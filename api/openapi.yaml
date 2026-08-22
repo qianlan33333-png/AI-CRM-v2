@@ -4132,6 +4132,212 @@ paths:
         "503":
           description: Submission snapshot storage unavailable.
           content: { application/json: { schema: { $ref: "#/components/schemas/LegacyQuestionnaireError" } } }
+  /admin/questionnaires/external-push-logs:
+    get:
+      tags: [p4-survey-compat]
+      operationId: listSurveyExternalPushLogs
+      summary: List local queued Survey external-push test records across questionnaires
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0062]
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_operational
+      x-aicrm-data-source: questionnaire_external_push_test_runs.local_read
+      x-aicrm-external-effect: none
+      x-p4-decision-evidence: P4-SURVEY-OPERATIONS-LOCAL-2026-08-22
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200":
+          description: Local queue facts only; no provider receipt, webhook payload, credential, retry or dispatch claim is exposed.
+          content: { application/json: { schema: { $ref: "#/components/schemas/SurveyExternalPushLogPage" } } }
+        "400": { description: Malformed pagination query., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: Local Survey Operations storage unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+  /admin/questionnaires/{questionnaire_id}/external-push-logs:
+    get:
+      tags: [p4-survey-compat]
+      operationId: listSurveyQuestionnaireExternalPushLogs
+      summary: List local queued external-push test records for one questionnaire
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0066]
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_operational
+      x-aicrm-data-source: questionnaire_external_push_test_runs.local_read
+      x-aicrm-external-effect: none
+      x-p4-decision-evidence: P4-SURVEY-OPERATIONS-LOCAL-2026-08-22
+      parameters:
+        - $ref: "#/components/parameters/QuestionnaireID"
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200":
+          description: Local queue facts only; every item belongs to the requested questionnaire.
+          content: { application/json: { schema: { $ref: "#/components/schemas/SurveyExternalPushLogPage" } } }
+        "400": { description: Malformed path or pagination query., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Questionnaire not found., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "503": { description: Local Survey Operations storage unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+  /admin/questionnaires/{questionnaire_id}/operations:
+    get:
+      tags: [p4-survey-compat]
+      operationId: getSurveyOperationsPageData
+      summary: Read data-only local Survey Operations configuration for the legacy admin route
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0067]
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_operational
+      x-aicrm-data-source: questionnaire_operations.local_read
+      x-aicrm-external-effect: none
+      x-p4-decision-evidence: P4-SURVEY-OPERATIONS-LOCAL-2026-08-22
+      parameters:
+        - $ref: "#/components/parameters/QuestionnaireID"
+      responses:
+        "200":
+          description: JSON data carrier only; it renders no HTML and contains no provider URL or credential.
+          content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsProjection" } } }
+        "400": { description: Malformed path or query., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Questionnaire not found., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "503": { description: Local Survey Operations storage unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+  /api/admin/questionnaires/{questionnaire_id}/operations:
+    get:
+      tags: [p4-survey-compat]
+      operationId: getSurveyOperations
+      summary: Read local completion and external-push configuration for one questionnaire
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0436]
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_operational
+      x-aicrm-data-source: questionnaire_operations.local_read
+      x-aicrm-external-effect: none
+      x-p4-decision-evidence: P4-SURVEY-OPERATIONS-LOCAL-2026-08-22
+      parameters:
+        - $ref: "#/components/parameters/QuestionnaireID"
+      responses:
+        "200":
+          description: Strict local readback with opaque references only.
+          content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsProjection" } } }
+        "400": { description: Malformed path or query., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Questionnaire not found., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "503": { description: Local Survey Operations storage unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+  /api/admin/questionnaires/{questionnaire_id}/operations/completion:
+    put:
+      tags: [p4-survey-compat]
+      operationId: saveSurveyCompletionOperations
+      summary: Save only local opaque completion configuration and return strict readback
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0437]
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_operational
+      x-aicrm-data-source: questionnaire_operations.local_transaction
+      x-aicrm-external-effect: none
+      x-p4-decision-evidence: P4-SURVEY-OPERATIONS-LOCAL-2026-08-22
+      parameters:
+        - $ref: "#/components/parameters/QuestionnaireID"
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SurveyCompletionOperations" } } }
+      responses:
+        "200":
+          description: Local configuration, receipt and event log were committed atomically and read back strictly.
+          content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsProjection" } } }
+        "400": { description: Malformed opaque local configuration or idempotency key., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Questionnaire not found., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "409": { description: Idempotency conflict., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "503": { description: Local Survey Operations transaction unavailable or readback did not match., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+  /api/admin/questionnaires/{questionnaire_id}/operations/external-push:
+    put:
+      tags: [p4-survey-compat]
+      operationId: saveSurveyExternalPushOperations
+      summary: Save only local opaque external-push configuration and return strict readback
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0438]
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_operational
+      x-aicrm-data-source: questionnaire_operations.local_transaction
+      x-aicrm-external-effect: none
+      x-p4-decision-evidence: P4-SURVEY-OPERATIONS-LOCAL-2026-08-22
+      parameters:
+        - $ref: "#/components/parameters/QuestionnaireID"
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SurveyExternalPushOperations" } } }
+      responses:
+        "200":
+          description: Local configuration, receipt and event log were committed atomically and read back strictly.
+          content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsProjection" } } }
+        "400": { description: Malformed opaque local configuration or idempotency key., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Questionnaire not found., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "409": { description: Idempotency conflict., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "503": { description: Local Survey Operations transaction unavailable or readback did not match., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+  /api/admin/questionnaires/{questionnaire_id}/operations/external-push/test:
+    post:
+      tags: [p4-survey-compat]
+      operationId: queueSurveyExternalPushTest
+      summary: Create one queued local external-push test record without dispatching it
+      security:
+        - AdminSession: []
+      x-legacy-mapping-ids: [LEGACY-API-0439]
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_operational
+      x-aicrm-data-source: questionnaire_external_push_test_runs.local_transaction
+      x-aicrm-external-effect: none
+      x-p4-decision-evidence: P4-SURVEY-OPERATIONS-LOCAL-2026-08-22
+      parameters:
+        - $ref: "#/components/parameters/QuestionnaireID"
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: A durable local queued record only; no River job, provider call, webhook, receipt, dispatch, unknown-after-dispatch retry or external effect occurred.
+          content: { application/json: { schema: { $ref: "#/components/schemas/SurveyExternalPushTest" } } }
+        "400": { description: Malformed path or idempotency key., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Questionnaire not found., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "409": { description: External push is not locally configured or idempotency conflicted., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
+        "503": { description: Local Survey Operations transaction unavailable or queued record readback did not match., content: { application/json: { schema: { $ref: "#/components/schemas/SurveyOperationsError" } } } }
   /api/admin/questionnaires/{questionnaire_id}/analysis:
     get:
       tags: [p4-survey-compat]
@@ -9250,6 +9456,73 @@ components:
             rules: { type: array, maxItems: 0, items: { type: object } }
         data: { type: object }
         side_effect_executed: { type: boolean, enum: [false] }
+    SurveyOperationsError:
+      type: object
+      additionalProperties: false
+      required: [ok, error, local_only, side_effect_executed, provider_result_received]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error:
+          type: object
+          additionalProperties: false
+          required: [code]
+          properties:
+            code:
+              type: string
+              enum: [authentication_required, permission_denied, invalid_questionnaire_id, invalid_page, invalid_idempotency_key, invalid_operations_request, questionnaire_not_found, operations_conflict, external_push_not_configured, survey_operations_unavailable, method_not_allowed]
+        local_only: { type: boolean, enum: [true] }
+        side_effect_executed: { type: boolean, enum: [false] }
+        provider_result_received: { type: boolean, enum: [false] }
+    SurveyCompletionOperations:
+      type: object
+      additionalProperties: false
+      description: Opaque local completion references only. An empty object clears both fields; a channel requires a navigation target.
+      properties:
+        navigation_target_id: { type: string, minLength: 1, maxLength: 128, pattern: '^[A-Za-z0-9._:-]{1,128}$' }
+        channel_id: { type: integer, format: int64, minimum: 0 }
+    SurveyExternalPushOperations:
+      type: object
+      additionalProperties: false
+      description: When enabled is true, configuration_reference is a required opaque local reference. When false, it is absent or empty. It is never a URL, token, payload, retry policy, or provider receipt.
+      required: [enabled]
+      properties:
+        enabled: { type: boolean }
+        configuration_reference: { type: string, minLength: 1, maxLength: 128, pattern: '^[A-Za-z0-9._:-]{1,128}$' }
+    SurveyOperationsProjection:
+      type: object
+      additionalProperties: false
+      required: [questionnaire_id, completion, external_push, local_only]
+      properties:
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        completion: { $ref: "#/components/schemas/SurveyCompletionOperations" }
+        external_push: { $ref: "#/components/schemas/SurveyExternalPushOperations" }
+        local_only: { type: boolean, enum: [true] }
+    SurveyExternalPushTest:
+      type: object
+      additionalProperties: false
+      required: [test_run_id, questionnaire_id, status, attempt_count, side_effect_executed, provider_result_received, unknown_after_dispatch, auto_retry_allowed, created_at, updated_at]
+      properties:
+        test_run_id: { type: integer, format: int64, minimum: 1 }
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        status: { type: string, enum: [queued] }
+        attempt_count: { type: integer, enum: [0] }
+        side_effect_executed: { type: boolean, enum: [false] }
+        provider_result_received: { type: boolean, enum: [false] }
+        unknown_after_dispatch: { type: boolean, enum: [false] }
+        auto_retry_allowed: { type: boolean, enum: [false] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    SurveyExternalPushLogPage:
+      type: object
+      additionalProperties: false
+      required: [items, total, limit, offset, has_more, local_only]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/SurveyExternalPushTest" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0, maximum: 1000000 }
+        has_more: { type: boolean }
+        local_only: { type: boolean, enum: [true] }
     SurveySafeAdminError:
       type: object
       additionalProperties: false
