@@ -58,10 +58,11 @@ func TestCloudCampaignMigrationDownFailsClosedAndSerializesFacts(t *testing.T) {
 	for _, fixture := range []struct {
 		name                                   string
 		seed                                   func(*testing.T, context.Context, *pgxpool.Pool, string)
+		lockRelation                           string
 		wantCampaigns, wantSteps, wantReceipts int
 	}{
-		{"campaign writer", seedCampaignFact, 1, 1, 0},
-		{"receipt writer", seedCampaignReceipt, 0, 0, 1},
+		{"campaign writer", seedCampaignFact, "public.cloud_campaigns", 1, 1, 0},
+		{"receipt writer", seedCampaignReceipt, "public.cloud_campaign_operation_receipts", 0, 0, 1},
 	} {
 		fixture := fixture
 		t.Run("concurrent "+fixture.name+" commits before rollback guard", func(t *testing.T) {
@@ -83,7 +84,7 @@ func TestCloudCampaignMigrationDownFailsClosedAndSerializesFacts(t *testing.T) {
 			downURL := campaignDownURL(t)
 			done := make(chan error, 1)
 			go func() { done <- campaignGoose(ctx, repoRoot, downURL, "down-to", "59") }()
-			waitForCampaignDownLock(t, ctx, pool)
+			waitForCampaignDownLock(t, ctx, pool, fixture.lockRelation)
 			if err = tx.Commit(ctx); err != nil {
 				t.Fatal(err)
 			}
@@ -253,8 +254,11 @@ func campaignDownURL(t *testing.T) string {
 	return parsed.String()
 }
 
-func waitForCampaignDownLock(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+func waitForCampaignDownLock(t *testing.T, ctx context.Context, pool *pgxpool.Pool, relation string) {
 	t.Helper()
+	if relation != "public.cloud_campaigns" && relation != "public.cloud_campaign_operation_receipts" {
+		t.Fatalf("unexpected campaign rollback lock relation %q", relation)
+	}
 	deadline := time.NewTimer(10 * time.Second)
 	defer deadline.Stop()
 	ticker := time.NewTicker(25 * time.Millisecond)
@@ -265,9 +269,9 @@ func waitForCampaignDownLock(t *testing.T, ctx context.Context, pool *pgxpool.Po
       FROM pg_locks lock
       JOIN pg_stat_activity activity ON activity.pid=lock.pid
       WHERE activity.application_name='campaign-migration-down'
-        AND lock.relation='public.cloud_campaigns'::regclass
+        AND lock.relation=$1::regclass
         AND lock.mode='ShareRowExclusiveLock'
-        AND NOT lock.granted`).Scan(&waiting)
+		AND NOT lock.granted`, relation).Scan(&waiting)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -276,7 +280,7 @@ func waitForCampaignDownLock(t *testing.T, ctx context.Context, pool *pgxpool.Po
 		}
 		select {
 		case <-deadline.C:
-			t.Fatal("campaign rollback never waited on cloud_campaigns lock")
+			t.Fatalf("campaign rollback never waited on %s lock", relation)
 		case <-ticker.C:
 		}
 	}
