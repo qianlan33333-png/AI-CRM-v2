@@ -1941,11 +1941,40 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	if err := validateConfigSettingsContract(doc); err != nil {
 		return err
 	}
+	if err := validateRadarShareContract(doc); err != nil {
+		return err
+	}
 	if err := validateAdminShellContract(doc); err != nil {
 		return err
 	}
 	if err := validateLegacyHealthContract(doc); err != nil {
 		return err
+	}
+	return nil
+}
+
+func validateRadarShareContract(doc *openapi3.T) error {
+	operation := doc.Paths.Value("/api/admin/radar-links/{link_id}/share")
+	schema := doc.Components.Schemas["RadarShareProjection"]
+	if operation == nil || operation.Get == nil || !operationResponseUsesLocalSchema(operation.Get, "RadarShareProjection") ||
+		schema == nil || schema.Value == nil || schema.Value.AdditionalProperties.Has == nil || *schema.Value.AdditionalProperties.Has ||
+		len(schema.Value.Properties) != 9 {
+		return errors.New("Radar share projection must remain a closed local-only descriptor")
+	}
+	required := append([]string(nil), schema.Value.Required...)
+	sort.Strings(required)
+	if !reflect.DeepEqual(required, []string{"available", "link_id", "local_projection", "public_code", "public_route_ready", "qr_payload", "real_external_call_executed", "share_path", "status"}) ||
+		!legacyTagBooleanEnum(schema.Value, "available", false) ||
+		!legacyTagBooleanEnum(schema.Value, "public_route_ready", false) ||
+		!legacyTagBooleanEnum(schema.Value, "real_external_call_executed", false) ||
+		!legacyTagStringEnum(schema.Value, "share_path", "") ||
+		!legacyTagStringEnum(schema.Value, "qr_payload", "") {
+		return errors.New("Radar share projection must not expose an unavailable public route")
+	}
+	for path := range doc.Paths.Map() {
+		if strings.HasPrefix(path, "/r/") {
+			return errors.New("Radar public route is not available")
+		}
 	}
 	return nil
 }
