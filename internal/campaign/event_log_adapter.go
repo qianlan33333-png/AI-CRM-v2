@@ -20,9 +20,10 @@ func (a *EventLogAdapter) Append(ctx context.Context, event AuditEvent) error {
 		return ErrUnavailable
 	}
 	payload, err := json.Marshal(struct {
+		AuditType    string `json:"audit_type"`
 		CampaignCode string `json:"campaign_code"`
 		ActorID      int64  `json:"actor_id"`
-	}{event.CampaignCode, event.ActorID})
+	}{event.Type, event.CampaignCode, event.ActorID})
 	if err != nil {
 		return ErrUnavailable
 	}
