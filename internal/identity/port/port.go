@@ -58,7 +58,7 @@ type CustomerMatchRequest struct {
 }
 
 type CustomerMatcher interface {
-	MatchesCustomer(context.Context, CustomerMatchRequest) (bool, error)
+	MatchCustomers(context.Context, []CustomerMatchRequest) ([]bool, error)
 }
 
 type BindStatus string

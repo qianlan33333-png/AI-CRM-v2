@@ -32,8 +32,8 @@ func TestCustomerAnswerServiceProjectsOnlyChoiceAnswersAndMarksBounds(t *testing
 		len(page.Items[0].ChoiceAnswers[0].OptionIDs) != 1 || page.Items[0].ChoiceAnswers[0].OptionIDs[0] != 9 {
 		t.Fatalf("safe answers=%+v", page.Items[0].ChoiceAnswers)
 	}
-	if len(matcher.requests) != 3 || matcher.requests[0].Refs[0].Value != "+8613800138000" {
-		t.Fatalf("match requests=%+v", matcher.requests)
+	if matcher.calls != 1 || len(matcher.requests) != 3 || matcher.requests[0].Refs[0].Value != "+8613800138000" {
+		t.Fatalf("match calls/requests=%d/%+v", matcher.calls, matcher.requests)
 	}
 }
 
@@ -57,6 +57,9 @@ func TestCustomerAnswerServiceMarksScanTruncationWithoutClaimingCompleteness(t *
 	page, err := service.ListCustomerSurveyAnswers(context.Background(), 41, 30)
 	if err != nil || !page.ScanTruncated || page.ScannedCount != CustomerAnswerScanLimit {
 		t.Fatalf("page/err=%+v/%v", page, err)
+	}
+	if matcher := service.matcher.(*customerAnswerMatcherStub); matcher.calls != 1 || len(matcher.requests) != int(CustomerAnswerScanLimit) {
+		t.Fatalf("matcher calls/requests=%d/%d", matcher.calls, len(matcher.requests))
 	}
 }
 
@@ -99,18 +102,23 @@ func (stub *customerAnswerStoreStub) ListRecentCustomerAnswerCandidates(context.
 type customerAnswerMatcherStub struct {
 	matchedPhones map[string]bool
 	err           error
+	calls         int
 	requests      []identityport.CustomerMatchRequest
 }
 
-func (stub *customerAnswerMatcherStub) MatchesCustomer(_ context.Context, request identityport.CustomerMatchRequest) (bool, error) {
-	stub.requests = append(stub.requests, request)
+func (stub *customerAnswerMatcherStub) MatchCustomers(_ context.Context, requests []identityport.CustomerMatchRequest) ([]bool, error) {
+	stub.calls++
+	stub.requests = append(stub.requests, requests...)
 	if stub.err != nil {
-		return false, stub.err
+		return nil, stub.err
 	}
-	for _, ref := range request.Refs {
-		if ref.Kind == identityport.KindPhone && stub.matchedPhones[ref.Value] {
-			return true, nil
+	result := make([]bool, len(requests))
+	for index, request := range requests {
+		for _, ref := range request.Refs {
+			if ref.Kind == identityport.KindPhone && stub.matchedPhones[ref.Value] {
+				result[index] = true
+			}
 		}
 	}
-	return false, nil
+	return result, nil
 }

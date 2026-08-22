@@ -3,76 +3,131 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 )
 
 func TestCustomerMatcherServiceRequiresConsistentFoundHints(t *testing.T) {
-	resolver := &customerMatchResolverStub{results: map[identityport.IDKind]identityport.ResolveResult{
-		identityport.KindPhone:               {Status: identityport.ResolveFound, CustomerID: 41},
-		identityport.KindWeComExternalUserID: {Status: identityport.ResolveFound, CustomerID: 41},
-	}}
-	service := NewCustomerMatcherService(resolver, &customerMatchUnionStub{result: identityport.ResolveResult{Status: identityport.ResolveNotFound}})
-	matched, err := service.MatchesCustomer(context.Background(), identityport.CustomerMatchRequest{
+	uow := &customerMatchUoW{}
+	store := &customerMatchStoreStub{
+		records: map[identityport.IDKind]ResolveRecord{
+			identityport.KindPhone:               {CustomerID: 41},
+			identityport.KindWeComExternalUserID: {CustomerID: 41},
+		},
+		unionIDs: []int64{41},
+	}
+	service := NewCustomerMatcherService(uow, store)
+	matches, err := service.MatchCustomers(context.Background(), []identityport.CustomerMatchRequest{{
 		CustomerID: 41,
 		Refs: []identityport.IDRef{
 			{Kind: identityport.KindPhone, Scope: "phone:e164", Value: "+8613800138000", Assurance: identityport.AssuranceVerified, Source: "survey.customer_answers"},
 			{Kind: identityport.KindWeComExternalUserID, Scope: "wecom-corp:corp", Value: "ext-1", Assurance: identityport.AssuranceVerified, Source: "survey.customer_answers"},
 		},
 		LegacyUnionID: "union-1",
-	})
-	if err != nil || !matched || len(resolver.refs) != 2 {
-		t.Fatalf("matched/err/refs=%t/%v/%v", matched, err, resolver.refs)
+	}})
+	if err != nil || len(matches) != 1 || !matches[0] || uow.calls != 1 || store.lookupCalls != 2 || store.unionCalls != 1 {
+		t.Fatalf("matches/error/uow/lookups=%v/%v/%d/%d/%d", matches, err, uow.calls, store.lookupCalls, store.unionCalls)
 	}
 }
 
-func TestCustomerMatcherServiceFailsClosedOnConflictOrDependencyError(t *testing.T) {
+func TestCustomerMatcherServiceUsesOneUoWForMaximumSurveyBatch(t *testing.T) {
+	uow := &customerMatchUoW{}
+	store := &customerMatchStoreStub{
+		records: map[identityport.IDKind]ResolveRecord{
+			identityport.KindPhone:               {CustomerID: 41},
+			identityport.KindWeComExternalUserID: {CustomerID: 41},
+		},
+		unionIDs: []int64{41},
+	}
+	requests := make([]identityport.CustomerMatchRequest, CustomerMatchMaximumBatch)
+	for index := range requests {
+		requests[index] = identityport.CustomerMatchRequest{
+			CustomerID: 41,
+			Refs: []identityport.IDRef{
+				{Kind: identityport.KindPhone, Scope: "phone:e164", Value: fmt.Sprintf("+8613800%08d", index)},
+				{Kind: identityport.KindWeComExternalUserID, Scope: "wecom-corp:corp", Value: fmt.Sprintf("ext-%d", index)},
+			},
+			LegacyUnionID: fmt.Sprintf("union-%d", index),
+		}
+	}
+	matches, err := NewCustomerMatcherService(uow, store).MatchCustomers(context.Background(), requests)
+	if err != nil || len(matches) != CustomerMatchMaximumBatch || uow.calls != 1 ||
+		store.lookupCalls != CustomerMatchMaximumBatch*2 || store.unionCalls != CustomerMatchMaximumBatch {
+		t.Fatalf("matches/error/uow/lookups=%d/%v/%d/%d/%d", len(matches), err, uow.calls, store.lookupCalls, store.unionCalls)
+	}
+	for index, matched := range matches {
+		if !matched {
+			t.Fatalf("match %d=false", index)
+		}
+	}
+}
+
+func TestCustomerMatcherServiceFailsWholeBatchClosedOnConflictOrDependencyError(t *testing.T) {
 	tests := []struct {
-		name     string
-		resolver *customerMatchResolverStub
+		name  string
+		store *customerMatchStoreStub
 	}{
-		{name: "different customers", resolver: &customerMatchResolverStub{results: map[identityport.IDKind]identityport.ResolveResult{
-			identityport.KindPhone: {Status: identityport.ResolveFound, CustomerID: 41}, identityport.KindWeComExternalUserID: {Status: identityport.ResolveFound, CustomerID: 42},
+		{name: "different customers", store: &customerMatchStoreStub{records: map[identityport.IDKind]ResolveRecord{
+			identityport.KindPhone: {CustomerID: 41}, identityport.KindWeComExternalUserID: {CustomerID: 42},
 		}}},
-		{name: "ambiguous", resolver: &customerMatchResolverStub{results: map[identityport.IDKind]identityport.ResolveResult{
-			identityport.KindPhone: {Status: identityport.ResolveConflict}, identityport.KindWeComExternalUserID: {Status: identityport.ResolveNotFound},
+		{name: "ambiguous", store: &customerMatchStoreStub{records: map[identityport.IDKind]ResolveRecord{
+			identityport.KindPhone: {Conflict: true}, identityport.KindWeComExternalUserID: {},
 		}}},
-		{name: "dependency", resolver: &customerMatchResolverStub{err: errors.New("identity unavailable")}},
+		{name: "union ambiguous", store: &customerMatchStoreStub{records: map[identityport.IDKind]ResolveRecord{
+			identityport.KindPhone: {CustomerID: 41},
+		}, unionIDs: []int64{41, 42}}},
+		{name: "dependency", store: &customerMatchStoreStub{err: errors.New("identity unavailable")}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			service := NewCustomerMatcherService(test.resolver, nil)
-			matched, err := service.MatchesCustomer(context.Background(), identityport.CustomerMatchRequest{CustomerID: 41, Refs: []identityport.IDRef{
-				{Kind: identityport.KindPhone, Scope: "phone:e164", Value: "+8613800138000"},
-				{Kind: identityport.KindWeComExternalUserID, Scope: "wecom-corp:corp", Value: "ext-1"},
-			}})
-			if matched || !errors.Is(err, ErrCustomerIdentityMatchFailed) {
-				t.Fatalf("matched/err=%t/%v", matched, err)
+			uow := &customerMatchUoW{}
+			matches, err := NewCustomerMatcherService(uow, test.store).MatchCustomers(context.Background(), []identityport.CustomerMatchRequest{
+				{CustomerID: 41, Refs: []identityport.IDRef{{Kind: identityport.KindPhone, Scope: "phone:e164", Value: "+8613800138000"}, {Kind: identityport.KindWeComExternalUserID, Scope: "wecom-corp:corp", Value: "ext-1"}}, LegacyUnionID: unionForTest(test.name)},
+				{CustomerID: 41, Refs: []identityport.IDRef{{Kind: identityport.KindPhone, Scope: "phone:e164", Value: "+8613900139000"}}},
+			})
+			if matches != nil || !errors.Is(err, ErrCustomerIdentityMatchFailed) || uow.calls != 1 {
+				t.Fatalf("matches/error/uow=%v/%v/%d", matches, err, uow.calls)
 			}
 		})
 	}
 }
 
-type customerMatchResolverStub struct {
-	results map[identityport.IDKind]identityport.ResolveResult
-	err     error
-	refs    []identityport.IDRef
-}
-
-func (stub *customerMatchResolverStub) Resolve(_ context.Context, ref identityport.IDRef) (identityport.ResolveResult, error) {
-	stub.refs = append(stub.refs, ref)
-	if stub.err != nil {
-		return identityport.ResolveResult{}, stub.err
+func unionForTest(name string) string {
+	if name == "union ambiguous" {
+		return "union-1"
 	}
-	return stub.results[ref.Kind], nil
+	return ""
 }
 
-type customerMatchUnionStub struct {
-	result identityport.ResolveResult
-	err    error
+type customerMatchUoW struct{ calls int }
+
+func (uow *customerMatchUoW) Within(ctx context.Context, callback func(context.Context) error) error {
+	uow.calls++
+	return callback(ctx)
 }
 
-func (stub *customerMatchUnionStub) ResolveUnionID(context.Context, string) (identityport.ResolveResult, error) {
-	return stub.result, stub.err
+type customerMatchStoreStub struct {
+	records     map[identityport.IDKind]ResolveRecord
+	unionIDs    []int64
+	err         error
+	lookupCalls int
+	unionCalls  int
+}
+
+func (store *customerMatchStoreStub) LookupNormalized(_ context.Context, identity NormalizedIdentity) (ResolveRecord, error) {
+	store.lookupCalls++
+	if store.err != nil {
+		return ResolveRecord{}, store.err
+	}
+	return store.records[identity.Kind], nil
+}
+
+func (store *customerMatchStoreStub) LookupMessageArchiveUnionIDCustomers(context.Context, string) ([]int64, error) {
+	store.unionCalls++
+	if store.err != nil {
+		return nil, store.err
+	}
+	return append([]int64(nil), store.unionIDs...), nil
 }

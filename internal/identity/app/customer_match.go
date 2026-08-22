@@ -5,52 +5,110 @@ import (
 	"errors"
 	"reflect"
 
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
+	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 )
+
+const CustomerMatchMaximumBatch = 500
 
 var ErrCustomerIdentityMatchFailed = errors.New("customer identity match failed")
 
-type customerIdentityResolver interface {
-	Resolve(context.Context, identityport.IDRef) (identityport.ResolveResult, error)
+type customerMatchStore interface {
+	ResolveStore
+	MessageArchiveUnionIDStore
 }
 
-type legacyUnionIDResolver interface {
-	ResolveUnionID(context.Context, string) (identityport.ResolveResult, error)
-}
-
-// CustomerMatcherService resolves every usable hint and fails closed when two
-// found hints disagree or any hint is ambiguous. It never returns an identity
-// value or creates/binds an identity.
+// CustomerMatcherService resolves a bounded batch inside one UoW that only
+// performs reads. It never returns identity values or creates/binds an identity.
+// Any malformed, ambiguous, conflicting, or unavailable hint fails the complete
+// batch closed.
 type CustomerMatcherService struct {
-	resolver customerIdentityResolver
-	union    legacyUnionIDResolver
+	uow   platformport.UnitOfWork
+	store customerMatchStore
 }
 
-func NewCustomerMatcherService(resolver customerIdentityResolver, union legacyUnionIDResolver) *CustomerMatcherService {
-	return &CustomerMatcherService{resolver: resolver, union: union}
+func NewCustomerMatcherService(uow platformport.UnitOfWork, store customerMatchStore) *CustomerMatcherService {
+	return &CustomerMatcherService{uow: uow, store: store}
 }
 
-func (service *CustomerMatcherService) MatchesCustomer(ctx context.Context, request identityport.CustomerMatchRequest) (bool, error) {
-	if ctx == nil || request.CustomerID <= 0 || len(request.Refs) > 3 || len(request.LegacyUnionID) > 1024 ||
-		(len(request.Refs) == 0 && request.LegacyUnionID == "") || service == nil || nilMatchDependency(service.resolver) {
-		return false, ErrCustomerIdentityMatchFailed
+type preparedCustomerMatch struct {
+	CustomerID    contactport.CustomerID
+	Refs          []NormalizedIdentity
+	LegacyUnionID string
+}
+
+func (service *CustomerMatcherService) MatchCustomers(ctx context.Context, requests []identityport.CustomerMatchRequest) ([]bool, error) {
+	if ctx == nil || len(requests) < 1 || len(requests) > CustomerMatchMaximumBatch || service == nil ||
+		nilCustomerMatchDependency(service.uow) || nilCustomerMatchDependency(service.store) {
+		return nil, ErrCustomerIdentityMatchFailed
+	}
+	prepared := make([]preparedCustomerMatch, len(requests))
+	for index, request := range requests {
+		if request.CustomerID <= 0 || len(request.Refs) > 3 ||
+			(len(request.Refs) == 0 && request.LegacyUnionID == "") ||
+			(request.LegacyUnionID != "" && !validMessageArchiveUnionID(request.LegacyUnionID)) {
+			return nil, ErrCustomerIdentityMatchFailed
+		}
+		prepared[index] = preparedCustomerMatch{CustomerID: request.CustomerID, LegacyUnionID: request.LegacyUnionID}
+		prepared[index].Refs = make([]NormalizedIdentity, len(request.Refs))
+		for refIndex, ref := range request.Refs {
+			normalized, err := Normalize(ref)
+			if err != nil {
+				return nil, errors.Join(ErrCustomerIdentityMatchFailed, err)
+			}
+			prepared[index].Refs[refIndex] = normalized
+		}
 	}
 
+	results := make([]bool, len(prepared))
+	err := service.uow.Within(ctx, func(tx context.Context) error {
+		for index, request := range prepared {
+			matched, matchErr := service.matchWithin(tx, request)
+			if matchErr != nil {
+				return matchErr
+			}
+			results[index] = matched
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Join(ErrCustomerIdentityMatchFailed, err)
+	}
+	return append([]bool(nil), results...), nil
+}
+
+func (service *CustomerMatcherService) matchWithin(ctx context.Context, request preparedCustomerMatch) (bool, error) {
 	results := make([]identityport.ResolveResult, 0, len(request.Refs)+1)
 	for _, ref := range request.Refs {
-		result, err := service.resolver.Resolve(ctx, ref)
+		record, err := service.store.LookupNormalized(ctx, ref)
 		if err != nil {
-			return false, errors.Join(ErrCustomerIdentityMatchFailed, err)
+			return false, err
+		}
+		result := identityport.ResolveResult{Status: identityport.ResolveNotFound}
+		switch {
+		case record.Conflict:
+			result = identityport.ResolveResult{Status: identityport.ResolveConflict}
+		case record.CustomerID == 0:
+		case record.CustomerID > 0:
+			result = identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: contactport.CustomerID(record.CustomerID)}
+		default:
+			return false, ErrCustomerIdentityMatchFailed
 		}
 		results = append(results, result)
 	}
 	if request.LegacyUnionID != "" {
-		if nilMatchDependency(service.union) {
-			return false, ErrCustomerIdentityMatchFailed
-		}
-		result, err := service.union.ResolveUnionID(ctx, request.LegacyUnionID)
-		if err != nil {
+		customerIDs, err := service.store.LookupMessageArchiveUnionIDCustomers(ctx, request.LegacyUnionID)
+		if err != nil || len(customerIDs) > 2 || !validMessageArchiveCustomerIDs(customerIDs) {
 			return false, errors.Join(ErrCustomerIdentityMatchFailed, err)
+		}
+		result := identityport.ResolveResult{Status: identityport.ResolveNotFound}
+		switch len(customerIDs) {
+		case 0:
+		case 1:
+			result = identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: contactport.CustomerID(customerIDs[0])}
+		default:
+			result = identityport.ResolveResult{Status: identityport.ResolveConflict}
 		}
 		results = append(results, result)
 	}
@@ -76,7 +134,7 @@ func (service *CustomerMatcherService) MatchesCustomer(ctx context.Context, requ
 	return found.Status == identityport.ResolveFound && found.CustomerID == request.CustomerID, nil
 }
 
-func nilMatchDependency(value any) bool {
+func nilCustomerMatchDependency(value any) bool {
 	if value == nil {
 		return true
 	}

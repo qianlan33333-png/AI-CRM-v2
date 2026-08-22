@@ -890,7 +890,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	identityRepository := identitystore.NewRepository()
 	identityResolver := identityapp.NewResolveService(uow, identityRepository)
 	legacyUnionIDResolver := identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
-	customerIdentityMatcher := identityapp.NewCustomerMatcherService(identityResolver, legacyUnionIDResolver)
+	customerIdentityMatcher := identityapp.NewCustomerMatcherService(uow, identityRepository)
 	customerAnswerService := surveyapp.NewCustomerAnswerService(
 		uow, surveySubmissionRepository, customerIdentityMatcher, config.WeCom.OAuth.CorpID,
 	)

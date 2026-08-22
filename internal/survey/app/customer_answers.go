@@ -96,7 +96,9 @@ func (service *CustomerAnswerService) ListCustomerSurveyAnswers(
 
 	var previous time.Time
 	var previousID int64
-	for _, candidate := range candidates {
+	matchRequests := make([]identityport.CustomerMatchRequest, 0, len(candidates))
+	matchIndexes := make([]int, 0, len(candidates))
+	for index, candidate := range candidates {
 		if !validCustomerAnswerCandidate(candidate) || !previous.IsZero() &&
 			(candidate.SubmittedAt.After(previous) || candidate.SubmittedAt.Equal(previous) && candidate.ID >= previousID) {
 			return surveyport.CustomerSurveyAnswerPage{}, ErrCustomerAnswersUnavailable
@@ -110,11 +112,25 @@ func (service *CustomerAnswerService) ListCustomerSurveyAnswers(
 		if !ok {
 			continue
 		}
-		matched, matchErr := service.matcher.MatchesCustomer(ctx, matchRequest)
+		matchRequests = append(matchRequests, matchRequest)
+		matchIndexes = append(matchIndexes, index)
+	}
+	matchedCandidates := make([]bool, len(candidates))
+	if len(matchRequests) > 0 {
+		matches, matchErr := service.matcher.MatchCustomers(ctx, matchRequests)
 		if matchErr != nil {
 			return surveyport.CustomerSurveyAnswerPage{}, errors.Join(ErrCustomerAnswersUnavailable, matchErr)
 		}
-		if !matched {
+		if len(matches) != len(matchRequests) {
+			return surveyport.CustomerSurveyAnswerPage{}, ErrCustomerAnswersUnavailable
+		}
+		for index, matched := range matches {
+			matchedCandidates[matchIndexes[index]] = matched
+		}
+	}
+
+	for index, candidate := range candidates {
+		if !matchedCandidates[index] {
 			continue
 		}
 		page.MatchedCount++
