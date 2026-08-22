@@ -21,6 +21,7 @@ func TestD01ServicePeriodLifecycleUsesProductCASReceiptsAndRetainsReferences(t *
 		productstore.NewCatalogRepository(),
 		eventstore.NewAppender(),
 	)
+	ordinary := realService(pool)
 	entitlements := realEntitlementService(pool)
 	actor := int64(9701)
 	code := uniqueCode("d01-service-period")
@@ -34,6 +35,10 @@ func TestD01ServicePeriodLifecycleUsesProductCASReceiptsAndRetainsReferences(t *
 		StockQuantity:  12,
 		Actor:          actor,
 		IdempotencyKey: createKey,
+	}
+	ordinaryBefore, err := ordinary.ListLegacy(ctx, 1, 0)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	created, err := service.CreateServicePeriodProduct(ctx, createCommand)
@@ -137,14 +142,13 @@ func TestD01ServicePeriodLifecycleUsesProductCASReceiptsAndRetainsReferences(t *
 	).Scan(&orderID); err != nil {
 		t.Fatal(err)
 	}
-	entitlement, err := entitlements.Grant(ctx, productport.GrantLocalEntitlementCommand{
+	if _, err = entitlements.Grant(ctx, productport.GrantLocalEntitlementCommand{
 		ProductID:      disabled.ServiceProductID,
 		OrderID:        orderID,
 		Actor:          actor,
 		IdempotencyKey: "d01-service-period-entitlement-" + code,
-	})
-	if err != nil || entitlement.ProductID != disabled.ServiceProductID || entitlement.OrderID != orderID || entitlement.CustomerID != customerID || entitlement.State != "active" {
-		t.Fatalf("local entitlement=%+v err=%v", entitlement, err)
+	}); !errors.Is(err, productapp.ErrEntitlementNotFound) {
+		t.Fatalf("generic local entitlement must reject service-period product: %v", err)
 	}
 
 	archived, err := service.ArchiveServicePeriodProduct(ctx, productport.ArchiveServicePeriodProductCommand{
@@ -161,9 +165,25 @@ func TestD01ServicePeriodLifecycleUsesProductCASReceiptsAndRetainsReferences(t *
 	if err != nil || loadedArchived != archived {
 		t.Fatalf("archived readback=%+v err=%v want=%+v", loadedArchived, err, archived)
 	}
-	loadedEntitlement, err := entitlements.Get(ctx, entitlement.ID)
-	if err != nil || loadedEntitlement.ID != entitlement.ID || loadedEntitlement.ProductID != archived.ServiceProductID || loadedEntitlement.OrderID != orderID || loadedEntitlement.State != "active" {
-		t.Fatalf("retained entitlement=%+v err=%v", loadedEntitlement, err)
+	ordinaryAfter, err := ordinary.ListLegacy(ctx, 1, 0)
+	if err != nil || ordinaryAfter.Total != ordinaryBefore.Total {
+		t.Fatalf("ordinary catalog total before/after service-period lifecycle=%d/%d err=%v", ordinaryBefore.Total, ordinaryAfter.Total, err)
+	}
+	if _, err = ordinary.Get(ctx, archived.ServiceProductID); !errors.Is(err, productapp.ErrNotFound) {
+		t.Fatalf("ordinary catalog read must reject service-period product: %v", err)
+	}
+	if _, err = ordinary.Update(ctx, productport.UpdateCommand{
+		ID:              archived.ServiceProductID,
+		ExpectedVersion: archived.Version,
+		Name:            archived.Name,
+		Description:     archived.Description,
+		PriceMinor:      archived.PriceMinor,
+		Currency:        archived.Currency,
+		StockQuantity:   archived.StockQuantity,
+		Actor:           actor,
+		IdempotencyKey:  "d01-service-period-ordinary-update-" + code,
+	}); !errors.Is(err, productapp.ErrNotFound) {
+		t.Fatalf("ordinary catalog update must reject service-period product: %v", err)
 	}
 
 	actorScope := fmt.Sprintf("admin:%d", actor)
@@ -172,7 +192,7 @@ func TestD01ServicePeriodLifecycleUsesProductCASReceiptsAndRetainsReferences(t *
 	var archivedEnabled bool
 	err = pool.QueryRow(ctx, `SELECT
 		(SELECT count(*) FROM products WHERE id IN ($1,$2)),
-		(SELECT count(*) FROM product_local_entitlements WHERE id=$3 AND product_id=$1 AND order_id=$4),
+		(SELECT count(*) FROM product_local_entitlements WHERE product_id=$1 AND order_id=$3),
 		(SELECT count(*) FROM order_list_projections WHERE id=$4 AND product_id=$1),
 		(SELECT count(*) FROM product_operation_receipts WHERE actor_scope=$5 AND state='completed'),
 		(SELECT count(*) FROM event_log WHERE payload->>'kind'='service_period' AND payload->>'actor'=$6),
@@ -181,7 +201,7 @@ func TestD01ServicePeriodLifecycleUsesProductCASReceiptsAndRetainsReferences(t *
 		(SELECT (legacy_admin_projection->>'enabled')::boolean FROM products WHERE id=$1)`,
 		int64(archived.ServiceProductID),
 		int64(copied.ServiceProductID),
-		int64(entitlement.ID),
+		orderID,
 		orderID,
 		actorScope,
 		fmt.Sprint(actor),
@@ -191,7 +211,7 @@ func TestD01ServicePeriodLifecycleUsesProductCASReceiptsAndRetainsReferences(t *
 	if err != nil {
 		t.Fatal(err)
 	}
-	if productRows != 2 || entitlementRows != 1 || orderRows != 1 {
+	if productRows != 2 || entitlementRows != 0 || orderRows != 1 {
 		t.Fatalf("retained rows products/entitlements/orders=%d/%d/%d", productRows, entitlementRows, orderRows)
 	}
 	if completedReceipts != 6 || servicePeriodEvents != 6 || invalidEventTypes != 0 {

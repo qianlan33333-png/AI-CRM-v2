@@ -7,7 +7,230 @@ package productdb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const countServicePeriodProductRows = `-- name: CountServicePeriodProductRows :one
+SELECT COUNT(*)::bigint
+FROM products AS p
+WHERE (
+  p.legacy_admin_projection->>'status' = 'service_period_enabled'
+  AND p.legacy_admin_projection->>'enabled' = 'true'
+  OR p.legacy_admin_projection->>'status' IN (
+    'service_period_draft',
+    'service_period_disabled',
+    'service_period_archived'
+  ) AND p.legacy_admin_projection->>'enabled' = 'false'
+)
+`
+
+func (q *Queries) CountServicePeriodProductRows(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countServicePeriodProductRows)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const getServicePeriodProductRow = `-- name: GetServicePeriodProductRow :one
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.local_lifecycle, p.legacy_admin_projection,
+       COALESCE(images.items, '[]'::jsonb) AS images
+FROM products AS p
+LEFT JOIN LATERAL (
+  SELECT jsonb_agg(pi.image_url ORDER BY pi.position) AS items
+  FROM product_images AS pi
+  WHERE pi.product_id = p.id
+) AS images ON true
+WHERE p.id = $1::bigint
+  AND (
+    p.legacy_admin_projection->>'status' = 'service_period_enabled'
+    AND p.legacy_admin_projection->>'enabled' = 'true'
+    OR p.legacy_admin_projection->>'status' IN (
+      'service_period_draft',
+      'service_period_disabled',
+      'service_period_archived'
+    ) AND p.legacy_admin_projection->>'enabled' = 'false'
+  )
+`
+
+type GetServicePeriodProductRowRow struct {
+	ID                    int64              `json:"id"`
+	ProductCode           string             `json:"product_code"`
+	Name                  string             `json:"name"`
+	Description           string             `json:"description"`
+	PriceMinor            int64              `json:"price_minor"`
+	Currency              string             `json:"currency"`
+	StockQuantity         int32              `json:"stock_quantity"`
+	CreatedBy             int64              `json:"created_by"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	Version               int64              `json:"version"`
+	LocalLifecycle        string             `json:"local_lifecycle"`
+	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
+	Images                []byte             `json:"images"`
+}
+
+func (q *Queries) GetServicePeriodProductRow(ctx context.Context, productID int64) (GetServicePeriodProductRowRow, error) {
+	row := q.db.QueryRow(ctx, getServicePeriodProductRow, productID)
+	var i GetServicePeriodProductRowRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProductCode,
+		&i.Name,
+		&i.Description,
+		&i.PriceMinor,
+		&i.Currency,
+		&i.StockQuantity,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Version,
+		&i.LocalLifecycle,
+		&i.LegacyAdminProjection,
+		&i.Images,
+	)
+	return i, err
+}
+
+const getServicePeriodProductRowForUpdate = `-- name: GetServicePeriodProductRowForUpdate :one
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.local_lifecycle, p.legacy_admin_projection,
+       COALESCE(images.items, '[]'::jsonb) AS images
+FROM products AS p
+LEFT JOIN LATERAL (
+  SELECT jsonb_agg(pi.image_url ORDER BY pi.position) AS items
+  FROM product_images AS pi
+  WHERE pi.product_id = p.id
+) AS images ON true
+WHERE p.id = $1::bigint
+  AND (
+    p.legacy_admin_projection->>'status' = 'service_period_enabled'
+    AND p.legacy_admin_projection->>'enabled' = 'true'
+    OR p.legacy_admin_projection->>'status' IN (
+      'service_period_draft',
+      'service_period_disabled',
+      'service_period_archived'
+    ) AND p.legacy_admin_projection->>'enabled' = 'false'
+  )
+FOR UPDATE OF p
+`
+
+type GetServicePeriodProductRowForUpdateRow struct {
+	ID                    int64              `json:"id"`
+	ProductCode           string             `json:"product_code"`
+	Name                  string             `json:"name"`
+	Description           string             `json:"description"`
+	PriceMinor            int64              `json:"price_minor"`
+	Currency              string             `json:"currency"`
+	StockQuantity         int32              `json:"stock_quantity"`
+	CreatedBy             int64              `json:"created_by"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	Version               int64              `json:"version"`
+	LocalLifecycle        string             `json:"local_lifecycle"`
+	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
+	Images                []byte             `json:"images"`
+}
+
+func (q *Queries) GetServicePeriodProductRowForUpdate(ctx context.Context, productID int64) (GetServicePeriodProductRowForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, getServicePeriodProductRowForUpdate, productID)
+	var i GetServicePeriodProductRowForUpdateRow
+	err := row.Scan(
+		&i.ID,
+		&i.ProductCode,
+		&i.Name,
+		&i.Description,
+		&i.PriceMinor,
+		&i.Currency,
+		&i.StockQuantity,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Version,
+		&i.LocalLifecycle,
+		&i.LegacyAdminProjection,
+		&i.Images,
+	)
+	return i, err
+}
+
+const listServicePeriodProductRows = `-- name: ListServicePeriodProductRows :many
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.local_lifecycle, p.legacy_admin_projection,
+       COALESCE(images.items, '[]'::jsonb) AS images
+FROM products AS p
+LEFT JOIN LATERAL (
+  SELECT jsonb_agg(pi.image_url ORDER BY pi.position) AS items
+  FROM product_images AS pi
+  WHERE pi.product_id = p.id
+) AS images ON true
+WHERE (
+  p.legacy_admin_projection->>'status' = 'service_period_enabled'
+  AND p.legacy_admin_projection->>'enabled' = 'true'
+  OR p.legacy_admin_projection->>'status' IN (
+    'service_period_draft',
+    'service_period_disabled',
+    'service_period_archived'
+  ) AND p.legacy_admin_projection->>'enabled' = 'false'
+)
+ORDER BY p.id
+LIMIT $2::integer OFFSET $1::integer
+`
+
+type ListServicePeriodProductRowsParams struct {
+	RowOffset int32 `json:"row_offset"`
+	RowLimit  int32 `json:"row_limit"`
+}
+
+type ListServicePeriodProductRowsRow struct {
+	ID                    int64              `json:"id"`
+	ProductCode           string             `json:"product_code"`
+	Name                  string             `json:"name"`
+	Description           string             `json:"description"`
+	PriceMinor            int64              `json:"price_minor"`
+	Currency              string             `json:"currency"`
+	StockQuantity         int32              `json:"stock_quantity"`
+	CreatedBy             int64              `json:"created_by"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+	Version               int64              `json:"version"`
+	LocalLifecycle        string             `json:"local_lifecycle"`
+	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
+	Images                []byte             `json:"images"`
+}
+
+func (q *Queries) ListServicePeriodProductRows(ctx context.Context, arg ListServicePeriodProductRowsParams) ([]ListServicePeriodProductRowsRow, error) {
+	rows, err := q.db.Query(ctx, listServicePeriodProductRows, arg.RowOffset, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListServicePeriodProductRowsRow{}
+	for rows.Next() {
+		var i ListServicePeriodProductRowsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProductCode,
+			&i.Name,
+			&i.Description,
+			&i.PriceMinor,
+			&i.Currency,
+			&i.StockQuantity,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Version,
+			&i.LocalLifecycle,
+			&i.LegacyAdminProjection,
+			&i.Images,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
 
 const updateServicePeriodProductProjection = `-- name: UpdateServicePeriodProductProjection :execrows
 WITH command AS (
@@ -25,11 +248,14 @@ SET name = command.payload->>'name',
 FROM command
 WHERE product.id = (command.payload->>'product_id')::bigint
   AND product.version = (command.payload->>'expected_version')::bigint
-  AND product.legacy_admin_projection->>'status' IN (
-    'service_period_draft',
-    'service_period_enabled',
-    'service_period_disabled',
-    'service_period_archived'
+  AND (
+    product.legacy_admin_projection->>'status' = 'service_period_enabled'
+    AND product.legacy_admin_projection->>'enabled' = 'true'
+    OR product.legacy_admin_projection->>'status' IN (
+      'service_period_draft',
+      'service_period_disabled',
+      'service_period_archived'
+    ) AND product.legacy_admin_projection->>'enabled' = 'false'
   )
 `
 

@@ -12,6 +12,7 @@ type Querier interface {
 	CompleteEntitlementOperationReceipt(ctx context.Context, arg CompleteEntitlementOperationReceiptParams) (CompleteEntitlementOperationReceiptRow, error)
 	CompleteProductOperationReceipt(ctx context.Context, arg CompleteProductOperationReceiptParams) (CompleteProductOperationReceiptRow, error)
 	CountProducts(ctx context.Context) (int64, error)
+	CountServicePeriodProductRows(ctx context.Context) (int64, error)
 	CreateProduct(ctx context.Context, arg CreateProductParams) (CreateProductRow, error)
 	CreateProductLocalEntitlement(ctx context.Context, arg CreateProductLocalEntitlementParams) (CreateProductLocalEntitlementRow, error)
 	// Only a draft with no local entitlement, order projection, or other Product
@@ -24,11 +25,14 @@ type Querier interface {
 	GetProductLocalEntitlement(ctx context.Context, entitlementID int64) (GetProductLocalEntitlementRow, error)
 	GetProductLocalEntitlementForUpdate(ctx context.Context, entitlementID int64) (GetProductLocalEntitlementForUpdateRow, error)
 	GetProductOperationReceipt(ctx context.Context, arg GetProductOperationReceiptParams) (GetProductOperationReceiptRow, error)
+	GetServicePeriodProductRow(ctx context.Context, productID int64) (GetServicePeriodProductRowRow, error)
+	GetServicePeriodProductRowForUpdate(ctx context.Context, productID int64) (GetServicePeriodProductRowForUpdateRow, error)
 	IncrementProductCount(ctx context.Context) (int64, error)
 	InsertProductImage(ctx context.Context, arg InsertProductImageParams) error
 	ListProductLocalEntitlements(ctx context.Context, arg ListProductLocalEntitlementsParams) ([]ListProductLocalEntitlementsRow, error)
 	ListProducts(ctx context.Context, arg ListProductsParams) ([]ListProductsRow, error)
 	ListProductsOffset(ctx context.Context, arg ListProductsOffsetParams) ([]ListProductsOffsetRow, error)
+	ListServicePeriodProductRows(ctx context.Context, arg ListServicePeriodProductRowsParams) ([]ListServicePeriodProductRowsRow, error)
 	// SHARE conflicts with the ROW EXCLUSIVE lock acquired by INSERT/UPDATE on
 	// both reference tables. The FK added by migration 00059 is the final
 	// product-row integrity check after this deterministic table-lock window.

@@ -13,6 +13,15 @@ const productExistsSQL = `SELECT EXISTS (
   SELECT 1
   FROM public.products AS p
   WHERE p.id = $1
+    AND (
+      p.legacy_admin_projection->>'status' = 'service_period_enabled'
+      AND p.legacy_admin_projection->>'enabled' = 'true'
+      OR p.legacy_admin_projection->>'status' IN (
+        'service_period_draft',
+        'service_period_disabled',
+        'service_period_archived'
+      ) AND p.legacy_admin_projection->>'enabled' = 'false'
+    )
 )`
 
 const memberProjection = `SELECT

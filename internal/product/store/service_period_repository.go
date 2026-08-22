@@ -10,6 +10,7 @@ import (
 
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
+	productdb "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/generated"
 )
 
 var _ productapp.ServicePeriodStore = (*CatalogRepository)(nil)
@@ -26,34 +27,23 @@ func (repository *CatalogRepository) ListServicePeriodProducts(ctx context.Conte
 		return nil, 0, productapp.ErrInvalidCursor
 	}
 
-	items := make([]productport.Product, 0, limit)
-	var total int64
-	var after *productport.ID
-	for {
-		rows, err := repository.List(ctx, after, productapp.MaximumLimit)
-		if err != nil {
-			return nil, 0, err
-		}
-		if len(rows) == 0 {
-			break
-		}
-		for index := range rows {
-			row := rows[index]
-			if !servicePeriodProjection(row.LegacyAdminProjection) {
-				continue
-			}
-			if total >= int64(offset) && len(items) < int(limit) {
-				items = append(items, row)
-			}
-			total++
-		}
-		last := rows[len(rows)-1].ID
-		if last < 1 || after != nil && last <= *after {
+	querySet, err := queries(ctx)
+	if err != nil {
+		return nil, 0, unavailable(err)
+	}
+	rows, err := querySet.ListServicePeriodProductRows(ctx, productdb.ListServicePeriodProductRowsParams{RowLimit: limit, RowOffset: offset})
+	if err != nil {
+		return nil, 0, unavailable(err)
+	}
+	total, err := querySet.CountServicePeriodProductRows(ctx)
+	if err != nil || total < 0 {
+		return nil, 0, unavailable(err)
+	}
+	items := make([]productport.Product, len(rows))
+	for index, row := range rows {
+		items[index], err = mapRow(row.ID, row.ProductCode, row.Name, row.Description, row.PriceMinor, row.Currency, row.StockQuantity, row.CreatedBy, row.CreatedAt, row.UpdatedAt, row.Version, row.LocalLifecycle, row.LegacyAdminProjection, row.Images)
+		if err != nil || !servicePeriodProjection(items[index].LegacyAdminProjection) {
 			return nil, 0, productapp.ErrUnavailable
-		}
-		after = &last
-		if len(rows) < int(productapp.MaximumLimit) {
-			break
 		}
 	}
 	return items, total, nil
@@ -63,12 +53,17 @@ func (repository *CatalogRepository) GetServicePeriodProduct(ctx context.Context
 	if repository == nil || id < 1 {
 		return productport.Product{}, productapp.ErrNotFound
 	}
-	product, err := repository.Get(ctx, id)
+	querySet, err := queries(ctx)
 	if err != nil {
-		return productport.Product{}, err
+		return productport.Product{}, unavailable(err)
 	}
-	if !servicePeriodProjection(product.LegacyAdminProjection) {
-		return productport.Product{}, productapp.ErrNotFound
+	row, err := querySet.GetServicePeriodProductRow(ctx, int64(id))
+	if err != nil {
+		return productport.Product{}, unavailable(err)
+	}
+	product, err := mapRow(row.ID, row.ProductCode, row.Name, row.Description, row.PriceMinor, row.Currency, row.StockQuantity, row.CreatedBy, row.CreatedAt, row.UpdatedAt, row.Version, row.LocalLifecycle, row.LegacyAdminProjection, row.Images)
+	if err != nil || !servicePeriodProjection(product.LegacyAdminProjection) {
+		return productport.Product{}, productapp.ErrUnavailable
 	}
 	return product, nil
 }
@@ -77,12 +72,17 @@ func (repository *CatalogRepository) GetServicePeriodProductForUpdate(ctx contex
 	if repository == nil || id < 1 {
 		return productport.Product{}, productapp.ErrNotFound
 	}
-	product, err := repository.GetForUpdate(ctx, id)
+	querySet, err := queries(ctx)
 	if err != nil {
-		return productport.Product{}, err
+		return productport.Product{}, unavailable(err)
 	}
-	if !servicePeriodProjection(product.LegacyAdminProjection) {
-		return productport.Product{}, productapp.ErrNotFound
+	row, err := querySet.GetServicePeriodProductRowForUpdate(ctx, int64(id))
+	if err != nil {
+		return productport.Product{}, unavailable(err)
+	}
+	product, err := mapRow(row.ID, row.ProductCode, row.Name, row.Description, row.PriceMinor, row.Currency, row.StockQuantity, row.CreatedBy, row.CreatedAt, row.UpdatedAt, row.Version, row.LocalLifecycle, row.LegacyAdminProjection, row.Images)
+	if err != nil || !servicePeriodProjection(product.LegacyAdminProjection) {
+		return productport.Product{}, productapp.ErrUnavailable
 	}
 	return product, nil
 }
@@ -133,7 +133,7 @@ func (repository *CatalogRepository) UpdateServicePeriodProduct(ctx context.Cont
 	if affected != 1 {
 		return productport.Product{}, productapp.ErrConflict
 	}
-	updated, err := repository.Get(ctx, command.ID)
+	updated, err := repository.GetServicePeriodProduct(ctx, command.ID)
 	if err != nil {
 		return productport.Product{}, err
 	}
@@ -144,27 +144,7 @@ func (repository *CatalogRepository) UpdateServicePeriodProduct(ctx context.Cont
 }
 
 func servicePeriodProjection(raw json.RawMessage) bool {
-	canonical, err := productapp.CanonicalLegacyAdminProjection(raw)
-	if err != nil || !jsonEqual(canonical, raw) {
-		return false
-	}
-	var projection struct {
-		Status  string `json:"status"`
-		Enabled bool   `json:"enabled"`
-	}
-	if json.Unmarshal(canonical, &projection) != nil {
-		return false
-	}
-	switch projection.Status {
-	case productapp.ServicePeriodProjectionDraftStatus,
-		productapp.ServicePeriodProjectionDisabledStatus,
-		productapp.ServicePeriodProjectionArchivedStatus:
-		return !projection.Enabled
-	case productapp.ServicePeriodProjectionEnabledStatus:
-		return projection.Enabled
-	default:
-		return false
-	}
+	return productapp.IsServicePeriodProjection(raw)
 }
 
 func jsonEqual(left, right []byte) bool {

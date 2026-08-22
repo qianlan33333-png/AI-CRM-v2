@@ -1685,13 +1685,13 @@ func (e LegacyPushCenterStatsDegradedResponseStatusCode) Valid() bool {
 
 // Defines values for LegacyPushCenterStatsDegradedResponseTotal.
 const (
-	N0 LegacyPushCenterStatsDegradedResponseTotal = 0
+	LegacyPushCenterStatsDegradedResponseTotalN0 LegacyPushCenterStatsDegradedResponseTotal = 0
 )
 
 // Valid indicates whether the value is a known member of the LegacyPushCenterStatsDegradedResponseTotal enum.
 func (e LegacyPushCenterStatsDegradedResponseTotal) Valid() bool {
 	switch e {
-	case N0:
+	case LegacyPushCenterStatsDegradedResponseTotalN0:
 		return true
 	default:
 		return false
@@ -2162,13 +2162,13 @@ func (e PublicSurveyResultExternalExecuted) Valid() bool {
 
 // Defines values for PublicSurveyResultLocalOnly.
 const (
-	True PublicSurveyResultLocalOnly = true
+	PublicSurveyResultLocalOnlyTrue PublicSurveyResultLocalOnly = true
 )
 
 // Valid indicates whether the value is a known member of the PublicSurveyResultLocalOnly enum.
 func (e PublicSurveyResultLocalOnly) Valid() bool {
 	switch e {
-	case True:
+	case PublicSurveyResultLocalOnlyTrue:
 		return true
 	default:
 		return false
@@ -2346,6 +2346,789 @@ const (
 func (e SegmentRefreshAcceptedStatus) Valid() bool {
 	switch e {
 	case Accepted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridAccessCanManageViews.
+const (
+	ServicePeriodMemberGridAccessCanManageViewsFalse ServicePeriodMemberGridAccessCanManageViews = false
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridAccessCanManageViews enum.
+func (e ServicePeriodMemberGridAccessCanManageViews) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridAccessCanManageViewsFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridAccessCanQuery.
+const (
+	ServicePeriodMemberGridAccessCanQueryTrue ServicePeriodMemberGridAccessCanQuery = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridAccessCanQuery enum.
+func (e ServicePeriodMemberGridAccessCanQuery) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridAccessCanQueryTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridAccessCanShare.
+const (
+	ServicePeriodMemberGridAccessCanShareFalse ServicePeriodMemberGridAccessCanShare = false
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridAccessCanShare enum.
+func (e ServicePeriodMemberGridAccessCanShare) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridAccessCanShareFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridAccessCanView.
+const (
+	ServicePeriodMemberGridAccessCanViewTrue ServicePeriodMemberGridAccessCanView = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridAccessCanView enum.
+func (e ServicePeriodMemberGridAccessCanView) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridAccessCanViewTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridCollaboratorPermission.
+const (
+	ServicePeriodMemberGridCollaboratorPermissionEdit ServicePeriodMemberGridCollaboratorPermission = "edit"
+	ServicePeriodMemberGridCollaboratorPermissionView ServicePeriodMemberGridCollaboratorPermission = "view"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridCollaboratorPermission enum.
+func (e ServicePeriodMemberGridCollaboratorPermission) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridCollaboratorPermissionEdit:
+		return true
+	case ServicePeriodMemberGridCollaboratorPermissionView:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersion.
+const (
+	ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersionN0 ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersion = 0
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersion enum.
+func (e ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersion) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersionN0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridCollaboratorCreateRequestPermission.
+const (
+	ServicePeriodMemberGridCollaboratorCreateRequestPermissionEdit ServicePeriodMemberGridCollaboratorCreateRequestPermission = "edit"
+	ServicePeriodMemberGridCollaboratorCreateRequestPermissionView ServicePeriodMemberGridCollaboratorCreateRequestPermission = "view"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridCollaboratorCreateRequestPermission enum.
+func (e ServicePeriodMemberGridCollaboratorCreateRequestPermission) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridCollaboratorCreateRequestPermissionEdit:
+		return true
+	case ServicePeriodMemberGridCollaboratorCreateRequestPermissionView:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridCollaboratorDeleteResponseDeleted.
+const (
+	ServicePeriodMemberGridCollaboratorDeleteResponseDeletedTrue ServicePeriodMemberGridCollaboratorDeleteResponseDeleted = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridCollaboratorDeleteResponseDeleted enum.
+func (e ServicePeriodMemberGridCollaboratorDeleteResponseDeleted) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridCollaboratorDeleteResponseDeletedTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridCollaboratorDeleteResponseEditPermissionIsLocalMetadataOnly.
+const (
+	ServicePeriodMemberGridCollaboratorDeleteResponseEditPermissionIsLocalMetadataOnlyTrue ServicePeriodMemberGridCollaboratorDeleteResponseEditPermissionIsLocalMetadataOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridCollaboratorDeleteResponseEditPermissionIsLocalMetadataOnly enum.
+func (e ServicePeriodMemberGridCollaboratorDeleteResponseEditPermissionIsLocalMetadataOnly) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridCollaboratorDeleteResponseEditPermissionIsLocalMetadataOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridCollaboratorDeleteResponseGrantsCentralProductsPermission.
+const (
+	ServicePeriodMemberGridCollaboratorDeleteResponseGrantsCentralProductsPermissionFalse ServicePeriodMemberGridCollaboratorDeleteResponseGrantsCentralProductsPermission = false
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridCollaboratorDeleteResponseGrantsCentralProductsPermission enum.
+func (e ServicePeriodMemberGridCollaboratorDeleteResponseGrantsCentralProductsPermission) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridCollaboratorDeleteResponseGrantsCentralProductsPermissionFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridCollaboratorDeleteResponseOk.
+const (
+	ServicePeriodMemberGridCollaboratorDeleteResponseOkTrue ServicePeriodMemberGridCollaboratorDeleteResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridCollaboratorDeleteResponseOk enum.
+func (e ServicePeriodMemberGridCollaboratorDeleteResponseOk) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridCollaboratorDeleteResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridCollaboratorResponseEditPermissionIsLocalMetadataOnly.
+const (
+	ServicePeriodMemberGridCollaboratorResponseEditPermissionIsLocalMetadataOnlyTrue ServicePeriodMemberGridCollaboratorResponseEditPermissionIsLocalMetadataOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridCollaboratorResponseEditPermissionIsLocalMetadataOnly enum.
+func (e ServicePeriodMemberGridCollaboratorResponseEditPermissionIsLocalMetadataOnly) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridCollaboratorResponseEditPermissionIsLocalMetadataOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridCollaboratorResponseGrantsCentralProductsPermission.
+const (
+	ServicePeriodMemberGridCollaboratorResponseGrantsCentralProductsPermissionFalse ServicePeriodMemberGridCollaboratorResponseGrantsCentralProductsPermission = false
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridCollaboratorResponseGrantsCentralProductsPermission enum.
+func (e ServicePeriodMemberGridCollaboratorResponseGrantsCentralProductsPermission) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridCollaboratorResponseGrantsCentralProductsPermissionFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridCollaboratorResponseOk.
+const (
+	ServicePeriodMemberGridCollaboratorResponseOkTrue ServicePeriodMemberGridCollaboratorResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridCollaboratorResponseOk enum.
+func (e ServicePeriodMemberGridCollaboratorResponseOk) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridCollaboratorResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridCollaboratorUpdateRequestPermission.
+const (
+	Edit ServicePeriodMemberGridCollaboratorUpdateRequestPermission = "edit"
+	View ServicePeriodMemberGridCollaboratorUpdateRequestPermission = "view"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridCollaboratorUpdateRequestPermission enum.
+func (e ServicePeriodMemberGridCollaboratorUpdateRequestPermission) Valid() bool {
+	switch e {
+	case Edit:
+		return true
+	case View:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridColumnKey.
+const (
+	ServicePeriodMemberGridColumnKeyDisplayName   ServicePeriodMemberGridColumnKey = "display_name"
+	ServicePeriodMemberGridColumnKeyEntitlementId ServicePeriodMemberGridColumnKey = "entitlement_id"
+	ServicePeriodMemberGridColumnKeyGrantedAt     ServicePeriodMemberGridColumnKey = "granted_at"
+	ServicePeriodMemberGridColumnKeyMaskedMobile  ServicePeriodMemberGridColumnKey = "masked_mobile"
+	ServicePeriodMemberGridColumnKeyProductId     ServicePeriodMemberGridColumnKey = "product_id"
+	ServicePeriodMemberGridColumnKeyRevokedAt     ServicePeriodMemberGridColumnKey = "revoked_at"
+	ServicePeriodMemberGridColumnKeyState         ServicePeriodMemberGridColumnKey = "state"
+	ServicePeriodMemberGridColumnKeyVersion       ServicePeriodMemberGridColumnKey = "version"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridColumnKey enum.
+func (e ServicePeriodMemberGridColumnKey) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridColumnKeyDisplayName:
+		return true
+	case ServicePeriodMemberGridColumnKeyEntitlementId:
+		return true
+	case ServicePeriodMemberGridColumnKeyGrantedAt:
+		return true
+	case ServicePeriodMemberGridColumnKeyMaskedMobile:
+		return true
+	case ServicePeriodMemberGridColumnKeyProductId:
+		return true
+	case ServicePeriodMemberGridColumnKeyRevokedAt:
+		return true
+	case ServicePeriodMemberGridColumnKeyState:
+		return true
+	case ServicePeriodMemberGridColumnKeyVersion:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridColumnType.
+const (
+	Enum      ServicePeriodMemberGridColumnType = "enum"
+	Integer   ServicePeriodMemberGridColumnType = "integer"
+	String    ServicePeriodMemberGridColumnType = "string"
+	Timestamp ServicePeriodMemberGridColumnType = "timestamp"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridColumnType enum.
+func (e ServicePeriodMemberGridColumnType) Valid() bool {
+	switch e {
+	case Enum:
+		return true
+	case Integer:
+		return true
+	case String:
+		return true
+	case Timestamp:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridMemberState.
+const (
+	ServicePeriodMemberGridMemberStateActive  ServicePeriodMemberGridMemberState = "active"
+	ServicePeriodMemberGridMemberStateRevoked ServicePeriodMemberGridMemberState = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridMemberState enum.
+func (e ServicePeriodMemberGridMemberState) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridMemberStateActive:
+		return true
+	case ServicePeriodMemberGridMemberStateRevoked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridQueryRequestState.
+const (
+	ServicePeriodMemberGridQueryRequestStateActive  ServicePeriodMemberGridQueryRequestState = "active"
+	ServicePeriodMemberGridQueryRequestStateAll     ServicePeriodMemberGridQueryRequestState = "all"
+	ServicePeriodMemberGridQueryRequestStateRevoked ServicePeriodMemberGridQueryRequestState = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridQueryRequestState enum.
+func (e ServicePeriodMemberGridQueryRequestState) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridQueryRequestStateActive:
+		return true
+	case ServicePeriodMemberGridQueryRequestStateAll:
+		return true
+	case ServicePeriodMemberGridQueryRequestStateRevoked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridShareSettingsCollaboratorEditGrantsCentralPermission.
+const (
+	ServicePeriodMemberGridShareSettingsCollaboratorEditGrantsCentralPermissionFalse ServicePeriodMemberGridShareSettingsCollaboratorEditGrantsCentralPermission = false
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridShareSettingsCollaboratorEditGrantsCentralPermission enum.
+func (e ServicePeriodMemberGridShareSettingsCollaboratorEditGrantsCentralPermission) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridShareSettingsCollaboratorEditGrantsCentralPermissionFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridShareSettingsCollaboratorEditIsLocalMetadataOnly.
+const (
+	ServicePeriodMemberGridShareSettingsCollaboratorEditIsLocalMetadataOnlyTrue ServicePeriodMemberGridShareSettingsCollaboratorEditIsLocalMetadataOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridShareSettingsCollaboratorEditIsLocalMetadataOnly enum.
+func (e ServicePeriodMemberGridShareSettingsCollaboratorEditIsLocalMetadataOnly) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridShareSettingsCollaboratorEditIsLocalMetadataOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridShareSettingsExternalShareEnabled.
+const (
+	ServicePeriodMemberGridShareSettingsExternalShareEnabledFalse ServicePeriodMemberGridShareSettingsExternalShareEnabled = false
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridShareSettingsExternalShareEnabled enum.
+func (e ServicePeriodMemberGridShareSettingsExternalShareEnabled) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridShareSettingsExternalShareEnabledFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridShareSettingsExternalShareSupported.
+const (
+	ServicePeriodMemberGridShareSettingsExternalShareSupportedFalse ServicePeriodMemberGridShareSettingsExternalShareSupported = false
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridShareSettingsExternalShareSupported enum.
+func (e ServicePeriodMemberGridShareSettingsExternalShareSupported) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridShareSettingsExternalShareSupportedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridShareSettingsRealExternalCallExecuted.
+const (
+	ServicePeriodMemberGridShareSettingsRealExternalCallExecutedFalse ServicePeriodMemberGridShareSettingsRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridShareSettingsRealExternalCallExecuted enum.
+func (e ServicePeriodMemberGridShareSettingsRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridShareSettingsRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridViewReadOnly.
+const (
+	ServicePeriodMemberGridViewReadOnlyTrue ServicePeriodMemberGridViewReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridViewReadOnly enum.
+func (e ServicePeriodMemberGridViewReadOnly) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridViewReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridViewSource.
+const (
+	BuiltIn ServicePeriodMemberGridViewSource = "built_in"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridViewSource enum.
+func (e ServicePeriodMemberGridViewSource) Valid() bool {
+	switch e {
+	case BuiltIn:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewColumns.
+const (
+	ServicePeriodMemberViewColumnsDisplayName   ServicePeriodMemberViewColumns = "display_name"
+	ServicePeriodMemberViewColumnsEntitlementId ServicePeriodMemberViewColumns = "entitlement_id"
+	ServicePeriodMemberViewColumnsGrantedAt     ServicePeriodMemberViewColumns = "granted_at"
+	ServicePeriodMemberViewColumnsMaskedMobile  ServicePeriodMemberViewColumns = "masked_mobile"
+	ServicePeriodMemberViewColumnsProductId     ServicePeriodMemberViewColumns = "product_id"
+	ServicePeriodMemberViewColumnsRevokedAt     ServicePeriodMemberViewColumns = "revoked_at"
+	ServicePeriodMemberViewColumnsState         ServicePeriodMemberViewColumns = "state"
+	ServicePeriodMemberViewColumnsVersion       ServicePeriodMemberViewColumns = "version"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewColumns enum.
+func (e ServicePeriodMemberViewColumns) Valid() bool {
+	switch e {
+	case ServicePeriodMemberViewColumnsDisplayName:
+		return true
+	case ServicePeriodMemberViewColumnsEntitlementId:
+		return true
+	case ServicePeriodMemberViewColumnsGrantedAt:
+		return true
+	case ServicePeriodMemberViewColumnsMaskedMobile:
+		return true
+	case ServicePeriodMemberViewColumnsProductId:
+		return true
+	case ServicePeriodMemberViewColumnsRevokedAt:
+		return true
+	case ServicePeriodMemberViewColumnsState:
+		return true
+	case ServicePeriodMemberViewColumnsVersion:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewSort.
+const (
+	ServicePeriodMemberViewSortGrantedAtDesc ServicePeriodMemberViewSort = "granted_at_desc"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewSort enum.
+func (e ServicePeriodMemberViewSort) Valid() bool {
+	switch e {
+	case ServicePeriodMemberViewSortGrantedAtDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewState.
+const (
+	ServicePeriodMemberViewStateActive  ServicePeriodMemberViewState = "active"
+	ServicePeriodMemberViewStateAll     ServicePeriodMemberViewState = "all"
+	ServicePeriodMemberViewStateRevoked ServicePeriodMemberViewState = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewState enum.
+func (e ServicePeriodMemberViewState) Valid() bool {
+	switch e {
+	case ServicePeriodMemberViewStateActive:
+		return true
+	case ServicePeriodMemberViewStateAll:
+		return true
+	case ServicePeriodMemberViewStateRevoked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewCreateRequest0Columns.
+const (
+	ServicePeriodMemberViewCreateRequest0ColumnsDisplayName   ServicePeriodMemberViewCreateRequest0Columns = "display_name"
+	ServicePeriodMemberViewCreateRequest0ColumnsEntitlementId ServicePeriodMemberViewCreateRequest0Columns = "entitlement_id"
+	ServicePeriodMemberViewCreateRequest0ColumnsGrantedAt     ServicePeriodMemberViewCreateRequest0Columns = "granted_at"
+	ServicePeriodMemberViewCreateRequest0ColumnsMaskedMobile  ServicePeriodMemberViewCreateRequest0Columns = "masked_mobile"
+	ServicePeriodMemberViewCreateRequest0ColumnsProductId     ServicePeriodMemberViewCreateRequest0Columns = "product_id"
+	ServicePeriodMemberViewCreateRequest0ColumnsRevokedAt     ServicePeriodMemberViewCreateRequest0Columns = "revoked_at"
+	ServicePeriodMemberViewCreateRequest0ColumnsState         ServicePeriodMemberViewCreateRequest0Columns = "state"
+	ServicePeriodMemberViewCreateRequest0ColumnsVersion       ServicePeriodMemberViewCreateRequest0Columns = "version"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewCreateRequest0Columns enum.
+func (e ServicePeriodMemberViewCreateRequest0Columns) Valid() bool {
+	switch e {
+	case ServicePeriodMemberViewCreateRequest0ColumnsDisplayName:
+		return true
+	case ServicePeriodMemberViewCreateRequest0ColumnsEntitlementId:
+		return true
+	case ServicePeriodMemberViewCreateRequest0ColumnsGrantedAt:
+		return true
+	case ServicePeriodMemberViewCreateRequest0ColumnsMaskedMobile:
+		return true
+	case ServicePeriodMemberViewCreateRequest0ColumnsProductId:
+		return true
+	case ServicePeriodMemberViewCreateRequest0ColumnsRevokedAt:
+		return true
+	case ServicePeriodMemberViewCreateRequest0ColumnsState:
+		return true
+	case ServicePeriodMemberViewCreateRequest0ColumnsVersion:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewCreateRequest0ExpectedVersion.
+const (
+	ServicePeriodMemberViewCreateRequest0ExpectedVersionN0 ServicePeriodMemberViewCreateRequest0ExpectedVersion = 0
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewCreateRequest0ExpectedVersion enum.
+func (e ServicePeriodMemberViewCreateRequest0ExpectedVersion) Valid() bool {
+	switch e {
+	case ServicePeriodMemberViewCreateRequest0ExpectedVersionN0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewCreateRequest0Sort.
+const (
+	ServicePeriodMemberViewCreateRequest0SortGrantedAtDesc ServicePeriodMemberViewCreateRequest0Sort = "granted_at_desc"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewCreateRequest0Sort enum.
+func (e ServicePeriodMemberViewCreateRequest0Sort) Valid() bool {
+	switch e {
+	case ServicePeriodMemberViewCreateRequest0SortGrantedAtDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewCreateRequest0State.
+const (
+	ServicePeriodMemberViewCreateRequest0StateActive  ServicePeriodMemberViewCreateRequest0State = "active"
+	ServicePeriodMemberViewCreateRequest0StateAll     ServicePeriodMemberViewCreateRequest0State = "all"
+	ServicePeriodMemberViewCreateRequest0StateRevoked ServicePeriodMemberViewCreateRequest0State = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewCreateRequest0State enum.
+func (e ServicePeriodMemberViewCreateRequest0State) Valid() bool {
+	switch e {
+	case ServicePeriodMemberViewCreateRequest0StateActive:
+		return true
+	case ServicePeriodMemberViewCreateRequest0StateAll:
+		return true
+	case ServicePeriodMemberViewCreateRequest0StateRevoked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewCreateRequest1ExpectedVersion.
+const (
+	ServicePeriodMemberViewCreateRequest1ExpectedVersionN0 ServicePeriodMemberViewCreateRequest1ExpectedVersion = 0
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewCreateRequest1ExpectedVersion enum.
+func (e ServicePeriodMemberViewCreateRequest1ExpectedVersion) Valid() bool {
+	switch e {
+	case ServicePeriodMemberViewCreateRequest1ExpectedVersionN0:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewDeleteResponseDeleted.
+const (
+	ServicePeriodMemberViewDeleteResponseDeletedTrue ServicePeriodMemberViewDeleteResponseDeleted = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewDeleteResponseDeleted enum.
+func (e ServicePeriodMemberViewDeleteResponseDeleted) Valid() bool {
+	switch e {
+	case ServicePeriodMemberViewDeleteResponseDeletedTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewDeleteResponseOk.
+const (
+	ServicePeriodMemberViewDeleteResponseOkTrue ServicePeriodMemberViewDeleteResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewDeleteResponseOk enum.
+func (e ServicePeriodMemberViewDeleteResponseOk) Valid() bool {
+	switch e {
+	case ServicePeriodMemberViewDeleteResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewResponseOk.
+const (
+	ServicePeriodMemberViewResponseOkTrue ServicePeriodMemberViewResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewResponseOk enum.
+func (e ServicePeriodMemberViewResponseOk) Valid() bool {
+	switch e {
+	case ServicePeriodMemberViewResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewUpdateRequestColumns.
+const (
+	ServicePeriodMemberViewUpdateRequestColumnsDisplayName   ServicePeriodMemberViewUpdateRequestColumns = "display_name"
+	ServicePeriodMemberViewUpdateRequestColumnsEntitlementId ServicePeriodMemberViewUpdateRequestColumns = "entitlement_id"
+	ServicePeriodMemberViewUpdateRequestColumnsGrantedAt     ServicePeriodMemberViewUpdateRequestColumns = "granted_at"
+	ServicePeriodMemberViewUpdateRequestColumnsMaskedMobile  ServicePeriodMemberViewUpdateRequestColumns = "masked_mobile"
+	ServicePeriodMemberViewUpdateRequestColumnsProductId     ServicePeriodMemberViewUpdateRequestColumns = "product_id"
+	ServicePeriodMemberViewUpdateRequestColumnsRevokedAt     ServicePeriodMemberViewUpdateRequestColumns = "revoked_at"
+	ServicePeriodMemberViewUpdateRequestColumnsState         ServicePeriodMemberViewUpdateRequestColumns = "state"
+	ServicePeriodMemberViewUpdateRequestColumnsVersion       ServicePeriodMemberViewUpdateRequestColumns = "version"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewUpdateRequestColumns enum.
+func (e ServicePeriodMemberViewUpdateRequestColumns) Valid() bool {
+	switch e {
+	case ServicePeriodMemberViewUpdateRequestColumnsDisplayName:
+		return true
+	case ServicePeriodMemberViewUpdateRequestColumnsEntitlementId:
+		return true
+	case ServicePeriodMemberViewUpdateRequestColumnsGrantedAt:
+		return true
+	case ServicePeriodMemberViewUpdateRequestColumnsMaskedMobile:
+		return true
+	case ServicePeriodMemberViewUpdateRequestColumnsProductId:
+		return true
+	case ServicePeriodMemberViewUpdateRequestColumnsRevokedAt:
+		return true
+	case ServicePeriodMemberViewUpdateRequestColumnsState:
+		return true
+	case ServicePeriodMemberViewUpdateRequestColumnsVersion:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewUpdateRequestSort.
+const (
+	GrantedAtDesc ServicePeriodMemberViewUpdateRequestSort = "granted_at_desc"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewUpdateRequestSort enum.
+func (e ServicePeriodMemberViewUpdateRequestSort) Valid() bool {
+	switch e {
+	case GrantedAtDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberViewUpdateRequestState.
+const (
+	Active  ServicePeriodMemberViewUpdateRequestState = "active"
+	All     ServicePeriodMemberViewUpdateRequestState = "all"
+	Revoked ServicePeriodMemberViewUpdateRequestState = "revoked"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberViewUpdateRequestState enum.
+func (e ServicePeriodMemberViewUpdateRequestState) Valid() bool {
+	switch e {
+	case Active:
+		return true
+	case All:
+		return true
+	case Revoked:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodProductLifecycle.
+const (
+	Archived ServicePeriodProductLifecycle = "archived"
+	Disabled ServicePeriodProductLifecycle = "disabled"
+	Draft    ServicePeriodProductLifecycle = "draft"
+	Enabled  ServicePeriodProductLifecycle = "enabled"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodProductLifecycle enum.
+func (e ServicePeriodProductLifecycle) Valid() bool {
+	switch e {
+	case Archived:
+		return true
+	case Disabled:
+		return true
+	case Draft:
+		return true
+	case Enabled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodProductPageOk.
+const (
+	ServicePeriodProductPageOkTrue ServicePeriodProductPageOk = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodProductPageOk enum.
+func (e ServicePeriodProductPageOk) Valid() bool {
+	switch e {
+	case ServicePeriodProductPageOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodProductResponseOk.
+const (
+	True ServicePeriodProductResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodProductResponseOk enum.
+func (e ServicePeriodProductResponseOk) Valid() bool {
+	switch e {
+	case True:
 		return true
 	default:
 		return false
@@ -4003,6 +4786,368 @@ type SegmentRefreshAccepted struct {
 // SegmentRefreshAcceptedStatus defines model for SegmentRefreshAccepted.Status.
 type SegmentRefreshAcceptedStatus string
 
+// ServicePeriodMemberGridAccess defines model for ServicePeriodMemberGridAccess.
+type ServicePeriodMemberGridAccess struct {
+	CanManageViews ServicePeriodMemberGridAccessCanManageViews `json:"can_manage_views"`
+	CanQuery       ServicePeriodMemberGridAccessCanQuery       `json:"can_query"`
+	CanShare       ServicePeriodMemberGridAccessCanShare       `json:"can_share"`
+	CanView        ServicePeriodMemberGridAccessCanView        `json:"can_view"`
+	ProductId      int64                                       `json:"product_id"`
+}
+
+// ServicePeriodMemberGridAccessCanManageViews defines model for ServicePeriodMemberGridAccess.CanManageViews.
+type ServicePeriodMemberGridAccessCanManageViews bool
+
+// ServicePeriodMemberGridAccessCanQuery defines model for ServicePeriodMemberGridAccess.CanQuery.
+type ServicePeriodMemberGridAccessCanQuery bool
+
+// ServicePeriodMemberGridAccessCanShare defines model for ServicePeriodMemberGridAccess.CanShare.
+type ServicePeriodMemberGridAccessCanShare bool
+
+// ServicePeriodMemberGridAccessCanView defines model for ServicePeriodMemberGridAccess.CanView.
+type ServicePeriodMemberGridAccessCanView bool
+
+// ServicePeriodMemberGridCollaborator defines model for ServicePeriodMemberGridCollaborator.
+type ServicePeriodMemberGridCollaborator struct {
+	CollaboratorId   int64                                         `json:"collaborator_id"`
+	CreatedAt        time.Time                                     `json:"created_at"`
+	InvitedBy        int64                                         `json:"invited_by"`
+	Permission       ServicePeriodMemberGridCollaboratorPermission `json:"permission"`
+	ServiceProductId int64                                         `json:"service_product_id"`
+	StaffId          int64                                         `json:"staff_id"`
+	UpdatedAt        time.Time                                     `json:"updated_at"`
+	Version          int64                                         `json:"version"`
+}
+
+// ServicePeriodMemberGridCollaboratorPermission defines model for ServicePeriodMemberGridCollaborator.Permission.
+type ServicePeriodMemberGridCollaboratorPermission string
+
+// ServicePeriodMemberGridCollaboratorCreateRequest defines model for ServicePeriodMemberGridCollaboratorCreateRequest.
+type ServicePeriodMemberGridCollaboratorCreateRequest struct {
+	ExpectedVersion ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersion `json:"expected_version"`
+	Permission      ServicePeriodMemberGridCollaboratorCreateRequestPermission      `json:"permission"`
+	StaffId         int64                                                           `json:"staff_id"`
+}
+
+// ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersion defines model for ServicePeriodMemberGridCollaboratorCreateRequest.ExpectedVersion.
+type ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersion int64
+
+// ServicePeriodMemberGridCollaboratorCreateRequestPermission defines model for ServicePeriodMemberGridCollaboratorCreateRequest.Permission.
+type ServicePeriodMemberGridCollaboratorCreateRequestPermission string
+
+// ServicePeriodMemberGridCollaboratorDeleteResponse defines model for ServicePeriodMemberGridCollaboratorDeleteResponse.
+type ServicePeriodMemberGridCollaboratorDeleteResponse struct {
+	Collaborator                      ServicePeriodMemberGridCollaborator                                                `json:"collaborator"`
+	Deleted                           ServicePeriodMemberGridCollaboratorDeleteResponseDeleted                           `json:"deleted"`
+	EditPermissionIsLocalMetadataOnly ServicePeriodMemberGridCollaboratorDeleteResponseEditPermissionIsLocalMetadataOnly `json:"edit_permission_is_local_metadata_only"`
+	GrantsCentralProductsPermission   ServicePeriodMemberGridCollaboratorDeleteResponseGrantsCentralProductsPermission   `json:"grants_central_products_permission"`
+	Ok                                ServicePeriodMemberGridCollaboratorDeleteResponseOk                                `json:"ok"`
+}
+
+// ServicePeriodMemberGridCollaboratorDeleteResponseDeleted defines model for ServicePeriodMemberGridCollaboratorDeleteResponse.Deleted.
+type ServicePeriodMemberGridCollaboratorDeleteResponseDeleted bool
+
+// ServicePeriodMemberGridCollaboratorDeleteResponseEditPermissionIsLocalMetadataOnly defines model for ServicePeriodMemberGridCollaboratorDeleteResponse.EditPermissionIsLocalMetadataOnly.
+type ServicePeriodMemberGridCollaboratorDeleteResponseEditPermissionIsLocalMetadataOnly bool
+
+// ServicePeriodMemberGridCollaboratorDeleteResponseGrantsCentralProductsPermission defines model for ServicePeriodMemberGridCollaboratorDeleteResponse.GrantsCentralProductsPermission.
+type ServicePeriodMemberGridCollaboratorDeleteResponseGrantsCentralProductsPermission bool
+
+// ServicePeriodMemberGridCollaboratorDeleteResponseOk defines model for ServicePeriodMemberGridCollaboratorDeleteResponse.Ok.
+type ServicePeriodMemberGridCollaboratorDeleteResponseOk bool
+
+// ServicePeriodMemberGridCollaboratorResponse defines model for ServicePeriodMemberGridCollaboratorResponse.
+type ServicePeriodMemberGridCollaboratorResponse struct {
+	Collaborator                      ServicePeriodMemberGridCollaborator                                          `json:"collaborator"`
+	EditPermissionIsLocalMetadataOnly ServicePeriodMemberGridCollaboratorResponseEditPermissionIsLocalMetadataOnly `json:"edit_permission_is_local_metadata_only"`
+	GrantsCentralProductsPermission   ServicePeriodMemberGridCollaboratorResponseGrantsCentralProductsPermission   `json:"grants_central_products_permission"`
+	Ok                                ServicePeriodMemberGridCollaboratorResponseOk                                `json:"ok"`
+}
+
+// ServicePeriodMemberGridCollaboratorResponseEditPermissionIsLocalMetadataOnly defines model for ServicePeriodMemberGridCollaboratorResponse.EditPermissionIsLocalMetadataOnly.
+type ServicePeriodMemberGridCollaboratorResponseEditPermissionIsLocalMetadataOnly bool
+
+// ServicePeriodMemberGridCollaboratorResponseGrantsCentralProductsPermission defines model for ServicePeriodMemberGridCollaboratorResponse.GrantsCentralProductsPermission.
+type ServicePeriodMemberGridCollaboratorResponseGrantsCentralProductsPermission bool
+
+// ServicePeriodMemberGridCollaboratorResponseOk defines model for ServicePeriodMemberGridCollaboratorResponse.Ok.
+type ServicePeriodMemberGridCollaboratorResponseOk bool
+
+// ServicePeriodMemberGridCollaboratorUpdateRequest defines model for ServicePeriodMemberGridCollaboratorUpdateRequest.
+type ServicePeriodMemberGridCollaboratorUpdateRequest struct {
+	ExpectedVersion int64                                                      `json:"expected_version"`
+	Permission      ServicePeriodMemberGridCollaboratorUpdateRequestPermission `json:"permission"`
+}
+
+// ServicePeriodMemberGridCollaboratorUpdateRequestPermission defines model for ServicePeriodMemberGridCollaboratorUpdateRequest.Permission.
+type ServicePeriodMemberGridCollaboratorUpdateRequestPermission string
+
+// ServicePeriodMemberGridColumn defines model for ServicePeriodMemberGridColumn.
+type ServicePeriodMemberGridColumn struct {
+	Key      ServicePeriodMemberGridColumnKey  `json:"key"`
+	Label    string                            `json:"label"`
+	Nullable bool                              `json:"nullable"`
+	Type     ServicePeriodMemberGridColumnType `json:"type"`
+}
+
+// ServicePeriodMemberGridColumnKey defines model for ServicePeriodMemberGridColumn.Key.
+type ServicePeriodMemberGridColumnKey string
+
+// ServicePeriodMemberGridColumnType defines model for ServicePeriodMemberGridColumn.Type.
+type ServicePeriodMemberGridColumnType string
+
+// ServicePeriodMemberGridMember defines model for ServicePeriodMemberGridMember.
+type ServicePeriodMemberGridMember struct {
+	DisplayName   string                             `json:"display_name"`
+	EntitlementId int64                              `json:"entitlement_id"`
+	GrantedAt     time.Time                          `json:"granted_at"`
+	MaskedMobile  *string                            `json:"masked_mobile,omitempty"`
+	ProductId     int64                              `json:"product_id"`
+	RevokedAt     *time.Time                         `json:"revoked_at,omitempty"`
+	State         ServicePeriodMemberGridMemberState `json:"state"`
+	Version       int64                              `json:"version"`
+}
+
+// ServicePeriodMemberGridMemberState defines model for ServicePeriodMemberGridMember.State.
+type ServicePeriodMemberGridMemberState string
+
+// ServicePeriodMemberGridQueryRequest defines model for ServicePeriodMemberGridQueryRequest.
+type ServicePeriodMemberGridQueryRequest struct {
+	Cursor *string                                   `json:"cursor,omitempty"`
+	Limit  *int                                      `json:"limit,omitempty"`
+	State  *ServicePeriodMemberGridQueryRequestState `json:"state,omitempty"`
+}
+
+// ServicePeriodMemberGridQueryRequestState defines model for ServicePeriodMemberGridQueryRequest.State.
+type ServicePeriodMemberGridQueryRequestState string
+
+// ServicePeriodMemberGridQueryResponse defines model for ServicePeriodMemberGridQueryResponse.
+type ServicePeriodMemberGridQueryResponse struct {
+	HasMore    bool                            `json:"has_more"`
+	Limit      int                             `json:"limit"`
+	NextCursor string                          `json:"next_cursor"`
+	Rows       []ServicePeriodMemberGridMember `json:"rows"`
+}
+
+// ServicePeriodMemberGridSchema defines model for ServicePeriodMemberGridSchema.
+type ServicePeriodMemberGridSchema struct {
+	Columns   []ServicePeriodMemberGridColumn `json:"columns"`
+	ProductId int64                           `json:"product_id"`
+}
+
+// ServicePeriodMemberGridShareSettings defines model for ServicePeriodMemberGridShareSettings.
+type ServicePeriodMemberGridShareSettings struct {
+	CollaboratorEditGrantsCentralPermission ServicePeriodMemberGridShareSettingsCollaboratorEditGrantsCentralPermission `json:"collaborator_edit_grants_central_permission"`
+	CollaboratorEditIsLocalMetadataOnly     ServicePeriodMemberGridShareSettingsCollaboratorEditIsLocalMetadataOnly     `json:"collaborator_edit_is_local_metadata_only"`
+	Collaborators                           []ServicePeriodMemberGridCollaborator                                       `json:"collaborators"`
+	ExternalShareEnabled                    ServicePeriodMemberGridShareSettingsExternalShareEnabled                    `json:"external_share_enabled"`
+	ExternalShareSupported                  ServicePeriodMemberGridShareSettingsExternalShareSupported                  `json:"external_share_supported"`
+	RealExternalCallExecuted                ServicePeriodMemberGridShareSettingsRealExternalCallExecuted                `json:"real_external_call_executed"`
+	SavedViews                              []ServicePeriodMemberView                                                   `json:"saved_views"`
+	ServiceProductId                        int64                                                                       `json:"service_product_id"`
+}
+
+// ServicePeriodMemberGridShareSettingsCollaboratorEditGrantsCentralPermission defines model for ServicePeriodMemberGridShareSettings.CollaboratorEditGrantsCentralPermission.
+type ServicePeriodMemberGridShareSettingsCollaboratorEditGrantsCentralPermission bool
+
+// ServicePeriodMemberGridShareSettingsCollaboratorEditIsLocalMetadataOnly defines model for ServicePeriodMemberGridShareSettings.CollaboratorEditIsLocalMetadataOnly.
+type ServicePeriodMemberGridShareSettingsCollaboratorEditIsLocalMetadataOnly bool
+
+// ServicePeriodMemberGridShareSettingsExternalShareEnabled defines model for ServicePeriodMemberGridShareSettings.ExternalShareEnabled.
+type ServicePeriodMemberGridShareSettingsExternalShareEnabled bool
+
+// ServicePeriodMemberGridShareSettingsExternalShareSupported defines model for ServicePeriodMemberGridShareSettings.ExternalShareSupported.
+type ServicePeriodMemberGridShareSettingsExternalShareSupported bool
+
+// ServicePeriodMemberGridShareSettingsRealExternalCallExecuted defines model for ServicePeriodMemberGridShareSettings.RealExternalCallExecuted.
+type ServicePeriodMemberGridShareSettingsRealExternalCallExecuted bool
+
+// ServicePeriodMemberGridView defines model for ServicePeriodMemberGridView.
+type ServicePeriodMemberGridView struct {
+	Id       string                              `json:"id"`
+	Name     string                              `json:"name"`
+	ReadOnly ServicePeriodMemberGridViewReadOnly `json:"read_only"`
+	Source   ServicePeriodMemberGridViewSource   `json:"source"`
+}
+
+// ServicePeriodMemberGridViewReadOnly defines model for ServicePeriodMemberGridView.ReadOnly.
+type ServicePeriodMemberGridViewReadOnly bool
+
+// ServicePeriodMemberGridViewSource defines model for ServicePeriodMemberGridView.Source.
+type ServicePeriodMemberGridViewSource string
+
+// ServicePeriodMemberGridViews defines model for ServicePeriodMemberGridViews.
+type ServicePeriodMemberGridViews struct {
+	ProductId int64                         `json:"product_id"`
+	Views     []ServicePeriodMemberGridView `json:"views"`
+}
+
+// ServicePeriodMemberView defines model for ServicePeriodMemberView.
+type ServicePeriodMemberView struct {
+	Columns          []ServicePeriodMemberViewColumns `json:"columns"`
+	CreatedAt        time.Time                        `json:"created_at"`
+	CreatedBy        int64                            `json:"created_by"`
+	Name             string                           `json:"name"`
+	ServiceProductId int64                            `json:"service_product_id"`
+	Sort             ServicePeriodMemberViewSort      `json:"sort"`
+	SourceViewId     *int64                           `json:"source_view_id,omitempty"`
+	State            ServicePeriodMemberViewState     `json:"state"`
+	UpdatedAt        time.Time                        `json:"updated_at"`
+	Version          int64                            `json:"version"`
+	ViewId           int64                            `json:"view_id"`
+}
+
+// ServicePeriodMemberViewColumns defines model for ServicePeriodMemberView.Columns.
+type ServicePeriodMemberViewColumns string
+
+// ServicePeriodMemberViewSort defines model for ServicePeriodMemberView.Sort.
+type ServicePeriodMemberViewSort string
+
+// ServicePeriodMemberViewState defines model for ServicePeriodMemberView.State.
+type ServicePeriodMemberViewState string
+
+// ServicePeriodMemberViewCreateRequest defines model for ServicePeriodMemberViewCreateRequest.
+type ServicePeriodMemberViewCreateRequest struct {
+	union json.RawMessage
+}
+
+// ServicePeriodMemberViewCreateRequest0 defines model for .
+type ServicePeriodMemberViewCreateRequest0 struct {
+	Columns         []ServicePeriodMemberViewCreateRequest0Columns       `json:"columns"`
+	ExpectedVersion ServicePeriodMemberViewCreateRequest0ExpectedVersion `json:"expected_version"`
+	Name            string                                               `json:"name"`
+	Sort            ServicePeriodMemberViewCreateRequest0Sort            `json:"sort"`
+	State           ServicePeriodMemberViewCreateRequest0State           `json:"state"`
+}
+
+// ServicePeriodMemberViewCreateRequest0Columns defines model for ServicePeriodMemberViewCreateRequest.0.Columns.
+type ServicePeriodMemberViewCreateRequest0Columns string
+
+// ServicePeriodMemberViewCreateRequest0ExpectedVersion defines model for ServicePeriodMemberViewCreateRequest.0.ExpectedVersion.
+type ServicePeriodMemberViewCreateRequest0ExpectedVersion int64
+
+// ServicePeriodMemberViewCreateRequest0Sort defines model for ServicePeriodMemberViewCreateRequest.0.Sort.
+type ServicePeriodMemberViewCreateRequest0Sort string
+
+// ServicePeriodMemberViewCreateRequest0State defines model for ServicePeriodMemberViewCreateRequest.0.State.
+type ServicePeriodMemberViewCreateRequest0State string
+
+// ServicePeriodMemberViewCreateRequest1 defines model for .
+type ServicePeriodMemberViewCreateRequest1 struct {
+	ExpectedVersion ServicePeriodMemberViewCreateRequest1ExpectedVersion `json:"expected_version"`
+	Name            string                                               `json:"name"`
+	SourceViewId    int64                                                `json:"source_view_id"`
+}
+
+// ServicePeriodMemberViewCreateRequest1ExpectedVersion defines model for ServicePeriodMemberViewCreateRequest.1.ExpectedVersion.
+type ServicePeriodMemberViewCreateRequest1ExpectedVersion int64
+
+// ServicePeriodMemberViewDeleteResponse defines model for ServicePeriodMemberViewDeleteResponse.
+type ServicePeriodMemberViewDeleteResponse struct {
+	Deleted ServicePeriodMemberViewDeleteResponseDeleted `json:"deleted"`
+	Ok      ServicePeriodMemberViewDeleteResponseOk      `json:"ok"`
+	View    ServicePeriodMemberView                      `json:"view"`
+}
+
+// ServicePeriodMemberViewDeleteResponseDeleted defines model for ServicePeriodMemberViewDeleteResponse.Deleted.
+type ServicePeriodMemberViewDeleteResponseDeleted bool
+
+// ServicePeriodMemberViewDeleteResponseOk defines model for ServicePeriodMemberViewDeleteResponse.Ok.
+type ServicePeriodMemberViewDeleteResponseOk bool
+
+// ServicePeriodMemberViewResponse defines model for ServicePeriodMemberViewResponse.
+type ServicePeriodMemberViewResponse struct {
+	Ok   ServicePeriodMemberViewResponseOk `json:"ok"`
+	View ServicePeriodMemberView           `json:"view"`
+}
+
+// ServicePeriodMemberViewResponseOk defines model for ServicePeriodMemberViewResponse.Ok.
+type ServicePeriodMemberViewResponseOk bool
+
+// ServicePeriodMemberViewUpdateRequest defines model for ServicePeriodMemberViewUpdateRequest.
+type ServicePeriodMemberViewUpdateRequest struct {
+	Columns         []ServicePeriodMemberViewUpdateRequestColumns `json:"columns"`
+	ExpectedVersion int64                                         `json:"expected_version"`
+	Name            string                                        `json:"name"`
+	Sort            ServicePeriodMemberViewUpdateRequestSort      `json:"sort"`
+	State           ServicePeriodMemberViewUpdateRequestState     `json:"state"`
+}
+
+// ServicePeriodMemberViewUpdateRequestColumns defines model for ServicePeriodMemberViewUpdateRequest.Columns.
+type ServicePeriodMemberViewUpdateRequestColumns string
+
+// ServicePeriodMemberViewUpdateRequestSort defines model for ServicePeriodMemberViewUpdateRequest.Sort.
+type ServicePeriodMemberViewUpdateRequestSort string
+
+// ServicePeriodMemberViewUpdateRequestState defines model for ServicePeriodMemberViewUpdateRequest.State.
+type ServicePeriodMemberViewUpdateRequestState string
+
+// ServicePeriodProduct defines model for ServicePeriodProduct.
+type ServicePeriodProduct struct {
+	Archived         bool                          `json:"archived"`
+	CreatedAt        time.Time                     `json:"created_at"`
+	Currency         string                        `json:"currency"`
+	Description      string                        `json:"description"`
+	Enabled          bool                          `json:"enabled"`
+	Lifecycle        ServicePeriodProductLifecycle `json:"lifecycle"`
+	Name             string                        `json:"name"`
+	PriceMinor       int64                         `json:"price_minor"`
+	ProductCode      string                        `json:"product_code"`
+	ServiceProductId int64                         `json:"service_product_id"`
+	StockQuantity    int32                         `json:"stock_quantity"`
+	UpdatedAt        time.Time                     `json:"updated_at"`
+	Version          int64                         `json:"version"`
+}
+
+// ServicePeriodProductLifecycle defines model for ServicePeriodProduct.Lifecycle.
+type ServicePeriodProductLifecycle string
+
+// ServicePeriodProductCreateRequest defines model for ServicePeriodProductCreateRequest.
+type ServicePeriodProductCreateRequest struct {
+	Currency      string  `json:"currency"`
+	Description   *string `json:"description,omitempty"`
+	Name          string  `json:"name"`
+	PriceMinor    int64   `json:"price_minor"`
+	ProductCode   string  `json:"product_code"`
+	StockQuantity int32   `json:"stock_quantity"`
+}
+
+// ServicePeriodProductPage defines model for ServicePeriodProductPage.
+type ServicePeriodProductPage struct {
+	Items  []ServicePeriodProduct     `json:"items"`
+	Limit  int32                      `json:"limit"`
+	Offset int32                      `json:"offset"`
+	Ok     ServicePeriodProductPageOk `json:"ok"`
+	Total  int64                      `json:"total"`
+}
+
+// ServicePeriodProductPageOk defines model for ServicePeriodProductPage.Ok.
+type ServicePeriodProductPageOk bool
+
+// ServicePeriodProductResponse defines model for ServicePeriodProductResponse.
+type ServicePeriodProductResponse struct {
+	Ok      ServicePeriodProductResponseOk `json:"ok"`
+	Product ServicePeriodProduct           `json:"product"`
+}
+
+// ServicePeriodProductResponseOk defines model for ServicePeriodProductResponse.Ok.
+type ServicePeriodProductResponseOk bool
+
+// ServicePeriodProductUpdateRequest defines model for ServicePeriodProductUpdateRequest.
+type ServicePeriodProductUpdateRequest struct {
+	Currency        string `json:"currency"`
+	Description     string `json:"description"`
+	ExpectedVersion int64  `json:"expected_version"`
+	Name            string `json:"name"`
+	PriceMinor      int64  `json:"price_minor"`
+	StockQuantity   int32  `json:"stock_quantity"`
+}
+
+// ServicePeriodVersionRequest defines model for ServicePeriodVersionRequest.
+type ServicePeriodVersionRequest struct {
+	ExpectedVersion int64 `json:"expected_version"`
+}
+
 // SetCustomerStageRequest defines model for SetCustomerStageRequest.
 type SetCustomerStageRequest struct {
 	StageId *int64 `json:"stage_id"`
@@ -4060,6 +5205,11 @@ type UpdateSegmentRequest struct {
 
 // UpdateSegmentRequestRefreshMode defines model for UpdateSegmentRequest.RefreshMode.
 type UpdateSegmentRequestRefreshMode string
+
+// VersionedDeleteRequest defines model for VersionedDeleteRequest.
+type VersionedDeleteRequest struct {
+	ExpectedVersion int64 `json:"expected_version"`
+}
 
 // AddedAfterFilter defines model for AddedAfterFilter.
 type AddedAfterFilter = time.Time
@@ -4301,6 +5451,120 @@ type DisableQuestionnairePublicDefinitionParams struct {
 
 // PublishQuestionnairePublicDefinitionParams defines parameters for PublishQuestionnairePublicDefinition.
 type PublishQuestionnairePublicDefinitionParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListServicePeriodProductsParams defines parameters for ListServicePeriodProducts.
+type ListServicePeriodProductsParams struct {
+	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// CreateServicePeriodProductParams defines parameters for CreateServicePeriodProduct.
+type CreateServicePeriodProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ArchiveServicePeriodProductParams defines parameters for ArchiveServicePeriodProduct.
+type ArchiveServicePeriodProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// UpdateServicePeriodProductParams defines parameters for UpdateServicePeriodProduct.
+type UpdateServicePeriodProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CopyServicePeriodProductParams defines parameters for CopyServicePeriodProduct.
+type CopyServicePeriodProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// DisableServicePeriodProductParams defines parameters for DisableServicePeriodProduct.
+type DisableServicePeriodProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// EnableServicePeriodProductParams defines parameters for EnableServicePeriodProduct.
+type EnableServicePeriodProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CreateServicePeriodMemberGridCollaboratorParams defines parameters for CreateServicePeriodMemberGridCollaborator.
+type CreateServicePeriodMemberGridCollaboratorParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// DeleteServicePeriodMemberGridCollaboratorParams defines parameters for DeleteServicePeriodMemberGridCollaborator.
+type DeleteServicePeriodMemberGridCollaboratorParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// UpdateServicePeriodMemberGridCollaboratorParams defines parameters for UpdateServicePeriodMemberGridCollaborator.
+type UpdateServicePeriodMemberGridCollaboratorParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CreateServicePeriodMemberViewParams defines parameters for CreateServicePeriodMemberView.
+type CreateServicePeriodMemberViewParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// DeleteServicePeriodMemberViewParams defines parameters for DeleteServicePeriodMemberView.
+type DeleteServicePeriodMemberViewParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// UpdateServicePeriodMemberViewParams defines parameters for UpdateServicePeriodMemberView.
+type UpdateServicePeriodMemberViewParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 
@@ -4700,6 +5964,45 @@ type DisableQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyDisableRe
 
 // PublishQuestionnairePublicDefinitionJSONRequestBody defines body for PublishQuestionnairePublicDefinition for application/json ContentType.
 type PublishQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyPublishRequest
+
+// CreateServicePeriodProductJSONRequestBody defines body for CreateServicePeriodProduct for application/json ContentType.
+type CreateServicePeriodProductJSONRequestBody = ServicePeriodProductCreateRequest
+
+// ArchiveServicePeriodProductJSONRequestBody defines body for ArchiveServicePeriodProduct for application/json ContentType.
+type ArchiveServicePeriodProductJSONRequestBody = ServicePeriodVersionRequest
+
+// UpdateServicePeriodProductJSONRequestBody defines body for UpdateServicePeriodProduct for application/json ContentType.
+type UpdateServicePeriodProductJSONRequestBody = ServicePeriodProductUpdateRequest
+
+// CopyServicePeriodProductJSONRequestBody defines body for CopyServicePeriodProduct for application/json ContentType.
+type CopyServicePeriodProductJSONRequestBody = ServicePeriodVersionRequest
+
+// DisableServicePeriodProductJSONRequestBody defines body for DisableServicePeriodProduct for application/json ContentType.
+type DisableServicePeriodProductJSONRequestBody = ServicePeriodVersionRequest
+
+// EnableServicePeriodProductJSONRequestBody defines body for EnableServicePeriodProduct for application/json ContentType.
+type EnableServicePeriodProductJSONRequestBody = ServicePeriodVersionRequest
+
+// CreateServicePeriodMemberGridCollaboratorJSONRequestBody defines body for CreateServicePeriodMemberGridCollaborator for application/json ContentType.
+type CreateServicePeriodMemberGridCollaboratorJSONRequestBody = ServicePeriodMemberGridCollaboratorCreateRequest
+
+// DeleteServicePeriodMemberGridCollaboratorJSONRequestBody defines body for DeleteServicePeriodMemberGridCollaborator for application/json ContentType.
+type DeleteServicePeriodMemberGridCollaboratorJSONRequestBody = VersionedDeleteRequest
+
+// UpdateServicePeriodMemberGridCollaboratorJSONRequestBody defines body for UpdateServicePeriodMemberGridCollaborator for application/json ContentType.
+type UpdateServicePeriodMemberGridCollaboratorJSONRequestBody = ServicePeriodMemberGridCollaboratorUpdateRequest
+
+// QueryServicePeriodMemberGridJSONRequestBody defines body for QueryServicePeriodMemberGrid for application/json ContentType.
+type QueryServicePeriodMemberGridJSONRequestBody = ServicePeriodMemberGridQueryRequest
+
+// CreateServicePeriodMemberViewJSONRequestBody defines body for CreateServicePeriodMemberView for application/json ContentType.
+type CreateServicePeriodMemberViewJSONRequestBody = ServicePeriodMemberViewCreateRequest
+
+// DeleteServicePeriodMemberViewJSONRequestBody defines body for DeleteServicePeriodMemberView for application/json ContentType.
+type DeleteServicePeriodMemberViewJSONRequestBody = VersionedDeleteRequest
+
+// UpdateServicePeriodMemberViewJSONRequestBody defines body for UpdateServicePeriodMemberView for application/json ContentType.
+type UpdateServicePeriodMemberViewJSONRequestBody = ServicePeriodMemberViewUpdateRequest
 
 // DeleteLegacyWechatPayProductJSONRequestBody defines body for DeleteLegacyWechatPayProduct for application/json ContentType.
 type DeleteLegacyWechatPayProductJSONRequestBody = LocalProductLifecycleVersionRequest
@@ -5414,6 +6717,68 @@ func (t *SegmentDefinition) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsServicePeriodMemberViewCreateRequest0 returns the union data inside the ServicePeriodMemberViewCreateRequest as a ServicePeriodMemberViewCreateRequest0
+func (t ServicePeriodMemberViewCreateRequest) AsServicePeriodMemberViewCreateRequest0() (ServicePeriodMemberViewCreateRequest0, error) {
+	var body ServicePeriodMemberViewCreateRequest0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromServicePeriodMemberViewCreateRequest0 overwrites any union data inside the ServicePeriodMemberViewCreateRequest as the provided ServicePeriodMemberViewCreateRequest0
+func (t *ServicePeriodMemberViewCreateRequest) FromServicePeriodMemberViewCreateRequest0(v ServicePeriodMemberViewCreateRequest0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeServicePeriodMemberViewCreateRequest0 performs a merge with any union data inside the ServicePeriodMemberViewCreateRequest, using the provided ServicePeriodMemberViewCreateRequest0
+func (t *ServicePeriodMemberViewCreateRequest) MergeServicePeriodMemberViewCreateRequest0(v ServicePeriodMemberViewCreateRequest0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsServicePeriodMemberViewCreateRequest1 returns the union data inside the ServicePeriodMemberViewCreateRequest as a ServicePeriodMemberViewCreateRequest1
+func (t ServicePeriodMemberViewCreateRequest) AsServicePeriodMemberViewCreateRequest1() (ServicePeriodMemberViewCreateRequest1, error) {
+	var body ServicePeriodMemberViewCreateRequest1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromServicePeriodMemberViewCreateRequest1 overwrites any union data inside the ServicePeriodMemberViewCreateRequest as the provided ServicePeriodMemberViewCreateRequest1
+func (t *ServicePeriodMemberViewCreateRequest) FromServicePeriodMemberViewCreateRequest1(v ServicePeriodMemberViewCreateRequest1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeServicePeriodMemberViewCreateRequest1 performs a merge with any union data inside the ServicePeriodMemberViewCreateRequest, using the provided ServicePeriodMemberViewCreateRequest1
+func (t *ServicePeriodMemberViewCreateRequest) MergeServicePeriodMemberViewCreateRequest1(v ServicePeriodMemberViewCreateRequest1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t ServicePeriodMemberViewCreateRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *ServicePeriodMemberViewCreateRequest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 	// Carry the safe local execution-runtime observation into the existing admin shell
@@ -5443,6 +6808,63 @@ type ServerInterface interface {
 	// Publish an immutable local anonymous public survey snapshot
 	// (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
 	PublishQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params PublishQuestionnairePublicDefinitionParams)
+	// List local service-period products without payment, entitlement, or provider effects
+	// (GET /api/admin/service-period-products)
+	ListServicePeriodProducts(w http.ResponseWriter, r *http.Request, params ListServicePeriodProductsParams)
+	// Create one local service-period product without public purchase capability
+	// (POST /api/admin/service-period-products)
+	CreateServicePeriodProduct(w http.ResponseWriter, r *http.Request, params CreateServicePeriodProductParams)
+	// Archive one local service-period product without deleting member history
+	// (DELETE /api/admin/service-period-products/{service_product_id})
+	ArchiveServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params ArchiveServicePeriodProductParams)
+	// Get one local service-period product
+	// (GET /api/admin/service-period-products/{service_product_id})
+	GetServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64)
+	// Compare-and-swap one local service-period product
+	// (PUT /api/admin/service-period-products/{service_product_id})
+	UpdateServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params UpdateServicePeriodProductParams)
+	// Copy one local service-period product as a draft
+	// (POST /api/admin/service-period-products/{service_product_id}/copy)
+	CopyServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params CopyServicePeriodProductParams)
+	// Disable one local service-period product
+	// (POST /api/admin/service-period-products/{service_product_id}/disable)
+	DisableServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params DisableServicePeriodProductParams)
+	// Enable one local service-period product without public purchase capability
+	// (POST /api/admin/service-period-products/{service_product_id}/enable)
+	EnableServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params EnableServicePeriodProductParams)
+	// Read local member-grid access; external sharing remains disabled
+	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/access)
+	GetServicePeriodMemberGridAccess(w http.ResponseWriter, r *http.Request, serviceProductId int64)
+	// Add active local staff metadata without sending an invitation
+	// (POST /api/admin/service-period-products/{service_product_id}/member-grid/collaborators)
+	CreateServicePeriodMemberGridCollaborator(w http.ResponseWriter, r *http.Request, serviceProductId int64, params CreateServicePeriodMemberGridCollaboratorParams)
+	// Delete local collaborator metadata without any provider action
+	// (DELETE /api/admin/service-period-products/{service_product_id}/member-grid/collaborators/{collaborator_id})
+	DeleteServicePeriodMemberGridCollaborator(w http.ResponseWriter, r *http.Request, serviceProductId int64, collaboratorId int64, params DeleteServicePeriodMemberGridCollaboratorParams)
+	// Update local collaborator metadata
+	// (PUT /api/admin/service-period-products/{service_product_id}/member-grid/collaborators/{collaborator_id})
+	UpdateServicePeriodMemberGridCollaborator(w http.ResponseWriter, r *http.Request, serviceProductId int64, collaboratorId int64, params UpdateServicePeriodMemberGridCollaboratorParams)
+	// Query existing local entitlement rows; it neither adds nor expires members
+	// (POST /api/admin/service-period-products/{service_product_id}/member-grid/query)
+	QueryServicePeriodMemberGrid(w http.ResponseWriter, r *http.Request, serviceProductId int64)
+	// Read the closed local member-grid schema
+	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/schema)
+	GetServicePeriodMemberGridSchema(w http.ResponseWriter, r *http.Request, serviceProductId int64)
+	// Read local views and collaborators; external sharing is unsupported
+	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/share-settings)
+	GetServicePeriodMemberGridShareSettings(w http.ResponseWriter, r *http.Request, serviceProductId int64)
+	// List closed built-in member-grid views
+	// (GET /api/admin/service-period-products/{service_product_id}/member-views)
+	ListServicePeriodMemberViews(w http.ResponseWriter, r *http.Request, serviceProductId int64)
+	// Save a closed local member-grid view
+	// (POST /api/admin/service-period-products/{service_product_id}/member-views)
+	CreateServicePeriodMemberView(w http.ResponseWriter, r *http.Request, serviceProductId int64, params CreateServicePeriodMemberViewParams)
+	// Delete one saved local member-grid view
+	// (DELETE /api/admin/service-period-products/{service_product_id}/member-views/{view_id})
+	DeleteServicePeriodMemberView(w http.ResponseWriter, r *http.Request, serviceProductId int64, viewId int64, params DeleteServicePeriodMemberViewParams)
+	// Update one saved local member-grid view
+	// (PUT /api/admin/service-period-products/{service_product_id}/member-views/{view_id})
+	UpdateServicePeriodMemberView(w http.ResponseWriter, r *http.Request, serviceProductId int64, viewId int64, params UpdateServicePeriodMemberViewParams)
 	// Delete only an unreferenced CRM-local draft product
 	// (DELETE /api/admin/wechat-pay/products/{product_id})
 	DeleteLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params DeleteLegacyWechatPayProductParams)
@@ -5686,6 +7108,120 @@ func (_ Unimplemented) DisableQuestionnairePublicDefinition(w http.ResponseWrite
 // Publish an immutable local anonymous public survey snapshot
 // (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
 func (_ Unimplemented) PublishQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params PublishQuestionnairePublicDefinitionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List local service-period products without payment, entitlement, or provider effects
+// (GET /api/admin/service-period-products)
+func (_ Unimplemented) ListServicePeriodProducts(w http.ResponseWriter, r *http.Request, params ListServicePeriodProductsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create one local service-period product without public purchase capability
+// (POST /api/admin/service-period-products)
+func (_ Unimplemented) CreateServicePeriodProduct(w http.ResponseWriter, r *http.Request, params CreateServicePeriodProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Archive one local service-period product without deleting member history
+// (DELETE /api/admin/service-period-products/{service_product_id})
+func (_ Unimplemented) ArchiveServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params ArchiveServicePeriodProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get one local service-period product
+// (GET /api/admin/service-period-products/{service_product_id})
+func (_ Unimplemented) GetServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Compare-and-swap one local service-period product
+// (PUT /api/admin/service-period-products/{service_product_id})
+func (_ Unimplemented) UpdateServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params UpdateServicePeriodProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Copy one local service-period product as a draft
+// (POST /api/admin/service-period-products/{service_product_id}/copy)
+func (_ Unimplemented) CopyServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params CopyServicePeriodProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Disable one local service-period product
+// (POST /api/admin/service-period-products/{service_product_id}/disable)
+func (_ Unimplemented) DisableServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params DisableServicePeriodProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Enable one local service-period product without public purchase capability
+// (POST /api/admin/service-period-products/{service_product_id}/enable)
+func (_ Unimplemented) EnableServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params EnableServicePeriodProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read local member-grid access; external sharing remains disabled
+// (GET /api/admin/service-period-products/{service_product_id}/member-grid/access)
+func (_ Unimplemented) GetServicePeriodMemberGridAccess(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Add active local staff metadata without sending an invitation
+// (POST /api/admin/service-period-products/{service_product_id}/member-grid/collaborators)
+func (_ Unimplemented) CreateServicePeriodMemberGridCollaborator(w http.ResponseWriter, r *http.Request, serviceProductId int64, params CreateServicePeriodMemberGridCollaboratorParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete local collaborator metadata without any provider action
+// (DELETE /api/admin/service-period-products/{service_product_id}/member-grid/collaborators/{collaborator_id})
+func (_ Unimplemented) DeleteServicePeriodMemberGridCollaborator(w http.ResponseWriter, r *http.Request, serviceProductId int64, collaboratorId int64, params DeleteServicePeriodMemberGridCollaboratorParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update local collaborator metadata
+// (PUT /api/admin/service-period-products/{service_product_id}/member-grid/collaborators/{collaborator_id})
+func (_ Unimplemented) UpdateServicePeriodMemberGridCollaborator(w http.ResponseWriter, r *http.Request, serviceProductId int64, collaboratorId int64, params UpdateServicePeriodMemberGridCollaboratorParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Query existing local entitlement rows; it neither adds nor expires members
+// (POST /api/admin/service-period-products/{service_product_id}/member-grid/query)
+func (_ Unimplemented) QueryServicePeriodMemberGrid(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the closed local member-grid schema
+// (GET /api/admin/service-period-products/{service_product_id}/member-grid/schema)
+func (_ Unimplemented) GetServicePeriodMemberGridSchema(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read local views and collaborators; external sharing is unsupported
+// (GET /api/admin/service-period-products/{service_product_id}/member-grid/share-settings)
+func (_ Unimplemented) GetServicePeriodMemberGridShareSettings(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List closed built-in member-grid views
+// (GET /api/admin/service-period-products/{service_product_id}/member-views)
+func (_ Unimplemented) ListServicePeriodMemberViews(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Save a closed local member-grid view
+// (POST /api/admin/service-period-products/{service_product_id}/member-views)
+func (_ Unimplemented) CreateServicePeriodMemberView(w http.ResponseWriter, r *http.Request, serviceProductId int64, params CreateServicePeriodMemberViewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete one saved local member-grid view
+// (DELETE /api/admin/service-period-products/{service_product_id}/member-views/{view_id})
+func (_ Unimplemented) DeleteServicePeriodMemberView(w http.ResponseWriter, r *http.Request, serviceProductId int64, viewId int64, params DeleteServicePeriodMemberViewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update one saved local member-grid view
+// (PUT /api/admin/service-period-products/{service_product_id}/member-views/{view_id})
+func (_ Unimplemented) UpdateServicePeriodMemberView(w http.ResponseWriter, r *http.Request, serviceProductId int64, viewId int64, params UpdateServicePeriodMemberViewParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -6757,6 +8293,1244 @@ func (siw *ServerInterfaceWrapper) PublishQuestionnairePublicDefinition(w http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PublishQuestionnairePublicDefinition(w, r, questionnaireId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListServicePeriodProducts operation middleware
+func (siw *ServerInterfaceWrapper) ListServicePeriodProducts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListServicePeriodProductsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListServicePeriodProducts(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateServicePeriodProduct operation middleware
+func (siw *ServerInterfaceWrapper) CreateServicePeriodProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateServicePeriodProductParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateServicePeriodProduct(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ArchiveServicePeriodProduct operation middleware
+func (siw *ServerInterfaceWrapper) ArchiveServicePeriodProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ArchiveServicePeriodProductParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ArchiveServicePeriodProduct(w, r, serviceProductId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetServicePeriodProduct operation middleware
+func (siw *ServerInterfaceWrapper) GetServicePeriodProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetServicePeriodProduct(w, r, serviceProductId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateServicePeriodProduct operation middleware
+func (siw *ServerInterfaceWrapper) UpdateServicePeriodProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateServicePeriodProductParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateServicePeriodProduct(w, r, serviceProductId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CopyServicePeriodProduct operation middleware
+func (siw *ServerInterfaceWrapper) CopyServicePeriodProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CopyServicePeriodProductParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CopyServicePeriodProduct(w, r, serviceProductId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableServicePeriodProduct operation middleware
+func (siw *ServerInterfaceWrapper) DisableServicePeriodProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DisableServicePeriodProductParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableServicePeriodProduct(w, r, serviceProductId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EnableServicePeriodProduct operation middleware
+func (siw *ServerInterfaceWrapper) EnableServicePeriodProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params EnableServicePeriodProductParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EnableServicePeriodProduct(w, r, serviceProductId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetServicePeriodMemberGridAccess operation middleware
+func (siw *ServerInterfaceWrapper) GetServicePeriodMemberGridAccess(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetServicePeriodMemberGridAccess(w, r, serviceProductId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateServicePeriodMemberGridCollaborator operation middleware
+func (siw *ServerInterfaceWrapper) CreateServicePeriodMemberGridCollaborator(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateServicePeriodMemberGridCollaboratorParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateServicePeriodMemberGridCollaborator(w, r, serviceProductId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteServicePeriodMemberGridCollaborator operation middleware
+func (siw *ServerInterfaceWrapper) DeleteServicePeriodMemberGridCollaborator(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "collaborator_id" -------------
+	var collaboratorId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "collaborator_id", chi.URLParam(r, "collaborator_id"), &collaboratorId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "collaborator_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteServicePeriodMemberGridCollaboratorParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteServicePeriodMemberGridCollaborator(w, r, serviceProductId, collaboratorId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateServicePeriodMemberGridCollaborator operation middleware
+func (siw *ServerInterfaceWrapper) UpdateServicePeriodMemberGridCollaborator(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "collaborator_id" -------------
+	var collaboratorId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "collaborator_id", chi.URLParam(r, "collaborator_id"), &collaboratorId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "collaborator_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateServicePeriodMemberGridCollaboratorParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateServicePeriodMemberGridCollaborator(w, r, serviceProductId, collaboratorId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// QueryServicePeriodMemberGrid operation middleware
+func (siw *ServerInterfaceWrapper) QueryServicePeriodMemberGrid(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.QueryServicePeriodMemberGrid(w, r, serviceProductId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetServicePeriodMemberGridSchema operation middleware
+func (siw *ServerInterfaceWrapper) GetServicePeriodMemberGridSchema(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetServicePeriodMemberGridSchema(w, r, serviceProductId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetServicePeriodMemberGridShareSettings operation middleware
+func (siw *ServerInterfaceWrapper) GetServicePeriodMemberGridShareSettings(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetServicePeriodMemberGridShareSettings(w, r, serviceProductId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListServicePeriodMemberViews operation middleware
+func (siw *ServerInterfaceWrapper) ListServicePeriodMemberViews(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListServicePeriodMemberViews(w, r, serviceProductId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateServicePeriodMemberView operation middleware
+func (siw *ServerInterfaceWrapper) CreateServicePeriodMemberView(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateServicePeriodMemberViewParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateServicePeriodMemberView(w, r, serviceProductId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteServicePeriodMemberView operation middleware
+func (siw *ServerInterfaceWrapper) DeleteServicePeriodMemberView(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "view_id" -------------
+	var viewId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "view_id", chi.URLParam(r, "view_id"), &viewId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "view_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteServicePeriodMemberViewParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteServicePeriodMemberView(w, r, serviceProductId, viewId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateServicePeriodMemberView operation middleware
+func (siw *ServerInterfaceWrapper) UpdateServicePeriodMemberView(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "view_id" -------------
+	var viewId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "view_id", chi.URLParam(r, "view_id"), &viewId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "view_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UpdateServicePeriodMemberViewParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateServicePeriodMemberView(w, r, serviceProductId, viewId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -10464,6 +13238,63 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/admin/questionnaires/{questionnaire_id}/public-publish", wrapper.PublishQuestionnairePublicDefinition)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/service-period-products", wrapper.ListServicePeriodProducts)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/service-period-products", wrapper.CreateServicePeriodProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/admin/service-period-products/{service_product_id}", wrapper.ArchiveServicePeriodProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/service-period-products/{service_product_id}", wrapper.GetServicePeriodProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/admin/service-period-products/{service_product_id}", wrapper.UpdateServicePeriodProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/copy", wrapper.CopyServicePeriodProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/disable", wrapper.DisableServicePeriodProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/enable", wrapper.EnableServicePeriodProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-grid/access", wrapper.GetServicePeriodMemberGridAccess)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-grid/collaborators", wrapper.CreateServicePeriodMemberGridCollaborator)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-grid/collaborators/{collaborator_id}", wrapper.DeleteServicePeriodMemberGridCollaborator)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-grid/collaborators/{collaborator_id}", wrapper.UpdateServicePeriodMemberGridCollaborator)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-grid/query", wrapper.QueryServicePeriodMemberGrid)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-grid/schema", wrapper.GetServicePeriodMemberGridSchema)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-grid/share-settings", wrapper.GetServicePeriodMemberGridShareSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-views", wrapper.ListServicePeriodMemberViews)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-views", wrapper.CreateServicePeriodMemberView)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-views/{view_id}", wrapper.DeleteServicePeriodMemberView)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-views/{view_id}", wrapper.UpdateServicePeriodMemberView)
+	})
+	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}", wrapper.DeleteLegacyWechatPayProduct)
 	})
 	r.Group(func(r chi.Router) {
@@ -11182,6 +14013,1302 @@ func (response PublishQuestionnairePublicDefinition409JSONResponse) VisitPublish
 type PublishQuestionnairePublicDefinition503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response PublishQuestionnairePublicDefinition503JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodProductsRequestObject struct {
+	Params ListServicePeriodProductsParams
+}
+
+type ListServicePeriodProductsResponseObject interface {
+	VisitListServicePeriodProductsResponse(w http.ResponseWriter) error
+}
+
+type ListServicePeriodProducts200JSONResponse ServicePeriodProductPage
+
+func (response ListServicePeriodProducts200JSONResponse) VisitListServicePeriodProductsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodProducts400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListServicePeriodProducts400JSONResponse) VisitListServicePeriodProductsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodProducts401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListServicePeriodProducts401JSONResponse) VisitListServicePeriodProductsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodProducts403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListServicePeriodProducts403JSONResponse) VisitListServicePeriodProductsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodProducts503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListServicePeriodProducts503JSONResponse) VisitListServicePeriodProductsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodProductRequestObject struct {
+	Params CreateServicePeriodProductParams
+	Body   *CreateServicePeriodProductJSONRequestBody
+}
+
+type CreateServicePeriodProductResponseObject interface {
+	VisitCreateServicePeriodProductResponse(w http.ResponseWriter) error
+}
+
+type CreateServicePeriodProduct201JSONResponse ServicePeriodProductResponse
+
+func (response CreateServicePeriodProduct201JSONResponse) VisitCreateServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodProduct400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateServicePeriodProduct400JSONResponse) VisitCreateServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodProduct401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateServicePeriodProduct401JSONResponse) VisitCreateServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateServicePeriodProduct403JSONResponse) VisitCreateServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodProduct409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateServicePeriodProduct409JSONResponse) VisitCreateServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateServicePeriodProduct503JSONResponse) VisitCreateServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveServicePeriodProductRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	Params           ArchiveServicePeriodProductParams
+	Body             *ArchiveServicePeriodProductJSONRequestBody
+}
+
+type ArchiveServicePeriodProductResponseObject interface {
+	VisitArchiveServicePeriodProductResponse(w http.ResponseWriter) error
+}
+
+type ArchiveServicePeriodProduct200JSONResponse ServicePeriodProductResponse
+
+func (response ArchiveServicePeriodProduct200JSONResponse) VisitArchiveServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveServicePeriodProduct400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ArchiveServicePeriodProduct400JSONResponse) VisitArchiveServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveServicePeriodProduct401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ArchiveServicePeriodProduct401JSONResponse) VisitArchiveServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveServicePeriodProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ArchiveServicePeriodProduct403JSONResponse) VisitArchiveServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveServicePeriodProduct404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ArchiveServicePeriodProduct404JSONResponse) VisitArchiveServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveServicePeriodProduct409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ArchiveServicePeriodProduct409JSONResponse) VisitArchiveServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ArchiveServicePeriodProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ArchiveServicePeriodProduct503JSONResponse) VisitArchiveServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+}
+
+type GetServicePeriodProductResponseObject interface {
+	VisitGetServicePeriodProductResponse(w http.ResponseWriter) error
+}
+
+type GetServicePeriodProduct200JSONResponse ServicePeriodProductResponse
+
+func (response GetServicePeriodProduct200JSONResponse) VisitGetServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProduct400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetServicePeriodProduct400JSONResponse) VisitGetServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProduct401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetServicePeriodProduct401JSONResponse) VisitGetServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetServicePeriodProduct403JSONResponse) VisitGetServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProduct404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetServicePeriodProduct404JSONResponse) VisitGetServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetServicePeriodProduct503JSONResponse) VisitGetServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodProductRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	Params           UpdateServicePeriodProductParams
+	Body             *UpdateServicePeriodProductJSONRequestBody
+}
+
+type UpdateServicePeriodProductResponseObject interface {
+	VisitUpdateServicePeriodProductResponse(w http.ResponseWriter) error
+}
+
+type UpdateServicePeriodProduct200JSONResponse ServicePeriodProductResponse
+
+func (response UpdateServicePeriodProduct200JSONResponse) VisitUpdateServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodProduct400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateServicePeriodProduct400JSONResponse) VisitUpdateServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodProduct401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateServicePeriodProduct401JSONResponse) VisitUpdateServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateServicePeriodProduct403JSONResponse) VisitUpdateServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodProduct404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateServicePeriodProduct404JSONResponse) VisitUpdateServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodProduct409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateServicePeriodProduct409JSONResponse) VisitUpdateServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response UpdateServicePeriodProduct503JSONResponse) VisitUpdateServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyServicePeriodProductRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	Params           CopyServicePeriodProductParams
+	Body             *CopyServicePeriodProductJSONRequestBody
+}
+
+type CopyServicePeriodProductResponseObject interface {
+	VisitCopyServicePeriodProductResponse(w http.ResponseWriter) error
+}
+
+type CopyServicePeriodProduct201JSONResponse ServicePeriodProductResponse
+
+func (response CopyServicePeriodProduct201JSONResponse) VisitCopyServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyServicePeriodProduct400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CopyServicePeriodProduct400JSONResponse) VisitCopyServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyServicePeriodProduct401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CopyServicePeriodProduct401JSONResponse) VisitCopyServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyServicePeriodProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CopyServicePeriodProduct403JSONResponse) VisitCopyServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyServicePeriodProduct404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CopyServicePeriodProduct404JSONResponse) VisitCopyServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyServicePeriodProduct409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CopyServicePeriodProduct409JSONResponse) VisitCopyServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyServicePeriodProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CopyServicePeriodProduct503JSONResponse) VisitCopyServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableServicePeriodProductRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	Params           DisableServicePeriodProductParams
+	Body             *DisableServicePeriodProductJSONRequestBody
+}
+
+type DisableServicePeriodProductResponseObject interface {
+	VisitDisableServicePeriodProductResponse(w http.ResponseWriter) error
+}
+
+type DisableServicePeriodProduct200JSONResponse ServicePeriodProductResponse
+
+func (response DisableServicePeriodProduct200JSONResponse) VisitDisableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableServicePeriodProduct400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DisableServicePeriodProduct400JSONResponse) VisitDisableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableServicePeriodProduct401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DisableServicePeriodProduct401JSONResponse) VisitDisableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableServicePeriodProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DisableServicePeriodProduct403JSONResponse) VisitDisableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableServicePeriodProduct404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DisableServicePeriodProduct404JSONResponse) VisitDisableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableServicePeriodProduct409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DisableServicePeriodProduct409JSONResponse) VisitDisableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableServicePeriodProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response DisableServicePeriodProduct503JSONResponse) VisitDisableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableServicePeriodProductRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	Params           EnableServicePeriodProductParams
+	Body             *EnableServicePeriodProductJSONRequestBody
+}
+
+type EnableServicePeriodProductResponseObject interface {
+	VisitEnableServicePeriodProductResponse(w http.ResponseWriter) error
+}
+
+type EnableServicePeriodProduct200JSONResponse ServicePeriodProductResponse
+
+func (response EnableServicePeriodProduct200JSONResponse) VisitEnableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableServicePeriodProduct400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response EnableServicePeriodProduct400JSONResponse) VisitEnableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableServicePeriodProduct401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response EnableServicePeriodProduct401JSONResponse) VisitEnableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableServicePeriodProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response EnableServicePeriodProduct403JSONResponse) VisitEnableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableServicePeriodProduct404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response EnableServicePeriodProduct404JSONResponse) VisitEnableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableServicePeriodProduct409JSONResponse struct{ ConflictJSONResponse }
+
+func (response EnableServicePeriodProduct409JSONResponse) VisitEnableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableServicePeriodProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response EnableServicePeriodProduct503JSONResponse) VisitEnableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridAccessRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+}
+
+type GetServicePeriodMemberGridAccessResponseObject interface {
+	VisitGetServicePeriodMemberGridAccessResponse(w http.ResponseWriter) error
+}
+
+type GetServicePeriodMemberGridAccess200JSONResponse ServicePeriodMemberGridAccess
+
+func (response GetServicePeriodMemberGridAccess200JSONResponse) VisitGetServicePeriodMemberGridAccessResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridAccess400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetServicePeriodMemberGridAccess400JSONResponse) VisitGetServicePeriodMemberGridAccessResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridAccess401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetServicePeriodMemberGridAccess401JSONResponse) VisitGetServicePeriodMemberGridAccessResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridAccess403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetServicePeriodMemberGridAccess403JSONResponse) VisitGetServicePeriodMemberGridAccessResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridAccess404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetServicePeriodMemberGridAccess404JSONResponse) VisitGetServicePeriodMemberGridAccessResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridAccess503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetServicePeriodMemberGridAccess503JSONResponse) VisitGetServicePeriodMemberGridAccessResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberGridCollaboratorRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	Params           CreateServicePeriodMemberGridCollaboratorParams
+	Body             *CreateServicePeriodMemberGridCollaboratorJSONRequestBody
+}
+
+type CreateServicePeriodMemberGridCollaboratorResponseObject interface {
+	VisitCreateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error
+}
+
+type CreateServicePeriodMemberGridCollaborator201JSONResponse ServicePeriodMemberGridCollaboratorResponse
+
+func (response CreateServicePeriodMemberGridCollaborator201JSONResponse) VisitCreateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberGridCollaborator400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateServicePeriodMemberGridCollaborator400JSONResponse) VisitCreateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberGridCollaborator401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateServicePeriodMemberGridCollaborator401JSONResponse) VisitCreateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberGridCollaborator403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateServicePeriodMemberGridCollaborator403JSONResponse) VisitCreateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberGridCollaborator404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateServicePeriodMemberGridCollaborator404JSONResponse) VisitCreateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberGridCollaborator409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateServicePeriodMemberGridCollaborator409JSONResponse) VisitCreateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberGridCollaborator503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateServicePeriodMemberGridCollaborator503JSONResponse) VisitCreateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberGridCollaboratorRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	CollaboratorId   int64 `json:"collaborator_id"`
+	Params           DeleteServicePeriodMemberGridCollaboratorParams
+	Body             *DeleteServicePeriodMemberGridCollaboratorJSONRequestBody
+}
+
+type DeleteServicePeriodMemberGridCollaboratorResponseObject interface {
+	VisitDeleteServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error
+}
+
+type DeleteServicePeriodMemberGridCollaborator200JSONResponse ServicePeriodMemberGridCollaboratorDeleteResponse
+
+func (response DeleteServicePeriodMemberGridCollaborator200JSONResponse) VisitDeleteServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberGridCollaborator400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DeleteServicePeriodMemberGridCollaborator400JSONResponse) VisitDeleteServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberGridCollaborator401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteServicePeriodMemberGridCollaborator401JSONResponse) VisitDeleteServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberGridCollaborator403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteServicePeriodMemberGridCollaborator403JSONResponse) VisitDeleteServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberGridCollaborator404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteServicePeriodMemberGridCollaborator404JSONResponse) VisitDeleteServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberGridCollaborator409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DeleteServicePeriodMemberGridCollaborator409JSONResponse) VisitDeleteServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberGridCollaborator503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response DeleteServicePeriodMemberGridCollaborator503JSONResponse) VisitDeleteServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberGridCollaboratorRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	CollaboratorId   int64 `json:"collaborator_id"`
+	Params           UpdateServicePeriodMemberGridCollaboratorParams
+	Body             *UpdateServicePeriodMemberGridCollaboratorJSONRequestBody
+}
+
+type UpdateServicePeriodMemberGridCollaboratorResponseObject interface {
+	VisitUpdateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error
+}
+
+type UpdateServicePeriodMemberGridCollaborator200JSONResponse ServicePeriodMemberGridCollaboratorResponse
+
+func (response UpdateServicePeriodMemberGridCollaborator200JSONResponse) VisitUpdateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberGridCollaborator400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateServicePeriodMemberGridCollaborator400JSONResponse) VisitUpdateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberGridCollaborator401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateServicePeriodMemberGridCollaborator401JSONResponse) VisitUpdateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberGridCollaborator403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateServicePeriodMemberGridCollaborator403JSONResponse) VisitUpdateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberGridCollaborator404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateServicePeriodMemberGridCollaborator404JSONResponse) VisitUpdateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberGridCollaborator409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateServicePeriodMemberGridCollaborator409JSONResponse) VisitUpdateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberGridCollaborator503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response UpdateServicePeriodMemberGridCollaborator503JSONResponse) VisitUpdateServicePeriodMemberGridCollaboratorResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryServicePeriodMemberGridRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	Body             *QueryServicePeriodMemberGridJSONRequestBody
+}
+
+type QueryServicePeriodMemberGridResponseObject interface {
+	VisitQueryServicePeriodMemberGridResponse(w http.ResponseWriter) error
+}
+
+type QueryServicePeriodMemberGrid200JSONResponse ServicePeriodMemberGridQueryResponse
+
+func (response QueryServicePeriodMemberGrid200JSONResponse) VisitQueryServicePeriodMemberGridResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryServicePeriodMemberGrid400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response QueryServicePeriodMemberGrid400JSONResponse) VisitQueryServicePeriodMemberGridResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryServicePeriodMemberGrid401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response QueryServicePeriodMemberGrid401JSONResponse) VisitQueryServicePeriodMemberGridResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryServicePeriodMemberGrid403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response QueryServicePeriodMemberGrid403JSONResponse) VisitQueryServicePeriodMemberGridResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryServicePeriodMemberGrid404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response QueryServicePeriodMemberGrid404JSONResponse) VisitQueryServicePeriodMemberGridResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryServicePeriodMemberGrid503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response QueryServicePeriodMemberGrid503JSONResponse) VisitQueryServicePeriodMemberGridResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridSchemaRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+}
+
+type GetServicePeriodMemberGridSchemaResponseObject interface {
+	VisitGetServicePeriodMemberGridSchemaResponse(w http.ResponseWriter) error
+}
+
+type GetServicePeriodMemberGridSchema200JSONResponse ServicePeriodMemberGridSchema
+
+func (response GetServicePeriodMemberGridSchema200JSONResponse) VisitGetServicePeriodMemberGridSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridSchema400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetServicePeriodMemberGridSchema400JSONResponse) VisitGetServicePeriodMemberGridSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridSchema401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetServicePeriodMemberGridSchema401JSONResponse) VisitGetServicePeriodMemberGridSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridSchema403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetServicePeriodMemberGridSchema403JSONResponse) VisitGetServicePeriodMemberGridSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridSchema404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetServicePeriodMemberGridSchema404JSONResponse) VisitGetServicePeriodMemberGridSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridSchema503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetServicePeriodMemberGridSchema503JSONResponse) VisitGetServicePeriodMemberGridSchemaResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridShareSettingsRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+}
+
+type GetServicePeriodMemberGridShareSettingsResponseObject interface {
+	VisitGetServicePeriodMemberGridShareSettingsResponse(w http.ResponseWriter) error
+}
+
+type GetServicePeriodMemberGridShareSettings200JSONResponse ServicePeriodMemberGridShareSettings
+
+func (response GetServicePeriodMemberGridShareSettings200JSONResponse) VisitGetServicePeriodMemberGridShareSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridShareSettings400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetServicePeriodMemberGridShareSettings400JSONResponse) VisitGetServicePeriodMemberGridShareSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridShareSettings401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetServicePeriodMemberGridShareSettings401JSONResponse) VisitGetServicePeriodMemberGridShareSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridShareSettings403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetServicePeriodMemberGridShareSettings403JSONResponse) VisitGetServicePeriodMemberGridShareSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridShareSettings404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetServicePeriodMemberGridShareSettings404JSONResponse) VisitGetServicePeriodMemberGridShareSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodMemberGridShareSettings503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetServicePeriodMemberGridShareSettings503JSONResponse) VisitGetServicePeriodMemberGridShareSettingsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodMemberViewsRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+}
+
+type ListServicePeriodMemberViewsResponseObject interface {
+	VisitListServicePeriodMemberViewsResponse(w http.ResponseWriter) error
+}
+
+type ListServicePeriodMemberViews200JSONResponse ServicePeriodMemberGridViews
+
+func (response ListServicePeriodMemberViews200JSONResponse) VisitListServicePeriodMemberViewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodMemberViews400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListServicePeriodMemberViews400JSONResponse) VisitListServicePeriodMemberViewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodMemberViews401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListServicePeriodMemberViews401JSONResponse) VisitListServicePeriodMemberViewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodMemberViews403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListServicePeriodMemberViews403JSONResponse) VisitListServicePeriodMemberViewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodMemberViews404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListServicePeriodMemberViews404JSONResponse) VisitListServicePeriodMemberViewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodMemberViews503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListServicePeriodMemberViews503JSONResponse) VisitListServicePeriodMemberViewsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberViewRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	Params           CreateServicePeriodMemberViewParams
+	Body             *CreateServicePeriodMemberViewJSONRequestBody
+}
+
+type CreateServicePeriodMemberViewResponseObject interface {
+	VisitCreateServicePeriodMemberViewResponse(w http.ResponseWriter) error
+}
+
+type CreateServicePeriodMemberView201JSONResponse ServicePeriodMemberViewResponse
+
+func (response CreateServicePeriodMemberView201JSONResponse) VisitCreateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberView400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateServicePeriodMemberView400JSONResponse) VisitCreateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberView401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateServicePeriodMemberView401JSONResponse) VisitCreateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberView403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateServicePeriodMemberView403JSONResponse) VisitCreateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberView404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateServicePeriodMemberView404JSONResponse) VisitCreateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberView409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateServicePeriodMemberView409JSONResponse) VisitCreateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateServicePeriodMemberView503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateServicePeriodMemberView503JSONResponse) VisitCreateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberViewRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	ViewId           int64 `json:"view_id"`
+	Params           DeleteServicePeriodMemberViewParams
+	Body             *DeleteServicePeriodMemberViewJSONRequestBody
+}
+
+type DeleteServicePeriodMemberViewResponseObject interface {
+	VisitDeleteServicePeriodMemberViewResponse(w http.ResponseWriter) error
+}
+
+type DeleteServicePeriodMemberView200JSONResponse ServicePeriodMemberViewDeleteResponse
+
+func (response DeleteServicePeriodMemberView200JSONResponse) VisitDeleteServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberView400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DeleteServicePeriodMemberView400JSONResponse) VisitDeleteServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberView401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteServicePeriodMemberView401JSONResponse) VisitDeleteServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberView403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteServicePeriodMemberView403JSONResponse) VisitDeleteServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberView404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteServicePeriodMemberView404JSONResponse) VisitDeleteServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberView409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DeleteServicePeriodMemberView409JSONResponse) VisitDeleteServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteServicePeriodMemberView503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response DeleteServicePeriodMemberView503JSONResponse) VisitDeleteServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberViewRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	ViewId           int64 `json:"view_id"`
+	Params           UpdateServicePeriodMemberViewParams
+	Body             *UpdateServicePeriodMemberViewJSONRequestBody
+}
+
+type UpdateServicePeriodMemberViewResponseObject interface {
+	VisitUpdateServicePeriodMemberViewResponse(w http.ResponseWriter) error
+}
+
+type UpdateServicePeriodMemberView200JSONResponse ServicePeriodMemberViewResponse
+
+func (response UpdateServicePeriodMemberView200JSONResponse) VisitUpdateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberView400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateServicePeriodMemberView400JSONResponse) VisitUpdateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberView401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateServicePeriodMemberView401JSONResponse) VisitUpdateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberView403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateServicePeriodMemberView403JSONResponse) VisitUpdateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberView404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateServicePeriodMemberView404JSONResponse) VisitUpdateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberView409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpdateServicePeriodMemberView409JSONResponse) VisitUpdateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateServicePeriodMemberView503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response UpdateServicePeriodMemberView503JSONResponse) VisitUpdateServicePeriodMemberViewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -15259,6 +19386,63 @@ type StrictServerInterface interface {
 	// Publish an immutable local anonymous public survey snapshot
 	// (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
 	PublishQuestionnairePublicDefinition(ctx context.Context, request PublishQuestionnairePublicDefinitionRequestObject) (PublishQuestionnairePublicDefinitionResponseObject, error)
+	// List local service-period products without payment, entitlement, or provider effects
+	// (GET /api/admin/service-period-products)
+	ListServicePeriodProducts(ctx context.Context, request ListServicePeriodProductsRequestObject) (ListServicePeriodProductsResponseObject, error)
+	// Create one local service-period product without public purchase capability
+	// (POST /api/admin/service-period-products)
+	CreateServicePeriodProduct(ctx context.Context, request CreateServicePeriodProductRequestObject) (CreateServicePeriodProductResponseObject, error)
+	// Archive one local service-period product without deleting member history
+	// (DELETE /api/admin/service-period-products/{service_product_id})
+	ArchiveServicePeriodProduct(ctx context.Context, request ArchiveServicePeriodProductRequestObject) (ArchiveServicePeriodProductResponseObject, error)
+	// Get one local service-period product
+	// (GET /api/admin/service-period-products/{service_product_id})
+	GetServicePeriodProduct(ctx context.Context, request GetServicePeriodProductRequestObject) (GetServicePeriodProductResponseObject, error)
+	// Compare-and-swap one local service-period product
+	// (PUT /api/admin/service-period-products/{service_product_id})
+	UpdateServicePeriodProduct(ctx context.Context, request UpdateServicePeriodProductRequestObject) (UpdateServicePeriodProductResponseObject, error)
+	// Copy one local service-period product as a draft
+	// (POST /api/admin/service-period-products/{service_product_id}/copy)
+	CopyServicePeriodProduct(ctx context.Context, request CopyServicePeriodProductRequestObject) (CopyServicePeriodProductResponseObject, error)
+	// Disable one local service-period product
+	// (POST /api/admin/service-period-products/{service_product_id}/disable)
+	DisableServicePeriodProduct(ctx context.Context, request DisableServicePeriodProductRequestObject) (DisableServicePeriodProductResponseObject, error)
+	// Enable one local service-period product without public purchase capability
+	// (POST /api/admin/service-period-products/{service_product_id}/enable)
+	EnableServicePeriodProduct(ctx context.Context, request EnableServicePeriodProductRequestObject) (EnableServicePeriodProductResponseObject, error)
+	// Read local member-grid access; external sharing remains disabled
+	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/access)
+	GetServicePeriodMemberGridAccess(ctx context.Context, request GetServicePeriodMemberGridAccessRequestObject) (GetServicePeriodMemberGridAccessResponseObject, error)
+	// Add active local staff metadata without sending an invitation
+	// (POST /api/admin/service-period-products/{service_product_id}/member-grid/collaborators)
+	CreateServicePeriodMemberGridCollaborator(ctx context.Context, request CreateServicePeriodMemberGridCollaboratorRequestObject) (CreateServicePeriodMemberGridCollaboratorResponseObject, error)
+	// Delete local collaborator metadata without any provider action
+	// (DELETE /api/admin/service-period-products/{service_product_id}/member-grid/collaborators/{collaborator_id})
+	DeleteServicePeriodMemberGridCollaborator(ctx context.Context, request DeleteServicePeriodMemberGridCollaboratorRequestObject) (DeleteServicePeriodMemberGridCollaboratorResponseObject, error)
+	// Update local collaborator metadata
+	// (PUT /api/admin/service-period-products/{service_product_id}/member-grid/collaborators/{collaborator_id})
+	UpdateServicePeriodMemberGridCollaborator(ctx context.Context, request UpdateServicePeriodMemberGridCollaboratorRequestObject) (UpdateServicePeriodMemberGridCollaboratorResponseObject, error)
+	// Query existing local entitlement rows; it neither adds nor expires members
+	// (POST /api/admin/service-period-products/{service_product_id}/member-grid/query)
+	QueryServicePeriodMemberGrid(ctx context.Context, request QueryServicePeriodMemberGridRequestObject) (QueryServicePeriodMemberGridResponseObject, error)
+	// Read the closed local member-grid schema
+	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/schema)
+	GetServicePeriodMemberGridSchema(ctx context.Context, request GetServicePeriodMemberGridSchemaRequestObject) (GetServicePeriodMemberGridSchemaResponseObject, error)
+	// Read local views and collaborators; external sharing is unsupported
+	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/share-settings)
+	GetServicePeriodMemberGridShareSettings(ctx context.Context, request GetServicePeriodMemberGridShareSettingsRequestObject) (GetServicePeriodMemberGridShareSettingsResponseObject, error)
+	// List closed built-in member-grid views
+	// (GET /api/admin/service-period-products/{service_product_id}/member-views)
+	ListServicePeriodMemberViews(ctx context.Context, request ListServicePeriodMemberViewsRequestObject) (ListServicePeriodMemberViewsResponseObject, error)
+	// Save a closed local member-grid view
+	// (POST /api/admin/service-period-products/{service_product_id}/member-views)
+	CreateServicePeriodMemberView(ctx context.Context, request CreateServicePeriodMemberViewRequestObject) (CreateServicePeriodMemberViewResponseObject, error)
+	// Delete one saved local member-grid view
+	// (DELETE /api/admin/service-period-products/{service_product_id}/member-views/{view_id})
+	DeleteServicePeriodMemberView(ctx context.Context, request DeleteServicePeriodMemberViewRequestObject) (DeleteServicePeriodMemberViewResponseObject, error)
+	// Update one saved local member-grid view
+	// (PUT /api/admin/service-period-products/{service_product_id}/member-views/{view_id})
+	UpdateServicePeriodMemberView(ctx context.Context, request UpdateServicePeriodMemberViewRequestObject) (UpdateServicePeriodMemberViewResponseObject, error)
 	// Delete only an unreferenced CRM-local draft product
 	// (DELETE /api/admin/wechat-pay/products/{product_id})
 	DeleteLegacyWechatPayProduct(ctx context.Context, request DeleteLegacyWechatPayProductRequestObject) (DeleteLegacyWechatPayProductResponseObject, error)
@@ -15716,6 +19900,606 @@ func (sh *strictHandler) PublishQuestionnairePublicDefinition(w http.ResponseWri
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PublishQuestionnairePublicDefinitionResponseObject); ok {
 		if err := validResponse.VisitPublishQuestionnairePublicDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListServicePeriodProducts operation middleware
+func (sh *strictHandler) ListServicePeriodProducts(w http.ResponseWriter, r *http.Request, params ListServicePeriodProductsParams) {
+	var request ListServicePeriodProductsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListServicePeriodProducts(ctx, request.(ListServicePeriodProductsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListServicePeriodProducts")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListServicePeriodProductsResponseObject); ok {
+		if err := validResponse.VisitListServicePeriodProductsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateServicePeriodProduct operation middleware
+func (sh *strictHandler) CreateServicePeriodProduct(w http.ResponseWriter, r *http.Request, params CreateServicePeriodProductParams) {
+	var request CreateServicePeriodProductRequestObject
+
+	request.Params = params
+
+	var body CreateServicePeriodProductJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateServicePeriodProduct(ctx, request.(CreateServicePeriodProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateServicePeriodProduct")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateServicePeriodProductResponseObject); ok {
+		if err := validResponse.VisitCreateServicePeriodProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ArchiveServicePeriodProduct operation middleware
+func (sh *strictHandler) ArchiveServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params ArchiveServicePeriodProductParams) {
+	var request ArchiveServicePeriodProductRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.Params = params
+
+	var body ArchiveServicePeriodProductJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ArchiveServicePeriodProduct(ctx, request.(ArchiveServicePeriodProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ArchiveServicePeriodProduct")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ArchiveServicePeriodProductResponseObject); ok {
+		if err := validResponse.VisitArchiveServicePeriodProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetServicePeriodProduct operation middleware
+func (sh *strictHandler) GetServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	var request GetServicePeriodProductRequestObject
+
+	request.ServiceProductId = serviceProductId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetServicePeriodProduct(ctx, request.(GetServicePeriodProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetServicePeriodProduct")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetServicePeriodProductResponseObject); ok {
+		if err := validResponse.VisitGetServicePeriodProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateServicePeriodProduct operation middleware
+func (sh *strictHandler) UpdateServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params UpdateServicePeriodProductParams) {
+	var request UpdateServicePeriodProductRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.Params = params
+
+	var body UpdateServicePeriodProductJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateServicePeriodProduct(ctx, request.(UpdateServicePeriodProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateServicePeriodProduct")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateServicePeriodProductResponseObject); ok {
+		if err := validResponse.VisitUpdateServicePeriodProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CopyServicePeriodProduct operation middleware
+func (sh *strictHandler) CopyServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params CopyServicePeriodProductParams) {
+	var request CopyServicePeriodProductRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.Params = params
+
+	var body CopyServicePeriodProductJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CopyServicePeriodProduct(ctx, request.(CopyServicePeriodProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CopyServicePeriodProduct")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CopyServicePeriodProductResponseObject); ok {
+		if err := validResponse.VisitCopyServicePeriodProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisableServicePeriodProduct operation middleware
+func (sh *strictHandler) DisableServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params DisableServicePeriodProductParams) {
+	var request DisableServicePeriodProductRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.Params = params
+
+	var body DisableServicePeriodProductJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableServicePeriodProduct(ctx, request.(DisableServicePeriodProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableServicePeriodProduct")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisableServicePeriodProductResponseObject); ok {
+		if err := validResponse.VisitDisableServicePeriodProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EnableServicePeriodProduct operation middleware
+func (sh *strictHandler) EnableServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params EnableServicePeriodProductParams) {
+	var request EnableServicePeriodProductRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.Params = params
+
+	var body EnableServicePeriodProductJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EnableServicePeriodProduct(ctx, request.(EnableServicePeriodProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EnableServicePeriodProduct")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EnableServicePeriodProductResponseObject); ok {
+		if err := validResponse.VisitEnableServicePeriodProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetServicePeriodMemberGridAccess operation middleware
+func (sh *strictHandler) GetServicePeriodMemberGridAccess(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	var request GetServicePeriodMemberGridAccessRequestObject
+
+	request.ServiceProductId = serviceProductId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetServicePeriodMemberGridAccess(ctx, request.(GetServicePeriodMemberGridAccessRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetServicePeriodMemberGridAccess")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetServicePeriodMemberGridAccessResponseObject); ok {
+		if err := validResponse.VisitGetServicePeriodMemberGridAccessResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateServicePeriodMemberGridCollaborator operation middleware
+func (sh *strictHandler) CreateServicePeriodMemberGridCollaborator(w http.ResponseWriter, r *http.Request, serviceProductId int64, params CreateServicePeriodMemberGridCollaboratorParams) {
+	var request CreateServicePeriodMemberGridCollaboratorRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.Params = params
+
+	var body CreateServicePeriodMemberGridCollaboratorJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateServicePeriodMemberGridCollaborator(ctx, request.(CreateServicePeriodMemberGridCollaboratorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateServicePeriodMemberGridCollaborator")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateServicePeriodMemberGridCollaboratorResponseObject); ok {
+		if err := validResponse.VisitCreateServicePeriodMemberGridCollaboratorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteServicePeriodMemberGridCollaborator operation middleware
+func (sh *strictHandler) DeleteServicePeriodMemberGridCollaborator(w http.ResponseWriter, r *http.Request, serviceProductId int64, collaboratorId int64, params DeleteServicePeriodMemberGridCollaboratorParams) {
+	var request DeleteServicePeriodMemberGridCollaboratorRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.CollaboratorId = collaboratorId
+	request.Params = params
+
+	var body DeleteServicePeriodMemberGridCollaboratorJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteServicePeriodMemberGridCollaborator(ctx, request.(DeleteServicePeriodMemberGridCollaboratorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteServicePeriodMemberGridCollaborator")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteServicePeriodMemberGridCollaboratorResponseObject); ok {
+		if err := validResponse.VisitDeleteServicePeriodMemberGridCollaboratorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateServicePeriodMemberGridCollaborator operation middleware
+func (sh *strictHandler) UpdateServicePeriodMemberGridCollaborator(w http.ResponseWriter, r *http.Request, serviceProductId int64, collaboratorId int64, params UpdateServicePeriodMemberGridCollaboratorParams) {
+	var request UpdateServicePeriodMemberGridCollaboratorRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.CollaboratorId = collaboratorId
+	request.Params = params
+
+	var body UpdateServicePeriodMemberGridCollaboratorJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateServicePeriodMemberGridCollaborator(ctx, request.(UpdateServicePeriodMemberGridCollaboratorRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateServicePeriodMemberGridCollaborator")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateServicePeriodMemberGridCollaboratorResponseObject); ok {
+		if err := validResponse.VisitUpdateServicePeriodMemberGridCollaboratorResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// QueryServicePeriodMemberGrid operation middleware
+func (sh *strictHandler) QueryServicePeriodMemberGrid(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	var request QueryServicePeriodMemberGridRequestObject
+
+	request.ServiceProductId = serviceProductId
+
+	var body QueryServicePeriodMemberGridJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.QueryServicePeriodMemberGrid(ctx, request.(QueryServicePeriodMemberGridRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "QueryServicePeriodMemberGrid")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(QueryServicePeriodMemberGridResponseObject); ok {
+		if err := validResponse.VisitQueryServicePeriodMemberGridResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetServicePeriodMemberGridSchema operation middleware
+func (sh *strictHandler) GetServicePeriodMemberGridSchema(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	var request GetServicePeriodMemberGridSchemaRequestObject
+
+	request.ServiceProductId = serviceProductId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetServicePeriodMemberGridSchema(ctx, request.(GetServicePeriodMemberGridSchemaRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetServicePeriodMemberGridSchema")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetServicePeriodMemberGridSchemaResponseObject); ok {
+		if err := validResponse.VisitGetServicePeriodMemberGridSchemaResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetServicePeriodMemberGridShareSettings operation middleware
+func (sh *strictHandler) GetServicePeriodMemberGridShareSettings(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	var request GetServicePeriodMemberGridShareSettingsRequestObject
+
+	request.ServiceProductId = serviceProductId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetServicePeriodMemberGridShareSettings(ctx, request.(GetServicePeriodMemberGridShareSettingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetServicePeriodMemberGridShareSettings")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetServicePeriodMemberGridShareSettingsResponseObject); ok {
+		if err := validResponse.VisitGetServicePeriodMemberGridShareSettingsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListServicePeriodMemberViews operation middleware
+func (sh *strictHandler) ListServicePeriodMemberViews(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	var request ListServicePeriodMemberViewsRequestObject
+
+	request.ServiceProductId = serviceProductId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListServicePeriodMemberViews(ctx, request.(ListServicePeriodMemberViewsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListServicePeriodMemberViews")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListServicePeriodMemberViewsResponseObject); ok {
+		if err := validResponse.VisitListServicePeriodMemberViewsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateServicePeriodMemberView operation middleware
+func (sh *strictHandler) CreateServicePeriodMemberView(w http.ResponseWriter, r *http.Request, serviceProductId int64, params CreateServicePeriodMemberViewParams) {
+	var request CreateServicePeriodMemberViewRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.Params = params
+
+	var body CreateServicePeriodMemberViewJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateServicePeriodMemberView(ctx, request.(CreateServicePeriodMemberViewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateServicePeriodMemberView")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateServicePeriodMemberViewResponseObject); ok {
+		if err := validResponse.VisitCreateServicePeriodMemberViewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteServicePeriodMemberView operation middleware
+func (sh *strictHandler) DeleteServicePeriodMemberView(w http.ResponseWriter, r *http.Request, serviceProductId int64, viewId int64, params DeleteServicePeriodMemberViewParams) {
+	var request DeleteServicePeriodMemberViewRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.ViewId = viewId
+	request.Params = params
+
+	var body DeleteServicePeriodMemberViewJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteServicePeriodMemberView(ctx, request.(DeleteServicePeriodMemberViewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteServicePeriodMemberView")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteServicePeriodMemberViewResponseObject); ok {
+		if err := validResponse.VisitDeleteServicePeriodMemberViewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateServicePeriodMemberView operation middleware
+func (sh *strictHandler) UpdateServicePeriodMemberView(w http.ResponseWriter, r *http.Request, serviceProductId int64, viewId int64, params UpdateServicePeriodMemberViewParams) {
+	var request UpdateServicePeriodMemberViewRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.ViewId = viewId
+	request.Params = params
+
+	var body UpdateServicePeriodMemberViewJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateServicePeriodMemberView(ctx, request.(UpdateServicePeriodMemberViewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateServicePeriodMemberView")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateServicePeriodMemberViewResponseObject); ok {
+		if err := validResponse.VisitUpdateServicePeriodMemberViewResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

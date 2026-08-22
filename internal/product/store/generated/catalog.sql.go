@@ -88,14 +88,21 @@ func (q *Queries) CompleteProductOperationReceipt(ctx context.Context, arg Compl
 }
 
 const countProducts = `-- name: CountProducts :one
-SELECT total_products FROM product_catalog_counters WHERE singleton = TRUE
+SELECT COUNT(*)::bigint
+FROM products AS p
+WHERE COALESCE(p.legacy_admin_projection->>'status', '') NOT IN (
+  'service_period_draft',
+  'service_period_enabled',
+  'service_period_disabled',
+  'service_period_archived'
+)
 `
 
 func (q *Queries) CountProducts(ctx context.Context) (int64, error) {
 	row := q.db.QueryRow(ctx, countProducts)
-	var total_products int64
-	err := row.Scan(&total_products)
-	return total_products, err
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
 }
 
 const createProduct = `-- name: CreateProduct :one
@@ -267,6 +274,12 @@ LEFT JOIN LATERAL (
   FROM product_images pi WHERE pi.product_id = p.id
 ) images ON true
 WHERE p.id = $1::bigint
+  AND COALESCE(p.legacy_admin_projection->>'status', '') NOT IN (
+    'service_period_draft',
+    'service_period_enabled',
+    'service_period_disabled',
+    'service_period_archived'
+  )
 `
 
 type GetProductRow struct {
@@ -317,6 +330,12 @@ LEFT JOIN LATERAL (
   FROM product_images pi WHERE pi.product_id = p.id
 ) images ON true
 WHERE p.id = $1::bigint
+  AND COALESCE(p.legacy_admin_projection->>'status', '') NOT IN (
+    'service_period_draft',
+    'service_period_enabled',
+    'service_period_disabled',
+    'service_period_archived'
+  )
 FOR UPDATE OF p
 `
 
@@ -554,6 +573,12 @@ LEFT JOIN LATERAL (
   FROM product_images pi WHERE pi.product_id = p.id
 ) images ON true
 WHERE ($1::bigint IS NULL OR p.id > $1::bigint)
+  AND COALESCE(p.legacy_admin_projection->>'status', '') NOT IN (
+    'service_period_draft',
+    'service_period_enabled',
+    'service_period_disabled',
+    'service_period_archived'
+  )
 ORDER BY p.id
 LIMIT $2::integer
 `
@@ -623,6 +648,12 @@ LEFT JOIN LATERAL (
   SELECT jsonb_agg(pi.image_url ORDER BY pi.position) AS items
   FROM product_images pi WHERE pi.product_id = p.id
 ) images ON true
+WHERE COALESCE(p.legacy_admin_projection->>'status', '') NOT IN (
+  'service_period_draft',
+  'service_period_enabled',
+  'service_period_disabled',
+  'service_period_archived'
+)
 ORDER BY p.id
 LIMIT $2::integer OFFSET $1::integer
 `
@@ -836,6 +867,12 @@ SET name = $1::text,
     version = version + 1
 WHERE id = $7::bigint
   AND version = $8::bigint
+  AND COALESCE(legacy_admin_projection->>'status', '') NOT IN (
+    'service_period_draft',
+    'service_period_enabled',
+    'service_period_disabled',
+    'service_period_archived'
+  )
 RETURNING id, product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, version, local_lifecycle, legacy_admin_projection
 `
 

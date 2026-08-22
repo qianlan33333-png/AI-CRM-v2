@@ -25,6 +25,30 @@ const (
 	ServicePeriodProjectionArchivedStatus = "service_period_archived"
 )
 
+func IsServicePeriodProjection(raw json.RawMessage) bool {
+	canonical, err := CanonicalLegacyAdminProjection(raw)
+	if err != nil || !jsonEquivalent(canonical, raw) {
+		return false
+	}
+	var projection struct {
+		Status  string `json:"status"`
+		Enabled bool   `json:"enabled"`
+	}
+	if json.Unmarshal(canonical, &projection) != nil {
+		return false
+	}
+	switch projection.Status {
+	case ServicePeriodProjectionDraftStatus,
+		ServicePeriodProjectionDisabledStatus,
+		ServicePeriodProjectionArchivedStatus:
+		return !projection.Enabled
+	case ServicePeriodProjectionEnabledStatus:
+		return projection.Enabled
+	default:
+		return false
+	}
+}
+
 // ServicePeriodStoreUpdate is the CAS write handed to the Product repository.
 // Projection remains the existing products.legacy_admin_projection; no second
 // product model or table is introduced.
