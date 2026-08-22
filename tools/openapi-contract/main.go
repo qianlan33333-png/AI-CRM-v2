@@ -277,13 +277,23 @@ var p4SurveyEvidence = map[string]string{
 
 var p4ChannelOperations = map[string]bool{
 	"listLegacyChannels": true, "createLegacyChannel": true, "getLegacyChannel": true, "updateLegacyChannel": true,
+	"listLegacyChannelEntrants": true,
 }
 
 var p4ChannelLegacyMappings = map[string][]string{
-	"listLegacyChannels":  {"LEGACY-API-0190"},
-	"createLegacyChannel": {"LEGACY-API-0191"},
-	"getLegacyChannel":    {"LEGACY-API-0195"},
-	"updateLegacyChannel": {"LEGACY-API-0196"},
+	"listLegacyChannels":        {"LEGACY-API-0190"},
+	"createLegacyChannel":       {"LEGACY-API-0191"},
+	"getLegacyChannel":          {"LEGACY-API-0195"},
+	"updateLegacyChannel":       {"LEGACY-API-0196"},
+	"listLegacyChannelEntrants": {"LEGACY-API-0201"},
+}
+
+var p4ChannelEvidence = map[string]string{
+	"listLegacyChannels":        p4ChannelDecisionEvidence,
+	"createLegacyChannel":       p4ChannelDecisionEvidence,
+	"getLegacyChannel":          p4ChannelDecisionEvidence,
+	"updateLegacyChannel":       p4ChannelDecisionEvidence,
+	"listLegacyChannelEntrants": "P4-S06-002-LOCAL-READ-2026-08-22",
 }
 
 var p4TagOperations = map[string]bool{
@@ -555,6 +565,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"createLegacyChannel":                        {"channels.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyChannel":                           {"channels.read", map[string]string{"admin": "global", "ops": "global"}},
 	"updateLegacyChannel":                        {"channels.write", map[string]string{"admin": "global", "ops": "global"}},
+	"listLegacyChannelEntrants":                  {"customers.read", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyWecomTags":                        {"customers.read", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyPushCenterSections":                {"operations.read", map[string]string{"admin": "global"}},
 	"getLegacyPushCenterStats":                   {"operations.read", map[string]string{"admin": "global"}},
@@ -1080,7 +1091,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 			} else if p4ChannelOperations[op.OperationID] {
 				seenP4Channel[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
-				if !ok || evidence != p4ChannelDecisionEvidence {
+				if !ok || evidence != p4ChannelEvidence[op.OperationID] {
 					return fmt.Errorf("%s has missing or forged P4 Channel evidence", op.OperationID)
 				}
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])

@@ -15,6 +15,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p4-c01-channel-acceptance
 .PHONY: p4-f01a-survey-acceptance
 .PHONY: p4-c01-channel-acceptance p4-b02ab-tag-acceptance
+.PHONY: p4-channel-entrants-acceptance
 .PHONY: p4-j01-coupon-acceptance p4-coupon-ab-acceptance p4-i03-order-acceptance p4-order-ab-acceptance p4-message-archive-ab-acceptance p4-operation-cycle-ab-acceptance p4-automation-agents-ab-acceptance p4-adminops-jobs-ab-acceptance p4-push-center-0421-0422-acceptance p4-admin-shell-ab-acceptance p4-execution-runtime-ab-acceptance
 .PHONY: p2-s04-acceptance
 .PHONY: p3-c07c-r3b-storage-acceptance p3-c07c-r3c-behavior-acceptance p3-o1a-r3-acceptance p3-o2-enqueue-one-acceptance p3-o3-enqueue-batch-acceptance p3-o4-sender-acceptance p3-o5-status-acceptance p3-o6a-retry-acceptance p3-o6b1-cancel-acceptance p3-o6b2-manual-retry-acceptance p3-o7-legacy-api-acceptance p4-w0-d01-automation-acceptance p4-w0-l01-stats-acceptance p4-a01-auth-acceptance p4-si00b-auth-acceptance
@@ -576,6 +577,11 @@ p4-c01-channel-acceptance:
 	@test -n "$${P4C01_CHANNEL_TEST_DATABASE_URL:-}" || { echo "P4C01_CHANNEL_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/contact/c01_migration_compatibility.sh
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s ./internal/contact/app ./internal/contact/store ./internal/events/store ./internal/platform/http ./internal/auth/...
+
+p4-channel-entrants-acceptance:
+	@test -n "$${P4CHANNELENTRANTS_TEST_DATABASE_URL:-}" || { echo "P4CHANNELENTRANTS_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres "$$P4CHANNELENTRANTS_TEST_DATABASE_URL" up
+	@P4CHANNELENTRANTS_TEST_DATABASE_URL="$$P4CHANNELENTRANTS_TEST_DATABASE_URL" /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s -run '^TestChannelEntrantsPG16Integration$$' ./internal/contact/acceptance
 
 p4-b02ab-tag-acceptance:
 	@test -n "$${P4B02AB_TAG_TEST_DATABASE_URL:-}" || { echo "P4B02AB_TAG_TEST_DATABASE_URL is required" >&2; exit 2; }
