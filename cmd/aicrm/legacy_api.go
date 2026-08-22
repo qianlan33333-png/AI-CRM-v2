@@ -180,6 +180,7 @@ type Handler struct {
 	memberGrid            http.Handler
 	memberGridManagement  http.Handler
 	radar                 http.Handler
+	aiAudience            http.Handler
 	channelEntrants       http.Handler
 	media                 legacyMediaApplication
 	imageDeletes          legacyImageDeleteApplication

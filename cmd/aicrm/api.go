@@ -71,6 +71,7 @@ import (
 	radarstore "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/store"
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 	segmenthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/http"
+	"github.com/qianlan33333-png/AI-CRM-v2/internal/segment/legacyaudience"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
 	surveyhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http"
@@ -613,9 +614,33 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	segmentCRUDHandler, err := segmenthttp.NewCRUDHandler(segmentapp.NewCRUDService(
-		uow, segmentstore.NewCRUDRepository(), eventstore.NewAppender(),
-	))
+	segmentCRUDService := segmentapp.NewCRUDService(uow, segmentstore.NewCRUDRepository(), eventstore.NewAppender())
+	segmentCRUDHandler, err := segmenthttp.NewCRUDHandler(segmentCRUDService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	legacyAIAudienceRepository, err := legacyaudience.NewSQLRepository(legacyAIAudienceSQLProvider{pool: pool})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	legacyAIAudienceService, err := legacyaudience.NewService(
+		uow,
+		legacyAIAudienceRepository,
+		segmentCRUDService,
+		legacyAIAudienceEventAppender{appender: eventstore.NewAppender()},
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	legacyAIAudienceHandler, err := legacyaudience.NewHandler(legacyAIAudienceService, legacyAIAudienceSecurity{})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	legacyAIAudienceFragment, err := legacyaudience.NewRouteFragment(legacyAIAudienceHandler)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -862,6 +887,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.memberGrid = memberGridFragment
 	legacyHandler.memberGridManagement = memberGridManagementFragment
 	legacyHandler.radar = radarFragment
+	legacyHandler.aiAudience = legacyAIAudienceFragment
 	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.legacyTagLive = legacyTagLiveService
@@ -1530,6 +1556,13 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				{http.MethodGet, radarthttp.BasePath + "/{link_id}/share", authport.CapabilityAdminRead, false},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.radar); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if legacy.aiAudience != nil {
+			for _, route := range legacyaudience.RouteSpecs() {
+				if err = registerLegacy(route.Method, route.Pattern, authport.Capability(route.Capability), route.RequiresCSRF, legacy.aiAudience); err != nil {
 					return nil, err
 				}
 			}
