@@ -192,6 +192,7 @@ type Handler struct {
 	surveys                 legacySurveyApplication
 	surveySubmissions       legacySurveySubmissionApplication
 	surveySafeAdmin         surveySafeAdminHTTP
+	surveyOperations        surveyOperationsHTTP
 	channels                legacyChannelApplication
 	legacyTags              legacyTagApplication
 	automationAgents        automationport.AgentService

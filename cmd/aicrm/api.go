@@ -78,6 +78,7 @@ import (
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
 	surveyhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http"
+	surveyoperationshttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http/operations"
 	safeadminhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http/safeadmin"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
 	surveystore "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/store"
@@ -716,6 +717,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	surveyService := surveyapp.NewService(uow, surveystore.NewQuestionnaireRepository(), eventstore.NewAppender())
 	surveySubmissionRepository := surveystore.NewSubmissionRepository()
 	surveySubmissionService := surveyapp.NewSubmissionService(uow, surveySubmissionRepository)
+	surveyOperationsHandler := surveyoperationshttp.New(surveyapp.NewOperationsService(
+		uow,
+		surveystore.NewOperationsRepository(),
+		eventstore.NewAppender(),
+	))
 	surveySafeAdminHandler := safeadminhttp.New(surveyapp.NewSafeAdminService(uow, surveySubmissionRepository))
 	surveyTokenKey, surveyCookieKey, surveyAbuseKey := deriveSurveyPublicKeys(config.Survey.PublicKey.Value())
 	surveyPublicHandler := surveyhttp.NewPublicHandler(
@@ -1025,6 +1031,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.externalEffects = externalEffectsHandler
 	legacyHandler.surveySubmissions = surveySubmissionService
 	legacyHandler.surveySafeAdmin = surveySafeAdminHandler
+	legacyHandler.surveyOperations = surveyOperationsHandler
 	legacyHandler.executionRuntime = adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{})
 	hxcStaffDirectory := audienceOperationMembers
 	hxcSenderRepository := hxcstore.NewSenderConfigRepository(pool)
@@ -1945,11 +1952,18 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, legacyQuestionnairePagePath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.QuestionnaireListPage)},
 			{http.MethodGet, legacyQuestionnairePagePath + "/ui", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.QuestionnaireListPage)},
 			{http.MethodGet, legacyQuestionnairePreflightPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.QuestionnairePreflight)},
+			{http.MethodGet, surveyoperationshttp.GlobalExternalPushLogsPath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListSurveyExternalPushLogs)},
+			{http.MethodGet, surveyoperationshttp.OperationsPagePath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetSurveyOperationsPage)},
+			{http.MethodGet, surveyoperationshttp.QuestionnaireExternalPushLogsPath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListSurveyQuestionnaireExternalPushLogs)},
 			{http.MethodGet, "/api/admin/questionnaires", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.ListQuestionnaires)},
 			{http.MethodPost, "/api/admin/questionnaires", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.CreateQuestionnaire)},
 			{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetQuestionnaire)},
 			{http.MethodPut, "/api/admin/questionnaires/{questionnaire_id}", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.UpdateQuestionnaire)},
 			{http.MethodPatch, "/api/admin/questionnaires/{questionnaire_id}", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.UpdateQuestionnaire)},
+			{http.MethodGet, surveyoperationshttp.OperationsPath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(legacy.GetSurveyOperations)},
+			{http.MethodPut, surveyoperationshttp.CompletionPath, authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.SaveSurveyCompletionOperations)},
+			{http.MethodPut, surveyoperationshttp.ExternalPushPath, authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.SaveSurveyExternalPushOperations)},
+			{http.MethodPost, surveyoperationshttp.ExternalPushTestPath, authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.QueueSurveyExternalPushTest)},
 			{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/duplicate", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.DuplicateQuestionnaire)},
 			{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/disable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.SetQuestionnaireDisabled)},
 			{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/enable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(legacy.SetQuestionnaireDisabled)},

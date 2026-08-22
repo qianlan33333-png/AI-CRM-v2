@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -22,10 +23,12 @@ var campaignMigrationDatabaseURL = flag.String("database-url", "", "isolated Pos
 func TestCloudCampaignMigrationDownFailsClosedAndSerializesFacts(t *testing.T) {
 	pool, ctx := openCampaignPool(t)
 	repoRoot := campaignRepoRoot(t)
+	restoreWaterline := campaignMigrationWaterlineAtLeast(t, ctx, pool, 60)
+	runCampaignGoose(t, ctx, repoRoot, "down-to", "60")
 	ensureCampaignMigrationAt60(t, ctx, pool)
 	t.Cleanup(func() {
 		clearCampaignFacts(t, ctx, pool)
-		runCampaignGoose(t, ctx, repoRoot, "up-to", "60")
+		runCampaignGoose(t, ctx, repoRoot, "up-to", restoreWaterline)
 	})
 
 	t.Run("facts and receipts reject rollback without loss", func(t *testing.T) {
@@ -154,10 +157,28 @@ func ensureCampaignMigrationAt60(t *testing.T, ctx context.Context, pool *pgxpoo
 
 func assertCampaignMigrationVersion(t *testing.T, ctx context.Context, pool *pgxpool.Pool, want int64) {
 	t.Helper()
-	var got int64
-	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&got); err != nil || got != want {
-		t.Fatalf("migration waterline=%d err=%v, want %d", got, err, want)
+	got := campaignMigrationWaterline(t, ctx, pool)
+	if got != want {
+		t.Fatalf("migration waterline=%d, want %d", got, want)
 	}
+}
+
+func campaignMigrationWaterlineAtLeast(t *testing.T, ctx context.Context, pool *pgxpool.Pool, minimum int64) string {
+	t.Helper()
+	got := campaignMigrationWaterline(t, ctx, pool)
+	if got < minimum {
+		t.Fatalf("migration waterline=%d, want at least %d", got, minimum)
+	}
+	return strconv.FormatInt(got, 10)
+}
+
+func campaignMigrationWaterline(t *testing.T, ctx context.Context, pool *pgxpool.Pool) int64 {
+	t.Helper()
+	var got int64
+	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM goose_db_version WHERE is_applied`).Scan(&got); err != nil {
+		t.Fatalf("read migration waterline: %v", err)
+	}
+	return got
 }
 
 func clearCampaignFacts(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {

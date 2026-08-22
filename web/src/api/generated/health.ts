@@ -5087,6 +5087,120 @@ export interface LegacyQuestionnaireSubmissionResultsResponse {
   side_effect_executed?: boolean;
 }
 
+export type SurveyOperationsErrorErrorCode =
+  (typeof SurveyOperationsErrorErrorCode)[keyof typeof SurveyOperationsErrorErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyOperationsErrorErrorCode = {
+  authentication_required: "authentication_required",
+  permission_denied: "permission_denied",
+  invalid_questionnaire_id: "invalid_questionnaire_id",
+  invalid_page: "invalid_page",
+  invalid_idempotency_key: "invalid_idempotency_key",
+  invalid_operations_request: "invalid_operations_request",
+  questionnaire_not_found: "questionnaire_not_found",
+  operations_conflict: "operations_conflict",
+  external_push_not_configured: "external_push_not_configured",
+  survey_operations_unavailable: "survey_operations_unavailable",
+  method_not_allowed: "method_not_allowed",
+} as const;
+
+export type SurveyOperationsErrorError = {
+  code: SurveyOperationsErrorErrorCode;
+};
+
+export interface SurveyOperationsError {
+  ok: boolean;
+  error: SurveyOperationsErrorError;
+  local_only: boolean;
+  side_effect_executed: boolean;
+  provider_result_received: boolean;
+}
+
+/**
+ * Opaque local completion references only. An empty object clears both fields; a channel requires a navigation target.
+ */
+export interface SurveyCompletionOperations {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   * @pattern ^[A-Za-z0-9._:-]{1,128}$
+   */
+  navigation_target_id?: string;
+  /** @minimum 0 */
+  channel_id?: number;
+}
+
+/**
+ * When enabled is true, configuration_reference is a required opaque local reference. When false, it is absent or empty. It is never a URL, token, payload, retry policy, or provider receipt.
+ */
+export interface SurveyExternalPushOperations {
+  enabled: boolean;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   * @pattern ^[A-Za-z0-9._:-]{1,128}$
+   */
+  configuration_reference?: string;
+}
+
+export interface SurveyOperationsProjection {
+  /** @minimum 1 */
+  questionnaire_id: number;
+  completion: SurveyCompletionOperations;
+  external_push: SurveyExternalPushOperations;
+  local_only: boolean;
+}
+
+export type SurveyExternalPushTestStatus =
+  (typeof SurveyExternalPushTestStatus)[keyof typeof SurveyExternalPushTestStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyExternalPushTestStatus = {
+  queued: "queued",
+} as const;
+
+export type SurveyExternalPushTestAttemptCount =
+  (typeof SurveyExternalPushTestAttemptCount)[keyof typeof SurveyExternalPushTestAttemptCount];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SurveyExternalPushTestAttemptCount = {
+  NUMBER_0: 0,
+} as const;
+
+export interface SurveyExternalPushTest {
+  /** @minimum 1 */
+  test_run_id: number;
+  /** @minimum 1 */
+  questionnaire_id: number;
+  status: SurveyExternalPushTestStatus;
+  attempt_count: SurveyExternalPushTestAttemptCount;
+  side_effect_executed: boolean;
+  provider_result_received: boolean;
+  unknown_after_dispatch: boolean;
+  auto_retry_allowed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SurveyExternalPushLogPage {
+  items: SurveyExternalPushTest[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  has_more: boolean;
+  local_only: boolean;
+}
+
 export type SurveySafeAdminErrorErrorCode =
   (typeof SurveySafeAdminErrorErrorCode)[keyof typeof SurveySafeAdminErrorErrorCode];
 
@@ -10960,6 +11074,32 @@ export type ListLegacyQuestionnairesParams = {
   /**
    * @minimum 1
    * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListSurveyExternalPushLogsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListSurveyQuestionnaireExternalPushLogsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
    */
   limit?: number;
   /**
@@ -25374,6 +25514,598 @@ export const getLegacyQuestionnaireResults = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyQuestionnaireResultsResponse;
+};
+
+/**
+ * @summary List local queued Survey external-push test records across questionnaires
+ */
+export type listSurveyExternalPushLogsResponse200 = {
+  data: SurveyExternalPushLogPage;
+  status: 200;
+};
+
+export type listSurveyExternalPushLogsResponse400 = {
+  data: SurveyOperationsError;
+  status: 400;
+};
+
+export type listSurveyExternalPushLogsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSurveyExternalPushLogsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSurveyExternalPushLogsResponse503 = {
+  data: SurveyOperationsError;
+  status: 503;
+};
+
+export type listSurveyExternalPushLogsResponseSuccess =
+  listSurveyExternalPushLogsResponse200 & {
+    headers: Headers;
+  };
+export type listSurveyExternalPushLogsResponseError = (
+  | listSurveyExternalPushLogsResponse400
+  | listSurveyExternalPushLogsResponse401
+  | listSurveyExternalPushLogsResponse403
+  | listSurveyExternalPushLogsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSurveyExternalPushLogsResponse =
+  | listSurveyExternalPushLogsResponseSuccess
+  | listSurveyExternalPushLogsResponseError;
+
+export const getListSurveyExternalPushLogsUrl = (
+  params?: ListSurveyExternalPushLogsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/admin/questionnaires/external-push-logs?${stringifiedParams}`
+    : `/admin/questionnaires/external-push-logs`;
+};
+
+export const listSurveyExternalPushLogs = async (
+  params?: ListSurveyExternalPushLogsParams,
+  options?: RequestInit,
+): Promise<listSurveyExternalPushLogsResponse> => {
+  const res = await fetch(getListSurveyExternalPushLogsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSurveyExternalPushLogsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSurveyExternalPushLogsResponse;
+};
+
+/**
+ * @summary List local queued external-push test records for one questionnaire
+ */
+export type listSurveyQuestionnaireExternalPushLogsResponse200 = {
+  data: SurveyExternalPushLogPage;
+  status: 200;
+};
+
+export type listSurveyQuestionnaireExternalPushLogsResponse400 = {
+  data: SurveyOperationsError;
+  status: 400;
+};
+
+export type listSurveyQuestionnaireExternalPushLogsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSurveyQuestionnaireExternalPushLogsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSurveyQuestionnaireExternalPushLogsResponse404 = {
+  data: SurveyOperationsError;
+  status: 404;
+};
+
+export type listSurveyQuestionnaireExternalPushLogsResponse503 = {
+  data: SurveyOperationsError;
+  status: 503;
+};
+
+export type listSurveyQuestionnaireExternalPushLogsResponseSuccess =
+  listSurveyQuestionnaireExternalPushLogsResponse200 & {
+    headers: Headers;
+  };
+export type listSurveyQuestionnaireExternalPushLogsResponseError = (
+  | listSurveyQuestionnaireExternalPushLogsResponse400
+  | listSurveyQuestionnaireExternalPushLogsResponse401
+  | listSurveyQuestionnaireExternalPushLogsResponse403
+  | listSurveyQuestionnaireExternalPushLogsResponse404
+  | listSurveyQuestionnaireExternalPushLogsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSurveyQuestionnaireExternalPushLogsResponse =
+  | listSurveyQuestionnaireExternalPushLogsResponseSuccess
+  | listSurveyQuestionnaireExternalPushLogsResponseError;
+
+export const getListSurveyQuestionnaireExternalPushLogsUrl = (
+  questionnaireId: number,
+  params?: ListSurveyQuestionnaireExternalPushLogsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/admin/questionnaires/${questionnaireId}/external-push-logs?${stringifiedParams}`
+    : `/admin/questionnaires/${questionnaireId}/external-push-logs`;
+};
+
+export const listSurveyQuestionnaireExternalPushLogs = async (
+  questionnaireId: number,
+  params?: ListSurveyQuestionnaireExternalPushLogsParams,
+  options?: RequestInit,
+): Promise<listSurveyQuestionnaireExternalPushLogsResponse> => {
+  const res = await fetch(
+    getListSurveyQuestionnaireExternalPushLogsUrl(questionnaireId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSurveyQuestionnaireExternalPushLogsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSurveyQuestionnaireExternalPushLogsResponse;
+};
+
+/**
+ * @summary Read data-only local Survey Operations configuration for the legacy admin route
+ */
+export type getSurveyOperationsPageDataResponse200 = {
+  data: SurveyOperationsProjection;
+  status: 200;
+};
+
+export type getSurveyOperationsPageDataResponse400 = {
+  data: SurveyOperationsError;
+  status: 400;
+};
+
+export type getSurveyOperationsPageDataResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getSurveyOperationsPageDataResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getSurveyOperationsPageDataResponse404 = {
+  data: SurveyOperationsError;
+  status: 404;
+};
+
+export type getSurveyOperationsPageDataResponse503 = {
+  data: SurveyOperationsError;
+  status: 503;
+};
+
+export type getSurveyOperationsPageDataResponseSuccess =
+  getSurveyOperationsPageDataResponse200 & {
+    headers: Headers;
+  };
+export type getSurveyOperationsPageDataResponseError = (
+  | getSurveyOperationsPageDataResponse400
+  | getSurveyOperationsPageDataResponse401
+  | getSurveyOperationsPageDataResponse403
+  | getSurveyOperationsPageDataResponse404
+  | getSurveyOperationsPageDataResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSurveyOperationsPageDataResponse =
+  | getSurveyOperationsPageDataResponseSuccess
+  | getSurveyOperationsPageDataResponseError;
+
+export const getGetSurveyOperationsPageDataUrl = (questionnaireId: number) => {
+  return `/admin/questionnaires/${questionnaireId}/operations`;
+};
+
+export const getSurveyOperationsPageData = async (
+  questionnaireId: number,
+  options?: RequestInit,
+): Promise<getSurveyOperationsPageDataResponse> => {
+  const res = await fetch(getGetSurveyOperationsPageDataUrl(questionnaireId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSurveyOperationsPageDataResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSurveyOperationsPageDataResponse;
+};
+
+/**
+ * @summary Read local completion and external-push configuration for one questionnaire
+ */
+export type getSurveyOperationsResponse200 = {
+  data: SurveyOperationsProjection;
+  status: 200;
+};
+
+export type getSurveyOperationsResponse400 = {
+  data: SurveyOperationsError;
+  status: 400;
+};
+
+export type getSurveyOperationsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getSurveyOperationsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getSurveyOperationsResponse404 = {
+  data: SurveyOperationsError;
+  status: 404;
+};
+
+export type getSurveyOperationsResponse503 = {
+  data: SurveyOperationsError;
+  status: 503;
+};
+
+export type getSurveyOperationsResponseSuccess =
+  getSurveyOperationsResponse200 & {
+    headers: Headers;
+  };
+export type getSurveyOperationsResponseError = (
+  | getSurveyOperationsResponse400
+  | getSurveyOperationsResponse401
+  | getSurveyOperationsResponse403
+  | getSurveyOperationsResponse404
+  | getSurveyOperationsResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSurveyOperationsResponse =
+  getSurveyOperationsResponseSuccess | getSurveyOperationsResponseError;
+
+export const getGetSurveyOperationsUrl = (questionnaireId: number) => {
+  return `/api/admin/questionnaires/${questionnaireId}/operations`;
+};
+
+export const getSurveyOperations = async (
+  questionnaireId: number,
+  options?: RequestInit,
+): Promise<getSurveyOperationsResponse> => {
+  const res = await fetch(getGetSurveyOperationsUrl(questionnaireId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSurveyOperationsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSurveyOperationsResponse;
+};
+
+/**
+ * @summary Save only local opaque completion configuration and return strict readback
+ */
+export type saveSurveyCompletionOperationsResponse200 = {
+  data: SurveyOperationsProjection;
+  status: 200;
+};
+
+export type saveSurveyCompletionOperationsResponse400 = {
+  data: SurveyOperationsError;
+  status: 400;
+};
+
+export type saveSurveyCompletionOperationsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type saveSurveyCompletionOperationsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type saveSurveyCompletionOperationsResponse404 = {
+  data: SurveyOperationsError;
+  status: 404;
+};
+
+export type saveSurveyCompletionOperationsResponse409 = {
+  data: SurveyOperationsError;
+  status: 409;
+};
+
+export type saveSurveyCompletionOperationsResponse503 = {
+  data: SurveyOperationsError;
+  status: 503;
+};
+
+export type saveSurveyCompletionOperationsResponseSuccess =
+  saveSurveyCompletionOperationsResponse200 & {
+    headers: Headers;
+  };
+export type saveSurveyCompletionOperationsResponseError = (
+  | saveSurveyCompletionOperationsResponse400
+  | saveSurveyCompletionOperationsResponse401
+  | saveSurveyCompletionOperationsResponse403
+  | saveSurveyCompletionOperationsResponse404
+  | saveSurveyCompletionOperationsResponse409
+  | saveSurveyCompletionOperationsResponse503
+) & {
+  headers: Headers;
+};
+
+export type saveSurveyCompletionOperationsResponse =
+  | saveSurveyCompletionOperationsResponseSuccess
+  | saveSurveyCompletionOperationsResponseError;
+
+export const getSaveSurveyCompletionOperationsUrl = (
+  questionnaireId: number,
+) => {
+  return `/api/admin/questionnaires/${questionnaireId}/operations/completion`;
+};
+
+export const saveSurveyCompletionOperations = async (
+  questionnaireId: number,
+  surveyCompletionOperations: SurveyCompletionOperations,
+  options?: RequestInit,
+): Promise<saveSurveyCompletionOperationsResponse> => {
+  const res = await fetch(
+    getSaveSurveyCompletionOperationsUrl(questionnaireId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(surveyCompletionOperations),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: saveSurveyCompletionOperationsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as saveSurveyCompletionOperationsResponse;
+};
+
+/**
+ * @summary Save only local opaque external-push configuration and return strict readback
+ */
+export type saveSurveyExternalPushOperationsResponse200 = {
+  data: SurveyOperationsProjection;
+  status: 200;
+};
+
+export type saveSurveyExternalPushOperationsResponse400 = {
+  data: SurveyOperationsError;
+  status: 400;
+};
+
+export type saveSurveyExternalPushOperationsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type saveSurveyExternalPushOperationsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type saveSurveyExternalPushOperationsResponse404 = {
+  data: SurveyOperationsError;
+  status: 404;
+};
+
+export type saveSurveyExternalPushOperationsResponse409 = {
+  data: SurveyOperationsError;
+  status: 409;
+};
+
+export type saveSurveyExternalPushOperationsResponse503 = {
+  data: SurveyOperationsError;
+  status: 503;
+};
+
+export type saveSurveyExternalPushOperationsResponseSuccess =
+  saveSurveyExternalPushOperationsResponse200 & {
+    headers: Headers;
+  };
+export type saveSurveyExternalPushOperationsResponseError = (
+  | saveSurveyExternalPushOperationsResponse400
+  | saveSurveyExternalPushOperationsResponse401
+  | saveSurveyExternalPushOperationsResponse403
+  | saveSurveyExternalPushOperationsResponse404
+  | saveSurveyExternalPushOperationsResponse409
+  | saveSurveyExternalPushOperationsResponse503
+) & {
+  headers: Headers;
+};
+
+export type saveSurveyExternalPushOperationsResponse =
+  | saveSurveyExternalPushOperationsResponseSuccess
+  | saveSurveyExternalPushOperationsResponseError;
+
+export const getSaveSurveyExternalPushOperationsUrl = (
+  questionnaireId: number,
+) => {
+  return `/api/admin/questionnaires/${questionnaireId}/operations/external-push`;
+};
+
+export const saveSurveyExternalPushOperations = async (
+  questionnaireId: number,
+  surveyExternalPushOperations: SurveyExternalPushOperations,
+  options?: RequestInit,
+): Promise<saveSurveyExternalPushOperationsResponse> => {
+  const res = await fetch(
+    getSaveSurveyExternalPushOperationsUrl(questionnaireId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(surveyExternalPushOperations),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: saveSurveyExternalPushOperationsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as saveSurveyExternalPushOperationsResponse;
+};
+
+/**
+ * @summary Create one queued local external-push test record without dispatching it
+ */
+export type queueSurveyExternalPushTestResponse202 = {
+  data: SurveyExternalPushTest;
+  status: 202;
+};
+
+export type queueSurveyExternalPushTestResponse400 = {
+  data: SurveyOperationsError;
+  status: 400;
+};
+
+export type queueSurveyExternalPushTestResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type queueSurveyExternalPushTestResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type queueSurveyExternalPushTestResponse404 = {
+  data: SurveyOperationsError;
+  status: 404;
+};
+
+export type queueSurveyExternalPushTestResponse409 = {
+  data: SurveyOperationsError;
+  status: 409;
+};
+
+export type queueSurveyExternalPushTestResponse503 = {
+  data: SurveyOperationsError;
+  status: 503;
+};
+
+export type queueSurveyExternalPushTestResponseSuccess =
+  queueSurveyExternalPushTestResponse202 & {
+    headers: Headers;
+  };
+export type queueSurveyExternalPushTestResponseError = (
+  | queueSurveyExternalPushTestResponse400
+  | queueSurveyExternalPushTestResponse401
+  | queueSurveyExternalPushTestResponse403
+  | queueSurveyExternalPushTestResponse404
+  | queueSurveyExternalPushTestResponse409
+  | queueSurveyExternalPushTestResponse503
+) & {
+  headers: Headers;
+};
+
+export type queueSurveyExternalPushTestResponse =
+  | queueSurveyExternalPushTestResponseSuccess
+  | queueSurveyExternalPushTestResponseError;
+
+export const getQueueSurveyExternalPushTestUrl = (questionnaireId: number) => {
+  return `/api/admin/questionnaires/${questionnaireId}/operations/external-push/test`;
+};
+
+export const queueSurveyExternalPushTest = async (
+  questionnaireId: number,
+  options?: RequestInit,
+): Promise<queueSurveyExternalPushTestResponse> => {
+  const res = await fetch(getQueueSurveyExternalPushTestUrl(questionnaireId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: queueSurveyExternalPushTestResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as queueSurveyExternalPushTestResponse;
 };
 
 /**
