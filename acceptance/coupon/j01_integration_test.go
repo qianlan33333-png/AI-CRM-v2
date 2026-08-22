@@ -285,7 +285,9 @@ func openPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 		t.Skip("database-url missing")
 	}
 	if e := acceptancefixtures.ValidateDatabaseURL(*databaseURL); e != nil {
-		t.Fatal(e)
+		if j01Err := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.J01CouponDatabaseName); j01Err != nil {
+			t.Fatal(e)
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	t.Cleanup(cancel)
