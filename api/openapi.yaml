@@ -6643,6 +6643,196 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/members:
+    get:
+      tags: [p4-service-period-member-grid]
+      operationId: listServicePeriodMembers
+      summary: List dedicated local service-period members with a signed cursor
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23
+      x-aicrm-capability: entitlements.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: state, in: query, required: false, schema: { $ref: "#/components/schemas/ServicePeriodMemberState" } }
+        - { name: source, in: query, required: false, schema: { $ref: "#/components/schemas/ServicePeriodMemberSource" } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: cursor, in: query, required: false, schema: { type: string, maxLength: 1024 } }
+      responses:
+        "200": { description: Dedicated local service-period member page, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-service-period-member-grid]
+      operationId: addServicePeriodMember
+      summary: Add one manual member to an enabled service-period product
+      description: Accepts only a local OneID customer_id and manual source. It never infers payment ownership or invokes a provider.
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23
+      x-aicrm-capability: entitlements.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { $ref: "#/components/parameters/CSRFToken" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberAddRequest" } } } }
+      responses:
+        "201": { description: Created member after strict transactional readback, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMember" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/members/export:
+    post:
+      tags: [p4-service-period-member-grid]
+      operationId: exportServicePeriodMembers
+      summary: Export only explicitly selected safe service-period member columns
+      description: The whitelist excludes remark, alliance, phone, unionid, openid, and every external identifier.
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23
+      x-aicrm-capability: entitlements.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { $ref: "#/components/parameters/CSRFToken" }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberExportRequest" } } } }
+      responses:
+        "200": { description: Bounded UTF-8 CSV containing only requested whitelist columns, headers: { Content-Disposition: { required: true, schema: { type: string, enum: ['attachment; filename="service-period-members.csv"'] } }, Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } } }, content: { text/csv: { schema: { type: string, format: binary } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/members/{member_ref}:
+    get:
+      tags: [p4-service-period-member-grid]
+      operationId: getServicePeriodMember
+      summary: Get one dedicated local service-period member by opaque reference
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23
+      x-aicrm-capability: entitlements.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { $ref: "#/components/parameters/ServicePeriodMemberRef" }
+      responses:
+        "200": { description: Dedicated local service-period member, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMember" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/members/{member_ref}/fields:
+    put:
+      tags: [p4-service-period-member-grid]
+      operationId: updateServicePeriodMemberFields
+      summary: Compare-and-swap bounded local remark and alliance fields
+      description: Uses the opaque member_ref, not a phone, unionid, openid, or other external identity key.
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23
+      x-aicrm-capability: entitlements.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { $ref: "#/components/parameters/ServicePeriodMemberRef" }
+        - { $ref: "#/components/parameters/CSRFToken" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberFieldsRequest" } } } }
+      responses:
+        "200": { description: Updated member after strict transactional readback, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMember" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/members/{member_ref}/expire:
+    post:
+      tags: [p4-service-period-member-grid]
+      operationId: expireServicePeriodMember
+      summary: Compare-and-swap one local service-period member to expired
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23
+      x-aicrm-capability: entitlements.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { $ref: "#/components/parameters/ServicePeriodMemberRef" }
+        - { $ref: "#/components/parameters/CSRFToken" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberTransitionRequest" } } } }
+      responses:
+        "200": { description: Expired member after strict transactional readback, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMember" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/members/{member_ref}/remove:
+    post:
+      tags: [p4-service-period-member-grid]
+      operationId: removeServicePeriodMember
+      summary: Compare-and-swap one local service-period member to removed
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23
+      x-aicrm-capability: entitlements.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { $ref: "#/components/parameters/ServicePeriodMemberRef" }
+        - { $ref: "#/components/parameters/CSRFToken" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberTransitionRequest" } } } }
+      responses:
+        "200": { description: Removed member after strict transactional readback, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMember" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/service-period-products/{service_product_id}/member-grid/access:
     get:
       tags: [p4-service-period-member-grid]
@@ -7874,6 +8064,12 @@ components:
       required: true
       description: Stable caller key; reusing it with a different normalized command is a conflict.
       schema: { type: string, minLength: 16, maxLength: 128 }
+    ServicePeriodMemberRef:
+      name: member_ref
+      in: path
+      required: true
+      description: Service-generated opaque member reference; never a phone, unionid, openid, or provider identifier.
+      schema: { type: string, minLength: 26, maxLength: 26, pattern: '^spm_[A-Za-z0-9_-]{22}$' }
     SetupWizardIdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -8856,6 +9052,83 @@ components:
       required: [expected_version]
       properties:
         expected_version: { type: integer, format: int64, minimum: 1 }
+    ServicePeriodMemberState:
+      type: string
+      enum: [active, expired, removed]
+      x-enum-varnames: [ServicePeriodMemberStateActive, ServicePeriodMemberStateExpired, ServicePeriodMemberStateRemoved]
+    ServicePeriodMemberSource:
+      type: string
+      enum: [manual, paid_order]
+      x-enum-varnames: [ServicePeriodMemberSourceManual, ServicePeriodMemberSourcePaidOrder]
+      description: paid_order is output-compatible only until an authoritative internal order owner is established; the manual add API cannot accept it.
+    ServicePeriodMemberAddSource:
+      type: string
+      enum: [manual]
+      x-enum-varnames: [ServicePeriodMemberAddSourceManual]
+    ServicePeriodMember:
+      type: object
+      additionalProperties: false
+      required: [member_ref, service_product_id, customer_id, state, source, starts_at, version, created_at, updated_at]
+      properties:
+        member_ref: { type: string, minLength: 26, maxLength: 26, pattern: '^spm_[A-Za-z0-9_-]{22}$' }
+        service_product_id: { type: integer, format: int64, minimum: 1 }
+        customer_id: { type: integer, format: int64, minimum: 1, description: Local OneID customer key. }
+        state: { $ref: "#/components/schemas/ServicePeriodMemberState" }
+        source: { $ref: "#/components/schemas/ServicePeriodMemberSource" }
+        starts_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time, nullable: true }
+        expired_at: { type: string, format: date-time, nullable: true }
+        removed_at: { type: string, format: date-time, nullable: true }
+        remark: { type: string, minLength: 1, maxLength: 500, nullable: true, description: Bounded local text excluded from every member export. }
+        alliance: { type: string, minLength: 1, maxLength: 120, nullable: true, description: Bounded local text excluded from every member export. }
+        version: { type: integer, format: int64, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ServicePeriodMemberAddRequest:
+      type: object
+      additionalProperties: false
+      required: [customer_id, source]
+      properties:
+        customer_id: { type: integer, format: int64, minimum: 1, description: Local OneID customer key. }
+        source: { $ref: "#/components/schemas/ServicePeriodMemberAddSource" }
+        expires_at: { type: string, format: date-time, nullable: true }
+        remark: { type: string, minLength: 1, maxLength: 500, nullable: true }
+        alliance: { type: string, minLength: 1, maxLength: 120, nullable: true }
+    ServicePeriodMemberTransitionRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 1 }
+    ServicePeriodMemberFieldsRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 1 }
+        remark: { type: string, minLength: 1, maxLength: 500, nullable: true, description: Null or omission clears the local field. }
+        alliance: { type: string, minLength: 1, maxLength: 120, nullable: true, description: Null or omission clears the local field. }
+    ServicePeriodMemberListResponse:
+      type: object
+      additionalProperties: false
+      required: [items, limit, next_cursor, has_more]
+      properties:
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/ServicePeriodMember" } }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        next_cursor: { type: string, maxLength: 1024 }
+        has_more: { type: boolean }
+    ServicePeriodMemberExportColumn:
+      type: string
+      enum: [member_ref, customer_id, state, source, starts_at, expires_at, expired_at, removed_at, version]
+      x-enum-varnames: [ServicePeriodMemberExportMemberRef, ServicePeriodMemberExportCustomerID, ServicePeriodMemberExportState, ServicePeriodMemberExportSource, ServicePeriodMemberExportStartsAt, ServicePeriodMemberExportExpiresAt, ServicePeriodMemberExportExpiredAt, ServicePeriodMemberExportRemovedAt, ServicePeriodMemberExportVersion]
+    ServicePeriodMemberExportRequest:
+      type: object
+      additionalProperties: false
+      required: [columns]
+      properties:
+        state: { allOf: [{ $ref: "#/components/schemas/ServicePeriodMemberState" }], nullable: true }
+        source: { allOf: [{ $ref: "#/components/schemas/ServicePeriodMemberSource" }], nullable: true }
+        columns: { type: array, minItems: 1, maxItems: 9, uniqueItems: true, items: { $ref: "#/components/schemas/ServicePeriodMemberExportColumn" } }
     ServicePeriodMemberGridAccess:
       type: object
       additionalProperties: false

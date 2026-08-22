@@ -66,6 +66,10 @@ const (
 	DeliveryJobKind              = "events_deliver"
 )
 
+// EvServicePeriodMemberChanged records only a local service-period member
+// fact. It has no delivery binding and cannot invoke payment or a provider.
+const EvServicePeriodMemberChanged = "service_period_member.changed"
+
 var (
 	ErrInvalidEvent           = errors.New("invalid event")
 	ErrIdempotencyConflict    = errors.New("event idempotency conflict")

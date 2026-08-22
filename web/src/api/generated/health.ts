@@ -1442,6 +1442,179 @@ export interface ServicePeriodVersionRequest {
   expected_version: number;
 }
 
+export type ServicePeriodMemberState =
+  (typeof ServicePeriodMemberState)[keyof typeof ServicePeriodMemberState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberState = {
+  ServicePeriodMemberStateActive: "active",
+  ServicePeriodMemberStateExpired: "expired",
+  ServicePeriodMemberStateRemoved: "removed",
+} as const;
+
+/**
+ * paid_order is output-compatible only until an authoritative internal order owner is established; the manual add API cannot accept it.
+ */
+export type ServicePeriodMemberSource =
+  (typeof ServicePeriodMemberSource)[keyof typeof ServicePeriodMemberSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberSource = {
+  ServicePeriodMemberSourceManual: "manual",
+  ServicePeriodMemberSourcePaidOrder: "paid_order",
+} as const;
+
+export type ServicePeriodMemberAddSource =
+  (typeof ServicePeriodMemberAddSource)[keyof typeof ServicePeriodMemberAddSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberAddSource = {
+  ServicePeriodMemberAddSourceManual: "manual",
+} as const;
+
+export interface ServicePeriodMember {
+  /**
+   * @minLength 26
+   * @maxLength 26
+   * @pattern ^spm_[A-Za-z0-9_-]{22}$
+   */
+  member_ref: string;
+  /** @minimum 1 */
+  service_product_id: number;
+  /**
+   * Local OneID customer key.
+   * @minimum 1
+   */
+  customer_id: number;
+  state: ServicePeriodMemberState;
+  source: ServicePeriodMemberSource;
+  starts_at: string;
+  /** @nullable */
+  expires_at?: string | null;
+  /** @nullable */
+  expired_at?: string | null;
+  /** @nullable */
+  removed_at?: string | null;
+  /**
+   * Bounded local text excluded from every member export.
+   * @minLength 1
+   * @maxLength 500
+   * @nullable
+   */
+  remark?: string | null;
+  /**
+   * Bounded local text excluded from every member export.
+   * @minLength 1
+   * @maxLength 120
+   * @nullable
+   */
+  alliance?: string | null;
+  /** @minimum 1 */
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServicePeriodMemberAddRequest {
+  /**
+   * Local OneID customer key.
+   * @minimum 1
+   */
+  customer_id: number;
+  source: ServicePeriodMemberAddSource;
+  /** @nullable */
+  expires_at?: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   * @nullable
+   */
+  remark?: string | null;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   * @nullable
+   */
+  alliance?: string | null;
+}
+
+export interface ServicePeriodMemberTransitionRequest {
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+export interface ServicePeriodMemberFieldsRequest {
+  /** @minimum 1 */
+  expected_version: number;
+  /**
+   * Null or omission clears the local field.
+   * @minLength 1
+   * @maxLength 500
+   * @nullable
+   */
+  remark?: string | null;
+  /**
+   * Null or omission clears the local field.
+   * @minLength 1
+   * @maxLength 120
+   * @nullable
+   */
+  alliance?: string | null;
+}
+
+export interface ServicePeriodMemberListResponse {
+  /** @maxItems 100 */
+  items: ServicePeriodMember[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @maxLength 1024 */
+  next_cursor: string;
+  has_more: boolean;
+}
+
+export type ServicePeriodMemberExportColumn =
+  (typeof ServicePeriodMemberExportColumn)[keyof typeof ServicePeriodMemberExportColumn];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberExportColumn = {
+  ServicePeriodMemberExportMemberRef: "member_ref",
+  ServicePeriodMemberExportCustomerID: "customer_id",
+  ServicePeriodMemberExportState: "state",
+  ServicePeriodMemberExportSource: "source",
+  ServicePeriodMemberExportStartsAt: "starts_at",
+  ServicePeriodMemberExportExpiresAt: "expires_at",
+  ServicePeriodMemberExportExpiredAt: "expired_at",
+  ServicePeriodMemberExportRemovedAt: "removed_at",
+  ServicePeriodMemberExportVersion: "version",
+} as const;
+
+/**
+ * @nullable
+ */
+export type ServicePeriodMemberExportRequestState =
+  ServicePeriodMemberState | null;
+
+/**
+ * @nullable
+ */
+export type ServicePeriodMemberExportRequestSource =
+  ServicePeriodMemberSource | null;
+
+export interface ServicePeriodMemberExportRequest {
+  /** @nullable */
+  state?: ServicePeriodMemberExportRequestState;
+  /** @nullable */
+  source?: ServicePeriodMemberExportRequestSource;
+  /**
+   * @minItems 1
+   * @maxItems 9
+   */
+  columns: ServicePeriodMemberExportColumn[];
+}
+
 export interface ServicePeriodMemberGridAccess {
   /** @minimum 1 */
   product_id: number;
@@ -12542,6 +12715,20 @@ export type ListServicePeriodProductsParams = {
    * @maximum 1000000
    */
   offset?: number;
+};
+
+export type ListServicePeriodMembersParams = {
+  state?: ServicePeriodMemberState;
+  source?: ServicePeriodMemberSource;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @maxLength 1024
+   */
+  cursor?: string;
 };
 
 export type ListRadarLinksParams = {
@@ -33958,6 +34145,673 @@ export const copyServicePeriodProduct = async (
     status: res.status,
     headers: res.headers,
   } as copyServicePeriodProductResponse;
+};
+
+/**
+ * @summary List dedicated local service-period members with a signed cursor
+ */
+export type listServicePeriodMembersResponse200 = {
+  data: ServicePeriodMemberListResponse;
+  status: 200;
+};
+
+export type listServicePeriodMembersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listServicePeriodMembersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listServicePeriodMembersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listServicePeriodMembersResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listServicePeriodMembersResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type listServicePeriodMembersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listServicePeriodMembersResponseSuccess =
+  listServicePeriodMembersResponse200 & {
+    headers: Headers;
+  };
+export type listServicePeriodMembersResponseError = (
+  | listServicePeriodMembersResponse400
+  | listServicePeriodMembersResponse401
+  | listServicePeriodMembersResponse403
+  | listServicePeriodMembersResponse404
+  | listServicePeriodMembersResponse422
+  | listServicePeriodMembersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listServicePeriodMembersResponse =
+  | listServicePeriodMembersResponseSuccess
+  | listServicePeriodMembersResponseError;
+
+export const getListServicePeriodMembersUrl = (
+  serviceProductId: number,
+  params?: ListServicePeriodMembersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/service-period-products/${serviceProductId}/members?${stringifiedParams}`
+    : `/api/admin/service-period-products/${serviceProductId}/members`;
+};
+
+export const listServicePeriodMembers = async (
+  serviceProductId: number,
+  params?: ListServicePeriodMembersParams,
+  options?: RequestInit,
+): Promise<listServicePeriodMembersResponse> => {
+  const res = await fetch(
+    getListServicePeriodMembersUrl(serviceProductId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listServicePeriodMembersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listServicePeriodMembersResponse;
+};
+
+/**
+ * Accepts only a local OneID customer_id and manual source. It never infers payment ownership or invokes a provider.
+ * @summary Add one manual member to an enabled service-period product
+ */
+export type addServicePeriodMemberResponse201 = {
+  data: ServicePeriodMember;
+  status: 201;
+};
+
+export type addServicePeriodMemberResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type addServicePeriodMemberResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type addServicePeriodMemberResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type addServicePeriodMemberResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type addServicePeriodMemberResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type addServicePeriodMemberResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type addServicePeriodMemberResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type addServicePeriodMemberResponseSuccess =
+  addServicePeriodMemberResponse201 & {
+    headers: Headers;
+  };
+export type addServicePeriodMemberResponseError = (
+  | addServicePeriodMemberResponse400
+  | addServicePeriodMemberResponse401
+  | addServicePeriodMemberResponse403
+  | addServicePeriodMemberResponse404
+  | addServicePeriodMemberResponse409
+  | addServicePeriodMemberResponse422
+  | addServicePeriodMemberResponse503
+) & {
+  headers: Headers;
+};
+
+export type addServicePeriodMemberResponse =
+  addServicePeriodMemberResponseSuccess | addServicePeriodMemberResponseError;
+
+export const getAddServicePeriodMemberUrl = (serviceProductId: number) => {
+  return `/api/admin/service-period-products/${serviceProductId}/members`;
+};
+
+export const addServicePeriodMember = async (
+  serviceProductId: number,
+  servicePeriodMemberAddRequest: ServicePeriodMemberAddRequest,
+  options?: RequestInit,
+): Promise<addServicePeriodMemberResponse> => {
+  const res = await fetch(getAddServicePeriodMemberUrl(serviceProductId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(servicePeriodMemberAddRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: addServicePeriodMemberResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as addServicePeriodMemberResponse;
+};
+
+/**
+ * The whitelist excludes remark, alliance, phone, unionid, openid, and every external identifier.
+ * @summary Export only explicitly selected safe service-period member columns
+ */
+export type exportServicePeriodMembersResponse200 = {
+  data: Blob;
+  status: 200;
+};
+
+export type exportServicePeriodMembersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type exportServicePeriodMembersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type exportServicePeriodMembersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type exportServicePeriodMembersResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type exportServicePeriodMembersResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type exportServicePeriodMembersResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type exportServicePeriodMembersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type exportServicePeriodMembersResponseSuccess =
+  exportServicePeriodMembersResponse200 & {
+    headers: Headers;
+  };
+export type exportServicePeriodMembersResponseError = (
+  | exportServicePeriodMembersResponse400
+  | exportServicePeriodMembersResponse401
+  | exportServicePeriodMembersResponse403
+  | exportServicePeriodMembersResponse404
+  | exportServicePeriodMembersResponse409
+  | exportServicePeriodMembersResponse422
+  | exportServicePeriodMembersResponse503
+) & {
+  headers: Headers;
+};
+
+export type exportServicePeriodMembersResponse =
+  | exportServicePeriodMembersResponseSuccess
+  | exportServicePeriodMembersResponseError;
+
+export const getExportServicePeriodMembersUrl = (serviceProductId: number) => {
+  return `/api/admin/service-period-products/${serviceProductId}/members/export`;
+};
+
+export const exportServicePeriodMembers = async (
+  serviceProductId: number,
+  servicePeriodMemberExportRequest: ServicePeriodMemberExportRequest,
+  options?: RequestInit,
+): Promise<exportServicePeriodMembersResponse> => {
+  const res = await fetch(getExportServicePeriodMembersUrl(serviceProductId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(servicePeriodMemberExportRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: exportServicePeriodMembersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as exportServicePeriodMembersResponse;
+};
+
+/**
+ * @summary Get one dedicated local service-period member by opaque reference
+ */
+export type getServicePeriodMemberResponse200 = {
+  data: ServicePeriodMember;
+  status: 200;
+};
+
+export type getServicePeriodMemberResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getServicePeriodMemberResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getServicePeriodMemberResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getServicePeriodMemberResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getServicePeriodMemberResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type getServicePeriodMemberResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getServicePeriodMemberResponseSuccess =
+  getServicePeriodMemberResponse200 & {
+    headers: Headers;
+  };
+export type getServicePeriodMemberResponseError = (
+  | getServicePeriodMemberResponse400
+  | getServicePeriodMemberResponse401
+  | getServicePeriodMemberResponse403
+  | getServicePeriodMemberResponse404
+  | getServicePeriodMemberResponse422
+  | getServicePeriodMemberResponse503
+) & {
+  headers: Headers;
+};
+
+export type getServicePeriodMemberResponse =
+  getServicePeriodMemberResponseSuccess | getServicePeriodMemberResponseError;
+
+export const getGetServicePeriodMemberUrl = (
+  serviceProductId: number,
+  memberRef: string,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/members/${memberRef}`;
+};
+
+export const getServicePeriodMember = async (
+  serviceProductId: number,
+  memberRef: string,
+  options?: RequestInit,
+): Promise<getServicePeriodMemberResponse> => {
+  const res = await fetch(
+    getGetServicePeriodMemberUrl(serviceProductId, memberRef),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getServicePeriodMemberResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getServicePeriodMemberResponse;
+};
+
+/**
+ * Uses the opaque member_ref, not a phone, unionid, openid, or other external identity key.
+ * @summary Compare-and-swap bounded local remark and alliance fields
+ */
+export type updateServicePeriodMemberFieldsResponse200 = {
+  data: ServicePeriodMember;
+  status: 200;
+};
+
+export type updateServicePeriodMemberFieldsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateServicePeriodMemberFieldsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateServicePeriodMemberFieldsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateServicePeriodMemberFieldsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateServicePeriodMemberFieldsResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateServicePeriodMemberFieldsResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type updateServicePeriodMemberFieldsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateServicePeriodMemberFieldsResponseSuccess =
+  updateServicePeriodMemberFieldsResponse200 & {
+    headers: Headers;
+  };
+export type updateServicePeriodMemberFieldsResponseError = (
+  | updateServicePeriodMemberFieldsResponse400
+  | updateServicePeriodMemberFieldsResponse401
+  | updateServicePeriodMemberFieldsResponse403
+  | updateServicePeriodMemberFieldsResponse404
+  | updateServicePeriodMemberFieldsResponse409
+  | updateServicePeriodMemberFieldsResponse422
+  | updateServicePeriodMemberFieldsResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateServicePeriodMemberFieldsResponse =
+  | updateServicePeriodMemberFieldsResponseSuccess
+  | updateServicePeriodMemberFieldsResponseError;
+
+export const getUpdateServicePeriodMemberFieldsUrl = (
+  serviceProductId: number,
+  memberRef: string,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/members/${memberRef}/fields`;
+};
+
+export const updateServicePeriodMemberFields = async (
+  serviceProductId: number,
+  memberRef: string,
+  servicePeriodMemberFieldsRequest: ServicePeriodMemberFieldsRequest,
+  options?: RequestInit,
+): Promise<updateServicePeriodMemberFieldsResponse> => {
+  const res = await fetch(
+    getUpdateServicePeriodMemberFieldsUrl(serviceProductId, memberRef),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(servicePeriodMemberFieldsRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateServicePeriodMemberFieldsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateServicePeriodMemberFieldsResponse;
+};
+
+/**
+ * @summary Compare-and-swap one local service-period member to expired
+ */
+export type expireServicePeriodMemberResponse200 = {
+  data: ServicePeriodMember;
+  status: 200;
+};
+
+export type expireServicePeriodMemberResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type expireServicePeriodMemberResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type expireServicePeriodMemberResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type expireServicePeriodMemberResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type expireServicePeriodMemberResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type expireServicePeriodMemberResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type expireServicePeriodMemberResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type expireServicePeriodMemberResponseSuccess =
+  expireServicePeriodMemberResponse200 & {
+    headers: Headers;
+  };
+export type expireServicePeriodMemberResponseError = (
+  | expireServicePeriodMemberResponse400
+  | expireServicePeriodMemberResponse401
+  | expireServicePeriodMemberResponse403
+  | expireServicePeriodMemberResponse404
+  | expireServicePeriodMemberResponse409
+  | expireServicePeriodMemberResponse422
+  | expireServicePeriodMemberResponse503
+) & {
+  headers: Headers;
+};
+
+export type expireServicePeriodMemberResponse =
+  | expireServicePeriodMemberResponseSuccess
+  | expireServicePeriodMemberResponseError;
+
+export const getExpireServicePeriodMemberUrl = (
+  serviceProductId: number,
+  memberRef: string,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/members/${memberRef}/expire`;
+};
+
+export const expireServicePeriodMember = async (
+  serviceProductId: number,
+  memberRef: string,
+  servicePeriodMemberTransitionRequest: ServicePeriodMemberTransitionRequest,
+  options?: RequestInit,
+): Promise<expireServicePeriodMemberResponse> => {
+  const res = await fetch(
+    getExpireServicePeriodMemberUrl(serviceProductId, memberRef),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(servicePeriodMemberTransitionRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: expireServicePeriodMemberResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as expireServicePeriodMemberResponse;
+};
+
+/**
+ * @summary Compare-and-swap one local service-period member to removed
+ */
+export type removeServicePeriodMemberResponse200 = {
+  data: ServicePeriodMember;
+  status: 200;
+};
+
+export type removeServicePeriodMemberResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type removeServicePeriodMemberResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type removeServicePeriodMemberResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type removeServicePeriodMemberResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type removeServicePeriodMemberResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type removeServicePeriodMemberResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type removeServicePeriodMemberResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type removeServicePeriodMemberResponseSuccess =
+  removeServicePeriodMemberResponse200 & {
+    headers: Headers;
+  };
+export type removeServicePeriodMemberResponseError = (
+  | removeServicePeriodMemberResponse400
+  | removeServicePeriodMemberResponse401
+  | removeServicePeriodMemberResponse403
+  | removeServicePeriodMemberResponse404
+  | removeServicePeriodMemberResponse409
+  | removeServicePeriodMemberResponse422
+  | removeServicePeriodMemberResponse503
+) & {
+  headers: Headers;
+};
+
+export type removeServicePeriodMemberResponse =
+  | removeServicePeriodMemberResponseSuccess
+  | removeServicePeriodMemberResponseError;
+
+export const getRemoveServicePeriodMemberUrl = (
+  serviceProductId: number,
+  memberRef: string,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/members/${memberRef}/remove`;
+};
+
+export const removeServicePeriodMember = async (
+  serviceProductId: number,
+  memberRef: string,
+  servicePeriodMemberTransitionRequest: ServicePeriodMemberTransitionRequest,
+  options?: RequestInit,
+): Promise<removeServicePeriodMemberResponse> => {
+  const res = await fetch(
+    getRemoveServicePeriodMemberUrl(serviceProductId, memberRef),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(servicePeriodMemberTransitionRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: removeServicePeriodMemberResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as removeServicePeriodMemberResponse;
 };
 
 /**

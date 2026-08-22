@@ -11,10 +11,12 @@ import (
 type Querier interface {
 	CompleteEntitlementOperationReceipt(ctx context.Context, arg CompleteEntitlementOperationReceiptParams) (CompleteEntitlementOperationReceiptRow, error)
 	CompleteProductOperationReceipt(ctx context.Context, arg CompleteProductOperationReceiptParams) (CompleteProductOperationReceiptRow, error)
+	CompleteServicePeriodMemberReceipt(ctx context.Context, arg CompleteServicePeriodMemberReceiptParams) (CompleteServicePeriodMemberReceiptRow, error)
 	CountProducts(ctx context.Context) (int64, error)
 	CountServicePeriodProductRows(ctx context.Context) (int64, error)
 	CreateProduct(ctx context.Context, arg CreateProductParams) (CreateProductRow, error)
 	CreateProductLocalEntitlement(ctx context.Context, arg CreateProductLocalEntitlementParams) (CreateProductLocalEntitlementRow, error)
+	CreateServicePeriodMember(ctx context.Context, arg CreateServicePeriodMemberParams) (CreateServicePeriodMemberRow, error)
 	// Only a draft with no local entitlement, order projection, or other Product
 	// fact may be physically deleted. Product images may cascade with the draft;
 	// financial/order/entitlement facts never do.
@@ -25,6 +27,8 @@ type Querier interface {
 	GetProductLocalEntitlement(ctx context.Context, entitlementID int64) (GetProductLocalEntitlementRow, error)
 	GetProductLocalEntitlementForUpdate(ctx context.Context, entitlementID int64) (GetProductLocalEntitlementForUpdateRow, error)
 	GetProductOperationReceipt(ctx context.Context, arg GetProductOperationReceiptParams) (GetProductOperationReceiptRow, error)
+	GetServicePeriodMember(ctx context.Context, arg GetServicePeriodMemberParams) (GetServicePeriodMemberRow, error)
+	GetServicePeriodMemberReceipt(ctx context.Context, arg GetServicePeriodMemberReceiptParams) (GetServicePeriodMemberReceiptRow, error)
 	GetServicePeriodProductRow(ctx context.Context, productID int64) (GetServicePeriodProductRowRow, error)
 	GetServicePeriodProductRowForUpdate(ctx context.Context, productID int64) (GetServicePeriodProductRowForUpdateRow, error)
 	IncrementProductCount(ctx context.Context) (int64, error)
@@ -32,19 +36,27 @@ type Querier interface {
 	ListProductLocalEntitlements(ctx context.Context, arg ListProductLocalEntitlementsParams) ([]ListProductLocalEntitlementsRow, error)
 	ListProducts(ctx context.Context, arg ListProductsParams) ([]ListProductsRow, error)
 	ListProductsOffset(ctx context.Context, arg ListProductsOffsetParams) ([]ListProductsOffsetRow, error)
+	ListServicePeriodMembers(ctx context.Context, arg ListServicePeriodMembersParams) ([]ListServicePeriodMembersRow, error)
 	ListServicePeriodProductRows(ctx context.Context, arg ListServicePeriodProductRowsParams) ([]ListServicePeriodProductRowsRow, error)
 	// SHARE conflicts with the ROW EXCLUSIVE lock acquired by INSERT/UPDATE on
 	// both reference tables. The FK added by migration 00059 is the final
 	// product-row integrity check after this deterministic table-lock window.
 	LockLocalProductDeleteReferences(ctx context.Context) error
+	LockServicePeriodMember(ctx context.Context, arg LockServicePeriodMemberParams) (LockServicePeriodMemberRow, error)
+	LockServiceProductForMemberAdd(ctx context.Context, productID int64) (bool, error)
 	ReserveEntitlementOperationReceipt(ctx context.Context, arg ReserveEntitlementOperationReceiptParams) (ReserveEntitlementOperationReceiptRow, error)
 	ReserveProductOperationReceipt(ctx context.Context, arg ReserveProductOperationReceiptParams) (ReserveProductOperationReceiptRow, error)
+	ReserveServicePeriodMemberReceipt(ctx context.Context, arg ReserveServicePeriodMemberReceiptParams) (ReserveServicePeriodMemberReceiptRow, error)
 	RevokeProductLocalEntitlement(ctx context.Context, arg RevokeProductLocalEntitlementParams) (RevokeProductLocalEntitlementRow, error)
+	ServicePeriodMemberCustomerExists(ctx context.Context, customerID int64) (bool, error)
+	ServicePeriodProductExists(ctx context.Context, productID int64) (bool, error)
+	TransitionServicePeriodMember(ctx context.Context, arg TransitionServicePeriodMemberParams) (TransitionServicePeriodMemberRow, error)
 	// Product-local WeChat-pay lifecycle queries. The command payload is a
 	// closed JSON object produced by the Product app port; it is not a browser
 	// contract and contains no provider token or payment request.
 	UpdateLocalProductLifecycle(ctx context.Context, command []byte) (int64, error)
 	UpdateProduct(ctx context.Context, arg UpdateProductParams) (UpdateProductRow, error)
+	UpdateServicePeriodMemberFields(ctx context.Context, arg UpdateServicePeriodMemberFieldsParams) (UpdateServicePeriodMemberFieldsRow, error)
 	UpdateServicePeriodProductProjection(ctx context.Context, command []byte) (int64, error)
 }
 

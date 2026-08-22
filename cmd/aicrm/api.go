@@ -69,6 +69,9 @@ import (
 	producthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/http"
 	serviceperiodhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/http/serviceperiod"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/product/membergrid"
+	memberapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/app"
+	memberhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/http"
+	memberstore "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/store"
 	productstore "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store"
 	pushcenterapp "github.com/qianlan33333-png/AI-CRM-v2/internal/pushcenter/app"
 	pushcenterstore "github.com/qianlan33333-png/AI-CRM-v2/internal/pushcenter/store"
@@ -144,6 +147,7 @@ type candidateHandler struct {
 	products                  *producthttp.Handler
 	productLocal              *producthttp.LocalMutationHandler
 	productLifecycle          *producthttp.LocalProductLifecycleHandler
+	servicePeriodMembers      *memberhttp.Handler
 	surveyPublic              *surveyhttp.PublicHandler
 	segmentRefresh            *segmenthttp.RefreshHandler
 	identityReviews           *identityhttp.ReviewHandler
@@ -374,6 +378,34 @@ func (handler *candidateHandler) GetProductLocalEntitlement(writer http.Response
 
 func (handler *candidateHandler) RevokeProductLocalEntitlement(writer http.ResponseWriter, request *http.Request, entitlementID api.EntitlementID, _ api.RevokeProductLocalEntitlementParams) {
 	handler.productLocal.RevokeProductLocalEntitlement(writer, request, int64(entitlementID))
+}
+
+func (handler *candidateHandler) ListServicePeriodMembers(writer http.ResponseWriter, request *http.Request, serviceProductID int64, _ api.ListServicePeriodMembersParams) {
+	handler.servicePeriodMembers.List(writer, request, serviceProductID)
+}
+
+func (handler *candidateHandler) AddServicePeriodMember(writer http.ResponseWriter, request *http.Request, serviceProductID int64, _ api.AddServicePeriodMemberParams) {
+	handler.servicePeriodMembers.Add(writer, request, serviceProductID)
+}
+
+func (handler *candidateHandler) ExportServicePeriodMembers(writer http.ResponseWriter, request *http.Request, serviceProductID int64, _ api.ExportServicePeriodMembersParams) {
+	handler.servicePeriodMembers.Export(writer, request, serviceProductID)
+}
+
+func (handler *candidateHandler) GetServicePeriodMember(writer http.ResponseWriter, request *http.Request, serviceProductID int64, memberRef api.ServicePeriodMemberRef) {
+	handler.servicePeriodMembers.Get(writer, request, serviceProductID, string(memberRef))
+}
+
+func (handler *candidateHandler) ExpireServicePeriodMember(writer http.ResponseWriter, request *http.Request, serviceProductID int64, memberRef api.ServicePeriodMemberRef, _ api.ExpireServicePeriodMemberParams) {
+	handler.servicePeriodMembers.Expire(writer, request, serviceProductID, string(memberRef))
+}
+
+func (handler *candidateHandler) UpdateServicePeriodMemberFields(writer http.ResponseWriter, request *http.Request, serviceProductID int64, memberRef api.ServicePeriodMemberRef, _ api.UpdateServicePeriodMemberFieldsParams) {
+	handler.servicePeriodMembers.UpdateFields(writer, request, serviceProductID, string(memberRef))
+}
+
+func (handler *candidateHandler) RemoveServicePeriodMember(writer http.ResponseWriter, request *http.Request, serviceProductID int64, memberRef api.ServicePeriodMemberRef, _ api.RemoveServicePeriodMemberParams) {
+	handler.servicePeriodMembers.Remove(writer, request, serviceProductID, string(memberRef))
 }
 
 func (handler *candidateHandler) CreateSegment(writer http.ResponseWriter, request *http.Request, params api.CreateSegmentParams) {
@@ -825,6 +857,26 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	servicePeriodMemberCursor, err := memberapp.NewCursorCodec(config.Identity.HMACKey.Value())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	servicePeriodMemberService, err := memberapp.NewService(
+		uow,
+		memberstore.NewRepository(),
+		eventstore.NewAppender(),
+		servicePeriodMemberCursor,
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	servicePeriodMemberHandler, err := memberhttp.NewHandler(servicePeriodMemberService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	memberGridCursor, err := membergrid.NewCursorCodec(config.Identity.HMACKey.Value())
 	if err != nil {
 		pool.Close()
@@ -957,16 +1009,17 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		customerChatActivity: customerChatActivityHandler, customerActivityAnalytics: customerActivityAnalyticsHandler,
 		customerMergeHistory: customerMergeHistoryHandler,
 		mutations:            mutationHandler, tags: tagCatalogHandler, localTags: localTagCatalogHandler, stages: stageHandler,
-		segments:           segmentCRUDHandler,
-		products:           productHandler,
-		productLocal:       productLocalHandler,
-		productLifecycle:   productLifecycleHandler,
-		surveyPublic:       surveyPublicHandler,
-		segmentRefresh:     segmentRefreshHandler,
-		identityReviews:    identityReviewHandler,
-		identityConsole:    identityConsoleHandler,
-		automationRuns:     automationstore.NewRepository(pool),
-		domainVerification: domainVerification,
+		segments:             segmentCRUDHandler,
+		products:             productHandler,
+		productLocal:         productLocalHandler,
+		productLifecycle:     productLifecycleHandler,
+		servicePeriodMembers: servicePeriodMemberHandler,
+		surveyPublic:         surveyPublicHandler,
+		segmentRefresh:       segmentRefreshHandler,
+		identityReviews:      identityReviewHandler,
+		identityConsole:      identityConsoleHandler,
+		automationRuns:       automationstore.NewRepository(pool),
+		domainVerification:   domainVerification,
 		legacyHealth: legacyhealth.NewHandler(legacyhealth.NewQuery(legacyhealth.RuntimeSnapshot{
 			DatabaseIsPostgres:                  config.LegacyHealth.DatabaseIsPostgres,
 			ProductionEnvironment:               config.LegacyHealth.ProductionEnvironment,
@@ -1433,6 +1486,13 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/v1/products/{product_id}/local-entitlements", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.GrantProductLocalEntitlement)},
 		{http.MethodGet, "/api/v1/product-entitlements/{entitlement_id}", authport.CapabilityEntitlementsRead, false, http.HandlerFunc(wrapper.GetProductLocalEntitlement)},
 		{http.MethodPost, "/api/v1/product-entitlements/{entitlement_id}/revoke", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.RevokeProductLocalEntitlement)},
+		{http.MethodGet, "/api/admin/service-period-products/{service_product_id}/members", authport.CapabilityEntitlementsRead, false, http.HandlerFunc(wrapper.ListServicePeriodMembers)},
+		{http.MethodPost, "/api/admin/service-period-products/{service_product_id}/members", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.AddServicePeriodMember)},
+		{http.MethodPost, "/api/admin/service-period-products/{service_product_id}/members/export", authport.CapabilityEntitlementsRead, true, http.HandlerFunc(wrapper.ExportServicePeriodMembers)},
+		{http.MethodGet, "/api/admin/service-period-products/{service_product_id}/members/{member_ref}", authport.CapabilityEntitlementsRead, false, http.HandlerFunc(wrapper.GetServicePeriodMember)},
+		{http.MethodPut, "/api/admin/service-period-products/{service_product_id}/members/{member_ref}/fields", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.UpdateServicePeriodMemberFields)},
+		{http.MethodPost, "/api/admin/service-period-products/{service_product_id}/members/{member_ref}/expire", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.ExpireServicePeriodMember)},
+		{http.MethodPost, "/api/admin/service-period-products/{service_product_id}/members/{member_ref}/remove", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.RemoveServicePeriodMember)},
 		{http.MethodPost, "/api/v1/segments", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.CreateSegment)},
 		{http.MethodPatch, "/api/v1/segments/{segment_id}", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.UpdateSegment)},
 		{http.MethodDelete, "/api/v1/segments/{segment_id}", authport.CapabilitySegmentsWrite, true, http.HandlerFunc(wrapper.ArchiveSegment)},
