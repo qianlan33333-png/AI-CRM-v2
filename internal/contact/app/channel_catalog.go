@@ -85,13 +85,16 @@ type ChannelStore interface {
 }
 
 type ChannelService struct {
-	uow    platformport.UnitOfWork
-	store  ChannelStore
-	images mediaport.ImageMetadataReader
-	tags   contactport.TagReferenceReader
-	staff  contactport.StaffDirectoryReader
-	events eventport.Appender
-	now    func() time.Time
+	uow          platformport.UnitOfWork
+	store        ChannelStore
+	images       mediaport.ImageMetadataReader
+	attachments  mediaport.ChannelAttachmentReferenceReader
+	miniprograms mediaport.ChannelMiniProgramReferenceReader
+	groupInvites mediaport.ChannelGroupInviteReferenceReader
+	tags         contactport.TagReferenceReader
+	staff        contactport.StaffDirectoryReader
+	events       eventport.Appender
+	now          func() time.Time
 }
 
 func NewChannelService(uow platformport.UnitOfWork, store ChannelStore, events eventport.Appender) *ChannelService {
@@ -104,12 +107,24 @@ func NewChannelServiceWithImageReferences(uow platformport.UnitOfWork, store Cha
 	return &ChannelService{uow: uow, store: store, images: images, events: events, now: time.Now}
 }
 
+// NewChannelServiceWithMediaReferences preserves the Attachment Library seam
+// while requiring its Channel-specific enabled-only reader.
+func NewChannelServiceWithMediaReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, attachments mediaport.ChannelAttachmentReferenceReader, events eventport.Appender) *ChannelService {
+	return &ChannelService{uow: uow, store: store, images: images, attachments: attachments, events: events, now: time.Now}
+}
+
 // NewChannelServiceWithLocalReferences validates Contact-owned tags and staff
 // in the same UnitOfWork as the channel mutation. It intentionally does not
 // accept Attachment, MiniProgram, or GroupInvite dependencies before their
 // authoritative shared reference contracts are available.
 func NewChannelServiceWithLocalReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, tags contactport.TagReferenceReader, staff contactport.StaffDirectoryReader, events eventport.Appender) *ChannelService {
 	return &ChannelService{uow: uow, store: store, images: images, tags: tags, staff: staff, events: events, now: time.Now}
+}
+
+// NewChannelServiceWithReferences validates every local welcome reference in
+// the same transaction that persists the Channel projection.
+func NewChannelServiceWithReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, attachments mediaport.ChannelAttachmentReferenceReader, miniprograms mediaport.ChannelMiniProgramReferenceReader, groupInvites mediaport.ChannelGroupInviteReferenceReader, tags contactport.TagReferenceReader, staff contactport.StaffDirectoryReader, events eventport.Appender) *ChannelService {
+	return &ChannelService{uow: uow, store: store, images: images, attachments: attachments, miniprograms: miniprograms, groupInvites: groupInvites, tags: tags, staff: staff, events: events, now: time.Now}
 }
 
 func (service *ChannelService) ListChannels(ctx context.Context, limit int32, status string, includeArchived bool) ([]Channel, error) {
@@ -440,11 +455,59 @@ func (service *ChannelService) validateLocalReferences(ctx context.Context, proj
 	if err := service.validateImageReferences(ctx, projection); err != nil {
 		return err
 	}
+	if err := service.validateMaterialReferences(ctx, projection); err != nil {
+		return err
+	}
 	if err := service.validateEntryTag(ctx, projection); err != nil {
 		return err
 	}
 	_, err := service.assigneesForProjection(ctx, projection)
 	return err
+}
+
+func (service *ChannelService) validateMaterialReferences(ctx context.Context, projection json.RawMessage) error {
+	values, err := object(projection)
+	if err != nil {
+		return ErrChannelUnavailable
+	}
+	for _, reference := range []struct {
+		key      string
+		eligible func(context.Context, int64) (bool, error)
+	}{
+		{"welcome_attachment_library_ids", func(ctx context.Context, id int64) (bool, error) {
+			if service == nil || service.attachments == nil {
+				return false, ErrChannelUnavailable
+			}
+			return service.attachments.ChannelAttachmentEligible(ctx, id)
+		}},
+		{"welcome_miniprogram_library_ids", func(ctx context.Context, id int64) (bool, error) {
+			if service == nil || service.miniprograms == nil {
+				return false, ErrChannelUnavailable
+			}
+			return service.miniprograms.ChannelMiniProgramEligible(ctx, id)
+		}},
+		{"welcome_group_invite_library_ids", func(ctx context.Context, id int64) (bool, error) {
+			if service == nil || service.groupInvites == nil {
+				return false, ErrChannelUnavailable
+			}
+			return service.groupInvites.ChannelGroupInviteEligible(ctx, id)
+		}},
+	} {
+		var ids []int64
+		if json.Unmarshal(values[reference.key], &ids) != nil {
+			return ErrChannelUnavailable
+		}
+		for _, id := range ids {
+			eligible, lookupErr := reference.eligible(ctx, id)
+			if lookupErr != nil {
+				return ErrChannelUnavailable
+			}
+			if !eligible {
+				return ErrInvalidChannel
+			}
+		}
+	}
+	return nil
 }
 
 func (service *ChannelService) validateEntryTag(ctx context.Context, projection json.RawMessage) error {

@@ -714,13 +714,15 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	attachmentRepository := mediastore.NewAttachmentRepository()
 	automationRepository := automationstore.NewAgentRepository()
 	channelRepository := contactstore.NewChannelRepository()
+	channelStaffDirectory := contactstore.NewStaffDirectoryRepository(pool)
+	channelTagCatalog := contactstore.NewTagCatalogRepository()
 	radarRepository := radarstore.NewPostgresRepository()
 	mediaService := mediaapp.NewService(uow, mediaRepository, eventstore.NewAppender())
 	imageDeleteService := mediaapp.NewImageDeleteService(uow, mediaRepository, automationRepository, channelRepository, radarRepository, eventstore.NewAppender())
 	groupInviteRepository := mediastore.NewGroupInviteRepository()
-	groupInviteService := mediaapp.NewGroupInviteService(uow, groupInviteRepository, groupInviteRepository, eventstore.NewAppender())
+	groupInviteService := mediaapp.NewGroupInviteServiceWithChannelReferences(uow, groupInviteRepository, groupInviteRepository, eventstore.NewAppender(), channelRepository)
 	miniProgramRepository := mediastore.NewMiniProgramRepository()
-	miniProgramService := mediaapp.NewMiniProgramService(uow, miniProgramRepository, miniProgramRepository, eventstore.NewAppender(), miniProgramRepository)
+	miniProgramService := mediaapp.NewMiniProgramServiceWithChannelReferences(uow, miniProgramRepository, miniProgramRepository, eventstore.NewAppender(), miniProgramRepository, channelRepository)
 	surveyService := surveyapp.NewService(uow, surveystore.NewQuestionnaireRepository(), eventstore.NewAppender())
 	surveySubmissionRepository := surveystore.NewSubmissionRepository()
 	surveySubmissionService := surveyapp.NewSubmissionService(uow, surveySubmissionRepository)
@@ -742,7 +744,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		surveyCookieKey,
 		surveyAbuseKey,
 	)
-	channelService := contactapp.NewChannelServiceWithMediaReferences(uow, channelRepository, mediaRepository, attachmentRepository, eventstore.NewAppender())
+	channelService := contactapp.NewChannelServiceWithReferences(uow, channelRepository, mediaRepository, attachmentRepository, miniProgramRepository, groupInviteRepository, channelTagCatalog, channelStaffDirectory, eventstore.NewAppender())
 	channelEntrantsCursor, err := contactapp.NewChannelEntrantsCursorCodec(config.Identity.HMACKey.Value())
 	if err != nil {
 		pool.Close()
@@ -783,7 +785,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyTagStatusService := contactapp.NewLegacyTagExecutionStatusService(uow, legacyTagExecutionRepository)
 	couponService := couponapp.NewService(uow, couponstore.NewRepository(), productstore.NewCatalogRepository(), eventstore.NewAppender())
 	automationAgentService := automationapp.NewAgentServiceWithMediaReferences(uow, automationRepository, mediaRepository, attachmentRepository, eventstore.NewAppender())
-	audienceOperationMembers := contactstore.NewStaffDirectoryRepository(pool)
+	audienceOperationMembers := channelStaffDirectory
 	legacyAIAudienceConfigurationService, err := legacyaudience.NewLocalConfigurationService(
 		uow,
 		legacyAIAudienceRepository,

@@ -101,6 +101,13 @@ type GroupInvite struct {
 	ArchivedAt   *time.Time `json:"archived_at,omitempty"`
 }
 
+// ChannelGroupInviteReferenceReader returns whether a group invite is present,
+// enabled, and not archived while holding its row lock in the caller's
+// UnitOfWork. It deliberately exposes no invite metadata.
+type ChannelGroupInviteReferenceReader interface {
+	ChannelGroupInviteEligible(context.Context, int64) (bool, error)
+}
+
 type GroupInviteCreateCommand struct {
 	Name, Title, Description, JoinURL string
 	CoverImageID                      int64

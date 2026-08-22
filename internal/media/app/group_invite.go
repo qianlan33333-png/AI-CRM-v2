@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
@@ -33,6 +34,7 @@ var (
 	ErrGroupInviteNotFound         = errors.New("group invite not found")
 	ErrGroupInviteInvalidReference = errors.New("group invite image not found")
 	ErrGroupInviteConflict         = errors.New("group invite operation conflict")
+	ErrGroupInviteHasReferences    = errors.New("group invite has channel references")
 	ErrGroupInviteUnavailable      = errors.New("group invite service unavailable")
 )
 
@@ -62,15 +64,20 @@ type GroupInviteStore interface {
 }
 
 type GroupInviteService struct {
-	uow    platformport.UnitOfWork
-	store  GroupInviteStore
-	images mediaport.ImageMetadataReader
-	events eventport.Appender
-	now    func() time.Time
+	uow     platformport.UnitOfWork
+	store   GroupInviteStore
+	images  mediaport.ImageMetadataReader
+	events  eventport.Appender
+	contact contactport.GroupInviteReferenceReader
+	now     func() time.Time
 }
 
 func NewGroupInviteService(uow platformport.UnitOfWork, store GroupInviteStore, images mediaport.ImageMetadataReader, events eventport.Appender) *GroupInviteService {
 	return &GroupInviteService{uow: uow, store: store, images: images, events: events, now: time.Now}
+}
+
+func NewGroupInviteServiceWithChannelReferences(uow platformport.UnitOfWork, store GroupInviteStore, images mediaport.ImageMetadataReader, events eventport.Appender, contact contactport.GroupInviteReferenceReader) *GroupInviteService {
+	return &GroupInviteService{uow: uow, store: store, images: images, events: events, contact: contact, now: time.Now}
 }
 
 func (service *GroupInviteService) List(ctx context.Context, query mediaport.GroupInviteListQuery) (mediaport.GroupInvitePage, error) {
@@ -205,6 +212,16 @@ func (service *GroupInviteService) mutateAt(ctx context.Context, operation, busi
 		if innerErr != nil {
 			return ErrInvalidGroupInviteOperation
 		}
+		if operation == "archive" {
+			if err := service.requireNoChannelReferences(tx, seed.ID); err != nil {
+				return err
+			}
+		}
+		if operation == "update" && !result.Enabled {
+			if err := service.requireNoChannelReferences(tx, seed.ID); err != nil {
+				return err
+			}
+		}
 		if result.CoverImageID > 0 {
 			exists, lookupErr := service.images.ImageExists(tx, result.CoverImageID)
 			if lookupErr != nil {
@@ -253,6 +270,20 @@ func (service *GroupInviteService) mutateAt(ctx context.Context, operation, busi
 	return result, nil
 }
 
+func (service *GroupInviteService) requireNoChannelReferences(ctx context.Context, id int64) error {
+	if service == nil || service.contact == nil {
+		return ErrGroupInviteUnavailable
+	}
+	references, err := service.contact.ListGroupInviteReferenceChannelIDs(ctx, id)
+	if err != nil {
+		return ErrGroupInviteUnavailable
+	}
+	if len(references) != 0 {
+		return ErrGroupInviteHasReferences
+	}
+	return nil
+}
+
 func (service *GroupInviteService) commandTime(actor int64, key string) (time.Time, error) {
 	if !groupInviteReady(service) || actor < 1 || len(key) < 16 || len(key) > 128 || strings.TrimSpace(key) != key {
 		return time.Time{}, ErrInvalidGroupInviteOperation
@@ -288,7 +319,7 @@ func groupInviteEventType(operation string) string {
 
 func classifyGroupInvite(err error) error {
 	switch {
-	case errors.Is(err, ErrInvalidGroupInviteOperation), errors.Is(err, ErrGroupInviteNotFound), errors.Is(err, ErrGroupInviteInvalidReference), errors.Is(err, ErrGroupInviteConflict):
+	case errors.Is(err, ErrInvalidGroupInviteOperation), errors.Is(err, ErrGroupInviteNotFound), errors.Is(err, ErrGroupInviteInvalidReference), errors.Is(err, ErrGroupInviteConflict), errors.Is(err, ErrGroupInviteHasReferences):
 		return err
 	default:
 		return ErrGroupInviteUnavailable

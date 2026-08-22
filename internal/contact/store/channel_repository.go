@@ -21,6 +21,8 @@ type ChannelRepository struct{}
 var _ contactapp.ChannelStore = (*ChannelRepository)(nil)
 var _ contactport.ImageReferenceReader = (*ChannelRepository)(nil)
 var _ contactport.AttachmentReferenceReader = (*ChannelRepository)(nil)
+var _ contactport.MiniProgramReferenceReader = (*ChannelRepository)(nil)
+var _ contactport.GroupInviteReferenceReader = (*ChannelRepository)(nil)
 
 func NewChannelRepository() *ChannelRepository { return &ChannelRepository{} }
 
@@ -89,31 +91,60 @@ func (repository *ChannelRepository) ListImageReferenceChannelIDs(ctx context.Co
 }
 
 func (repository *ChannelRepository) ListAttachmentReferenceChannelIDs(ctx context.Context, attachmentID int64) ([]int64, error) {
-	queries, err := channelQueries(ctx)
-	if repository == nil || err != nil || attachmentID < 1 {
-		return nil, channelError(err)
+	return repository.listMaterialReferenceChannelIDs(ctx, attachmentID, "welcome_attachment_library_ids")
+}
+
+func (repository *ChannelRepository) ListMiniProgramReferenceChannelIDs(ctx context.Context, miniProgramID int64) ([]int64, error) {
+	return repository.listMaterialReferenceChannelIDs(ctx, miniProgramID, "welcome_miniprogram_library_ids")
+}
+
+func (repository *ChannelRepository) ListGroupInviteReferenceChannelIDs(ctx context.Context, groupInviteID int64) ([]int64, error) {
+	return repository.listMaterialReferenceChannelIDs(ctx, groupInviteID, "welcome_group_invite_library_ids")
+}
+
+func (repository *ChannelRepository) listMaterialReferenceChannelIDs(ctx context.Context, referenceID int64, key string) ([]int64, error) {
+	if repository == nil || referenceID < 1 {
+		return nil, contactapp.ErrChannelUnavailable
 	}
-	rows, err := queries.ListChannelAttachmentReferencePackages(ctx)
+	column := map[string]string{
+		"welcome_attachment_library_ids":   "welcome_attachment_library_ids",
+		"welcome_miniprogram_library_ids":  "welcome_miniprogram_library_ids",
+		"welcome_group_invite_library_ids": "welcome_group_invite_library_ids",
+	}[key]
+	if column == "" {
+		return nil, contactapp.ErrChannelUnavailable
+	}
+	tx, err := platformstore.TxFromContext(ctx)
 	if err != nil {
 		return nil, channelError(err)
 	}
-	result := make([]int64, 0, len(rows))
+	rows, err := tx.Query(ctx, `SELECT id, COALESCE(config -> '`+column+`', '[]'::jsonb)::text FROM channels ORDER BY id ASC`)
+	if err != nil {
+		return nil, channelError(err)
+	}
+	defer rows.Close()
+	result := []int64{}
 	var previousID int64
-	for _, row := range rows {
-		if row.ID < 1 || row.ID <= previousID {
+	for rows.Next() {
+		var id int64
+		var raw string
+		if err = rows.Scan(&id, &raw); err != nil || id < 1 || id <= previousID {
 			return nil, contactapp.ErrChannelUnavailable
 		}
-		previousID = row.ID
-		ids, parseErr := channelAttachmentReferenceIDs(json.RawMessage(row.WelcomeAttachmentLibraryIds))
+		previousID = id
+		ids, parseErr := channelReferenceIDs(json.RawMessage(raw))
 		if parseErr != nil {
-			return nil, contactapp.ErrChannelUnavailable
+			return nil, parseErr
 		}
 		for _, candidate := range ids {
-			if candidate == attachmentID {
-				result = append(result, row.ID)
+			if candidate == referenceID {
+				result = append(result, id)
 				break
 			}
 		}
+	}
+	if err = rows.Err(); err != nil {
+		return nil, channelError(err)
 	}
 	return result, nil
 }

@@ -81,3 +81,10 @@ type AttachmentDeleteCommand struct {
 type AttachmentMetadataReader interface {
 	AttachmentExists(context.Context, int64) (bool, error)
 }
+
+// ChannelAttachmentReferenceReader returns whether an attachment is both
+// present and locally enabled while holding a KEY SHARE lock in the caller's
+// UnitOfWork. It deliberately exposes no attachment metadata.
+type ChannelAttachmentReferenceReader interface {
+	ChannelAttachmentEligible(context.Context, int64) (bool, error)
+}

@@ -51,6 +51,22 @@ type ImageReferenceReader interface {
 	ListImageReferenceChannelIDs(context.Context, int64) ([]int64, error)
 }
 
+// AttachmentReferenceReader is the Contact-owned answer to whether a channel
+// welcome projection references one private attachment.
+type AttachmentReferenceReader interface {
+	ListAttachmentReferenceChannelIDs(context.Context, int64) ([]int64, error)
+}
+
+// MiniProgramReferenceReader and GroupInviteReferenceReader keep Media's
+// destructive lifecycle from stranding Channel-owned welcome references.
+type MiniProgramReferenceReader interface {
+	ListMiniProgramReferenceChannelIDs(context.Context, int64) ([]int64, error)
+}
+
+type GroupInviteReferenceReader interface {
+	ListGroupInviteReferenceChannelIDs(context.Context, int64) ([]int64, error)
+}
+
 // TagReferenceReader locks one active Contact-owned tag in the caller's
 // UnitOfWork. It prevents a channel mutation from committing a stale tag
 // reference while that tag or its group is being archived.

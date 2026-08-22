@@ -12,6 +12,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
@@ -33,6 +34,7 @@ var (
 	ErrMiniProgramConflict         = errors.New("miniprogram material operation conflict")
 	ErrMiniProgramImageNotFound    = errors.New("miniprogram thumbnail image not found")
 	ErrMiniProgramUnsafeResolver   = errors.New("miniprogram thumbnail resolver reported a forbidden external effect")
+	ErrMiniProgramHasReferences    = errors.New("miniprogram material has channel references")
 	ErrMiniProgramUnavailable      = errors.New("miniprogram material service unavailable")
 )
 
@@ -79,11 +81,16 @@ type MiniProgramService struct {
 	images   mediaport.ImageMetadataReader
 	events   eventport.Appender
 	resolver mediaport.ThumbnailCacheResolver
+	contact  contactport.MiniProgramReferenceReader
 	now      func() time.Time
 }
 
 func NewMiniProgramService(uow platformport.UnitOfWork, store MiniProgramStore, images mediaport.ImageMetadataReader, events eventport.Appender, resolver mediaport.ThumbnailCacheResolver) *MiniProgramService {
 	return &MiniProgramService{uow: uow, store: store, images: images, events: events, resolver: resolver, now: time.Now}
+}
+
+func NewMiniProgramServiceWithChannelReferences(uow platformport.UnitOfWork, store MiniProgramStore, images mediaport.ImageMetadataReader, events eventport.Appender, resolver mediaport.ThumbnailCacheResolver, contact contactport.MiniProgramReferenceReader) *MiniProgramService {
+	return &MiniProgramService{uow: uow, store: store, images: images, events: events, resolver: resolver, contact: contact, now: time.Now}
 }
 
 func (service *MiniProgramService) List(ctx context.Context, query mediaport.MiniProgramListQuery) (mediaport.MiniProgramPage, error) {
@@ -240,6 +247,11 @@ func (service *MiniProgramService) Update(ctx context.Context, command mediaport
 		if reserveErr != nil {
 			return ErrInvalidMiniProgramOperation
 		}
+		if result.Changed && !result.Item.Enabled {
+			if err := service.requireNoChannelReferences(tx, command.ID); err != nil {
+				return err
+			}
+		}
 		if result.Changed {
 			if err := service.validateThumbnailImage(tx, result.Item.ThumbnailImageID); err != nil {
 				return err
@@ -305,6 +317,9 @@ func (service *MiniProgramService) Delete(ctx context.Context, command mediaport
 		if !domain.ValidMiniProgram(item, true) {
 			return ErrMiniProgramUnavailable
 		}
+		if err := service.requireNoChannelReferences(tx, command.ID); err != nil {
+			return err
+		}
 		if reserveErr = service.store.DeleteMiniProgram(tx, command.ID); reserveErr != nil {
 			return reserveErr
 		}
@@ -318,6 +333,20 @@ func (service *MiniProgramService) Delete(ctx context.Context, command mediaport
 		return mediaport.MiniProgramDeleteResult{}, classifyMiniProgram(err)
 	}
 	return result, nil
+}
+
+func (service *MiniProgramService) requireNoChannelReferences(ctx context.Context, id int64) error {
+	if service == nil || service.contact == nil {
+		return ErrMiniProgramUnavailable
+	}
+	references, err := service.contact.ListMiniProgramReferenceChannelIDs(ctx, id)
+	if err != nil {
+		return ErrMiniProgramUnavailable
+	}
+	if len(references) != 0 {
+		return ErrMiniProgramHasReferences
+	}
+	return nil
 }
 
 func (service *MiniProgramService) ResolveThumbnail(ctx context.Context, command mediaport.MiniProgramResolveThumbnailCommand) (mediaport.MiniProgramThumbnailResolutionResult, error) {
@@ -621,7 +650,7 @@ func classifyMiniProgram(err error) error {
 	switch {
 	case err == nil:
 		return nil
-	case errors.Is(err, ErrInvalidMiniProgramOperation), errors.Is(err, ErrMiniProgramNotFound), errors.Is(err, ErrMiniProgramConflict), errors.Is(err, ErrMiniProgramImageNotFound), errors.Is(err, ErrMiniProgramUnsafeResolver):
+	case errors.Is(err, ErrInvalidMiniProgramOperation), errors.Is(err, ErrMiniProgramNotFound), errors.Is(err, ErrMiniProgramConflict), errors.Is(err, ErrMiniProgramImageNotFound), errors.Is(err, ErrMiniProgramUnsafeResolver), errors.Is(err, ErrMiniProgramHasReferences):
 		return err
 	default:
 		return ErrMiniProgramUnavailable

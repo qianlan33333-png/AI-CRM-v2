@@ -12,12 +12,14 @@ import (
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	mediadb "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store/generated"
+	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
 type MiniProgramRepository struct{}
 
 var _ mediaapp.MiniProgramStore = (*MiniProgramRepository)(nil)
 var _ mediaport.ImageMetadataReader = (*MiniProgramRepository)(nil)
+var _ mediaport.ChannelMiniProgramReferenceReader = (*MiniProgramRepository)(nil)
 var _ mediaport.ThumbnailCacheResolver = (*MiniProgramRepository)(nil)
 
 func NewMiniProgramRepository() *MiniProgramRepository { return &MiniProgramRepository{} }
@@ -80,6 +82,19 @@ func (repository *MiniProgramRepository) LockMiniProgram(ctx context.Context, id
 		return mediaport.MiniProgram{}, miniProgramStoreUnavailable(err)
 	}
 	return repository.GetMiniProgram(ctx, id)
+}
+
+func (repository *MiniProgramRepository) ChannelMiniProgramEligible(ctx context.Context, id int64) (bool, error) {
+	tx, err := platformstore.TxFromContext(ctx)
+	if repository == nil || id < 1 || err != nil {
+		return false, miniProgramStoreUnavailable(err)
+	}
+	var lockedID int64
+	err = tx.QueryRow(ctx, `SELECT id FROM media_miniprograms WHERE id = $1 AND enabled = TRUE FOR KEY SHARE`, id).Scan(&lockedID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil && lockedID == id, miniProgramStoreUnavailable(err)
 }
 
 func (repository *MiniProgramRepository) CreateMiniProgram(ctx context.Context, item mediaport.MiniProgram) (mediaport.MiniProgram, error) {

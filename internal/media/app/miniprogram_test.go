@@ -15,19 +15,21 @@ import (
 )
 
 type miniProgramTestState struct {
-	mu       sync.Mutex
-	receipts map[string]MiniProgramReceipt
-	items    map[int64]mediaport.MiniProgram
-	images   map[int64]bool
-	events   []eventport.Event
-	nextID   int64
-	fault    string
+	mu                sync.Mutex
+	receipts          map[string]MiniProgramReceipt
+	items             map[int64]mediaport.MiniProgram
+	images            map[int64]bool
+	events            []eventport.Event
+	channelReferences []int64
+	nextID            int64
+	fault             string
 }
 
 type miniProgramTestUOW struct{ state *miniProgramTestState }
 type miniProgramTestStore struct{ state *miniProgramTestState }
 type miniProgramTestImages struct{ state *miniProgramTestState }
 type miniProgramTestEvents struct{ state *miniProgramTestState }
+type miniProgramTestContacts struct{ state *miniProgramTestState }
 type miniProgramTestResolver struct {
 	resolution mediaport.ThumbnailCacheResolution
 	err        error
@@ -189,6 +191,13 @@ func (events miniProgramTestEvents) Append(_ context.Context, event eventport.Ev
 	return eventport.EventID(len(events.state.events)), nil
 }
 
+func (contacts miniProgramTestContacts) ListMiniProgramReferenceChannelIDs(_ context.Context, _ int64) ([]int64, error) {
+	if contacts.state.fault == "contact" {
+		return nil, errors.New("channel reference scan failed")
+	}
+	return append([]int64{}, contacts.state.channelReferences...), nil
+}
+
 func (resolver *miniProgramTestResolver) ResolveThumbnailFromCache(_ context.Context, _ mediaport.MiniProgram) (mediaport.ThumbnailCacheResolution, error) {
 	resolver.calls++
 	return cloneMiniProgramResolution(resolver.resolution), resolver.err
@@ -197,7 +206,7 @@ func (resolver *miniProgramTestResolver) ResolveThumbnailFromCache(_ context.Con
 func newMiniProgramTestService() (*MiniProgramService, *miniProgramTestState, *miniProgramTestResolver) {
 	state := &miniProgramTestState{receipts: map[string]MiniProgramReceipt{}, items: map[int64]mediaport.MiniProgram{}, images: map[int64]bool{11: true}}
 	resolver := &miniProgramTestResolver{resolution: mediaport.ThumbnailCacheResolution{Status: mediaport.ThumbnailResolved, CacheOwner: mediaport.ThumbnailCacheOwner, CacheReceipt: "local-cache:11", MediaID: "cache-media-11"}}
-	service := NewMiniProgramService(miniProgramTestUOW{state}, miniProgramTestStore{state}, miniProgramTestImages{state}, miniProgramTestEvents{state}, resolver)
+	service := NewMiniProgramServiceWithChannelReferences(miniProgramTestUOW{state}, miniProgramTestStore{state}, miniProgramTestImages{state}, miniProgramTestEvents{state}, resolver, miniProgramTestContacts{state})
 	service.now = func() time.Time { return time.Date(2026, 8, 16, 12, 0, 0, 0, time.UTC) }
 	return service, state, resolver
 }
@@ -590,6 +599,23 @@ func TestMiniProgramPhysicalDeleteHasOneEventAndReplayDoesNotDuplicate(t *testin
 	replay, err := service.Delete(context.Background(), mediaport.MiniProgramDeleteCommand{ID: created.Item.ID, Actor: 7, IdempotencyKey: key})
 	if err != nil || replay != deleted || len(state.events) != 2 || len(state.receipts) != 2 {
 		t.Fatalf("replay=%#v err=%v state=%#v", replay, err, state)
+	}
+}
+
+func TestMiniProgramDeleteFailsClosedWhenChannelReferencesExistOrCannotBeRead(t *testing.T) {
+	service, state, _ := newMiniProgramTestService()
+	created, err := service.Create(context.Background(), miniProgramTestCreate("miniprogram-create-key-0006"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	state.channelReferences = []int64{9}
+	if _, err = service.Delete(context.Background(), mediaport.MiniProgramDeleteCommand{ID: created.Item.ID, Actor: 7, IdempotencyKey: "miniprogram-delete-key-0002"}); !errors.Is(err, ErrMiniProgramHasReferences) || len(state.items) != 1 {
+		t.Fatalf("referenced delete err=%v items=%#v", err, state.items)
+	}
+	state.channelReferences = nil
+	state.fault = "contact"
+	if _, err = service.Delete(context.Background(), mediaport.MiniProgramDeleteCommand{ID: created.Item.ID, Actor: 7, IdempotencyKey: "miniprogram-delete-key-0003"}); !errors.Is(err, ErrMiniProgramUnavailable) || len(state.items) != 1 {
+		t.Fatalf("unavailable scan err=%v items=%#v", err, state.items)
 	}
 }
 

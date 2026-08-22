@@ -93,6 +93,30 @@ func TestChannelAttachmentReferencesUseTransactionBoundReader(t *testing.T) {
 	}
 }
 
+func TestChannelMaterialReferencesRequireLocallyEligibleReaders(t *testing.T) {
+	for _, test := range []struct {
+		name, projection string
+		materials        channelTestMaterials
+		want             error
+	}{
+		{"enabled", `{"welcome_attachment_library_ids":[19],"welcome_miniprogram_library_ids":[20],"welcome_group_invite_library_ids":[21]}`, channelTestMaterials{attachments: map[int64]bool{19: true}, miniprograms: map[int64]bool{20: true}, groupInvites: map[int64]bool{21: true}}, nil},
+		{"disabled attachment", `{"welcome_attachment_library_ids":[19]}`, channelTestMaterials{attachments: map[int64]bool{19: false}}, ErrInvalidChannel},
+		{"disabled miniprogram", `{"welcome_miniprogram_library_ids":[20]}`, channelTestMaterials{miniprograms: map[int64]bool{20: false}}, ErrInvalidChannel},
+		{"archived group", `{"welcome_group_invite_library_ids":[21]}`, channelTestMaterials{groupInvites: map[int64]bool{21: false}}, ErrInvalidChannel},
+		{"reader unavailable", `{"welcome_attachment_library_ids":[19]}`, channelTestMaterials{attachments: map[int64]bool{19: true}, err: errors.New("reader failed")}, ErrChannelUnavailable},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			store := &channelStore{receipts: map[string]ChannelReceipt{}}
+			service := NewChannelServiceWithReferences(channelUOW{}, store, channelTestImages{}, &test.materials, &test.materials, &test.materials, nil, nil, &channelEvents{})
+			service.now = func() time.Time { return time.Date(2026, 8, 23, 12, 0, 0, 0, time.UTC) }
+			_, err := service.CreateChannel(context.Background(), CreateChannelCommand{Actor: 7, IdempotencyKey: "channel-material-key-0001", ChannelName: "素材", LegacyProjection: json.RawMessage(test.projection)})
+			if !errors.Is(err, test.want) || test.want == nil && err != nil || test.want != nil && store.creates != 0 {
+				t.Fatalf("err=%v creates=%d", err, store.creates)
+			}
+		})
+	}
+}
+
 type channelUOW struct{}
 
 func (channelUOW) Within(ctx context.Context, fn func(context.Context) error) error { return fn(ctx) }
@@ -113,8 +137,33 @@ func (reader *channelTestAttachments) AttachmentExists(_ context.Context, id int
 	return reader.available[id], nil
 }
 
+func (reader *channelTestAttachments) ChannelAttachmentEligible(_ context.Context, id int64) (bool, error) {
+	reader.calls++
+	return reader.available[id], nil
+}
+
 var _ mediaport.ImageMetadataReader = channelTestImages{}
 var _ mediaport.AttachmentMetadataReader = (*channelTestAttachments)(nil)
+var _ mediaport.ChannelAttachmentReferenceReader = (*channelTestAttachments)(nil)
+
+type channelTestMaterials struct {
+	attachments, miniprograms, groupInvites map[int64]bool
+	err                                     error
+}
+
+func (reader *channelTestMaterials) ChannelAttachmentEligible(_ context.Context, id int64) (bool, error) {
+	return reader.attachments[id], reader.err
+}
+func (reader *channelTestMaterials) ChannelMiniProgramEligible(_ context.Context, id int64) (bool, error) {
+	return reader.miniprograms[id], reader.err
+}
+func (reader *channelTestMaterials) ChannelGroupInviteEligible(_ context.Context, id int64) (bool, error) {
+	return reader.groupInvites[id], reader.err
+}
+
+var _ mediaport.ChannelAttachmentReferenceReader = (*channelTestMaterials)(nil)
+var _ mediaport.ChannelMiniProgramReferenceReader = (*channelTestMaterials)(nil)
+var _ mediaport.ChannelGroupInviteReferenceReader = (*channelTestMaterials)(nil)
 
 func (events *channelEvents) Append(_ context.Context, event eventport.Event) (eventport.EventID, error) {
 	events.items = append(events.items, event)
