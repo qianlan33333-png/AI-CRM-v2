@@ -17,13 +17,18 @@ ORDER BY
   t.id;
 
 -- name: LockActiveTagReference :one
-SELECT t.id, t.name, g.name AS group_name
+SELECT t.id, t.name, t.group_id
 FROM tags AS t
-LEFT JOIN tag_groups AS g ON g.id = t.group_id
 WHERE t.id = sqlc.arg(tag_id)::bigint
   AND t.name NOT LIKE 'archived:%'
-  AND (g.id IS NULL OR g.name NOT LIKE 'archived:%')
 FOR SHARE OF t;
+
+-- name: LockActiveTagGroupReference :one
+SELECT id, name
+FROM tag_groups
+WHERE id = sqlc.arg(group_id)::bigint
+  AND name NOT LIKE 'archived:%'
+FOR SHARE;
 
 -- name: ListLegacyTagGroups :many
 SELECT id, name, sort_order FROM tag_groups WHERE name NOT LIKE 'archived:%' ORDER BY sort_order, id;

@@ -264,8 +264,13 @@ type channelStaffDirectory struct {
 	entries []contactport.StaffDirectoryEntry
 }
 
-func (directory channelStaffDirectory) ListEligibleStaff(context.Context) ([]contactport.StaffDirectoryEntry, error) {
-	return append([]contactport.StaffDirectoryEntry(nil), directory.entries...), nil
+func (directory channelStaffDirectory) LockEligibleStaffByWeComUserID(_ context.Context, weComUserID string) (contactport.StaffDirectoryEntry, error) {
+	for _, entry := range directory.entries {
+		if entry.WeComUserID == weComUserID {
+			return entry, nil
+		}
+	}
+	return contactport.StaffDirectoryEntry{}, contactport.ErrStaffReferenceNotFound
 }
 
 func TestC01ChannelValidatesEntryTagAndProjectsEligibleOwner(t *testing.T) {

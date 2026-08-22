@@ -80,12 +80,15 @@ func (*TagCatalogRepository) LockActiveTag(ctx context.Context, id int64) (conta
 		return contactport.TagReference{}, contactport.ErrTagReferenceUnavailable
 	}
 	result := contactport.TagReference{ID: row.ID, Name: row.Name}
-	if row.GroupName.Valid {
-		name := row.GroupName.String
-		if name == "" {
+	if row.GroupID.Valid {
+		group, groupErr := contactdb.New(tx).LockActiveTagGroupReference(ctx, row.GroupID.Int64)
+		if errors.Is(groupErr, pgx.ErrNoRows) {
+			return contactport.TagReference{}, contactport.ErrTagReferenceNotFound
+		}
+		if groupErr != nil || group.ID != row.GroupID.Int64 || group.Name == "" {
 			return contactport.TagReference{}, contactport.ErrTagReferenceUnavailable
 		}
-		result.GroupName = &name
+		result.GroupName = tagCatalogStringPointer(group.Name)
 	}
 	return result, nil
 }

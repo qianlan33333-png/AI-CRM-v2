@@ -92,7 +92,7 @@ type ChannelService struct {
 	miniprograms mediaport.ChannelMiniProgramReferenceReader
 	groupInvites mediaport.ChannelGroupInviteReferenceReader
 	tags         contactport.TagReferenceReader
-	staff        contactport.StaffDirectoryReader
+	staff        contactport.EligibleStaffReferenceReader
 	events       eventport.Appender
 	now          func() time.Time
 }
@@ -117,13 +117,13 @@ func NewChannelServiceWithMediaReferences(uow platformport.UnitOfWork, store Cha
 // in the same UnitOfWork as the channel mutation. It intentionally does not
 // accept Attachment, MiniProgram, or GroupInvite dependencies before their
 // authoritative shared reference contracts are available.
-func NewChannelServiceWithLocalReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, tags contactport.TagReferenceReader, staff contactport.StaffDirectoryReader, events eventport.Appender) *ChannelService {
+func NewChannelServiceWithLocalReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, tags contactport.TagReferenceReader, staff contactport.EligibleStaffReferenceReader, events eventport.Appender) *ChannelService {
 	return &ChannelService{uow: uow, store: store, images: images, tags: tags, staff: staff, events: events, now: time.Now}
 }
 
 // NewChannelServiceWithReferences validates every local welcome reference in
 // the same transaction that persists the Channel projection.
-func NewChannelServiceWithReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, attachments mediaport.ChannelAttachmentReferenceReader, miniprograms mediaport.ChannelMiniProgramReferenceReader, groupInvites mediaport.ChannelGroupInviteReferenceReader, tags contactport.TagReferenceReader, staff contactport.StaffDirectoryReader, events eventport.Appender) *ChannelService {
+func NewChannelServiceWithReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, attachments mediaport.ChannelAttachmentReferenceReader, miniprograms mediaport.ChannelMiniProgramReferenceReader, groupInvites mediaport.ChannelGroupInviteReferenceReader, tags contactport.TagReferenceReader, staff contactport.EligibleStaffReferenceReader, events eventport.Appender) *ChannelService {
 	return &ChannelService{uow: uow, store: store, images: images, attachments: attachments, miniprograms: miniprograms, groupInvites: groupInvites, tags: tags, staff: staff, events: events, now: time.Now}
 }
 
@@ -584,29 +584,20 @@ func (service *ChannelService) assigneesForProjection(ctx context.Context, proje
 	if owner == "" {
 		return []ChannelAssignee{}, nil
 	}
+	if !validText(owner, 200) {
+		return nil, ErrInvalidChannel
+	}
 	if service == nil || service.staff == nil {
 		return nil, ErrChannelUnavailable
 	}
-	staff, err := service.staff.ListEligibleStaff(ctx)
-	if err != nil {
+	entry, err := service.staff.LockEligibleStaffByWeComUserID(ctx, owner)
+	if errors.Is(err, contactport.ErrStaffReferenceNotFound) {
+		return nil, ErrInvalidChannel
+	}
+	if err != nil || entry.WeComUserID != owner || !validText(entry.DisplayName, 200) || entry.UpdatedAt.IsZero() {
 		return nil, ErrChannelUnavailable
 	}
-	seen := make(map[string]struct{}, len(staff))
-	for _, entry := range staff {
-		if !validText(entry.WeComUserID, 200) || !validText(entry.DisplayName, 200) || entry.UpdatedAt.IsZero() {
-			return nil, ErrChannelUnavailable
-		}
-		if _, duplicate := seen[entry.WeComUserID]; duplicate {
-			return nil, ErrChannelUnavailable
-		}
-		seen[entry.WeComUserID] = struct{}{}
-	}
-	for _, entry := range staff {
-		if entry.WeComUserID == owner {
-			return []ChannelAssignee{{WeComUserID: entry.WeComUserID, DisplayName: entry.DisplayName}}, nil
-		}
-	}
-	return nil, ErrInvalidChannel
+	return []ChannelAssignee{{WeComUserID: entry.WeComUserID, DisplayName: entry.DisplayName}}, nil
 }
 
 func canonicalPositiveID(value string) bool {

@@ -15,17 +15,19 @@ type Actor string
 type StageID int64
 
 var (
-	ErrInvalidStage            = errors.New("invalid stage")
-	ErrStageNotFound           = errors.New("stage not found")
-	ErrStageReferenced         = errors.New("stage is still referenced by customers")
-	ErrStageConflict           = errors.New("stage command conflict")
-	ErrInvalidMergeCommand     = errors.New("invalid contact merge command")
-	ErrMergeCustomerNotFound   = errors.New("contact merge customer not found")
-	ErrMergeConflict           = errors.New("contact merge conflict")
-	ErrMergeStoreFailed        = errors.New("contact merge store failed")
-	ErrExternalEventConflict   = errors.New("external customer event conflict")
-	ErrTagReferenceNotFound    = errors.New("contact tag reference not found")
-	ErrTagReferenceUnavailable = errors.New("contact tag reference unavailable")
+	ErrInvalidStage              = errors.New("invalid stage")
+	ErrStageNotFound             = errors.New("stage not found")
+	ErrStageReferenced           = errors.New("stage is still referenced by customers")
+	ErrStageConflict             = errors.New("stage command conflict")
+	ErrInvalidMergeCommand       = errors.New("invalid contact merge command")
+	ErrMergeCustomerNotFound     = errors.New("contact merge customer not found")
+	ErrMergeConflict             = errors.New("contact merge conflict")
+	ErrMergeStoreFailed          = errors.New("contact merge store failed")
+	ErrExternalEventConflict     = errors.New("external customer event conflict")
+	ErrTagReferenceNotFound      = errors.New("contact tag reference not found")
+	ErrTagReferenceUnavailable   = errors.New("contact tag reference unavailable")
+	ErrStaffReferenceNotFound    = errors.New("contact staff reference not found")
+	ErrStaffReferenceUnavailable = errors.New("contact staff reference unavailable")
 )
 
 var (
@@ -80,9 +82,14 @@ type TagReference struct {
 	GroupName *string
 }
 
-// StaffDirectoryReader exposes the narrowly-scoped local staff projection to
-// approved read-only consumers. It contains only the approved staff identity
-// fields and no provider payload or broader contact PII.
+// EligibleStaffReferenceReader locks exactly one active local staff row by its
+// WeCom user ID in the caller's UnitOfWork. It never exposes a full directory.
+type EligibleStaffReferenceReader interface {
+	LockEligibleStaffByWeComUserID(context.Context, string) (StaffDirectoryEntry, error)
+}
+
+// StaffDirectoryReader remains the broad safe projection for existing read
+// consumers. Channel mutation must use EligibleStaffReferenceReader instead.
 type StaffDirectoryReader interface {
 	ListEligibleStaff(context.Context) ([]StaffDirectoryEntry, error)
 }

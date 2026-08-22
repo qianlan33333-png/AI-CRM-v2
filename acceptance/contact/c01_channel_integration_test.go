@@ -8,13 +8,16 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
@@ -78,6 +81,124 @@ func TestC01EventConflictRollsBackChannelAndReceipt(t *testing.T) {
 	if err = pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM channels WHERE code=$1),(SELECT count(*) FROM channel_operation_receipts WHERE actor_scope='admin:83' AND key_digest=$2)`, code, keyDigest[:]).Scan(&channels, &receipts); err != nil || channels != 0 || receipts != 0 {
 		t.Fatalf("rollback=%d/%d err=%v", channels, receipts, err)
 	}
+}
+
+func TestC01ChannelOwnerLockBlocksConcurrentStaffDeactivation(t *testing.T) {
+	pool, ctx := c01OpenPool(t)
+	weComUserID := fmt.Sprintf("c01-owner-lock-%d", time.Now().UnixNano())
+	if _, err := pool.Exec(ctx, `INSERT INTO staff (wecom_userid, name, is_active, updated_at) VALUES ($1, '锁定成员', TRUE, now())`, weComUserID); err != nil {
+		t.Fatal(err)
+	}
+	release := make(chan struct{})
+	appender := &c01BlockingAppender{delegate: eventstore.NewAppender(), entered: make(chan struct{}), release: release}
+	service := contactapp.NewChannelServiceWithReferences(
+		platformstore.NewUnitOfWork(pool), contactstore.NewChannelRepository(), nil, nil, nil, nil,
+		contactstore.NewTagCatalogRepository(), contactstore.NewStaffDirectoryRepository(pool), appender,
+	)
+	result := make(chan error, 1)
+	go func() {
+		_, err := service.CreateChannel(ctx, contactapp.CreateChannelCommand{
+			Actor: 91, IdempotencyKey: "c01-owner-lock-key-" + weComUserID, ChannelCode: weComUserID,
+			ChannelName: "成员锁", LegacyProjection: json.RawMessage(fmt.Sprintf(`{"owner_staff_id":%q}`, weComUserID)),
+		})
+		result <- err
+	}()
+	select {
+	case <-appender.entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("channel mutation did not reach the event barrier")
+	}
+	blocker, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = blocker.Exec(ctx, `SET LOCAL statement_timeout = '200ms'`); err != nil {
+		t.Fatal(err)
+	}
+	_, err = blocker.Exec(ctx, `UPDATE staff SET is_active = FALSE WHERE wecom_userid = $1`, weComUserID)
+	_ = blocker.Rollback(ctx)
+	var databaseErr *pgconn.PgError
+	if !errors.As(err, &databaseErr) || databaseErr.Code != "57014" {
+		t.Fatalf("deactivation error=%v, want statement timeout while Channel owns FOR SHARE", err)
+	}
+	close(release)
+	if err = <-result; err != nil {
+		t.Fatalf("channel mutation=%v", err)
+	}
+	if _, err = pool.Exec(ctx, `UPDATE staff SET is_active = FALSE WHERE wecom_userid = $1`, weComUserID); err != nil {
+		t.Fatalf("deactivation after Channel commit=%v", err)
+	}
+}
+
+func TestC01TagReferenceLockBlocksGroupArchiveThenFailsClosed(t *testing.T) {
+	pool, ctx := c01OpenPool(t)
+	groupName := fmt.Sprintf("c01-tag-lock-%d", time.Now().UnixNano())
+	var groupID, tagID int64
+	if err := pool.QueryRow(ctx, `INSERT INTO tag_groups (name, sort_order) VALUES ($1, 0) RETURNING id`, groupName).Scan(&groupID); err != nil {
+		t.Fatal(err)
+	}
+	if err := pool.QueryRow(ctx, `INSERT INTO tags (group_id, name, sort_order) VALUES ($1, '锁定标签', 0) RETURNING id`, groupID).Scan(&tagID); err != nil {
+		t.Fatal(err)
+	}
+	locked := make(chan struct{})
+	release := make(chan struct{})
+	result := make(chan error, 1)
+	uow := platformstore.NewUnitOfWork(pool)
+	go func() {
+		result <- uow.Within(ctx, func(tx context.Context) error {
+			if _, err := contactstore.NewTagCatalogRepository().LockActiveTag(tx, tagID); err != nil {
+				return err
+			}
+			close(locked)
+			<-release
+			return nil
+		})
+	}()
+	select {
+	case <-locked:
+	case <-time.After(5 * time.Second):
+		t.Fatal("tag reference lock was not acquired")
+	}
+	blocker, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = blocker.Exec(ctx, `SET LOCAL statement_timeout = '200ms'`); err != nil {
+		t.Fatal(err)
+	}
+	_, err = blocker.Exec(ctx, `UPDATE tag_groups SET name = 'archived:' || id::text WHERE id = $1`, groupID)
+	_ = blocker.Rollback(ctx)
+	var databaseErr *pgconn.PgError
+	if !errors.As(err, &databaseErr) || databaseErr.Code != "57014" {
+		t.Fatalf("archive error=%v, want statement timeout while tag/group share locks are held", err)
+	}
+	close(release)
+	if err = <-result; err != nil {
+		t.Fatalf("tag lock transaction=%v", err)
+	}
+	if _, err = pool.Exec(ctx, `UPDATE tag_groups SET name = 'archived:' || id::text WHERE id = $1`, groupID); err != nil {
+		t.Fatalf("archive after reference commit=%v", err)
+	}
+	err = uow.Within(ctx, func(tx context.Context) error {
+		_, lookupErr := contactstore.NewTagCatalogRepository().LockActiveTag(tx, tagID)
+		return lookupErr
+	})
+	if !errors.Is(err, contactport.ErrTagReferenceNotFound) {
+		t.Fatalf("post-archive tag lookup=%v, want not found", err)
+	}
+}
+
+type c01BlockingAppender struct {
+	delegate eventport.Appender
+	entered  chan struct{}
+	release  <-chan struct{}
+	once     sync.Once
+}
+
+func (appender *c01BlockingAppender) Append(ctx context.Context, event eventport.Event) (eventport.EventID, error) {
+	appender.once.Do(func() { close(appender.entered) })
+	<-appender.release
+	return appender.delegate.Append(ctx, event)
 }
 
 func TestC01S200KChannelQueriesUseIndexes(t *testing.T) {
