@@ -29,7 +29,7 @@ type Safety struct {
 func LocalSafety() Safety { return Safety{} }
 
 type Plan struct {
-	ID        int64      `json:"plan_id"`
+	ID        int64      `json:"plan_id,string"`
 	Name      string     `json:"name"`
 	Status    PlanStatus `json:"status"`
 	Revision  int64      `json:"revision"`
@@ -44,12 +44,12 @@ type Member struct {
 }
 
 type GroupAsset struct {
-	ID       int64  `json:"group_asset_id"`
+	ID       int64  `json:"group_asset_id,string"`
 	AssetRef string `json:"asset_reference"`
 }
 
 type Node struct {
-	ID           int64    `json:"node_id"`
+	ID           int64    `json:"node_id,string"`
 	Position     int32    `json:"position"`
 	Kind         NodeKind `json:"kind"`
 	MessageText  string   `json:"message_text,omitempty"`
