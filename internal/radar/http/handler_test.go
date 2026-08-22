@@ -80,8 +80,7 @@ func (spy *applicationSpy) Share(_ context.Context, id radarport.LinkID) (radarp
 	spy.shareID = id
 	return radarport.ShareProjection{
 		LinkID: id, PublicCode: "rd_AAAAAAAAAAAAAAAAAAAAAA", Status: radarport.StatusDraft,
-		SharePath:       "/local/radar-links/rd_AAAAAAAAAAAAAAAAAAAAAA",
-		QRPayload:       "aicrm-local://radar-links/rd_AAAAAAAAAAAAAAAAAAAAAA",
+		Available:       false,
 		LocalProjection: true,
 	}, nil
 }
@@ -223,7 +222,7 @@ func TestListGetShareAndOptionsUseReadPermission(t *testing.T) {
 		t.Fatalf("permissions=%v", authorizer.permissions)
 	}
 	var share radarport.ShareProjection
-	if json.Unmarshal(shareRecorder.Body.Bytes(), &share) != nil || !share.LocalProjection || share.PublicRouteReady || share.RealExternalCallExecuted || share.QRPayload == "" {
+	if json.Unmarshal(shareRecorder.Body.Bytes(), &share) != nil || share.Available || !share.LocalProjection || share.PublicRouteReady || share.RealExternalCallExecuted || share.SharePath != "" || share.QRPayload != "" {
 		t.Fatalf("share body=%s", shareRecorder.Body.String())
 	}
 	var options radarport.Options

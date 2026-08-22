@@ -1156,16 +1156,31 @@ export interface RadarVersionRequest {
   expected_version: number;
 }
 
+export type RadarShareProjectionSharePath =
+  (typeof RadarShareProjectionSharePath)[keyof typeof RadarShareProjectionSharePath];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarShareProjectionSharePath = {
+  "": "",
+} as const;
+
+export type RadarShareProjectionQrPayload =
+  (typeof RadarShareProjectionQrPayload)[keyof typeof RadarShareProjectionQrPayload];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarShareProjectionQrPayload = {
+  "": "",
+} as const;
+
 export interface RadarShareProjection {
   /** @minimum 1 */
   link_id: number;
   /** @pattern ^rd_[A-Za-z0-9_-]{22}$ */
   public_code: string;
   status: RadarStatus;
-  /** @pattern ^/r/rd_[A-Za-z0-9_-]{22}$ */
-  share_path: string;
-  /** @pattern ^/r/rd_[A-Za-z0-9_-]{22}$ */
-  qr_payload: string;
+  available: boolean;
+  share_path: RadarShareProjectionSharePath;
+  qr_payload: RadarShareProjectionQrPayload;
   local_projection: boolean;
   public_route_ready: boolean;
   real_external_call_executed: boolean;

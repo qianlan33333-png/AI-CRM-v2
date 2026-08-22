@@ -7057,7 +7057,7 @@ paths:
       x-aicrm-external-effect: none
       parameters: [{ name: link_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
       responses:
-        "200": { description: Local descriptor only, content: { application/json: { schema: { $ref: "#/components/schemas/RadarShareProjection" } } } }
+        "200": { description: Unavailable local descriptor; no public route or external effect is implied, content: { application/json: { schema: { $ref: "#/components/schemas/RadarShareProjection" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -8692,13 +8692,14 @@ components:
     RadarShareProjection:
       type: object
       additionalProperties: false
-      required: [link_id, public_code, status, share_path, qr_payload, local_projection, public_route_ready, real_external_call_executed]
+      required: [link_id, public_code, status, available, share_path, qr_payload, local_projection, public_route_ready, real_external_call_executed]
       properties:
         link_id: { type: integer, format: int64, minimum: 1 }
         public_code: { type: string, pattern: '^rd_[A-Za-z0-9_-]{22}$' }
         status: { $ref: "#/components/schemas/RadarStatus" }
-        share_path: { type: string, pattern: '^/r/rd_[A-Za-z0-9_-]{22}$' }
-        qr_payload: { type: string, pattern: '^/r/rd_[A-Za-z0-9_-]{22}$' }
+        available: { type: boolean, enum: [false] }
+        share_path: { type: string, enum: [""] }
+        qr_payload: { type: string, enum: [""] }
         local_projection: { type: boolean, enum: [true] }
         public_route_ready: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
