@@ -38,6 +38,7 @@ func TestSafeDatabaseURLIsLoopbackAICRMTestOnly(t *testing.T) {
 		{name: "wrong user", databaseURL: "postgres://root:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable", wantError: true},
 		{name: "wrong password", databaseURL: "postgres://postgres:secret@127.0.0.1:5432/aicrm_test?sslmode=disable", wantError: true},
 		{name: "production database", databaseURL: "postgres://postgres:postgres@127.0.0.1:5432/aicrm?sslmode=disable", wantError: true},
+		{name: "encoded shared database path", databaseURL: "postgres://postgres:postgres@127.0.0.1:5432/aicrm%5Ftest?sslmode=disable", wantError: true},
 		{name: "unexpected query option", databaseURL: "postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=require", wantError: true},
 		{name: "extra query option", databaseURL: "postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable&application_name=test", wantError: true},
 		{name: "missing port", databaseURL: "postgres://postgres:postgres@127.0.0.1/aicrm_test?sslmode=disable", wantError: true},

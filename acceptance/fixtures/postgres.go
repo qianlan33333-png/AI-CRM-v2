@@ -79,7 +79,7 @@ func ValidateDatabaseURLForDatabase(databaseURL, databaseName string) error {
 		return ErrUnsafeDatabaseURL
 	}
 	parsed, err := url.Parse(databaseURL)
-	if err != nil || parsed.Scheme != "postgres" || parsed.Path != "/"+databaseName || parsed.RawQuery != "sslmode=disable" || parsed.Fragment != "" {
+	if err != nil || parsed.Scheme != "postgres" || parsed.Path != "/"+databaseName || parsed.RawPath != "" || parsed.RawQuery != "sslmode=disable" || parsed.Fragment != "" {
 		return ErrUnsafeDatabaseURL
 	}
 	if parsed.User == nil {
