@@ -39,6 +39,9 @@ func (*CustomerQueryRepository) ListCustomers(ctx context.Context, query contact
 		return contactapp.CustomerListStoreResult{}, err
 	}
 	queries := contactdb.New(customerQueryDBTX{Tx: tx})
+	if query.MatchNone {
+		return contactapp.CustomerListStoreResult{Items: []contactapp.CustomerRecord{}}, nil
+	}
 
 	boundedTotal, err := queries.CountCustomerIDsBounded(ctx, countCustomerIDsBoundedParams(query))
 	if err != nil {
@@ -90,6 +93,9 @@ func validateCustomerListQuery(query contactapp.CustomerListQuery) error {
 	if query.AfterUpdatedAt != nil && (query.AfterUpdatedAt.IsZero() || query.AfterUpdatedAt.After(query.Watermark) || *query.AfterID <= 0) {
 		return errInvalidCustomerListQuery
 	}
+	if query.CustomerID != nil && *query.CustomerID <= 0 || query.MatchNone && query.CustomerID != nil {
+		return errInvalidCustomerListQuery
+	}
 	for _, value := range []*int64{query.OwnerStaffID, query.StageID, query.ChannelID, query.TagID} {
 		if value != nil && *value <= 0 {
 			return errInvalidCustomerListQuery
@@ -107,6 +113,7 @@ func invalidTimeRange(after, before *time.Time) bool {
 
 func listCustomersParams(query contactapp.CustomerListQuery) contactdb.ListCustomersParams {
 	return contactdb.ListCustomersParams{
+		CustomerID:         nullableCustomerID(query.CustomerID),
 		Watermark:          nullableTimestamp(&query.Watermark),
 		Keyword:            nullableKeyword(query.Keyword),
 		OwnerStaffID:       nullableInt64(query.OwnerStaffID),
@@ -126,6 +133,7 @@ func listCustomersParams(query contactapp.CustomerListQuery) contactdb.ListCusto
 
 func countCustomerIDsBoundedParams(query contactapp.CustomerListQuery) contactdb.CountCustomerIDsBoundedParams {
 	return contactdb.CountCustomerIDsBoundedParams{
+		CustomerID:         nullableCustomerID(query.CustomerID),
 		Watermark:          nullableTimestamp(&query.Watermark),
 		Keyword:            nullableKeyword(query.Keyword),
 		OwnerStaffID:       nullableInt64(query.OwnerStaffID),

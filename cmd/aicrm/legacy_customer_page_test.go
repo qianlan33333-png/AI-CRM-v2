@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
+	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 )
 
 func TestLegacyCustomerPageCarriersReuseClosedCapabilitiesAndScopes(t *testing.T) {
@@ -143,7 +145,6 @@ func TestLegacyCustomerPageCarriersFailClosedForMalformedPaths(t *testing.T) {
 		"/admin/customers/01",
 		"/admin/customers/9007199254740992",
 		"/admin/customers/18446744073709551615",
-		"/admin/customers/legacy-text-key",
 		"/admin/customers/42/extra",
 		"/admin/customers/42\\extra",
 		"/admin\\customers\\42",
@@ -245,6 +246,7 @@ func TestLegacyCustomerPagePathParserAcceptsOnlyCanonicalSafeIDs(t *testing.T) {
 		legacyCustomerListPagePath,
 		"/admin/customers/1",
 		"/admin/customers/9007199254740991",
+		"/admin/customers/legacy-text-key",
 		"/admin/customer-360/1",
 		"/admin/customer-360/9007199254740991",
 	} {
@@ -257,7 +259,6 @@ func TestLegacyCustomerPagePathParserAcceptsOnlyCanonicalSafeIDs(t *testing.T) {
 		"/admin/customers/01",
 		"/admin/customers/9007199254740992",
 		"/admin/customers/18446744073709551615",
-		"/admin/customers/legacy-text-key",
 		"/admin/customers/1/extra",
 		"/admin/customers/1\\extra",
 		"/admin/customer-360",
@@ -281,6 +282,54 @@ func TestLegacyCustomerPagePathParserAcceptsOnlyCanonicalSafeIDs(t *testing.T) {
 	request = httptest.NewRequest(http.MethodGet, "/admin/customers/42?extra=1", nil)
 	if _, ok := legacyCustomerPageRouteForRequest(request); ok {
 		t.Fatal("query-bearing carrier must be rejected")
+	}
+}
+
+func TestLegacyCustomerUnionIDRedirectResolvesAfterAuthorization(t *testing.T) {
+	resolver := &customerPageUnionResolver{result: identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: 42}}
+	service := &customerPageAuthSpy{principal: authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}}
+	response := httptest.NewRecorder()
+	customerPageRouter(t, service, resolver).ServeHTTP(response, legacyRequest(http.MethodGet, "/admin/customers/legacy-union-key", legacyToken(84)))
+	if response.Code != http.StatusFound || response.Header().Get("Location") != "/admin/customers/42" {
+		t.Fatalf("status/location/body=%d/%q/%s", response.Code, response.Header().Get("Location"), response.Body.String())
+	}
+	if resolver.calls != 1 || resolver.value != "legacy-union-key" || strings.Contains(response.Body.String(), "legacy-union-key") || strings.Contains(response.Header().Get("Location"), "legacy-union-key") {
+		t.Fatalf("resolver/response=%d/%q/%q/%s", resolver.calls, resolver.value, response.Header().Get("Location"), response.Body.String())
+	}
+}
+
+func TestLegacyCustomerUnionIDRedirectFailsClosed(t *testing.T) {
+	tests := []struct {
+		name       string
+		result     identityport.ResolveResult
+		err        error
+		wantStatus int
+	}{
+		{name: "not_found", result: identityport.ResolveResult{Status: identityport.ResolveNotFound}, wantStatus: http.StatusNotFound},
+		{name: "conflict", result: identityport.ResolveResult{Status: identityport.ResolveConflict}, wantStatus: http.StatusServiceUnavailable},
+		{name: "invalid_found", result: identityport.ResolveResult{Status: identityport.ResolveFound}, wantStatus: http.StatusServiceUnavailable},
+		{name: "dependency", err: errors.New("identity unavailable"), wantStatus: http.StatusServiceUnavailable},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			resolver := &customerPageUnionResolver{result: test.result, err: test.err}
+			service := &customerPageAuthSpy{principal: authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}}
+			response := httptest.NewRecorder()
+			customerPageRouter(t, service, resolver).ServeHTTP(response, legacyRequest(http.MethodGet, "/admin/customers/secret-union-key", legacyToken(85)))
+			if response.Code != test.wantStatus || response.Header().Get("Location") != "" || strings.Contains(response.Body.String(), "secret-union-key") {
+				t.Fatalf("status/location/body=%d/%q/%s", response.Code, response.Header().Get("Location"), response.Body.String())
+			}
+		})
+	}
+}
+
+func TestLegacyCustomerUnionIDIsNotResolvedBeforeAuthorization(t *testing.T) {
+	resolver := &customerPageUnionResolver{result: identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: 42}}
+	service := &customerPageAuthSpy{principal: authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}}
+	response := httptest.NewRecorder()
+	customerPageRouter(t, service, resolver).ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/admin/customers/legacy-union-key", nil))
+	if response.Code != http.StatusUnauthorized || resolver.calls != 0 {
+		t.Fatalf("status/resolve_calls=%d/%d", response.Code, resolver.calls)
 	}
 }
 
@@ -347,7 +396,20 @@ func (*customerPageAuthSpy) Invalidate(context.Context, authport.SessionRef, aut
 	return nil
 }
 
-func customerPageRouter(t *testing.T, service authport.Service) http.Handler {
+type customerPageUnionResolver struct {
+	result identityport.ResolveResult
+	err    error
+	calls  int
+	value  string
+}
+
+func (resolver *customerPageUnionResolver) ResolveUnionID(_ context.Context, value string) (identityport.ResolveResult, error) {
+	resolver.calls++
+	resolver.value = value
+	return resolver.result, resolver.err
+}
+
+func customerPageRouter(t *testing.T, service authport.Service, resolvers ...legacyMessageArchiveUnionResolver) http.Handler {
 	t.Helper()
 	authHandler, err := authhttp.NewHandler(service)
 	if err != nil {
@@ -356,6 +418,9 @@ func customerPageRouter(t *testing.T, service authport.Service) http.Handler {
 	legacy, err := NewHandler(service, &legacyCustomerStub{})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(resolvers) > 0 {
+		legacy.messageArchiveUnionID = resolvers[0]
 	}
 	router, err := newAPIHandlerWithAll(
 		slog.New(slog.NewJSONHandler(io.Discard, nil)),

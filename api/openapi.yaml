@@ -557,6 +557,10 @@ paths:
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/CustomerKeyword"
+        - name: mobile
+          in: query
+          description: E.164 phone resolved by Identity to an exact OneID before Contact is queried.
+          schema: { type: string, minLength: 3, maxLength: 32, pattern: '^\+[1-9][0-9]{1,14}$' }
         - $ref: "#/components/parameters/OwnerStaffIDFilter"
         - $ref: "#/components/parameters/StageIDFilter"
         - $ref: "#/components/parameters/ChannelIDFilter"
@@ -813,6 +817,36 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CustomerChatActivityResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/customers/{customer_id}/survey-answers:
+    parameters:
+      - $ref: "#/components/parameters/CustomerID"
+    get:
+      tags: [p4-customer-360]
+      operationId: listCustomerSurveyAnswers
+      summary: List a bounded safe projection of recent Survey answers matched locally to one OneID
+      x-p4-decision-evidence: P4-CUSTOMER-360-READ-2026-08-20
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 30 }
+      responses:
+        "200":
+          description: Bounded, explicitly incomplete-safe answer projection without free text or identity values.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerSurveyAnswerResponse" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -10508,6 +10542,42 @@ components:
         timeline_next_cursor: { type: string, minLength: 1, nullable: true }
         chat: { $ref: "#/components/schemas/CustomerContextChatSummary" }
         non_atomic_snapshot: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    CustomerSurveyChoiceAnswer:
+      type: object
+      additionalProperties: false
+      required: [question_id, question_type, sort_order, option_ids]
+      properties:
+        question_id: { type: integer, format: int64, minimum: 1 }
+        question_type: { type: string, enum: [single_choice, multi_choice] }
+        sort_order: { type: integer, format: int32, minimum: 0 }
+        option_ids: { type: array, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }
+    CustomerSurveyAnswerItem:
+      type: object
+      additionalProperties: false
+      required: [submission_id, questionnaire_id, submitted_at, score, choice_answers]
+      properties:
+        submission_id: { type: integer, format: int64, minimum: 1 }
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        submitted_at: { type: string, format: date-time }
+        score: { type: number, format: double }
+        choice_answers: { type: array, items: { $ref: "#/components/schemas/CustomerSurveyChoiceAnswer" } }
+    CustomerSurveyAnswerResponse:
+      type: object
+      additionalProperties: false
+      required: [customer_id, items, limit, scan_limit, scanned_count, matched_count, scan_truncated, result_truncated, non_atomic_snapshot, identity_values_included, free_text_included, real_external_call_executed]
+      properties:
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CustomerSurveyAnswerItem" } }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        scan_limit: { type: integer, format: int32, minimum: 1 }
+        scanned_count: { type: integer, format: int32, minimum: 0 }
+        matched_count: { type: integer, format: int32, minimum: 0 }
+        scan_truncated: { type: boolean }
+        result_truncated: { type: boolean }
+        non_atomic_snapshot: { type: boolean, enum: [true] }
+        identity_values_included: { type: boolean, enum: [false] }
+        free_text_included: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
     CustomerMergeHistoryItem:
       type: object

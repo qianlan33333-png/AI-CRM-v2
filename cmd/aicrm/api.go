@@ -79,6 +79,7 @@ import (
 	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
 	surveyhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http"
 	safeadminhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http/safeadmin"
+	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
 	surveystore "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/store"
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
@@ -121,7 +122,10 @@ type apiComponent struct {
 type candidateHandler struct {
 	*authhttp.Handler
 	customers                 *contacthttp.CustomerListHandler
+	customerIdentity          identityResolveApplication
 	customerDetail            *contacthttp.CustomerDetailHandler
+	customerDetailReader      customerDetailApplication
+	customerSurveyAnswers     surveyport.CustomerSurveyAnswerReader
 	customerEvents            *contacthttp.CustomerEventHandler
 	customerContext           *customer360http.CustomerContextHandler
 	customerChatActivity      *customer360http.CustomerChatActivityHandler
@@ -164,7 +168,11 @@ func (application identityConsoleApplication) Bind(ctx context.Context, command 
 var _ api.ServerInterface = (*candidateHandler)(nil)
 
 func (handler *candidateHandler) ListCustomers(writer http.ResponseWriter, request *http.Request, params api.ListCustomersParams) {
-	handler.customers.ListCustomers(writer, request, params)
+	if params.Mobile == nil {
+		handler.customers.ListCustomers(writer, request, params)
+		return
+	}
+	handler.listCustomersByMobile(writer, request, params)
 }
 
 func (handler *candidateHandler) GetCustomer(writer http.ResponseWriter, request *http.Request, customerID api.CustomerID) {
@@ -573,9 +581,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	customerDetailHandler, err := contacthttp.NewCustomerDetailHandler(contactapp.NewCustomerDetailService(
-		uow, contactstore.NewCustomerDetailRepository(),
-	))
+	customerDetailService := contactapp.NewCustomerDetailService(uow, contactstore.NewCustomerDetailRepository())
+	customerDetailHandler, err := contacthttp.NewCustomerDetailHandler(customerDetailService)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -597,7 +604,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	messageArchiveService := wecomapp.NewMessageArchiveService(uow, wecomstore.NewMessageArchiveRepository(), eventstore.NewAppender())
 	customerContextService := customer360app.NewCustomerContextService(
 		contactapp.NewCustomer360ReaderService(
-			contactapp.NewCustomerDetailService(uow, contactstore.NewCustomerDetailRepository()),
+			customerDetailService,
 			contactapp.NewCustomerEventService(uow, contactstore.NewCustomerEventRepository()),
 		),
 		messageArchiveService,
@@ -881,6 +888,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	identityRepository := identitystore.NewRepository()
+	identityResolver := identityapp.NewResolveService(uow, identityRepository)
+	legacyUnionIDResolver := identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
+	customerIdentityMatcher := identityapp.NewCustomerMatcherService(identityResolver, legacyUnionIDResolver)
+	customerAnswerService := surveyapp.NewCustomerAnswerService(
+		uow, surveySubmissionRepository, customerIdentityMatcher, config.WeCom.OAuth.CorpID,
+	)
 	customerMergeHistoryHandler, err := identityhttp.NewMergeHistoryHandler(identityapp.NewCustomerMergeHistoryService(
 		uow, identityRepository,
 	))
@@ -896,7 +909,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	identityConsoleHandler, err := identityhttp.NewConsoleHandler(identityConsoleApplication{
-		resolver: identityapp.NewResolveService(uow, identityRepository),
+		resolver: identityResolver,
 		binder: identityapp.NewBindServiceWithMergePort(
 			uow,
 			identityRepository,
@@ -916,7 +929,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
-		customerDetail: customerDetailHandler, customerEvents: customerEventHandler, customerContext: customerContextHandler,
+		customerIdentity: identityResolver, customerDetail: customerDetailHandler, customerDetailReader: customerDetailService,
+		customerSurveyAnswers: customerAnswerService, customerEvents: customerEventHandler, customerContext: customerContextHandler,
 		customerChatActivity: customerChatActivityHandler, customerActivityAnalytics: customerActivityAnalyticsHandler,
 		customerMergeHistory: customerMergeHistoryHandler,
 		mutations:            mutationHandler, tags: tagCatalogHandler, localTags: localTagCatalogHandler, stages: stageHandler,
@@ -972,8 +986,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	adminOpsService := adminopsapp.NewService(uow, adminopsstore.NewRepository())
 	legacyHandler, err := NewHandlerWithAll(
 		service, customerService,
-		contactapp.NewCustomerDetailService(uow, contactstore.NewCustomerDetailRepository()),
-		identityapp.NewResolveService(uow, identityRepository), config.WeCom.OAuth.CorpID,
+		customerDetailService,
+		identityResolver, config.WeCom.OAuth.CorpID,
 		outboundQueryService,
 		outboundapp.NewCancelService(uow, outboundControlRepository, eventstore.NewAppender()),
 		outboundapp.NewManualRetryService(uow, outboundControlRepository, eventstore.NewAppender()),
@@ -1005,7 +1019,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.couponBoard = couponService
 	legacyHandler.automationAgents = automationAgentService
 	legacyHandler.messageArchive = messageArchiveService
-	legacyHandler.messageArchiveUnionID = identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
+	legacyHandler.messageArchiveUnionID = legacyUnionIDResolver
 	legacyHandler.operationCycles = operationapp.NewService(uow, operationstore.NewRepository(), eventstore.NewAppender(), deliveryProducer)
 	legacyHandler.pushCenter = pushcenterapp.NewService(uow, pushcenterstore.NewRepository())
 	legacyHandler.externalEffects = externalEffectsHandler

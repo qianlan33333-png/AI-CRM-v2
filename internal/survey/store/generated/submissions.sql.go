@@ -251,6 +251,62 @@ func (q *Queries) ListQuestionnaireSubmissions(ctx context.Context, arg ListQues
 	return items, nil
 }
 
+const listRecentCustomerAnswerCandidates = `-- name: ListRecentCustomerAnswerCandidates :many
+SELECT s.id, s.questionnaire_id, s.unionid, s.external_userid, s.mobile,
+       s.total_score, s.submitted_at,
+       COALESCE((SELECT jsonb_agg(jsonb_build_object(
+         'question_id', a.question_id, 'question_type', a.question_type,
+         'sort_order', a.sort_order,
+         'selected_options', COALESCE((SELECT jsonb_agg(jsonb_build_object(
+           'option_id', option_value -> 'option_id'
+         )) FROM jsonb_array_elements(a.selected_options) AS selected_option(option_value)), '[]'::jsonb)
+       ) ORDER BY a.sort_order, a.id)
+       FROM questionnaire_submission_answers a WHERE a.submission_id = s.id), '[]'::jsonb) AS answers
+FROM questionnaire_submissions s
+ORDER BY s.submitted_at DESC, s.id DESC
+LIMIT $1::integer
+`
+
+type ListRecentCustomerAnswerCandidatesRow struct {
+	ID              int64              `json:"id"`
+	QuestionnaireID int64              `json:"questionnaire_id"`
+	Unionid         string             `json:"unionid"`
+	ExternalUserid  string             `json:"external_userid"`
+	Mobile          string             `json:"mobile"`
+	TotalScore      float64            `json:"total_score"`
+	SubmittedAt     pgtype.Timestamptz `json:"submitted_at"`
+	Answers         interface{}        `json:"answers"`
+}
+
+func (q *Queries) ListRecentCustomerAnswerCandidates(ctx context.Context, rowLimit int32) ([]ListRecentCustomerAnswerCandidatesRow, error) {
+	rows, err := q.db.Query(ctx, listRecentCustomerAnswerCandidates, rowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListRecentCustomerAnswerCandidatesRow{}
+	for rows.Next() {
+		var i ListRecentCustomerAnswerCandidatesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.QuestionnaireID,
+			&i.Unionid,
+			&i.ExternalUserid,
+			&i.Mobile,
+			&i.TotalScore,
+			&i.SubmittedAt,
+			&i.Answers,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const questionnaireSubmissionOwnerExists = `-- name: QuestionnaireSubmissionOwnerExists :one
 SELECT EXISTS(SELECT 1 FROM questionnaires q WHERE q.id = $1::bigint) AS owner_exists
 `
