@@ -113,6 +113,19 @@ func TestListsAreDeterministicAndBounded(t *testing.T) {
 	}
 }
 
+func TestMutationRejectsMismatchedStrictReadback(t *testing.T) {
+	service, store, _ := newTestService()
+	detail, err := service.Create(context.Background(), groupopsport.CreatePlanCommand{Name: "readback", Actor: 7, IdempotencyKey: "group-ops-readback-001"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	store.corruptReadback = true
+	_, err = service.Update(context.Background(), groupopsport.UpdatePlanCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, Name: "changed", Actor: 7, IdempotencyKey: "group-ops-readback-002"})
+	if !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("err=%v", err)
+	}
+}
+
 type testUOW struct{}
 
 func (testUOW) Within(_ context.Context, fn func(context.Context) error) error {
@@ -127,11 +140,12 @@ func (e *testEvents) Append(_ context.Context, event eventport.Event) (eventport
 }
 
 type testStore struct {
-	details   map[int64]groupopsport.Detail
-	receipts  map[string]Receipt
-	nextPlan  int64
-	nextAsset int64
-	nextNode  int64
+	details         map[int64]groupopsport.Detail
+	receipts        map[string]Receipt
+	nextPlan        int64
+	nextAsset       int64
+	nextNode        int64
+	corruptReadback bool
 }
 
 func newTestService() (*Service, *testStore, *testEvents) {
@@ -190,6 +204,9 @@ func (s *testStore) Save(_ context.Context, detail groupopsport.Detail) error {
 		}
 	}
 	sort.Slice(detail.GroupAssets, func(i, j int) bool { return detail.GroupAssets[i].AssetRef < detail.GroupAssets[j].AssetRef })
+	if s.corruptReadback {
+		detail.Plan.Name = "corrupt"
+	}
 	s.details[detail.Plan.ID] = cloneDetail(detail)
 	return nil
 }

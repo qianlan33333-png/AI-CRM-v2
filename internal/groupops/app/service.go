@@ -381,7 +381,11 @@ func (s *Service) mutate(ctx context.Context, operation string, planID, expected
 		if err := s.store.Save(tx, detail); err != nil {
 			return groupopsport.Detail{}, err
 		}
-		return s.strictRead(tx, planID)
+		readback, err := s.strictRead(tx, planID)
+		if err != nil || !sameSavedDetail(detail, readback) {
+			return groupopsport.Detail{}, ErrUnavailable
+		}
+		return readback, nil
 	})
 }
 
@@ -618,6 +622,27 @@ func validNodes(items []groupopsport.Node) bool {
 		}
 	}
 	return items != nil
+}
+func sameSavedDetail(want, got groupopsport.Detail) bool {
+	if want.Plan != got.Plan || want.WebhookDescriptor != got.WebhookDescriptor || want.Safety != got.Safety || len(want.Members) != len(got.Members) || len(want.GroupAssets) != len(got.GroupAssets) || len(want.Nodes) != len(got.Nodes) {
+		return false
+	}
+	for index := range want.Members {
+		if want.Members[index] != got.Members[index] {
+			return false
+		}
+	}
+	for index := range want.GroupAssets {
+		if got.GroupAssets[index].ID < 1 || want.GroupAssets[index].ID != 0 && want.GroupAssets[index].ID != got.GroupAssets[index].ID || want.GroupAssets[index].AssetRef != got.GroupAssets[index].AssetRef {
+			return false
+		}
+	}
+	for index := range want.Nodes {
+		if got.Nodes[index].ID < 1 || want.Nodes[index].ID != 0 && want.Nodes[index].ID != got.Nodes[index].ID || want.Nodes[index].Position != got.Nodes[index].Position || want.Nodes[index].Kind != got.Nodes[index].Kind || want.Nodes[index].MessageText != got.Nodes[index].MessageText || want.Nodes[index].DelayMinutes != got.Nodes[index].DelayMinutes {
+			return false
+		}
+	}
+	return true
 }
 func receiptMatches(value Receipt, operation string, reservation Reservation) bool {
 	return value.ID > 0 && value.Operation == operation && value.ActorScope == reservation.ActorScope && subtle.ConstantTimeCompare(value.KeyDigest[:], reservation.KeyDigest[:]) == 1 && (value.State == "in_progress" || value.State == "completed")

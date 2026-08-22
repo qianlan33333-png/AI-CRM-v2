@@ -8026,9 +8026,15 @@ components:
         provider_execution_eligible: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
     GroupOpsWebhookDescriptorResponse:
-      allOf:
-        - { $ref: "#/components/schemas/GroupOpsWebhookDescriptor" }
-        - { $ref: "#/components/schemas/GroupOpsSafety" }
+      type: object
+      additionalProperties: false
+      required: [configured, description, provider_execution_eligible, real_external_call_executed]
+      properties:
+        configured: { type: boolean }
+        reference: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 }
+        description: { type: string, enum: [not configured, local opaque reference only] }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
     GroupOpsContentValidation:
       type: object
       additionalProperties: false
