@@ -30,7 +30,7 @@ func (a *EventLogAdapter) Append(ctx context.Context, event AuditEvent) error {
 	// one audit event per campaign, so preserve its per-campaign identity rather
 	// than making the second item collide with the first.
 	key := strings.Join([]string{event.IdempotencyKey, event.Type, event.CampaignCode}, ":")
-	_, err = a.appender.Append(ctx, eventport.Event{Type: event.Type, Payload: payload, OccurredAt: event.OccurredAt, IdempotencyKey: key})
+	_, err = a.appender.Append(ctx, eventport.Event{Type: eventport.EvCloudCampaignFact, Payload: payload, OccurredAt: event.OccurredAt, IdempotencyKey: key})
 	if err != nil {
 		return ErrUnavailable
 	}

@@ -97,9 +97,9 @@ func (m *MemoryStore) CreateLocalPlanAndCommand(_ context.Context, c Campaign, c
 	return p, cmd, nil
 }
 func (m *MemoryStore) ReserveIdempotency(_ context.Context, r Reservation) (IdempotencyRecord, bool, error) {
-	key := receiptKey(r.ActorID, r.Operation, r.KeyDigest)
+	key := receiptKey(r.ActorID, r.KeyDigest)
 	if old, ok := m.receipts[key]; ok {
-		if subtle.ConstantTimeCompare(old.PayloadDigest[:], r.PayloadDigest[:]) != 1 {
+		if old.Operation != r.Operation || subtle.ConstantTimeCompare(old.PayloadDigest[:], r.PayloadDigest[:]) != 1 {
 			return IdempotencyRecord{}, false, ErrIdempotencyConflict
 		}
 		if old.State != IdempotencyCompleted || old.Result == nil {
@@ -164,8 +164,8 @@ func (m *MemoryStore) restore(s memorySnapshot) {
 	m.nextPlan = s.nextPlan
 	m.nextCommand = s.nextCommand
 }
-func receiptKey(actor int64, op string, digest [32]byte) string {
-	return strconv.FormatInt(actor, 10) + "/" + op + "/" + hex.EncodeToString(digest[:])
+func receiptKey(actor int64, digest [32]byte) string {
+	return strconv.FormatInt(actor, 10) + "/" + hex.EncodeToString(digest[:])
 }
 func cloneResult(in OperationResult) *OperationResult {
 	out := in
