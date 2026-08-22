@@ -23,7 +23,7 @@ import (
 	surveystore "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/store"
 )
 
-var databaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 F01A database")
+var databaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 survey migration database")
 
 func TestF01AMigrationHistoryFixture(t *testing.T) {
 	pool, ctx := openPool(t)
@@ -232,8 +232,10 @@ func openPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	if *databaseURL == "" {
 		t.Skip("database-url is not set")
 	}
-	if err := acceptancefixtures.ValidateDatabaseURL(*databaseURL); err != nil {
-		t.Fatal(err)
+	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.F01ADatabaseName); err != nil {
+		if f01abErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.F01ABDatabaseName); f01abErr != nil {
+			t.Fatal(err)
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	t.Cleanup(cancel)

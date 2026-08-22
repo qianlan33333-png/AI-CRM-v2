@@ -27,7 +27,7 @@ import (
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
-var databaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 H01A1 database")
+var databaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 media migration database")
 
 func TestH01A1MigrationHistoryFixture(t *testing.T) {
 	pool, ctx := openPool(t)
@@ -240,7 +240,15 @@ func openPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 		t.Skip("database-url is not set")
 	}
 	if err := acceptancefixtures.ValidateDatabaseURL(*databaseURL); err != nil {
-		t.Fatal(err)
+		if h01A1Err := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.H01A1DatabaseName); h01A1Err != nil {
+			if h03Err := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.H03DatabaseName); h03Err != nil {
+				if miniProgramErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.MiniProgramLibraryDatabaseName); miniProgramErr != nil {
+					if imageUpdateErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.ImageUpdateDatabaseName); imageUpdateErr != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	t.Cleanup(cancel)

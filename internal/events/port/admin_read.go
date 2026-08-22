@@ -16,6 +16,7 @@ var adminReadBindings = []AdminReadBinding{
 	{Consumer: ConsumerAutomationTagTrigger, EventTypes: []string{EvTagApplied}},
 	{Consumer: ConsumerStatsTagApplied, EventTypes: []string{EvTagApplied}},
 	{Consumer: ConsumerOperationCycleFact, EventTypes: []string{EvOperationCycleFact}},
+	{Consumer: ConsumerCloudCampaignFact, EventTypes: []string{EvCloudCampaignFact}},
 }
 
 var adminReadStatuses = []string{

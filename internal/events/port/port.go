@@ -53,10 +53,12 @@ const (
 	// EvOperationCycleFact is a local lifecycle fact. Its delivery consumer
 	// only completes the durable receipt; it never invokes a provider.
 	EvOperationCycleFact = "operation_cycle.fact_recorded"
+	EvCloudCampaignFact  = "cloud_campaign.fact_recorded"
 
 	ConsumerAutomationTagTrigger = "automation.tag-trigger.v1"
 	ConsumerStatsTagApplied      = "stats.tag-applied.v1"
 	ConsumerOperationCycleFact   = "operation-cycle.fact.v1"
+	ConsumerCloudCampaignFact    = "cloud-campaign.fact.v1"
 	DeliveryJobKind              = "events_deliver"
 )
 

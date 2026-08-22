@@ -180,6 +180,7 @@ type Handler struct {
 	memberGrid              http.Handler
 	memberGridManagement    http.Handler
 	radar                   http.Handler
+	campaign                http.Handler
 	aiAudience              http.Handler
 	aiAudienceMembers       http.Handler
 	aiAudienceConfiguration http.Handler

@@ -38,6 +38,7 @@ func TestSafeDatabaseURLIsLoopbackAICRMTestOnly(t *testing.T) {
 		{name: "wrong user", databaseURL: "postgres://root:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable", wantError: true},
 		{name: "wrong password", databaseURL: "postgres://postgres:secret@127.0.0.1:5432/aicrm_test?sslmode=disable", wantError: true},
 		{name: "production database", databaseURL: "postgres://postgres:postgres@127.0.0.1:5432/aicrm?sslmode=disable", wantError: true},
+		{name: "encoded shared database path", databaseURL: "postgres://postgres:postgres@127.0.0.1:5432/aicrm%5Ftest?sslmode=disable", wantError: true},
 		{name: "unexpected query option", databaseURL: "postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=require", wantError: true},
 		{name: "extra query option", databaseURL: "postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable&application_name=test", wantError: true},
 		{name: "missing port", databaseURL: "postgres://postgres:postgres@127.0.0.1/aicrm_test?sslmode=disable", wantError: true},
@@ -64,6 +65,19 @@ func TestValidateDatabaseURLDoesNotExposeRejectedInput(t *testing.T) {
 	}
 	if strings.Contains(err.Error(), secret) {
 		t.Fatalf("ValidateDatabaseURL() error exposes rejected credential")
+	}
+}
+
+func TestValidateDatabaseURLForDedicatedTemporaryDatabases(t *testing.T) {
+	t.Parallel()
+	for _, databaseName := range []string{H01A1DatabaseName, H03DatabaseName, I01BDatabaseName, F01ADatabaseName, F01ABDatabaseName, F01PublicDatabaseName, AutomationAgentsABDatabaseName, AdminOpsABDatabaseName, C01ChannelDatabaseName, J01CouponDatabaseName, CouponABDatabaseName, I03OrderDatabaseName, OrderABDatabaseName, MessageArchiveDatabaseName, PushCenterDatabaseName, MiniProgramLibraryDatabaseName, ImageUpdateDatabaseName, HXCSenderDatabaseName} {
+		databaseURL := "postgres://postgres:postgres@127.0.0.1:5432/" + databaseName + "?sslmode=disable"
+		if err := ValidateDatabaseURLForDatabase(databaseURL, databaseName); err != nil {
+			t.Fatalf("temporary database %q rejected: %v", databaseName, err)
+		}
+	}
+	if err := ValidateDatabaseURLForDatabase("postgres://postgres:postgres@127.0.0.1:5432/aicrm_test_other?sslmode=disable", "aicrm_test_other"); !errors.Is(err, ErrUnsafeDatabaseURL) {
+		t.Fatalf("unapproved temporary database error=%v, want ErrUnsafeDatabaseURL", err)
 	}
 }
 

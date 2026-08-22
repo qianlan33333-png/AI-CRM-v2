@@ -24,6 +24,8 @@ import (
 	automationapp "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/app"
 	automationhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/http"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
+	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
+	campaignstore "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/store"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 	configapp "github.com/qianlan33333-png/AI-CRM-v2/internal/config/app"
 	configstore "github.com/qianlan33333-png/AI-CRM-v2/internal/config/store"
@@ -838,6 +840,21 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	campaignAudit, err := campaign.NewEventLogAdapter(eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignService, err := campaign.NewService(uow, campaignstore.NewRepository(), campaignAudit)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignFragment, err := campaign.NewRouteFragment(campaignService, legacyCampaignAuthorizer{}, legacyCampaignCSRF{})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	memberGridManagementFragment, err := membergrid.NewManagementRouteFragment(memberGridManagementHandler)
 	if err != nil {
 		pool.Close()
@@ -971,6 +988,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.memberGrid = memberGridFragment
 	legacyHandler.memberGridManagement = memberGridManagementFragment
 	legacyHandler.radar = radarFragment
+	legacyHandler.campaign = campaignFragment
 	legacyHandler.aiAudience = legacyAIAudienceFragment
 	legacyHandler.aiAudienceMembers = legacyAIAudienceMembersFragment
 	legacyHandler.aiAudienceConfiguration = legacyAIAudienceConfigurationFragment
@@ -1650,6 +1668,29 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				{http.MethodGet, radarthttp.BasePath + "/{link_id}/share", authport.CapabilityAdminRead, false},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.radar); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if legacy.campaign != nil {
+			for _, route := range []struct {
+				method, pattern string
+				capability      authport.Capability
+				csrf            bool
+			}{
+				{http.MethodGet, campaign.RoutePrefix, authport.CapabilityAdminRead, false},
+				{http.MethodPost, campaign.RoutePrefix + "/batch-start", authport.CapabilityOperationsManage, true},
+				{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}", authport.CapabilityAdminRead, false},
+				{http.MethodDelete, campaign.RoutePrefix + "/{campaign_code}", authport.CapabilityOperationsManage, true},
+				{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/approve", authport.CapabilityOperationsManage, true},
+				{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/reject", authport.CapabilityOperationsManage, true},
+				{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/pause", authport.CapabilityOperationsManage, true},
+				{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/start", authport.CapabilityOperationsManage, true},
+				{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/steps", authport.CapabilityOperationsManage, true},
+				{http.MethodPatch, campaign.RoutePrefix + "/{campaign_code}/steps/{step_index}", authport.CapabilityOperationsManage, true},
+				{http.MethodDelete, campaign.RoutePrefix + "/{campaign_code}/steps/{step_index}", authport.CapabilityOperationsManage, true},
+			} {
+				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.campaign); err != nil {
 					return nil, err
 				}
 			}

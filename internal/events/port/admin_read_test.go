@@ -4,7 +4,7 @@ import "testing"
 
 func TestAdminReadRegistryIsImmutableAndOrdered(t *testing.T) {
 	bindings := AdminReadBindings()
-	if len(bindings) != 3 || bindings[0].Consumer != ConsumerAutomationTagTrigger || bindings[1].Consumer != ConsumerStatsTagApplied || bindings[2].Consumer != ConsumerOperationCycleFact {
+	if len(bindings) != 4 || bindings[0].Consumer != ConsumerAutomationTagTrigger || bindings[1].Consumer != ConsumerStatsTagApplied || bindings[2].Consumer != ConsumerOperationCycleFact || bindings[3].Consumer != ConsumerCloudCampaignFact {
 		t.Fatalf("bindings=%+v", bindings)
 	}
 	bindings[0].EventTypes[0] = "tampered"

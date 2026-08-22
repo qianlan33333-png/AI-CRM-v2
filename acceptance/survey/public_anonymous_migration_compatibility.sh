@@ -6,8 +6,21 @@ set -euo pipefail
 # migrations are present, and restores the latest waterline after cleaning the
 # anonymous fixture rows.
 : "${P4SURVEY_PUBLIC_TEST_DATABASE_URL:?P4SURVEY_PUBLIC_TEST_DATABASE_URL is required}"
-db_url="$P4SURVEY_PUBLIC_TEST_DATABASE_URL"
+base_database_url="$P4SURVEY_PUBLIC_TEST_DATABASE_URL"
+temporary_database="aicrm_test_f01public"
+db_url="${base_database_url/aicrm_test/$temporary_database}"
 root="$(cd "$(dirname "$0")/../.." && pwd)"
+
+MIGRATION_TEST_DATABASE_URL="$base_database_url" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  go run "$root/acceptance/fixtures/cmd/validate-database-url"
+cleanup() {
+  psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null
+}
+trap cleanup EXIT
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "CREATE DATABASE $temporary_database" >/dev/null
+MIGRATION_TEST_DATABASE_URL="$db_url" MIGRATION_TEST_DATABASE_NAME="$temporary_database" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  go run "$root/acceptance/fixtures/cmd/validate-database-url"
 goose=(go tool -modfile="$root/tools/go.mod" goose -dir "$root/migrations" postgres "$db_url")
 "${goose[@]}" up
 psql "$db_url" -v ON_ERROR_STOP=1 -Atqc "SELECT 1 FROM goose_db_version WHERE version_id=52 AND is_applied" >/dev/null

@@ -6333,6 +6333,274 @@ paths:
         "415": { $ref: "#/components/responses/UnsupportedMediaType" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/cloud-orchestrator/campaigns:
+    get:
+      tags: [p4-cloud-campaign]
+      x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22
+      x-legacy-mapping-ids: [LEGACY-API-0209]
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      operationId: listCloudCampaigns
+      parameters:
+        - { name: approval_status, in: query, required: false, schema: { type: string, enum: [draft, approved, rejected] } }
+        - { name: runtime_status, in: query, required: false, schema: { type: string, enum: [idle, planned, paused] } }
+      responses:
+        "200": { description: CRM-local campaign list, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignListResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden or invalid CSRF token, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Campaign not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "409": { description: Command conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+  /api/admin/cloud-orchestrator/campaigns/batch-start:
+    post:
+      tags: [p4-cloud-campaign]
+      x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22
+      x-legacy-mapping-ids: [LEGACY-API-0211]
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      operationId: batchStartCloudCampaigns
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignBatchStartRequest" } } } }
+      responses:
+        "200": { description: CRM-local plans and commands only, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignBatchStartResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden or invalid CSRF token, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Campaign not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "409": { description: Command conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "422": { description: Semantically invalid command, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}:
+    parameters: [{ name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }]
+    get:
+      tags: [p4-cloud-campaign]
+      x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22
+      x-legacy-mapping-ids: [LEGACY-API-0217]
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      operationId: getCloudCampaign
+      responses:
+        "200": { description: CRM-local campaign detail, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignDetailResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden or invalid CSRF token, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Campaign not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "409": { description: Command conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+    delete:
+      tags: [p4-cloud-campaign]
+      x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22
+      x-legacy-mapping-ids: [LEGACY-API-0216]
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      operationId: deleteCloudCampaign
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignVersionRequest" } } } }
+      responses:
+        "200": { description: Draft and idle campaign deleted, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignDeleteResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden or invalid CSRF token, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Campaign not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "409": { description: Command conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "422": { description: Semantically invalid command, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/steps:
+    parameters: [{ name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }]
+    post:
+      tags: [p4-cloud-campaign]
+      x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22
+      x-legacy-mapping-ids: [LEGACY-API-0224]
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      operationId: addCloudCampaignStep
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignStepCreateRequest" } } } }
+      responses:
+        "200": { description: CRM-local step added, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignMutationResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden or invalid CSRF token, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Campaign not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "409": { description: Command conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "422": { description: Semantically invalid command, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/steps/{step_index}:
+    parameters:
+      - { name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }
+      - { name: step_index, in: path, required: true, schema: { type: integer, format: int32, minimum: 1 } }
+    patch:
+      tags: [p4-cloud-campaign]
+      x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22
+      x-legacy-mapping-ids: [LEGACY-API-0226]
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      operationId: updateCloudCampaignStep
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignStepUpdateRequest" } } } }
+      responses:
+        "200": { description: CRM-local step updated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignMutationResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden or invalid CSRF token, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Campaign not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "409": { description: Command conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "422": { description: Semantically invalid command, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+    delete:
+      tags: [p4-cloud-campaign]
+      x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22
+      x-legacy-mapping-ids: [LEGACY-API-0225]
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      operationId: deleteCloudCampaignStep
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignVersionRequest" } } } }
+      responses:
+        "200": { description: CRM-local step deleted, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignMutationResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden or invalid CSRF token, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Campaign not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "409": { description: Command conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "422": { description: Semantically invalid command, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/approve:
+    parameters: [{ name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }]
+    post:
+      tags: [p4-cloud-campaign]
+      x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22
+      x-legacy-mapping-ids: [LEGACY-API-0218]
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      operationId: approveCloudCampaign
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignVersionRequest" } } } }
+      responses:
+        "200": { description: CRM-local approval state updated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignMutationResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden or invalid CSRF token, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Campaign not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "409": { description: Command conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "422": { description: Semantically invalid command, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/start:
+    parameters: [{ name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }]
+    post:
+      tags: [p4-cloud-campaign]
+      x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22
+      x-legacy-mapping-ids: [LEGACY-API-0222]
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      operationId: startCloudCampaign
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignVersionRequest" } } } }
+      responses:
+        "200": { description: CRM-local plan and command recorded only, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignMutationResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden or invalid CSRF token, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Campaign not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "409": { description: Command conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "422": { description: Semantically invalid command, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/reject:
+    parameters: [{ name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }]
+    post:
+      tags: [p4-cloud-campaign]
+      x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22
+      x-legacy-mapping-ids: [LEGACY-API-0221]
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      operationId: rejectCloudCampaign
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignVersionRequest" } } } }
+      responses:
+        "200": { description: CRM-local rejection state updated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignMutationResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden or invalid CSRF token, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Campaign not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "409": { description: Command conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "422": { description: Semantically invalid command, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/pause:
+    parameters: [{ name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }]
+    post:
+      tags: [p4-cloud-campaign]
+      x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22
+      x-legacy-mapping-ids: [LEGACY-API-0220]
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      operationId: pauseCloudCampaign
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignVersionRequest" } } } }
+      responses:
+        "200": { description: CRM-local planned campaign paused, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignMutationResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden or invalid CSRF token, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Campaign not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "409": { description: Command conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "422": { description: Semantically invalid command, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
 components:
   securitySchemes:
     AdminSession:
@@ -6554,6 +6822,146 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    CloudCampaignError:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties: { code: { type: string, minLength: 1 } }
+    CloudCampaignProjection:
+      type: object
+      additionalProperties: false
+      required: [local_projection, real_external_call_executed, real_send, runtime_executed]
+      properties:
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        real_send: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
+    CloudCampaign:
+      type: object
+      additionalProperties: false
+      required: [campaign_code, name, approval_status, runtime_status, version, created_by, updated_by, created_at, updated_at]
+      properties:
+        campaign_code: { type: string, minLength: 1, maxLength: 96 }
+        name: { type: string, minLength: 1, maxLength: 160 }
+        approval_status: { type: string, enum: [draft, approved, rejected] }
+        runtime_status: { type: string, enum: [idle, planned, paused] }
+        version: { type: integer, format: int64, minimum: 1 }
+        created_by: { type: integer, format: int64, minimum: 1 }
+        updated_by: { type: integer, format: int64, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    CloudCampaignStep:
+      type: object
+      additionalProperties: false
+      required: [step_index, delay_minutes, content]
+      properties:
+        step_index: { type: integer, format: int32, minimum: 1 }
+        delay_minutes: { type: integer, format: int32, minimum: 0 }
+        content: { type: string, minLength: 1, maxLength: 4000 }
+    CloudCampaignPlan:
+      type: object
+      additionalProperties: false
+      required: [plan_id, campaign_code, campaign_version, step_count, created_at]
+      properties:
+        plan_id: { type: integer, format: int64, minimum: 1 }
+        campaign_code: { type: string, minLength: 1, maxLength: 96 }
+        campaign_version: { type: integer, format: int64, minimum: 1 }
+        step_count: { type: integer, format: int32, minimum: 0 }
+        created_at: { type: string, format: date-time }
+    CloudCampaignCommand:
+      type: object
+      additionalProperties: false
+      required: [command_id, operation, campaign_code, plan_id, real_send, runtime_executed, created_at]
+      properties:
+        command_id: { type: integer, format: int64, minimum: 1 }
+        operation: { type: string, enum: [start, batch_start] }
+        campaign_code: { type: string, minLength: 1, maxLength: 96 }
+        plan_id: { type: integer, format: int64, minimum: 1 }
+        real_send: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
+        created_at: { type: string, format: date-time }
+    CloudCampaignListResponse:
+      type: object
+      additionalProperties: false
+      required: [items, local_projection, real_external_call_executed, real_send, runtime_executed]
+      properties:
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaign" } }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        real_send: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
+    CloudCampaignDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [campaign, steps, local_projection, real_external_call_executed, real_send, runtime_executed]
+      properties:
+        campaign: { $ref: "#/components/schemas/CloudCampaign" }
+        steps: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignStep" } }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        real_send: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
+    CloudCampaignMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [campaign, local_projection, real_external_call_executed, real_send, runtime_executed]
+      properties:
+        campaign: { $ref: "#/components/schemas/CloudCampaign" }
+        plan: { $ref: "#/components/schemas/CloudCampaignPlan" }
+        command: { $ref: "#/components/schemas/CloudCampaignCommand" }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        real_send: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
+    CloudCampaignDeleteResponse:
+      type: object
+      additionalProperties: false
+      required: [campaign_code, deleted, local_projection, real_external_call_executed, real_send, runtime_executed]
+      properties:
+        campaign_code: { type: string, minLength: 1, maxLength: 96 }
+        deleted: { type: boolean, enum: [true] }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        real_send: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
+    CloudCampaignBatchStartItem:
+      type: object
+      additionalProperties: false
+      required: [campaign_code, expected_version]
+      properties: { campaign_code: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' }, expected_version: { type: integer, format: int64, minimum: 1 } }
+    CloudCampaignBatchStartResponse:
+      type: object
+      additionalProperties: false
+      required: [started, skipped, failed, local_projection, real_external_call_executed, real_send, runtime_executed]
+      properties:
+        started: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignMutationResponse" } }
+        skipped: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignBatchStartItem" } }
+        failed: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignBatchStartItem" } }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        real_send: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
+    CloudCampaignVersionRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      properties: { expected_version: { type: integer, format: int64, minimum: 1 } }
+    CloudCampaignStepCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version, delay_minutes, content]
+      properties: { expected_version: { type: integer, format: int64, minimum: 1 }, delay_minutes: { type: integer, format: int32, minimum: 0 }, content: { type: string, minLength: 1, maxLength: 4000 } }
+    CloudCampaignStepUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      anyOf: [{ required: [delay_minutes] }, { required: [content] }]
+      properties: { expected_version: { type: integer, format: int64, minimum: 1 }, delay_minutes: { type: integer, format: int32, minimum: 0 }, content: { type: string, minLength: 1, maxLength: 4000 } }
+    CloudCampaignBatchStartRequest:
+      type: object
+      additionalProperties: false
+      required: [campaigns]
+      properties: { campaigns: { type: array, minItems: 1, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignBatchStartItem" } } }
     AIAudienceProjection:
       type: object
       additionalProperties: false

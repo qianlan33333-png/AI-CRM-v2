@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
+	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	hxcapp "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/app"
 	hxcstore "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/store"
@@ -146,6 +147,9 @@ func openPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	t.Helper()
 	if *hxcDatabaseURL == "" {
 		t.Skip("database-url is not set")
+	}
+	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(*hxcDatabaseURL, acceptancefixtures.HXCSenderDatabaseName); err != nil {
+		t.Fatal(err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	t.Cleanup(cancel)

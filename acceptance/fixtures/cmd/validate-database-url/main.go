@@ -9,7 +9,11 @@ import (
 
 func main() {
 	databaseURL, present := os.LookupEnv("MIGRATION_TEST_DATABASE_URL")
-	if !present || fixtures.ValidateDatabaseURL(databaseURL) != nil {
+	databaseName := os.Getenv("MIGRATION_TEST_DATABASE_NAME")
+	if databaseName == "" {
+		databaseName = "aicrm_test"
+	}
+	if !present || fixtures.ValidateDatabaseURLForDatabase(databaseURL, databaseName) != nil {
 		fmt.Fprintln(os.Stderr, "MIGRATION_TEST_DATABASE_URL failed safe acceptance validation")
 		os.Exit(2)
 	}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
+	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	contactworker "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/worker"
@@ -107,6 +108,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		{EventType: eventport.EvTagApplied, Consumer: eventport.ConsumerAutomationTagTrigger},
 		{EventType: eventport.EvTagApplied, Consumer: eventport.ConsumerStatsTagApplied},
 		{EventType: eventport.EvOperationCycleFact, Consumer: eventport.ConsumerOperationCycleFact},
+		{EventType: eventport.EvCloudCampaignFact, Consumer: eventport.ConsumerCloudCampaignFact},
 	})
 	if err != nil {
 		pool.Close()
@@ -140,6 +142,14 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	operationCycleConsumer, err := operationstore.NewFactDeliveryConsumer(platformstore.NewUnitOfWork(pool), deliveries)
 	if err == nil {
 		err = router.RegisterDelivery(operationCycleConsumer)
+	}
+	campaignConsumer, err := campaign.NewFactDeliveryConsumer(platformstore.NewUnitOfWork(pool), deliveries)
+	if err == nil {
+		err = router.RegisterDelivery(campaignConsumer)
+	}
+	if err != nil {
+		pool.Close()
+		return nil, err
 	}
 	if err != nil {
 		pool.Close()

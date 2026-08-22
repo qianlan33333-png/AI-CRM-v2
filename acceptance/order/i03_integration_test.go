@@ -112,7 +112,11 @@ func openOrderPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 		t.Skip("database-url is not set")
 	}
 	if err := acceptancefixtures.ValidateDatabaseURL(*i03DatabaseURL); err != nil {
-		t.Fatal(err)
+		if i03Err := acceptancefixtures.ValidateDatabaseURLForDatabase(*i03DatabaseURL, acceptancefixtures.I03OrderDatabaseName); i03Err != nil {
+			if orderABErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*i03DatabaseURL, acceptancefixtures.OrderABDatabaseName); orderABErr != nil {
+				t.Fatal(err)
+			}
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	t.Cleanup(cancel)
