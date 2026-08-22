@@ -6,8 +6,12 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
+	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
+	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 )
 
@@ -32,6 +36,7 @@ type legacyCustomerPageRoute struct {
 	kind       legacyCustomerPageKind
 	pathname   string
 	customerID int64
+	legacyKey  string
 }
 
 func parseLegacyCustomerPagePath(pathname string) (legacyCustomerPageRoute, bool) {
@@ -50,13 +55,25 @@ func parseLegacyCustomerPagePath(pathname string) (legacyCustomerPageRoute, bool
 			continue
 		}
 		rawID := strings.TrimPrefix(pathname, candidate.prefix)
-		if rawID == "" || rawID[0] == '0' || strings.ContainsAny(rawID, "/\\") {
+		if rawID == "" || len(rawID) > 1024 || strings.ContainsAny(rawID, "/\\") ||
+			strings.TrimSpace(rawID) != rawID || !utf8.ValidString(rawID) || strings.IndexFunc(rawID, unicode.IsControl) >= 0 {
 			return legacyCustomerPageRoute{}, false
 		}
+		allDigits := true
 		for index := range rawID {
 			if rawID[index] < '0' || rawID[index] > '9' {
+				allDigits = false
+				break
+			}
+		}
+		if !allDigits {
+			if candidate.kind != legacyCustomerPageDetail || rawID[0] == '-' || rawID[0] == '+' {
 				return legacyCustomerPageRoute{}, false
 			}
+			return legacyCustomerPageRoute{kind: candidate.kind, pathname: pathname, legacyKey: rawID}, true
+		}
+		if rawID[0] == '0' {
+			return legacyCustomerPageRoute{}, false
 		}
 		customerID, err := strconv.ParseInt(rawID, 10, 64)
 		if err != nil || customerID < 1 || customerID > legacyCustomerMaxSafeID {
@@ -130,10 +147,49 @@ func (handler *Handler) CustomerListPage(writer http.ResponseWriter, request *ht
 	serveLegacyCustomerPage(writer, request, legacyCustomerPageList, authport.CapabilityCustomersRead)
 }
 
-// CustomerDetailPage is an authenticated HTML carrier only. Its strict path
-// parser accepts one canonical positive integer and reflects no invalid input.
+// CustomerDetailPage keeps numeric OneID carriers unchanged. A safe legacy
+// unionid is resolved only after authorization and redirected without ever
+// reflecting the raw key.
 func (handler *Handler) CustomerDetailPage(writer http.ResponseWriter, request *http.Request) {
-	serveLegacyCustomerPage(writer, request, legacyCustomerPageDetail, authport.CapabilityCustomersRead)
+	setLegacyCustomerPageHeaders(writer)
+	if !legacyCustomerPageAuthorized(request, authport.CapabilityCustomersRead) {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthorized, authport.ErrUnauthorized))
+		return
+	}
+	route, ok := legacyCustomerPageRouteForRequest(request)
+	if !ok || route.kind != legacyCustomerPageDetail {
+		writeLegacyCustomerPageNotFoundResponse(writer)
+		return
+	}
+	if route.legacyKey == "" {
+		http.Redirect(writer, request, "/?legacy_admin_path="+url.QueryEscape(route.pathname), http.StatusFound)
+		return
+	}
+	if handler == nil || nilLegacyDependency(handler.messageArchiveUnionID) {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, identityapp.ErrMessageArchiveUnionLookupFailed))
+		return
+	}
+	result, err := handler.messageArchiveUnionID.ResolveUnionID(request.Context(), route.legacyKey)
+	if err != nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, identityapp.ErrMessageArchiveUnionLookupFailed))
+		return
+	}
+	switch result.Status {
+	case identityport.ResolveNotFound:
+		if result.CustomerID != 0 {
+			platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, identityapp.ErrMessageArchiveUnionLookupFailed))
+			return
+		}
+		writeLegacyCustomerPageNotFoundResponse(writer)
+	case identityport.ResolveFound:
+		if result.CustomerID <= 0 || int64(result.CustomerID) > legacyCustomerMaxSafeID {
+			platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, identityapp.ErrMessageArchiveUnionLookupFailed))
+			return
+		}
+		http.Redirect(writer, request, legacyCustomerListPagePath+"/"+strconv.FormatInt(int64(result.CustomerID), 10), http.StatusFound)
+	default:
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, identityapp.ErrMessageArchiveUnionLookupFailed))
+	}
 }
 
 // CustomerContextPage is an authenticated HTML carrier only. The Web shell

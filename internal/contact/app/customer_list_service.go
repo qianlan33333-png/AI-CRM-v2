@@ -32,6 +32,8 @@ var (
 )
 
 type CustomerListInput struct {
+	CustomerID         *contactport.CustomerID
+	MatchNone          bool
 	Keyword            string
 	OwnerStaffID       *int64
 	StageID            *int64
@@ -134,6 +136,9 @@ func (service *CustomerListService) normalize(input CustomerListInput) (Customer
 	if !utf8.ValidString(keyword) || utf8.RuneCountInString(keyword) > customerListMaximumKeyword {
 		return CustomerListQuery{}, "", ErrInvalidCustomerListQuery
 	}
+	if input.CustomerID != nil && *input.CustomerID <= 0 || input.MatchNone && input.CustomerID != nil {
+		return CustomerListQuery{}, "", ErrInvalidCustomerListQuery
+	}
 	for _, id := range []*int64{input.OwnerStaffID, input.StageID, input.ChannelID, input.TagID} {
 		if id != nil && *id <= 0 {
 			return CustomerListQuery{}, "", ErrInvalidCustomerListQuery
@@ -161,6 +166,8 @@ func (service *CustomerListService) normalize(input CustomerListInput) (Customer
 	}
 
 	query := CustomerListQuery{
+		CustomerID:         cloneCustomerID(input.CustomerID),
+		MatchNone:          input.MatchNone,
 		Keyword:            keyword,
 		OwnerStaffID:       cloneInt64(input.OwnerStaffID),
 		StageID:            cloneInt64(input.StageID),
@@ -181,20 +188,23 @@ func (service *CustomerListService) normalize(input CustomerListInput) (Customer
 }
 
 type customerListFilterFingerprint struct {
-	Keyword            string  `json:"keyword"`
-	OwnerStaffID       *int64  `json:"owner_staff_id"`
-	StageID            *int64  `json:"stage_id"`
-	ChannelID          *int64  `json:"channel_id"`
-	TagID              *int64  `json:"tag_id"`
-	IsDeleted          bool    `json:"is_deleted"`
-	AddedAfter         *string `json:"added_after"`
-	AddedBefore        *string `json:"added_before"`
-	LastInteractAfter  *string `json:"last_interact_after"`
-	LastInteractBefore *string `json:"last_interact_before"`
+	CustomerID         *contactport.CustomerID `json:"customer_id"`
+	MatchNone          bool                    `json:"match_none"`
+	Keyword            string                  `json:"keyword"`
+	OwnerStaffID       *int64                  `json:"owner_staff_id"`
+	StageID            *int64                  `json:"stage_id"`
+	ChannelID          *int64                  `json:"channel_id"`
+	TagID              *int64                  `json:"tag_id"`
+	IsDeleted          bool                    `json:"is_deleted"`
+	AddedAfter         *string                 `json:"added_after"`
+	AddedBefore        *string                 `json:"added_before"`
+	LastInteractAfter  *string                 `json:"last_interact_after"`
+	LastInteractBefore *string                 `json:"last_interact_before"`
 }
 
 func customerListFilterHash(query CustomerListQuery) (string, error) {
 	fingerprint := customerListFilterFingerprint{
+		CustomerID: cloneCustomerID(query.CustomerID), MatchNone: query.MatchNone,
 		Keyword: query.Keyword, OwnerStaffID: query.OwnerStaffID, StageID: query.StageID,
 		ChannelID: query.ChannelID, TagID: query.TagID, IsDeleted: query.IsDeleted,
 		AddedAfter: formatOptionalTime(query.AddedAfter), AddedBefore: formatOptionalTime(query.AddedBefore),
@@ -207,6 +217,14 @@ func customerListFilterHash(query CustomerListQuery) (string, error) {
 	}
 	digest := sha256.Sum256(encoded)
 	return hex.EncodeToString(digest[:]), nil
+}
+
+func cloneCustomerID(value *contactport.CustomerID) *contactport.CustomerID {
+	if value == nil {
+		return nil
+	}
+	cloned := *value
+	return &cloned
 }
 
 type customerListCursor struct {
@@ -278,12 +296,14 @@ func applyCustomerListCursor(query *CustomerListQuery, raw string, expectedFilte
 func validateCustomerListStoreResult(result CustomerListStoreResult, query CustomerListQuery) error {
 	if result.BoundedTotal < 0 || result.BoundedTotal > CustomerListExactTotalCap+1 ||
 		result.BoundedTotal < int64(len(result.Items)) || len(result.Items) > int(query.Limit) ||
-		(result.HasMore && len(result.Items) == 0) {
+		(result.HasMore && len(result.Items) == 0) ||
+		(query.MatchNone && (result.BoundedTotal != 0 || len(result.Items) != 0 || result.HasMore)) ||
+		(query.CustomerID != nil && (result.BoundedTotal > 1 || result.BoundedTotal != int64(len(result.Items)) || result.HasMore)) {
 		return errors.New("customer list store result shape is invalid")
 	}
 	for index, item := range result.Items {
 		if item.ID <= 0 || item.CreatedAt.IsZero() || item.UpdatedAt.IsZero() || item.UpdatedAt.After(query.Watermark) ||
-			!IsChannelNeutralCustomerExtra(item.Extra) {
+			!IsChannelNeutralCustomerExtra(item.Extra) || query.CustomerID != nil && item.ID != *query.CustomerID {
 			return errors.New("customer list store item is invalid")
 		}
 		if index > 0 {

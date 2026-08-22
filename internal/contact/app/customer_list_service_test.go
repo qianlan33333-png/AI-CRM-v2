@@ -232,6 +232,27 @@ func TestCustomerListServiceRejectsMalformedCursors(t *testing.T) {
 	}
 }
 
+func TestCustomerListServiceBindsResolvedCustomerToCursorAndStoreResult(t *testing.T) {
+	customerID := contactport.CustomerID(9)
+	store := &fakeCustomerQueryStore{result: CustomerListStoreResult{
+		Items: []CustomerRecord{validCustomerRecord(9, customerListTime(20))}, BoundedTotal: 1,
+	}}
+	service := newTestCustomerListService(&fakeCustomerListUoW{}, store)
+	service.now = func() time.Time { return customerListTime(30) }
+	result, err := service.List(context.Background(), CustomerListInput{CustomerID: &customerID})
+	if err != nil || len(store.queries) != 1 || store.queries[0].CustomerID == nil || *store.queries[0].CustomerID != customerID {
+		t.Fatalf("result/query/error=%+v/%+v/%v", result, store.queries, err)
+	}
+
+	escaped := &fakeCustomerQueryStore{result: CustomerListStoreResult{
+		Items: []CustomerRecord{validCustomerRecord(10, customerListTime(20))}, BoundedTotal: 1,
+	}}
+	_, err = newTestCustomerListService(&fakeCustomerListUoW{}, escaped).List(context.Background(), CustomerListInput{CustomerID: &customerID})
+	if !errors.Is(err, ErrCustomerListUnavailable) {
+		t.Fatalf("escaped customer error=%v", err)
+	}
+}
+
 func TestCustomerListServiceFailsClosedForMalformedStoreResults(t *testing.T) {
 	watermark := customerListTime(30)
 	tests := []struct {

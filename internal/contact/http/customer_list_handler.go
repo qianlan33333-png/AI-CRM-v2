@@ -14,6 +14,7 @@ import (
 	generated "github.com/qianlan33333-png/AI-CRM-v2/internal/api/candidate/generated"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 )
 
@@ -37,6 +38,32 @@ func (handler *CustomerListHandler) ListCustomers(
 	request *http.Request,
 	params generated.ListCustomersParams,
 ) {
+	if params.Mobile != nil {
+		writeCustomerListError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, contactapp.ErrInvalidCustomerListQuery), params.Cursor != nil)
+		return
+	}
+	handler.listCustomers(writer, request, params, nil, false)
+}
+
+// ListCustomersForResolvedCustomer accepts only the channel-neutral outcome of
+// a composition-root Identity lookup. A nil customer ID is an authoritative
+// no-match result; Contact never receives the phone or reads Identity storage.
+func (handler *CustomerListHandler) ListCustomersForResolvedCustomer(
+	writer http.ResponseWriter,
+	request *http.Request,
+	params generated.ListCustomersParams,
+	customerID *contactport.CustomerID,
+) {
+	handler.listCustomers(writer, request, params, customerID, customerID == nil)
+}
+
+func (handler *CustomerListHandler) listCustomers(
+	writer http.ResponseWriter,
+	request *http.Request,
+	params generated.ListCustomersParams,
+	customerID *contactport.CustomerID,
+	matchNone bool,
+) {
 	if handler == nil || nilCustomerListApplication(handler.application) || request == nil {
 		if request == nil {
 			request = &http.Request{}
@@ -55,6 +82,8 @@ func (handler *CustomerListHandler) ListCustomers(
 		writeCustomerListError(writer, request, err, cursorSupplied)
 		return
 	}
+	input.CustomerID = cloneContactCustomerID(customerID)
+	input.MatchNone = matchNone
 	result, err := handler.application.List(request.Context(), input)
 	if err != nil {
 		writeCustomerListError(writer, request, err, cursorSupplied)
@@ -66,6 +95,14 @@ func (handler *CustomerListHandler) ListCustomers(
 		return
 	}
 	writeCustomerListJSON(writer, http.StatusOK, response)
+}
+
+func cloneContactCustomerID(value *contactport.CustomerID) *contactport.CustomerID {
+	if value == nil {
+		return nil
+	}
+	cloned := *value
+	return &cloned
 }
 
 func customerListOwner(ctx context.Context, requested *generated.OwnerStaffIDFilter) (*int64, error) {

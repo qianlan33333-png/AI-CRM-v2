@@ -41,6 +41,21 @@ SELECT q.slug,
        FROM questionnaire_questions qq WHERE qq.questionnaire_id = q.id), '[]'::jsonb) AS questions
 FROM questionnaires q WHERE q.id = sqlc.arg(questionnaire_id)::bigint;
 
+-- name: ListRecentCustomerAnswerCandidates :many
+SELECT s.id, s.questionnaire_id, s.unionid, s.external_userid, s.mobile,
+       s.total_score, s.submitted_at,
+       COALESCE((SELECT jsonb_agg(jsonb_build_object(
+         'question_id', a.question_id, 'question_type', a.question_type,
+         'sort_order', a.sort_order,
+         'selected_options', COALESCE((SELECT jsonb_agg(jsonb_build_object(
+           'option_id', option_value -> 'option_id'
+         )) FROM jsonb_array_elements(a.selected_options) AS selected_option(option_value)), '[]'::jsonb)
+       ) ORDER BY a.sort_order, a.id)
+       FROM questionnaire_submission_answers a WHERE a.submission_id = s.id), '[]'::jsonb) AS answers
+FROM questionnaire_submissions s
+ORDER BY s.submitted_at DESC, s.id DESC
+LIMIT sqlc.arg(row_limit)::integer;
+
 -- name: ListQuestionnaireSubmissionExportRows :many
 SELECT s.id, s.questionnaire_id, s.respondent_key, s.openid, s.unionid, s.external_userid,
        s.customer_name, s.follow_user_userid, s.matched_by, s.mobile,

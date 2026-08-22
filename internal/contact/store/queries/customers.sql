@@ -16,6 +16,10 @@ SELECT
 FROM customers AS c
 WHERE c.updated_at <= sqlc.arg(watermark)::timestamptz
   AND (
+    sqlc.narg(customer_id)::bigint IS NULL
+    OR c.id = sqlc.narg(customer_id)::bigint
+  )
+  AND (
     sqlc.narg(keyword)::text IS NULL
     OR lower(c.name) % lower(sqlc.narg(keyword)::text)
   )
@@ -83,6 +87,10 @@ FROM (
     WHERE sqlc.narg(tag_id)::bigint IS NULL
       AND c.updated_at <= sqlc.arg(watermark)::timestamptz
       AND (
+        sqlc.narg(customer_id)::bigint IS NULL
+        OR c.id = sqlc.narg(customer_id)::bigint
+      )
+      AND (
         sqlc.narg(keyword)::text IS NULL
         OR lower(c.name) % lower(sqlc.narg(keyword)::text)
       )
@@ -126,6 +134,10 @@ FROM (
       SELECT c.id
       FROM customers AS c
       WHERE c.id = ct.customer_id
+        AND (
+          sqlc.narg(customer_id)::bigint IS NULL
+          OR c.id = sqlc.narg(customer_id)::bigint
+        )
         AND c.updated_at <= sqlc.arg(watermark)::timestamptz
         AND (
           sqlc.narg(keyword)::text IS NULL

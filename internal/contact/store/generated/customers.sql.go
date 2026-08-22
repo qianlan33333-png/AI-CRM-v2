@@ -20,40 +20,44 @@ FROM (
     WHERE $1::bigint IS NULL
       AND c.updated_at <= $2::timestamptz
       AND (
-        $3::text IS NULL
-        OR lower(c.name) % lower($3::text)
+        $3::bigint IS NULL
+        OR c.id = $3::bigint
       )
       AND (
-        $4::bigint IS NULL
-        OR c.owner_staff_id = $4::bigint
+        $4::text IS NULL
+        OR lower(c.name) % lower($4::text)
       )
       AND (
         $5::bigint IS NULL
-        OR c.stage_id = $5::bigint
+        OR c.owner_staff_id = $5::bigint
       )
       AND (
         $6::bigint IS NULL
-        OR c.channel_id = $6::bigint
+        OR c.stage_id = $6::bigint
       )
-      AND c.is_deleted = $7
       AND (
-        $8::timestamptz IS NULL
-        OR c.added_at >= $8::timestamptz
+        $7::bigint IS NULL
+        OR c.channel_id = $7::bigint
       )
+      AND c.is_deleted = $8
       AND (
         $9::timestamptz IS NULL
-        OR c.added_at <= $9::timestamptz
+        OR c.added_at >= $9::timestamptz
       )
       AND (
         $10::timestamptz IS NULL
-        OR c.last_interact_at >= $10::timestamptz
+        OR c.added_at <= $10::timestamptz
       )
       AND (
         $11::timestamptz IS NULL
-        OR c.last_interact_at <= $11::timestamptz
+        OR c.last_interact_at >= $11::timestamptz
+      )
+      AND (
+        $12::timestamptz IS NULL
+        OR c.last_interact_at <= $12::timestamptz
       )
     ORDER BY c.updated_at DESC, c.id DESC
-    LIMIT $12::integer
+    LIMIT $13::integer
   )
   UNION ALL
   (
@@ -63,45 +67,49 @@ FROM (
       SELECT c.id
       FROM customers AS c
       WHERE c.id = ct.customer_id
+        AND (
+          $3::bigint IS NULL
+          OR c.id = $3::bigint
+        )
         AND c.updated_at <= $2::timestamptz
         AND (
-          $3::text IS NULL
-          OR lower(c.name) % lower($3::text)
-        )
-        AND (
-          $4::bigint IS NULL
-          OR c.owner_staff_id = $4::bigint
+          $4::text IS NULL
+          OR lower(c.name) % lower($4::text)
         )
         AND (
           $5::bigint IS NULL
-          OR c.stage_id = $5::bigint
+          OR c.owner_staff_id = $5::bigint
         )
         AND (
           $6::bigint IS NULL
-          OR c.channel_id = $6::bigint
+          OR c.stage_id = $6::bigint
         )
-        AND c.is_deleted = $7
         AND (
-          $8::timestamptz IS NULL
-          OR c.added_at >= $8::timestamptz
+          $7::bigint IS NULL
+          OR c.channel_id = $7::bigint
         )
+        AND c.is_deleted = $8
         AND (
           $9::timestamptz IS NULL
-          OR c.added_at <= $9::timestamptz
+          OR c.added_at >= $9::timestamptz
         )
         AND (
           $10::timestamptz IS NULL
-          OR c.last_interact_at >= $10::timestamptz
+          OR c.added_at <= $10::timestamptz
         )
         AND (
           $11::timestamptz IS NULL
-          OR c.last_interact_at <= $11::timestamptz
+          OR c.last_interact_at >= $11::timestamptz
+        )
+        AND (
+          $12::timestamptz IS NULL
+          OR c.last_interact_at <= $12::timestamptz
         )
       LIMIT 1
     ) AS tagged_customer
     WHERE $1::bigint IS NOT NULL
       AND ct.tag_id = $1::bigint
-    LIMIT $12::integer
+    LIMIT $13::integer
   )
 ) AS bounded_customer_ids
 `
@@ -109,6 +117,7 @@ FROM (
 type CountCustomerIDsBoundedParams struct {
 	TagID              pgtype.Int8        `json:"tag_id"`
 	Watermark          pgtype.Timestamptz `json:"watermark"`
+	CustomerID         pgtype.Int8        `json:"customer_id"`
 	Keyword            pgtype.Text        `json:"keyword"`
 	OwnerStaffID       pgtype.Int8        `json:"owner_staff_id"`
 	StageID            pgtype.Int8        `json:"stage_id"`
@@ -125,6 +134,7 @@ func (q *Queries) CountCustomerIDsBounded(ctx context.Context, arg CountCustomer
 	row := q.db.QueryRow(ctx, countCustomerIDsBounded,
 		arg.TagID,
 		arg.Watermark,
+		arg.CustomerID,
 		arg.Keyword,
 		arg.OwnerStaffID,
 		arg.StageID,
@@ -159,67 +169,72 @@ SELECT
 FROM customers AS c
 WHERE c.updated_at <= $1::timestamptz
   AND (
-    $2::text IS NULL
-    OR lower(c.name) % lower($2::text)
+    $2::bigint IS NULL
+    OR c.id = $2::bigint
   )
   AND (
-    $3::bigint IS NULL
-    OR c.owner_staff_id = $3::bigint
+    $3::text IS NULL
+    OR lower(c.name) % lower($3::text)
   )
   AND (
     $4::bigint IS NULL
-    OR c.stage_id = $4::bigint
+    OR c.owner_staff_id = $4::bigint
   )
   AND (
     $5::bigint IS NULL
-    OR c.channel_id = $5::bigint
+    OR c.stage_id = $5::bigint
   )
   AND (
     $6::bigint IS NULL
+    OR c.channel_id = $6::bigint
+  )
+  AND (
+    $7::bigint IS NULL
     OR EXISTS (
       SELECT 1
       FROM customer_tags AS ct
-      WHERE ct.tag_id = $6::bigint
+      WHERE ct.tag_id = $7::bigint
         AND ct.customer_id = c.id
     )
   )
-  AND c.is_deleted = $7
-  AND (
-    $8::timestamptz IS NULL
-    OR c.added_at >= $8::timestamptz
-  )
+  AND c.is_deleted = $8
   AND (
     $9::timestamptz IS NULL
-    OR c.added_at <= $9::timestamptz
+    OR c.added_at >= $9::timestamptz
   )
   AND (
     $10::timestamptz IS NULL
-    OR c.last_interact_at >= $10::timestamptz
+    OR c.added_at <= $10::timestamptz
   )
   AND (
     $11::timestamptz IS NULL
-    OR c.last_interact_at <= $11::timestamptz
+    OR c.last_interact_at >= $11::timestamptz
+  )
+  AND (
+    $12::timestamptz IS NULL
+    OR c.last_interact_at <= $12::timestamptz
   )
   AND (
     (
-      $12::timestamptz IS NULL
-      AND $13::bigint IS NULL
+      $13::timestamptz IS NULL
+      AND $14::bigint IS NULL
     )
     OR (
-      $12::timestamptz IS NOT NULL
-      AND $13::bigint IS NOT NULL
+      $13::timestamptz IS NOT NULL
+      AND $14::bigint IS NOT NULL
       AND (c.updated_at, c.id) < (
-        $12::timestamptz,
-        $13::bigint
+        $13::timestamptz,
+        $14::bigint
       )
     )
   )
 ORDER BY c.updated_at DESC, c.id DESC
-LIMIT $14::integer
+LIMIT $15::integer
 `
 
 type ListCustomersParams struct {
 	Watermark          pgtype.Timestamptz `json:"watermark"`
+	CustomerID         pgtype.Int8        `json:"customer_id"`
 	Keyword            pgtype.Text        `json:"keyword"`
 	OwnerStaffID       pgtype.Int8        `json:"owner_staff_id"`
 	StageID            pgtype.Int8        `json:"stage_id"`
@@ -238,6 +253,7 @@ type ListCustomersParams struct {
 func (q *Queries) ListCustomers(ctx context.Context, arg ListCustomersParams) ([]Customer, error) {
 	rows, err := q.db.Query(ctx, listCustomers,
 		arg.Watermark,
+		arg.CustomerID,
 		arg.Keyword,
 		arg.OwnerStaffID,
 		arg.StageID,

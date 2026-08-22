@@ -201,6 +201,7 @@ var p4AutomationAgentManagementOperations = map[string]bool{
 var p4Customer360Operations = map[string]bool{
 	"getCustomerContext": true, "listCustomerMergeHistory": true,
 	"listCustomerChatActivity": true, "getCustomerActivityAnalytics": true,
+	"listCustomerSurveyAnswers": true,
 }
 
 var p4Customer360ResponseSchemas = map[string]string{
@@ -208,6 +209,7 @@ var p4Customer360ResponseSchemas = map[string]string{
 	"listCustomerMergeHistory":     "CustomerMergeHistoryResponse",
 	"listCustomerChatActivity":     "CustomerChatActivityResponse",
 	"getCustomerActivityAnalytics": "CustomerActivityAnalyticsResponse",
+	"listCustomerSurveyAnswers":    "CustomerSurveyAnswerResponse",
 }
 
 var p4ProductOperations = map[string]bool{
@@ -578,6 +580,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"listCustomerMergeHistory":                   {"identity.review.read", map[string]string{"admin": "global", "ops": "global"}},
 	"listCustomerChatActivity":                   {"customer.events.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getCustomerActivityAnalytics":               {"customer.events.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listCustomerSurveyAnswers":                  {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"resolveIdentity":                            {"identity.resolve", map[string]string{"admin": "global", "ops": "global"}},
 	"bindIdentity":                               {"identity.bind", map[string]string{"admin": "global", "ops": "global"}},
 	"ingestIdentityEvent":                        {"identity.ingest", map[string]string{"admin": "global", "ops": "global"}},
@@ -2669,7 +2672,7 @@ func validateContactContract(doc *openapi3.T) error {
 
 	wantFilters := []string{
 		"added_after", "added_before", "channel_id", "cursor", "is_deleted", "keyword", "last_interact_after",
-		"last_interact_before", "limit", "owner_staff_id", "stage_id", "tag_id",
+		"last_interact_before", "limit", "mobile", "owner_staff_id", "stage_id", "tag_id",
 	}
 	gotFilters := make([]string, 0, len(customers.Get.Parameters))
 	for _, ref := range customers.Get.Parameters {
@@ -2684,6 +2687,11 @@ func validateContactContract(doc *openapi3.T) error {
 	sort.Strings(gotFilters)
 	if fmt.Sprint(gotFilters) != fmt.Sprint(wantFilters) {
 		return fmt.Errorf("listCustomers filters=%v", gotFilters)
+	}
+	mobile := customers.Get.Parameters.GetByInAndName("query", "mobile")
+	if mobile == nil || mobile.Schema == nil || mobile.Schema.Value == nil || mobile.Schema.Value.Type == nil || !mobile.Schema.Value.Type.Is("string") ||
+		mobile.Schema.Value.Pattern != `^\+[1-9][0-9]{1,14}$` || mobile.Schema.Value.MinLength != 3 || mobile.Schema.Value.MaxLength == nil || *mobile.Schema.Value.MaxLength != 32 {
+		return errors.New("listCustomers mobile filter must remain exact E.164")
 	}
 
 	listResponse := doc.Components.Schemas["CustomerListResponse"]

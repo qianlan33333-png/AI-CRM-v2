@@ -48,6 +48,19 @@ type ResolveResult struct {
 	CustomerID contactport.CustomerID
 }
 
+// CustomerMatchRequest keeps raw identity hints inside the local matching
+// boundary. Callers receive only a boolean OneID match and must never expose
+// the refs or the unscoped legacy unionid in an HTTP projection.
+type CustomerMatchRequest struct {
+	CustomerID    contactport.CustomerID
+	Refs          []IDRef
+	LegacyUnionID string
+}
+
+type CustomerMatcher interface {
+	MatchCustomers(context.Context, []CustomerMatchRequest) ([]bool, error)
+}
+
 type BindStatus string
 
 const (

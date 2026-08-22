@@ -31,6 +31,7 @@ type Querier interface {
 	ListQuestionnaireSubmissionExportRows(ctx context.Context, arg ListQuestionnaireSubmissionExportRowsParams) ([]ListQuestionnaireSubmissionExportRowsRow, error)
 	ListQuestionnaireSubmissions(ctx context.Context, arg ListQuestionnaireSubmissionsParams) ([]ListQuestionnaireSubmissionsRow, error)
 	ListQuestionnairesOffset(ctx context.Context, arg ListQuestionnairesOffsetParams) ([]ListQuestionnairesOffsetRow, error)
+	ListRecentCustomerAnswerCandidates(ctx context.Context, rowLimit int32) ([]ListRecentCustomerAnswerCandidatesRow, error)
 	LookupPublicSurveyResult(ctx context.Context, resultTokenDigest []byte) (LookupPublicSurveyResultRow, error)
 	QuestionnaireSubmissionOwnerExists(ctx context.Context, questionnaireID int64) (bool, error)
 	ReserveQuestionnaireManagementReceipt(ctx context.Context, arg ReserveQuestionnaireManagementReceiptParams) (ReserveQuestionnaireManagementReceiptRow, error)

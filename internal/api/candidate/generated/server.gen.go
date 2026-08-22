@@ -567,6 +567,84 @@ func (e CustomerMergeHistoryResponseScope) Valid() bool {
 	}
 }
 
+// Defines values for CustomerSurveyAnswerResponseFreeTextIncluded.
+const (
+	CustomerSurveyAnswerResponseFreeTextIncludedFalse CustomerSurveyAnswerResponseFreeTextIncluded = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerSurveyAnswerResponseFreeTextIncluded enum.
+func (e CustomerSurveyAnswerResponseFreeTextIncluded) Valid() bool {
+	switch e {
+	case CustomerSurveyAnswerResponseFreeTextIncludedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerSurveyAnswerResponseIdentityValuesIncluded.
+const (
+	CustomerSurveyAnswerResponseIdentityValuesIncludedFalse CustomerSurveyAnswerResponseIdentityValuesIncluded = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerSurveyAnswerResponseIdentityValuesIncluded enum.
+func (e CustomerSurveyAnswerResponseIdentityValuesIncluded) Valid() bool {
+	switch e {
+	case CustomerSurveyAnswerResponseIdentityValuesIncludedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerSurveyAnswerResponseNonAtomicSnapshot.
+const (
+	CustomerSurveyAnswerResponseNonAtomicSnapshotTrue CustomerSurveyAnswerResponseNonAtomicSnapshot = true
+)
+
+// Valid indicates whether the value is a known member of the CustomerSurveyAnswerResponseNonAtomicSnapshot enum.
+func (e CustomerSurveyAnswerResponseNonAtomicSnapshot) Valid() bool {
+	switch e {
+	case CustomerSurveyAnswerResponseNonAtomicSnapshotTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerSurveyAnswerResponseRealExternalCallExecuted.
+const (
+	CustomerSurveyAnswerResponseRealExternalCallExecutedFalse CustomerSurveyAnswerResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerSurveyAnswerResponseRealExternalCallExecuted enum.
+func (e CustomerSurveyAnswerResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerSurveyAnswerResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerSurveyChoiceAnswerQuestionType.
+const (
+	CustomerSurveyChoiceAnswerQuestionTypeMultiChoice  CustomerSurveyChoiceAnswerQuestionType = "multi_choice"
+	CustomerSurveyChoiceAnswerQuestionTypeSingleChoice CustomerSurveyChoiceAnswerQuestionType = "single_choice"
+)
+
+// Valid indicates whether the value is a known member of the CustomerSurveyChoiceAnswerQuestionType enum.
+func (e CustomerSurveyChoiceAnswerQuestionType) Valid() bool {
+	switch e {
+	case CustomerSurveyChoiceAnswerQuestionTypeMultiChoice:
+		return true
+	case CustomerSurveyChoiceAnswerQuestionTypeSingleChoice:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for IdentityMergeReviewStatus.
 const (
 	IdentityMergeReviewStatusApproved IdentityMergeReviewStatus = "approved"
@@ -2051,16 +2129,16 @@ func (e PublicSurveyManagementResponseState) Valid() bool {
 
 // Defines values for PublicSurveyQuestionType.
 const (
-	PublicSurveyQuestionTypeMultiChoice  PublicSurveyQuestionType = "multi_choice"
-	PublicSurveyQuestionTypeSingleChoice PublicSurveyQuestionType = "single_choice"
+	MultiChoice  PublicSurveyQuestionType = "multi_choice"
+	SingleChoice PublicSurveyQuestionType = "single_choice"
 )
 
 // Valid indicates whether the value is a known member of the PublicSurveyQuestionType enum.
 func (e PublicSurveyQuestionType) Valid() bool {
 	switch e {
-	case PublicSurveyQuestionTypeMultiChoice:
+	case MultiChoice:
 		return true
-	case PublicSurveyQuestionTypeSingleChoice:
+	case SingleChoice:
 		return true
 	default:
 		return false
@@ -2069,13 +2147,13 @@ func (e PublicSurveyQuestionType) Valid() bool {
 
 // Defines values for PublicSurveyResultExternalExecuted.
 const (
-	False PublicSurveyResultExternalExecuted = false
+	PublicSurveyResultExternalExecutedFalse PublicSurveyResultExternalExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the PublicSurveyResultExternalExecuted enum.
 func (e PublicSurveyResultExternalExecuted) Valid() bool {
 	switch e {
-	case False:
+	case PublicSurveyResultExternalExecutedFalse:
 		return true
 	default:
 		return false
@@ -2084,13 +2162,13 @@ func (e PublicSurveyResultExternalExecuted) Valid() bool {
 
 // Defines values for PublicSurveyResultLocalOnly.
 const (
-	PublicSurveyResultLocalOnlyTrue PublicSurveyResultLocalOnly = true
+	True PublicSurveyResultLocalOnly = true
 )
 
 // Valid indicates whether the value is a known member of the PublicSurveyResultLocalOnly enum.
 func (e PublicSurveyResultLocalOnly) Valid() bool {
 	switch e {
-	case PublicSurveyResultLocalOnlyTrue:
+	case True:
 		return true
 	default:
 		return false
@@ -2778,6 +2856,54 @@ type CustomerMergeHistoryResponseRealExternalCallExecuted bool
 
 // CustomerMergeHistoryResponseScope defines model for CustomerMergeHistoryResponse.Scope.
 type CustomerMergeHistoryResponseScope string
+
+// CustomerSurveyAnswerItem defines model for CustomerSurveyAnswerItem.
+type CustomerSurveyAnswerItem struct {
+	ChoiceAnswers   []CustomerSurveyChoiceAnswer `json:"choice_answers"`
+	QuestionnaireId int64                        `json:"questionnaire_id"`
+	Score           float64                      `json:"score"`
+	SubmissionId    int64                        `json:"submission_id"`
+	SubmittedAt     time.Time                    `json:"submitted_at"`
+}
+
+// CustomerSurveyAnswerResponse defines model for CustomerSurveyAnswerResponse.
+type CustomerSurveyAnswerResponse struct {
+	CustomerId               int64                                                `json:"customer_id"`
+	FreeTextIncluded         CustomerSurveyAnswerResponseFreeTextIncluded         `json:"free_text_included"`
+	IdentityValuesIncluded   CustomerSurveyAnswerResponseIdentityValuesIncluded   `json:"identity_values_included"`
+	Items                    []CustomerSurveyAnswerItem                           `json:"items"`
+	Limit                    int32                                                `json:"limit"`
+	MatchedCount             int32                                                `json:"matched_count"`
+	NonAtomicSnapshot        CustomerSurveyAnswerResponseNonAtomicSnapshot        `json:"non_atomic_snapshot"`
+	RealExternalCallExecuted CustomerSurveyAnswerResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	ResultTruncated          bool                                                 `json:"result_truncated"`
+	ScanLimit                int32                                                `json:"scan_limit"`
+	ScanTruncated            bool                                                 `json:"scan_truncated"`
+	ScannedCount             int32                                                `json:"scanned_count"`
+}
+
+// CustomerSurveyAnswerResponseFreeTextIncluded defines model for CustomerSurveyAnswerResponse.FreeTextIncluded.
+type CustomerSurveyAnswerResponseFreeTextIncluded bool
+
+// CustomerSurveyAnswerResponseIdentityValuesIncluded defines model for CustomerSurveyAnswerResponse.IdentityValuesIncluded.
+type CustomerSurveyAnswerResponseIdentityValuesIncluded bool
+
+// CustomerSurveyAnswerResponseNonAtomicSnapshot defines model for CustomerSurveyAnswerResponse.NonAtomicSnapshot.
+type CustomerSurveyAnswerResponseNonAtomicSnapshot bool
+
+// CustomerSurveyAnswerResponseRealExternalCallExecuted defines model for CustomerSurveyAnswerResponse.RealExternalCallExecuted.
+type CustomerSurveyAnswerResponseRealExternalCallExecuted bool
+
+// CustomerSurveyChoiceAnswer defines model for CustomerSurveyChoiceAnswer.
+type CustomerSurveyChoiceAnswer struct {
+	OptionIds    []int64                                `json:"option_ids"`
+	QuestionId   int64                                  `json:"question_id"`
+	QuestionType CustomerSurveyChoiceAnswerQuestionType `json:"question_type"`
+	SortOrder    int32                                  `json:"sort_order"`
+}
+
+// CustomerSurveyChoiceAnswerQuestionType defines model for CustomerSurveyChoiceAnswer.QuestionType.
+type CustomerSurveyChoiceAnswerQuestionType string
 
 // CustomerUpdateRequest defines model for CustomerUpdateRequest.
 type CustomerUpdateRequest struct {
@@ -4227,9 +4353,12 @@ type LogoutAdminParams struct {
 // ListCustomersParams defines parameters for ListCustomers.
 type ListCustomersParams struct {
 	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
-	Cursor             *Cursor                   `form:"cursor,omitempty" json:"cursor,omitempty"`
-	Limit              *Limit                    `form:"limit,omitempty" json:"limit,omitempty"`
-	Keyword            *CustomerKeyword          `form:"keyword,omitempty" json:"keyword,omitempty"`
+	Cursor  *Cursor          `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit   *Limit           `form:"limit,omitempty" json:"limit,omitempty"`
+	Keyword *CustomerKeyword `form:"keyword,omitempty" json:"keyword,omitempty"`
+
+	// Mobile E.164 phone resolved by Identity to an exact OneID before Contact is queried.
+	Mobile             *string                   `form:"mobile,omitempty" json:"mobile,omitempty"`
 	OwnerStaffId       *OwnerStaffIDFilter       `form:"owner_staff_id,omitempty" json:"owner_staff_id,omitempty"`
 	StageId            *StageIDFilter            `form:"stage_id,omitempty" json:"stage_id,omitempty"`
 	ChannelId          *ChannelIDFilter          `form:"channel_id,omitempty" json:"channel_id,omitempty"`
@@ -4292,6 +4421,11 @@ type ListCustomerMergeHistoryParams struct {
 type SetCustomerStageParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+}
+
+// ListCustomerSurveyAnswersParams defines parameters for ListCustomerSurveyAnswers.
+type ListCustomerSurveyAnswersParams struct {
+	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // RemoveCustomerTagParams defines parameters for RemoveCustomerTag.
@@ -5369,6 +5503,9 @@ type ServerInterface interface {
 	// Set or clear a customer's stage
 	// (PUT /api/v1/customers/{customer_id}/stage)
 	SetCustomerStage(w http.ResponseWriter, r *http.Request, customerId CustomerID, params SetCustomerStageParams)
+	// List a bounded safe projection of recent Survey answers matched locally to one OneID
+	// (GET /api/v1/customers/{customer_id}/survey-answers)
+	ListCustomerSurveyAnswers(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerSurveyAnswersParams)
 	// Idempotently remove one local tag from a customer
 	// (DELETE /api/v1/customers/{customer_id}/tags/{tag_id})
 	RemoveCustomerTag(w http.ResponseWriter, r *http.Request, customerId CustomerID, tagId TagID, params RemoveCustomerTagParams)
@@ -5669,6 +5806,12 @@ func (_ Unimplemented) ListCustomerMergeHistory(w http.ResponseWriter, r *http.R
 // Set or clear a customer's stage
 // (PUT /api/v1/customers/{customer_id}/stage)
 func (_ Unimplemented) SetCustomerStage(w http.ResponseWriter, r *http.Request, customerId CustomerID, params SetCustomerStageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List a bounded safe projection of recent Survey answers matched locally to one OneID
+// (GET /api/v1/customers/{customer_id}/survey-answers)
+func (_ Unimplemented) ListCustomerSurveyAnswers(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerSurveyAnswersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -7174,6 +7317,14 @@ func (siw *ServerInterfaceWrapper) ListCustomers(w http.ResponseWriter, r *http.
 		return
 	}
 
+	// ------------- Optional query parameter "mobile" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "mobile", r.URL.Query(), &params.Mobile, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "mobile", Err: err})
+		return
+	}
+
 	// ------------- Optional query parameter "owner_staff_id" -------------
 
 	err = runtime.BindQueryParameterWithOptions("form", true, false, "owner_staff_id", r.URL.Query(), &params.OwnerStaffId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
@@ -7647,6 +7798,48 @@ func (siw *ServerInterfaceWrapper) SetCustomerStage(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SetCustomerStage(w, r, customerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCustomerSurveyAnswers operation middleware
+func (siw *ServerInterfaceWrapper) ListCustomerSurveyAnswers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCustomerSurveyAnswersParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCustomerSurveyAnswers(w, r, customerId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -10331,6 +10524,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/api/v1/customers/{customer_id}/stage", wrapper.SetCustomerStage)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/customers/{customer_id}/survey-answers", wrapper.ListCustomerSurveyAnswers)
+	})
+	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/api/v1/customers/{customer_id}/tags/{tag_id}", wrapper.RemoveCustomerTag)
 	})
 	r.Group(func(r chi.Router) {
@@ -12223,6 +12419,69 @@ type SetCustomerStage422JSONResponse struct {
 func (response SetCustomerStage422JSONResponse) VisitSetCustomerStageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerSurveyAnswersRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     ListCustomerSurveyAnswersParams
+}
+
+type ListCustomerSurveyAnswersResponseObject interface {
+	VisitListCustomerSurveyAnswersResponse(w http.ResponseWriter) error
+}
+
+type ListCustomerSurveyAnswers200JSONResponse CustomerSurveyAnswerResponse
+
+func (response ListCustomerSurveyAnswers200JSONResponse) VisitListCustomerSurveyAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerSurveyAnswers400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListCustomerSurveyAnswers400JSONResponse) VisitListCustomerSurveyAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerSurveyAnswers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListCustomerSurveyAnswers401JSONResponse) VisitListCustomerSurveyAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerSurveyAnswers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListCustomerSurveyAnswers403JSONResponse) VisitListCustomerSurveyAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerSurveyAnswers404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListCustomerSurveyAnswers404JSONResponse) VisitListCustomerSurveyAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCustomerSurveyAnswers503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListCustomerSurveyAnswers503JSONResponse) VisitListCustomerSurveyAnswersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -15060,6 +15319,9 @@ type StrictServerInterface interface {
 	// Set or clear a customer's stage
 	// (PUT /api/v1/customers/{customer_id}/stage)
 	SetCustomerStage(ctx context.Context, request SetCustomerStageRequestObject) (SetCustomerStageResponseObject, error)
+	// List a bounded safe projection of recent Survey answers matched locally to one OneID
+	// (GET /api/v1/customers/{customer_id}/survey-answers)
+	ListCustomerSurveyAnswers(ctx context.Context, request ListCustomerSurveyAnswersRequestObject) (ListCustomerSurveyAnswersResponseObject, error)
 	// Idempotently remove one local tag from a customer
 	// (DELETE /api/v1/customers/{customer_id}/tags/{tag_id})
 	RemoveCustomerTag(ctx context.Context, request RemoveCustomerTagRequestObject) (RemoveCustomerTagResponseObject, error)
@@ -16035,6 +16297,33 @@ func (sh *strictHandler) SetCustomerStage(w http.ResponseWriter, r *http.Request
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SetCustomerStageResponseObject); ok {
 		if err := validResponse.VisitSetCustomerStageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCustomerSurveyAnswers operation middleware
+func (sh *strictHandler) ListCustomerSurveyAnswers(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerSurveyAnswersParams) {
+	var request ListCustomerSurveyAnswersRequestObject
+
+	request.CustomerId = customerId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCustomerSurveyAnswers(ctx, request.(ListCustomerSurveyAnswersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCustomerSurveyAnswers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCustomerSurveyAnswersResponseObject); ok {
+		if err := validResponse.VisitListCustomerSurveyAnswersResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -201,13 +201,13 @@ func TestCustomerQueryRepositoryTrimsLimitPlusOneAndUsesBoundedTotal(t *testing.
 	if tx.customPlanQueries != 2 {
 		t.Fatalf("custom-plan query calls = %d, want bounded total and page query", tx.customPlanQueries)
 	}
-	if got := tx.listArgs[13].(int32); got != query.Limit+1 {
+	if got := tx.listArgs[14].(int32); got != query.Limit+1 {
 		t.Fatalf("list row limit = %d, want %d", got, query.Limit+1)
 	}
-	if got := tx.boundedArgs[11].(int32); got != int32(contactapp.CustomerListExactTotalCap+1) {
+	if got := tx.boundedArgs[12].(int32); got != int32(contactapp.CustomerListExactTotalCap+1) {
 		t.Fatalf("bounded id limit = %d, want cap+1", got)
 	}
-	if keyword := tx.listArgs[1].(pgtype.Text); keyword.Valid {
+	if keyword := tx.listArgs[2].(pgtype.Text); keyword.Valid {
 		t.Fatal("empty keyword was not passed as NULL")
 	}
 	tx.rows[0].Extra[2] = 'X'
@@ -227,6 +227,43 @@ func TestCustomerQueryRepositoryRejectsInvalidBoundedTotalShape(t *testing.T) {
 		if !errors.Is(err, errInvalidCustomerBoundedTotal) {
 			t.Fatalf("bounded total %d error = %v, want fail-closed bounded-total error", boundedTotal, err)
 		}
+	}
+}
+
+func TestCustomerQueryRepositoryAppliesResolvedCustomerIDAndMatchNone(t *testing.T) {
+	at := time.Date(2026, time.August, 12, 10, 0, 0, 0, time.UTC)
+	customerID := contactport.CustomerID(3)
+	tx := &customerQueryTx{boundedTotal: 1, rows: []contactdb.Customer{customerRow(3, at, `{}`)}}
+	uow := platformstore.NewUnitOfWork(&customerQueryBeginner{tx: tx})
+	query := validCustomerListQuery()
+	query.CustomerID = &customerID
+	err := uow.Within(context.Background(), func(ctx context.Context) error {
+		_, listErr := NewCustomerQueryRepository().ListCustomers(ctx, query)
+		return listErr
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if listID := tx.listArgs[1].(pgtype.Int8); !listID.Valid || listID.Int64 != 3 {
+		t.Fatalf("list customer id=%+v", listID)
+	}
+	if countID := tx.boundedArgs[2].(pgtype.Int8); !countID.Valid || countID.Int64 != 3 {
+		t.Fatalf("bounded customer id=%+v", countID)
+	}
+
+	emptyTx := &customerQueryTx{}
+	emptyUoW := platformstore.NewUnitOfWork(&customerQueryBeginner{tx: emptyTx})
+	query = validCustomerListQuery()
+	query.MatchNone = true
+	err = emptyUoW.Within(context.Background(), func(ctx context.Context) error {
+		result, listErr := NewCustomerQueryRepository().ListCustomers(ctx, query)
+		if listErr == nil && (len(result.Items) != 0 || result.BoundedTotal != 0 || result.HasMore) {
+			t.Fatalf("match-none result=%+v", result)
+		}
+		return listErr
+	})
+	if err != nil || emptyTx.customPlanQueries != 0 {
+		t.Fatalf("match-none error/queries=%v/%d", err, emptyTx.customPlanQueries)
 	}
 }
 

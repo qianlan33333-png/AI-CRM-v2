@@ -17,6 +17,7 @@ import (
 type SubmissionRepository struct{}
 
 var _ surveyapp.SubmissionStore = (*SubmissionRepository)(nil)
+var _ surveyapp.CustomerAnswerCandidateStore = (*SubmissionRepository)(nil)
 
 func NewSubmissionRepository() *SubmissionRepository { return &SubmissionRepository{} }
 
@@ -115,6 +116,33 @@ func (r *SubmissionRepository) ExportDefinition(ctx context.Context, id surveypo
 		result[i] = surveyport.SubmissionExportQuestion{ID: question.ID, Title: question.Title, SortOrder: question.SortOrder}
 	}
 	return row.Slug, result, nil
+}
+
+func (r *SubmissionRepository) ListRecentCustomerAnswerCandidates(ctx context.Context, limit int32) ([]surveyapp.CustomerAnswerCandidate, error) {
+	q, err := queries(ctx)
+	if r == nil || err != nil || limit < 1 || limit > surveyapp.CustomerAnswerScanLimit+1 {
+		return nil, unavailable(err)
+	}
+	rows, err := q.ListRecentCustomerAnswerCandidates(ctx, limit)
+	if err != nil {
+		return nil, unavailable(err)
+	}
+	result := make([]surveyapp.CustomerAnswerCandidate, len(rows))
+	for index, row := range rows {
+		mapped, mapErr := mapSubmission(row.ID, row.QuestionnaireID, "", "", row.Unionid,
+			row.ExternalUserid, "", "", "", row.Mobile, "", "", "", row.TotalScore,
+			[]byte("[]"), "", "", row.SubmittedAt, row.SubmittedAt, row.Answers)
+		err = mapErr
+		if err != nil {
+			return nil, err
+		}
+		result[index] = surveyapp.CustomerAnswerCandidate{
+			ID: mapped.ID, QuestionnaireID: mapped.QuestionnaireID, UnionID: mapped.UnionID,
+			ExternalUserID: mapped.ExternalUserID, Mobile: mapped.Mobile, TotalScore: mapped.TotalScore,
+			SubmittedAt: mapped.SubmittedAt, Answers: mapped.Answers,
+		}
+	}
+	return result, nil
 }
 
 func (r *SubmissionRepository) ExportSubmissions(ctx context.Context, id surveyport.ID, limit int32) ([]surveyport.Submission, error) {

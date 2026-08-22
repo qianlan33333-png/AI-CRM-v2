@@ -8130,6 +8130,58 @@ export interface CustomerContextResponse {
   real_external_call_executed: boolean;
 }
 
+export type CustomerSurveyChoiceAnswerQuestionType =
+  (typeof CustomerSurveyChoiceAnswerQuestionType)[keyof typeof CustomerSurveyChoiceAnswerQuestionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerSurveyChoiceAnswerQuestionType = {
+  single_choice: "single_choice",
+  multi_choice: "multi_choice",
+} as const;
+
+export interface CustomerSurveyChoiceAnswer {
+  /** @minimum 1 */
+  question_id: number;
+  question_type: CustomerSurveyChoiceAnswerQuestionType;
+  /** @minimum 0 */
+  sort_order: number;
+  option_ids: number[];
+}
+
+export interface CustomerSurveyAnswerItem {
+  /** @minimum 1 */
+  submission_id: number;
+  /** @minimum 1 */
+  questionnaire_id: number;
+  submitted_at: string;
+  score: number;
+  choice_answers: CustomerSurveyChoiceAnswer[];
+}
+
+export interface CustomerSurveyAnswerResponse {
+  /** @minimum 1 */
+  customer_id: number;
+  /** @maxItems 100 */
+  items: CustomerSurveyAnswerItem[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 1 */
+  scan_limit: number;
+  /** @minimum 0 */
+  scanned_count: number;
+  /** @minimum 0 */
+  matched_count: number;
+  scan_truncated: boolean;
+  result_truncated: boolean;
+  non_atomic_snapshot: boolean;
+  identity_values_included: boolean;
+  free_text_included: boolean;
+  real_external_call_executed: boolean;
+}
+
 export type CustomerMergeHistoryItemMode =
   (typeof CustomerMergeHistoryItemMode)[keyof typeof CustomerMergeHistoryItemMode];
 
@@ -10297,6 +10349,13 @@ export type ListCustomersParams = {
    */
   keyword?: CustomerKeywordParameter;
   /**
+   * E.164 phone resolved by Identity to an exact OneID before Contact is queried.
+   * @minLength 3
+   * @maxLength 32
+   * @pattern ^\+[1-9][0-9]{1,14}$
+   */
+  mobile?: string;
+  /**
    * @minimum 1
    */
   owner_staff_id?: OwnerStaffIDFilterParameter;
@@ -10384,6 +10443,14 @@ export const ListCustomerChatActivityChatType = {
   private: "private",
   group: "group",
 } as const;
+
+export type ListCustomerSurveyAnswersParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
 
 export type GetCustomerActivityAnalyticsParams = {
   window_days?: GetCustomerActivityAnalyticsWindowDays;
@@ -13862,6 +13929,98 @@ export const listCustomerChatActivity = async (
     status: res.status,
     headers: res.headers,
   } as listCustomerChatActivityResponse;
+};
+
+/**
+ * @summary List a bounded safe projection of recent Survey answers matched locally to one OneID
+ */
+export type listCustomerSurveyAnswersResponse200 = {
+  data: CustomerSurveyAnswerResponse;
+  status: 200;
+};
+
+export type listCustomerSurveyAnswersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listCustomerSurveyAnswersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCustomerSurveyAnswersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCustomerSurveyAnswersResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listCustomerSurveyAnswersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listCustomerSurveyAnswersResponseSuccess =
+  listCustomerSurveyAnswersResponse200 & {
+    headers: Headers;
+  };
+export type listCustomerSurveyAnswersResponseError = (
+  | listCustomerSurveyAnswersResponse400
+  | listCustomerSurveyAnswersResponse401
+  | listCustomerSurveyAnswersResponse403
+  | listCustomerSurveyAnswersResponse404
+  | listCustomerSurveyAnswersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCustomerSurveyAnswersResponse =
+  | listCustomerSurveyAnswersResponseSuccess
+  | listCustomerSurveyAnswersResponseError;
+
+export const getListCustomerSurveyAnswersUrl = (
+  customerId: number,
+  params?: ListCustomerSurveyAnswersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/customers/${customerId}/survey-answers?${stringifiedParams}`
+    : `/api/v1/customers/${customerId}/survey-answers`;
+};
+
+export const listCustomerSurveyAnswers = async (
+  customerId: number,
+  params?: ListCustomerSurveyAnswersParams,
+  options?: RequestInit,
+): Promise<listCustomerSurveyAnswersResponse> => {
+  const res = await fetch(getListCustomerSurveyAnswersUrl(customerId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCustomerSurveyAnswersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCustomerSurveyAnswersResponse;
 };
 
 /**

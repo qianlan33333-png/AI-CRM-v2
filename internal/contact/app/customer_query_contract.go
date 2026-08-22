@@ -35,6 +35,8 @@ type CustomerRecord struct {
 // CustomerListQuery is already validated and normalized by the application
 // service. Watermark stays fixed across every page; After* is the keyset only.
 type CustomerListQuery struct {
+	CustomerID         *contactport.CustomerID
+	MatchNone          bool
 	Keyword            string
 	OwnerStaffID       *int64
 	StageID            *int64
