@@ -158,6 +158,7 @@ export interface CloudCampaignBatchStartItem {
   /**
    * @minLength 1
    * @maxLength 96
+   * @pattern ^[A-Za-z0-9._-]+$
    */
   campaign_code: string;
   /** @minimum 1 */

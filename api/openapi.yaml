@@ -6928,7 +6928,7 @@ components:
       type: object
       additionalProperties: false
       required: [campaign_code, expected_version]
-      properties: { campaign_code: { type: string, minLength: 1, maxLength: 96 }, expected_version: { type: integer, format: int64, minimum: 1 } }
+      properties: { campaign_code: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' }, expected_version: { type: integer, format: int64, minimum: 1 } }
     CloudCampaignBatchStartResponse:
       type: object
       additionalProperties: false
