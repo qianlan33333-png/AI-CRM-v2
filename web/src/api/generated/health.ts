@@ -963,6 +963,256 @@ export interface RadarOptions {
   real_external_call_executed: boolean;
 }
 
+export type ServicePeriodProductLifecycle =
+  (typeof ServicePeriodProductLifecycle)[keyof typeof ServicePeriodProductLifecycle];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodProductLifecycle = {
+  draft: "draft",
+  enabled: "enabled",
+  disabled: "disabled",
+  archived: "archived",
+} as const;
+
+export interface ServicePeriodProduct {
+  /** @minimum 1 */
+  service_product_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  product_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @maxLength 10000 */
+  description: string;
+  /** @minimum 0 */
+  price_minor: number;
+  /** @pattern ^[A-Z]{3}$ */
+  currency: string;
+  /** @minimum 0 */
+  stock_quantity: number;
+  lifecycle: ServicePeriodProductLifecycle;
+  enabled: boolean;
+  archived: boolean;
+  /** @minimum 1 */
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ServicePeriodProductPage {
+  ok: boolean;
+  items: ServicePeriodProduct[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+}
+
+export interface ServicePeriodProductResponse {
+  ok: boolean;
+  product: ServicePeriodProduct;
+}
+
+export interface ServicePeriodProductCreateRequest {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  product_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @maxLength 10000 */
+  description?: string;
+  /** @minimum 0 */
+  price_minor: number;
+  /**
+   * @minLength 3
+   * @maxLength 3
+   */
+  currency: string;
+  /** @minimum 0 */
+  stock_quantity: number;
+}
+
+export interface ServicePeriodProductUpdateRequest {
+  /** @minimum 1 */
+  expected_version: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @maxLength 10000 */
+  description: string;
+  /** @minimum 0 */
+  price_minor: number;
+  /**
+   * @minLength 3
+   * @maxLength 3
+   */
+  currency: string;
+  /** @minimum 0 */
+  stock_quantity: number;
+}
+
+export interface ServicePeriodVersionRequest {
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+export interface ServicePeriodMemberGridAccess {
+  /** @minimum 1 */
+  product_id: number;
+  can_view: boolean;
+  can_query: boolean;
+  can_manage_views: boolean;
+  can_share: boolean;
+}
+
+export type ServicePeriodMemberGridColumnKey =
+  (typeof ServicePeriodMemberGridColumnKey)[keyof typeof ServicePeriodMemberGridColumnKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridColumnKey = {
+  entitlement_id: "entitlement_id",
+  product_id: "product_id",
+  state: "state",
+  version: "version",
+  granted_at: "granted_at",
+  revoked_at: "revoked_at",
+  display_name: "display_name",
+  masked_mobile: "masked_mobile",
+} as const;
+
+export type ServicePeriodMemberGridColumnType =
+  (typeof ServicePeriodMemberGridColumnType)[keyof typeof ServicePeriodMemberGridColumnType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridColumnType = {
+  integer: "integer",
+  enum: "enum",
+  timestamp: "timestamp",
+  string: "string",
+} as const;
+
+export interface ServicePeriodMemberGridColumn {
+  key: ServicePeriodMemberGridColumnKey;
+  /** @minLength 1 */
+  label: string;
+  type: ServicePeriodMemberGridColumnType;
+  nullable: boolean;
+}
+
+export interface ServicePeriodMemberGridSchema {
+  /** @minimum 1 */
+  product_id: number;
+  /**
+   * @minItems 8
+   * @maxItems 8
+   */
+  columns: ServicePeriodMemberGridColumn[];
+}
+
+export type ServicePeriodMemberGridViewSource =
+  (typeof ServicePeriodMemberGridViewSource)[keyof typeof ServicePeriodMemberGridViewSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridViewSource = {
+  built_in: "built_in",
+} as const;
+
+export interface ServicePeriodMemberGridView {
+  /** @minLength 1 */
+  id: string;
+  /** @minLength 1 */
+  name: string;
+  source: ServicePeriodMemberGridViewSource;
+  read_only: boolean;
+}
+
+export interface ServicePeriodMemberGridViews {
+  /** @minimum 1 */
+  product_id: number;
+  /** @minItems 1 */
+  views: ServicePeriodMemberGridView[];
+}
+
+export type ServicePeriodMemberGridQueryRequestState =
+  (typeof ServicePeriodMemberGridQueryRequestState)[keyof typeof ServicePeriodMemberGridQueryRequestState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridQueryRequestState = {
+  active: "active",
+  revoked: "revoked",
+  all: "all",
+} as const;
+
+export interface ServicePeriodMemberGridQueryRequest {
+  state?: ServicePeriodMemberGridQueryRequestState;
+  /**
+   * @minimum 1
+   * @maximum 50
+   */
+  limit?: number;
+  /**
+   * @maxLength 256
+   * @nullable
+   */
+  cursor?: string | null;
+}
+
+export type ServicePeriodMemberGridMemberState =
+  (typeof ServicePeriodMemberGridMemberState)[keyof typeof ServicePeriodMemberGridMemberState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridMemberState = {
+  active: "active",
+  revoked: "revoked",
+} as const;
+
+export interface ServicePeriodMemberGridMember {
+  /** @minimum 1 */
+  entitlement_id: number;
+  /** @minimum 1 */
+  product_id: number;
+  state: ServicePeriodMemberGridMemberState;
+  /** @minimum 1 */
+  version: number;
+  granted_at: string;
+  /** @nullable */
+  revoked_at?: string | null;
+  display_name: string;
+  /** @nullable */
+  masked_mobile?: string | null;
+}
+
+export interface ServicePeriodMemberGridQueryResponse {
+  rows: ServicePeriodMemberGridMember[];
+  /**
+   * @minimum 1
+   * @maximum 50
+   */
+  limit: number;
+  next_cursor: string;
+  has_more: boolean;
+}
+
 export type ServicePeriodMemberViewState =
   (typeof ServicePeriodMemberViewState)[keyof typeof ServicePeriodMemberViewState];
 
@@ -11494,6 +11744,19 @@ export type ListExternalEffectJobsParams = {
    * @maximum 100
    */
   limit?: number;
+};
+
+export type ListServicePeriodProductsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
 };
 
 export type ListRadarLinksParams = {
@@ -29815,6 +30078,995 @@ export const getExternalEffectsDiagnostics = async (
     status: res.status,
     headers: res.headers,
   } as getExternalEffectsDiagnosticsResponse;
+};
+
+/**
+ * @summary List local service-period products without payment, entitlement, or provider effects
+ */
+export type listServicePeriodProductsResponse200 = {
+  data: ServicePeriodProductPage;
+  status: 200;
+};
+
+export type listServicePeriodProductsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listServicePeriodProductsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listServicePeriodProductsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listServicePeriodProductsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listServicePeriodProductsResponseSuccess =
+  listServicePeriodProductsResponse200 & {
+    headers: Headers;
+  };
+export type listServicePeriodProductsResponseError = (
+  | listServicePeriodProductsResponse400
+  | listServicePeriodProductsResponse401
+  | listServicePeriodProductsResponse403
+  | listServicePeriodProductsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listServicePeriodProductsResponse =
+  | listServicePeriodProductsResponseSuccess
+  | listServicePeriodProductsResponseError;
+
+export const getListServicePeriodProductsUrl = (
+  params?: ListServicePeriodProductsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/service-period-products?${stringifiedParams}`
+    : `/api/admin/service-period-products`;
+};
+
+export const listServicePeriodProducts = async (
+  params?: ListServicePeriodProductsParams,
+  options?: RequestInit,
+): Promise<listServicePeriodProductsResponse> => {
+  const res = await fetch(getListServicePeriodProductsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listServicePeriodProductsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listServicePeriodProductsResponse;
+};
+
+/**
+ * @summary Create one local service-period product without public purchase capability
+ */
+export type createServicePeriodProductResponse201 = {
+  data: ServicePeriodProductResponse;
+  status: 201;
+};
+
+export type createServicePeriodProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createServicePeriodProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createServicePeriodProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createServicePeriodProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createServicePeriodProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createServicePeriodProductResponseSuccess =
+  createServicePeriodProductResponse201 & {
+    headers: Headers;
+  };
+export type createServicePeriodProductResponseError = (
+  | createServicePeriodProductResponse400
+  | createServicePeriodProductResponse401
+  | createServicePeriodProductResponse403
+  | createServicePeriodProductResponse409
+  | createServicePeriodProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type createServicePeriodProductResponse =
+  | createServicePeriodProductResponseSuccess
+  | createServicePeriodProductResponseError;
+
+export const getCreateServicePeriodProductUrl = () => {
+  return `/api/admin/service-period-products`;
+};
+
+export const createServicePeriodProduct = async (
+  servicePeriodProductCreateRequest: ServicePeriodProductCreateRequest,
+  options?: RequestInit,
+): Promise<createServicePeriodProductResponse> => {
+  const res = await fetch(getCreateServicePeriodProductUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(servicePeriodProductCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createServicePeriodProductResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createServicePeriodProductResponse;
+};
+
+/**
+ * @summary Get one local service-period product
+ */
+export type getServicePeriodProductResponse200 = {
+  data: ServicePeriodProductResponse;
+  status: 200;
+};
+
+export type getServicePeriodProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getServicePeriodProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getServicePeriodProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getServicePeriodProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getServicePeriodProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getServicePeriodProductResponseSuccess =
+  getServicePeriodProductResponse200 & {
+    headers: Headers;
+  };
+export type getServicePeriodProductResponseError = (
+  | getServicePeriodProductResponse400
+  | getServicePeriodProductResponse401
+  | getServicePeriodProductResponse403
+  | getServicePeriodProductResponse404
+  | getServicePeriodProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type getServicePeriodProductResponse =
+  getServicePeriodProductResponseSuccess | getServicePeriodProductResponseError;
+
+export const getGetServicePeriodProductUrl = (serviceProductId: number) => {
+  return `/api/admin/service-period-products/${serviceProductId}`;
+};
+
+export const getServicePeriodProduct = async (
+  serviceProductId: number,
+  options?: RequestInit,
+): Promise<getServicePeriodProductResponse> => {
+  const res = await fetch(getGetServicePeriodProductUrl(serviceProductId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getServicePeriodProductResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getServicePeriodProductResponse;
+};
+
+/**
+ * @summary Compare-and-swap one local service-period product
+ */
+export type updateServicePeriodProductResponse200 = {
+  data: ServicePeriodProductResponse;
+  status: 200;
+};
+
+export type updateServicePeriodProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateServicePeriodProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateServicePeriodProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateServicePeriodProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateServicePeriodProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateServicePeriodProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateServicePeriodProductResponseSuccess =
+  updateServicePeriodProductResponse200 & {
+    headers: Headers;
+  };
+export type updateServicePeriodProductResponseError = (
+  | updateServicePeriodProductResponse400
+  | updateServicePeriodProductResponse401
+  | updateServicePeriodProductResponse403
+  | updateServicePeriodProductResponse404
+  | updateServicePeriodProductResponse409
+  | updateServicePeriodProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateServicePeriodProductResponse =
+  | updateServicePeriodProductResponseSuccess
+  | updateServicePeriodProductResponseError;
+
+export const getUpdateServicePeriodProductUrl = (serviceProductId: number) => {
+  return `/api/admin/service-period-products/${serviceProductId}`;
+};
+
+export const updateServicePeriodProduct = async (
+  serviceProductId: number,
+  servicePeriodProductUpdateRequest: ServicePeriodProductUpdateRequest,
+  options?: RequestInit,
+): Promise<updateServicePeriodProductResponse> => {
+  const res = await fetch(getUpdateServicePeriodProductUrl(serviceProductId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(servicePeriodProductUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateServicePeriodProductResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateServicePeriodProductResponse;
+};
+
+/**
+ * @summary Archive one local service-period product without deleting member history
+ */
+export type archiveServicePeriodProductResponse200 = {
+  data: ServicePeriodProductResponse;
+  status: 200;
+};
+
+export type archiveServicePeriodProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type archiveServicePeriodProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type archiveServicePeriodProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type archiveServicePeriodProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type archiveServicePeriodProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type archiveServicePeriodProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type archiveServicePeriodProductResponseSuccess =
+  archiveServicePeriodProductResponse200 & {
+    headers: Headers;
+  };
+export type archiveServicePeriodProductResponseError = (
+  | archiveServicePeriodProductResponse400
+  | archiveServicePeriodProductResponse401
+  | archiveServicePeriodProductResponse403
+  | archiveServicePeriodProductResponse404
+  | archiveServicePeriodProductResponse409
+  | archiveServicePeriodProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type archiveServicePeriodProductResponse =
+  | archiveServicePeriodProductResponseSuccess
+  | archiveServicePeriodProductResponseError;
+
+export const getArchiveServicePeriodProductUrl = (serviceProductId: number) => {
+  return `/api/admin/service-period-products/${serviceProductId}`;
+};
+
+export const archiveServicePeriodProduct = async (
+  serviceProductId: number,
+  servicePeriodVersionRequest: ServicePeriodVersionRequest,
+  options?: RequestInit,
+): Promise<archiveServicePeriodProductResponse> => {
+  const res = await fetch(getArchiveServicePeriodProductUrl(serviceProductId), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(servicePeriodVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: archiveServicePeriodProductResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as archiveServicePeriodProductResponse;
+};
+
+/**
+ * @summary Enable one local service-period product without public purchase capability
+ */
+export type enableServicePeriodProductResponse200 = {
+  data: ServicePeriodProductResponse;
+  status: 200;
+};
+
+export type enableServicePeriodProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type enableServicePeriodProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type enableServicePeriodProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type enableServicePeriodProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type enableServicePeriodProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type enableServicePeriodProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type enableServicePeriodProductResponseSuccess =
+  enableServicePeriodProductResponse200 & {
+    headers: Headers;
+  };
+export type enableServicePeriodProductResponseError = (
+  | enableServicePeriodProductResponse400
+  | enableServicePeriodProductResponse401
+  | enableServicePeriodProductResponse403
+  | enableServicePeriodProductResponse404
+  | enableServicePeriodProductResponse409
+  | enableServicePeriodProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type enableServicePeriodProductResponse =
+  | enableServicePeriodProductResponseSuccess
+  | enableServicePeriodProductResponseError;
+
+export const getEnableServicePeriodProductUrl = (serviceProductId: number) => {
+  return `/api/admin/service-period-products/${serviceProductId}/enable`;
+};
+
+export const enableServicePeriodProduct = async (
+  serviceProductId: number,
+  servicePeriodVersionRequest: ServicePeriodVersionRequest,
+  options?: RequestInit,
+): Promise<enableServicePeriodProductResponse> => {
+  const res = await fetch(getEnableServicePeriodProductUrl(serviceProductId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(servicePeriodVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: enableServicePeriodProductResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as enableServicePeriodProductResponse;
+};
+
+/**
+ * @summary Disable one local service-period product
+ */
+export type disableServicePeriodProductResponse200 = {
+  data: ServicePeriodProductResponse;
+  status: 200;
+};
+
+export type disableServicePeriodProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type disableServicePeriodProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type disableServicePeriodProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type disableServicePeriodProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type disableServicePeriodProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type disableServicePeriodProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type disableServicePeriodProductResponseSuccess =
+  disableServicePeriodProductResponse200 & {
+    headers: Headers;
+  };
+export type disableServicePeriodProductResponseError = (
+  | disableServicePeriodProductResponse400
+  | disableServicePeriodProductResponse401
+  | disableServicePeriodProductResponse403
+  | disableServicePeriodProductResponse404
+  | disableServicePeriodProductResponse409
+  | disableServicePeriodProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type disableServicePeriodProductResponse =
+  | disableServicePeriodProductResponseSuccess
+  | disableServicePeriodProductResponseError;
+
+export const getDisableServicePeriodProductUrl = (serviceProductId: number) => {
+  return `/api/admin/service-period-products/${serviceProductId}/disable`;
+};
+
+export const disableServicePeriodProduct = async (
+  serviceProductId: number,
+  servicePeriodVersionRequest: ServicePeriodVersionRequest,
+  options?: RequestInit,
+): Promise<disableServicePeriodProductResponse> => {
+  const res = await fetch(getDisableServicePeriodProductUrl(serviceProductId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(servicePeriodVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: disableServicePeriodProductResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as disableServicePeriodProductResponse;
+};
+
+/**
+ * @summary Copy one local service-period product as a draft
+ */
+export type copyServicePeriodProductResponse201 = {
+  data: ServicePeriodProductResponse;
+  status: 201;
+};
+
+export type copyServicePeriodProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type copyServicePeriodProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type copyServicePeriodProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type copyServicePeriodProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type copyServicePeriodProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type copyServicePeriodProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type copyServicePeriodProductResponseSuccess =
+  copyServicePeriodProductResponse201 & {
+    headers: Headers;
+  };
+export type copyServicePeriodProductResponseError = (
+  | copyServicePeriodProductResponse400
+  | copyServicePeriodProductResponse401
+  | copyServicePeriodProductResponse403
+  | copyServicePeriodProductResponse404
+  | copyServicePeriodProductResponse409
+  | copyServicePeriodProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type copyServicePeriodProductResponse =
+  | copyServicePeriodProductResponseSuccess
+  | copyServicePeriodProductResponseError;
+
+export const getCopyServicePeriodProductUrl = (serviceProductId: number) => {
+  return `/api/admin/service-period-products/${serviceProductId}/copy`;
+};
+
+export const copyServicePeriodProduct = async (
+  serviceProductId: number,
+  servicePeriodVersionRequest: ServicePeriodVersionRequest,
+  options?: RequestInit,
+): Promise<copyServicePeriodProductResponse> => {
+  const res = await fetch(getCopyServicePeriodProductUrl(serviceProductId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(servicePeriodVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: copyServicePeriodProductResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as copyServicePeriodProductResponse;
+};
+
+/**
+ * @summary Read local member-grid access; external sharing remains disabled
+ */
+export type getServicePeriodMemberGridAccessResponse200 = {
+  data: ServicePeriodMemberGridAccess;
+  status: 200;
+};
+
+export type getServicePeriodMemberGridAccessResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getServicePeriodMemberGridAccessResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getServicePeriodMemberGridAccessResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getServicePeriodMemberGridAccessResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getServicePeriodMemberGridAccessResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getServicePeriodMemberGridAccessResponseSuccess =
+  getServicePeriodMemberGridAccessResponse200 & {
+    headers: Headers;
+  };
+export type getServicePeriodMemberGridAccessResponseError = (
+  | getServicePeriodMemberGridAccessResponse400
+  | getServicePeriodMemberGridAccessResponse401
+  | getServicePeriodMemberGridAccessResponse403
+  | getServicePeriodMemberGridAccessResponse404
+  | getServicePeriodMemberGridAccessResponse503
+) & {
+  headers: Headers;
+};
+
+export type getServicePeriodMemberGridAccessResponse =
+  | getServicePeriodMemberGridAccessResponseSuccess
+  | getServicePeriodMemberGridAccessResponseError;
+
+export const getGetServicePeriodMemberGridAccessUrl = (
+  serviceProductId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/member-grid/access`;
+};
+
+export const getServicePeriodMemberGridAccess = async (
+  serviceProductId: number,
+  options?: RequestInit,
+): Promise<getServicePeriodMemberGridAccessResponse> => {
+  const res = await fetch(
+    getGetServicePeriodMemberGridAccessUrl(serviceProductId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getServicePeriodMemberGridAccessResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getServicePeriodMemberGridAccessResponse;
+};
+
+/**
+ * @summary Read the closed local member-grid schema
+ */
+export type getServicePeriodMemberGridSchemaResponse200 = {
+  data: ServicePeriodMemberGridSchema;
+  status: 200;
+};
+
+export type getServicePeriodMemberGridSchemaResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getServicePeriodMemberGridSchemaResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getServicePeriodMemberGridSchemaResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getServicePeriodMemberGridSchemaResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getServicePeriodMemberGridSchemaResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getServicePeriodMemberGridSchemaResponseSuccess =
+  getServicePeriodMemberGridSchemaResponse200 & {
+    headers: Headers;
+  };
+export type getServicePeriodMemberGridSchemaResponseError = (
+  | getServicePeriodMemberGridSchemaResponse400
+  | getServicePeriodMemberGridSchemaResponse401
+  | getServicePeriodMemberGridSchemaResponse403
+  | getServicePeriodMemberGridSchemaResponse404
+  | getServicePeriodMemberGridSchemaResponse503
+) & {
+  headers: Headers;
+};
+
+export type getServicePeriodMemberGridSchemaResponse =
+  | getServicePeriodMemberGridSchemaResponseSuccess
+  | getServicePeriodMemberGridSchemaResponseError;
+
+export const getGetServicePeriodMemberGridSchemaUrl = (
+  serviceProductId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/member-grid/schema`;
+};
+
+export const getServicePeriodMemberGridSchema = async (
+  serviceProductId: number,
+  options?: RequestInit,
+): Promise<getServicePeriodMemberGridSchemaResponse> => {
+  const res = await fetch(
+    getGetServicePeriodMemberGridSchemaUrl(serviceProductId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getServicePeriodMemberGridSchemaResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getServicePeriodMemberGridSchemaResponse;
+};
+
+/**
+ * @summary Query existing local entitlement rows; it neither adds nor expires members
+ */
+export type queryServicePeriodMemberGridResponse200 = {
+  data: ServicePeriodMemberGridQueryResponse;
+  status: 200;
+};
+
+export type queryServicePeriodMemberGridResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type queryServicePeriodMemberGridResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type queryServicePeriodMemberGridResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type queryServicePeriodMemberGridResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type queryServicePeriodMemberGridResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type queryServicePeriodMemberGridResponseSuccess =
+  queryServicePeriodMemberGridResponse200 & {
+    headers: Headers;
+  };
+export type queryServicePeriodMemberGridResponseError = (
+  | queryServicePeriodMemberGridResponse400
+  | queryServicePeriodMemberGridResponse401
+  | queryServicePeriodMemberGridResponse403
+  | queryServicePeriodMemberGridResponse404
+  | queryServicePeriodMemberGridResponse503
+) & {
+  headers: Headers;
+};
+
+export type queryServicePeriodMemberGridResponse =
+  | queryServicePeriodMemberGridResponseSuccess
+  | queryServicePeriodMemberGridResponseError;
+
+export const getQueryServicePeriodMemberGridUrl = (
+  serviceProductId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/member-grid/query`;
+};
+
+export const queryServicePeriodMemberGrid = async (
+  serviceProductId: number,
+  servicePeriodMemberGridQueryRequest: ServicePeriodMemberGridQueryRequest,
+  options?: RequestInit,
+): Promise<queryServicePeriodMemberGridResponse> => {
+  const res = await fetch(
+    getQueryServicePeriodMemberGridUrl(serviceProductId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(servicePeriodMemberGridQueryRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: queryServicePeriodMemberGridResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as queryServicePeriodMemberGridResponse;
+};
+
+/**
+ * @summary List closed built-in member-grid views
+ */
+export type listServicePeriodMemberViewsResponse200 = {
+  data: ServicePeriodMemberGridViews;
+  status: 200;
+};
+
+export type listServicePeriodMemberViewsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listServicePeriodMemberViewsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listServicePeriodMemberViewsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listServicePeriodMemberViewsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listServicePeriodMemberViewsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listServicePeriodMemberViewsResponseSuccess =
+  listServicePeriodMemberViewsResponse200 & {
+    headers: Headers;
+  };
+export type listServicePeriodMemberViewsResponseError = (
+  | listServicePeriodMemberViewsResponse400
+  | listServicePeriodMemberViewsResponse401
+  | listServicePeriodMemberViewsResponse403
+  | listServicePeriodMemberViewsResponse404
+  | listServicePeriodMemberViewsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listServicePeriodMemberViewsResponse =
+  | listServicePeriodMemberViewsResponseSuccess
+  | listServicePeriodMemberViewsResponseError;
+
+export const getListServicePeriodMemberViewsUrl = (
+  serviceProductId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/member-views`;
+};
+
+export const listServicePeriodMemberViews = async (
+  serviceProductId: number,
+  options?: RequestInit,
+): Promise<listServicePeriodMemberViewsResponse> => {
+  const res = await fetch(
+    getListServicePeriodMemberViewsUrl(serviceProductId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listServicePeriodMemberViewsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listServicePeriodMemberViewsResponse;
 };
 
 /**
