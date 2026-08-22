@@ -10,6 +10,91 @@ export interface AIAudienceProjection {
   real_external_call_executed: boolean;
 }
 
+export interface AIAudienceOperationMember {
+  /** @minLength 1 */
+  sender_userid: string;
+  display_name: string;
+}
+
+export type AIAudienceOperationMemberListResponseScope =
+  (typeof AIAudienceOperationMemberListResponseScope)[keyof typeof AIAudienceOperationMemberListResponseScope];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceOperationMemberListResponseScope = {
+  ai_audience: "ai_audience",
+} as const;
+
+export interface AIAudienceOperationMemberListResponse {
+  scope: AIAudienceOperationMemberListResponseScope;
+  /** @maxItems 100 */
+  items: AIAudienceOperationMember[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  page_size: number;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface AIAudienceAutomationBinding {
+  /** @minimum 1 */
+  package_id: number;
+  /** @minimum 1 */
+  automation_agent_id: number;
+  /** @minimum 1 */
+  created_by: number;
+  /** @minimum 1 */
+  updated_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIAudienceAutomationBindingPutRequest {
+  /** @minimum 1 */
+  automation_agent_id: number;
+}
+
+export interface AIAudienceAutomationBindingResponse {
+  /** @nullable */
+  binding: AIAudienceAutomationBinding;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface AIAudienceAutomationBindingDeleteResponse {
+  /** @minimum 1 */
+  package_id: number;
+  deleted: boolean;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface AIAudiencePackageSender {
+  /** @minLength 1 */
+  sender_userid: string;
+  /**
+   * @minimum 1
+   * @maximum 5
+   */
+  sort_order: number;
+  is_enabled: boolean;
+}
+
+export interface AIAudiencePackageSendersReplaceRequest {
+  /** @maxItems 5 */
+  items: AIAudiencePackageSender[];
+}
+
+export interface AIAudiencePackageSendersResponse {
+  /** @minimum 1 */
+  package_id: number;
+  /** @maxItems 5 */
+  items: AIAudiencePackageSender[];
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
 export interface AIAudienceGroup {
   /** @minimum 1 */
   group_id: number;
@@ -10893,6 +10978,23 @@ export type ListRadarLinksParams = {
    */
   offset?: number;
 };
+
+export type ListAIAudienceOperationMembersParams = {
+  scope: ListAIAudienceOperationMembersScope;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  page_size?: number;
+};
+
+export type ListAIAudienceOperationMembersScope =
+  (typeof ListAIAudienceOperationMembersScope)[keyof typeof ListAIAudienceOperationMembersScope];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListAIAudienceOperationMembersScope = {
+  ai_audience: "ai_audience",
+} as const;
 
 export type ListAIAudiencePackagesParams = {
   /**
@@ -29335,6 +29437,96 @@ export const getRadarLinkShareProjection = async (
 };
 
 /**
+ * @summary List the active local staff projection eligible for AI Audience sender selection
+ */
+export type listAIAudienceOperationMembersResponse200 = {
+  data: AIAudienceOperationMemberListResponse;
+  status: 200;
+};
+
+export type listAIAudienceOperationMembersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAIAudienceOperationMembersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAIAudienceOperationMembersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAIAudienceOperationMembersResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type listAIAudienceOperationMembersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAIAudienceOperationMembersResponseSuccess =
+  listAIAudienceOperationMembersResponse200 & {
+    headers: Headers;
+  };
+export type listAIAudienceOperationMembersResponseError = (
+  | listAIAudienceOperationMembersResponse400
+  | listAIAudienceOperationMembersResponse401
+  | listAIAudienceOperationMembersResponse403
+  | listAIAudienceOperationMembersResponse422
+  | listAIAudienceOperationMembersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAIAudienceOperationMembersResponse =
+  | listAIAudienceOperationMembersResponseSuccess
+  | listAIAudienceOperationMembersResponseError;
+
+export const getListAIAudienceOperationMembersUrl = (
+  params: ListAIAudienceOperationMembersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/common/operation-members?${stringifiedParams}`
+    : `/api/admin/common/operation-members`;
+};
+
+export const listAIAudienceOperationMembers = async (
+  params: ListAIAudienceOperationMembersParams,
+  options?: RequestInit,
+): Promise<listAIAudienceOperationMembersResponse> => {
+  const res = await fetch(getListAIAudienceOperationMembersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAIAudienceOperationMembersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAIAudienceOperationMembersResponse;
+};
+
+/**
  * @summary List CRM-local AI Audience package groups
  */
 export type listAIAudiencePackageGroupsResponse200 = {
@@ -30144,6 +30336,464 @@ export const copyAIAudiencePackage = async (
     status: res.status,
     headers: res.headers,
   } as copyAIAudiencePackageResponse;
+};
+
+/**
+ * @summary Read a CRM-local automation agent binding without starting an agent
+ */
+export type getAIAudienceAutomationBindingResponse200 = {
+  data: AIAudienceAutomationBindingResponse;
+  status: 200;
+};
+
+export type getAIAudienceAutomationBindingResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getAIAudienceAutomationBindingResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAIAudienceAutomationBindingResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAIAudienceAutomationBindingResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getAIAudienceAutomationBindingResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getAIAudienceAutomationBindingResponseSuccess =
+  getAIAudienceAutomationBindingResponse200 & {
+    headers: Headers;
+  };
+export type getAIAudienceAutomationBindingResponseError = (
+  | getAIAudienceAutomationBindingResponse400
+  | getAIAudienceAutomationBindingResponse401
+  | getAIAudienceAutomationBindingResponse403
+  | getAIAudienceAutomationBindingResponse404
+  | getAIAudienceAutomationBindingResponse503
+) & {
+  headers: Headers;
+};
+
+export type getAIAudienceAutomationBindingResponse =
+  | getAIAudienceAutomationBindingResponseSuccess
+  | getAIAudienceAutomationBindingResponseError;
+
+export const getGetAIAudienceAutomationBindingUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/automation-binding`;
+};
+
+export const getAIAudienceAutomationBinding = async (
+  packageId: number,
+  options?: RequestInit,
+): Promise<getAIAudienceAutomationBindingResponse> => {
+  const res = await fetch(getGetAIAudienceAutomationBindingUrl(packageId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAIAudienceAutomationBindingResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAIAudienceAutomationBindingResponse;
+};
+
+/**
+ * @summary Replace one CRM-local automation agent binding without starting it
+ */
+export type putAIAudienceAutomationBindingResponse200 = {
+  data: AIAudienceAutomationBindingResponse;
+  status: 200;
+};
+
+export type putAIAudienceAutomationBindingResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type putAIAudienceAutomationBindingResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type putAIAudienceAutomationBindingResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type putAIAudienceAutomationBindingResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type putAIAudienceAutomationBindingResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type putAIAudienceAutomationBindingResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type putAIAudienceAutomationBindingResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type putAIAudienceAutomationBindingResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type putAIAudienceAutomationBindingResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type putAIAudienceAutomationBindingResponseSuccess =
+  putAIAudienceAutomationBindingResponse200 & {
+    headers: Headers;
+  };
+export type putAIAudienceAutomationBindingResponseError = (
+  | putAIAudienceAutomationBindingResponse400
+  | putAIAudienceAutomationBindingResponse401
+  | putAIAudienceAutomationBindingResponse403
+  | putAIAudienceAutomationBindingResponse404
+  | putAIAudienceAutomationBindingResponse409
+  | putAIAudienceAutomationBindingResponse413
+  | putAIAudienceAutomationBindingResponse415
+  | putAIAudienceAutomationBindingResponse422
+  | putAIAudienceAutomationBindingResponse503
+) & {
+  headers: Headers;
+};
+
+export type putAIAudienceAutomationBindingResponse =
+  | putAIAudienceAutomationBindingResponseSuccess
+  | putAIAudienceAutomationBindingResponseError;
+
+export const getPutAIAudienceAutomationBindingUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/automation-binding`;
+};
+
+export const putAIAudienceAutomationBinding = async (
+  packageId: number,
+  aIAudienceAutomationBindingPutRequest: AIAudienceAutomationBindingPutRequest,
+  options?: RequestInit,
+): Promise<putAIAudienceAutomationBindingResponse> => {
+  const res = await fetch(getPutAIAudienceAutomationBindingUrl(packageId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceAutomationBindingPutRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: putAIAudienceAutomationBindingResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as putAIAudienceAutomationBindingResponse;
+};
+
+/**
+ * @summary Idempotently remove one CRM-local automation agent binding
+ */
+export type deleteAIAudienceAutomationBindingResponse200 = {
+  data: AIAudienceAutomationBindingDeleteResponse;
+  status: 200;
+};
+
+export type deleteAIAudienceAutomationBindingResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type deleteAIAudienceAutomationBindingResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type deleteAIAudienceAutomationBindingResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type deleteAIAudienceAutomationBindingResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type deleteAIAudienceAutomationBindingResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type deleteAIAudienceAutomationBindingResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type deleteAIAudienceAutomationBindingResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type deleteAIAudienceAutomationBindingResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type deleteAIAudienceAutomationBindingResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type deleteAIAudienceAutomationBindingResponseSuccess =
+  deleteAIAudienceAutomationBindingResponse200 & {
+    headers: Headers;
+  };
+export type deleteAIAudienceAutomationBindingResponseError = (
+  | deleteAIAudienceAutomationBindingResponse400
+  | deleteAIAudienceAutomationBindingResponse401
+  | deleteAIAudienceAutomationBindingResponse403
+  | deleteAIAudienceAutomationBindingResponse404
+  | deleteAIAudienceAutomationBindingResponse409
+  | deleteAIAudienceAutomationBindingResponse413
+  | deleteAIAudienceAutomationBindingResponse415
+  | deleteAIAudienceAutomationBindingResponse422
+  | deleteAIAudienceAutomationBindingResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteAIAudienceAutomationBindingResponse =
+  | deleteAIAudienceAutomationBindingResponseSuccess
+  | deleteAIAudienceAutomationBindingResponseError;
+
+export const getDeleteAIAudienceAutomationBindingUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/automation-binding`;
+};
+
+export const deleteAIAudienceAutomationBinding = async (
+  packageId: number,
+  options?: RequestInit,
+): Promise<deleteAIAudienceAutomationBindingResponse> => {
+  const res = await fetch(getDeleteAIAudienceAutomationBindingUrl(packageId), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteAIAudienceAutomationBindingResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteAIAudienceAutomationBindingResponse;
+};
+
+/**
+ * @summary Read the CRM-local ordered sender allowlist for one package
+ */
+export type getAIAudiencePackageSendersResponse200 = {
+  data: AIAudiencePackageSendersResponse;
+  status: 200;
+};
+
+export type getAIAudiencePackageSendersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getAIAudiencePackageSendersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAIAudiencePackageSendersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAIAudiencePackageSendersResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getAIAudiencePackageSendersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getAIAudiencePackageSendersResponseSuccess =
+  getAIAudiencePackageSendersResponse200 & {
+    headers: Headers;
+  };
+export type getAIAudiencePackageSendersResponseError = (
+  | getAIAudiencePackageSendersResponse400
+  | getAIAudiencePackageSendersResponse401
+  | getAIAudiencePackageSendersResponse403
+  | getAIAudiencePackageSendersResponse404
+  | getAIAudiencePackageSendersResponse503
+) & {
+  headers: Headers;
+};
+
+export type getAIAudiencePackageSendersResponse =
+  | getAIAudiencePackageSendersResponseSuccess
+  | getAIAudiencePackageSendersResponseError;
+
+export const getGetAIAudiencePackageSendersUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/senders`;
+};
+
+export const getAIAudiencePackageSenders = async (
+  packageId: number,
+  options?: RequestInit,
+): Promise<getAIAudiencePackageSendersResponse> => {
+  const res = await fetch(getGetAIAudiencePackageSendersUrl(packageId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAIAudiencePackageSendersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAIAudiencePackageSendersResponse;
+};
+
+/**
+ * @summary Fully replace the CRM-local ordered sender allowlist for one package
+ */
+export type replaceAIAudiencePackageSendersResponse200 = {
+  data: AIAudiencePackageSendersResponse;
+  status: 200;
+};
+
+export type replaceAIAudiencePackageSendersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type replaceAIAudiencePackageSendersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type replaceAIAudiencePackageSendersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type replaceAIAudiencePackageSendersResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type replaceAIAudiencePackageSendersResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type replaceAIAudiencePackageSendersResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type replaceAIAudiencePackageSendersResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type replaceAIAudiencePackageSendersResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type replaceAIAudiencePackageSendersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type replaceAIAudiencePackageSendersResponseSuccess =
+  replaceAIAudiencePackageSendersResponse200 & {
+    headers: Headers;
+  };
+export type replaceAIAudiencePackageSendersResponseError = (
+  | replaceAIAudiencePackageSendersResponse400
+  | replaceAIAudiencePackageSendersResponse401
+  | replaceAIAudiencePackageSendersResponse403
+  | replaceAIAudiencePackageSendersResponse404
+  | replaceAIAudiencePackageSendersResponse409
+  | replaceAIAudiencePackageSendersResponse413
+  | replaceAIAudiencePackageSendersResponse415
+  | replaceAIAudiencePackageSendersResponse422
+  | replaceAIAudiencePackageSendersResponse503
+) & {
+  headers: Headers;
+};
+
+export type replaceAIAudiencePackageSendersResponse =
+  | replaceAIAudiencePackageSendersResponseSuccess
+  | replaceAIAudiencePackageSendersResponseError;
+
+export const getReplaceAIAudiencePackageSendersUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/senders`;
+};
+
+export const replaceAIAudiencePackageSenders = async (
+  packageId: number,
+  aIAudiencePackageSendersReplaceRequest: AIAudiencePackageSendersReplaceRequest,
+  options?: RequestInit,
+): Promise<replaceAIAudiencePackageSendersResponse> => {
+  const res = await fetch(getReplaceAIAudiencePackageSendersUrl(packageId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudiencePackageSendersReplaceRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: replaceAIAudiencePackageSendersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as replaceAIAudiencePackageSendersResponse;
 };
 
 /**
