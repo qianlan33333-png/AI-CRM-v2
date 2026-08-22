@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
@@ -297,7 +298,7 @@ func (handler *Handler) ListWechatOrderExternalEffects(writer http.ResponseWrite
 		writeOrderError(writer, err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, page)
+	writeJSON(writer, http.StatusOK, mapLegacyOrderExternalEffectPage(page))
 }
 
 func (handler *Handler) ReviewWechatOrderExternalEffect(writer http.ResponseWriter, request *http.Request) {
@@ -340,7 +341,7 @@ func (handler *Handler) ReviewWechatOrderExternalEffect(writer http.ResponseWrit
 		writeOrderError(writer, err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, result)
+	writeJSON(writer, http.StatusOK, mapLegacyOrderExternalEffect(result))
 }
 
 func (handler *Handler) orderBoardOrFail(writer http.ResponseWriter) legacyOrderBoardApplication {
@@ -560,6 +561,61 @@ func orderBoardActor(request *http.Request) (authport.Principal, error) {
 		return authport.Principal{}, authport.ErrUnauthorized
 	}
 	return principal, nil
+}
+
+const legacyOrderDeliverySemantics = "local_state_not_delivery_proof"
+
+// legacyOrderExternalEffect is the only public projection for local payment
+// effect facts. Provider receipts remain an internal database fact: even a
+// completed local state is never delivery or provider-success proof.
+type legacyOrderExternalEffect struct {
+	ID                       int64        `json:"id"`
+	OrderID                  orderport.ID `json:"order_id"`
+	Provider                 string       `json:"provider"`
+	EffectKind               string       `json:"effect_kind"`
+	State                    string       `json:"state"`
+	AutoRetryAllowed         bool         `json:"auto_retry_allowed"`
+	ManualReviewRequestedAt  *time.Time   `json:"manual_review_requested_at,omitempty"`
+	ReceiptState             string       `json:"receipt_state"`
+	ProviderReceiptPresent   bool         `json:"provider_receipt_present"`
+	DeliveryProven           bool         `json:"delivery_proven"`
+	LocalFactOnly            bool         `json:"local_fact_only"`
+	RealExternalCallExecuted bool         `json:"real_external_call_executed"`
+	DeliverySemantics        string       `json:"delivery_semantics"`
+	CreatedAt                time.Time    `json:"created_at"`
+	UpdatedAt                time.Time    `json:"updated_at"`
+}
+
+type legacyOrderExternalEffectPage struct {
+	Items []legacyOrderExternalEffect `json:"items"`
+	Total int64                       `json:"total"`
+}
+
+func mapLegacyOrderExternalEffect(effect orderport.ExternalEffect) legacyOrderExternalEffect {
+	receiptPresent := len(effect.ProviderReceipt) > 0
+	receiptState := "absent"
+	if receiptPresent {
+		receiptState = "present"
+	}
+	var reviewedAt *time.Time
+	if !effect.ManualReviewRequested.IsZero() {
+		value := effect.ManualReviewRequested.UTC()
+		reviewedAt = &value
+	}
+	return legacyOrderExternalEffect{ID: effect.ID, OrderID: effect.OrderID, Provider: effect.Provider,
+		EffectKind: effect.EffectKind, State: effect.State, AutoRetryAllowed: false,
+		ManualReviewRequestedAt: reviewedAt, ReceiptState: receiptState,
+		ProviderReceiptPresent: receiptPresent, DeliveryProven: false, LocalFactOnly: true,
+		RealExternalCallExecuted: false, DeliverySemantics: legacyOrderDeliverySemantics,
+		CreatedAt: effect.CreatedAt.UTC(), UpdatedAt: effect.UpdatedAt.UTC()}
+}
+
+func mapLegacyOrderExternalEffectPage(page orderport.ExternalEffectPage) legacyOrderExternalEffectPage {
+	items := make([]legacyOrderExternalEffect, len(page.Items))
+	for index, effect := range page.Items {
+		items[index] = mapLegacyOrderExternalEffect(effect)
+	}
+	return legacyOrderExternalEffectPage{Items: items, Total: page.Total}
 }
 
 func emptyOrderBoardBody(writer http.ResponseWriter, request *http.Request) bool {

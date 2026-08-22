@@ -66,21 +66,23 @@ const (
 	p4AIAudienceConfigurationEvidence = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22"
 	p4GroupOpsLocalEvidence           = "P4-GROUP-OPS-LOCAL-ONLY-2026-08-23"
 	p4ServicePeriodMembersEvidence    = "P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23"
+	p4OrderSafeExportEvidence         = "P4-ORDER-SAFE-EXPORT-2026-08-23"
 )
 
 var nativePackageOperations = map[string]nativePackageOperation{
-	"reorderStages":    {"/api/v1/stages/reorder", "PUT", p4ClassificationPackageEvidence, "stages.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"archiveStage":     {"/api/v1/stages/{stage_id}", "DELETE", p4ClassificationPackageEvidence, "stages.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"listTagGroups":    {"/api/v1/tag-groups", "GET", p4ClassificationPackageEvidence, "customers.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
-	"createTagGroup":   {"/api/v1/tag-groups", "POST", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"updateTagGroup":   {"/api/v1/tag-groups/{group_id}", "PATCH", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"archiveTagGroup":  {"/api/v1/tag-groups/{group_id}", "DELETE", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"reorderTagGroups": {"/api/v1/tag-groups/reorder", "PUT", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"createTag":        {"/api/v1/tags", "POST", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"updateTag":        {"/api/v1/tags/{tag_id}", "PATCH", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"archiveTag":       {"/api/v1/tags/{tag_id}", "DELETE", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"reorderTags":      {"/api/v1/tags/reorder", "PUT", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"archiveSegment":   {"/api/v1/segments/{segment_id}", "DELETE", p4ClassificationPackageEvidence, "segments.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"previewLegacyOrderExport": {"/api/admin/exports/preview", "POST", p4OrderSafeExportEvidence, "order.read", "human_session", "internal", "order.local_safe_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"reorderStages":            {"/api/v1/stages/reorder", "PUT", p4ClassificationPackageEvidence, "stages.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"archiveStage":             {"/api/v1/stages/{stage_id}", "DELETE", p4ClassificationPackageEvidence, "stages.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"listTagGroups":            {"/api/v1/tag-groups", "GET", p4ClassificationPackageEvidence, "customers.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"createTagGroup":           {"/api/v1/tag-groups", "POST", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"updateTagGroup":           {"/api/v1/tag-groups/{group_id}", "PATCH", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"archiveTagGroup":          {"/api/v1/tag-groups/{group_id}", "DELETE", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"reorderTagGroups":         {"/api/v1/tag-groups/reorder", "PUT", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"createTag":                {"/api/v1/tags", "POST", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"updateTag":                {"/api/v1/tags/{tag_id}", "PATCH", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"archiveTag":               {"/api/v1/tags/{tag_id}", "DELETE", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"reorderTags":              {"/api/v1/tags/reorder", "PUT", p4ClassificationPackageEvidence, "customers.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"archiveSegment":           {"/api/v1/segments/{segment_id}", "DELETE", p4ClassificationPackageEvidence, "segments.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 
 	"updateProduct":                   {"/api/v1/products/{product_id}", "PUT", p4ProductEntitlementEvidence, "products.write", "human_session", "financial", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"listProductLocalEntitlements":    {"/api/v1/products/{product_id}/local-entitlements", "GET", p4ProductEntitlementEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},

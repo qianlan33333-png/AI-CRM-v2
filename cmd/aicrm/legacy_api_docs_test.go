@@ -61,6 +61,7 @@ func TestLegacyAPIDocsGroupIDFreezesFirstMatchOrder(t *testing.T) {
 		{"/api/frontend-compat/anything", "system-mcp"},
 		{"/api/admin/exports", "system-mcp"},
 		{"/api/admin/exports/1", "system-mcp"},
+		{"/api/admin/exports/preview", "system-mcp"},
 		{"/login", "auth-callback"},
 		{"/wecom/callback", "auth-callback"},
 		{"/api/wecom/events", "auth-callback"},

@@ -465,7 +465,11 @@ func (s *BoardService) exportSafeCSV(ctx context.Context, command orderport.Expo
 }
 
 func (s *BoardService) exportSafeOrders(ctx context.Context, filter orderport.ExportFilter, rowLimit int64, requireComplete bool) (string, int64, bool, error) {
-	boardFilter := orderport.BoardFilter{Provider: filter.Provider, Status: filter.Status, ProductCode: filter.ProductCode, CreatedFrom: filter.CreatedFrom, CreatedTo: filter.CreatedTo, Limit: MaximumLimit}
+	provider := filter.Provider
+	if provider == "" {
+		provider = "all"
+	}
+	boardFilter := orderport.BoardFilter{Provider: provider, Status: filter.Status, ProductCode: filter.ProductCode, CreatedFrom: filter.CreatedFrom, CreatedTo: filter.CreatedTo, Limit: MaximumLimit}
 	var rows []orderport.Record
 	var total int64
 	if filter.LocalID != nil {
@@ -527,7 +531,11 @@ func (s *BoardService) exportSafeRefunds(ctx context.Context, filter orderport.E
 	if filter.ProductCode != "" {
 		return "", 0, false, ErrInvalidBoardCommand
 	}
-	refundFilter := orderport.RefundFilter{Provider: filter.Provider, Status: filter.Status, CreatedFrom: filter.CreatedFrom, CreatedTo: filter.CreatedTo, Limit: MaximumLimit}
+	provider := filter.Provider
+	if provider == "" {
+		provider = "all"
+	}
+	refundFilter := orderport.RefundFilter{Provider: provider, Status: filter.Status, CreatedFrom: filter.CreatedFrom, CreatedTo: filter.CreatedTo, Limit: MaximumLimit}
 	var rows []orderport.Refund
 	var total int64
 	if filter.LocalID != nil {

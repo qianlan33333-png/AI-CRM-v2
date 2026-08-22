@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -219,6 +220,26 @@ func TestOrderSafeExportTransportAllowsOnlyTheWhitelistedFilter(t *testing.T) {
 	request = httptest.NewRequest(http.MethodPost, "/api/admin/exports/preview", strings.NewReader(`{"resource":"orders","format":"csv","filter":{"mobile":"13800000000"}}`))
 	if _, err := legacyPreviewExportCommand(writer, request, 7); err == nil {
 		t.Fatal("identity filter was accepted")
+	}
+}
+
+func TestOrderExternalEffectPublicProjectionNeverLeaksProviderReceipt(t *testing.T) {
+	now := time.Date(2026, 8, 23, 12, 0, 0, 0, time.UTC)
+	effect := orderport.ExternalEffect{ID: 9, OrderID: 11, Provider: "wechat", EffectKind: "refund", State: "outcome_unknown", AutoRetryAllowed: false, ProviderReceipt: []byte("provider-receipt-must-not-leak"), CreatedAt: now, UpdatedAt: now}
+	encoded, err := json.Marshal(mapLegacyOrderExternalEffect(effect))
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(encoded)
+	for _, forbidden := range []string{"provider-receipt-must-not-leak", `"provider_receipt":`, "base64"} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("unsafe effect projection leaked %q: %s", forbidden, body)
+		}
+	}
+	for _, required := range []string{`"receipt_state":"present"`, `"provider_receipt_present":true`, `"delivery_proven":false`, `"local_fact_only":true`, `"real_external_call_executed":false`, `"delivery_semantics":"local_state_not_delivery_proof"`} {
+		if !strings.Contains(body, required) {
+			t.Fatalf("effect projection missing %q: %s", required, body)
+		}
 	}
 }
 

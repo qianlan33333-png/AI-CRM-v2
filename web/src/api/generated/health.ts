@@ -5904,6 +5904,53 @@ export const LegacyOrderExportRequestFormat = {
 export interface LegacyOrderExportRequest {
   resource: LegacyOrderExportRequestResource;
   format: LegacyOrderExportRequestFormat;
+  filter?: LegacyOrderExportFilter;
+}
+
+export type LegacyOrderExportPreviewRequestResource =
+  (typeof LegacyOrderExportPreviewRequestResource)[keyof typeof LegacyOrderExportPreviewRequestResource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExportPreviewRequestResource = {
+  orders: "orders",
+  payments: "payments",
+  refunds: "refunds",
+} as const;
+
+export type LegacyOrderExportPreviewRequestFormat =
+  (typeof LegacyOrderExportPreviewRequestFormat)[keyof typeof LegacyOrderExportPreviewRequestFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExportPreviewRequestFormat = {
+  csv: "csv",
+} as const;
+
+export interface LegacyOrderExportPreviewRequest {
+  resource: LegacyOrderExportPreviewRequestResource;
+  format: LegacyOrderExportPreviewRequestFormat;
+  filter?: LegacyOrderExportFilter;
+}
+
+export type LegacyOrderExportFilterProvider =
+  (typeof LegacyOrderExportFilterProvider)[keyof typeof LegacyOrderExportFilterProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExportFilterProvider = {
+  wechat: "wechat",
+  alipay: "alipay",
+  wechat_shop: "wechat_shop",
+} as const;
+
+export interface LegacyOrderExportFilter {
+  provider?: LegacyOrderExportFilterProvider;
+  /** @maxLength 64 */
+  status?: string;
+  /** @maxLength 200 */
+  product_code?: string;
+  /** @minimum 1 */
+  local_id?: number;
+  created_from?: string;
+  created_to?: string;
 }
 
 export type LegacyOrderExportResource =
@@ -5912,7 +5959,6 @@ export type LegacyOrderExportResource =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const LegacyOrderExportResource = {
   orders: "orders",
-  payments: "payments",
   refunds: "refunds",
 } as const;
 
@@ -5964,6 +6010,33 @@ export interface LegacyOrderExport {
   content_text: string;
 }
 
+export type LegacyOrderExportPreviewResource =
+  (typeof LegacyOrderExportPreviewResource)[keyof typeof LegacyOrderExportPreviewResource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExportPreviewResource = {
+  orders: "orders",
+  refunds: "refunds",
+} as const;
+
+export type LegacyOrderExportPreviewFormat =
+  (typeof LegacyOrderExportPreviewFormat)[keyof typeof LegacyOrderExportPreviewFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExportPreviewFormat = {
+  csv: "csv",
+} as const;
+
+export interface LegacyOrderExportPreview {
+  resource: LegacyOrderExportPreviewResource;
+  format: LegacyOrderExportPreviewFormat;
+  /** @minimum 0 */
+  total: number;
+  truncated: boolean;
+  /** @minLength 1 */
+  content_text: string;
+}
+
 export type LegacyOrderExternalEffectProvider =
   (typeof LegacyOrderExternalEffectProvider)[keyof typeof LegacyOrderExternalEffectProvider];
 
@@ -5994,6 +6067,23 @@ export const LegacyOrderExternalEffectState = {
   final_failed: "final_failed",
 } as const;
 
+export type LegacyOrderExternalEffectReceiptState =
+  (typeof LegacyOrderExternalEffectReceiptState)[keyof typeof LegacyOrderExternalEffectReceiptState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExternalEffectReceiptState = {
+  absent: "absent",
+  present: "present",
+} as const;
+
+export type LegacyOrderExternalEffectDeliverySemantics =
+  (typeof LegacyOrderExternalEffectDeliverySemantics)[keyof typeof LegacyOrderExternalEffectDeliverySemantics];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderExternalEffectDeliverySemantics = {
+  local_state_not_delivery_proof: "local_state_not_delivery_proof",
+} as const;
+
 export interface LegacyOrderExternalEffect {
   /** @minimum 1 */
   id: number;
@@ -6004,9 +6094,13 @@ export interface LegacyOrderExternalEffect {
   state: LegacyOrderExternalEffectState;
   auto_retry_allowed: boolean;
   /** @nullable */
-  provider_receipt?: string | null;
-  /** @nullable */
   manual_review_requested_at?: string | null;
+  receipt_state: LegacyOrderExternalEffectReceiptState;
+  provider_receipt_present: boolean;
+  delivery_proven: boolean;
+  local_fact_only: boolean;
+  real_external_call_executed: boolean;
+  delivery_semantics: LegacyOrderExternalEffectDeliverySemantics;
   created_at: string;
   updated_at: string;
 }
@@ -23871,6 +23965,84 @@ export const createLegacyOrderExport = async (
     status: res.status,
     headers: res.headers,
   } as createLegacyOrderExportResponse;
+};
+
+/**
+ * @summary Preview one closed local CSV projection without creating an export job
+ */
+export type previewLegacyOrderExportResponse200 = {
+  data: LegacyOrderExportPreview;
+  status: 200;
+};
+
+export type previewLegacyOrderExportResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type previewLegacyOrderExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type previewLegacyOrderExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type previewLegacyOrderExportResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type previewLegacyOrderExportResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type previewLegacyOrderExportResponseSuccess =
+  previewLegacyOrderExportResponse200 & {
+    headers: Headers;
+  };
+export type previewLegacyOrderExportResponseError = (
+  | previewLegacyOrderExportResponse400
+  | previewLegacyOrderExportResponse401
+  | previewLegacyOrderExportResponse403
+  | previewLegacyOrderExportResponse409
+  | previewLegacyOrderExportResponse503
+) & {
+  headers: Headers;
+};
+
+export type previewLegacyOrderExportResponse =
+  | previewLegacyOrderExportResponseSuccess
+  | previewLegacyOrderExportResponseError;
+
+export const getPreviewLegacyOrderExportUrl = () => {
+  return `/api/admin/exports/preview`;
+};
+
+export const previewLegacyOrderExport = async (
+  legacyOrderExportPreviewRequest: LegacyOrderExportPreviewRequest,
+  options?: RequestInit,
+): Promise<previewLegacyOrderExportResponse> => {
+  const res = await fetch(getPreviewLegacyOrderExportUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyOrderExportPreviewRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: previewLegacyOrderExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as previewLegacyOrderExportResponse;
 };
 
 /**

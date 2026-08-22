@@ -40,6 +40,8 @@ type boardTestStore struct {
 	refunds         []orderport.Refund
 	exports         map[string]orderport.ExportJob
 	refundListCalls int
+	orderFilter     orderport.BoardFilter
+	refundFilter    orderport.RefundFilter
 	nextEffectID    int64
 	nextRefundID    int64
 }
@@ -51,6 +53,7 @@ func newBoardTestStore(now time.Time) *boardTestStore {
 }
 
 func (s *boardTestStore) ListBoardOrders(_ context.Context, filter orderport.BoardFilter) ([]orderport.Record, error) {
+	s.orderFilter = filter
 	start := int(filter.Offset)
 	if start >= len(s.records) {
 		return []orderport.Record{}, nil
@@ -61,7 +64,8 @@ func (s *boardTestStore) ListBoardOrders(_ context.Context, filter orderport.Boa
 	}
 	return append([]orderport.Record(nil), s.records[start:end]...), nil
 }
-func (s *boardTestStore) CountBoardOrders(_ context.Context, _ orderport.BoardFilter) (int64, error) {
+func (s *boardTestStore) CountBoardOrders(_ context.Context, filter orderport.BoardFilter) (int64, error) {
+	s.orderFilter = filter
 	return int64(len(s.records)), nil
 }
 func (s *boardTestStore) GetBoardOrder(_ context.Context, provider, reference string) (orderport.Record, error) {
@@ -182,8 +186,9 @@ func (s *boardTestStore) CreateRefund(ctx context.Context, refund orderport.Refu
 	s.refunds = append(s.refunds, refund)
 	return refund, nil
 }
-func (s *boardTestStore) ListRefunds(_ context.Context, _ orderport.RefundFilter) ([]orderport.Refund, int64, error) {
+func (s *boardTestStore) ListRefunds(_ context.Context, filter orderport.RefundFilter) ([]orderport.Refund, int64, error) {
 	s.refundListCalls++
+	s.refundFilter = filter
 	return append([]orderport.Refund(nil), s.refunds...), int64(len(s.refunds)), nil
 }
 func (s *boardTestStore) GetRefundByID(_ context.Context, id int64) (orderport.Refund, error) {
@@ -283,6 +288,19 @@ func TestOrderBoardSafeExportPreviewIsReadOnlyAndStripsSensitiveFields(t *testin
 	}
 	if !strings.Contains(preview.ContentText, "local_id,provider,product_code,amount_minor,currency,status,created_at") || !strings.Contains(preview.ContentText, "'=SUM(A1)next") || strings.Contains(preview.ContentText, "\r") {
 		t.Fatalf("unsafe CSV projection: %q", preview.ContentText)
+	}
+}
+
+func TestOrderBoardSafeExportUsesAllProviderForEmptyFilter(t *testing.T) {
+	now := time.Date(2026, 8, 23, 9, 30, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	service, _ := boardTestService(now, store, events)
+	if _, err := service.PreviewExport(context.Background(), orderport.ExportCommand{Resource: "orders", Format: "csv", Actor: 9}); err != nil || store.orderFilter.Provider != "all" {
+		t.Fatalf("order preview error=%v provider=%q", err, store.orderFilter.Provider)
+	}
+	store.refunds = []orderport.Refund{{ID: 7, OrderID: 11, Provider: "wechat", OrderNo: "merchant-secret", TransactionID: "transaction-secret", RefundID: "rfd_target", OutRefundNo: "rfd_target", RefundAmountTotal: 1990, Currency: "CNY", Status: "pending_external_gate", ExternalEffectID: 8, ExternalEffectState: "pending_external_gate", CreatedAt: now}}
+	if _, err := service.PreviewExport(context.Background(), orderport.ExportCommand{Resource: "refunds", Format: "csv", Actor: 9}); err != nil || store.refundFilter.Provider != "all" {
+		t.Fatalf("refund preview error=%v provider=%q", err, store.refundFilter.Provider)
 	}
 }
 
