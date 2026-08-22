@@ -187,6 +187,9 @@ func (service *LocalConfigurationService) GetSenders(ctx context.Context, packag
 	if validateErr := validatePackageSenders(items); validateErr != nil {
 		return PackageSendersResponse{}, validateErr
 	}
+	if eligibleErr := service.validateCurrentSenders(ctx, items, false); eligibleErr != nil {
+		return PackageSendersResponse{}, eligibleErr
+	}
 	return PackageSendersResponse{PackageID: packageID, Items: clonePackageSenders(items), Projection: localProjection()}, nil
 }
 
@@ -214,7 +217,7 @@ func (service *LocalConfigurationService) ReplaceSenders(ctx context.Context, in
 			if validateErr := validateWriteModel(packageModel); validateErr != nil {
 				return nil, nil, validateErr
 			}
-			if eligibleErr := service.validateSenders(tx, items); eligibleErr != nil {
+			if eligibleErr := service.validateCurrentSenders(tx, items, true); eligibleErr != nil {
 				return nil, nil, eligibleErr
 			}
 			stored, changed, saveErr := service.repo.ReplacePackageSenders(tx, input.PackageID, items, input.Actor.AdminUserID, now)
@@ -237,14 +240,26 @@ func (service *LocalConfigurationService) ReplaceSenders(ctx context.Context, in
 	return decodeMutation[PackageSendersResponse](raw)
 }
 
-func (service *LocalConfigurationService) validateSenders(ctx context.Context, items []PackageSender) error {
-	entries, err := service.members.ListEligibleStaff(ctx)
+func (service *LocalConfigurationService) validateCurrentSenders(ctx context.Context, items []PackageSender, lock bool) error {
+	userIDs := make([]string, 0, len(items))
+	for _, item := range items {
+		userIDs = append(userIDs, item.SenderUserID)
+	}
+	var (
+		entries []string
+		err     error
+	)
+	if lock {
+		entries, err = service.repo.LockEligibleSenderUserIDs(ctx, userIDs)
+	} else {
+		entries, err = service.repo.ListEligibleSenderUserIDs(ctx, userIDs)
+	}
 	if err != nil {
 		return errors.Join(ErrUnavailable, err)
 	}
 	allowed := make(map[string]struct{}, len(entries))
-	for _, entry := range entries {
-		userid := strings.TrimSpace(entry.WeComUserID)
+	for _, userid := range entries {
+		userid = strings.TrimSpace(userid)
 		if userid == "" {
 			return ErrUnavailable
 		}

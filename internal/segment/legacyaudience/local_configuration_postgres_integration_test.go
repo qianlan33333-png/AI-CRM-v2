@@ -108,6 +108,100 @@ func TestLocalConfigurationSQLRepositoryPG16(t *testing.T) {
 	}
 }
 
+func TestLocalConfigurationSQLRepositoryPG16SerializesStaffDeactivationAndSenderReplacement(t *testing.T) {
+	ctx := context.Background()
+	dsn := os.Getenv("CI_TEST_DATABASE_URL")
+	if dsn == "" {
+		t.Skip("CI_TEST_DATABASE_URL is required for the isolated migrated PG16 test")
+	}
+	connection, err := pgx.Connect(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer connection.Close(ctx)
+	competitor, err := pgx.Connect(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer competitor.Close(ctx)
+
+	setup, err := connection.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	packageID := insertLocalConfigurationPackage(t, ctx, setup, "staff-lock")
+	senderUserID := insertLocalConfigurationStaff(t, ctx, setup, "staff-lock")
+	if err = setup.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_, _ = connection.Exec(context.Background(), `DELETE FROM public.segments WHERE id = $1`, packageID)
+		_, _ = connection.Exec(context.Background(), `DELETE FROM public.staff WHERE wecom_userid = $1`, senderUserID)
+	})
+
+	transaction, err := connection.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	repository, err := NewSQLRepository(localConfigurationPGProvider{transaction: transaction})
+	if err != nil {
+		_ = transaction.Rollback(ctx)
+		t.Fatal(err)
+	}
+	if _, err = repository.LockPackage(ctx, packageID); err != nil {
+		_ = transaction.Rollback(ctx)
+		t.Fatal(err)
+	}
+	eligible, err := repository.LockEligibleSenderUserIDs(ctx, []string{senderUserID})
+	if err != nil || !reflect.DeepEqual(eligible, []string{senderUserID}) {
+		_ = transaction.Rollback(ctx)
+		t.Fatalf("LockEligibleSenderUserIDs eligible=%v err=%v", eligible, err)
+	}
+
+	deactivationDone := make(chan error, 1)
+	go func() {
+		_, updateErr := competitor.Exec(ctx, `UPDATE public.staff SET is_active = false WHERE wecom_userid = $1`, senderUserID)
+		deactivationDone <- updateErr
+	}()
+	select {
+	case updateErr := <-deactivationDone:
+		_ = transaction.Rollback(ctx)
+		if updateErr != nil {
+			t.Fatalf("staff deactivation returned before sender transaction: %v", updateErr)
+		}
+		t.Fatal("staff deactivation did not block on sender eligibility lock")
+	case <-time.After(200 * time.Millisecond):
+	}
+
+	stored, changed, err := repository.ReplacePackageSenders(ctx, packageID, []PackageSender{{
+		SenderUserID: senderUserID, SortOrder: 1, IsEnabled: true,
+	}}, 7, time.Date(2026, 8, 22, 5, 6, 8, 0, time.UTC))
+	if err != nil || !changed || !reflect.DeepEqual(stored, []PackageSender{{SenderUserID: senderUserID, SortOrder: 1, IsEnabled: true}}) {
+		_ = transaction.Rollback(ctx)
+		t.Fatalf("ReplacePackageSenders stored=%v changed=%t err=%v", stored, changed, err)
+	}
+	if err = transaction.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case updateErr := <-deactivationDone:
+		if updateErr != nil {
+			t.Fatalf("staff deactivation after sender commit: %v", updateErr)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("staff deactivation remained blocked after sender commit")
+	}
+
+	var active bool
+	if err = connection.QueryRow(ctx, `SELECT is_active FROM public.staff WHERE wecom_userid = $1`, senderUserID).Scan(&active); err != nil || active {
+		t.Fatalf("staff active=%t err=%v, want committed deactivation", active, err)
+	}
+	var senderCount int
+	if err = connection.QueryRow(ctx, `SELECT count(*) FROM public.ai_audience_package_senders WHERE package_id = $1 AND sender_userid = $2`, packageID, senderUserID).Scan(&senderCount); err != nil || senderCount != 1 {
+		t.Fatalf("sender count=%d err=%v, want committed replacement", senderCount, err)
+	}
+}
+
 func assertLocalConfigurationSchema(t *testing.T, ctx context.Context, transaction pgx.Tx) {
 	t.Helper()
 	var bindings, senders, receipts string
@@ -154,6 +248,17 @@ RETURNING id`, code).Scan(&agentID); err != nil {
 		t.Fatal(err)
 	}
 	return agentID
+}
+
+func insertLocalConfigurationStaff(t *testing.T, ctx context.Context, transaction pgx.Tx, suffix string) string {
+	t.Helper()
+	userID := fmt.Sprintf("audience_local_%s_%d", suffix, time.Now().UnixNano())
+	if _, err := transaction.Exec(ctx, `
+INSERT INTO public.staff (wecom_userid, name, is_active)
+VALUES ($1, 'Audience local configuration staff', true)`, userID); err != nil {
+		t.Fatal(err)
+	}
+	return userID
 }
 
 type localConfigurationPGProvider struct{ transaction pgx.Tx }

@@ -542,6 +542,22 @@ VALUES ($1, $2, $3, $4, $5, $5, $6, $6)`,
 	return stored, true, nil
 }
 
+func (repository *SQLRepository) ListEligibleSenderUserIDs(ctx context.Context, userIDs []string) ([]string, error) {
+	database, err := repository.reader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return listEligibleSenderUserIDs(ctx, database, userIDs, false)
+}
+
+func (repository *SQLRepository) LockEligibleSenderUserIDs(ctx context.Context, userIDs []string) ([]string, error) {
+	database, err := repository.transaction(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return listEligibleSenderUserIDs(ctx, database, userIDs, true)
+}
+
 func (repository *SQLRepository) ReserveConfigurationReceipt(ctx context.Context, wanted ReceiptReservation) (Receipt, bool, error) {
 	database, err := repository.transaction(ctx)
 	if err != nil {
@@ -617,6 +633,42 @@ ORDER BY sort_order ASC, sender_userid ASC`
 	}
 	if validateErr := validatePackageSenders(items); validateErr != nil {
 		return nil, ErrUnavailable
+	}
+	return items, nil
+}
+
+func listEligibleSenderUserIDs(ctx context.Context, database SQLExecutor, userIDs []string, lock bool) ([]string, error) {
+	if len(userIDs) == 0 {
+		return []string{}, nil
+	}
+	query := `
+SELECT wecom_userid
+FROM public.staff
+WHERE is_active
+  AND btrim(wecom_userid) <> ''
+  AND wecom_userid = ANY($1::text[])
+ORDER BY wecom_userid ASC`
+	if lock {
+		// FOR SHARE conflicts with the row lock taken by UPDATE/DELETE, so an
+		// in-flight staff deactivation or identifier change cannot pass between
+		// validation and the sender replacement in this same transaction.
+		query += ` FOR SHARE`
+	}
+	rows, err := database.Query(ctx, query, userIDs)
+	if err != nil {
+		return nil, classifySQLError(err)
+	}
+	defer rows.Close()
+	items := make([]string, 0, len(userIDs))
+	for rows.Next() {
+		var userID string
+		if err = rows.Scan(&userID); err != nil {
+			return nil, classifySQLError(err)
+		}
+		items = append(items, userID)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, classifySQLError(err)
 	}
 	return items, nil
 }

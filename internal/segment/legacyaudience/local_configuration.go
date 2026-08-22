@@ -98,6 +98,8 @@ type LocalConfigurationRepository interface {
 	DeleteAutomationBinding(context.Context, int64) (bool, error)
 	ListPackageSenders(context.Context, int64) ([]PackageSender, error)
 	ReplacePackageSenders(context.Context, int64, []PackageSender, int64, time.Time) ([]PackageSender, bool, error)
+	ListEligibleSenderUserIDs(context.Context, []string) ([]string, error)
+	LockEligibleSenderUserIDs(context.Context, []string) ([]string, error)
 	ReserveConfigurationReceipt(context.Context, ReceiptReservation) (Receipt, bool, error)
 	CompleteConfigurationReceipt(context.Context, int64, json.RawMessage, time.Time) (Receipt, error)
 }

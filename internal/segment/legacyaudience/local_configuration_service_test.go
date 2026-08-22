@@ -90,6 +90,28 @@ func (world *localConfigurationWorld) ReplacePackageSenders(ctx context.Context,
 	world.senders[id] = clonePackageSenders(items)
 	return clonePackageSenders(items), true, nil
 }
+func (world *localConfigurationWorld) ListEligibleSenderUserIDs(_ context.Context, ids []string) ([]string, error) {
+	return world.eligibleSenderUserIDs(ids), nil
+}
+func (world *localConfigurationWorld) LockEligibleSenderUserIDs(ctx context.Context, ids []string) ([]string, error) {
+	if err := requireTransaction(ctx); err != nil {
+		return nil, err
+	}
+	return world.eligibleSenderUserIDs(ids), nil
+}
+func (world *localConfigurationWorld) eligibleSenderUserIDs(ids []string) []string {
+	eligible := make(map[string]struct{}, len(world.entries))
+	for _, entry := range world.entries {
+		eligible[entry.WeComUserID] = struct{}{}
+	}
+	result := make([]string, 0, len(ids))
+	for _, id := range ids {
+		if _, ok := eligible[id]; ok {
+			result = append(result, id)
+		}
+	}
+	return result
+}
 func (world *localConfigurationWorld) ReserveConfigurationReceipt(ctx context.Context, wanted ReceiptReservation) (Receipt, bool, error) {
 	if err := requireTransaction(ctx); err != nil {
 		return Receipt{}, false, err
@@ -201,6 +223,10 @@ func TestLocalConfigurationServiceReplacesOnlyEligibleOrderedSenders(t *testing.
 		PackageID: 101, Items: []PackageSender{{SenderUserID: "beta", SortOrder: 2, IsEnabled: true}},
 		Actor: Actor{AdminUserID: 9}, IdempotencyKey: "senders-order-key-01"}); !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("non-contiguous sender order error=%v, want invalid", err)
+	}
+	world.senders[101] = []PackageSender{{SenderUserID: "retired", SortOrder: 1, IsEnabled: true}}
+	if _, err = service.GetSenders(context.Background(), 101); !errors.Is(err, ErrConflict) {
+		t.Fatalf("inactive stored sender error=%v, want conflict", err)
 	}
 	members, err := service.ListOperationMembers(context.Background(), 1)
 	if err != nil || !reflect.DeepEqual(members.Items, []OperationMember{{SenderUserID: "alpha", DisplayName: "Alpha"}}) || members.Scope != OperationMemberScope {
