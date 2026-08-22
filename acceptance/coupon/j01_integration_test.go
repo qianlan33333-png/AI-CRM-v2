@@ -85,6 +85,9 @@ func TestJ01PublishFailsClosedForMissingDuplicateExtraTypeCurrencyAndPrice(t *te
 			cmd.TargetRefs = tc.refs
 			cmd.DiscountAmountTotal = tc.discount
 			cmd.IdempotencyKey = fmt.Sprintf("j01-invalid-%s-%d", tc.name, i)
+			if tc.name == "missing" {
+				cmd.Name = fmt.Sprintf("j01-invalid-missing-%d", time.Now().UnixNano())
+			}
 			created, err := service.Create(ctx, cmd)
 			if tc.name == "duplicate" || tc.name == "extra" || tc.name == "type" {
 				if !errors.Is(err, couponapp.ErrInvalidTarget) {
@@ -97,7 +100,7 @@ func TestJ01PublishFailsClosedForMissingDuplicateExtraTypeCurrencyAndPrice(t *te
 			// business fact, receipt, or event behind.
 			if tc.name == "missing" && errors.Is(err, couponapp.ErrUnavailable) {
 				var coupons, receipts, events int
-				if e := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM coupons c JOIN coupon_targets t ON t.coupon_id=c.id WHERE t.target_ref=$1),(SELECT count(*) FROM coupon_operation_receipts WHERE actor_scope=$2),(SELECT count(*) FROM event_log WHERE payload->>'actor'=$3 AND event_type='coupon.created')`, tc.refs[0], fmt.Sprintf("admin:%d", cmd.Actor), fmt.Sprint(cmd.Actor)).Scan(&coupons, &receipts, &events); e != nil || coupons != 0 || receipts != 0 || events != 0 {
+				if e := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM coupons WHERE name=$1),(SELECT count(*) FROM coupon_operation_receipts WHERE actor_scope=$2),(SELECT count(*) FROM event_log WHERE payload->>'actor'=$3 AND event_type='coupon.created')`, cmd.Name, fmt.Sprintf("admin:%d", cmd.Actor), fmt.Sprint(cmd.Actor)).Scan(&coupons, &receipts, &events); e != nil || coupons != 0 || receipts != 0 || events != 0 {
 					t.Fatalf("create rollback=%d/%d/%d err=%v", coupons, receipts, events, e)
 				}
 				return
