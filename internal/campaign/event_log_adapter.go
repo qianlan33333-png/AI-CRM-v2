@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	"strings"
 )
 
 type EventLogAdapter struct{ appender eventport.Appender }
@@ -25,7 +26,11 @@ func (a *EventLogAdapter) Append(ctx context.Context, event AuditEvent) error {
 	if err != nil {
 		return ErrUnavailable
 	}
-	_, err = a.appender.Append(ctx, eventport.Event{Type: event.Type, Payload: payload, OccurredAt: event.OccurredAt, IdempotencyKey: event.IdempotencyKey})
+	// event_log has a globally unique idempotency key. A batch command writes
+	// one audit event per campaign, so preserve its per-campaign identity rather
+	// than making the second item collide with the first.
+	key := strings.Join([]string{event.IdempotencyKey, event.Type, event.CampaignCode}, ":")
+	_, err = a.appender.Append(ctx, eventport.Event{Type: event.Type, Payload: payload, OccurredAt: event.OccurredAt, IdempotencyKey: key})
 	if err != nil {
 		return ErrUnavailable
 	}
