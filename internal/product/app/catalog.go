@@ -109,7 +109,7 @@ func (s *Service) List(ctx context.Context, cursor string, limit int32) (product
 	}); err != nil {
 		return productport.Page{}, classify(err)
 	}
-	if len(rows) > int(limit)+1 || !validProducts(rows) {
+	if len(rows) > int(limit)+1 || !validOrdinaryProducts(rows) {
 		return productport.Page{}, ErrUnavailable
 	}
 	page := productport.Page{Items: rows}
@@ -136,7 +136,7 @@ func (s *Service) ListLegacy(ctx context.Context, limit, offset int32) (productp
 	}); err != nil {
 		return productport.LegacyPage{}, classify(err)
 	}
-	if result.Total < 0 || int64(offset) > result.Total && len(result.Items) != 0 || len(result.Items) > int(limit) || !validProducts(result.Items) {
+	if result.Total < 0 || int64(offset) > result.Total && len(result.Items) != 0 || len(result.Items) > int(limit) || !validOrdinaryProducts(result.Items) {
 		return productport.LegacyPage{}, ErrUnavailable
 	}
 	return result, nil
@@ -150,6 +150,9 @@ func (s *Service) Get(ctx context.Context, id productport.ID) (productport.Produ
 	if err != nil {
 		return productport.Product{}, classify(err)
 	}
+	if IsServicePeriodProjection(p.LegacyAdminProjection) {
+		return productport.Product{}, ErrNotFound
+	}
 	if !validProduct(p) {
 		return productport.Product{}, ErrUnavailable
 	}
@@ -159,6 +162,9 @@ func (s *Service) Create(ctx context.Context, command productport.CreateCommand)
 	command, digest, err := normalize(command)
 	if err != nil {
 		return productport.Product{}, err
+	}
+	if IsServicePeriodProjection(command.LegacyAdminProjection) {
+		return productport.Product{}, ErrInvalidProduct
 	}
 	if !ready(s) {
 		return productport.Product{}, ErrUnavailable
@@ -274,6 +280,9 @@ func (s *Service) Update(ctx context.Context, command productport.UpdateCommand)
 		if e != nil {
 			return e
 		}
+		if IsServicePeriodProjection(current.LegacyAdminProjection) {
+			return ErrNotFound
+		}
 		if !validProduct(current) {
 			return ErrUnavailable
 		}
@@ -284,7 +293,7 @@ func (s *Service) Update(ctx context.Context, command productport.UpdateCommand)
 		if e != nil {
 			return e
 		}
-		if !validProduct(result) || result.Version != current.Version+1 ||
+		if !validOrdinaryProduct(result) || result.Version != current.Version+1 ||
 			result.ProductCode != current.ProductCode || result.CreatedBy != current.CreatedBy ||
 			!result.CreatedAt.Equal(current.CreatedAt) || !reflect.DeepEqual(result.Images, current.Images) ||
 			!jsonEquivalent(result.LegacyAdminProjection, current.LegacyAdminProjection) ||
@@ -661,6 +670,19 @@ func validProducts(ps []productport.Product) bool {
 		prev = p.ID
 	}
 	return true
+}
+
+func validOrdinaryProduct(product productport.Product) bool {
+	return validProduct(product) && !IsServicePeriodProjection(product.LegacyAdminProjection)
+}
+
+func validOrdinaryProducts(products []productport.Product) bool {
+	for _, product := range products {
+		if !validOrdinaryProduct(product) {
+			return false
+		}
+	}
+	return validProducts(products)
 }
 func validReceipt(r Receipt, x Reservation) bool {
 	return r.ID > 0 && r.Operation == x.Operation && r.ActorScope == x.ActorScope && subtle.ConstantTimeCompare(r.KeyDigest[:], x.KeyDigest[:]) == 1

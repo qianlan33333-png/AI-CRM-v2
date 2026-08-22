@@ -230,6 +230,15 @@ func validTestProduct(id int64) productport.Product {
 		CreatedBy: 7, CreatedAt: now, UpdatedAt: now, Version: 1, LegacyAdminProjection: DefaultLegacyAdminProjection()}
 }
 
+func validServicePeriodProjection(t *testing.T, status string, enabled bool) json.RawMessage {
+	t.Helper()
+	projection, err := CanonicalLegacyAdminProjection(json.RawMessage(`{"schema_version":1,"status":"` + status + `","enabled":` + map[bool]string{false: "false", true: "true"}[enabled] + `}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return projection
+}
+
 func TestCreateCanonicalLegacyProjectionParticipatesInIdempotency(t *testing.T) {
 	uow, store, events := &productTestUoW{}, &productTestStore{}, &productTestEvents{}
 	service := NewService(uow, store, events)
@@ -270,6 +279,28 @@ func TestListLegacyReturnsBoundedOffsetPageAndExactTotal(t *testing.T) {
 		if _, err = service.ListLegacy(context.Background(), input[0], input[1]); !errors.Is(err, ErrInvalidCursor) {
 			t.Fatalf("ListLegacy(%d,%d) error = %v", input[0], input[1], err)
 		}
+	}
+}
+
+func TestOrdinaryCatalogRejectsServicePeriodProjectionAtEveryApplicationBoundary(t *testing.T) {
+	servicePeriod := validTestProduct(7)
+	servicePeriod.LegacyAdminProjection = validServicePeriodProjection(t, ServicePeriodProjectionDraftStatus, false)
+	store := &productTestStore{products: []productport.Product{servicePeriod}}
+	service := NewService(&productTestUoW{}, store, &productTestEvents{})
+
+	if _, err := service.List(context.Background(), "", 10); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("list error=%v", err)
+	}
+	if _, err := service.ListLegacy(context.Background(), 10, 0); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("legacy list error=%v", err)
+	}
+	if _, err := service.Get(context.Background(), servicePeriod.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("get error=%v", err)
+	}
+	if _, err := service.Update(context.Background(), productport.UpdateCommand{
+		ID: servicePeriod.ID, ExpectedVersion: servicePeriod.Version, Name: "ordinary", Description: "ordinary", PriceMinor: 1, Currency: "CNY", StockQuantity: 1, Actor: 1, IdempotencyKey: "ordinary-service-period-001",
+	}); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("update error=%v", err)
 	}
 }
 

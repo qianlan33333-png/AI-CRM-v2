@@ -99,6 +99,15 @@ func TestRepositoryReadsExactProductCustomerRelationship(t *testing.T) {
 	}
 }
 
+func TestProductExistsRequiresServicePeriodProjection(t *testing.T) {
+	executor := &fakeSQLExecutor{row: fakeSQLRow{values: []any{false}}}
+	repository := repositoryForExecutor(executor)
+	exists, err := repository.ProductExists(context.Background(), 8)
+	if err != nil || exists || executor.queryRowSQL != productExistsSQL || !reflect.DeepEqual(executor.queryRowArgs, []any{int64(8)}) {
+		t.Fatalf("exists/error/sql/args=%v/%v/%q/%v", exists, err, executor.queryRowSQL, executor.queryRowArgs)
+	}
+}
+
 func TestRepositoryUsesCompositeKeysetWithoutOffset(t *testing.T) {
 	stamp := time.Now().UTC()
 	revoked := stamp.Add(time.Hour)

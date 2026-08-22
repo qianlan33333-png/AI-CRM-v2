@@ -20,15 +20,20 @@ func TestLaneD2MemberGridRepositoryPG16_14(t *testing.T) {
 	code := uniqueCode("member-grid")
 	now := time.Now().UTC().Truncate(time.Microsecond)
 
-	var productID, emptyProductID int64
+	var productID, emptyProductID, ordinaryProductID int64
 	if err := pool.QueryRow(ctx, `INSERT INTO products (
-		product_code,name,description,price_minor,currency,stock_quantity,created_by,created_at,updated_at
-	) VALUES ($1,'周期会员商品','Lane D2 local read',0,'CNY',0,7001,$2,$2) RETURNING id`, code, now).Scan(&productID); err != nil {
+		product_code,name,description,price_minor,currency,stock_quantity,created_by,created_at,updated_at,legacy_admin_projection
+	) VALUES ($1,'周期会员商品','Lane D2 local read',0,'CNY',0,7001,$2,$2,'{"schema_version":1,"status":"service_period_draft","enabled":false}'::jsonb) RETURNING id`, code, now).Scan(&productID); err != nil {
+		t.Fatal(err)
+	}
+	if err := pool.QueryRow(ctx, `INSERT INTO products (
+		product_code,name,description,price_minor,currency,stock_quantity,created_by,created_at,updated_at,legacy_admin_projection
+	) VALUES ($1,'空会员商品','Lane D2 empty',0,'CNY',0,7001,$2,$2,'{"schema_version":1,"status":"service_period_draft","enabled":false}'::jsonb) RETURNING id`, code+"-empty", now).Scan(&emptyProductID); err != nil {
 		t.Fatal(err)
 	}
 	if err := pool.QueryRow(ctx, `INSERT INTO products (
 		product_code,name,description,price_minor,currency,stock_quantity,created_by,created_at,updated_at
-	) VALUES ($1,'空会员商品','Lane D2 empty',0,'CNY',0,7001,$2,$2) RETURNING id`, code+"-empty", now).Scan(&emptyProductID); err != nil {
+	) VALUES ($1,'普通商品','Lane D2 ordinary boundary',0,'CNY',0,7001,$2,$2) RETURNING id`, code+"-ordinary", now).Scan(&ordinaryProductID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -91,9 +96,9 @@ func TestLaneD2MemberGridRepositoryPG16_14(t *testing.T) {
 	}
 
 	t.Cleanup(func() {
-		_, _ = pool.Exec(ctx, `DELETE FROM product_local_entitlements WHERE product_id IN ($1,$2)`, productID, emptyProductID)
-		_, _ = pool.Exec(ctx, `DELETE FROM order_list_projections WHERE product_id IN ($1,$2)`, productID, emptyProductID)
-		_, _ = pool.Exec(ctx, `DELETE FROM products WHERE id IN ($1,$2)`, productID, emptyProductID)
+		_, _ = pool.Exec(ctx, `DELETE FROM product_local_entitlements WHERE product_id IN ($1,$2,$3)`, productID, emptyProductID, ordinaryProductID)
+		_, _ = pool.Exec(ctx, `DELETE FROM order_list_projections WHERE product_id IN ($1,$2,$3)`, productID, emptyProductID, ordinaryProductID)
+		_, _ = pool.Exec(ctx, `DELETE FROM products WHERE id IN ($1,$2,$3)`, productID, emptyProductID, ordinaryProductID)
 		allCustomers := append(append([]int64(nil), customerIDs...), trapCustomerID)
 		_, _ = pool.Exec(ctx, `DELETE FROM customers WHERE id = ANY($1::bigint[])`, allCustomers)
 	})
@@ -175,6 +180,9 @@ func TestLaneD2MemberGridRepositoryPG16_14(t *testing.T) {
 		ProductID: math.MaxInt64, State: membergrid.StateAll, Limit: 1,
 	}); !errors.Is(err, membergrid.ErrNotFound) {
 		t.Fatalf("missing product error=%v", err)
+	}
+	if _, err = service.Access(ctx, ordinaryProductID); !errors.Is(err, membergrid.ErrNotFound) {
+		t.Fatalf("ordinary product access error=%v", err)
 	}
 
 	encoded, err := json.Marshal(append(append([]membergrid.MemberRow(nil), first.Rows...), second.Rows...))

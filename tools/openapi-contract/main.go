@@ -230,6 +230,8 @@ var p4ProductLegacyMappings = map[string][]string{
 	"deleteLegacyWechatPayProduct":  {"LEGACY-S07-170"},
 }
 
+const p4ServicePeriodLifecycleEvidence = "P4-SERVICE-PERIOD-LIFECYCLE-2026-08-22"
+const p4ServicePeriodMemberGridReadEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-READ-2026-08-22"
 const p4MemberGridManagementEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-MANAGEMENT-2026-08-22"
 const p4RadarEvidence = "P4-RADAR-LOCAL-LIFECYCLE-2026-08-22"
 const p4CloudCampaignEvidence = "P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22"
@@ -243,6 +245,30 @@ var p4MemberGridManagementOperations = map[string]bool{
 	"createServicePeriodMemberGridCollaborator": true,
 	"updateServicePeriodMemberGridCollaborator": true,
 	"deleteServicePeriodMemberGridCollaborator": true,
+}
+
+var p4ServicePeriodLifecycleOperations = map[string]bool{
+	"listServicePeriodProducts": true, "createServicePeriodProduct": true,
+	"getServicePeriodProduct": true, "updateServicePeriodProduct": true,
+	"archiveServicePeriodProduct": true, "enableServicePeriodProduct": true,
+	"disableServicePeriodProduct": true, "copyServicePeriodProduct": true,
+}
+
+var p4ServicePeriodLifecycleLegacyMappings = map[string][]string{
+	"listServicePeriodProducts": {"LEGACY-API-0467"}, "createServicePeriodProduct": {"LEGACY-API-0468"},
+	"getServicePeriodProduct": {"LEGACY-API-0471"}, "updateServicePeriodProduct": {"LEGACY-API-0472"},
+	"archiveServicePeriodProduct": {"LEGACY-API-0470"}, "enableServicePeriodProduct": {"LEGACY-API-0475"},
+	"disableServicePeriodProduct": {"LEGACY-API-0474"}, "copyServicePeriodProduct": {"LEGACY-API-0473"},
+}
+
+var p4ServicePeriodMemberGridReadOperations = map[string]bool{
+	"getServicePeriodMemberGridAccess": true, "getServicePeriodMemberGridSchema": true,
+	"listServicePeriodMemberViews": true, "queryServicePeriodMemberGrid": true,
+}
+
+var p4ServicePeriodMemberGridReadLegacyMappings = map[string][]string{
+	"getServicePeriodMemberGridAccess": {"LEGACY-API-0476"}, "getServicePeriodMemberGridSchema": {"LEGACY-API-0482"},
+	"listServicePeriodMemberViews": {"LEGACY-API-0484"}, "queryServicePeriodMemberGrid": {"LEGACY-API-0481"},
 }
 
 var p4MemberGridManagementLegacyMappings = map[string][]string{
@@ -657,6 +683,18 @@ var authorizationContracts = map[string]authorizationContract{
 	"copyLegacyWechatPayProduct":                 {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteLegacyWechatPayProduct":               {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyWechatPayProductShare":             {"products.read", map[string]string{"admin": "global", "ops": "global"}},
+	"listServicePeriodProducts":                  {"products.read", map[string]string{"admin": "global", "ops": "global"}},
+	"createServicePeriodProduct":                 {"products.write", map[string]string{"admin": "global", "ops": "global"}},
+	"getServicePeriodProduct":                    {"products.read", map[string]string{"admin": "global", "ops": "global"}},
+	"updateServicePeriodProduct":                 {"products.write", map[string]string{"admin": "global", "ops": "global"}},
+	"archiveServicePeriodProduct":                {"products.write", map[string]string{"admin": "global", "ops": "global"}},
+	"enableServicePeriodProduct":                 {"products.write", map[string]string{"admin": "global", "ops": "global"}},
+	"disableServicePeriodProduct":                {"products.write", map[string]string{"admin": "global", "ops": "global"}},
+	"copyServicePeriodProduct":                   {"products.write", map[string]string{"admin": "global", "ops": "global"}},
+	"getServicePeriodMemberGridAccess":           {"products.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getServicePeriodMemberGridSchema":           {"products.read", map[string]string{"admin": "global", "ops": "global"}},
+	"listServicePeriodMemberViews":               {"products.read", map[string]string{"admin": "global", "ops": "global"}},
+	"queryServicePeriodMemberGrid":               {"entitlements.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createServicePeriodMemberView":              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"updateServicePeriodMemberView":              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteServicePeriodMemberView":              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
@@ -893,7 +931,7 @@ func load(spec, mapping string) (*openapi3.T, mappingInventory, error) {
 func isRunnerDeclaredOperation(operationID string) bool {
 	return p1CandidateOperations[operationID] || p2StageOperations[operationID] ||
 		p3ContactOperations[operationID] || p3IdentityOperations[operationID] || p3SegmentOperations[operationID] ||
-		p4AutomationOperations[operationID] || p4HXCSenderManagementOperations[operationID] || p4AutomationAgentOperations[operationID] || p4AutomationAgentManagementOperations[operationID] || p4Customer360Operations[operationID] || p4ProductOperations[operationID] || p4MemberGridManagementOperations[operationID] || p4RadarOperations[operationID] || p4CloudCampaignOperations[operationID] || p4AIAudienceOperations[operationID] || p4MediaOperations[operationID] ||
+		p4AutomationOperations[operationID] || p4HXCSenderManagementOperations[operationID] || p4AutomationAgentOperations[operationID] || p4AutomationAgentManagementOperations[operationID] || p4Customer360Operations[operationID] || p4ProductOperations[operationID] || p4ServicePeriodLifecycleOperations[operationID] || p4ServicePeriodMemberGridReadOperations[operationID] || p4MemberGridManagementOperations[operationID] || p4RadarOperations[operationID] || p4CloudCampaignOperations[operationID] || p4AIAudienceOperations[operationID] || p4MediaOperations[operationID] ||
 		p4GroupInviteOperations[operationID] || p4SurveyOperations[operationID] || p4ChannelOperations[operationID] ||
 		p4TagOperations[operationID] || p4TagABOperations[operationID] || p4CouponOperations[operationID] ||
 		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] ||
@@ -1071,7 +1109,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment := map[string]bool{}, map[string]bool{}, map[string]bool{}
-	seenP4Automation, seenP4HXCSenderManagement, seenP4AutomationAgent, seenP4AutomationAgentManagement, seenP4Customer360, seenP4Product, seenP4MemberGridManagement, seenP4Radar, seenP4CloudCampaign, seenP4AIAudience, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4HXCSenderManagement, seenP4AutomationAgent, seenP4AutomationAgentManagement, seenP4Customer360, seenP4Product, seenP4ServicePeriodLifecycle, seenP4ServicePeriodMemberGridRead, seenP4MemberGridManagement, seenP4Radar, seenP4CloudCampaign, seenP4AIAudience, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	seenOperationIDs, seenCanonical := map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
@@ -1217,6 +1255,37 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
 				if linkErr != nil || !reflect.DeepEqual(ids, p4ProductLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+			} else if p4ServicePeriodLifecycleOperations[op.OperationID] {
+				seenP4ServicePeriodLifecycle[op.OperationID] = true
+				read := op.OperationID == "listServicePeriodProducts" || op.OperationID == "getServicePeriodProduct"
+				capability, csrf, source := "products.write", "required", "local_command"
+				if read {
+					capability, csrf, source = "products.read", "none", "local_read_model"
+				}
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, p4ServicePeriodLifecycleLegacyMappings[op.OperationID]) ||
+					op.Extensions["x-p4-decision-evidence"] != p4ServicePeriodLifecycleEvidence ||
+					op.Extensions["x-aicrm-capability"] != capability || op.Extensions["x-aicrm-auth-scheme"] != "human_session" ||
+					op.Extensions["x-aicrm-session-bound-csrf"] != csrf || op.Extensions["x-aicrm-data-classification"] != "financial" ||
+					op.Extensions["x-aicrm-data-source"] != source || op.Extensions["x-aicrm-external-effect"] != "none" ||
+					op.Responses.Value("401") == nil || op.Responses.Value("403") == nil || op.Responses.Value("503") == nil {
+					return fmt.Errorf("%s service-period lifecycle contract drifted", op.OperationID)
+				}
+			} else if p4ServicePeriodMemberGridReadOperations[op.OperationID] {
+				seenP4ServicePeriodMemberGridRead[op.OperationID] = true
+				capability := "products.read"
+				if op.OperationID == "queryServicePeriodMemberGrid" {
+					capability = "entitlements.read"
+				}
+				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
+				if linkErr != nil || !reflect.DeepEqual(ids, p4ServicePeriodMemberGridReadLegacyMappings[op.OperationID]) ||
+					op.Extensions["x-p4-decision-evidence"] != p4ServicePeriodMemberGridReadEvidence ||
+					op.Extensions["x-aicrm-capability"] != capability || op.Extensions["x-aicrm-auth-scheme"] != "human_session" ||
+					op.Extensions["x-aicrm-session-bound-csrf"] != "none" || op.Extensions["x-aicrm-data-classification"] != "internal_pii" ||
+					op.Extensions["x-aicrm-data-source"] != "local_read_model" || op.Extensions["x-aicrm-external-effect"] != "none" ||
+					op.Responses.Value("401") == nil || op.Responses.Value("403") == nil || op.Responses.Value("404") == nil || op.Responses.Value("503") == nil {
+					return fmt.Errorf("%s service-period member-grid read contract drifted", op.OperationID)
 				}
 			} else if p4MemberGridManagementOperations[op.OperationID] {
 				seenP4MemberGridManagement[op.OperationID] = true
@@ -1580,7 +1649,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	}
 	if len(seenP1) != len(p1CandidateOperations) || len(seenP2) != len(p2StageOperations) ||
 		len(seenP3Contact) != len(p3ContactOperations) || len(seenP3Identity) != len(p3IdentityOperations) || len(seenP3Segment) != len(p3SegmentOperations) ||
-		len(seenP4Automation) != len(p4AutomationOperations) || len(seenP4HXCSenderManagement) != len(p4HXCSenderManagementOperations) || len(seenP4AutomationAgent) != len(p4AutomationAgentOperations) || len(seenP4AutomationAgentManagement) != len(p4AutomationAgentManagementOperations) || len(seenP4Customer360) != len(p4Customer360Operations) || len(seenP4Product) != len(p4ProductOperations) || len(seenP4MemberGridManagement) != len(p4MemberGridManagementOperations) || len(seenP4Radar) != len(p4RadarOperations) || len(seenP4CloudCampaign) != len(p4CloudCampaignOperations) || len(seenP4AIAudience) != len(p4AIAudienceOperations) || len(seenP4Media) != len(p4MediaOperations) ||
+		len(seenP4Automation) != len(p4AutomationOperations) || len(seenP4HXCSenderManagement) != len(p4HXCSenderManagementOperations) || len(seenP4AutomationAgent) != len(p4AutomationAgentOperations) || len(seenP4AutomationAgentManagement) != len(p4AutomationAgentManagementOperations) || len(seenP4Customer360) != len(p4Customer360Operations) || len(seenP4Product) != len(p4ProductOperations) || len(seenP4ServicePeriodLifecycle) != len(p4ServicePeriodLifecycleOperations) || len(seenP4ServicePeriodMemberGridRead) != len(p4ServicePeriodMemberGridReadOperations) || len(seenP4MemberGridManagement) != len(p4MemberGridManagementOperations) || len(seenP4Radar) != len(p4RadarOperations) || len(seenP4CloudCampaign) != len(p4CloudCampaignOperations) || len(seenP4AIAudience) != len(p4AIAudienceOperations) || len(seenP4Media) != len(p4MediaOperations) ||
 		len(seenP4GroupInvite) != len(p4GroupInviteOperations) || len(seenP4Survey) != len(p4SurveyOperations) || len(seenP4Channel) != len(p4ChannelOperations) ||
 		len(seenP4Tag) != len(p4TagOperations) || len(seenP4TagAB) != len(p4TagABOperations) || len(seenP4Coupon) != len(p4CouponOperations) ||
 		len(seenP4Order) != len(p4OrderOperations) || len(seenP4CustomerCompat) != len(p4CustomerCompatOperations) ||
@@ -1637,6 +1706,16 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	for id := range p4ProductOperations {
 		if !seenP4Product[id] {
 			return fmt.Errorf("missing P4 Product operation: %s", id)
+		}
+	}
+	for id := range p4ServicePeriodLifecycleOperations {
+		if !seenP4ServicePeriodLifecycle[id] {
+			return fmt.Errorf("missing P4 service-period lifecycle operation: %s", id)
+		}
+	}
+	for id := range p4ServicePeriodMemberGridReadOperations {
+		if !seenP4ServicePeriodMemberGridRead[id] {
+			return fmt.Errorf("missing P4 service-period member-grid read operation: %s", id)
 		}
 	}
 	for id := range p4MemberGridManagementOperations {

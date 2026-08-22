@@ -5751,7 +5751,280 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products:
+    get:
+      tags: [p4-service-period-products]
+      operationId: listServicePeriodProducts
+      summary: List local service-period products without payment, entitlement, or provider effects
+      x-legacy-mapping-ids: [LEGACY-API-0467]
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-LIFECYCLE-2026-08-22
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, maximum: 1000000, default: 0 } }
+      responses:
+        "200": { description: Local service-period product page, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodProductPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-service-period-products]
+      operationId: createServicePeriodProduct
+      summary: Create one local service-period product without public purchase capability
+      x-legacy-mapping-ids: [LEGACY-API-0468]
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-LIFECYCLE-2026-08-22
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodProductCreateRequest" } } } }
+      responses:
+        "201": { description: Created local service-period product, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodProductResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}:
+    get:
+      tags: [p4-service-period-products]
+      operationId: getServicePeriodProduct
+      summary: Get one local service-period product
+      x-legacy-mapping-ids: [LEGACY-API-0471]
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-LIFECYCLE-2026-08-22
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Local service-period product, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodProductResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-service-period-products]
+      operationId: updateServicePeriodProduct
+      summary: Compare-and-swap one local service-period product
+      x-legacy-mapping-ids: [LEGACY-API-0472]
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-LIFECYCLE-2026-08-22
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodProductUpdateRequest" } } } }
+      responses:
+        "200": { description: Updated local service-period product, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodProductResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-service-period-products]
+      operationId: archiveServicePeriodProduct
+      summary: Archive one local service-period product without deleting member history
+      x-legacy-mapping-ids: [LEGACY-API-0470]
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-LIFECYCLE-2026-08-22
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodVersionRequest" } } } }
+      responses:
+        "200": { description: Archived local service-period product, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodProductResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/enable:
+    post:
+      tags: [p4-service-period-products]
+      operationId: enableServicePeriodProduct
+      summary: Enable one local service-period product without public purchase capability
+      x-legacy-mapping-ids: [LEGACY-API-0475]
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-LIFECYCLE-2026-08-22
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodVersionRequest" } } } }
+      responses:
+        "200": { description: Enabled local service-period product, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodProductResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/disable:
+    post:
+      tags: [p4-service-period-products]
+      operationId: disableServicePeriodProduct
+      summary: Disable one local service-period product
+      x-legacy-mapping-ids: [LEGACY-API-0474]
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-LIFECYCLE-2026-08-22
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodVersionRequest" } } } }
+      responses:
+        "200": { description: Disabled local service-period product, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodProductResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/copy:
+    post:
+      tags: [p4-service-period-products]
+      operationId: copyServicePeriodProduct
+      summary: Copy one local service-period product as a draft
+      x-legacy-mapping-ids: [LEGACY-API-0473]
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-LIFECYCLE-2026-08-22
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodVersionRequest" } } } }
+      responses:
+        "201": { description: Copied local service-period product, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodProductResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/member-grid/access:
+    get:
+      tags: [p4-service-period-member-grid]
+      operationId: getServicePeriodMemberGridAccess
+      summary: Read local member-grid access; external sharing remains disabled
+      x-legacy-mapping-ids: [LEGACY-API-0476]
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBER-GRID-READ-2026-08-22
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Closed local grid access, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberGridAccess" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/member-grid/schema:
+    get:
+      tags: [p4-service-period-member-grid]
+      operationId: getServicePeriodMemberGridSchema
+      summary: Read the closed local member-grid schema
+      x-legacy-mapping-ids: [LEGACY-API-0482]
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBER-GRID-READ-2026-08-22
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Closed local grid schema, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberGridSchema" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/member-grid/query:
+    post:
+      tags: [p4-service-period-member-grid]
+      operationId: queryServicePeriodMemberGrid
+      summary: Query existing local entitlement rows; it neither adds nor expires members
+      x-legacy-mapping-ids: [LEGACY-API-0481]
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBER-GRID-READ-2026-08-22
+      x-aicrm-capability: entitlements.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberGridQueryRequest" } } } }
+      responses:
+        "200": { description: Existing local entitlement rows, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberGridQueryResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/service-period-products/{service_product_id}/member-views:
+    get:
+      tags: [p4-service-period-member-grid]
+      operationId: listServicePeriodMemberViews
+      summary: List closed built-in member-grid views
+      x-legacy-mapping-ids: [LEGACY-API-0484]
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBER-GRID-READ-2026-08-22
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Closed local member-grid views, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberGridViews" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
     post:
       tags: [p4-service-period-member-grid]
       operationId: createServicePeriodMemberView
@@ -7596,6 +7869,140 @@ components:
         local_projection: { type: boolean, enum: [true] }
         public_route_ready: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
+    ServicePeriodProduct:
+      type: object
+      additionalProperties: false
+      required: [service_product_id, product_code, name, description, price_minor, currency, stock_quantity, lifecycle, enabled, archived, version, created_at, updated_at]
+      properties:
+        service_product_id: { type: integer, format: int64, minimum: 1 }
+        product_code: { type: string, minLength: 1, maxLength: 200 }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, maxLength: 10000 }
+        price_minor: { type: integer, format: int64, minimum: 0 }
+        currency: { type: string, pattern: '^[A-Z]{3}$' }
+        stock_quantity: { type: integer, format: int32, minimum: 0 }
+        lifecycle: { type: string, enum: [draft, enabled, disabled, archived] }
+        enabled: { type: boolean }
+        archived: { type: boolean }
+        version: { type: integer, format: int64, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ServicePeriodProductPage:
+      type: object
+      additionalProperties: false
+      required: [ok, items, total, limit, offset]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, items: { $ref: "#/components/schemas/ServicePeriodProduct" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0, maximum: 1000000 }
+    ServicePeriodProductResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, product]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        product: { $ref: "#/components/schemas/ServicePeriodProduct" }
+    ServicePeriodProductCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [product_code, name, price_minor, currency, stock_quantity]
+      properties:
+        product_code: { type: string, minLength: 1, maxLength: 200 }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, maxLength: 10000, default: '' }
+        price_minor: { type: integer, format: int64, minimum: 0 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        stock_quantity: { type: integer, format: int32, minimum: 0 }
+    ServicePeriodProductUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version, name, description, price_minor, currency, stock_quantity]
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, maxLength: 10000 }
+        price_minor: { type: integer, format: int64, minimum: 0 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        stock_quantity: { type: integer, format: int32, minimum: 0 }
+    ServicePeriodVersionRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 1 }
+    ServicePeriodMemberGridAccess:
+      type: object
+      additionalProperties: false
+      required: [product_id, can_view, can_query, can_manage_views, can_share]
+      properties:
+        product_id: { type: integer, format: int64, minimum: 1 }
+        can_view: { type: boolean, enum: [true] }
+        can_query: { type: boolean, enum: [true] }
+        can_manage_views: { type: boolean, enum: [false] }
+        can_share: { type: boolean, enum: [false] }
+    ServicePeriodMemberGridColumn:
+      type: object
+      additionalProperties: false
+      required: [key, label, type, nullable]
+      properties:
+        key: { type: string, enum: [entitlement_id, product_id, state, version, granted_at, revoked_at, display_name, masked_mobile] }
+        label: { type: string, minLength: 1 }
+        type: { type: string, enum: [integer, enum, timestamp, string] }
+        nullable: { type: boolean }
+    ServicePeriodMemberGridSchema:
+      type: object
+      additionalProperties: false
+      required: [product_id, columns]
+      properties:
+        product_id: { type: integer, format: int64, minimum: 1 }
+        columns: { type: array, minItems: 8, maxItems: 8, items: { $ref: "#/components/schemas/ServicePeriodMemberGridColumn" } }
+    ServicePeriodMemberGridView:
+      type: object
+      additionalProperties: false
+      required: [id, name, source, read_only]
+      properties:
+        id: { type: string, minLength: 1 }
+        name: { type: string, minLength: 1 }
+        source: { type: string, enum: [built_in] }
+        read_only: { type: boolean, enum: [true] }
+    ServicePeriodMemberGridViews:
+      type: object
+      additionalProperties: false
+      required: [product_id, views]
+      properties:
+        product_id: { type: integer, format: int64, minimum: 1 }
+        views: { type: array, minItems: 1, items: { $ref: "#/components/schemas/ServicePeriodMemberGridView" } }
+    ServicePeriodMemberGridQueryRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        state: { type: string, enum: [active, revoked, all], default: all }
+        limit: { type: integer, minimum: 1, maximum: 50, default: 50 }
+        cursor: { type: string, nullable: true, maxLength: 256 }
+    ServicePeriodMemberGridMember:
+      type: object
+      additionalProperties: false
+      required: [entitlement_id, product_id, state, version, granted_at, display_name]
+      properties:
+        entitlement_id: { type: integer, format: int64, minimum: 1 }
+        product_id: { type: integer, format: int64, minimum: 1 }
+        state: { type: string, enum: [active, revoked] }
+        version: { type: integer, format: int64, minimum: 1 }
+        granted_at: { type: string, format: date-time }
+        revoked_at: { type: string, format: date-time, nullable: true }
+        display_name: { type: string }
+        masked_mobile: { type: string, nullable: true }
+    ServicePeriodMemberGridQueryResponse:
+      type: object
+      additionalProperties: false
+      required: [rows, limit, next_cursor, has_more]
+      properties:
+        rows: { type: array, items: { $ref: "#/components/schemas/ServicePeriodMemberGridMember" } }
+        limit: { type: integer, minimum: 1, maximum: 50 }
+        next_cursor: { type: string }
+        has_more: { type: boolean }
     ServicePeriodMemberView:
       type: object
       additionalProperties: false

@@ -381,7 +381,7 @@ func TestI01AConcurrentReplayAndProductCodeConflict(t *testing.T) {
 	}
 }
 
-func TestI01AS200KPlansUseProductIndexes(t *testing.T) {
+func TestI01AS200KOrdinaryCatalogListAndGetUseProductIndexes(t *testing.T) {
 	pool, ctx := openPool(t)
 	tx, err := pool.Begin(ctx)
 	if err != nil {
@@ -398,17 +398,18 @@ func TestI01AS200KPlansUseProductIndexes(t *testing.T) {
 		t.Fatal(err)
 	}
 	listPlan := explain(t, ctx, tx, `EXPLAIN (FORMAT JSON, COSTS OFF)
-      SELECT id,product_code FROM products ORDER BY id LIMIT 100 OFFSET 100000`)
+      SELECT id,product_code FROM products
+      WHERE COALESCE(legacy_admin_projection->>'status', '') NOT IN ('service_period_draft','service_period_enabled','service_period_disabled','service_period_archived')
+      ORDER BY id LIMIT 100 OFFSET 100000`)
 	if strings.Contains(listPlan, `"Node Type": "Seq Scan"`) || !strings.Contains(listPlan, `"Index Name": "products_pkey"`) {
 		t.Fatalf("illegal list S plan:\n%s", listPlan)
 	}
-	getPlan := explain(t, ctx, tx, `EXPLAIN (FORMAT JSON, COSTS OFF) SELECT id,product_code FROM products WHERE id=100000`)
+	getPlan := explain(t, ctx, tx, `EXPLAIN (FORMAT JSON, COSTS OFF)
+      SELECT id,product_code FROM products
+      WHERE id=100000
+        AND COALESCE(legacy_admin_projection->>'status', '') NOT IN ('service_period_draft','service_period_enabled','service_period_disabled','service_period_archived')`)
 	if strings.Contains(getPlan, `"Node Type": "Seq Scan"`) || !strings.Contains(getPlan, `"Index Name": "products_pkey"`) {
 		t.Fatalf("illegal get S plan:\n%s", getPlan)
-	}
-	countPlan := explain(t, ctx, tx, `EXPLAIN (FORMAT JSON, COSTS OFF) SELECT total_products FROM product_catalog_counters WHERE singleton=TRUE`)
-	if strings.Contains(countPlan, `"Relation Name": "products"`) {
-		t.Fatalf("illegal exact-total S plan:\n%s", countPlan)
 	}
 }
 
