@@ -9,6 +9,7 @@ import (
 	"time"
 
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 )
 
 func TestC01ChannelCreateReplayUpdateListAndGet(t *testing.T) {
@@ -70,11 +71,49 @@ func TestC01ChannelBoundariesAndActorScopedReceipt(t *testing.T) {
 	}
 }
 
+func TestChannelAttachmentReferencesUseTransactionBoundReader(t *testing.T) {
+	store := &channelStore{receipts: map[string]ChannelReceipt{}}
+	events := &channelEvents{}
+	attachments := &channelTestAttachments{available: map[int64]bool{19: true}}
+	service := NewChannelServiceWithMediaReferences(channelUOW{}, store, channelTestImages{}, attachments, events)
+	service.now = func() time.Time { return time.Date(2026, 8, 23, 11, 0, 0, 0, time.UTC) }
+	created, err := service.CreateChannel(context.Background(), CreateChannelCommand{Actor: 7, IdempotencyKey: "channel-attachment-key-0001", ChannelName: "附件欢迎语", LegacyProjection: json.RawMessage(`{"welcome_attachment_library_ids":[19]}`)})
+	if err != nil || created.ID != 1 || attachments.calls != 1 || len(events.items) != 1 {
+		t.Fatalf("created=%+v err=%v calls=%d events=%+v", created, err, attachments.calls, events.items)
+	}
+
+	missingStore := &channelStore{receipts: map[string]ChannelReceipt{}}
+	missingEvents := &channelEvents{}
+	missing := &channelTestAttachments{available: map[int64]bool{}}
+	missingService := NewChannelServiceWithMediaReferences(channelUOW{}, missingStore, channelTestImages{}, missing, missingEvents)
+	missingService.now = service.now
+	if _, err := missingService.CreateChannel(context.Background(), CreateChannelCommand{Actor: 7, IdempotencyKey: "channel-attachment-key-0002", ChannelName: "附件欢迎语", LegacyProjection: json.RawMessage(`{"welcome_attachment_library_ids":[19]}`)}); !errors.Is(err, ErrInvalidChannel) || missing.calls != 1 || missingStore.creates != 0 || len(missingEvents.items) != 0 {
+		t.Fatalf("missing err=%v calls=%d creates=%d events=%+v", err, missing.calls, missingStore.creates, missingEvents.items)
+	}
+}
+
 type channelUOW struct{}
 
 func (channelUOW) Within(ctx context.Context, fn func(context.Context) error) error { return fn(ctx) }
 
 type channelEvents struct{ items []eventport.Event }
+
+type channelTestImages struct{}
+
+func (channelTestImages) ImageExists(context.Context, int64) (bool, error) { return true, nil }
+
+type channelTestAttachments struct {
+	available map[int64]bool
+	calls     int
+}
+
+func (reader *channelTestAttachments) AttachmentExists(_ context.Context, id int64) (bool, error) {
+	reader.calls++
+	return reader.available[id], nil
+}
+
+var _ mediaport.ImageMetadataReader = channelTestImages{}
+var _ mediaport.AttachmentMetadataReader = (*channelTestAttachments)(nil)
 
 func (events *channelEvents) Append(_ context.Context, event eventport.Event) (eventport.EventID, error) {
 	events.items = append(events.items, event)

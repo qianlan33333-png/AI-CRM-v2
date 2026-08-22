@@ -19,6 +19,9 @@ import (
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	mediastore "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
+	radarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/app"
+	radarport "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/port"
+	radarstore "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/store"
 )
 
 func TestImageDelete0362PostgreSQLHardDeleteReplayAndCascades(t *testing.T) {
@@ -77,6 +80,7 @@ func TestImageDelete0362PostgreSQLReferencesFailClosedForBothForceValues(t *test
 		{"archived group invite", seedDeleteArchivedGroupInviteReference, func(refs mediaapp.ImageDeleteReferences) bool { return len(refs.GroupInvites) == 1 }},
 		{"automation agent", seedDeleteAutomationReference, func(refs mediaapp.ImageDeleteReferences) bool { return len(refs.AutomationAgents) == 1 }},
 		{"channel", seedDeleteChannelReference, func(refs mediaapp.ImageDeleteReferences) bool { return len(refs.Channels) == 1 }},
+		{"radar", seedDeleteRadarReference, func(refs mediaapp.ImageDeleteReferences) bool { return len(refs.RadarLinks) == 1 }},
 		{"incomplete preflight", seedDeletePreflightReference, func(refs mediaapp.ImageDeleteReferences) bool { return len(refs.ImportPreflights) == 1 }},
 	} {
 		t.Run(fixture.name, func(t *testing.T) {
@@ -234,7 +238,7 @@ func TestImageDelete0362PostgreSQLReferenceWritersCoordinateWithDeleteLock(t *te
 	store := &imageDeleteLockObserver{UploadRepository: mediastore.NewUploadRepository(), locked: locked, release: release}
 	deleteResults := make(chan error, 1)
 	go func() {
-		_, deleteErr := mediaapp.NewImageDeleteService(platformstore.NewUnitOfWork(pool), store, automationstore.NewAgentRepository(), contactstore.NewChannelRepository(), eventstore.NewAppender()).DeleteImage(ctx, mediaapp.ImageDeleteCommand{ImageID: raceImage.ID, Actor: actor, IdempotencyKey: unique("writer-race-delete")})
+		_, deleteErr := mediaapp.NewImageDeleteService(platformstore.NewUnitOfWork(pool), store, automationstore.NewAgentRepository(), contactstore.NewChannelRepository(), radarstore.NewPostgresRepository(), eventstore.NewAppender()).DeleteImage(ctx, mediaapp.ImageDeleteCommand{ImageID: raceImage.ID, Actor: actor, IdempotencyKey: unique("writer-race-delete")})
 		deleteResults <- deleteErr
 	}()
 	select {
@@ -273,8 +277,65 @@ func TestImageDelete0362PostgreSQLReferenceWritersCoordinateWithDeleteLock(t *te
 	}
 }
 
+func TestImageDelete0362PostgreSQLRadarCoverWriterCoordinatesWithDeleteLock(t *testing.T) {
+	pool, ctx := openPool(t)
+	actor := int64(9392)
+	raceImage, err := realService(pool).Upload(ctx, command(t, actor, unique("radar-race-upload"), unique("radar-race-image")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	locked, release := make(chan struct{}, 1), make(chan struct{})
+	store := &imageDeleteLockObserver{UploadRepository: mediastore.NewUploadRepository(), locked: locked, release: release}
+	deleteResults := make(chan error, 1)
+	go func() {
+		_, deleteErr := mediaapp.NewImageDeleteService(platformstore.NewUnitOfWork(pool), store, automationstore.NewAgentRepository(), contactstore.NewChannelRepository(), radarstore.NewPostgresRepository(), eventstore.NewAppender()).DeleteImage(ctx, mediaapp.ImageDeleteCommand{ImageID: raceImage.ID, Actor: actor, IdempotencyKey: unique("radar-race-delete")})
+		deleteResults <- deleteErr
+	}()
+	select {
+	case <-locked:
+	case <-time.After(5 * time.Second):
+		t.Fatal("delete did not acquire image row lock")
+	}
+	writerResults := make(chan error, 1)
+	go func() {
+		service, serviceErr := radarapp.NewServiceWithImageReferences(platformstore.NewUnitOfWork(pool), radarstore.NewPostgresRepository(), mediastore.NewUploadRepository(), eventstore.NewAppender())
+		if serviceErr != nil {
+			writerResults <- serviceErr
+			return
+		}
+		_, writerErr := service.Create(ctx, radarport.CreateCommand{ExpectedVersion: 0, Name: unique("radar-race"), Title: "Radar race", DestinationURL: "https://example.com/radar-race", CoverImageID: &raceImage.ID, ActorID: actor, IdempotencyKey: unique("radar-race-writer")})
+		writerResults <- writerErr
+	}()
+	select {
+	case writerErr := <-writerResults:
+		t.Fatalf("radar writer completed before delete lock release: %v", writerErr)
+	case <-time.After(100 * time.Millisecond):
+	}
+	close(release)
+	select {
+	case deleteErr := <-deleteResults:
+		if deleteErr != nil {
+			t.Fatalf("delete result=%v", deleteErr)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("delete did not finish")
+	}
+	select {
+	case writerErr := <-writerResults:
+		if !errors.Is(writerErr, radarport.ErrInvalidArgument) {
+			t.Fatalf("radar writer error=%v", writerErr)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("radar writer did not finish")
+	}
+	var links int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM radar_links WHERE cover_image_id=$1`, raceImage.ID).Scan(&links); err != nil || links != 0 {
+		t.Fatalf("radar links=%d err=%v", links, err)
+	}
+}
+
 func realImageDeleteService(pool *pgxpool.Pool) *mediaapp.ImageDeleteService {
-	return mediaapp.NewImageDeleteService(platformstore.NewUnitOfWork(pool), mediastore.NewUploadRepository(), automationstore.NewAgentRepository(), contactstore.NewChannelRepository(), eventstore.NewAppender())
+	return mediaapp.NewImageDeleteService(platformstore.NewUnitOfWork(pool), mediastore.NewUploadRepository(), automationstore.NewAgentRepository(), contactstore.NewChannelRepository(), radarstore.NewPostgresRepository(), eventstore.NewAppender())
 }
 
 type imageDeleteLockObserver struct {
@@ -332,6 +393,16 @@ func seedDeleteChannelReference(t *testing.T, ctx context.Context, pool *pgxpool
 	t.Helper()
 	id, err := contactfixture.CreateImageReference(ctx, pool, unique("delete-channel"), unique("delete-channel-code"), imageID)
 	if err != nil {
+		t.Fatal(err)
+	}
+	return id
+}
+
+func seedDeleteRadarReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, imageID int64) int64 {
+	t.Helper()
+	var id int64
+	code := fmt.Sprintf("rd_%022d", imageID)
+	if err := pool.QueryRow(ctx, `INSERT INTO radar_links (public_code,name,title,destination_url,cover_image_id,status,version,created_by,updated_by,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,'draft',1,1,1,now(),now()) RETURNING id`, code, unique("delete-radar"), unique("delete radar"), "https://example.com/delete-radar", imageID).Scan(&id); err != nil {
 		t.Fatal(err)
 	}
 	return id
@@ -406,7 +477,7 @@ func deleteReferenceOwnerCount(t *testing.T, ctx context.Context, pool *pgxpool.
 		}
 		return count
 	}
-	table := map[string]string{"miniprogram": "media_miniprograms", "archived group invite": "media_group_invites", "incomplete preflight": "media_miniprogram_import_preflights"}[name]
+	table := map[string]string{"miniprogram": "media_miniprograms", "archived group invite": "media_group_invites", "radar": "radar_links", "incomplete preflight": "media_miniprogram_import_preflights"}[name]
 	var count int
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM `+table+` WHERE id=$1`, id).Scan(&count); err != nil {
 		t.Fatal(err)
@@ -415,7 +486,7 @@ func deleteReferenceOwnerCount(t *testing.T, ctx context.Context, pool *pgxpool.
 }
 
 func imageReferenceListsSorted(refs mediaapp.ImageDeleteReferences) bool {
-	for _, ids := range [][]int64{refs.Miniprograms, refs.CampaignSteps, refs.GroupInvites, refs.AutomationAgents, refs.Channels, refs.ImportPreflights} {
+	for _, ids := range [][]int64{refs.Miniprograms, refs.CampaignSteps, refs.GroupInvites, refs.AutomationAgents, refs.Channels, refs.RadarLinks, refs.ImportPreflights} {
 		for index, id := range ids {
 			if id < 1 || index > 0 && ids[index-1] >= id {
 				return false

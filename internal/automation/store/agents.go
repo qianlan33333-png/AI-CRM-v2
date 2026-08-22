@@ -22,6 +22,7 @@ import (
 type AgentRepository struct{}
 
 var _ automationport.ImageReferenceReader = (*AgentRepository)(nil)
+var _ automationport.AttachmentReferenceReader = (*AgentRepository)(nil)
 
 func NewAgentRepository() *AgentRepository { return &AgentRepository{} }
 
@@ -85,7 +86,48 @@ func (r *AgentRepository) ListImageReferenceAgentIDs(ctx context.Context, imageI
 	return result, nil
 }
 
+func (r *AgentRepository) ListAttachmentReferenceAgentIDs(ctx context.Context, attachmentID int64) ([]int64, error) {
+	q, err := agentQueries(ctx)
+	if r == nil || attachmentID < 1 {
+		return nil, errors.New("automation attachment reference reader unavailable")
+	}
+	if err != nil {
+		return nil, err
+	}
+	rows, err := q.ListAutomationAgentAttachmentReferencePackages(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]int64, 0, len(rows))
+	var previousID int64
+	for _, row := range rows {
+		if row.ID < 1 || row.ID <= previousID {
+			return nil, errors.New("automation attachment reference reader unavailable")
+		}
+		previousID = row.ID
+		ids, parseErr := automationAttachmentReferenceIDs(json.RawMessage(row.AttachmentLibraryIds))
+		if parseErr != nil {
+			return nil, parseErr
+		}
+		for _, candidate := range ids {
+			if candidate == attachmentID {
+				result = append(result, row.ID)
+				break
+			}
+		}
+	}
+	return result, nil
+}
+
 func automationImageReferenceIDs(raw json.RawMessage) ([]int64, error) {
+	return automationReferenceIDs(raw)
+}
+
+func automationAttachmentReferenceIDs(raw json.RawMessage) ([]int64, error) {
+	return automationReferenceIDs(raw)
+}
+
+func automationReferenceIDs(raw json.RawMessage) ([]int64, error) {
 	if len(raw) == 0 {
 		return []int64{}, nil
 	}
@@ -99,7 +141,7 @@ func automationImageReferenceIDs(raw json.RawMessage) ([]int64, error) {
 	result := make([]int64, 0, len(values))
 	seen := make(map[int64]struct{}, len(values))
 	for _, value := range values {
-		id, err := automationCanonicalImageReferenceID(value)
+		id, err := automationCanonicalReferenceID(value)
 		if err != nil {
 			return nil, err
 		}
@@ -113,6 +155,10 @@ func automationImageReferenceIDs(raw json.RawMessage) ([]int64, error) {
 }
 
 func automationCanonicalImageReferenceID(raw json.RawMessage) (int64, error) {
+	return automationCanonicalReferenceID(raw)
+}
+
+func automationCanonicalReferenceID(raw json.RawMessage) (int64, error) {
 	if len(raw) == 0 || raw[0] < '1' || raw[0] > '9' {
 		return 0, errors.New("automation image reference reader unavailable")
 	}

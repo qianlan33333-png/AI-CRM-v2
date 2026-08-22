@@ -332,11 +332,28 @@ var p4AIAudienceLegacyMappings = map[string][]string{
 }
 
 var p4MediaOperations = map[string]bool{
-	"uploadLegacyImage": true,
+	"uploadLegacyImage":     true,
+	"listLegacyAttachments": true, "createLegacyAttachment": true, "uploadLegacyAttachment": true,
+	"getLegacyAttachment": true, "updateLegacyAttachment": true, "deleteLegacyAttachment": true,
+	"downloadLegacyAttachment": true,
 }
 
 var p4MediaLegacyMappings = map[string][]string{
-	"uploadLegacyImage": {"LEGACY-API-0361"},
+	"uploadLegacyImage":     {"LEGACY-API-0361"},
+	"listLegacyAttachments": {"LEGACY-API-0123"}, "createLegacyAttachment": {"LEGACY-API-0124"},
+	"uploadLegacyAttachment": {"LEGACY-API-0125"}, "getLegacyAttachment": {"LEGACY-API-0127"},
+	"updateLegacyAttachment": {"LEGACY-API-0128"}, "deleteLegacyAttachment": {"LEGACY-API-0126"},
+	// The private download is the v2 safety projection of the legacy Attachment
+	// GET mapping; it stays separately authenticated and metadata-free.
+	"downloadLegacyAttachment": {"LEGACY-API-0127"},
+}
+
+var p4MediaEvidence = map[string]string{
+	"uploadLegacyImage":     p4MediaDecisionEvidence,
+	"listLegacyAttachments": p4AttachmentLibraryDecisionEvidence, "createLegacyAttachment": p4AttachmentLibraryDecisionEvidence,
+	"uploadLegacyAttachment": p4AttachmentLibraryDecisionEvidence, "getLegacyAttachment": p4AttachmentLibraryDecisionEvidence,
+	"updateLegacyAttachment": p4AttachmentLibraryDecisionEvidence, "deleteLegacyAttachment": p4AttachmentLibraryDecisionEvidence,
+	"downloadLegacyAttachment": p4AttachmentLibraryDecisionEvidence,
 }
 
 var p4GroupInviteOperations = map[string]bool{
@@ -734,6 +751,13 @@ var authorizationContracts = map[string]authorizationContract{
 	"updateServicePeriodMemberGridCollaborator":  {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteServicePeriodMemberGridCollaborator":  {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"uploadLegacyImage":                          {"media.images.write", map[string]string{"admin": "global", "ops": "global"}},
+	"listLegacyAttachments":                      {"media.library.read", map[string]string{"admin": "global", "ops": "global"}},
+	"createLegacyAttachment":                     {"media.library.write", map[string]string{"admin": "global", "ops": "global"}},
+	"uploadLegacyAttachment":                     {"media.library.write", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyAttachment":                        {"media.library.read", map[string]string{"admin": "global", "ops": "global"}},
+	"updateLegacyAttachment":                     {"media.library.write", map[string]string{"admin": "global", "ops": "global"}},
+	"deleteLegacyAttachment":                     {"media.library.write", map[string]string{"admin": "global", "ops": "global"}},
+	"downloadLegacyAttachment":                   {"media.library.read", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyGroupInvites":                     {"media.library.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createLegacyGroupInvite":                    {"media.library.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyGroupInvite":                       {"media.library.read", map[string]string{"admin": "global", "ops": "global"}},
@@ -842,7 +866,10 @@ const p4AutomationAgentDecisionEvidence = "P4-AUTOMATION-AGENT-BROWSER-061-2026-
 const p4AutomationAgentManagementDecisionEvidence = "P4-AUTOMATION-AGENT-MANAGEMENT-2026-08-20"
 const p4Customer360DecisionEvidence = "P4-CUSTOMER-360-READ-2026-08-20"
 const p4ProductDecisionEvidence = "P4-I01A-2026-08-14"
-const p4MediaDecisionEvidence = "P4-H01A1-2026-08-14"
+const (
+	p4MediaDecisionEvidence             = "P4-H01A1-2026-08-14"
+	p4AttachmentLibraryDecisionEvidence = "P4-ATTACHMENT-LIBRARY-00062-2026-08-23"
+)
 const p4GroupInviteDecisionEvidence = "P4-H03-2026-08-15"
 const p4ChannelDecisionEvidence = "P4-C01-2026-08-15"
 const p4TagDecisionEvidence = "P4-B02-2026-08-15"
@@ -1368,7 +1395,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 			} else if p4MediaOperations[op.OperationID] {
 				seenP4Media[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
-				if !ok || evidence != p4MediaDecisionEvidence {
+				if !ok || evidence != p4MediaEvidence[op.OperationID] {
 					return fmt.Errorf("%s has missing or forged P4 Media evidence", op.OperationID)
 				}
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])

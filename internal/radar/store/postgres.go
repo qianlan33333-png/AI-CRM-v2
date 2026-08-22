@@ -23,6 +23,8 @@ type PostgresRepository struct {
 }
 
 var _ radarport.Repository = (*PostgresRepository)(nil)
+var _ radarport.ImageReferenceReader = (*PostgresRepository)(nil)
+var _ radarport.AttachmentReferenceReader = (*PostgresRepository)(nil)
 
 func NewPostgresRepository() *PostgresRepository {
 	return &PostgresRepository{tx: platformstore.TxFromContext}
@@ -79,6 +81,76 @@ func (repository *PostgresRepository) Get(ctx context.Context, id radarport.Link
 
 func (repository *PostgresRepository) GetForUpdate(ctx context.Context, id radarport.LinkID) (radarport.Link, error) {
 	return repository.get(ctx, id, true)
+}
+
+func (repository *PostgresRepository) ListImageReferenceLinkIDs(ctx context.Context, imageID int64) ([]int64, error) {
+	if repository == nil || repository.tx == nil || imageID < 1 {
+		return nil, radarport.ErrUnavailable
+	}
+	tx, err := repository.tx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := tx.Query(ctx, `
+SELECT id
+FROM public.radar_links
+WHERE cover_image_id = $1
+ORDER BY id ASC
+`, imageID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := make([]int64, 0)
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		if id < 1 {
+			return nil, radarport.ErrUnavailable
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return ids, nil
+}
+
+func (repository *PostgresRepository) ListAttachmentReferenceLinkIDs(ctx context.Context, attachmentID int64) ([]int64, error) {
+	if repository == nil || repository.tx == nil || attachmentID < 1 {
+		return nil, radarport.ErrUnavailable
+	}
+	tx, err := repository.tx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := tx.Query(ctx, `
+SELECT id
+FROM public.radar_links
+WHERE attachment_id = $1
+ORDER BY id ASC
+`, attachmentID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	ids := make([]int64, 0)
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		if id < 1 {
+			return nil, radarport.ErrUnavailable
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return ids, nil
 }
 
 func (repository *PostgresRepository) get(ctx context.Context, id radarport.LinkID, lock bool) (radarport.Link, error) {

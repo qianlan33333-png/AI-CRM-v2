@@ -60,11 +60,12 @@ type Store interface {
 }
 
 type Service struct {
-	uow    platformport.UnitOfWork
-	store  Store
-	images mediaport.ImageMetadataReader
-	events eventport.Appender
-	now    func() time.Time
+	uow         platformport.UnitOfWork
+	store       Store
+	images      mediaport.ImageMetadataReader
+	attachments mediaport.AttachmentMetadataReader
+	events      eventport.Appender
+	now         func() time.Time
 }
 
 var _ automationport.AgentService = (*Service)(nil)
@@ -76,7 +77,14 @@ func NewAgentService(uow platformport.UnitOfWork, store Store, events eventport.
 // NewAgentServiceWithImageReferences wires Media's transaction-bound image
 // reader for the only Automation image-reference field.
 func NewAgentServiceWithImageReferences(uow platformport.UnitOfWork, store Store, images mediaport.ImageMetadataReader, events eventport.Appender) *Service {
-	return &Service{uow: uow, store: store, images: images, events: events, now: time.Now}
+	return NewAgentServiceWithMediaReferences(uow, store, images, nil, events)
+}
+
+// NewAgentServiceWithMediaReferences validates both local Media reference
+// sets under the caller's UoW. Metadata readers acquire FOR KEY SHARE before
+// JSON references are persisted, closing the delete/write race.
+func NewAgentServiceWithMediaReferences(uow platformport.UnitOfWork, store Store, images mediaport.ImageMetadataReader, attachments mediaport.AttachmentMetadataReader, events eventport.Appender) *Service {
+	return &Service{uow: uow, store: store, images: images, attachments: attachments, events: events, now: time.Now}
 }
 
 func (s *Service) List(ctx context.Context, kind automationport.AutomationType) (automationport.Page, error) {
@@ -118,7 +126,7 @@ func (s *Service) Create(ctx context.Context, input automationport.CreateCommand
 		return automationport.Agent{}, err
 	}
 	return s.mutate(ctx, "create", input.Actor, input.IdempotencyKey, item, func(tx context.Context, now time.Time) (automationport.Agent, bool, error) {
-		if err := s.validateImageReferences(tx, item.FixedContentPackage); err != nil {
+		if err := s.validateMediaReferences(tx, item.FixedContentPackage); err != nil {
 			return automationport.Agent{}, false, err
 		}
 		item, err := s.store.Create(tx, item, now)
@@ -142,7 +150,7 @@ func (s *Service) Update(ctx context.Context, input automationport.UpdateCommand
 		if sameConfig(current, next) {
 			return current, false, nil
 		}
-		if err := s.validateImageReferences(tx, next.FixedContentPackage); err != nil {
+		if err := s.validateMediaReferences(tx, next.FixedContentPackage); err != nil {
 			return automationport.Agent{}, false, err
 		}
 		next.UpdatedBy = input.Actor
@@ -169,7 +177,7 @@ func (s *Service) Copy(ctx context.Context, input automationport.MutationCommand
 		}
 		source.ID, source.AgentCode = 0, code
 		source.AgentName, source.CreatedBy, source.UpdatedBy = copiedName(source.AgentName), input.Actor, input.Actor
-		if err := s.validateImageReferences(tx, source.FixedContentPackage); err != nil {
+		if err := s.validateMediaReferences(tx, source.FixedContentPackage); err != nil {
 			return automationport.Agent{}, false, err
 		}
 		item, err := s.store.Create(tx, source, now)
@@ -209,7 +217,7 @@ func (s *Service) SaveFixedContent(ctx context.Context, input automationport.Fix
 		if reflect.DeepEqual(item.FixedContentPackage, content) {
 			return item, false, nil
 		}
-		if err := s.validateImageReferences(tx, content); err != nil {
+		if err := s.validateMediaReferences(tx, content); err != nil {
 			return automationport.Agent{}, false, err
 		}
 		item.FixedContentPackage, item.UpdatedBy = content, input.Actor
@@ -464,6 +472,32 @@ func (s *Service) validateImageReferences(ctx context.Context, content automatio
 		}
 	}
 	return nil
+}
+
+func (s *Service) validateAttachmentReferences(ctx context.Context, content automationport.FixedContentPackage) error {
+	if len(content.AttachmentLibraryIDs) == 0 {
+		return nil
+	}
+	if s == nil || s.attachments == nil {
+		return ErrAgentUnavailable
+	}
+	for _, attachmentID := range content.AttachmentLibraryIDs {
+		exists, err := s.attachments.AttachmentExists(ctx, attachmentID)
+		if err != nil {
+			return ErrAgentUnavailable
+		}
+		if !exists {
+			return ErrInvalidAgent
+		}
+	}
+	return nil
+}
+
+func (s *Service) validateMediaReferences(ctx context.Context, content automationport.FixedContentPackage) error {
+	if err := s.validateImageReferences(ctx, content); err != nil {
+		return err
+	}
+	return s.validateAttachmentReferences(ctx, content)
 }
 func copiedName(name string) string {
 	candidate := strings.TrimSpace(name) + "（副本）"

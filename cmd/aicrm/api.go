@@ -708,8 +708,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	productService := productapp.NewService(uow, productstore.NewCatalogRepository(), eventstore.NewAppender())
 	mediaRepository := mediastore.NewUploadRepository()
+	attachmentRepository := mediastore.NewAttachmentRepository()
+	automationRepository := automationstore.NewAgentRepository()
+	channelRepository := contactstore.NewChannelRepository()
+	radarRepository := radarstore.NewPostgresRepository()
 	mediaService := mediaapp.NewService(uow, mediaRepository, eventstore.NewAppender())
-	imageDeleteService := mediaapp.NewImageDeleteService(uow, mediaRepository, automationstore.NewAgentRepository(), contactstore.NewChannelRepository(), eventstore.NewAppender())
+	imageDeleteService := mediaapp.NewImageDeleteService(uow, mediaRepository, automationRepository, channelRepository, radarRepository, eventstore.NewAppender())
 	groupInviteRepository := mediastore.NewGroupInviteRepository()
 	groupInviteService := mediaapp.NewGroupInviteService(uow, groupInviteRepository, groupInviteRepository, eventstore.NewAppender())
 	miniProgramRepository := mediastore.NewMiniProgramRepository()
@@ -729,7 +733,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		surveyCookieKey,
 		surveyAbuseKey,
 	)
-	channelService := contactapp.NewChannelServiceWithImageReferences(uow, contactstore.NewChannelRepository(), mediaRepository, eventstore.NewAppender())
+	channelService := contactapp.NewChannelServiceWithMediaReferences(uow, channelRepository, mediaRepository, attachmentRepository, eventstore.NewAppender())
 	channelEntrantsCursor, err := contactapp.NewChannelEntrantsCursorCodec(config.Identity.HMACKey.Value())
 	if err != nil {
 		pool.Close()
@@ -769,7 +773,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyTagLiveService := contactapp.NewLegacyTagLiveMutationService(uow, legacyTagExecutionRepository, eventstore.NewAppender(), legacyTagExecutionRepository)
 	legacyTagStatusService := contactapp.NewLegacyTagExecutionStatusService(uow, legacyTagExecutionRepository)
 	couponService := couponapp.NewService(uow, couponstore.NewRepository(), productstore.NewCatalogRepository(), eventstore.NewAppender())
-	automationAgentService := automationapp.NewAgentServiceWithImageReferences(uow, automationstore.NewAgentRepository(), mediaRepository, eventstore.NewAppender())
+	automationAgentService := automationapp.NewAgentServiceWithMediaReferences(uow, automationRepository, mediaRepository, attachmentRepository, eventstore.NewAppender())
 	audienceOperationMembers := contactstore.NewStaffDirectoryRepository(pool)
 	legacyAIAudienceConfigurationService, err := legacyaudience.NewLocalConfigurationService(
 		uow,
@@ -843,11 +847,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	radarService, err := radarapp.NewService(uow, radarstore.NewPostgresRepository(), eventstore.NewAppender())
+	radarService, err := radarapp.NewServiceWithMediaReferences(uow, radarRepository, mediaRepository, attachmentRepository, eventstore.NewAppender())
 	if err != nil {
 		pool.Close()
 		return nil, err
 	}
+	attachmentService := mediaapp.NewAttachmentServiceWithReferences(uow, attachmentRepository, automationRepository, channelRepository, radarRepository, eventstore.NewAppender())
 	radarFragment, err := radarthttp.NewRouteFragment(radarService, legacyRadarAuthorizer{}, legacyRadarCSRF{})
 	if err != nil {
 		pool.Close()
@@ -1014,6 +1019,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.aiAudienceConfiguration = legacyAIAudienceConfigurationFragment
 	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.imageDeletes = imageDeleteService
+	legacyHandler.attachments = attachmentService
 	legacyHandler.legacyTagLive = legacyTagLiveService
 	legacyHandler.legacyTagStatus = legacyTagStatusService
 	legacyHandler.adminOps = adminOpsService
@@ -1532,10 +1538,13 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if method == http.MethodPost && pattern == legacyImageCollectionPath {
 				tail = legacyImageCreateSecurityHeaders(tail)
 			}
+			if isLegacyAttachmentPattern(pattern) {
+				tail = legacyAttachmentSecurityHeaders(tail)
+			}
 			if pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath {
 				tail = legacyInternalEventsSecurityHeaders(tail)
 			}
-			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyHXCSenderItemPath || pattern == legacyHXCSenderReorderPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyCustomerProfileMessagesPath || pattern == legacyChannelPagePath || pattern == legacyCouponPagePath || pattern == legacyOrderPagePath || pattern == legacyProductPagePath || pattern == legacyExecutionRuntimePagePath || pattern == legacyAutomationAgentListPagePath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath || pattern == legacyRuntimeConfigPath || pattern == legacyConfigChecklistPath || pattern == legacyaudiencemembers.RoutePattern || isLegacyCustomerPagePattern(pattern) || isCloudOrchestratorPagePattern(pattern) || automationhttp.IsGroupOpsPagePattern(pattern) || automationhttp.IsAudiencePackagePagePattern(pattern) || automationhttp.IsUserOpsPagePattern(pattern) || producthttp.IsWorkspacePagePattern(pattern) {
+			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || isLegacyAttachmentPattern(pattern) || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyHXCSenderItemPath || pattern == legacyHXCSenderReorderPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyCustomerProfileMessagesPath || pattern == legacyChannelPagePath || pattern == legacyCouponPagePath || pattern == legacyOrderPagePath || pattern == legacyProductPagePath || pattern == legacyExecutionRuntimePagePath || pattern == legacyAutomationAgentListPagePath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath || pattern == legacyRuntimeConfigPath || pattern == legacyConfigChecklistPath || pattern == legacyaudiencemembers.RoutePattern || isLegacyCustomerPagePattern(pattern) || isCloudOrchestratorPagePattern(pattern) || automationhttp.IsGroupOpsPagePattern(pattern) || automationhttp.IsAudiencePackagePagePattern(pattern) || automationhttp.IsUserOpsPagePattern(pattern) || producthttp.IsWorkspacePagePattern(pattern) {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -1549,6 +1558,14 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyImageDetailMethodNotAllowed))
 					} else if pattern == legacyImageCollectionPath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyImageCollectionMethodNotAllowed))
+					} else if pattern == legacyAttachmentCollectionPath {
+						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyAttachmentCollectionMethodNotAllowed))
+					} else if pattern == legacyAttachmentUploadPath {
+						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyAttachmentUploadMethodNotAllowed))
+					} else if pattern == legacyAttachmentDetailPath {
+						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyAttachmentDetailMethodNotAllowed))
+					} else if pattern == legacyAttachmentDownloadPath {
+						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyAttachmentDownloadMethodNotAllowed))
 					}
 					if pattern == legacyDeliveryLineagePath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyDeliveryLineageMethodNotAllowed))
@@ -1937,6 +1954,13 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodDelete, legacyImageDetailPath, authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.DeleteImage)},
 			{http.MethodGet, legacyImageVariantPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageVariant)},
 			{http.MethodPost, "/api/admin/image-library/upload", authport.CapabilityMediaImagesWrite, true, http.HandlerFunc(legacy.UploadImage)},
+			{http.MethodGet, legacyAttachmentCollectionPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ListAttachments)},
+			{http.MethodPost, legacyAttachmentCollectionPath, authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.CreateAttachment)},
+			{http.MethodPost, legacyAttachmentUploadPath, authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.UploadAttachment)},
+			{http.MethodGet, legacyAttachmentDetailPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetAttachment)},
+			{http.MethodPut, legacyAttachmentDetailPath, authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.UpdateAttachment)},
+			{http.MethodDelete, legacyAttachmentDetailPath, authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.DeleteAttachment)},
+			{http.MethodGet, legacyAttachmentDownloadPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.DownloadAttachment)},
 			{http.MethodGet, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ListGroupInvites)},
 			{http.MethodPost, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.CreateGroupInvite)},
 			{http.MethodGet, "/api/admin/group-invite-library/{item_id}", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetGroupInvite)},

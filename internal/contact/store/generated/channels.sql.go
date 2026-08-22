@@ -175,6 +175,37 @@ func (q *Queries) GetChannelOperationReceipt(ctx context.Context, arg GetChannel
 	return i, err
 }
 
+const listChannelAttachmentReferencePackages = `-- name: ListChannelAttachmentReferencePackages :many
+SELECT id, COALESCE(config -> 'welcome_attachment_library_ids', '[]'::jsonb)::text AS welcome_attachment_library_ids
+FROM channels
+ORDER BY id ASC
+`
+
+type ListChannelAttachmentReferencePackagesRow struct {
+	ID                          int64  `json:"id"`
+	WelcomeAttachmentLibraryIds string `json:"welcome_attachment_library_ids"`
+}
+
+func (q *Queries) ListChannelAttachmentReferencePackages(ctx context.Context) ([]ListChannelAttachmentReferencePackagesRow, error) {
+	rows, err := q.db.Query(ctx, listChannelAttachmentReferencePackages)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListChannelAttachmentReferencePackagesRow{}
+	for rows.Next() {
+		var i ListChannelAttachmentReferencePackagesRow
+		if err := rows.Scan(&i.ID, &i.WelcomeAttachmentLibraryIds); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listChannelImageReferencePackages = `-- name: ListChannelImageReferencePackages :many
 SELECT id, COALESCE(config -> 'welcome_image_library_ids', '[]'::jsonb)::text AS welcome_image_library_ids
 FROM channels

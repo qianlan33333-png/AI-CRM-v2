@@ -57,6 +57,7 @@ type legacyImageDeleteReferences struct {
 	GroupInvites     []legacyImageReferenceID `json:"group_invites"`
 	AutomationAgents []legacyImageReferenceID `json:"automation_agents"`
 	Channels         []legacyImageReferenceID `json:"channels"`
+	RadarLinks       []legacyImageReferenceID `json:"radar_links"`
 	ImportPreflights []legacyImageReferenceID `json:"import_preflights"`
 }
 
@@ -182,7 +183,7 @@ func legacyImageDeleteReferencesFrom(references mediaapp.ImageDeleteReferences) 
 	return legacyImageDeleteReferences{
 		Miniprograms: imageDeleteReferenceIDs(references.Miniprograms), CampaignSteps: imageDeleteReferenceIDs(references.CampaignSteps),
 		GroupInvites: imageDeleteReferenceIDs(references.GroupInvites), AutomationAgents: imageDeleteReferenceIDs(references.AutomationAgents),
-		Channels: imageDeleteReferenceIDs(references.Channels), ImportPreflights: imageDeleteReferenceIDs(references.ImportPreflights),
+		Channels: imageDeleteReferenceIDs(references.Channels), RadarLinks: imageDeleteReferenceIDs(references.RadarLinks), ImportPreflights: imageDeleteReferenceIDs(references.ImportPreflights),
 	}
 }
 

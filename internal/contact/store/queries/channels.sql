@@ -16,6 +16,11 @@ SELECT id, COALESCE(config -> 'welcome_image_library_ids', '[]'::jsonb)::text AS
 FROM channels
 ORDER BY id ASC;
 
+-- name: ListChannelAttachmentReferencePackages :many
+SELECT id, COALESCE(config -> 'welcome_attachment_library_ids', '[]'::jsonb)::text AS welcome_attachment_library_ids
+FROM channels
+ORDER BY id ASC;
+
 -- name: CreateChannel :one
 INSERT INTO channels (code, name, status, config, created_by, updated_by, created_at, updated_at)
 VALUES (sqlc.arg(channel_code)::text, sqlc.arg(channel_name)::text, sqlc.arg(status)::text,

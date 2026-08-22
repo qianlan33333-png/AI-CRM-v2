@@ -43,7 +43,7 @@ func TestLegacyImageDeleteWritesExactSuccessAndReferenceConflict(t *testing.T) {
 	}
 
 	stub = &legacyImageDeleteStub{result: mediaapp.ImageDeleteResult{ID: 42, References: mediaapp.ImageDeleteReferences{
-		Miniprograms: []int64{7}, CampaignSteps: []int64{}, GroupInvites: []int64{9}, AutomationAgents: []int64{11}, Channels: []int64{13}, ImportPreflights: []int64{17},
+		Miniprograms: []int64{7}, CampaignSteps: []int64{}, GroupInvites: []int64{9}, AutomationAgents: []int64{11}, Channels: []int64{13}, RadarLinks: []int64{15}, ImportPreflights: []int64{17},
 	}}, err: mediaapp.ErrImageHasReferences}
 	response = httptest.NewRecorder()
 	legacyMediaRouterWithAuth(t, stub, &legacyMediaAuthStub{principal: authport.Principal{AdminUserID: 7, Role: authport.RoleOps}}).ServeHTTP(response, legacyImageDeleteRequest("42", "force=true", "delete-image-key-0002", true, true))
@@ -56,7 +56,7 @@ func TestLegacyImageDeleteWritesExactSuccessAndReferenceConflict(t *testing.T) {
 	if err := json.Unmarshal(body["references"], &references); err != nil {
 		t.Fatal(err)
 	}
-	if string(body["error"]) != `"image_has_references"` || len(references) != 6 || string(references["miniprograms"][0]["id"]) != "7" || len(references["campaign_steps"]) != 0 || string(references["group_invites"][0]["id"]) != "9" || string(references["automation_agents"][0]["id"]) != "11" || string(references["channels"][0]["id"]) != "13" || string(references["import_preflights"][0]["id"]) != "17" {
+	if string(body["error"]) != `"image_has_references"` || len(references) != 7 || string(references["miniprograms"][0]["id"]) != "7" || len(references["campaign_steps"]) != 0 || string(references["group_invites"][0]["id"]) != "9" || string(references["automation_agents"][0]["id"]) != "11" || string(references["channels"][0]["id"]) != "13" || string(references["radar_links"][0]["id"]) != "15" || string(references["import_preflights"][0]["id"]) != "17" {
 		t.Fatalf("references=%s", body["references"])
 	}
 

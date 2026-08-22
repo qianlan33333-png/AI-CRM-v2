@@ -15,6 +15,7 @@ type Querier interface {
 	CreateAutomationAgent(ctx context.Context, arg CreateAutomationAgentParams) (AutomationAgentConfiguration, error)
 	GetAutomationAgent(ctx context.Context, id int64) (AutomationAgentConfiguration, error)
 	GetAutomationAgentReceipt(ctx context.Context, arg GetAutomationAgentReceiptParams) (AutomationAgentOperationReceipt, error)
+	ListAutomationAgentAttachmentReferencePackages(ctx context.Context) ([]ListAutomationAgentAttachmentReferencePackagesRow, error)
 	ListAutomationAgentCodesByCopyPrefix(ctx context.Context, copyPrefix string) ([]string, error)
 	ListAutomationAgentImageReferencePackages(ctx context.Context) ([]ListAutomationAgentImageReferencePackagesRow, error)
 	ListAutomationAgents(ctx context.Context, automationType string) ([]AutomationAgentConfiguration, error)

@@ -187,6 +187,7 @@ type Handler struct {
 	channelEntrants         http.Handler
 	media                   legacyMediaApplication
 	imageDeletes            legacyImageDeleteApplication
+	attachments             legacyAttachmentApplication
 	groupInvites            groupInviteApplication
 	miniPrograms            miniProgramApplication
 	surveys                 legacySurveyApplication

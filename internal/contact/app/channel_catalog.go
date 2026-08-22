@@ -77,11 +77,12 @@ type ChannelStore interface {
 }
 
 type ChannelService struct {
-	uow    platformport.UnitOfWork
-	store  ChannelStore
-	images mediaport.ImageMetadataReader
-	events eventport.Appender
-	now    func() time.Time
+	uow         platformport.UnitOfWork
+	store       ChannelStore
+	images      mediaport.ImageMetadataReader
+	attachments mediaport.AttachmentMetadataReader
+	events      eventport.Appender
+	now         func() time.Time
 }
 
 func NewChannelService(uow platformport.UnitOfWork, store ChannelStore, events eventport.Appender) *ChannelService {
@@ -91,7 +92,15 @@ func NewChannelService(uow platformport.UnitOfWork, store ChannelStore, events e
 // NewChannelServiceWithImageReferences wires Media's transaction-bound image
 // reader for welcome_image_library_ids in the Contact-owned projection.
 func NewChannelServiceWithImageReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, events eventport.Appender) *ChannelService {
-	return &ChannelService{uow: uow, store: store, images: images, events: events, now: time.Now}
+	return NewChannelServiceWithMediaReferences(uow, store, images, nil, events)
+}
+
+// NewChannelServiceWithMediaReferences keeps the channel-owned JSON
+// projection while validating local Media IDs in the same UoW that persists
+// it. Attachment validation intentionally fails closed until its reader is
+// wired by the Attachment Library composition root.
+func NewChannelServiceWithMediaReferences(uow platformport.UnitOfWork, store ChannelStore, images mediaport.ImageMetadataReader, attachments mediaport.AttachmentMetadataReader, events eventport.Appender) *ChannelService {
+	return &ChannelService{uow: uow, store: store, images: images, attachments: attachments, events: events, now: time.Now}
 }
 
 func (service *ChannelService) ListChannels(ctx context.Context, limit int32, status string, includeArchived bool) ([]Channel, error) {
@@ -136,7 +145,7 @@ func (service *ChannelService) CreateChannel(ctx context.Context, command Create
 		return Channel{}, err
 	}
 	return service.mutate(ctx, "create", normalized.Actor, normalized.IdempotencyKey, normalized, func(tx context.Context, now time.Time) (Channel, error) {
-		if err := service.validateImageReferences(tx, normalized.LegacyProjection); err != nil {
+		if err := service.validateMediaReferences(tx, normalized.LegacyProjection); err != nil {
 			return Channel{}, err
 		}
 		return service.store.CreateChannel(tx, normalized, now)
@@ -156,7 +165,7 @@ func (service *ChannelService) UpdateChannel(ctx context.Context, command Update
 		if err != nil {
 			return Channel{}, err
 		}
-		if err := service.validateImageReferences(tx, merged.LegacyProjection); err != nil {
+		if err := service.validateMediaReferences(tx, merged.LegacyProjection); err != nil {
 			return Channel{}, err
 		}
 		return service.store.UpdateChannel(tx, merged, command.Actor, now)
@@ -404,6 +413,40 @@ func (service *ChannelService) validateImageReferences(ctx context.Context, proj
 		}
 	}
 	return nil
+}
+
+func (service *ChannelService) validateAttachmentReferences(ctx context.Context, projection json.RawMessage) error {
+	values, err := object(projection)
+	if err != nil {
+		return ErrChannelUnavailable
+	}
+	var attachmentIDs []int64
+	if err := json.Unmarshal(values["welcome_attachment_library_ids"], &attachmentIDs); err != nil {
+		return ErrChannelUnavailable
+	}
+	if len(attachmentIDs) == 0 {
+		return nil
+	}
+	if service == nil || service.attachments == nil {
+		return ErrChannelUnavailable
+	}
+	for _, attachmentID := range attachmentIDs {
+		exists, err := service.attachments.AttachmentExists(ctx, attachmentID)
+		if err != nil {
+			return ErrChannelUnavailable
+		}
+		if !exists {
+			return ErrInvalidChannel
+		}
+	}
+	return nil
+}
+
+func (service *ChannelService) validateMediaReferences(ctx context.Context, projection json.RawMessage) error {
+	if err := service.validateImageReferences(ctx, projection); err != nil {
+		return err
+	}
+	return service.validateAttachmentReferences(ctx, projection)
 }
 
 func object(raw []byte) (map[string]json.RawMessage, error) {

@@ -399,6 +399,71 @@ func TestServiceLifecycleCASAndIdempotency(t *testing.T) {
 	}
 }
 
+func TestServiceFailsClosedForUnavailableOrMissingCoverImage(t *testing.T) {
+	service, db := newServiceFixture(t)
+	coverID := int64(19)
+	service.images = nil
+	_, err := service.Create(context.Background(), radarport.CreateCommand{
+		ExpectedVersion: 0,
+		Name:            "No image reader",
+		Title:           "No image reader",
+		DestinationURL:  "https://example.com/no-reader",
+		CoverImageID:    &coverID,
+		ActorID:         7,
+		IdempotencyKey:  "radar-image-reader-0001",
+	})
+	if !errors.Is(err, radarport.ErrUnavailable) || len(db.snapshot().links) != 0 || len(db.snapshot().idempotency) != 0 {
+		t.Fatalf("unavailable err=%v state=%+v", err, db.snapshot())
+	}
+
+	images := &memoryImageReader{exists: false}
+	service.images = images
+	_, err = service.Create(context.Background(), radarport.CreateCommand{
+		ExpectedVersion: 0,
+		Name:            "Missing image",
+		Title:           "Missing image",
+		DestinationURL:  "https://example.com/missing",
+		CoverImageID:    &coverID,
+		ActorID:         7,
+		IdempotencyKey:  "radar-image-reader-0002",
+	})
+	if !errors.Is(err, radarport.ErrInvalidArgument) || images.calls != 1 || len(db.snapshot().links) != 0 || len(db.snapshot().idempotency) != 0 {
+		t.Fatalf("missing err=%v calls=%d state=%+v", err, images.calls, db.snapshot())
+	}
+}
+
+func TestServiceFailsClosedForUnavailableOrMissingAttachment(t *testing.T) {
+	service, db := newServiceFixture(t)
+	attachmentID := int64(29)
+	_, err := service.Create(context.Background(), radarport.CreateCommand{
+		ExpectedVersion: 0,
+		Name:            "No attachment reader",
+		Title:           "No attachment reader",
+		DestinationURL:  "https://example.com/no-attachment-reader",
+		AttachmentID:    &attachmentID,
+		ActorID:         7,
+		IdempotencyKey:  "radar-attachment-reader-01",
+	})
+	if !errors.Is(err, radarport.ErrUnavailable) || len(db.snapshot().links) != 0 || len(db.snapshot().idempotency) != 0 {
+		t.Fatalf("unavailable err=%v state=%+v", err, db.snapshot())
+	}
+
+	attachments := &memoryAttachmentReader{exists: false}
+	service.attachments = attachments
+	_, err = service.Create(context.Background(), radarport.CreateCommand{
+		ExpectedVersion: 0,
+		Name:            "Missing attachment",
+		Title:           "Missing attachment",
+		DestinationURL:  "https://example.com/missing-attachment",
+		AttachmentID:    &attachmentID,
+		ActorID:         7,
+		IdempotencyKey:  "radar-attachment-reader-02",
+	})
+	if !errors.Is(err, radarport.ErrInvalidArgument) || attachments.calls != 1 || len(db.snapshot().links) != 0 || len(db.snapshot().idempotency) != 0 {
+		t.Fatalf("missing err=%v calls=%d state=%+v", err, attachments.calls, db.snapshot())
+	}
+}
+
 func TestServiceStateConflictAndTransactionRollback(t *testing.T) {
 	service, db := newServiceFixture(t)
 	ctx := context.Background()
@@ -563,7 +628,7 @@ func TestServiceRetriesPublicCodeCollisionAndKeepsNoOpUpdateStable(t *testing.T)
 func newServiceFixture(t *testing.T) (*Service, *memoryDB) {
 	t.Helper()
 	db := newMemoryDB()
-	service, err := NewService(&memoryUnitOfWork{db: db}, &memoryRepository{db: db}, &memoryAppender{db: db})
+	service, err := NewServiceWithImageReferences(&memoryUnitOfWork{db: db}, &memoryRepository{db: db}, &memoryImageReader{exists: true}, &memoryAppender{db: db})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -590,6 +655,28 @@ func newServiceFixture(t *testing.T) (*Service, *memoryDB) {
 		return code, nil
 	}
 	return service, db
+}
+
+type memoryImageReader struct {
+	exists bool
+	err    error
+	calls  int
+}
+
+func (reader *memoryImageReader) ImageExists(context.Context, int64) (bool, error) {
+	reader.calls++
+	return reader.exists, reader.err
+}
+
+type memoryAttachmentReader struct {
+	exists bool
+	err    error
+	calls  int
+}
+
+func (reader *memoryAttachmentReader) AttachmentExists(context.Context, int64) (bool, error) {
+	reader.calls++
+	return reader.exists, reader.err
 }
 
 func memoryStateFromContext(ctx context.Context) (*memoryState, error) {

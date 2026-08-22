@@ -4783,6 +4783,282 @@ paths:
         "503":
           description: Local Media, receipt, event, or required reference reads are unavailable; no partial mutation is exposed.
           content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+  /api/admin/attachment-library:
+    get:
+      tags: [p4-media-compat]
+      operationId: listLegacyAttachments
+      summary: List private local PDF attachment metadata
+      security:
+        - AdminSession: []
+      x-p4-decision-evidence: P4-ATTACHMENT-LIBRARY-00062-2026-08-23
+      x-legacy-mapping-ids: [LEGACY-API-0123]
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_attachments.read_projection
+      x-aicrm-external-effect: none
+      x-aicrm-reject-unknown-query-keys: true
+      x-aicrm-reject-malformed-percent-or-utf8: true
+      x-aicrm-scalar-query-cardinality: exactly-one-when-present
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: { type: string, pattern: '^[0-9]+$', default: '100' }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: string, pattern: '^[0-9]+$', default: '0' }
+        - name: enabled_only
+          in: query
+          required: false
+          schema: { type: string, enum: ['true', 'false'], default: 'true' }
+        - name: q
+          in: query
+          required: false
+          schema: { type: string, maxLength: 200, default: '' }
+      responses:
+        "200":
+          description: Bounded private local metadata page; blobs, checksums, receipts, public URLs, and provider fields are never returned.
+          headers:
+            Cache-Control: { required: true, schema: { type: string, enum: ['private, no-store'] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentListSuccess" } } }
+        "400": { description: Invalid strict query, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405":
+          description: Only GET and multipart POST are independently registered before authentication.
+          headers: { Allow: { required: true, schema: { type: string, enum: ['GET, POST'] } } }
+        "503": { description: Local attachment read model unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+    post:
+      tags: [p4-media-compat]
+      operationId: createLegacyAttachment
+      summary: Canonically create one private PDF attachment with its local blob
+      security:
+        - AdminSession: []
+      x-p4-decision-evidence: P4-ATTACHMENT-LIBRARY-00062-2026-08-23
+      x-legacy-mapping-ids: [LEGACY-API-0124]
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_attachments_and_blobs.local_uow
+      x-aicrm-external-effect: none
+      x-aicrm-canonical-command: multipart_metadata_and_blob
+      x-aicrm-no-blobless-attachment: true
+      x-aicrm-allowed-mime-types: [application/pdf]
+      x-aicrm-max-upload-bytes: 10485760
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/LegacyAttachmentUploadRequest" }
+            encoding:
+              attachment: { contentType: application/pdf }
+      responses:
+        "200":
+          description: Confirmed one local metadata-and-blob transaction. The response contains metadata only.
+          headers:
+            Cache-Control: { required: true, schema: { type: string, enum: ['private, no-store'] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentItem" } } }
+        "400": { description: "Multipart shape, idempotency key, PDF MIME/sniff/magic, filename, size, or metadata is invalid.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: "Only GET and multipart POST are independently registered before authentication.", headers: { Allow: { required: true, schema: { type: string, enum: ['GET, POST'] } } } }
+        "409": { description: Idempotency key is bound to a different canonical upload, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "503": { description: "Local transaction, blob, receipt, or event dependency unavailable; no partial attachment commits.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+  /api/admin/attachment-library/upload:
+    post:
+      tags: [p4-media-compat]
+      operationId: uploadLegacyAttachment
+      summary: Legacy upload alias for the canonical private PDF attachment command
+      security:
+        - AdminSession: []
+      x-p4-decision-evidence: P4-ATTACHMENT-LIBRARY-00062-2026-08-23
+      x-legacy-mapping-ids: [LEGACY-API-0125]
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_attachments_and_blobs.local_uow
+      x-aicrm-external-effect: none
+      x-aicrm-canonical-command-alias: createLegacyAttachment
+      x-aicrm-no-blobless-attachment: true
+      x-aicrm-allowed-mime-types: [application/pdf]
+      x-aicrm-max-upload-bytes: 10485760
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/LegacyAttachmentUploadRequest" }
+            encoding:
+              attachment: { contentType: application/pdf }
+      responses:
+        "200": { description: "Same canonical local result as collection POST.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentItem" } } } }
+        "400": { description: Invalid multipart PDF command, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "405": { description: "Only POST is independently registered before authentication.", headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } } }
+        "409": { description: Idempotency conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "503": { description: Local transaction dependency unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+  /api/admin/attachment-library/{attachment_id}:
+    parameters:
+      - name: attachment_id
+        in: path
+        required: true
+        description: Canonical positive decimal attachment ID; signs, leading zeroes, whitespace, and overflow are rejected.
+        schema: { type: string, pattern: '^[1-9][0-9]*$', maxLength: 19 }
+    get:
+      tags: [p4-media-compat]
+      operationId: getLegacyAttachment
+      summary: Read one private local PDF attachment metadata
+      security:
+        - AdminSession: []
+      x-p4-decision-evidence: P4-ATTACHMENT-LIBRARY-00062-2026-08-23
+      x-legacy-mapping-ids: [LEGACY-API-0127]
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_attachments.read_projection
+      x-aicrm-external-effect: none
+      x-aicrm-reject-query-string: true
+      responses:
+        "200": { description: "Private metadata only; use the separately authorized private download endpoint for bytes.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentItem" } } } }
+        "400": { description: Invalid path or query, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Attachment not found, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "405": { description: "Only GET, PUT, and DELETE are independently registered before authentication.", headers: { Allow: { required: true, schema: { type: string, enum: ['GET, PUT, DELETE'] } } } }
+        "503": { description: Local attachment read model unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+    put:
+      tags: [p4-media-compat]
+      operationId: updateLegacyAttachment
+      summary: CAS-update only mutable private PDF attachment metadata and enabled state
+      security:
+        - AdminSession: []
+      x-p4-decision-evidence: P4-ATTACHMENT-LIBRARY-00062-2026-08-23
+      x-legacy-mapping-ids: [LEGACY-API-0128]
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_attachments.mutable_metadata.local_uow
+      x-aicrm-external-effect: none
+      x-aicrm-request-max-bytes: 65536
+      x-aicrm-reject-unknown-json-fields: true
+      x-aicrm-reject-duplicate-json-keys: true
+      x-aicrm-immutable-fields: [file_name, mime_type, file_size, blob]
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LegacyAttachmentUpdateRequest" }
+      responses:
+        "200": { description: "Confirmed local CAS update; a business change and its event share one transaction.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentItem" } } } }
+        "400": { description: Invalid strict metadata update, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Attachment not found, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "405": { description: "Only GET, PUT, and DELETE are independently registered before authentication.", headers: { Allow: { required: true, schema: { type: string, enum: ['GET, PUT, DELETE'] } } } }
+        "409": { description: Stale expected_version or idempotency conflict, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "503": { description: "Local transaction, receipt, or event dependency unavailable.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+    delete:
+      tags: [p4-media-compat]
+      operationId: deleteLegacyAttachment
+      summary: Hard-delete one unreferenced private local PDF attachment
+      security:
+        - AdminSession: []
+      x-p4-decision-evidence: P4-ATTACHMENT-LIBRARY-00062-2026-08-23
+      x-legacy-mapping-ids: [LEGACY-API-0126]
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_attachments.hard_delete_when_unreferenced
+      x-aicrm-external-effect: none
+      x-aicrm-delete-reference-scans: [automation_agents, channels, radar_links]
+      x-aicrm-delete-fail-closed: true
+      x-aicrm-reject-query-string: true
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200": { description: "Private local metadata and blob were hard-deleted in one transaction.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentDeleteSuccess" } } } }
+        "400": { description: "Invalid path, empty body requirement, or idempotency key.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Attachment not found, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "405": { description: "Only GET, PUT, and DELETE are independently registered before authentication.", headers: { Allow: { required: true, schema: { type: string, enum: ['GET, PUT, DELETE'] } } } }
+        "409":
+          description: An Automation, Channel, or Radar local reference blocks deletion, or the idempotency key conflicts.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/LegacyAttachmentDeleteConflict"
+                  - $ref: "#/components/schemas/LegacyAttachmentError"
+        "503": { description: "Required local reference scan, transaction, receipt, or event dependency unavailable; no deletion commits.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+  /api/admin/attachment-library/{attachment_id}/download:
+    parameters:
+      - name: attachment_id
+        in: path
+        required: true
+        schema: { type: string, pattern: '^[1-9][0-9]*$', maxLength: 19 }
+    get:
+      tags: [p4-media-compat]
+      operationId: downloadLegacyAttachment
+      summary: Privately download one validated local PDF attachment
+      security:
+        - AdminSession: []
+      x-p4-decision-evidence: P4-ATTACHMENT-LIBRARY-00062-2026-08-23
+      x-legacy-mapping-ids: [LEGACY-API-0127]
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media_attachments_and_blobs.private_read
+      x-aicrm-external-effect: none
+      x-aicrm-public-url: false
+      x-aicrm-public-share: false
+      x-aicrm-reject-query-string: true
+      responses:
+        "200":
+          description: Authenticated private PDF only after metadata/blob checksum and PDF admission validation.
+          headers:
+            Content-Type: { required: true, schema: { type: string, enum: [application/pdf] } }
+            Content-Length: { required: true, schema: { type: integer, minimum: 1, maximum: 10485760 } }
+            Content-Disposition: { required: true, schema: { type: string, pattern: '^attachment;' } }
+            Cache-Control: { required: true, schema: { type: string, enum: ['private, no-store'] } }
+            Content-Security-Policy: { required: true, schema: { type: string, enum: [sandbox] } }
+            Referrer-Policy: { required: true, schema: { type: string, enum: [no-referrer] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content: { application/pdf: { schema: { type: string, format: binary } } }
+        "400": { description: Invalid path or query, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: Attachment not found, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
+        "405": { description: "Only GET is independently registered before authentication.", headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } } }
+        "503": { description: "Local blob, checksum, or PDF admission is unavailable or unsafe.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyAttachmentError" } } } }
   /api/admin/image-library/{image_id}/variants/{variant_key}:
     get:
       tags: [p4-media-compat]
@@ -10090,6 +10366,102 @@ components:
         limit: { type: integer, minimum: 1, maximum: 100 }
         offset: { type: integer, minimum: 0 }
         side_effect_executed: { type: boolean, enum: [false] }
+    LegacyAttachmentUploadRequest:
+      type: object
+      additionalProperties: false
+      required: [attachment]
+      properties:
+        attachment:
+          type: string
+          format: binary
+          description: One nonempty PDF no larger than 10 MiB. The declared MIME, HTTP sniff result, and %PDF- magic must all agree.
+        name: { type: string, minLength: 1, maxLength: 200, description: Optional display name; omitted falls back to the uploaded filename. }
+        tags:
+          type: string
+          maxLength: 3249
+          description: Optional comma-separated UTF-8 tags; each is trim-normalized, nonempty, unique, at most 64 runes, and commas are not allowed inside one tag.
+    LegacyAttachmentItem:
+      type: object
+      additionalProperties: false
+      required: [id, name, file_name, mime_type, file_size, description, tags, enabled, version, created_by, updated_by, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        file_name: { type: string, minLength: 1, maxLength: 255, pattern: '^[^/\\[:cntrl:]]+$' }
+        mime_type: { type: string, enum: [application/pdf] }
+        file_size: { type: integer, format: int32, minimum: 1, maximum: 10485760 }
+        description: { type: string, maxLength: 10000 }
+        tags:
+          type: array
+          maxItems: 50
+          uniqueItems: true
+          items: { type: string, minLength: 1, maxLength: 64, pattern: '^[^,]+$' }
+        enabled: { type: boolean }
+        version: { type: integer, format: int64, minimum: 1 }
+        created_by: { type: integer, format: int64, minimum: 1 }
+        updated_by: { type: integer, format: int64, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    LegacyAttachmentListSuccess:
+      type: object
+      additionalProperties: false
+      required: [items, total, limit, offset]
+      properties:
+        items: { type: array, maxItems: 500, items: { $ref: "#/components/schemas/LegacyAttachmentItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int64, minimum: 1, maximum: 500 }
+        offset: { type: integer, format: int64, minimum: 0 }
+    LegacyAttachmentUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version, name, description, tags, enabled]
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        description: { type: string, maxLength: 10000 }
+        tags:
+          type: array
+          maxItems: 50
+          uniqueItems: true
+          items: { type: string, minLength: 1, maxLength: 64, pattern: '^[^,]+$' }
+        enabled: { type: boolean }
+    LegacyAttachmentDeleteSuccess:
+      type: object
+      additionalProperties: false
+      required: [id, deleted, hard_deleted]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        deleted: { type: boolean, enum: [true] }
+        hard_deleted: { type: boolean, enum: [true] }
+    LegacyAttachmentReferenceID:
+      type: object
+      additionalProperties: false
+      required: [id]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+    LegacyAttachmentDeleteReferences:
+      type: object
+      additionalProperties: false
+      required: [automation_agents, channels, radar_links]
+      properties:
+        automation_agents: { type: array, items: { $ref: "#/components/schemas/LegacyAttachmentReferenceID" } }
+        channels: { type: array, items: { $ref: "#/components/schemas/LegacyAttachmentReferenceID" } }
+        radar_links: { type: array, items: { $ref: "#/components/schemas/LegacyAttachmentReferenceID" } }
+    LegacyAttachmentDeleteConflict:
+      type: object
+      additionalProperties: false
+      required: [error, references]
+      properties:
+        error: { type: string, enum: [attachment_has_references] }
+        references: { $ref: "#/components/schemas/LegacyAttachmentDeleteReferences" }
+    LegacyAttachmentError:
+      type: object
+      additionalProperties: false
+      required: [code, message, request_id]
+      properties:
+        code: { type: string, enum: [MALFORMED_REQUEST, UNAUTHORIZED, NOT_FOUND, CONFLICT, DEPENDENCY_UNAVAILABLE] }
+        message: { type: string, minLength: 1 }
+        request_id: { type: string, minLength: 1 }
     LegacyImageCreateRequest:
       type: object
       additionalProperties: false
@@ -10291,13 +10663,14 @@ components:
     LegacyImageDeleteReferences:
       type: object
       additionalProperties: false
-      required: [miniprograms, campaign_steps, group_invites, automation_agents, channels, import_preflights]
+      required: [miniprograms, campaign_steps, group_invites, automation_agents, channels, radar_links, import_preflights]
       properties:
         miniprograms: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
         campaign_steps: { type: array, maxItems: 0, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
         group_invites: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
         automation_agents: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
         channels: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
+        radar_links: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
         import_preflights: { type: array, items: { $ref: "#/components/schemas/LegacyImageDeleteReferenceID" } }
     LegacyImageDeleteConflict:
       type: object
