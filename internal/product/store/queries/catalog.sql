@@ -1,5 +1,5 @@
 -- name: ListProducts :many
-SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.legacy_admin_projection,
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.local_lifecycle, p.legacy_admin_projection,
        COALESCE(images.items, '[]'::jsonb) AS images
 FROM products p
 LEFT JOIN LATERAL (
@@ -11,7 +11,7 @@ ORDER BY p.id
 LIMIT sqlc.arg(row_limit)::integer;
 
 -- name: ListProductsOffset :many
-SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.legacy_admin_projection,
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.local_lifecycle, p.legacy_admin_projection,
        COALESCE(images.items, '[]'::jsonb) AS images
 FROM products p
 LEFT JOIN LATERAL (
@@ -25,7 +25,7 @@ LIMIT sqlc.arg(row_limit)::integer OFFSET sqlc.arg(row_offset)::integer;
 SELECT total_products FROM product_catalog_counters WHERE singleton = TRUE;
 
 -- name: GetProduct :one
-SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.legacy_admin_projection,
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.local_lifecycle, p.legacy_admin_projection,
        COALESCE(images.items, '[]'::jsonb) AS images
 FROM products p
 LEFT JOIN LATERAL (
@@ -36,7 +36,7 @@ WHERE p.id = sqlc.arg(product_id)::bigint
 ;
 
 -- name: GetProductForUpdate :one
-SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.legacy_admin_projection,
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.local_lifecycle, p.legacy_admin_projection,
        COALESCE(images.items, '[]'::jsonb) AS images
 FROM products p
 LEFT JOIN LATERAL (
@@ -47,9 +47,17 @@ WHERE p.id = sqlc.arg(product_id)::bigint
 FOR UPDATE OF p;
 
 -- name: CreateProduct :one
-INSERT INTO products (product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, legacy_admin_projection)
-VALUES (sqlc.arg(product_code)::text, sqlc.arg(name)::text, sqlc.arg(description)::text, sqlc.arg(price_minor)::bigint, sqlc.arg(currency)::char(3), sqlc.arg(stock_quantity)::integer, sqlc.arg(created_by)::bigint, sqlc.arg(created_at)::timestamptz, sqlc.arg(created_at)::timestamptz, sqlc.arg(legacy_admin_projection)::jsonb)
-RETURNING id, product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, version, legacy_admin_projection;
+INSERT INTO products (product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, local_lifecycle, legacy_admin_projection)
+VALUES (sqlc.arg(product_code)::text, sqlc.arg(name)::text, sqlc.arg(description)::text, sqlc.arg(price_minor)::bigint, sqlc.arg(currency)::char(3), sqlc.arg(stock_quantity)::integer, sqlc.arg(created_by)::bigint, sqlc.arg(created_at)::timestamptz, sqlc.arg(created_at)::timestamptz,
+        CASE
+          WHEN sqlc.arg(legacy_admin_projection)::jsonb->>'status' IN ('active', 'enabled')
+            AND sqlc.arg(legacy_admin_projection)::jsonb->>'enabled' = 'true' THEN 'enabled'
+          WHEN sqlc.arg(legacy_admin_projection)::jsonb->>'status' IN ('disabled', 'inactive')
+            AND sqlc.arg(legacy_admin_projection)::jsonb->>'enabled' <> 'true' THEN 'disabled'
+          ELSE 'draft'
+        END,
+        sqlc.arg(legacy_admin_projection)::jsonb)
+RETURNING id, product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, version, local_lifecycle, legacy_admin_projection;
 
 -- name: UpdateProduct :one
 UPDATE products
@@ -62,7 +70,7 @@ SET name = sqlc.arg(name)::text,
     version = version + 1
 WHERE id = sqlc.arg(product_id)::bigint
   AND version = sqlc.arg(expected_version)::bigint
-RETURNING id, product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, version, legacy_admin_projection;
+RETURNING id, product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, version, local_lifecycle, legacy_admin_projection;
 
 -- name: IncrementProductCount :one
 UPDATE product_catalog_counters SET total_products = total_products + 1

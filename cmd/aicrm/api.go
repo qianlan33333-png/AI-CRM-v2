@@ -132,6 +132,7 @@ type candidateHandler struct {
 	segments                  *segmenthttp.CRUDHandler
 	products                  *producthttp.Handler
 	productLocal              *producthttp.LocalMutationHandler
+	productLifecycle          *producthttp.LocalProductLifecycleHandler
 	surveyPublic              *surveyhttp.PublicHandler
 	segmentRefresh            *segmenthttp.RefreshHandler
 	identityReviews           *identityhttp.ReviewHandler
@@ -318,6 +319,26 @@ func (handler *candidateHandler) GetProduct(writer http.ResponseWriter, request 
 
 func (handler *candidateHandler) UpdateProduct(writer http.ResponseWriter, request *http.Request, productID api.ProductID, _ api.UpdateProductParams) {
 	handler.productLocal.UpdateProduct(writer, request, int64(productID))
+}
+
+func (handler *candidateHandler) EnableLegacyWechatPayProduct(writer http.ResponseWriter, request *http.Request, productID api.ProductID, _ api.EnableLegacyWechatPayProductParams) {
+	handler.productLifecycle.SetLocalProductEnabled(writer, request, int64(productID), true)
+}
+
+func (handler *candidateHandler) DisableLegacyWechatPayProduct(writer http.ResponseWriter, request *http.Request, productID api.ProductID, _ api.DisableLegacyWechatPayProductParams) {
+	handler.productLifecycle.SetLocalProductEnabled(writer, request, int64(productID), false)
+}
+
+func (handler *candidateHandler) CopyLegacyWechatPayProduct(writer http.ResponseWriter, request *http.Request, productID api.ProductID, _ api.CopyLegacyWechatPayProductParams) {
+	handler.productLifecycle.CopyLocalProduct(writer, request, int64(productID))
+}
+
+func (handler *candidateHandler) DeleteLegacyWechatPayProduct(writer http.ResponseWriter, request *http.Request, productID api.ProductID, _ api.DeleteLegacyWechatPayProductParams) {
+	handler.productLifecycle.DeleteLocalProduct(writer, request, int64(productID))
+}
+
+func (handler *candidateHandler) GetLegacyWechatPayProductShare(writer http.ResponseWriter, request *http.Request, productID api.ProductID) {
+	handler.productLifecycle.ShareLocalProduct(writer, request, int64(productID))
 }
 
 func (handler *candidateHandler) ListProductLocalEntitlements(writer http.ResponseWriter, request *http.Request, productID api.ProductID, params api.ListProductLocalEntitlementsParams) {
@@ -835,6 +856,13 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	productLifecycleHandler, err := producthttp.NewLocalProductLifecycleHandler(productapp.NewLocalProductLifecycleService(
+		uow, productstore.NewCatalogRepository(), eventstore.NewAppender(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	identityRepository := identitystore.NewRepository()
 	customerMergeHistoryHandler, err := identityhttp.NewMergeHistoryHandler(identityapp.NewCustomerMergeHistoryService(
 		uow, identityRepository,
@@ -878,6 +906,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		segments:           segmentCRUDHandler,
 		products:           productHandler,
 		productLocal:       productLocalHandler,
+		productLifecycle:   productLifecycleHandler,
 		surveyPublic:       surveyPublicHandler,
 		segmentRefresh:     segmentRefreshHandler,
 		identityReviews:    identityReviewHandler,
@@ -1322,6 +1351,11 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/v1/products", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.CreateProduct)},
 		{http.MethodGet, "/api/v1/products/{product_id}", authport.CapabilityProductsRead, false, http.HandlerFunc(wrapper.GetProduct)},
 		{http.MethodPut, "/api/v1/products/{product_id}", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.UpdateProduct)},
+		{http.MethodPost, "/api/admin/wechat-pay/products/{product_id}/enable", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.EnableLegacyWechatPayProduct)},
+		{http.MethodPost, "/api/admin/wechat-pay/products/{product_id}/disable", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.DisableLegacyWechatPayProduct)},
+		{http.MethodPost, "/api/admin/wechat-pay/products/{product_id}/copy", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.CopyLegacyWechatPayProduct)},
+		{http.MethodDelete, "/api/admin/wechat-pay/products/{product_id}", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.DeleteLegacyWechatPayProduct)},
+		{http.MethodGet, "/api/admin/wechat-pay/products/{product_id}/share", authport.CapabilityProductsRead, false, http.HandlerFunc(wrapper.GetLegacyWechatPayProductShare)},
 		{http.MethodGet, "/api/v1/products/{product_id}/local-entitlements", authport.CapabilityEntitlementsRead, false, http.HandlerFunc(wrapper.ListProductLocalEntitlements)},
 		{http.MethodPost, "/api/v1/products/{product_id}/local-entitlements", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.GrantProductLocalEntitlement)},
 		{http.MethodGet, "/api/v1/product-entitlements/{entitlement_id}", authport.CapabilityEntitlementsRead, false, http.HandlerFunc(wrapper.GetProductLocalEntitlement)},

@@ -8,6 +8,7 @@ WITH command AS (
 )
 UPDATE products AS product
 SET legacy_admin_projection = command.payload->'legacy_admin_projection',
+    local_lifecycle = command.payload->>'local_lifecycle',
     updated_at = (command.payload->>'updated_at')::timestamptz,
     version = product.version + 1
 FROM command
@@ -25,8 +26,7 @@ WITH command AS (
   USING command
   WHERE product.id = (command.payload->>'product_id')::bigint
     AND product.version = (command.payload->>'expected_version')::bigint
-    AND product.legacy_admin_projection->>'status' = 'draft'
-    AND COALESCE((product.legacy_admin_projection->>'enabled')::boolean, false) = false
+    AND product.local_lifecycle = 'draft'
     AND NOT EXISTS (
       SELECT 1
       FROM product_local_entitlements entitlement

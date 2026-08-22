@@ -99,9 +99,17 @@ func (q *Queries) CountProducts(ctx context.Context) (int64, error) {
 }
 
 const createProduct = `-- name: CreateProduct :one
-INSERT INTO products (product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, legacy_admin_projection)
-VALUES ($1::text, $2::text, $3::text, $4::bigint, $5::char(3), $6::integer, $7::bigint, $8::timestamptz, $8::timestamptz, $9::jsonb)
-RETURNING id, product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, version, legacy_admin_projection
+INSERT INTO products (product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, local_lifecycle, legacy_admin_projection)
+VALUES ($1::text, $2::text, $3::text, $4::bigint, $5::char(3), $6::integer, $7::bigint, $8::timestamptz, $8::timestamptz,
+        CASE
+          WHEN $9::jsonb->>'status' IN ('active', 'enabled')
+            AND $9::jsonb->>'enabled' = 'true' THEN 'enabled'
+          WHEN $9::jsonb->>'status' IN ('disabled', 'inactive')
+            AND $9::jsonb->>'enabled' <> 'true' THEN 'disabled'
+          ELSE 'draft'
+        END,
+        $9::jsonb)
+RETURNING id, product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, version, local_lifecycle, legacy_admin_projection
 `
 
 type CreateProductParams struct {
@@ -128,6 +136,7 @@ type CreateProductRow struct {
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
 	Version               int64              `json:"version"`
+	LocalLifecycle        string             `json:"local_lifecycle"`
 	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
 }
 
@@ -156,6 +165,7 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (C
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
+		&i.LocalLifecycle,
 		&i.LegacyAdminProjection,
 	)
 	return i, err
@@ -249,7 +259,7 @@ func (q *Queries) GetEntitlementOperationReceipt(ctx context.Context, arg GetEnt
 }
 
 const getProduct = `-- name: GetProduct :one
-SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.legacy_admin_projection,
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.local_lifecycle, p.legacy_admin_projection,
        COALESCE(images.items, '[]'::jsonb) AS images
 FROM products p
 LEFT JOIN LATERAL (
@@ -271,6 +281,7 @@ type GetProductRow struct {
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
 	Version               int64              `json:"version"`
+	LocalLifecycle        string             `json:"local_lifecycle"`
 	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
 	Images                []byte             `json:"images"`
 }
@@ -290,6 +301,7 @@ func (q *Queries) GetProduct(ctx context.Context, productID int64) (GetProductRo
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
+		&i.LocalLifecycle,
 		&i.LegacyAdminProjection,
 		&i.Images,
 	)
@@ -297,7 +309,7 @@ func (q *Queries) GetProduct(ctx context.Context, productID int64) (GetProductRo
 }
 
 const getProductForUpdate = `-- name: GetProductForUpdate :one
-SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.legacy_admin_projection,
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.local_lifecycle, p.legacy_admin_projection,
        COALESCE(images.items, '[]'::jsonb) AS images
 FROM products p
 LEFT JOIN LATERAL (
@@ -320,6 +332,7 @@ type GetProductForUpdateRow struct {
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
 	Version               int64              `json:"version"`
+	LocalLifecycle        string             `json:"local_lifecycle"`
 	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
 	Images                []byte             `json:"images"`
 }
@@ -339,6 +352,7 @@ func (q *Queries) GetProductForUpdate(ctx context.Context, productID int64) (Get
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
+		&i.LocalLifecycle,
 		&i.LegacyAdminProjection,
 		&i.Images,
 	)
@@ -532,7 +546,7 @@ func (q *Queries) ListProductLocalEntitlements(ctx context.Context, arg ListProd
 }
 
 const listProducts = `-- name: ListProducts :many
-SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.legacy_admin_projection,
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.local_lifecycle, p.legacy_admin_projection,
        COALESCE(images.items, '[]'::jsonb) AS images
 FROM products p
 LEFT JOIN LATERAL (
@@ -561,6 +575,7 @@ type ListProductsRow struct {
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
 	Version               int64              `json:"version"`
+	LocalLifecycle        string             `json:"local_lifecycle"`
 	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
 	Images                []byte             `json:"images"`
 }
@@ -586,6 +601,7 @@ func (q *Queries) ListProducts(ctx context.Context, arg ListProductsParams) ([]L
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Version,
+			&i.LocalLifecycle,
 			&i.LegacyAdminProjection,
 			&i.Images,
 		); err != nil {
@@ -600,7 +616,7 @@ func (q *Queries) ListProducts(ctx context.Context, arg ListProductsParams) ([]L
 }
 
 const listProductsOffset = `-- name: ListProductsOffset :many
-SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.legacy_admin_projection,
+SELECT p.id, p.product_code, p.name, p.description, p.price_minor, p.currency, p.stock_quantity, p.created_by, p.created_at, p.updated_at, p.version, p.local_lifecycle, p.legacy_admin_projection,
        COALESCE(images.items, '[]'::jsonb) AS images
 FROM products p
 LEFT JOIN LATERAL (
@@ -628,6 +644,7 @@ type ListProductsOffsetRow struct {
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
 	Version               int64              `json:"version"`
+	LocalLifecycle        string             `json:"local_lifecycle"`
 	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
 	Images                []byte             `json:"images"`
 }
@@ -653,6 +670,7 @@ func (q *Queries) ListProductsOffset(ctx context.Context, arg ListProductsOffset
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Version,
+			&i.LocalLifecycle,
 			&i.LegacyAdminProjection,
 			&i.Images,
 		); err != nil {
@@ -818,7 +836,7 @@ SET name = $1::text,
     version = version + 1
 WHERE id = $7::bigint
   AND version = $8::bigint
-RETURNING id, product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, version, legacy_admin_projection
+RETURNING id, product_code, name, description, price_minor, currency, stock_quantity, created_by, created_at, updated_at, version, local_lifecycle, legacy_admin_projection
 `
 
 type UpdateProductParams struct {
@@ -844,6 +862,7 @@ type UpdateProductRow struct {
 	CreatedAt             pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
 	Version               int64              `json:"version"`
+	LocalLifecycle        string             `json:"local_lifecycle"`
 	LegacyAdminProjection []byte             `json:"legacy_admin_projection"`
 }
 
@@ -871,6 +890,7 @@ func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (U
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Version,
+		&i.LocalLifecycle,
 		&i.LegacyAdminProjection,
 	)
 	return i, err

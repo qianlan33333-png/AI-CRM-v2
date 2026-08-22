@@ -1890,6 +1890,63 @@ func (e LocalProductEntitlementState) Valid() bool {
 	}
 }
 
+// Defines values for LocalProductLifecycleProductLifecycle.
+const (
+	LocalProductLifecycleProductLifecycleDisabled LocalProductLifecycleProductLifecycle = "disabled"
+	LocalProductLifecycleProductLifecycleDraft    LocalProductLifecycleProductLifecycle = "draft"
+	LocalProductLifecycleProductLifecycleEnabled  LocalProductLifecycleProductLifecycle = "enabled"
+)
+
+// Valid indicates whether the value is a known member of the LocalProductLifecycleProductLifecycle enum.
+func (e LocalProductLifecycleProductLifecycle) Valid() bool {
+	switch e {
+	case LocalProductLifecycleProductLifecycleDisabled:
+		return true
+	case LocalProductLifecycleProductLifecycleDraft:
+		return true
+	case LocalProductLifecycleProductLifecycleEnabled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LocalProductLifecycleShareLifecycle.
+const (
+	LocalProductLifecycleShareLifecycleDisabled LocalProductLifecycleShareLifecycle = "disabled"
+	LocalProductLifecycleShareLifecycleDraft    LocalProductLifecycleShareLifecycle = "draft"
+	LocalProductLifecycleShareLifecycleEnabled  LocalProductLifecycleShareLifecycle = "enabled"
+)
+
+// Valid indicates whether the value is a known member of the LocalProductLifecycleShareLifecycle enum.
+func (e LocalProductLifecycleShareLifecycle) Valid() bool {
+	switch e {
+	case LocalProductLifecycleShareLifecycleDisabled:
+		return true
+	case LocalProductLifecycleShareLifecycleDraft:
+		return true
+	case LocalProductLifecycleShareLifecycleEnabled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LocalProductLifecycleShareReason.
+const (
+	NoAuthoritativePublicPurchaseRoute LocalProductLifecycleShareReason = "no_authoritative_public_purchase_route"
+)
+
+// Valid indicates whether the value is a known member of the LocalProductLifecycleShareReason enum.
+func (e LocalProductLifecycleShareReason) Valid() bool {
+	switch e {
+	case NoAuthoritativePublicPurchaseRoute:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PublicSurveyAnalyticsState.
 const (
 	PublicSurveyAnalyticsStateDisabled PublicSurveyAnalyticsState = "disabled"
@@ -3428,6 +3485,57 @@ type LocalProductEntitlementPage struct {
 	Items []LocalProductEntitlement `json:"items"`
 }
 
+// LocalProductLifecycleDelete defines model for LocalProductLifecycleDelete.
+type LocalProductLifecycleDelete struct {
+	Deleted   bool  `json:"deleted"`
+	Ok        bool  `json:"ok"`
+	ProductId int64 `json:"product_id"`
+}
+
+// LocalProductLifecycleProduct defines model for LocalProductLifecycleProduct.
+type LocalProductLifecycleProduct struct {
+	CreatedAt     time.Time                             `json:"created_at"`
+	CreatedBy     int64                                 `json:"created_by"`
+	Currency      string                                `json:"currency"`
+	Description   string                                `json:"description"`
+	Enabled       bool                                  `json:"enabled"`
+	Id            int64                                 `json:"id"`
+	Images        []string                              `json:"images"`
+	Lifecycle     LocalProductLifecycleProductLifecycle `json:"lifecycle"`
+	Name          string                                `json:"name"`
+	PriceMinor    int64                                 `json:"price_minor"`
+	ProductCode   string                                `json:"product_code"`
+	StockQuantity int32                                 `json:"stock_quantity"`
+	UpdatedAt     time.Time                             `json:"updated_at"`
+	Version       int64                                 `json:"version"`
+}
+
+// LocalProductLifecycleProductLifecycle defines model for LocalProductLifecycleProduct.Lifecycle.
+type LocalProductLifecycleProductLifecycle string
+
+// LocalProductLifecycleShare defines model for LocalProductLifecycleShare.
+type LocalProductLifecycleShare struct {
+	Available   bool                                `json:"available"`
+	Lifecycle   LocalProductLifecycleShareLifecycle `json:"lifecycle"`
+	Ok          bool                                `json:"ok"`
+	ProductCode string                              `json:"product_code"`
+	ProductId   int64                               `json:"product_id"`
+	PurchaseUrl *string                             `json:"purchase_url,omitempty"`
+	QrCodeUrl   *string                             `json:"qr_code_url,omitempty"`
+	Reason      LocalProductLifecycleShareReason    `json:"reason"`
+}
+
+// LocalProductLifecycleShareLifecycle defines model for LocalProductLifecycleShare.Lifecycle.
+type LocalProductLifecycleShareLifecycle string
+
+// LocalProductLifecycleShareReason defines model for LocalProductLifecycleShare.Reason.
+type LocalProductLifecycleShareReason string
+
+// LocalProductLifecycleVersionRequest defines model for LocalProductLifecycleVersionRequest.
+type LocalProductLifecycleVersionRequest struct {
+	ExpectedVersion int64 `json:"expected_version"`
+}
+
 // LocalTag defines model for LocalTag.
 type LocalTag struct {
 	GroupId   int64  `json:"group_id"`
@@ -4074,6 +4182,42 @@ type PublishQuestionnairePublicDefinitionParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// DeleteLegacyWechatPayProductParams defines parameters for DeleteLegacyWechatPayProduct.
+type DeleteLegacyWechatPayProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CopyLegacyWechatPayProductParams defines parameters for CopyLegacyWechatPayProduct.
+type CopyLegacyWechatPayProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// DisableLegacyWechatPayProductParams defines parameters for DisableLegacyWechatPayProduct.
+type DisableLegacyWechatPayProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// EnableLegacyWechatPayProductParams defines parameters for EnableLegacyWechatPayProduct.
+type EnableLegacyWechatPayProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // LogoutAdminParams defines parameters for LogoutAdmin.
 type LogoutAdminParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -4422,6 +4566,18 @@ type DisableQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyDisableRe
 
 // PublishQuestionnairePublicDefinitionJSONRequestBody defines body for PublishQuestionnairePublicDefinition for application/json ContentType.
 type PublishQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyPublishRequest
+
+// DeleteLegacyWechatPayProductJSONRequestBody defines body for DeleteLegacyWechatPayProduct for application/json ContentType.
+type DeleteLegacyWechatPayProductJSONRequestBody = LocalProductLifecycleVersionRequest
+
+// CopyLegacyWechatPayProductJSONRequestBody defines body for CopyLegacyWechatPayProduct for application/json ContentType.
+type CopyLegacyWechatPayProductJSONRequestBody = LocalProductLifecycleVersionRequest
+
+// DisableLegacyWechatPayProductJSONRequestBody defines body for DisableLegacyWechatPayProduct for application/json ContentType.
+type DisableLegacyWechatPayProductJSONRequestBody = LocalProductLifecycleVersionRequest
+
+// EnableLegacyWechatPayProductJSONRequestBody defines body for EnableLegacyWechatPayProduct for application/json ContentType.
+type EnableLegacyWechatPayProductJSONRequestBody = LocalProductLifecycleVersionRequest
 
 // SubmitPublicSurveyJSONRequestBody defines body for SubmitPublicSurvey for application/json ContentType.
 type SubmitPublicSurveyJSONRequestBody = PublicSurveySubmissionRequest
@@ -5153,6 +5309,21 @@ type ServerInterface interface {
 	// Publish an immutable local anonymous public survey snapshot
 	// (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
 	PublishQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params PublishQuestionnairePublicDefinitionParams)
+	// Delete only an unreferenced CRM-local draft product
+	// (DELETE /api/admin/wechat-pay/products/{product_id})
+	DeleteLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params DeleteLegacyWechatPayProductParams)
+	// Copy one CRM-local WeChat-pay product into a disabled draft
+	// (POST /api/admin/wechat-pay/products/{product_id}/copy)
+	CopyLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params CopyLegacyWechatPayProductParams)
+	// Disable one CRM-local WeChat-pay product without provider effects
+	// (POST /api/admin/wechat-pay/products/{product_id}/disable)
+	DisableLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params DisableLegacyWechatPayProductParams)
+	// Enable one CRM-local WeChat-pay product without provider effects
+	// (POST /api/admin/wechat-pay/products/{product_id}/enable)
+	EnableLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params EnableLegacyWechatPayProductParams)
+	// Read a closed local share descriptor without claiming a public purchase route
+	// (GET /api/admin/wechat-pay/products/{product_id}/share)
+	GetLegacyWechatPayProductShare(w http.ResponseWriter, r *http.Request, productId ProductID)
 	// Read one immutable anonymous public survey definition
 	// (GET /api/public/questionnaires/{slug})
 	GetPublicSurveyDefinition(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug)
@@ -5378,6 +5549,36 @@ func (_ Unimplemented) DisableQuestionnairePublicDefinition(w http.ResponseWrite
 // Publish an immutable local anonymous public survey snapshot
 // (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
 func (_ Unimplemented) PublishQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params PublishQuestionnairePublicDefinitionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete only an unreferenced CRM-local draft product
+// (DELETE /api/admin/wechat-pay/products/{product_id})
+func (_ Unimplemented) DeleteLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params DeleteLegacyWechatPayProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Copy one CRM-local WeChat-pay product into a disabled draft
+// (POST /api/admin/wechat-pay/products/{product_id}/copy)
+func (_ Unimplemented) CopyLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params CopyLegacyWechatPayProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Disable one CRM-local WeChat-pay product without provider effects
+// (POST /api/admin/wechat-pay/products/{product_id}/disable)
+func (_ Unimplemented) DisableLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params DisableLegacyWechatPayProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Enable one CRM-local WeChat-pay product without provider effects
+// (POST /api/admin/wechat-pay/products/{product_id}/enable)
+func (_ Unimplemented) EnableLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params EnableLegacyWechatPayProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read a closed local share descriptor without claiming a public purchase route
+// (GET /api/admin/wechat-pay/products/{product_id}/share)
+func (_ Unimplemented) GetLegacyWechatPayProductShare(w http.ResponseWriter, r *http.Request, productId ProductID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -6413,6 +6614,365 @@ func (siw *ServerInterfaceWrapper) PublishQuestionnairePublicDefinition(w http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PublishQuestionnairePublicDefinition(w, r, questionnaireId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteLegacyWechatPayProduct operation middleware
+func (siw *ServerInterfaceWrapper) DeleteLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "product_id" -------------
+	var productId ProductID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteLegacyWechatPayProductParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteLegacyWechatPayProduct(w, r, productId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CopyLegacyWechatPayProduct operation middleware
+func (siw *ServerInterfaceWrapper) CopyLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "product_id" -------------
+	var productId ProductID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CopyLegacyWechatPayProductParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CopyLegacyWechatPayProduct(w, r, productId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableLegacyWechatPayProduct operation middleware
+func (siw *ServerInterfaceWrapper) DisableLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "product_id" -------------
+	var productId ProductID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DisableLegacyWechatPayProductParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableLegacyWechatPayProduct(w, r, productId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EnableLegacyWechatPayProduct operation middleware
+func (siw *ServerInterfaceWrapper) EnableLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "product_id" -------------
+	var productId ProductID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params EnableLegacyWechatPayProductParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EnableLegacyWechatPayProduct(w, r, productId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyWechatPayProductShare operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyWechatPayProductShare(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "product_id" -------------
+	var productId ProductID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyWechatPayProductShare(w, r, productId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -9711,6 +10271,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/admin/questionnaires/{questionnaire_id}/public-publish", wrapper.PublishQuestionnairePublicDefinition)
 	})
 	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}", wrapper.DeleteLegacyWechatPayProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}/copy", wrapper.CopyLegacyWechatPayProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}/disable", wrapper.DisableLegacyWechatPayProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}/enable", wrapper.EnableLegacyWechatPayProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}/share", wrapper.GetLegacyWechatPayProductShare)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/public/questionnaires/{slug}", wrapper.GetPublicSurveyDefinition)
 	})
 	r.Group(func(r chi.Router) {
@@ -10411,6 +10986,404 @@ func (response PublishQuestionnairePublicDefinition409JSONResponse) VisitPublish
 type PublishQuestionnairePublicDefinition503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response PublishQuestionnairePublicDefinition503JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteLegacyWechatPayProductRequestObject struct {
+	ProductId ProductID `json:"product_id"`
+	Params    DeleteLegacyWechatPayProductParams
+	Body      *DeleteLegacyWechatPayProductJSONRequestBody
+}
+
+type DeleteLegacyWechatPayProductResponseObject interface {
+	VisitDeleteLegacyWechatPayProductResponse(w http.ResponseWriter) error
+}
+
+type DeleteLegacyWechatPayProduct200JSONResponse LocalProductLifecycleDelete
+
+func (response DeleteLegacyWechatPayProduct200JSONResponse) VisitDeleteLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteLegacyWechatPayProduct400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DeleteLegacyWechatPayProduct400JSONResponse) VisitDeleteLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteLegacyWechatPayProduct401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteLegacyWechatPayProduct401JSONResponse) VisitDeleteLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteLegacyWechatPayProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteLegacyWechatPayProduct403JSONResponse) VisitDeleteLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteLegacyWechatPayProduct404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteLegacyWechatPayProduct404JSONResponse) VisitDeleteLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteLegacyWechatPayProduct409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DeleteLegacyWechatPayProduct409JSONResponse) VisitDeleteLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteLegacyWechatPayProduct422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response DeleteLegacyWechatPayProduct422JSONResponse) VisitDeleteLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteLegacyWechatPayProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response DeleteLegacyWechatPayProduct503JSONResponse) VisitDeleteLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyLegacyWechatPayProductRequestObject struct {
+	ProductId ProductID `json:"product_id"`
+	Params    CopyLegacyWechatPayProductParams
+	Body      *CopyLegacyWechatPayProductJSONRequestBody
+}
+
+type CopyLegacyWechatPayProductResponseObject interface {
+	VisitCopyLegacyWechatPayProductResponse(w http.ResponseWriter) error
+}
+
+type CopyLegacyWechatPayProduct201JSONResponse LocalProductLifecycleProduct
+
+func (response CopyLegacyWechatPayProduct201JSONResponse) VisitCopyLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyLegacyWechatPayProduct400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CopyLegacyWechatPayProduct400JSONResponse) VisitCopyLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyLegacyWechatPayProduct401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CopyLegacyWechatPayProduct401JSONResponse) VisitCopyLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyLegacyWechatPayProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CopyLegacyWechatPayProduct403JSONResponse) VisitCopyLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyLegacyWechatPayProduct404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CopyLegacyWechatPayProduct404JSONResponse) VisitCopyLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyLegacyWechatPayProduct409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CopyLegacyWechatPayProduct409JSONResponse) VisitCopyLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyLegacyWechatPayProduct422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response CopyLegacyWechatPayProduct422JSONResponse) VisitCopyLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CopyLegacyWechatPayProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CopyLegacyWechatPayProduct503JSONResponse) VisitCopyLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableLegacyWechatPayProductRequestObject struct {
+	ProductId ProductID `json:"product_id"`
+	Params    DisableLegacyWechatPayProductParams
+	Body      *DisableLegacyWechatPayProductJSONRequestBody
+}
+
+type DisableLegacyWechatPayProductResponseObject interface {
+	VisitDisableLegacyWechatPayProductResponse(w http.ResponseWriter) error
+}
+
+type DisableLegacyWechatPayProduct200JSONResponse LocalProductLifecycleProduct
+
+func (response DisableLegacyWechatPayProduct200JSONResponse) VisitDisableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableLegacyWechatPayProduct400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DisableLegacyWechatPayProduct400JSONResponse) VisitDisableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableLegacyWechatPayProduct401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DisableLegacyWechatPayProduct401JSONResponse) VisitDisableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableLegacyWechatPayProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DisableLegacyWechatPayProduct403JSONResponse) VisitDisableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableLegacyWechatPayProduct404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DisableLegacyWechatPayProduct404JSONResponse) VisitDisableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableLegacyWechatPayProduct409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DisableLegacyWechatPayProduct409JSONResponse) VisitDisableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableLegacyWechatPayProduct422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response DisableLegacyWechatPayProduct422JSONResponse) VisitDisableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DisableLegacyWechatPayProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response DisableLegacyWechatPayProduct503JSONResponse) VisitDisableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableLegacyWechatPayProductRequestObject struct {
+	ProductId ProductID `json:"product_id"`
+	Params    EnableLegacyWechatPayProductParams
+	Body      *EnableLegacyWechatPayProductJSONRequestBody
+}
+
+type EnableLegacyWechatPayProductResponseObject interface {
+	VisitEnableLegacyWechatPayProductResponse(w http.ResponseWriter) error
+}
+
+type EnableLegacyWechatPayProduct200JSONResponse LocalProductLifecycleProduct
+
+func (response EnableLegacyWechatPayProduct200JSONResponse) VisitEnableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableLegacyWechatPayProduct400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response EnableLegacyWechatPayProduct400JSONResponse) VisitEnableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableLegacyWechatPayProduct401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response EnableLegacyWechatPayProduct401JSONResponse) VisitEnableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableLegacyWechatPayProduct403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response EnableLegacyWechatPayProduct403JSONResponse) VisitEnableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableLegacyWechatPayProduct404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response EnableLegacyWechatPayProduct404JSONResponse) VisitEnableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableLegacyWechatPayProduct409JSONResponse struct{ ConflictJSONResponse }
+
+func (response EnableLegacyWechatPayProduct409JSONResponse) VisitEnableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableLegacyWechatPayProduct422JSONResponse struct {
+	UnprocessableEntityJSONResponse
+}
+
+func (response EnableLegacyWechatPayProduct422JSONResponse) VisitEnableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type EnableLegacyWechatPayProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response EnableLegacyWechatPayProduct503JSONResponse) VisitEnableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyWechatPayProductShareRequestObject struct {
+	ProductId ProductID `json:"product_id"`
+}
+
+type GetLegacyWechatPayProductShareResponseObject interface {
+	VisitGetLegacyWechatPayProductShareResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyWechatPayProductShare200JSONResponse LocalProductLifecycleShare
+
+func (response GetLegacyWechatPayProductShare200JSONResponse) VisitGetLegacyWechatPayProductShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyWechatPayProductShare400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetLegacyWechatPayProductShare400JSONResponse) VisitGetLegacyWechatPayProductShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyWechatPayProductShare401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyWechatPayProductShare401JSONResponse) VisitGetLegacyWechatPayProductShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyWechatPayProductShare403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyWechatPayProductShare403JSONResponse) VisitGetLegacyWechatPayProductShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyWechatPayProductShare404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetLegacyWechatPayProductShare404JSONResponse) VisitGetLegacyWechatPayProductShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyWechatPayProductShare503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetLegacyWechatPayProductShare503JSONResponse) VisitGetLegacyWechatPayProductShareResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -14027,6 +15000,21 @@ type StrictServerInterface interface {
 	// Publish an immutable local anonymous public survey snapshot
 	// (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
 	PublishQuestionnairePublicDefinition(ctx context.Context, request PublishQuestionnairePublicDefinitionRequestObject) (PublishQuestionnairePublicDefinitionResponseObject, error)
+	// Delete only an unreferenced CRM-local draft product
+	// (DELETE /api/admin/wechat-pay/products/{product_id})
+	DeleteLegacyWechatPayProduct(ctx context.Context, request DeleteLegacyWechatPayProductRequestObject) (DeleteLegacyWechatPayProductResponseObject, error)
+	// Copy one CRM-local WeChat-pay product into a disabled draft
+	// (POST /api/admin/wechat-pay/products/{product_id}/copy)
+	CopyLegacyWechatPayProduct(ctx context.Context, request CopyLegacyWechatPayProductRequestObject) (CopyLegacyWechatPayProductResponseObject, error)
+	// Disable one CRM-local WeChat-pay product without provider effects
+	// (POST /api/admin/wechat-pay/products/{product_id}/disable)
+	DisableLegacyWechatPayProduct(ctx context.Context, request DisableLegacyWechatPayProductRequestObject) (DisableLegacyWechatPayProductResponseObject, error)
+	// Enable one CRM-local WeChat-pay product without provider effects
+	// (POST /api/admin/wechat-pay/products/{product_id}/enable)
+	EnableLegacyWechatPayProduct(ctx context.Context, request EnableLegacyWechatPayProductRequestObject) (EnableLegacyWechatPayProductResponseObject, error)
+	// Read a closed local share descriptor without claiming a public purchase route
+	// (GET /api/admin/wechat-pay/products/{product_id}/share)
+	GetLegacyWechatPayProductShare(ctx context.Context, request GetLegacyWechatPayProductShareRequestObject) (GetLegacyWechatPayProductShareResponseObject, error)
 	// Read one immutable anonymous public survey definition
 	// (GET /api/public/questionnaires/{slug})
 	GetPublicSurveyDefinition(ctx context.Context, request GetPublicSurveyDefinitionRequestObject) (GetPublicSurveyDefinitionResponseObject, error)
@@ -14466,6 +15454,168 @@ func (sh *strictHandler) PublishQuestionnairePublicDefinition(w http.ResponseWri
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PublishQuestionnairePublicDefinitionResponseObject); ok {
 		if err := validResponse.VisitPublishQuestionnairePublicDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteLegacyWechatPayProduct operation middleware
+func (sh *strictHandler) DeleteLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params DeleteLegacyWechatPayProductParams) {
+	var request DeleteLegacyWechatPayProductRequestObject
+
+	request.ProductId = productId
+	request.Params = params
+
+	var body DeleteLegacyWechatPayProductJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteLegacyWechatPayProduct(ctx, request.(DeleteLegacyWechatPayProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteLegacyWechatPayProduct")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteLegacyWechatPayProductResponseObject); ok {
+		if err := validResponse.VisitDeleteLegacyWechatPayProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CopyLegacyWechatPayProduct operation middleware
+func (sh *strictHandler) CopyLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params CopyLegacyWechatPayProductParams) {
+	var request CopyLegacyWechatPayProductRequestObject
+
+	request.ProductId = productId
+	request.Params = params
+
+	var body CopyLegacyWechatPayProductJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CopyLegacyWechatPayProduct(ctx, request.(CopyLegacyWechatPayProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CopyLegacyWechatPayProduct")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CopyLegacyWechatPayProductResponseObject); ok {
+		if err := validResponse.VisitCopyLegacyWechatPayProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DisableLegacyWechatPayProduct operation middleware
+func (sh *strictHandler) DisableLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params DisableLegacyWechatPayProductParams) {
+	var request DisableLegacyWechatPayProductRequestObject
+
+	request.ProductId = productId
+	request.Params = params
+
+	var body DisableLegacyWechatPayProductJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DisableLegacyWechatPayProduct(ctx, request.(DisableLegacyWechatPayProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DisableLegacyWechatPayProduct")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DisableLegacyWechatPayProductResponseObject); ok {
+		if err := validResponse.VisitDisableLegacyWechatPayProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// EnableLegacyWechatPayProduct operation middleware
+func (sh *strictHandler) EnableLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params EnableLegacyWechatPayProductParams) {
+	var request EnableLegacyWechatPayProductRequestObject
+
+	request.ProductId = productId
+	request.Params = params
+
+	var body EnableLegacyWechatPayProductJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.EnableLegacyWechatPayProduct(ctx, request.(EnableLegacyWechatPayProductRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "EnableLegacyWechatPayProduct")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(EnableLegacyWechatPayProductResponseObject); ok {
+		if err := validResponse.VisitEnableLegacyWechatPayProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyWechatPayProductShare operation middleware
+func (sh *strictHandler) GetLegacyWechatPayProductShare(w http.ResponseWriter, r *http.Request, productId ProductID) {
+	var request GetLegacyWechatPayProductShareRequestObject
+
+	request.ProductId = productId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyWechatPayProductShare(ctx, request.(GetLegacyWechatPayProductShareRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyWechatPayProductShare")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyWechatPayProductShareResponseObject); ok {
+		if err := validResponse.VisitGetLegacyWechatPayProductShareResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

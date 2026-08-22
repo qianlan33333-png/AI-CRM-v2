@@ -15,6 +15,8 @@ func TestLocalProductLifecycleSQLContractIsSafeByConstruction(t *testing.T) {
 	for _, fragment := range []string{
 		"-- name: UpdateLocalProductLifecycle :execrows",
 		"-- name: DeleteLocalProductIfSafe :one",
+		"local_lifecycle = command.payload->>'local_lifecycle'",
+		"product.local_lifecycle = 'draft'",
 		"product.version = (command.payload->>'expected_version')::bigint",
 		"product_local_entitlements",
 		"coupon_targets",

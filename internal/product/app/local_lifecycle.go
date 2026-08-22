@@ -47,6 +47,7 @@ type LocalProductLifecycleStore interface {
 type LocalProductLifecycleStoreUpdate struct {
 	ID                    productport.ID
 	ExpectedVersion       int64
+	LocalLifecycle        productport.LocalProductLifecycle
 	LegacyAdminProjection json.RawMessage
 }
 
@@ -83,6 +84,7 @@ func (service *LocalProductLifecycleService) SetLocalProductEnabled(ctx context.
 		target = productport.LocalProductEnabled
 	}
 	reservation := localProductLifecycleReservation(normalized.Actor, normalized.IdempotencyKey, digest, now)
+	reservation.Operation = "lifecycle"
 	var result productport.LocalProduct
 	err = service.uow.Within(ctx, func(tx context.Context) error {
 		receipt, owned, replayErr := service.reserveLocalProductLifecycle(tx, reservation)
@@ -119,7 +121,7 @@ func (service *LocalProductLifecycleService) SetLocalProductEnabled(ctx context.
 			return projectionErr
 		}
 		updated, updateErr := service.store.UpdateLocalProductLifecycle(tx, LocalProductLifecycleStoreUpdate{
-			ID: normalized.ID, ExpectedVersion: normalized.ExpectedVersion, LegacyAdminProjection: projection,
+			ID: normalized.ID, ExpectedVersion: normalized.ExpectedVersion, LocalLifecycle: target, LegacyAdminProjection: projection,
 		}, now)
 		if updateErr != nil {
 			return updateErr
@@ -154,7 +156,7 @@ func (service *LocalProductLifecycleService) CopyLocalProduct(ctx context.Contex
 
 	actorScope := localProductActorScope(normalized.Actor)
 	reservation := localProductLifecycleReservation(normalized.Actor, normalized.IdempotencyKey, digest, now)
-	reservation.Operation = "create"
+	reservation.Operation = "copy"
 	var result productport.LocalProduct
 	err = service.uow.Within(ctx, func(tx context.Context) error {
 		receipt, owned, replayErr := service.reserveLocalProductLifecycle(tx, reservation)
@@ -233,6 +235,7 @@ func (service *LocalProductLifecycleService) DeleteLocalProduct(ctx context.Cont
 	}
 
 	reservation := localProductLifecycleReservation(normalized.Actor, normalized.IdempotencyKey, digest, now)
+	reservation.Operation = "delete"
 	var result productport.DeleteLocalProductResult
 	err = service.uow.Within(ctx, func(tx context.Context) error {
 		receipt, owned, replayErr := service.reserveLocalProductLifecycle(tx, reservation)
@@ -444,6 +447,22 @@ func projectLocalProduct(product productport.Product) (productport.LocalProduct,
 	lifecycle, enabled, err := localProductLifecycleFromProjection(product.LegacyAdminProjection)
 	if err != nil {
 		return productport.LocalProduct{}, err
+	}
+	if product.LocalLifecycle != "" {
+		switch product.LocalLifecycle {
+		case productport.LocalProductDraft:
+			lifecycle, enabled = productport.LocalProductDraft, false
+		case productport.LocalProductDisabled:
+			lifecycle, enabled = productport.LocalProductDisabled, false
+		case productport.LocalProductEnabled:
+			lifecycle, enabled = productport.LocalProductEnabled, true
+		default:
+			return productport.LocalProduct{}, ErrUnavailable
+		}
+		projectionLifecycle, projectionEnabled, projectionErr := localProductLifecycleFromProjection(product.LegacyAdminProjection)
+		if projectionErr != nil || projectionLifecycle != lifecycle || projectionEnabled != enabled {
+			return productport.LocalProduct{}, ErrUnavailable
+		}
 	}
 	result := productport.LocalProduct{
 		ID: product.ID, ProductCode: product.ProductCode, Name: product.Name, Description: product.Description,

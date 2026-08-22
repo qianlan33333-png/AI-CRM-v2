@@ -212,13 +212,20 @@ var p4Customer360ResponseSchemas = map[string]string{
 
 var p4ProductOperations = map[string]bool{
 	"listProducts": true, "createProduct": true, "getProduct": true, "getLegacyProductListPage": true,
+	"enableLegacyWechatPayProduct": true, "disableLegacyWechatPayProduct": true,
+	"copyLegacyWechatPayProduct": true, "deleteLegacyWechatPayProduct": true,
+	"getLegacyWechatPayProductShare": true,
 }
 
 var p4ProductLegacyMappings = map[string][]string{
-	"listProducts":             {"LEGACY-API-0525"},
-	"createProduct":            {"LEGACY-API-0526"},
-	"getProduct":               {"LEGACY-API-0530"},
-	"getLegacyProductListPage": {"LEGACY-API-0079"},
+	"listProducts":                  {"LEGACY-API-0525"},
+	"createProduct":                 {"LEGACY-API-0526"},
+	"getProduct":                    {"LEGACY-API-0530"},
+	"getLegacyProductListPage":      {"LEGACY-API-0079"},
+	"enableLegacyWechatPayProduct":  {"LEGACY-S07-167"},
+	"disableLegacyWechatPayProduct": {"LEGACY-S07-168"},
+	"copyLegacyWechatPayProduct":    {"LEGACY-S07-169"},
+	"deleteLegacyWechatPayProduct":  {"LEGACY-S07-170"},
 }
 
 const p4MemberGridManagementEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-MANAGEMENT-2026-08-22"
@@ -605,6 +612,11 @@ var authorizationContracts = map[string]authorizationContract{
 	"createProduct":                              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getProduct":                                 {"products.read", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyProductListPage":                   {"products.read", map[string]string{"admin": "global", "ops": "global"}},
+	"enableLegacyWechatPayProduct":               {"products.write", map[string]string{"admin": "global", "ops": "global"}},
+	"disableLegacyWechatPayProduct":              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
+	"copyLegacyWechatPayProduct":                 {"products.write", map[string]string{"admin": "global", "ops": "global"}},
+	"deleteLegacyWechatPayProduct":               {"products.write", map[string]string{"admin": "global", "ops": "global"}},
+	"getLegacyWechatPayProductShare":             {"products.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createServicePeriodMemberView":              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"updateServicePeriodMemberView":              {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteServicePeriodMemberView":              {"products.write", map[string]string{"admin": "global", "ops": "global"}},

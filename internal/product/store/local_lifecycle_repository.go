@@ -23,7 +23,8 @@ type localProductSafeDeleter interface {
 }
 
 func (repository *CatalogRepository) UpdateLocalProductLifecycle(ctx context.Context, command productapp.LocalProductLifecycleStoreUpdate, now time.Time) (productport.Product, error) {
-	if repository == nil || command.ID < 1 || command.ExpectedVersion < 1 || now.IsZero() || !json.Valid(command.LegacyAdminProjection) {
+	if repository == nil || command.ID < 1 || command.ExpectedVersion < 1 || now.IsZero() || !json.Valid(command.LegacyAdminProjection) ||
+		(command.LocalLifecycle != productport.LocalProductDraft && command.LocalLifecycle != productport.LocalProductDisabled && command.LocalLifecycle != productport.LocalProductEnabled) {
 		return productport.Product{}, productapp.ErrInvalidProduct
 	}
 	querySet, err := queries(ctx)
@@ -39,9 +40,10 @@ func (repository *CatalogRepository) UpdateLocalProductLifecycle(ctx context.Con
 	payload, err := json.Marshal(struct {
 		ProductID             int64           `json:"product_id"`
 		ExpectedVersion       int64           `json:"expected_version"`
+		LocalLifecycle        string          `json:"local_lifecycle"`
 		LegacyAdminProjection json.RawMessage `json:"legacy_admin_projection"`
 		UpdatedAt             time.Time       `json:"updated_at"`
-	}{int64(command.ID), command.ExpectedVersion, command.LegacyAdminProjection, now})
+	}{int64(command.ID), command.ExpectedVersion, string(command.LocalLifecycle), command.LegacyAdminProjection, now})
 	if err != nil {
 		return productport.Product{}, productapp.ErrUnavailable
 	}
