@@ -2763,6 +2763,32 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/channels/{channel_id}/contacts:
+    get:
+      tags: [p4-channel-compat]
+      operationId: listLegacyChannelEntrants
+      summary: List a channel's recent entrants from the closed local Contact projection
+      x-legacy-mapping-ids: [LEGACY-API-0201]
+      x-p4-decision-evidence: P4-S06-002-LOCAL-READ-2026-08-22
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: channel_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: cursor, in: query, schema: { type: string, minLength: 1, maxLength: 256, pattern: '^ce1\.[A-Za-z0-9_-]+$' } }
+      responses:
+        "200":
+          description: Closed local entrant projection; this does not prove provider contact or identity synchronization.
+          content: { application/json: { schema: { $ref: "#/components/schemas/LegacyChannelEntrantsResponse" } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /admin/orders:
     get:
       tags: [p4-order-compat]
@@ -6714,6 +6740,27 @@ components:
         reason: { type: string, enum: [channel_created, channel_updated] }
         source: { type: string, enum: [ai_crm_next] }
         fallback_used: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyChannelEntrant:
+      type: object
+      additionalProperties: false
+      required: [customer_id, display_name, added_at, last_interact_at]
+      properties:
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        display_name: { type: string, minLength: 1, maxLength: 200 }
+        added_at: { type: string, format: date-time }
+        last_interact_at: { type: string, format: date-time, nullable: true }
+    LegacyChannelEntrantsResponse:
+      type: object
+      additionalProperties: false
+      required: [channel_id, items, limit, has_more, next_cursor, local_projection, real_external_call_executed]
+      properties:
+        channel_id: { type: integer, format: int64, minimum: 1 }
+        items: { type: array, maxItems: 50, items: { $ref: "#/components/schemas/LegacyChannelEntrant" } }
+        limit: { type: integer, minimum: 1, maximum: 50 }
+        has_more: { type: boolean }
+        next_cursor: { type: string, maxLength: 256 }
+        local_projection: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
     LegacyCustomer:
       type: object

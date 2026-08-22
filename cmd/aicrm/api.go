@@ -636,6 +636,30 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		surveyAbuseKey,
 	)
 	channelService := contactapp.NewChannelServiceWithImageReferences(uow, contactstore.NewChannelRepository(), mediaRepository, eventstore.NewAppender())
+	channelEntrantsCursor, err := contactapp.NewChannelEntrantsCursorCodec(config.Identity.HMACKey.Value())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	channelEntrantsService, err := contactapp.NewChannelEntrantsService(
+		uow,
+		contactstore.NewChannelEntrantsRepository(),
+		channelEntrantsCursor,
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	channelEntrantsHandler, err := contacthttp.NewChannelEntrantsHandler(channelEntrantsService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	channelEntrantsFragment, err := contacthttp.NewChannelEntrantsRouteFragment(channelEntrantsHandler)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	legacyTagService := contactapp.NewLegacyTagCatalogService(uow, contactstore.NewLegacyTagCatalogRepository(), eventstore.NewAppender())
 	localTagCatalogHandler, err := contacthttp.NewLocalTagCatalogHandler(legacyTagService)
 	if err != nil {
@@ -804,6 +828,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.legacyTagSync = legacyTagSyncService
 	legacyHandler.servicePeriod = servicePeriodHandler
 	legacyHandler.memberGrid = memberGridFragment
+	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.legacyTagLive = legacyTagLiveService
 	legacyHandler.legacyTagStatus = legacyTagStatusService
@@ -1434,6 +1459,17 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				if err = registerLegacy(route.method, route.pattern, route.capability, false, legacy.memberGrid); err != nil {
 					return nil, err
 				}
+			}
+		}
+		if legacy.channelEntrants != nil {
+			if err = registerLegacy(
+				http.MethodGet,
+				contacthttp.ChannelEntrantsRoutePrefix+"/{channel_id}/contacts",
+				authport.CapabilityCustomersRead,
+				false,
+				legacy.channelEntrants,
+			); err != nil {
+				return nil, err
 			}
 		}
 		for _, route := range []struct {
