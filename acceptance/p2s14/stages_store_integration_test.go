@@ -130,7 +130,15 @@ CREATE TABLE acceptance_fixtures.stages (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   name TEXT NOT NULL,
   sort_order INTEGER NOT NULL,
-  config JSONB NOT NULL DEFAULT '{}'
+  config JSONB NOT NULL DEFAULT '{}',
+  archived_at TIMESTAMPTZ,
+  archived_by TEXT,
+  CONSTRAINT stages_archive_pair CHECK (
+    (archived_at IS NULL AND archived_by IS NULL)
+    OR (archived_at IS NOT NULL AND archived_by IS NOT NULL
+        AND btrim(archived_by) = archived_by AND archived_by <> ''
+        AND char_length(archived_by) <= 200)
+  )
 )`)
 	if err != nil {
 		t.Fatalf("create acceptance stages table: %v", err)
