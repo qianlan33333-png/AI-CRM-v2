@@ -5,6 +5,357 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export type GroupOpsErrorErrorCode =
+  (typeof GroupOpsErrorErrorCode)[keyof typeof GroupOpsErrorErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsErrorErrorCode = {
+  authentication_required: "authentication_required",
+  permission_denied: "permission_denied",
+  invalid_plan_id: "invalid_plan_id",
+  invalid_staff_id: "invalid_staff_id",
+  invalid_node_id: "invalid_node_id",
+  invalid_asset_reference: "invalid_asset_reference",
+  invalid_page: "invalid_page",
+  invalid_idempotency_key: "invalid_idempotency_key",
+  invalid_request: "invalid_request",
+  plan_not_found: "plan_not_found",
+  operations_conflict: "operations_conflict",
+  group_ops_unavailable: "group_ops_unavailable",
+  method_not_allowed: "method_not_allowed",
+} as const;
+
+export type GroupOpsErrorError = {
+  code: GroupOpsErrorErrorCode;
+};
+
+export interface GroupOpsError {
+  ok: boolean;
+  error: GroupOpsErrorError;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type GroupOpsPlanStatus =
+  (typeof GroupOpsPlanStatus)[keyof typeof GroupOpsPlanStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsPlanStatus = {
+  draft: "draft",
+  active: "active",
+  paused: "paused",
+  archived: "archived",
+} as const;
+
+export interface GroupOpsPlan {
+  /**
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  plan_id: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  name: string;
+  status: GroupOpsPlanStatus;
+  /** @minimum 1 */
+  revision: number;
+  /** @minimum 1 */
+  created_by: number;
+  /** @minimum 1 */
+  updated_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GroupOpsMember {
+  /** @minimum 1 */
+  staff_id: number;
+}
+
+export interface GroupOpsGroupAsset {
+  /**
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  group_asset_id: string;
+  /**
+   * @maxLength 128
+   * @pattern ^[A-Za-z0-9._:-]{1,128}$
+   */
+  asset_reference: string;
+}
+
+export type GroupOpsNodeKind =
+  (typeof GroupOpsNodeKind)[keyof typeof GroupOpsNodeKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsNodeKind = {
+  message: "message",
+  delay: "delay",
+} as const;
+
+export interface GroupOpsNode {
+  /**
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  node_id: string;
+  /**
+   * @minimum 1
+   * @maximum 1000
+   */
+  position: number;
+  kind: GroupOpsNodeKind;
+  /**
+   * @minLength 1
+   * @maxLength 1000
+   */
+  message_text?: string;
+  /**
+   * @minimum 1
+   * @maximum 10080
+   */
+  delay_minutes?: number;
+}
+
+export type GroupOpsWebhookDescriptorDescription =
+  (typeof GroupOpsWebhookDescriptorDescription)[keyof typeof GroupOpsWebhookDescriptorDescription];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorDescription = {
+  not_configured: "not configured",
+  local_opaque_reference_only: "local opaque reference only",
+} as const;
+
+export interface GroupOpsWebhookDescriptor {
+  configured: boolean;
+  /**
+   * @maxLength 128
+   * @pattern ^[A-Za-z0-9._:-]{1,128}$
+   */
+  reference?: string;
+  description: GroupOpsWebhookDescriptorDescription;
+}
+
+export interface GroupOpsSafety {
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface GroupOpsPlanDetail {
+  plan: GroupOpsPlan;
+  members: GroupOpsMember[];
+  group_assets: GroupOpsGroupAsset[];
+  nodes: GroupOpsNode[];
+  webhook_descriptor: GroupOpsWebhookDescriptor;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface GroupOpsPlanPage {
+  items: GroupOpsPlan[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  has_more: boolean;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface GroupOpsMemberPage {
+  items: GroupOpsMember[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  has_more: boolean;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface GroupOpsGroupAssetPage {
+  items: GroupOpsGroupAsset[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  has_more: boolean;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface GroupOpsNodePage {
+  items: GroupOpsNode[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  has_more: boolean;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type GroupOpsWebhookDescriptorResponseDescription =
+  (typeof GroupOpsWebhookDescriptorResponseDescription)[keyof typeof GroupOpsWebhookDescriptorResponseDescription];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsWebhookDescriptorResponseDescription = {
+  not_configured: "not configured",
+  local_opaque_reference_only: "local opaque reference only",
+} as const;
+
+export interface GroupOpsWebhookDescriptorResponse {
+  configured: boolean;
+  /**
+   * @maxLength 128
+   * @pattern ^[A-Za-z0-9._:-]{1,128}$
+   */
+  reference?: string;
+  description: GroupOpsWebhookDescriptorResponseDescription;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type GroupOpsContentValidationIssueCodesItem =
+  (typeof GroupOpsContentValidationIssueCodesItem)[keyof typeof GroupOpsContentValidationIssueCodesItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsContentValidationIssueCodesItem = {
+  group_asset_required: "group_asset_required",
+  member_required: "member_required",
+  node_required: "node_required",
+  invalid_node: "invalid_node",
+} as const;
+
+export interface GroupOpsContentValidation {
+  valid: boolean;
+  issue_codes: GroupOpsContentValidationIssueCodesItem[];
+  preview_lines: string[];
+  /** @minimum 0 */
+  node_count: number;
+  /** @minimum 0 */
+  group_asset_count: number;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface GroupOpsPlanCreateRequest {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  name: string;
+}
+
+export interface GroupOpsPlanUpdateRequest {
+  /** @minimum 1 */
+  expected_revision: number;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  name: string;
+}
+
+export interface GroupOpsRevisionRequest {
+  /** @minimum 1 */
+  expected_revision: number;
+}
+
+export type GroupOpsTransitionRequest = GroupOpsRevisionRequest;
+
+export interface GroupOpsMemberRequest {
+  /** @minimum 1 */
+  expected_revision: number;
+  /** @minimum 1 */
+  staff_id: number;
+}
+
+export interface GroupOpsGroupAssetRequest {
+  /** @minimum 1 */
+  expected_revision: number;
+  /**
+   * @maxLength 128
+   * @pattern ^[A-Za-z0-9._:-]{1,128}$
+   */
+  asset_reference: string;
+}
+
+export type GroupOpsNodeRequestKind =
+  (typeof GroupOpsNodeRequestKind)[keyof typeof GroupOpsNodeRequestKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsNodeRequestKind = {
+  message: "message",
+  delay: "delay",
+} as const;
+
+export interface GroupOpsNodeRequest {
+  /** @minimum 1 */
+  expected_revision: number;
+  /**
+   * @minimum 1
+   * @maximum 1000
+   */
+  position: number;
+  kind: GroupOpsNodeRequestKind;
+  /**
+   * @minLength 1
+   * @maxLength 1000
+   */
+  message_text?: string;
+  /**
+   * @minimum 1
+   * @maximum 10080
+   */
+  delay_minutes?: number;
+}
+
+export interface GroupOpsWebhookDescriptorRequest {
+  /** @minimum 1 */
+  expected_revision: number;
+  /**
+   * @maxLength 128
+   * @pattern ^[A-Za-z0-9._:-]{1,128}$
+   */
+  reference?: string;
+}
+
 export interface CloudCampaignError {
   /** @minLength 1 */
   code: string;
@@ -10743,6 +11094,10 @@ export type CSRFTokenParameter = string;
  */
 export type IdempotencyKeyParameter = string;
 
+export type GroupOpsLimitParameter = number;
+
+export type GroupOpsOffsetParameter = number;
+
 /**
  * Opaque keyset cursor; clients must not parse or synthesize it.
  */
@@ -11480,6 +11835,58 @@ export type ListLegacyQuestionnairesParams = {
    * @maximum 1000000
    */
   offset?: number;
+};
+
+export type ListGroupOpsPlansParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: GroupOpsLimitParameter;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: GroupOpsOffsetParameter;
+};
+
+export type ListGroupOpsPlanMembersParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: GroupOpsLimitParameter;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: GroupOpsOffsetParameter;
+};
+
+export type ListGroupOpsPlanGroupAssetsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: GroupOpsLimitParameter;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: GroupOpsOffsetParameter;
+};
+
+export type ListGroupOpsPlanNodesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: GroupOpsLimitParameter;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: GroupOpsOffsetParameter;
 };
 
 export type ListSurveyExternalPushLogsParams = {
@@ -25954,6 +26361,1689 @@ export const getLegacyQuestionnaireResults = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyQuestionnaireResultsResponse;
+};
+
+/**
+ * @summary List local-only Group Ops plans in deterministic updated-at order
+ */
+export type listGroupOpsPlansResponse200 = {
+  data: GroupOpsPlanPage;
+  status: 200;
+};
+
+export type listGroupOpsPlansResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type listGroupOpsPlansResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listGroupOpsPlansResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listGroupOpsPlansResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type listGroupOpsPlansResponseSuccess = listGroupOpsPlansResponse200 & {
+  headers: Headers;
+};
+export type listGroupOpsPlansResponseError = (
+  | listGroupOpsPlansResponse400
+  | listGroupOpsPlansResponse401
+  | listGroupOpsPlansResponse403
+  | listGroupOpsPlansResponse503
+) & {
+  headers: Headers;
+};
+
+export type listGroupOpsPlansResponse =
+  listGroupOpsPlansResponseSuccess | listGroupOpsPlansResponseError;
+
+export const getListGroupOpsPlansUrl = (params?: ListGroupOpsPlansParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-conversion/group-ops/plans?${stringifiedParams}`
+    : `/api/admin/automation-conversion/group-ops/plans`;
+};
+
+export const listGroupOpsPlans = async (
+  params?: ListGroupOpsPlansParams,
+  options?: RequestInit,
+): Promise<listGroupOpsPlansResponse> => {
+  const res = await fetch(getListGroupOpsPlansUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listGroupOpsPlansResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listGroupOpsPlansResponse;
+};
+
+/**
+ * @summary Create a local draft Group Ops plan
+ */
+export type createGroupOpsPlanResponse201 = {
+  data: GroupOpsPlanDetail;
+  status: 201;
+};
+
+export type createGroupOpsPlanResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type createGroupOpsPlanResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createGroupOpsPlanResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createGroupOpsPlanResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type createGroupOpsPlanResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type createGroupOpsPlanResponseSuccess =
+  createGroupOpsPlanResponse201 & {
+    headers: Headers;
+  };
+export type createGroupOpsPlanResponseError = (
+  | createGroupOpsPlanResponse400
+  | createGroupOpsPlanResponse401
+  | createGroupOpsPlanResponse403
+  | createGroupOpsPlanResponse409
+  | createGroupOpsPlanResponse503
+) & {
+  headers: Headers;
+};
+
+export type createGroupOpsPlanResponse =
+  createGroupOpsPlanResponseSuccess | createGroupOpsPlanResponseError;
+
+export const getCreateGroupOpsPlanUrl = () => {
+  return `/api/admin/automation-conversion/group-ops/plans`;
+};
+
+export const createGroupOpsPlan = async (
+  groupOpsPlanCreateRequest: GroupOpsPlanCreateRequest,
+  options?: RequestInit,
+): Promise<createGroupOpsPlanResponse> => {
+  const res = await fetch(getCreateGroupOpsPlanUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(groupOpsPlanCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createGroupOpsPlanResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createGroupOpsPlanResponse;
+};
+
+/**
+ * @summary Read one local-only Group Ops plan
+ */
+export type getGroupOpsPlanResponse200 = {
+  data: GroupOpsPlanDetail;
+  status: 200;
+};
+
+export type getGroupOpsPlanResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type getGroupOpsPlanResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getGroupOpsPlanResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getGroupOpsPlanResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type getGroupOpsPlanResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type getGroupOpsPlanResponseSuccess = getGroupOpsPlanResponse200 & {
+  headers: Headers;
+};
+export type getGroupOpsPlanResponseError = (
+  | getGroupOpsPlanResponse400
+  | getGroupOpsPlanResponse401
+  | getGroupOpsPlanResponse403
+  | getGroupOpsPlanResponse404
+  | getGroupOpsPlanResponse503
+) & {
+  headers: Headers;
+};
+
+export type getGroupOpsPlanResponse =
+  getGroupOpsPlanResponseSuccess | getGroupOpsPlanResponseError;
+
+export const getGetGroupOpsPlanUrl = (planId: string) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}`;
+};
+
+export const getGroupOpsPlan = async (
+  planId: string,
+  options?: RequestInit,
+): Promise<getGroupOpsPlanResponse> => {
+  const res = await fetch(getGetGroupOpsPlanUrl(planId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getGroupOpsPlanResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getGroupOpsPlanResponse;
+};
+
+/**
+ * @summary Update a draft local Group Ops plan with CAS
+ */
+export type updateGroupOpsPlanResponse200 = {
+  data: GroupOpsPlanDetail;
+  status: 200;
+};
+
+export type updateGroupOpsPlanResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type updateGroupOpsPlanResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateGroupOpsPlanResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateGroupOpsPlanResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type updateGroupOpsPlanResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type updateGroupOpsPlanResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type updateGroupOpsPlanResponseSuccess =
+  updateGroupOpsPlanResponse200 & {
+    headers: Headers;
+  };
+export type updateGroupOpsPlanResponseError = (
+  | updateGroupOpsPlanResponse400
+  | updateGroupOpsPlanResponse401
+  | updateGroupOpsPlanResponse403
+  | updateGroupOpsPlanResponse404
+  | updateGroupOpsPlanResponse409
+  | updateGroupOpsPlanResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateGroupOpsPlanResponse =
+  updateGroupOpsPlanResponseSuccess | updateGroupOpsPlanResponseError;
+
+export const getUpdateGroupOpsPlanUrl = (planId: string) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}`;
+};
+
+export const updateGroupOpsPlan = async (
+  planId: string,
+  groupOpsPlanUpdateRequest: GroupOpsPlanUpdateRequest,
+  options?: RequestInit,
+): Promise<updateGroupOpsPlanResponse> => {
+  const res = await fetch(getUpdateGroupOpsPlanUrl(planId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(groupOpsPlanUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateGroupOpsPlanResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateGroupOpsPlanResponse;
+};
+
+/**
+ * @summary Activate a validated local plan without scheduling or dispatching it
+ */
+export type activateGroupOpsPlanResponse200 = {
+  data: GroupOpsPlanDetail;
+  status: 200;
+};
+
+export type activateGroupOpsPlanResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type activateGroupOpsPlanResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type activateGroupOpsPlanResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type activateGroupOpsPlanResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type activateGroupOpsPlanResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type activateGroupOpsPlanResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type activateGroupOpsPlanResponseSuccess =
+  activateGroupOpsPlanResponse200 & {
+    headers: Headers;
+  };
+export type activateGroupOpsPlanResponseError = (
+  | activateGroupOpsPlanResponse400
+  | activateGroupOpsPlanResponse401
+  | activateGroupOpsPlanResponse403
+  | activateGroupOpsPlanResponse404
+  | activateGroupOpsPlanResponse409
+  | activateGroupOpsPlanResponse503
+) & {
+  headers: Headers;
+};
+
+export type activateGroupOpsPlanResponse =
+  activateGroupOpsPlanResponseSuccess | activateGroupOpsPlanResponseError;
+
+export const getActivateGroupOpsPlanUrl = (planId: string) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}/activate`;
+};
+
+export const activateGroupOpsPlan = async (
+  planId: string,
+  groupOpsTransitionRequest: GroupOpsTransitionRequest,
+  options?: RequestInit,
+): Promise<activateGroupOpsPlanResponse> => {
+  const res = await fetch(getActivateGroupOpsPlanUrl(planId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(groupOpsTransitionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: activateGroupOpsPlanResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as activateGroupOpsPlanResponse;
+};
+
+/**
+ * @summary Pause a local active plan without altering any external runtime
+ */
+export type pauseGroupOpsPlanResponse200 = {
+  data: GroupOpsPlanDetail;
+  status: 200;
+};
+
+export type pauseGroupOpsPlanResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type pauseGroupOpsPlanResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type pauseGroupOpsPlanResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type pauseGroupOpsPlanResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type pauseGroupOpsPlanResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type pauseGroupOpsPlanResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type pauseGroupOpsPlanResponseSuccess = pauseGroupOpsPlanResponse200 & {
+  headers: Headers;
+};
+export type pauseGroupOpsPlanResponseError = (
+  | pauseGroupOpsPlanResponse400
+  | pauseGroupOpsPlanResponse401
+  | pauseGroupOpsPlanResponse403
+  | pauseGroupOpsPlanResponse404
+  | pauseGroupOpsPlanResponse409
+  | pauseGroupOpsPlanResponse503
+) & {
+  headers: Headers;
+};
+
+export type pauseGroupOpsPlanResponse =
+  pauseGroupOpsPlanResponseSuccess | pauseGroupOpsPlanResponseError;
+
+export const getPauseGroupOpsPlanUrl = (planId: string) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}/pause`;
+};
+
+export const pauseGroupOpsPlan = async (
+  planId: string,
+  groupOpsTransitionRequest: GroupOpsTransitionRequest,
+  options?: RequestInit,
+): Promise<pauseGroupOpsPlanResponse> => {
+  const res = await fetch(getPauseGroupOpsPlanUrl(planId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(groupOpsTransitionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: pauseGroupOpsPlanResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as pauseGroupOpsPlanResponse;
+};
+
+/**
+ * @summary Archive a local plan; later writes fail closed
+ */
+export type archiveGroupOpsPlanResponse200 = {
+  data: GroupOpsPlanDetail;
+  status: 200;
+};
+
+export type archiveGroupOpsPlanResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type archiveGroupOpsPlanResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type archiveGroupOpsPlanResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type archiveGroupOpsPlanResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type archiveGroupOpsPlanResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type archiveGroupOpsPlanResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type archiveGroupOpsPlanResponseSuccess =
+  archiveGroupOpsPlanResponse200 & {
+    headers: Headers;
+  };
+export type archiveGroupOpsPlanResponseError = (
+  | archiveGroupOpsPlanResponse400
+  | archiveGroupOpsPlanResponse401
+  | archiveGroupOpsPlanResponse403
+  | archiveGroupOpsPlanResponse404
+  | archiveGroupOpsPlanResponse409
+  | archiveGroupOpsPlanResponse503
+) & {
+  headers: Headers;
+};
+
+export type archiveGroupOpsPlanResponse =
+  archiveGroupOpsPlanResponseSuccess | archiveGroupOpsPlanResponseError;
+
+export const getArchiveGroupOpsPlanUrl = (planId: string) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}/archive`;
+};
+
+export const archiveGroupOpsPlan = async (
+  planId: string,
+  groupOpsTransitionRequest: GroupOpsTransitionRequest,
+  options?: RequestInit,
+): Promise<archiveGroupOpsPlanResponse> => {
+  const res = await fetch(getArchiveGroupOpsPlanUrl(planId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(groupOpsTransitionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: archiveGroupOpsPlanResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as archiveGroupOpsPlanResponse;
+};
+
+/**
+ * @summary List local operating members in deterministic staff order
+ */
+export type listGroupOpsPlanMembersResponse200 = {
+  data: GroupOpsMemberPage;
+  status: 200;
+};
+
+export type listGroupOpsPlanMembersResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type listGroupOpsPlanMembersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listGroupOpsPlanMembersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listGroupOpsPlanMembersResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type listGroupOpsPlanMembersResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type listGroupOpsPlanMembersResponseSuccess =
+  listGroupOpsPlanMembersResponse200 & {
+    headers: Headers;
+  };
+export type listGroupOpsPlanMembersResponseError = (
+  | listGroupOpsPlanMembersResponse400
+  | listGroupOpsPlanMembersResponse401
+  | listGroupOpsPlanMembersResponse403
+  | listGroupOpsPlanMembersResponse404
+  | listGroupOpsPlanMembersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listGroupOpsPlanMembersResponse =
+  listGroupOpsPlanMembersResponseSuccess | listGroupOpsPlanMembersResponseError;
+
+export const getListGroupOpsPlanMembersUrl = (
+  planId: string,
+  params?: ListGroupOpsPlanMembersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-conversion/group-ops/plans/${planId}/members?${stringifiedParams}`
+    : `/api/admin/automation-conversion/group-ops/plans/${planId}/members`;
+};
+
+export const listGroupOpsPlanMembers = async (
+  planId: string,
+  params?: ListGroupOpsPlanMembersParams,
+  options?: RequestInit,
+): Promise<listGroupOpsPlanMembersResponse> => {
+  const res = await fetch(getListGroupOpsPlanMembersUrl(planId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listGroupOpsPlanMembersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listGroupOpsPlanMembersResponse;
+};
+
+/**
+ * @summary Add a local operating member to a draft plan
+ */
+export type addGroupOpsPlanMemberResponse200 = {
+  data: GroupOpsPlanDetail;
+  status: 200;
+};
+
+export type addGroupOpsPlanMemberResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type addGroupOpsPlanMemberResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type addGroupOpsPlanMemberResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type addGroupOpsPlanMemberResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type addGroupOpsPlanMemberResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type addGroupOpsPlanMemberResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type addGroupOpsPlanMemberResponseSuccess =
+  addGroupOpsPlanMemberResponse200 & {
+    headers: Headers;
+  };
+export type addGroupOpsPlanMemberResponseError = (
+  | addGroupOpsPlanMemberResponse400
+  | addGroupOpsPlanMemberResponse401
+  | addGroupOpsPlanMemberResponse403
+  | addGroupOpsPlanMemberResponse404
+  | addGroupOpsPlanMemberResponse409
+  | addGroupOpsPlanMemberResponse503
+) & {
+  headers: Headers;
+};
+
+export type addGroupOpsPlanMemberResponse =
+  addGroupOpsPlanMemberResponseSuccess | addGroupOpsPlanMemberResponseError;
+
+export const getAddGroupOpsPlanMemberUrl = (planId: string) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}/members`;
+};
+
+export const addGroupOpsPlanMember = async (
+  planId: string,
+  groupOpsMemberRequest: GroupOpsMemberRequest,
+  options?: RequestInit,
+): Promise<addGroupOpsPlanMemberResponse> => {
+  const res = await fetch(getAddGroupOpsPlanMemberUrl(planId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(groupOpsMemberRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: addGroupOpsPlanMemberResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as addGroupOpsPlanMemberResponse;
+};
+
+/**
+ * @summary Remove a local operating member from a draft plan
+ */
+export type removeGroupOpsPlanMemberResponse200 = {
+  data: GroupOpsPlanDetail;
+  status: 200;
+};
+
+export type removeGroupOpsPlanMemberResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type removeGroupOpsPlanMemberResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type removeGroupOpsPlanMemberResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type removeGroupOpsPlanMemberResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type removeGroupOpsPlanMemberResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type removeGroupOpsPlanMemberResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type removeGroupOpsPlanMemberResponseSuccess =
+  removeGroupOpsPlanMemberResponse200 & {
+    headers: Headers;
+  };
+export type removeGroupOpsPlanMemberResponseError = (
+  | removeGroupOpsPlanMemberResponse400
+  | removeGroupOpsPlanMemberResponse401
+  | removeGroupOpsPlanMemberResponse403
+  | removeGroupOpsPlanMemberResponse404
+  | removeGroupOpsPlanMemberResponse409
+  | removeGroupOpsPlanMemberResponse503
+) & {
+  headers: Headers;
+};
+
+export type removeGroupOpsPlanMemberResponse =
+  | removeGroupOpsPlanMemberResponseSuccess
+  | removeGroupOpsPlanMemberResponseError;
+
+export const getRemoveGroupOpsPlanMemberUrl = (
+  planId: string,
+  staffId: string,
+) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}/members/${staffId}`;
+};
+
+export const removeGroupOpsPlanMember = async (
+  planId: string,
+  staffId: string,
+  groupOpsRevisionRequest: GroupOpsRevisionRequest,
+  options?: RequestInit,
+): Promise<removeGroupOpsPlanMemberResponse> => {
+  const res = await fetch(getRemoveGroupOpsPlanMemberUrl(planId, staffId), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(groupOpsRevisionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: removeGroupOpsPlanMemberResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as removeGroupOpsPlanMemberResponse;
+};
+
+/**
+ * @summary List locally bound opaque group assets in deterministic reference order
+ */
+export type listGroupOpsPlanGroupAssetsResponse200 = {
+  data: GroupOpsGroupAssetPage;
+  status: 200;
+};
+
+export type listGroupOpsPlanGroupAssetsResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type listGroupOpsPlanGroupAssetsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listGroupOpsPlanGroupAssetsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listGroupOpsPlanGroupAssetsResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type listGroupOpsPlanGroupAssetsResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type listGroupOpsPlanGroupAssetsResponseSuccess =
+  listGroupOpsPlanGroupAssetsResponse200 & {
+    headers: Headers;
+  };
+export type listGroupOpsPlanGroupAssetsResponseError = (
+  | listGroupOpsPlanGroupAssetsResponse400
+  | listGroupOpsPlanGroupAssetsResponse401
+  | listGroupOpsPlanGroupAssetsResponse403
+  | listGroupOpsPlanGroupAssetsResponse404
+  | listGroupOpsPlanGroupAssetsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listGroupOpsPlanGroupAssetsResponse =
+  | listGroupOpsPlanGroupAssetsResponseSuccess
+  | listGroupOpsPlanGroupAssetsResponseError;
+
+export const getListGroupOpsPlanGroupAssetsUrl = (
+  planId: string,
+  params?: ListGroupOpsPlanGroupAssetsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-conversion/group-ops/plans/${planId}/group-assets?${stringifiedParams}`
+    : `/api/admin/automation-conversion/group-ops/plans/${planId}/group-assets`;
+};
+
+export const listGroupOpsPlanGroupAssets = async (
+  planId: string,
+  params?: ListGroupOpsPlanGroupAssetsParams,
+  options?: RequestInit,
+): Promise<listGroupOpsPlanGroupAssetsResponse> => {
+  const res = await fetch(getListGroupOpsPlanGroupAssetsUrl(planId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listGroupOpsPlanGroupAssetsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listGroupOpsPlanGroupAssetsResponse;
+};
+
+/**
+ * @summary Bind one opaque local group asset to a draft plan
+ */
+export type addGroupOpsPlanGroupAssetResponse200 = {
+  data: GroupOpsPlanDetail;
+  status: 200;
+};
+
+export type addGroupOpsPlanGroupAssetResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type addGroupOpsPlanGroupAssetResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type addGroupOpsPlanGroupAssetResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type addGroupOpsPlanGroupAssetResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type addGroupOpsPlanGroupAssetResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type addGroupOpsPlanGroupAssetResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type addGroupOpsPlanGroupAssetResponseSuccess =
+  addGroupOpsPlanGroupAssetResponse200 & {
+    headers: Headers;
+  };
+export type addGroupOpsPlanGroupAssetResponseError = (
+  | addGroupOpsPlanGroupAssetResponse400
+  | addGroupOpsPlanGroupAssetResponse401
+  | addGroupOpsPlanGroupAssetResponse403
+  | addGroupOpsPlanGroupAssetResponse404
+  | addGroupOpsPlanGroupAssetResponse409
+  | addGroupOpsPlanGroupAssetResponse503
+) & {
+  headers: Headers;
+};
+
+export type addGroupOpsPlanGroupAssetResponse =
+  | addGroupOpsPlanGroupAssetResponseSuccess
+  | addGroupOpsPlanGroupAssetResponseError;
+
+export const getAddGroupOpsPlanGroupAssetUrl = (planId: string) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}/group-assets`;
+};
+
+export const addGroupOpsPlanGroupAsset = async (
+  planId: string,
+  groupOpsGroupAssetRequest: GroupOpsGroupAssetRequest,
+  options?: RequestInit,
+): Promise<addGroupOpsPlanGroupAssetResponse> => {
+  const res = await fetch(getAddGroupOpsPlanGroupAssetUrl(planId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(groupOpsGroupAssetRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: addGroupOpsPlanGroupAssetResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as addGroupOpsPlanGroupAssetResponse;
+};
+
+/**
+ * @summary Remove one opaque local group asset from a draft plan
+ */
+export type removeGroupOpsPlanGroupAssetResponse200 = {
+  data: GroupOpsPlanDetail;
+  status: 200;
+};
+
+export type removeGroupOpsPlanGroupAssetResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type removeGroupOpsPlanGroupAssetResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type removeGroupOpsPlanGroupAssetResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type removeGroupOpsPlanGroupAssetResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type removeGroupOpsPlanGroupAssetResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type removeGroupOpsPlanGroupAssetResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type removeGroupOpsPlanGroupAssetResponseSuccess =
+  removeGroupOpsPlanGroupAssetResponse200 & {
+    headers: Headers;
+  };
+export type removeGroupOpsPlanGroupAssetResponseError = (
+  | removeGroupOpsPlanGroupAssetResponse400
+  | removeGroupOpsPlanGroupAssetResponse401
+  | removeGroupOpsPlanGroupAssetResponse403
+  | removeGroupOpsPlanGroupAssetResponse404
+  | removeGroupOpsPlanGroupAssetResponse409
+  | removeGroupOpsPlanGroupAssetResponse503
+) & {
+  headers: Headers;
+};
+
+export type removeGroupOpsPlanGroupAssetResponse =
+  | removeGroupOpsPlanGroupAssetResponseSuccess
+  | removeGroupOpsPlanGroupAssetResponseError;
+
+export const getRemoveGroupOpsPlanGroupAssetUrl = (
+  planId: string,
+  assetReference: string,
+) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}/group-assets/${assetReference}`;
+};
+
+export const removeGroupOpsPlanGroupAsset = async (
+  planId: string,
+  assetReference: string,
+  groupOpsRevisionRequest: GroupOpsRevisionRequest,
+  options?: RequestInit,
+): Promise<removeGroupOpsPlanGroupAssetResponse> => {
+  const res = await fetch(
+    getRemoveGroupOpsPlanGroupAssetUrl(planId, assetReference),
+    {
+      ...options,
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(groupOpsRevisionRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: removeGroupOpsPlanGroupAssetResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as removeGroupOpsPlanGroupAssetResponse;
+};
+
+/**
+ * @summary List persisted standard nodes in deterministic position order
+ */
+export type listGroupOpsPlanNodesResponse200 = {
+  data: GroupOpsNodePage;
+  status: 200;
+};
+
+export type listGroupOpsPlanNodesResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type listGroupOpsPlanNodesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listGroupOpsPlanNodesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listGroupOpsPlanNodesResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type listGroupOpsPlanNodesResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type listGroupOpsPlanNodesResponseSuccess =
+  listGroupOpsPlanNodesResponse200 & {
+    headers: Headers;
+  };
+export type listGroupOpsPlanNodesResponseError = (
+  | listGroupOpsPlanNodesResponse400
+  | listGroupOpsPlanNodesResponse401
+  | listGroupOpsPlanNodesResponse403
+  | listGroupOpsPlanNodesResponse404
+  | listGroupOpsPlanNodesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listGroupOpsPlanNodesResponse =
+  listGroupOpsPlanNodesResponseSuccess | listGroupOpsPlanNodesResponseError;
+
+export const getListGroupOpsPlanNodesUrl = (
+  planId: string,
+  params?: ListGroupOpsPlanNodesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/automation-conversion/group-ops/plans/${planId}/nodes?${stringifiedParams}`
+    : `/api/admin/automation-conversion/group-ops/plans/${planId}/nodes`;
+};
+
+export const listGroupOpsPlanNodes = async (
+  planId: string,
+  params?: ListGroupOpsPlanNodesParams,
+  options?: RequestInit,
+): Promise<listGroupOpsPlanNodesResponse> => {
+  const res = await fetch(getListGroupOpsPlanNodesUrl(planId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listGroupOpsPlanNodesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listGroupOpsPlanNodesResponse;
+};
+
+/**
+ * @summary Add a persisted standard node to a draft plan
+ */
+export type addGroupOpsPlanNodeResponse200 = {
+  data: GroupOpsPlanDetail;
+  status: 200;
+};
+
+export type addGroupOpsPlanNodeResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type addGroupOpsPlanNodeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type addGroupOpsPlanNodeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type addGroupOpsPlanNodeResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type addGroupOpsPlanNodeResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type addGroupOpsPlanNodeResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type addGroupOpsPlanNodeResponseSuccess =
+  addGroupOpsPlanNodeResponse200 & {
+    headers: Headers;
+  };
+export type addGroupOpsPlanNodeResponseError = (
+  | addGroupOpsPlanNodeResponse400
+  | addGroupOpsPlanNodeResponse401
+  | addGroupOpsPlanNodeResponse403
+  | addGroupOpsPlanNodeResponse404
+  | addGroupOpsPlanNodeResponse409
+  | addGroupOpsPlanNodeResponse503
+) & {
+  headers: Headers;
+};
+
+export type addGroupOpsPlanNodeResponse =
+  addGroupOpsPlanNodeResponseSuccess | addGroupOpsPlanNodeResponseError;
+
+export const getAddGroupOpsPlanNodeUrl = (planId: string) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}/nodes`;
+};
+
+export const addGroupOpsPlanNode = async (
+  planId: string,
+  groupOpsNodeRequest: GroupOpsNodeRequest,
+  options?: RequestInit,
+): Promise<addGroupOpsPlanNodeResponse> => {
+  const res = await fetch(getAddGroupOpsPlanNodeUrl(planId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(groupOpsNodeRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: addGroupOpsPlanNodeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as addGroupOpsPlanNodeResponse;
+};
+
+/**
+ * @summary Update a persisted standard node on a draft plan
+ */
+export type updateGroupOpsPlanNodeResponse200 = {
+  data: GroupOpsPlanDetail;
+  status: 200;
+};
+
+export type updateGroupOpsPlanNodeResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type updateGroupOpsPlanNodeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateGroupOpsPlanNodeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateGroupOpsPlanNodeResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type updateGroupOpsPlanNodeResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type updateGroupOpsPlanNodeResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type updateGroupOpsPlanNodeResponseSuccess =
+  updateGroupOpsPlanNodeResponse200 & {
+    headers: Headers;
+  };
+export type updateGroupOpsPlanNodeResponseError = (
+  | updateGroupOpsPlanNodeResponse400
+  | updateGroupOpsPlanNodeResponse401
+  | updateGroupOpsPlanNodeResponse403
+  | updateGroupOpsPlanNodeResponse404
+  | updateGroupOpsPlanNodeResponse409
+  | updateGroupOpsPlanNodeResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateGroupOpsPlanNodeResponse =
+  updateGroupOpsPlanNodeResponseSuccess | updateGroupOpsPlanNodeResponseError;
+
+export const getUpdateGroupOpsPlanNodeUrl = (
+  planId: string,
+  nodeId: string,
+) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}/nodes/${nodeId}`;
+};
+
+export const updateGroupOpsPlanNode = async (
+  planId: string,
+  nodeId: string,
+  groupOpsNodeRequest: GroupOpsNodeRequest,
+  options?: RequestInit,
+): Promise<updateGroupOpsPlanNodeResponse> => {
+  const res = await fetch(getUpdateGroupOpsPlanNodeUrl(planId, nodeId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(groupOpsNodeRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateGroupOpsPlanNodeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateGroupOpsPlanNodeResponse;
+};
+
+/**
+ * @summary Remove one persisted standard node from a draft plan
+ */
+export type removeGroupOpsPlanNodeResponse200 = {
+  data: GroupOpsPlanDetail;
+  status: 200;
+};
+
+export type removeGroupOpsPlanNodeResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type removeGroupOpsPlanNodeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type removeGroupOpsPlanNodeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type removeGroupOpsPlanNodeResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type removeGroupOpsPlanNodeResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type removeGroupOpsPlanNodeResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type removeGroupOpsPlanNodeResponseSuccess =
+  removeGroupOpsPlanNodeResponse200 & {
+    headers: Headers;
+  };
+export type removeGroupOpsPlanNodeResponseError = (
+  | removeGroupOpsPlanNodeResponse400
+  | removeGroupOpsPlanNodeResponse401
+  | removeGroupOpsPlanNodeResponse403
+  | removeGroupOpsPlanNodeResponse404
+  | removeGroupOpsPlanNodeResponse409
+  | removeGroupOpsPlanNodeResponse503
+) & {
+  headers: Headers;
+};
+
+export type removeGroupOpsPlanNodeResponse =
+  removeGroupOpsPlanNodeResponseSuccess | removeGroupOpsPlanNodeResponseError;
+
+export const getRemoveGroupOpsPlanNodeUrl = (
+  planId: string,
+  nodeId: string,
+) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}/nodes/${nodeId}`;
+};
+
+export const removeGroupOpsPlanNode = async (
+  planId: string,
+  nodeId: string,
+  groupOpsRevisionRequest: GroupOpsRevisionRequest,
+  options?: RequestInit,
+): Promise<removeGroupOpsPlanNodeResponse> => {
+  const res = await fetch(getRemoveGroupOpsPlanNodeUrl(planId, nodeId), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(groupOpsRevisionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: removeGroupOpsPlanNodeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as removeGroupOpsPlanNodeResponse;
+};
+
+/**
+ * @summary Read a safe opaque local Webhook descriptor without URL or secret material
+ */
+export type getGroupOpsWebhookDescriptorResponse200 = {
+  data: GroupOpsWebhookDescriptorResponse;
+  status: 200;
+};
+
+export type getGroupOpsWebhookDescriptorResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type getGroupOpsWebhookDescriptorResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getGroupOpsWebhookDescriptorResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getGroupOpsWebhookDescriptorResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type getGroupOpsWebhookDescriptorResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type getGroupOpsWebhookDescriptorResponseSuccess =
+  getGroupOpsWebhookDescriptorResponse200 & {
+    headers: Headers;
+  };
+export type getGroupOpsWebhookDescriptorResponseError = (
+  | getGroupOpsWebhookDescriptorResponse400
+  | getGroupOpsWebhookDescriptorResponse401
+  | getGroupOpsWebhookDescriptorResponse403
+  | getGroupOpsWebhookDescriptorResponse404
+  | getGroupOpsWebhookDescriptorResponse503
+) & {
+  headers: Headers;
+};
+
+export type getGroupOpsWebhookDescriptorResponse =
+  | getGroupOpsWebhookDescriptorResponseSuccess
+  | getGroupOpsWebhookDescriptorResponseError;
+
+export const getGetGroupOpsWebhookDescriptorUrl = (planId: string) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}/webhook-descriptor`;
+};
+
+export const getGroupOpsWebhookDescriptor = async (
+  planId: string,
+  options?: RequestInit,
+): Promise<getGroupOpsWebhookDescriptorResponse> => {
+  const res = await fetch(getGetGroupOpsWebhookDescriptorUrl(planId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getGroupOpsWebhookDescriptorResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getGroupOpsWebhookDescriptorResponse;
+};
+
+/**
+ * @summary Save only an opaque local Webhook descriptor on a draft plan
+ */
+export type putGroupOpsWebhookDescriptorResponse200 = {
+  data: GroupOpsPlanDetail;
+  status: 200;
+};
+
+export type putGroupOpsWebhookDescriptorResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type putGroupOpsWebhookDescriptorResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type putGroupOpsWebhookDescriptorResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type putGroupOpsWebhookDescriptorResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type putGroupOpsWebhookDescriptorResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type putGroupOpsWebhookDescriptorResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type putGroupOpsWebhookDescriptorResponseSuccess =
+  putGroupOpsWebhookDescriptorResponse200 & {
+    headers: Headers;
+  };
+export type putGroupOpsWebhookDescriptorResponseError = (
+  | putGroupOpsWebhookDescriptorResponse400
+  | putGroupOpsWebhookDescriptorResponse401
+  | putGroupOpsWebhookDescriptorResponse403
+  | putGroupOpsWebhookDescriptorResponse404
+  | putGroupOpsWebhookDescriptorResponse409
+  | putGroupOpsWebhookDescriptorResponse503
+) & {
+  headers: Headers;
+};
+
+export type putGroupOpsWebhookDescriptorResponse =
+  | putGroupOpsWebhookDescriptorResponseSuccess
+  | putGroupOpsWebhookDescriptorResponseError;
+
+export const getPutGroupOpsWebhookDescriptorUrl = (planId: string) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}/webhook-descriptor`;
+};
+
+export const putGroupOpsWebhookDescriptor = async (
+  planId: string,
+  groupOpsWebhookDescriptorRequest: GroupOpsWebhookDescriptorRequest,
+  options?: RequestInit,
+): Promise<putGroupOpsWebhookDescriptorResponse> => {
+  const res = await fetch(getPutGroupOpsWebhookDescriptorUrl(planId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(groupOpsWebhookDescriptorRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: putGroupOpsWebhookDescriptorResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as putGroupOpsWebhookDescriptorResponse;
+};
+
+/**
+ * @summary Validate and preview persisted draft facts without sending, scheduling or invoking a Webhook
+ */
+export type previewGroupOpsPlanContentResponse200 = {
+  data: GroupOpsContentValidation;
+  status: 200;
+};
+
+export type previewGroupOpsPlanContentResponse400 = {
+  data: GroupOpsError;
+  status: 400;
+};
+
+export type previewGroupOpsPlanContentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type previewGroupOpsPlanContentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type previewGroupOpsPlanContentResponse404 = {
+  data: GroupOpsError;
+  status: 404;
+};
+
+export type previewGroupOpsPlanContentResponse409 = {
+  data: GroupOpsError;
+  status: 409;
+};
+
+export type previewGroupOpsPlanContentResponse503 = {
+  data: GroupOpsError;
+  status: 503;
+};
+
+export type previewGroupOpsPlanContentResponseSuccess =
+  previewGroupOpsPlanContentResponse200 & {
+    headers: Headers;
+  };
+export type previewGroupOpsPlanContentResponseError = (
+  | previewGroupOpsPlanContentResponse400
+  | previewGroupOpsPlanContentResponse401
+  | previewGroupOpsPlanContentResponse403
+  | previewGroupOpsPlanContentResponse404
+  | previewGroupOpsPlanContentResponse409
+  | previewGroupOpsPlanContentResponse503
+) & {
+  headers: Headers;
+};
+
+export type previewGroupOpsPlanContentResponse =
+  | previewGroupOpsPlanContentResponseSuccess
+  | previewGroupOpsPlanContentResponseError;
+
+export const getPreviewGroupOpsPlanContentUrl = (planId: string) => {
+  return `/api/admin/automation-conversion/group-ops/plans/${planId}/content/preview`;
+};
+
+export const previewGroupOpsPlanContent = async (
+  planId: string,
+  options?: RequestInit,
+): Promise<previewGroupOpsPlanContentResponse> => {
+  const res = await fetch(getPreviewGroupOpsPlanContentUrl(planId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: previewGroupOpsPlanContentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as previewGroupOpsPlanContentResponse;
 };
 
 /**

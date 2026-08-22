@@ -54,6 +54,10 @@ const (
 	// only completes the durable receipt; it never invokes a provider.
 	EvOperationCycleFact = "operation_cycle.fact_recorded"
 	EvCloudCampaignFact  = "cloud_campaign.fact_recorded"
+	// EvGroupOpsPlanUpdated records only local Group Ops configuration. No
+	// dispatcher binding is registered for it, so it cannot send a group
+	// message, invoke a webhook, or call a provider.
+	EvGroupOpsPlanUpdated = "group_ops.plan_updated"
 
 	ConsumerAutomationTagTrigger = "automation.tag-trigger.v1"
 	ConsumerStatsTagApplied      = "stats.tag-applied.v1"

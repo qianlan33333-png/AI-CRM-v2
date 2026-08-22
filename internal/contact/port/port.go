@@ -62,6 +62,13 @@ type StaffDirectoryReader interface {
 	ListEligibleStaff(context.Context) ([]StaffDirectoryEntry, error)
 }
 
+// ActiveStaffReader answers only whether one local numeric staff fact remains
+// active. The supplied context must carry the caller's UnitOfWork transaction.
+// It intentionally exposes neither directory fields nor external identities.
+type ActiveStaffReader interface {
+	IsActiveStaff(context.Context, int64) (bool, error)
+}
+
 type StaffDirectoryEntry struct {
 	WeComUserID string
 	DisplayName string

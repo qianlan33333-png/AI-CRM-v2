@@ -5241,6 +5241,9 @@ type EntitlementID = int64
 // EntitlementLimit defines model for EntitlementLimit.
 type EntitlementLimit = int
 
+// GroupOpsPlanID defines model for GroupOpsPlanID.
+type GroupOpsPlanID = string
+
 // IdempotencyKey defines model for IdempotencyKey.
 type IdempotencyKey = string
 

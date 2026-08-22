@@ -149,6 +149,9 @@ type AutomationAgentID = int64
 // CustomerID defines model for CustomerID.
 type CustomerID = int64
 
+// GroupOpsPlanID defines model for GroupOpsPlanID.
+type GroupOpsPlanID = string
+
 // SegmentID defines model for SegmentID.
 type SegmentID = int64
 
