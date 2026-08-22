@@ -382,7 +382,7 @@ func TestServiceLifecycleCASAndIdempotency(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if share.SharePath != "/local/radar-links/"+created.Link.PublicCode || share.QRPayload != "aicrm-local://radar-links/"+created.Link.PublicCode || !share.LocalProjection || share.PublicRouteReady || share.RealExternalCallExecuted {
+	if share.Available || share.SharePath != "" || share.QRPayload != "" || !share.LocalProjection || share.PublicRouteReady || share.RealExternalCallExecuted {
 		t.Fatalf("share=%+v", share)
 	}
 	options := service.Options(ctx)

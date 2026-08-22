@@ -113,6 +113,7 @@ type ShareProjection struct {
 	LinkID                   LinkID `json:"link_id"`
 	PublicCode               string `json:"public_code"`
 	Status                   Status `json:"status"`
+	Available                bool   `json:"available"`
 	SharePath                string `json:"share_path"`
 	QRPayload                string `json:"qr_payload"`
 	LocalProjection          bool   `json:"local_projection"`
