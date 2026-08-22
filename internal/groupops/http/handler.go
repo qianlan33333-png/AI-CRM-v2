@@ -38,6 +38,8 @@ const (
 
 var canonicalID = regexp.MustCompile(`^[1-9][0-9]{0,18}$`)
 
+type methodRejectedKey struct{}
+
 type Application interface {
 	List(context.Context, int32, int32) (groupopsport.PlanPage, error)
 	Detail(context.Context, int64) (groupopsport.Detail, error)
@@ -682,6 +684,9 @@ func method(w http.ResponseWriter, r *http.Request, want string) bool {
 	if r != nil && r.Method == want {
 		return true
 	}
+	if r != nil {
+		*r = *r.WithContext(context.WithValue(r.Context(), methodRejectedKey{}, true))
+	}
 	w.Header().Set("Allow", want)
 	writeError(w, http.StatusMethodNotAllowed, "method_not_allowed")
 	return false
@@ -702,6 +707,9 @@ func writeAuthorized(r *http.Request) (int64, bool) {
 	return p.AdminUserID, true
 }
 func authorization(w http.ResponseWriter, r *http.Request) {
+	if r != nil && r.Context().Value(methodRejectedKey{}) == true {
+		return
+	}
 	if r == nil {
 		writeError(w, http.StatusUnauthorized, "authentication_required")
 		return
