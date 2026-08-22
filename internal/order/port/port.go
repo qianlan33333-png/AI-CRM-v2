@@ -4,7 +4,6 @@ package port
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"time"
 )
@@ -151,6 +150,28 @@ type ExportJob struct {
 	ContentText string    `json:"content_text,omitempty"`
 }
 
+// ExportFilter deliberately accepts only locally held, non-identity facts.
+// It is shared by the preview and the durable CSV export so their projections
+// cannot drift.
+type ExportFilter struct {
+	Provider    string     `json:"provider,omitempty"`
+	Status      string     `json:"status,omitempty"`
+	ProductCode string     `json:"product_code,omitempty"`
+	LocalID     *int64     `json:"local_id,omitempty"`
+	CreatedFrom *time.Time `json:"created_from,omitempty"`
+	CreatedTo   *time.Time `json:"created_to,omitempty"`
+}
+
+// ExportPreview is read-only. It has no job, receipt, event, provider result,
+// or download URL because it never creates an external or durable effect.
+type ExportPreview struct {
+	Resource    string `json:"resource"`
+	Format      string `json:"format"`
+	Total       int64  `json:"total"`
+	Truncated   bool   `json:"truncated"`
+	ContentText string `json:"content_text"`
+}
+
 type ExternalEffect struct {
 	ID                    int64     `json:"id"`
 	OrderID               ID        `json:"order_id"`
@@ -171,7 +192,7 @@ type ExternalEffectPage struct {
 
 type ExportCommand struct {
 	Resource, Format, IdempotencyKey string
-	Filters                          json.RawMessage
+	Filter                           ExportFilter
 	Actor                            int64
 }
 

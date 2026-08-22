@@ -16,12 +16,15 @@ import (
 )
 
 type legacyOrderBoardStub struct {
-	filter        orderport.BoardFilter
-	listCalls     int
-	refundCommand orderport.RefundCommand
-	retryID       int64
-	page          orderport.Page
-	refund        orderport.Refund
+	filter         orderport.BoardFilter
+	listCalls      int
+	refundCommand  orderport.RefundCommand
+	previewCommand orderport.ExportCommand
+	exportCommand  orderport.ExportCommand
+	getActor       int64
+	retryID        int64
+	page           orderport.Page
+	refund         orderport.Refund
 }
 
 func (s *legacyOrderBoardStub) ListOrders(_ context.Context, filter orderport.BoardFilter) (orderport.Page, error) {
@@ -35,10 +38,16 @@ func (*legacyOrderBoardStub) GetOrder(context.Context, string, string) (orderpor
 func (*legacyOrderBoardStub) ListRefunds(context.Context, orderport.RefundFilter) (orderport.RefundPage, error) {
 	return orderport.RefundPage{}, nil
 }
-func (*legacyOrderBoardStub) CreateExport(context.Context, orderport.ExportCommand) (orderport.ExportJob, error) {
+func (s *legacyOrderBoardStub) PreviewExport(_ context.Context, command orderport.ExportCommand) (orderport.ExportPreview, error) {
+	s.previewCommand = command
+	return orderport.ExportPreview{}, nil
+}
+func (s *legacyOrderBoardStub) CreateExport(_ context.Context, command orderport.ExportCommand) (orderport.ExportJob, error) {
+	s.exportCommand = command
 	return orderport.ExportJob{}, nil
 }
-func (*legacyOrderBoardStub) GetExport(context.Context, string) (orderport.ExportJob, error) {
+func (s *legacyOrderBoardStub) GetExport(_ context.Context, _ string, actor int64) (orderport.ExportJob, error) {
+	s.getActor = actor
 	return orderport.ExportJob{}, nil
 }
 func (s *legacyOrderBoardStub) RequestRefund(_ context.Context, command orderport.RefundCommand) (orderport.Refund, error) {
@@ -196,6 +205,20 @@ func TestOrderABRejectsOpaqueCursorInsteadOfGuessingItsCodec(t *testing.T) {
 	router.ServeHTTP(response, legacyRequest(http.MethodGet, "/api/admin/orders?cursor=unproven", legacyToken(98)))
 	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"error_code":"invalid_argument"`) {
 		t.Fatalf("cursor status=%d body=%s", response.Code, response.Body.String())
+	}
+}
+
+func TestOrderSafeExportTransportAllowsOnlyTheWhitelistedFilter(t *testing.T) {
+	writer := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/admin/exports/preview", strings.NewReader(`{"resource":"orders","format":"csv","filter":{"provider":"wechat","status":"paid","product_code":"sku-1","local_id":11}}`))
+	command, err := legacyPreviewExportCommand(writer, request, 7)
+	if err != nil || command.Actor != 7 || command.Filter.Provider != "wechat" || command.Filter.Status != "paid" || command.Filter.ProductCode != "sku-1" || command.Filter.LocalID == nil || *command.Filter.LocalID != 11 || command.IdempotencyKey != "" {
+		t.Fatalf("command=%+v err=%v", command, err)
+	}
+	writer = httptest.NewRecorder()
+	request = httptest.NewRequest(http.MethodPost, "/api/admin/exports/preview", strings.NewReader(`{"resource":"orders","format":"csv","filter":{"mobile":"13800000000"}}`))
+	if _, err := legacyPreviewExportCommand(writer, request, 7); err == nil {
+		t.Fatal("identity filter was accepted")
 	}
 }
 

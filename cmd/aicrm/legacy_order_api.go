@@ -115,6 +115,8 @@ func writeOrderError(writer http.ResponseWriter, err error) {
 		status, code, compatibility = http.StatusNotFound, "not_found", platformhttp.CodeNotFound
 	case errors.Is(err, orderapp.ErrConflict), errors.Is(err, orderapp.ErrBoardConflict):
 		status, code, compatibility = http.StatusConflict, "conflict", platformhttp.CodeConflict
+	case errors.Is(err, orderapp.ErrBoardBlockedRedline):
+		status, code, compatibility = http.StatusConflict, "blocked_redline", platformhttp.CodeConflict
 	}
 	platformhttp.MarkCompatibilityError(writer, compatibility)
 	message := "order list unavailable"

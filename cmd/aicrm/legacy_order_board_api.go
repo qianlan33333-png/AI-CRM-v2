@@ -23,8 +23,9 @@ type legacyOrderBoardApplication interface {
 	ListOrders(context.Context, orderport.BoardFilter) (orderport.Page, error)
 	GetOrder(context.Context, string, string) (orderport.Detail, error)
 	ListRefunds(context.Context, orderport.RefundFilter) (orderport.RefundPage, error)
+	PreviewExport(context.Context, orderport.ExportCommand) (orderport.ExportPreview, error)
 	CreateExport(context.Context, orderport.ExportCommand) (orderport.ExportJob, error)
-	GetExport(context.Context, string) (orderport.ExportJob, error)
+	GetExport(context.Context, string, int64) (orderport.ExportJob, error)
 	RequestRefund(context.Context, orderport.RefundCommand) (orderport.Refund, error)
 	ListExternalEffects(context.Context, string, string) (orderport.ExternalEffectPage, error)
 	RequestExternalEffectRetry(context.Context, int64, int64, string) (orderport.ExternalEffect, error)
@@ -170,6 +171,31 @@ func (handler *Handler) CreateOrderBoardExport(writer http.ResponseWriter, reque
 	handler.createOrderBoardExport(writer, request, false)
 }
 
+// PreviewOrderBoardExport is intentionally read-only: it has no idempotency
+// key because it never creates a receipt, event, or durable export job.
+func (handler *Handler) PreviewOrderBoardExport(writer http.ResponseWriter, request *http.Request) {
+	board := handler.orderBoardOrFail(writer)
+	if board == nil {
+		return
+	}
+	principal, err := orderBoardActor(request)
+	if err != nil {
+		writeOrderError(writer, err)
+		return
+	}
+	command, err := legacyPreviewExportCommand(writer, request, principal.AdminUserID)
+	if err != nil {
+		writeOrderError(writer, err)
+		return
+	}
+	result, err := board.PreviewExport(request.Context(), command)
+	if err != nil {
+		writeOrderError(writer, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, result)
+}
+
 func (handler *Handler) CreateWechatOrderBoardExport(writer http.ResponseWriter, request *http.Request) {
 	handler.createOrderBoardExport(writer, request, true)
 }
@@ -206,7 +232,12 @@ func (handler *Handler) GetOrderBoardExport(writer http.ResponseWriter, request 
 		writeOrderError(writer, orderapp.ErrInvalidBoardCommand)
 		return
 	}
-	result, err := board.GetExport(request.Context(), chi.URLParam(request, "job_id"))
+	principal, err := orderBoardActor(request)
+	if err != nil {
+		writeOrderError(writer, err)
+		return
+	}
+	result, err := board.GetExport(request.Context(), chi.URLParam(request, "job_id"), principal.AdminUserID)
 	if err != nil {
 		writeOrderError(writer, err)
 		return
@@ -442,8 +473,9 @@ func singleOrderBoardQueryValues(query map[string][]string, allowed map[string]b
 }
 
 type legacyOrderExportRequest struct {
-	Resource string `json:"resource"`
-	Format   string `json:"format"`
+	Resource string                 `json:"resource"`
+	Format   string                 `json:"format"`
+	Filter   orderport.ExportFilter `json:"filter"`
 }
 
 func legacyExportCommand(writer http.ResponseWriter, request *http.Request, actor int64, key string, wechatOnly bool) (orderport.ExportCommand, error) {
@@ -459,7 +491,17 @@ func legacyExportCommand(writer http.ResponseWriter, request *http.Request, acto
 	if decoder.Decode(&body) != nil || !errors.Is(decoder.Decode(&struct{}{}), io.EOF) {
 		return orderport.ExportCommand{}, orderapp.ErrInvalidBoardCommand
 	}
-	return orderport.ExportCommand{Resource: strings.TrimSpace(body.Resource), Format: strings.TrimSpace(body.Format), Actor: actor, IdempotencyKey: key}, nil
+	return orderport.ExportCommand{Resource: strings.TrimSpace(body.Resource), Format: strings.TrimSpace(body.Format), Filter: body.Filter, Actor: actor, IdempotencyKey: key}, nil
+}
+
+func legacyPreviewExportCommand(writer http.ResponseWriter, request *http.Request, actor int64) (orderport.ExportCommand, error) {
+	decoder := json.NewDecoder(http.MaxBytesReader(writer, request.Body, 64<<10))
+	decoder.DisallowUnknownFields()
+	var body legacyOrderExportRequest
+	if decoder.Decode(&body) != nil || !errors.Is(decoder.Decode(&struct{}{}), io.EOF) {
+		return orderport.ExportCommand{}, orderapp.ErrInvalidBoardCommand
+	}
+	return orderport.ExportCommand{Resource: strings.TrimSpace(body.Resource), Format: strings.TrimSpace(body.Format), Filter: body.Filter, Actor: actor}, nil
 }
 
 type legacyOrderRefundRequest struct {
@@ -498,18 +540,26 @@ func legacyRefundCommand(writer http.ResponseWriter, request *http.Request, acto
 }
 
 func orderBoardActorAndKey(request *http.Request) (authport.Principal, string, error) {
-	if request == nil {
-		return authport.Principal{}, "", orderapp.ErrInvalidBoardCommand
-	}
-	principal, ok := authport.PrincipalFromContext(request.Context())
-	if !ok || principal.AdminUserID < 1 {
-		return authport.Principal{}, "", authport.ErrUnauthorized
+	principal, err := orderBoardActor(request)
+	if err != nil {
+		return authport.Principal{}, "", err
 	}
 	values := request.Header.Values("Idempotency-Key")
 	if len(values) != 1 || strings.TrimSpace(values[0]) != values[0] || len(values[0]) < 16 || len(values[0]) > 128 {
 		return authport.Principal{}, "", orderapp.ErrInvalidBoardCommand
 	}
 	return principal, values[0], nil
+}
+
+func orderBoardActor(request *http.Request) (authport.Principal, error) {
+	if request == nil {
+		return authport.Principal{}, orderapp.ErrInvalidBoardCommand
+	}
+	principal, ok := authport.PrincipalFromContext(request.Context())
+	if !ok || principal.AdminUserID < 1 {
+		return authport.Principal{}, authport.ErrUnauthorized
+	}
+	return principal, nil
 }
 
 func emptyOrderBoardBody(writer http.ResponseWriter, request *http.Request) bool {

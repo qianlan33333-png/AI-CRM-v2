@@ -11,6 +11,7 @@ import (
 	orderapp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/app"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 	orderdb "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store/generated"
+	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
 var _ orderapp.BoardStore = (*Repository)(nil)
@@ -53,6 +54,29 @@ func (repository *Repository) GetBoardOrder(ctx context.Context, provider, refer
 		return orderport.Record{}, err
 	}
 	row, err := queries.GetBoardOrder(ctx, orderdb.GetBoardOrderParams{Provider: provider, OrderReference: reference})
+	if err != nil {
+		return orderport.Record{}, boardStoreError(err)
+	}
+	return boardRecord(row), nil
+}
+
+// GetBoardOrderByID is intentionally separate from GetBoardOrder: a local ID
+// must never be interpreted as a merchant or provider transaction reference.
+func (repository *Repository) GetBoardOrderByID(ctx context.Context, id orderport.ID) (orderport.Record, error) {
+	if repository == nil || id < 1 {
+		return orderport.Record{}, orderapp.ErrNotFound
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return orderport.Record{}, unavailable(err)
+	}
+	var row orderdb.OrderListProjection
+	err = tx.QueryRow(ctx, exactBoardOrderByID, int64(id)).Scan(
+		&row.ID, &row.Provider, &row.ProviderLabel, &row.MerchantOrderNo, &row.PlatformTransactionNo,
+		&row.CustomerID, &row.PayerNameSnapshot, &row.MobileSnapshot, &row.IdentityKind, &row.IdentityValue,
+		&row.ProductID, &row.ProductCode, &row.ProductNameSnapshot, &row.AmountMinor, &row.Currency,
+		&row.Status, &row.StatusLabel, &row.DetailUrl, &row.CreatedAt, &row.UpdatedAt,
+	)
 	if err != nil {
 		return orderport.Record{}, boardStoreError(err)
 	}
@@ -231,9 +255,29 @@ func (repository *Repository) ListRefunds(ctx context.Context, filter orderport.
 	}
 	items := make([]orderport.Refund, len(rows))
 	for i, row := range rows {
-		items[i] = orderport.Refund{ID: row.ID, OrderID: orderport.ID(row.OrderID), Provider: row.Provider, OrderNo: row.MerchantOrderNo, TransactionID: row.PlatformTransactionNo, RefundID: row.RefundID, OutRefundNo: row.OutRefundNo, RefundAmountTotal: row.RefundAmountTotal, Currency: row.Currency, Reason: row.Reason, Status: row.Status, ExternalEffectID: row.ExternalEffectID, ExternalEffectState: row.ExternalEffectState, AutoRetryAllowed: row.AutoRetryAllowed, CreatedAt: row.CreatedAt.Time}
+		items[i] = boardRefund(row)
 	}
 	return items, count, nil
+}
+
+func (repository *Repository) GetRefundByID(ctx context.Context, id int64) (orderport.Refund, error) {
+	if repository == nil || id < 1 {
+		return orderport.Refund{}, orderapp.ErrNotFound
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return orderport.Refund{}, unavailable(err)
+	}
+	var row orderdb.ListOrderRefundsRow
+	err = tx.QueryRow(ctx, exactBoardRefundByID, id).Scan(
+		&row.ID, &row.OrderID, &row.ExternalEffectID, &row.Provider, &row.RefundID, &row.OutRefundNo,
+		&row.RefundAmountTotal, &row.Currency, &row.Reason, &row.Status, &row.CreatedAt, &row.MerchantOrderNo,
+		&row.PlatformTransactionNo, &row.ExternalEffectState, &row.AutoRetryAllowed,
+	)
+	if err != nil {
+		return orderport.Refund{}, boardStoreError(err)
+	}
+	return boardRefund(row), nil
 }
 
 func boardQueries(ctx context.Context, repository *Repository) (*orderdb.Queries, error) {
@@ -255,6 +299,30 @@ func boardRefundParams(filter orderport.RefundFilter) orderdb.ListOrderRefundsPa
 func boardRecord(row orderdb.OrderListProjection) orderport.Record {
 	return orderport.Record{ID: orderport.ID(row.ID), Provider: row.Provider, ProviderLabel: row.ProviderLabel, MerchantOrderNo: row.MerchantOrderNo, PlatformTransactionNo: row.PlatformTransactionNo, CustomerID: optionalInt64(row.CustomerID), PayerNameSnapshot: row.PayerNameSnapshot, MobileSnapshot: row.MobileSnapshot, IdentityKind: row.IdentityKind, IdentityValue: row.IdentityValue, ProductID: optionalInt64(row.ProductID), ProductCode: row.ProductCode, ProductNameSnapshot: row.ProductNameSnapshot, AmountMinor: row.AmountMinor, Currency: row.Currency, Status: row.Status, StatusLabel: row.StatusLabel, DetailURL: row.DetailUrl, CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time}
 }
+
+func boardRefund(row orderdb.ListOrderRefundsRow) orderport.Refund {
+	return orderport.Refund{ID: row.ID, OrderID: orderport.ID(row.OrderID), Provider: row.Provider, OrderNo: row.MerchantOrderNo, TransactionID: row.PlatformTransactionNo, RefundID: row.RefundID, OutRefundNo: row.OutRefundNo, RefundAmountTotal: row.RefundAmountTotal, Currency: row.Currency, Reason: row.Reason, Status: row.Status, ExternalEffectID: row.ExternalEffectID, ExternalEffectState: row.ExternalEffectState, AutoRetryAllowed: row.AutoRetryAllowed, CreatedAt: row.CreatedAt.Time}
+}
+
+const exactBoardOrderByID = `
+SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+       customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
+       product_id, product_code, product_name_snapshot, amount_minor, currency,
+       status, status_label, detail_url, created_at, updated_at
+FROM order_list_projections
+WHERE id = $1::bigint
+`
+
+const exactBoardRefundByID = `
+SELECT refund.id, refund.order_id, refund.external_effect_id, refund.provider, refund.refund_id,
+       refund.out_refund_no, refund.refund_amount_total, refund.currency, refund.reason,
+       refund.status, refund.created_at, order_projection.merchant_order_no,
+       order_projection.platform_transaction_no, effect.state, effect.auto_retry_allowed
+FROM order_refunds AS refund
+JOIN order_list_projections AS order_projection ON order_projection.id = refund.order_id
+JOIN order_external_effects AS effect ON effect.id = refund.external_effect_id
+WHERE refund.id = $1::bigint
+`
 
 func boardReceipt(id int64, operation, actorScope string, keyDigest, payloadDigest []byte, state string, snapshot []byte) (orderapp.BoardReceipt, error) {
 	if len(keyDigest) != 32 || len(payloadDigest) != 32 {
