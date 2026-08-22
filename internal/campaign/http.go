@@ -276,7 +276,12 @@ func (h *RouteFragment) writeHeader(w stdhttp.ResponseWriter, r *stdhttp.Request
 	if !ok {
 		return Actor{}, "", false
 	}
-	key := r.Header.Get("Idempotency-Key")
+	keys := r.Header.Values("Idempotency-Key")
+	if len(keys) != 1 {
+		writeHTTPError(w, 400, "MALFORMED_REQUEST")
+		return Actor{}, "", false
+	}
+	key := keys[0]
 	if !validKey(key) {
 		writeHTTPError(w, 400, "MALFORMED_REQUEST")
 		return Actor{}, "", false

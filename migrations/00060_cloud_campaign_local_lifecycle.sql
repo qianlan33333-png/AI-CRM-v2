@@ -35,11 +35,11 @@ CREATE TABLE public.cloud_campaign_operation_receipts (
 CREATE INDEX cloud_campaigns_status_idx ON public.cloud_campaigns(approval_status, runtime_status, campaign_code);
 
 -- +goose Down
-LOCK TABLE public.cloud_campaign_local_commands, public.cloud_campaign_local_plans, public.cloud_campaign_operation_receipts IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE public.cloud_campaigns, public.cloud_campaign_local_commands, public.cloud_campaign_local_plans, public.cloud_campaign_operation_receipts IN SHARE ROW EXCLUSIVE MODE;
 -- +goose StatementBegin
 DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM public.cloud_campaign_local_commands) OR EXISTS (SELECT 1 FROM public.cloud_campaign_operation_receipts WHERE state = 'completed') THEN
-    RAISE EXCEPTION 'cannot roll back recorded cloud campaign command facts' USING ERRCODE = '55000';
+  IF EXISTS (SELECT 1 FROM public.cloud_campaigns) OR EXISTS (SELECT 1 FROM public.cloud_campaign_operation_receipts) THEN
+    RAISE EXCEPTION 'cannot roll back cloud campaign facts' USING ERRCODE = '55000';
   END IF;
 END $$;
 -- +goose StatementEnd

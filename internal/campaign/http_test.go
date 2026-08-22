@@ -95,6 +95,25 @@ func TestRouteFragmentMapsSemanticCommandValidationTo422(t *testing.T) {
 	}
 }
 
+func TestRouteFragmentRejectsDuplicateIdempotencyKeyBeforeService(t *testing.T) {
+	svc, _ := testService(t, testCampaign("spring", ApprovalDraft, RuntimeIdle, 1))
+	handler, _ := NewRouteFragment(svc, &authorizerSpy{actor: Actor{ID: 1}}, &csrfSpy{})
+	rec := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, RoutePrefix+"/spring/approve", strings.NewReader(`{"expected_version":1}`))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Add("Idempotency-Key", "key-http-duplicate1")
+	request.Header.Add("Idempotency-Key", "key-http-duplicate2")
+	handler.ServeHTTP(rec, request)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("duplicate key status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	detail := httptest.NewRecorder()
+	handler.ServeHTTP(detail, httptest.NewRequest(http.MethodGet, RoutePrefix+"/spring", nil))
+	if detail.Code != http.StatusOK || !strings.Contains(detail.Body.String(), `"approval_status":"draft"`) || !strings.Contains(detail.Body.String(), `"version":1`) {
+		t.Fatalf("service was called: status=%d body=%s", detail.Code, detail.Body.String())
+	}
+}
+
 func TestRouteFragmentListStatusFiltersAreClosed(t *testing.T) {
 	svc, _ := testService(t,
 		testCampaign("draft", ApprovalDraft, RuntimeIdle, 1),

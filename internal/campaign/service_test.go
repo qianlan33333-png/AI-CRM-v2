@@ -159,6 +159,20 @@ func testService(t *testing.T, seed ...Campaign) (*Service, *MemoryStore) {
 	svc.now = func() time.Time { return time.Date(2026, 8, 22, 1, 2, 3, 0, time.UTC) }
 	return svc, store
 }
+
+func TestValidCodeMatchesOpenAPIASCIIContract(t *testing.T) {
+	for _, code := range []string{"campaign-1", "A.B_c-2"} {
+		if !validCode(code) {
+			t.Fatalf("valid code rejected: %q", code)
+		}
+	}
+	for _, code := range []string{"中文", "campaign:one", "campaign one", "campaign/one", " campaign"} {
+		if validCode(code) {
+			t.Fatalf("invalid code accepted: %q", code)
+		}
+	}
+}
+
 func testCampaign(code string, approval ApprovalStatus, runtime RuntimeStatus, version int64) Campaign {
 	now := time.Date(2026, 8, 22, 0, 0, 0, 0, time.UTC)
 	return Campaign{Code: code, Name: "Campaign " + code, ApprovalStatus: approval, RuntimeStatus: runtime, Version: version, CreatedBy: 1, UpdatedBy: 1, CreatedAt: now, UpdatedAt: now}

@@ -31,3 +31,20 @@ func TestEventLogAdapterSeparatesBatchCampaignReceiptKeys(t *testing.T) {
 		t.Fatalf("events=%+v", spy.events)
 	}
 }
+
+func TestEventLogAdapterSeparatesActorsWithSameReceiptKey(t *testing.T) {
+	spy := &eventAppenderSpy{}
+	adapter, err := NewEventLogAdapter(spy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Date(2026, 8, 22, 1, 0, 0, 0, time.UTC)
+	for _, actorID := range []int64{7, 8} {
+		if err = adapter.Append(context.Background(), AuditEvent{Type: "cloud_campaign.approved", CampaignCode: "one", ActorID: actorID, IdempotencyKey: "same-key", OccurredAt: now}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(spy.events) != 2 || spy.events[0].IdempotencyKey == spy.events[1].IdempotencyKey {
+		t.Fatalf("events=%+v", spy.events)
+	}
+}

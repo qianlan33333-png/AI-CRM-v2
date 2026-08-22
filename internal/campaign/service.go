@@ -394,7 +394,15 @@ func validVersioned(code string, v int64, a Actor, key string) bool {
 	return validCode(code) && v > 0 && a.ID > 0 && validKey(key)
 }
 func validCode(code string) bool {
-	return code != "" && len(code) <= MaximumCampaignCodeBytes && code == strings.TrimSpace(code) && !strings.ContainsAny(code, "/\\\x00\r\n")
+	if code == "" || len(code) > MaximumCampaignCodeBytes || code != strings.TrimSpace(code) {
+		return false
+	}
+	for _, b := range []byte(code) {
+		if !(b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9' || b == '.' || b == '_' || b == '-') {
+			return false
+		}
+	}
+	return true
 }
 func validKey(key string) bool {
 	return len(key) >= 16 && len(key) <= 128 && key == strings.TrimSpace(key)
