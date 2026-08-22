@@ -177,6 +177,37 @@ func (q *Queries) GetAutomationAgentReceipt(ctx context.Context, arg GetAutomati
 	return i, err
 }
 
+const listAutomationAgentAttachmentReferencePackages = `-- name: ListAutomationAgentAttachmentReferencePackages :many
+SELECT id, COALESCE(fixed_content_package_json -> 'attachment_library_ids', '[]'::jsonb)::text AS attachment_library_ids
+FROM automation_agent_configurations
+ORDER BY id ASC
+`
+
+type ListAutomationAgentAttachmentReferencePackagesRow struct {
+	ID                   int64  `json:"id"`
+	AttachmentLibraryIds string `json:"attachment_library_ids"`
+}
+
+func (q *Queries) ListAutomationAgentAttachmentReferencePackages(ctx context.Context) ([]ListAutomationAgentAttachmentReferencePackagesRow, error) {
+	rows, err := q.db.Query(ctx, listAutomationAgentAttachmentReferencePackages)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAutomationAgentAttachmentReferencePackagesRow{}
+	for rows.Next() {
+		var i ListAutomationAgentAttachmentReferencePackagesRow
+		if err := rows.Scan(&i.ID, &i.AttachmentLibraryIds); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAutomationAgentCodesByCopyPrefix = `-- name: ListAutomationAgentCodesByCopyPrefix :many
 SELECT agent_code FROM automation_agent_configurations
 WHERE agent_code LIKE $1::text ESCAPE E'\\'

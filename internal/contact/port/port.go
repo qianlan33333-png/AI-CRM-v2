@@ -49,6 +49,12 @@ type ImageReferenceReader interface {
 	ListImageReferenceChannelIDs(context.Context, int64) ([]int64, error)
 }
 
+// AttachmentReferenceReader is the Contact-owned read-only answer to whether
+// a channel welcome projection references one private attachment.
+type AttachmentReferenceReader interface {
+	ListAttachmentReferenceChannelIDs(context.Context, int64) ([]int64, error)
+}
+
 // StaffDirectoryReader exposes the narrowly-scoped local staff projection to
 // approved read-only consumers. It contains only the approved staff identity
 // fields and no provider payload or broader contact PII.

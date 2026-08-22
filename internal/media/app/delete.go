@@ -16,6 +16,7 @@ import (
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
+	radarport "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/port"
 )
 
 var (
@@ -39,13 +40,14 @@ type ImageDeleteReferences struct {
 	GroupInvites     []int64 `json:"group_invites"`
 	AutomationAgents []int64 `json:"automation_agents"`
 	Channels         []int64 `json:"channels"`
+	RadarLinks       []int64 `json:"radar_links"`
 	ImportPreflights []int64 `json:"import_preflights"`
 }
 
 func (references ImageDeleteReferences) Any() bool {
 	return len(references.Miniprograms) != 0 || len(references.CampaignSteps) != 0 ||
 		len(references.GroupInvites) != 0 || len(references.AutomationAgents) != 0 ||
-		len(references.Channels) != 0 || len(references.ImportPreflights) != 0
+		len(references.Channels) != 0 || len(references.RadarLinks) != 0 || len(references.ImportPreflights) != 0
 }
 
 type ImageDeleteResult struct {
@@ -85,16 +87,17 @@ type ImageDeleteService struct {
 	store      ImageDeleteStore
 	automation automationport.ImageReferenceReader
 	contact    contactport.ImageReferenceReader
+	radar      radarport.ImageReferenceReader
 	events     eventport.Appender
 	now        func() time.Time
 }
 
-func NewImageDeleteService(uow platformport.UnitOfWork, store ImageDeleteStore, automation automationport.ImageReferenceReader, contact contactport.ImageReferenceReader, events eventport.Appender) *ImageDeleteService {
-	return &ImageDeleteService{uow: uow, store: store, automation: automation, contact: contact, events: events, now: time.Now}
+func NewImageDeleteService(uow platformport.UnitOfWork, store ImageDeleteStore, automation automationport.ImageReferenceReader, contact contactport.ImageReferenceReader, radar radarport.ImageReferenceReader, events eventport.Appender) *ImageDeleteService {
+	return &ImageDeleteService{uow: uow, store: store, automation: automation, contact: contact, radar: radar, events: events, now: time.Now}
 }
 
 func (service *ImageDeleteService) DeleteImage(ctx context.Context, command ImageDeleteCommand) (ImageDeleteResult, error) {
-	if service == nil || service.uow == nil || service.store == nil || service.automation == nil || service.contact == nil || service.events == nil || service.now == nil ||
+	if service == nil || service.uow == nil || service.store == nil || service.automation == nil || service.contact == nil || service.radar == nil || service.events == nil || service.now == nil ||
 		command.ImageID < 1 || command.Actor < 1 || len(command.IdempotencyKey) < 16 || len(command.IdempotencyKey) > 128 || command.IdempotencyKey != strings.TrimSpace(command.IdempotencyKey) {
 		return ImageDeleteResult{}, ErrInvalidImageDelete
 	}
@@ -218,6 +221,10 @@ func (service *ImageDeleteService) references(ctx context.Context, imageID int64
 	if err != nil {
 		return ImageDeleteReferences{}, err
 	}
+	references.RadarLinks, err = service.radar.ListImageReferenceLinkIDs(ctx, imageID)
+	if err != nil {
+		return ImageDeleteReferences{}, err
+	}
 	if !validImageDeleteReferences(references) {
 		return ImageDeleteReferences{}, ErrImageDeleteUnavailable
 	}
@@ -244,7 +251,7 @@ func validImageDeleteReceipt(receipt ImageDeleteReceipt, reservation ImageDelete
 }
 
 func emptyImageDeleteReferences() ImageDeleteReferences {
-	return ImageDeleteReferences{Miniprograms: []int64{}, CampaignSteps: []int64{}, GroupInvites: []int64{}, AutomationAgents: []int64{}, Channels: []int64{}, ImportPreflights: []int64{}}
+	return ImageDeleteReferences{Miniprograms: []int64{}, CampaignSteps: []int64{}, GroupInvites: []int64{}, AutomationAgents: []int64{}, Channels: []int64{}, RadarLinks: []int64{}, ImportPreflights: []int64{}}
 }
 
 func validImageDeleteResult(result ImageDeleteResult) bool {
@@ -254,7 +261,8 @@ func validImageDeleteResult(result ImageDeleteResult) bool {
 func validImageDeleteReferences(references ImageDeleteReferences) bool {
 	return sortedPositiveImageReferenceIDs(references.Miniprograms) && sortedPositiveImageReferenceIDs(references.CampaignSteps) &&
 		sortedPositiveImageReferenceIDs(references.GroupInvites) && sortedPositiveImageReferenceIDs(references.AutomationAgents) &&
-		sortedPositiveImageReferenceIDs(references.Channels) && sortedPositiveImageReferenceIDs(references.ImportPreflights)
+		sortedPositiveImageReferenceIDs(references.Channels) && sortedPositiveImageReferenceIDs(references.RadarLinks) &&
+		sortedPositiveImageReferenceIDs(references.ImportPreflights)
 }
 
 func sortedPositiveImageReferenceIDs(values []int64) bool {

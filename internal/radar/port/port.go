@@ -25,3 +25,17 @@ type Repository interface {
 	ReserveIdempotency(context.Context, ReserveIdempotencyRecord) (IdempotencyRecord, bool, error)
 	CompleteIdempotency(context.Context, int64, Link, time.Time) (IdempotencyRecord, error)
 }
+
+// ImageReferenceReader is Radar's read-only answer to whether a local link
+// currently uses one Media image as its cover. IDs are ordered ascending.
+// Media uses this inside its deletion UoW; Radar retains ownership of the
+// radar_links projection and its query semantics.
+type ImageReferenceReader interface {
+	ListImageReferenceLinkIDs(context.Context, int64) ([]int64, error)
+}
+
+// AttachmentReferenceReader is Radar's read-only answer to whether a local
+// link currently uses one private attachment. IDs are ordered ascending.
+type AttachmentReferenceReader interface {
+	ListAttachmentReferenceLinkIDs(context.Context, int64) ([]int64, error)
+}

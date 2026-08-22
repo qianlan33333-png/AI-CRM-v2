@@ -13,6 +13,11 @@ SELECT id, COALESCE(fixed_content_package_json -> 'image_library_ids', '[]'::jso
 FROM automation_agent_configurations
 ORDER BY id ASC;
 
+-- name: ListAutomationAgentAttachmentReferencePackages :many
+SELECT id, COALESCE(fixed_content_package_json -> 'attachment_library_ids', '[]'::jsonb)::text AS attachment_library_ids
+FROM automation_agent_configurations
+ORDER BY id ASC;
+
 -- name: GetAutomationAgent :one
 SELECT id, agent_name, agent_code, automation_type, status, draft_role_prompt,
        draft_task_prompt, published_role_prompt, published_task_prompt,

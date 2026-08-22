@@ -20,6 +20,7 @@ type ChannelRepository struct{}
 
 var _ contactapp.ChannelStore = (*ChannelRepository)(nil)
 var _ contactport.ImageReferenceReader = (*ChannelRepository)(nil)
+var _ contactport.AttachmentReferenceReader = (*ChannelRepository)(nil)
 
 func NewChannelRepository() *ChannelRepository { return &ChannelRepository{} }
 
@@ -87,7 +88,45 @@ func (repository *ChannelRepository) ListImageReferenceChannelIDs(ctx context.Co
 	return result, nil
 }
 
+func (repository *ChannelRepository) ListAttachmentReferenceChannelIDs(ctx context.Context, attachmentID int64) ([]int64, error) {
+	queries, err := channelQueries(ctx)
+	if repository == nil || err != nil || attachmentID < 1 {
+		return nil, channelError(err)
+	}
+	rows, err := queries.ListChannelAttachmentReferencePackages(ctx)
+	if err != nil {
+		return nil, channelError(err)
+	}
+	result := make([]int64, 0, len(rows))
+	var previousID int64
+	for _, row := range rows {
+		if row.ID < 1 || row.ID <= previousID {
+			return nil, contactapp.ErrChannelUnavailable
+		}
+		previousID = row.ID
+		ids, parseErr := channelAttachmentReferenceIDs(json.RawMessage(row.WelcomeAttachmentLibraryIds))
+		if parseErr != nil {
+			return nil, contactapp.ErrChannelUnavailable
+		}
+		for _, candidate := range ids {
+			if candidate == attachmentID {
+				result = append(result, row.ID)
+				break
+			}
+		}
+	}
+	return result, nil
+}
+
 func channelImageReferenceIDs(raw json.RawMessage) ([]int64, error) {
+	return channelReferenceIDs(raw)
+}
+
+func channelAttachmentReferenceIDs(raw json.RawMessage) ([]int64, error) {
+	return channelReferenceIDs(raw)
+}
+
+func channelReferenceIDs(raw json.RawMessage) ([]int64, error) {
 	if len(raw) == 0 {
 		return []int64{}, nil
 	}
@@ -101,7 +140,7 @@ func channelImageReferenceIDs(raw json.RawMessage) ([]int64, error) {
 	result := make([]int64, 0, len(values))
 	seen := make(map[int64]struct{}, len(values))
 	for _, value := range values {
-		id, err := channelCanonicalImageReferenceID(value)
+		id, err := channelCanonicalReferenceID(value)
 		if err != nil {
 			return nil, err
 		}
@@ -115,6 +154,10 @@ func channelImageReferenceIDs(raw json.RawMessage) ([]int64, error) {
 }
 
 func channelCanonicalImageReferenceID(raw json.RawMessage) (int64, error) {
+	return channelCanonicalReferenceID(raw)
+}
+
+func channelCanonicalReferenceID(raw json.RawMessage) (int64, error) {
 	if len(raw) == 0 || raw[0] < '1' || raw[0] > '9' {
 		return 0, contactapp.ErrChannelUnavailable
 	}

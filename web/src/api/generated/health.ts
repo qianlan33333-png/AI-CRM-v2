@@ -5731,6 +5731,145 @@ export interface LegacyQuestionnaireSubmissionListResponse {
   side_effect_executed?: boolean;
 }
 
+export interface LegacyAttachmentUploadRequest {
+  /** One nonempty PDF no larger than 10 MiB. The declared MIME, HTTP sniff result, and %PDF- magic must all agree. */
+  attachment: Blob;
+  /**
+   * Optional display name; omitted falls back to the uploaded filename.
+   * @minLength 1
+   * @maxLength 200
+   */
+  name?: string;
+  /**
+   * Optional comma-separated UTF-8 tags; each is trim-normalized, nonempty, unique, at most 64 runes, and commas are not allowed inside one tag.
+   * @maxLength 3249
+   */
+  tags?: string;
+}
+
+export type LegacyAttachmentItemMimeType =
+  (typeof LegacyAttachmentItemMimeType)[keyof typeof LegacyAttachmentItemMimeType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAttachmentItemMimeType = {
+  "application/pdf": "application/pdf",
+} as const;
+
+export interface LegacyAttachmentItem {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   * @pattern ^[^/\\[:cntrl:]]+$
+   */
+  file_name: string;
+  mime_type: LegacyAttachmentItemMimeType;
+  /**
+   * @minimum 1
+   * @maximum 10485760
+   */
+  file_size: number;
+  /** @maxLength 10000 */
+  description: string;
+  /** @maxItems 50 */
+  tags: string[];
+  enabled: boolean;
+  /** @minimum 1 */
+  version: number;
+  /** @minimum 1 */
+  created_by: number;
+  /** @minimum 1 */
+  updated_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LegacyAttachmentListSuccess {
+  /** @maxItems 500 */
+  items: LegacyAttachmentItem[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 500
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+}
+
+export interface LegacyAttachmentUpdateRequest {
+  /** @minimum 1 */
+  expected_version: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @maxLength 10000 */
+  description: string;
+  /** @maxItems 50 */
+  tags: string[];
+  enabled: boolean;
+}
+
+export interface LegacyAttachmentDeleteSuccess {
+  /** @minimum 1 */
+  id: number;
+  deleted: boolean;
+  hard_deleted: boolean;
+}
+
+export interface LegacyAttachmentReferenceID {
+  /** @minimum 1 */
+  id: number;
+}
+
+export interface LegacyAttachmentDeleteReferences {
+  automation_agents: LegacyAttachmentReferenceID[];
+  channels: LegacyAttachmentReferenceID[];
+  radar_links: LegacyAttachmentReferenceID[];
+}
+
+export type LegacyAttachmentDeleteConflictError =
+  (typeof LegacyAttachmentDeleteConflictError)[keyof typeof LegacyAttachmentDeleteConflictError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAttachmentDeleteConflictError = {
+  attachment_has_references: "attachment_has_references",
+} as const;
+
+export interface LegacyAttachmentDeleteConflict {
+  error: LegacyAttachmentDeleteConflictError;
+  references: LegacyAttachmentDeleteReferences;
+}
+
+export type LegacyAttachmentErrorCode =
+  (typeof LegacyAttachmentErrorCode)[keyof typeof LegacyAttachmentErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyAttachmentErrorCode = {
+  MALFORMED_REQUEST: "MALFORMED_REQUEST",
+  UNAUTHORIZED: "UNAUTHORIZED",
+  NOT_FOUND: "NOT_FOUND",
+  CONFLICT: "CONFLICT",
+  DEPENDENCY_UNAVAILABLE: "DEPENDENCY_UNAVAILABLE",
+} as const;
+
+export interface LegacyAttachmentError {
+  code: LegacyAttachmentErrorCode;
+  /** @minLength 1 */
+  message: string;
+  /** @minLength 1 */
+  request_id: string;
+}
+
 export interface LegacyImageCreateRequest {
   /**
    * One canonical standard-base64 data URL with an exact lower-case image/png, image/jpeg, or image/gif prefix. Raw bytes and alternate alphabets are rejected.
@@ -6268,6 +6407,7 @@ export interface LegacyImageDeleteReferences {
   group_invites: LegacyImageDeleteReferenceID[];
   automation_agents: LegacyImageDeleteReferenceID[];
   channels: LegacyImageDeleteReferenceID[];
+  radar_links: LegacyImageDeleteReferenceID[];
   import_preflights: LegacyImageDeleteReferenceID[];
 }
 
@@ -11499,6 +11639,34 @@ export const DeleteLegacyImageForce = {
 } as const;
 
 export type DeleteLegacyImage409 = LegacyImageDeleteConflict | ErrorResponse;
+
+export type ListLegacyAttachmentsParams = {
+  /**
+   * @pattern ^[0-9]+$
+   */
+  limit?: string;
+  /**
+   * @pattern ^[0-9]+$
+   */
+  offset?: string;
+  enabled_only?: ListLegacyAttachmentsEnabledOnly;
+  /**
+   * @maxLength 200
+   */
+  q?: string;
+};
+
+export type ListLegacyAttachmentsEnabledOnly =
+  (typeof ListLegacyAttachmentsEnabledOnly)[keyof typeof ListLegacyAttachmentsEnabledOnly];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyAttachmentsEnabledOnly = {
+  true: "true",
+  false: "false",
+} as const;
+
+export type DeleteLegacyAttachment409 =
+  LegacyAttachmentDeleteConflict | LegacyAttachmentError;
 
 export type UploadLegacyImageBody = {
   image: Blob;
@@ -27250,6 +27418,617 @@ export const deleteLegacyImage = async (
     status: res.status,
     headers: res.headers,
   } as deleteLegacyImageResponse;
+};
+
+/**
+ * @summary List private local PDF attachment metadata
+ */
+export type listLegacyAttachmentsResponse200 = {
+  data: LegacyAttachmentListSuccess;
+  status: 200;
+};
+
+export type listLegacyAttachmentsResponse400 = {
+  data: LegacyAttachmentError;
+  status: 400;
+};
+
+export type listLegacyAttachmentsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyAttachmentsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyAttachmentsResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type listLegacyAttachmentsResponse503 = {
+  data: LegacyAttachmentError;
+  status: 503;
+};
+
+export type listLegacyAttachmentsResponseSuccess =
+  listLegacyAttachmentsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyAttachmentsResponseError = (
+  | listLegacyAttachmentsResponse400
+  | listLegacyAttachmentsResponse401
+  | listLegacyAttachmentsResponse403
+  | listLegacyAttachmentsResponse405
+  | listLegacyAttachmentsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyAttachmentsResponse =
+  listLegacyAttachmentsResponseSuccess | listLegacyAttachmentsResponseError;
+
+export const getListLegacyAttachmentsUrl = (
+  params?: ListLegacyAttachmentsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/attachment-library?${stringifiedParams}`
+    : `/api/admin/attachment-library`;
+};
+
+export const listLegacyAttachments = async (
+  params?: ListLegacyAttachmentsParams,
+  options?: RequestInit,
+): Promise<listLegacyAttachmentsResponse> => {
+  const res = await fetch(getListLegacyAttachmentsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyAttachmentsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyAttachmentsResponse;
+};
+
+/**
+ * @summary Canonically create one private PDF attachment with its local blob
+ */
+export type createLegacyAttachmentResponse200 = {
+  data: LegacyAttachmentItem;
+  status: 200;
+};
+
+export type createLegacyAttachmentResponse400 = {
+  data: LegacyAttachmentError;
+  status: 400;
+};
+
+export type createLegacyAttachmentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createLegacyAttachmentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createLegacyAttachmentResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type createLegacyAttachmentResponse409 = {
+  data: LegacyAttachmentError;
+  status: 409;
+};
+
+export type createLegacyAttachmentResponse503 = {
+  data: LegacyAttachmentError;
+  status: 503;
+};
+
+export type createLegacyAttachmentResponseSuccess =
+  createLegacyAttachmentResponse200 & {
+    headers: Headers;
+  };
+export type createLegacyAttachmentResponseError = (
+  | createLegacyAttachmentResponse400
+  | createLegacyAttachmentResponse401
+  | createLegacyAttachmentResponse403
+  | createLegacyAttachmentResponse405
+  | createLegacyAttachmentResponse409
+  | createLegacyAttachmentResponse503
+) & {
+  headers: Headers;
+};
+
+export type createLegacyAttachmentResponse =
+  createLegacyAttachmentResponseSuccess | createLegacyAttachmentResponseError;
+
+export const getCreateLegacyAttachmentUrl = () => {
+  return `/api/admin/attachment-library`;
+};
+
+export const createLegacyAttachment = async (
+  legacyAttachmentUploadRequest: LegacyAttachmentUploadRequest,
+  options?: RequestInit,
+): Promise<createLegacyAttachmentResponse> => {
+  const formData = new FormData();
+  formData.append(`attachment`, legacyAttachmentUploadRequest.attachment);
+  if (legacyAttachmentUploadRequest.name !== undefined) {
+    formData.append(`name`, legacyAttachmentUploadRequest.name);
+  }
+  if (legacyAttachmentUploadRequest.tags !== undefined) {
+    formData.append(`tags`, legacyAttachmentUploadRequest.tags);
+  }
+
+  const res = await fetch(getCreateLegacyAttachmentUrl(), {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createLegacyAttachmentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createLegacyAttachmentResponse;
+};
+
+/**
+ * @summary Legacy upload alias for the canonical private PDF attachment command
+ */
+export type uploadLegacyAttachmentResponse200 = {
+  data: LegacyAttachmentItem;
+  status: 200;
+};
+
+export type uploadLegacyAttachmentResponse400 = {
+  data: LegacyAttachmentError;
+  status: 400;
+};
+
+export type uploadLegacyAttachmentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type uploadLegacyAttachmentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type uploadLegacyAttachmentResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type uploadLegacyAttachmentResponse409 = {
+  data: LegacyAttachmentError;
+  status: 409;
+};
+
+export type uploadLegacyAttachmentResponse503 = {
+  data: LegacyAttachmentError;
+  status: 503;
+};
+
+export type uploadLegacyAttachmentResponseSuccess =
+  uploadLegacyAttachmentResponse200 & {
+    headers: Headers;
+  };
+export type uploadLegacyAttachmentResponseError = (
+  | uploadLegacyAttachmentResponse400
+  | uploadLegacyAttachmentResponse401
+  | uploadLegacyAttachmentResponse403
+  | uploadLegacyAttachmentResponse405
+  | uploadLegacyAttachmentResponse409
+  | uploadLegacyAttachmentResponse503
+) & {
+  headers: Headers;
+};
+
+export type uploadLegacyAttachmentResponse =
+  uploadLegacyAttachmentResponseSuccess | uploadLegacyAttachmentResponseError;
+
+export const getUploadLegacyAttachmentUrl = () => {
+  return `/api/admin/attachment-library/upload`;
+};
+
+export const uploadLegacyAttachment = async (
+  legacyAttachmentUploadRequest: LegacyAttachmentUploadRequest,
+  options?: RequestInit,
+): Promise<uploadLegacyAttachmentResponse> => {
+  const formData = new FormData();
+  formData.append(`attachment`, legacyAttachmentUploadRequest.attachment);
+  if (legacyAttachmentUploadRequest.name !== undefined) {
+    formData.append(`name`, legacyAttachmentUploadRequest.name);
+  }
+  if (legacyAttachmentUploadRequest.tags !== undefined) {
+    formData.append(`tags`, legacyAttachmentUploadRequest.tags);
+  }
+
+  const res = await fetch(getUploadLegacyAttachmentUrl(), {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: uploadLegacyAttachmentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as uploadLegacyAttachmentResponse;
+};
+
+/**
+ * @summary Read one private local PDF attachment metadata
+ */
+export type getLegacyAttachmentResponse200 = {
+  data: LegacyAttachmentItem;
+  status: 200;
+};
+
+export type getLegacyAttachmentResponse400 = {
+  data: LegacyAttachmentError;
+  status: 400;
+};
+
+export type getLegacyAttachmentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyAttachmentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyAttachmentResponse404 = {
+  data: LegacyAttachmentError;
+  status: 404;
+};
+
+export type getLegacyAttachmentResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type getLegacyAttachmentResponse503 = {
+  data: LegacyAttachmentError;
+  status: 503;
+};
+
+export type getLegacyAttachmentResponseSuccess =
+  getLegacyAttachmentResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyAttachmentResponseError = (
+  | getLegacyAttachmentResponse400
+  | getLegacyAttachmentResponse401
+  | getLegacyAttachmentResponse403
+  | getLegacyAttachmentResponse404
+  | getLegacyAttachmentResponse405
+  | getLegacyAttachmentResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyAttachmentResponse =
+  getLegacyAttachmentResponseSuccess | getLegacyAttachmentResponseError;
+
+export const getGetLegacyAttachmentUrl = (attachmentId: string) => {
+  return `/api/admin/attachment-library/${attachmentId}`;
+};
+
+export const getLegacyAttachment = async (
+  attachmentId: string,
+  options?: RequestInit,
+): Promise<getLegacyAttachmentResponse> => {
+  const res = await fetch(getGetLegacyAttachmentUrl(attachmentId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyAttachmentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyAttachmentResponse;
+};
+
+/**
+ * @summary CAS-update only mutable private PDF attachment metadata and enabled state
+ */
+export type updateLegacyAttachmentResponse200 = {
+  data: LegacyAttachmentItem;
+  status: 200;
+};
+
+export type updateLegacyAttachmentResponse400 = {
+  data: LegacyAttachmentError;
+  status: 400;
+};
+
+export type updateLegacyAttachmentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateLegacyAttachmentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateLegacyAttachmentResponse404 = {
+  data: LegacyAttachmentError;
+  status: 404;
+};
+
+export type updateLegacyAttachmentResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type updateLegacyAttachmentResponse409 = {
+  data: LegacyAttachmentError;
+  status: 409;
+};
+
+export type updateLegacyAttachmentResponse503 = {
+  data: LegacyAttachmentError;
+  status: 503;
+};
+
+export type updateLegacyAttachmentResponseSuccess =
+  updateLegacyAttachmentResponse200 & {
+    headers: Headers;
+  };
+export type updateLegacyAttachmentResponseError = (
+  | updateLegacyAttachmentResponse400
+  | updateLegacyAttachmentResponse401
+  | updateLegacyAttachmentResponse403
+  | updateLegacyAttachmentResponse404
+  | updateLegacyAttachmentResponse405
+  | updateLegacyAttachmentResponse409
+  | updateLegacyAttachmentResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateLegacyAttachmentResponse =
+  updateLegacyAttachmentResponseSuccess | updateLegacyAttachmentResponseError;
+
+export const getUpdateLegacyAttachmentUrl = (attachmentId: string) => {
+  return `/api/admin/attachment-library/${attachmentId}`;
+};
+
+export const updateLegacyAttachment = async (
+  attachmentId: string,
+  legacyAttachmentUpdateRequest: LegacyAttachmentUpdateRequest,
+  options?: RequestInit,
+): Promise<updateLegacyAttachmentResponse> => {
+  const res = await fetch(getUpdateLegacyAttachmentUrl(attachmentId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(legacyAttachmentUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateLegacyAttachmentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateLegacyAttachmentResponse;
+};
+
+/**
+ * @summary Hard-delete one unreferenced private local PDF attachment
+ */
+export type deleteLegacyAttachmentResponse200 = {
+  data: LegacyAttachmentDeleteSuccess;
+  status: 200;
+};
+
+export type deleteLegacyAttachmentResponse400 = {
+  data: LegacyAttachmentError;
+  status: 400;
+};
+
+export type deleteLegacyAttachmentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type deleteLegacyAttachmentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type deleteLegacyAttachmentResponse404 = {
+  data: LegacyAttachmentError;
+  status: 404;
+};
+
+export type deleteLegacyAttachmentResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type deleteLegacyAttachmentResponse409 = {
+  data: DeleteLegacyAttachment409;
+  status: 409;
+};
+
+export type deleteLegacyAttachmentResponse503 = {
+  data: LegacyAttachmentError;
+  status: 503;
+};
+
+export type deleteLegacyAttachmentResponseSuccess =
+  deleteLegacyAttachmentResponse200 & {
+    headers: Headers;
+  };
+export type deleteLegacyAttachmentResponseError = (
+  | deleteLegacyAttachmentResponse400
+  | deleteLegacyAttachmentResponse401
+  | deleteLegacyAttachmentResponse403
+  | deleteLegacyAttachmentResponse404
+  | deleteLegacyAttachmentResponse405
+  | deleteLegacyAttachmentResponse409
+  | deleteLegacyAttachmentResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteLegacyAttachmentResponse =
+  deleteLegacyAttachmentResponseSuccess | deleteLegacyAttachmentResponseError;
+
+export const getDeleteLegacyAttachmentUrl = (attachmentId: string) => {
+  return `/api/admin/attachment-library/${attachmentId}`;
+};
+
+export const deleteLegacyAttachment = async (
+  attachmentId: string,
+  options?: RequestInit,
+): Promise<deleteLegacyAttachmentResponse> => {
+  const res = await fetch(getDeleteLegacyAttachmentUrl(attachmentId), {
+    ...options,
+    method: "DELETE",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteLegacyAttachmentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteLegacyAttachmentResponse;
+};
+
+/**
+ * @summary Privately download one validated local PDF attachment
+ */
+export type downloadLegacyAttachmentResponse200 = {
+  data: Blob;
+  status: 200;
+};
+
+export type downloadLegacyAttachmentResponse400 = {
+  data: LegacyAttachmentError;
+  status: 400;
+};
+
+export type downloadLegacyAttachmentResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type downloadLegacyAttachmentResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type downloadLegacyAttachmentResponse404 = {
+  data: LegacyAttachmentError;
+  status: 404;
+};
+
+export type downloadLegacyAttachmentResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type downloadLegacyAttachmentResponse503 = {
+  data: LegacyAttachmentError;
+  status: 503;
+};
+
+export type downloadLegacyAttachmentResponseSuccess =
+  downloadLegacyAttachmentResponse200 & {
+    headers: Headers;
+  };
+export type downloadLegacyAttachmentResponseError = (
+  | downloadLegacyAttachmentResponse400
+  | downloadLegacyAttachmentResponse401
+  | downloadLegacyAttachmentResponse403
+  | downloadLegacyAttachmentResponse404
+  | downloadLegacyAttachmentResponse405
+  | downloadLegacyAttachmentResponse503
+) & {
+  headers: Headers;
+};
+
+export type downloadLegacyAttachmentResponse =
+  | downloadLegacyAttachmentResponseSuccess
+  | downloadLegacyAttachmentResponseError;
+
+export const getDownloadLegacyAttachmentUrl = (attachmentId: string) => {
+  return `/api/admin/attachment-library/${attachmentId}/download`;
+};
+
+export const downloadLegacyAttachment = async (
+  attachmentId: string,
+  options?: RequestInit,
+): Promise<downloadLegacyAttachmentResponse> => {
+  const res = await fetch(getDownloadLegacyAttachmentUrl(attachmentId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: downloadLegacyAttachmentResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as downloadLegacyAttachmentResponse;
 };
 
 /**

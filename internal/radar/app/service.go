@@ -14,6 +14,7 @@ import (
 	"time"
 
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 	radarport "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/port"
 )
@@ -30,6 +31,8 @@ const (
 type Service struct {
 	uow                platformport.UnitOfWork
 	repository         radarport.Repository
+	images             mediaport.ImageMetadataReader
+	attachments        mediaport.AttachmentMetadataReader
 	events             eventport.Appender
 	now                func() time.Time
 	generatePublicCode func() (string, error)
@@ -38,12 +41,32 @@ type Service struct {
 var _ radarport.Application = (*Service)(nil)
 
 func NewService(uow platformport.UnitOfWork, repository radarport.Repository, events eventport.Appender) (*Service, error) {
+	return newService(uow, repository, nil, nil, events)
+}
+
+// NewServiceWithImageReferences wires Media's transaction-bound image reader.
+// A Radar cover is only written after ImageExists has acquired FOR KEY SHARE,
+// which serializes the reference write with Media's hard delete lock.
+func NewServiceWithImageReferences(uow platformport.UnitOfWork, repository radarport.Repository, images mediaport.ImageMetadataReader, events eventport.Appender) (*Service, error) {
+	return newService(uow, repository, images, nil, events)
+}
+
+// NewServiceWithMediaReferences wires both Media reference readers. The
+// attachment reader is needed once attachment_id becomes a live local foreign
+// reference; it uses the same FOR KEY SHARE / hard-delete protocol as covers.
+func NewServiceWithMediaReferences(uow platformport.UnitOfWork, repository radarport.Repository, images mediaport.ImageMetadataReader, attachments mediaport.AttachmentMetadataReader, events eventport.Appender) (*Service, error) {
+	return newService(uow, repository, images, attachments, events)
+}
+
+func newService(uow platformport.UnitOfWork, repository radarport.Repository, images mediaport.ImageMetadataReader, attachments mediaport.AttachmentMetadataReader, events eventport.Appender) (*Service, error) {
 	if nilDependency(uow) || nilDependency(repository) || nilDependency(events) {
 		return nil, radarport.ErrUnavailable
 	}
 	return &Service{
 		uow:                uow,
 		repository:         repository,
+		images:             images,
+		attachments:        attachments,
 		events:             events,
 		now:                time.Now,
 		generatePublicCode: randomPublicCode,
@@ -154,6 +177,12 @@ func (service *Service) Create(ctx context.Context, command radarport.CreateComm
 			result, replayErr = linkResult(*record.Result)
 			return replayErr
 		}
+		if referenceErr := service.validateCoverImageReference(tx, normalized.CoverImageID); referenceErr != nil {
+			return referenceErr
+		}
+		if referenceErr := service.validateAttachmentReference(tx, normalized.AttachmentID); referenceErr != nil {
+			return referenceErr
+		}
 
 		var created radarport.Link
 		for attempt := 0; attempt < maximumPublicCodeAttempts; attempt++ {
@@ -255,6 +284,12 @@ func (service *Service) Update(ctx context.Context, command radarport.UpdateComm
 		}
 		if !validateStoredLink(updated) {
 			return radarport.ErrInvalidArgument
+		}
+		if referenceErr := service.validateCoverImageReference(tx, updated.CoverImageID); referenceErr != nil {
+			return referenceErr
+		}
+		if referenceErr := service.validateAttachmentReference(tx, updated.AttachmentID); referenceErr != nil {
+			return referenceErr
 		}
 		changed := updated.Name != current.Name || updated.Title != current.Title || updated.DestinationURL != current.DestinationURL || !equivalentID(updated.CoverImageID, current.CoverImageID) || !equivalentID(updated.AttachmentID, current.AttachmentID)
 		if changed {
@@ -571,6 +606,40 @@ func (service *Service) nowUTC() time.Time {
 
 func (service *Service) ready() bool {
 	return service != nil && !nilDependency(service.uow) && !nilDependency(service.repository) && !nilDependency(service.events) && service.now != nil && service.generatePublicCode != nil
+}
+
+func (service *Service) validateCoverImageReference(ctx context.Context, imageID *int64) error {
+	if imageID == nil {
+		return nil
+	}
+	if service == nil || nilDependency(service.images) {
+		return radarport.ErrUnavailable
+	}
+	exists, err := service.images.ImageExists(ctx, *imageID)
+	if err != nil {
+		return radarport.ErrUnavailable
+	}
+	if !exists {
+		return radarport.Invalid("cover_image_id", "not_found")
+	}
+	return nil
+}
+
+func (service *Service) validateAttachmentReference(ctx context.Context, attachmentID *int64) error {
+	if attachmentID == nil {
+		return nil
+	}
+	if service == nil || nilDependency(service.attachments) {
+		return radarport.ErrUnavailable
+	}
+	exists, err := service.attachments.AttachmentExists(ctx, *attachmentID)
+	if err != nil {
+		return radarport.ErrUnavailable
+	}
+	if !exists {
+		return radarport.Invalid("attachment_id", "not_found")
+	}
+	return nil
 }
 
 func nilDependency(value any) bool {

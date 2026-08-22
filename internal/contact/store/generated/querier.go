@@ -35,6 +35,7 @@ type Querier interface {
 	InsertCustomerMergeLineage(ctx context.Context, arg InsertCustomerMergeLineageParams) (int64, error)
 	InsertExternalEventIdempotency(ctx context.Context, arg InsertExternalEventIdempotencyParams) (int64, error)
 	InsertStage(ctx context.Context, arg InsertStageParams) (InsertStageRow, error)
+	ListChannelAttachmentReferencePackages(ctx context.Context) ([]ListChannelAttachmentReferencePackagesRow, error)
 	ListChannelImageReferencePackages(ctx context.Context) ([]ListChannelImageReferencePackagesRow, error)
 	// Contact owns the local channel catalog; WeCom remains a provider adapter.
 	ListChannels(ctx context.Context, arg ListChannelsParams) ([]ListChannelsRow, error)

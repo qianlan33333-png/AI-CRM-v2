@@ -18,6 +18,7 @@ type imageDeleteMemory struct {
 	references  ImageDeleteReferences
 	agents      []int64
 	channels    []int64
+	radarLinks  []int64
 	events      []eventport.Event
 	failEvent   bool
 	failReaders bool
@@ -28,6 +29,7 @@ type imageDeleteMemoryUOW struct{ state *imageDeleteMemory }
 type imageDeleteMemoryStore struct{ state *imageDeleteMemory }
 type imageDeleteMemoryAutomation struct{ state *imageDeleteMemory }
 type imageDeleteMemoryContact struct{ state *imageDeleteMemory }
+type imageDeleteMemoryRadar struct{ state *imageDeleteMemory }
 type imageDeleteMemoryEvents struct{ state *imageDeleteMemory }
 
 func (u imageDeleteMemoryUOW) Within(ctx context.Context, run func(context.Context) error) error {
@@ -100,6 +102,12 @@ func (r imageDeleteMemoryContact) ListImageReferenceChannelIDs(_ context.Context
 	}
 	return append([]int64{}, r.state.channels...), nil
 }
+func (r imageDeleteMemoryRadar) ListImageReferenceLinkIDs(_ context.Context, _ int64) ([]int64, error) {
+	if r.state.failReaders {
+		return nil, errors.New("radar reader failed")
+	}
+	return append([]int64{}, r.state.radarLinks...), nil
+}
 func (e imageDeleteMemoryEvents) Append(_ context.Context, event eventport.Event) (eventport.EventID, error) {
 	if e.state.failEvent {
 		return 0, errors.New("event write failed")
@@ -144,6 +152,13 @@ func TestImageDeleteActorScopedReplayConflictReferencesAndRollback(t *testing.T)
 	}
 
 	state.references = emptyImageDeleteReferences()
+	state.radarLinks = []int64{21}
+	state.images[44] = true
+	blockedByRadar, err := service.DeleteImage(context.Background(), ImageDeleteCommand{ImageID: 44, Actor: 7, IdempotencyKey: "delete-image-command-radar"})
+	if !errors.Is(err, ErrImageHasReferences) || len(blockedByRadar.References.RadarLinks) != 1 || blockedByRadar.References.RadarLinks[0] != 21 || !state.images[44] {
+		t.Fatalf("radar blocked=%#v err=%v state=%#v", blockedByRadar, err, state)
+	}
+	state.radarLinks = []int64{}
 	state.images[44] = true
 	state.failEvent = true
 	if _, err = service.DeleteImage(context.Background(), ImageDeleteCommand{ImageID: 44, Actor: 7, IdempotencyKey: "delete-image-command-0003"}); !errors.Is(err, ErrImageDeleteUnavailable) || !state.images[44] || len(state.receipts) != 1 || len(state.events) != 1 {
@@ -165,7 +180,7 @@ func TestImageDeleteRejectsUnorderedOrUnavailableReferenceReads(t *testing.T) {
 }
 
 func newImageDeleteMemoryService(state *imageDeleteMemory) *ImageDeleteService {
-	service := NewImageDeleteService(imageDeleteMemoryUOW{state}, imageDeleteMemoryStore{state}, imageDeleteMemoryAutomation{state}, imageDeleteMemoryContact{state}, imageDeleteMemoryEvents{state})
+	service := NewImageDeleteService(imageDeleteMemoryUOW{state}, imageDeleteMemoryStore{state}, imageDeleteMemoryAutomation{state}, imageDeleteMemoryContact{state}, imageDeleteMemoryRadar{state}, imageDeleteMemoryEvents{state})
 	service.now = func() time.Time { return time.Date(2026, 8, 19, 10, 0, 0, 0, time.UTC) }
 	return service
 }
@@ -179,5 +194,5 @@ func cloneImageDeleteReceipt(receipt ImageDeleteReceipt) ImageDeleteReceipt {
 }
 func cloneImageDeleteReferences(value ImageDeleteReferences) ImageDeleteReferences {
 	return ImageDeleteReferences{Miniprograms: append([]int64{}, value.Miniprograms...), CampaignSteps: append([]int64{}, value.CampaignSteps...),
-		GroupInvites: append([]int64{}, value.GroupInvites...), AutomationAgents: append([]int64{}, value.AutomationAgents...), Channels: append([]int64{}, value.Channels...), ImportPreflights: append([]int64{}, value.ImportPreflights...)}
+		GroupInvites: append([]int64{}, value.GroupInvites...), AutomationAgents: append([]int64{}, value.AutomationAgents...), Channels: append([]int64{}, value.Channels...), RadarLinks: append([]int64{}, value.RadarLinks...), ImportPreflights: append([]int64{}, value.ImportPreflights...)}
 }

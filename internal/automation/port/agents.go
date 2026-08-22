@@ -41,6 +41,12 @@ type ImageReferenceReader interface {
 	ListImageReferenceAgentIDs(context.Context, int64) ([]int64, error)
 }
 
+// AttachmentReferenceReader is the Automation-owned read-only answer to
+// whether a fixed content package references one private attachment.
+type AttachmentReferenceReader interface {
+	ListAttachmentReferenceAgentIDs(context.Context, int64) ([]int64, error)
+}
+
 type Agent struct {
 	ID                  AgentID             `json:"id"`
 	AgentName           string              `json:"agent_name"`
