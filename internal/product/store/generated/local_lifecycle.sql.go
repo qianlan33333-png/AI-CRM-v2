@@ -64,6 +64,18 @@ func (q *Queries) DeleteLocalProductIfSafe(ctx context.Context, command []byte) 
 	return deleted_count, err
 }
 
+const lockLocalProductDeleteReferences = `-- name: LockLocalProductDeleteReferences :exec
+LOCK TABLE coupon_targets, order_list_projections IN SHARE MODE
+`
+
+// SHARE conflicts with the ROW EXCLUSIVE lock acquired by INSERT/UPDATE on
+// both reference tables. The FK added by migration 00059 is the final
+// product-row integrity check after this deterministic table-lock window.
+func (q *Queries) LockLocalProductDeleteReferences(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, lockLocalProductDeleteReferences)
+	return err
+}
+
 const updateLocalProductLifecycle = `-- name: UpdateLocalProductLifecycle :execrows
 
 WITH command AS (

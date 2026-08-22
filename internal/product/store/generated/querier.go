@@ -29,6 +29,10 @@ type Querier interface {
 	ListProductLocalEntitlements(ctx context.Context, arg ListProductLocalEntitlementsParams) ([]ListProductLocalEntitlementsRow, error)
 	ListProducts(ctx context.Context, arg ListProductsParams) ([]ListProductsRow, error)
 	ListProductsOffset(ctx context.Context, arg ListProductsOffsetParams) ([]ListProductsOffsetRow, error)
+	// SHARE conflicts with the ROW EXCLUSIVE lock acquired by INSERT/UPDATE on
+	// both reference tables. The FK added by migration 00059 is the final
+	// product-row integrity check after this deterministic table-lock window.
+	LockLocalProductDeleteReferences(ctx context.Context) error
 	ReserveEntitlementOperationReceipt(ctx context.Context, arg ReserveEntitlementOperationReceiptParams) (ReserveEntitlementOperationReceiptRow, error)
 	ReserveProductOperationReceipt(ctx context.Context, arg ReserveProductOperationReceiptParams) (ReserveProductOperationReceiptRow, error)
 	RevokeProductLocalEntitlement(ctx context.Context, arg RevokeProductLocalEntitlementParams) (RevokeProductLocalEntitlementRow, error)

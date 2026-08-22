@@ -159,8 +159,8 @@ psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 50
 psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
   "DELETE FROM products WHERE id=${protected_product_id}" >/dev/null
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 58
-read -r final_product_waterline local_lifecycle_column lifecycle_constraint receipt_constraint <<<"$(
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 59
+read -r final_product_waterline local_lifecycle_column lifecycle_constraint receipt_constraint coupon_fk order_fk coupon_orphans order_orphans <<<"$(
   psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c \
     "SELECT max(version_id),
             (SELECT count(*) FROM information_schema.columns
@@ -169,13 +169,19 @@ read -r final_product_waterline local_lifecycle_column lifecycle_constraint rece
               WHERE conrelid='public.products'::regclass AND conname='products_local_lifecycle'),
             (SELECT count(*) FROM pg_constraint
               WHERE conrelid='public.product_operation_receipts'::regclass AND conname='product_operation_receipts_operation')
+            ,(SELECT count(*) FROM pg_constraint
+              WHERE conrelid='public.coupon_targets'::regclass AND conname='coupon_targets_product_fk')
+            ,(SELECT count(*) FROM pg_constraint
+              WHERE conrelid='public.order_list_projections'::regclass AND conname='order_list_projections_product_fk')
+            ,(SELECT count(*) FROM public.coupon_targets target LEFT JOIN public.products product ON product.id=target.product_id WHERE product.id IS NULL)
+            ,(SELECT count(*) FROM public.order_list_projections order_projection LEFT JOIN public.products product ON product.id=order_projection.product_id WHERE order_projection.product_id IS NOT NULL AND product.id IS NULL)
        FROM goose_db_version WHERE is_applied"
 )"
-[[ "$final_product_waterline" = "58" && "$local_lifecycle_column" = "1" && "$lifecycle_constraint" = "1" && "$receipt_constraint" = "1" ]]
+[[ "$final_product_waterline" = "59" && "$local_lifecycle_column" = "1" && "$lifecycle_constraint" = "1" && "$receipt_constraint" = "1" && "$coupon_fk" = "1" && "$order_fk" = "1" && "$coupon_orphans" = "0" && "$order_orphans" = "0" ]]
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" test -race -count=1 -timeout=300s \
-  -run '^TestI01A(Create|Event|S200K|Storage).*' \
+  -run '^TestI01A(Create|DeleteReference|Event|S200K|Storage).*' \
   ./acceptance/product -args -database-url "$database_url"
 
-printf 'P4-I01A migration compatibility: PASS (28/29/28/29/50/49/50/58, versioned facts make rollback fail closed, Event/Auth/session history preserved)\n'
+printf 'P4-I01A migration compatibility: PASS (28/29/28/29/50/49/50/59, reference FKs and delete-vs-insert concurrency verified, versioned facts make rollback fail closed, Event/Auth/session history preserved)\n'

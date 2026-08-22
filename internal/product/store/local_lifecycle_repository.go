@@ -22,6 +22,10 @@ type localProductSafeDeleter interface {
 	DeleteLocalProductIfSafe(context.Context, []byte) (int64, error)
 }
 
+type localProductDeleteReferenceLocker interface {
+	LockLocalProductDeleteReferences(context.Context) error
+}
+
 func (repository *CatalogRepository) UpdateLocalProductLifecycle(ctx context.Context, command productapp.LocalProductLifecycleStoreUpdate, now time.Time) (productport.Product, error) {
 	if repository == nil || command.ID < 1 || command.ExpectedVersion < 1 || now.IsZero() || !json.Valid(command.LegacyAdminProjection) ||
 		(command.LocalLifecycle != productport.LocalProductDraft && command.LocalLifecycle != productport.LocalProductDisabled && command.LocalLifecycle != productport.LocalProductEnabled) {
@@ -75,6 +79,13 @@ func (repository *CatalogRepository) DeleteLocalProductIfSafe(ctx context.Contex
 	deleter, ok := any(querySet).(localProductSafeDeleter)
 	if !ok {
 		return false, productapp.ErrUnavailable
+	}
+	locker, ok := any(querySet).(localProductDeleteReferenceLocker)
+	if !ok {
+		return false, productapp.ErrUnavailable
+	}
+	if err := locker.LockLocalProductDeleteReferences(ctx); err != nil {
+		return false, unavailable(err)
 	}
 	payload, err := json.Marshal(struct {
 		ProductID       int64 `json:"product_id"`

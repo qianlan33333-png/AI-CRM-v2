@@ -61,3 +61,9 @@ WITH command AS (
 )
 SELECT count(*)::bigint AS deleted_count
 FROM doomed;
+
+-- name: LockLocalProductDeleteReferences :exec
+-- SHARE conflicts with the ROW EXCLUSIVE lock acquired by INSERT/UPDATE on
+-- both reference tables. The FK added by migration 00059 is the final
+-- product-row integrity check after this deterministic table-lock window.
+LOCK TABLE coupon_targets, order_list_projections IN SHARE MODE;
