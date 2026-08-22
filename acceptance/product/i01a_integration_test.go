@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
@@ -23,6 +24,7 @@ import (
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
 	productstore "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store"
+	productdb "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/generated"
 )
 
 var i01aDatabaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 I01A database")
@@ -422,10 +424,150 @@ func TestI01AStorageCatalogAndSingleInstanceShape(t *testing.T) {
 	  (SELECT count(*) FROM pg_constraint WHERE conrelid IN ('products'::regclass,'product_images'::regclass,'product_catalog_counters'::regclass,'product_operation_receipts'::regclass) AND confrelid='event_log'::regclass)`).Scan(
 		&waterline, &constraints, &invalidConstraints, &indexes, &invalidIndexes, &eventForeignKeys,
 	)
-	if err != nil || waterline != 58 || constraints < 20 || invalidConstraints != 0 || indexes < 6 || invalidIndexes != 0 || eventForeignKeys != 0 {
+	if err != nil || waterline != 59 || constraints < 20 || invalidConstraints != 0 || indexes < 6 || invalidIndexes != 0 || eventForeignKeys != 0 {
 		t.Fatalf("catalog waterline/constraints/invalid/indexes/invalid/event-fk/error=%d/%d/%d/%d/%d/%d/%v",
 			waterline, constraints, invalidConstraints, indexes, invalidIndexes, eventForeignKeys, err)
 	}
+}
+
+func TestI01ADeleteReferenceLocksRejectConcurrentCouponAndOrderInsert(t *testing.T) {
+	pool, ctx := openPool(t)
+	t.Run("coupon_targets", func(t *testing.T) {
+		productID, productCode := seedDeleteLockProduct(t, pool, ctx, "coupon")
+		couponID := seedDeleteLockCoupon(t, pool, ctx, "coupon")
+		assertDeleteLockRejectsInsert(t, pool, ctx, productID, productCode, "coupon_targets", func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, `INSERT INTO coupon_targets(coupon_id,position,target_ref,product_id) VALUES ($1,0,$2,$3)`, couponID, "standard_product:"+fmt.Sprint(productID), productID)
+			return err
+		}, func() (int, error) {
+			var count int
+			err := pool.QueryRow(ctx, `SELECT count(*) FROM coupon_targets WHERE product_id=$1`, productID).Scan(&count)
+			return count, err
+		})
+	})
+	t.Run("order_list_projections", func(t *testing.T) {
+		productID, productCode := seedDeleteLockProduct(t, pool, ctx, "order")
+		assertDeleteLockRejectsInsert(t, pool, ctx, productID, productCode, "order_list_projections", func(tx pgx.Tx) error {
+			_, err := tx.Exec(ctx, `INSERT INTO order_list_projections
+      (provider,provider_label,merchant_order_no,platform_transaction_no,product_id,product_code,product_name_snapshot,amount_minor,currency,status,status_label,detail_url,created_at,updated_at)
+      VALUES ('wechat','wechat',$1,$2,$3,$4,'并发删除测试',1,'CNY','paid','已支付','/api/admin/orders/lock-test',now(),now())`, uniqueCode("lock-order"), uniqueCode("lock-tx"), productID, productCode)
+			return err
+		}, func() (int, error) {
+			var count int
+			err := pool.QueryRow(ctx, `SELECT count(*) FROM order_list_projections WHERE product_id=$1`, productID).Scan(&count)
+			return count, err
+		})
+	})
+}
+
+func assertDeleteLockRejectsInsert(t *testing.T, pool *pgxpool.Pool, ctx context.Context, productID int64, productCode, referenceTable string, insert func(pgx.Tx) error, count func() (int, error)) {
+	t.Helper()
+	deleteReady := make(chan struct{})
+	deleteRelease := make(chan struct{})
+	deleteDone := make(chan error, 1)
+	go func() {
+		deleteDone <- platformstore.NewUnitOfWork(pool).Within(ctx, func(txCtx context.Context) error {
+			tx, err := platformstore.TxFromContext(txCtx)
+			if err != nil {
+				return err
+			}
+			queries := productdb.New(tx)
+			if err = queries.LockLocalProductDeleteReferences(txCtx); err != nil {
+				return err
+			}
+			close(deleteReady)
+			<-deleteRelease
+			deleted, err := queries.DeleteLocalProductIfSafe(txCtx, []byte(fmt.Sprintf(`{"product_id":%d,"expected_version":1}`, productID)))
+			if err != nil {
+				return err
+			}
+			if deleted != 1 {
+				return fmt.Errorf("deleted=%d", deleted)
+			}
+			return nil
+		})
+	}()
+	select {
+	case err := <-deleteDone:
+		t.Fatalf("delete transaction ended before locking %s: %v", referenceTable, err)
+	case <-deleteReady:
+	}
+
+	writerStarted := make(chan struct{})
+	writerDone := make(chan error, 1)
+	go func() {
+		tx, err := pool.Begin(ctx)
+		if err != nil {
+			writerDone <- err
+			return
+		}
+		defer func() { _ = tx.Rollback(ctx) }()
+		close(writerStarted)
+		writerDone <- insert(tx)
+	}()
+	select {
+	case err := <-writerDone:
+		close(deleteRelease)
+		<-deleteDone
+		t.Fatalf("concurrent %s insert was not blocked by delete lock: %v", referenceTable, err)
+	case <-writerStarted:
+	case <-time.After(2 * time.Second):
+		close(deleteRelease)
+		<-deleteDone
+		t.Fatalf("concurrent %s writer did not start", referenceTable)
+	}
+	select {
+	case err := <-writerDone:
+		close(deleteRelease)
+		<-deleteDone
+		t.Fatalf("concurrent %s insert completed while delete held SHARE lock: %v", referenceTable, err)
+	case <-time.After(250 * time.Millisecond):
+	}
+	close(deleteRelease)
+	if err := <-deleteDone; err != nil {
+		t.Fatalf("delete transaction error for %s: %v", referenceTable, err)
+	}
+	if err := <-writerDone; err == nil {
+		t.Fatalf("concurrent %s insert succeeded after product deletion", referenceTable)
+	} else {
+		var pgErr *pgconn.PgError
+		if !errors.As(err, &pgErr) || pgErr.Code != "23503" {
+			t.Fatalf("concurrent %s insert error=%v, want FK violation", referenceTable, err)
+		}
+	}
+	if count, err := count(); err != nil || count != 0 {
+		t.Fatalf("%s dangling reference count=%d error=%v", referenceTable, count, err)
+	}
+	var productCount int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM products WHERE id=$1`, productID).Scan(&productCount); err != nil || productCount != 0 {
+		t.Fatalf("deleted product count=%d error=%v", productCount, err)
+	}
+}
+
+func seedDeleteLockProduct(t *testing.T, pool *pgxpool.Pool, ctx context.Context, suffix string) (int64, string) {
+	t.Helper()
+	code := uniqueCode("delete-lock-" + suffix)
+	var id int64
+	if err := pool.QueryRow(ctx, `INSERT INTO products
+      (product_code,name,description,price_minor,currency,stock_quantity,created_by,created_at,updated_at,local_lifecycle,legacy_admin_projection)
+      VALUES ($1,'并发删除商品','',1,'CNY',0,1,now(),now(),'draft','{"schema_version":1}'::jsonb) RETURNING id`, code).Scan(&id); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE product_catalog_counters SET total_products=total_products+1 WHERE singleton=TRUE`); err != nil {
+		t.Fatal(err)
+	}
+	return id, code
+}
+
+func seedDeleteLockCoupon(t *testing.T, pool *pgxpool.Pool, ctx context.Context, suffix string) int64 {
+	t.Helper()
+	var id int64
+	now := time.Now().UTC()
+	if err := pool.QueryRow(ctx, `INSERT INTO coupons
+      (name,discount_amount_total,currency,status,total_issue_limit,per_user_issue_limit,claim_starts_at,claim_ends_at,validity_mode,relative_validity_days,created_by,updated_by,created_at,updated_at)
+      VALUES ($1,1,'CNY','draft',1,1,$2,$3,'relative_days',1,1,1,$2,$2) RETURNING id`, uniqueCode("delete-lock-"+suffix), now, now.Add(time.Hour)).Scan(&id); err != nil {
+		t.Fatal(err)
+	}
+	return id
 }
 
 func realService(pool *pgxpool.Pool) *productapp.Service {

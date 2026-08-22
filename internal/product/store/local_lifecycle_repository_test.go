@@ -25,6 +25,8 @@ func TestLocalProductLifecycleSQLContractIsSafeByConstruction(t *testing.T) {
 		"service_period_member_grid_collaborators",
 		"product_catalog_counters",
 		"total_products = total_products - 1",
+		"-- name: LockLocalProductDeleteReferences :exec",
+		"LOCK TABLE coupon_targets, order_list_projections IN SHARE MODE",
 	} {
 		if !strings.Contains(source, fragment) {
 			t.Fatalf("SQL contract missing %q", fragment)
