@@ -6234,7 +6234,9 @@ paths:
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: none
       x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: outbound_tasks.local_read_model
       x-aicrm-external-effect: none
+      x-aicrm-local-only: true
       parameters:
         - { name: status, in: query, schema: { type: string, enum: [pending, sending, sent, retryable_failed, final_failed, outcome_unknown, cancelled] } }
         - { name: business_id, in: query, schema: { type: integer, format: int64, minimum: 1 } }
@@ -6246,6 +6248,28 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/push-center/jobs/{job_id}:
+    get:
+      tags: [p4-outbound-operations]
+      operationId: getLegacyOutboundJob
+      summary: Read one owner-scoped local outbound task without exposing provider identifiers or delivery proof
+      x-p4-decision-evidence: P4-OUTBOUND-OPERATIONS-2026-08-20
+      x-aicrm-capability: outbound.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: outbound_tasks.local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ name: job_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Closed local outbound task projection, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOutboundJobDetailResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/push-center/jobs/{job_id}/reconciliation:
     get:
@@ -6259,7 +6283,9 @@ paths:
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: none
       x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: outbound_tasks.local_read_model
       x-aicrm-external-effect: none
+      x-aicrm-local-only: true
       parameters: [{ name: job_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
       responses:
         "200": { description: Local outbound reconciliation, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOutboundJobReconciliationResponse" } } } }
@@ -6281,12 +6307,39 @@ paths:
       x-aicrm-data-classification: internal_pii
       x-aicrm-data-source: local_command
       x-aicrm-external-effect: none
+      x-aicrm-local-only: true
       parameters:
         - { name: job_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
         - $ref: "#/components/parameters/CSRFToken"
         - $ref: "#/components/parameters/IdempotencyKey"
       responses:
         "202": { description: Completed local pre-worker cancellation receipt; it is not a provider receipt, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOutboundCancelResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/push-center/jobs/{job_id}/retry:
+    post:
+      tags: [p4-outbound-operations]
+      operationId: retryLegacyOutboundJob
+      summary: Create one next-generation local retry job without executing or proving provider delivery
+      x-p4-decision-evidence: P4-OUTBOUND-OPERATIONS-2026-08-20
+      x-aicrm-capability: outbound.control
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters:
+        - { name: job_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202": { description: Completed local manual-retry receipt; it is not a provider receipt or delivery proof, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOutboundRetryResponse" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -10666,20 +10719,6 @@ components:
         occurred_at: { type: string, format: date-time }
         dispatched: { type: boolean }
         deliveries: { type: array, items: { $ref: "#/components/schemas/LegacyInternalEventDelivery" } }
-    LegacyOutboundFailure:
-      type: object
-      additionalProperties: false
-      required: [kind, code]
-      properties:
-        kind: { type: string, minLength: 1, maxLength: 64 }
-        code: { type: string, maxLength: 256 }
-    LegacyOutboundProviderReceipt:
-      type: object
-      additionalProperties: false
-      required: [message_id, confirmed_at]
-      properties:
-        message_id: { type: string, minLength: 1, maxLength: 512 }
-        confirmed_at: { type: string, format: date-time }
     LegacyOutboundQueueJob:
       type: object
       additionalProperties: false
@@ -10691,7 +10730,7 @@ components:
     LegacyOutboundJob:
       type: object
       additionalProperties: false
-      required: [job_id, task_id, customer_id, status, attempt_count, delivery_proven, queue_job, created_at, status_updated_at]
+      required: [job_id, task_id, customer_id, status, attempt_count, failure_present, failure_class, provider_receipt_present, delivery_proven, local_fact_only, real_external_call_executed, delivery_semantics, queue_job, created_at, status_updated_at]
       properties:
         job_id: { type: integer, format: int64, minimum: 1 }
         task_id: { type: integer, format: int64, minimum: 1 }
@@ -10701,16 +10740,20 @@ components:
         batch_chunk_index: { type: integer, format: int32, minimum: 0 }
         status: { type: string, enum: [pending, sending, sent, retryable_failed, final_failed, outcome_unknown, cancelled] }
         attempt_count: { type: integer, format: int32, minimum: 0 }
-        failure: { $ref: "#/components/schemas/LegacyOutboundFailure" }
-        provider_receipt: { $ref: "#/components/schemas/LegacyOutboundProviderReceipt" }
-        delivery_proven: { type: boolean }
+        failure_present: { type: boolean }
+        failure_class: { type: string, enum: [none, local_failure, outcome_unknown] }
+        provider_receipt_present: { type: boolean }
+        delivery_proven: { type: boolean, enum: [false] }
+        local_fact_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
         queue_job: { $ref: "#/components/schemas/LegacyOutboundQueueJob" }
         created_at: { type: string, format: date-time }
         status_updated_at: { type: string, format: date-time }
     LegacyOutboundAttempt:
       type: object
       additionalProperties: false
-      required: [attempt_id, history_id, generation, river_job_id, attempt, max_attempts, state]
+      required: [attempt_id, history_id, generation, river_job_id, attempt, max_attempts, state, failure_present, failure_class, provider_receipt_present, delivery_proven, local_fact_only, real_external_call_executed, delivery_semantics]
       properties:
         attempt_id: { type: integer, format: int64, minimum: 1 }
         history_id: { type: integer, format: int64, minimum: 1 }
@@ -10719,14 +10762,19 @@ components:
         attempt: { type: integer, format: int32, minimum: 1 }
         max_attempts: { type: integer, format: int32, minimum: 1 }
         state: { type: string, enum: [reserved, dispatching, succeeded, retryable_failed, final_failed, outcome_unknown] }
-        failure: { $ref: "#/components/schemas/LegacyOutboundFailure" }
-        provider_receipt: { $ref: "#/components/schemas/LegacyOutboundProviderReceipt" }
+        failure_present: { type: boolean }
+        failure_class: { type: string, enum: [none, local_failure, outcome_unknown] }
+        provider_receipt_present: { type: boolean }
+        delivery_proven: { type: boolean, enum: [false] }
+        local_fact_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
         dispatch_started_at: { type: string, format: date-time }
         completed_at: { type: string, format: date-time }
     LegacyOutboundControlReceipt:
       type: object
       additionalProperties: false
-      required: [receipt_id, task_id, operation, state, generation, river_job_id, job_kind, event_id, task_status, completed_at]
+      required: [receipt_id, task_id, operation, state, generation, river_job_id, job_kind, event_id, task_status, completed_at, provider_receipt_present, delivery_proven, local_fact_only, real_external_call_executed, delivery_semantics]
       properties:
         receipt_id: { type: integer, format: int64, minimum: 1 }
         task_id: { type: integer, format: int64, minimum: 1 }
@@ -10738,10 +10786,15 @@ components:
         event_id: { type: integer, format: int64, minimum: 1 }
         task_status: { type: string, enum: [pending, sending, sent, retryable_failed, final_failed, outcome_unknown, cancelled] }
         completed_at: { type: string, format: date-time }
+        provider_receipt_present: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+        local_fact_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
     LegacyOutboundJobListResponse:
       type: object
       additionalProperties: false
-      required: [ok, jobs, items, count, has_more, limit, offset, source_status, fallback_used]
+      required: [ok, jobs, items, count, has_more, limit, offset, source_status, fallback_used, local_fact_only, real_external_call_executed, delivery_semantics]
       properties:
         ok: { type: boolean, enum: [true] }
         jobs: { type: array, items: { $ref: "#/components/schemas/LegacyOutboundJob" } }
@@ -10752,10 +10805,25 @@ components:
         offset: { type: integer, minimum: 0, maximum: 1000000 }
         source_status: { type: string, enum: [v2_outbound_service] }
         fallback_used: { type: boolean, enum: [false] }
+        local_fact_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
+    LegacyOutboundJobDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, job, source_status, fallback_used, local_fact_only, real_external_call_executed, delivery_semantics]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        job: { $ref: "#/components/schemas/LegacyOutboundJob" }
+        source_status: { type: string, enum: [v2_outbound_service] }
+        fallback_used: { type: boolean, enum: [false] }
+        local_fact_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
     LegacyOutboundJobReconciliationResponse:
       type: object
       additionalProperties: false
-      required: [ok, job, attempts, control_receipts, source_status, fallback_used]
+      required: [ok, job, attempts, control_receipts, source_status, fallback_used, local_fact_only, real_external_call_executed, delivery_semantics]
       properties:
         ok: { type: boolean, enum: [true] }
         job: { $ref: "#/components/schemas/LegacyOutboundJob" }
@@ -10763,10 +10831,13 @@ components:
         control_receipts: { type: array, items: { $ref: "#/components/schemas/LegacyOutboundControlReceipt" } }
         source_status: { type: string, enum: [v2_outbound_service] }
         fallback_used: { type: boolean, enum: [false] }
+        local_fact_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
     LegacyOutboundCancelReceipt:
       type: object
       additionalProperties: false
-      required: [receipt_id, task_id, operation, state, generation, river_job_id, job_kind, event_id, task_status, completed_at]
+      required: [receipt_id, task_id, operation, state, generation, river_job_id, job_kind, event_id, task_status, completed_at, provider_receipt_present, delivery_proven, local_fact_only, real_external_call_executed, delivery_semantics]
       properties:
         receipt_id: { type: integer, format: int64, minimum: 1 }
         task_id: { type: integer, format: int64, minimum: 1 }
@@ -10778,15 +10849,55 @@ components:
         event_id: { type: integer, format: int64, minimum: 1 }
         task_status: { type: string, enum: [cancelled] }
         completed_at: { type: string, format: date-time }
+        provider_receipt_present: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+        local_fact_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
+    LegacyOutboundRetryReceipt:
+      type: object
+      additionalProperties: false
+      required: [receipt_id, task_id, operation, state, generation, river_job_id, job_kind, event_id, task_status, completed_at, provider_receipt_present, delivery_proven, local_fact_only, real_external_call_executed, delivery_semantics]
+      properties:
+        receipt_id: { type: integer, format: int64, minimum: 1 }
+        task_id: { type: integer, format: int64, minimum: 1 }
+        operation: { type: string, enum: [manual_retry] }
+        state: { type: string, enum: [completed] }
+        generation: { type: integer, format: int32, minimum: 1 }
+        river_job_id: { type: integer, format: int64, minimum: 1 }
+        job_kind: { type: string, enum: [outbound_enqueue_one, outbound_enqueue_batch_task] }
+        event_id: { type: integer, format: int64, minimum: 1 }
+        task_status: { type: string, enum: [pending] }
+        completed_at: { type: string, format: date-time }
+        provider_receipt_present: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+        local_fact_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
     LegacyOutboundCancelResponse:
       type: object
       additionalProperties: false
-      required: [ok, control_receipt, source_status, fallback_used]
+      required: [ok, control_receipt, source_status, fallback_used, local_fact_only, real_external_call_executed, delivery_semantics]
       properties:
         ok: { type: boolean, enum: [true] }
         control_receipt: { $ref: "#/components/schemas/LegacyOutboundCancelReceipt" }
         source_status: { type: string, enum: [v2_outbound_cancel_service] }
         fallback_used: { type: boolean, enum: [false] }
+        local_fact_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
+    LegacyOutboundRetryResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, control_receipt, source_status, fallback_used, local_fact_only, real_external_call_executed, delivery_semantics]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        control_receipt: { $ref: "#/components/schemas/LegacyOutboundRetryReceipt" }
+        source_status: { type: string, enum: [v2_outbound_manual_retry_service] }
+        fallback_used: { type: boolean, enum: [false] }
+        local_fact_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
     LegacyInternalEventListResponse:
       type: object
       additionalProperties: false

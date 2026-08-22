@@ -22,6 +22,7 @@ output-options:
     - p4-domain-verification
     - p4-execution-runtime-compat
     - p4-push-center-compat
+    - p4-outbound-operations
     - p4-legacy-health
     - p4-setup-wizard
     - p4-survey

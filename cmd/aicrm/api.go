@@ -158,8 +158,9 @@ type candidateHandler struct {
 	domainVerification interface {
 		Read(string) (string, error)
 	}
-	legacyHealth *legacyhealth.Handler
-	adminOps     http.Handler
+	legacyHealth   *legacyhealth.Handler
+	adminOps       http.Handler
+	outboundLegacy *Handler
 }
 
 type identityConsoleApplication struct {
@@ -469,7 +470,7 @@ func (handler *candidateHandler) ListAutomationTriggerRuns(writer http.ResponseW
 		items = append(items, api.AutomationTriggerRun{
 			RunId:     "automation-trigger:" + strconv.FormatInt(receipt.ID, 10),
 			RequestId: "event:" + strconv.FormatInt(int64(receipt.EventID), 10),
-			AgentCode: api.TagTriggerV1, RunStatus: api.Completed,
+			AgentCode: api.TagTriggerV1, RunStatus: api.AutomationTriggerRunRunStatusCompleted,
 			TriggerSource: api.CustomerTagApplied, CustomerId: int64(receipt.CustomerID), TagId: receipt.TagID,
 			SourceEventId: int64(receipt.EventID), TriggeredEventId: int64(receipt.TriggeredEventID),
 			StartedAt: receipt.TriggeredAt, CompletedAt: receipt.CompletedAt, HasError: false,
@@ -493,7 +494,7 @@ func automationTriggerListInput(params api.ListAutomationTriggerRunsParams) (aut
 		return input, false, automationstore.ErrInvalidTagTrigger
 	}
 	empty := (params.AgentCode != nil && *params.AgentCode != "" && *params.AgentCode != string(api.TagTriggerV1)) ||
-		(params.RunStatus != nil && *params.RunStatus != "" && *params.RunStatus != string(api.Completed)) ||
+		(params.RunStatus != nil && *params.RunStatus != "" && *params.RunStatus != string(api.AutomationTriggerRunRunStatusCompleted)) ||
 		(params.TriggerSource != nil && *params.TriggerSource != "" && *params.TriggerSource != string(api.CustomerTagApplied)) ||
 		(params.HasError != nil && *params.HasError)
 	var err error
@@ -1105,6 +1106,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.legacyTagStatus = legacyTagStatusService
 	legacyHandler.adminOps = adminOpsService
 	candidate.adminOps = http.HandlerFunc(legacyHandler.AdminOps)
+	candidate.outboundLegacy = legacyHandler
 	legacyHandler.runtimeConfig = runtimeConfigDeclarationFromConfig(config)
 	legacyHandler.orders = orderapp.NewService(
 		uow, orderstore.NewRepository(), contactstore.NewCustomerDetailRepository(), productstore.NewCatalogRepository(),

@@ -576,13 +576,13 @@ func (e AutomationTriggerRunHasError) Valid() bool {
 
 // Defines values for AutomationTriggerRunRunStatus.
 const (
-	Completed AutomationTriggerRunRunStatus = "completed"
+	AutomationTriggerRunRunStatusCompleted AutomationTriggerRunRunStatus = "completed"
 )
 
 // Valid indicates whether the value is a known member of the AutomationTriggerRunRunStatus enum.
 func (e AutomationTriggerRunRunStatus) Valid() bool {
 	switch e {
-	case Completed:
+	case AutomationTriggerRunRunStatusCompleted:
 		return true
 	default:
 		return false
@@ -1957,6 +1957,1134 @@ const (
 func (e LegacyHealthMethodNotAllowedDetail) Valid() bool {
 	switch e {
 	case LegacyHealthMethodNotAllowedDetailMethodNotAllowed:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundAttemptDeliveryProven.
+const (
+	LegacyOutboundAttemptDeliveryProvenFalse LegacyOutboundAttemptDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundAttemptDeliveryProven enum.
+func (e LegacyOutboundAttemptDeliveryProven) Valid() bool {
+	switch e {
+	case LegacyOutboundAttemptDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundAttemptDeliverySemantics.
+const (
+	LegacyOutboundAttemptDeliverySemanticsLocalStateNotDeliveryProof LegacyOutboundAttemptDeliverySemantics = "local_state_not_delivery_proof"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundAttemptDeliverySemantics enum.
+func (e LegacyOutboundAttemptDeliverySemantics) Valid() bool {
+	switch e {
+	case LegacyOutboundAttemptDeliverySemanticsLocalStateNotDeliveryProof:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundAttemptFailureClass.
+const (
+	LegacyOutboundAttemptFailureClassLocalFailure   LegacyOutboundAttemptFailureClass = "local_failure"
+	LegacyOutboundAttemptFailureClassNone           LegacyOutboundAttemptFailureClass = "none"
+	LegacyOutboundAttemptFailureClassOutcomeUnknown LegacyOutboundAttemptFailureClass = "outcome_unknown"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundAttemptFailureClass enum.
+func (e LegacyOutboundAttemptFailureClass) Valid() bool {
+	switch e {
+	case LegacyOutboundAttemptFailureClassLocalFailure:
+		return true
+	case LegacyOutboundAttemptFailureClassNone:
+		return true
+	case LegacyOutboundAttemptFailureClassOutcomeUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundAttemptLocalFactOnly.
+const (
+	LegacyOutboundAttemptLocalFactOnlyTrue LegacyOutboundAttemptLocalFactOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundAttemptLocalFactOnly enum.
+func (e LegacyOutboundAttemptLocalFactOnly) Valid() bool {
+	switch e {
+	case LegacyOutboundAttemptLocalFactOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundAttemptRealExternalCallExecuted.
+const (
+	LegacyOutboundAttemptRealExternalCallExecutedFalse LegacyOutboundAttemptRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundAttemptRealExternalCallExecuted enum.
+func (e LegacyOutboundAttemptRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyOutboundAttemptRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundAttemptState.
+const (
+	LegacyOutboundAttemptStateDispatching     LegacyOutboundAttemptState = "dispatching"
+	LegacyOutboundAttemptStateFinalFailed     LegacyOutboundAttemptState = "final_failed"
+	LegacyOutboundAttemptStateOutcomeUnknown  LegacyOutboundAttemptState = "outcome_unknown"
+	LegacyOutboundAttemptStateReserved        LegacyOutboundAttemptState = "reserved"
+	LegacyOutboundAttemptStateRetryableFailed LegacyOutboundAttemptState = "retryable_failed"
+	LegacyOutboundAttemptStateSucceeded       LegacyOutboundAttemptState = "succeeded"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundAttemptState enum.
+func (e LegacyOutboundAttemptState) Valid() bool {
+	switch e {
+	case LegacyOutboundAttemptStateDispatching:
+		return true
+	case LegacyOutboundAttemptStateFinalFailed:
+		return true
+	case LegacyOutboundAttemptStateOutcomeUnknown:
+		return true
+	case LegacyOutboundAttemptStateReserved:
+		return true
+	case LegacyOutboundAttemptStateRetryableFailed:
+		return true
+	case LegacyOutboundAttemptStateSucceeded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelReceiptDeliveryProven.
+const (
+	LegacyOutboundCancelReceiptDeliveryProvenFalse LegacyOutboundCancelReceiptDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelReceiptDeliveryProven enum.
+func (e LegacyOutboundCancelReceiptDeliveryProven) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelReceiptDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelReceiptDeliverySemantics.
+const (
+	LegacyOutboundCancelReceiptDeliverySemanticsLocalStateNotDeliveryProof LegacyOutboundCancelReceiptDeliverySemantics = "local_state_not_delivery_proof"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelReceiptDeliverySemantics enum.
+func (e LegacyOutboundCancelReceiptDeliverySemantics) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelReceiptDeliverySemanticsLocalStateNotDeliveryProof:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelReceiptJobKind.
+const (
+	LegacyOutboundCancelReceiptJobKindOutboundEnqueueBatchTask LegacyOutboundCancelReceiptJobKind = "outbound_enqueue_batch_task"
+	LegacyOutboundCancelReceiptJobKindOutboundEnqueueOne       LegacyOutboundCancelReceiptJobKind = "outbound_enqueue_one"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelReceiptJobKind enum.
+func (e LegacyOutboundCancelReceiptJobKind) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelReceiptJobKindOutboundEnqueueBatchTask:
+		return true
+	case LegacyOutboundCancelReceiptJobKindOutboundEnqueueOne:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelReceiptLocalFactOnly.
+const (
+	LegacyOutboundCancelReceiptLocalFactOnlyTrue LegacyOutboundCancelReceiptLocalFactOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelReceiptLocalFactOnly enum.
+func (e LegacyOutboundCancelReceiptLocalFactOnly) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelReceiptLocalFactOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelReceiptOperation.
+const (
+	LegacyOutboundCancelReceiptOperationCancel LegacyOutboundCancelReceiptOperation = "cancel"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelReceiptOperation enum.
+func (e LegacyOutboundCancelReceiptOperation) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelReceiptOperationCancel:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelReceiptProviderReceiptPresent.
+const (
+	LegacyOutboundCancelReceiptProviderReceiptPresentFalse LegacyOutboundCancelReceiptProviderReceiptPresent = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelReceiptProviderReceiptPresent enum.
+func (e LegacyOutboundCancelReceiptProviderReceiptPresent) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelReceiptProviderReceiptPresentFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelReceiptRealExternalCallExecuted.
+const (
+	LegacyOutboundCancelReceiptRealExternalCallExecutedFalse LegacyOutboundCancelReceiptRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelReceiptRealExternalCallExecuted enum.
+func (e LegacyOutboundCancelReceiptRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelReceiptRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelReceiptState.
+const (
+	LegacyOutboundCancelReceiptStateCompleted LegacyOutboundCancelReceiptState = "completed"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelReceiptState enum.
+func (e LegacyOutboundCancelReceiptState) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelReceiptStateCompleted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelReceiptTaskStatus.
+const (
+	LegacyOutboundCancelReceiptTaskStatusCancelled LegacyOutboundCancelReceiptTaskStatus = "cancelled"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelReceiptTaskStatus enum.
+func (e LegacyOutboundCancelReceiptTaskStatus) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelReceiptTaskStatusCancelled:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelResponseDeliverySemantics.
+const (
+	LegacyOutboundCancelResponseDeliverySemanticsLocalStateNotDeliveryProof LegacyOutboundCancelResponseDeliverySemantics = "local_state_not_delivery_proof"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelResponseDeliverySemantics enum.
+func (e LegacyOutboundCancelResponseDeliverySemantics) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelResponseDeliverySemanticsLocalStateNotDeliveryProof:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelResponseFallbackUsed.
+const (
+	LegacyOutboundCancelResponseFallbackUsedFalse LegacyOutboundCancelResponseFallbackUsed = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelResponseFallbackUsed enum.
+func (e LegacyOutboundCancelResponseFallbackUsed) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelResponseFallbackUsedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelResponseLocalFactOnly.
+const (
+	LegacyOutboundCancelResponseLocalFactOnlyTrue LegacyOutboundCancelResponseLocalFactOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelResponseLocalFactOnly enum.
+func (e LegacyOutboundCancelResponseLocalFactOnly) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelResponseLocalFactOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelResponseOk.
+const (
+	LegacyOutboundCancelResponseOkTrue LegacyOutboundCancelResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelResponseOk enum.
+func (e LegacyOutboundCancelResponseOk) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelResponseRealExternalCallExecuted.
+const (
+	LegacyOutboundCancelResponseRealExternalCallExecutedFalse LegacyOutboundCancelResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelResponseRealExternalCallExecuted enum.
+func (e LegacyOutboundCancelResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyOutboundCancelResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundCancelResponseSourceStatus.
+const (
+	V2OutboundCancelService LegacyOutboundCancelResponseSourceStatus = "v2_outbound_cancel_service"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundCancelResponseSourceStatus enum.
+func (e LegacyOutboundCancelResponseSourceStatus) Valid() bool {
+	switch e {
+	case V2OutboundCancelService:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundControlReceiptDeliveryProven.
+const (
+	LegacyOutboundControlReceiptDeliveryProvenFalse LegacyOutboundControlReceiptDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundControlReceiptDeliveryProven enum.
+func (e LegacyOutboundControlReceiptDeliveryProven) Valid() bool {
+	switch e {
+	case LegacyOutboundControlReceiptDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundControlReceiptDeliverySemantics.
+const (
+	LegacyOutboundControlReceiptDeliverySemanticsLocalStateNotDeliveryProof LegacyOutboundControlReceiptDeliverySemantics = "local_state_not_delivery_proof"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundControlReceiptDeliverySemantics enum.
+func (e LegacyOutboundControlReceiptDeliverySemantics) Valid() bool {
+	switch e {
+	case LegacyOutboundControlReceiptDeliverySemanticsLocalStateNotDeliveryProof:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundControlReceiptJobKind.
+const (
+	LegacyOutboundControlReceiptJobKindOutboundEnqueueBatchTask LegacyOutboundControlReceiptJobKind = "outbound_enqueue_batch_task"
+	LegacyOutboundControlReceiptJobKindOutboundEnqueueOne       LegacyOutboundControlReceiptJobKind = "outbound_enqueue_one"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundControlReceiptJobKind enum.
+func (e LegacyOutboundControlReceiptJobKind) Valid() bool {
+	switch e {
+	case LegacyOutboundControlReceiptJobKindOutboundEnqueueBatchTask:
+		return true
+	case LegacyOutboundControlReceiptJobKindOutboundEnqueueOne:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundControlReceiptLocalFactOnly.
+const (
+	LegacyOutboundControlReceiptLocalFactOnlyTrue LegacyOutboundControlReceiptLocalFactOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundControlReceiptLocalFactOnly enum.
+func (e LegacyOutboundControlReceiptLocalFactOnly) Valid() bool {
+	switch e {
+	case LegacyOutboundControlReceiptLocalFactOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundControlReceiptOperation.
+const (
+	LegacyOutboundControlReceiptOperationCancel      LegacyOutboundControlReceiptOperation = "cancel"
+	LegacyOutboundControlReceiptOperationManualRetry LegacyOutboundControlReceiptOperation = "manual_retry"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundControlReceiptOperation enum.
+func (e LegacyOutboundControlReceiptOperation) Valid() bool {
+	switch e {
+	case LegacyOutboundControlReceiptOperationCancel:
+		return true
+	case LegacyOutboundControlReceiptOperationManualRetry:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundControlReceiptProviderReceiptPresent.
+const (
+	LegacyOutboundControlReceiptProviderReceiptPresentFalse LegacyOutboundControlReceiptProviderReceiptPresent = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundControlReceiptProviderReceiptPresent enum.
+func (e LegacyOutboundControlReceiptProviderReceiptPresent) Valid() bool {
+	switch e {
+	case LegacyOutboundControlReceiptProviderReceiptPresentFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundControlReceiptRealExternalCallExecuted.
+const (
+	LegacyOutboundControlReceiptRealExternalCallExecutedFalse LegacyOutboundControlReceiptRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundControlReceiptRealExternalCallExecuted enum.
+func (e LegacyOutboundControlReceiptRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyOutboundControlReceiptRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundControlReceiptState.
+const (
+	LegacyOutboundControlReceiptStateCompleted LegacyOutboundControlReceiptState = "completed"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundControlReceiptState enum.
+func (e LegacyOutboundControlReceiptState) Valid() bool {
+	switch e {
+	case LegacyOutboundControlReceiptStateCompleted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundControlReceiptTaskStatus.
+const (
+	LegacyOutboundControlReceiptTaskStatusCancelled       LegacyOutboundControlReceiptTaskStatus = "cancelled"
+	LegacyOutboundControlReceiptTaskStatusFinalFailed     LegacyOutboundControlReceiptTaskStatus = "final_failed"
+	LegacyOutboundControlReceiptTaskStatusOutcomeUnknown  LegacyOutboundControlReceiptTaskStatus = "outcome_unknown"
+	LegacyOutboundControlReceiptTaskStatusPending         LegacyOutboundControlReceiptTaskStatus = "pending"
+	LegacyOutboundControlReceiptTaskStatusRetryableFailed LegacyOutboundControlReceiptTaskStatus = "retryable_failed"
+	LegacyOutboundControlReceiptTaskStatusSending         LegacyOutboundControlReceiptTaskStatus = "sending"
+	LegacyOutboundControlReceiptTaskStatusSent            LegacyOutboundControlReceiptTaskStatus = "sent"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundControlReceiptTaskStatus enum.
+func (e LegacyOutboundControlReceiptTaskStatus) Valid() bool {
+	switch e {
+	case LegacyOutboundControlReceiptTaskStatusCancelled:
+		return true
+	case LegacyOutboundControlReceiptTaskStatusFinalFailed:
+		return true
+	case LegacyOutboundControlReceiptTaskStatusOutcomeUnknown:
+		return true
+	case LegacyOutboundControlReceiptTaskStatusPending:
+		return true
+	case LegacyOutboundControlReceiptTaskStatusRetryableFailed:
+		return true
+	case LegacyOutboundControlReceiptTaskStatusSending:
+		return true
+	case LegacyOutboundControlReceiptTaskStatusSent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobDeliveryProven.
+const (
+	LegacyOutboundJobDeliveryProvenFalse LegacyOutboundJobDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobDeliveryProven enum.
+func (e LegacyOutboundJobDeliveryProven) Valid() bool {
+	switch e {
+	case LegacyOutboundJobDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobDeliverySemantics.
+const (
+	LegacyOutboundJobDeliverySemanticsLocalStateNotDeliveryProof LegacyOutboundJobDeliverySemantics = "local_state_not_delivery_proof"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobDeliverySemantics enum.
+func (e LegacyOutboundJobDeliverySemantics) Valid() bool {
+	switch e {
+	case LegacyOutboundJobDeliverySemanticsLocalStateNotDeliveryProof:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobFailureClass.
+const (
+	LegacyOutboundJobFailureClassLocalFailure   LegacyOutboundJobFailureClass = "local_failure"
+	LegacyOutboundJobFailureClassNone           LegacyOutboundJobFailureClass = "none"
+	LegacyOutboundJobFailureClassOutcomeUnknown LegacyOutboundJobFailureClass = "outcome_unknown"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobFailureClass enum.
+func (e LegacyOutboundJobFailureClass) Valid() bool {
+	switch e {
+	case LegacyOutboundJobFailureClassLocalFailure:
+		return true
+	case LegacyOutboundJobFailureClassNone:
+		return true
+	case LegacyOutboundJobFailureClassOutcomeUnknown:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobLocalFactOnly.
+const (
+	LegacyOutboundJobLocalFactOnlyTrue LegacyOutboundJobLocalFactOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobLocalFactOnly enum.
+func (e LegacyOutboundJobLocalFactOnly) Valid() bool {
+	switch e {
+	case LegacyOutboundJobLocalFactOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobRealExternalCallExecuted.
+const (
+	LegacyOutboundJobRealExternalCallExecutedFalse LegacyOutboundJobRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobRealExternalCallExecuted enum.
+func (e LegacyOutboundJobRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyOutboundJobRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobStatus.
+const (
+	LegacyOutboundJobStatusCancelled       LegacyOutboundJobStatus = "cancelled"
+	LegacyOutboundJobStatusFinalFailed     LegacyOutboundJobStatus = "final_failed"
+	LegacyOutboundJobStatusOutcomeUnknown  LegacyOutboundJobStatus = "outcome_unknown"
+	LegacyOutboundJobStatusPending         LegacyOutboundJobStatus = "pending"
+	LegacyOutboundJobStatusRetryableFailed LegacyOutboundJobStatus = "retryable_failed"
+	LegacyOutboundJobStatusSending         LegacyOutboundJobStatus = "sending"
+	LegacyOutboundJobStatusSent            LegacyOutboundJobStatus = "sent"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobStatus enum.
+func (e LegacyOutboundJobStatus) Valid() bool {
+	switch e {
+	case LegacyOutboundJobStatusCancelled:
+		return true
+	case LegacyOutboundJobStatusFinalFailed:
+		return true
+	case LegacyOutboundJobStatusOutcomeUnknown:
+		return true
+	case LegacyOutboundJobStatusPending:
+		return true
+	case LegacyOutboundJobStatusRetryableFailed:
+		return true
+	case LegacyOutboundJobStatusSending:
+		return true
+	case LegacyOutboundJobStatusSent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobDetailResponseDeliverySemantics.
+const (
+	LegacyOutboundJobDetailResponseDeliverySemanticsLocalStateNotDeliveryProof LegacyOutboundJobDetailResponseDeliverySemantics = "local_state_not_delivery_proof"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobDetailResponseDeliverySemantics enum.
+func (e LegacyOutboundJobDetailResponseDeliverySemantics) Valid() bool {
+	switch e {
+	case LegacyOutboundJobDetailResponseDeliverySemanticsLocalStateNotDeliveryProof:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobDetailResponseFallbackUsed.
+const (
+	LegacyOutboundJobDetailResponseFallbackUsedFalse LegacyOutboundJobDetailResponseFallbackUsed = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobDetailResponseFallbackUsed enum.
+func (e LegacyOutboundJobDetailResponseFallbackUsed) Valid() bool {
+	switch e {
+	case LegacyOutboundJobDetailResponseFallbackUsedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobDetailResponseLocalFactOnly.
+const (
+	LegacyOutboundJobDetailResponseLocalFactOnlyTrue LegacyOutboundJobDetailResponseLocalFactOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobDetailResponseLocalFactOnly enum.
+func (e LegacyOutboundJobDetailResponseLocalFactOnly) Valid() bool {
+	switch e {
+	case LegacyOutboundJobDetailResponseLocalFactOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobDetailResponseOk.
+const (
+	LegacyOutboundJobDetailResponseOkTrue LegacyOutboundJobDetailResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobDetailResponseOk enum.
+func (e LegacyOutboundJobDetailResponseOk) Valid() bool {
+	switch e {
+	case LegacyOutboundJobDetailResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobDetailResponseRealExternalCallExecuted.
+const (
+	LegacyOutboundJobDetailResponseRealExternalCallExecutedFalse LegacyOutboundJobDetailResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobDetailResponseRealExternalCallExecuted enum.
+func (e LegacyOutboundJobDetailResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyOutboundJobDetailResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobDetailResponseSourceStatus.
+const (
+	LegacyOutboundJobDetailResponseSourceStatusV2OutboundService LegacyOutboundJobDetailResponseSourceStatus = "v2_outbound_service"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobDetailResponseSourceStatus enum.
+func (e LegacyOutboundJobDetailResponseSourceStatus) Valid() bool {
+	switch e {
+	case LegacyOutboundJobDetailResponseSourceStatusV2OutboundService:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobListResponseDeliverySemantics.
+const (
+	LegacyOutboundJobListResponseDeliverySemanticsLocalStateNotDeliveryProof LegacyOutboundJobListResponseDeliverySemantics = "local_state_not_delivery_proof"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobListResponseDeliverySemantics enum.
+func (e LegacyOutboundJobListResponseDeliverySemantics) Valid() bool {
+	switch e {
+	case LegacyOutboundJobListResponseDeliverySemanticsLocalStateNotDeliveryProof:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobListResponseFallbackUsed.
+const (
+	LegacyOutboundJobListResponseFallbackUsedFalse LegacyOutboundJobListResponseFallbackUsed = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobListResponseFallbackUsed enum.
+func (e LegacyOutboundJobListResponseFallbackUsed) Valid() bool {
+	switch e {
+	case LegacyOutboundJobListResponseFallbackUsedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobListResponseLocalFactOnly.
+const (
+	LegacyOutboundJobListResponseLocalFactOnlyTrue LegacyOutboundJobListResponseLocalFactOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobListResponseLocalFactOnly enum.
+func (e LegacyOutboundJobListResponseLocalFactOnly) Valid() bool {
+	switch e {
+	case LegacyOutboundJobListResponseLocalFactOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobListResponseOk.
+const (
+	LegacyOutboundJobListResponseOkTrue LegacyOutboundJobListResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobListResponseOk enum.
+func (e LegacyOutboundJobListResponseOk) Valid() bool {
+	switch e {
+	case LegacyOutboundJobListResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobListResponseRealExternalCallExecuted.
+const (
+	LegacyOutboundJobListResponseRealExternalCallExecutedFalse LegacyOutboundJobListResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobListResponseRealExternalCallExecuted enum.
+func (e LegacyOutboundJobListResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyOutboundJobListResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobListResponseSourceStatus.
+const (
+	LegacyOutboundJobListResponseSourceStatusV2OutboundService LegacyOutboundJobListResponseSourceStatus = "v2_outbound_service"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobListResponseSourceStatus enum.
+func (e LegacyOutboundJobListResponseSourceStatus) Valid() bool {
+	switch e {
+	case LegacyOutboundJobListResponseSourceStatusV2OutboundService:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobReconciliationResponseDeliverySemantics.
+const (
+	LegacyOutboundJobReconciliationResponseDeliverySemanticsLocalStateNotDeliveryProof LegacyOutboundJobReconciliationResponseDeliverySemantics = "local_state_not_delivery_proof"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobReconciliationResponseDeliverySemantics enum.
+func (e LegacyOutboundJobReconciliationResponseDeliverySemantics) Valid() bool {
+	switch e {
+	case LegacyOutboundJobReconciliationResponseDeliverySemanticsLocalStateNotDeliveryProof:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobReconciliationResponseFallbackUsed.
+const (
+	LegacyOutboundJobReconciliationResponseFallbackUsedFalse LegacyOutboundJobReconciliationResponseFallbackUsed = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobReconciliationResponseFallbackUsed enum.
+func (e LegacyOutboundJobReconciliationResponseFallbackUsed) Valid() bool {
+	switch e {
+	case LegacyOutboundJobReconciliationResponseFallbackUsedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobReconciliationResponseLocalFactOnly.
+const (
+	LegacyOutboundJobReconciliationResponseLocalFactOnlyTrue LegacyOutboundJobReconciliationResponseLocalFactOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobReconciliationResponseLocalFactOnly enum.
+func (e LegacyOutboundJobReconciliationResponseLocalFactOnly) Valid() bool {
+	switch e {
+	case LegacyOutboundJobReconciliationResponseLocalFactOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobReconciliationResponseOk.
+const (
+	LegacyOutboundJobReconciliationResponseOkTrue LegacyOutboundJobReconciliationResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobReconciliationResponseOk enum.
+func (e LegacyOutboundJobReconciliationResponseOk) Valid() bool {
+	switch e {
+	case LegacyOutboundJobReconciliationResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobReconciliationResponseRealExternalCallExecuted.
+const (
+	LegacyOutboundJobReconciliationResponseRealExternalCallExecutedFalse LegacyOutboundJobReconciliationResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobReconciliationResponseRealExternalCallExecuted enum.
+func (e LegacyOutboundJobReconciliationResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyOutboundJobReconciliationResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundJobReconciliationResponseSourceStatus.
+const (
+	V2OutboundService LegacyOutboundJobReconciliationResponseSourceStatus = "v2_outbound_service"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundJobReconciliationResponseSourceStatus enum.
+func (e LegacyOutboundJobReconciliationResponseSourceStatus) Valid() bool {
+	switch e {
+	case V2OutboundService:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundQueueJobKind.
+const (
+	LegacyOutboundQueueJobKindOutboundEnqueueBatchTask LegacyOutboundQueueJobKind = "outbound_enqueue_batch_task"
+	LegacyOutboundQueueJobKindOutboundEnqueueOne       LegacyOutboundQueueJobKind = "outbound_enqueue_one"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundQueueJobKind enum.
+func (e LegacyOutboundQueueJobKind) Valid() bool {
+	switch e {
+	case LegacyOutboundQueueJobKindOutboundEnqueueBatchTask:
+		return true
+	case LegacyOutboundQueueJobKindOutboundEnqueueOne:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryReceiptDeliveryProven.
+const (
+	LegacyOutboundRetryReceiptDeliveryProvenFalse LegacyOutboundRetryReceiptDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryReceiptDeliveryProven enum.
+func (e LegacyOutboundRetryReceiptDeliveryProven) Valid() bool {
+	switch e {
+	case LegacyOutboundRetryReceiptDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryReceiptDeliverySemantics.
+const (
+	LegacyOutboundRetryReceiptDeliverySemanticsLocalStateNotDeliveryProof LegacyOutboundRetryReceiptDeliverySemantics = "local_state_not_delivery_proof"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryReceiptDeliverySemantics enum.
+func (e LegacyOutboundRetryReceiptDeliverySemantics) Valid() bool {
+	switch e {
+	case LegacyOutboundRetryReceiptDeliverySemanticsLocalStateNotDeliveryProof:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryReceiptJobKind.
+const (
+	LegacyOutboundRetryReceiptJobKindOutboundEnqueueBatchTask LegacyOutboundRetryReceiptJobKind = "outbound_enqueue_batch_task"
+	LegacyOutboundRetryReceiptJobKindOutboundEnqueueOne       LegacyOutboundRetryReceiptJobKind = "outbound_enqueue_one"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryReceiptJobKind enum.
+func (e LegacyOutboundRetryReceiptJobKind) Valid() bool {
+	switch e {
+	case LegacyOutboundRetryReceiptJobKindOutboundEnqueueBatchTask:
+		return true
+	case LegacyOutboundRetryReceiptJobKindOutboundEnqueueOne:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryReceiptLocalFactOnly.
+const (
+	LegacyOutboundRetryReceiptLocalFactOnlyTrue LegacyOutboundRetryReceiptLocalFactOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryReceiptLocalFactOnly enum.
+func (e LegacyOutboundRetryReceiptLocalFactOnly) Valid() bool {
+	switch e {
+	case LegacyOutboundRetryReceiptLocalFactOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryReceiptOperation.
+const (
+	ManualRetry LegacyOutboundRetryReceiptOperation = "manual_retry"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryReceiptOperation enum.
+func (e LegacyOutboundRetryReceiptOperation) Valid() bool {
+	switch e {
+	case ManualRetry:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryReceiptProviderReceiptPresent.
+const (
+	LegacyOutboundRetryReceiptProviderReceiptPresentFalse LegacyOutboundRetryReceiptProviderReceiptPresent = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryReceiptProviderReceiptPresent enum.
+func (e LegacyOutboundRetryReceiptProviderReceiptPresent) Valid() bool {
+	switch e {
+	case LegacyOutboundRetryReceiptProviderReceiptPresentFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryReceiptRealExternalCallExecuted.
+const (
+	LegacyOutboundRetryReceiptRealExternalCallExecutedFalse LegacyOutboundRetryReceiptRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryReceiptRealExternalCallExecuted enum.
+func (e LegacyOutboundRetryReceiptRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyOutboundRetryReceiptRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryReceiptState.
+const (
+	LegacyOutboundRetryReceiptStateCompleted LegacyOutboundRetryReceiptState = "completed"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryReceiptState enum.
+func (e LegacyOutboundRetryReceiptState) Valid() bool {
+	switch e {
+	case LegacyOutboundRetryReceiptStateCompleted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryReceiptTaskStatus.
+const (
+	LegacyOutboundRetryReceiptTaskStatusPending LegacyOutboundRetryReceiptTaskStatus = "pending"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryReceiptTaskStatus enum.
+func (e LegacyOutboundRetryReceiptTaskStatus) Valid() bool {
+	switch e {
+	case LegacyOutboundRetryReceiptTaskStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryResponseDeliverySemantics.
+const (
+	LegacyOutboundRetryResponseDeliverySemanticsLocalStateNotDeliveryProof LegacyOutboundRetryResponseDeliverySemantics = "local_state_not_delivery_proof"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryResponseDeliverySemantics enum.
+func (e LegacyOutboundRetryResponseDeliverySemantics) Valid() bool {
+	switch e {
+	case LegacyOutboundRetryResponseDeliverySemanticsLocalStateNotDeliveryProof:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryResponseFallbackUsed.
+const (
+	LegacyOutboundRetryResponseFallbackUsedFalse LegacyOutboundRetryResponseFallbackUsed = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryResponseFallbackUsed enum.
+func (e LegacyOutboundRetryResponseFallbackUsed) Valid() bool {
+	switch e {
+	case LegacyOutboundRetryResponseFallbackUsedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryResponseLocalFactOnly.
+const (
+	LegacyOutboundRetryResponseLocalFactOnlyTrue LegacyOutboundRetryResponseLocalFactOnly = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryResponseLocalFactOnly enum.
+func (e LegacyOutboundRetryResponseLocalFactOnly) Valid() bool {
+	switch e {
+	case LegacyOutboundRetryResponseLocalFactOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryResponseOk.
+const (
+	LegacyOutboundRetryResponseOkTrue LegacyOutboundRetryResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryResponseOk enum.
+func (e LegacyOutboundRetryResponseOk) Valid() bool {
+	switch e {
+	case LegacyOutboundRetryResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryResponseRealExternalCallExecuted.
+const (
+	LegacyOutboundRetryResponseRealExternalCallExecutedFalse LegacyOutboundRetryResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryResponseRealExternalCallExecuted enum.
+func (e LegacyOutboundRetryResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case LegacyOutboundRetryResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for LegacyOutboundRetryResponseSourceStatus.
+const (
+	V2OutboundManualRetryService LegacyOutboundRetryResponseSourceStatus = "v2_outbound_manual_retry_service"
+)
+
+// Valid indicates whether the value is a known member of the LegacyOutboundRetryResponseSourceStatus enum.
+func (e LegacyOutboundRetryResponseSourceStatus) Valid() bool {
+	switch e {
+	case V2OutboundManualRetryService:
 		return true
 	default:
 		return false
@@ -4455,13 +5583,13 @@ func (e SetupWizardSaveResponseRuntimeApplied) Valid() bool {
 
 // Defines values for SetupWizardUnavailableMaskedSettingConfigured.
 const (
-	False SetupWizardUnavailableMaskedSettingConfigured = false
+	SetupWizardUnavailableMaskedSettingConfiguredFalse SetupWizardUnavailableMaskedSettingConfigured = false
 )
 
 // Valid indicates whether the value is a known member of the SetupWizardUnavailableMaskedSettingConfigured enum.
 func (e SetupWizardUnavailableMaskedSettingConfigured) Valid() bool {
 	switch e {
-	case False:
+	case SetupWizardUnavailableMaskedSettingConfiguredFalse:
 		return true
 	default:
 		return false
@@ -4470,13 +5598,13 @@ func (e SetupWizardUnavailableMaskedSettingConfigured) Valid() bool {
 
 // Defines values for SetupWizardUnavailableMaskedSettingMasked.
 const (
-	True SetupWizardUnavailableMaskedSettingMasked = true
+	SetupWizardUnavailableMaskedSettingMaskedTrue SetupWizardUnavailableMaskedSettingMasked = true
 )
 
 // Valid indicates whether the value is a known member of the SetupWizardUnavailableMaskedSettingMasked enum.
 func (e SetupWizardUnavailableMaskedSettingMasked) Valid() bool {
 	switch e {
-	case True:
+	case SetupWizardUnavailableMaskedSettingMaskedTrue:
 		return true
 	default:
 		return false
@@ -4531,6 +5659,39 @@ func (e ListLegacyChannelsParamsStatus) Valid() bool {
 	case ListLegacyChannelsParamsStatusArchived:
 		return true
 	case ListLegacyChannelsParamsStatusInactive:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListLegacyOutboundJobsParamsStatus.
+const (
+	ListLegacyOutboundJobsParamsStatusCancelled       ListLegacyOutboundJobsParamsStatus = "cancelled"
+	ListLegacyOutboundJobsParamsStatusFinalFailed     ListLegacyOutboundJobsParamsStatus = "final_failed"
+	ListLegacyOutboundJobsParamsStatusOutcomeUnknown  ListLegacyOutboundJobsParamsStatus = "outcome_unknown"
+	ListLegacyOutboundJobsParamsStatusPending         ListLegacyOutboundJobsParamsStatus = "pending"
+	ListLegacyOutboundJobsParamsStatusRetryableFailed ListLegacyOutboundJobsParamsStatus = "retryable_failed"
+	ListLegacyOutboundJobsParamsStatusSending         ListLegacyOutboundJobsParamsStatus = "sending"
+	ListLegacyOutboundJobsParamsStatusSent            ListLegacyOutboundJobsParamsStatus = "sent"
+)
+
+// Valid indicates whether the value is a known member of the ListLegacyOutboundJobsParamsStatus enum.
+func (e ListLegacyOutboundJobsParamsStatus) Valid() bool {
+	switch e {
+	case ListLegacyOutboundJobsParamsStatusCancelled:
+		return true
+	case ListLegacyOutboundJobsParamsStatusFinalFailed:
+		return true
+	case ListLegacyOutboundJobsParamsStatusOutcomeUnknown:
+		return true
+	case ListLegacyOutboundJobsParamsStatusPending:
+		return true
+	case ListLegacyOutboundJobsParamsStatusRetryableFailed:
+		return true
+	case ListLegacyOutboundJobsParamsStatusSending:
+		return true
+	case ListLegacyOutboundJobsParamsStatusSent:
 		return true
 	default:
 		return false
@@ -5836,6 +6997,384 @@ type LegacyHealthMethodNotAllowed struct {
 
 // LegacyHealthMethodNotAllowedDetail defines model for LegacyHealthMethodNotAllowed.Detail.
 type LegacyHealthMethodNotAllowedDetail string
+
+// LegacyOutboundAttempt defines model for LegacyOutboundAttempt.
+type LegacyOutboundAttempt struct {
+	Attempt                  int32                                         `json:"attempt"`
+	AttemptId                int64                                         `json:"attempt_id"`
+	CompletedAt              *time.Time                                    `json:"completed_at,omitempty"`
+	DeliveryProven           LegacyOutboundAttemptDeliveryProven           `json:"delivery_proven"`
+	DeliverySemantics        LegacyOutboundAttemptDeliverySemantics        `json:"delivery_semantics"`
+	DispatchStartedAt        *time.Time                                    `json:"dispatch_started_at,omitempty"`
+	FailureClass             LegacyOutboundAttemptFailureClass             `json:"failure_class"`
+	FailurePresent           bool                                          `json:"failure_present"`
+	Generation               int32                                         `json:"generation"`
+	HistoryId                int64                                         `json:"history_id"`
+	LocalFactOnly            LegacyOutboundAttemptLocalFactOnly            `json:"local_fact_only"`
+	MaxAttempts              int32                                         `json:"max_attempts"`
+	ProviderReceiptPresent   bool                                          `json:"provider_receipt_present"`
+	RealExternalCallExecuted LegacyOutboundAttemptRealExternalCallExecuted `json:"real_external_call_executed"`
+	RiverJobId               int64                                         `json:"river_job_id"`
+	State                    LegacyOutboundAttemptState                    `json:"state"`
+}
+
+// LegacyOutboundAttemptDeliveryProven defines model for LegacyOutboundAttempt.DeliveryProven.
+type LegacyOutboundAttemptDeliveryProven bool
+
+// LegacyOutboundAttemptDeliverySemantics defines model for LegacyOutboundAttempt.DeliverySemantics.
+type LegacyOutboundAttemptDeliverySemantics string
+
+// LegacyOutboundAttemptFailureClass defines model for LegacyOutboundAttempt.FailureClass.
+type LegacyOutboundAttemptFailureClass string
+
+// LegacyOutboundAttemptLocalFactOnly defines model for LegacyOutboundAttempt.LocalFactOnly.
+type LegacyOutboundAttemptLocalFactOnly bool
+
+// LegacyOutboundAttemptRealExternalCallExecuted defines model for LegacyOutboundAttempt.RealExternalCallExecuted.
+type LegacyOutboundAttemptRealExternalCallExecuted bool
+
+// LegacyOutboundAttemptState defines model for LegacyOutboundAttempt.State.
+type LegacyOutboundAttemptState string
+
+// LegacyOutboundCancelReceipt defines model for LegacyOutboundCancelReceipt.
+type LegacyOutboundCancelReceipt struct {
+	CompletedAt              time.Time                                           `json:"completed_at"`
+	DeliveryProven           LegacyOutboundCancelReceiptDeliveryProven           `json:"delivery_proven"`
+	DeliverySemantics        LegacyOutboundCancelReceiptDeliverySemantics        `json:"delivery_semantics"`
+	EventId                  int64                                               `json:"event_id"`
+	Generation               int32                                               `json:"generation"`
+	JobKind                  LegacyOutboundCancelReceiptJobKind                  `json:"job_kind"`
+	LocalFactOnly            LegacyOutboundCancelReceiptLocalFactOnly            `json:"local_fact_only"`
+	Operation                LegacyOutboundCancelReceiptOperation                `json:"operation"`
+	ProviderReceiptPresent   LegacyOutboundCancelReceiptProviderReceiptPresent   `json:"provider_receipt_present"`
+	RealExternalCallExecuted LegacyOutboundCancelReceiptRealExternalCallExecuted `json:"real_external_call_executed"`
+	ReceiptId                int64                                               `json:"receipt_id"`
+	RiverJobId               int64                                               `json:"river_job_id"`
+	State                    LegacyOutboundCancelReceiptState                    `json:"state"`
+	TaskId                   int64                                               `json:"task_id"`
+	TaskStatus               LegacyOutboundCancelReceiptTaskStatus               `json:"task_status"`
+}
+
+// LegacyOutboundCancelReceiptDeliveryProven defines model for LegacyOutboundCancelReceipt.DeliveryProven.
+type LegacyOutboundCancelReceiptDeliveryProven bool
+
+// LegacyOutboundCancelReceiptDeliverySemantics defines model for LegacyOutboundCancelReceipt.DeliverySemantics.
+type LegacyOutboundCancelReceiptDeliverySemantics string
+
+// LegacyOutboundCancelReceiptJobKind defines model for LegacyOutboundCancelReceipt.JobKind.
+type LegacyOutboundCancelReceiptJobKind string
+
+// LegacyOutboundCancelReceiptLocalFactOnly defines model for LegacyOutboundCancelReceipt.LocalFactOnly.
+type LegacyOutboundCancelReceiptLocalFactOnly bool
+
+// LegacyOutboundCancelReceiptOperation defines model for LegacyOutboundCancelReceipt.Operation.
+type LegacyOutboundCancelReceiptOperation string
+
+// LegacyOutboundCancelReceiptProviderReceiptPresent defines model for LegacyOutboundCancelReceipt.ProviderReceiptPresent.
+type LegacyOutboundCancelReceiptProviderReceiptPresent bool
+
+// LegacyOutboundCancelReceiptRealExternalCallExecuted defines model for LegacyOutboundCancelReceipt.RealExternalCallExecuted.
+type LegacyOutboundCancelReceiptRealExternalCallExecuted bool
+
+// LegacyOutboundCancelReceiptState defines model for LegacyOutboundCancelReceipt.State.
+type LegacyOutboundCancelReceiptState string
+
+// LegacyOutboundCancelReceiptTaskStatus defines model for LegacyOutboundCancelReceipt.TaskStatus.
+type LegacyOutboundCancelReceiptTaskStatus string
+
+// LegacyOutboundCancelResponse defines model for LegacyOutboundCancelResponse.
+type LegacyOutboundCancelResponse struct {
+	ControlReceipt           LegacyOutboundCancelReceipt                          `json:"control_receipt"`
+	DeliverySemantics        LegacyOutboundCancelResponseDeliverySemantics        `json:"delivery_semantics"`
+	FallbackUsed             LegacyOutboundCancelResponseFallbackUsed             `json:"fallback_used"`
+	LocalFactOnly            LegacyOutboundCancelResponseLocalFactOnly            `json:"local_fact_only"`
+	Ok                       LegacyOutboundCancelResponseOk                       `json:"ok"`
+	RealExternalCallExecuted LegacyOutboundCancelResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	SourceStatus             LegacyOutboundCancelResponseSourceStatus             `json:"source_status"`
+}
+
+// LegacyOutboundCancelResponseDeliverySemantics defines model for LegacyOutboundCancelResponse.DeliverySemantics.
+type LegacyOutboundCancelResponseDeliverySemantics string
+
+// LegacyOutboundCancelResponseFallbackUsed defines model for LegacyOutboundCancelResponse.FallbackUsed.
+type LegacyOutboundCancelResponseFallbackUsed bool
+
+// LegacyOutboundCancelResponseLocalFactOnly defines model for LegacyOutboundCancelResponse.LocalFactOnly.
+type LegacyOutboundCancelResponseLocalFactOnly bool
+
+// LegacyOutboundCancelResponseOk defines model for LegacyOutboundCancelResponse.Ok.
+type LegacyOutboundCancelResponseOk bool
+
+// LegacyOutboundCancelResponseRealExternalCallExecuted defines model for LegacyOutboundCancelResponse.RealExternalCallExecuted.
+type LegacyOutboundCancelResponseRealExternalCallExecuted bool
+
+// LegacyOutboundCancelResponseSourceStatus defines model for LegacyOutboundCancelResponse.SourceStatus.
+type LegacyOutboundCancelResponseSourceStatus string
+
+// LegacyOutboundControlReceipt defines model for LegacyOutboundControlReceipt.
+type LegacyOutboundControlReceipt struct {
+	CompletedAt              time.Time                                            `json:"completed_at"`
+	DeliveryProven           LegacyOutboundControlReceiptDeliveryProven           `json:"delivery_proven"`
+	DeliverySemantics        LegacyOutboundControlReceiptDeliverySemantics        `json:"delivery_semantics"`
+	EventId                  int64                                                `json:"event_id"`
+	Generation               int32                                                `json:"generation"`
+	JobKind                  LegacyOutboundControlReceiptJobKind                  `json:"job_kind"`
+	LocalFactOnly            LegacyOutboundControlReceiptLocalFactOnly            `json:"local_fact_only"`
+	Operation                LegacyOutboundControlReceiptOperation                `json:"operation"`
+	ProviderReceiptPresent   LegacyOutboundControlReceiptProviderReceiptPresent   `json:"provider_receipt_present"`
+	RealExternalCallExecuted LegacyOutboundControlReceiptRealExternalCallExecuted `json:"real_external_call_executed"`
+	ReceiptId                int64                                                `json:"receipt_id"`
+	RiverJobId               int64                                                `json:"river_job_id"`
+	State                    LegacyOutboundControlReceiptState                    `json:"state"`
+	TaskId                   int64                                                `json:"task_id"`
+	TaskStatus               LegacyOutboundControlReceiptTaskStatus               `json:"task_status"`
+}
+
+// LegacyOutboundControlReceiptDeliveryProven defines model for LegacyOutboundControlReceipt.DeliveryProven.
+type LegacyOutboundControlReceiptDeliveryProven bool
+
+// LegacyOutboundControlReceiptDeliverySemantics defines model for LegacyOutboundControlReceipt.DeliverySemantics.
+type LegacyOutboundControlReceiptDeliverySemantics string
+
+// LegacyOutboundControlReceiptJobKind defines model for LegacyOutboundControlReceipt.JobKind.
+type LegacyOutboundControlReceiptJobKind string
+
+// LegacyOutboundControlReceiptLocalFactOnly defines model for LegacyOutboundControlReceipt.LocalFactOnly.
+type LegacyOutboundControlReceiptLocalFactOnly bool
+
+// LegacyOutboundControlReceiptOperation defines model for LegacyOutboundControlReceipt.Operation.
+type LegacyOutboundControlReceiptOperation string
+
+// LegacyOutboundControlReceiptProviderReceiptPresent defines model for LegacyOutboundControlReceipt.ProviderReceiptPresent.
+type LegacyOutboundControlReceiptProviderReceiptPresent bool
+
+// LegacyOutboundControlReceiptRealExternalCallExecuted defines model for LegacyOutboundControlReceipt.RealExternalCallExecuted.
+type LegacyOutboundControlReceiptRealExternalCallExecuted bool
+
+// LegacyOutboundControlReceiptState defines model for LegacyOutboundControlReceipt.State.
+type LegacyOutboundControlReceiptState string
+
+// LegacyOutboundControlReceiptTaskStatus defines model for LegacyOutboundControlReceipt.TaskStatus.
+type LegacyOutboundControlReceiptTaskStatus string
+
+// LegacyOutboundJob defines model for LegacyOutboundJob.
+type LegacyOutboundJob struct {
+	AttemptCount             int32                                     `json:"attempt_count"`
+	BatchChunkIndex          *int32                                    `json:"batch_chunk_index,omitempty"`
+	BusinessId               *int64                                    `json:"business_id,omitempty"`
+	CreatedAt                time.Time                                 `json:"created_at"`
+	CustomerId               int64                                     `json:"customer_id"`
+	DeliveryProven           LegacyOutboundJobDeliveryProven           `json:"delivery_proven"`
+	DeliverySemantics        LegacyOutboundJobDeliverySemantics        `json:"delivery_semantics"`
+	FailureClass             LegacyOutboundJobFailureClass             `json:"failure_class"`
+	FailurePresent           bool                                      `json:"failure_present"`
+	JobId                    int64                                     `json:"job_id"`
+	LocalFactOnly            LegacyOutboundJobLocalFactOnly            `json:"local_fact_only"`
+	OwnerStaffId             *int64                                    `json:"owner_staff_id,omitempty"`
+	ProviderReceiptPresent   bool                                      `json:"provider_receipt_present"`
+	QueueJob                 LegacyOutboundQueueJob                    `json:"queue_job"`
+	RealExternalCallExecuted LegacyOutboundJobRealExternalCallExecuted `json:"real_external_call_executed"`
+	Status                   LegacyOutboundJobStatus                   `json:"status"`
+	StatusUpdatedAt          time.Time                                 `json:"status_updated_at"`
+	TaskId                   int64                                     `json:"task_id"`
+}
+
+// LegacyOutboundJobDeliveryProven defines model for LegacyOutboundJob.DeliveryProven.
+type LegacyOutboundJobDeliveryProven bool
+
+// LegacyOutboundJobDeliverySemantics defines model for LegacyOutboundJob.DeliverySemantics.
+type LegacyOutboundJobDeliverySemantics string
+
+// LegacyOutboundJobFailureClass defines model for LegacyOutboundJob.FailureClass.
+type LegacyOutboundJobFailureClass string
+
+// LegacyOutboundJobLocalFactOnly defines model for LegacyOutboundJob.LocalFactOnly.
+type LegacyOutboundJobLocalFactOnly bool
+
+// LegacyOutboundJobRealExternalCallExecuted defines model for LegacyOutboundJob.RealExternalCallExecuted.
+type LegacyOutboundJobRealExternalCallExecuted bool
+
+// LegacyOutboundJobStatus defines model for LegacyOutboundJob.Status.
+type LegacyOutboundJobStatus string
+
+// LegacyOutboundJobDetailResponse defines model for LegacyOutboundJobDetailResponse.
+type LegacyOutboundJobDetailResponse struct {
+	DeliverySemantics        LegacyOutboundJobDetailResponseDeliverySemantics        `json:"delivery_semantics"`
+	FallbackUsed             LegacyOutboundJobDetailResponseFallbackUsed             `json:"fallback_used"`
+	Job                      LegacyOutboundJob                                       `json:"job"`
+	LocalFactOnly            LegacyOutboundJobDetailResponseLocalFactOnly            `json:"local_fact_only"`
+	Ok                       LegacyOutboundJobDetailResponseOk                       `json:"ok"`
+	RealExternalCallExecuted LegacyOutboundJobDetailResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	SourceStatus             LegacyOutboundJobDetailResponseSourceStatus             `json:"source_status"`
+}
+
+// LegacyOutboundJobDetailResponseDeliverySemantics defines model for LegacyOutboundJobDetailResponse.DeliverySemantics.
+type LegacyOutboundJobDetailResponseDeliverySemantics string
+
+// LegacyOutboundJobDetailResponseFallbackUsed defines model for LegacyOutboundJobDetailResponse.FallbackUsed.
+type LegacyOutboundJobDetailResponseFallbackUsed bool
+
+// LegacyOutboundJobDetailResponseLocalFactOnly defines model for LegacyOutboundJobDetailResponse.LocalFactOnly.
+type LegacyOutboundJobDetailResponseLocalFactOnly bool
+
+// LegacyOutboundJobDetailResponseOk defines model for LegacyOutboundJobDetailResponse.Ok.
+type LegacyOutboundJobDetailResponseOk bool
+
+// LegacyOutboundJobDetailResponseRealExternalCallExecuted defines model for LegacyOutboundJobDetailResponse.RealExternalCallExecuted.
+type LegacyOutboundJobDetailResponseRealExternalCallExecuted bool
+
+// LegacyOutboundJobDetailResponseSourceStatus defines model for LegacyOutboundJobDetailResponse.SourceStatus.
+type LegacyOutboundJobDetailResponseSourceStatus string
+
+// LegacyOutboundJobListResponse defines model for LegacyOutboundJobListResponse.
+type LegacyOutboundJobListResponse struct {
+	Count                    int                                                   `json:"count"`
+	DeliverySemantics        LegacyOutboundJobListResponseDeliverySemantics        `json:"delivery_semantics"`
+	FallbackUsed             LegacyOutboundJobListResponseFallbackUsed             `json:"fallback_used"`
+	HasMore                  bool                                                  `json:"has_more"`
+	Items                    []LegacyOutboundJob                                   `json:"items"`
+	Jobs                     []LegacyOutboundJob                                   `json:"jobs"`
+	Limit                    int                                                   `json:"limit"`
+	LocalFactOnly            LegacyOutboundJobListResponseLocalFactOnly            `json:"local_fact_only"`
+	Offset                   int                                                   `json:"offset"`
+	Ok                       LegacyOutboundJobListResponseOk                       `json:"ok"`
+	RealExternalCallExecuted LegacyOutboundJobListResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	SourceStatus             LegacyOutboundJobListResponseSourceStatus             `json:"source_status"`
+}
+
+// LegacyOutboundJobListResponseDeliverySemantics defines model for LegacyOutboundJobListResponse.DeliverySemantics.
+type LegacyOutboundJobListResponseDeliverySemantics string
+
+// LegacyOutboundJobListResponseFallbackUsed defines model for LegacyOutboundJobListResponse.FallbackUsed.
+type LegacyOutboundJobListResponseFallbackUsed bool
+
+// LegacyOutboundJobListResponseLocalFactOnly defines model for LegacyOutboundJobListResponse.LocalFactOnly.
+type LegacyOutboundJobListResponseLocalFactOnly bool
+
+// LegacyOutboundJobListResponseOk defines model for LegacyOutboundJobListResponse.Ok.
+type LegacyOutboundJobListResponseOk bool
+
+// LegacyOutboundJobListResponseRealExternalCallExecuted defines model for LegacyOutboundJobListResponse.RealExternalCallExecuted.
+type LegacyOutboundJobListResponseRealExternalCallExecuted bool
+
+// LegacyOutboundJobListResponseSourceStatus defines model for LegacyOutboundJobListResponse.SourceStatus.
+type LegacyOutboundJobListResponseSourceStatus string
+
+// LegacyOutboundJobReconciliationResponse defines model for LegacyOutboundJobReconciliationResponse.
+type LegacyOutboundJobReconciliationResponse struct {
+	Attempts                 []LegacyOutboundAttempt                                         `json:"attempts"`
+	ControlReceipts          []LegacyOutboundControlReceipt                                  `json:"control_receipts"`
+	DeliverySemantics        LegacyOutboundJobReconciliationResponseDeliverySemantics        `json:"delivery_semantics"`
+	FallbackUsed             LegacyOutboundJobReconciliationResponseFallbackUsed             `json:"fallback_used"`
+	Job                      LegacyOutboundJob                                               `json:"job"`
+	LocalFactOnly            LegacyOutboundJobReconciliationResponseLocalFactOnly            `json:"local_fact_only"`
+	Ok                       LegacyOutboundJobReconciliationResponseOk                       `json:"ok"`
+	RealExternalCallExecuted LegacyOutboundJobReconciliationResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	SourceStatus             LegacyOutboundJobReconciliationResponseSourceStatus             `json:"source_status"`
+}
+
+// LegacyOutboundJobReconciliationResponseDeliverySemantics defines model for LegacyOutboundJobReconciliationResponse.DeliverySemantics.
+type LegacyOutboundJobReconciliationResponseDeliverySemantics string
+
+// LegacyOutboundJobReconciliationResponseFallbackUsed defines model for LegacyOutboundJobReconciliationResponse.FallbackUsed.
+type LegacyOutboundJobReconciliationResponseFallbackUsed bool
+
+// LegacyOutboundJobReconciliationResponseLocalFactOnly defines model for LegacyOutboundJobReconciliationResponse.LocalFactOnly.
+type LegacyOutboundJobReconciliationResponseLocalFactOnly bool
+
+// LegacyOutboundJobReconciliationResponseOk defines model for LegacyOutboundJobReconciliationResponse.Ok.
+type LegacyOutboundJobReconciliationResponseOk bool
+
+// LegacyOutboundJobReconciliationResponseRealExternalCallExecuted defines model for LegacyOutboundJobReconciliationResponse.RealExternalCallExecuted.
+type LegacyOutboundJobReconciliationResponseRealExternalCallExecuted bool
+
+// LegacyOutboundJobReconciliationResponseSourceStatus defines model for LegacyOutboundJobReconciliationResponse.SourceStatus.
+type LegacyOutboundJobReconciliationResponseSourceStatus string
+
+// LegacyOutboundQueueJob defines model for LegacyOutboundQueueJob.
+type LegacyOutboundQueueJob struct {
+	Generation int32                      `json:"generation"`
+	Kind       LegacyOutboundQueueJobKind `json:"kind"`
+	RiverJobId int64                      `json:"river_job_id"`
+}
+
+// LegacyOutboundQueueJobKind defines model for LegacyOutboundQueueJob.Kind.
+type LegacyOutboundQueueJobKind string
+
+// LegacyOutboundRetryReceipt defines model for LegacyOutboundRetryReceipt.
+type LegacyOutboundRetryReceipt struct {
+	CompletedAt              time.Time                                          `json:"completed_at"`
+	DeliveryProven           LegacyOutboundRetryReceiptDeliveryProven           `json:"delivery_proven"`
+	DeliverySemantics        LegacyOutboundRetryReceiptDeliverySemantics        `json:"delivery_semantics"`
+	EventId                  int64                                              `json:"event_id"`
+	Generation               int32                                              `json:"generation"`
+	JobKind                  LegacyOutboundRetryReceiptJobKind                  `json:"job_kind"`
+	LocalFactOnly            LegacyOutboundRetryReceiptLocalFactOnly            `json:"local_fact_only"`
+	Operation                LegacyOutboundRetryReceiptOperation                `json:"operation"`
+	ProviderReceiptPresent   LegacyOutboundRetryReceiptProviderReceiptPresent   `json:"provider_receipt_present"`
+	RealExternalCallExecuted LegacyOutboundRetryReceiptRealExternalCallExecuted `json:"real_external_call_executed"`
+	ReceiptId                int64                                              `json:"receipt_id"`
+	RiverJobId               int64                                              `json:"river_job_id"`
+	State                    LegacyOutboundRetryReceiptState                    `json:"state"`
+	TaskId                   int64                                              `json:"task_id"`
+	TaskStatus               LegacyOutboundRetryReceiptTaskStatus               `json:"task_status"`
+}
+
+// LegacyOutboundRetryReceiptDeliveryProven defines model for LegacyOutboundRetryReceipt.DeliveryProven.
+type LegacyOutboundRetryReceiptDeliveryProven bool
+
+// LegacyOutboundRetryReceiptDeliverySemantics defines model for LegacyOutboundRetryReceipt.DeliverySemantics.
+type LegacyOutboundRetryReceiptDeliverySemantics string
+
+// LegacyOutboundRetryReceiptJobKind defines model for LegacyOutboundRetryReceipt.JobKind.
+type LegacyOutboundRetryReceiptJobKind string
+
+// LegacyOutboundRetryReceiptLocalFactOnly defines model for LegacyOutboundRetryReceipt.LocalFactOnly.
+type LegacyOutboundRetryReceiptLocalFactOnly bool
+
+// LegacyOutboundRetryReceiptOperation defines model for LegacyOutboundRetryReceipt.Operation.
+type LegacyOutboundRetryReceiptOperation string
+
+// LegacyOutboundRetryReceiptProviderReceiptPresent defines model for LegacyOutboundRetryReceipt.ProviderReceiptPresent.
+type LegacyOutboundRetryReceiptProviderReceiptPresent bool
+
+// LegacyOutboundRetryReceiptRealExternalCallExecuted defines model for LegacyOutboundRetryReceipt.RealExternalCallExecuted.
+type LegacyOutboundRetryReceiptRealExternalCallExecuted bool
+
+// LegacyOutboundRetryReceiptState defines model for LegacyOutboundRetryReceipt.State.
+type LegacyOutboundRetryReceiptState string
+
+// LegacyOutboundRetryReceiptTaskStatus defines model for LegacyOutboundRetryReceipt.TaskStatus.
+type LegacyOutboundRetryReceiptTaskStatus string
+
+// LegacyOutboundRetryResponse defines model for LegacyOutboundRetryResponse.
+type LegacyOutboundRetryResponse struct {
+	ControlReceipt           LegacyOutboundRetryReceipt                          `json:"control_receipt"`
+	DeliverySemantics        LegacyOutboundRetryResponseDeliverySemantics        `json:"delivery_semantics"`
+	FallbackUsed             LegacyOutboundRetryResponseFallbackUsed             `json:"fallback_used"`
+	LocalFactOnly            LegacyOutboundRetryResponseLocalFactOnly            `json:"local_fact_only"`
+	Ok                       LegacyOutboundRetryResponseOk                       `json:"ok"`
+	RealExternalCallExecuted LegacyOutboundRetryResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	SourceStatus             LegacyOutboundRetryResponseSourceStatus             `json:"source_status"`
+}
+
+// LegacyOutboundRetryResponseDeliverySemantics defines model for LegacyOutboundRetryResponse.DeliverySemantics.
+type LegacyOutboundRetryResponseDeliverySemantics string
+
+// LegacyOutboundRetryResponseFallbackUsed defines model for LegacyOutboundRetryResponse.FallbackUsed.
+type LegacyOutboundRetryResponseFallbackUsed bool
+
+// LegacyOutboundRetryResponseLocalFactOnly defines model for LegacyOutboundRetryResponse.LocalFactOnly.
+type LegacyOutboundRetryResponseLocalFactOnly bool
+
+// LegacyOutboundRetryResponseOk defines model for LegacyOutboundRetryResponse.Ok.
+type LegacyOutboundRetryResponseOk bool
+
+// LegacyOutboundRetryResponseRealExternalCallExecuted defines model for LegacyOutboundRetryResponse.RealExternalCallExecuted.
+type LegacyOutboundRetryResponseRealExternalCallExecuted bool
+
+// LegacyOutboundRetryResponseSourceStatus defines model for LegacyOutboundRetryResponse.SourceStatus.
+type LegacyOutboundRetryResponseSourceStatus string
 
 // LegacyPushCenterCounts defines model for LegacyPushCenterCounts.
 type LegacyPushCenterCounts struct {
@@ -7726,6 +9265,36 @@ type AcknowledgeAdminOpsMessageBatchParams struct {
 	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
 }
 
+// ListLegacyOutboundJobsParams defines parameters for ListLegacyOutboundJobs.
+type ListLegacyOutboundJobsParams struct {
+	Status      *ListLegacyOutboundJobsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+	BusinessId  *int64                              `form:"business_id,omitempty" json:"business_id,omitempty"`
+	OwnerUserid *int64                              `form:"owner_userid,omitempty" json:"owner_userid,omitempty"`
+	Limit       *int                                `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset      *int                                `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListLegacyOutboundJobsParamsStatus defines parameters for ListLegacyOutboundJobs.
+type ListLegacyOutboundJobsParamsStatus string
+
+// CancelLegacyOutboundJobParams defines parameters for CancelLegacyOutboundJob.
+type CancelLegacyOutboundJobParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RetryLegacyOutboundJobParams defines parameters for RetryLegacyOutboundJob.
+type RetryLegacyOutboundJobParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // GetLegacyPushCenterSectionsParams defines parameters for GetLegacyPushCenterSections.
 type GetLegacyPushCenterSectionsParams struct {
 	Section        *PushCenterSectionFilter        `form:"section,omitempty" json:"section,omitempty"`
@@ -9566,6 +11135,21 @@ type ServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request)
+	// Read bounded local outbound-job projections without starting a worker or provider call
+	// (GET /api/admin/push-center/jobs)
+	ListLegacyOutboundJobs(w http.ResponseWriter, r *http.Request, params ListLegacyOutboundJobsParams)
+	// Read one owner-scoped local outbound task without exposing provider identifiers or delivery proof
+	// (GET /api/admin/push-center/jobs/{job_id})
+	GetLegacyOutboundJob(w http.ResponseWriter, r *http.Request, jobId int64)
+	// Cancel only a still-pending local outbound task before a worker can claim it
+	// (POST /api/admin/push-center/jobs/{job_id}/cancel)
+	CancelLegacyOutboundJob(w http.ResponseWriter, r *http.Request, jobId int64, params CancelLegacyOutboundJobParams)
+	// Reconcile persisted local attempts and local control receipts without a provider call
+	// (GET /api/admin/push-center/jobs/{job_id}/reconciliation)
+	GetLegacyOutboundJobReconciliation(w http.ResponseWriter, r *http.Request, jobId int64)
+	// Create one next-generation local retry job without executing or proving provider delivery
+	// (POST /api/admin/push-center/jobs/{job_id}/retry)
+	RetryLegacyOutboundJob(w http.ResponseWriter, r *http.Request, jobId int64, params RetryLegacyOutboundJobParams)
 	// Read the frozen global Push Center section aggregation without touching a worker or provider
 	// (GET /api/admin/push-center/sections)
 	GetLegacyPushCenterSections(w http.ResponseWriter, r *http.Request, params GetLegacyPushCenterSectionsParams)
@@ -10130,6 +11714,36 @@ func (_ Unimplemented) GetAdminOpsJobsSummary(w http.ResponseWriter, r *http.Req
 // List local webhook-plan records without any webhook locator
 // (GET /api/admin/jobs/webhook-deliveries)
 func (_ Unimplemented) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read bounded local outbound-job projections without starting a worker or provider call
+// (GET /api/admin/push-center/jobs)
+func (_ Unimplemented) ListLegacyOutboundJobs(w http.ResponseWriter, r *http.Request, params ListLegacyOutboundJobsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one owner-scoped local outbound task without exposing provider identifiers or delivery proof
+// (GET /api/admin/push-center/jobs/{job_id})
+func (_ Unimplemented) GetLegacyOutboundJob(w http.ResponseWriter, r *http.Request, jobId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Cancel only a still-pending local outbound task before a worker can claim it
+// (POST /api/admin/push-center/jobs/{job_id}/cancel)
+func (_ Unimplemented) CancelLegacyOutboundJob(w http.ResponseWriter, r *http.Request, jobId int64, params CancelLegacyOutboundJobParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Reconcile persisted local attempts and local control receipts without a provider call
+// (GET /api/admin/push-center/jobs/{job_id}/reconciliation)
+func (_ Unimplemented) GetLegacyOutboundJobReconciliation(w http.ResponseWriter, r *http.Request, jobId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create one next-generation local retry job without executing or proving provider delivery
+// (POST /api/admin/push-center/jobs/{job_id}/retry)
+func (_ Unimplemented) RetryLegacyOutboundJob(w http.ResponseWriter, r *http.Request, jobId int64, params RetryLegacyOutboundJobParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -12868,6 +14482,297 @@ func (siw *ServerInterfaceWrapper) ListAdminOpsWebhookDeliveryJobs(w http.Respon
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAdminOpsWebhookDeliveryJobs(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListLegacyOutboundJobs operation middleware
+func (siw *ServerInterfaceWrapper) ListLegacyOutboundJobs(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListLegacyOutboundJobsParams
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "business_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "business_id", r.URL.Query(), &params.BusinessId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "business_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "owner_userid" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "owner_userid", r.URL.Query(), &params.OwnerUserid, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "owner_userid", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListLegacyOutboundJobs(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyOutboundJob operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyOutboundJob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "job_id" -------------
+	var jobId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "job_id", chi.URLParam(r, "job_id"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "job_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyOutboundJob(w, r, jobId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelLegacyOutboundJob operation middleware
+func (siw *ServerInterfaceWrapper) CancelLegacyOutboundJob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "job_id" -------------
+	var jobId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "job_id", chi.URLParam(r, "job_id"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "job_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelLegacyOutboundJobParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelLegacyOutboundJob(w, r, jobId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetLegacyOutboundJobReconciliation operation middleware
+func (siw *ServerInterfaceWrapper) GetLegacyOutboundJobReconciliation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "job_id" -------------
+	var jobId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "job_id", chi.URLParam(r, "job_id"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "job_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetLegacyOutboundJobReconciliation(w, r, jobId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RetryLegacyOutboundJob operation middleware
+func (siw *ServerInterfaceWrapper) RetryLegacyOutboundJob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "job_id" -------------
+	var jobId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "job_id", chi.URLParam(r, "job_id"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "job_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RetryLegacyOutboundJobParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetryLegacyOutboundJob(w, r, jobId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -19033,6 +20938,21 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/jobs/webhook-deliveries", wrapper.ListAdminOpsWebhookDeliveryJobs)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/push-center/jobs", wrapper.ListLegacyOutboundJobs)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/push-center/jobs/{job_id}", wrapper.GetLegacyOutboundJob)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/push-center/jobs/{job_id}/cancel", wrapper.CancelLegacyOutboundJob)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/push-center/jobs/{job_id}/reconciliation", wrapper.GetLegacyOutboundJobReconciliation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/push-center/jobs/{job_id}/retry", wrapper.RetryLegacyOutboundJob)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/push-center/sections", wrapper.GetLegacyPushCenterSections)
 	})
 	r.Group(func(r chi.Router) {
@@ -21944,6 +23864,327 @@ func (response ListAdminOpsWebhookDeliveryJobs409JSONResponse) VisitListAdminOps
 type ListAdminOpsWebhookDeliveryJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListAdminOpsWebhookDeliveryJobs503JSONResponse) VisitListAdminOpsWebhookDeliveryJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyOutboundJobsRequestObject struct {
+	Params ListLegacyOutboundJobsParams
+}
+
+type ListLegacyOutboundJobsResponseObject interface {
+	VisitListLegacyOutboundJobsResponse(w http.ResponseWriter) error
+}
+
+type ListLegacyOutboundJobs200JSONResponse LegacyOutboundJobListResponse
+
+func (response ListLegacyOutboundJobs200JSONResponse) VisitListLegacyOutboundJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyOutboundJobs400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListLegacyOutboundJobs400JSONResponse) VisitListLegacyOutboundJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyOutboundJobs401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListLegacyOutboundJobs401JSONResponse) VisitListLegacyOutboundJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyOutboundJobs403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListLegacyOutboundJobs403JSONResponse) VisitListLegacyOutboundJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListLegacyOutboundJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListLegacyOutboundJobs503JSONResponse) VisitListLegacyOutboundJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyOutboundJobRequestObject struct {
+	JobId int64 `json:"job_id"`
+}
+
+type GetLegacyOutboundJobResponseObject interface {
+	VisitGetLegacyOutboundJobResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyOutboundJob200JSONResponse LegacyOutboundJobDetailResponse
+
+func (response GetLegacyOutboundJob200JSONResponse) VisitGetLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyOutboundJob400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetLegacyOutboundJob400JSONResponse) VisitGetLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyOutboundJob401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyOutboundJob401JSONResponse) VisitGetLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyOutboundJob403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyOutboundJob403JSONResponse) VisitGetLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyOutboundJob404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetLegacyOutboundJob404JSONResponse) VisitGetLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyOutboundJob503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetLegacyOutboundJob503JSONResponse) VisitGetLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelLegacyOutboundJobRequestObject struct {
+	JobId  int64 `json:"job_id"`
+	Params CancelLegacyOutboundJobParams
+}
+
+type CancelLegacyOutboundJobResponseObject interface {
+	VisitCancelLegacyOutboundJobResponse(w http.ResponseWriter) error
+}
+
+type CancelLegacyOutboundJob202JSONResponse LegacyOutboundCancelResponse
+
+func (response CancelLegacyOutboundJob202JSONResponse) VisitCancelLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelLegacyOutboundJob400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CancelLegacyOutboundJob400JSONResponse) VisitCancelLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelLegacyOutboundJob401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CancelLegacyOutboundJob401JSONResponse) VisitCancelLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelLegacyOutboundJob403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CancelLegacyOutboundJob403JSONResponse) VisitCancelLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelLegacyOutboundJob404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CancelLegacyOutboundJob404JSONResponse) VisitCancelLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelLegacyOutboundJob409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CancelLegacyOutboundJob409JSONResponse) VisitCancelLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelLegacyOutboundJob503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CancelLegacyOutboundJob503JSONResponse) VisitCancelLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyOutboundJobReconciliationRequestObject struct {
+	JobId int64 `json:"job_id"`
+}
+
+type GetLegacyOutboundJobReconciliationResponseObject interface {
+	VisitGetLegacyOutboundJobReconciliationResponse(w http.ResponseWriter) error
+}
+
+type GetLegacyOutboundJobReconciliation200JSONResponse LegacyOutboundJobReconciliationResponse
+
+func (response GetLegacyOutboundJobReconciliation200JSONResponse) VisitGetLegacyOutboundJobReconciliationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyOutboundJobReconciliation400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetLegacyOutboundJobReconciliation400JSONResponse) VisitGetLegacyOutboundJobReconciliationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyOutboundJobReconciliation401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetLegacyOutboundJobReconciliation401JSONResponse) VisitGetLegacyOutboundJobReconciliationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyOutboundJobReconciliation403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetLegacyOutboundJobReconciliation403JSONResponse) VisitGetLegacyOutboundJobReconciliationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyOutboundJobReconciliation404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetLegacyOutboundJobReconciliation404JSONResponse) VisitGetLegacyOutboundJobReconciliationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetLegacyOutboundJobReconciliation503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetLegacyOutboundJobReconciliation503JSONResponse) VisitGetLegacyOutboundJobReconciliationResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryLegacyOutboundJobRequestObject struct {
+	JobId  int64 `json:"job_id"`
+	Params RetryLegacyOutboundJobParams
+}
+
+type RetryLegacyOutboundJobResponseObject interface {
+	VisitRetryLegacyOutboundJobResponse(w http.ResponseWriter) error
+}
+
+type RetryLegacyOutboundJob202JSONResponse LegacyOutboundRetryResponse
+
+func (response RetryLegacyOutboundJob202JSONResponse) VisitRetryLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryLegacyOutboundJob400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RetryLegacyOutboundJob400JSONResponse) VisitRetryLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryLegacyOutboundJob401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RetryLegacyOutboundJob401JSONResponse) VisitRetryLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryLegacyOutboundJob403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RetryLegacyOutboundJob403JSONResponse) VisitRetryLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryLegacyOutboundJob404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RetryLegacyOutboundJob404JSONResponse) VisitRetryLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryLegacyOutboundJob409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RetryLegacyOutboundJob409JSONResponse) VisitRetryLegacyOutboundJobResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryLegacyOutboundJob503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RetryLegacyOutboundJob503JSONResponse) VisitRetryLegacyOutboundJobResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -28417,6 +30658,21 @@ type StrictServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(ctx context.Context, request ListAdminOpsWebhookDeliveryJobsRequestObject) (ListAdminOpsWebhookDeliveryJobsResponseObject, error)
+	// Read bounded local outbound-job projections without starting a worker or provider call
+	// (GET /api/admin/push-center/jobs)
+	ListLegacyOutboundJobs(ctx context.Context, request ListLegacyOutboundJobsRequestObject) (ListLegacyOutboundJobsResponseObject, error)
+	// Read one owner-scoped local outbound task without exposing provider identifiers or delivery proof
+	// (GET /api/admin/push-center/jobs/{job_id})
+	GetLegacyOutboundJob(ctx context.Context, request GetLegacyOutboundJobRequestObject) (GetLegacyOutboundJobResponseObject, error)
+	// Cancel only a still-pending local outbound task before a worker can claim it
+	// (POST /api/admin/push-center/jobs/{job_id}/cancel)
+	CancelLegacyOutboundJob(ctx context.Context, request CancelLegacyOutboundJobRequestObject) (CancelLegacyOutboundJobResponseObject, error)
+	// Reconcile persisted local attempts and local control receipts without a provider call
+	// (GET /api/admin/push-center/jobs/{job_id}/reconciliation)
+	GetLegacyOutboundJobReconciliation(ctx context.Context, request GetLegacyOutboundJobReconciliationRequestObject) (GetLegacyOutboundJobReconciliationResponseObject, error)
+	// Create one next-generation local retry job without executing or proving provider delivery
+	// (POST /api/admin/push-center/jobs/{job_id}/retry)
+	RetryLegacyOutboundJob(ctx context.Context, request RetryLegacyOutboundJobRequestObject) (RetryLegacyOutboundJobResponseObject, error)
 	// Read the frozen global Push Center section aggregation without touching a worker or provider
 	// (GET /api/admin/push-center/sections)
 	GetLegacyPushCenterSections(ctx context.Context, request GetLegacyPushCenterSectionsRequestObject) (GetLegacyPushCenterSectionsResponseObject, error)
@@ -30026,6 +32282,138 @@ func (sh *strictHandler) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAdminOpsWebhookDeliveryJobsResponseObject); ok {
 		if err := validResponse.VisitListAdminOpsWebhookDeliveryJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListLegacyOutboundJobs operation middleware
+func (sh *strictHandler) ListLegacyOutboundJobs(w http.ResponseWriter, r *http.Request, params ListLegacyOutboundJobsParams) {
+	var request ListLegacyOutboundJobsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListLegacyOutboundJobs(ctx, request.(ListLegacyOutboundJobsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListLegacyOutboundJobs")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListLegacyOutboundJobsResponseObject); ok {
+		if err := validResponse.VisitListLegacyOutboundJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyOutboundJob operation middleware
+func (sh *strictHandler) GetLegacyOutboundJob(w http.ResponseWriter, r *http.Request, jobId int64) {
+	var request GetLegacyOutboundJobRequestObject
+
+	request.JobId = jobId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyOutboundJob(ctx, request.(GetLegacyOutboundJobRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyOutboundJob")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyOutboundJobResponseObject); ok {
+		if err := validResponse.VisitGetLegacyOutboundJobResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelLegacyOutboundJob operation middleware
+func (sh *strictHandler) CancelLegacyOutboundJob(w http.ResponseWriter, r *http.Request, jobId int64, params CancelLegacyOutboundJobParams) {
+	var request CancelLegacyOutboundJobRequestObject
+
+	request.JobId = jobId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelLegacyOutboundJob(ctx, request.(CancelLegacyOutboundJobRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelLegacyOutboundJob")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelLegacyOutboundJobResponseObject); ok {
+		if err := validResponse.VisitCancelLegacyOutboundJobResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetLegacyOutboundJobReconciliation operation middleware
+func (sh *strictHandler) GetLegacyOutboundJobReconciliation(w http.ResponseWriter, r *http.Request, jobId int64) {
+	var request GetLegacyOutboundJobReconciliationRequestObject
+
+	request.JobId = jobId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetLegacyOutboundJobReconciliation(ctx, request.(GetLegacyOutboundJobReconciliationRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetLegacyOutboundJobReconciliation")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetLegacyOutboundJobReconciliationResponseObject); ok {
+		if err := validResponse.VisitGetLegacyOutboundJobReconciliationResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RetryLegacyOutboundJob operation middleware
+func (sh *strictHandler) RetryLegacyOutboundJob(w http.ResponseWriter, r *http.Request, jobId int64, params RetryLegacyOutboundJobParams) {
+	var request RetryLegacyOutboundJobRequestObject
+
+	request.JobId = jobId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RetryLegacyOutboundJob(ctx, request.(RetryLegacyOutboundJobRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RetryLegacyOutboundJob")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RetryLegacyOutboundJobResponseObject); ok {
+		if err := validResponse.VisitRetryLegacyOutboundJobResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

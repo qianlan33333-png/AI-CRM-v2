@@ -16,6 +16,8 @@ import (
 
 var errInvalidLegacyOutboundQuery = errors.New("legacy outbound query cannot be mapped safely")
 
+const legacyOutboundDeliverySemantics = "local_state_not_delivery_proof"
+
 type legacyOutboundQueryApplication interface {
 	Get(context.Context, outboundapp.TaskGetQuery) (outboundapp.TaskReadModel, error)
 	List(context.Context, outboundapp.TaskListQuery) (outboundapp.TaskListResult, error)
@@ -54,7 +56,7 @@ func (handler *Handler) ListOutboundJobs(writer http.ResponseWriter, request *ht
 	for index, task := range result.Items {
 		jobs[index] = mapLegacyOutboundJob(task)
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{
+	writeLegacyOutboundJSON(writer, http.StatusOK, map[string]any{
 		"ok": true, "jobs": jobs, "items": jobs, "count": len(jobs), "has_more": result.HasMore,
 		"limit": query.Limit, "offset": query.Offset, "source_status": "v2_outbound_service", "fallback_used": false,
 	})
@@ -80,7 +82,7 @@ func (handler *Handler) GetOutboundJob(writer http.ResponseWriter, request *http
 		legacyOutboundError(writer, request, err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{
+	writeLegacyOutboundJSON(writer, http.StatusOK, map[string]any{
 		"ok": true, "job": mapLegacyOutboundJob(task), "source_status": "v2_outbound_service", "fallback_used": false,
 	})
 }
@@ -113,7 +115,7 @@ func (handler *Handler) ReconcileOutboundJob(writer http.ResponseWriter, request
 	for index, receipt := range result.ControlReceipts {
 		receipts[index] = mapLegacyOutboundReceipt(receipt)
 	}
-	writeJSON(writer, http.StatusOK, map[string]any{
+	writeLegacyOutboundJSON(writer, http.StatusOK, map[string]any{
 		"ok": true, "job": mapLegacyOutboundJob(result.Task), "attempts": attempts,
 		"control_receipts": receipts, "source_status": "v2_outbound_service", "fallback_used": false,
 	})
@@ -136,11 +138,11 @@ func (handler *Handler) CancelOutboundJob(writer http.ResponseWriter, request *h
 		legacyOutboundError(writer, request, err)
 		return
 	}
-	receipt := legacyOutboundControlReceipt{ID: result.ReceiptID, TaskID: int64(result.TaskID),
+	receipt := localLegacyOutboundReceipt(legacyOutboundControlReceipt{ID: result.ReceiptID, TaskID: int64(result.TaskID),
 		Operation: "cancel", State: string(outboundapp.ControlReceiptCompleted), Generation: result.Job.Generation,
 		RiverJobID: result.Job.RiverJobID, JobKind: result.Job.JobKind, EventID: int64(result.EventID),
-		TaskStatus: string(result.Status), CompletedAt: result.CancelledAt.UTC()}
-	writeJSON(writer, http.StatusAccepted, map[string]any{
+		TaskStatus: string(result.Status), CompletedAt: result.CancelledAt.UTC()})
+	writeLegacyOutboundJSON(writer, http.StatusAccepted, map[string]any{
 		"ok": true, "control_receipt": receipt, "source_status": "v2_outbound_cancel_service", "fallback_used": false,
 	})
 }
@@ -162,11 +164,11 @@ func (handler *Handler) RetryOutboundJob(writer http.ResponseWriter, request *ht
 		legacyOutboundError(writer, request, err)
 		return
 	}
-	receipt := legacyOutboundControlReceipt{ID: result.ReceiptID, TaskID: int64(result.TaskID),
+	receipt := localLegacyOutboundReceipt(legacyOutboundControlReceipt{ID: result.ReceiptID, TaskID: int64(result.TaskID),
 		Operation: "manual_retry", State: string(outboundapp.ControlReceiptCompleted), Generation: result.Job.Generation,
 		RiverJobID: result.Job.RiverJobID, JobKind: result.Job.JobKind, EventID: int64(result.EventID),
-		TaskStatus: string(result.Status), CompletedAt: result.RetriedAt.UTC()}
-	writeJSON(writer, http.StatusAccepted, map[string]any{
+		TaskStatus: string(result.Status), CompletedAt: result.RetriedAt.UTC()})
+	writeLegacyOutboundJSON(writer, http.StatusAccepted, map[string]any{
 		"ok": true, "control_receipt": receipt, "source_status": "v2_outbound_manual_retry_service", "fallback_used": false,
 	})
 }
@@ -274,29 +276,24 @@ func legacyOutboundError(writer http.ResponseWriter, request *http.Request, err 
 }
 
 type legacyOutboundJob struct {
-	JobID           int64                  `json:"job_id"`
-	TaskID          int64                  `json:"task_id"`
-	CustomerID      int64                  `json:"customer_id"`
-	OwnerStaffID    *int64                 `json:"owner_staff_id,omitempty"`
-	BusinessID      *int64                 `json:"business_id,omitempty"`
-	BatchChunkIndex *int32                 `json:"batch_chunk_index,omitempty"`
-	Status          string                 `json:"status"`
-	AttemptCount    int32                  `json:"attempt_count"`
-	Failure         *legacyOutboundFailure `json:"failure,omitempty"`
-	ProviderReceipt *legacyProviderReceipt `json:"provider_receipt,omitempty"`
-	DeliveryProven  bool                   `json:"delivery_proven"`
-	QueueJob        legacyOutboundQueueJob `json:"queue_job"`
-	CreatedAt       time.Time              `json:"created_at"`
-	StatusUpdatedAt time.Time              `json:"status_updated_at"`
-}
-
-type legacyOutboundFailure struct {
-	Kind string `json:"kind"`
-	Code string `json:"code"`
-}
-type legacyProviderReceipt struct {
-	MessageID   string    `json:"message_id"`
-	ConfirmedAt time.Time `json:"confirmed_at"`
+	JobID                    int64                  `json:"job_id"`
+	TaskID                   int64                  `json:"task_id"`
+	CustomerID               int64                  `json:"customer_id"`
+	OwnerStaffID             *int64                 `json:"owner_staff_id,omitempty"`
+	BusinessID               *int64                 `json:"business_id,omitempty"`
+	BatchChunkIndex          *int32                 `json:"batch_chunk_index,omitempty"`
+	Status                   string                 `json:"status"`
+	AttemptCount             int32                  `json:"attempt_count"`
+	FailurePresent           bool                   `json:"failure_present"`
+	FailureClass             string                 `json:"failure_class"`
+	ProviderReceiptPresent   bool                   `json:"provider_receipt_present"`
+	DeliveryProven           bool                   `json:"delivery_proven"`
+	LocalFactOnly            bool                   `json:"local_fact_only"`
+	RealExternalCallExecuted bool                   `json:"real_external_call_executed"`
+	DeliverySemantics        string                 `json:"delivery_semantics"`
+	QueueJob                 legacyOutboundQueueJob `json:"queue_job"`
+	CreatedAt                time.Time              `json:"created_at"`
+	StatusUpdatedAt          time.Time              `json:"status_updated_at"`
 }
 type legacyOutboundQueueJob struct {
 	RiverJobID int64  `json:"river_job_id"`
@@ -305,64 +302,95 @@ type legacyOutboundQueueJob struct {
 }
 
 func mapLegacyOutboundJob(task outboundapp.TaskReadModel) legacyOutboundJob {
+	failurePresent, failureClass := legacyOutboundFailureProjection(string(task.Status), task.LastFailureKind != "" || strings.TrimSpace(task.LastError) != "")
 	job := legacyOutboundJob{JobID: int64(task.TaskID), TaskID: int64(task.TaskID), CustomerID: task.CustomerID,
 		OwnerStaffID: task.OwnerStaffID, BusinessID: task.BatchID, BatchChunkIndex: task.BatchChunkIndex,
-		Status: string(task.Status), AttemptCount: task.AttemptCount,
+		Status: string(task.Status), AttemptCount: task.AttemptCount, FailurePresent: failurePresent, FailureClass: failureClass,
+		ProviderReceiptPresent: strings.TrimSpace(task.ProviderMessageID) != "", DeliveryProven: false,
+		LocalFactOnly: true, RealExternalCallExecuted: false, DeliverySemantics: legacyOutboundDeliverySemantics,
 		QueueJob:  legacyOutboundQueueJob{RiverJobID: task.Job.RiverJobID, Generation: task.Job.Generation, Kind: task.Job.JobKind},
 		CreatedAt: task.CreatedAt.UTC(), StatusUpdatedAt: task.StatusUpdatedAt.UTC()}
-	if task.LastFailureKind != "" {
-		job.Failure = &legacyOutboundFailure{Kind: string(task.LastFailureKind), Code: task.LastError}
-	}
-	if task.Status == outboundapp.TaskStatusSent && task.ProviderMessageID != "" && task.SentAt != nil {
-		job.ProviderReceipt = &legacyProviderReceipt{MessageID: task.ProviderMessageID, ConfirmedAt: task.SentAt.UTC()}
-		job.DeliveryProven = true
-	}
 	return job
 }
 
 type legacyOutboundAttempt struct {
-	AttemptID         int64                  `json:"attempt_id"`
-	HistoryID         int64                  `json:"history_id"`
-	Generation        int32                  `json:"generation"`
-	RiverJobID        int64                  `json:"river_job_id"`
-	Attempt           int32                  `json:"attempt"`
-	MaxAttempts       int32                  `json:"max_attempts"`
-	State             string                 `json:"state"`
-	Failure           *legacyOutboundFailure `json:"failure,omitempty"`
-	ProviderReceipt   *legacyProviderReceipt `json:"provider_receipt,omitempty"`
-	DispatchStartedAt *time.Time             `json:"dispatch_started_at,omitempty"`
-	CompletedAt       *time.Time             `json:"completed_at,omitempty"`
+	AttemptID                int64      `json:"attempt_id"`
+	HistoryID                int64      `json:"history_id"`
+	Generation               int32      `json:"generation"`
+	RiverJobID               int64      `json:"river_job_id"`
+	Attempt                  int32      `json:"attempt"`
+	MaxAttempts              int32      `json:"max_attempts"`
+	State                    string     `json:"state"`
+	FailurePresent           bool       `json:"failure_present"`
+	FailureClass             string     `json:"failure_class"`
+	ProviderReceiptPresent   bool       `json:"provider_receipt_present"`
+	DeliveryProven           bool       `json:"delivery_proven"`
+	LocalFactOnly            bool       `json:"local_fact_only"`
+	RealExternalCallExecuted bool       `json:"real_external_call_executed"`
+	DeliverySemantics        string     `json:"delivery_semantics"`
+	DispatchStartedAt        *time.Time `json:"dispatch_started_at,omitempty"`
+	CompletedAt              *time.Time `json:"completed_at,omitempty"`
 }
 
 func mapLegacyOutboundAttempt(attempt outboundapp.AttemptReadModel) legacyOutboundAttempt {
+	failurePresent, failureClass := legacyOutboundFailureProjection(string(attempt.State), attempt.FailureKind != "" || strings.TrimSpace(attempt.ProviderCode) != "")
 	result := legacyOutboundAttempt{AttemptID: attempt.ID, HistoryID: attempt.HistoryID, Generation: attempt.Generation,
 		RiverJobID: attempt.RiverJobID, Attempt: attempt.RiverAttempt, MaxAttempts: attempt.RiverMaxAttempts,
-		State: string(attempt.State), DispatchStartedAt: attempt.DispatchStartedAt, CompletedAt: attempt.CompletedAt}
-	if attempt.FailureKind != "" {
-		result.Failure = &legacyOutboundFailure{Kind: string(attempt.FailureKind), Code: attempt.ProviderCode}
-	}
-	if attempt.State == outboundapp.SendAttemptSucceeded && attempt.ProviderMessageID != "" && attempt.CompletedAt != nil {
-		result.ProviderReceipt = &legacyProviderReceipt{MessageID: attempt.ProviderMessageID, ConfirmedAt: attempt.CompletedAt.UTC()}
-	}
+		State: string(attempt.State), FailurePresent: failurePresent, FailureClass: failureClass,
+		ProviderReceiptPresent: strings.TrimSpace(attempt.ProviderMessageID) != "", DeliveryProven: false,
+		LocalFactOnly: true, RealExternalCallExecuted: false, DeliverySemantics: legacyOutboundDeliverySemantics,
+		DispatchStartedAt: attempt.DispatchStartedAt, CompletedAt: attempt.CompletedAt}
 	return result
 }
 
 type legacyOutboundControlReceipt struct {
-	ID          int64     `json:"receipt_id"`
-	TaskID      int64     `json:"task_id"`
-	Operation   string    `json:"operation"`
-	State       string    `json:"state"`
-	Generation  int32     `json:"generation"`
-	RiverJobID  int64     `json:"river_job_id"`
-	JobKind     string    `json:"job_kind"`
-	EventID     int64     `json:"event_id"`
-	TaskStatus  string    `json:"task_status"`
-	CompletedAt time.Time `json:"completed_at"`
+	ID                       int64     `json:"receipt_id"`
+	TaskID                   int64     `json:"task_id"`
+	Operation                string    `json:"operation"`
+	State                    string    `json:"state"`
+	Generation               int32     `json:"generation"`
+	RiverJobID               int64     `json:"river_job_id"`
+	JobKind                  string    `json:"job_kind"`
+	EventID                  int64     `json:"event_id"`
+	TaskStatus               string    `json:"task_status"`
+	CompletedAt              time.Time `json:"completed_at"`
+	ProviderReceiptPresent   bool      `json:"provider_receipt_present"`
+	DeliveryProven           bool      `json:"delivery_proven"`
+	LocalFactOnly            bool      `json:"local_fact_only"`
+	RealExternalCallExecuted bool      `json:"real_external_call_executed"`
+	DeliverySemantics        string    `json:"delivery_semantics"`
 }
 
 func mapLegacyOutboundReceipt(receipt outboundapp.ControlReceiptReadModel) legacyOutboundControlReceipt {
-	return legacyOutboundControlReceipt{ID: receipt.ID, TaskID: int64(receipt.TaskID), Operation: receipt.Operation,
+	return localLegacyOutboundReceipt(legacyOutboundControlReceipt{ID: receipt.ID, TaskID: int64(receipt.TaskID), Operation: receipt.Operation,
 		State: string(receipt.State), Generation: receipt.Job.Generation, RiverJobID: receipt.Job.RiverJobID,
 		JobKind: receipt.Job.JobKind, EventID: int64(receipt.EventID), TaskStatus: string(receipt.TaskStatus),
-		CompletedAt: receipt.CompletedAt.UTC()}
+		CompletedAt: receipt.CompletedAt.UTC()})
+}
+
+func localLegacyOutboundReceipt(receipt legacyOutboundControlReceipt) legacyOutboundControlReceipt {
+	receipt.ProviderReceiptPresent = false
+	receipt.DeliveryProven = false
+	receipt.LocalFactOnly = true
+	receipt.RealExternalCallExecuted = false
+	receipt.DeliverySemantics = legacyOutboundDeliverySemantics
+	return receipt
+}
+
+func legacyOutboundFailureProjection(state string, rawPresent bool) (bool, string) {
+	if state == string(outboundapp.TaskStatusOutcomeUnknown) || state == string(outboundapp.SendAttemptOutcomeUnknown) {
+		return true, "outcome_unknown"
+	}
+	if rawPresent || state == string(outboundapp.TaskStatusRetryableFailed) || state == string(outboundapp.TaskStatusFinalFailed) ||
+		state == string(outboundapp.SendAttemptRetryableFailed) || state == string(outboundapp.SendAttemptFinalFailed) {
+		return true, "local_failure"
+	}
+	return false, "none"
+}
+
+func writeLegacyOutboundJSON(writer http.ResponseWriter, status int, payload map[string]any) {
+	payload["local_fact_only"] = true
+	payload["real_external_call_executed"] = false
+	payload["delivery_semantics"] = legacyOutboundDeliverySemantics
+	writeJSON(writer, status, payload)
 }

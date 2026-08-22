@@ -137,7 +137,9 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getAudiencePackageDetailWorkspace":          {"/admin/automation-conversion/packages/{package_id}", "GET", p4AudienceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getUserOpsReviewWorkspace":                  {"/admin/user-ops", "GET", p4UserOpsWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getUserOpsReviewWorkspaceAlias":             {"/admin/user-ops/ui", "GET", p4UserOpsWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
+	"getLegacyOutboundJob":                       {"/api/admin/push-center/jobs/{job_id}", "GET", p4OutboundOperationsEvidence, "outbound.read", "human_session", "internal_pii", "outbound_tasks.local_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"cancelLegacyOutboundJob":                    {"/api/admin/push-center/jobs/{job_id}/cancel", "POST", p4OutboundOperationsEvidence, "outbound.control", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"retryLegacyOutboundJob":                     {"/api/admin/push-center/jobs/{job_id}/retry", "POST", p4OutboundOperationsEvidence, "outbound.control", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getAlipayTransactionsWorkspace":             {"/admin/alipay/transactions", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getServiceProductsWorkspace":                {"/admin/service-period-products", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getServiceProductCreateWorkspace":           {"/admin/service-period-products/new", "GET", p4CommerceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
@@ -1284,6 +1286,80 @@ func validateOutboundCancelOperation(op *openapi3.Operation) error {
 	return nil
 }
 
+func validateOutboundSafeProjectionContract(doc *openapi3.T) error {
+	operations := []struct {
+		path, method, schema, status string
+	}{
+		{"/api/admin/push-center/jobs", "GET", "LegacyOutboundJobListResponse", "200"},
+		{"/api/admin/push-center/jobs/{job_id}", "GET", "LegacyOutboundJobDetailResponse", "200"},
+		{"/api/admin/push-center/jobs/{job_id}/reconciliation", "GET", "LegacyOutboundJobReconciliationResponse", "200"},
+		{"/api/admin/push-center/jobs/{job_id}/cancel", "POST", "LegacyOutboundCancelResponse", "202"},
+		{"/api/admin/push-center/jobs/{job_id}/retry", "POST", "LegacyOutboundRetryResponse", "202"},
+	}
+	for _, contract := range operations {
+		item := doc.Paths.Value(contract.path)
+		if item == nil {
+			return fmt.Errorf("%s %s outbound safe projection contract is missing", contract.method, contract.path)
+		}
+		operation := operationForMethod(item, contract.method)
+		if operation == nil || operation.Extensions["x-aicrm-local-only"] != true ||
+			!operationResponseUsesStatusLocalSchema(operation, contract.status, contract.schema) {
+			return fmt.Errorf("%s %s outbound safe projection contract drifted", contract.method, contract.path)
+		}
+	}
+	for _, name := range []string{"LegacyOutboundJob", "LegacyOutboundAttempt"} {
+		schema := doc.Components.Schemas[name]
+		if !closedOutboundProjectionSchema(schema, true) {
+			return fmt.Errorf("%s must remain a closed provider-safe projection", name)
+		}
+	}
+	for _, name := range []string{"LegacyOutboundControlReceipt", "LegacyOutboundCancelReceipt", "LegacyOutboundRetryReceipt"} {
+		schema := doc.Components.Schemas[name]
+		if !closedOutboundProjectionSchema(schema, false) || !legacyTagBooleanEnum(schema.Value, "provider_receipt_present", false) {
+			return fmt.Errorf("%s must remain a closed local receipt projection", name)
+		}
+	}
+	for _, name := range []string{"LegacyOutboundJobListResponse", "LegacyOutboundJobDetailResponse", "LegacyOutboundJobReconciliationResponse", "LegacyOutboundCancelResponse", "LegacyOutboundRetryResponse"} {
+		schema := doc.Components.Schemas[name]
+		if schema == nil || schema.Value == nil || schema.Value.AdditionalProperties.Has == nil || *schema.Value.AdditionalProperties.Has ||
+			!legacyTagBooleanEnum(schema.Value, "local_fact_only", true) ||
+			!legacyTagBooleanEnum(schema.Value, "real_external_call_executed", false) ||
+			!legacyTagStringEnum(schema.Value, "delivery_semantics", "local_state_not_delivery_proof") {
+			return fmt.Errorf("%s must keep the local-only delivery boundary", name)
+		}
+	}
+	return nil
+}
+
+func closedOutboundProjectionSchema(reference *openapi3.SchemaRef, includeFailure bool) bool {
+	if reference == nil || reference.Value == nil || reference.Value.AdditionalProperties.Has == nil || *reference.Value.AdditionalProperties.Has {
+		return false
+	}
+	schema := reference.Value
+	for _, forbidden := range []string{"failure", "code", "last_error", "provider_code", "provider_message_id", "message_id", "provider_receipt"} {
+		if schema.Properties[forbidden] != nil {
+			return false
+		}
+	}
+	if !legacyTagBooleanEnum(schema, "delivery_proven", false) || !legacyTagBooleanEnum(schema, "local_fact_only", true) ||
+		!legacyTagBooleanEnum(schema, "real_external_call_executed", false) ||
+		!legacyTagStringEnum(schema, "delivery_semantics", "local_state_not_delivery_proof") ||
+		schema.Properties["provider_receipt_present"] == nil {
+		return false
+	}
+	if !includeFailure {
+		return true
+	}
+	failurePresent := schema.Properties["failure_present"]
+	failureClass := schema.Properties["failure_class"]
+	if failurePresent == nil || failurePresent.Value == nil || failureClass == nil || failureClass.Value == nil {
+		return false
+	}
+	values, err := stringList(failureClass.Value.Enum)
+	sort.Strings(values)
+	return err == nil && reflect.DeepEqual(values, []string{"local_failure", "none", "outcome_unknown"})
+}
+
 func validate(doc *openapi3.T, inventory mappingInventory) error {
 	return validateContracts(doc, inventory, true)
 }
@@ -2111,6 +2187,9 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 		return err
 	}
 	if err := validateCustomerCompatContract(doc); err != nil {
+		return err
+	}
+	if err := validateOutboundSafeProjectionContract(doc); err != nil {
 		return err
 	}
 	if err := validateConfigSettingsContract(doc); err != nil {
