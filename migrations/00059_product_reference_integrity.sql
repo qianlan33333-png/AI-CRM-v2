@@ -2,6 +2,7 @@
 -- Product references are historical facts and must not outlive the product.
 -- Fail closed before adding the constraints if a pre-existing orphan is
 -- discovered; no fact is guessed, repaired, or deleted by this migration.
+-- +goose StatementBegin
 DO $$
 BEGIN
   IF EXISTS (
@@ -20,6 +21,7 @@ BEGIN
   END IF;
 END;
 $$;
+-- +goose StatementEnd
 
 ALTER TABLE public.coupon_targets
   ADD CONSTRAINT coupon_targets_product_fk
