@@ -202,6 +202,10 @@ func (h *RouteFragment) addStep(w stdhttp.ResponseWriter, r *stdhttp.Request, co
 		writeHTTPError(w, 400, "MALFORMED_REQUEST")
 		return
 	}
+	if !validStepFields(body.DelayMinutes, body.Content) {
+		writeHTTPError(w, 422, "VALIDATION_FAILED")
+		return
+	}
 	out, e := h.application.AddStep(r.Context(), StepCreateCommand{CampaignCode: code, ExpectedVersion: body.ExpectedVersion, DelayMinutes: body.DelayMinutes, Content: body.Content, Actor: actor, IdempotencyKey: key})
 	if e != nil {
 		mapError(w, e)
@@ -217,6 +221,10 @@ func (h *RouteFragment) updateStep(w stdhttp.ResponseWriter, r *stdhttp.Request,
 	var body stepUpdateRequest
 	if !decodeJSON(r, &body) || body.ExpectedVersion == 0 || body.DelayMinutes == nil && body.Content == nil {
 		writeHTTPError(w, 400, "MALFORMED_REQUEST")
+		return
+	}
+	if body.DelayMinutes != nil && !validDelay(*body.DelayMinutes) || body.Content != nil && !validContent(*body.Content) {
+		writeHTTPError(w, 422, "VALIDATION_FAILED")
 		return
 	}
 	out, e := h.application.UpdateStep(r.Context(), StepUpdateCommand{CampaignCode: code, StepIndex: index, ExpectedVersion: body.ExpectedVersion, DelayMinutes: body.DelayMinutes, Content: body.Content, Actor: actor, IdempotencyKey: key})
@@ -246,6 +254,10 @@ func (h *RouteFragment) batch(w stdhttp.ResponseWriter, r *stdhttp.Request) {
 	var body batchRequest
 	if !decodeJSON(r, &body) {
 		writeHTTPError(w, 400, "MALFORMED_REQUEST")
+		return
+	}
+	if !validBatch(BatchStartCommand{Items: body.Campaigns, Actor: actor, IdempotencyKey: key}) {
+		writeHTTPError(w, 422, "VALIDATION_FAILED")
 		return
 	}
 	out, e := h.application.BatchStart(r.Context(), BatchStartCommand{Items: body.Campaigns, Actor: actor, IdempotencyKey: key})
@@ -390,7 +402,10 @@ func methodNotAllowed(w stdhttp.ResponseWriter, allow string) {
 	writeHTTPError(w, 405, "METHOD_NOT_ALLOWED")
 }
 func mapError(w stdhttp.ResponseWriter, e error) {
+	var validation *ValidationError
 	switch {
+	case errors.As(e, &validation):
+		writeHTTPError(w, 422, "VALIDATION_FAILED")
 	case errors.Is(e, ErrInvalidArgument):
 		writeHTTPError(w, 400, "INVALID_ARGUMENT")
 	case errors.Is(e, ErrNotFound):

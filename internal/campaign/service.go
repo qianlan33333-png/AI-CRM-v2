@@ -450,6 +450,10 @@ func classify(e error) error {
 	if e == nil {
 		return nil
 	}
+	var validation *ValidationError
+	if errors.As(e, &validation) {
+		return validation
+	}
 	for _, v := range []error{ErrInvalidArgument, ErrNotFound, ErrConflict, ErrStateConflict, ErrIdempotencyConflict, ErrUnavailable} {
 		if errors.Is(e, v) {
 			return v

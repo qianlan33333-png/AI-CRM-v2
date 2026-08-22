@@ -82,6 +82,19 @@ func TestRouteFragmentFailsClosedForPermissionAndCSRF(t *testing.T) {
 	}
 }
 
+func TestRouteFragmentMapsSemanticCommandValidationTo422(t *testing.T) {
+	svc, _ := testService(t, testCampaign("spring", ApprovalDraft, RuntimeIdle, 1))
+	handler, _ := NewRouteFragment(svc, &authorizerSpy{actor: Actor{ID: 1}}, &csrfSpy{})
+	rec := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, RoutePrefix+"/spring/steps", strings.NewReader(`{"expected_version":1,"delay_minutes":0,"content":"   "}`))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Idempotency-Key", "key-http-validation1")
+	handler.ServeHTTP(rec, request)
+	if rec.Code != http.StatusUnprocessableEntity || !strings.Contains(rec.Body.String(), `"VALIDATION_FAILED"`) {
+		t.Fatalf("validation status=%d body=%s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestRouteFragmentListStatusFiltersAreClosed(t *testing.T) {
 	svc, _ := testService(t,
 		testCampaign("draft", ApprovalDraft, RuntimeIdle, 1),
