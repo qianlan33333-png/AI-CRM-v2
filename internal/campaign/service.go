@@ -205,7 +205,7 @@ func (s *Service) start(ctx context.Context, op string, c VersionedCommand, oper
 		if e != nil {
 			return MutationResponse{}, e
 		}
-		if plan.CampaignCode != cur.Code || cmd.CampaignCode != cur.Code || cmd.PlanID != plan.ID || cmd.RealSend || cmd.RuntimeExecuted {
+		if !validLocalPlanCommand(plan, cmd, cur, int32(len(steps)), operation, now) {
 			return MutationResponse{}, ErrUnavailable
 		}
 		if e = s.repo.Save(tx, cur, steps); e != nil {
@@ -278,7 +278,7 @@ func (s *Service) startDirect(tx context.Context, item BatchStartItem, actor Act
 	if e != nil {
 		return MutationResponse{}, e
 	}
-	if cmd.RealSend || cmd.RuntimeExecuted {
+	if !validLocalPlanCommand(plan, cmd, cur, int32(len(steps)), op, now) {
 		return MutationResponse{}, ErrUnavailable
 	}
 	if e = s.repo.Save(tx, cur, steps); e != nil {
@@ -420,6 +420,12 @@ func validSteps(steps []Step) bool {
 }
 func validCampaign(c Campaign) bool {
 	return validCode(c.Code) && strings.TrimSpace(c.Name) != "" && utf8.RuneCountInString(c.Name) <= MaximumCampaignNameRunes && c.ApprovalStatus.Valid() && c.RuntimeStatus.Valid() && c.Version > 0 && c.CreatedBy > 0 && c.UpdatedBy > 0 && !c.CreatedAt.IsZero() && !c.UpdatedAt.IsZero()
+}
+func validLocalPlanCommand(plan Plan, command Command, campaign Campaign, stepCount int32, operation CommandOperation, now time.Time) bool {
+	return plan.ID > 0 && command.ID > 0 &&
+		plan.CampaignCode == campaign.Code && plan.CampaignVersion == campaign.Version && plan.StepCount == stepCount && plan.CreatedAt.Equal(now) &&
+		command.Operation == operation && command.CampaignCode == campaign.Code && command.PlanID == plan.ID && command.CreatedAt.Equal(now) &&
+		!command.RealSend && !command.RuntimeExecuted
 }
 func validBatch(c BatchStartCommand) bool {
 	if c.Actor.ID <= 0 || !validKey(c.IdempotencyKey) || len(c.Items) == 0 || len(c.Items) > MaximumBatch {

@@ -74,6 +74,81 @@ func TestBatchStartSkipsUnstartableWithoutExternalExecution(t *testing.T) {
 	}
 }
 
+func TestStartRejectsMalformedLocalPlanCommandFromAdapter(t *testing.T) {
+	cases := map[string]func(Plan, Command) (Plan, Command){
+		"zero IDs":               func(plan Plan, command Command) (Plan, Command) { plan.ID = 0; command.ID = 0; return plan, command },
+		"wrong plan campaign":    func(plan Plan, command Command) (Plan, Command) { plan.CampaignCode = "other"; return plan, command },
+		"wrong command campaign": func(plan Plan, command Command) (Plan, Command) { command.CampaignCode = "other"; return plan, command },
+		"wrong version":          func(plan Plan, command Command) (Plan, Command) { plan.CampaignVersion++; return plan, command },
+		"wrong step count":       func(plan Plan, command Command) (Plan, Command) { plan.StepCount++; return plan, command },
+		"wrong plan timestamp": func(plan Plan, command Command) (Plan, Command) {
+			plan.CreatedAt = plan.CreatedAt.Add(time.Second)
+			return plan, command
+		},
+		"wrong command timestamp": func(plan Plan, command Command) (Plan, Command) {
+			command.CreatedAt = command.CreatedAt.Add(time.Second)
+			return plan, command
+		},
+		"wrong plan link": func(plan Plan, command Command) (Plan, Command) { command.PlanID++; return plan, command },
+		"wrong operation": func(plan Plan, command Command) (Plan, Command) {
+			if command.Operation == CommandStart {
+				command.Operation = CommandBatchStart
+			} else {
+				command.Operation = CommandStart
+			}
+			return plan, command
+		},
+		"external flags": func(plan Plan, command Command) (Plan, Command) {
+			command.RealSend = true
+			command.RuntimeExecuted = true
+			return plan, command
+		},
+	}
+	for name, alter := range cases {
+		t.Run(name+" single", func(t *testing.T) { assertMalformedStartRejected(t, alter, false) })
+		t.Run(name+" batch", func(t *testing.T) { assertMalformedStartRejected(t, alter, true) })
+	}
+}
+
+type malformedPlanCommandStore struct {
+	*MemoryStore
+	alter func(Plan, Command) (Plan, Command)
+}
+
+func (store *malformedPlanCommandStore) CreateLocalPlanAndCommand(ctx context.Context, campaign Campaign, stepCount int32, operation CommandOperation, now time.Time) (Plan, Command, error) {
+	plan, command, err := store.MemoryStore.CreateLocalPlanAndCommand(ctx, campaign, stepCount, operation, now)
+	if err != nil {
+		return plan, command, err
+	}
+	plan, command = store.alter(plan, command)
+	return plan, command, nil
+}
+
+func assertMalformedStartRejected(t *testing.T, alter func(Plan, Command) (Plan, Command), batch bool) {
+	t.Helper()
+	seed := testCampaign("spring", ApprovalApproved, RuntimeIdle, 1)
+	backing := NewMemoryStore(seed)
+	backing.SeedSteps("spring", []Step{{Index: 1, DelayMinutes: 0, Content: "one"}})
+	store := &malformedPlanCommandStore{MemoryStore: backing, alter: alter}
+	svc, err := NewService(store, store, store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc.now = func() time.Time { return time.Date(2026, 8, 22, 1, 2, 3, 0, time.UTC) }
+	if batch {
+		_, err = svc.BatchStart(context.Background(), BatchStartCommand{Items: []BatchStartItem{{CampaignCode: "spring", ExpectedVersion: 1}}, Actor: Actor{ID: 8}, IdempotencyKey: "key-malformed-bat"})
+	} else {
+		_, err = svc.Start(context.Background(), VersionedCommand{CampaignCode: "spring", ExpectedVersion: 1, Actor: Actor{ID: 8}, IdempotencyKey: "key-malformed-one"})
+	}
+	if !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("start err=%v", err)
+	}
+	detail, err := svc.Detail(context.Background(), "spring")
+	if err != nil || detail.Campaign.Version != 1 || detail.Campaign.RuntimeStatus != RuntimeIdle || len(backing.AuditEvents()) != 0 {
+		t.Fatalf("rollback detail=%+v err=%v audit=%+v", detail, err, backing.AuditEvents())
+	}
+}
+
 func testService(t *testing.T, seed ...Campaign) (*Service, *MemoryStore) {
 	t.Helper()
 	store := NewMemoryStore(seed...)
