@@ -119,6 +119,11 @@ func (r *Repository) Delete(ctx context.Context, code string, version int64) err
 	if e != nil {
 		return e
 	}
+	// Hold a deterministic reference window. The draft+idle predicate is still
+	// checked by the delete itself and the FKs remain the final integrity guard.
+	if _, e = tx.Exec(ctx, `LOCK TABLE cloud_campaign_local_plans, cloud_campaign_local_commands IN SHARE MODE`); e != nil {
+		return e
+	}
 	tag, e := tx.Exec(ctx, `DELETE FROM cloud_campaigns WHERE campaign_code=$1 AND version=$2 AND approval_status='draft' AND runtime_status='idle'`, code, version)
 	if e != nil {
 		return e
