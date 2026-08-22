@@ -1,0 +1,218 @@
+package app
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"sort"
+	"testing"
+	"time"
+
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
+)
+
+func TestLocalPlanLifecycleUsesReceiptsEventsAndStrictDraftBoundary(t *testing.T) {
+	service, store, events := newTestService()
+	ctx := context.Background()
+	detail, err := service.Create(ctx, groupopsport.CreatePlanCommand{Name: "Onboarding", Actor: 7, IdempotencyKey: "group-ops-create-0001"})
+	if err != nil || detail.Plan.Status != groupopsport.PlanDraft || detail.Plan.Revision != 1 || detail.ProviderExecutionEligible || detail.RealExternalCallExecuted {
+		t.Fatalf("create detail=%#v err=%v", detail, err)
+	}
+	detail, err = service.AddMember(ctx, groupopsport.MemberCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, StaffID: 19, Actor: 7, IdempotencyKey: "group-ops-member-0001"})
+	if err != nil || len(detail.Members) != 1 || detail.Members[0].StaffID != 19 {
+		t.Fatalf("member detail=%#v err=%v", detail, err)
+	}
+	detail, err = service.AddGroupAsset(ctx, groupopsport.GroupAssetCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, AssetRef: "local-group-18", Actor: 7, IdempotencyKey: "group-ops-asset-0001"})
+	if err != nil || len(detail.GroupAssets) != 1 || detail.GroupAssets[0].ID < 1 {
+		t.Fatalf("asset detail=%#v err=%v", detail, err)
+	}
+	detail, err = service.AddNode(ctx, groupopsport.NodeCreateCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, Position: 1, Kind: groupopsport.NodeMessage, MessageText: "欢迎加入", Actor: 7, IdempotencyKey: "group-ops-node-0001"})
+	if err != nil || len(detail.Nodes) != 1 || detail.Nodes[0].ID < 1 {
+		t.Fatalf("node detail=%#v err=%v", detail, err)
+	}
+	preview, err := service.Preview(ctx, detail.Plan.ID)
+	if err != nil || !preview.Valid || preview.ProviderExecutionEligible || preview.RealExternalCallExecuted || len(preview.PreviewLines) != 1 {
+		t.Fatalf("preview=%#v err=%v", preview, err)
+	}
+	detail, err = service.Activate(ctx, groupopsport.TransitionCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, Actor: 7, IdempotencyKey: "group-ops-activate-01"})
+	if err != nil || detail.Plan.Status != groupopsport.PlanActive {
+		t.Fatalf("activate detail=%#v err=%v", detail, err)
+	}
+	_, err = service.Update(ctx, groupopsport.UpdatePlanCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, Name: "not allowed", Actor: 7, IdempotencyKey: "group-ops-update-0001"})
+	if !errors.Is(err, ErrStateConflict) {
+		t.Fatalf("update active err=%v", err)
+	}
+	detail, err = service.Pause(ctx, groupopsport.TransitionCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, Actor: 7, IdempotencyKey: "group-ops-pause-00001"})
+	if err != nil || detail.Plan.Status != groupopsport.PlanPaused {
+		t.Fatalf("pause detail=%#v err=%v", detail, err)
+	}
+	detail, err = service.Archive(ctx, groupopsport.TransitionCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, Actor: 7, IdempotencyKey: "group-ops-archive-001"})
+	if err != nil || detail.Plan.Status != groupopsport.PlanArchived {
+		t.Fatalf("archive detail=%#v err=%v", detail, err)
+	}
+	_, err = service.AddMember(ctx, groupopsport.MemberCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, StaffID: 20, Actor: 7, IdempotencyKey: "group-ops-member-0002"})
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("archive write err=%v", err)
+	}
+	completed := 0
+	for _, receipt := range store.receipts {
+		if receipt.State == "completed" {
+			completed++
+		}
+	}
+	if completed != 7 || len(events.items) != 7 {
+		t.Fatalf("completed receipts/events=%d/%d", completed, len(events.items))
+	}
+	for _, event := range events.items {
+		if event.Type != eventport.EvGroupOpsPlanUpdated {
+			t.Fatalf("event=%#v", event)
+		}
+	}
+}
+
+func TestCreateReplayAndDescriptorAreOpaqueOnly(t *testing.T) {
+	service, store, _ := newTestService()
+	first, err := service.Create(context.Background(), groupopsport.CreatePlanCommand{Name: "local", Actor: 7, IdempotencyKey: "group-ops-create-replay"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := service.Create(context.Background(), groupopsport.CreatePlanCommand{Name: "local", Actor: 7, IdempotencyKey: "group-ops-create-replay"})
+	if err != nil || second.Plan.ID != first.Plan.ID || len(store.details) != 1 {
+		t.Fatalf("replay=%#v err=%v details=%d", second, err, len(store.details))
+	}
+	_, err = service.Create(context.Background(), groupopsport.CreatePlanCommand{Name: "different", Actor: 7, IdempotencyKey: "group-ops-create-replay"})
+	if !errors.Is(err, ErrConflict) {
+		t.Fatalf("replay conflict err=%v", err)
+	}
+	for _, ref := range []string{"https://example.invalid", "secret-value", "token-value"} {
+		_, err = service.PutWebhookDescriptor(context.Background(), groupopsport.WebhookDescriptorCommand{PlanID: first.Plan.ID, ExpectedRevision: first.Plan.Revision, Reference: ref, Actor: 7, IdempotencyKey: "group-ops-webhook-0001"})
+		if !errors.Is(err, ErrInvalid) {
+			t.Fatalf("ref=%q err=%v", ref, err)
+		}
+	}
+	detail, err := service.PutWebhookDescriptor(context.Background(), groupopsport.WebhookDescriptorCommand{PlanID: first.Plan.ID, ExpectedRevision: first.Plan.Revision, Reference: "local-webhook-7", Actor: 7, IdempotencyKey: "group-ops-webhook-0002"})
+	if err != nil || detail.WebhookDescriptor.Reference != "local-webhook-7" || detail.WebhookDescriptor.Description != "local opaque reference only" {
+		t.Fatalf("descriptor=%#v err=%v", detail.WebhookDescriptor, err)
+	}
+}
+
+func TestListsAreDeterministicAndBounded(t *testing.T) {
+	service, _, _ := newTestService()
+	for _, name := range []string{"one", "two", "three"} {
+		if _, err := service.Create(context.Background(), groupopsport.CreatePlanCommand{Name: name, Actor: 7, IdempotencyKey: "group-ops-list-key-" + name}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	page, err := service.List(context.Background(), 2, 0)
+	if err != nil || page.Total != 3 || len(page.Items) != 2 || !page.HasMore || page.Items[0].ID <= page.Items[1].ID || page.ProviderExecutionEligible || page.RealExternalCallExecuted {
+		t.Fatalf("page=%#v err=%v", page, err)
+	}
+	if _, err := service.List(context.Background(), 101, 0); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("bounds err=%v", err)
+	}
+}
+
+type testUOW struct{}
+
+func (testUOW) Within(_ context.Context, fn func(context.Context) error) error {
+	return fn(context.Background())
+}
+
+type testEvents struct{ items []eventport.Event }
+
+func (e *testEvents) Append(_ context.Context, event eventport.Event) (eventport.EventID, error) {
+	e.items = append(e.items, event)
+	return eventport.EventID(len(e.items)), nil
+}
+
+type testStore struct {
+	details   map[int64]groupopsport.Detail
+	receipts  map[string]Receipt
+	nextPlan  int64
+	nextAsset int64
+	nextNode  int64
+}
+
+func newTestService() (*Service, *testStore, *testEvents) {
+	store := &testStore{details: map[int64]groupopsport.Detail{}, receipts: map[string]Receipt{}, nextPlan: 1, nextAsset: 1, nextNode: 1}
+	events := &testEvents{}
+	service := NewService(testUOW{}, store, events)
+	service.now = func() time.Time { return time.Date(2026, time.August, 23, 8, 0, 0, 0, time.UTC) }
+	return service, store, events
+}
+
+func (s *testStore) List(_ context.Context, limit, offset int32) ([]groupopsport.Plan, error) {
+	items := make([]groupopsport.Plan, 0, len(s.details))
+	for _, detail := range s.details {
+		items = append(items, detail.Plan)
+	}
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].UpdatedAt.After(items[j].UpdatedAt) || items[i].UpdatedAt.Equal(items[j].UpdatedAt) && items[i].ID > items[j].ID
+	})
+	if int(offset) >= len(items) {
+		return []groupopsport.Plan{}, nil
+	}
+	end := int(offset + limit)
+	if end > len(items) {
+		end = len(items)
+	}
+	return append([]groupopsport.Plan{}, items[offset:end]...), nil
+}
+func (s *testStore) Count(context.Context) (int64, error) { return int64(len(s.details)), nil }
+func (s *testStore) Get(_ context.Context, id int64) (groupopsport.Detail, error) {
+	detail, ok := s.details[id]
+	if !ok {
+		return groupopsport.Detail{}, ErrNotFound
+	}
+	return cloneDetail(detail), nil
+}
+func (s *testStore) Lock(ctx context.Context, id int64) (groupopsport.Detail, error) {
+	return s.Get(ctx, id)
+}
+func (s *testStore) Create(_ context.Context, plan groupopsport.Plan) (int64, error) {
+	plan.ID = s.nextPlan
+	s.nextPlan++
+	s.details[plan.ID] = groupopsport.Detail{Plan: plan, Members: []groupopsport.Member{}, GroupAssets: []groupopsport.GroupAsset{}, Nodes: []groupopsport.Node{}, WebhookDescriptor: descriptor(""), Safety: groupopsport.LocalSafety()}
+	return plan.ID, nil
+}
+func (s *testStore) Save(_ context.Context, detail groupopsport.Detail) error {
+	for i := range detail.GroupAssets {
+		if detail.GroupAssets[i].ID == 0 {
+			detail.GroupAssets[i].ID = s.nextAsset
+			s.nextAsset++
+		}
+	}
+	for i := range detail.Nodes {
+		if detail.Nodes[i].ID == 0 {
+			detail.Nodes[i].ID = s.nextNode
+			s.nextNode++
+		}
+	}
+	sort.Slice(detail.GroupAssets, func(i, j int) bool { return detail.GroupAssets[i].AssetRef < detail.GroupAssets[j].AssetRef })
+	s.details[detail.Plan.ID] = cloneDetail(detail)
+	return nil
+}
+func receiptKey(operation, scope string, key [32]byte) string {
+	return operation + "/" + scope + "/" + string(key[:])
+}
+func (s *testStore) Reserve(_ context.Context, operation string, input Reservation) (Receipt, bool, error) {
+	key := receiptKey(operation, input.ActorScope, input.KeyDigest)
+	if value, ok := s.receipts[key]; ok {
+		return value, false, nil
+	}
+	value := Receipt{ID: int64(len(s.receipts) + 1), Operation: operation, ActorScope: input.ActorScope, KeyDigest: input.KeyDigest, PayloadDigest: input.PayloadDigest, State: "in_progress"}
+	s.receipts[key] = value
+	return value, true, nil
+}
+func (s *testStore) Complete(_ context.Context, id int64, snapshot json.RawMessage, _ time.Time) (Receipt, error) {
+	for key, value := range s.receipts {
+		if value.ID == id {
+			value.State = "completed"
+			value.ResultSnapshot = append([]byte{}, snapshot...)
+			s.receipts[key] = value
+			return value, nil
+		}
+	}
+	return Receipt{}, ErrNotFound
+}
