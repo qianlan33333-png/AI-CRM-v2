@@ -223,7 +223,7 @@ func scanStageReceipt(row stageScanner) (contactapp.StageReceipt, error) {
 	if err := row.Scan(&receipt.ID, &operation, &actor, &keyDigest, &payloadDigest, &receipt.State, &resultIDs); err != nil {
 		return contactapp.StageReceipt{}, err
 	}
-	if receipt.ID <= 0 || (operation != "reorder" && operation != "archive") || actor == "" || len(keyDigest) != 32 || len(payloadDigest) != 32 || (receipt.State != "in_progress" && receipt.State != "completed") {
+	if receipt.ID <= 0 || (operation != "create" && operation != "rename" && operation != "reorder" && operation != "archive") || actor == "" || len(keyDigest) != 32 || len(payloadDigest) != 32 || (receipt.State != "in_progress" && receipt.State != "completed") {
 		return contactapp.StageReceipt{}, fmt.Errorf("invalid stage receipt")
 	}
 	receipt.Operation = contactapp.StageOperation(operation)

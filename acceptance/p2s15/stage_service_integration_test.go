@@ -27,7 +27,7 @@ func TestStageServiceCommitsEventsAndRollsBackWhenAppendFails(t *testing.T) {
 	service := contactapp.NewStageService(uow, repository, eventstore.NewAppender())
 
 	stage, err := service.CreateStage(ctx, contactport.CreateStageCommand{
-		Name: "初识", SortOrder: 10, Actor: "admin:1",
+		Name: "初识", SortOrder: 10, Actor: "admin:1", IdempotencyKey: "stage-create-key-0001",
 	})
 	if err != nil {
 		t.Fatalf("CreateStage() error = %v", err)
@@ -42,7 +42,7 @@ func TestStageServiceCommitsEventsAndRollsBackWhenAppendFails(t *testing.T) {
 	assertEvent(t, ctx, fixture, "stage.created", stage.ID, "初识", "admin:1", 1)
 
 	renamed, err := service.RenameStage(ctx, contactport.RenameStageCommand{
-		ID: stage.ID, Name: "已联系", Actor: "admin:2",
+		ID: stage.ID, Name: "已联系", Actor: "admin:2", IdempotencyKey: "stage-rename-key-0001",
 	})
 	if err != nil || renamed.Name != "已联系" {
 		t.Fatalf("RenameStage() = %#v, %v", renamed, err)
@@ -52,7 +52,7 @@ func TestStageServiceCommitsEventsAndRollsBackWhenAppendFails(t *testing.T) {
 	sentinel := errors.New("append failed")
 	failingService := contactapp.NewStageService(uow, repository, failingAppender{err: sentinel})
 	created, err := failingService.CreateStage(ctx, contactport.CreateStageCommand{
-		Name: "不得提交", SortOrder: 20, Config: json.RawMessage(`{}`), Actor: "admin:3",
+		Name: "不得提交", SortOrder: 20, Config: json.RawMessage(`{}`), Actor: "admin:3", IdempotencyKey: "stage-create-key-0002",
 	})
 	if !errors.Is(err, sentinel) || !zeroStage(created) {
 		t.Fatalf("CreateStage() on event failure = %#v, %v", created, err)
@@ -60,7 +60,7 @@ func TestStageServiceCommitsEventsAndRollsBackWhenAppendFails(t *testing.T) {
 	assertCountsAndName(t, ctx, fixture, 1, 2, stage.ID, "已联系")
 
 	renamed, err = failingService.RenameStage(ctx, contactport.RenameStageCommand{
-		ID: stage.ID, Name: "不得改名", Actor: "admin:3",
+		ID: stage.ID, Name: "不得改名", Actor: "admin:3", IdempotencyKey: "stage-rename-key-0002",
 	})
 	if !errors.Is(err, sentinel) || !zeroStage(renamed) {
 		t.Fatalf("RenameStage() on event failure = %#v, %v", renamed, err)
@@ -122,7 +122,15 @@ CREATE TABLE acceptance_fixtures.stages (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   name TEXT NOT NULL,
   sort_order INTEGER NOT NULL,
-  config JSONB NOT NULL DEFAULT '{}'
+  config JSONB NOT NULL DEFAULT '{}',
+  archived_at TIMESTAMPTZ,
+  archived_by TEXT,
+  CONSTRAINT stages_archive_pair CHECK (
+    (archived_at IS NULL AND archived_by IS NULL)
+    OR (archived_at IS NOT NULL AND archived_by IS NOT NULL
+        AND btrim(archived_by) = archived_by AND archived_by <> ''
+        AND char_length(archived_by) <= 200)
+  )
 );
 CREATE TABLE acceptance_fixtures.event_log (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -161,16 +169,19 @@ ORDER BY id DESC LIMIT 1`).Scan(&gotType, &customerID, &payload, &occurredAt, &k
 		t.Fatalf("query event: %v", err)
 	}
 	var decoded struct {
-		StageID contactport.StageID `json:"stage_id"`
-		Name    string              `json:"name"`
-		Actor   string              `json:"actor"`
+		StageIDs []contactport.StageID `json:"stage_ids"`
+		Actor    string                `json:"actor"`
 	}
 	if err = json.Unmarshal(payload, &decoded); err != nil {
 		t.Fatalf("decode event payload: %v", err)
 	}
-	if gotType != eventType || customerID.Valid || decoded.StageID != stageID ||
-		decoded.Name != name || decoded.Actor != actor || occurredAt.IsZero() ||
-		len(key) != len(eventType)+1+32 || key[:len(eventType)+1] != eventType+":" {
+	keyPrefix := map[string]string{
+		"stage.created": "stage.create:",
+		"stage.renamed": "stage.rename:",
+	}[eventType]
+	if gotType != eventType || customerID.Valid || len(decoded.StageIDs) != 1 || decoded.StageIDs[0] != stageID ||
+		decoded.Actor != actor || occurredAt.IsZero() ||
+		len(key) != len(keyPrefix)+64 || key[:len(keyPrefix)] != keyPrefix {
 		t.Fatalf("event = type:%q customer:%#v payload:%s at:%v key:%q", gotType, customerID, payload, occurredAt, key)
 	}
 	assertCountsAndName(t, ctx, fixture, 1, wantCount, stageID, name)
