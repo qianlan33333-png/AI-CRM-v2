@@ -196,28 +196,31 @@ export interface CloudCampaignStepCreateRequest {
 }
 
 export type CloudCampaignStepUpdateRequest =
-  | (unknown & {
-      /** @minimum 1 */
-      expected_version: number;
-      /** @minimum 0 */
-      delay_minutes?: number;
-      /**
-       * @minLength 1
-       * @maxLength 4000
-       */
-      content?: string;
-    })
-  | (unknown & {
-      /** @minimum 1 */
-      expected_version: number;
-      /** @minimum 0 */
-      delay_minutes?: number;
-      /**
-       * @minLength 1
-       * @maxLength 4000
-       */
-      content?: string;
-    });
+  CloudCampaignStepUpdateDelayRequest | CloudCampaignStepUpdateContentRequest;
+
+export interface CloudCampaignStepUpdateDelayRequest {
+  /** @minimum 1 */
+  expected_version: number;
+  /** @minimum 0 */
+  delay_minutes: number;
+  /**
+   * @minLength 1
+   * @maxLength 4000
+   */
+  content?: string;
+}
+
+export interface CloudCampaignStepUpdateContentRequest {
+  /** @minimum 1 */
+  expected_version: number;
+  /** @minimum 0 */
+  delay_minutes?: number;
+  /**
+   * @minLength 1
+   * @maxLength 4000
+   */
+  content: string;
+}
 
 export interface CloudCampaignBatchStartRequest {
   /**
@@ -277,9 +280,15 @@ export interface AIAudienceAutomationBindingPutRequest {
   automation_agent_id: number;
 }
 
+/**
+ * @nullable
+ */
+export type AIAudienceAutomationBindingResponseBinding =
+  AIAudienceAutomationBinding | null;
+
 export interface AIAudienceAutomationBindingResponse {
   /** @nullable */
-  binding: AIAudienceAutomationBinding;
+  binding: AIAudienceAutomationBindingResponseBinding;
   local_projection: boolean;
   real_external_call_executed: boolean;
 }

@@ -6986,10 +6986,18 @@ components:
       required: [expected_version, delay_minutes, content]
       properties: { expected_version: { type: integer, format: int64, minimum: 1 }, delay_minutes: { type: integer, format: int32, minimum: 0 }, content: { type: string, minLength: 1, maxLength: 4000 } }
     CloudCampaignStepUpdateRequest:
+      anyOf:
+        - $ref: "#/components/schemas/CloudCampaignStepUpdateDelayRequest"
+        - $ref: "#/components/schemas/CloudCampaignStepUpdateContentRequest"
+    CloudCampaignStepUpdateDelayRequest:
       type: object
       additionalProperties: false
-      required: [expected_version]
-      anyOf: [{ required: [delay_minutes] }, { required: [content] }]
+      required: [expected_version, delay_minutes]
+      properties: { expected_version: { type: integer, format: int64, minimum: 1 }, delay_minutes: { type: integer, format: int32, minimum: 0 }, content: { type: string, minLength: 1, maxLength: 4000 } }
+    CloudCampaignStepUpdateContentRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version, content]
       properties: { expected_version: { type: integer, format: int64, minimum: 1 }, delay_minutes: { type: integer, format: int32, minimum: 0 }, content: { type: string, minLength: 1, maxLength: 4000 } }
     CloudCampaignBatchStartRequest:
       type: object
@@ -7042,7 +7050,7 @@ components:
       additionalProperties: false
       required: [binding, local_projection, real_external_call_executed]
       properties:
-        binding: { $ref: "#/components/schemas/AIAudienceAutomationBinding", nullable: true }
+        binding: { allOf: [{ $ref: "#/components/schemas/AIAudienceAutomationBinding" }], nullable: true }
         local_projection: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
     AIAudienceAutomationBindingDeleteResponse:
