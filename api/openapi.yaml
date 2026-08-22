@@ -5769,6 +5769,278 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/package-groups:
+    get:
+      tags: [p4-ai-audience]
+      operationId: listAIAudiencePackageGroups
+      summary: List CRM-local AI Audience package groups
+      x-legacy-mapping-ids: [LEGACY-API-0089]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Local package groups, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceGroupListResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-ai-audience]
+      operationId: createAIAudiencePackageGroup
+      summary: Create a CRM-local package group
+      x-legacy-mapping-ids: [LEGACY-API-0090]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceGroupCreateRequest" } } } }
+      responses:
+        "201": { description: Created local group, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceGroupMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/package-groups/{group_id}:
+    parameters: [{ name: group_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    patch:
+      tags: [p4-ai-audience]
+      operationId: updateAIAudiencePackageGroup
+      summary: Update a CRM-local package group with CAS
+      x-legacy-mapping-ids: [LEGACY-API-0092]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceGroupUpdateRequest" } } } }
+      responses:
+        "200": { description: Updated local group, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceGroupMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-ai-audience]
+      operationId: deleteAIAudiencePackageGroup
+      summary: Delete an empty CRM-local package group
+      x-legacy-mapping-ids: [LEGACY-API-0091]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceVersionRequest" } } } }
+      responses:
+        "200": { description: Deleted empty local group, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceGroupDeleteResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages:
+    get:
+      tags: [p4-ai-audience]
+      operationId: listAIAudiencePackages
+      summary: List local package metadata joined to authoritative Segment facts
+      x-legacy-mapping-ids: [LEGACY-API-0093]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: segments.local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: group_id, in: query, required: false, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+      responses:
+        "200": { description: Local package page, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudiencePackageListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}:
+    parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    get:
+      tags: [p4-ai-audience]
+      operationId: getAIAudiencePackage
+      summary: Read one local package with authoritative Segment definition and member count
+      x-legacy-mapping-ids: [LEGACY-API-0096]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: segments.local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Local package detail, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudiencePackageDetailResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    patch:
+      tags: [p4-ai-audience]
+      operationId: updateAIAudiencePackage
+      summary: Update local package and authoritative Segment fields in one transaction
+      x-legacy-mapping-ids: [LEGACY-API-0097]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudiencePackageUpdateRequest" } } } }
+      responses:
+        "200": { description: Updated local package, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudiencePackageMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-ai-audience]
+      operationId: archiveAIAudiencePackage
+      summary: Archive local package lifecycle without deleting Segment member facts
+      x-legacy-mapping-ids: [LEGACY-API-0095]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceVersionRequest" } } } }
+      responses:
+        "200": { description: Archived local package, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudiencePackageArchiveResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}/copy:
+    post:
+      tags: [p4-ai-audience]
+      operationId: copyAIAudiencePackage
+      summary: Copy package definition without copying members or running refresh
+      x-legacy-mapping-ids: [LEGACY-API-0102]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceVersionRequest" } } } }
+      responses:
+        "201": { description: Copied package with zero members, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudiencePackageMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}/pause:
+    post:
+      tags: [p4-ai-audience]
+      operationId: pauseAIAudiencePackage
+      summary: Pause one local package lifecycle
+      x-legacy-mapping-ids: [LEGACY-API-0104]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceVersionRequest" } } } }
+      responses:
+        "200": { description: Paused local lifecycle, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudiencePackageMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}/activate:
+    post:
+      tags: [p4-ai-audience]
+      operationId: activateAIAudiencePackage
+      summary: Activate a non-archived local package lifecycle
+      x-legacy-mapping-ids: [LEGACY-API-0098]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceVersionRequest" } } } }
+      responses:
+        "200": { description: Activated local lifecycle, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudiencePackageMutationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
 components:
   securitySchemes:
     AdminSession:
@@ -5990,6 +6262,167 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    AIAudienceProjection:
+      type: object
+      additionalProperties: false
+      required: [local_projection, real_external_call_executed]
+      properties:
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceGroup:
+      type: object
+      additionalProperties: false
+      required: [group_id, name, sort_order, version, created_by, created_at, updated_at]
+      properties:
+        group_id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        sort_order: { type: integer, format: int32, minimum: 0, maximum: 1000000 }
+        version: { type: integer, format: int64, minimum: 1 }
+        created_by: { type: integer, format: int64, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    AIAudienceGroupCreateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, expected_version]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        sort_order: { type: integer, format: int32, minimum: 0, maximum: 1000000, default: 0 }
+        expected_version: { type: integer, format: int64, enum: [0] }
+    AIAudienceGroupUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      minProperties: 2
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        sort_order: { type: integer, format: int32, minimum: 0, maximum: 1000000 }
+        expected_version: { type: integer, format: int64, minimum: 1 }
+    AIAudienceVersionRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 1 }
+    AIAudienceGroupListResponse:
+      type: object
+      additionalProperties: false
+      required: [items, local_projection, real_external_call_executed]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AIAudienceGroup" } }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceGroupMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [group, local_projection, real_external_call_executed]
+      properties:
+        group: { $ref: "#/components/schemas/AIAudienceGroup" }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceGroupDeleteResponse:
+      type: object
+      additionalProperties: false
+      required: [group_id, version, deleted, local_projection, real_external_call_executed]
+      properties:
+        group_id: { type: integer, format: int64, minimum: 1 }
+        version: { type: integer, format: int64, minimum: 1 }
+        deleted: { type: boolean, enum: [true] }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudiencePackageLifecycle:
+      type: string
+      enum: [paused, active, archived]
+    AIAudiencePackageSummary:
+      type: object
+      additionalProperties: false
+      required: [package_id, name, group_id, lifecycle, version, refresh_mode, refresh_cron, member_count, refreshed_at, refresh_status, created_at, updated_at]
+      properties:
+        package_id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        group_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        lifecycle: { $ref: "#/components/schemas/AIAudiencePackageLifecycle" }
+        version: { type: integer, format: int64, minimum: 1 }
+        refresh_mode: { type: string, enum: [manual, scheduled] }
+        refresh_cron: { type: string, minLength: 1, maxLength: 200, nullable: true }
+        member_count: { type: integer, format: int64, minimum: 0 }
+        refreshed_at: { type: string, format: date-time, nullable: true }
+        refresh_status: { type: string, enum: [idle, running, failed] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    AIAudiencePackage:
+      allOf:
+        - $ref: "#/components/schemas/AIAudiencePackageSummary"
+        - type: object
+          additionalProperties: false
+          required: [definition]
+          properties:
+            definition: { $ref: "#/components/schemas/SegmentDefinition" }
+    AIAudiencePackageMutation:
+      type: object
+      additionalProperties: false
+      required: [package_id, name, group_id, lifecycle, version, refresh_mode, refresh_cron, created_at, updated_at]
+      properties:
+        package_id: { type: integer, format: int64, minimum: 1 }
+        name: { type: string, minLength: 1, maxLength: 200 }
+        group_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        lifecycle: { $ref: "#/components/schemas/AIAudiencePackageLifecycle" }
+        version: { type: integer, format: int64, minimum: 1 }
+        refresh_mode: { type: string, enum: [manual, scheduled] }
+        refresh_cron: { type: string, minLength: 1, maxLength: 200, nullable: true }
+        member_count: { type: integer, format: int64, minimum: 0, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    AIAudiencePackageUpdateRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      minProperties: 2
+      properties:
+        name: { type: string, minLength: 1, maxLength: 200 }
+        definition: { $ref: "#/components/schemas/SegmentDefinition" }
+        refresh_mode: { type: string, enum: [manual, scheduled] }
+        refresh_cron: { type: string, minLength: 1, maxLength: 200, nullable: true }
+        group_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        expected_version: { type: integer, format: int64, minimum: 1 }
+    AIAudiencePackageListResponse:
+      type: object
+      additionalProperties: false
+      required: [items, limit, offset, total, local_projection, real_external_call_executed]
+      properties:
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/AIAudiencePackageSummary" } }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0, maximum: 100000 }
+        total: { type: integer, format: int64, minimum: 0 }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudiencePackageDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [package, local_projection, real_external_call_executed]
+      properties:
+        package: { $ref: "#/components/schemas/AIAudiencePackage" }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudiencePackageMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [package, local_projection, real_external_call_executed]
+      properties:
+        package: { $ref: "#/components/schemas/AIAudiencePackageMutation" }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudiencePackageArchiveResponse:
+      type: object
+      additionalProperties: false
+      required: [package_id, lifecycle, version, archived, local_projection, real_external_call_executed]
+      properties:
+        package_id: { type: integer, format: int64, minimum: 1 }
+        lifecycle: { allOf: [{ $ref: "#/components/schemas/AIAudiencePackageLifecycle" }], enum: [archived] }
+        version: { type: integer, format: int64, minimum: 1 }
+        archived: { type: boolean, enum: [true] }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
     RadarStatus:
       type: string
       enum: [draft, enabled, disabled]

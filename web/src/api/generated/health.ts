@@ -5,6 +5,287 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface AIAudienceProjection {
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface AIAudienceGroup {
+  /** @minimum 1 */
+  group_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  name: string;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  sort_order: number;
+  /** @minimum 1 */
+  version: number;
+  /** @minimum 1 */
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AIAudienceGroupCreateRequestExpectedVersion =
+  (typeof AIAudienceGroupCreateRequestExpectedVersion)[keyof typeof AIAudienceGroupCreateRequestExpectedVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceGroupCreateRequestExpectedVersion = {
+  NUMBER_0: 0,
+} as const;
+
+export interface AIAudienceGroupCreateRequest {
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  name: string;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  sort_order?: number;
+  expected_version: AIAudienceGroupCreateRequestExpectedVersion;
+}
+
+export interface AIAudienceGroupUpdateRequest {
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  name?: string;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  sort_order?: number;
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+export interface AIAudienceVersionRequest {
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+export interface AIAudienceGroupListResponse {
+  items: AIAudienceGroup[];
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface AIAudienceGroupMutationResponse {
+  group: AIAudienceGroup;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface AIAudienceGroupDeleteResponse {
+  /** @minimum 1 */
+  group_id: number;
+  /** @minimum 1 */
+  version: number;
+  deleted: boolean;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type AIAudiencePackageLifecycle =
+  (typeof AIAudiencePackageLifecycle)[keyof typeof AIAudiencePackageLifecycle];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudiencePackageLifecycle = {
+  paused: "paused",
+  active: "active",
+  archived: "archived",
+} as const;
+
+export type AIAudiencePackageSummaryRefreshMode =
+  (typeof AIAudiencePackageSummaryRefreshMode)[keyof typeof AIAudiencePackageSummaryRefreshMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudiencePackageSummaryRefreshMode = {
+  manual: "manual",
+  scheduled: "scheduled",
+} as const;
+
+export type AIAudiencePackageSummaryRefreshStatus =
+  (typeof AIAudiencePackageSummaryRefreshStatus)[keyof typeof AIAudiencePackageSummaryRefreshStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudiencePackageSummaryRefreshStatus = {
+  idle: "idle",
+  running: "running",
+  failed: "failed",
+} as const;
+
+export interface AIAudiencePackageSummary {
+  /** @minimum 1 */
+  package_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  group_id: number | null;
+  lifecycle: AIAudiencePackageLifecycle;
+  /** @minimum 1 */
+  version: number;
+  refresh_mode: AIAudiencePackageSummaryRefreshMode;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   * @nullable
+   */
+  refresh_cron: string | null;
+  /** @minimum 0 */
+  member_count: number;
+  /** @nullable */
+  refreshed_at: string | null;
+  refresh_status: AIAudiencePackageSummaryRefreshStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AIAudiencePackageAllOf = {
+  definition: SegmentDefinition;
+};
+
+export type AIAudiencePackage = AIAudiencePackageSummary &
+  AIAudiencePackageAllOf;
+
+export type AIAudiencePackageMutationRefreshMode =
+  (typeof AIAudiencePackageMutationRefreshMode)[keyof typeof AIAudiencePackageMutationRefreshMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudiencePackageMutationRefreshMode = {
+  manual: "manual",
+  scheduled: "scheduled",
+} as const;
+
+export interface AIAudiencePackageMutation {
+  /** @minimum 1 */
+  package_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  group_id: number | null;
+  lifecycle: AIAudiencePackageLifecycle;
+  /** @minimum 1 */
+  version: number;
+  refresh_mode: AIAudiencePackageMutationRefreshMode;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   * @nullable
+   */
+  refresh_cron: string | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  member_count?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type AIAudiencePackageUpdateRequestRefreshMode =
+  (typeof AIAudiencePackageUpdateRequestRefreshMode)[keyof typeof AIAudiencePackageUpdateRequestRefreshMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudiencePackageUpdateRequestRefreshMode = {
+  manual: "manual",
+  scheduled: "scheduled",
+} as const;
+
+export interface AIAudiencePackageUpdateRequest {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name?: string;
+  definition?: SegmentDefinition;
+  refresh_mode?: AIAudiencePackageUpdateRequestRefreshMode;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   * @nullable
+   */
+  refresh_cron?: string | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  group_id?: number | null;
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+export interface AIAudiencePackageListResponse {
+  /** @maxItems 100 */
+  items: AIAudiencePackageSummary[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 100000
+   */
+  offset: number;
+  /** @minimum 0 */
+  total: number;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface AIAudiencePackageDetailResponse {
+  package: AIAudiencePackage;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface AIAudiencePackageMutationResponse {
+  package: AIAudiencePackageMutation;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type AIAudiencePackageArchiveResponseLifecycle =
+  (typeof AIAudiencePackageArchiveResponseLifecycle)[keyof typeof AIAudiencePackageArchiveResponseLifecycle];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudiencePackageArchiveResponseLifecycle = {
+  archived: "archived",
+} as const;
+
+export interface AIAudiencePackageArchiveResponse {
+  /** @minimum 1 */
+  package_id: number;
+  lifecycle: AIAudiencePackageArchiveResponseLifecycle;
+  /** @minimum 1 */
+  version: number;
+  archived: boolean;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
 export type RadarStatus = (typeof RadarStatus)[keyof typeof RadarStatus];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
@@ -10579,6 +10860,23 @@ export type ListRadarLinksParams = {
   /**
    * @minimum 0
    * @maximum 1000000
+   */
+  offset?: number;
+};
+
+export type ListAIAudiencePackagesParams = {
+  /**
+   * @minimum 1
+   */
+  group_id?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 100000
    */
   offset?: number;
 };
@@ -28992,4 +29290,1009 @@ export const getRadarLinkShareProjection = async (
     status: res.status,
     headers: res.headers,
   } as getRadarLinkShareProjectionResponse;
+};
+
+/**
+ * @summary List CRM-local AI Audience package groups
+ */
+export type listAIAudiencePackageGroupsResponse200 = {
+  data: AIAudienceGroupListResponse;
+  status: 200;
+};
+
+export type listAIAudiencePackageGroupsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAIAudiencePackageGroupsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAIAudiencePackageGroupsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAIAudiencePackageGroupsResponseSuccess =
+  listAIAudiencePackageGroupsResponse200 & {
+    headers: Headers;
+  };
+export type listAIAudiencePackageGroupsResponseError = (
+  | listAIAudiencePackageGroupsResponse401
+  | listAIAudiencePackageGroupsResponse403
+  | listAIAudiencePackageGroupsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAIAudiencePackageGroupsResponse =
+  | listAIAudiencePackageGroupsResponseSuccess
+  | listAIAudiencePackageGroupsResponseError;
+
+export const getListAIAudiencePackageGroupsUrl = () => {
+  return `/api/admin/ai-audience/package-groups`;
+};
+
+export const listAIAudiencePackageGroups = async (
+  options?: RequestInit,
+): Promise<listAIAudiencePackageGroupsResponse> => {
+  const res = await fetch(getListAIAudiencePackageGroupsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAIAudiencePackageGroupsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAIAudiencePackageGroupsResponse;
+};
+
+/**
+ * @summary Create a CRM-local package group
+ */
+export type createAIAudiencePackageGroupResponse201 = {
+  data: AIAudienceGroupMutationResponse;
+  status: 201;
+};
+
+export type createAIAudiencePackageGroupResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createAIAudiencePackageGroupResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createAIAudiencePackageGroupResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createAIAudiencePackageGroupResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createAIAudiencePackageGroupResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type createAIAudiencePackageGroupResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type createAIAudiencePackageGroupResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type createAIAudiencePackageGroupResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createAIAudiencePackageGroupResponseSuccess =
+  createAIAudiencePackageGroupResponse201 & {
+    headers: Headers;
+  };
+export type createAIAudiencePackageGroupResponseError = (
+  | createAIAudiencePackageGroupResponse400
+  | createAIAudiencePackageGroupResponse401
+  | createAIAudiencePackageGroupResponse403
+  | createAIAudiencePackageGroupResponse409
+  | createAIAudiencePackageGroupResponse413
+  | createAIAudiencePackageGroupResponse415
+  | createAIAudiencePackageGroupResponse422
+  | createAIAudiencePackageGroupResponse503
+) & {
+  headers: Headers;
+};
+
+export type createAIAudiencePackageGroupResponse =
+  | createAIAudiencePackageGroupResponseSuccess
+  | createAIAudiencePackageGroupResponseError;
+
+export const getCreateAIAudiencePackageGroupUrl = () => {
+  return `/api/admin/ai-audience/package-groups`;
+};
+
+export const createAIAudiencePackageGroup = async (
+  aIAudienceGroupCreateRequest: AIAudienceGroupCreateRequest,
+  options?: RequestInit,
+): Promise<createAIAudiencePackageGroupResponse> => {
+  const res = await fetch(getCreateAIAudiencePackageGroupUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceGroupCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createAIAudiencePackageGroupResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createAIAudiencePackageGroupResponse;
+};
+
+/**
+ * @summary Update a CRM-local package group with CAS
+ */
+export type updateAIAudiencePackageGroupResponse200 = {
+  data: AIAudienceGroupMutationResponse;
+  status: 200;
+};
+
+export type updateAIAudiencePackageGroupResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateAIAudiencePackageGroupResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateAIAudiencePackageGroupResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateAIAudiencePackageGroupResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateAIAudiencePackageGroupResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateAIAudiencePackageGroupResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type updateAIAudiencePackageGroupResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type updateAIAudiencePackageGroupResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type updateAIAudiencePackageGroupResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateAIAudiencePackageGroupResponseSuccess =
+  updateAIAudiencePackageGroupResponse200 & {
+    headers: Headers;
+  };
+export type updateAIAudiencePackageGroupResponseError = (
+  | updateAIAudiencePackageGroupResponse400
+  | updateAIAudiencePackageGroupResponse401
+  | updateAIAudiencePackageGroupResponse403
+  | updateAIAudiencePackageGroupResponse404
+  | updateAIAudiencePackageGroupResponse409
+  | updateAIAudiencePackageGroupResponse413
+  | updateAIAudiencePackageGroupResponse415
+  | updateAIAudiencePackageGroupResponse422
+  | updateAIAudiencePackageGroupResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateAIAudiencePackageGroupResponse =
+  | updateAIAudiencePackageGroupResponseSuccess
+  | updateAIAudiencePackageGroupResponseError;
+
+export const getUpdateAIAudiencePackageGroupUrl = (groupId: number) => {
+  return `/api/admin/ai-audience/package-groups/${groupId}`;
+};
+
+export const updateAIAudiencePackageGroup = async (
+  groupId: number,
+  aIAudienceGroupUpdateRequest: AIAudienceGroupUpdateRequest,
+  options?: RequestInit,
+): Promise<updateAIAudiencePackageGroupResponse> => {
+  const res = await fetch(getUpdateAIAudiencePackageGroupUrl(groupId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceGroupUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateAIAudiencePackageGroupResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateAIAudiencePackageGroupResponse;
+};
+
+/**
+ * @summary Delete an empty CRM-local package group
+ */
+export type deleteAIAudiencePackageGroupResponse200 = {
+  data: AIAudienceGroupDeleteResponse;
+  status: 200;
+};
+
+export type deleteAIAudiencePackageGroupResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type deleteAIAudiencePackageGroupResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type deleteAIAudiencePackageGroupResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type deleteAIAudiencePackageGroupResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type deleteAIAudiencePackageGroupResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type deleteAIAudiencePackageGroupResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type deleteAIAudiencePackageGroupResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type deleteAIAudiencePackageGroupResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type deleteAIAudiencePackageGroupResponseSuccess =
+  deleteAIAudiencePackageGroupResponse200 & {
+    headers: Headers;
+  };
+export type deleteAIAudiencePackageGroupResponseError = (
+  | deleteAIAudiencePackageGroupResponse400
+  | deleteAIAudiencePackageGroupResponse401
+  | deleteAIAudiencePackageGroupResponse403
+  | deleteAIAudiencePackageGroupResponse404
+  | deleteAIAudiencePackageGroupResponse409
+  | deleteAIAudiencePackageGroupResponse415
+  | deleteAIAudiencePackageGroupResponse422
+  | deleteAIAudiencePackageGroupResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteAIAudiencePackageGroupResponse =
+  | deleteAIAudiencePackageGroupResponseSuccess
+  | deleteAIAudiencePackageGroupResponseError;
+
+export const getDeleteAIAudiencePackageGroupUrl = (groupId: number) => {
+  return `/api/admin/ai-audience/package-groups/${groupId}`;
+};
+
+export const deleteAIAudiencePackageGroup = async (
+  groupId: number,
+  aIAudienceVersionRequest: AIAudienceVersionRequest,
+  options?: RequestInit,
+): Promise<deleteAIAudiencePackageGroupResponse> => {
+  const res = await fetch(getDeleteAIAudiencePackageGroupUrl(groupId), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteAIAudiencePackageGroupResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteAIAudiencePackageGroupResponse;
+};
+
+/**
+ * @summary List local package metadata joined to authoritative Segment facts
+ */
+export type listAIAudiencePackagesResponse200 = {
+  data: AIAudiencePackageListResponse;
+  status: 200;
+};
+
+export type listAIAudiencePackagesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAIAudiencePackagesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAIAudiencePackagesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAIAudiencePackagesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAIAudiencePackagesResponseSuccess =
+  listAIAudiencePackagesResponse200 & {
+    headers: Headers;
+  };
+export type listAIAudiencePackagesResponseError = (
+  | listAIAudiencePackagesResponse400
+  | listAIAudiencePackagesResponse401
+  | listAIAudiencePackagesResponse403
+  | listAIAudiencePackagesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAIAudiencePackagesResponse =
+  listAIAudiencePackagesResponseSuccess | listAIAudiencePackagesResponseError;
+
+export const getListAIAudiencePackagesUrl = (
+  params?: ListAIAudiencePackagesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/ai-audience/packages?${stringifiedParams}`
+    : `/api/admin/ai-audience/packages`;
+};
+
+export const listAIAudiencePackages = async (
+  params?: ListAIAudiencePackagesParams,
+  options?: RequestInit,
+): Promise<listAIAudiencePackagesResponse> => {
+  const res = await fetch(getListAIAudiencePackagesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAIAudiencePackagesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAIAudiencePackagesResponse;
+};
+
+/**
+ * @summary Read one local package with authoritative Segment definition and member count
+ */
+export type getAIAudiencePackageResponse200 = {
+  data: AIAudiencePackageDetailResponse;
+  status: 200;
+};
+
+export type getAIAudiencePackageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getAIAudiencePackageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAIAudiencePackageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAIAudiencePackageResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getAIAudiencePackageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getAIAudiencePackageResponseSuccess =
+  getAIAudiencePackageResponse200 & {
+    headers: Headers;
+  };
+export type getAIAudiencePackageResponseError = (
+  | getAIAudiencePackageResponse400
+  | getAIAudiencePackageResponse401
+  | getAIAudiencePackageResponse403
+  | getAIAudiencePackageResponse404
+  | getAIAudiencePackageResponse503
+) & {
+  headers: Headers;
+};
+
+export type getAIAudiencePackageResponse =
+  getAIAudiencePackageResponseSuccess | getAIAudiencePackageResponseError;
+
+export const getGetAIAudiencePackageUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}`;
+};
+
+export const getAIAudiencePackage = async (
+  packageId: number,
+  options?: RequestInit,
+): Promise<getAIAudiencePackageResponse> => {
+  const res = await fetch(getGetAIAudiencePackageUrl(packageId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAIAudiencePackageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAIAudiencePackageResponse;
+};
+
+/**
+ * @summary Update local package and authoritative Segment fields in one transaction
+ */
+export type updateAIAudiencePackageResponse200 = {
+  data: AIAudiencePackageMutationResponse;
+  status: 200;
+};
+
+export type updateAIAudiencePackageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateAIAudiencePackageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateAIAudiencePackageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateAIAudiencePackageResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateAIAudiencePackageResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateAIAudiencePackageResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type updateAIAudiencePackageResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type updateAIAudiencePackageResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type updateAIAudiencePackageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateAIAudiencePackageResponseSuccess =
+  updateAIAudiencePackageResponse200 & {
+    headers: Headers;
+  };
+export type updateAIAudiencePackageResponseError = (
+  | updateAIAudiencePackageResponse400
+  | updateAIAudiencePackageResponse401
+  | updateAIAudiencePackageResponse403
+  | updateAIAudiencePackageResponse404
+  | updateAIAudiencePackageResponse409
+  | updateAIAudiencePackageResponse413
+  | updateAIAudiencePackageResponse415
+  | updateAIAudiencePackageResponse422
+  | updateAIAudiencePackageResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateAIAudiencePackageResponse =
+  updateAIAudiencePackageResponseSuccess | updateAIAudiencePackageResponseError;
+
+export const getUpdateAIAudiencePackageUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}`;
+};
+
+export const updateAIAudiencePackage = async (
+  packageId: number,
+  aIAudiencePackageUpdateRequest: AIAudiencePackageUpdateRequest,
+  options?: RequestInit,
+): Promise<updateAIAudiencePackageResponse> => {
+  const res = await fetch(getUpdateAIAudiencePackageUrl(packageId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudiencePackageUpdateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateAIAudiencePackageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateAIAudiencePackageResponse;
+};
+
+/**
+ * @summary Archive local package lifecycle without deleting Segment member facts
+ */
+export type archiveAIAudiencePackageResponse200 = {
+  data: AIAudiencePackageArchiveResponse;
+  status: 200;
+};
+
+export type archiveAIAudiencePackageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type archiveAIAudiencePackageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type archiveAIAudiencePackageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type archiveAIAudiencePackageResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type archiveAIAudiencePackageResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type archiveAIAudiencePackageResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type archiveAIAudiencePackageResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type archiveAIAudiencePackageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type archiveAIAudiencePackageResponseSuccess =
+  archiveAIAudiencePackageResponse200 & {
+    headers: Headers;
+  };
+export type archiveAIAudiencePackageResponseError = (
+  | archiveAIAudiencePackageResponse400
+  | archiveAIAudiencePackageResponse401
+  | archiveAIAudiencePackageResponse403
+  | archiveAIAudiencePackageResponse404
+  | archiveAIAudiencePackageResponse409
+  | archiveAIAudiencePackageResponse415
+  | archiveAIAudiencePackageResponse422
+  | archiveAIAudiencePackageResponse503
+) & {
+  headers: Headers;
+};
+
+export type archiveAIAudiencePackageResponse =
+  | archiveAIAudiencePackageResponseSuccess
+  | archiveAIAudiencePackageResponseError;
+
+export const getArchiveAIAudiencePackageUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}`;
+};
+
+export const archiveAIAudiencePackage = async (
+  packageId: number,
+  aIAudienceVersionRequest: AIAudienceVersionRequest,
+  options?: RequestInit,
+): Promise<archiveAIAudiencePackageResponse> => {
+  const res = await fetch(getArchiveAIAudiencePackageUrl(packageId), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: archiveAIAudiencePackageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as archiveAIAudiencePackageResponse;
+};
+
+/**
+ * @summary Copy package definition without copying members or running refresh
+ */
+export type copyAIAudiencePackageResponse201 = {
+  data: AIAudiencePackageMutationResponse;
+  status: 201;
+};
+
+export type copyAIAudiencePackageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type copyAIAudiencePackageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type copyAIAudiencePackageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type copyAIAudiencePackageResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type copyAIAudiencePackageResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type copyAIAudiencePackageResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type copyAIAudiencePackageResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type copyAIAudiencePackageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type copyAIAudiencePackageResponseSuccess =
+  copyAIAudiencePackageResponse201 & {
+    headers: Headers;
+  };
+export type copyAIAudiencePackageResponseError = (
+  | copyAIAudiencePackageResponse400
+  | copyAIAudiencePackageResponse401
+  | copyAIAudiencePackageResponse403
+  | copyAIAudiencePackageResponse404
+  | copyAIAudiencePackageResponse409
+  | copyAIAudiencePackageResponse415
+  | copyAIAudiencePackageResponse422
+  | copyAIAudiencePackageResponse503
+) & {
+  headers: Headers;
+};
+
+export type copyAIAudiencePackageResponse =
+  copyAIAudiencePackageResponseSuccess | copyAIAudiencePackageResponseError;
+
+export const getCopyAIAudiencePackageUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/copy`;
+};
+
+export const copyAIAudiencePackage = async (
+  packageId: number,
+  aIAudienceVersionRequest: AIAudienceVersionRequest,
+  options?: RequestInit,
+): Promise<copyAIAudiencePackageResponse> => {
+  const res = await fetch(getCopyAIAudiencePackageUrl(packageId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: copyAIAudiencePackageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as copyAIAudiencePackageResponse;
+};
+
+/**
+ * @summary Pause one local package lifecycle
+ */
+export type pauseAIAudiencePackageResponse200 = {
+  data: AIAudiencePackageMutationResponse;
+  status: 200;
+};
+
+export type pauseAIAudiencePackageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type pauseAIAudiencePackageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type pauseAIAudiencePackageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type pauseAIAudiencePackageResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type pauseAIAudiencePackageResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type pauseAIAudiencePackageResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type pauseAIAudiencePackageResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type pauseAIAudiencePackageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type pauseAIAudiencePackageResponseSuccess =
+  pauseAIAudiencePackageResponse200 & {
+    headers: Headers;
+  };
+export type pauseAIAudiencePackageResponseError = (
+  | pauseAIAudiencePackageResponse400
+  | pauseAIAudiencePackageResponse401
+  | pauseAIAudiencePackageResponse403
+  | pauseAIAudiencePackageResponse404
+  | pauseAIAudiencePackageResponse409
+  | pauseAIAudiencePackageResponse415
+  | pauseAIAudiencePackageResponse422
+  | pauseAIAudiencePackageResponse503
+) & {
+  headers: Headers;
+};
+
+export type pauseAIAudiencePackageResponse =
+  pauseAIAudiencePackageResponseSuccess | pauseAIAudiencePackageResponseError;
+
+export const getPauseAIAudiencePackageUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/pause`;
+};
+
+export const pauseAIAudiencePackage = async (
+  packageId: number,
+  aIAudienceVersionRequest: AIAudienceVersionRequest,
+  options?: RequestInit,
+): Promise<pauseAIAudiencePackageResponse> => {
+  const res = await fetch(getPauseAIAudiencePackageUrl(packageId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: pauseAIAudiencePackageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as pauseAIAudiencePackageResponse;
+};
+
+/**
+ * @summary Activate a non-archived local package lifecycle
+ */
+export type activateAIAudiencePackageResponse200 = {
+  data: AIAudiencePackageMutationResponse;
+  status: 200;
+};
+
+export type activateAIAudiencePackageResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type activateAIAudiencePackageResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type activateAIAudiencePackageResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type activateAIAudiencePackageResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type activateAIAudiencePackageResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type activateAIAudiencePackageResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type activateAIAudiencePackageResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type activateAIAudiencePackageResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type activateAIAudiencePackageResponseSuccess =
+  activateAIAudiencePackageResponse200 & {
+    headers: Headers;
+  };
+export type activateAIAudiencePackageResponseError = (
+  | activateAIAudiencePackageResponse400
+  | activateAIAudiencePackageResponse401
+  | activateAIAudiencePackageResponse403
+  | activateAIAudiencePackageResponse404
+  | activateAIAudiencePackageResponse409
+  | activateAIAudiencePackageResponse415
+  | activateAIAudiencePackageResponse422
+  | activateAIAudiencePackageResponse503
+) & {
+  headers: Headers;
+};
+
+export type activateAIAudiencePackageResponse =
+  | activateAIAudiencePackageResponseSuccess
+  | activateAIAudiencePackageResponseError;
+
+export const getActivateAIAudiencePackageUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/activate`;
+};
+
+export const activateAIAudiencePackage = async (
+  packageId: number,
+  aIAudienceVersionRequest: AIAudienceVersionRequest,
+  options?: RequestInit,
+): Promise<activateAIAudiencePackageResponse> => {
+  const res = await fetch(getActivateAIAudiencePackageUrl(packageId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: activateAIAudiencePackageResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as activateAIAudiencePackageResponse;
 };
