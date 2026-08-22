@@ -207,6 +207,127 @@ paths:
             Allow: { required: true, schema: { type: string, enum: [GET] } }
             Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
             X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /api/admin/wechat-pay/products/{product_id}/enable:
+    post:
+      tags: [p4-product]
+      operationId: enableLegacyWechatPayProduct
+      summary: Enable one CRM-local WeChat-pay product without provider effects
+      x-legacy-mapping-ids: [LEGACY-S07-167]
+      x-p4-decision-evidence: P4-I01A-2026-08-14
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: financial
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/ProductID" }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LocalProductLifecycleVersionRequest" } } } }
+      responses:
+        "200": { description: Enabled local CRM state, content: { application/json: { schema: { $ref: "#/components/schemas/LocalProductLifecycleProduct" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wechat-pay/products/{product_id}/disable:
+    post:
+      tags: [p4-product]
+      operationId: disableLegacyWechatPayProduct
+      summary: Disable one CRM-local WeChat-pay product without provider effects
+      x-legacy-mapping-ids: [LEGACY-S07-168]
+      x-p4-decision-evidence: P4-I01A-2026-08-14
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: financial
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/ProductID" }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LocalProductLifecycleVersionRequest" } } } }
+      responses:
+        "200": { description: Disabled local CRM state, content: { application/json: { schema: { $ref: "#/components/schemas/LocalProductLifecycleProduct" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wechat-pay/products/{product_id}/copy:
+    post:
+      tags: [p4-product]
+      operationId: copyLegacyWechatPayProduct
+      summary: Copy one CRM-local WeChat-pay product into a disabled draft
+      x-legacy-mapping-ids: [LEGACY-S07-169]
+      x-p4-decision-evidence: P4-I01A-2026-08-14
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: financial
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/ProductID" }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LocalProductLifecycleVersionRequest" } } } }
+      responses:
+        "201": { description: Copied local draft, content: { application/json: { schema: { $ref: "#/components/schemas/LocalProductLifecycleProduct" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wechat-pay/products/{product_id}:
+    delete:
+      tags: [p4-product]
+      operationId: deleteLegacyWechatPayProduct
+      summary: Delete only an unreferenced CRM-local draft product
+      x-legacy-mapping-ids: [LEGACY-S07-170]
+      x-p4-decision-evidence: P4-I01A-2026-08-14
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: financial
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/ProductID" }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LocalProductLifecycleVersionRequest" } } } }
+      responses:
+        "200": { description: Deleted local draft, content: { application/json: { schema: { $ref: "#/components/schemas/LocalProductLifecycleDelete" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wechat-pay/products/{product_id}/share:
+    get:
+      tags: [p4-product]
+      operationId: getLegacyWechatPayProductShare
+      summary: Read a closed local share descriptor without claiming a public purchase route
+      x-p4-decision-evidence: P4-I01A-2026-08-14
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: local_read_model
+      x-aicrm-data-classification: financial
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/ProductID" }]
+      responses:
+        "200": { description: Closed local share descriptor, content: { application/json: { schema: { $ref: "#/components/schemas/LocalProductLifecycleShare" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /healthz:
     get:
       tags: [health]
@@ -9571,6 +9692,52 @@ components:
       properties:
         items: {type: array, items: {$ref: "#/components/schemas/Product"}}
         next_cursor: {type: string}
+    LocalProductLifecycleVersionRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      properties:
+        expected_version: {type: integer, format: int64, minimum: 1}
+    LocalProductLifecycleProduct:
+      type: object
+      additionalProperties: false
+      required: [id, product_code, name, description, price_minor, currency, stock_quantity, images, created_by, created_at, updated_at, lifecycle, enabled, version]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        product_code: {type: string, minLength: 1, maxLength: 200}
+        name: {type: string, minLength: 1, maxLength: 200}
+        description: {type: string, maxLength: 10000}
+        price_minor: {type: integer, format: int64, minimum: 0}
+        currency: {type: string, pattern: '^[A-Z]{3}$'}
+        stock_quantity: {type: integer, format: int32, minimum: 0}
+        images: {type: array, maxItems: 20, items: {type: string, minLength: 1, maxLength: 2048}}
+        created_by: {type: integer, format: int64, minimum: 1}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        lifecycle: {type: string, enum: [draft, disabled, enabled]}
+        enabled: {type: boolean}
+        version: {type: integer, format: int64, minimum: 1}
+    LocalProductLifecycleDelete:
+      type: object
+      additionalProperties: false
+      required: [ok, deleted, product_id]
+      properties:
+        ok: {type: boolean}
+        deleted: {type: boolean}
+        product_id: {type: integer, format: int64, minimum: 1}
+    LocalProductLifecycleShare:
+      type: object
+      additionalProperties: false
+      required: [ok, product_id, product_code, lifecycle, available, reason]
+      properties:
+        ok: {type: boolean}
+        product_id: {type: integer, format: int64, minimum: 1}
+        product_code: {type: string, minLength: 1, maxLength: 200}
+        lifecycle: {type: string, enum: [draft, disabled, enabled]}
+        available: {type: boolean}
+        reason: {type: string, minLength: 1, enum: [no_authoritative_public_purchase_route]}
+        purchase_url: {type: string}
+        qr_code_url: {type: string}
     CreateProductRequest:
       type: object
       additionalProperties: false

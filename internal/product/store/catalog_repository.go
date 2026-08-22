@@ -52,7 +52,7 @@ func (r *CatalogRepository) List(ctx context.Context, after *productport.ID, lim
 	}
 	out := make([]productport.Product, len(rows))
 	for i, row := range rows {
-		out[i], e = mapRow(row.ID, row.ProductCode, row.Name, row.Description, row.PriceMinor, row.Currency, row.StockQuantity, row.CreatedBy, row.CreatedAt, row.UpdatedAt, row.Version, row.LegacyAdminProjection, row.Images)
+		out[i], e = mapRow(row.ID, row.ProductCode, row.Name, row.Description, row.PriceMinor, row.Currency, row.StockQuantity, row.CreatedBy, row.CreatedAt, row.UpdatedAt, row.Version, row.LocalLifecycle, row.LegacyAdminProjection, row.Images)
 		if e != nil {
 			return nil, e
 		}
@@ -70,7 +70,7 @@ func (r *CatalogRepository) ListOffset(ctx context.Context, limit, offset int32)
 	}
 	out := make([]productport.Product, len(rows))
 	for i, row := range rows {
-		out[i], e = mapRow(row.ID, row.ProductCode, row.Name, row.Description, row.PriceMinor, row.Currency, row.StockQuantity, row.CreatedBy, row.CreatedAt, row.UpdatedAt, row.Version, row.LegacyAdminProjection, row.Images)
+		out[i], e = mapRow(row.ID, row.ProductCode, row.Name, row.Description, row.PriceMinor, row.Currency, row.StockQuantity, row.CreatedBy, row.CreatedAt, row.UpdatedAt, row.Version, row.LocalLifecycle, row.LegacyAdminProjection, row.Images)
 		if e != nil {
 			return nil, e
 		}
@@ -97,7 +97,7 @@ func (r *CatalogRepository) Get(ctx context.Context, id productport.ID) (product
 	if e != nil {
 		return productport.Product{}, unavailable(e)
 	}
-	return mapRow(row.ID, row.ProductCode, row.Name, row.Description, row.PriceMinor, row.Currency, row.StockQuantity, row.CreatedBy, row.CreatedAt, row.UpdatedAt, row.Version, row.LegacyAdminProjection, row.Images)
+	return mapRow(row.ID, row.ProductCode, row.Name, row.Description, row.PriceMinor, row.Currency, row.StockQuantity, row.CreatedBy, row.CreatedAt, row.UpdatedAt, row.Version, row.LocalLifecycle, row.LegacyAdminProjection, row.Images)
 }
 func (r *CatalogRepository) GetForUpdate(ctx context.Context, id productport.ID) (productport.Product, error) {
 	q, e := queries(ctx)
@@ -108,7 +108,7 @@ func (r *CatalogRepository) GetForUpdate(ctx context.Context, id productport.ID)
 	if e != nil {
 		return productport.Product{}, unavailable(e)
 	}
-	return mapRow(row.ID, row.ProductCode, row.Name, row.Description, row.PriceMinor, row.Currency, row.StockQuantity, row.CreatedBy, row.CreatedAt, row.UpdatedAt, row.Version, row.LegacyAdminProjection, row.Images)
+	return mapRow(row.ID, row.ProductCode, row.Name, row.Description, row.PriceMinor, row.Currency, row.StockQuantity, row.CreatedBy, row.CreatedAt, row.UpdatedAt, row.Version, row.LocalLifecycle, row.LegacyAdminProjection, row.Images)
 }
 func (r *CatalogRepository) Create(ctx context.Context, c productport.CreateCommand, now time.Time) (productport.Product, error) {
 	q, e := queries(ctx)
@@ -127,7 +127,7 @@ func (r *CatalogRepository) Create(ctx context.Context, c productport.CreateComm
 	if total, countErr := q.IncrementProductCount(ctx); countErr != nil || total < 1 {
 		return productport.Product{}, unavailable(countErr)
 	}
-	return productport.Product{ID: productport.ID(row.ID), ProductCode: row.ProductCode, Name: row.Name, Description: row.Description, PriceMinor: row.PriceMinor, Currency: row.Currency, StockQuantity: row.StockQuantity, Images: append([]string(nil), c.Images...), CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time, Version: row.Version, LegacyAdminProjection: append([]byte(nil), row.LegacyAdminProjection...)}, nil
+	return productport.Product{ID: productport.ID(row.ID), ProductCode: row.ProductCode, Name: row.Name, Description: row.Description, PriceMinor: row.PriceMinor, Currency: row.Currency, StockQuantity: row.StockQuantity, Images: append([]string(nil), c.Images...), CreatedBy: row.CreatedBy, CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time, Version: row.Version, LocalLifecycle: productport.LocalProductLifecycle(row.LocalLifecycle), LegacyAdminProjection: append([]byte(nil), row.LegacyAdminProjection...)}, nil
 }
 func (r *CatalogRepository) Update(ctx context.Context, c productport.UpdateCommand, now time.Time) (productport.Product, error) {
 	q, e := queries(ctx)
@@ -142,7 +142,7 @@ func (r *CatalogRepository) Update(ctx context.Context, c productport.UpdateComm
 	if e != nil {
 		return productport.Product{}, unavailable(e)
 	}
-	return mapRow(row.ID, row.ProductCode, row.Name, row.Description, row.PriceMinor, row.Currency, row.StockQuantity, row.CreatedBy, row.CreatedAt, row.UpdatedAt, row.Version, row.LegacyAdminProjection, current.Images)
+	return mapRow(row.ID, row.ProductCode, row.Name, row.Description, row.PriceMinor, row.Currency, row.StockQuantity, row.CreatedBy, row.CreatedAt, row.UpdatedAt, row.Version, row.LocalLifecycle, row.LegacyAdminProjection, current.Images)
 }
 
 func (r *CatalogRepository) CreateLocalEntitlement(ctx context.Context, productID productport.ID, order orderport.PaidOrderProjection, actor int64, now time.Time) (productport.LocalEntitlement, error) {
@@ -277,7 +277,7 @@ func receipt(id int64, operation, actor string, key, payload []byte, state strin
 	copy(r.PayloadDigest[:], payload)
 	return r
 }
-func mapRow(id int64, productCode, name, description string, price int64, currency string, stock int32, createdBy int64, created, updated pgtype.Timestamptz, version int64, projection []byte, raw any) (productport.Product, error) {
+func mapRow(id int64, productCode, name, description string, price int64, currency string, stock int32, createdBy int64, created, updated pgtype.Timestamptz, version int64, localLifecycle string, projection []byte, raw any) (productport.Product, error) {
 	images, ok := raw.([]byte)
 	if !ok {
 		return productport.Product{}, productapp.ErrUnavailable
@@ -286,7 +286,7 @@ func mapRow(id int64, productCode, name, description string, price int64, curren
 	if json.Unmarshal(images, &urls) != nil {
 		return productport.Product{}, productapp.ErrUnavailable
 	}
-	return productport.Product{ID: productport.ID(id), ProductCode: productCode, Name: name, Description: description, PriceMinor: price, Currency: currency, StockQuantity: stock, Images: urls, CreatedBy: createdBy, CreatedAt: created.Time, UpdatedAt: updated.Time, Version: version, LegacyAdminProjection: append([]byte(nil), projection...)}, nil
+	return productport.Product{ID: productport.ID(id), ProductCode: productCode, Name: name, Description: description, PriceMinor: price, Currency: currency, StockQuantity: stock, Images: urls, CreatedBy: createdBy, CreatedAt: created.Time, UpdatedAt: updated.Time, Version: version, LocalLifecycle: productport.LocalProductLifecycle(localLifecycle), LegacyAdminProjection: append([]byte(nil), projection...)}, nil
 }
 func entitlement(id, productID, orderID, customerID int64, state string, version int64, grantedAt, revokedAt pgtype.Timestamptz) (productport.LocalEntitlement, error) {
 	if id < 1 || productID < 1 || orderID < 1 || customerID < 1 || version < 1 || !grantedAt.Valid {

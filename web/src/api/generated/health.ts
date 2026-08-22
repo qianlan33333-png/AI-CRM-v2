@@ -7051,6 +7051,100 @@ export interface ProductPage {
   next_cursor?: string;
 }
 
+export interface LocalProductLifecycleVersionRequest {
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+export type LocalProductLifecycleProductLifecycle =
+  (typeof LocalProductLifecycleProductLifecycle)[keyof typeof LocalProductLifecycleProductLifecycle];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LocalProductLifecycleProductLifecycle = {
+  draft: "draft",
+  disabled: "disabled",
+  enabled: "enabled",
+} as const;
+
+export interface LocalProductLifecycleProduct {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  product_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @maxLength 10000 */
+  description: string;
+  /** @minimum 0 */
+  price_minor: number;
+  /** @pattern ^[A-Z]{3}$ */
+  currency: string;
+  /** @minimum 0 */
+  stock_quantity: number;
+  /** @maxItems 20 */
+  images: string[];
+  /** @minimum 1 */
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+  lifecycle: LocalProductLifecycleProductLifecycle;
+  enabled: boolean;
+  /** @minimum 1 */
+  version: number;
+}
+
+export interface LocalProductLifecycleDelete {
+  ok: boolean;
+  deleted: boolean;
+  /** @minimum 1 */
+  product_id: number;
+}
+
+export type LocalProductLifecycleShareLifecycle =
+  (typeof LocalProductLifecycleShareLifecycle)[keyof typeof LocalProductLifecycleShareLifecycle];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LocalProductLifecycleShareLifecycle = {
+  draft: "draft",
+  disabled: "disabled",
+  enabled: "enabled",
+} as const;
+
+/**
+ * @minLength 1
+ */
+export type LocalProductLifecycleShareReason =
+  (typeof LocalProductLifecycleShareReason)[keyof typeof LocalProductLifecycleShareReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LocalProductLifecycleShareReason = {
+  no_authoritative_public_purchase_route:
+    "no_authoritative_public_purchase_route",
+} as const;
+
+export interface LocalProductLifecycleShare {
+  ok: boolean;
+  /** @minimum 1 */
+  product_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  product_code: string;
+  lifecycle: LocalProductLifecycleShareLifecycle;
+  available: boolean;
+  /** @minLength 1 */
+  reason: LocalProductLifecycleShareReason;
+  purchase_url?: string;
+  qr_code_url?: string;
+}
+
 export interface CreateProductRequest {
   /**
    * @minLength 1
@@ -11728,6 +11822,446 @@ export const getLegacyProductListPage = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyProductListPageResponse;
+};
+
+/**
+ * @summary Enable one CRM-local WeChat-pay product without provider effects
+ */
+export type enableLegacyWechatPayProductResponse200 = {
+  data: LocalProductLifecycleProduct;
+  status: 200;
+};
+
+export type enableLegacyWechatPayProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type enableLegacyWechatPayProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type enableLegacyWechatPayProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type enableLegacyWechatPayProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type enableLegacyWechatPayProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type enableLegacyWechatPayProductResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type enableLegacyWechatPayProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type enableLegacyWechatPayProductResponseSuccess =
+  enableLegacyWechatPayProductResponse200 & {
+    headers: Headers;
+  };
+export type enableLegacyWechatPayProductResponseError = (
+  | enableLegacyWechatPayProductResponse400
+  | enableLegacyWechatPayProductResponse401
+  | enableLegacyWechatPayProductResponse403
+  | enableLegacyWechatPayProductResponse404
+  | enableLegacyWechatPayProductResponse409
+  | enableLegacyWechatPayProductResponse422
+  | enableLegacyWechatPayProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type enableLegacyWechatPayProductResponse =
+  | enableLegacyWechatPayProductResponseSuccess
+  | enableLegacyWechatPayProductResponseError;
+
+export const getEnableLegacyWechatPayProductUrl = (productId: number) => {
+  return `/api/admin/wechat-pay/products/${productId}/enable`;
+};
+
+export const enableLegacyWechatPayProduct = async (
+  productId: number,
+  localProductLifecycleVersionRequest: LocalProductLifecycleVersionRequest,
+  options?: RequestInit,
+): Promise<enableLegacyWechatPayProductResponse> => {
+  const res = await fetch(getEnableLegacyWechatPayProductUrl(productId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(localProductLifecycleVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: enableLegacyWechatPayProductResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as enableLegacyWechatPayProductResponse;
+};
+
+/**
+ * @summary Disable one CRM-local WeChat-pay product without provider effects
+ */
+export type disableLegacyWechatPayProductResponse200 = {
+  data: LocalProductLifecycleProduct;
+  status: 200;
+};
+
+export type disableLegacyWechatPayProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type disableLegacyWechatPayProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type disableLegacyWechatPayProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type disableLegacyWechatPayProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type disableLegacyWechatPayProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type disableLegacyWechatPayProductResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type disableLegacyWechatPayProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type disableLegacyWechatPayProductResponseSuccess =
+  disableLegacyWechatPayProductResponse200 & {
+    headers: Headers;
+  };
+export type disableLegacyWechatPayProductResponseError = (
+  | disableLegacyWechatPayProductResponse400
+  | disableLegacyWechatPayProductResponse401
+  | disableLegacyWechatPayProductResponse403
+  | disableLegacyWechatPayProductResponse404
+  | disableLegacyWechatPayProductResponse409
+  | disableLegacyWechatPayProductResponse422
+  | disableLegacyWechatPayProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type disableLegacyWechatPayProductResponse =
+  | disableLegacyWechatPayProductResponseSuccess
+  | disableLegacyWechatPayProductResponseError;
+
+export const getDisableLegacyWechatPayProductUrl = (productId: number) => {
+  return `/api/admin/wechat-pay/products/${productId}/disable`;
+};
+
+export const disableLegacyWechatPayProduct = async (
+  productId: number,
+  localProductLifecycleVersionRequest: LocalProductLifecycleVersionRequest,
+  options?: RequestInit,
+): Promise<disableLegacyWechatPayProductResponse> => {
+  const res = await fetch(getDisableLegacyWechatPayProductUrl(productId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(localProductLifecycleVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: disableLegacyWechatPayProductResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as disableLegacyWechatPayProductResponse;
+};
+
+/**
+ * @summary Copy one CRM-local WeChat-pay product into a disabled draft
+ */
+export type copyLegacyWechatPayProductResponse201 = {
+  data: LocalProductLifecycleProduct;
+  status: 201;
+};
+
+export type copyLegacyWechatPayProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type copyLegacyWechatPayProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type copyLegacyWechatPayProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type copyLegacyWechatPayProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type copyLegacyWechatPayProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type copyLegacyWechatPayProductResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type copyLegacyWechatPayProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type copyLegacyWechatPayProductResponseSuccess =
+  copyLegacyWechatPayProductResponse201 & {
+    headers: Headers;
+  };
+export type copyLegacyWechatPayProductResponseError = (
+  | copyLegacyWechatPayProductResponse400
+  | copyLegacyWechatPayProductResponse401
+  | copyLegacyWechatPayProductResponse403
+  | copyLegacyWechatPayProductResponse404
+  | copyLegacyWechatPayProductResponse409
+  | copyLegacyWechatPayProductResponse422
+  | copyLegacyWechatPayProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type copyLegacyWechatPayProductResponse =
+  | copyLegacyWechatPayProductResponseSuccess
+  | copyLegacyWechatPayProductResponseError;
+
+export const getCopyLegacyWechatPayProductUrl = (productId: number) => {
+  return `/api/admin/wechat-pay/products/${productId}/copy`;
+};
+
+export const copyLegacyWechatPayProduct = async (
+  productId: number,
+  localProductLifecycleVersionRequest: LocalProductLifecycleVersionRequest,
+  options?: RequestInit,
+): Promise<copyLegacyWechatPayProductResponse> => {
+  const res = await fetch(getCopyLegacyWechatPayProductUrl(productId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(localProductLifecycleVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: copyLegacyWechatPayProductResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as copyLegacyWechatPayProductResponse;
+};
+
+/**
+ * @summary Delete only an unreferenced CRM-local draft product
+ */
+export type deleteLegacyWechatPayProductResponse200 = {
+  data: LocalProductLifecycleDelete;
+  status: 200;
+};
+
+export type deleteLegacyWechatPayProductResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type deleteLegacyWechatPayProductResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type deleteLegacyWechatPayProductResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type deleteLegacyWechatPayProductResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type deleteLegacyWechatPayProductResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type deleteLegacyWechatPayProductResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type deleteLegacyWechatPayProductResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type deleteLegacyWechatPayProductResponseSuccess =
+  deleteLegacyWechatPayProductResponse200 & {
+    headers: Headers;
+  };
+export type deleteLegacyWechatPayProductResponseError = (
+  | deleteLegacyWechatPayProductResponse400
+  | deleteLegacyWechatPayProductResponse401
+  | deleteLegacyWechatPayProductResponse403
+  | deleteLegacyWechatPayProductResponse404
+  | deleteLegacyWechatPayProductResponse409
+  | deleteLegacyWechatPayProductResponse422
+  | deleteLegacyWechatPayProductResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteLegacyWechatPayProductResponse =
+  | deleteLegacyWechatPayProductResponseSuccess
+  | deleteLegacyWechatPayProductResponseError;
+
+export const getDeleteLegacyWechatPayProductUrl = (productId: number) => {
+  return `/api/admin/wechat-pay/products/${productId}`;
+};
+
+export const deleteLegacyWechatPayProduct = async (
+  productId: number,
+  localProductLifecycleVersionRequest: LocalProductLifecycleVersionRequest,
+  options?: RequestInit,
+): Promise<deleteLegacyWechatPayProductResponse> => {
+  const res = await fetch(getDeleteLegacyWechatPayProductUrl(productId), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(localProductLifecycleVersionRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteLegacyWechatPayProductResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteLegacyWechatPayProductResponse;
+};
+
+/**
+ * @summary Read a closed local share descriptor without claiming a public purchase route
+ */
+export type getLegacyWechatPayProductShareResponse200 = {
+  data: LocalProductLifecycleShare;
+  status: 200;
+};
+
+export type getLegacyWechatPayProductShareResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyWechatPayProductShareResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyWechatPayProductShareResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyWechatPayProductShareResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyWechatPayProductShareResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyWechatPayProductShareResponseSuccess =
+  getLegacyWechatPayProductShareResponse200 & {
+    headers: Headers;
+  };
+export type getLegacyWechatPayProductShareResponseError = (
+  | getLegacyWechatPayProductShareResponse400
+  | getLegacyWechatPayProductShareResponse401
+  | getLegacyWechatPayProductShareResponse403
+  | getLegacyWechatPayProductShareResponse404
+  | getLegacyWechatPayProductShareResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyWechatPayProductShareResponse =
+  | getLegacyWechatPayProductShareResponseSuccess
+  | getLegacyWechatPayProductShareResponseError;
+
+export const getGetLegacyWechatPayProductShareUrl = (productId: number) => {
+  return `/api/admin/wechat-pay/products/${productId}/share`;
+};
+
+export const getLegacyWechatPayProductShare = async (
+  productId: number,
+  options?: RequestInit,
+): Promise<getLegacyWechatPayProductShareResponse> => {
+  const res = await fetch(getGetLegacyWechatPayProductShareUrl(productId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyWechatPayProductShareResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyWechatPayProductShareResponse;
 };
 
 /**

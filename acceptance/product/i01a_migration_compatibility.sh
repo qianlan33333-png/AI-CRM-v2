@@ -125,13 +125,14 @@ read -r admin_count admin_hash session_count session_hash <<<"$(auth_snapshot)"
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 50
 [[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")" = "50" ]]
 
-/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
-  "$go_command" test -race -count=1 -timeout=300s \
-  -run '^TestI01A(Create|Event|S200K|Storage).*' \
-  ./acceptance/product -args -database-url "$database_url"
-
 protected_product_id="$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c \
-  "SELECT id FROM products ORDER BY id LIMIT 1")"
+  "INSERT INTO products (
+     product_code, name, description, price_minor, currency, stock_quantity,
+     created_by, created_at, updated_at, legacy_admin_projection
+   ) VALUES (
+     'i01a-rollback-probe', 'I01A rollback probe', '', 0, 'CNY', 0,
+     1, now(), now(), '{\"schema_version\":1}'::jsonb
+   ) RETURNING id")"
 [[ "$protected_product_id" =~ ^[1-9][0-9]*$ ]]
 psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
   "UPDATE products SET version=2 WHERE id=${protected_product_id} AND version=1" >/dev/null
@@ -156,6 +157,25 @@ psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
   "UPDATE products SET version=1 WHERE id=${protected_product_id} AND version=2" >/dev/null
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 49
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 50
-[[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")" = "50" ]]
+psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
+  "DELETE FROM products WHERE id=${protected_product_id}" >/dev/null
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 58
+read -r final_product_waterline local_lifecycle_column lifecycle_constraint receipt_constraint <<<"$(
+  psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c \
+    "SELECT max(version_id),
+            (SELECT count(*) FROM information_schema.columns
+              WHERE table_schema='public' AND table_name='products' AND column_name='local_lifecycle'),
+            (SELECT count(*) FROM pg_constraint
+              WHERE conrelid='public.products'::regclass AND conname='products_local_lifecycle'),
+            (SELECT count(*) FROM pg_constraint
+              WHERE conrelid='public.product_operation_receipts'::regclass AND conname='product_operation_receipts_operation')
+       FROM goose_db_version WHERE is_applied"
+)"
+[[ "$final_product_waterline" = "58" && "$local_lifecycle_column" = "1" && "$lifecycle_constraint" = "1" && "$receipt_constraint" = "1" ]]
 
-printf 'P4-I01A migration compatibility: PASS (28/29/28/29/50/49/50, versioned facts make rollback fail closed, Event/Auth/session history preserved)\n'
+/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  "$go_command" test -race -count=1 -timeout=300s \
+  -run '^TestI01A(Create|Event|S200K|Storage).*' \
+  ./acceptance/product -args -database-url "$database_url"
+
+printf 'P4-I01A migration compatibility: PASS (28/29/28/29/50/49/50/58, versioned facts make rollback fail closed, Event/Auth/session history preserved)\n'

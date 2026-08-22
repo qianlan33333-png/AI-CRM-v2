@@ -14,6 +14,10 @@ type Querier interface {
 	CountProducts(ctx context.Context) (int64, error)
 	CreateProduct(ctx context.Context, arg CreateProductParams) (CreateProductRow, error)
 	CreateProductLocalEntitlement(ctx context.Context, arg CreateProductLocalEntitlementParams) (CreateProductLocalEntitlementRow, error)
+	// Only a draft with no local entitlement, order projection, or other Product
+	// fact may be physically deleted. Product images may cascade with the draft;
+	// financial/order/entitlement facts never do.
+	DeleteLocalProductIfSafe(ctx context.Context, command []byte) (int64, error)
 	GetEntitlementOperationReceipt(ctx context.Context, arg GetEntitlementOperationReceiptParams) (GetEntitlementOperationReceiptRow, error)
 	GetProduct(ctx context.Context, productID int64) (GetProductRow, error)
 	GetProductForUpdate(ctx context.Context, productID int64) (GetProductForUpdateRow, error)
@@ -28,6 +32,10 @@ type Querier interface {
 	ReserveEntitlementOperationReceipt(ctx context.Context, arg ReserveEntitlementOperationReceiptParams) (ReserveEntitlementOperationReceiptRow, error)
 	ReserveProductOperationReceipt(ctx context.Context, arg ReserveProductOperationReceiptParams) (ReserveProductOperationReceiptRow, error)
 	RevokeProductLocalEntitlement(ctx context.Context, arg RevokeProductLocalEntitlementParams) (RevokeProductLocalEntitlementRow, error)
+	// Product-local WeChat-pay lifecycle queries. The command payload is a
+	// closed JSON object produced by the Product app port; it is not a browser
+	// contract and contains no provider token or payment request.
+	UpdateLocalProductLifecycle(ctx context.Context, command []byte) (int64, error)
 	UpdateProduct(ctx context.Context, arg UpdateProductParams) (UpdateProductRow, error)
 	UpdateServicePeriodProductProjection(ctx context.Context, command []byte) (int64, error)
 }

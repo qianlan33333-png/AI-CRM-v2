@@ -340,7 +340,7 @@ func writeLocalError(w http.ResponseWriter, r *http.Request, err error) {
 		code = platformhttp.CodeMalformedRequest
 	case errors.Is(err, productapp.ErrNotFound), errors.Is(err, productapp.ErrEntitlementNotFound):
 		code = platformhttp.CodeNotFound
-	case errors.Is(err, productapp.ErrConflict), errors.Is(err, productapp.ErrEntitlementOrderIneligible):
+	case errors.Is(err, productapp.ErrConflict), errors.Is(err, productapp.ErrEntitlementOrderIneligible), errors.Is(err, productapp.ErrLocalProductDeleteNotAllowed):
 		code = platformhttp.CodeConflict
 	}
 	platformhttp.WriteError(w, r, platformhttp.NewError(code, err))
