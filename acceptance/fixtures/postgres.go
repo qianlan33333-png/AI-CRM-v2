@@ -16,6 +16,8 @@ import (
 const (
 	Schema             = "acceptance_fixtures"
 	DefaultDatabaseURL = "postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable"
+	H01A1DatabaseName  = "aicrm_test_h01a1"
+	I01BDatabaseName   = "aicrm_test_i01b"
 	advisoryLockKey    = int64(0x414943524d503230)
 )
 
@@ -67,8 +69,17 @@ func OpenPostgreSQL(ctx context.Context, databaseURL string) (*PostgreSQL, error
 // ValidateDatabaseURL accepts only the dedicated loopback acceptance database.
 // It never includes the supplied URL in an error, so rejected credentials cannot leak.
 func ValidateDatabaseURL(databaseURL string) error {
+	return ValidateDatabaseURLForDatabase(databaseURL, "aicrm_test")
+}
+
+// ValidateDatabaseURLForDatabase accepts only named, locally-created
+// acceptance databases on the dedicated loopback PostgreSQL service.
+func ValidateDatabaseURLForDatabase(databaseURL, databaseName string) error {
+	if databaseName != "aicrm_test" && databaseName != H01A1DatabaseName && databaseName != I01BDatabaseName {
+		return ErrUnsafeDatabaseURL
+	}
 	parsed, err := url.Parse(databaseURL)
-	if err != nil || parsed.Scheme != "postgres" || parsed.Path != "/aicrm_test" || parsed.RawQuery != "sslmode=disable" || parsed.Fragment != "" {
+	if err != nil || parsed.Scheme != "postgres" || parsed.Path != "/"+databaseName || parsed.RawQuery != "sslmode=disable" || parsed.Fragment != "" {
 		return ErrUnsafeDatabaseURL
 	}
 	if parsed.User == nil {

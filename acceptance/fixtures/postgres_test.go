@@ -67,6 +67,19 @@ func TestValidateDatabaseURLDoesNotExposeRejectedInput(t *testing.T) {
 	}
 }
 
+func TestValidateDatabaseURLForDedicatedTemporaryDatabases(t *testing.T) {
+	t.Parallel()
+	for _, databaseName := range []string{H01A1DatabaseName, I01BDatabaseName} {
+		databaseURL := "postgres://postgres:postgres@127.0.0.1:5432/" + databaseName + "?sslmode=disable"
+		if err := ValidateDatabaseURLForDatabase(databaseURL, databaseName); err != nil {
+			t.Fatalf("temporary database %q rejected: %v", databaseName, err)
+		}
+	}
+	if err := ValidateDatabaseURLForDatabase("postgres://postgres:postgres@127.0.0.1:5432/aicrm_test_other?sslmode=disable", "aicrm_test_other"); !errors.Is(err, ErrUnsafeDatabaseURL) {
+		t.Fatalf("unapproved temporary database error=%v, want ErrUnsafeDatabaseURL", err)
+	}
+}
+
 func TestPostgreSQLTransactionRollbackAndCleanup(t *testing.T) {
 	databaseURL := os.Getenv("ACCEPTANCE_FIXTURES_TEST_DATABASE_URL")
 	if databaseURL == "" {

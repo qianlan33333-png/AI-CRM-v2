@@ -4,13 +4,20 @@ set -euo pipefail
 : "${P4H01A1_MEDIA_TEST_DATABASE_URL:?P4H01A1_MEDIA_TEST_DATABASE_URL is required}"
 go_command="${GO:-go}"
 tools_mod="${TOOLS_MOD:-tools/go.mod}"
-database_url="$P4H01A1_MEDIA_TEST_DATABASE_URL"
+base_database_url="$P4H01A1_MEDIA_TEST_DATABASE_URL"
+temporary_database="aicrm_test_h01a1"
+database_url="${base_database_url/aicrm_test/$temporary_database}"
 
-# This historical 29/30 compatibility proof must not reuse local-lifecycle
-# facts made by earlier manifest entries. Its fixtures supply all history it
-# asserts, so start from a separately reset, validated acceptance schema.
-MIGRATION_TEST_DATABASE_URL="$database_url" GO="$go_command" \
-  acceptance/fixtures/reset_public_schema.sh
+# This historical proof owns a separate, freshly created acceptance database;
+# it never resets the shared manifest database or its local-lifecycle facts.
+MIGRATION_TEST_DATABASE_URL="$base_database_url" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  "$go_command" run ./acceptance/fixtures/cmd/validate-database-url
+cleanup() {
+  psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null
+}
+trap cleanup EXIT
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "CREATE DATABASE $temporary_database" >/dev/null
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 29
 
 history_snapshot() {

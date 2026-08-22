@@ -523,11 +523,7 @@ p4-i01a-product-acceptance:
 
 p4-i01b-product-entitlement-acceptance:
 	@test -n "$${P4I01B_PRODUCT_TEST_DATABASE_URL:-}" || { echo "P4I01B_PRODUCT_TEST_DATABASE_URL is required" >&2; exit 2; }
-	@MIGRATION_TEST_DATABASE_URL="$$P4I01B_PRODUCT_TEST_DATABASE_URL" GO="$(GO)" acceptance/fixtures/reset_public_schema.sh
-	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres "$${P4I01B_PRODUCT_TEST_DATABASE_URL}" up
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=300s \
-		-run '^TestI01BProductCASAndLocalEntitlementLifecycleUseOneUoW$$' ./acceptance/product \
-		-args -database-url "$${P4I01B_PRODUCT_TEST_DATABASE_URL}"
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/product/i01b_fresh_database_compatibility.sh
 
 p4-h01a1-media-acceptance:
 	@test -n "$${P4H01A1_MEDIA_TEST_DATABASE_URL:-}" || { echo "P4H01A1_MEDIA_TEST_DATABASE_URL is required" >&2; exit 2; }
