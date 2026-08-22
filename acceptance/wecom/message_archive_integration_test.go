@@ -134,7 +134,9 @@ func openMessageArchivePool(t *testing.T) (*pgxpool.Pool, context.Context) {
 		t.Skip("p4-message-archive-database-url is not set")
 	}
 	if err := acceptancefixtures.ValidateDatabaseURL(*p4MessageArchiveDatabaseURL); err != nil {
-		t.Fatal(err)
+		if messageArchiveErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*p4MessageArchiveDatabaseURL, acceptancefixtures.MessageArchiveDatabaseName); messageArchiveErr != nil {
+			t.Fatal(err)
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	t.Cleanup(cancel)

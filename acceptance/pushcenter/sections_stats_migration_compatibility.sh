@@ -4,22 +4,19 @@ set -euo pipefail
 : "${P4PUSHCENTER_TEST_DATABASE_URL:?P4PUSHCENTER_TEST_DATABASE_URL is required}"
 go_command="${GO:-go}"
 tools_mod="${TOOLS_MOD:-tools/go.mod}"
-database_url="$P4PUSHCENTER_TEST_DATABASE_URL"
+base_database_url="$P4PUSHCENTER_TEST_DATABASE_URL"
+temporary_database="aicrm_test_pushcenter"
+database_url="${base_database_url/aicrm_test/$temporary_database}"
 
-MIGRATION_TEST_DATABASE_URL="$database_url" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+MIGRATION_TEST_DATABASE_URL="$base_database_url" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" run ./acceptance/fixtures/cmd/validate-database-url
-
-has_migration_table="$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT (to_regclass('public.goose_db_version') IS NOT NULL)::int")"
-if [[ "$has_migration_table" = "0" ]]; then
-  "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 43
-else
-  waterline="$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")"
-  if (( waterline > 43 )); then
-    "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 43
-  elif (( waterline < 43 )); then
-    "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 43
-  fi
-fi
+cleanup() { psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null; }
+trap cleanup EXIT
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "CREATE DATABASE $temporary_database" >/dev/null
+MIGRATION_TEST_DATABASE_URL="$database_url" MIGRATION_TEST_DATABASE_NAME="$temporary_database" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  "$go_command" run ./acceptance/fixtures/cmd/validate-database-url
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 43
 
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 44
 read -r waterline state entries text_index tenant_columns foreign_keys ready fixture allow_fixture <<<"$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c "SELECT

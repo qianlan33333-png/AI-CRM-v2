@@ -111,7 +111,9 @@ func openPushCenterPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 		t.Skip("database-url is not set")
 	}
 	if err := acceptancefixtures.ValidateDatabaseURL(*pushCenterDatabaseURL); err != nil {
-		t.Fatal(err)
+		if pushCenterErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*pushCenterDatabaseURL, acceptancefixtures.PushCenterDatabaseName); pushCenterErr != nil {
+			t.Fatal(err)
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	t.Cleanup(cancel)

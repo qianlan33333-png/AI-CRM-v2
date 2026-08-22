@@ -4,21 +4,24 @@ set -euo pipefail
 : "${P4HXC_SENDER_TEST_DATABASE_URL:?P4HXC_SENDER_TEST_DATABASE_URL is required}"
 go_command="${GO:-go}"
 tools_mod="${TOOLS_MOD:-tools/go.mod}"
-database_url="$P4HXC_SENDER_TEST_DATABASE_URL"
+base_database_url="$P4HXC_SENDER_TEST_DATABASE_URL"
 
 # The manifest self-test substitutes executors and must not start PostgreSQL.
-if [[ "$database_url" = "postgres://fixture" && -n "${CI_ACCEPTANCE_TEST_LOG:-}" ]]; then
+if [[ "$base_database_url" = "postgres://fixture" && -n "${CI_ACCEPTANCE_TEST_LOG:-}" ]]; then
   exit 0
 fi
 
-MIGRATION_TEST_DATABASE_URL="$database_url" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+temporary_database="aicrm_test_hxc_sender"
+database_url="${base_database_url/aicrm_test/$temporary_database}"
+MIGRATION_TEST_DATABASE_URL="$base_database_url" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" run ./acceptance/fixtures/cmd/validate-database-url
-
-if [[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT (to_regclass('public.goose_db_version') IS NOT NULL)::int")" = "0" ]]; then
-  "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 47
-else
-  "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 47
-fi
+cleanup() { psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null; }
+trap cleanup EXIT
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "CREATE DATABASE $temporary_database" >/dev/null
+MIGRATION_TEST_DATABASE_URL="$database_url" MIGRATION_TEST_DATABASE_NAME="$temporary_database" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  "$go_command" run ./acceptance/fixtures/cmd/validate-database-url
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 47
 
 history_snapshot() {
   psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -F ' ' -c "SELECT

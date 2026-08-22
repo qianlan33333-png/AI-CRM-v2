@@ -241,7 +241,11 @@ func openPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	}
 	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.H01A1DatabaseName); err != nil {
 		if h03Err := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.H03DatabaseName); h03Err != nil {
-			t.Fatal(err)
+			if miniProgramErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.MiniProgramLibraryDatabaseName); miniProgramErr != nil {
+				if imageUpdateErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.ImageUpdateDatabaseName); imageUpdateErr != nil {
+					t.Fatal(err)
+				}
+			}
 		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)

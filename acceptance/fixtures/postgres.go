@@ -27,6 +27,13 @@ const (
 	C01ChannelDatabaseName         = "aicrm_test_c01_channel"
 	J01CouponDatabaseName          = "aicrm_test_j01_coupon"
 	CouponABDatabaseName           = "aicrm_test_coupon_ab"
+	I03OrderDatabaseName           = "aicrm_test_i03_order"
+	OrderABDatabaseName            = "aicrm_test_order_ab"
+	MessageArchiveDatabaseName     = "aicrm_test_message_archive"
+	PushCenterDatabaseName         = "aicrm_test_pushcenter"
+	MiniProgramLibraryDatabaseName = "aicrm_test_miniprogram_library"
+	ImageUpdateDatabaseName        = "aicrm_test_image_update"
+	HXCSenderDatabaseName          = "aicrm_test_hxc_sender"
 	advisoryLockKey                = int64(0x414943524d503230)
 )
 
@@ -84,7 +91,7 @@ func ValidateDatabaseURL(databaseURL string) error {
 // ValidateDatabaseURLForDatabase accepts only named, locally-created
 // acceptance databases on the dedicated loopback PostgreSQL service.
 func ValidateDatabaseURLForDatabase(databaseURL, databaseName string) error {
-	if databaseName != "aicrm_test" && databaseName != H01A1DatabaseName && databaseName != H03DatabaseName && databaseName != I01BDatabaseName && databaseName != F01ADatabaseName && databaseName != F01ABDatabaseName && databaseName != F01PublicDatabaseName && databaseName != AutomationAgentsABDatabaseName && databaseName != AdminOpsABDatabaseName && databaseName != C01ChannelDatabaseName && databaseName != J01CouponDatabaseName && databaseName != CouponABDatabaseName {
+	if databaseName != "aicrm_test" && databaseName != H01A1DatabaseName && databaseName != H03DatabaseName && databaseName != I01BDatabaseName && databaseName != F01ADatabaseName && databaseName != F01ABDatabaseName && databaseName != F01PublicDatabaseName && databaseName != AutomationAgentsABDatabaseName && databaseName != AdminOpsABDatabaseName && databaseName != C01ChannelDatabaseName && databaseName != J01CouponDatabaseName && databaseName != CouponABDatabaseName && databaseName != I03OrderDatabaseName && databaseName != OrderABDatabaseName && databaseName != MessageArchiveDatabaseName && databaseName != PushCenterDatabaseName && databaseName != MiniProgramLibraryDatabaseName && databaseName != ImageUpdateDatabaseName && databaseName != HXCSenderDatabaseName {
 		return ErrUnsafeDatabaseURL
 	}
 	parsed, err := url.Parse(databaseURL)

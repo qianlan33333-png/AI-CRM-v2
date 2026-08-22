@@ -4,14 +4,19 @@ set -euo pipefail
 : "${P4MESSAGEARCHIVE_TEST_DATABASE_URL:?P4MESSAGEARCHIVE_TEST_DATABASE_URL is required}"
 go_command="${GO:-go}"
 tools_mod="${TOOLS_MOD:-tools/go.mod}"
-database_url="$P4MESSAGEARCHIVE_TEST_DATABASE_URL"
+base_database_url="$P4MESSAGEARCHIVE_TEST_DATABASE_URL"
+temporary_database="aicrm_test_message_archive"
+database_url="${base_database_url/aicrm_test/$temporary_database}"
 
-MIGRATION_TEST_DATABASE_URL="$database_url" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+MIGRATION_TEST_DATABASE_URL="$base_database_url" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" run ./acceptance/fixtures/cmd/validate-database-url
-
-if [[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT (to_regclass('public.goose_db_version') IS NOT NULL)::int")" = "1" ]]; then
-  "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 37
-fi
+cleanup() { psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null; }
+trap cleanup EXIT
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "CREATE DATABASE $temporary_database" >/dev/null
+MIGRATION_TEST_DATABASE_URL="$database_url" MIGRATION_TEST_DATABASE_NAME="$temporary_database" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  "$go_command" run ./acceptance/fixtures/cmd/validate-database-url
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 37
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 39
 
 history_snapshot() {
