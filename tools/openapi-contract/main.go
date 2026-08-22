@@ -644,6 +644,50 @@ var p4ConfigSettingsEvidence = map[string]string{
 	"getLegacyAppSettingsResource": "P4-A02-2026-08-15", "saveLegacyAppSettingsResource": "P4-ADMINOPS-JOBS-AB-2026-08-16",
 }
 
+type p4AdminOpsSafeContract struct {
+	path, method, mapping string
+	write, blocked        bool
+}
+
+var p4AdminOpsSafeOperations = map[string]p4AdminOpsSafeContract{
+	"getAdminOpsConfigPage":                  {"/admin/config", "GET", "LEGACY-API-0021", false, false},
+	"getAdminOpsReleasesPage":                {"/admin/config/releases", "GET", "LEGACY-API-0035", false, false},
+	"getAdminOpsNewReleasePage":              {"/admin/config/releases/new", "GET", "LEGACY-API-0037", false, false},
+	"getAdminOpsReleasePage":                 {"/admin/config/releases/{release_id}", "GET", "LEGACY-API-0038", false, false},
+	"listAdminOpsCategories":                 {"/api/admin/config/categories", "GET", "LEGACY-API-0256", false, false},
+	"getAdminOpsCategory":                    {"/api/admin/config/categories/{category_key}", "GET", "LEGACY-API-0257", false, false},
+	"checkAdminOpsCategory":                  {"/api/admin/config/categories/{category_key}/check", "POST", "LEGACY-API-0258", true, false},
+	"setAdminOpsCategoryEnabled":             {"/api/admin/config/categories/{category_key}/enabled", "PUT", "LEGACY-API-0259", true, false},
+	"setAdminOpsCategorySettings":            {"/api/admin/config/categories/{category_key}/settings", "PUT", "LEGACY-API-0260", true, false},
+	"getAdminOpsPushCapabilities":            {"/api/admin/config/push-capabilities", "GET", "LEGACY-API-0270", false, false},
+	"setAdminOpsPushScheduler":               {"/api/admin/config/push-capabilities/scheduler", "PATCH", "LEGACY-API-0271", true, false},
+	"setAdminOpsPushCapability":              {"/api/admin/config/push-capabilities/{capability_key}", "PATCH", "LEGACY-API-0272", true, false},
+	"listAdminOpsReleases":                   {"/api/admin/config/releases", "GET", "LEGACY-API-0273", false, false},
+	"createAdminOpsRelease":                  {"/api/admin/config/releases", "POST", "LEGACY-API-0274", true, false},
+	"getAdminOpsRelease":                     {"/api/admin/config/releases/{release_id}", "GET", "LEGACY-API-0275", false, false},
+	"compareAdminOpsReleaseShadow":           {"/api/admin/config/releases/{release_id}/shadow-compare", "GET", "LEGACY-API-0278", false, false},
+	"validateAdminOpsRelease":                {"/api/admin/config/releases/{release_id}/validate", "POST", "LEGACY-API-0279", true, false},
+	"publishAdminOpsRelease":                 {"/api/admin/config/releases/{release_id}/publish", "POST", "LEGACY-API-0276", true, false},
+	"rollbackAdminOpsRelease":                {"/api/admin/config/releases/{release_id}/rollback", "POST", "LEGACY-API-0277", true, false},
+	"getAdminOpsJobsSummary":                 {"/api/admin/jobs/summary", "GET", "LEGACY-API-0384", false, false},
+	"listAdminOpsArchiveSyncJobs":            {"/api/admin/jobs/archive-sync", "GET", "LEGACY-API-0376", false, false},
+	"runAdminOpsArchiveSyncPlan":             {"/api/admin/jobs/archive-sync/run", "POST", "LEGACY-API-0377", true, false},
+	"listAdminOpsCallbackJobs":               {"/api/admin/jobs/callbacks", "GET", "LEGACY-API-0378", false, true},
+	"listAdminOpsDeferredJobs":               {"/api/admin/jobs/deferred-jobs", "GET", "LEGACY-API-0379", false, true},
+	"listAdminOpsWebhookDeliveryJobs":        {"/api/admin/jobs/webhook-deliveries", "GET", "LEGACY-API-0385", false, true},
+	"listAdminOpsMessageBatchJobs":           {"/api/admin/jobs/message-batches", "GET", "LEGACY-API-0380", false, false},
+	"getAdminOpsMessageBatch":                {"/api/admin/jobs/message-batches/{batch_id}", "GET", "LEGACY-API-0381", false, true},
+	"acknowledgeAdminOpsMessageBatch":        {"/api/admin/jobs/message-batches/{batch_id}/ack", "POST", "LEGACY-API-0382", true, false},
+	"listAdminOpsBroadcastJobs":              {"/api/admin/broadcast-jobs", "GET", "LEGACY-API-0181", false, true},
+	"runAdminOpsFeishuHourlyReportPlan":      {"/api/admin/broadcast-jobs/feishu-hourly-report/run", "POST", "LEGACY-API-0182", true, false},
+	"getAdminOpsFeishuNotificationSetting":   {"/api/admin/broadcast-jobs/notification-settings/feishu", "GET", "LEGACY-API-0183", false, false},
+	"saveAdminOpsFeishuNotificationSetting":  {"/api/admin/broadcast-jobs/notification-settings/feishu", "PUT", "LEGACY-API-0184", true, false},
+	"validateAdminOpsFeishuNotificationPlan": {"/api/admin/broadcast-jobs/notification-settings/feishu/validate", "POST", "LEGACY-API-0185", true, false},
+	"getAdminOpsBroadcastJob":                {"/api/admin/broadcast-jobs/{job_id}", "GET", "LEGACY-API-0186", false, true},
+	"approveAdminOpsBroadcastJob":            {"/api/admin/broadcast-jobs/{job_id}/approve", "POST", "LEGACY-API-0187", true, true},
+	"cancelAdminOpsBroadcastJob":             {"/api/admin/broadcast-jobs/{job_id}/cancel", "POST", "LEGACY-API-0188", true, true},
+}
+
 var identityOperations = map[string]bool{
 	"resolveIdentity": true, "bindIdentity": true, "ingestIdentityEvent": true,
 	"listIdentityMergeReviews": true, "approveIdentityMergeReview": true,
@@ -667,6 +711,42 @@ type authorizationContract struct {
 }
 
 var authorizationContracts = map[string]authorizationContract{
+	"getAdminOpsConfigPage":                      {"config.overview.read", map[string]string{"admin": "global"}},
+	"getAdminOpsReleasesPage":                    {"config.overview.read", map[string]string{"admin": "global"}},
+	"getAdminOpsNewReleasePage":                  {"config.overview.read", map[string]string{"admin": "global"}},
+	"getAdminOpsReleasePage":                     {"config.overview.read", map[string]string{"admin": "global"}},
+	"listAdminOpsCategories":                     {"config.overview.read", map[string]string{"admin": "global"}},
+	"getAdminOpsCategory":                        {"config.overview.read", map[string]string{"admin": "global"}},
+	"checkAdminOpsCategory":                      {"config.settings.manage", map[string]string{"admin": "global"}},
+	"setAdminOpsCategoryEnabled":                 {"config.settings.manage", map[string]string{"admin": "global"}},
+	"setAdminOpsCategorySettings":                {"config.settings.manage", map[string]string{"admin": "global"}},
+	"getAdminOpsPushCapabilities":                {"config.overview.read", map[string]string{"admin": "global"}},
+	"setAdminOpsPushScheduler":                   {"config.settings.manage", map[string]string{"admin": "global"}},
+	"setAdminOpsPushCapability":                  {"config.settings.manage", map[string]string{"admin": "global"}},
+	"listAdminOpsReleases":                       {"config.overview.read", map[string]string{"admin": "global"}},
+	"createAdminOpsRelease":                      {"config.settings.manage", map[string]string{"admin": "global"}},
+	"getAdminOpsRelease":                         {"config.overview.read", map[string]string{"admin": "global"}},
+	"compareAdminOpsReleaseShadow":               {"config.overview.read", map[string]string{"admin": "global"}},
+	"validateAdminOpsRelease":                    {"config.settings.manage", map[string]string{"admin": "global"}},
+	"publishAdminOpsRelease":                     {"config.settings.manage", map[string]string{"admin": "global"}},
+	"rollbackAdminOpsRelease":                    {"config.settings.manage", map[string]string{"admin": "global"}},
+	"getAdminOpsJobsSummary":                     {"config.overview.read", map[string]string{"admin": "global"}},
+	"listAdminOpsArchiveSyncJobs":                {"config.overview.read", map[string]string{"admin": "global"}},
+	"runAdminOpsArchiveSyncPlan":                 {"config.settings.manage", map[string]string{"admin": "global"}},
+	"listAdminOpsCallbackJobs":                   {"config.overview.read", map[string]string{"admin": "global"}},
+	"listAdminOpsDeferredJobs":                   {"config.overview.read", map[string]string{"admin": "global"}},
+	"listAdminOpsWebhookDeliveryJobs":            {"config.overview.read", map[string]string{"admin": "global"}},
+	"listAdminOpsMessageBatchJobs":               {"config.overview.read", map[string]string{"admin": "global"}},
+	"getAdminOpsMessageBatch":                    {"config.overview.read", map[string]string{"admin": "global"}},
+	"acknowledgeAdminOpsMessageBatch":            {"config.settings.manage", map[string]string{"admin": "global"}},
+	"listAdminOpsBroadcastJobs":                  {"config.overview.read", map[string]string{"admin": "global"}},
+	"runAdminOpsFeishuHourlyReportPlan":          {"config.settings.manage", map[string]string{"admin": "global"}},
+	"getAdminOpsFeishuNotificationSetting":       {"config.overview.read", map[string]string{"admin": "global"}},
+	"saveAdminOpsFeishuNotificationSetting":      {"config.settings.manage", map[string]string{"admin": "global"}},
+	"validateAdminOpsFeishuNotificationPlan":     {"config.settings.manage", map[string]string{"admin": "global"}},
+	"getAdminOpsBroadcastJob":                    {"config.overview.read", map[string]string{"admin": "global"}},
+	"approveAdminOpsBroadcastJob":                {"config.settings.manage", map[string]string{"admin": "global"}},
+	"cancelAdminOpsBroadcastJob":                 {"config.settings.manage", map[string]string{"admin": "global"}},
 	"listCustomers":                              {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getCustomer":                                {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"updateCustomer":                             {"customers.write", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
@@ -997,10 +1077,58 @@ func isRunnerDeclaredOperation(operationID string) bool {
 		p4AutomationOperations[operationID] || p4HXCSenderManagementOperations[operationID] || p4AutomationAgentOperations[operationID] || p4AutomationAgentManagementOperations[operationID] || p4Customer360Operations[operationID] || p4ProductOperations[operationID] || p4ServicePeriodLifecycleOperations[operationID] || p4ServicePeriodMemberGridReadOperations[operationID] || p4MemberGridManagementOperations[operationID] || p4RadarOperations[operationID] || p4CloudCampaignOperations[operationID] || p4AIAudienceOperations[operationID] || p4MediaOperations[operationID] ||
 		p4GroupInviteOperations[operationID] || p4SurveyOperations[operationID] || p4ChannelOperations[operationID] ||
 		p4TagOperations[operationID] || p4TagABOperations[operationID] || p4CouponOperations[operationID] ||
-		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] || p4SetupWizardOperations[operationID] ||
+		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] || p4AdminOpsSafeOperations[operationID].path != "" || p4SetupWizardOperations[operationID] ||
 		p4DomainVerificationOperations[operationID] || p4PushCenterOperations[operationID] ||
 		p4ExecutionRuntimeOperations[operationID] || p4AdminShellOperations[operationID] ||
 		p4LegacyHealthOperations[operationID] || nativePackageOperationDeclared(operationID)
+}
+
+func validateP4AdminOpsSafeOperation(path string, item *openapi3.PathItem, op *openapi3.Operation, contract p4AdminOpsSafeContract, known map[string]bool) error {
+	if path != contract.path || operationForMethod(item, contract.method) != op || !known[contract.mapping] {
+		return fmt.Errorf("%s AdminOps path, method, or mapping drifted", op.OperationID)
+	}
+	ids, err := stringList(op.Extensions["x-legacy-mapping-ids"])
+	if err != nil || !reflect.DeepEqual(ids, []string{contract.mapping}) {
+		return fmt.Errorf("%s AdminOps legacy mapping=%v", op.OperationID, ids)
+	}
+	capability, csrf, source := "config.overview.read", "none", "local_read_model"
+	if contract.write {
+		capability, csrf, source = "config.settings.manage", "required", "local_command"
+	}
+	if op.OperationID == "checkAdminOpsCategory" {
+		source = "local_read_model"
+	}
+	if contract.blocked {
+		switch op.OperationID {
+		case "getAdminOpsMessageBatch":
+			source = "unavailable_owner_mapping"
+		case "approveAdminOpsBroadcastJob":
+			source = "unavailable_review_state"
+		case "listAdminOpsCallbackJobs", "listAdminOpsDeferredJobs", "listAdminOpsWebhookDeliveryJobs":
+			source = "unavailable_job_kind"
+		default:
+			source = "unavailable_broadcast_fact"
+		}
+	}
+	if op.Extensions["x-p4-decision-evidence"] != "P4-ADMINOPS-SAFE-PROJECTION-2026-08-23" ||
+		op.Extensions["x-aicrm-capability"] != capability || op.Extensions["x-aicrm-auth-scheme"] != "human_session" ||
+		op.Extensions["x-aicrm-session-bound-csrf"] != csrf || op.Extensions["x-aicrm-data-classification"] != "internal" ||
+		op.Extensions["x-aicrm-data-source"] != source || op.Extensions["x-aicrm-external-effect"] != "none" ||
+		op.Extensions["x-aicrm-local-only"] != true || op.Responses.Value("401") == nil ||
+		op.Responses.Value("403") == nil || op.Responses.Value("503") == nil {
+		return fmt.Errorf("%s AdminOps security or local-only boundary drifted", op.OperationID)
+	}
+	if contract.write && op.Extensions["x-aicrm-route-bound-action-token"] != "required" {
+		return fmt.Errorf("%s AdminOps action-token boundary drifted", op.OperationID)
+	}
+	if contract.blocked {
+		if op.Extensions["x-p4-status"] != "BLOCKED_REDLINE" || op.Responses.Value("409") == nil || op.Responses.Value("200") != nil || op.Responses.Value("202") != nil {
+			return fmt.Errorf("%s must remain an explicit BLOCKED_REDLINE", op.OperationID)
+		}
+	} else if op.Responses.Value("200") == nil && op.Responses.Value("202") == nil {
+		return fmt.Errorf("%s AdminOps success response is missing", op.OperationID)
+	}
+	return nil
 }
 
 func nativePackageOperationDeclared(operationID string) bool {
@@ -1173,6 +1301,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment := map[string]bool{}, map[string]bool{}, map[string]bool{}
 	seenP4Automation, seenP4HXCSenderManagement, seenP4AutomationAgent, seenP4AutomationAgentManagement, seenP4Customer360, seenP4Product, seenP4ServicePeriodLifecycle, seenP4ServicePeriodMemberGridRead, seenP4MemberGridManagement, seenP4Radar, seenP4CloudCampaign, seenP4AIAudience, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4SetupWizard, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4AdminOpsSafe := map[string]bool{}
 	seenOperationIDs, seenCanonical := map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
 		for _, op := range item.Operations() {
@@ -1528,6 +1657,11 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				if linkErr != nil || !reflect.DeepEqual(ids, p4ConfigSettingsLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
+			} else if contract, ok := p4AdminOpsSafeOperations[op.OperationID]; ok {
+				seenP4AdminOpsSafe[op.OperationID] = true
+				if err := validateP4AdminOpsSafeOperation(path, item, op, contract, known); err != nil {
+					return err
+				}
 			} else if p4SetupWizardOperations[op.OperationID] {
 				seenP4SetupWizard[op.OperationID] = true
 				read := op.OperationID == "getSetupWizard"
@@ -1733,7 +1867,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 		len(seenP4GroupInvite) != len(p4GroupInviteOperations) || len(seenP4Survey) != len(p4SurveyOperations) || len(seenP4Channel) != len(p4ChannelOperations) ||
 		len(seenP4Tag) != len(p4TagOperations) || len(seenP4TagAB) != len(p4TagABOperations) || len(seenP4Coupon) != len(p4CouponOperations) ||
 		len(seenP4Order) != len(p4OrderOperations) || len(seenP4CustomerCompat) != len(p4CustomerCompatOperations) ||
-		len(seenP4ConfigSettings) != len(p4ConfigSettingsOperations) || len(seenP4SetupWizard) != len(p4SetupWizardOperations) || len(seenP4DomainVerification) != len(p4DomainVerificationOperations) ||
+		len(seenP4ConfigSettings) != len(p4ConfigSettingsOperations) || len(seenP4AdminOpsSafe) != len(p4AdminOpsSafeOperations) || len(seenP4SetupWizard) != len(p4SetupWizardOperations) || len(seenP4DomainVerification) != len(p4DomainVerificationOperations) ||
 		len(seenP4PushCenter) != len(p4PushCenterOperations) || len(seenP4ExecutionRuntime) != len(p4ExecutionRuntimeOperations) ||
 		len(seenP4AdminShell) != len(p4AdminShellOperations) || len(seenP4LegacyHealth) != len(p4LegacyHealthOperations) || len(seenCanonical) != len(inventory.Candidates) {
 		return errors.New("candidate inventory differs from canonical declarations")
@@ -1866,6 +2000,11 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	for id := range p4ConfigSettingsOperations {
 		if !seenP4ConfigSettings[id] {
 			return fmt.Errorf("missing P4 Config Settings compatibility operation: %s", id)
+		}
+	}
+	for id := range p4AdminOpsSafeOperations {
+		if !seenP4AdminOpsSafe[id] {
+			return fmt.Errorf("missing P4 AdminOps safe projection operation: %s", id)
 		}
 	}
 	for id := range p4SetupWizardOperations {

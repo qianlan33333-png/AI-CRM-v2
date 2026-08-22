@@ -2,14 +2,18 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	adminopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/adminops/app"
 	adminopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/adminops/port"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
@@ -17,9 +21,14 @@ import (
 
 type legacyAdminOpsTransportStub struct {
 	legacyAdminOps
-	created     []adminopsapp.CredentialCommand
-	credentials []adminopsport.Credential
-	listErr     error
+	created      []adminopsapp.CredentialCommand
+	credentials  []adminopsport.Credential
+	listErr      error
+	job          adminopsport.Job
+	jobErr       error
+	jobKeys      []string
+	listJobCalls int
+	cancelCalls  int
 }
 
 func (stub *legacyAdminOpsTransportStub) CreateCredential(_ context.Context, command adminopsapp.CredentialCommand) (adminopsport.Credential, error) {
@@ -29,6 +38,21 @@ func (stub *legacyAdminOpsTransportStub) CreateCredential(_ context.Context, com
 
 func (stub *legacyAdminOpsTransportStub) ListCredentials(context.Context) ([]adminopsport.Credential, error) {
 	return stub.credentials, stub.listErr
+}
+
+func (stub *legacyAdminOpsTransportStub) GetJob(_ context.Context, key string) (adminopsport.Job, error) {
+	stub.jobKeys = append(stub.jobKeys, key)
+	return stub.job, stub.jobErr
+}
+
+func (stub *legacyAdminOpsTransportStub) ListJobs(context.Context, string, string, int32) ([]adminopsport.Job, error) {
+	stub.listJobCalls++
+	return nil, nil
+}
+
+func (stub *legacyAdminOpsTransportStub) CancelJob(context.Context, string, int64, string, string) (adminopsport.Job, error) {
+	stub.cancelCalls++
+	return adminopsport.Job{}, nil
 }
 
 func TestAdminOpsAPIClientListPageUsesLocalProjectionAndSafeFilters(t *testing.T) {
@@ -140,6 +164,88 @@ func TestDecodeAdminOpsPayloadRejectsTrailingJSONAndSecretMaterial(t *testing.T)
 		if ok || response.Code != http.StatusBadRequest {
 			t.Fatalf("body=%s status=%d ok=%v", body, response.Code, ok)
 		}
+	}
+}
+
+func TestPublicAdminOpsJobUsesClosedTargetProjection(t *testing.T) {
+	for _, test := range []struct {
+		kind, target, wantKind string
+		wantPresent            bool
+	}{
+		{"feishu_webhook_validate", "secret://notifications/feishu/sensitive-locator", "notification_secret", true},
+		{"message_batch_ack", "message_batch:external-identifier", "message_batch", true},
+		{"archive_sync", "", "message_archive", false},
+	} {
+		failure := `{"provider_token":"must-not-leak"}`
+		encoded, err := json.Marshal(publicJob(adminopsport.Job{Key: "admjob_123456789012", Kind: test.kind, State: "failed", TargetRef: test.target, Version: 1, FailureCode: failure}))
+		if err != nil {
+			t.Fatal(err)
+		}
+		body := string(encoded)
+		if strings.Contains(body, "target_ref") || strings.Contains(body, "failure_code") || strings.Contains(body, "must-not-leak") || test.target != "" && strings.Contains(body, test.target) || !strings.Contains(body, `"target_kind":"`+test.wantKind+`"`) || !strings.Contains(body, `"target_present":`+strconv.FormatBool(test.wantPresent)) || !strings.Contains(body, `"failure_present":true`) || !strings.Contains(body, `"failure_class":"local_failure"`) || !strings.Contains(body, `"local_only":true`) || !strings.Contains(body, `"real_external_call_executed":false`) {
+			t.Fatalf("unsafe job projection=%s", body)
+		}
+		if test.wantPresent && !strings.Contains(body, `"target_mask":"masked"`) {
+			t.Fatalf("missing target mask=%s", body)
+		}
+	}
+	queuedWithFailure, err := json.Marshal(publicJob(adminopsport.Job{Key: "admjob_123456789012", Kind: "archive_sync", State: "queued", FailureCode: "provider raw token", Version: 1}))
+	if err != nil || strings.Contains(string(queuedWithFailure), "provider raw token") || !strings.Contains(string(queuedWithFailure), `"failure_present":true`) || !strings.Contains(string(queuedWithFailure), `"failure_class":"local_failure"`) {
+		t.Fatalf("queued failure projection=%s err=%v", queuedWithFailure, err)
+	}
+}
+
+func TestAdminOpsUnownedJobRoutesFailClosedWithoutReadingGenericJobs(t *testing.T) {
+	const key = "admjob_1234567890abcdef1234567890abcdef"
+	for _, path := range []string{
+		"/api/admin/jobs/callbacks",
+		"/api/admin/jobs/deferred-jobs",
+		"/api/admin/jobs/webhook-deliveries",
+		"/api/admin/broadcast-jobs",
+		"/api/admin/broadcast-jobs/" + key,
+	} {
+		stub := &legacyAdminOpsTransportStub{}
+		response := httptest.NewRecorder()
+		(&Handler{adminOps: stub}).AdminOps(response, httptest.NewRequest(http.MethodGet, path, nil))
+		body := response.Body.String()
+		if response.Code != http.StatusConflict || stub.listJobCalls != 0 || len(stub.jobKeys) != 0 || !strings.Contains(body, `"local_only":true`) || !strings.Contains(body, `"real_external_call_executed":false`) {
+			t.Fatalf("path=%s status=%d keys=%v list_calls=%d body=%s", path, response.Code, stub.jobKeys, stub.listJobCalls, body)
+		}
+	}
+}
+
+func TestAdminOpsBroadcastWritesFailClosedWithoutJobMutation(t *testing.T) {
+	const key = "admjob_1234567890abcdef1234567890abcdef"
+	for _, test := range []struct {
+		action, body, errorCode string
+	}{
+		{action: "cancel", body: `{"confirm":true,"version":1,"admin_action_token":"%s"}`, errorCode: "broadcast_job_fact_unavailable"},
+		{action: "approve", body: `{"confirm":true,"admin_action_token":"%s"}`, errorCode: "broadcast_job_review_state_unavailable"},
+	} {
+		stub := &legacyAdminOpsTransportStub{}
+		handler := &Handler{adminOps: stub}
+		session := authport.SessionRef(legacyToken(4))
+		pattern := "/api/admin/broadcast-jobs/{job_id}/" + test.action
+		token := adminOpsActionToken(session, http.MethodPost, pattern)
+		request := httptest.NewRequest(http.MethodPost, "/api/admin/broadcast-jobs/"+key+"/"+test.action, strings.NewReader(fmt.Sprintf(test.body, token)))
+		request = request.WithContext(authport.WithAuthenticatedSession(request.Context(), authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}, session))
+		response := httptest.NewRecorder()
+		handler.AdminOps(response, request)
+		if response.Code != http.StatusConflict || stub.cancelCalls != 0 || stub.listJobCalls != 0 || len(stub.jobKeys) != 0 || !strings.Contains(response.Body.String(), `"error":"`+test.errorCode+`"`) {
+			t.Fatalf("action=%s status=%d cancel=%d list=%d keys=%v body=%s", test.action, response.Code, stub.cancelCalls, stub.listJobCalls, stub.jobKeys, response.Body.String())
+		}
+	}
+}
+
+func TestAdminOpsMessageBatchDetailFailsClosedWithoutOwnerMapping(t *testing.T) {
+	stub := &legacyAdminOpsTransportStub{}
+	router := chi.NewRouter()
+	router.Get("/api/admin/jobs/message-batches/{batch_id}", (&Handler{adminOps: stub}).AdminOps)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/api/admin/jobs/message-batches/batch-external-locator", nil))
+	body := response.Body.String()
+	if response.Code != http.StatusConflict || stub.listJobCalls != 0 || !strings.Contains(body, `"error":"message_batch_job_mapping_unavailable"`) || !strings.Contains(body, `"local_only":true`) || !strings.Contains(body, `"real_external_call_executed":false`) {
+		t.Fatalf("status=%d list_calls=%d body=%s", response.Code, stub.listJobCalls, body)
 	}
 }
 

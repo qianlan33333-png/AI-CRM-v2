@@ -8011,6 +8011,835 @@ paths:
         "409": { description: Command conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
         "422": { description: Semantically invalid command, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
         "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+  /api/admin/broadcast-jobs:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: listAdminOpsBroadcastJobs
+      summary: List CRM-local broadcast plans through the closed job DTO
+      x-legacy-mapping-ids: [LEGACY-API-0181]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-p4-status: BLOCKED_REDLINE
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: unavailable_broadcast_fact
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "409": { $ref: "#/components/responses/AdminOpsBlockedRedline" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/broadcast-jobs/feishu-hourly-report/run:
+    post:
+      tags: [p4-adminops-safe]
+      operationId: runAdminOpsFeishuHourlyReportPlan
+      summary: Queue a CRM-local report plan without sending to Feishu
+      x-legacy-mapping-ids: [LEGACY-API-0182]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsActionRequest" } } } }
+      responses:
+        "202": { $ref: "#/components/responses/AdminOpsLocalAccepted" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/broadcast-jobs/notification-settings/feishu:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: getAdminOpsFeishuNotificationSetting
+      summary: Read only the masked local Feishu notification reference state
+      x-legacy-mapping-ids: [LEGACY-API-0183]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-adminops-safe]
+      operationId: saveAdminOpsFeishuNotificationSetting
+      summary: Save only a local secret reference; never execute the webhook
+      x-legacy-mapping-ids: [LEGACY-API-0184]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsNotificationSettingRequest" } } } }
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/broadcast-jobs/notification-settings/feishu/validate:
+    post:
+      tags: [p4-adminops-safe]
+      operationId: validateAdminOpsFeishuNotificationPlan
+      summary: Queue only a local validation plan without calling Feishu
+      x-legacy-mapping-ids: [LEGACY-API-0185]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsActionRequest" } } } }
+      responses:
+        "202": { $ref: "#/components/responses/AdminOpsLocalAccepted" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/broadcast-jobs/{job_id}:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsJobID" }]
+    get:
+      tags: [p4-adminops-safe]
+      operationId: getAdminOpsBroadcastJob
+      summary: Read one exact CRM-local job through the closed projection
+      x-legacy-mapping-ids: [LEGACY-API-0186]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-p4-status: BLOCKED_REDLINE
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: unavailable_broadcast_fact
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "409": { $ref: "#/components/responses/AdminOpsBlockedRedline" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/broadcast-jobs/{job_id}/approve:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsJobID" }]
+    post:
+      tags: [p4-adminops-safe]
+      operationId: approveAdminOpsBroadcastJob
+      summary: Fail closed because no authoritative local review state exists
+      x-legacy-mapping-ids: [LEGACY-API-0187]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-p4-status: BLOCKED_REDLINE
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: unavailable_review_state
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsConfirmedActionRequest" } } } }
+      responses:
+        "409": { $ref: "#/components/responses/AdminOpsBlockedRedline" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/broadcast-jobs/{job_id}/cancel:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsJobID" }]
+    post:
+      tags: [p4-adminops-safe]
+      operationId: cancelAdminOpsBroadcastJob
+      summary: Fail closed because no authoritative local broadcast fact exists
+      x-legacy-mapping-ids: [LEGACY-API-0188]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-p4-status: BLOCKED_REDLINE
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: unavailable_broadcast_fact
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsCancelJobRequest" } } } }
+      responses:
+        "409": { $ref: "#/components/responses/AdminOpsBlockedRedline" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/jobs/summary:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: getAdminOpsJobsSummary
+      summary: Read local AdminOps job counts without external execution
+      x-legacy-mapping-ids: [LEGACY-API-0384]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/jobs/archive-sync:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: listAdminOpsArchiveSyncJobs
+      summary: List local archive-sync job records through the closed job DTO
+      x-legacy-mapping-ids: [LEGACY-API-0376]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/jobs/archive-sync/run:
+    post:
+      tags: [p4-adminops-safe]
+      operationId: runAdminOpsArchiveSyncPlan
+      summary: Queue a CRM-local archive-sync plan without executing a provider
+      x-legacy-mapping-ids: [LEGACY-API-0377]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsConfirmedActionRequest" } } } }
+      responses:
+        "202": { $ref: "#/components/responses/AdminOpsLocalAccepted" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/jobs/callbacks:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: listAdminOpsCallbackJobs
+      summary: List local callback-related job records through the closed job DTO
+      x-legacy-mapping-ids: [LEGACY-API-0378]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-p4-status: BLOCKED_REDLINE
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: unavailable_job_kind
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "409": { $ref: "#/components/responses/AdminOpsBlockedRedline" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/jobs/deferred-jobs:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: listAdminOpsDeferredJobs
+      summary: List local deferred job records through the closed job DTO
+      x-legacy-mapping-ids: [LEGACY-API-0379]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-p4-status: BLOCKED_REDLINE
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: unavailable_job_kind
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "409": { $ref: "#/components/responses/AdminOpsBlockedRedline" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/jobs/webhook-deliveries:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: listAdminOpsWebhookDeliveryJobs
+      summary: List local webhook-plan records without any webhook locator
+      x-legacy-mapping-ids: [LEGACY-API-0385]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-p4-status: BLOCKED_REDLINE
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: unavailable_job_kind
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "409": { $ref: "#/components/responses/AdminOpsBlockedRedline" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/jobs/message-batches:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: listAdminOpsMessageBatchJobs
+      summary: List local message-batch acknowledgement plans through the closed job DTO
+      x-legacy-mapping-ids: [LEGACY-API-0380]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/jobs/message-batches/{batch_id}:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsBatchID" }]
+    get:
+      tags: [p4-adminops-safe]
+      operationId: getAdminOpsMessageBatch
+      summary: Fail closed until an authoritative batch-to-local-job owner mapping exists
+      x-legacy-mapping-ids: [LEGACY-API-0381]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-p4-status: BLOCKED_REDLINE
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: unavailable_owner_mapping
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "409": { $ref: "#/components/responses/AdminOpsBlockedRedline" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/jobs/message-batches/{batch_id}/ack:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsBatchID" }]
+    post:
+      tags: [p4-adminops-safe]
+      operationId: acknowledgeAdminOpsMessageBatch
+      summary: Queue a local acknowledgement plan without executing a provider
+      x-legacy-mapping-ids: [LEGACY-API-0382]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsBatchAckRequest" } } } }
+      responses:
+        "202": { $ref: "#/components/responses/AdminOpsLocalAccepted" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/push-capabilities:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: getAdminOpsPushCapabilities
+      summary: Read local push gates through the closed category projection
+      x-legacy-mapping-ids: [LEGACY-API-0270]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/push-capabilities/scheduler:
+    patch:
+      tags: [p4-adminops-safe]
+      operationId: setAdminOpsPushScheduler
+      summary: Update the local scheduler gate without executing a provider
+      x-legacy-mapping-ids: [LEGACY-API-0271]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsEnabledRequest" } } } }
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/push-capabilities/{capability_key}:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsCapabilityKey" }]
+    patch:
+      tags: [p4-adminops-safe]
+      operationId: setAdminOpsPushCapability
+      summary: Update one local push gate without executing a provider
+      x-legacy-mapping-ids: [LEGACY-API-0272]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsEnabledRequest" } } } }
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/releases:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: listAdminOpsReleases
+      summary: List local releases through a closed changes projection
+      x-legacy-mapping-ids: [LEGACY-API-0273]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-adminops-safe]
+      operationId: createAdminOpsRelease
+      summary: Create a local release using the closed changes allowlist
+      x-legacy-mapping-ids: [LEGACY-API-0274]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsCreateReleaseRequest" } } } }
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/releases/{release_id}:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsReleaseID" }]
+    get:
+      tags: [p4-adminops-safe]
+      operationId: getAdminOpsRelease
+      summary: Read one local release without exposing stored bytes or references
+      x-legacy-mapping-ids: [LEGACY-API-0275]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/releases/{release_id}/shadow-compare:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsReleaseID" }]
+    get:
+      tags: [p4-adminops-safe]
+      operationId: compareAdminOpsReleaseShadow
+      summary: Return a derived local release comparison without provider execution
+      x-legacy-mapping-ids: [LEGACY-API-0278]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/releases/{release_id}/validate:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsReleaseID" }]
+    post:
+      tags: [p4-adminops-safe]
+      operationId: validateAdminOpsRelease
+      summary: Validate one local release without executing external effects
+      x-legacy-mapping-ids: [LEGACY-API-0279]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsActionRequest" } } } }
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/releases/{release_id}/publish:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsReleaseID" }]
+    post:
+      tags: [p4-adminops-safe]
+      operationId: publishAdminOpsRelease
+      summary: Publish local configuration state only
+      x-legacy-mapping-ids: [LEGACY-API-0276]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsPublishReleaseRequest" } } } }
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/releases/{release_id}/rollback:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsReleaseID" }]
+    post:
+      tags: [p4-adminops-safe]
+      operationId: rollbackAdminOpsRelease
+      summary: Roll back local configuration state only
+      x-legacy-mapping-ids: [LEGACY-API-0277]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsConfirmedActionRequest" } } } }
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/config:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: getAdminOpsConfigPage
+      summary: Render local AdminOps categories through the closed safe projection
+      x-legacy-mapping-ids: [LEGACY-API-0021]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { description: HTML carrier embeds only closed Category DTOs and local-only markers, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/config/releases:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: getAdminOpsReleasesPage
+      summary: Render local releases through the closed safe projection
+      x-legacy-mapping-ids: [LEGACY-API-0035]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { description: HTML carrier embeds only closed Release DTOs and local-only markers, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/config/releases/new:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: getAdminOpsNewReleasePage
+      summary: Render the local release creation carrier without secret material
+      x-legacy-mapping-ids: [LEGACY-API-0037]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { description: HTML carrier contains no raw secret or external-effect result, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /admin/config/releases/{release_id}:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsReleaseID" }]
+    get:
+      tags: [p4-adminops-safe]
+      operationId: getAdminOpsReleasePage
+      summary: Render one local release through the closed safe projection
+      x-legacy-mapping-ids: [LEGACY-API-0038]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { description: HTML carrier embeds only the closed Release DTO and local-only markers, content: { text/html: { schema: { type: string } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/categories:
+    get:
+      tags: [p4-adminops-safe]
+      operationId: listAdminOpsCategories
+      summary: List local configuration categories using a closed settings projection
+      x-legacy-mapping-ids: [LEGACY-API-0256]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/categories/{category_key}:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsCategoryKey" }]
+    get:
+      tags: [p4-adminops-safe]
+      operationId: getAdminOpsCategory
+      summary: Read one local category without exposing stored bytes or base64
+      x-legacy-mapping-ids: [LEGACY-API-0257]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.overview.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/categories/{category_key}/enabled:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsCategoryKey" }]
+    put:
+      tags: [p4-adminops-safe]
+      operationId: setAdminOpsCategoryEnabled
+      summary: Update the local enabled flag through a route-bound admin command
+      x-legacy-mapping-ids: [LEGACY-API-0259]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsEnabledRequest" } } } }
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/categories/{category_key}/settings:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsCategoryKey" }]
+    put:
+      tags: [p4-adminops-safe]
+      operationId: setAdminOpsCategorySettings
+      summary: Replace the local category settings through the closed allowlist
+      x-legacy-mapping-ids: [LEGACY-API-0260]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsCategorySettingsRequest" } } } }
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/config/categories/{category_key}/check:
+    parameters: [{ $ref: "#/components/parameters/AdminOpsCategoryKey" }]
+    post:
+      tags: [p4-adminops-safe]
+      operationId: checkAdminOpsCategory
+      summary: Read a local-only category diagnostic without provider execution
+      x-legacy-mapping-ids: [LEGACY-API-0258]
+      x-p4-decision-evidence: P4-ADMINOPS-SAFE-PROJECTION-2026-08-23
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-route-bound-action-token: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/AdminOpsActionToken" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsActionRequest" } } } }
+      responses:
+        "200": { $ref: "#/components/responses/AdminOpsLocalOK" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
 components:
   securitySchemes:
     AdminSession:
@@ -8207,7 +9036,49 @@ components:
     PushCenterSourceRouteFilter: { name: source_route, in: query, required: false, schema: { type: string, default: "" } }
     PushCenterCreatedFromFilter: { name: created_from, in: query, required: false, schema: { type: string, default: "" } }
     PushCenterCreatedToFilter: { name: created_to, in: query, required: false, schema: { type: string, default: "" } }
+    AdminOpsCategoryKey:
+      name: category_key
+      in: path
+      required: true
+      schema: { type: string, minLength: 2, maxLength: 80, pattern: '^[a-z][a-z0-9_]{1,79}$' }
+    AdminOpsCapabilityKey:
+      name: capability_key
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 80, pattern: '^[a-z][a-z0-9_]{0,79}$' }
+    AdminOpsReleaseID:
+      name: release_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+    AdminOpsJobID:
+      name: job_id
+      in: path
+      required: true
+      description: Service-generated local AdminOps job identifier, never a provider locator.
+      schema: { type: string, pattern: '^admjob_[a-f0-9]{32}$' }
+    AdminOpsBatchID:
+      name: batch_id
+      in: path
+      required: true
+      description: Legacy batch locator. No authoritative local batch-to-job ownership mapping currently exists.
+      schema: { type: string, minLength: 1, maxLength: 120 }
+    AdminOpsActionToken:
+      name: X-Admin-Action-Token
+      in: header
+      required: false
+      description: Route-bound token. Required either here or in the closed JSON body.
+      schema: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
   responses:
+    AdminOpsLocalOK:
+      description: Closed CRM-local safe projection; no provider or external call was executed.
+      content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsLocalResponse" } } }
+    AdminOpsLocalAccepted:
+      description: Closed CRM-local queued-plan receipt; acceptance is not provider success or delivery.
+      content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsLocalResponse" } } }
+    AdminOpsBlockedRedline:
+      description: BLOCKED_REDLINE because no authoritative local ownership or review-state contract exists.
+      content: { application/json: { schema: { $ref: "#/components/schemas/AdminOpsLocalResponse" } } }
     BadRequest:
       description: Request validation failed.
       content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
@@ -8259,6 +9130,228 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    AdminOpsCategorySettings:
+      type: object
+      additionalProperties: false
+      properties:
+        enabled: { type: boolean }
+    AdminOpsCategoryPersisted:
+      type: object
+      additionalProperties: false
+      required: [key, enabled, settings, settings_redacted, version, updated_by, updated_at]
+      properties:
+        key: { type: string, minLength: 1, maxLength: 80 }
+        enabled: { type: boolean }
+        settings: { $ref: "#/components/schemas/AdminOpsCategorySettings" }
+        settings_redacted: { type: boolean }
+        version: { type: integer, format: int64, minimum: 1 }
+        updated_by: { type: string }
+        updated_at: { type: string, format: date-time }
+    AdminOpsCategoryFallback:
+      type: object
+      additionalProperties: false
+      required: [key, enabled, settings]
+      properties:
+        key: { type: string, minLength: 1, maxLength: 80 }
+        enabled: { type: boolean, enum: [false], x-enum-varnames: [AdminOpsCategoryFallbackEnabledFalse] }
+        settings: { $ref: "#/components/schemas/AdminOpsCategorySettings" }
+    AdminOpsCategoryRead:
+      oneOf:
+        - { $ref: "#/components/schemas/AdminOpsCategoryPersisted" }
+        - { $ref: "#/components/schemas/AdminOpsCategoryFallback" }
+    AdminOpsReleaseChangesRead:
+      type: object
+      additionalProperties: false
+      properties:
+        wecom.corp_id: { type: string, maxLength: 256, nullable: true }
+        wecom.agent_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        outbound.rate_per_second: { type: integer, format: int64, minimum: 1, nullable: true }
+        outbound.max_attempts: { type: integer, format: int64, minimum: 1, nullable: true }
+        wecom.webhook_ref: { type: string, enum: [masked], x-enum-varnames: [AdminOpsWebhookRefMasked], nullable: true, description: Never returns the stored reference or raw webhook locator. }
+    AdminOpsReleaseChangesWrite:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        wecom.corp_id: { type: string, minLength: 1, maxLength: 256, nullable: true }
+        wecom.agent_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        outbound.rate_per_second: { type: integer, format: int64, minimum: 1, nullable: true }
+        outbound.max_attempts: { type: integer, format: int64, minimum: 1, nullable: true }
+        wecom.webhook_ref: { type: string, minLength: 10, maxLength: 250, pattern: '^(secret://|secretref:)[^?&# ]+$', nullable: true }
+    AdminOpsRelease:
+      type: object
+      additionalProperties: false
+      required: [id, state, changes, changes_redacted, checksum, created_by, created_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        state: { type: string, enum: [draft, validated, published, rolled_back], x-enum-varnames: [AdminOpsReleaseDraft, AdminOpsReleaseValidated, AdminOpsReleasePublished, AdminOpsReleaseRolledBack] }
+        changes: { $ref: "#/components/schemas/AdminOpsReleaseChangesRead" }
+        changes_redacted: { type: boolean }
+        checksum: { type: string, pattern: '^[a-f0-9]{64}$' }
+        based_on_release_id: { type: integer, format: int64, minimum: 1 }
+        rollback_of_release_id: { type: integer, format: int64, minimum: 1 }
+        created_by: { type: string }
+        published_by: { type: string }
+        created_at: { type: string, format: date-time }
+        validated_at: { type: string, format: date-time }
+        published_at: { type: string, format: date-time }
+    AdminOpsJob:
+      type: object
+      additionalProperties: false
+      required: [job_id, kind, status, target_kind, target_present, target_mask, version, failure_present, failure_class, created_at, completed_at, local_only, real_external_call_executed]
+      properties:
+        job_id: { type: string, pattern: '^admjob_[a-f0-9]{32}$' }
+        kind: { type: string, enum: [archive_sync, message_batch_ack, feishu_webhook_validate, feishu_hourly_report, order_identity_repair], x-enum-varnames: [AdminOpsJobArchiveSync, AdminOpsJobMessageBatchAck, AdminOpsJobFeishuWebhookValidate, AdminOpsJobFeishuHourlyReport, AdminOpsJobOrderIdentityRepair] }
+        status: { type: string, enum: [queued, running, completed, failed, cancelled, outcome_unknown, retired], x-enum-varnames: [AdminOpsJobQueued, AdminOpsJobRunning, AdminOpsJobCompleted, AdminOpsJobFailed, AdminOpsJobCancelled, AdminOpsJobOutcomeUnknown, AdminOpsJobRetired] }
+        target_kind: { type: string, enum: [message_archive, message_batch, notification_secret, notification, order_identity, unknown], x-enum-varnames: [AdminOpsTargetMessageArchive, AdminOpsTargetMessageBatch, AdminOpsTargetNotificationSecret, AdminOpsTargetNotification, AdminOpsTargetOrderIdentity, AdminOpsTargetUnknown] }
+        target_present: { type: boolean }
+        target_mask: { type: string, enum: ['', masked], x-enum-varnames: [AdminOpsTargetMaskEmpty, AdminOpsTargetMaskMasked] }
+        version: { type: integer, format: int64, minimum: 1 }
+        failure_present: { type: boolean }
+        failure_class: { type: string, enum: [none, local_failure, outcome_unknown], x-enum-varnames: [AdminOpsFailureNone, AdminOpsFailureLocal, AdminOpsFailureOutcomeUnknown], description: Closed state-derived class; never a provider or raw error string. }
+        created_at: { type: string, format: date-time }
+        completed_at: { type: string, format: date-time, nullable: true }
+        local_only: { type: boolean, enum: [true], x-enum-varnames: [AdminOpsJobLocalOnlyTrue] }
+        real_external_call_executed: { type: boolean, enum: [false], x-enum-varnames: [AdminOpsJobExternalCallFalse] }
+    AdminOpsLocalResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, local_only, real_external_call_executed]
+      properties:
+        ok: { type: boolean }
+        local_only: { type: boolean, enum: [true], x-enum-varnames: [AdminOpsResponseLocalOnlyTrue] }
+        real_external_call_executed: { type: boolean, enum: [false], x-enum-varnames: [AdminOpsResponseExternalCallFalse] }
+        categories: { type: array, items: { $ref: "#/components/schemas/AdminOpsCategoryPersisted" } }
+        category: { $ref: "#/components/schemas/AdminOpsCategoryRead" }
+        config: { $ref: "#/components/schemas/AdminOpsCategoryPersisted" }
+        changed: { type: boolean }
+        summary:
+          oneOf:
+            - { $ref: "#/components/schemas/AdminOpsCategoryCheckSummary" }
+            - { $ref: "#/components/schemas/AdminOpsJobSummary" }
+        comparison: { $ref: "#/components/schemas/AdminOpsReleaseComparison" }
+        releases: { type: array, items: { $ref: "#/components/schemas/AdminOpsRelease" } }
+        release: { $ref: "#/components/schemas/AdminOpsRelease" }
+        capabilities:
+          oneOf:
+            - { type: array, maxItems: 0, items: {} }
+            - { $ref: "#/components/schemas/AdminOpsCategorySettings" }
+        scheduler: { $ref: "#/components/schemas/AdminOpsEnabledState" }
+        capability: { $ref: "#/components/schemas/AdminOpsCategoryPersisted" }
+        derived_gates: { $ref: "#/components/schemas/AdminOpsDerivedGates" }
+        jobs: { type: array, items: { $ref: "#/components/schemas/AdminOpsJob" } }
+        job: { $ref: "#/components/schemas/AdminOpsJob" }
+        accepted: { type: boolean, enum: [true], x-enum-varnames: [AdminOpsResponseAcceptedTrue] }
+        enabled: { type: boolean }
+        channel: { type: string, enum: [feishu], x-enum-varnames: [AdminOpsChannelFeishu] }
+        webhookMasked: { type: string }
+        validationStatus: { type: string, enum: [unconfigured, unverified, queued, valid, invalid], x-enum-varnames: [AdminOpsValidationUnconfigured, AdminOpsValidationUnverified, AdminOpsValidationQueued, AdminOpsValidationValid, AdminOpsValidationInvalid] }
+        status: { type: string, enum: [queued], x-enum-varnames: [AdminOpsResponseQueued] }
+        error: { type: string }
+    AdminOpsCategoryCheckSummary:
+      type: object
+      additionalProperties: false
+      required: [category, failed, external_calls]
+      properties:
+        category: { type: string }
+        failed: { type: integer, enum: [0], x-enum-varnames: [AdminOpsCategoryCheckFailedZero] }
+        external_calls: { type: boolean, enum: [false], x-enum-varnames: [AdminOpsCategoryCheckExternalCallsFalse] }
+    AdminOpsJobSummary:
+      type: object
+      additionalProperties: false
+      required: [counts, worker, outcome_unknown_auto_retry]
+      properties:
+        counts:
+          type: object
+          additionalProperties: { type: integer, minimum: 0 }
+        worker: { type: string, enum: [separate_from_http], x-enum-varnames: [AdminOpsWorkerSeparateFromHTTP] }
+        outcome_unknown_auto_retry: { type: boolean, enum: [false], x-enum-varnames: [AdminOpsOutcomeUnknownAutoRetryFalse] }
+    AdminOpsReleaseComparison:
+      type: object
+      additionalProperties: false
+      required: [release_id, external_calls]
+      properties:
+        release_id: { type: integer, format: int64, minimum: 1 }
+        external_calls: { type: boolean, enum: [false], x-enum-varnames: [AdminOpsReleaseComparisonExternalCallsFalse] }
+    AdminOpsEnabledState:
+      type: object
+      additionalProperties: false
+      required: [enabled]
+      properties:
+        enabled: { type: boolean }
+    AdminOpsDerivedGates:
+      type: object
+      additionalProperties: false
+      required: [api_worker_isolated]
+      properties:
+        api_worker_isolated: { type: boolean, enum: [true], x-enum-varnames: [AdminOpsAPIWorkerIsolatedTrue] }
+    AdminOpsActionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        confirm: { type: boolean }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+    AdminOpsConfirmedActionRequest:
+      type: object
+      additionalProperties: false
+      required: [confirm]
+      properties:
+        confirm: { type: boolean, enum: [true], x-enum-varnames: [AdminOpsConfirmedActionTrue] }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+    AdminOpsEnabledRequest:
+      type: object
+      additionalProperties: false
+      required: [enabled]
+      properties:
+        enabled: { type: boolean }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+    AdminOpsCategorySettingsRequest:
+      type: object
+      additionalProperties: false
+      required: [settings]
+      properties:
+        settings: { $ref: "#/components/schemas/AdminOpsCategorySettings" }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+    AdminOpsCreateReleaseRequest:
+      type: object
+      additionalProperties: false
+      required: [confirm, changes]
+      properties:
+        confirm: { type: boolean, enum: [true], x-enum-varnames: [AdminOpsCreateReleaseConfirmTrue] }
+        changes: { $ref: "#/components/schemas/AdminOpsReleaseChangesWrite" }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+    AdminOpsPublishReleaseRequest:
+      type: object
+      additionalProperties: false
+      required: [confirm, checksum]
+      properties:
+        confirm: { type: boolean, enum: [true], x-enum-varnames: [AdminOpsPublishReleaseConfirmTrue] }
+        checksum: { type: string, pattern: '^[a-f0-9]{64}$' }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+    AdminOpsBatchAckRequest:
+      type: object
+      additionalProperties: false
+      required: [confirm, ack_note]
+      properties:
+        confirm: { type: boolean, enum: [true], x-enum-varnames: [AdminOpsBatchAckConfirmTrue] }
+        ack_note: { type: string, minLength: 1, maxLength: 4096 }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+    AdminOpsCancelJobRequest:
+      type: object
+      additionalProperties: false
+      required: [confirm, version]
+      properties:
+        confirm: { type: boolean, enum: [true], x-enum-varnames: [AdminOpsCancelJobConfirmTrue] }
+        version: { type: integer, format: int64, minimum: 1 }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
+    AdminOpsNotificationSettingRequest:
+      type: object
+      additionalProperties: false
+      required: [enabled]
+      properties:
+        enabled: { type: boolean }
+        secret_ref: { type: string, minLength: 10, maxLength: 250, pattern: '^(secret://|secretref:)[^?&# ]+$' }
+        admin_action_token: { type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$' }
     GroupOpsError:
       type: object
       additionalProperties: false

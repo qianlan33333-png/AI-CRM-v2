@@ -3,6 +3,7 @@ package p1s11_test
 import (
 	"encoding/json"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
@@ -218,11 +219,14 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"GetCustomer", "GetCustomerActivityAnalytics", "GetCustomerContext", "GetDomainVerificationFile", "GetLegacyChannel", "GetLegacyChannelListPage", "GetLegacyExecutionRuntime", "GetLegacyExecutionRuntimePage", "GetLegacyExecutionTimeline", "GetLegacyHealth", "GetLegacyPushCenterSections", "GetLegacyPushCenterStats", "GetLegacyWechatPayProductShare", "GetProduct", "GetProductLocalEntitlement", "GetPublicSurveyDefinition", "GetPublicSurveyPage", "GetQuestionnairePublicAnalytics", "GetSegment", "GetServicePeriodMember", "GetServicePeriodMemberGridAccess", "GetServicePeriodMemberGridSchema", "GetServicePeriodMemberGridShareSettings", "GetServicePeriodProduct", "GetSetupWizard", "GrantProductLocalEntitlement", "IngestIdentityEvent", "ListAutomationTriggerRuns", "ListCustomerChatActivity", "ListCustomerEvents", "ListCustomerMergeHistory", "ListCustomerSurveyAnswers", "ListCustomers", "ListIdentityMergeReviews",
 		"ListLegacyChannelEntrants", "ListLegacyChannels", "ListProductLocalEntitlements", "ListProducts", "ListSegmentMembers", "ListSegments", "ListServicePeriodMemberViews", "ListServicePeriodMembers", "ListServicePeriodProducts", "ListStages", "ListTagGroups", "ListTags", "LogoutAdmin", "PublishQuestionnairePublicDefinition", "QueryPublicSurveySubmissionResult", "QueryServicePeriodMemberGrid", "RejectIdentityMergeReview",
 		"RemoveCustomerTag", "RemoveServicePeriodMember", "RenameStage", "ReorderStages", "ReorderTagGroups", "ReorderTags", "RequestSegmentRefresh", "ResolveIdentity", "RevokeProductLocalEntitlement", "SaveSetupWizard", "SetCustomerStage", "SubmitPublicSurvey", "UpdateCustomer", "UpdateLegacyChannel", "UpdateProduct", "UpdateSegment", "UpdateServicePeriodMemberFields", "UpdateServicePeriodMemberGridCollaborator", "UpdateServicePeriodMemberView", "UpdateServicePeriodProduct", "UpdateTag", "UpdateTagGroup",
+		"AcknowledgeAdminOpsMessageBatch", "ApproveAdminOpsBroadcastJob", "CancelAdminOpsBroadcastJob", "CheckAdminOpsCategory", "CompareAdminOpsReleaseShadow", "CreateAdminOpsRelease", "GetAdminOpsBroadcastJob", "GetAdminOpsCategory", "GetAdminOpsConfigPage", "GetAdminOpsFeishuNotificationSetting", "GetAdminOpsJobsSummary", "GetAdminOpsMessageBatch", "GetAdminOpsNewReleasePage", "GetAdminOpsPushCapabilities", "GetAdminOpsRelease", "GetAdminOpsReleasePage", "GetAdminOpsReleasesPage", "ListAdminOpsArchiveSyncJobs", "ListAdminOpsBroadcastJobs", "ListAdminOpsCallbackJobs", "ListAdminOpsCategories", "ListAdminOpsDeferredJobs", "ListAdminOpsMessageBatchJobs", "ListAdminOpsReleases", "ListAdminOpsWebhookDeliveryJobs", "PublishAdminOpsRelease", "RollbackAdminOpsRelease", "RunAdminOpsArchiveSyncPlan", "RunAdminOpsFeishuHourlyReportPlan", "SaveAdminOpsFeishuNotificationSetting", "SetAdminOpsCategoryEnabled", "SetAdminOpsCategorySettings", "SetAdminOpsPushCapability", "SetAdminOpsPushScheduler", "ValidateAdminOpsFeishuNotificationPlan", "ValidateAdminOpsRelease",
 	})
 }
 
 func assertMethodNames(t *testing.T, name string, contract reflect.Type, want []string) {
 	t.Helper()
+	want = append([]string(nil), want...)
+	sort.Strings(want)
 	if contract.NumMethod() != len(want) {
 		t.Fatalf("%s methods=%d want=%d", name, contract.NumMethod(), len(want))
 	}

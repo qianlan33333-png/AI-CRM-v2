@@ -143,6 +143,21 @@ type SegmentDefinitionPredicateField string
 // SegmentDefinitionPredicateOp defines model for SegmentDefinitionPredicate.Op.
 type SegmentDefinitionPredicateOp string
 
+// AdminOpsBatchID defines model for AdminOpsBatchID.
+type AdminOpsBatchID = string
+
+// AdminOpsCapabilityKey defines model for AdminOpsCapabilityKey.
+type AdminOpsCapabilityKey = string
+
+// AdminOpsCategoryKey defines model for AdminOpsCategoryKey.
+type AdminOpsCategoryKey = string
+
+// AdminOpsJobID defines model for AdminOpsJobID.
+type AdminOpsJobID = string
+
+// AdminOpsReleaseID defines model for AdminOpsReleaseID.
+type AdminOpsReleaseID = int64
+
 // AutomationAgentID defines model for AutomationAgentID.
 type AutomationAgentID = int64
 
