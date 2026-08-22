@@ -1599,6 +1599,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/wechat-pay/products", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.ListProducts)},
 			{http.MethodPost, "/api/admin/wechat-pay/products", authport.CapabilityProductsWrite, true, http.HandlerFunc(legacy.CreateProduct)},
 			{http.MethodGet, "/api/admin/wechat-pay/products/{product_id}", authport.CapabilityProductsRead, false, http.HandlerFunc(legacy.GetProduct)},
+			{http.MethodPut, "/api/admin/wechat-pay/products/{product_id}", authport.CapabilityProductsWrite, true, http.HandlerFunc(legacy.UpdateProduct)},
 			{http.MethodGet, legacyOrderPagePath, authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.OrderListPage)},
 			{http.MethodGet, "/api/admin/orders", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.ListOrderBoard)},
 			{http.MethodGet, "/api/admin/orders/{order_no}", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.GetOrderBoard)},

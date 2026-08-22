@@ -67,6 +67,7 @@ type legacyProductApplication interface {
 	ListLegacy(context.Context, int32, int32) (productport.LegacyPage, error)
 	Get(context.Context, productport.ID) (productport.Product, error)
 	Create(context.Context, productport.CreateCommand) (productport.Product, error)
+	Update(context.Context, productport.UpdateCommand) (productport.Product, error)
 }
 
 type legacyMediaApplication interface {
