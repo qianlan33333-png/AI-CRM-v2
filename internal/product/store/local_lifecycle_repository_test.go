@@ -17,6 +17,7 @@ func TestLocalProductLifecycleSQLContractIsSafeByConstruction(t *testing.T) {
 		"-- name: DeleteLocalProductIfSafe :one",
 		"product.version = (command.payload->>'expected_version')::bigint",
 		"product_local_entitlements",
+		"coupon_targets",
 		"order_list_projections",
 		"service_period_member_views",
 		"service_period_member_grid_collaborators",

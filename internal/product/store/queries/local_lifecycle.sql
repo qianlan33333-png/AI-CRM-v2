@@ -34,6 +34,11 @@ WITH command AS (
     )
     AND NOT EXISTS (
       SELECT 1
+      FROM coupon_targets coupon_target
+      WHERE coupon_target.product_id = product.id
+    )
+    AND NOT EXISTS (
+      SELECT 1
       FROM order_list_projections order_projection
       WHERE order_projection.product_id = product.id
     )

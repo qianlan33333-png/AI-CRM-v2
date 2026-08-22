@@ -127,6 +127,17 @@ func TestLocalProductLifecycleDeleteIsDraftOnlyAndReferenceSafe(t *testing.T) {
 		t.Fatal("referenced draft was removed")
 	}
 
+	couponTargeted := seedLocalProduct(t, store, 24, productport.LocalProductDraft, false, nil)
+	store.couponTargets[couponTargeted.ID] = true
+	if _, err = service.DeleteLocalProduct(context.Background(), productport.DeleteLocalProductCommand{
+		ID: couponTargeted.ID, ExpectedVersion: couponTargeted.Version, Actor: 24, IdempotencyKey: "wechat-delete-coupon-target-01",
+	}); !errors.Is(err, ErrLocalProductDeleteNotAllowed) || !errors.Is(err, ErrConflict) {
+		t.Fatalf("coupon-targeted delete error=%v", err)
+	}
+	if _, ok := store.products[couponTargeted.ID]; !ok {
+		t.Fatal("coupon-targeted draft was removed")
+	}
+
 	disabled := seedLocalProduct(t, store, 23, productport.LocalProductDisabled, false, nil)
 	if _, err = service.DeleteLocalProduct(context.Background(), productport.DeleteLocalProductCommand{
 		ID: disabled.ID, ExpectedVersion: disabled.Version, Actor: 23, IdempotencyKey: "wechat-delete-disabled-01",
@@ -205,7 +216,7 @@ func seedLocalProduct(t *testing.T, store *localProductLifecycleTestStore, actor
 }
 
 func newLocalProductLifecycleFixture() (*LocalProductLifecycleService, *localProductLifecycleTestStore, *localProductLifecycleTestEvents) {
-	store := &localProductLifecycleTestStore{products: map[productport.ID]productport.Product{}, receipts: map[string]Receipt{}, references: map[productport.ID]bool{}, nextProductID: 1, nextReceiptID: 1}
+	store := &localProductLifecycleTestStore{products: map[productport.ID]productport.Product{}, receipts: map[string]Receipt{}, references: map[productport.ID]bool{}, couponTargets: map[productport.ID]bool{}, nextProductID: 1, nextReceiptID: 1}
 	events := &localProductLifecycleTestEvents{}
 	service := NewLocalProductLifecycleService(&localProductLifecycleTestUOW{}, store, events)
 	base := time.Date(2026, 8, 22, 12, 0, 0, 0, time.UTC)
@@ -228,6 +239,7 @@ type localProductLifecycleTestStore struct {
 	products      map[productport.ID]productport.Product
 	receipts      map[string]Receipt
 	references    map[productport.ID]bool
+	couponTargets map[productport.ID]bool
 	nextProductID productport.ID
 	nextReceiptID int64
 	createCalls   int
@@ -284,7 +296,7 @@ func (store *localProductLifecycleTestStore) DeleteLocalProductIfSafe(_ context.
 	if product.Version != expectedVersion {
 		return false, ErrConflict
 	}
-	if store.references[id] {
+	if store.references[id] || store.couponTargets[id] {
 		return false, nil
 	}
 	delete(store.products, id)
