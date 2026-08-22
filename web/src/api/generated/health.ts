@@ -2651,6 +2651,36 @@ export interface LegacyChannelMutationResponse {
   real_external_call_executed: boolean;
 }
 
+export interface LegacyChannelEntrant {
+  /** @minimum 1 */
+  customer_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  display_name: string;
+  added_at: string;
+  /** @nullable */
+  last_interact_at: string | null;
+}
+
+export interface LegacyChannelEntrantsResponse {
+  /** @minimum 1 */
+  channel_id: number;
+  /** @maxItems 50 */
+  items: LegacyChannelEntrant[];
+  /**
+   * @minimum 1
+   * @maximum 50
+   */
+  limit: number;
+  has_more: boolean;
+  /** @maxLength 256 */
+  next_cursor: string;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
 export interface LegacyCustomer {
   /**
    * @minLength 1
@@ -9189,6 +9219,20 @@ export const ListLegacyChannelsStatus = {
   inactive: "inactive",
   archived: "archived",
 } as const;
+
+export type ListLegacyChannelEntrantsParams = {
+  /**
+   * @minimum 1
+   * @maximum 50
+   */
+  limit?: number;
+  /**
+   * @minLength 1
+   * @maxLength 256
+   * @pattern ^ce1\.[A-Za-z0-9_-]+$
+   */
+  cursor?: string;
+};
 
 export type ListLegacyOrdersParams = {
   provider?: ListLegacyOrdersProvider;
@@ -18803,6 +18847,98 @@ export const updateLegacyChannel = async (
     status: res.status,
     headers: res.headers,
   } as updateLegacyChannelResponse;
+};
+
+/**
+ * @summary List a channel's recent entrants from the closed local Contact projection
+ */
+export type listLegacyChannelEntrantsResponse200 = {
+  data: LegacyChannelEntrantsResponse;
+  status: 200;
+};
+
+export type listLegacyChannelEntrantsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyChannelEntrantsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyChannelEntrantsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listLegacyChannelEntrantsResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type listLegacyChannelEntrantsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyChannelEntrantsResponseSuccess =
+  listLegacyChannelEntrantsResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyChannelEntrantsResponseError = (
+  | listLegacyChannelEntrantsResponse401
+  | listLegacyChannelEntrantsResponse403
+  | listLegacyChannelEntrantsResponse404
+  | listLegacyChannelEntrantsResponse422
+  | listLegacyChannelEntrantsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyChannelEntrantsResponse =
+  | listLegacyChannelEntrantsResponseSuccess
+  | listLegacyChannelEntrantsResponseError;
+
+export const getListLegacyChannelEntrantsUrl = (
+  channelId: number,
+  params?: ListLegacyChannelEntrantsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/channels/${channelId}/contacts?${stringifiedParams}`
+    : `/api/admin/channels/${channelId}/contacts`;
+};
+
+export const listLegacyChannelEntrants = async (
+  channelId: number,
+  params?: ListLegacyChannelEntrantsParams,
+  options?: RequestInit,
+): Promise<listLegacyChannelEntrantsResponse> => {
+  const res = await fetch(getListLegacyChannelEntrantsUrl(channelId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyChannelEntrantsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyChannelEntrantsResponse;
 };
 
 /**
