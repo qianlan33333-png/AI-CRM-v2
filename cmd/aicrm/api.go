@@ -1265,6 +1265,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if pattern == legacyCustomerProfileTagsPath {
 				tail = legacyCustomerProfileTagsSecurityHeaders(tail)
 			}
+			if pattern == legacyCustomerProfileMessagesPath {
+				tail = legacyCustomerProfileMessagesSecurityHeaders(tail)
+			}
 			if pattern == legacyChannelPagePath {
 				tail = legacyChannelPageSecurityHeaders(tail)
 			}
@@ -1317,7 +1320,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			if pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath {
 				tail = legacyInternalEventsSecurityHeaders(tail)
 			}
-			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyHXCSenderItemPath || pattern == legacyHXCSenderReorderPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyChannelPagePath || pattern == legacyCouponPagePath || pattern == legacyOrderPagePath || pattern == legacyProductPagePath || pattern == legacyExecutionRuntimePagePath || pattern == legacyAutomationAgentListPagePath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath || pattern == legacyRuntimeConfigPath || pattern == legacyConfigChecklistPath || isLegacyCustomerPagePattern(pattern) || isCloudOrchestratorPagePattern(pattern) || automationhttp.IsGroupOpsPagePattern(pattern) || automationhttp.IsAudiencePackagePagePattern(pattern) || automationhttp.IsUserOpsPagePattern(pattern) || producthttp.IsWorkspacePagePattern(pattern) {
+			if pattern == legacyImageCollectionPath || pattern == legacyImageFacetsPath || pattern == legacyImageDetailPath || pattern == legacyImageVariantPath || pattern == legacyApiDocsPath || pattern == legacyMcpToolsPath || pattern == legacyDataHealthChecksPath || pattern == legacyDataHealthCheckPath || pattern == legacyDataHealthSummaryPath || pattern == legacyHXCSenderReadPath || pattern == legacyHXCSenderItemPath || pattern == legacyHXCSenderReorderPath || pattern == legacyDeliveryLineagePath || pattern == legacyInternalEventsPath || pattern == legacyInternalEventsDiagnosticsPath || pattern == legacyInternalEventDetailPath || pattern == legacyCustomerProfileTagsPath || pattern == legacyCustomerProfileMessagesPath || pattern == legacyChannelPagePath || pattern == legacyCouponPagePath || pattern == legacyOrderPagePath || pattern == legacyProductPagePath || pattern == legacyExecutionRuntimePagePath || pattern == legacyAutomationAgentListPagePath || pattern == legacyQuestionnairePagePath || pattern == legacyQuestionnairePagePath+"/ui" || pattern == legacyQuestionnairePreflightPath || pattern == legacyRuntimeConfigPath || pattern == legacyConfigChecklistPath || isLegacyCustomerPagePattern(pattern) || isCloudOrchestratorPagePattern(pattern) || automationhttp.IsGroupOpsPagePattern(pattern) || automationhttp.IsAudiencePackagePagePattern(pattern) || automationhttp.IsUserOpsPagePattern(pattern) || producthttp.IsWorkspacePagePattern(pattern) {
 				// Keep the strict image-library reads out of the compatibility
 				// router's legacy 400 method adapter. A per-path method router lets
 				// Chi return 405 before authentication and preserves the shared
@@ -1340,6 +1343,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 					}
 					if pattern == legacyCustomerProfileTagsPath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyCustomerProfileTagsMethodNotAllowed))
+					}
+					if pattern == legacyCustomerProfileMessagesPath {
+						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyCustomerProfileMessagesMethodNotAllowed))
 					}
 					if pattern == legacyChannelPagePath {
 						methodRouter.MethodNotAllowed(http.HandlerFunc(writeLegacyChannelPageMethodNotAllowed))
@@ -1449,6 +1455,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, legacyInternalEventsDiagnosticsPath, authport.CapabilityAdminRead, false, http.HandlerFunc(newLegacyInternalEventsHandler(adminReadRepository).Diagnostics)},
 			{http.MethodGet, legacyInternalEventDetailPath, authport.CapabilityAdminRead, false, http.HandlerFunc(newLegacyInternalEventDetailHandler(adminDetailRepository).Get)},
 			{http.MethodGet, legacyCustomerProfileTagsPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetCustomerProfileTags)},
+			{http.MethodGet, legacyCustomerProfileMessagesPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.GetCustomerProfileMessages)},
 			{http.MethodGet, legacyCustomerListPagePath, authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.CustomerListPage)},
 			{http.MethodGet, legacyCustomerDetailPagePattern, authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.CustomerDetailPage)},
 			{http.MethodGet, legacyCustomerContextPagePattern, authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(legacy.CustomerContextPage)},
