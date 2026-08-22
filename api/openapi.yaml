@@ -5989,6 +5989,38 @@ paths:
         "415": { $ref: "#/components/responses/UnsupportedMediaType" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}/members:
+    get:
+      tags: [p4-ai-audience]
+      operationId: listAIAudiencePackageMembers
+      summary: Read the stable CRM-local member snapshot for one AI Audience package
+      x-legacy-mapping-ids: [LEGACY-API-0103]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-LIFECYCLE-2026-08-22
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: segments.local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int64, minimum: 0, default: 0 } }
+      responses:
+        "200": { description: "Stable local member page with a trusted, ambiguity-safe external identity projection.", content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceMemberListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "405":
+          description: Only GET is accepted before authentication.
+          headers:
+            Allow: { required: true, schema: { type: string, enum: [GET] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/ai-audience/packages/{package_id}/pause:
     post:
       tags: [p4-ai-audience]
@@ -6395,6 +6427,27 @@ components:
         offset: { type: integer, minimum: 0, maximum: 100000 }
         total: { type: integer, format: int64, minimum: 0 }
         local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceMember:
+      type: object
+      additionalProperties: false
+      required: [customer_id, nickname, external_userid, entered_at]
+      properties:
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        nickname: { type: string }
+        external_userid: { type: string, description: Unique verified WeCom external identity; empty when absent or ambiguous. }
+        entered_at: { type: string, format: date-time }
+    AIAudienceMemberListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, total, count, limit, offset, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, maxItems: 200, items: { $ref: "#/components/schemas/AIAudienceMember" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        count: { type: integer, minimum: 0, maximum: 200 }
+        limit: { type: integer, minimum: 1, maximum: 200 }
+        offset: { type: integer, format: int64, minimum: 0 }
         real_external_call_executed: { type: boolean, enum: [false] }
     AIAudiencePackageDetailResponse:
       type: object

@@ -181,6 +181,7 @@ type Handler struct {
 	memberGridManagement  http.Handler
 	radar                 http.Handler
 	aiAudience            http.Handler
+	aiAudienceMembers     http.Handler
 	channelEntrants       http.Handler
 	media                 legacyMediaApplication
 	imageDeletes          legacyImageDeleteApplication

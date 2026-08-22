@@ -257,7 +257,7 @@ var p4AIAudienceOperations = map[string]bool{
 	"listAIAudiencePackages": true, "getAIAudiencePackage": true,
 	"updateAIAudiencePackage": true, "copyAIAudiencePackage": true,
 	"pauseAIAudiencePackage": true, "activateAIAudiencePackage": true,
-	"archiveAIAudiencePackage": true,
+	"archiveAIAudiencePackage": true, "listAIAudiencePackageMembers": true,
 }
 
 var p4AIAudienceLegacyMappings = map[string][]string{
@@ -266,7 +266,8 @@ var p4AIAudienceLegacyMappings = map[string][]string{
 	"listAIAudiencePackages": {"LEGACY-API-0093"}, "archiveAIAudiencePackage": {"LEGACY-API-0095"},
 	"getAIAudiencePackage": {"LEGACY-API-0096"}, "updateAIAudiencePackage": {"LEGACY-API-0097"},
 	"activateAIAudiencePackage": {"LEGACY-API-0098"}, "copyAIAudiencePackage": {"LEGACY-API-0102"},
-	"pauseAIAudiencePackage": {"LEGACY-API-0104"},
+	"pauseAIAudiencePackage":       {"LEGACY-API-0104"},
+	"listAIAudiencePackageMembers": {"LEGACY-API-0103"},
 }
 
 var p4MediaOperations = map[string]bool{
@@ -620,6 +621,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"pauseAIAudiencePackage":                     {"segments.write", map[string]string{"admin": "global", "ops": "global"}},
 	"activateAIAudiencePackage":                  {"segments.write", map[string]string{"admin": "global", "ops": "global"}},
 	"archiveAIAudiencePackage":                   {"segments.write", map[string]string{"admin": "global", "ops": "global"}},
+	"listAIAudiencePackageMembers":               {"segments.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createServicePeriodMemberGridCollaborator":  {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"updateServicePeriodMemberGridCollaborator":  {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteServicePeriodMemberGridCollaborator":  {"products.write", map[string]string{"admin": "global", "ops": "global"}},
@@ -1183,7 +1185,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				if linkErr != nil || !reflect.DeepEqual(ids, p4AIAudienceLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
-				read := op.OperationID == "listAIAudiencePackageGroups" || op.OperationID == "listAIAudiencePackages" || op.OperationID == "getAIAudiencePackage"
+				read := op.OperationID == "listAIAudiencePackageGroups" || op.OperationID == "listAIAudiencePackages" || op.OperationID == "getAIAudiencePackage" || op.OperationID == "listAIAudiencePackageMembers"
 				wantCapability, wantCSRF, wantSource := "segments.write", "required", "local_command"
 				if read {
 					wantCapability, wantCSRF = "segments.read", "none"
