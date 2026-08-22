@@ -239,11 +239,13 @@ func openPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	if *databaseURL == "" {
 		t.Skip("database-url is not set")
 	}
-	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.H01A1DatabaseName); err != nil {
-		if h03Err := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.H03DatabaseName); h03Err != nil {
-			if miniProgramErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.MiniProgramLibraryDatabaseName); miniProgramErr != nil {
-				if imageUpdateErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.ImageUpdateDatabaseName); imageUpdateErr != nil {
-					t.Fatal(err)
+	if err := acceptancefixtures.ValidateDatabaseURL(*databaseURL); err != nil {
+		if h01A1Err := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.H01A1DatabaseName); h01A1Err != nil {
+			if h03Err := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.H03DatabaseName); h03Err != nil {
+				if miniProgramErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.MiniProgramLibraryDatabaseName); miniProgramErr != nil {
+					if imageUpdateErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.ImageUpdateDatabaseName); imageUpdateErr != nil {
+						t.Fatal(err)
+					}
 				}
 			}
 		}
