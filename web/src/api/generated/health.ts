@@ -255,6 +255,36 @@ export interface AIAudiencePackageListResponse {
   real_external_call_executed: boolean;
 }
 
+export interface AIAudienceMember {
+  /** @minimum 1 */
+  customer_id: number;
+  nickname: string;
+  /** Unique verified WeCom external identity; empty when absent or ambiguous. */
+  external_userid: string;
+  entered_at: string;
+}
+
+export interface AIAudienceMemberListResponse {
+  ok: boolean;
+  /** @maxItems 200 */
+  items: AIAudienceMember[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 0
+   * @maximum 200
+   */
+  count: number;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  real_external_call_executed: boolean;
+}
+
 export interface AIAudiencePackageDetailResponse {
   package: AIAudiencePackage;
   local_projection: boolean;
@@ -10877,6 +10907,18 @@ export type ListAIAudiencePackagesParams = {
   /**
    * @minimum 0
    * @maximum 100000
+   */
+  offset?: number;
+};
+
+export type ListAIAudiencePackageMembersParams = {
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
    */
   offset?: number;
 };
@@ -30102,6 +30144,107 @@ export const copyAIAudiencePackage = async (
     status: res.status,
     headers: res.headers,
   } as copyAIAudiencePackageResponse;
+};
+
+/**
+ * @summary Read the stable CRM-local member snapshot for one AI Audience package
+ */
+export type listAIAudiencePackageMembersResponse200 = {
+  data: AIAudienceMemberListResponse;
+  status: 200;
+};
+
+export type listAIAudiencePackageMembersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAIAudiencePackageMembersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAIAudiencePackageMembersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAIAudiencePackageMembersResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listAIAudiencePackageMembersResponse405 = {
+  data: ErrorResponse;
+  status: 405;
+};
+
+export type listAIAudiencePackageMembersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAIAudiencePackageMembersResponseSuccess =
+  listAIAudiencePackageMembersResponse200 & {
+    headers: Headers;
+  };
+export type listAIAudiencePackageMembersResponseError = (
+  | listAIAudiencePackageMembersResponse400
+  | listAIAudiencePackageMembersResponse401
+  | listAIAudiencePackageMembersResponse403
+  | listAIAudiencePackageMembersResponse404
+  | listAIAudiencePackageMembersResponse405
+  | listAIAudiencePackageMembersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAIAudiencePackageMembersResponse =
+  | listAIAudiencePackageMembersResponseSuccess
+  | listAIAudiencePackageMembersResponseError;
+
+export const getListAIAudiencePackageMembersUrl = (
+  packageId: number,
+  params?: ListAIAudiencePackageMembersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/ai-audience/packages/${packageId}/members?${stringifiedParams}`
+    : `/api/admin/ai-audience/packages/${packageId}/members`;
+};
+
+export const listAIAudiencePackageMembers = async (
+  packageId: number,
+  params?: ListAIAudiencePackageMembersParams,
+  options?: RequestInit,
+): Promise<listAIAudiencePackageMembersResponse> => {
+  const res = await fetch(
+    getListAIAudiencePackageMembersUrl(packageId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAIAudiencePackageMembersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAIAudiencePackageMembersResponse;
 };
 
 /**
