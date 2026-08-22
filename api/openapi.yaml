@@ -4149,7 +4149,7 @@ paths:
       parameters: [{ $ref: "#/components/parameters/GroupOpsLimit" }, { $ref: "#/components/parameters/GroupOpsOffset" }]
       responses:
         "200": { description: Local deterministic page; no runtime or provider eligibility exists., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsPlanPage" } } } }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "400": { description: Invalid Group Ops page request., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { description: Local Group Ops storage unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
@@ -4192,7 +4192,7 @@ paths:
       x-aicrm-external-effect: none
       responses:
         "200": { description: Strict local projection with opaque references only., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsPlanDetail" } } } }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "400": { description: Invalid Group Ops plan identifier., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { description: Plan not found., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
@@ -4265,7 +4265,7 @@ paths:
       parameters: [{ $ref: "#/components/parameters/GroupOpsLimit" }, { $ref: "#/components/parameters/GroupOpsOffset" }]
       responses:
         "200": { description: Local deterministic member page., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsMemberPage" } } } }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "400": { description: Invalid Group Ops page request., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { description: Plan not found., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
@@ -4300,7 +4300,7 @@ paths:
       parameters: [{ $ref: "#/components/parameters/GroupOpsLimit" }, { $ref: "#/components/parameters/GroupOpsOffset" }]
       responses:
         "200": { description: Local deterministic group-asset page., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsGroupAssetPage" } } } }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "400": { description: Invalid Group Ops page request., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { description: Plan not found., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
@@ -4335,7 +4335,7 @@ paths:
       parameters: [{ $ref: "#/components/parameters/GroupOpsLimit" }, { $ref: "#/components/parameters/GroupOpsOffset" }]
       responses:
         "200": { description: Local deterministic standard-node page., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsNodePage" } } } }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "400": { description: Invalid Group Ops page request., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { description: Plan not found., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
@@ -4375,7 +4375,7 @@ paths:
       x-aicrm-external-effect: none
       responses:
         "200": { description: "Safe descriptor only; no URL, credential, payload, callback or dispatch fact.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsWebhookDescriptorResponse" } } } }
-        "400": { $ref: "#/components/responses/BadRequest" }
+        "400": { description: Invalid Group Ops plan identifier., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { description: Plan not found., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
@@ -8035,7 +8035,7 @@ components:
       required: [valid, issue_codes, preview_lines, node_count, group_asset_count, provider_execution_eligible, real_external_call_executed]
       properties:
         valid: { type: boolean }
-        issue_codes: { type: array, items: { type: string, enum: [group_asset_required, node_required, invalid_node] } }
+        issue_codes: { type: array, items: { type: string, enum: [group_asset_required, member_required, node_required, invalid_node] } }
         preview_lines: { type: array, items: { type: string, maxLength: 1016 } }
         node_count: { type: integer, minimum: 0 }
         group_asset_count: { type: integer, minimum: 0 }

@@ -454,6 +454,9 @@ func contentValidation(detail groupopsport.Detail) groupopsport.ContentValidatio
 	if len(detail.GroupAssets) == 0 {
 		result.IssueCodes = append(result.IssueCodes, "group_asset_required")
 	}
+	if len(detail.Members) == 0 {
+		result.IssueCodes = append(result.IssueCodes, "member_required")
+	}
 	if len(detail.Nodes) == 0 {
 		result.IssueCodes = append(result.IssueCodes, "node_required")
 	}
