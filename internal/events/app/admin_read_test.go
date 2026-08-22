@@ -66,7 +66,7 @@ func TestAdminReadDiagnosticsCountsMatchingDeliveries(t *testing.T) {
 	if result.EventCount != 1 || result.UndispatchedEventCount != 1 || result.DeliveryCounts.Pending != 1 || result.DeliveryCounts.Completed != 0 {
 		t.Fatalf("result=%+v", result)
 	}
-	if len(result.ConsumerRegistry) != 3 || result.ConsumerRegistry[0].Consumer != eventport.ConsumerAutomationTagTrigger {
+	if len(result.ConsumerRegistry) != 4 || result.ConsumerRegistry[0].Consumer != eventport.ConsumerAutomationTagTrigger || result.ConsumerRegistry[3].Consumer != eventport.ConsumerCloudCampaignFact {
 		t.Fatalf("registry=%+v", result.ConsumerRegistry)
 	}
 }

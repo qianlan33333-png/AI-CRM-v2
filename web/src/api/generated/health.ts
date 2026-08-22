@@ -112,43 +112,47 @@ export interface CloudCampaignCommand {
   created_at: string;
 }
 
-export type CloudCampaignListResponseAllOf = {
+export interface CloudCampaignListResponse {
   /** @maxItems 100 */
   items: CloudCampaign[];
-};
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+  real_send: boolean;
+  runtime_executed: boolean;
+}
 
-export type CloudCampaignListResponse = CloudCampaignProjection &
-  CloudCampaignListResponseAllOf;
-
-export type CloudCampaignDetailResponseAllOf = {
+export interface CloudCampaignDetailResponse {
   campaign: CloudCampaign;
   /** @maxItems 100 */
   steps: CloudCampaignStep[];
-};
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+  real_send: boolean;
+  runtime_executed: boolean;
+}
 
-export type CloudCampaignDetailResponse = CloudCampaignProjection &
-  CloudCampaignDetailResponseAllOf;
-
-export type CloudCampaignMutationResponseAllOf = {
+export interface CloudCampaignMutationResponse {
   campaign: CloudCampaign;
   plan?: CloudCampaignPlan;
   command?: CloudCampaignCommand;
-};
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+  real_send: boolean;
+  runtime_executed: boolean;
+}
 
-export type CloudCampaignMutationResponse = CloudCampaignProjection &
-  CloudCampaignMutationResponseAllOf;
-
-export type CloudCampaignDeleteResponseAllOf = {
+export interface CloudCampaignDeleteResponse {
   /**
    * @minLength 1
    * @maxLength 96
    */
   campaign_code: string;
   deleted: boolean;
-};
-
-export type CloudCampaignDeleteResponse = CloudCampaignProjection &
-  CloudCampaignDeleteResponseAllOf;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+  real_send: boolean;
+  runtime_executed: boolean;
+}
 
 export interface CloudCampaignBatchStartItem {
   /**
@@ -160,17 +164,18 @@ export interface CloudCampaignBatchStartItem {
   expected_version: number;
 }
 
-export type CloudCampaignBatchStartResponseAllOf = {
+export interface CloudCampaignBatchStartResponse {
   /** @maxItems 100 */
   started: CloudCampaignMutationResponse[];
   /** @maxItems 100 */
   skipped: CloudCampaignBatchStartItem[];
   /** @maxItems 100 */
   failed: CloudCampaignBatchStartItem[];
-};
-
-export type CloudCampaignBatchStartResponse = CloudCampaignProjection &
-  CloudCampaignBatchStartResponseAllOf;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+  real_send: boolean;
+  runtime_executed: boolean;
+}
 
 export interface CloudCampaignVersionRequest {
   /** @minimum 1 */
@@ -11334,6 +11339,31 @@ export type ListAIAudiencePackageMembersParams = {
    */
   offset?: number;
 };
+
+export type ListCloudCampaignsParams = {
+  approval_status?: ListCloudCampaignsApprovalStatus;
+  runtime_status?: ListCloudCampaignsRuntimeStatus;
+};
+
+export type ListCloudCampaignsApprovalStatus =
+  (typeof ListCloudCampaignsApprovalStatus)[keyof typeof ListCloudCampaignsApprovalStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListCloudCampaignsApprovalStatus = {
+  draft: "draft",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
+
+export type ListCloudCampaignsRuntimeStatus =
+  (typeof ListCloudCampaignsRuntimeStatus)[keyof typeof ListCloudCampaignsRuntimeStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListCloudCampaignsRuntimeStatus = {
+  idle: "idle",
+  planned: "planned",
+  paused: "paused",
+} as const;
 
 /**
  * @summary List ordinary products using a keyset cursor
@@ -31893,14 +31923,27 @@ export type listCloudCampaignsResponseError = (
 export type listCloudCampaignsResponse =
   listCloudCampaignsResponseSuccess | listCloudCampaignsResponseError;
 
-export const getListCloudCampaignsUrl = () => {
-  return `/api/admin/cloud-orchestrator/campaigns`;
+export const getListCloudCampaignsUrl = (params?: ListCloudCampaignsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/cloud-orchestrator/campaigns?${stringifiedParams}`
+    : `/api/admin/cloud-orchestrator/campaigns`;
 };
 
 export const listCloudCampaigns = async (
+  params?: ListCloudCampaignsParams,
   options?: RequestInit,
 ): Promise<listCloudCampaignsResponse> => {
-  const res = await fetch(getListCloudCampaignsUrl(), {
+  const res = await fetch(getListCloudCampaignsUrl(params), {
     ...options,
     method: "GET",
   });

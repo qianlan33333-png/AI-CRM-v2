@@ -6346,6 +6346,9 @@ paths:
       x-aicrm-data-source: local_read_model
       x-aicrm-external-effect: none
       operationId: listCloudCampaigns
+      parameters:
+        - { name: approval_status, in: query, required: false, schema: { type: string, enum: [draft, approved, rejected] } }
+        - { name: runtime_status, in: query, required: false, schema: { type: string, enum: [idle, planned, paused] } }
       responses:
         "200": { description: CRM-local campaign list, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignListResponse" } } } }
         "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
@@ -6878,20 +6881,66 @@ components:
         runtime_executed: { type: boolean, enum: [false] }
         created_at: { type: string, format: date-time }
     CloudCampaignListResponse:
-      allOf: [{ $ref: "#/components/schemas/CloudCampaignProjection" }, { type: object, additionalProperties: false, required: [items], properties: { items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaign" } } } }]
+      type: object
+      additionalProperties: false
+      required: [items, local_projection, real_external_call_executed, real_send, runtime_executed]
+      properties:
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaign" } }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        real_send: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
     CloudCampaignDetailResponse:
-      allOf: [{ $ref: "#/components/schemas/CloudCampaignProjection" }, { type: object, additionalProperties: false, required: [campaign, steps], properties: { campaign: { $ref: "#/components/schemas/CloudCampaign" }, steps: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignStep" } } } }]
+      type: object
+      additionalProperties: false
+      required: [campaign, steps, local_projection, real_external_call_executed, real_send, runtime_executed]
+      properties:
+        campaign: { $ref: "#/components/schemas/CloudCampaign" }
+        steps: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignStep" } }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        real_send: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
     CloudCampaignMutationResponse:
-      allOf: [{ $ref: "#/components/schemas/CloudCampaignProjection" }, { type: object, additionalProperties: false, required: [campaign], properties: { campaign: { $ref: "#/components/schemas/CloudCampaign" }, plan: { $ref: "#/components/schemas/CloudCampaignPlan" }, command: { $ref: "#/components/schemas/CloudCampaignCommand" } } }]
+      type: object
+      additionalProperties: false
+      required: [campaign, local_projection, real_external_call_executed, real_send, runtime_executed]
+      properties:
+        campaign: { $ref: "#/components/schemas/CloudCampaign" }
+        plan: { $ref: "#/components/schemas/CloudCampaignPlan" }
+        command: { $ref: "#/components/schemas/CloudCampaignCommand" }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        real_send: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
     CloudCampaignDeleteResponse:
-      allOf: [{ $ref: "#/components/schemas/CloudCampaignProjection" }, { type: object, additionalProperties: false, required: [campaign_code, deleted], properties: { campaign_code: { type: string, minLength: 1, maxLength: 96 }, deleted: { type: boolean, enum: [true] } } }]
+      type: object
+      additionalProperties: false
+      required: [campaign_code, deleted, local_projection, real_external_call_executed, real_send, runtime_executed]
+      properties:
+        campaign_code: { type: string, minLength: 1, maxLength: 96 }
+        deleted: { type: boolean, enum: [true] }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        real_send: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
     CloudCampaignBatchStartItem:
       type: object
       additionalProperties: false
       required: [campaign_code, expected_version]
       properties: { campaign_code: { type: string, minLength: 1, maxLength: 96 }, expected_version: { type: integer, format: int64, minimum: 1 } }
     CloudCampaignBatchStartResponse:
-      allOf: [{ $ref: "#/components/schemas/CloudCampaignProjection" }, { type: object, additionalProperties: false, required: [started, skipped, failed], properties: { started: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignMutationResponse" } }, skipped: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignBatchStartItem" } }, failed: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignBatchStartItem" } } } }]
+      type: object
+      additionalProperties: false
+      required: [started, skipped, failed, local_projection, real_external_call_executed, real_send, runtime_executed]
+      properties:
+        started: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignMutationResponse" } }
+        skipped: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignBatchStartItem" } }
+        failed: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignBatchStartItem" } }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        real_send: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
     CloudCampaignVersionRequest:
       type: object
       additionalProperties: false
