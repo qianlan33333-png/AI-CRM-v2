@@ -5,6 +5,303 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export type ServicePeriodMemberViewState =
+  (typeof ServicePeriodMemberViewState)[keyof typeof ServicePeriodMemberViewState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberViewState = {
+  active: "active",
+  revoked: "revoked",
+  all: "all",
+} as const;
+
+export type ServicePeriodMemberViewSort =
+  (typeof ServicePeriodMemberViewSort)[keyof typeof ServicePeriodMemberViewSort];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberViewSort = {
+  granted_at_desc: "granted_at_desc",
+} as const;
+
+export type ServicePeriodMemberViewColumnsItem =
+  (typeof ServicePeriodMemberViewColumnsItem)[keyof typeof ServicePeriodMemberViewColumnsItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberViewColumnsItem = {
+  entitlement_id: "entitlement_id",
+  product_id: "product_id",
+  state: "state",
+  version: "version",
+  granted_at: "granted_at",
+  revoked_at: "revoked_at",
+  display_name: "display_name",
+  masked_mobile: "masked_mobile",
+} as const;
+
+export interface ServicePeriodMemberView {
+  /** @minimum 1 */
+  view_id: number;
+  /** @minimum 1 */
+  service_product_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  state: ServicePeriodMemberViewState;
+  sort: ServicePeriodMemberViewSort;
+  /**
+   * @minItems 1
+   * @maxItems 8
+   */
+  columns: ServicePeriodMemberViewColumnsItem[];
+  /** @minimum 1 */
+  source_view_id?: number;
+  /** @minimum 1 */
+  version: number;
+  /** @minimum 1 */
+  created_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ServicePeriodMemberGridCollaboratorPermission =
+  (typeof ServicePeriodMemberGridCollaboratorPermission)[keyof typeof ServicePeriodMemberGridCollaboratorPermission];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridCollaboratorPermission = {
+  view: "view",
+  edit: "edit",
+} as const;
+
+export interface ServicePeriodMemberGridCollaborator {
+  /** @minimum 1 */
+  collaborator_id: number;
+  /** @minimum 1 */
+  service_product_id: number;
+  /** @minimum 1 */
+  staff_id: number;
+  permission: ServicePeriodMemberGridCollaboratorPermission;
+  /** @minimum 1 */
+  version: number;
+  /** @minimum 1 */
+  invited_by: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ServicePeriodMemberViewCreateRequestOneOfExpectedVersion =
+  (typeof ServicePeriodMemberViewCreateRequestOneOfExpectedVersion)[keyof typeof ServicePeriodMemberViewCreateRequestOneOfExpectedVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberViewCreateRequestOneOfExpectedVersion = {
+  NUMBER_0: 0,
+} as const;
+
+export type ServicePeriodMemberViewCreateRequestOneOfState =
+  (typeof ServicePeriodMemberViewCreateRequestOneOfState)[keyof typeof ServicePeriodMemberViewCreateRequestOneOfState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberViewCreateRequestOneOfState = {
+  active: "active",
+  revoked: "revoked",
+  all: "all",
+} as const;
+
+export type ServicePeriodMemberViewCreateRequestOneOfSort =
+  (typeof ServicePeriodMemberViewCreateRequestOneOfSort)[keyof typeof ServicePeriodMemberViewCreateRequestOneOfSort];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberViewCreateRequestOneOfSort = {
+  granted_at_desc: "granted_at_desc",
+} as const;
+
+export type ServicePeriodMemberViewCreateRequestOneOfColumnsItem =
+  (typeof ServicePeriodMemberViewCreateRequestOneOfColumnsItem)[keyof typeof ServicePeriodMemberViewCreateRequestOneOfColumnsItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberViewCreateRequestOneOfColumnsItem = {
+  entitlement_id: "entitlement_id",
+  product_id: "product_id",
+  state: "state",
+  version: "version",
+  granted_at: "granted_at",
+  revoked_at: "revoked_at",
+  display_name: "display_name",
+  masked_mobile: "masked_mobile",
+} as const;
+
+export type ServicePeriodMemberViewCreateRequestOneOf = {
+  expected_version: ServicePeriodMemberViewCreateRequestOneOfExpectedVersion;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  state: ServicePeriodMemberViewCreateRequestOneOfState;
+  sort: ServicePeriodMemberViewCreateRequestOneOfSort;
+  /**
+   * @minItems 1
+   * @maxItems 8
+   */
+  columns: ServicePeriodMemberViewCreateRequestOneOfColumnsItem[];
+};
+
+export type ServicePeriodMemberViewCreateRequestOneOfSixExpectedVersion =
+  (typeof ServicePeriodMemberViewCreateRequestOneOfSixExpectedVersion)[keyof typeof ServicePeriodMemberViewCreateRequestOneOfSixExpectedVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberViewCreateRequestOneOfSixExpectedVersion = {
+  NUMBER_0: 0,
+} as const;
+
+export type ServicePeriodMemberViewCreateRequestOneOfSix = {
+  expected_version: ServicePeriodMemberViewCreateRequestOneOfSixExpectedVersion;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @minimum 1 */
+  source_view_id: number;
+};
+
+export type ServicePeriodMemberViewCreateRequest =
+  | ServicePeriodMemberViewCreateRequestOneOf
+  | ServicePeriodMemberViewCreateRequestOneOfSix;
+
+export type ServicePeriodMemberViewUpdateRequestState =
+  (typeof ServicePeriodMemberViewUpdateRequestState)[keyof typeof ServicePeriodMemberViewUpdateRequestState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberViewUpdateRequestState = {
+  active: "active",
+  revoked: "revoked",
+  all: "all",
+} as const;
+
+export type ServicePeriodMemberViewUpdateRequestSort =
+  (typeof ServicePeriodMemberViewUpdateRequestSort)[keyof typeof ServicePeriodMemberViewUpdateRequestSort];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberViewUpdateRequestSort = {
+  granted_at_desc: "granted_at_desc",
+} as const;
+
+export type ServicePeriodMemberViewUpdateRequestColumnsItem =
+  (typeof ServicePeriodMemberViewUpdateRequestColumnsItem)[keyof typeof ServicePeriodMemberViewUpdateRequestColumnsItem];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberViewUpdateRequestColumnsItem = {
+  entitlement_id: "entitlement_id",
+  product_id: "product_id",
+  state: "state",
+  version: "version",
+  granted_at: "granted_at",
+  revoked_at: "revoked_at",
+  display_name: "display_name",
+  masked_mobile: "masked_mobile",
+} as const;
+
+export interface ServicePeriodMemberViewUpdateRequest {
+  /** @minimum 1 */
+  expected_version: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  state: ServicePeriodMemberViewUpdateRequestState;
+  sort: ServicePeriodMemberViewUpdateRequestSort;
+  /**
+   * @minItems 1
+   * @maxItems 8
+   */
+  columns: ServicePeriodMemberViewUpdateRequestColumnsItem[];
+}
+
+export interface VersionedDeleteRequest {
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+export type ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersion =
+  (typeof ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersion)[keyof typeof ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersion = {
+  NUMBER_0: 0,
+} as const;
+
+export type ServicePeriodMemberGridCollaboratorCreateRequestPermission =
+  (typeof ServicePeriodMemberGridCollaboratorCreateRequestPermission)[keyof typeof ServicePeriodMemberGridCollaboratorCreateRequestPermission];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridCollaboratorCreateRequestPermission = {
+  view: "view",
+  edit: "edit",
+} as const;
+
+export interface ServicePeriodMemberGridCollaboratorCreateRequest {
+  expected_version: ServicePeriodMemberGridCollaboratorCreateRequestExpectedVersion;
+  /** @minimum 1 */
+  staff_id: number;
+  permission: ServicePeriodMemberGridCollaboratorCreateRequestPermission;
+}
+
+export type ServicePeriodMemberGridCollaboratorUpdateRequestPermission =
+  (typeof ServicePeriodMemberGridCollaboratorUpdateRequestPermission)[keyof typeof ServicePeriodMemberGridCollaboratorUpdateRequestPermission];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ServicePeriodMemberGridCollaboratorUpdateRequestPermission = {
+  view: "view",
+  edit: "edit",
+} as const;
+
+export interface ServicePeriodMemberGridCollaboratorUpdateRequest {
+  /** @minimum 1 */
+  expected_version: number;
+  permission: ServicePeriodMemberGridCollaboratorUpdateRequestPermission;
+}
+
+export interface ServicePeriodMemberViewResponse {
+  ok: boolean;
+  view: ServicePeriodMemberView;
+}
+
+export interface ServicePeriodMemberViewDeleteResponse {
+  ok: boolean;
+  deleted: boolean;
+  view: ServicePeriodMemberView;
+}
+
+export interface ServicePeriodMemberGridCollaboratorResponse {
+  ok: boolean;
+  collaborator: ServicePeriodMemberGridCollaborator;
+  edit_permission_is_local_metadata_only: boolean;
+  grants_central_products_permission: boolean;
+}
+
+export interface ServicePeriodMemberGridCollaboratorDeleteResponse {
+  ok: boolean;
+  deleted: boolean;
+  collaborator: ServicePeriodMemberGridCollaborator;
+  edit_permission_is_local_metadata_only: boolean;
+  grants_central_products_permission: boolean;
+}
+
+export interface ServicePeriodMemberGridShareSettings {
+  /** @minimum 1 */
+  service_product_id: number;
+  saved_views: ServicePeriodMemberView[];
+  collaborators: ServicePeriodMemberGridCollaborator[];
+  external_share_supported: boolean;
+  external_share_enabled: boolean;
+  real_external_call_executed: boolean;
+  collaborator_edit_is_local_metadata_only: boolean;
+  collaborator_edit_grants_central_permission: boolean;
+}
+
 export type ExternalEffectStatus =
   (typeof ExternalEffectStatus)[keyof typeof ExternalEffectStatus];
 
@@ -27039,4 +27336,639 @@ export const getExternalEffectsDiagnostics = async (
     status: res.status,
     headers: res.headers,
   } as getExternalEffectsDiagnosticsResponse;
+};
+
+/**
+ * @summary Save a closed local member-grid view
+ */
+export type createServicePeriodMemberViewResponse201 = {
+  data: ServicePeriodMemberViewResponse;
+  status: 201;
+};
+
+export type createServicePeriodMemberViewResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createServicePeriodMemberViewResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createServicePeriodMemberViewResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createServicePeriodMemberViewResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type createServicePeriodMemberViewResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createServicePeriodMemberViewResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createServicePeriodMemberViewResponseSuccess =
+  createServicePeriodMemberViewResponse201 & {
+    headers: Headers;
+  };
+export type createServicePeriodMemberViewResponseError = (
+  | createServicePeriodMemberViewResponse400
+  | createServicePeriodMemberViewResponse401
+  | createServicePeriodMemberViewResponse403
+  | createServicePeriodMemberViewResponse404
+  | createServicePeriodMemberViewResponse409
+  | createServicePeriodMemberViewResponse503
+) & {
+  headers: Headers;
+};
+
+export type createServicePeriodMemberViewResponse =
+  | createServicePeriodMemberViewResponseSuccess
+  | createServicePeriodMemberViewResponseError;
+
+export const getCreateServicePeriodMemberViewUrl = (
+  serviceProductId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/member-views`;
+};
+
+export const createServicePeriodMemberView = async (
+  serviceProductId: number,
+  servicePeriodMemberViewCreateRequest: ServicePeriodMemberViewCreateRequest,
+  options?: RequestInit,
+): Promise<createServicePeriodMemberViewResponse> => {
+  const res = await fetch(
+    getCreateServicePeriodMemberViewUrl(serviceProductId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(servicePeriodMemberViewCreateRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createServicePeriodMemberViewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createServicePeriodMemberViewResponse;
+};
+
+/**
+ * @summary Update one saved local member-grid view
+ */
+export type updateServicePeriodMemberViewResponse200 = {
+  data: ServicePeriodMemberViewResponse;
+  status: 200;
+};
+
+export type updateServicePeriodMemberViewResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateServicePeriodMemberViewResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateServicePeriodMemberViewResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateServicePeriodMemberViewResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateServicePeriodMemberViewResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateServicePeriodMemberViewResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateServicePeriodMemberViewResponseSuccess =
+  updateServicePeriodMemberViewResponse200 & {
+    headers: Headers;
+  };
+export type updateServicePeriodMemberViewResponseError = (
+  | updateServicePeriodMemberViewResponse400
+  | updateServicePeriodMemberViewResponse401
+  | updateServicePeriodMemberViewResponse403
+  | updateServicePeriodMemberViewResponse404
+  | updateServicePeriodMemberViewResponse409
+  | updateServicePeriodMemberViewResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateServicePeriodMemberViewResponse =
+  | updateServicePeriodMemberViewResponseSuccess
+  | updateServicePeriodMemberViewResponseError;
+
+export const getUpdateServicePeriodMemberViewUrl = (
+  serviceProductId: number,
+  viewId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/member-views/${viewId}`;
+};
+
+export const updateServicePeriodMemberView = async (
+  serviceProductId: number,
+  viewId: number,
+  servicePeriodMemberViewUpdateRequest: ServicePeriodMemberViewUpdateRequest,
+  options?: RequestInit,
+): Promise<updateServicePeriodMemberViewResponse> => {
+  const res = await fetch(
+    getUpdateServicePeriodMemberViewUrl(serviceProductId, viewId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(servicePeriodMemberViewUpdateRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateServicePeriodMemberViewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateServicePeriodMemberViewResponse;
+};
+
+/**
+ * @summary Delete one saved local member-grid view
+ */
+export type deleteServicePeriodMemberViewResponse200 = {
+  data: ServicePeriodMemberViewDeleteResponse;
+  status: 200;
+};
+
+export type deleteServicePeriodMemberViewResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type deleteServicePeriodMemberViewResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type deleteServicePeriodMemberViewResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type deleteServicePeriodMemberViewResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type deleteServicePeriodMemberViewResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type deleteServicePeriodMemberViewResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type deleteServicePeriodMemberViewResponseSuccess =
+  deleteServicePeriodMemberViewResponse200 & {
+    headers: Headers;
+  };
+export type deleteServicePeriodMemberViewResponseError = (
+  | deleteServicePeriodMemberViewResponse400
+  | deleteServicePeriodMemberViewResponse401
+  | deleteServicePeriodMemberViewResponse403
+  | deleteServicePeriodMemberViewResponse404
+  | deleteServicePeriodMemberViewResponse409
+  | deleteServicePeriodMemberViewResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteServicePeriodMemberViewResponse =
+  | deleteServicePeriodMemberViewResponseSuccess
+  | deleteServicePeriodMemberViewResponseError;
+
+export const getDeleteServicePeriodMemberViewUrl = (
+  serviceProductId: number,
+  viewId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/member-views/${viewId}`;
+};
+
+export const deleteServicePeriodMemberView = async (
+  serviceProductId: number,
+  viewId: number,
+  versionedDeleteRequest: VersionedDeleteRequest,
+  options?: RequestInit,
+): Promise<deleteServicePeriodMemberViewResponse> => {
+  const res = await fetch(
+    getDeleteServicePeriodMemberViewUrl(serviceProductId, viewId),
+    {
+      ...options,
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(versionedDeleteRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteServicePeriodMemberViewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteServicePeriodMemberViewResponse;
+};
+
+/**
+ * @summary Read local views and collaborators; external sharing is unsupported
+ */
+export type getServicePeriodMemberGridShareSettingsResponse200 = {
+  data: ServicePeriodMemberGridShareSettings;
+  status: 200;
+};
+
+export type getServicePeriodMemberGridShareSettingsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getServicePeriodMemberGridShareSettingsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getServicePeriodMemberGridShareSettingsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getServicePeriodMemberGridShareSettingsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getServicePeriodMemberGridShareSettingsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getServicePeriodMemberGridShareSettingsResponseSuccess =
+  getServicePeriodMemberGridShareSettingsResponse200 & {
+    headers: Headers;
+  };
+export type getServicePeriodMemberGridShareSettingsResponseError = (
+  | getServicePeriodMemberGridShareSettingsResponse400
+  | getServicePeriodMemberGridShareSettingsResponse401
+  | getServicePeriodMemberGridShareSettingsResponse403
+  | getServicePeriodMemberGridShareSettingsResponse404
+  | getServicePeriodMemberGridShareSettingsResponse503
+) & {
+  headers: Headers;
+};
+
+export type getServicePeriodMemberGridShareSettingsResponse =
+  | getServicePeriodMemberGridShareSettingsResponseSuccess
+  | getServicePeriodMemberGridShareSettingsResponseError;
+
+export const getGetServicePeriodMemberGridShareSettingsUrl = (
+  serviceProductId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/member-grid/share-settings`;
+};
+
+export const getServicePeriodMemberGridShareSettings = async (
+  serviceProductId: number,
+  options?: RequestInit,
+): Promise<getServicePeriodMemberGridShareSettingsResponse> => {
+  const res = await fetch(
+    getGetServicePeriodMemberGridShareSettingsUrl(serviceProductId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getServicePeriodMemberGridShareSettingsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getServicePeriodMemberGridShareSettingsResponse;
+};
+
+/**
+ * @summary Add active local staff metadata without sending an invitation
+ */
+export type createServicePeriodMemberGridCollaboratorResponse201 = {
+  data: ServicePeriodMemberGridCollaboratorResponse;
+  status: 201;
+};
+
+export type createServicePeriodMemberGridCollaboratorResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createServicePeriodMemberGridCollaboratorResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createServicePeriodMemberGridCollaboratorResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createServicePeriodMemberGridCollaboratorResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type createServicePeriodMemberGridCollaboratorResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createServicePeriodMemberGridCollaboratorResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createServicePeriodMemberGridCollaboratorResponseSuccess =
+  createServicePeriodMemberGridCollaboratorResponse201 & {
+    headers: Headers;
+  };
+export type createServicePeriodMemberGridCollaboratorResponseError = (
+  | createServicePeriodMemberGridCollaboratorResponse400
+  | createServicePeriodMemberGridCollaboratorResponse401
+  | createServicePeriodMemberGridCollaboratorResponse403
+  | createServicePeriodMemberGridCollaboratorResponse404
+  | createServicePeriodMemberGridCollaboratorResponse409
+  | createServicePeriodMemberGridCollaboratorResponse503
+) & {
+  headers: Headers;
+};
+
+export type createServicePeriodMemberGridCollaboratorResponse =
+  | createServicePeriodMemberGridCollaboratorResponseSuccess
+  | createServicePeriodMemberGridCollaboratorResponseError;
+
+export const getCreateServicePeriodMemberGridCollaboratorUrl = (
+  serviceProductId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/member-grid/collaborators`;
+};
+
+export const createServicePeriodMemberGridCollaborator = async (
+  serviceProductId: number,
+  servicePeriodMemberGridCollaboratorCreateRequest: ServicePeriodMemberGridCollaboratorCreateRequest,
+  options?: RequestInit,
+): Promise<createServicePeriodMemberGridCollaboratorResponse> => {
+  const res = await fetch(
+    getCreateServicePeriodMemberGridCollaboratorUrl(serviceProductId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(servicePeriodMemberGridCollaboratorCreateRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createServicePeriodMemberGridCollaboratorResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createServicePeriodMemberGridCollaboratorResponse;
+};
+
+/**
+ * @summary Update local collaborator metadata
+ */
+export type updateServicePeriodMemberGridCollaboratorResponse200 = {
+  data: ServicePeriodMemberGridCollaboratorResponse;
+  status: 200;
+};
+
+export type updateServicePeriodMemberGridCollaboratorResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateServicePeriodMemberGridCollaboratorResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateServicePeriodMemberGridCollaboratorResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateServicePeriodMemberGridCollaboratorResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateServicePeriodMemberGridCollaboratorResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateServicePeriodMemberGridCollaboratorResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateServicePeriodMemberGridCollaboratorResponseSuccess =
+  updateServicePeriodMemberGridCollaboratorResponse200 & {
+    headers: Headers;
+  };
+export type updateServicePeriodMemberGridCollaboratorResponseError = (
+  | updateServicePeriodMemberGridCollaboratorResponse400
+  | updateServicePeriodMemberGridCollaboratorResponse401
+  | updateServicePeriodMemberGridCollaboratorResponse403
+  | updateServicePeriodMemberGridCollaboratorResponse404
+  | updateServicePeriodMemberGridCollaboratorResponse409
+  | updateServicePeriodMemberGridCollaboratorResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateServicePeriodMemberGridCollaboratorResponse =
+  | updateServicePeriodMemberGridCollaboratorResponseSuccess
+  | updateServicePeriodMemberGridCollaboratorResponseError;
+
+export const getUpdateServicePeriodMemberGridCollaboratorUrl = (
+  serviceProductId: number,
+  collaboratorId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/member-grid/collaborators/${collaboratorId}`;
+};
+
+export const updateServicePeriodMemberGridCollaborator = async (
+  serviceProductId: number,
+  collaboratorId: number,
+  servicePeriodMemberGridCollaboratorUpdateRequest: ServicePeriodMemberGridCollaboratorUpdateRequest,
+  options?: RequestInit,
+): Promise<updateServicePeriodMemberGridCollaboratorResponse> => {
+  const res = await fetch(
+    getUpdateServicePeriodMemberGridCollaboratorUrl(
+      serviceProductId,
+      collaboratorId,
+    ),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(servicePeriodMemberGridCollaboratorUpdateRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateServicePeriodMemberGridCollaboratorResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateServicePeriodMemberGridCollaboratorResponse;
+};
+
+/**
+ * @summary Delete local collaborator metadata without any provider action
+ */
+export type deleteServicePeriodMemberGridCollaboratorResponse200 = {
+  data: ServicePeriodMemberGridCollaboratorDeleteResponse;
+  status: 200;
+};
+
+export type deleteServicePeriodMemberGridCollaboratorResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type deleteServicePeriodMemberGridCollaboratorResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type deleteServicePeriodMemberGridCollaboratorResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type deleteServicePeriodMemberGridCollaboratorResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type deleteServicePeriodMemberGridCollaboratorResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type deleteServicePeriodMemberGridCollaboratorResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type deleteServicePeriodMemberGridCollaboratorResponseSuccess =
+  deleteServicePeriodMemberGridCollaboratorResponse200 & {
+    headers: Headers;
+  };
+export type deleteServicePeriodMemberGridCollaboratorResponseError = (
+  | deleteServicePeriodMemberGridCollaboratorResponse400
+  | deleteServicePeriodMemberGridCollaboratorResponse401
+  | deleteServicePeriodMemberGridCollaboratorResponse403
+  | deleteServicePeriodMemberGridCollaboratorResponse404
+  | deleteServicePeriodMemberGridCollaboratorResponse409
+  | deleteServicePeriodMemberGridCollaboratorResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteServicePeriodMemberGridCollaboratorResponse =
+  | deleteServicePeriodMemberGridCollaboratorResponseSuccess
+  | deleteServicePeriodMemberGridCollaboratorResponseError;
+
+export const getDeleteServicePeriodMemberGridCollaboratorUrl = (
+  serviceProductId: number,
+  collaboratorId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/member-grid/collaborators/${collaboratorId}`;
+};
+
+export const deleteServicePeriodMemberGridCollaborator = async (
+  serviceProductId: number,
+  collaboratorId: number,
+  versionedDeleteRequest: VersionedDeleteRequest,
+  options?: RequestInit,
+): Promise<deleteServicePeriodMemberGridCollaboratorResponse> => {
+  const res = await fetch(
+    getDeleteServicePeriodMemberGridCollaboratorUrl(
+      serviceProductId,
+      collaboratorId,
+    ),
+    {
+      ...options,
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(versionedDeleteRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteServicePeriodMemberGridCollaboratorResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteServicePeriodMemberGridCollaboratorResponse;
 };

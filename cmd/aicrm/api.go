@@ -710,6 +710,25 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	memberGridManagementService, err := membergrid.NewManagementService(uow, membergrid.NewRepository(), eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	memberGridManagementHandler, err := membergrid.NewManagementHandler(
+		memberGridManagementService,
+		legacyMemberGridManagementAuthorizer{},
+		legacyMemberGridManagementCSRF{},
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	memberGridManagementFragment, err := membergrid.NewManagementRouteFragment(memberGridManagementHandler)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	productLocalHandler, err := producthttp.NewLocalMutationHandler(
 		productService,
 		productapp.NewEntitlementService(
@@ -828,6 +847,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.legacyTagSync = legacyTagSyncService
 	legacyHandler.servicePeriod = servicePeriodHandler
 	legacyHandler.memberGrid = memberGridFragment
+	legacyHandler.memberGridManagement = memberGridManagementFragment
 	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.legacyTagLive = legacyTagLiveService
@@ -1457,6 +1477,25 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				{http.MethodPost, membergrid.RoutePrefix + "/{service_product_id}/member-grid/query", authport.CapabilityEntitlementsRead},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, false, legacy.memberGrid); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if legacy.memberGridManagement != nil {
+			for _, route := range []struct {
+				method, pattern string
+				capability      authport.Capability
+				csrf            bool
+			}{
+				{http.MethodPost, membergrid.RoutePrefix + "/{service_product_id}/member-views", authport.CapabilityProductsWrite, true},
+				{http.MethodPut, membergrid.RoutePrefix + "/{service_product_id}/member-views/{view_id}", authport.CapabilityProductsWrite, true},
+				{http.MethodDelete, membergrid.RoutePrefix + "/{service_product_id}/member-views/{view_id}", authport.CapabilityProductsWrite, true},
+				{http.MethodGet, membergrid.RoutePrefix + "/{service_product_id}/member-grid/share-settings", authport.CapabilityProductsRead, false},
+				{http.MethodPost, membergrid.RoutePrefix + "/{service_product_id}/member-grid/collaborators", authport.CapabilityProductsWrite, true},
+				{http.MethodPut, membergrid.RoutePrefix + "/{service_product_id}/member-grid/collaborators/{collaborator_id}", authport.CapabilityProductsWrite, true},
+				{http.MethodDelete, membergrid.RoutePrefix + "/{service_product_id}/member-grid/collaborators/{collaborator_id}", authport.CapabilityProductsWrite, true},
+			} {
+				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.memberGridManagement); err != nil {
 					return nil, err
 				}
 			}
