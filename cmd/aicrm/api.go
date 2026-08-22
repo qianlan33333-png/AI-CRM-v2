@@ -734,6 +734,31 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyTagStatusService := contactapp.NewLegacyTagExecutionStatusService(uow, legacyTagExecutionRepository)
 	couponService := couponapp.NewService(uow, couponstore.NewRepository(), productstore.NewCatalogRepository(), eventstore.NewAppender())
 	automationAgentService := automationapp.NewAgentServiceWithImageReferences(uow, automationstore.NewAgentRepository(), mediaRepository, eventstore.NewAppender())
+	audienceOperationMembers := contactstore.NewStaffDirectoryRepository(pool)
+	legacyAIAudienceConfigurationService, err := legacyaudience.NewLocalConfigurationService(
+		uow,
+		legacyAIAudienceRepository,
+		legacyAIAudienceAutomationAgentReader{store: automationstore.NewAgentRepository()},
+		audienceOperationMembers,
+		legacyAIAudienceEventAppender{appender: eventstore.NewAppender()},
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	legacyAIAudienceConfigurationHandler, err := legacyaudience.NewLocalConfigurationHandler(
+		legacyAIAudienceConfigurationService,
+		legacyAIAudienceSecurity{},
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	legacyAIAudienceConfigurationFragment, err := legacyaudience.NewLocalConfigurationRouteFragment(legacyAIAudienceConfigurationHandler)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	productHandler, err := producthttp.NewHandler(productService)
 	if err != nil {
 		pool.Close()
@@ -919,6 +944,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.radar = radarFragment
 	legacyHandler.aiAudience = legacyAIAudienceFragment
 	legacyHandler.aiAudienceMembers = legacyAIAudienceMembersFragment
+	legacyHandler.aiAudienceConfiguration = legacyAIAudienceConfigurationFragment
 	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.legacyTagLive = legacyTagLiveService
@@ -939,7 +965,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.surveySubmissions = surveySubmissionService
 	legacyHandler.surveySafeAdmin = surveySafeAdminHandler
 	legacyHandler.executionRuntime = adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{})
-	hxcStaffDirectory := contactstore.NewStaffDirectoryRepository(pool)
+	hxcStaffDirectory := audienceOperationMembers
 	hxcSenderRepository := hxcstore.NewSenderConfigRepository(pool)
 	legacyHandler.hxcSender = &hxcSenderHandler{
 		reader:  hxcapp.Reader{Staff: hxcStaffDirectory, Configs: hxcSenderRepository},
@@ -1604,6 +1630,13 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		if legacy.aiAudienceMembers != nil {
 			for _, route := range legacyaudiencemembers.RouteSpecs() {
 				if err = registerLegacy(route.Method, route.Pattern, authport.Capability(route.Capability), route.RequiresCSRF, legacy.aiAudienceMembers); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if legacy.aiAudienceConfiguration != nil {
+			for _, route := range legacyaudience.LocalConfigurationRouteSpecs() {
+				if err = registerLegacy(route.Method, route.Pattern, authport.Capability(route.Capability), route.RequiresCSRF, legacy.aiAudienceConfiguration); err != nil {
 					return nil, err
 				}
 			}

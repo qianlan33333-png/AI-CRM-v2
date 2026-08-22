@@ -5769,6 +5769,29 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/common/operation-members:
+    get:
+      tags: [p4-ai-audience]
+      operationId: listAIAudienceOperationMembers
+      summary: List the active local staff projection eligible for AI Audience sender selection
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: staff.local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: scope, in: query, required: true, schema: { type: string, enum: [ai_audience] } }
+        - { name: page_size, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 100 } }
+      responses:
+        "200": { description: Active local staff selector; it does not synchronize any external directory, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceOperationMemberListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/ai-audience/package-groups:
     get:
       tags: [p4-ai-audience]
@@ -5986,6 +6009,122 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}/automation-binding:
+    parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    get:
+      tags: [p4-ai-audience]
+      operationId: getAIAudienceAutomationBinding
+      summary: Read a CRM-local automation agent binding without starting an agent
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Local binding or null when none is stored, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceAutomationBindingResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-ai-audience]
+      operationId: putAIAudienceAutomationBinding
+      summary: Replace one CRM-local automation agent binding without starting it
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceAutomationBindingPutRequest" } } } }
+      responses:
+        "200": { description: Stored local binding, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceAutomationBindingResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-ai-audience]
+      operationId: deleteAIAudienceAutomationBinding
+      summary: Idempotently remove one CRM-local automation agent binding
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "200": { description: Local binding removal result, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceAutomationBindingDeleteResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}/senders:
+    parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    get:
+      tags: [p4-ai-audience]
+      operationId: getAIAudiencePackageSenders
+      summary: Read the CRM-local ordered sender allowlist for one package
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Ordered CRM-local sender allowlist, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudiencePackageSendersResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-ai-audience]
+      operationId: replaceAIAudiencePackageSenders
+      summary: Fully replace the CRM-local ordered sender allowlist for one package
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudiencePackageSendersReplaceRequest" } } } }
+      responses:
+        "200": { description: Fully replaced local allowlist, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudiencePackageSendersResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
         "415": { $ref: "#/components/responses/UnsupportedMediaType" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
@@ -6299,6 +6438,80 @@ components:
       additionalProperties: false
       required: [local_projection, real_external_call_executed]
       properties:
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceOperationMember:
+      type: object
+      additionalProperties: false
+      required: [sender_userid, display_name]
+      properties:
+        sender_userid: { type: string, minLength: 1 }
+        display_name: { type: string }
+    AIAudienceOperationMemberListResponse:
+      type: object
+      additionalProperties: false
+      required: [scope, items, page_size, local_projection, real_external_call_executed]
+      properties:
+        scope: { type: string, enum: [ai_audience] }
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/AIAudienceOperationMember" } }
+        page_size: { type: integer, minimum: 1, maximum: 100 }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceAutomationBinding:
+      type: object
+      additionalProperties: false
+      required: [package_id, automation_agent_id, created_by, updated_by, created_at, updated_at]
+      properties:
+        package_id: { type: integer, format: int64, minimum: 1 }
+        automation_agent_id: { type: integer, format: int64, minimum: 1 }
+        created_by: { type: integer, format: int64, minimum: 1 }
+        updated_by: { type: integer, format: int64, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    AIAudienceAutomationBindingPutRequest:
+      type: object
+      additionalProperties: false
+      required: [automation_agent_id]
+      properties:
+        automation_agent_id: { type: integer, format: int64, minimum: 1 }
+    AIAudienceAutomationBindingResponse:
+      type: object
+      additionalProperties: false
+      required: [binding, local_projection, real_external_call_executed]
+      properties:
+        binding: { $ref: "#/components/schemas/AIAudienceAutomationBinding", nullable: true }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceAutomationBindingDeleteResponse:
+      type: object
+      additionalProperties: false
+      required: [package_id, deleted, local_projection, real_external_call_executed]
+      properties:
+        package_id: { type: integer, format: int64, minimum: 1 }
+        deleted: { type: boolean }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudiencePackageSender:
+      type: object
+      additionalProperties: false
+      required: [sender_userid, sort_order, is_enabled]
+      properties:
+        sender_userid: { type: string, minLength: 1 }
+        sort_order: { type: integer, format: int32, minimum: 1, maximum: 5 }
+        is_enabled: { type: boolean }
+    AIAudiencePackageSendersReplaceRequest:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: { type: array, maxItems: 5, items: { $ref: "#/components/schemas/AIAudiencePackageSender" } }
+    AIAudiencePackageSendersResponse:
+      type: object
+      additionalProperties: false
+      required: [package_id, items, local_projection, real_external_call_executed]
+      properties:
+        package_id: { type: integer, format: int64, minimum: 1 }
+        items: { type: array, maxItems: 5, items: { $ref: "#/components/schemas/AIAudiencePackageSender" } }
         local_projection: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
     AIAudienceGroup:

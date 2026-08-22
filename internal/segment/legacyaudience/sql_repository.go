@@ -434,6 +434,206 @@ RETURNING id, operation, actor_id, key_digest, payload_digest, state, result_jso
 	return receipt, nil
 }
 
+func (repository *SQLRepository) GetAutomationBinding(ctx context.Context, packageID int64) (*AutomationBinding, error) {
+	database, err := repository.reader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	binding, err := scanAutomationBinding(database.QueryRow(ctx, `
+SELECT package_id, automation_agent_id, created_by, updated_by, created_at, updated_at
+FROM public.ai_audience_package_automation_bindings
+WHERE package_id = $1`, packageID))
+	if err != nil {
+		if repository.provider.IsNoRows(err) {
+			return nil, nil
+		}
+		return nil, classifySQLError(err)
+	}
+	return &binding, nil
+}
+
+func (repository *SQLRepository) SaveAutomationBinding(ctx context.Context, value AutomationBinding, actorID int64, now time.Time) (AutomationBinding, error) {
+	database, err := repository.transaction(ctx)
+	if err != nil {
+		return AutomationBinding{}, err
+	}
+	binding, err := scanAutomationBinding(database.QueryRow(ctx, `
+INSERT INTO public.ai_audience_package_automation_bindings
+  (package_id, automation_agent_id, created_by, updated_by, created_at, updated_at)
+VALUES ($1, $2, $3, $3, $4, $4)
+ON CONFLICT (package_id) DO UPDATE
+SET automation_agent_id = EXCLUDED.automation_agent_id,
+    updated_by = EXCLUDED.updated_by,
+    updated_at = EXCLUDED.updated_at
+RETURNING package_id, automation_agent_id, created_by, updated_by, created_at, updated_at`,
+		value.PackageID, value.AutomationAgentID, actorID, now))
+	if err != nil {
+		return AutomationBinding{}, classifySQLError(err)
+	}
+	return binding, nil
+}
+
+func (repository *SQLRepository) DeleteAutomationBinding(ctx context.Context, packageID int64) (bool, error) {
+	database, err := repository.transaction(ctx)
+	if err != nil {
+		return false, err
+	}
+	rows, err := database.Exec(ctx, `
+DELETE FROM public.ai_audience_package_automation_bindings
+WHERE package_id = $1`, packageID)
+	if err != nil {
+		return false, classifySQLError(err)
+	}
+	if rows > 1 {
+		return false, ErrUnavailable
+	}
+	return rows == 1, nil
+}
+
+func (repository *SQLRepository) ListPackageSenders(ctx context.Context, packageID int64) ([]PackageSender, error) {
+	database, err := repository.reader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return listPackageSenders(ctx, database, packageID, false)
+}
+
+func (repository *SQLRepository) ReplacePackageSenders(
+	ctx context.Context,
+	packageID int64,
+	wanted []PackageSender,
+	actorID int64,
+	now time.Time,
+) ([]PackageSender, bool, error) {
+	database, err := repository.transaction(ctx)
+	if err != nil {
+		return nil, false, err
+	}
+	// There may be no sender rows yet, so row locks alone cannot serialize two
+	// first writers. The package-scoped transaction advisory lock covers the
+	// exact full-replacement set without blocking another package.
+	if _, err = database.Exec(ctx, `
+SELECT pg_advisory_xact_lock(hashtextextended('ai_audience.package.senders.v1:' || $1::text, 0))`, packageID); err != nil {
+		return nil, false, classifySQLError(err)
+	}
+	current, err := listPackageSenders(ctx, database, packageID, true)
+	if err != nil {
+		return nil, false, err
+	}
+	if samePackageSenders(current, wanted) {
+		return current, false, nil
+	}
+	if _, err = database.Exec(ctx, `DELETE FROM public.ai_audience_package_senders WHERE package_id = $1`, packageID); err != nil {
+		return nil, false, classifySQLError(err)
+	}
+	for _, item := range wanted {
+		if _, err = database.Exec(ctx, `
+INSERT INTO public.ai_audience_package_senders
+  (package_id, sender_userid, sort_order, is_enabled, created_by, updated_by, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $5, $6, $6)`,
+			packageID, item.SenderUserID, item.SortOrder, item.IsEnabled, actorID, now); err != nil {
+			return nil, false, classifySQLError(err)
+		}
+	}
+	stored, err := listPackageSenders(ctx, database, packageID, true)
+	if err != nil {
+		return nil, false, err
+	}
+	return stored, true, nil
+}
+
+func (repository *SQLRepository) ReserveConfigurationReceipt(ctx context.Context, wanted ReceiptReservation) (Receipt, bool, error) {
+	database, err := repository.transaction(ctx)
+	if err != nil {
+		return Receipt{}, false, err
+	}
+	receipt, err := scanReceipt(database.QueryRow(ctx, `
+INSERT INTO public.ai_audience_local_configuration_receipts
+  (operation, actor_id, key_digest, payload_digest, state, created_at)
+VALUES ($1, $2, $3, $4, 'in_progress', $5)
+ON CONFLICT (operation, actor_id, key_digest) DO NOTHING
+RETURNING id, operation, actor_id, key_digest, payload_digest, state, result_json`,
+		wanted.Operation, wanted.ActorID, wanted.KeyDigest[:], wanted.PayloadDigest[:], wanted.CreatedAt))
+	if err == nil {
+		return receipt, true, nil
+	}
+	if !repository.provider.IsNoRows(err) {
+		return Receipt{}, false, classifySQLError(err)
+	}
+	receipt, err = scanReceipt(database.QueryRow(ctx, `
+SELECT id, operation, actor_id, key_digest, payload_digest, state, result_json
+FROM public.ai_audience_local_configuration_receipts
+WHERE operation = $1 AND actor_id = $2 AND key_digest = $3
+FOR UPDATE`, wanted.Operation, wanted.ActorID, wanted.KeyDigest[:]))
+	if err != nil {
+		return Receipt{}, false, classifySQLError(err)
+	}
+	return receipt, false, nil
+}
+
+func (repository *SQLRepository) CompleteConfigurationReceipt(ctx context.Context, receiptID int64, result json.RawMessage, now time.Time) (Receipt, error) {
+	database, err := repository.transaction(ctx)
+	if err != nil {
+		return Receipt{}, err
+	}
+	receipt, err := scanReceipt(database.QueryRow(ctx, `
+UPDATE public.ai_audience_local_configuration_receipts
+SET state = 'completed', result_json = $1, completed_at = $2
+WHERE id = $3 AND state = 'in_progress'
+RETURNING id, operation, actor_id, key_digest, payload_digest, state, result_json`, []byte(result), now, receiptID))
+	if err != nil {
+		if repository.provider.IsNoRows(err) {
+			return Receipt{}, ErrConflict
+		}
+		return Receipt{}, classifySQLError(err)
+	}
+	return receipt, nil
+}
+
+func listPackageSenders(ctx context.Context, database SQLExecutor, packageID int64, lock bool) ([]PackageSender, error) {
+	query := `
+SELECT sender_userid, sort_order, is_enabled
+FROM public.ai_audience_package_senders
+WHERE package_id = $1
+ORDER BY sort_order ASC, sender_userid ASC`
+	if lock {
+		query += ` FOR UPDATE`
+	}
+	rows, err := database.Query(ctx, query, packageID)
+	if err != nil {
+		return nil, classifySQLError(err)
+	}
+	defer rows.Close()
+	items := make([]PackageSender, 0, MaximumSenderCount)
+	for rows.Next() {
+		var item PackageSender
+		if err = rows.Scan(&item.SenderUserID, &item.SortOrder, &item.IsEnabled); err != nil {
+			return nil, classifySQLError(err)
+		}
+		items = append(items, item)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, classifySQLError(err)
+	}
+	if validateErr := validatePackageSenders(items); validateErr != nil {
+		return nil, ErrUnavailable
+	}
+	return items, nil
+}
+
+func scanAutomationBinding(row interface{ Scan(...any) error }) (AutomationBinding, error) {
+	var binding AutomationBinding
+	err := row.Scan(
+		&binding.PackageID,
+		&binding.AutomationAgentID,
+		&binding.CreatedBy,
+		&binding.UpdatedBy,
+		&binding.CreatedAt,
+		&binding.UpdatedAt,
+	)
+	return binding, err
+}
+
 func scanGroup(row interface{ Scan(...any) error }) (Group, error) {
 	var group Group
 	err := row.Scan(&group.ID, &group.Name, &group.SortOrder, &group.Version, &group.CreatedBy, &group.CreatedAt, &group.UpdatedAt)

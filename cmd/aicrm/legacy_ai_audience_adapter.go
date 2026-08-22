@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
+	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/segment/legacyaudience"
@@ -93,4 +94,29 @@ func (adapter legacyAIAudienceEventAppender) Append(ctx context.Context, event l
 		Type: event.Type, Payload: event.Payload, OccurredAt: event.OccurredAt, IdempotencyKey: event.IdempotencyKey,
 	})
 	return err
+}
+
+// legacyAIAudienceAutomationStore is intentionally narrower than Automation's
+// command service. Lock is used only to validate the local agent selection in
+// the enclosing AI Audience transaction; it never executes an agent/runtime.
+type legacyAIAudienceAutomationStore interface {
+	Lock(context.Context, automationport.AgentID) (automationport.Agent, error)
+}
+
+type legacyAIAudienceAutomationAgentReader struct {
+	store legacyAIAudienceAutomationStore
+}
+
+func (reader legacyAIAudienceAutomationAgentReader) GetAutomationAgent(ctx context.Context, id int64) (legacyaudience.AutomationAgent, error) {
+	if reader.store == nil || id < 1 {
+		return legacyaudience.AutomationAgent{}, legacyaudience.ErrNotFound
+	}
+	agent, err := reader.store.Lock(ctx, automationport.AgentID(id))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return legacyaudience.AutomationAgent{}, legacyaudience.ErrNotFound
+		}
+		return legacyaudience.AutomationAgent{}, errors.Join(legacyaudience.ErrUnavailable, err)
+	}
+	return legacyaudience.AutomationAgent{ID: int64(agent.ID), Status: string(agent.Status)}, nil
 }

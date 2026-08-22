@@ -63,6 +63,7 @@ const (
 	p4CommerceWorkspaceEvidence       = "P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20"
 	p4HXCSenderManagementEvidence     = "P4-HXC-SENDER-MANAGEMENT-2026-08-20"
 	p4ExternalEffectsReadonlyEvidence = "P4-EXTERNAL-EFFECTS-READONLY-2026-08-21"
+	p4AIAudienceConfigurationEvidence = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22"
 )
 
 var nativePackageOperations = map[string]nativePackageOperation{
@@ -121,6 +122,12 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"reorderLegacyHXCSendConfigs":                {"/api/admin/hxc-dashboard/send-config/reorder", "PUT", p4HXCSenderManagementEvidence, "operations.manage", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global"}},
 	"listExternalEffectJobs":                     {"/api/admin/external-effects/jobs", "GET", p4ExternalEffectsReadonlyEvidence, "operations.read", "human_session", "internal", "outbound_tasks.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"getExternalEffectsDiagnostics":              {"/api/admin/external-effects/diagnostics", "GET", p4ExternalEffectsReadonlyEvidence, "operations.read", "human_session", "internal", "outbound_tasks.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"listAIAudienceOperationMembers":             {"/api/admin/common/operation-members", "GET", p4AIAudienceConfigurationEvidence, "segments.read", "human_session", "internal", "staff.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"getAIAudienceAutomationBinding":             {"/api/admin/ai-audience/packages/{package_id}/automation-binding", "GET", p4AIAudienceConfigurationEvidence, "segments.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"putAIAudienceAutomationBinding":             {"/api/admin/ai-audience/packages/{package_id}/automation-binding", "PUT", p4AIAudienceConfigurationEvidence, "segments.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"deleteAIAudienceAutomationBinding":          {"/api/admin/ai-audience/packages/{package_id}/automation-binding", "DELETE", p4AIAudienceConfigurationEvidence, "segments.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"getAIAudiencePackageSenders":                {"/api/admin/ai-audience/packages/{package_id}/senders", "GET", p4AIAudienceConfigurationEvidence, "segments.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"replaceAIAudiencePackageSenders":            {"/api/admin/ai-audience/packages/{package_id}/senders", "PUT", p4AIAudienceConfigurationEvidence, "segments.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 }
 
 // nativePackagePathParameters freezes identifiers which must cross generated
