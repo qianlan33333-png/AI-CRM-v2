@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 )
@@ -126,6 +127,24 @@ func TestMutationRejectsMismatchedStrictReadback(t *testing.T) {
 	}
 }
 
+func TestAddMemberRequiresActiveLocalStaff(t *testing.T) {
+	service, _, _ := newTestService()
+	detail, err := service.Create(context.Background(), groupopsport.CreatePlanCommand{Name: "local staff", Actor: 7, IdempotencyKey: "group-ops-staff-create-001"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	service.staff = testStaff{active: false}
+	_, err = service.AddMember(context.Background(), groupopsport.MemberCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, StaffID: 19, Actor: 7, IdempotencyKey: "group-ops-staff-invalid-01"})
+	if !errors.Is(err, ErrInvalid) {
+		t.Fatalf("inactive staff err=%v", err)
+	}
+	service.staff = testStaff{err: errors.New("staff reader unavailable")}
+	_, err = service.AddMember(context.Background(), groupopsport.MemberCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, StaffID: 19, Actor: 7, IdempotencyKey: "group-ops-staff-unavail-1"})
+	if !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("staff reader err=%v", err)
+	}
+}
+
 type testUOW struct{}
 
 func (testUOW) Within(_ context.Context, fn func(context.Context) error) error {
@@ -133,6 +152,15 @@ func (testUOW) Within(_ context.Context, fn func(context.Context) error) error {
 }
 
 type testEvents struct{ items []eventport.Event }
+
+type testStaff struct {
+	active bool
+	err    error
+}
+
+var _ contactport.ActiveStaffReader = testStaff{}
+
+func (s testStaff) IsActiveStaff(context.Context, int64) (bool, error) { return s.active, s.err }
 
 func (e *testEvents) Append(_ context.Context, event eventport.Event) (eventport.EventID, error) {
 	e.items = append(e.items, event)
@@ -151,7 +179,7 @@ type testStore struct {
 func newTestService() (*Service, *testStore, *testEvents) {
 	store := &testStore{details: map[int64]groupopsport.Detail{}, receipts: map[string]Receipt{}, nextPlan: 1, nextAsset: 1, nextNode: 1}
 	events := &testEvents{}
-	service := NewService(testUOW{}, store, events)
+	service := NewService(testUOW{}, store, testStaff{active: true}, events)
 	service.now = func() time.Time { return time.Date(2026, time.August, 23, 8, 0, 0, 0, time.UTC) }
 	return service, store, events
 }

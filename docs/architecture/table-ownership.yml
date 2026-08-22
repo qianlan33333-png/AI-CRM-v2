@@ -202,6 +202,17 @@ owners:
       push_center_read_model_state: global_fail_closed_readiness_only_without_worker_or_provider_execution
       push_center_read_model_entries: global_internal_push_status_projection_without_tenant_or_cross_domain_foreign_key
 
+  groupops:
+    package: internal/groupops
+    tables: [group_ops_plans, group_ops_plan_members, group_ops_plan_group_assets, group_ops_plan_nodes, group_ops_plan_webhook_descriptors, group_ops_operation_receipts]
+    constraints:
+      group_ops_plans: local_only_draft_active_paused_archived_plan_control_plane
+      group_ops_plan_members: local_operator_member_bindings_without_directory_or_provider_sync
+      group_ops_plan_group_assets: opaque_local_group_asset_references_without_group_provider_reads
+      group_ops_plan_nodes: local_standard_content_nodes_without_runtime_or_send_execution
+      group_ops_plan_webhook_descriptors: opaque_safe_descriptors_without_url_credential_payload_or_dispatch
+      group_ops_operation_receipts: transaction_scoped_actor_idempotency_receipts
+
   hxc:
     package: internal/hxc
     tables: [hxc_sender_configs]

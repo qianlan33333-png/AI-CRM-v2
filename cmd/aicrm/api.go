@@ -40,6 +40,9 @@ import (
 	eventapp "github.com/qianlan33333-png/AI-CRM-v2/internal/events/app"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	groupopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/app"
+	groupopshttp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/http"
+	groupopsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/store"
 	hxcapp "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/app"
 	hxcstore "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/store"
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
@@ -726,6 +729,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		surveystore.NewOperationsRepository(),
 		eventstore.NewAppender(),
 	))
+	groupOpsHandler := groupopshttp.New(groupopsapp.NewService(
+		uow,
+		groupopsstore.NewRepository(),
+		contactstore.NewStaffDirectoryRepository(pool),
+		eventstore.NewAppender(),
+	))
 	surveySafeAdminHandler := safeadminhttp.New(surveyapp.NewSafeAdminService(uow, surveySubmissionRepository))
 	surveyTokenKey, surveyCookieKey, surveyAbuseKey := deriveSurveyPublicKeys(config.Survey.PublicKey.Value())
 	surveyPublicHandler := surveyhttp.NewPublicHandler(
@@ -1038,6 +1047,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.surveySubmissions = surveySubmissionService
 	legacyHandler.surveySafeAdmin = surveySafeAdminHandler
 	legacyHandler.surveyOperations = surveyOperationsHandler
+	legacyHandler.groupOps = groupOpsHandler
 	legacyHandler.executionRuntime = adminopsapp.NewExecutionRuntimeService(emptyExecutionRuntimeReader{})
 	hxcStaffDirectory := audienceOperationMembers
 	hxcSenderRepository := hxcstore.NewSenderConfigRepository(pool)
@@ -1635,6 +1645,39 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			}
 			router.Method(method, pattern, tail)
 			return nil
+		}
+		if legacy.groupOps != nil {
+			for _, route := range []struct {
+				method, pattern string
+				capability      authport.Capability
+				csrf            bool
+				endpoint        http.Handler
+			}{
+				{http.MethodGet, groupopshttp.PlansPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListPlans)},
+				{http.MethodPost, groupopshttp.PlansPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.CreatePlan)},
+				{http.MethodGet, groupopshttp.PlanPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.GetPlan)},
+				{http.MethodPatch, groupopshttp.PlanPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.UpdatePlan)},
+				{http.MethodPost, groupopshttp.PlanActivatePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.Activate)},
+				{http.MethodPost, groupopshttp.PlanPausePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.Pause)},
+				{http.MethodPost, groupopshttp.PlanArchivePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.Archive)},
+				{http.MethodGet, groupopshttp.MembersPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListMembers)},
+				{http.MethodPost, groupopshttp.MembersPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.AddMember)},
+				{http.MethodDelete, groupopshttp.MemberPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.RemoveMember)},
+				{http.MethodGet, groupopshttp.GroupAssetsPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListGroupAssets)},
+				{http.MethodPost, groupopshttp.GroupAssetsPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.AddGroupAsset)},
+				{http.MethodDelete, groupopshttp.GroupAssetPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.RemoveGroupAsset)},
+				{http.MethodGet, groupopshttp.NodesPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListNodes)},
+				{http.MethodPost, groupopshttp.NodesPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.AddNode)},
+				{http.MethodPatch, groupopshttp.NodePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.UpdateNode)},
+				{http.MethodDelete, groupopshttp.NodePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.RemoveNode)},
+				{http.MethodGet, groupopshttp.WebhookDescriptorPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.GetWebhookDescriptor)},
+				{http.MethodPut, groupopshttp.WebhookDescriptorPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.PutWebhookDescriptor)},
+				{http.MethodPost, groupopshttp.ContentPreviewPath, authport.CapabilityAdminRead, true, http.HandlerFunc(legacy.groupOps.Preview)},
+			} {
+				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
+					return nil, err
+				}
+			}
 		}
 		if legacy.servicePeriod != nil {
 			for _, route := range []struct {

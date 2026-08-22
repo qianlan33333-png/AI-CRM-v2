@@ -15,6 +15,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
@@ -68,12 +69,13 @@ type Store interface {
 type Service struct {
 	uow    platformport.UnitOfWork
 	store  Store
+	staff  contactport.ActiveStaffReader
 	events eventport.Appender
 	now    func() time.Time
 }
 
-func NewService(uow platformport.UnitOfWork, store Store, events eventport.Appender) *Service {
-	return &Service{uow: uow, store: store, events: events, now: time.Now}
+func NewService(uow platformport.UnitOfWork, store Store, staff contactport.ActiveStaffReader, events eventport.Appender) *Service {
+	return &Service{uow: uow, store: store, staff: staff, events: events, now: time.Now}
 }
 
 func (s *Service) List(ctx context.Context, limit, offset int32) (groupopsport.PlanPage, error) {
@@ -127,7 +129,7 @@ func (s *Service) Update(ctx context.Context, command groupopsport.UpdatePlanCom
 	if !ready(s) || !validUpdate(command) {
 		return groupopsport.Detail{}, invalidOrUnavailable(s)
 	}
-	return s.mutate(ctx, "plan_update", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(detail *groupopsport.Detail, now time.Time) error {
+	return s.mutate(ctx, "plan_update", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(_ context.Context, detail *groupopsport.Detail, now time.Time) error {
 		detail.Plan.Name = strings.TrimSpace(command.Name)
 		return nil
 	})
@@ -143,7 +145,7 @@ func (s *Service) Archive(ctx context.Context, command groupopsport.TransitionCo
 	if !ready(s) || !validTransition(command) {
 		return groupopsport.Detail{}, invalidOrUnavailable(s)
 	}
-	return s.mutate(ctx, "plan_archive", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(detail *groupopsport.Detail, _ time.Time) error {
+	return s.mutate(ctx, "plan_archive", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(_ context.Context, detail *groupopsport.Detail, _ time.Time) error {
 		if detail.Plan.Status == groupopsport.PlanArchived {
 			return ErrNotFound
 		}
@@ -156,7 +158,7 @@ func (s *Service) transition(ctx context.Context, operation string, command grou
 	if !ready(s) || !validTransition(command) {
 		return groupopsport.Detail{}, invalidOrUnavailable(s)
 	}
-	return s.mutate(ctx, operation, command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(detail *groupopsport.Detail, _ time.Time) error {
+	return s.mutate(ctx, operation, command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(_ context.Context, detail *groupopsport.Detail, _ time.Time) error {
 		if detail.Plan.Status == groupopsport.PlanArchived {
 			return ErrNotFound
 		}
@@ -182,10 +184,20 @@ func (s *Service) ListMembers(ctx context.Context, planID int64, limit, offset i
 	return memberPage(detail.Members, limit, offset), nil
 }
 func (s *Service) AddMember(ctx context.Context, command groupopsport.MemberCommand) (groupopsport.Detail, error) {
-	if !ready(s) || !validMemberCommand(command) {
+	if !ready(s) || s.staff == nil {
+		return groupopsport.Detail{}, ErrUnavailable
+	}
+	if !validMemberCommand(command) {
 		return groupopsport.Detail{}, invalidOrUnavailable(s)
 	}
-	return s.mutate(ctx, "member_add", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(detail *groupopsport.Detail, _ time.Time) error {
+	return s.mutate(ctx, "member_add", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(tx context.Context, detail *groupopsport.Detail, _ time.Time) error {
+		active, err := s.staff.IsActiveStaff(tx, command.StaffID)
+		if err != nil {
+			return ErrUnavailable
+		}
+		if !active {
+			return ErrInvalid
+		}
 		for _, member := range detail.Members {
 			if member.StaffID == command.StaffID {
 				return ErrConflict
@@ -200,7 +212,7 @@ func (s *Service) RemoveMember(ctx context.Context, command groupopsport.MemberC
 	if !ready(s) || !validMemberCommand(command) {
 		return groupopsport.Detail{}, invalidOrUnavailable(s)
 	}
-	return s.mutate(ctx, "member_remove", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(detail *groupopsport.Detail, _ time.Time) error {
+	return s.mutate(ctx, "member_remove", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(_ context.Context, detail *groupopsport.Detail, _ time.Time) error {
 		for i, member := range detail.Members {
 			if member.StaffID == command.StaffID {
 				detail.Members = append(detail.Members[:i], detail.Members[i+1:]...)
@@ -225,7 +237,7 @@ func (s *Service) AddGroupAsset(ctx context.Context, command groupopsport.GroupA
 	if !ready(s) || !validAssetCommand(command) {
 		return groupopsport.Detail{}, invalidOrUnavailable(s)
 	}
-	return s.mutate(ctx, "group_asset_add", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(detail *groupopsport.Detail, _ time.Time) error {
+	return s.mutate(ctx, "group_asset_add", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(_ context.Context, detail *groupopsport.Detail, _ time.Time) error {
 		for _, asset := range detail.GroupAssets {
 			if asset.AssetRef == command.AssetRef {
 				return ErrConflict
@@ -240,7 +252,7 @@ func (s *Service) RemoveGroupAsset(ctx context.Context, command groupopsport.Gro
 	if !ready(s) || !validAssetCommand(command) {
 		return groupopsport.Detail{}, invalidOrUnavailable(s)
 	}
-	return s.mutate(ctx, "group_asset_remove", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(detail *groupopsport.Detail, _ time.Time) error {
+	return s.mutate(ctx, "group_asset_remove", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(_ context.Context, detail *groupopsport.Detail, _ time.Time) error {
 		for i, asset := range detail.GroupAssets {
 			if asset.AssetRef == command.AssetRef {
 				detail.GroupAssets = append(detail.GroupAssets[:i], detail.GroupAssets[i+1:]...)
@@ -265,7 +277,7 @@ func (s *Service) AddNode(ctx context.Context, command groupopsport.NodeCreateCo
 	if !ready(s) || !validNodeCreate(command) {
 		return groupopsport.Detail{}, invalidOrUnavailable(s)
 	}
-	return s.mutate(ctx, "node_add", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(detail *groupopsport.Detail, _ time.Time) error {
+	return s.mutate(ctx, "node_add", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(_ context.Context, detail *groupopsport.Detail, _ time.Time) error {
 		if command.Position > int32(len(detail.Nodes))+1 {
 			return ErrConflict
 		}
@@ -278,7 +290,7 @@ func (s *Service) UpdateNode(ctx context.Context, command groupopsport.NodeUpdat
 	if !ready(s) || !validNodeUpdate(command) {
 		return groupopsport.Detail{}, invalidOrUnavailable(s)
 	}
-	return s.mutate(ctx, "node_update", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(detail *groupopsport.Detail, _ time.Time) error {
+	return s.mutate(ctx, "node_update", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(_ context.Context, detail *groupopsport.Detail, _ time.Time) error {
 		for i := range detail.Nodes {
 			if detail.Nodes[i].ID == command.NodeID {
 				detail.Nodes[i] = groupopsport.Node{ID: command.NodeID, Position: command.Position, Kind: command.Kind, MessageText: strings.TrimSpace(command.MessageText), DelayMinutes: command.DelayMinutes}
@@ -292,7 +304,7 @@ func (s *Service) RemoveNode(ctx context.Context, command groupopsport.NodeDelet
 	if !ready(s) || !validNodeDelete(command) {
 		return groupopsport.Detail{}, invalidOrUnavailable(s)
 	}
-	return s.mutate(ctx, "node_remove", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(detail *groupopsport.Detail, _ time.Time) error {
+	return s.mutate(ctx, "node_remove", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(_ context.Context, detail *groupopsport.Detail, _ time.Time) error {
 		for i, node := range detail.Nodes {
 			if node.ID == command.NodeID {
 				detail.Nodes = append(detail.Nodes[:i], detail.Nodes[i+1:]...)
@@ -314,7 +326,7 @@ func (s *Service) PutWebhookDescriptor(ctx context.Context, command groupopsport
 	if !ready(s) || !validWebhookCommand(command) {
 		return groupopsport.Detail{}, invalidOrUnavailable(s)
 	}
-	return s.mutate(ctx, "webhook_descriptor_put", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(detail *groupopsport.Detail, _ time.Time) error {
+	return s.mutate(ctx, "webhook_descriptor_put", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(_ context.Context, detail *groupopsport.Detail, _ time.Time) error {
 		detail.WebhookDescriptor = descriptor(command.Reference)
 		return nil
 	})
@@ -346,7 +358,7 @@ func (s *Service) readDetail(ctx context.Context, planID int64) (groupopsport.De
 	return cloneDetail(detail), nil
 }
 
-func (s *Service) mutate(ctx context.Context, operation string, planID, expectedRevision, actor int64, key string, payload any, change func(*groupopsport.Detail, time.Time) error) (groupopsport.Detail, error) {
+func (s *Service) mutate(ctx context.Context, operation string, planID, expectedRevision, actor int64, key string, payload any, change func(context.Context, *groupopsport.Detail, time.Time) error) (groupopsport.Detail, error) {
 	if planID < 1 || expectedRevision < 1 || actor < 1 || !validKey(key) || change == nil {
 		return groupopsport.Detail{}, ErrInvalid
 	}
@@ -371,7 +383,7 @@ func (s *Service) mutate(ctx context.Context, operation string, planID, expected
 		if detail.Plan.Status != groupopsport.PlanDraft && operation != "plan_pause" && operation != "plan_archive" {
 			return groupopsport.Detail{}, ErrStateConflict
 		}
-		if err := change(&detail, now); err != nil {
+		if err := change(tx, &detail, now); err != nil {
 			return groupopsport.Detail{}, err
 		}
 		detail.Plan.Revision++
@@ -624,7 +636,7 @@ func validNodes(items []groupopsport.Node) bool {
 	return items != nil
 }
 func sameSavedDetail(want, got groupopsport.Detail) bool {
-	if want.Plan != got.Plan || want.WebhookDescriptor != got.WebhookDescriptor || want.Safety != got.Safety || len(want.Members) != len(got.Members) || len(want.GroupAssets) != len(got.GroupAssets) || len(want.Nodes) != len(got.Nodes) {
+	if !samePlan(want.Plan, got.Plan) || want.WebhookDescriptor != got.WebhookDescriptor || want.Safety != got.Safety || len(want.Members) != len(got.Members) || len(want.GroupAssets) != len(got.GroupAssets) || len(want.Nodes) != len(got.Nodes) {
 		return false
 	}
 	for index := range want.Members {
@@ -643,6 +655,9 @@ func sameSavedDetail(want, got groupopsport.Detail) bool {
 		}
 	}
 	return true
+}
+func samePlan(want, got groupopsport.Plan) bool {
+	return want.ID == got.ID && want.Name == got.Name && want.Status == got.Status && want.Revision == got.Revision && want.CreatedBy == got.CreatedBy && want.UpdatedBy == got.UpdatedBy && want.CreatedAt.Equal(got.CreatedAt) && want.UpdatedAt.Equal(got.UpdatedAt)
 }
 func receiptMatches(value Receipt, operation string, reservation Reservation) bool {
 	return value.ID > 0 && value.Operation == operation && value.ActorScope == reservation.ActorScope && subtle.ConstantTimeCompare(value.KeyDigest[:], reservation.KeyDigest[:]) == 1 && (value.State == "in_progress" || value.State == "completed")
@@ -673,7 +688,9 @@ func (s *Service) nowUTC() time.Time {
 	if s == nil || s.now == nil {
 		return time.Time{}
 	}
-	return s.now().UTC()
+	// PostgreSQL timestamptz stores microseconds. Normalizing before a strict
+	// write/read comparison makes the persisted fact the exact service fact.
+	return s.now().UTC().Truncate(time.Microsecond)
 }
 func ready(s *Service) bool {
 	return s != nil && s.uow != nil && s.store != nil && s.events != nil && s.now != nil

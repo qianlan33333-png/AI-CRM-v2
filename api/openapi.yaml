@@ -4239,14 +4239,38 @@ paths:
       responses: *group_ops_write_responses
   /api/admin/automation-conversion/group-ops/plans/{plan_id}/pause:
     post:
-      <<: *group_ops_activate
+      tags: [p4-group-ops]
       operationId: pauseGroupOpsPlan
       summary: Pause a local active plan without altering any external runtime
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsTransitionRequest" } } } }
+      responses: *group_ops_write_responses
   /api/admin/automation-conversion/group-ops/plans/{plan_id}/archive:
     post:
-      <<: *group_ops_activate
+      tags: [p4-group-ops]
       operationId: archiveGroupOpsPlan
       summary: Archive a local plan; later writes fail closed
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsTransitionRequest" } } } }
+      responses: *group_ops_write_responses
   /api/admin/automation-conversion/group-ops/plans/{plan_id}/members:
     parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }]
     get:
@@ -4271,17 +4295,38 @@ paths:
         "404": { description: Plan not found., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "503": { description: Local Group Ops storage unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
     post:
-      <<: *group_ops_activate
+      tags: [p4-group-ops]
       operationId: addGroupOpsPlanMember
       summary: Add a local operating member to a draft plan
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsMemberRequest" } } } }
+      responses: *group_ops_write_responses
   /api/admin/automation-conversion/group-ops/plans/{plan_id}/members/{staff_id}:
     delete:
-      <<: *group_ops_activate
+      tags: [p4-group-ops]
       operationId: removeGroupOpsPlanMember
       summary: Remove a local operating member from a draft plan
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
       parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { name: staff_id, in: path, required: true, schema: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRevisionRequest" } } } }
+      responses: *group_ops_write_responses
   /api/admin/automation-conversion/group-ops/plans/{plan_id}/group-assets:
     parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }]
     get:
@@ -4306,17 +4351,38 @@ paths:
         "404": { description: Plan not found., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "503": { description: Local Group Ops storage unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
     post:
-      <<: *group_ops_activate
+      tags: [p4-group-ops]
       operationId: addGroupOpsPlanGroupAsset
       summary: Bind one opaque local group asset to a draft plan
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsGroupAssetRequest" } } } }
+      responses: *group_ops_write_responses
   /api/admin/automation-conversion/group-ops/plans/{plan_id}/group-assets/{asset_reference}:
     delete:
-      <<: *group_ops_activate
+      tags: [p4-group-ops]
       operationId: removeGroupOpsPlanGroupAsset
       summary: Remove one opaque local group asset from a draft plan
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
       parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { name: asset_reference, in: path, required: true, schema: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRevisionRequest" } } } }
+      responses: *group_ops_write_responses
   /api/admin/automation-conversion/group-ops/plans/{plan_id}/nodes:
     parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }]
     get:
@@ -4341,23 +4407,54 @@ paths:
         "404": { description: Plan not found., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "503": { description: Local Group Ops storage unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
     post:
-      <<: *group_ops_activate
+      tags: [p4-group-ops]
       operationId: addGroupOpsPlanNode
       summary: Add a persisted standard node to a draft plan
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsNodeRequest" } } } }
+      responses: *group_ops_write_responses
   /api/admin/automation-conversion/group-ops/plans/{plan_id}/nodes/{node_id}:
     patch:
-      <<: *group_ops_activate
+      tags: [p4-group-ops]
       operationId: updateGroupOpsPlanNode
       summary: Update a persisted standard node on a draft plan
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
       parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { name: node_id, in: path, required: true, schema: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsNodeRequest" } } } }
+      responses: *group_ops_write_responses
     delete:
-      <<: *group_ops_activate
+      tags: [p4-group-ops]
       operationId: removeGroupOpsPlanNode
       summary: Remove one persisted standard node from a draft plan
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
       parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { name: node_id, in: path, required: true, schema: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRevisionRequest" } } } }
+      responses: *group_ops_write_responses
   /api/admin/automation-conversion/group-ops/plans/{plan_id}/webhook-descriptor:
     parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }]
     get:
@@ -4381,10 +4478,21 @@ paths:
         "404": { description: Plan not found., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "503": { description: Local Group Ops storage unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
     put:
-      <<: *group_ops_activate
+      tags: [p4-group-ops]
       operationId: putGroupOpsWebhookDescriptor
       summary: Save only an opaque local Webhook descriptor on a draft plan
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsWebhookDescriptorRequest" } } } }
+      responses: *group_ops_write_responses
   /api/admin/automation-conversion/group-ops/plans/{plan_id}/content/preview:
     post:
       tags: [p4-group-ops]
