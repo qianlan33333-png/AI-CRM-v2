@@ -9798,6 +9798,55 @@ export interface CustomerDetailResponse {
   tags: Tag[];
 }
 
+export type CustomerContactPolicyReasonCode =
+  (typeof CustomerContactPolicyReasonCode)[keyof typeof CustomerContactPolicyReasonCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerContactPolicyReasonCode = {
+  ContactPolicyManualOptOut: "manual_opt_out",
+  ContactPolicyComplianceHold: "compliance_hold",
+  ContactPolicyOperatorHold: "operator_hold",
+} as const;
+
+export interface SetCustomerContactPolicyRequest {
+  /** @minimum 0 */
+  expected_version: number;
+  reason_code: CustomerContactPolicyReasonCode;
+  /** @nullable */
+  suppressed_until?: string | null;
+}
+
+export interface ClearCustomerContactPolicyRequest {
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+/**
+ * @nullable
+ */
+export type CustomerContactPolicyResponseReasonCode =
+  CustomerContactPolicyReasonCode | null;
+
+export interface CustomerContactPolicyResponse {
+  /** @minimum 1 */
+  customer_id: number;
+  /** @minimum 0 */
+  version: number;
+  policy_present: boolean;
+  /** The related transaction-bound Contact eligibility checker accepts at most 1000 unique customer IDs per preview or dispatch check. */
+  eligible: boolean;
+  suppression_active: boolean;
+  /** @nullable */
+  reason_code: CustomerContactPolicyResponseReasonCode;
+  /** @nullable */
+  suppressed_until: string | null;
+  local_only: boolean;
+  /** This local policy API neither validates nor executes a Provider; false does not mean the customer can never be sent to. */
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+  delivery_proven: boolean;
+}
+
 export type CustomerEventPayload = { [key: string]: unknown };
 
 export interface CustomerEvent {
@@ -15558,6 +15607,246 @@ export const setCustomerStage = async (
     status: res.status,
     headers: res.headers,
   } as setCustomerStageResponse;
+};
+
+/**
+ * @summary Read the Contact-owned local customer suppression policy
+ */
+export type getCustomerContactPolicyResponse200 = {
+  data: CustomerContactPolicyResponse;
+  status: 200;
+};
+
+export type getCustomerContactPolicyResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getCustomerContactPolicyResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getCustomerContactPolicyResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getCustomerContactPolicyResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getCustomerContactPolicyResponseSuccess =
+  getCustomerContactPolicyResponse200 & {
+    headers: Headers;
+  };
+export type getCustomerContactPolicyResponseError = (
+  | getCustomerContactPolicyResponse401
+  | getCustomerContactPolicyResponse403
+  | getCustomerContactPolicyResponse404
+  | getCustomerContactPolicyResponse503
+) & {
+  headers: Headers;
+};
+
+export type getCustomerContactPolicyResponse =
+  | getCustomerContactPolicyResponseSuccess
+  | getCustomerContactPolicyResponseError;
+
+export const getGetCustomerContactPolicyUrl = (customerId: number) => {
+  return `/api/v1/customers/${customerId}/contact-policy`;
+};
+
+export const getCustomerContactPolicy = async (
+  customerId: number,
+  options?: RequestInit,
+): Promise<getCustomerContactPolicyResponse> => {
+  const res = await fetch(getGetCustomerContactPolicyUrl(customerId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCustomerContactPolicyResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCustomerContactPolicyResponse;
+};
+
+/**
+ * @summary Create or replace the Contact-owned local customer suppression policy
+ */
+export type putCustomerContactPolicyResponse200 = {
+  data: CustomerContactPolicyResponse;
+  status: 200;
+};
+
+export type putCustomerContactPolicyResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type putCustomerContactPolicyResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type putCustomerContactPolicyResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type putCustomerContactPolicyResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type putCustomerContactPolicyResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type putCustomerContactPolicyResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type putCustomerContactPolicyResponseSuccess =
+  putCustomerContactPolicyResponse200 & {
+    headers: Headers;
+  };
+export type putCustomerContactPolicyResponseError = (
+  | putCustomerContactPolicyResponse400
+  | putCustomerContactPolicyResponse401
+  | putCustomerContactPolicyResponse403
+  | putCustomerContactPolicyResponse404
+  | putCustomerContactPolicyResponse409
+  | putCustomerContactPolicyResponse503
+) & {
+  headers: Headers;
+};
+
+export type putCustomerContactPolicyResponse =
+  | putCustomerContactPolicyResponseSuccess
+  | putCustomerContactPolicyResponseError;
+
+export const getPutCustomerContactPolicyUrl = (customerId: number) => {
+  return `/api/v1/customers/${customerId}/contact-policy`;
+};
+
+export const putCustomerContactPolicy = async (
+  customerId: number,
+  setCustomerContactPolicyRequest: SetCustomerContactPolicyRequest,
+  options?: RequestInit,
+): Promise<putCustomerContactPolicyResponse> => {
+  const res = await fetch(getPutCustomerContactPolicyUrl(customerId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(setCustomerContactPolicyRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: putCustomerContactPolicyResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as putCustomerContactPolicyResponse;
+};
+
+/**
+ * @summary Clear the Contact-owned local customer suppression policy
+ */
+export type deleteCustomerContactPolicyResponse200 = {
+  data: CustomerContactPolicyResponse;
+  status: 200;
+};
+
+export type deleteCustomerContactPolicyResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type deleteCustomerContactPolicyResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type deleteCustomerContactPolicyResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type deleteCustomerContactPolicyResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type deleteCustomerContactPolicyResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type deleteCustomerContactPolicyResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type deleteCustomerContactPolicyResponseSuccess =
+  deleteCustomerContactPolicyResponse200 & {
+    headers: Headers;
+  };
+export type deleteCustomerContactPolicyResponseError = (
+  | deleteCustomerContactPolicyResponse400
+  | deleteCustomerContactPolicyResponse401
+  | deleteCustomerContactPolicyResponse403
+  | deleteCustomerContactPolicyResponse404
+  | deleteCustomerContactPolicyResponse409
+  | deleteCustomerContactPolicyResponse503
+) & {
+  headers: Headers;
+};
+
+export type deleteCustomerContactPolicyResponse =
+  | deleteCustomerContactPolicyResponseSuccess
+  | deleteCustomerContactPolicyResponseError;
+
+export const getDeleteCustomerContactPolicyUrl = (customerId: number) => {
+  return `/api/v1/customers/${customerId}/contact-policy`;
+};
+
+export const deleteCustomerContactPolicy = async (
+  customerId: number,
+  clearCustomerContactPolicyRequest: ClearCustomerContactPolicyRequest,
+  options?: RequestInit,
+): Promise<deleteCustomerContactPolicyResponse> => {
+  const res = await fetch(getDeleteCustomerContactPolicyUrl(customerId), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(clearCustomerContactPolicyRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteCustomerContactPolicyResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as deleteCustomerContactPolicyResponse;
 };
 
 /**

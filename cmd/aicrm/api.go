@@ -140,6 +140,7 @@ type candidateHandler struct {
 	customerActivityAnalytics *contacthttp.CustomerActivityAnalyticsHandler
 	customerMergeHistory      *identityhttp.MergeHistoryHandler
 	mutations                 *contacthttp.CustomerMutationHandler
+	contactPolicy             *contacthttp.ContactPolicyHandler
 	tags                      *contacthttp.TagCatalogHandler
 	localTags                 *contacthttp.LocalTagCatalogHandler
 	stages                    *contacthttp.Handler
@@ -633,6 +634,13 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	contactPolicyHandler, err := contacthttp.NewContactPolicyHandler(contactapp.NewContactPolicyService(
+		uow, contactstore.NewContactPolicyRepository(), eventstore.NewAppender(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	customerEventHandler, err := contacthttp.NewCustomerEventHandler(contactapp.NewCustomerEventService(
 		uow, contactstore.NewCustomerEventRepository(),
 	))
@@ -1010,7 +1018,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		customerSurveyAnswers: customerAnswerService, customerEvents: customerEventHandler, customerContext: customerContextHandler,
 		customerChatActivity: customerChatActivityHandler, customerActivityAnalytics: customerActivityAnalyticsHandler,
 		customerMergeHistory: customerMergeHistoryHandler,
-		mutations:            mutationHandler, tags: tagCatalogHandler, localTags: localTagCatalogHandler, stages: stageHandler,
+		mutations:            mutationHandler, contactPolicy: contactPolicyHandler,
+		tags: tagCatalogHandler, localTags: localTagCatalogHandler, stages: stageHandler,
 		segments:             segmentCRUDHandler,
 		products:             productHandler,
 		productLocal:         productLocalHandler,
@@ -1456,6 +1465,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/v1/customers/{customer_id}/merge-history", authport.CapabilityIdentityReviewRead, false, http.HandlerFunc(wrapper.ListCustomerMergeHistory)},
 		{http.MethodGet, "/api/v1/customers/{customer_id}/chat-activity", authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(wrapper.ListCustomerChatActivity)},
 		{http.MethodGet, "/api/v1/customers/{customer_id}/activity-analytics", authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(wrapper.GetCustomerActivityAnalytics)},
+		{http.MethodGet, "/api/v1/customers/{customer_id}/contact-policy", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetCustomerContactPolicy)},
+		{http.MethodPut, "/api/v1/customers/{customer_id}/contact-policy", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.PutCustomerContactPolicy)},
+		{http.MethodDelete, "/api/v1/customers/{customer_id}/contact-policy", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.DeleteCustomerContactPolicy)},
 		{http.MethodPut, "/api/v1/customers/{customer_id}/stage", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.SetCustomerStage)},
 		{http.MethodPut, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.AddCustomerTag)},
 		{http.MethodDelete, "/api/v1/customers/{customer_id}/tags/{tag_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.RemoveCustomerTag)},
