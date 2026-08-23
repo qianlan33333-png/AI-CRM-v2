@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import { readCSRFCookie } from "./auth";
 import {
   CampaignTouchPlanMachine,
@@ -17,7 +17,9 @@ import type {
   TouchPlanSummary,
 } from "./campaign-touch-plan-read";
 import { CampaignTouchPlanReviewPanel } from "./campaign-touch-plan-review-ui";
-import type { CampaignTouchPlanReviewTransport } from "./campaign-touch-plan-review";
+import type { CampaignTouchPlanReviewTransport, TouchPlanReviewSnapshot } from "./campaign-touch-plan-review";
+import { OutboundCampaignHandoffPanel } from "./outbound-campaign-handoff-ui";
+import type { OutboundCampaignHandoffTransport } from "./outbound-campaign-handoff";
 import {
   CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
   CLOUD_ORCHESTRATOR_PLANS_PATH,
@@ -424,6 +426,7 @@ function CampaignsWorkspace({
   onUnauthenticated,
   readTransport,
   reviewTransport,
+  handoffTransport,
 }: {
   readonly role: CloudOrchestratorRole;
   readonly route: Extract<
@@ -438,8 +441,11 @@ function CampaignsWorkspace({
   readonly onUnauthenticated?: () => void;
   readonly readTransport?: CampaignTouchPlanReadTransport;
   readonly reviewTransport?: CampaignTouchPlanReviewTransport;
+  readonly handoffTransport?: OutboundCampaignHandoffTransport;
 }): React.ReactElement {
   const [reviewPlan, setReviewPlan] = useState<TouchPlanSummary>();
+  const [approvedReview, setApprovedReview] = useState<TouchPlanReviewSnapshot>();
+  const selectPlan = useCallback((plan: TouchPlanSummary | undefined): void => { setApprovedReview(undefined); setReviewPlan(plan); }, []);
   return (
     <section aria-labelledby="cloud-orchestrator-title">
       <h1 id="cloud-orchestrator-title">Campaign 审阅工作区</h1>
@@ -465,7 +471,7 @@ function CampaignsWorkspace({
         actorID={actorID}
         transport={readTransport}
         onUnauthenticated={onUnauthenticated}
-        onPlanSelected={setReviewPlan}
+        onPlanSelected={selectPlan}
       />
       {actorID && reviewPlan ? (
         <CampaignTouchPlanReviewPanel
@@ -477,7 +483,11 @@ function CampaignsWorkspace({
           readCookie={readCookie}
           keySource={keySource}
           onUnauthenticated={onUnauthenticated}
+          onReviewSelected={setApprovedReview}
         />
+      ) : null}
+      {actorID && reviewPlan && approvedReview ? (
+        <OutboundCampaignHandoffPanel role={role} actorID={actorID} plan={reviewPlan} approved={approvedReview} transport={handoffTransport} sessionStorage={sessionStorage} readCookie={readCookie} keySource={keySource} onUnauthenticated={onUnauthenticated} />
       ) : null}
     </section>
   );
@@ -521,6 +531,7 @@ export function CloudOrchestratorWorkspace({
   onUnauthenticated,
   campaignReadTransport,
   campaignReviewTransport,
+  campaignHandoffTransport,
 }: {
   readonly role: CloudOrchestratorRole;
   readonly route: CloudOrchestratorRoute;
@@ -532,6 +543,7 @@ export function CloudOrchestratorWorkspace({
   readonly onUnauthenticated?: () => void;
   readonly campaignReadTransport?: CampaignTouchPlanReadTransport;
   readonly campaignReviewTransport?: CampaignTouchPlanReviewTransport;
+  readonly campaignHandoffTransport?: OutboundCampaignHandoffTransport;
 }): React.ReactElement {
   if (role === "sales" || (role === "ops" && route.kind !== "campaigns")) {
     return (
@@ -564,6 +576,7 @@ export function CloudOrchestratorWorkspace({
           onUnauthenticated={onUnauthenticated}
           readTransport={campaignReadTransport}
           reviewTransport={campaignReviewTransport}
+          handoffTransport={campaignHandoffTransport}
         />
       ) : null}
       {route.kind === "observability" ? <ObservabilityWorkspace /> : null}

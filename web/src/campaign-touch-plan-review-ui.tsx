@@ -11,6 +11,7 @@ import {
   type ReviewOperation,
   type TouchPlanReview,
   type TouchPlanReviewHandoff,
+  type TouchPlanReviewSnapshot,
 } from "./campaign-touch-plan-review";
 import type { CloudOrchestratorRole } from "./cloud-orchestrator";
 
@@ -45,6 +46,8 @@ export interface CampaignTouchPlanReviewPanelProps {
   readonly readCookie?: () => string;
   readonly keySource?: { readonly randomUUID: () => string };
   readonly onUnauthenticated?: () => void;
+  // eslint-disable-next-line no-unused-vars -- callback parameter documents the approved C2 seam.
+  readonly onReviewSelected?: (review: TouchPlanReviewSnapshot | undefined) => void;
 }
 
 function message(result: ReviewMutationResult | undefined): string | undefined {
@@ -95,6 +98,7 @@ function ReviewPanelInner({
   readCookie = () => (typeof document === "undefined" ? "" : document.cookie),
   keySource = typeof crypto === "undefined" ? unavailableKeySource : crypto,
   onUnauthenticated,
+  onReviewSelected,
 }: Omit<CampaignTouchPlanReviewPanelProps, "role">): React.ReactElement {
   const [review, setReview] = useState<TouchPlanReview>();
   const [handoff, setHandoff] = useState<TouchPlanReviewHandoff>();
@@ -120,12 +124,14 @@ function ReviewPanelInner({
   useLayoutEffect(() => {
     mounted.current = true;
     currentMachine.current = machine;
+    onReviewSelected?.(undefined);
     return () => {
       actionController.current?.abort();
       mounted.current = false;
       ++generation.current;
+      onReviewSelected?.(undefined);
     };
-  }, [machine]);
+  }, [machine, onReviewSelected]);
   const current = (value: number): boolean => mounted.current && currentMachine.current === machine && generation.current === value;
 
   useEffect(() => {
@@ -138,6 +144,7 @@ function ReviewPanelInner({
     setAction(undefined);
     setBusy(false);
     setLoadState("loading");
+    onReviewSelected?.(undefined);
     void loadTouchPlanReview(transport, plan, controller.signal).then((result) => {
       if (!current(request)) return;
       if (result.status === "unauthenticated") onUnauthenticated?.();
@@ -145,10 +152,14 @@ function ReviewPanelInner({
         setReview(result.review);
         setHandoff(result.handoff);
         setLoadState("loaded");
-      } else setLoadState("unavailable");
+        onReviewSelected?.(result.review.status === "approved" && result.handoff ? { review: result.review, handoff: result.handoff } : undefined);
+      } else {
+        onReviewSelected?.(undefined);
+        setLoadState("unavailable");
+      }
     });
     return () => controller.abort();
-  }, [machine, onUnauthenticated, plan, transport]);
+  }, [machine, onReviewSelected, onUnauthenticated, plan, transport]);
 
   const run = async (nextOperation: ReviewOperation, replay: boolean): Promise<void> => {
     if (!review || !mounted.current || currentMachine.current !== machine || actionController.current) return;
@@ -188,11 +199,13 @@ function ReviewPanelInner({
       setReview(result.review);
       setHandoff(result.handoff);
       setConfirmation("");
+      onReviewSelected?.(result.review.status === "approved" && result.handoff ? { review: result.review, handoff: result.handoff } : undefined);
     } else if (result.status === "conflict") {
       if (result.review) setReview(result.review);
       setHandoff(result.handoff);
       setConfirmation("");
       setOperation(undefined);
+      onReviewSelected?.(result.review?.status === "approved" && result.handoff ? { review: result.review, handoff: result.handoff } : undefined);
     }
     setAction(result);
   };
