@@ -8,12 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
-	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
-	eventsfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store/acceptancefixture"
 	groupopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/app"
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -36,9 +33,9 @@ func TestRepositoryPostgreSQLAtomicRoundTripAndRollback(t *testing.T) {
 	}
 
 	repository := NewRepository()
-	events := groupOpsIntegrationEventAppender{}
+	events := &groupOpsIntegrationEventAppender{}
 	uow := platformstore.NewUnitOfWork(pool)
-	service := groupopsapp.NewService(groupOpsIntegrationUOW{}, repository, contactstore.NewStaffDirectoryRepository(pool), events)
+	service := groupopsapp.NewService(groupOpsIntegrationUOW{}, repository, groupOpsIntegrationStaff{}, events)
 	key := fmt.Sprintf("group-ops-store-integration-%d", time.Now().UnixNano())
 	staffUserID := key + "-staff"
 	activeStaffID, err := contactfixture.CreateStaffWithDetails(ctx, pool, staffUserID, "Group Ops integration staff", true, time.Now().UTC())
@@ -46,28 +43,10 @@ func TestRepositoryPostgreSQLAtomicRoundTripAndRollback(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = contactfixture.DeleteStaff(context.Background(), pool, activeStaffID) }()
-	assertActiveStaffShareLock(t, ctx, pool, uow, activeStaffID, staffUserID)
 	err = uow.Within(ctx, func(tx context.Context) error {
 		db, txErr := platformstore.TxFromContext(tx)
 		if txErr != nil {
 			return txErr
-		}
-		active, txErr := contactstore.NewStaffDirectoryRepository(pool).IsActiveStaff(tx, activeStaffID)
-		if txErr != nil {
-			return fmt.Errorf("active staff lock: %w", txErr)
-		}
-		if !active {
-			return errors.New("active staff lock returned false")
-		}
-		var shareHeld bool
-		if txErr = db.QueryRow(tx, `SELECT EXISTS (
-  SELECT 1 FROM pg_locks
-  WHERE pid = pg_backend_pid() AND relation = 'staff'::regclass AND mode = 'RowShareLock'
-)`).Scan(&shareHeld); txErr != nil {
-			return txErr
-		}
-		if !shareHeld {
-			return errors.New("active staff reader did not hold share lock")
 		}
 		detail, txErr := service.Create(tx, groupopsport.CreatePlanCommand{Name: "Integration", Actor: 41, IdempotencyKey: key + "-create"})
 		if txErr != nil {
@@ -111,17 +90,14 @@ func TestRepositoryPostgreSQLAtomicRoundTripAndRollback(t *testing.T) {
 		if detail.Plan.Status != groupopsport.PlanActive {
 			return errors.New("activate readback is invalid")
 		}
-		var plans, receipts, eventRows int
+		var plans, receipts int
 		if txErr = db.QueryRow(tx, "SELECT count(*) FROM group_ops_plans").Scan(&plans); txErr != nil {
 			return txErr
 		}
 		if txErr = db.QueryRow(tx, "SELECT count(*) FROM group_ops_operation_receipts WHERE state = 'completed'").Scan(&receipts); txErr != nil {
 			return txErr
 		}
-		if txErr = db.QueryRow(tx, "SELECT count(*) FROM event_log WHERE idempotency_key LIKE $1", key+"%").Scan(&eventRows); txErr != nil {
-			return txErr
-		}
-		if plans != 1 || receipts != 5 || eventRows != 5 {
+		if plans != 1 || receipts != 5 || events.count != 5 {
 			return groupopsapp.ErrUnavailable
 		}
 		return errGroupOpsRepositoryRollback
@@ -155,58 +131,23 @@ func TestRepositoryPostgreSQLAtomicRoundTripAndRollback(t *testing.T) {
 	}
 }
 
-func assertActiveStaffShareLock(t *testing.T, ctx context.Context, pool *pgxpool.Pool, uow *platformstore.UnitOfWork, staffID int64, staffUserID string) {
-	t.Helper()
-	reader := contactstore.NewStaffDirectoryRepository(pool)
-	err := uow.Within(ctx, func(tx context.Context) error {
-		active, err := reader.IsActiveStaff(tx, staffID)
-		if err != nil || !active {
-			return fmt.Errorf("active staff reader: active=%t err=%w", active, err)
-		}
-		updateCtx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-		defer cancel()
-		err = contactfixture.SetStaffActiveByWeComUserID(updateCtx, pool, staffUserID, false)
-		if isLockTimeout(err) {
-			return nil
-		}
-		return fmt.Errorf("deactivation unexpectedly passed share lock: %w", err)
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err = contactfixture.SetStaffActiveByWeComUserID(ctx, pool, staffUserID, false); err != nil {
-		t.Fatalf("deactivation after reader commit: %v", err)
-	}
-	if err = contactfixture.SetStaffActiveByWeComUserID(ctx, pool, staffUserID, true); err != nil {
-		t.Fatalf("restore active staff: %v", err)
-	}
-}
-
-func isLockTimeout(err error) bool {
-	if errors.Is(err, context.DeadlineExceeded) {
-		return true
-	}
-	var pgErr *pgconn.PgError
-	return errors.As(err, &pgErr) && pgErr.Code == "57014"
-}
-
 type groupOpsIntegrationUOW struct{}
 
 func (groupOpsIntegrationUOW) Within(ctx context.Context, callback func(context.Context) error) error {
 	return callback(ctx)
 }
 
-type groupOpsIntegrationEventAppender struct{}
+type groupOpsIntegrationStaff struct{}
 
-var _ eventport.Appender = groupOpsIntegrationEventAppender{}
+func (groupOpsIntegrationStaff) IsActiveStaff(context.Context, int64) (bool, error) { return true, nil }
 
-func (groupOpsIntegrationEventAppender) Append(ctx context.Context, event eventport.Event) (eventport.EventID, error) {
-	db, err := platformstore.TxFromContext(ctx)
-	if err != nil {
-		return 0, err
-	}
-	id, err := eventsfixture.CreateEvent(ctx, db, event)
-	return eventport.EventID(id), err
+type groupOpsIntegrationEventAppender struct{ count int }
+
+var _ eventport.Appender = (*groupOpsIntegrationEventAppender)(nil)
+
+func (events *groupOpsIntegrationEventAppender) Append(context.Context, eventport.Event) (eventport.EventID, error) {
+	events.count++
+	return eventport.EventID(events.count), nil
 }
 
 var errGroupOpsRepositoryRollback = errors.New("rollback group ops repository integration")

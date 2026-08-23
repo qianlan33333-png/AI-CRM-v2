@@ -9,16 +9,16 @@ import (
 	"testing"
 	"time"
 
-	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
 )
 
 const (
-	testSession = "service-period-test-session"
-	testCSRF    = "service-period-test-csrf"
-	testKey     = "service-period-idempotency-key-0001"
+	testSession       = "service-period-test-session"
+	testCSRF          = "service-period-test-csrf"
+	testKey           = "service-period-idempotency-key-0001"
+	testSessionCookie = "aicrm_session"
 )
 
 func TestProtectedRoutesEnforceExistingProductRolesCapabilitiesAndCSRF(t *testing.T) {
@@ -278,22 +278,8 @@ func mustProtectedHandler(t *testing.T, application productport.ServicePeriodApp
 	if err != nil {
 		t.Fatal(err)
 	}
-	authHandler, err := authhttp.NewHandler(auth)
-	if err != nil {
-		t.Fatal(err)
-	}
-	read, err := authHandler.Authorize(authport.CapabilityProductsRead, leaf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	writeAuthorized, err := authHandler.Authorize(authport.CapabilityProductsWrite, leaf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	write, err := authHandler.RequireCSRF(writeAuthorized)
-	if err != nil {
-		t.Fatal(err)
-	}
+	read := servicePeriodTestAuthorize(auth, authport.CapabilityProductsRead, leaf)
+	write := servicePeriodTestCSRF(auth, servicePeriodTestAuthorize(auth, authport.CapabilityProductsWrite, leaf))
 	dispatch := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method == http.MethodGet {
 			read.ServeHTTP(writer, request)
@@ -301,7 +287,66 @@ func mustProtectedHandler(t *testing.T, application productport.ServicePeriodApp
 		}
 		write.ServeHTTP(writer, request)
 	})
-	return authHandler.Authenticate(dispatch)
+	return servicePeriodTestAuthenticate(auth, dispatch)
+}
+
+func servicePeriodTestAuthenticate(auth authport.Service, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		cookie, err := request.Cookie(testSessionCookie)
+		if err != nil {
+			http.Error(writer, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		session := authport.SessionRef(cookie.Value)
+		principal, err := auth.Authenticate(request.Context(), session)
+		if err != nil {
+			http.Error(writer, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		ctx := authport.WithAuthenticatedSession(request.Context(), principal, session)
+		next.ServeHTTP(writer, request.WithContext(ctx))
+	})
+}
+
+func servicePeriodTestAuthorize(auth authport.Service, capability authport.Capability, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		principal, ok := authport.PrincipalFromContext(request.Context())
+		if !ok {
+			http.Error(writer, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		authorization, err := auth.Authorize(request.Context(), principal, capability)
+		if err != nil {
+			http.Error(writer, "forbidden", http.StatusForbidden)
+			return
+		}
+		ctx, err := authport.WithAuthorization(request.Context(), authorization)
+		if err != nil {
+			http.Error(writer, "forbidden", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(writer, request.WithContext(ctx))
+	})
+}
+
+func servicePeriodTestCSRF(auth authport.Service, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		session, ok := authport.SessionFromContext(request.Context())
+		if !ok {
+			http.Error(writer, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		values := request.Header.Values("X-CSRF-Token")
+		if len(values) != 1 {
+			http.Error(writer, "forbidden", http.StatusForbidden)
+			return
+		}
+		if err := auth.ValidateCSRF(request.Context(), session, authport.CSRFToken(values[0])); err != nil {
+			http.Error(writer, "forbidden", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(writer, request)
+	})
 }
 
 func serveServicePeriodRequest(handler http.Handler, method, path, body, key string, session, csrf bool) *httptest.ResponseRecorder {
@@ -329,7 +374,7 @@ func newServicePeriodRequest(method, path, body, key string, session, csrf bool)
 		request.Header.Set("X-CSRF-Token", testCSRF)
 	}
 	if session {
-		request.AddCookie(&http.Cookie{Name: authhttp.SessionCookieName, Value: testSession})
+		request.AddCookie(&http.Cookie{Name: testSessionCookie, Value: testSession})
 	}
 	return request
 }

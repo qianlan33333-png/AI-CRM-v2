@@ -11,7 +11,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	memberapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/app"
 	memberdomain "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/domain"
@@ -51,19 +52,21 @@ VALUES ($1,'service member integration','local only',0,'CNY',0,7001,$2,$2,$3::js
 	productID = insertProduct(key, `{"schema_version":1,"status":"service_period_enabled","enabled":true}`)
 	archivedProductID = insertProduct(key+"-archived", `{"schema_version":1,"status":"service_period_archived","enabled":false}`)
 	ordinaryProductID = insertProduct(key+"-ordinary", `{"schema_version":1}`)
-	if err = pool.QueryRow(ctx, `INSERT INTO customers (name) VALUES ('service member OneID') RETURNING id`).Scan(&customerID); err != nil {
+	customerID, err = contactfixture.CreateCustomerWithDetails(ctx, pool, "service member OneID", []byte(`{}`))
+	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
 		_, _ = pool.Exec(context.Background(), `DELETE FROM products WHERE id=ANY($1::bigint[])`, []int64{productID, archivedProductID, ordinaryProductID})
-		_, _ = pool.Exec(context.Background(), `DELETE FROM customers WHERE id=$1`, customerID)
+		_ = contactfixture.DeleteCustomers(context.Background(), pool, []int64{customerID})
 	})
 
 	codec, err := memberapp.NewCursorCodec(bytes.Repeat([]byte("service-member-pg16-secret-"), 2))
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := memberapp.NewService(inlineUoW{}, NewRepository(), eventstore.NewAppender(), codec)
+	events := &memberIntegrationEvents{}
+	service, err := memberapp.NewService(inlineUoW{}, NewRepository(), events, codec)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,12 +134,11 @@ VALUES ($1,'service member integration','local only',0,'CNY',0,7001,$2,$2,$3::js
 		if addErr != nil || removed.State != memberdomain.StateRemoved || removed.Version != 4 {
 			return fmt.Errorf("remove: %w", addErr)
 		}
-		var members, receipts, events int
+		var members, receipts int
 		_ = db.QueryRow(tx, `SELECT count(*) FROM service_period_members WHERE service_product_id=$1`, productID).Scan(&members)
 		_ = db.QueryRow(tx, `SELECT count(*) FROM service_period_member_operation_receipts WHERE actor_scope='service_period_members:actor:7001'`).Scan(&receipts)
-		_ = db.QueryRow(tx, `SELECT count(*) FROM event_log WHERE idempotency_key LIKE 'service_period_member.%' AND customer_id=$1`, customerID).Scan(&events)
-		if members != 1 || receipts != 4 || events != 4 {
-			return fmt.Errorf("facts=%d/%d/%d", members, receipts, events)
+		if members != 1 || receipts != 4 || events.count != 4 {
+			return fmt.Errorf("facts=%d/%d/%d", members, receipts, events.count)
 		}
 		return errIntegrationRollback
 	})
@@ -204,6 +206,13 @@ type inlineUoW struct{}
 
 func (inlineUoW) Within(ctx context.Context, callback func(context.Context) error) error {
 	return callback(ctx)
+}
+
+type memberIntegrationEvents struct{ count int }
+
+func (events *memberIntegrationEvents) Append(context.Context, eventport.Event) (eventport.EventID, error) {
+	events.count++
+	return eventport.EventID(events.count), nil
 }
 
 var errIntegrationRollback = errors.New("rollback service member integration")

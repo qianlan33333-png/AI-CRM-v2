@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	configapp "github.com/qianlan33333-png/AI-CRM-v2/internal/config/app"
 	configport "github.com/qianlan33333-png/AI-CRM-v2/internal/config/port"
@@ -177,15 +176,26 @@ func newSetupWizardHandler(t *testing.T, application setupWizardApplication) *Ha
 
 func csrfProtectedSetupWizardHandler(t *testing.T, leaf http.Handler, auth authport.Service) http.Handler {
 	t.Helper()
-	handler, err := authhttp.NewHandler(auth)
-	if err != nil {
-		t.Fatal(err)
+	if leaf == nil || auth == nil {
+		t.Fatal("valid setup wizard test handler and auth required")
 	}
-	protected, err := handler.RequireCSRF(leaf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return protected
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		session, ok := authport.SessionFromContext(request.Context())
+		if !ok {
+			http.Error(writer, "unauthenticated", http.StatusUnauthorized)
+			return
+		}
+		values := request.Header.Values("X-CSRF-Token")
+		if len(values) != 1 {
+			http.Error(writer, "forbidden", http.StatusForbidden)
+			return
+		}
+		if err := auth.ValidateCSRF(request.Context(), session, authport.CSRFToken(values[0])); err != nil {
+			http.Error(writer, "forbidden", http.StatusForbidden)
+			return
+		}
+		leaf.ServeHTTP(writer, request)
+	})
 }
 
 func authorizedSetupWizardRequest(t *testing.T, method, path string, body io.Reader, session authport.SessionRef, capability authport.Capability) *http.Request {

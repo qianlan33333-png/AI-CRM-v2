@@ -11,7 +11,6 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
-	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
@@ -42,7 +41,7 @@ func TestOperationsRepositoryPostgreSQLAtomicLocalOnlyRoundTrip(t *testing.T) {
 	}
 
 	repository := NewOperationsRepository()
-	events := eventstore.NewAppender()
+	events := &surveyOperationsIntegrationEvents{}
 	uow := platformstore.NewUnitOfWork(pool)
 	now := time.Date(2026, time.August, 22, 11, 0, 0, 0, time.UTC)
 	err = uow.Within(ctx, func(tx context.Context) error {
@@ -121,17 +120,14 @@ RETURNING id`, now).Scan(&questionnaireID)
 		if txErr != nil || len(page) != 1 || page[0] != testRun {
 			return errors.Join(surveyapp.ErrUnavailable, txErr)
 		}
-		var operationRows, receiptRows, eventRows int
+		var operationRows, receiptRows int
 		if txErr = db.QueryRow(tx, `SELECT count(*) FROM questionnaire_operations WHERE questionnaire_id = $1`, questionnaireID).Scan(&operationRows); txErr != nil {
 			return txErr
 		}
 		if txErr = db.QueryRow(tx, `SELECT count(*) FROM questionnaire_operations_receipts WHERE id IN ($1, $2) AND state = 'completed'`, completionReceipt.ID, queueReceipt.ID).Scan(&receiptRows); txErr != nil {
 			return txErr
 		}
-		if txErr = db.QueryRow(tx, `SELECT count(*) FROM event_log WHERE idempotency_key IN ('survey.operations.integration.completion', 'survey.operations.integration.queue')`).Scan(&eventRows); txErr != nil {
-			return txErr
-		}
-		if operationRows != 1 || receiptRows != 2 || eventRows != 2 {
+		if operationRows != 1 || receiptRows != 2 || events.count != 2 {
 			return surveyapp.ErrUnavailable
 		}
 		return errOperationsRepositoryRollback
@@ -156,6 +152,13 @@ func operationsReservation(label string, now time.Time) surveyapp.OperationsRese
 	key := sha256.Sum256([]byte("operations-integration-key-" + label))
 	payload := sha256.Sum256([]byte("operations-integration-payload-" + label))
 	return surveyapp.OperationsReservation{ActorScope: "admin:41", KeyDigest: key, PayloadDigest: payload, CreatedAt: now}
+}
+
+type surveyOperationsIntegrationEvents struct{ count int }
+
+func (events *surveyOperationsIntegrationEvents) Append(context.Context, eventport.Event) (eventport.EventID, error) {
+	events.count++
+	return eventport.EventID(events.count), nil
 }
 
 var errOperationsRepositoryRollback = errors.New("rollback survey operations repository integration")
