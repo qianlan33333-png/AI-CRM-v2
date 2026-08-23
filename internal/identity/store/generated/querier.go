@@ -26,6 +26,7 @@ type Querier interface {
 	ListCustomerMergeHistory(ctx context.Context, arg ListCustomerMergeHistoryParams) ([]ListCustomerMergeHistoryRow, error)
 	ListMergeReviewsByStatus(ctx context.Context, arg ListMergeReviewsByStatusParams) ([]ListMergeReviewsByStatusRow, error)
 	ListPendingMergeReviews(ctx context.Context, arg ListPendingMergeReviewsParams) ([]ListPendingMergeReviewsRow, error)
+	ListPrimaryWeComExternalUserIDs(ctx context.Context, customerIds []int64) ([]ListPrimaryWeComExternalUserIDsRow, error)
 	LoadBindMergeReview(ctx context.Context, reviewID int64) (int64, error)
 	LoadBindReceipt(ctx context.Context, keyDigest []byte) (LoadBindReceiptRow, error)
 	LoadCustomerMergeAudit(ctx context.Context, mergeAuditID int64) (LoadCustomerMergeAuditRow, error)

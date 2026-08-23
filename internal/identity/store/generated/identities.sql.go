@@ -650,6 +650,44 @@ func (q *Queries) ListPendingMergeReviews(ctx context.Context, arg ListPendingMe
 	return items, nil
 }
 
+const listPrimaryWeComExternalUserIDs = `-- name: ListPrimaryWeComExternalUserIDs :many
+SELECT
+  customer_id,
+  min(normalized_value)::text AS external_userid
+FROM identities
+WHERE customer_id = ANY($1::bigint[])
+  AND kind = 'wecom_external_userid'
+  AND assurance = 'verified'
+GROUP BY customer_id
+HAVING count(DISTINCT normalized_value) = 1
+ORDER BY customer_id
+`
+
+type ListPrimaryWeComExternalUserIDsRow struct {
+	CustomerID     pgtype.Int8 `json:"customer_id"`
+	ExternalUserid string      `json:"external_userid"`
+}
+
+func (q *Queries) ListPrimaryWeComExternalUserIDs(ctx context.Context, customerIds []int64) ([]ListPrimaryWeComExternalUserIDsRow, error) {
+	rows, err := q.db.Query(ctx, listPrimaryWeComExternalUserIDs, customerIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListPrimaryWeComExternalUserIDsRow{}
+	for rows.Next() {
+		var i ListPrimaryWeComExternalUserIDsRow
+		if err := rows.Scan(&i.CustomerID, &i.ExternalUserid); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const loadBindMergeReview = `-- name: LoadBindMergeReview :one
 SELECT id
 FROM pending_events
