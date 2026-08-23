@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	AcceptSegmentRefreshReceipt(ctx context.Context, arg AcceptSegmentRefreshReceiptParams) (AcceptSegmentRefreshReceiptRow, error)
+	ArchiveSegment(ctx context.Context, arg ArchiveSegmentParams) (ArchiveSegmentRow, error)
 	CompleteSegmentOperationReceipt(ctx context.Context, arg CompleteSegmentOperationReceiptParams) (CompleteSegmentOperationReceiptRow, error)
 	CompleteSegmentRefresh(ctx context.Context, arg CompleteSegmentRefreshParams) (int64, error)
 	CreateSegment(ctx context.Context, arg CreateSegmentParams) (CreateSegmentRow, error)

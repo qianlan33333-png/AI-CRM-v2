@@ -29,20 +29,21 @@ RETURNING id, operation, actor_scope, key_digest, payload_digest, state, result_
 
 -- name: ListSegments :many
 SELECT id, name, definition, refresh_mode, refresh_cron, member_count,
-       refreshed_at, refresh_status, created_at, updated_at
+       refreshed_at, refresh_status, created_at, updated_at, lifecycle_status
 FROM segments
-WHERE (sqlc.narg(after_id)::bigint IS NULL OR id > sqlc.narg(after_id)::bigint)
+WHERE lifecycle_status = 'active'
+  AND (sqlc.narg(after_id)::bigint IS NULL OR id > sqlc.narg(after_id)::bigint)
 ORDER BY id
 LIMIT sqlc.arg(row_limit)::integer;
 -- name: GetSegment :one
 SELECT id, name, definition, refresh_mode, refresh_cron, member_count,
-       refreshed_at, refresh_status, created_at, updated_at
+       refreshed_at, refresh_status, created_at, updated_at, lifecycle_status
 FROM segments
 WHERE id = sqlc.arg(segment_id)::bigint;
 
 -- name: LockSegmentForUpdate :one
 SELECT id, name, definition, refresh_mode, refresh_cron, member_count,
-       refreshed_at, refresh_status, created_at, updated_at
+       refreshed_at, refresh_status, created_at, updated_at, lifecycle_status
 FROM segments
 WHERE id = sqlc.arg(segment_id)::bigint
 FOR UPDATE;
@@ -60,6 +61,17 @@ INSERT INTO segments (
 )
 RETURNING id, name, definition, refresh_mode, refresh_cron, member_count,
           refreshed_at, refresh_status, created_at, updated_at;
+
+-- name: ArchiveSegment :one
+UPDATE segments
+SET lifecycle_status = 'archived',
+    archived_at = sqlc.arg(archived_at)::timestamptz,
+    archived_by = sqlc.arg(archived_by)::text,
+    updated_at = sqlc.arg(archived_at)::timestamptz
+WHERE id = sqlc.arg(segment_id)::bigint
+  AND lifecycle_status = 'active'
+RETURNING id, name, definition, refresh_mode, refresh_cron, member_count,
+          refreshed_at, refresh_status, created_at, updated_at, lifecycle_status;
 
 -- name: UpdateSegment :one
 UPDATE segments
