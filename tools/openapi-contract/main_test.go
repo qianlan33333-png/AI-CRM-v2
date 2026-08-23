@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -319,6 +320,80 @@ func TestOperationsWorkspaceCarrierRBACRemainsNarrow(t *testing.T) {
 		if contract.capability != "admin.read" || !reflect.DeepEqual(contract.scopes, map[string]string{"admin": "global"}) {
 			t.Fatalf("%s capability/scopes=%q/%v", operationID, contract.capability, contract.scopes)
 		}
+	}
+}
+
+func TestCloudCampaignWorkspaceLaunchQueryRemainsLosslessAndClosed(t *testing.T) {
+	doc, _ := fresh(t)
+	operation := doc.Paths.Value("/admin/cloud-orchestrator/campaigns").Get
+	if operation == nil || len(operation.Parameters) != 2 {
+		t.Fatalf("campaign carrier parameters=%v", operation)
+	}
+	kind := operation.Parameters.GetByInAndName("query", "source_kind")
+	id := operation.Parameters.GetByInAndName("query", "source_id")
+	if kind == nil || kind.Required || kind.Schema == nil || kind.Schema.Value == nil ||
+		kind.Schema.Value.Type == nil || !kind.Schema.Value.Type.Is("string") ||
+		!reflect.DeepEqual(kind.Schema.Value.Enum, []any{"customer_selection", "segment_members", "ai_audience_package_members"}) {
+		t.Fatalf("source_kind=%#v", kind)
+	}
+	if id == nil || id.Required || id.Schema == nil || id.Schema.Value == nil ||
+		id.Schema.Value.Type == nil || !id.Schema.Value.Type.Is("string") || id.Schema.Value.Format != "" ||
+		id.Schema.Value.Pattern != "^[1-9][0-9]{0,18}$" || id.Schema.Value.MaxLength == nil || *id.Schema.Value.MaxLength != 19 ||
+		id.Schema.Value.Min != nil || id.Schema.Value.Max != nil ||
+		id.Schema.Value.Extensions["x-aicrm-decimal-maximum"] != "9223372036854775807" ||
+		operation.Extensions["x-aicrm-query-contract"] != "none_or_exact_source_pair" {
+		t.Fatalf("source_id=%#v", id)
+	}
+	redirect := operation.Responses.Value("302")
+	if redirect == nil || redirect.Value == nil {
+		t.Fatal("campaign carrier redirect response is missing")
+	}
+	location := redirect.Value.Headers["Location"]
+	if location == nil || location.Value == nil || location.Value.Schema == nil || location.Value.Schema.Value == nil || len(location.Value.Schema.Value.OneOf) != 2 {
+		t.Fatalf("Location=%#v", location)
+	}
+	pattern := regexp.MustCompile(location.Value.Schema.Value.OneOf[1].Value.Pattern)
+	for _, sourceID := range []string{"1", "999999999999999999", "1000000000000000000", "9223372036854775807"} {
+		value := "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns%3Fsource_kind%3Dsegment_members%26source_id%3D" + sourceID
+		if !pattern.MatchString(value) {
+			t.Fatalf("Location pattern rejected source_id=%s", sourceID)
+		}
+	}
+	for _, sourceID := range []string{"0", "01", "9223372036854775808", "9999999999999999999", "10000000000000000000"} {
+		value := "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns%3Fsource_kind%3Dsegment_members%26source_id%3D" + sourceID
+		if pattern.MatchString(value) {
+			t.Fatalf("Location pattern accepted source_id=%s", sourceID)
+		}
+	}
+	if operation.Responses.Value("400") == nil {
+		t.Fatal("campaign carrier lacks malformed-query response")
+	}
+}
+
+func TestCloudCampaignWorkspaceLaunchQueryRegistryRejectsDrift(t *testing.T) {
+	for name, mutate := range map[string]func(*openapi3.Operation){
+		"source id becomes number": func(operation *openapi3.Operation) {
+			parameter := operation.Parameters.GetByInAndName("query", "source_id")
+			parameter.Schema.Value.Type = &openapi3.Types{"integer"}
+			parameter.Schema.Value.Format = "int64"
+		},
+		"source kind broadens": func(operation *openapi3.Operation) {
+			operation.Parameters.GetByInAndName("query", "source_kind").Schema.Value.Enum = append(
+				operation.Parameters.GetByInAndName("query", "source_kind").Schema.Value.Enum,
+				"customer_filter",
+			)
+		},
+		"extra query appears": func(operation *openapi3.Operation) {
+			operation.Parameters = append(operation.Parameters, &openapi3.ParameterRef{Value: &openapi3.Parameter{
+				Name: "return_to", In: "query", Schema: &openapi3.SchemaRef{Value: openapi3.NewStringSchema()},
+			}})
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			doc, ids := fresh(t)
+			mutate(doc.Paths.Value("/admin/cloud-orchestrator/campaigns").Get)
+			reject(t, doc, ids)
+		})
 	}
 }
 
