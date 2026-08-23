@@ -2,6 +2,8 @@ package campaign
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -13,6 +15,27 @@ type eventAppenderSpy struct{ events []eventport.Event }
 func (spy *eventAppenderSpy) Append(_ context.Context, event eventport.Event) (eventport.EventID, error) {
 	spy.events = append(spy.events, event)
 	return eventport.EventID(len(spy.events)), nil
+}
+
+func TestEventLogAdapterAppendsTouchPlanAsBoundLocalCampaignFact(t *testing.T) {
+	spy := &eventAppenderSpy{}
+	adapter, err := NewEventLogAdapter(spy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	created, err := adapter.AppendTouchPlanCreated(context.Background(), TouchPlanCreatedAuditEvent{
+		PlanID: DraftTouchPlanID(7, "spring-campaign", "touch-plan-key"), CampaignCode: "spring-campaign", OwnerActorID: 7,
+		TargetDigest: strings.Repeat("1", 64), TargetCount: 1, ContentDigest: strings.Repeat("2", 64),
+		OccurredAt: time.Date(2026, time.August, 23, 2, 3, 4, 0, time.UTC), IdempotencyKey: "touch-plan-event-key",
+	})
+	if err != nil || created != 1 || len(spy.events) != 1 || spy.events[0].Type != eventport.EvCloudCampaignFact {
+		t.Fatalf("event id/error/events=%d/%v/%+v", created, err, spy.events)
+	}
+	var payload map[string]any
+	if err = json.Unmarshal(spy.events[0].Payload, &payload); err != nil || payload["audit_type"] != "touch_plan_created" ||
+		payload["plan_id"] == "" || payload["provider"] != nil || payload["outbound_task_id"] != nil {
+		t.Fatalf("payload=%s parsed=%#v err=%v", spy.events[0].Payload, payload, err)
+	}
 }
 
 func TestEventLogAdapterSeparatesBatchCampaignReceiptKeys(t *testing.T) {

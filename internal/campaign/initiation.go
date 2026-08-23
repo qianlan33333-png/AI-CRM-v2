@@ -10,7 +10,10 @@ import (
 	"time"
 )
 
-const MaximumDraftTouchTargets = 1_000
+const (
+	MaximumDraftTouchTargets       = 1_000
+	MaximumDraftTouchPlanPageLimit = 100
+)
 
 var ErrBlockedRedline = errors.New("campaign initiation blocked redline")
 
@@ -31,10 +34,10 @@ func (kind InitiationSourceKind) Valid() bool {
 // provide. The resolver, not the caller, supplies the persisted version and
 // digest in InitiationSourceRef.
 type InitiationSourceRequest struct {
-	Kind              InitiationSourceKind
-	CustomerIDs       []int64
-	SegmentID         int64
-	AudiencePackageID int64
+	Kind              InitiationSourceKind `json:"kind"`
+	CustomerIDs       []int64              `json:"customer_ids,omitempty"`
+	SegmentID         int64                `json:"segment_id,omitempty"`
+	AudiencePackageID int64                `json:"audience_package_id,omitempty"`
 }
 
 func (request InitiationSourceRequest) Valid() bool {
@@ -129,13 +132,7 @@ func NewCustomerSelectionSourceRef(customerIDs []int64) (InitiationSourceRef, bo
 }
 
 func CanonicalCustomerSelectionDigest(customerIDs []int64) string {
-	hash := sha256.New()
-	_, _ = hash.Write([]byte("campaign.customer_selection.v1"))
-	for _, customerID := range customerIDs {
-		_, _ = hash.Write([]byte{0})
-		_, _ = hash.Write([]byte(strconv.FormatInt(customerID, 10)))
-	}
-	return hex.EncodeToString(hash.Sum(nil))
+	return canonicalMemberDigest("campaign.customer_selection.v1", customerIDs)
 }
 
 // SegmentMemberSourceFact is the authoritative local Segment member snapshot.
@@ -150,6 +147,22 @@ func (fact SegmentMemberSourceFact) Valid() bool {
 	return fact.SegmentID > 0 && validSourceWatermark(fact.MemberSnapshotWatermark) && validInitiationDigest(fact.Digest)
 }
 
+// NewSegmentMemberSourceRefFromSnapshot accepts only the digest authored by
+// the Segment-owned transaction-bound snapshot seam. Campaign persists that
+// closed source fact but never reads Segment tables itself.
+func NewSegmentMemberSourceRefFromSnapshot(segmentID int64, watermark time.Time, digest string) (InitiationSourceRef, bool) {
+	if segmentID < 1 || !validSourceWatermark(watermark) || !validInitiationDigest(digest) {
+		return InitiationSourceRef{}, false
+	}
+	return InitiationSourceRef{
+		Kind: InitiationSourceSegmentMembers,
+		Segment: &SegmentMemberSourceFact{
+			SegmentID: segmentID, MemberSnapshotWatermark: watermark.UTC(),
+			Digest: digest,
+		},
+	}, true
+}
+
 // AudiencePackageMemberSourceFact binds the local AI Audience package version
 // and the underlying member snapshot watermark/digest in one frozen source.
 type AudiencePackageMemberSourceFact struct {
@@ -161,6 +174,21 @@ type AudiencePackageMemberSourceFact struct {
 
 func (fact AudiencePackageMemberSourceFact) Valid() bool {
 	return fact.PackageID > 0 && fact.PackageVersion > 0 && validSourceWatermark(fact.MemberSnapshotWatermark) && validInitiationDigest(fact.Digest)
+}
+
+// NewAudiencePackageMemberSourceRefFromSnapshot preserves the package version
+// and digest authored by the Segment-owned locked Audience package snapshot.
+func NewAudiencePackageMemberSourceRefFromSnapshot(packageID, packageVersion int64, watermark time.Time, digest string) (InitiationSourceRef, bool) {
+	if packageID < 1 || packageVersion < 1 || !validSourceWatermark(watermark) || !validInitiationDigest(digest) {
+		return InitiationSourceRef{}, false
+	}
+	return InitiationSourceRef{
+		Kind: InitiationSourceAudiencePackageMembers,
+		AudiencePackage: &AudiencePackageMemberSourceFact{
+			PackageID: packageID, PackageVersion: packageVersion, MemberSnapshotWatermark: watermark.UTC(),
+			Digest: digest,
+		},
+	}, true
 }
 
 // InitiationSourceRef is a resolver-authored local source fact. It has a
@@ -206,7 +234,8 @@ func CanonicalInitiationSourceRef(ref InitiationSourceRef) InitiationSourceRef {
 }
 
 type ContentSnapshot struct {
-	Steps []Step `json:"steps"`
+	Steps  []Step `json:"steps"`
+	Digest string `json:"content_digest"`
 }
 
 type CustomerTargetSnapshot struct {
@@ -220,10 +249,6 @@ type PreviewExclusionSummary struct {
 	InactiveExcludedCount int32 `json:"inactive_excluded_count"`
 	PolicyExcludedCount   int32 `json:"policy_excluded_count"`
 }
-
-type ReviewStatus string
-
-const ReviewDraft ReviewStatus = "draft"
 
 type InitiationSafety struct {
 	LocalOnly                 bool `json:"local_only"`
@@ -248,10 +273,66 @@ type DraftTouchPlan struct {
 	Content         ContentSnapshot         `json:"content"`
 	OwnerActorID    int64                   `json:"owner_actor_id"`
 	Exclusions      PreviewExclusionSummary `json:"preview_exclusion_summary"`
-	Review          ReviewStatus            `json:"review"`
-	Version         int64                   `json:"version"`
 	CreatedAt       time.Time               `json:"created_at"`
 	Safety          InitiationSafety        `json:"safety"`
+}
+
+// DraftTouchPlanSummary is deliberately recipient-safe: it exposes counts and
+// immutable digests, not the individual canonical customer IDs held by the
+// Campaign-owned target snapshot. Per-recipient reads remain a later contract.
+type DraftTouchPlanSummary struct {
+	ID               string                  `json:"id"`
+	CampaignCode     string                  `json:"campaign_code"`
+	CampaignVersion  int64                   `json:"campaign_version"`
+	Source           InitiationSourceRef     `json:"source"`
+	TargetCount      int32                   `json:"target_count"`
+	TargetDigest     string                  `json:"target_digest"`
+	ContentStepCount int32                   `json:"content_step_count"`
+	ContentDigest    string                  `json:"content_digest"`
+	OwnerActorID     int64                   `json:"owner_actor_id"`
+	Exclusions       PreviewExclusionSummary `json:"preview_exclusion_summary"`
+	CreatedAt        time.Time               `json:"created_at"`
+	Safety           InitiationSafety        `json:"safety"`
+}
+
+// DraftTouchPlanPage uses an opaque application-authored keyset cursor. It
+// contains summaries only, never the individual target snapshot IDs.
+type DraftTouchPlanPage struct {
+	Items      []DraftTouchPlanSummary `json:"items"`
+	NextCursor string                  `json:"next_cursor,omitempty"`
+}
+
+func DraftTouchPlanSummaryOf(plan DraftTouchPlan) DraftTouchPlanSummary {
+	return DraftTouchPlanSummary{
+		ID:               plan.ID,
+		CampaignCode:     plan.CampaignCode,
+		CampaignVersion:  plan.CampaignVersion,
+		Source:           CanonicalInitiationSourceRef(plan.Source),
+		TargetCount:      int32(len(plan.Targets.CustomerIDs)),
+		TargetDigest:     plan.Targets.Digest,
+		ContentStepCount: int32(len(plan.Content.Steps)),
+		ContentDigest:    plan.Content.Digest,
+		OwnerActorID:     plan.OwnerActorID,
+		Exclusions:       plan.Exclusions,
+		CreatedAt:        plan.CreatedAt,
+		Safety:           plan.Safety,
+	}
+}
+
+func ValidDraftTouchPlanSummary(plan DraftTouchPlanSummary) bool {
+	if !validPlanID(plan.ID) || !validCode(plan.CampaignCode) || !plan.Source.Valid() ||
+		plan.CampaignVersion < 1 || plan.TargetCount < 1 || plan.TargetCount > MaximumDraftTouchTargets ||
+		plan.ContentStepCount < 1 || plan.ContentStepCount > MaximumSteps ||
+		!validInitiationDigest(plan.TargetDigest) || !validInitiationDigest(plan.ContentDigest) ||
+		plan.OwnerActorID < 1 || plan.CreatedAt.IsZero() ||
+		plan.Safety != LocalInitiationSafety() {
+		return false
+	}
+	return plan.Exclusions.CandidateCount >= plan.TargetCount &&
+		plan.Exclusions.ActiveCustomerCount >= plan.TargetCount &&
+		plan.Exclusions.InactiveExcludedCount >= 0 && plan.Exclusions.PolicyExcludedCount >= 0 &&
+		plan.Exclusions.CandidateCount == plan.TargetCount+plan.Exclusions.InactiveExcludedCount+plan.Exclusions.PolicyExcludedCount &&
+		plan.Exclusions.ActiveCustomerCount == plan.TargetCount+plan.Exclusions.PolicyExcludedCount
 }
 
 type CreateDraftTouchPlanCommand struct {
@@ -267,11 +348,30 @@ func ValidateCreateDraftTouchPlanCommand(command CreateDraftTouchPlanCommand) bo
 }
 
 func ValidContentSnapshot(content ContentSnapshot) bool {
-	return len(content.Steps) >= 1 && validSteps(content.Steps)
+	return len(content.Steps) >= 1 && validSteps(content.Steps) &&
+		validInitiationDigest(content.Digest) && content.Digest == CanonicalContentDigest(content.Steps)
 }
 
 func CanonicalContentSnapshot(steps []Step) ContentSnapshot {
-	return ContentSnapshot{Steps: append([]Step(nil), steps...)}
+	canonical := append([]Step(nil), steps...)
+	return ContentSnapshot{Steps: canonical, Digest: CanonicalContentDigest(canonical)}
+}
+
+// CanonicalContentDigest freezes the Campaign step payload using the same
+// ordered fields persisted in cloud_campaign_touch_plan_steps. It deliberately
+// excludes any future material-reference shape until Campaign owns one.
+func CanonicalContentDigest(steps []Step) string {
+	hash := sha256.New()
+	_, _ = hash.Write([]byte("campaign.touch_plan_content.v1"))
+	for _, step := range steps {
+		_, _ = hash.Write([]byte{0})
+		_, _ = hash.Write([]byte(strconv.FormatInt(int64(step.Index), 10)))
+		_, _ = hash.Write([]byte{0})
+		_, _ = hash.Write([]byte(strconv.FormatInt(int64(step.DelayMinutes), 10)))
+		_, _ = hash.Write([]byte{0})
+		_, _ = hash.Write([]byte(step.Content))
+	}
+	return hex.EncodeToString(hash.Sum(nil))
 }
 
 func CanonicalTargetDigest(source InitiationSourceRef, customerIDs []int64) string {
@@ -322,7 +422,7 @@ func DraftTouchPlanID(actorID int64, campaignCode, idempotencyKey string) string
 
 func ValidDraftTouchPlan(plan DraftTouchPlan) bool {
 	if !validPlanID(plan.ID) || !validCode(plan.CampaignCode) || !plan.Source.Valid() ||
-		plan.CampaignVersion < 1 || plan.OwnerActorID < 1 || plan.Review != ReviewDraft || plan.Version != 1 || plan.CreatedAt.IsZero() ||
+		plan.CampaignVersion < 1 || plan.OwnerActorID < 1 || plan.CreatedAt.IsZero() ||
 		plan.Safety != LocalInitiationSafety() || !ValidContentSnapshot(plan.Content) ||
 		len(plan.Targets.CustomerIDs) < 1 || len(plan.Targets.CustomerIDs) > MaximumDraftTouchTargets || plan.Targets.Digest != CanonicalTargetDigest(plan.Source, plan.Targets.CustomerIDs) {
 		return false
@@ -345,6 +445,15 @@ func CloneDraftTouchPlan(plan DraftTouchPlan) DraftTouchPlan {
 	return plan
 }
 
+func CloneDraftTouchPlanSummaries(plans []DraftTouchPlanSummary) []DraftTouchPlanSummary {
+	result := make([]DraftTouchPlanSummary, len(plans))
+	for index, plan := range plans {
+		plan.Source = CanonicalInitiationSourceRef(plan.Source)
+		result[index] = plan
+	}
+	return result
+}
+
 func validSourceWatermark(value time.Time) bool {
 	return !value.IsZero() && value.Location() == time.UTC
 }
@@ -363,4 +472,16 @@ func validPlanID(value string) bool {
 	}
 	_, err := hex.DecodeString(value[len("ctp_"):])
 	return err == nil
+}
+
+func ValidDraftTouchPlanID(value string) bool { return validPlanID(value) }
+
+func canonicalMemberDigest(namespace string, customerIDs []int64) string {
+	hash := sha256.New()
+	_, _ = hash.Write([]byte(namespace))
+	for _, customerID := range customerIDs {
+		_, _ = hash.Write([]byte{0})
+		_, _ = hash.Write([]byte(strconv.FormatInt(customerID, 10)))
+	}
+	return hex.EncodeToString(hash.Sum(nil))
 }

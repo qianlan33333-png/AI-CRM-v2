@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"reflect"
+	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -131,6 +133,7 @@ func (stub *initiationEligibilityStub) CheckCampaignEligibility(ctx context.Cont
 
 type initiationRepositoryStub struct {
 	mu         sync.Mutex
+	nextID     int64
 	receipts   map[string]campaignport.CreateReceipt
 	plans      map[string]campaign.DraftTouchPlan
 	reserveTx  []int
@@ -156,7 +159,8 @@ func (stub *initiationRepositoryStub) ReserveDraftCreate(ctx context.Context, re
 	if receipt, exists := stub.receipts[key]; exists {
 		return receipt, false, nil
 	}
-	receipt := campaignport.CreateReceipt{ActorID: reservation.ActorID, KeyDigest: reservation.KeyDigest, PayloadDigest: reservation.PayloadDigest, PlanID: reservation.PlanID}
+	stub.nextID++
+	receipt := campaignport.CreateReceipt{ID: stub.nextID, ActorID: reservation.ActorID, KeyDigest: reservation.KeyDigest, PayloadDigest: reservation.PayloadDigest, PlanID: reservation.PlanID}
 	stub.receipts[key] = receipt
 	registerInitiationRollback(ctx, func() {
 		stub.mu.Lock()
@@ -186,7 +190,7 @@ func (stub *initiationRepositoryStub) SaveDraftTouchPlan(ctx context.Context, pl
 	return nil
 }
 
-func (stub *initiationRepositoryStub) CompleteDraftCreate(ctx context.Context, receipt campaignport.CreateReceipt) error {
+func (stub *initiationRepositoryStub) CompleteDraftCreate(ctx context.Context, receipt campaignport.CreateReceipt, eventID int64) error {
 	stub.mu.Lock()
 	defer stub.mu.Unlock()
 	transactionID := initiationTransactionID(ctx)
@@ -196,10 +200,11 @@ func (stub *initiationRepositoryStub) CompleteDraftCreate(ctx context.Context, r
 	}
 	key := receiptKey(receipt.ActorID, receipt.KeyDigest)
 	current, exists := stub.receipts[key]
-	if !exists || current != receipt {
+	if !exists || current != receipt || eventID < 1 {
 		return errors.New("unknown receipt")
 	}
 	current.Completed = true
+	current.EventID = eventID
 	stub.receipts[key] = current
 	registerInitiationRollback(ctx, func() {
 		stub.mu.Lock()
@@ -209,7 +214,32 @@ func (stub *initiationRepositoryStub) CompleteDraftCreate(ctx context.Context, r
 	return nil
 }
 
-func (stub *initiationRepositoryStub) ReadDraftTouchPlan(ctx context.Context, id string) (campaign.DraftTouchPlan, error) {
+func (stub *initiationRepositoryStub) ListDraftTouchPlanSummaries(ctx context.Context, code string, after *campaignport.DraftTouchPlanKeyset, limit int32) ([]campaign.DraftTouchPlanSummary, error) {
+	stub.mu.Lock()
+	defer stub.mu.Unlock()
+	if initiationTransactionID(ctx) < 1 || limit < 1 {
+		return nil, errors.New("list outside transaction")
+	}
+	items := make([]campaign.DraftTouchPlanSummary, 0)
+	for _, plan := range stub.plans {
+		if plan.CampaignCode != code || after != nil && (plan.CreatedAt.After(after.CreatedAt) || plan.CreatedAt.Equal(after.CreatedAt) && plan.ID >= after.PlanID) {
+			continue
+		}
+		items = append(items, campaign.DraftTouchPlanSummaryOf(plan))
+	}
+	sort.Slice(items, func(left, right int) bool {
+		if items[left].CreatedAt.Equal(items[right].CreatedAt) {
+			return items[left].ID > items[right].ID
+		}
+		return items[left].CreatedAt.After(items[right].CreatedAt)
+	})
+	if len(items) > int(limit) {
+		items = items[:limit]
+	}
+	return campaign.CloneDraftTouchPlanSummaries(items), nil
+}
+
+func (stub *initiationRepositoryStub) ReadDraftTouchPlan(ctx context.Context, code, id string) (campaign.DraftTouchPlan, error) {
 	stub.mu.Lock()
 	defer stub.mu.Unlock()
 	transactionID := initiationTransactionID(ctx)
@@ -218,7 +248,7 @@ func (stub *initiationRepositoryStub) ReadDraftTouchPlan(ctx context.Context, id
 		return campaign.DraftTouchPlan{}, errors.New("strict readback outside transaction")
 	}
 	plan, exists := stub.plans[id]
-	if !exists {
+	if !exists || plan.CampaignCode != code {
 		return campaign.DraftTouchPlan{}, errors.New("not found")
 	}
 	plan = campaign.CloneDraftTouchPlan(plan)
@@ -235,16 +265,16 @@ type initiationEventStub struct {
 	err    error
 }
 
-func (stub *initiationEventStub) AppendCampaignEvent(ctx context.Context, event campaignport.CampaignEvent) error {
+func (stub *initiationEventStub) AppendCampaignEvent(ctx context.Context, event campaignport.CampaignEvent) (int64, error) {
 	stub.mu.Lock()
 	defer stub.mu.Unlock()
 	transactionID := initiationTransactionID(ctx)
 	stub.txIDs = append(stub.txIDs, transactionID)
 	if transactionID < 1 {
-		return errors.New("event outside transaction")
+		return 0, errors.New("event outside transaction")
 	}
 	if stub.err != nil {
-		return stub.err
+		return 0, stub.err
 	}
 	stub.events = append(stub.events, event)
 	registerInitiationRollback(ctx, func() {
@@ -252,7 +282,7 @@ func (stub *initiationEventStub) AppendCampaignEvent(ctx context.Context, event 
 		defer stub.mu.Unlock()
 		stub.events = stub.events[:len(stub.events)-1]
 	})
-	return nil
+	return int64(len(stub.events)), nil
 }
 
 func TestCreateDraftTouchPlanFreezesCanonicalLocalSnapshot(t *testing.T) {
@@ -264,7 +294,7 @@ func TestCreateDraftTouchPlanFreezesCanonicalLocalSnapshot(t *testing.T) {
 	if plan.CampaignCode != command.CampaignCode || plan.CampaignVersion != command.ExpectedCampaignVersion || !reflect.DeepEqual(plan.Source, deps.source.resolution.Source) || plan.OwnerActorID != command.Owner.ID ||
 		!reflect.DeepEqual(plan.Targets.CustomerIDs, []int64{1}) || plan.Targets.Digest != campaign.CanonicalTargetDigest(plan.Source, []int64{1}) ||
 		plan.Exclusions != (campaign.PreviewExclusionSummary{CandidateCount: 3, ActiveCustomerCount: 2, InactiveExcludedCount: 1, PolicyExcludedCount: 1}) ||
-		plan.Review != campaign.ReviewDraft || !plan.Safety.LocalOnly || plan.Safety.ProviderExecutionEligible || plan.Safety.RuntimeExecuted || plan.Safety.RealExternalCallExecuted || plan.Safety.DeliveryProven ||
+		!plan.Safety.LocalOnly || plan.Safety.ProviderExecutionEligible || plan.Safety.RuntimeExecuted || plan.Safety.RealExternalCallExecuted || plan.Safety.DeliveryProven ||
 		!reflect.DeepEqual(plan.Content.Steps, deps.draft.fact.Steps) {
 		t.Fatalf("plan=%+v", plan)
 	}
@@ -450,7 +480,10 @@ func TestCreateDraftTouchPlanRejectsCampaignVersionDriftBeforeSourceRead(t *test
 
 func TestCreateDraftTouchPlanRequiresStrictReadback(t *testing.T) {
 	service, deps, command := testInitiationService(t)
-	deps.repository.readAlter = func(plan campaign.DraftTouchPlan) campaign.DraftTouchPlan { plan.Version++; return plan }
+	deps.repository.readAlter = func(plan campaign.DraftTouchPlan) campaign.DraftTouchPlan {
+		plan.Content.Digest = strings.Repeat("0", 64)
+		return plan
+	}
 	if _, err := service.CreateDraftTouchPlan(context.Background(), command); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("err=%v", err)
 	}
@@ -502,7 +535,7 @@ func testInitiationService(t *testing.T) (*Service, *initiationDependencies, cam
 			CampaignCode: "spring-campaign", Version: 4, ApprovalStatus: campaign.ApprovalDraft, RuntimeStatus: campaign.RuntimeIdle,
 			Steps: []campaign.Step{{Index: 1, DelayMinutes: 0, Content: "hello"}},
 		}},
-		source: &initiationSourceStub{resolution: campaignport.SourceResolution{Source: source, CustomerIDs: []int64{3, 2, 2, 1}}},
+		source: &initiationSourceStub{resolution: campaignport.SourceResolution{Source: source, CustomerIDs: []int64{1, 2, 3}}},
 		eligibility: &initiationEligibilityStub{decisions: []campaignport.EligibilityDecision{
 			{CustomerID: 1, CustomerActive: true, Eligible: true, Exclusion: campaignport.EligibilityExclusionNone},
 			{CustomerID: 2, CustomerActive: false, Eligible: false, Exclusion: campaignport.EligibilityExclusionInactiveCustomer},

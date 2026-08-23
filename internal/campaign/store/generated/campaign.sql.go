@@ -7,16 +7,555 @@ package campaigndb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const lockCloudCampaignDeleteReferences = `-- name: LockCloudCampaignDeleteReferences :exec
-LOCK TABLE public.cloud_campaign_local_plans, public.cloud_campaign_local_commands IN SHARE MODE
+const completeCampaignTouchPlanReceipt = `-- name: CompleteCampaignTouchPlanReceipt :one
+UPDATE public.cloud_campaign_touch_plan_receipts
+SET state = 'completed', event_id = $1, completed_at = now()
+WHERE id = $2 AND state = 'reserved'
+RETURNING id, actor_id, key_digest, payload_digest, plan_id, event_id, state
 `
 
-// The generated query package is intentionally retained for PG16 schema
-// validation and future read-model reporting; command SQL stays transaction
-// bound in postgres.go so typed Plan/Command values are checked before save.
+type CompleteCampaignTouchPlanReceiptParams struct {
+	EventID pgtype.Int8 `json:"event_id"`
+	ID      int64       `json:"id"`
+}
+
+type CompleteCampaignTouchPlanReceiptRow struct {
+	ID            int64       `json:"id"`
+	ActorID       int64       `json:"actor_id"`
+	KeyDigest     []byte      `json:"key_digest"`
+	PayloadDigest []byte      `json:"payload_digest"`
+	PlanID        string      `json:"plan_id"`
+	EventID       pgtype.Int8 `json:"event_id"`
+	State         string      `json:"state"`
+}
+
+func (q *Queries) CompleteCampaignTouchPlanReceipt(ctx context.Context, arg CompleteCampaignTouchPlanReceiptParams) (CompleteCampaignTouchPlanReceiptRow, error) {
+	row := q.db.QueryRow(ctx, completeCampaignTouchPlanReceipt, arg.EventID, arg.ID)
+	var i CompleteCampaignTouchPlanReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorID,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.PlanID,
+		&i.EventID,
+		&i.State,
+	)
+	return i, err
+}
+
+const getCampaignTouchPlan = `-- name: GetCampaignTouchPlan :one
+SELECT id, campaign_code, campaign_version, source_kind,
+       customer_selection_id, customer_selection_version, segment_id,
+       audience_package_id, audience_package_version, member_snapshot_watermark,
+       source_digest, target_digest, content_digest, target_count, content_step_count,
+       candidate_count, active_customer_count, inactive_excluded_count,
+       policy_excluded_count, owner_actor_id, created_at,
+       local_only, provider_execution_eligible, runtime_executed,
+       real_external_call_executed, delivery_proven
+FROM public.cloud_campaign_touch_plans
+WHERE campaign_code = $1 AND id = $2
+`
+
+type GetCampaignTouchPlanParams struct {
+	CampaignCode string `json:"campaign_code"`
+	ID           string `json:"id"`
+}
+
+type GetCampaignTouchPlanRow struct {
+	ID                        string             `json:"id"`
+	CampaignCode              string             `json:"campaign_code"`
+	CampaignVersion           int64              `json:"campaign_version"`
+	SourceKind                string             `json:"source_kind"`
+	CustomerSelectionID       pgtype.Text        `json:"customer_selection_id"`
+	CustomerSelectionVersion  pgtype.Text        `json:"customer_selection_version"`
+	SegmentID                 pgtype.Int8        `json:"segment_id"`
+	AudiencePackageID         pgtype.Int8        `json:"audience_package_id"`
+	AudiencePackageVersion    pgtype.Int8        `json:"audience_package_version"`
+	MemberSnapshotWatermark   pgtype.Timestamptz `json:"member_snapshot_watermark"`
+	SourceDigest              []byte             `json:"source_digest"`
+	TargetDigest              []byte             `json:"target_digest"`
+	ContentDigest             []byte             `json:"content_digest"`
+	TargetCount               int32              `json:"target_count"`
+	ContentStepCount          int32              `json:"content_step_count"`
+	CandidateCount            int32              `json:"candidate_count"`
+	ActiveCustomerCount       int32              `json:"active_customer_count"`
+	InactiveExcludedCount     int32              `json:"inactive_excluded_count"`
+	PolicyExcludedCount       int32              `json:"policy_excluded_count"`
+	OwnerActorID              int64              `json:"owner_actor_id"`
+	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
+	LocalOnly                 bool               `json:"local_only"`
+	ProviderExecutionEligible bool               `json:"provider_execution_eligible"`
+	RuntimeExecuted           bool               `json:"runtime_executed"`
+	RealExternalCallExecuted  bool               `json:"real_external_call_executed"`
+	DeliveryProven            bool               `json:"delivery_proven"`
+}
+
+func (q *Queries) GetCampaignTouchPlan(ctx context.Context, arg GetCampaignTouchPlanParams) (GetCampaignTouchPlanRow, error) {
+	row := q.db.QueryRow(ctx, getCampaignTouchPlan, arg.CampaignCode, arg.ID)
+	var i GetCampaignTouchPlanRow
+	err := row.Scan(
+		&i.ID,
+		&i.CampaignCode,
+		&i.CampaignVersion,
+		&i.SourceKind,
+		&i.CustomerSelectionID,
+		&i.CustomerSelectionVersion,
+		&i.SegmentID,
+		&i.AudiencePackageID,
+		&i.AudiencePackageVersion,
+		&i.MemberSnapshotWatermark,
+		&i.SourceDigest,
+		&i.TargetDigest,
+		&i.ContentDigest,
+		&i.TargetCount,
+		&i.ContentStepCount,
+		&i.CandidateCount,
+		&i.ActiveCustomerCount,
+		&i.InactiveExcludedCount,
+		&i.PolicyExcludedCount,
+		&i.OwnerActorID,
+		&i.CreatedAt,
+		&i.LocalOnly,
+		&i.ProviderExecutionEligible,
+		&i.RuntimeExecuted,
+		&i.RealExternalCallExecuted,
+		&i.DeliveryProven,
+	)
+	return i, err
+}
+
+const getCampaignTouchPlanReceiptForUpdate = `-- name: GetCampaignTouchPlanReceiptForUpdate :one
+SELECT id, actor_id, key_digest, payload_digest, plan_id, event_id, state
+FROM public.cloud_campaign_touch_plan_receipts
+WHERE actor_id = $1 AND key_digest = $2
+FOR UPDATE
+`
+
+type GetCampaignTouchPlanReceiptForUpdateParams struct {
+	ActorID   int64  `json:"actor_id"`
+	KeyDigest []byte `json:"key_digest"`
+}
+
+type GetCampaignTouchPlanReceiptForUpdateRow struct {
+	ID            int64       `json:"id"`
+	ActorID       int64       `json:"actor_id"`
+	KeyDigest     []byte      `json:"key_digest"`
+	PayloadDigest []byte      `json:"payload_digest"`
+	PlanID        string      `json:"plan_id"`
+	EventID       pgtype.Int8 `json:"event_id"`
+	State         string      `json:"state"`
+}
+
+func (q *Queries) GetCampaignTouchPlanReceiptForUpdate(ctx context.Context, arg GetCampaignTouchPlanReceiptForUpdateParams) (GetCampaignTouchPlanReceiptForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, getCampaignTouchPlanReceiptForUpdate, arg.ActorID, arg.KeyDigest)
+	var i GetCampaignTouchPlanReceiptForUpdateRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorID,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.PlanID,
+		&i.EventID,
+		&i.State,
+	)
+	return i, err
+}
+
+const insertCampaignTouchPlan = `-- name: InsertCampaignTouchPlan :exec
+INSERT INTO public.cloud_campaign_touch_plans (
+  id, campaign_code, campaign_version, source_kind,
+  customer_selection_id, customer_selection_version, segment_id,
+  audience_package_id, audience_package_version, member_snapshot_watermark,
+  source_digest, target_digest, content_digest, target_count, content_step_count,
+  candidate_count, active_customer_count, inactive_excluded_count,
+  policy_excluded_count, owner_actor_id, created_at
+) VALUES (
+  $1, $2, $3, $4,
+  $5, $6, $7,
+  $8, $9, $10,
+  $11, $12, $13, $14, $15,
+  $16, $17, $18,
+  $19, $20, $21
+)
+`
+
+type InsertCampaignTouchPlanParams struct {
+	ID                       string             `json:"id"`
+	CampaignCode             string             `json:"campaign_code"`
+	CampaignVersion          int64              `json:"campaign_version"`
+	SourceKind               string             `json:"source_kind"`
+	CustomerSelectionID      pgtype.Text        `json:"customer_selection_id"`
+	CustomerSelectionVersion pgtype.Text        `json:"customer_selection_version"`
+	SegmentID                pgtype.Int8        `json:"segment_id"`
+	AudiencePackageID        pgtype.Int8        `json:"audience_package_id"`
+	AudiencePackageVersion   pgtype.Int8        `json:"audience_package_version"`
+	MemberSnapshotWatermark  pgtype.Timestamptz `json:"member_snapshot_watermark"`
+	SourceDigest             []byte             `json:"source_digest"`
+	TargetDigest             []byte             `json:"target_digest"`
+	ContentDigest            []byte             `json:"content_digest"`
+	TargetCount              int32              `json:"target_count"`
+	ContentStepCount         int32              `json:"content_step_count"`
+	CandidateCount           int32              `json:"candidate_count"`
+	ActiveCustomerCount      int32              `json:"active_customer_count"`
+	InactiveExcludedCount    int32              `json:"inactive_excluded_count"`
+	PolicyExcludedCount      int32              `json:"policy_excluded_count"`
+	OwnerActorID             int64              `json:"owner_actor_id"`
+	CreatedAt                pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) InsertCampaignTouchPlan(ctx context.Context, arg InsertCampaignTouchPlanParams) error {
+	_, err := q.db.Exec(ctx, insertCampaignTouchPlan,
+		arg.ID,
+		arg.CampaignCode,
+		arg.CampaignVersion,
+		arg.SourceKind,
+		arg.CustomerSelectionID,
+		arg.CustomerSelectionVersion,
+		arg.SegmentID,
+		arg.AudiencePackageID,
+		arg.AudiencePackageVersion,
+		arg.MemberSnapshotWatermark,
+		arg.SourceDigest,
+		arg.TargetDigest,
+		arg.ContentDigest,
+		arg.TargetCount,
+		arg.ContentStepCount,
+		arg.CandidateCount,
+		arg.ActiveCustomerCount,
+		arg.InactiveExcludedCount,
+		arg.PolicyExcludedCount,
+		arg.OwnerActorID,
+		arg.CreatedAt,
+	)
+	return err
+}
+
+const insertCampaignTouchPlanStep = `-- name: InsertCampaignTouchPlanStep :exec
+INSERT INTO public.cloud_campaign_touch_plan_steps (plan_id, step_index, delay_minutes, content)
+VALUES ($1, $2, $3, $4)
+`
+
+type InsertCampaignTouchPlanStepParams struct {
+	PlanID       string `json:"plan_id"`
+	StepIndex    int32  `json:"step_index"`
+	DelayMinutes int32  `json:"delay_minutes"`
+	Content      string `json:"content"`
+}
+
+func (q *Queries) InsertCampaignTouchPlanStep(ctx context.Context, arg InsertCampaignTouchPlanStepParams) error {
+	_, err := q.db.Exec(ctx, insertCampaignTouchPlanStep,
+		arg.PlanID,
+		arg.StepIndex,
+		arg.DelayMinutes,
+		arg.Content,
+	)
+	return err
+}
+
+const insertCampaignTouchPlanTargets = `-- name: InsertCampaignTouchPlanTargets :exec
+INSERT INTO public.cloud_campaign_touch_plan_targets (plan_id, customer_id)
+SELECT $1, customer_id
+FROM unnest($2::bigint[]) AS items(customer_id)
+`
+
+type InsertCampaignTouchPlanTargetsParams struct {
+	PlanID      string  `json:"plan_id"`
+	CustomerIds []int64 `json:"customer_ids"`
+}
+
+func (q *Queries) InsertCampaignTouchPlanTargets(ctx context.Context, arg InsertCampaignTouchPlanTargetsParams) error {
+	_, err := q.db.Exec(ctx, insertCampaignTouchPlanTargets, arg.PlanID, arg.CustomerIds)
+	return err
+}
+
+const listCampaignStepsForTouchPlan = `-- name: ListCampaignStepsForTouchPlan :many
+SELECT step_index, delay_minutes, content
+FROM public.cloud_campaign_steps
+WHERE campaign_code = $1
+ORDER BY step_index ASC
+`
+
+type ListCampaignStepsForTouchPlanRow struct {
+	StepIndex    int32  `json:"step_index"`
+	DelayMinutes int32  `json:"delay_minutes"`
+	Content      string `json:"content"`
+}
+
+func (q *Queries) ListCampaignStepsForTouchPlan(ctx context.Context, campaignCode string) ([]ListCampaignStepsForTouchPlanRow, error) {
+	rows, err := q.db.Query(ctx, listCampaignStepsForTouchPlan, campaignCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCampaignStepsForTouchPlanRow{}
+	for rows.Next() {
+		var i ListCampaignStepsForTouchPlanRow
+		if err := rows.Scan(&i.StepIndex, &i.DelayMinutes, &i.Content); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCampaignTouchPlanSteps = `-- name: ListCampaignTouchPlanSteps :many
+SELECT step_index, delay_minutes, content
+FROM public.cloud_campaign_touch_plan_steps
+WHERE plan_id = $1
+ORDER BY step_index ASC
+`
+
+type ListCampaignTouchPlanStepsRow struct {
+	StepIndex    int32  `json:"step_index"`
+	DelayMinutes int32  `json:"delay_minutes"`
+	Content      string `json:"content"`
+}
+
+func (q *Queries) ListCampaignTouchPlanSteps(ctx context.Context, planID string) ([]ListCampaignTouchPlanStepsRow, error) {
+	rows, err := q.db.Query(ctx, listCampaignTouchPlanSteps, planID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCampaignTouchPlanStepsRow{}
+	for rows.Next() {
+		var i ListCampaignTouchPlanStepsRow
+		if err := rows.Scan(&i.StepIndex, &i.DelayMinutes, &i.Content); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCampaignTouchPlanSummaries = `-- name: ListCampaignTouchPlanSummaries :many
+SELECT id, campaign_code, campaign_version, source_kind,
+       customer_selection_id, customer_selection_version, segment_id,
+       audience_package_id, audience_package_version, member_snapshot_watermark,
+       source_digest, target_digest, content_digest, target_count, content_step_count,
+       candidate_count, active_customer_count, inactive_excluded_count,
+       policy_excluded_count, owner_actor_id, created_at,
+       local_only, provider_execution_eligible, runtime_executed,
+       real_external_call_executed, delivery_proven
+FROM public.cloud_campaign_touch_plans
+WHERE campaign_code = $1
+  AND (
+    $2::timestamptz IS NULL
+    OR (created_at, id) < ($2::timestamptz, $3::text)
+  )
+ORDER BY created_at DESC, id DESC
+LIMIT $4
+`
+
+type ListCampaignTouchPlanSummariesParams struct {
+	CampaignCode   string             `json:"campaign_code"`
+	AfterCreatedAt pgtype.Timestamptz `json:"after_created_at"`
+	AfterID        pgtype.Text        `json:"after_id"`
+	PageLimit      int32              `json:"page_limit"`
+}
+
+type ListCampaignTouchPlanSummariesRow struct {
+	ID                        string             `json:"id"`
+	CampaignCode              string             `json:"campaign_code"`
+	CampaignVersion           int64              `json:"campaign_version"`
+	SourceKind                string             `json:"source_kind"`
+	CustomerSelectionID       pgtype.Text        `json:"customer_selection_id"`
+	CustomerSelectionVersion  pgtype.Text        `json:"customer_selection_version"`
+	SegmentID                 pgtype.Int8        `json:"segment_id"`
+	AudiencePackageID         pgtype.Int8        `json:"audience_package_id"`
+	AudiencePackageVersion    pgtype.Int8        `json:"audience_package_version"`
+	MemberSnapshotWatermark   pgtype.Timestamptz `json:"member_snapshot_watermark"`
+	SourceDigest              []byte             `json:"source_digest"`
+	TargetDigest              []byte             `json:"target_digest"`
+	ContentDigest             []byte             `json:"content_digest"`
+	TargetCount               int32              `json:"target_count"`
+	ContentStepCount          int32              `json:"content_step_count"`
+	CandidateCount            int32              `json:"candidate_count"`
+	ActiveCustomerCount       int32              `json:"active_customer_count"`
+	InactiveExcludedCount     int32              `json:"inactive_excluded_count"`
+	PolicyExcludedCount       int32              `json:"policy_excluded_count"`
+	OwnerActorID              int64              `json:"owner_actor_id"`
+	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
+	LocalOnly                 bool               `json:"local_only"`
+	ProviderExecutionEligible bool               `json:"provider_execution_eligible"`
+	RuntimeExecuted           bool               `json:"runtime_executed"`
+	RealExternalCallExecuted  bool               `json:"real_external_call_executed"`
+	DeliveryProven            bool               `json:"delivery_proven"`
+}
+
+func (q *Queries) ListCampaignTouchPlanSummaries(ctx context.Context, arg ListCampaignTouchPlanSummariesParams) ([]ListCampaignTouchPlanSummariesRow, error) {
+	rows, err := q.db.Query(ctx, listCampaignTouchPlanSummaries,
+		arg.CampaignCode,
+		arg.AfterCreatedAt,
+		arg.AfterID,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCampaignTouchPlanSummariesRow{}
+	for rows.Next() {
+		var i ListCampaignTouchPlanSummariesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CampaignCode,
+			&i.CampaignVersion,
+			&i.SourceKind,
+			&i.CustomerSelectionID,
+			&i.CustomerSelectionVersion,
+			&i.SegmentID,
+			&i.AudiencePackageID,
+			&i.AudiencePackageVersion,
+			&i.MemberSnapshotWatermark,
+			&i.SourceDigest,
+			&i.TargetDigest,
+			&i.ContentDigest,
+			&i.TargetCount,
+			&i.ContentStepCount,
+			&i.CandidateCount,
+			&i.ActiveCustomerCount,
+			&i.InactiveExcludedCount,
+			&i.PolicyExcludedCount,
+			&i.OwnerActorID,
+			&i.CreatedAt,
+			&i.LocalOnly,
+			&i.ProviderExecutionEligible,
+			&i.RuntimeExecuted,
+			&i.RealExternalCallExecuted,
+			&i.DeliveryProven,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCampaignTouchPlanTargets = `-- name: ListCampaignTouchPlanTargets :many
+SELECT customer_id
+FROM public.cloud_campaign_touch_plan_targets
+WHERE plan_id = $1
+ORDER BY customer_id ASC
+`
+
+func (q *Queries) ListCampaignTouchPlanTargets(ctx context.Context, planID string) ([]int64, error) {
+	rows, err := q.db.Query(ctx, listCampaignTouchPlanTargets, planID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var customer_id int64
+		if err := rows.Scan(&customer_id); err != nil {
+			return nil, err
+		}
+		items = append(items, customer_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockCampaignDraftForTouchPlan = `-- name: LockCampaignDraftForTouchPlan :one
+SELECT campaign_code, version, approval_status, runtime_status
+FROM public.cloud_campaigns
+WHERE campaign_code = $1
+FOR UPDATE
+`
+
+type LockCampaignDraftForTouchPlanRow struct {
+	CampaignCode   string `json:"campaign_code"`
+	Version        int64  `json:"version"`
+	ApprovalStatus string `json:"approval_status"`
+	RuntimeStatus  string `json:"runtime_status"`
+}
+
+func (q *Queries) LockCampaignDraftForTouchPlan(ctx context.Context, campaignCode string) (LockCampaignDraftForTouchPlanRow, error) {
+	row := q.db.QueryRow(ctx, lockCampaignDraftForTouchPlan, campaignCode)
+	var i LockCampaignDraftForTouchPlanRow
+	err := row.Scan(
+		&i.CampaignCode,
+		&i.Version,
+		&i.ApprovalStatus,
+		&i.RuntimeStatus,
+	)
+	return i, err
+}
+
+const lockCloudCampaignDeleteReferences = `-- name: LockCloudCampaignDeleteReferences :exec
+LOCK TABLE public.cloud_campaign_local_plans,
+  public.cloud_campaign_local_commands,
+  public.cloud_campaign_touch_plans,
+  public.cloud_campaign_touch_plan_receipts IN SHARE MODE
+`
+
+// The generated query package keeps every initiation read/write attached to
+// the caller's Campaign UnitOfWork transaction in postgres.go.
 func (q *Queries) LockCloudCampaignDeleteReferences(ctx context.Context) error {
 	_, err := q.db.Exec(ctx, lockCloudCampaignDeleteReferences)
 	return err
+}
+
+const reserveCampaignTouchPlanReceipt = `-- name: ReserveCampaignTouchPlanReceipt :one
+INSERT INTO public.cloud_campaign_touch_plan_receipts (
+  actor_id, key_digest, payload_digest, plan_id, created_at
+) VALUES (
+  $1, $2, $3, $4, now()
+)
+ON CONFLICT (actor_id, key_digest) DO NOTHING
+RETURNING id, actor_id, key_digest, payload_digest, plan_id, event_id, state
+`
+
+type ReserveCampaignTouchPlanReceiptParams struct {
+	ActorID       int64  `json:"actor_id"`
+	KeyDigest     []byte `json:"key_digest"`
+	PayloadDigest []byte `json:"payload_digest"`
+	PlanID        string `json:"plan_id"`
+}
+
+type ReserveCampaignTouchPlanReceiptRow struct {
+	ID            int64       `json:"id"`
+	ActorID       int64       `json:"actor_id"`
+	KeyDigest     []byte      `json:"key_digest"`
+	PayloadDigest []byte      `json:"payload_digest"`
+	PlanID        string      `json:"plan_id"`
+	EventID       pgtype.Int8 `json:"event_id"`
+	State         string      `json:"state"`
+}
+
+func (q *Queries) ReserveCampaignTouchPlanReceipt(ctx context.Context, arg ReserveCampaignTouchPlanReceiptParams) (ReserveCampaignTouchPlanReceiptRow, error) {
+	row := q.db.QueryRow(ctx, reserveCampaignTouchPlanReceipt,
+		arg.ActorID,
+		arg.KeyDigest,
+		arg.PayloadDigest,
+		arg.PlanID,
+	)
+	var i ReserveCampaignTouchPlanReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorID,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.PlanID,
+		&i.EventID,
+		&i.State,
+	)
+	return i, err
 }

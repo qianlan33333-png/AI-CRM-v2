@@ -16,6 +16,11 @@ var ErrSourceFactsUnavailable = errors.New("campaign initiation source facts una
 
 const MaximumEligibilityTargets = campaign.MaximumDraftTouchTargets
 
+const (
+	DefaultDraftTouchPlanPageLimit int32 = 50
+	MaximumDraftTouchPlanPageLimit int32 = campaign.MaximumDraftTouchPlanPageLimit
+)
+
 // UnitOfWork must atomically roll back all repository/event writes when the
 // callback returns an error, including an uncompleted create reservation.
 type UnitOfWork interface {
@@ -66,6 +71,7 @@ type EligibilityRequest struct {
 	Checkpoint     EligibilityCheckpoint
 	MaximumTargets int
 	CustomerIDs    []int64
+	EvaluatedAt    time.Time
 }
 
 type EligibilityExclusion string
@@ -91,24 +97,33 @@ type CreateReservation struct {
 }
 
 type CreateReceipt struct {
+	ID            int64
 	ActorID       int64
 	KeyDigest     [sha256.Size]byte
 	PayloadDigest [sha256.Size]byte
 	PlanID        string
+	EventID       int64
 	Completed     bool
+}
+
+type DraftTouchPlanKeyset struct {
+	CreatedAt time.Time
+	PlanID    string
 }
 
 type Repository interface {
 	ReserveDraftCreate(context.Context, CreateReservation) (CreateReceipt, bool, error)
 	SaveDraftTouchPlan(context.Context, campaign.DraftTouchPlan) error
-	CompleteDraftCreate(context.Context, CreateReceipt) error
+	CompleteDraftCreate(context.Context, CreateReceipt, int64) error
+	ListDraftTouchPlanSummaries(context.Context, string, *DraftTouchPlanKeyset, int32) ([]campaign.DraftTouchPlanSummary, error)
 	// ReadDraftTouchPlan is a strict readback and must receive the UnitOfWork
 	// transaction context used for ReserveDraftCreate.
-	ReadDraftTouchPlan(context.Context, string) (campaign.DraftTouchPlan, error)
+	ReadDraftTouchPlan(context.Context, string, string) (campaign.DraftTouchPlan, error)
 }
 
-// CampaignEvent contains no raw target list or content body. A future adapter
-// may persist it to event_log in the same UoW without dispatching anything.
+// CampaignEvent contains no raw target list or content body. Its same-UoW
+// event_log record uses the existing Campaign local Events delivery binding;
+// that delivery does not create an Outbound or Provider task.
 type CampaignEvent struct {
 	Type           string
 	PlanID         string
@@ -116,10 +131,11 @@ type CampaignEvent struct {
 	OwnerActorID   int64
 	TargetDigest   string
 	TargetCount    int32
+	ContentDigest  string
 	OccurredAt     time.Time
 	IdempotencyKey string
 }
 
 type EventAppender interface {
-	AppendCampaignEvent(context.Context, CampaignEvent) error
+	AppendCampaignEvent(context.Context, CampaignEvent) (int64, error)
 }

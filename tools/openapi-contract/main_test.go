@@ -190,6 +190,84 @@ func TestOwnerApprovedNativePackageRegistry(t *testing.T) {
 	})
 }
 
+func TestCampaignInitiationTouchPlanContractRemainsClosed(t *testing.T) {
+	doc, inventory := fresh(t)
+	operations := map[string]struct {
+		path   string
+		method string
+	}{
+		"listCloudCampaignTouchPlans":  {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans", "GET"},
+		"createCloudCampaignTouchPlan": {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans", "POST"},
+		"getCloudCampaignTouchPlan":    {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}", "GET"},
+	}
+	for operationID, want := range operations {
+		item := doc.Paths.Value(want.path)
+		op := operationForMethod(item, want.method)
+		if op == nil || op.OperationID != operationID {
+			t.Fatalf("%s operation is missing", operationID)
+		}
+		if err := validateNativePackageOperation(want.path, item, op, nativePackageOperations[operationID]); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, forbidden := range []string{
+		"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients",
+		"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/approve",
+		"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/reject",
+		"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/handoff",
+	} {
+		if doc.Paths.Value(forbidden) != nil {
+			t.Fatalf("00067 route leaked into 00066: %s", forbidden)
+		}
+	}
+	requestSource := doc.Components.Schemas["CloudCampaignTouchPlanCreateSource"].Value
+	if requestSource == nil || requestSource.Discriminator == nil || requestSource.Discriminator.PropertyName != "kind" || len(requestSource.OneOf) != 3 {
+		t.Fatal("touch-plan request source must remain a closed three-way discriminator")
+	}
+	for _, ref := range requestSource.OneOf {
+		if ref == nil || ref.Value == nil || strings.Contains(ref.Ref, "CustomerFilter") {
+			t.Fatalf("customer_filter must not be a callable touch-plan source: %#v", ref)
+		}
+	}
+	if _, present := doc.Components.Schemas["CloudCampaignTouchPlanCustomerFilterRequest"]; present {
+		t.Fatal("customer_filter request schema must not be exposed")
+	}
+	detail := doc.Components.Schemas["CloudCampaignTouchPlanDetailResponse"].Value
+	if detail == nil {
+		t.Fatal("touch-plan detail schema is missing")
+	}
+	for _, forbidden := range []string{"customer_ids", "recipients", "review_status", "handoff_created"} {
+		if _, present := detail.Properties[forbidden]; present {
+			t.Fatalf("touch-plan detail leaks deferred field %q", forbidden)
+		}
+	}
+	for _, name := range []string{"CloudCampaignTouchPlanSummary", "CloudCampaignTouchPlanDetailResponse", "CloudCampaignTouchPlanListResponse"} {
+		schema := doc.Components.Schemas[name].Value
+		if schema == nil || schema.AdditionalProperties.Has == nil || *schema.AdditionalProperties.Has {
+			t.Fatalf("%s must remain a closed response", name)
+		}
+		for field, want := range map[string][]any{
+			"local_only":                  {true},
+			"provider_execution_eligible": {false},
+			"runtime_executed":            {false},
+			"real_external_call_executed": {false},
+			"delivery_proven":             {false},
+		} {
+			property := schema.Properties[field]
+			if property == nil || property.Value == nil || !containsString(schema.Required, field) || !reflect.DeepEqual(property.Value.Enum, want) {
+				t.Fatalf("%s safety field %s drifted", name, field)
+			}
+		}
+	}
+	create := doc.Paths.Value(operations["createCloudCampaignTouchPlan"].path).Post
+	if create == nil || create.Parameters.GetByInAndName("header", "X-CSRF-Token") == nil || create.Parameters.GetByInAndName("header", "Idempotency-Key") == nil {
+		t.Fatal("touch-plan create must retain root CSRF and idempotency headers")
+	}
+	if err := validateContracts(doc, inventory, false); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestGroupOpsPlanIDRemainsALosslessDecimalString(t *testing.T) {
 	for name, mutate := range map[string]func(*openapi3.Schema){
 		"integer type": func(schema *openapi3.Schema) {

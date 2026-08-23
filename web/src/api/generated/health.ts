@@ -1007,6 +1007,300 @@ export interface CloudCampaignBatchStartRequest {
   campaigns: CloudCampaignBatchStartItem[];
 }
 
+export interface CloudCampaignTouchPlanCreateRequest {
+  /** @minimum 1 */
+  expected_campaign_version: number;
+  source: CloudCampaignTouchPlanCreateSource;
+}
+
+export type CloudCampaignTouchPlanCreateSource =
+  | CloudCampaignTouchPlanCustomerSelectionRequest
+  | CloudCampaignTouchPlanSegmentMembersRequest
+  | CloudCampaignTouchPlanAudiencePackageMembersRequest;
+
+export type CloudCampaignTouchPlanCustomerSelectionRequestKind =
+  (typeof CloudCampaignTouchPlanCustomerSelectionRequestKind)[keyof typeof CloudCampaignTouchPlanCustomerSelectionRequestKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignTouchPlanCustomerSelectionRequestKind = {
+  customer_selection: "customer_selection",
+} as const;
+
+export interface CloudCampaignTouchPlanCustomerSelectionRequest {
+  kind: CloudCampaignTouchPlanCustomerSelectionRequestKind;
+  /**
+   * @minItems 1
+   * @maxItems 1000
+   */
+  customer_ids: number[];
+}
+
+export type CloudCampaignTouchPlanSegmentMembersRequestKind =
+  (typeof CloudCampaignTouchPlanSegmentMembersRequestKind)[keyof typeof CloudCampaignTouchPlanSegmentMembersRequestKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignTouchPlanSegmentMembersRequestKind = {
+  segment_members: "segment_members",
+} as const;
+
+export interface CloudCampaignTouchPlanSegmentMembersRequest {
+  kind: CloudCampaignTouchPlanSegmentMembersRequestKind;
+  /** @minimum 1 */
+  segment_id: number;
+}
+
+export type CloudCampaignTouchPlanAudiencePackageMembersRequestKind =
+  (typeof CloudCampaignTouchPlanAudiencePackageMembersRequestKind)[keyof typeof CloudCampaignTouchPlanAudiencePackageMembersRequestKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignTouchPlanAudiencePackageMembersRequestKind = {
+  ai_audience_package_members: "ai_audience_package_members",
+} as const;
+
+export interface CloudCampaignTouchPlanAudiencePackageMembersRequest {
+  kind: CloudCampaignTouchPlanAudiencePackageMembersRequestKind;
+  /** @minimum 1 */
+  audience_package_id: number;
+}
+
+export type CloudCampaignTouchPlanSource =
+  | CloudCampaignTouchPlanCustomerSelectionSource
+  | CloudCampaignTouchPlanSegmentMembersSource
+  | CloudCampaignTouchPlanAudiencePackageMembersSource;
+
+export type CloudCampaignTouchPlanCustomerSelectionSourceKind =
+  (typeof CloudCampaignTouchPlanCustomerSelectionSourceKind)[keyof typeof CloudCampaignTouchPlanCustomerSelectionSourceKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignTouchPlanCustomerSelectionSourceKind = {
+  customer_selection: "customer_selection",
+} as const;
+
+export interface CloudCampaignTouchPlanCustomerSelectionSource {
+  kind: CloudCampaignTouchPlanCustomerSelectionSourceKind;
+  customer_selection: CloudCampaignTouchPlanCustomerSelectionSourceFact;
+}
+
+export type CloudCampaignTouchPlanCustomerSelectionSourceFactId =
+  (typeof CloudCampaignTouchPlanCustomerSelectionSourceFactId)[keyof typeof CloudCampaignTouchPlanCustomerSelectionSourceFactId];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignTouchPlanCustomerSelectionSourceFactId = {
+  local_selection: "local_selection",
+} as const;
+
+export type CloudCampaignTouchPlanCustomerSelectionSourceFactVersion =
+  (typeof CloudCampaignTouchPlanCustomerSelectionSourceFactVersion)[keyof typeof CloudCampaignTouchPlanCustomerSelectionSourceFactVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignTouchPlanCustomerSelectionSourceFactVersion = {
+  v1: "v1",
+} as const;
+
+export interface CloudCampaignTouchPlanCustomerSelectionSourceFact {
+  id: CloudCampaignTouchPlanCustomerSelectionSourceFactId;
+  version: CloudCampaignTouchPlanCustomerSelectionSourceFactVersion;
+  /**
+   * @minLength 64
+   * @maxLength 64
+   * @pattern ^[0-9a-f]{64}$
+   */
+  digest: string;
+}
+
+export type CloudCampaignTouchPlanSegmentMembersSourceKind =
+  (typeof CloudCampaignTouchPlanSegmentMembersSourceKind)[keyof typeof CloudCampaignTouchPlanSegmentMembersSourceKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignTouchPlanSegmentMembersSourceKind = {
+  segment_members: "segment_members",
+} as const;
+
+export interface CloudCampaignTouchPlanSegmentMembersSource {
+  kind: CloudCampaignTouchPlanSegmentMembersSourceKind;
+  segment: CloudCampaignTouchPlanSegmentMembersSourceFact;
+}
+
+export interface CloudCampaignTouchPlanSegmentMembersSourceFact {
+  /** @minimum 1 */
+  segment_id: number;
+  member_snapshot_watermark: string;
+  /**
+   * @minLength 64
+   * @maxLength 64
+   * @pattern ^[0-9a-f]{64}$
+   */
+  digest: string;
+}
+
+export type CloudCampaignTouchPlanAudiencePackageMembersSourceKind =
+  (typeof CloudCampaignTouchPlanAudiencePackageMembersSourceKind)[keyof typeof CloudCampaignTouchPlanAudiencePackageMembersSourceKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignTouchPlanAudiencePackageMembersSourceKind = {
+  ai_audience_package_members: "ai_audience_package_members",
+} as const;
+
+export interface CloudCampaignTouchPlanAudiencePackageMembersSource {
+  kind: CloudCampaignTouchPlanAudiencePackageMembersSourceKind;
+  audience_package: CloudCampaignTouchPlanAudiencePackageMembersSourceFact;
+}
+
+export interface CloudCampaignTouchPlanAudiencePackageMembersSourceFact {
+  /** @minimum 1 */
+  package_id: number;
+  /** @minimum 1 */
+  package_version: number;
+  member_snapshot_watermark: string;
+  /**
+   * @minLength 64
+   * @maxLength 64
+   * @pattern ^[0-9a-f]{64}$
+   */
+  digest: string;
+}
+
+export interface CloudCampaignTouchPlanContentSnapshot {
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  steps: CloudCampaignStep[];
+  /**
+   * @minLength 64
+   * @maxLength 64
+   * @pattern ^[0-9a-f]{64}$
+   */
+  content_digest: string;
+}
+
+export interface CloudCampaignTouchPlanPreviewExclusionSummary {
+  /**
+   * @minimum 1
+   * @maximum 1000
+   */
+  candidate_count: number;
+  /**
+   * @minimum 1
+   * @maximum 1000
+   */
+  active_customer_count: number;
+  /**
+   * @minimum 0
+   * @maximum 1000
+   */
+  inactive_excluded_count: number;
+  /**
+   * @minimum 0
+   * @maximum 1000
+   */
+  policy_excluded_count: number;
+}
+
+export interface CloudCampaignTouchPlanSummary {
+  /**
+   * @minLength 68
+   * @maxLength 68
+   * @pattern ^ctp_[0-9a-f]{64}$
+   */
+  id: string;
+  /**
+   * @minLength 1
+   * @maxLength 96
+   * @pattern ^[A-Za-z0-9._-]+$
+   */
+  campaign_code: string;
+  /** @minimum 1 */
+  campaign_version: number;
+  source: CloudCampaignTouchPlanSource;
+  /**
+   * @minimum 1
+   * @maximum 1000
+   */
+  target_count: number;
+  /**
+   * @minLength 64
+   * @maxLength 64
+   * @pattern ^[0-9a-f]{64}$
+   */
+  target_digest: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  content_step_count: number;
+  /**
+   * @minLength 64
+   * @maxLength 64
+   * @pattern ^[0-9a-f]{64}$
+   */
+  content_digest: string;
+  /** @minimum 1 */
+  owner_actor_id: number;
+  preview_exclusion_summary: CloudCampaignTouchPlanPreviewExclusionSummary;
+  created_at: string;
+  local_only: boolean;
+  provider_execution_eligible: boolean;
+  runtime_executed: boolean;
+  real_external_call_executed: boolean;
+  delivery_proven: boolean;
+}
+
+export interface CloudCampaignTouchPlanDetailResponse {
+  /**
+   * @minLength 68
+   * @maxLength 68
+   * @pattern ^ctp_[0-9a-f]{64}$
+   */
+  id: string;
+  /**
+   * @minLength 1
+   * @maxLength 96
+   * @pattern ^[A-Za-z0-9._-]+$
+   */
+  campaign_code: string;
+  /** @minimum 1 */
+  campaign_version: number;
+  source: CloudCampaignTouchPlanSource;
+  /**
+   * @minimum 1
+   * @maximum 1000
+   */
+  target_count: number;
+  /**
+   * @minLength 64
+   * @maxLength 64
+   * @pattern ^[0-9a-f]{64}$
+   */
+  target_digest: string;
+  content: CloudCampaignTouchPlanContentSnapshot;
+  /** @minimum 1 */
+  owner_actor_id: number;
+  preview_exclusion_summary: CloudCampaignTouchPlanPreviewExclusionSummary;
+  created_at: string;
+  local_only: boolean;
+  provider_execution_eligible: boolean;
+  runtime_executed: boolean;
+  real_external_call_executed: boolean;
+  delivery_proven: boolean;
+}
+
+export interface CloudCampaignTouchPlanListResponse {
+  /** @maxItems 100 */
+  items: CloudCampaignTouchPlanSummary[];
+  /**
+   * @minLength 1
+   * @maxLength 512
+   * @nullable
+   */
+  next_cursor?: string | null;
+  local_only: boolean;
+  provider_execution_eligible: boolean;
+  runtime_executed: boolean;
+  real_external_call_executed: boolean;
+  delivery_proven: boolean;
+}
+
 export interface AIAudienceProjection {
   local_projection: boolean;
   real_external_call_executed: boolean;
@@ -13606,6 +13900,19 @@ export const ListCloudCampaignsRuntimeStatus = {
   planned: "planned",
   paused: "paused",
 } as const;
+
+export type ListCloudCampaignTouchPlansParams = {
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
 
 /**
  * @summary List ordinary products using a keyset cursor
@@ -39445,6 +39752,263 @@ export const listCloudCampaigns = async (
     status: res.status,
     headers: res.headers,
   } as listCloudCampaignsResponse;
+};
+
+/**
+ * @summary List recipient-safe immutable local Campaign touch-plan snapshots
+ */
+export type listCloudCampaignTouchPlansResponse200 = {
+  data: CloudCampaignTouchPlanListResponse;
+  status: 200;
+};
+
+export type listCloudCampaignTouchPlansResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type listCloudCampaignTouchPlansResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type listCloudCampaignTouchPlansResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type listCloudCampaignTouchPlansResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type listCloudCampaignTouchPlansResponseSuccess =
+  listCloudCampaignTouchPlansResponse200 & {
+    headers: Headers;
+  };
+export type listCloudCampaignTouchPlansResponseError = (
+  | listCloudCampaignTouchPlansResponse400
+  | listCloudCampaignTouchPlansResponse401
+  | listCloudCampaignTouchPlansResponse403
+  | listCloudCampaignTouchPlansResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCloudCampaignTouchPlansResponse =
+  | listCloudCampaignTouchPlansResponseSuccess
+  | listCloudCampaignTouchPlansResponseError;
+
+export const getListCloudCampaignTouchPlansUrl = (
+  campaignCode: string,
+  params?: ListCloudCampaignTouchPlansParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/touch-plans?${stringifiedParams}`
+    : `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/touch-plans`;
+};
+
+export const listCloudCampaignTouchPlans = async (
+  campaignCode: string,
+  params?: ListCloudCampaignTouchPlansParams,
+  options?: RequestInit,
+): Promise<listCloudCampaignTouchPlansResponse> => {
+  const res = await fetch(
+    getListCloudCampaignTouchPlansUrl(campaignCode, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCloudCampaignTouchPlansResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCloudCampaignTouchPlansResponse;
+};
+
+/**
+ * @summary Freeze one immutable local Campaign touch-plan snapshot
+ */
+export type createCloudCampaignTouchPlanResponse201 = {
+  data: CloudCampaignTouchPlanDetailResponse;
+  status: 201;
+};
+
+export type createCloudCampaignTouchPlanResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type createCloudCampaignTouchPlanResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type createCloudCampaignTouchPlanResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type createCloudCampaignTouchPlanResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type createCloudCampaignTouchPlanResponse409 = {
+  data: CloudCampaignError;
+  status: 409;
+};
+
+export type createCloudCampaignTouchPlanResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type createCloudCampaignTouchPlanResponseSuccess =
+  createCloudCampaignTouchPlanResponse201 & {
+    headers: Headers;
+  };
+export type createCloudCampaignTouchPlanResponseError = (
+  | createCloudCampaignTouchPlanResponse400
+  | createCloudCampaignTouchPlanResponse401
+  | createCloudCampaignTouchPlanResponse403
+  | createCloudCampaignTouchPlanResponse404
+  | createCloudCampaignTouchPlanResponse409
+  | createCloudCampaignTouchPlanResponse503
+) & {
+  headers: Headers;
+};
+
+export type createCloudCampaignTouchPlanResponse =
+  | createCloudCampaignTouchPlanResponseSuccess
+  | createCloudCampaignTouchPlanResponseError;
+
+export const getCreateCloudCampaignTouchPlanUrl = (campaignCode: string) => {
+  return `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/touch-plans`;
+};
+
+export const createCloudCampaignTouchPlan = async (
+  campaignCode: string,
+  cloudCampaignTouchPlanCreateRequest: CloudCampaignTouchPlanCreateRequest,
+  options?: RequestInit,
+): Promise<createCloudCampaignTouchPlanResponse> => {
+  const res = await fetch(getCreateCloudCampaignTouchPlanUrl(campaignCode), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(cloudCampaignTouchPlanCreateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createCloudCampaignTouchPlanResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createCloudCampaignTouchPlanResponse;
+};
+
+/**
+ * @summary Read one recipient-safe immutable local Campaign touch-plan snapshot
+ */
+export type getCloudCampaignTouchPlanResponse200 = {
+  data: CloudCampaignTouchPlanDetailResponse;
+  status: 200;
+};
+
+export type getCloudCampaignTouchPlanResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type getCloudCampaignTouchPlanResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type getCloudCampaignTouchPlanResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type getCloudCampaignTouchPlanResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type getCloudCampaignTouchPlanResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type getCloudCampaignTouchPlanResponseSuccess =
+  getCloudCampaignTouchPlanResponse200 & {
+    headers: Headers;
+  };
+export type getCloudCampaignTouchPlanResponseError = (
+  | getCloudCampaignTouchPlanResponse400
+  | getCloudCampaignTouchPlanResponse401
+  | getCloudCampaignTouchPlanResponse403
+  | getCloudCampaignTouchPlanResponse404
+  | getCloudCampaignTouchPlanResponse503
+) & {
+  headers: Headers;
+};
+
+export type getCloudCampaignTouchPlanResponse =
+  | getCloudCampaignTouchPlanResponseSuccess
+  | getCloudCampaignTouchPlanResponseError;
+
+export const getGetCloudCampaignTouchPlanUrl = (
+  campaignCode: string,
+  planId: string,
+) => {
+  return `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/touch-plans/${planId}`;
+};
+
+export const getCloudCampaignTouchPlan = async (
+  campaignCode: string,
+  planId: string,
+  options?: RequestInit,
+): Promise<getCloudCampaignTouchPlanResponse> => {
+  const res = await fetch(
+    getGetCloudCampaignTouchPlanUrl(campaignCode, planId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCloudCampaignTouchPlanResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCloudCampaignTouchPlanResponse;
 };
 
 export type batchStartCloudCampaignsResponse200 = {

@@ -44,12 +44,13 @@ func (events *testEvents) Append(ctx context.Context, event eventport.Event) (ev
 }
 
 type testStore struct {
-	members       map[string]memberdomain.Member
-	receipts      map[string]memberport.Receipt
-	nextReceiptID int64
-	createCalls   int
-	readbackCalls int
-	listOverride  []memberdomain.Member
+	members            map[string]memberdomain.Member
+	receipts           map[string]memberport.Receipt
+	nextReceiptID      int64
+	createCalls        int
+	readbackCalls      int
+	listOverride       []memberdomain.Member
+	timestampPrecision time.Duration
 }
 
 func newTestStore() *testStore {
@@ -79,6 +80,11 @@ func (store *testStore) GetForUpdate(ctx context.Context, productID int64, membe
 func (store *testStore) Create(_ context.Context, record memberport.CreateRecord) (memberdomain.Member, error) {
 	store.createCalls++
 	member := memberdomain.Member{MemberRef: record.MemberRef, ServiceProductID: record.ServiceProductID, CustomerID: record.CustomerID, State: memberdomain.StateActive, Source: record.Source, StartsAt: record.StartsAt, ExpiresAt: cloneTime(record.ExpiresAt), Remark: cloneString(record.Remark), Alliance: cloneString(record.Alliance), Version: 1, CreatedAt: record.CreatedAt, UpdatedAt: record.CreatedAt}
+	if store.timestampPrecision > 0 {
+		member.StartsAt = member.StartsAt.Truncate(store.timestampPrecision)
+		member.CreatedAt = member.CreatedAt.Truncate(store.timestampPrecision)
+		member.UpdatedAt = member.UpdatedAt.Truncate(store.timestampPrecision)
+	}
 	store.members[member.MemberRef] = cloneMember(member)
 	return member, nil
 }
@@ -176,6 +182,23 @@ func TestAddIsOpaqueIdempotentAndAppendsEventInsideTransaction(t *testing.T) {
 	}
 	if strings.Contains(string(events.events[0].Payload), "unionid") || strings.Contains(string(events.events[0].Payload), "phone") {
 		t.Fatalf("unsafe event payload=%s", events.events[0].Payload)
+	}
+}
+
+func TestAddCanonicalizesClockToPostgreSQLTimestampPrecision(t *testing.T) {
+	service, store, events, _ := fixture(t)
+	// PostgreSQL timestamptz persists microsecond precision.
+	store.timestampPrecision = time.Microsecond
+	clock := time.Date(2026, 8, 23, 2, 0, 0, 123456789, time.UTC)
+	service.now = func() time.Time { return clock }
+
+	member, err := service.Add(context.Background(), memberport.AddCommand{ServiceProductID: 7, CustomerID: 9, Source: memberdomain.SourceManual, ActorID: 3, IdempotencyKey: "member-add-postgres-precision"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := clock.Truncate(time.Microsecond)
+	if !member.StartsAt.Equal(want) || !member.CreatedAt.Equal(want) || !member.UpdatedAt.Equal(want) || len(events.events) != 1 || !events.events[0].OccurredAt.Equal(want) {
+		t.Fatalf("member/event timestamps=%#v/%#v want=%s", member, events.events, want)
 	}
 }
 
