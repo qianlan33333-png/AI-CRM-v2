@@ -22,6 +22,8 @@ owners:
       - customer_events
       - customer_merge_lineage
       - customer_event_idempotency
+      - customer_contact_policies
+      - customer_contact_policy_operation_receipts
       - channel_operation_receipts
       - legacy_tag_sync_receipts
       - legacy_tag_live_mutation_receipts
@@ -31,6 +33,8 @@ owners:
       customer_events: append_only
       customer_merge_lineage: contact_owned_effective_customer_projection
       customer_event_idempotency: external_event_fact_registry
+      customer_contact_policies: canonical_OneID_local_contact_suppression_policy_without_provider_or_outbound_execution
+      customer_contact_policy_operation_receipts: actor_scoped_durable_contact_policy_mutation_receipts
       channels: single_instance_local_channel_resource_without_provider_truth
       channel_operation_receipts: actor_scoped_transactional_create_update_idempotency_receipts
       legacy_tag_sync_receipts: actor_scoped_local_sync_queue_acceptance_receipts_without_provider_execution
@@ -228,6 +232,9 @@ owners:
       - cloud_campaign_touch_plan_targets
       - cloud_campaign_touch_plan_steps
       - cloud_campaign_touch_plan_receipts
+      - cloud_campaign_touch_plan_reviews
+      - cloud_campaign_touch_plan_review_receipts
+      - cloud_campaign_touch_plan_handoffs
     constraints:
       cloud_campaigns: local_campaign_control_plane_only
       cloud_campaign_steps: ordered_campaign_content_without_material_reference_or_runtime_execution
@@ -238,6 +245,9 @@ owners:
       cloud_campaign_touch_plan_targets: immutable_canonical_OneID_snapshot_without_customer_fk
       cloud_campaign_touch_plan_steps: immutable_campaign_step_content_snapshot_without_material_reference
       cloud_campaign_touch_plan_receipts: actor_scoped_plan_event_bound_transactional_create_receipts
+      cloud_campaign_touch_plan_reviews: campaign_owned_review_sidecar_with_cas_terminal_decision
+      cloud_campaign_touch_plan_review_receipts: actor_scoped_durable_review_result_snapshot_receipts
+      cloud_campaign_touch_plan_handoffs: approved_review_bound_pending_local_handoff_without_provider_execution
 
   hxc:
     package: internal/hxc

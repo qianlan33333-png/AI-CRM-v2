@@ -353,16 +353,24 @@ func clearCampaignFacts(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 		t.Fatal(err)
 	}
 	if touchPlans != nil {
-		if _, err := pool.Exec(ctx, `TRUNCATE TABLE public.cloud_campaign_touch_plan_receipts, public.cloud_campaign_touch_plan_targets, public.cloud_campaign_touch_plan_steps, public.cloud_campaign_touch_plans`); err != nil {
+		var reviewReceipts *string
+		if err := pool.QueryRow(ctx, `SELECT to_regclass('public.cloud_campaign_touch_plan_review_receipts')::text`).Scan(&reviewReceipts); err != nil {
+			t.Fatal(err)
+		}
+		truncate := `TRUNCATE TABLE public.cloud_campaign_touch_plan_receipts, public.cloud_campaign_touch_plan_targets, public.cloud_campaign_touch_plan_steps, public.cloud_campaign_touch_plans`
+		if reviewReceipts != nil {
+			truncate = `TRUNCATE TABLE public.cloud_campaign_touch_plan_review_receipts, public.cloud_campaign_touch_plan_handoffs, public.cloud_campaign_touch_plan_reviews, public.cloud_campaign_touch_plan_receipts, public.cloud_campaign_touch_plan_targets, public.cloud_campaign_touch_plan_steps, public.cloud_campaign_touch_plans`
+		}
+		if _, err := pool.Exec(ctx, truncate); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := pool.Exec(ctx, `DELETE FROM public.event_deliveries WHERE event_id IN (
   SELECT id FROM public.event_log
-  WHERE event_type = 'cloud_campaign.fact_recorded' AND payload ->> 'audit_type' = 'touch_plan_created'
+  WHERE event_type = 'cloud_campaign.fact_recorded' AND payload ->> 'audit_type' IN ('touch_plan_created', 'touch_plan_submitted', 'approved', 'rejected', 'handoff_created')
 )`); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := pool.Exec(ctx, `DELETE FROM public.event_log WHERE event_type = 'cloud_campaign.fact_recorded' AND payload ->> 'audit_type' = 'touch_plan_created'`); err != nil {
+		if _, err := pool.Exec(ctx, `DELETE FROM public.event_log WHERE event_type = 'cloud_campaign.fact_recorded' AND payload ->> 'audit_type' IN ('touch_plan_created', 'touch_plan_submitted', 'approved', 'rejected', 'handoff_created')`); err != nil {
 			t.Fatal(err)
 		}
 	}

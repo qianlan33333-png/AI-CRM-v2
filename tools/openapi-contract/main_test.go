@@ -211,7 +211,6 @@ func TestCampaignInitiationTouchPlanContractRemainsClosed(t *testing.T) {
 		}
 	}
 	for _, forbidden := range []string{
-		"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients",
 		"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/approve",
 		"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/reject",
 		"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/handoff",
@@ -262,6 +261,29 @@ func TestCampaignInitiationTouchPlanContractRemainsClosed(t *testing.T) {
 	create := doc.Paths.Value(operations["createCloudCampaignTouchPlan"].path).Post
 	if create == nil || create.Parameters.GetByInAndName("header", "X-CSRF-Token") == nil || create.Parameters.GetByInAndName("header", "Idempotency-Key") == nil {
 		t.Fatal("touch-plan create must retain root CSRF and idempotency headers")
+	}
+	if err := validateContracts(doc, inventory, false); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCampaignReviewHandoffContractRemainsSeparateFromInitiation(t *testing.T) {
+	doc, inventory := fresh(t)
+	operations := map[string]struct{ path, method string }{
+		"listCloudCampaignTouchPlanRecipients": {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients", "GET"},
+		"getCloudCampaignTouchPlanRecipient":   {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}", "GET"},
+		"getCloudCampaignTouchPlanReview":      {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review", "GET"},
+		"mutateCloudCampaignTouchPlanReview":   {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review/{operation}", "POST"},
+	}
+	for operationID, want := range operations {
+		item := doc.Paths.Value(want.path)
+		op := operationForMethod(item, want.method)
+		if op == nil || op.OperationID != operationID {
+			t.Fatalf("%s operation is missing", operationID)
+		}
+		if err := validateNativePackageOperation(want.path, item, op, nativePackageOperations[operationID]); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if err := validateContracts(doc, inventory, false); err != nil {
 		t.Fatal(err)
