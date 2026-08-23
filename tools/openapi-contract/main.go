@@ -901,7 +901,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"disableRadarLink":                           {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
 	"getRadarLinkShareProjection":                {"admin.read", map[string]string{"admin": "global", "ops": "global"}},
 	"listCloudCampaigns":                         {"operations.read", map[string]string{"admin": "global", "ops": "global"}},
-	"getCloudCampaign":                           {"admin.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getCloudCampaign":                           {"admin.read", map[string]string{"admin": "global"}},
 	"batchStartCloudCampaigns":                   {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteCloudCampaign":                        {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
 	"addCloudCampaignStep":                       {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},

@@ -322,6 +322,29 @@ func TestOperationsWorkspaceCarrierRBACRemainsNarrow(t *testing.T) {
 	}
 }
 
+func TestCloudCampaignDetailRBACRemainsAdminOnly(t *testing.T) {
+	contract := authorizationContracts["getCloudCampaign"]
+	adminOnly := map[string]string{"admin": "global"}
+	if contract.capability != "admin.read" || !reflect.DeepEqual(contract.scopes, adminOnly) {
+		t.Fatalf("getCloudCampaign capability/scopes=%q/%v", contract.capability, contract.scopes)
+	}
+
+	doc, inventory := fresh(t)
+	operation := doc.Paths.Value("/api/admin/cloud-orchestrator/campaigns/{campaign_code}").Get
+	if operation == nil || operation.OperationID != "getCloudCampaign" {
+		t.Fatal("getCloudCampaign operation is missing")
+	}
+	if scopes, err := stringMap(operation.Extensions["x-aicrm-rbac-scopes"]); err != nil || !reflect.DeepEqual(scopes, adminOnly) {
+		t.Fatalf("getCloudCampaign OAS scopes=%v err=%v", scopes, err)
+	}
+	if err := validateContracts(doc, inventory, false); err != nil {
+		t.Fatal(err)
+	}
+
+	operation.Extensions["x-aicrm-rbac-scopes"] = map[string]any{"admin": "global", "ops": "global"}
+	reject(t, doc, inventory)
+}
+
 func TestCloudCampaignWorkspaceLaunchQueryRemainsLosslessAndClosed(t *testing.T) {
 	doc, _ := fresh(t)
 	operation := doc.Paths.Value("/admin/cloud-orchestrator/campaigns").Get
