@@ -48,6 +48,23 @@ type ResolveResult struct {
 	CustomerID contactport.CustomerID
 }
 
+// TrustedWeComExternalIdentity is the unique verified reverse projection for
+// one canonical OneID. Callers must not persist or expose it outside their
+// already-authorized local response boundary.
+type TrustedWeComExternalIdentity struct {
+	CustomerID     contactport.CustomerID
+	ExternalUserID string
+}
+
+const MaximumTrustedWeComIdentityCustomerIDs = 200
+
+// TrustedWeComIdentityReader is transaction-bound: callers must supply the
+// active outer UnitOfWork context. Missing, unverified, or ambiguous values are
+// omitted from the result. Each call accepts at most 200 canonical OneIDs.
+type TrustedWeComIdentityReader interface {
+	ListPrimaryWeComExternalUserIDs(context.Context, []contactport.CustomerID) ([]TrustedWeComExternalIdentity, error)
+}
+
 // CustomerMatchRequest keeps raw identity hints inside the local matching
 // boundary. Callers receive only a boolean OneID match and must never expose
 // the refs or the unscoped legacy unionid in an HTTP projection.

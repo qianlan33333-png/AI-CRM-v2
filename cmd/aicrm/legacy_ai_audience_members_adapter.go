@@ -8,6 +8,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
+	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/segment/legacyaudiencemembers"
 )
 
@@ -49,27 +52,20 @@ func (reader legacyAIAudienceMembersSQLReader) Query(ctx context.Context, query 
 	return reader.queryer.Query(ctx, query, arguments...)
 }
 
-const legacyAIAudienceMembersExternalIdentitySQL = `SELECT
-  customer_id,
-  min(normalized_value) AS external_userid
-FROM public.identities
-WHERE customer_id = ANY($1::bigint[])
-  AND kind = 'wecom_external_userid'
-  AND assurance = 'verified'
-GROUP BY customer_id
-HAVING count(DISTINCT normalized_value) = 1
-ORDER BY customer_id`
-
 // legacyAIAudienceMembersIdentityReader exposes only a unique verified WeCom
 // external_userid. Customers with no verified identity or conflicting values
 // across scopes are deliberately omitted from the projection.
-type legacyAIAudienceMembersIdentityReader struct{ queryer legacyAIAudienceQueryer }
+type legacyAIAudienceMembersIdentityReader struct {
+	uow    platformport.UnitOfWork
+	reader identityport.TrustedWeComIdentityReader
+}
 
 func (reader legacyAIAudienceMembersIdentityReader) ListPrimaryExternalUserIDs(
 	ctx context.Context,
 	customerIDs []int64,
 ) ([]legacyaudiencemembers.TrustedExternalIdentity, error) {
-	if reader.queryer == nil || ctx == nil {
+	if reader.uow == nil || reader.reader == nil || ctx == nil ||
+		len(customerIDs) > identityport.MaximumTrustedWeComIdentityCustomerIDs {
 		return nil, legacyaudiencemembers.ErrUnavailable
 	}
 	if len(customerIDs) == 0 {
@@ -82,21 +78,26 @@ func (reader legacyAIAudienceMembersIdentityReader) ListPrimaryExternalUserIDs(
 			return nil, legacyaudiencemembers.ErrUnavailable
 		}
 	}
-	rows, err := reader.queryer.Query(ctx, legacyAIAudienceMembersExternalIdentitySQL, ids)
-	if err != nil {
-		return nil, errors.Join(legacyaudiencemembers.ErrUnavailable, err)
+	trustedIDs := make([]contactport.CustomerID, len(ids))
+	for index, id := range ids {
+		trustedIDs[index] = contactport.CustomerID(id)
 	}
-	defer rows.Close()
-
 	items := make([]legacyaudiencemembers.TrustedExternalIdentity, 0, len(ids))
-	for rows.Next() {
-		var item legacyaudiencemembers.TrustedExternalIdentity
-		if err = rows.Scan(&item.CustomerID, &item.ExternalUserID); err != nil {
-			return nil, errors.Join(legacyaudiencemembers.ErrUnavailable, err)
+	err := reader.uow.Within(ctx, func(txCtx context.Context) error {
+		identities, readErr := reader.reader.ListPrimaryWeComExternalUserIDs(txCtx, trustedIDs)
+		if readErr != nil {
+			return readErr
 		}
-		items = append(items, item)
-	}
-	if err = rows.Err(); err != nil {
+		attemptItems := make([]legacyaudiencemembers.TrustedExternalIdentity, 0, len(identities))
+		for _, identity := range identities {
+			attemptItems = append(attemptItems, legacyaudiencemembers.TrustedExternalIdentity{
+				CustomerID: int64(identity.CustomerID), ExternalUserID: identity.ExternalUserID,
+			})
+		}
+		items = attemptItems
+		return nil
+	})
+	if err != nil {
 		return nil, errors.Join(legacyaudiencemembers.ErrUnavailable, err)
 	}
 	return items, nil

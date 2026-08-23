@@ -629,6 +629,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, errInvalidAPIComponent
 	}
 	uow := platformstore.NewUnitOfWork(pool)
+	identityRepository := identitystore.NewRepository()
 	deliveryProducer, err := eventstore.NewProducerDeliveryRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -804,7 +805,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyAIAudienceMembersService, err := legacyaudiencemembers.NewService(
 		legacyAIAudienceMembersRepository,
 		legacyAIAudienceMembersRepository,
-		legacyAIAudienceMembersIdentityReader{queryer: pool},
+		legacyAIAudienceMembersIdentityReader{uow: uow, reader: identityRepository},
 	)
 	if err != nil {
 		pool.Close()
@@ -1108,7 +1109,6 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	identityRepository := identitystore.NewRepository()
 	identityResolver := identityapp.NewResolveService(uow, identityRepository)
 	legacyUnionIDResolver := identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
 	customerIdentityMatcher := identityapp.NewCustomerMatcherService(uow, identityRepository)

@@ -32,6 +32,18 @@ WHERE i.kind = sqlc.arg(kind)::text
   AND i.scope = sqlc.arg(scope)::text
   AND i.normalized_value = sqlc.arg(normalized_value)::text;
 
+-- name: ListPrimaryWeComExternalUserIDs :many
+SELECT
+  customer_id,
+  min(normalized_value)::text AS external_userid
+FROM identities
+WHERE customer_id = ANY(sqlc.arg(customer_ids)::bigint[])
+  AND kind = 'wecom_external_userid'
+  AND assurance = 'verified'
+GROUP BY customer_id
+HAVING count(DISTINCT normalized_value) = 1
+ORDER BY customer_id;
+
 -- name: LookupMessageArchiveUnionIDCustomers :many
 SELECT DISTINCT i.customer_id
 FROM identities AS i
