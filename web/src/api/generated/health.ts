@@ -13177,6 +13177,30 @@ export const ListAutomationTriggerRunsVisibility = {
   masked: "masked",
 } as const;
 
+export type GetCloudOrchestratorCampaignsWorkspaceParams = {
+  /**
+   * Optional launch context; it must appear exactly once together with source_id, or both parameters must be absent.
+   */
+  source_kind?: GetCloudOrchestratorCampaignsWorkspaceSourceKind;
+  /**
+   * Lossless canonical positive int64 decimal string no greater than 9223372036854775807; it must appear exactly once together with source_kind.
+   * @minLength 1
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  source_id?: string;
+};
+
+export type GetCloudOrchestratorCampaignsWorkspaceSourceKind =
+  (typeof GetCloudOrchestratorCampaignsWorkspaceSourceKind)[keyof typeof GetCloudOrchestratorCampaignsWorkspaceSourceKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GetCloudOrchestratorCampaignsWorkspaceSourceKind = {
+  customer_selection: "customer_selection",
+  segment_members: "segment_members",
+  ai_audience_package_members: "ai_audience_package_members",
+} as const;
+
 export type CreateLegacyWecomTag200 =
   LegacyTagCreateSuccess | LegacyTagCreateValidatedSuccess;
 
@@ -20282,6 +20306,11 @@ export type getCloudOrchestratorCampaignsWorkspaceResponse302 = {
   status: 302;
 };
 
+export type getCloudOrchestratorCampaignsWorkspaceResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
 export type getCloudOrchestratorCampaignsWorkspaceResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
@@ -20299,6 +20328,7 @@ export type getCloudOrchestratorCampaignsWorkspaceResponse405 = {
 
 export type getCloudOrchestratorCampaignsWorkspaceResponseError = (
   | getCloudOrchestratorCampaignsWorkspaceResponse302
+  | getCloudOrchestratorCampaignsWorkspaceResponse400
   | getCloudOrchestratorCampaignsWorkspaceResponse401
   | getCloudOrchestratorCampaignsWorkspaceResponse403
   | getCloudOrchestratorCampaignsWorkspaceResponse405
@@ -20309,17 +20339,35 @@ export type getCloudOrchestratorCampaignsWorkspaceResponseError = (
 export type getCloudOrchestratorCampaignsWorkspaceResponse =
   getCloudOrchestratorCampaignsWorkspaceResponseError;
 
-export const getGetCloudOrchestratorCampaignsWorkspaceUrl = () => {
-  return `/admin/cloud-orchestrator/campaigns`;
+export const getGetCloudOrchestratorCampaignsWorkspaceUrl = (
+  params?: GetCloudOrchestratorCampaignsWorkspaceParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/admin/cloud-orchestrator/campaigns?${stringifiedParams}`
+    : `/admin/cloud-orchestrator/campaigns`;
 };
 
 export const getCloudOrchestratorCampaignsWorkspace = async (
+  params?: GetCloudOrchestratorCampaignsWorkspaceParams,
   options?: RequestInit,
 ): Promise<getCloudOrchestratorCampaignsWorkspaceResponse> => {
-  const res = await fetch(getGetCloudOrchestratorCampaignsWorkspaceUrl(), {
-    ...options,
-    method: "GET",
-  });
+  const res = await fetch(
+    getGetCloudOrchestratorCampaignsWorkspaceUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 

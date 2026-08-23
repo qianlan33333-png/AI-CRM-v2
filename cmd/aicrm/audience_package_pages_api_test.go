@@ -50,6 +50,7 @@ func TestFinalRouterKeepsCloudCarrierCapabilitiesRouteSpecific(t *testing.T) {
 		{path: automationhttp.CloudOrchestratorPlansPath, location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans", capability: authport.CapabilityAdminRead},
 		{path: automationhttp.CloudOrchestratorPlansPath + "/plan_A-42", location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans%2Fplan_A-42", capability: authport.CapabilityAdminRead},
 		{path: automationhttp.CloudOrchestratorCampaignsPath, location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns", capability: authport.CapabilityOperationsRead},
+		{path: automationhttp.CloudOrchestratorCampaignsPath + "?source_kind=segment_members&source_id=7", location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns%3Fsource_kind%3Dsegment_members%26source_id%3D7", capability: authport.CapabilityOperationsRead},
 		{path: automationhttp.CloudOrchestratorObservabilityPath, location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fobservability", capability: authport.CapabilityAdminRead},
 	}
 	for index, test := range tests {
@@ -62,6 +63,20 @@ func TestFinalRouterKeepsCloudCarrierCapabilitiesRouteSpecific(t *testing.T) {
 		if len(capabilities) != index+1 || capabilities[index] != test.capability {
 			t.Fatalf("GET %s capabilities=%v", test.path, capabilities)
 		}
+	}
+}
+
+func TestFinalRouterRejectsMalformedCloudCampaignCarrierLaunchContext(t *testing.T) {
+	router, auth := legacySurveyRouter(t, &legacySurveyStub{item: legacySurveyItem()})
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, legacyRequest(http.MethodGet, automationhttp.CloudOrchestratorCampaignsPath+"?source_kind=segment_members", legacyToken(195)))
+
+	if response.Code != http.StatusBadRequest || response.Header().Get("Location") != "" {
+		t.Fatalf("status/location=%d/%q", response.Code, response.Header().Get("Location"))
+	}
+	capabilities := auth.capabilities()
+	if len(capabilities) != 1 || capabilities[0] != authport.CapabilityOperationsRead {
+		t.Fatalf("capabilities=%v", capabilities)
 	}
 }
 

@@ -50,6 +50,15 @@ type nativePackagePathParameter struct {
 	maxLength uint64
 }
 
+type nativePackageLaunchQueryContract struct {
+	kinds           []any
+	idPattern       string
+	idMaximumLength uint64
+	idMaximumValue  string
+	location        string
+	locationPattern string
+}
+
 const (
 	p4ClassificationPackageEvidence   = "P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20"
 	p4ProductEntitlementEvidence      = "P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20"
@@ -217,6 +226,17 @@ var nativePackagePathParameters = map[string]nativePackagePathParameter{
 		typeName:  "string",
 		pattern:   "^ctp_[0-9a-f]{64}$",
 		maxLength: 68,
+	},
+}
+
+var nativePackageLaunchQueryContracts = map[string]nativePackageLaunchQueryContract{
+	"getCloudOrchestratorCampaignsWorkspace": {
+		kinds:           []any{"customer_selection", "segment_members", "ai_audience_package_members"},
+		idPattern:       "^[1-9][0-9]{0,18}$",
+		idMaximumLength: 19,
+		idMaximumValue:  "9223372036854775807",
+		location:        "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns",
+		locationPattern: `^/[?]legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns%3Fsource_kind%3D(customer_selection|segment_members|ai_audience_package_members)%26source_id%3D([1-9][0-9]{0,17}|[1-8][0-9]{18}|9[01][0-9]{17}|92[01][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[01][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-7])$`,
 	},
 }
 
@@ -1300,6 +1320,51 @@ func validateNativePackageOperation(path string, item *openapi3.PathItem, op *op
 			schema.Min != nil || schema.Max != nil {
 			return fmt.Errorf("%s lossless path parameter contract drifted", op.OperationID)
 		}
+	}
+	if queryContract, frozen := nativePackageLaunchQueryContracts[op.OperationID]; frozen {
+		if err := validateNativePackageLaunchQuery(op, queryContract); err != nil {
+			return fmt.Errorf("%s %w", op.OperationID, err)
+		}
+	}
+	return nil
+}
+
+func validateNativePackageLaunchQuery(op *openapi3.Operation, contract nativePackageLaunchQueryContract) error {
+	if op.Extensions["x-aicrm-query-contract"] != "none_or_exact_source_pair" || len(op.Parameters) != 2 {
+		return errors.New("launch query parameter count drifted")
+	}
+	kind := op.Parameters.GetByInAndName("query", "source_kind")
+	id := op.Parameters.GetByInAndName("query", "source_id")
+	if kind == nil || kind.Required || kind.Schema == nil || kind.Schema.Value == nil ||
+		kind.Schema.Value.Type == nil || !kind.Schema.Value.Type.Is("string") || kind.Schema.Value.Format != "" ||
+		!reflect.DeepEqual(kind.Schema.Value.Enum, contract.kinds) {
+		return errors.New("source_kind launch query drifted")
+	}
+	if id == nil || id.Required || id.Schema == nil || id.Schema.Value == nil ||
+		id.Schema.Value.Type == nil || !id.Schema.Value.Type.Is("string") || id.Schema.Value.Format != "" ||
+		id.Schema.Value.Pattern != contract.idPattern || id.Schema.Value.MinLength != 1 ||
+		id.Schema.Value.MaxLength == nil || *id.Schema.Value.MaxLength != contract.idMaximumLength ||
+		id.Schema.Value.Min != nil || id.Schema.Value.Max != nil ||
+		id.Schema.Value.Extensions["x-aicrm-decimal-maximum"] != contract.idMaximumValue {
+		return errors.New("source_id launch query drifted")
+	}
+	malformed := op.Responses.Value("400")
+	redirect := op.Responses.Value("302")
+	if malformed == nil || redirect == nil || redirect.Value == nil {
+		return errors.New("launch query responses drifted")
+	}
+	location := redirect.Value.Headers["Location"]
+	if location == nil || location.Value == nil || location.Value.Schema == nil || location.Value.Schema.Value == nil ||
+		len(location.Value.Schema.Value.OneOf) != 2 {
+		return errors.New("launch query Location drifted")
+	}
+	withoutSource := location.Value.Schema.Value.OneOf[0]
+	withSource := location.Value.Schema.Value.OneOf[1]
+	if withoutSource == nil || withoutSource.Value == nil || withoutSource.Value.Type == nil || !withoutSource.Value.Type.Is("string") ||
+		!reflect.DeepEqual(withoutSource.Value.Enum, []any{contract.location}) ||
+		withSource == nil || withSource.Value == nil || withSource.Value.Type == nil || !withSource.Value.Type.Is("string") ||
+		withSource.Value.Pattern != contract.locationPattern {
+		return errors.New("launch query Location alternatives drifted")
 	}
 	return nil
 }

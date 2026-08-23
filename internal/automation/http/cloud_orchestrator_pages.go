@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
@@ -19,7 +20,10 @@ const (
 	legacyAdminPathParameter           = "legacy_admin_path"
 )
 
-var errCloudOrchestratorPageNotFound = errors.New("cloud orchestrator page not found")
+var (
+	errCloudOrchestratorPageNotFound  = errors.New("cloud orchestrator page not found")
+	errCloudOrchestratorPageMalformed = errors.New("cloud orchestrator page request is malformed")
+)
 
 // CloudOrchestratorPages is a read-only carrier for the approved legacy
 // workspaces. It deliberately owns no plan, audience, approval, quality,
@@ -51,11 +55,49 @@ func (handler *CloudOrchestratorPages) ServeHTTP(writer http.ResponseWriter, req
 		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthorized, authport.ErrUnauthorized))
 		return
 	}
+	if target == CloudOrchestratorCampaignsPath {
+		var valid bool
+		target, valid = cloudOrchestratorCampaignsPageTarget(request.URL.RawQuery)
+		if !valid {
+			platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, errCloudOrchestratorPageMalformed))
+			return
+		}
+	}
 	if root {
 		http.Redirect(writer, request, CloudOrchestratorPlansPath, http.StatusFound)
 		return
 	}
 	http.Redirect(writer, request, "/?"+legacyAdminPathParameter+"="+url.QueryEscape(target), http.StatusFound)
+}
+
+func cloudOrchestratorCampaignsPageTarget(rawQuery string) (string, bool) {
+	if rawQuery == "" {
+		return CloudOrchestratorCampaignsPath, true
+	}
+	parameters, err := url.ParseQuery(rawQuery)
+	if err != nil || len(parameters) != 2 {
+		return "", false
+	}
+	kinds, ids := parameters["source_kind"], parameters["source_id"]
+	if len(kinds) != 1 || len(ids) != 1 {
+		return "", false
+	}
+	kind, sourceID := kinds[0], ids[0]
+	switch kind {
+	case "customer_selection", "segment_members", "ai_audience_package_members":
+	default:
+		return "", false
+	}
+	parsedID, err := strconv.ParseInt(sourceID, 10, 64)
+	if err != nil || parsedID < 1 || strconv.FormatInt(parsedID, 10) != sourceID {
+		return "", false
+	}
+	kindFirst := "source_kind=" + kind + "&source_id=" + sourceID
+	idFirst := "source_id=" + sourceID + "&source_kind=" + kind
+	if rawQuery != kindFirst && rawQuery != idFirst {
+		return "", false
+	}
+	return CloudOrchestratorCampaignsPath + "?" + kindFirst, true
 }
 
 func cloudOrchestratorPageTarget(path string) (target string, root bool, matched bool) {

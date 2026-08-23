@@ -37,6 +37,85 @@ func TestCloudOrchestratorPagesCarryOnlyApprovedWorkspaces(t *testing.T) {
 	}
 }
 
+func TestCloudOrchestratorCampaignsPageCarriesClosedLaunchContext(t *testing.T) {
+	tests := []struct {
+		name     string
+		query    string
+		location string
+	}{
+		{
+			name:     "customer selection",
+			query:    "source_kind=customer_selection&source_id=42",
+			location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns%3Fsource_kind%3Dcustomer_selection%26source_id%3D42",
+		},
+		{
+			name:     "segment members",
+			query:    "source_kind=segment_members&source_id=7",
+			location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns%3Fsource_kind%3Dsegment_members%26source_id%3D7",
+		},
+		{
+			name:     "pair order is normalized",
+			query:    "source_id=7&source_kind=segment_members",
+			location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns%3Fsource_kind%3Dsegment_members%26source_id%3D7",
+		},
+		{
+			name:     "audience package at int64 maximum",
+			query:    "source_kind=ai_audience_package_members&source_id=9223372036854775807",
+			location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns%3Fsource_kind%3Dai_audience_package_members%26source_id%3D9223372036854775807",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := authorizedCloudOrchestratorRequest(http.MethodGet, CloudOrchestratorCampaignsPath, authport.RoleOps, authport.CapabilityOperationsRead)
+			request.URL.RawQuery = test.query
+			response := httptest.NewRecorder()
+
+			NewCloudOrchestratorPages().ServeHTTP(response, request)
+
+			if response.Code != http.StatusFound || response.Header().Get("Location") != test.location {
+				t.Fatalf("status/location=%d/%q", response.Code, response.Header().Get("Location"))
+			}
+			assertCloudOrchestratorHeaders(t, response)
+		})
+	}
+}
+
+func TestCloudOrchestratorCampaignsPageRejectsNonCanonicalLaunchContext(t *testing.T) {
+	queries := map[string]string{
+		"half pair kind":         "source_kind=customer_selection",
+		"half pair id":           "source_id=7",
+		"duplicate kind":         "source_kind=customer_selection&source_kind=segment_members&source_id=7",
+		"duplicate id":           "source_kind=segment_members&source_id=7&source_id=8",
+		"extra query":            "source_kind=segment_members&source_id=7&return_to=customers",
+		"unknown kind":           "source_kind=customer_filter&source_id=7",
+		"empty id":               "source_kind=customer_selection&source_id=",
+		"zero id":                "source_kind=customer_selection&source_id=0",
+		"negative id":            "source_kind=customer_selection&source_id=-1",
+		"leading zero":           "source_kind=customer_selection&source_id=01",
+		"raw plus":               "source_kind=customer_selection&source_id=+1",
+		"encoded plus":           "source_kind=customer_selection&source_id=%2B1",
+		"leading whitespace":     "source_kind=customer_selection&source_id=%201",
+		"trailing whitespace":    "source_kind=customer_selection&source_id=1%20",
+		"above int64 maximum":    "source_kind=ai_audience_package_members&source_id=9223372036854775808",
+		"too many digits":        "source_kind=segment_members&source_id=100000000000000000000",
+		"invalid percent escape": "source_kind=segment_members&source_id=%zz",
+	}
+	for name, query := range queries {
+		t.Run(name, func(t *testing.T) {
+			request := authorizedCloudOrchestratorRequest(http.MethodGet, CloudOrchestratorCampaignsPath, authport.RoleAdmin, authport.CapabilityOperationsRead)
+			request.URL.RawQuery = query
+			response := httptest.NewRecorder()
+
+			NewCloudOrchestratorPages().ServeHTTP(response, request)
+
+			if response.Code != http.StatusBadRequest || response.Header().Get("Location") != "" {
+				t.Fatalf("status/location=%d/%q", response.Code, response.Header().Get("Location"))
+			}
+			assertCloudOrchestratorError(t, response, "MALFORMED_REQUEST")
+		})
+	}
+}
+
 func TestCloudOrchestratorCampaignsPageFailsClosedForRoleCapabilityAndScopeDrift(t *testing.T) {
 	tests := []struct {
 		name          string
