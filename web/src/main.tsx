@@ -1169,10 +1169,13 @@ export function App({
     initialSession ?? { status: "checking" },
   );
   const [logoutState, setLogoutState] = useState<LogoutState>("ready");
+  const cloudOrchestratorCarrier =
+    pathname === "/" ? cloudOrchestratorCarrierRoute(search) : undefined;
   const effectivePathname = carrierPathname(pathname, search);
   const route = routeForPathname(effectivePathname);
   const customerPage = customerPageRoute(effectivePathname);
-  const cloudOrchestrator = cloudOrchestratorRoute(effectivePathname);
+  const cloudOrchestrator =
+    cloudOrchestratorCarrier ?? cloudOrchestratorRoute(effectivePathname);
   const groupOps = groupOpsRoute(effectivePathname);
   const audiencePackage = audiencePackageRoute(effectivePathname);
   const commerceWorkspace = commerceWorkspaceRoute(effectivePathname);

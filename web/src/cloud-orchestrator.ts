@@ -7,6 +7,9 @@ export const CLOUD_ORCHESTRATOR_OBSERVABILITY_PATH =
 
 export type CloudOrchestratorRole = "admin" | "ops" | "sales";
 
+export type CloudCampaignSourceKind =
+  "customer_selection" | "segment_members" | "ai_audience_package_members";
+
 export type CloudOrchestratorRoute =
   | {
       readonly kind: "root";
@@ -24,6 +27,14 @@ export type CloudOrchestratorRoute =
   | {
       readonly kind: "campaigns";
       readonly pathname: typeof CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH;
+      readonly source_kind?: undefined;
+      readonly source_id?: undefined;
+    }
+  | {
+      readonly kind: "campaigns";
+      readonly pathname: typeof CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH;
+      readonly source_kind: CloudCampaignSourceKind;
+      readonly source_id: string;
     }
   | {
       readonly kind: "observability";
@@ -86,7 +97,50 @@ export function cloudOrchestratorCarrierRoute(
   if (entries.length !== 1 || entries[0][0] !== "legacy_admin_path") {
     return undefined;
   }
-  return cloudOrchestratorRoute(entries[0][1]);
+  const inner = entries[0][1];
+  if (search !== `?legacy_admin_path=${encodeURIComponent(inner)}`) {
+    return undefined;
+  }
+
+  const separator = inner.indexOf("?");
+  if (separator < 0) return cloudOrchestratorRoute(inner);
+  if (inner.slice(0, separator) !== CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH) {
+    return undefined;
+  }
+
+  const rawQuery = inner.slice(separator + 1);
+  const query = new URLSearchParams(rawQuery);
+  const queryEntries = [...query.entries()];
+  if (queryEntries.length !== 2) return undefined;
+  const kinds = query.getAll("source_kind");
+  const ids = query.getAll("source_id");
+  if (kinds.length !== 1 || ids.length !== 1) return undefined;
+
+  const sourceKind = kinds[0];
+  const sourceID = ids[0];
+  if (
+    sourceKind !== "customer_selection" &&
+    sourceKind !== "segment_members" &&
+    sourceKind !== "ai_audience_package_members"
+  ) {
+    return undefined;
+  }
+  if (
+    !/^[1-9][0-9]{0,18}$/u.test(sourceID) ||
+    (sourceID.length === 19 && sourceID > "9223372036854775807")
+  ) {
+    return undefined;
+  }
+
+  const kindFirst = `source_kind=${sourceKind}&source_id=${sourceID}`;
+  const idFirst = `source_id=${sourceID}&source_kind=${sourceKind}`;
+  if (rawQuery !== kindFirst && rawQuery !== idFirst) return undefined;
+  return {
+    kind: "campaigns",
+    pathname: CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
+    source_kind: sourceKind,
+    source_id: sourceID,
+  };
 }
 
 export interface CloudOrchestratorWorkspaceLink {

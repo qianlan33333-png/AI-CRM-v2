@@ -59,6 +59,87 @@ describe("cloud orchestrator approved page routes", () => {
     ).toBeUndefined();
   });
 
+  it.each([
+    ["customer_selection", "1"],
+    ["segment_members", "42"],
+    ["ai_audience_package_members", "9223372036854775807"],
+  ])("restores the exact %s source pair losslessly", (sourceKind, sourceID) => {
+    const inner = `${CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH}?source_kind=${sourceKind}&source_id=${sourceID}`;
+    expect(
+      cloudOrchestratorCarrierRoute(
+        `?legacy_admin_path=${encodeURIComponent(inner)}`,
+      ),
+    ).toEqual({
+      kind: "campaigns",
+      pathname: CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
+      source_kind: sourceKind,
+      source_id: sourceID,
+    });
+  });
+
+  it("accepts the closed pair in either order and returns a canonical route", () => {
+    const inner = `${CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH}?source_id=7&source_kind=segment_members`;
+    expect(
+      cloudOrchestratorCarrierRoute(
+        `?legacy_admin_path=${encodeURIComponent(inner)}`,
+      ),
+    ).toEqual({
+      kind: "campaigns",
+      pathname: CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
+      source_kind: "segment_members",
+      source_id: "7",
+    });
+  });
+
+  it.each([
+    "source_kind=segment_members",
+    "source_id=7",
+    "source_kind=segment_members&source_id=7&return_to=customers",
+    "source_kind=segment_members&source_kind=customer_selection&source_id=7",
+    "source_kind=segment_members&source_id=7&source_id=8",
+    "source_kind=unknown&source_id=7",
+    "source_kind=segment_members&source_id=",
+    "source_kind=segment_members&source_id=0",
+    "source_kind=segment_members&source_id=-1",
+    "source_kind=segment_members&source_id=01",
+    "source_kind=segment_members&source_id=+1",
+    "source_kind=segment_members&source_id=%2B1",
+    "source_kind=segment_members&source_id=%201",
+    "source_kind=segment_members&source_id=1%20",
+    "source_kind=segment_members&source_id=9223372036854775808",
+    "source_kind=segment_members&source_id=10000000000000000000",
+    "source_kind=segment_members&source_id=%37",
+    "source%5Fkind=segment_members&source_id=7",
+    "source_kind=segment%5Fmembers&source_id=7",
+    "source_kind=segment_members&source_id=%zz",
+  ])("rejects malformed or noncanonical inner query %s", (rawQuery) => {
+    const inner = `${CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH}?${rawQuery}`;
+    expect(
+      cloudOrchestratorCarrierRoute(
+        `?legacy_admin_path=${encodeURIComponent(inner)}`,
+      ),
+    ).toBeUndefined();
+  });
+
+  it("rejects query context on every other Cloud route and noncanonical outer encoding", () => {
+    const plans = `${CLOUD_ORCHESTRATOR_PLANS_PATH}?source_kind=segment_members&source_id=7`;
+    expect(
+      cloudOrchestratorCarrierRoute(
+        `?legacy_admin_path=${encodeURIComponent(plans)}`,
+      ),
+    ).toBeUndefined();
+
+    const campaign = `${CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH}?source_kind=segment_members&source_id=7`;
+    expect(
+      cloudOrchestratorCarrierRoute(`?legacy_admin_path=${campaign}`),
+    ).toBeUndefined();
+    expect(
+      cloudOrchestratorCarrierRoute(
+        `?legacy%5Fadmin_path=${encodeURIComponent(campaign)}`,
+      ),
+    ).toBeUndefined();
+  });
+
   it("exposes only the three frozen workspace links", () => {
     expect(cloudOrchestratorWorkspaceLinks).toEqual([
       { href: CLOUD_ORCHESTRATOR_PLANS_PATH, label: "运营计划" },
