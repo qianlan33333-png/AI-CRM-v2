@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	segmentdb "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store/generated"
 )
 
 // TestSQLRepositoryPG16UsesMigratedSegmentSnapshotAndStablePagination runs
@@ -26,8 +28,12 @@ func TestSQLRepositoryPG16UsesMigratedSegmentSnapshotAndStablePagination(t *test
 	}
 	defer connection.Close(ctx)
 
-	var serverVersion int
-	if err = connection.QueryRow(ctx, "SHOW server_version_num").Scan(&serverVersion); err != nil {
+	var serverVersionText string
+	if err = connection.QueryRow(ctx, "SHOW server_version_num").Scan(&serverVersionText); err != nil {
+		t.Fatal(err)
+	}
+	serverVersion, err := strconv.Atoi(serverVersionText)
+	if err != nil {
 		t.Fatal(err)
 	}
 	if serverVersion/10000 != 16 {
@@ -67,7 +73,7 @@ VALUES ($1, $2, $3)`, segmentID, customerID, computedAt); err != nil {
 		}
 	}
 
-	repository, err := NewSQLRepository(pg16ReadProvider{transaction: transaction})
+	repository, err := newSQLRepository(segmentdb.New(transaction))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -157,24 +163,4 @@ func customerNameByID(ids map[string]int64, customerID int64) string {
 		}
 	}
 	return ""
-}
-
-type pg16ReadProvider struct {
-	transaction pgx.Tx
-}
-
-func (provider pg16ReadProvider) Reader(context.Context) (SQLReader, error) {
-	return pg16Reader{transaction: provider.transaction}, nil
-}
-
-type pg16Reader struct {
-	transaction pgx.Tx
-}
-
-func (reader pg16Reader) QueryRow(ctx context.Context, query string, arguments ...any) SQLRow {
-	return reader.transaction.QueryRow(ctx, query, arguments...)
-}
-
-func (reader pg16Reader) Query(ctx context.Context, query string, arguments ...any) (SQLRows, error) {
-	return reader.transaction.Query(ctx, query, arguments...)
 }

@@ -795,24 +795,18 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	legacyAIAudienceMembersRepository, err := legacyaudiencemembers.NewSQLRepository(
-		legacyAIAudienceMembersSQLProvider{pool: pool},
-	)
-	if err != nil {
-		pool.Close()
-		return nil, err
-	}
+	legacyAIAudienceMembersRepository := legacyaudiencemembers.NewSQLRepository()
 	legacyAIAudienceMembersService, err := legacyaudiencemembers.NewService(
 		legacyAIAudienceMembersRepository,
 		legacyAIAudienceMembersRepository,
-		legacyAIAudienceMembersIdentityReader{uow: uow, reader: identityRepository},
+		legacyAIAudienceMembersIdentityReader{reader: identityRepository},
 	)
 	if err != nil {
 		pool.Close()
 		return nil, err
 	}
 	legacyAIAudienceMembersHandler, err := legacyaudiencemembers.NewHandler(
-		legacyAIAudienceMembersService,
+		legacyAIAudienceMembersApplication{uow: uow, application: legacyAIAudienceMembersService},
 		legacyAIAudienceMembersSecurity{},
 	)
 	if err != nil {
