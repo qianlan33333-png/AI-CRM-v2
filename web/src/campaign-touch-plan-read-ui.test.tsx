@@ -228,9 +228,77 @@ const plan = (code: string) => ({
   created_at: now,
   ...safety,
 });
+const detailPlan = (code: string) => {
+  const summary = plan(code);
+  const { content_step_count: _stepCount, content_digest, ...rest } = summary;
+  return {
+    ...rest,
+    content: {
+      steps: [{ step_index: 1, delay_minutes: 0, content: "local" }],
+      content_digest,
+    },
+  };
+};
 
 afterEach(() => vi.unstubAllGlobals());
 describe("CampaignTouchPlanReadPanel", () => {
+  it("emits only a verified detail and synchronously clears it on selection clear and unmount", async () => {
+    const selected = vi.fn();
+    const transport: CampaignTouchPlanReadTransport = {
+      listCampaigns: async () => ({ status: 200, data: campaigns }),
+      getCampaign: async () => ({ status: 500, data: {} }),
+      createPlan: async () => ({ status: 500, data: {} }),
+      listPlans: async (code) => ({
+        status: 200,
+        data: { items: [plan(code)], next_cursor: null, ...safety },
+      }),
+      getPlan: async (code) => ({ status: 200, data: detailPlan(code) }),
+      listRecipients: async () => ({
+        status: 200,
+        data: {
+          items: [{ canonical_customer_id: 1 }],
+          next_cursor: null,
+          local_only: true,
+          provider_execution_eligible: false,
+          real_external_call_executed: false,
+          delivery_proven: false,
+        },
+      }),
+    };
+    const { root, container } = mount();
+    await act(async () =>
+      root.render(
+        <CampaignTouchPlanReadPanel
+          actorID={1}
+          transport={transport}
+          onPlanSelected={selected}
+        />,
+      ),
+    );
+    await act(async () =>
+      props<{ onChange(event: { currentTarget: { value: string } }): void }>(
+        elements(container, "select")[0],
+      ).onChange({ currentTarget: { value: "a" } }),
+    );
+    await act(async () =>
+      props<{ onChange(event: { currentTarget: { value: string } }): void }>(
+        elements(container, "select")[1],
+      ).onChange({ currentTarget: { value: plan("a").id } }),
+    );
+    expect(selected).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        id: plan("a").id,
+        immutable: expect.any(String),
+      }),
+    );
+    props<{ onChange(event: { currentTarget: { value: string } }): void }>(
+      elements(container, "select")[1],
+    ).onChange({ currentTarget: { value: "" } });
+    expect(selected).toHaveBeenLastCalledWith(undefined);
+    await act(async () => root.unmount());
+    expect(selected).toHaveBeenLastCalledWith(undefined);
+  });
+
   it("keeps a newer campaign selection when transport ignores the aborted older request", async () => {
     const a = deferred<{ status: number; data: unknown }>();
     const b = deferred<{ status: number; data: unknown }>();

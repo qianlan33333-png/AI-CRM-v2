@@ -12,7 +12,12 @@ import {
   type SessionStorageLike,
 } from "./campaign-touch-plan-core";
 import { CampaignTouchPlanReadPanel } from "./campaign-touch-plan-read-ui";
-import type { CampaignTouchPlanReadTransport } from "./campaign-touch-plan-read";
+import type {
+  CampaignTouchPlanReadTransport,
+  TouchPlanSummary,
+} from "./campaign-touch-plan-read";
+import { CampaignTouchPlanReviewPanel } from "./campaign-touch-plan-review-ui";
+import type { CampaignTouchPlanReviewTransport } from "./campaign-touch-plan-review";
 import {
   CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
   CLOUD_ORCHESTRATOR_PLANS_PATH,
@@ -409,6 +414,7 @@ function CampaignTouchPlanPanelInner({
 }
 
 function CampaignsWorkspace({
+  role,
   route,
   actorID,
   transport,
@@ -417,7 +423,9 @@ function CampaignsWorkspace({
   keySource,
   onUnauthenticated,
   readTransport,
+  reviewTransport,
 }: {
+  readonly role: CloudOrchestratorRole;
   readonly route: Extract<
     CloudOrchestratorRoute,
     { readonly kind: "campaigns" }
@@ -429,7 +437,9 @@ function CampaignsWorkspace({
   readonly keySource?: { readonly randomUUID: () => string };
   readonly onUnauthenticated?: () => void;
   readonly readTransport?: CampaignTouchPlanReadTransport;
+  readonly reviewTransport?: CampaignTouchPlanReviewTransport;
 }): React.ReactElement {
+  const [reviewPlan, setReviewPlan] = useState<TouchPlanSummary>();
   return (
     <section aria-labelledby="cloud-orchestrator-title">
       <h1 id="cloud-orchestrator-title">Campaign 审阅工作区</h1>
@@ -455,7 +465,20 @@ function CampaignsWorkspace({
         actorID={actorID}
         transport={readTransport}
         onUnauthenticated={onUnauthenticated}
+        onPlanSelected={setReviewPlan}
       />
+      {actorID && reviewPlan ? (
+        <CampaignTouchPlanReviewPanel
+          role={role}
+          actorID={actorID}
+          plan={reviewPlan}
+          transport={reviewTransport}
+          sessionStorage={sessionStorage}
+          readCookie={readCookie}
+          keySource={keySource}
+          onUnauthenticated={onUnauthenticated}
+        />
+      ) : null}
     </section>
   );
 }
@@ -497,6 +520,7 @@ export function CloudOrchestratorWorkspace({
   keySource,
   onUnauthenticated,
   campaignReadTransport,
+  campaignReviewTransport,
 }: {
   readonly role: CloudOrchestratorRole;
   readonly route: CloudOrchestratorRoute;
@@ -507,6 +531,7 @@ export function CloudOrchestratorWorkspace({
   readonly keySource?: { readonly randomUUID: () => string };
   readonly onUnauthenticated?: () => void;
   readonly campaignReadTransport?: CampaignTouchPlanReadTransport;
+  readonly campaignReviewTransport?: CampaignTouchPlanReviewTransport;
 }): React.ReactElement {
   if (role === "sales" || (role === "ops" && route.kind !== "campaigns")) {
     return (
@@ -528,6 +553,8 @@ export function CloudOrchestratorWorkspace({
       ) : null}
       {route.kind === "campaigns" ? (
         <CampaignsWorkspace
+          key={actorID ?? 0}
+          role={role}
           route={route}
           actorID={actorID}
           transport={campaignTransport}
@@ -536,6 +563,7 @@ export function CloudOrchestratorWorkspace({
           keySource={keySource}
           onUnauthenticated={onUnauthenticated}
           readTransport={campaignReadTransport}
+          reviewTransport={campaignReviewTransport}
         />
       ) : null}
       {route.kind === "observability" ? <ObservabilityWorkspace /> : null}
