@@ -11,6 +11,57 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const archiveSegment = `-- name: ArchiveSegment :one
+UPDATE segments
+SET lifecycle_status = 'archived',
+    archived_at = $1::timestamptz,
+    archived_by = $2::text,
+    updated_at = $1::timestamptz
+WHERE id = $3::bigint
+  AND lifecycle_status = 'active'
+RETURNING id, name, definition, refresh_mode, refresh_cron, member_count,
+          refreshed_at, refresh_status, created_at, updated_at, lifecycle_status
+`
+
+type ArchiveSegmentParams struct {
+	ArchivedAt pgtype.Timestamptz `json:"archived_at"`
+	ArchivedBy string             `json:"archived_by"`
+	SegmentID  int64              `json:"segment_id"`
+}
+
+type ArchiveSegmentRow struct {
+	ID              int64              `json:"id"`
+	Name            string             `json:"name"`
+	Definition      []byte             `json:"definition"`
+	RefreshMode     string             `json:"refresh_mode"`
+	RefreshCron     pgtype.Text        `json:"refresh_cron"`
+	MemberCount     int64              `json:"member_count"`
+	RefreshedAt     pgtype.Timestamptz `json:"refreshed_at"`
+	RefreshStatus   string             `json:"refresh_status"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	LifecycleStatus string             `json:"lifecycle_status"`
+}
+
+func (q *Queries) ArchiveSegment(ctx context.Context, arg ArchiveSegmentParams) (ArchiveSegmentRow, error) {
+	row := q.db.QueryRow(ctx, archiveSegment, arg.ArchivedAt, arg.ArchivedBy, arg.SegmentID)
+	var i ArchiveSegmentRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Definition,
+		&i.RefreshMode,
+		&i.RefreshCron,
+		&i.MemberCount,
+		&i.RefreshedAt,
+		&i.RefreshStatus,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.LifecycleStatus,
+	)
+	return i, err
+}
+
 const completeSegmentOperationReceipt = `-- name: CompleteSegmentOperationReceipt :one
 UPDATE segment_operation_receipts
 SET state = 'completed',
@@ -114,22 +165,23 @@ func (q *Queries) CreateSegment(ctx context.Context, arg CreateSegmentParams) (C
 
 const getSegment = `-- name: GetSegment :one
 SELECT id, name, definition, refresh_mode, refresh_cron, member_count,
-       refreshed_at, refresh_status, created_at, updated_at
+       refreshed_at, refresh_status, created_at, updated_at, lifecycle_status
 FROM segments
 WHERE id = $1::bigint
 `
 
 type GetSegmentRow struct {
-	ID            int64              `json:"id"`
-	Name          string             `json:"name"`
-	Definition    []byte             `json:"definition"`
-	RefreshMode   string             `json:"refresh_mode"`
-	RefreshCron   pgtype.Text        `json:"refresh_cron"`
-	MemberCount   int64              `json:"member_count"`
-	RefreshedAt   pgtype.Timestamptz `json:"refreshed_at"`
-	RefreshStatus string             `json:"refresh_status"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	ID              int64              `json:"id"`
+	Name            string             `json:"name"`
+	Definition      []byte             `json:"definition"`
+	RefreshMode     string             `json:"refresh_mode"`
+	RefreshCron     pgtype.Text        `json:"refresh_cron"`
+	MemberCount     int64              `json:"member_count"`
+	RefreshedAt     pgtype.Timestamptz `json:"refreshed_at"`
+	RefreshStatus   string             `json:"refresh_status"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	LifecycleStatus string             `json:"lifecycle_status"`
 }
 
 func (q *Queries) GetSegment(ctx context.Context, segmentID int64) (GetSegmentRow, error) {
@@ -146,6 +198,7 @@ func (q *Queries) GetSegment(ctx context.Context, segmentID int64) (GetSegmentRo
 		&i.RefreshStatus,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LifecycleStatus,
 	)
 	return i, err
 }
@@ -243,9 +296,10 @@ func (q *Queries) ListSegmentMemberRecords(ctx context.Context, arg ListSegmentM
 
 const listSegments = `-- name: ListSegments :many
 SELECT id, name, definition, refresh_mode, refresh_cron, member_count,
-       refreshed_at, refresh_status, created_at, updated_at
+       refreshed_at, refresh_status, created_at, updated_at, lifecycle_status
 FROM segments
-WHERE ($1::bigint IS NULL OR id > $1::bigint)
+WHERE lifecycle_status = 'active'
+  AND ($1::bigint IS NULL OR id > $1::bigint)
 ORDER BY id
 LIMIT $2::integer
 `
@@ -256,16 +310,17 @@ type ListSegmentsParams struct {
 }
 
 type ListSegmentsRow struct {
-	ID            int64              `json:"id"`
-	Name          string             `json:"name"`
-	Definition    []byte             `json:"definition"`
-	RefreshMode   string             `json:"refresh_mode"`
-	RefreshCron   pgtype.Text        `json:"refresh_cron"`
-	MemberCount   int64              `json:"member_count"`
-	RefreshedAt   pgtype.Timestamptz `json:"refreshed_at"`
-	RefreshStatus string             `json:"refresh_status"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	ID              int64              `json:"id"`
+	Name            string             `json:"name"`
+	Definition      []byte             `json:"definition"`
+	RefreshMode     string             `json:"refresh_mode"`
+	RefreshCron     pgtype.Text        `json:"refresh_cron"`
+	MemberCount     int64              `json:"member_count"`
+	RefreshedAt     pgtype.Timestamptz `json:"refreshed_at"`
+	RefreshStatus   string             `json:"refresh_status"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	LifecycleStatus string             `json:"lifecycle_status"`
 }
 
 func (q *Queries) ListSegments(ctx context.Context, arg ListSegmentsParams) ([]ListSegmentsRow, error) {
@@ -288,6 +343,7 @@ func (q *Queries) ListSegments(ctx context.Context, arg ListSegmentsParams) ([]L
 			&i.RefreshStatus,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.LifecycleStatus,
 		); err != nil {
 			return nil, err
 		}
@@ -301,23 +357,24 @@ func (q *Queries) ListSegments(ctx context.Context, arg ListSegmentsParams) ([]L
 
 const lockSegmentForUpdate = `-- name: LockSegmentForUpdate :one
 SELECT id, name, definition, refresh_mode, refresh_cron, member_count,
-       refreshed_at, refresh_status, created_at, updated_at
+       refreshed_at, refresh_status, created_at, updated_at, lifecycle_status
 FROM segments
 WHERE id = $1::bigint
 FOR UPDATE
 `
 
 type LockSegmentForUpdateRow struct {
-	ID            int64              `json:"id"`
-	Name          string             `json:"name"`
-	Definition    []byte             `json:"definition"`
-	RefreshMode   string             `json:"refresh_mode"`
-	RefreshCron   pgtype.Text        `json:"refresh_cron"`
-	MemberCount   int64              `json:"member_count"`
-	RefreshedAt   pgtype.Timestamptz `json:"refreshed_at"`
-	RefreshStatus string             `json:"refresh_status"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	ID              int64              `json:"id"`
+	Name            string             `json:"name"`
+	Definition      []byte             `json:"definition"`
+	RefreshMode     string             `json:"refresh_mode"`
+	RefreshCron     pgtype.Text        `json:"refresh_cron"`
+	MemberCount     int64              `json:"member_count"`
+	RefreshedAt     pgtype.Timestamptz `json:"refreshed_at"`
+	RefreshStatus   string             `json:"refresh_status"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	LifecycleStatus string             `json:"lifecycle_status"`
 }
 
 func (q *Queries) LockSegmentForUpdate(ctx context.Context, segmentID int64) (LockSegmentForUpdateRow, error) {
@@ -334,6 +391,7 @@ func (q *Queries) LockSegmentForUpdate(ctx context.Context, segmentID int64) (Lo
 		&i.RefreshStatus,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.LifecycleStatus,
 	)
 	return i, err
 }

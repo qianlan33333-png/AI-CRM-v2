@@ -106,6 +106,36 @@ func TestSegmentCRUDReceiptAndRuntimeFlow(t *testing.T) {
 	if err != nil || len(page.Items) == 0 {
 		t.Fatalf("segments = %#v, %v", page, err)
 	}
+	archive := segmentport.ArchiveCommand{
+		SegmentID: first.ID, Actor: actor, IdempotencyKey: "segment-archive-" + suffix,
+	}
+	archived, err := service.Archive(ctx, archive)
+	if err != nil || archived.ID != first.ID || archived.LifecycleStatus != segmentport.LifecycleStatusArchived {
+		t.Fatalf("archived segment = %#v, %v", archived, err)
+	}
+	replayedArchive, err := service.Archive(ctx, archive)
+	if err != nil || replayedArchive.ID != first.ID || replayedArchive.LifecycleStatus != segmentport.LifecycleStatusArchived {
+		t.Fatalf("archive replay = %#v, %v", replayedArchive, err)
+	}
+	page, err = service.List(ctx, "", 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, item := range page.Items {
+		if item.ID == first.ID {
+			t.Fatalf("archived segment %d remained in active list", first.ID)
+		}
+	}
+	var archiveReceiptCount, archiveEventCount int
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM segment_operation_receipts WHERE operation = 'archive' AND actor_scope = $1 AND state = 'completed'`, actor).Scan(&archiveReceiptCount); err != nil {
+		t.Fatal(err)
+	}
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM event_log WHERE event_type = 'segment.archived' AND payload->>'segment_id' = $1`, strconv.FormatInt(int64(first.ID), 10)).Scan(&archiveEventCount); err != nil {
+		t.Fatal(err)
+	}
+	if archiveReceiptCount != 1 || archiveEventCount != 1 {
+		t.Fatalf("archive receipt/event counts = %d/%d, want 1/1", archiveReceiptCount, archiveEventCount)
+	}
 
 	tx, err := pool.Begin(ctx)
 	if err != nil {
