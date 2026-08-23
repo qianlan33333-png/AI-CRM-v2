@@ -43,6 +43,7 @@ describe("CloudOrchestratorWorkspace", () => {
   it("renders the campaign workspace and observability navigation without execution claims", () => {
     const html = render(CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH);
     expect(html).toContain("Campaign 审阅工作区");
+    expect(html).toContain("本地触达计划审阅");
     expect(html).toContain('href="/admin/cloud-orchestrator/observability"');
     expect(html).toContain("Provider 已调用");
     expect(html).toContain("外部发送已执行");

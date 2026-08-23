@@ -11,6 +11,8 @@ import {
   type CampaignTouchPlanTransport,
   type SessionStorageLike,
 } from "./campaign-touch-plan-core";
+import { CampaignTouchPlanReadPanel } from "./campaign-touch-plan-read-ui";
+import type { CampaignTouchPlanReadTransport } from "./campaign-touch-plan-read";
 import {
   CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
   CLOUD_ORCHESTRATOR_PLANS_PATH,
@@ -414,6 +416,7 @@ function CampaignsWorkspace({
   readCookie,
   keySource,
   onUnauthenticated,
+  readTransport,
 }: {
   readonly route: Extract<
     CloudOrchestratorRoute,
@@ -425,6 +428,7 @@ function CampaignsWorkspace({
   readonly readCookie?: () => string;
   readonly keySource?: { readonly randomUUID: () => string };
   readonly onUnauthenticated?: () => void;
+  readonly readTransport?: CampaignTouchPlanReadTransport;
 }): React.ReactElement {
   return (
     <section aria-labelledby="cloud-orchestrator-title">
@@ -447,6 +451,11 @@ function CampaignsWorkspace({
           发起触达；此处不提供通用来源输入。
         </p>
       )}
+      <CampaignTouchPlanReadPanel
+        actorID={actorID}
+        transport={readTransport}
+        onUnauthenticated={onUnauthenticated}
+      />
     </section>
   );
 }
@@ -487,6 +496,7 @@ export function CloudOrchestratorWorkspace({
   readCookie,
   keySource,
   onUnauthenticated,
+  campaignReadTransport,
 }: {
   readonly role: CloudOrchestratorRole;
   readonly route: CloudOrchestratorRoute;
@@ -496,6 +506,7 @@ export function CloudOrchestratorWorkspace({
   readonly readCookie?: () => string;
   readonly keySource?: { readonly randomUUID: () => string };
   readonly onUnauthenticated?: () => void;
+  readonly campaignReadTransport?: CampaignTouchPlanReadTransport;
 }): React.ReactElement {
   if (role === "sales" || (role === "ops" && route.kind !== "campaigns")) {
     return (
@@ -524,6 +535,7 @@ export function CloudOrchestratorWorkspace({
           readCookie={readCookie}
           keySource={keySource}
           onUnauthenticated={onUnauthenticated}
+          readTransport={campaignReadTransport}
         />
       ) : null}
       {route.kind === "observability" ? <ObservabilityWorkspace /> : null}

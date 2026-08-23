@@ -78,6 +78,7 @@ import { AutomationAgentsPage } from "./automation-agents-ui";
 import type { AutomationAgentsTransport } from "./automation-agents";
 import { CloudOrchestratorWorkspace } from "./cloud-orchestrator-ui";
 import type { CampaignTouchPlanTransport } from "./campaign-touch-plan-core";
+import type { CampaignTouchPlanReadTransport } from "./campaign-touch-plan-read";
 import {
   CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
   CLOUD_ORCHESTRATOR_OBSERVABILITY_PATH,
@@ -428,6 +429,7 @@ export interface AppProps {
   automationRunsTransport?: AutomationRunsTransport;
   automationAgentsTransport?: AutomationAgentsTransport;
   campaignTouchPlanTransport?: CampaignTouchPlanTransport;
+  campaignTouchPlanReadTransport?: CampaignTouchPlanReadTransport;
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   deliveryLineageTransport?: DeliveryLineageTransport;
   dataHealthTransport?: DataHealthTransport;
@@ -646,6 +648,7 @@ function PageContent({
   automationRunsTransport,
   automationAgentsTransport,
   campaignTouchPlanTransport,
+  campaignTouchPlanReadTransport,
   groupInviteLibraryTransport,
   deliveryLineageTransport,
   dataHealthTransport,
@@ -687,6 +690,7 @@ function PageContent({
   automationRunsTransport?: AutomationRunsTransport;
   automationAgentsTransport?: AutomationAgentsTransport;
   campaignTouchPlanTransport?: CampaignTouchPlanTransport;
+  campaignTouchPlanReadTransport?: CampaignTouchPlanReadTransport;
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   deliveryLineageTransport?: DeliveryLineageTransport;
   dataHealthTransport?: DataHealthTransport;
@@ -725,6 +729,7 @@ function PageContent({
         route={cloudOrchestrator}
         actorID={principal.adminUserID}
         campaignTransport={campaignTouchPlanTransport}
+        campaignReadTransport={campaignTouchPlanReadTransport}
         readCookie={cookieHeader}
         onUnauthenticated={onUnauthenticated}
       />
@@ -1160,6 +1165,7 @@ export function App({
   automationRunsTransport,
   automationAgentsTransport,
   campaignTouchPlanTransport,
+  campaignTouchPlanReadTransport,
   groupInviteLibraryTransport,
   deliveryLineageTransport,
   dataHealthTransport,
@@ -1363,6 +1369,7 @@ export function App({
             automationRunsTransport={automationRunsTransport}
             automationAgentsTransport={automationAgentsTransport}
             campaignTouchPlanTransport={campaignTouchPlanTransport}
+            campaignTouchPlanReadTransport={campaignTouchPlanReadTransport}
             groupInviteLibraryTransport={groupInviteLibraryTransport}
             deliveryLineageTransport={deliveryLineageTransport}
             dataHealthTransport={dataHealthTransport}
