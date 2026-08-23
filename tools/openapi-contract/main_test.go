@@ -281,6 +281,20 @@ func TestCampaignInitiationTouchPlanContractRemainsClosed(t *testing.T) {
 	}
 }
 
+func TestCancelledUserOpsPageCarriersRemainAbsent(t *testing.T) {
+	doc, _ := fresh(t)
+	for _, path := range []string{"/admin/user-ops", "/admin/user-ops/ui"} {
+		if doc.Paths.Value(path) != nil {
+			t.Fatalf("cancelled User Ops page carrier remains registered: %s", path)
+		}
+	}
+	for _, operationID := range []string{"getUserOpsReviewWorkspace", "getUserOpsReviewWorkspaceAlias"} {
+		if _, present := nativePackageOperations[operationID]; present {
+			t.Fatalf("cancelled User Ops operation remains registered: %s", operationID)
+		}
+	}
+}
+
 func TestCampaignReviewHandoffContractRemainsSeparateFromInitiation(t *testing.T) {
 	doc, inventory := fresh(t)
 	operations := map[string]struct{ path, method string }{
