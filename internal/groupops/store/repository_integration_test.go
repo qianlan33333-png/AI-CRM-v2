@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
+	eventsfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/eventsfixture"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
-	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	groupopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/app"
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -35,7 +35,7 @@ func TestRepositoryPostgreSQLAtomicRoundTripAndRollback(t *testing.T) {
 	}
 
 	repository := NewRepository()
-	events := groupOpsIntegrationEventAppender{}
+	events := eventsfixture.NewAppender()
 	uow := platformstore.NewUnitOfWork(pool)
 	service := groupopsapp.NewService(groupOpsIntegrationUOW{}, repository, contactstore.NewStaffDirectoryRepository(pool), events)
 	key := fmt.Sprintf("group-ops-store-integration-%d", time.Now().UnixNano())
@@ -196,25 +196,6 @@ type groupOpsIntegrationUOW struct{}
 
 func (groupOpsIntegrationUOW) Within(ctx context.Context, callback func(context.Context) error) error {
 	return callback(ctx)
-}
-
-type groupOpsIntegrationEventAppender struct{}
-
-var _ eventport.Appender = groupOpsIntegrationEventAppender{}
-
-func (groupOpsIntegrationEventAppender) Append(ctx context.Context, event eventport.Event) (eventport.EventID, error) {
-	db, err := platformstore.TxFromContext(ctx)
-	if err != nil {
-		return 0, err
-	}
-	var id int64
-	err = db.QueryRow(ctx, `INSERT INTO event_log (event_type, payload, occurred_at, idempotency_key)
-VALUES ($1, $2::jsonb, $3, $4)
-RETURNING id`, event.Type, event.Payload, event.OccurredAt, event.IdempotencyKey).Scan(&id)
-	if err != nil {
-		return 0, err
-	}
-	return eventport.EventID(id), nil
 }
 
 var errGroupOpsRepositoryRollback = errors.New("rollback group ops repository integration")
