@@ -70,9 +70,11 @@ describe("CloudOrchestratorWorkspace", () => {
     expect(ops).toContain("Campaign 审阅");
     expect(ops).not.toContain("运营计划");
     expect(ops).not.toContain("可观察性");
+    expect(ops).not.toContain("触达计划人工审核");
 
     const sales = render(CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH, "sales");
     expect(sales).toContain("没有 AI 助手本地审阅权限");
     expect(sales).not.toContain("Campaign 审阅工作区");
+    expect(sales).not.toContain("触达计划人工审核");
   });
 });

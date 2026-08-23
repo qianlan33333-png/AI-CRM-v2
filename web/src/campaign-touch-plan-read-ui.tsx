@@ -17,6 +17,8 @@ type Props = {
   readonly actorID?: number;
   readonly transport?: CampaignTouchPlanReadTransport;
   readonly onUnauthenticated?: () => void;
+  // eslint-disable-next-line no-unused-vars -- callback input defines the C1/C2 seam.
+  readonly onPlanSelected?: (plan: TouchPlanSummary | undefined) => void;
 };
 
 function sourceLabel(plan: TouchPlanSummary): string {
@@ -32,6 +34,7 @@ function sourceLabel(plan: TouchPlanSummary): string {
 function ReadPanelInner({
   transport = generatedCampaignTouchPlanReadTransport,
   onUnauthenticated,
+  onPlanSelected,
 }: Props): React.ReactElement {
   const [campaigns, setCampaigns] = useState<readonly CampaignDraftSummary[]>(
     [],
@@ -58,6 +61,10 @@ function ReadPanelInner({
       mounted.current = false;
     };
   }, []);
+  useLayoutEffect(() => {
+    onPlanSelected?.(detail);
+    return () => onPlanSelected?.(undefined);
+  }, [detail, onPlanSelected]);
   const active = (
     generation: number,
     current: React.MutableRefObject<number>,
@@ -69,6 +76,7 @@ function ReadPanelInner({
     setState: React.Dispatch<React.SetStateAction<State>>,
   ): boolean => {
     if (!active(generation, current)) return true;
+    onPlanSelected?.(undefined);
     if (status === "unauthenticated") onUnauthenticated?.();
     setState("unavailable");
     return true;
@@ -234,7 +242,10 @@ function ReadPanelInner({
           aria-label="只读 Campaign"
           value={campaignCode}
           disabled={campaignState !== "loaded"}
-          onChange={(event) => setCampaignCode(event.currentTarget.value)}
+          onChange={(event) => {
+            onPlanSelected?.(undefined);
+            setCampaignCode(event.currentTarget.value);
+          }}
         >
           <option value="">请选择 Campaign</option>
           {campaigns.map((campaign) => (
@@ -254,11 +265,12 @@ function ReadPanelInner({
             aria-label="只读触达计划"
             value={selected?.id ?? ""}
             disabled={planState !== "loaded"}
-            onChange={(event) =>
+            onChange={(event) => {
+              onPlanSelected?.(undefined);
               setSelected(
                 plans.find((plan) => plan.id === event.currentTarget.value),
-              )
-            }
+              );
+            }}
           >
             <option value="">请选择本地计划</option>
             {plans.map((plan) => (
