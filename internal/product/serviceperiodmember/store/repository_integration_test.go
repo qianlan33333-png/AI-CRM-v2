@@ -76,7 +76,7 @@ VALUES ($1,'service member integration','local only',0,'CNY',0,7001,$2,$2,$3::js
 		command := memberport.AddCommand{ServiceProductID: productID, CustomerID: customerID, Source: memberdomain.SourceManual, ActorID: 7001, IdempotencyKey: key + "-add"}
 		created, addErr := service.Add(tx, command)
 		if addErr != nil {
-			return addErr
+			return fmt.Errorf("add: %w", addErr)
 		}
 		lockCtx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		_, lockErr := pool.Exec(lockCtx, `UPDATE products SET updated_at=updated_at WHERE id=$1`, productID)

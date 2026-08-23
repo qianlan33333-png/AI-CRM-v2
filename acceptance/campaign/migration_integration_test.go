@@ -2,6 +2,7 @@ package campaign_acceptance
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net/url"
@@ -13,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
@@ -103,6 +105,146 @@ func TestCloudCampaignMigrationDownFailsClosedAndSerializesFacts(t *testing.T) {
 	}
 }
 
+func TestCampaignInitiationSnapshotMigrationGuards(t *testing.T) {
+	pool, ctx := openCampaignPool(t)
+	repoRoot := campaignRepoRoot(t)
+	restoreWaterline := campaignMigrationWaterlineAtLeast(t, ctx, pool, 66)
+	clearCampaignFacts(t, ctx, pool)
+	runCampaignGoose(t, ctx, repoRoot, "down-to", "65")
+	assertCampaignInitiationTablesAbsent(t, ctx, pool)
+	runCampaignGoose(t, ctx, repoRoot, "up-to", "66")
+	ensureCampaignInitiationMigrationAt66(t, ctx, pool)
+	t.Cleanup(func() {
+		clearCampaignFacts(t, ctx, pool)
+		runCampaignGoose(t, ctx, repoRoot, "up-to", restoreWaterline)
+	})
+
+	t.Run("orphan plan is rejected at commit", func(t *testing.T) {
+		clearCampaignFacts(t, ctx, pool)
+		tx, err := pool.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = tx.Rollback(ctx) }()
+		if err := seedInitiationPlanHeader(ctx, tx, "initiation-orphan", initiationPlanID('a'), 1, 1); err != nil {
+			t.Fatal(err)
+		}
+		assertCampaignInitiationSQLState(t, tx.Commit(ctx), "23514")
+	})
+
+	t.Run("declared child count mismatch is rejected at commit", func(t *testing.T) {
+		clearCampaignFacts(t, ctx, pool)
+		planID := initiationPlanID('b')
+		err := seedCompletedInitiationPlan(ctx, pool, "initiation-count-mismatch", planID, 2, 1, "0b")
+		assertCampaignInitiationSQLState(t, err, "23514")
+	})
+
+	t.Run("completed snapshots reject appended targets and steps", func(t *testing.T) {
+		clearCampaignFacts(t, ctx, pool)
+		planID := initiationPlanID('c')
+		if err := seedCompletedInitiationPlan(ctx, pool, "initiation-complete", planID, 1, 1, "0c"); err != nil {
+			t.Fatal(err)
+		}
+		_, err := pool.Exec(ctx, `INSERT INTO public.cloud_campaign_touch_plan_targets (plan_id, customer_id) VALUES ($1, 2)`, planID)
+		assertCampaignInitiationSQLState(t, err, "55000")
+		_, err = pool.Exec(ctx, `INSERT INTO public.cloud_campaign_touch_plan_steps (plan_id, step_index, delay_minutes, content) VALUES ($1, 2, 0, 'late')`, planID)
+		assertCampaignInitiationSQLState(t, err, "55000")
+	})
+
+	for _, child := range []struct {
+		name           string
+		planID         string
+		receiptKeyByte string
+		append         func(context.Context, pgx.Tx, string) error
+	}{
+		{
+			name:           "target",
+			planID:         initiationPlanID('e'),
+			receiptKeyByte: "0e",
+			append: func(ctx context.Context, tx pgx.Tx, planID string) error {
+				_, err := tx.Exec(ctx, `INSERT INTO public.cloud_campaign_touch_plan_targets (plan_id, customer_id) VALUES ($1, 2)`, planID)
+				return err
+			},
+		},
+		{
+			name:           "step",
+			planID:         initiationPlanID('f'),
+			receiptKeyByte: "0f",
+			append: func(ctx context.Context, tx pgx.Tx, planID string) error {
+				_, err := tx.Exec(ctx, `INSERT INTO public.cloud_campaign_touch_plan_steps (plan_id, step_index, delay_minutes, content) VALUES ($1, 2, 0, 'late')`, planID)
+				return err
+			},
+		},
+	} {
+		child := child
+		t.Run("uncommitted snapshot rejects cross-transaction "+child.name+" append", func(t *testing.T) {
+			clearCampaignFacts(t, ctx, pool)
+			parentConn, err := pool.Acquire(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer parentConn.Release()
+			childConn, err := pool.Acquire(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer childConn.Release()
+
+			parentTx, err := parentConn.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = parentTx.Rollback(ctx) }()
+			planID := child.planID
+			if err = seedCompletedInitiationPlanInTx(ctx, parentTx, "initiation-child-race-"+child.name, planID, 1, 1, child.receiptKeyByte); err != nil {
+				t.Fatal(err)
+			}
+
+			childTx, err := childConn.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() { _ = childTx.Rollback(ctx) }()
+			appendDone := make(chan error, 1)
+			go func() { appendDone <- child.append(ctx, childTx, planID) }()
+			select {
+			case err := <-appendDone:
+				// PostgreSQL's non-deferrable child FK rejects an uncommitted
+				// parent immediately. It does not resume the child statement after
+				// the parent commits, so the trigger cannot be bypassed by this race.
+				assertCampaignInitiationSQLState(t, err, "23503")
+			case <-time.After(5 * time.Second):
+				t.Fatalf("concurrent %s append did not reject before parent commit", child.name)
+			}
+			if err = parentTx.Commit(ctx); err != nil {
+				t.Fatal(err)
+			}
+			var childCount int
+			childTable := "cloud_campaign_touch_plan_" + child.name + "s"
+			if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.`+childTable+` WHERE plan_id=$1`, planID).Scan(&childCount); err != nil {
+				t.Fatal(err)
+			}
+			if childCount != 1 {
+				t.Fatalf("%s rows after concurrent rejected append=%d, want 1", child.name, childCount)
+			}
+		})
+	}
+
+	t.Run("facts prevent rollback then empty tables reapply", func(t *testing.T) {
+		clearCampaignFacts(t, ctx, pool)
+		if err := seedCompletedInitiationPlan(ctx, pool, "initiation-down-guard", initiationPlanID('d'), 1, 1, "0d"); err != nil {
+			t.Fatal(err)
+		}
+		err := campaignGoose(ctx, repoRoot, *campaignMigrationDatabaseURL, "down-to", "65")
+		assertCampaignRollbackError(t, err)
+		clearCampaignFacts(t, ctx, pool)
+		runCampaignGoose(t, ctx, repoRoot, "down-to", "65")
+		assertCampaignInitiationTablesAbsent(t, ctx, pool)
+		runCampaignGoose(t, ctx, repoRoot, "up-to", "66")
+		ensureCampaignInitiationMigrationAt66(t, ctx, pool)
+	})
+}
+
 func openCampaignPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	t.Helper()
 	if *campaignMigrationDatabaseURL == "" {
@@ -155,6 +297,29 @@ func ensureCampaignMigrationAt60(t *testing.T, ctx context.Context, pool *pgxpoo
 	}
 }
 
+func ensureCampaignInitiationMigrationAt66(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	assertCampaignMigrationVersion(t, ctx, pool, 66)
+	var plans *string
+	if err := pool.QueryRow(ctx, `SELECT to_regclass('public.cloud_campaign_touch_plans')::text`).Scan(&plans); err != nil {
+		t.Fatal(err)
+	}
+	if plans == nil {
+		t.Fatal("cloud_campaign_touch_plans is absent at migration 66")
+	}
+}
+
+func assertCampaignInitiationTablesAbsent(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	var plans *string
+	if err := pool.QueryRow(ctx, `SELECT to_regclass('public.cloud_campaign_touch_plans')::text`).Scan(&plans); err != nil {
+		t.Fatal(err)
+	}
+	if plans != nil {
+		t.Fatalf("cloud_campaign_touch_plans remains after rollback: %q", *plans)
+	}
+}
+
 func assertCampaignMigrationVersion(t *testing.T, ctx context.Context, pool *pgxpool.Pool, want int64) {
 	t.Helper()
 	got := campaignMigrationWaterline(t, ctx, pool)
@@ -183,11 +348,124 @@ func campaignMigrationWaterline(t *testing.T, ctx context.Context, pool *pgxpool
 
 func clearCampaignFacts(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	t.Helper()
+	var touchPlans *string
+	if err := pool.QueryRow(ctx, `SELECT to_regclass('public.cloud_campaign_touch_plans')::text`).Scan(&touchPlans); err != nil {
+		t.Fatal(err)
+	}
+	if touchPlans != nil {
+		if _, err := pool.Exec(ctx, `TRUNCATE TABLE public.cloud_campaign_touch_plan_receipts, public.cloud_campaign_touch_plan_targets, public.cloud_campaign_touch_plan_steps, public.cloud_campaign_touch_plans`); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := pool.Exec(ctx, `DELETE FROM public.event_deliveries WHERE event_id IN (
+  SELECT id FROM public.event_log
+  WHERE event_type = 'cloud_campaign.fact_recorded' AND payload ->> 'audit_type' = 'touch_plan_created'
+)`); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := pool.Exec(ctx, `DELETE FROM public.event_log WHERE event_type = 'cloud_campaign.fact_recorded' AND payload ->> 'audit_type' = 'touch_plan_created'`); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if _, err := pool.Exec(ctx, `DELETE FROM public.cloud_campaign_operation_receipts`); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := pool.Exec(ctx, `DELETE FROM public.cloud_campaigns`); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func initiationPlanID(character rune) string {
+	return "ctp_" + strings.Repeat(string(character), 64)
+}
+
+func seedInitiationPlanHeader(ctx context.Context, execer campaignExecer, campaignCode, planID string, targetCount, stepCount int32) error {
+	if _, err := execer.Exec(ctx, `INSERT INTO public.cloud_campaigns (campaign_code,name,approval_status,runtime_status,version,created_by,updated_by,created_at,updated_at)
+VALUES ($1,'initiation guard','draft','idle',1,1,1,now(),now())`, campaignCode); err != nil {
+		return err
+	}
+	if _, err := execer.Exec(ctx, `INSERT INTO public.cloud_campaign_steps (campaign_code,step_index,delay_minutes,content)
+VALUES ($1,1,0,'local only')`, campaignCode); err != nil {
+		return err
+	}
+	if _, err := execer.Exec(ctx, `INSERT INTO public.cloud_campaign_touch_plans (
+  id, campaign_code, campaign_version, source_kind,
+  customer_selection_id, customer_selection_version,
+  source_digest, target_digest, content_digest,
+  target_count, content_step_count, candidate_count, active_customer_count,
+  inactive_excluded_count, policy_excluded_count, owner_actor_id, created_at
+) VALUES (
+  $1, $2, 1, 'customer_selection',
+  'local_selection', 'v1',
+  decode(repeat('01', 32), 'hex'), decode(repeat('02', 32), 'hex'), decode(repeat('03', 32), 'hex'),
+  $3, $4, $3, $3, 0, 0, 1, now()
+)`, planID, campaignCode, targetCount, stepCount); err != nil {
+		return err
+	}
+	return nil
+}
+
+func seedCompletedInitiationPlan(ctx context.Context, pool *pgxpool.Pool, campaignCode, planID string, declaredTargets, actualTargets int32, receiptKeyByte string) error {
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	if err = seedCompletedInitiationPlanInTx(ctx, tx, campaignCode, planID, declaredTargets, actualTargets, receiptKeyByte); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+func seedCompletedInitiationPlanInTx(ctx context.Context, tx pgx.Tx, campaignCode, planID string, declaredTargets, actualTargets int32, receiptKeyByte string) error {
+	if err := seedInitiationPlanHeader(ctx, tx, campaignCode, planID, declaredTargets, 1); err != nil {
+		return err
+	}
+	for customerID := int32(1); customerID <= actualTargets; customerID++ {
+		if _, err := tx.Exec(ctx, `INSERT INTO public.cloud_campaign_touch_plan_targets (plan_id, customer_id) VALUES ($1, $2)`, planID, customerID); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO public.cloud_campaign_touch_plan_steps (plan_id, step_index, delay_minutes, content) VALUES ($1, 1, 0, 'local only')`, planID); err != nil {
+		return err
+	}
+	var eventID int64
+	if err := tx.QueryRow(ctx, `INSERT INTO public.event_log (event_type, payload, occurred_at, idempotency_key)
+VALUES (
+  'cloud_campaign.fact_recorded',
+  jsonb_build_object(
+    'audit_type', 'touch_plan_created',
+    'plan_id', $1::text,
+    'campaign_code', $2::text,
+    'owner_actor_id', 1,
+    'target_digest', repeat('02', 32),
+    'target_count', $3::integer,
+    'content_digest', repeat('03', 32)
+  ),
+  now(),
+  'campaign-initiation-acceptance:' || $1::text
+)
+RETURNING id`, planID, campaignCode, declaredTargets).Scan(&eventID); err != nil {
+		return err
+	}
+	var receiptID int64
+	if err := tx.QueryRow(ctx, `INSERT INTO public.cloud_campaign_touch_plan_receipts (actor_id, key_digest, payload_digest, plan_id, created_at)
+VALUES (1, decode(repeat($2::text, 32), 'hex'), decode(repeat('04', 32), 'hex'), $1::text, now())
+RETURNING id`, planID, receiptKeyByte).Scan(&receiptID); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `UPDATE public.cloud_campaign_touch_plan_receipts
+SET state = 'completed', event_id = $2, completed_at = now()
+WHERE id = $1`, receiptID, eventID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func assertCampaignInitiationSQLState(t *testing.T, err error, want string) {
+	t.Helper()
+	var pgErr *pgconn.PgError
+	if err == nil || !errors.As(err, &pgErr) || pgErr.Code != want {
+		t.Fatalf("error=%v, want SQLSTATE %s", err, want)
 	}
 }
 

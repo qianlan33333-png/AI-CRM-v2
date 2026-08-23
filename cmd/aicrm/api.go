@@ -25,6 +25,7 @@ import (
 	automationhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/http"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
+	campaignapp "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/app"
 	campaignstore "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/store"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 	configapp "github.com/qianlan33333-png/AI-CRM-v2/internal/config/app"
@@ -159,9 +160,10 @@ type candidateHandler struct {
 	domainVerification interface {
 		Read(string) (string, error)
 	}
-	legacyHealth   *legacyhealth.Handler
-	adminOps       http.Handler
-	outboundLegacy *Handler
+	legacyHealth       *legacyhealth.Handler
+	campaignInitiation http.Handler
+	adminOps           http.Handler
+	outboundLegacy     *Handler
 }
 
 type identityConsoleApplication struct {
@@ -545,6 +547,29 @@ func (handler *candidateHandler) GetLegacyHealth(writer http.ResponseWriter, req
 		return
 	}
 	handler.legacyHealth.ServeHTTP(writer, request)
+}
+
+// These generated operations deliberately delegate to Campaign's narrow
+// initiation fragment. The composition root owns authorization and the one
+// CSRF validation; the fragment only consumes the bound auth context.
+func (handler *candidateHandler) ListCloudCampaignTouchPlans(writer http.ResponseWriter, request *http.Request, _ string, _ api.ListCloudCampaignTouchPlansParams) {
+	handler.serveCampaignInitiation(writer, request)
+}
+
+func (handler *candidateHandler) CreateCloudCampaignTouchPlan(writer http.ResponseWriter, request *http.Request, _ string, _ api.CreateCloudCampaignTouchPlanParams) {
+	handler.serveCampaignInitiation(writer, request)
+}
+
+func (handler *candidateHandler) GetCloudCampaignTouchPlan(writer http.ResponseWriter, request *http.Request, _ string, _ string) {
+	handler.serveCampaignInitiation(writer, request)
+}
+
+func (handler *candidateHandler) serveCampaignInitiation(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || handler.campaignInitiation == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.campaignInitiation.ServeHTTP(writer, request)
 }
 
 func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
@@ -937,12 +962,40 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	campaignService, err := campaign.NewService(uow, campaignstore.NewRepository(), campaignAudit)
+	campaignRepository := campaignstore.NewRepository()
+	campaignService, err := campaign.NewService(uow, campaignRepository, campaignAudit)
 	if err != nil {
 		pool.Close()
 		return nil, err
 	}
 	campaignFragment, err := campaign.NewRouteFragment(campaignService, legacyCampaignAuthorizer{}, legacyCampaignCSRF{})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignInitiationAudit, err := campaignstore.NewInitiationEventLogAdapter(eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignEligibility, err := newCampaignContactEligibilityAdapter(contactstore.NewContactPolicyRepository())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignSources, err := newCampaignSegmentSourceAdapter(segmentstore.NewTouchPlanSnapshotRepository())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignInitiationService, err := campaignapp.NewService(
+		uow, campaignRepository, campaignSources, campaignEligibility, campaignRepository, campaignInitiationAudit,
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignInitiationFragment, err := campaign.NewInitiationRouteFragment(campaignInitiationService, legacyCampaignAuthorizer{})
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -1038,6 +1091,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			WeChatShopCallbackTokenPresent:      config.LegacyHealth.WeChatShopCallbackTokenPresent,
 			AllowMissingWeChatShopCallbackToken: config.LegacyHealth.AllowMissingWeChatShopCallbackToken,
 		})),
+		campaignInitiation: campaignInitiationFragment,
 	}
 	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
 	if err != nil {
@@ -1519,6 +1573,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPut, "/api/v1/stages/reorder", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.ReorderStages)},
 		{http.MethodDelete, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.ArchiveStage)},
 		{http.MethodPatch, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.RenameStage)},
+		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListCloudCampaignTouchPlans)},
+		{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/touch-plans", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.CreateCloudCampaignTouchPlan)},
+		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetCloudCampaignTouchPlan)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-publish", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.PublishQuestionnairePublicDefinition)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-disable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.DisableQuestionnairePublicDefinition)},
 		{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/public-analytics", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(wrapper.GetQuestionnairePublicAnalytics)},

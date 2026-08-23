@@ -9,10 +9,21 @@ import (
 )
 
 type Querier interface {
-	// The generated query package is intentionally retained for PG16 schema
-	// validation and future read-model reporting; command SQL stays transaction
-	// bound in postgres.go so typed Plan/Command values are checked before save.
+	CompleteCampaignTouchPlanReceipt(ctx context.Context, arg CompleteCampaignTouchPlanReceiptParams) (CompleteCampaignTouchPlanReceiptRow, error)
+	GetCampaignTouchPlan(ctx context.Context, arg GetCampaignTouchPlanParams) (GetCampaignTouchPlanRow, error)
+	GetCampaignTouchPlanReceiptForUpdate(ctx context.Context, arg GetCampaignTouchPlanReceiptForUpdateParams) (GetCampaignTouchPlanReceiptForUpdateRow, error)
+	InsertCampaignTouchPlan(ctx context.Context, arg InsertCampaignTouchPlanParams) error
+	InsertCampaignTouchPlanStep(ctx context.Context, arg InsertCampaignTouchPlanStepParams) error
+	InsertCampaignTouchPlanTargets(ctx context.Context, arg InsertCampaignTouchPlanTargetsParams) error
+	ListCampaignStepsForTouchPlan(ctx context.Context, campaignCode string) ([]ListCampaignStepsForTouchPlanRow, error)
+	ListCampaignTouchPlanSteps(ctx context.Context, planID string) ([]ListCampaignTouchPlanStepsRow, error)
+	ListCampaignTouchPlanSummaries(ctx context.Context, arg ListCampaignTouchPlanSummariesParams) ([]ListCampaignTouchPlanSummariesRow, error)
+	ListCampaignTouchPlanTargets(ctx context.Context, planID string) ([]int64, error)
+	LockCampaignDraftForTouchPlan(ctx context.Context, campaignCode string) (LockCampaignDraftForTouchPlanRow, error)
+	// The generated query package keeps every initiation read/write attached to
+	// the caller's Campaign UnitOfWork transaction in postgres.go.
 	LockCloudCampaignDeleteReferences(ctx context.Context) error
+	ReserveCampaignTouchPlanReceipt(ctx context.Context, arg ReserveCampaignTouchPlanReceiptParams) (ReserveCampaignTouchPlanReceiptRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

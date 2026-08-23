@@ -52,9 +52,10 @@ owners:
 
   segment:
     package: internal/segment
-    tables: [segments, segment_members, segment_refresh_receipts, segment_operation_receipts]
+    tables: [segments, segment_members, segment_refresh_receipts, segment_operation_receipts, ai_audience_package_metadata]
     constraints:
       segment_operation_receipts: transaction_scoped_crud_idempotency_receipts
+      ai_audience_package_metadata: local_package_lifecycle_and_version_over_authoritative_segment_members
 
   automation:
     package: internal/automation
@@ -214,6 +215,29 @@ owners:
       group_ops_plan_nodes: local_standard_content_nodes_without_runtime_or_send_execution
       group_ops_plan_webhook_descriptors: opaque_safe_descriptors_without_url_credential_payload_or_dispatch
       group_ops_operation_receipts: transaction_scoped_actor_idempotency_receipts
+
+  campaign:
+    package: internal/campaign
+    tables:
+      - cloud_campaigns
+      - cloud_campaign_steps
+      - cloud_campaign_local_plans
+      - cloud_campaign_local_commands
+      - cloud_campaign_operation_receipts
+      - cloud_campaign_touch_plans
+      - cloud_campaign_touch_plan_targets
+      - cloud_campaign_touch_plan_steps
+      - cloud_campaign_touch_plan_receipts
+    constraints:
+      cloud_campaigns: local_campaign_control_plane_only
+      cloud_campaign_steps: ordered_campaign_content_without_material_reference_or_runtime_execution
+      cloud_campaign_local_plans: local_start_control_plane_only
+      cloud_campaign_local_commands: local_start_command_without_real_send_or_runtime_execution
+      cloud_campaign_operation_receipts: actor_scoped_transactional_campaign_control_receipts
+      cloud_campaign_touch_plans: immutable_campaign_owned_snapshot_without_provider_or_dispatch
+      cloud_campaign_touch_plan_targets: immutable_canonical_OneID_snapshot_without_customer_fk
+      cloud_campaign_touch_plan_steps: immutable_campaign_step_content_snapshot_without_material_reference
+      cloud_campaign_touch_plan_receipts: actor_scoped_plan_event_bound_transactional_create_receipts
 
   hxc:
     package: internal/hxc

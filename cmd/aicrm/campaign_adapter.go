@@ -22,10 +22,12 @@ func (legacyCampaignAuthorizer) Authorize(request *http.Request, requirement cam
 		return campaign.Actor{}, campaign.ErrForbidden
 	}
 	expected := authport.CapabilityAdminRead
-	if requirement.Capability == campaign.CapabilityManageAutomation {
+	if requirement.Capability == campaign.CapabilityOperationsRead {
+		expected = authport.CapabilityOperationsRead
+	} else if requirement.Capability == campaign.CapabilityManageAutomation {
 		expected = authport.CapabilityOperationsManage
 	}
-	if requirement.Capability != campaign.CapabilityAdminRead && requirement.Capability != campaign.CapabilityManageAutomation || authorization.Capability != expected {
+	if requirement.Capability != campaign.CapabilityAdminRead && requirement.Capability != campaign.CapabilityOperationsRead && requirement.Capability != campaign.CapabilityManageAutomation || authorization.Capability != expected {
 		return campaign.Actor{}, campaign.ErrForbidden
 	}
 	return campaign.Actor{ID: principal.AdminUserID}, nil

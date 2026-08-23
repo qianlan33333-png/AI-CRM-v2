@@ -8,6 +8,7 @@ import (
 const (
 	RoutePrefix                      = "/api/admin/cloud-orchestrator/campaigns"
 	CapabilityAdminRead              = "admin_read"
+	CapabilityOperationsRead         = "operations_read"
 	CapabilityManageAutomation       = "manage_automation"
 	MaximumRequestBodyBytes    int64 = 64 << 10
 	MaximumCampaignCodeBytes         = 96
@@ -16,6 +17,8 @@ const (
 	MaximumSteps                     = 100
 	MaximumBatch                     = 100
 )
+
+func ValidCampaignCode(value string) bool { return validCode(value) }
 
 type ApprovalStatus string
 

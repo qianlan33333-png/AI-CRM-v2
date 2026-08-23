@@ -272,7 +272,7 @@ func (service *Service) mutate(ctx context.Context, operation string, actorID in
 	if !ready(service) || ctx == nil || actorID < 1 || !validIdempotencyKey(key) || len(payload) == 0 || !json.Valid(payload) || mutation == nil {
 		return memberdomain.Member{}, memberport.ErrInvalidInput
 	}
-	now := service.now().UTC()
+	now := service.now().UTC().Truncate(time.Microsecond)
 	if now.IsZero() {
 		return memberdomain.Member{}, memberport.ErrUnavailable
 	}

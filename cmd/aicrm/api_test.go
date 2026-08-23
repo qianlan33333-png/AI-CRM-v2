@@ -80,6 +80,9 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodPut, "/api/v1/stages/reorder", authport.CapabilityStagesWrite},
 		{http.MethodDelete, "/api/v1/stages/1", authport.CapabilityStagesWrite},
 		{http.MethodPatch, "/api/v1/stages/1", authport.CapabilityStagesWrite},
+		{http.MethodGet, "/api/admin/cloud-orchestrator/campaigns/spring-campaign/touch-plans", authport.CapabilityOperationsRead},
+		{http.MethodPost, "/api/admin/cloud-orchestrator/campaigns/spring-campaign/touch-plans", authport.CapabilityOperationsManage},
+		{http.MethodGet, "/api/admin/cloud-orchestrator/campaigns/spring-campaign/touch-plans/ctp_0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", authport.CapabilityOperationsRead},
 		{http.MethodPost, "/api/admin/questionnaires/1/public-publish", authport.CapabilityQuestionnairesWrite},
 		{http.MethodPost, "/api/admin/questionnaires/1/public-disable", authport.CapabilityQuestionnairesWrite},
 		{http.MethodGet, "/api/admin/questionnaires/1/public-analytics?definition_version=1", authport.CapabilityQuestionnairesRead},
@@ -114,6 +117,10 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 			}
 			if test.capability == authport.CapabilityIdentityReviewWrite {
 				request.Header.Set("Idempotency-Key", "router-review-key")
+			}
+			if test.method == http.MethodPost && strings.Contains(test.path, "/touch-plans") {
+				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
+				request.Header.Set("Idempotency-Key", "router-touch-plan-key")
 			}
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, request)
