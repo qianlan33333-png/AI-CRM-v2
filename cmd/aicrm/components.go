@@ -15,6 +15,7 @@ import (
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	operationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/store"
+	outbound "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
@@ -109,6 +110,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		{EventType: eventport.EvTagApplied, Consumer: eventport.ConsumerStatsTagApplied},
 		{EventType: eventport.EvOperationCycleFact, Consumer: eventport.ConsumerOperationCycleFact},
 		{EventType: eventport.EvCloudCampaignFact, Consumer: eventport.ConsumerCloudCampaignFact},
+		{EventType: eventport.EvOutboundCampaignHandoffFact, Consumer: eventport.ConsumerOutboundCampaignHandoffFact},
 	})
 	if err != nil {
 		pool.Close()
@@ -150,6 +152,10 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	if err != nil {
 		pool.Close()
 		return nil, err
+	}
+	outboundCampaignHandoffConsumer, err := outbound.NewCampaignHandoffFactDeliveryConsumer(platformstore.NewUnitOfWork(pool), deliveries)
+	if err == nil {
+		err = router.RegisterDelivery(outboundCampaignHandoffConsumer)
 	}
 	if err != nil {
 		pool.Close()

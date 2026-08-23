@@ -21,11 +21,14 @@ type Querier interface {
 	InsertCampaignTouchPlanHandoff(ctx context.Context, arg InsertCampaignTouchPlanHandoffParams) error
 	InsertCampaignTouchPlanStep(ctx context.Context, arg InsertCampaignTouchPlanStepParams) error
 	InsertCampaignTouchPlanTargets(ctx context.Context, arg InsertCampaignTouchPlanTargetsParams) error
+	ListApprovedCampaignTouchPlanSteps(ctx context.Context, arg ListApprovedCampaignTouchPlanStepsParams) ([]ListApprovedCampaignTouchPlanStepsRow, error)
+	ListApprovedCampaignTouchPlanTargets(ctx context.Context, arg ListApprovedCampaignTouchPlanTargetsParams) ([]int64, error)
 	ListCampaignStepsForTouchPlan(ctx context.Context, campaignCode string) ([]ListCampaignStepsForTouchPlanRow, error)
 	ListCampaignTouchPlanReviewRecipients(ctx context.Context, arg ListCampaignTouchPlanReviewRecipientsParams) ([]CloudCampaignTouchPlanTarget, error)
 	ListCampaignTouchPlanSteps(ctx context.Context, planID string) ([]ListCampaignTouchPlanStepsRow, error)
 	ListCampaignTouchPlanSummaries(ctx context.Context, arg ListCampaignTouchPlanSummariesParams) ([]ListCampaignTouchPlanSummariesRow, error)
 	ListCampaignTouchPlanTargets(ctx context.Context, planID string) ([]int64, error)
+	LockApprovedCampaignTouchPlanHandoff(ctx context.Context, arg LockApprovedCampaignTouchPlanHandoffParams) (LockApprovedCampaignTouchPlanHandoffRow, error)
 	LockCampaignDraftForTouchPlan(ctx context.Context, campaignCode string) (LockCampaignDraftForTouchPlanRow, error)
 	LockCampaignTouchPlanReview(ctx context.Context, arg LockCampaignTouchPlanReviewParams) (CloudCampaignTouchPlanReview, error)
 	// The generated query package keeps every initiation read/write attached to

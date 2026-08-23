@@ -62,7 +62,9 @@ export interface AutomationSourceEvent {
 export type AutomationDiagnosticConsumer =
   | "automation.tag-trigger.v1"
   | "stats.tag-applied.v1"
-  | "operation-cycle.fact.v1";
+  | "operation-cycle.fact.v1"
+  | "cloud-campaign.fact.v1"
+  | "outbound-campaign-handoff.fact.v1";
 export type AutomationDiagnosticStatus =
   | "pending"
   | "processing"
@@ -76,7 +78,7 @@ export interface AutomationDiagnostics {
   readonly deliveryCounts: Readonly<Record<AutomationDiagnosticStatus, number>>;
   readonly consumerRegistry: readonly Readonly<{
     readonly consumer: AutomationDiagnosticConsumer;
-    readonly eventType: "customer.tag_applied" | "operation_cycle.fact_recorded";
+    readonly eventType: "customer.tag_applied" | "operation_cycle.fact_recorded" | "cloud_campaign.fact_recorded" | "outbound.campaign_handoff_fact_recorded";
   }>[];
   readonly observedAt: string;
   readonly observedDomains: readonly ["event_log", "event_deliveries"];
@@ -85,7 +87,9 @@ export interface AutomationDiagnostics {
 
 type AutomationInternalEventTypeWithDeliveries =
   | "customer.tag_applied"
-  | "operation_cycle.fact_recorded";
+  | "operation_cycle.fact_recorded"
+  | "cloud_campaign.fact_recorded"
+  | "outbound.campaign_handoff_fact_recorded";
 
 export interface AutomationInternalEventDelivery {
   readonly consumer: AutomationDiagnosticConsumer;
@@ -249,11 +253,13 @@ const DIAGNOSTIC_STATUSES: readonly AutomationDiagnosticStatus[] = [
 ];
 const DIAGNOSTIC_REGISTRY: readonly Readonly<{
   readonly consumer: AutomationDiagnosticConsumer;
-  readonly eventType: "customer.tag_applied" | "operation_cycle.fact_recorded";
+  readonly eventType: AutomationInternalEventTypeWithDeliveries;
 }>[] = [
   { consumer: "automation.tag-trigger.v1", eventType: "customer.tag_applied" },
   { consumer: "stats.tag-applied.v1", eventType: "customer.tag_applied" },
   { consumer: "operation-cycle.fact.v1", eventType: "operation_cycle.fact_recorded" },
+  { consumer: "cloud-campaign.fact.v1", eventType: "cloud_campaign.fact_recorded" },
+  { consumer: "outbound-campaign-handoff.fact.v1", eventType: "outbound.campaign_handoff_fact_recorded" },
 ];
 const DIAGNOSTIC_OBSERVED_DOMAINS = ["event_log", "event_deliveries"] as const;
 const DIAGNOSTIC_UNOBSERVED_DOMAINS = [
@@ -262,6 +268,8 @@ const DIAGNOSTIC_UNOBSERVED_DOMAINS = [
 const INTERNAL_EVENT_TYPES_WITH_DELIVERIES: ReadonlySet<AutomationInternalEventTypeWithDeliveries> = new Set([
   "customer.tag_applied",
   "operation_cycle.fact_recorded",
+  "cloud_campaign.fact_recorded",
+  "outbound.campaign_handoff_fact_recorded",
 ]);
 const INTERNAL_EVENT_CONSUMERS_BY_TYPE: Readonly<
   Record<AutomationInternalEventTypeWithDeliveries, readonly AutomationDiagnosticConsumer[]>
@@ -271,6 +279,8 @@ const INTERNAL_EVENT_CONSUMERS_BY_TYPE: Readonly<
     "stats.tag-applied.v1",
   ],
   "operation_cycle.fact_recorded": ["operation-cycle.fact.v1"],
+  "cloud_campaign.fact_recorded": ["cloud-campaign.fact.v1"],
+  "outbound.campaign_handoff_fact_recorded": ["outbound-campaign-handoff.fact.v1"],
 };
 
 function exactStrings(value: unknown, expected: readonly string[]): boolean {

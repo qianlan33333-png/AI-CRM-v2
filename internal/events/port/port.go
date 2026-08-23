@@ -54,6 +54,10 @@ const (
 	// only completes the durable receipt; it never invokes a provider.
 	EvOperationCycleFact = "operation_cycle.fact_recorded"
 	EvCloudCampaignFact  = "cloud_campaign.fact_recorded"
+	// EvOutboundCampaignHandoffFact records only an Outbound-owned local
+	// acceptance snapshot. Its bound consumer completes an Events receipt and
+	// never creates an outbound task, send job, or Provider call.
+	EvOutboundCampaignHandoffFact = "outbound.campaign_handoff_fact_recorded"
 	// EvGroupOpsPlanUpdated records only local Group Ops configuration. No
 	// dispatcher binding is registered for it, so it cannot send a group
 	// message, invoke a webhook, or call a provider.
@@ -62,11 +66,12 @@ const (
 	// mutation. It has no delivery binding and cannot invoke a provider.
 	EvCustomerContactPolicyChanged = "customer.contact_policy_changed"
 
-	ConsumerAutomationTagTrigger = "automation.tag-trigger.v1"
-	ConsumerStatsTagApplied      = "stats.tag-applied.v1"
-	ConsumerOperationCycleFact   = "operation-cycle.fact.v1"
-	ConsumerCloudCampaignFact    = "cloud-campaign.fact.v1"
-	DeliveryJobKind              = "events_deliver"
+	ConsumerAutomationTagTrigger        = "automation.tag-trigger.v1"
+	ConsumerStatsTagApplied             = "stats.tag-applied.v1"
+	ConsumerOperationCycleFact          = "operation-cycle.fact.v1"
+	ConsumerCloudCampaignFact           = "cloud-campaign.fact.v1"
+	ConsumerOutboundCampaignHandoffFact = "outbound-campaign-handoff.fact.v1"
+	DeliveryJobKind                     = "events_deliver"
 )
 
 // EvServicePeriodMemberChanged records only a local service-period member

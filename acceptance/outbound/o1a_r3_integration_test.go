@@ -323,16 +323,30 @@ func openOutboundPool(t *testing.T) *pgxpool.Pool {
 
 func resetOutboundFixture(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	if _, err := pool.Exec(context.Background(), `TRUNCATE outbound_control_receipts, outbound_task_job_links, outbound_send_attempt_history, outbound_send_attempts, outbound_batch_chunks, outbound_enqueue_receipts, outbound_tasks, outbound_batches`); err != nil {
+	if err := truncateOutboundTaskFixtures(pool); err != nil {
 		t.Fatalf("reset outbound fixture: %v", err)
 	}
 }
 
 func resetOutboundEnqueueFixture(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	if _, err := pool.Exec(context.Background(), `TRUNCATE outbound_control_receipts, outbound_task_job_links, outbound_send_attempt_history, outbound_send_attempts, outbound_batch_chunks, outbound_enqueue_receipts, outbound_tasks, outbound_batches`); err != nil {
+	if err := truncateOutboundTaskFixtures(pool); err != nil {
 		t.Fatalf("reset outbound enqueue fixture: %v", err)
 	}
+}
+
+func truncateOutboundTaskFixtures(pool *pgxpool.Pool) error {
+	ctx := context.Background()
+	var campaignHandoffLinksExist bool
+	if err := pool.QueryRow(ctx, `SELECT to_regclass('public.outbound_campaign_handoff_customer_tasks') IS NOT NULL`).Scan(&campaignHandoffLinksExist); err != nil {
+		return err
+	}
+	query := `TRUNCATE outbound_control_receipts, outbound_task_job_links, outbound_send_attempt_history, outbound_send_attempts, outbound_batch_chunks, outbound_enqueue_receipts, outbound_tasks, outbound_batches`
+	if campaignHandoffLinksExist {
+		query = `TRUNCATE outbound_campaign_handoff_customer_tasks, outbound_control_receipts, outbound_task_job_links, outbound_send_attempt_history, outbound_send_attempts, outbound_batch_chunks, outbound_enqueue_receipts, outbound_tasks, outbound_batches`
+	}
+	_, err := pool.Exec(ctx, query)
+	return err
 }
 
 func ensureOutboundRiverCatalog(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {

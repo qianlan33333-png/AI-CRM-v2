@@ -108,6 +108,7 @@ while [[ -n "$remaining_groups" ]]; do
       run_make_acceptance P4ORDERAB_TEST_DATABASE_URL p4-order-ab-acceptance
       ;;
     outbound)
+      run_make_acceptance P4OUTBOUNDCAMPAIGNHANDOFF_TEST_DATABASE_URL p4-outbound-campaign-handoff-acceptance
       run_make_acceptance P3O2_ENQUEUE_ONE_TEST_DATABASE_URL p3-o2-enqueue-one-acceptance
       run_make_acceptance P3O3_ENQUEUE_BATCH_TEST_DATABASE_URL p3-o3-enqueue-batch-acceptance
       run_make_acceptance P3O4_SENDER_TEST_DATABASE_URL p3-o4-sender-acceptance

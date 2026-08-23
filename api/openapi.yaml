@@ -6347,6 +6347,82 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}:
+    parameters:
+      - { name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }
+      - { name: plan_id, in: path, required: true, schema: { type: string, minLength: 68, maxLength: 68, pattern: '^ctp_[0-9a-f]{64}$' } }
+    get:
+      tags: [p4-outbound-operations]
+      operationId: getOutboundCampaignHandoffSummary
+      summary: Read a recipient-safe local accepted Campaign handoff summary
+      x-p4-decision-evidence: P4-OUTBOUND-CAMPAIGN-HANDOFF-2026-08-23
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: outbound_campaign_handoffs.local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { description: Safe local header and counts without customer IDs, content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignHandoffSummary" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept:
+    parameters:
+      - { name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }
+      - { name: plan_id, in: path, required: true, schema: { type: string, minLength: 68, maxLength: 68, pattern: '^ctp_[0-9a-f]{64}$' } }
+    post:
+      tags: [p4-outbound-operations]
+      operationId: acceptOutboundCampaignHandoff
+      summary: Accept an approved Campaign handoff as held local facts only
+      description: Creates one bound internal Events delivery River job after commit; it creates no Outbound send job, invokes no Provider, and proves no delivery.
+      x-p4-decision-evidence: P4-OUTBOUND-CAMPAIGN-HANDOFF-2026-08-23
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignHandoffAcceptRequest" } } } }
+      responses:
+        "200": { description: Durable local acceptance receipt replay and held reconciliation; no Outbound send or Provider delivery fact, content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignHandoffReconciliation" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation:
+    parameters:
+      - { name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }
+      - { name: plan_id, in: path, required: true, schema: { type: string, minLength: 68, maxLength: 68, pattern: '^ctp_[0-9a-f]{64}$' } }
+    get:
+      tags: [p4-outbound-operations]
+      operationId: reconcileOutboundCampaignHandoff
+      summary: Reconcile held local task-link counts without customer IDs or Provider fields
+      x-p4-decision-evidence: P4-OUTBOUND-CAMPAIGN-HANDOFF-2026-08-23
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: outbound_campaign_handoffs.local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { description: Count-only local reconciliation with no customer or external identifier, content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignHandoffReconciliation" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/push-center/jobs/{job_id}:
     get:
       tags: [p4-outbound-operations]
@@ -6466,7 +6542,7 @@ paths:
         - name: consumer
           in: query
           required: false
-          schema: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+          schema: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1, cloud-campaign.fact.v1, outbound-campaign-handoff.fact.v1] }
         - name: status
           in: query
           required: false
@@ -6513,7 +6589,7 @@ paths:
         - name: consumer
           in: query
           required: false
-          schema: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+          schema: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1, cloud-campaign.fact.v1, outbound-campaign-handoff.fact.v1] }
         - name: status
           in: query
           required: false
@@ -11201,7 +11277,7 @@ components:
       additionalProperties: false
       required: [consumer, status, attempt_count, completed_at]
       properties:
-        consumer: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+        consumer: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1, cloud-campaign.fact.v1, outbound-campaign-handoff.fact.v1] }
         status: { type: string, enum: [pending, processing, completed, final_failed, outcome_unknown] }
         attempt_count: { type: integer, format: int32, minimum: 0 }
         completed_at: { type: string, format: date-time, nullable: true }
@@ -11215,6 +11291,56 @@ components:
         occurred_at: { type: string, format: date-time }
         dispatched: { type: boolean }
         deliveries: { type: array, items: { $ref: "#/components/schemas/LegacyInternalEventDelivery" } }
+    OutboundCampaignHandoffAcceptRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_review_version]
+      properties:
+        expected_review_version: { type: integer, format: int64, minimum: 3 }
+    OutboundCampaignHandoffSafety:
+      type: object
+      additionalProperties: false
+      required: [local_only, provider_execution_eligible, real_external_call_executed, delivery_proven]
+      properties:
+        local_only: { type: boolean, enum: [true] }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+    OutboundCampaignHandoffSummary:
+      type: object
+      additionalProperties: false
+      required: [id, campaign_code, plan_id, review_version, status, target_count, step_count, accepted_at, safety]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        campaign_code: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' }
+        plan_id: { type: string, minLength: 68, maxLength: 68, pattern: '^ctp_[0-9a-f]{64}$' }
+        review_version: { type: integer, format: int64, minimum: 3 }
+        status: { type: string, enum: [held] }
+        target_count: { type: integer, format: int32, minimum: 1, maximum: 1000 }
+        step_count: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        accepted_at: { type: string, format: date-time }
+        safety: { $ref: "#/components/schemas/OutboundCampaignHandoffSafety" }
+    OutboundCampaignHandoffReconciliation:
+      type: object
+      additionalProperties: false
+      required: [id, campaign_code, plan_id, review_version, status, target_count, step_count, held_count, blocked_count, pending_count, not_evaluated_count, eligible_count, inactive_count, contact_policy_count, accepted_at, safety]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        campaign_code: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' }
+        plan_id: { type: string, minLength: 68, maxLength: 68, pattern: '^ctp_[0-9a-f]{64}$' }
+        review_version: { type: integer, format: int64, minimum: 3 }
+        status: { type: string, enum: [held] }
+        target_count: { type: integer, format: int32, minimum: 1, maximum: 1000 }
+        step_count: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        held_count: { type: integer, format: int32, minimum: 0, maximum: 1000 }
+        blocked_count: { type: integer, format: int32, minimum: 0, maximum: 1000 }
+        pending_count: { type: integer, format: int32, minimum: 0, maximum: 1000 }
+        not_evaluated_count: { type: integer, format: int32, minimum: 0, maximum: 1000 }
+        eligible_count: { type: integer, format: int32, minimum: 0, maximum: 1000 }
+        inactive_count: { type: integer, format: int32, minimum: 0, maximum: 1000 }
+        contact_policy_count: { type: integer, format: int32, minimum: 0, maximum: 1000 }
+        accepted_at: { type: string, format: date-time }
+        safety: { $ref: "#/components/schemas/OutboundCampaignHandoffSafety" }
     LegacyOutboundQueueJob:
       type: object
       additionalProperties: false
@@ -11431,7 +11557,7 @@ components:
       required: [event_type, consumer, status]
       properties:
         event_type: { type: string, maxLength: 200 }
-        consumer: { type: string, enum: ["", automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
+        consumer: { type: string, enum: ["", automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1, cloud-campaign.fact.v1, outbound-campaign-handoff.fact.v1] }
         status: { type: string, enum: ["", pending, processing, completed, final_failed, outcome_unknown] }
     LegacyInternalEventDeliveryCounts:
       type: object
@@ -11448,8 +11574,8 @@ components:
       additionalProperties: false
       required: [consumer, event_types]
       properties:
-        consumer: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1] }
-        event_types: { type: array, minItems: 1, items: { type: string, enum: [customer.tag_applied, operation_cycle.fact_recorded] } }
+        consumer: { type: string, enum: [automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1, cloud-campaign.fact.v1, outbound-campaign-handoff.fact.v1] }
+        event_types: { type: array, minItems: 1, items: { type: string, enum: [customer.tag_applied, operation_cycle.fact_recorded, cloud_campaign.fact_recorded, outbound.campaign_handoff_fact_recorded] } }
     LegacyInternalEventDiagnosticsResponse:
       type: object
       additionalProperties: false
@@ -11460,7 +11586,7 @@ components:
         event_count: { type: integer, format: int64, minimum: 0 }
         undispatched_event_count: { type: integer, format: int64, minimum: 0 }
         delivery_counts: { $ref: "#/components/schemas/LegacyInternalEventDeliveryCounts" }
-        consumer_registry: { type: array, minItems: 3, maxItems: 3, items: { $ref: "#/components/schemas/LegacyInternalEventConsumerBinding" } }
+        consumer_registry: { type: array, minItems: 5, maxItems: 5, items: { $ref: "#/components/schemas/LegacyInternalEventConsumerBinding" } }
         observed_at: { type: string, format: date-time }
         registry_id: { type: string, enum: [v2-internal-events.v1] }
         source_status: { type: string, enum: [local_read_model] }

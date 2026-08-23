@@ -3333,6 +3333,8 @@ export const LegacyInternalEventDeliveryConsumer = {
   "automationtag-triggerv1": "automation.tag-trigger.v1",
   "statstag-appliedv1": "stats.tag-applied.v1",
   "operation-cyclefactv1": "operation-cycle.fact.v1",
+  "cloud-campaignfactv1": "cloud-campaign.fact.v1",
+  "outbound-campaign-handofffactv1": "outbound-campaign-handoff.fact.v1",
 } as const;
 
 export type LegacyInternalEventDeliveryStatus =
@@ -3367,6 +3369,133 @@ export interface LegacyInternalEventItem {
   occurred_at: string;
   dispatched: boolean;
   deliveries: LegacyInternalEventDelivery[];
+}
+
+export interface OutboundCampaignHandoffAcceptRequest {
+  /** @minimum 3 */
+  expected_review_version: number;
+}
+
+export interface OutboundCampaignHandoffSafety {
+  local_only: boolean;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+  delivery_proven: boolean;
+}
+
+export type OutboundCampaignHandoffSummaryStatus =
+  (typeof OutboundCampaignHandoffSummaryStatus)[keyof typeof OutboundCampaignHandoffSummaryStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const OutboundCampaignHandoffSummaryStatus = {
+  held: "held",
+} as const;
+
+export interface OutboundCampaignHandoffSummary {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 96
+   * @pattern ^[A-Za-z0-9._-]+$
+   */
+  campaign_code: string;
+  /**
+   * @minLength 68
+   * @maxLength 68
+   * @pattern ^ctp_[0-9a-f]{64}$
+   */
+  plan_id: string;
+  /** @minimum 3 */
+  review_version: number;
+  status: OutboundCampaignHandoffSummaryStatus;
+  /**
+   * @minimum 1
+   * @maximum 1000
+   */
+  target_count: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  step_count: number;
+  accepted_at: string;
+  safety: OutboundCampaignHandoffSafety;
+}
+
+export type OutboundCampaignHandoffReconciliationStatus =
+  (typeof OutboundCampaignHandoffReconciliationStatus)[keyof typeof OutboundCampaignHandoffReconciliationStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const OutboundCampaignHandoffReconciliationStatus = {
+  held: "held",
+} as const;
+
+export interface OutboundCampaignHandoffReconciliation {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 96
+   * @pattern ^[A-Za-z0-9._-]+$
+   */
+  campaign_code: string;
+  /**
+   * @minLength 68
+   * @maxLength 68
+   * @pattern ^ctp_[0-9a-f]{64}$
+   */
+  plan_id: string;
+  /** @minimum 3 */
+  review_version: number;
+  status: OutboundCampaignHandoffReconciliationStatus;
+  /**
+   * @minimum 1
+   * @maximum 1000
+   */
+  target_count: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  step_count: number;
+  /**
+   * @minimum 0
+   * @maximum 1000
+   */
+  held_count: number;
+  /**
+   * @minimum 0
+   * @maximum 1000
+   */
+  blocked_count: number;
+  /**
+   * @minimum 0
+   * @maximum 1000
+   */
+  pending_count: number;
+  /**
+   * @minimum 0
+   * @maximum 1000
+   */
+  not_evaluated_count: number;
+  /**
+   * @minimum 0
+   * @maximum 1000
+   */
+  eligible_count: number;
+  /**
+   * @minimum 0
+   * @maximum 1000
+   */
+  inactive_count: number;
+  /**
+   * @minimum 0
+   * @maximum 1000
+   */
+  contact_policy_count: number;
+  accepted_at: string;
+  safety: OutboundCampaignHandoffSafety;
 }
 
 export type LegacyOutboundQueueJobKind =
@@ -3956,6 +4085,8 @@ export const LegacyInternalEventFiltersConsumer = {
   "automationtag-triggerv1": "automation.tag-trigger.v1",
   "statstag-appliedv1": "stats.tag-applied.v1",
   "operation-cyclefactv1": "operation-cycle.fact.v1",
+  "cloud-campaignfactv1": "cloud-campaign.fact.v1",
+  "outbound-campaign-handofffactv1": "outbound-campaign-handoff.fact.v1",
 } as const;
 
 export type LegacyInternalEventFiltersStatus =
@@ -3999,6 +4130,8 @@ export const LegacyInternalEventConsumerBindingConsumer = {
   "automationtag-triggerv1": "automation.tag-trigger.v1",
   "statstag-appliedv1": "stats.tag-applied.v1",
   "operation-cyclefactv1": "operation-cycle.fact.v1",
+  "cloud-campaignfactv1": "cloud-campaign.fact.v1",
+  "outbound-campaign-handofffactv1": "outbound-campaign-handoff.fact.v1",
 } as const;
 
 export type LegacyInternalEventConsumerBindingEventTypesItem =
@@ -4008,6 +4141,9 @@ export type LegacyInternalEventConsumerBindingEventTypesItem =
 export const LegacyInternalEventConsumerBindingEventTypesItem = {
   customertag_applied: "customer.tag_applied",
   operation_cyclefact_recorded: "operation_cycle.fact_recorded",
+  cloud_campaignfact_recorded: "cloud_campaign.fact_recorded",
+  outboundcampaign_handoff_fact_recorded:
+    "outbound.campaign_handoff_fact_recorded",
 } as const;
 
 export interface LegacyInternalEventConsumerBinding {
@@ -4076,8 +4212,8 @@ export interface LegacyInternalEventDiagnosticsResponse {
   undispatched_event_count: number;
   delivery_counts: LegacyInternalEventDeliveryCounts;
   /**
-   * @minItems 3
-   * @maxItems 3
+   * @minItems 5
+   * @maxItems 5
    */
   consumer_registry: LegacyInternalEventConsumerBinding[];
   observed_at: string;
@@ -13821,6 +13957,8 @@ export const ListLegacyInternalEventsConsumer = {
   "automationtag-triggerv1": "automation.tag-trigger.v1",
   "statstag-appliedv1": "stats.tag-applied.v1",
   "operation-cyclefactv1": "operation-cycle.fact.v1",
+  "cloud-campaignfactv1": "cloud-campaign.fact.v1",
+  "outbound-campaign-handofffactv1": "outbound-campaign-handoff.fact.v1",
 } as const;
 
 export type ListLegacyInternalEventsStatus =
@@ -13853,6 +13991,8 @@ export const GetLegacyInternalEventDiagnosticsConsumer = {
   "automationtag-triggerv1": "automation.tag-trigger.v1",
   "statstag-appliedv1": "stats.tag-applied.v1",
   "operation-cyclefactv1": "operation-cycle.fact.v1",
+  "cloud-campaignfactv1": "cloud-campaign.fact.v1",
+  "outbound-campaign-handofffactv1": "outbound-campaign-handoff.fact.v1",
 } as const;
 
 export type GetLegacyInternalEventDiagnosticsStatus =
@@ -34419,6 +34559,265 @@ export const listLegacyOutboundJobs = async (
     status: res.status,
     headers: res.headers,
   } as listLegacyOutboundJobsResponse;
+};
+
+/**
+ * @summary Read a recipient-safe local accepted Campaign handoff summary
+ */
+export type getOutboundCampaignHandoffSummaryResponse200 = {
+  data: OutboundCampaignHandoffSummary;
+  status: 200;
+};
+
+export type getOutboundCampaignHandoffSummaryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getOutboundCampaignHandoffSummaryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getOutboundCampaignHandoffSummaryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getOutboundCampaignHandoffSummaryResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getOutboundCampaignHandoffSummaryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getOutboundCampaignHandoffSummaryResponseSuccess =
+  getOutboundCampaignHandoffSummaryResponse200 & {
+    headers: Headers;
+  };
+export type getOutboundCampaignHandoffSummaryResponseError = (
+  | getOutboundCampaignHandoffSummaryResponse400
+  | getOutboundCampaignHandoffSummaryResponse401
+  | getOutboundCampaignHandoffSummaryResponse403
+  | getOutboundCampaignHandoffSummaryResponse404
+  | getOutboundCampaignHandoffSummaryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getOutboundCampaignHandoffSummaryResponse =
+  | getOutboundCampaignHandoffSummaryResponseSuccess
+  | getOutboundCampaignHandoffSummaryResponseError;
+
+export const getGetOutboundCampaignHandoffSummaryUrl = (
+  campaignCode: string,
+  planId: string,
+) => {
+  return `/api/admin/outbound/campaign-handoffs/${campaignCode}/${planId}`;
+};
+
+export const getOutboundCampaignHandoffSummary = async (
+  campaignCode: string,
+  planId: string,
+  options?: RequestInit,
+): Promise<getOutboundCampaignHandoffSummaryResponse> => {
+  const res = await fetch(
+    getGetOutboundCampaignHandoffSummaryUrl(campaignCode, planId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getOutboundCampaignHandoffSummaryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getOutboundCampaignHandoffSummaryResponse;
+};
+
+/**
+ * Creates one bound internal Events delivery River job after commit; it creates no Outbound send job, invokes no Provider, and proves no delivery.
+ * @summary Accept an approved Campaign handoff as held local facts only
+ */
+export type acceptOutboundCampaignHandoffResponse200 = {
+  data: OutboundCampaignHandoffReconciliation;
+  status: 200;
+};
+
+export type acceptOutboundCampaignHandoffResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type acceptOutboundCampaignHandoffResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type acceptOutboundCampaignHandoffResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type acceptOutboundCampaignHandoffResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type acceptOutboundCampaignHandoffResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type acceptOutboundCampaignHandoffResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type acceptOutboundCampaignHandoffResponseSuccess =
+  acceptOutboundCampaignHandoffResponse200 & {
+    headers: Headers;
+  };
+export type acceptOutboundCampaignHandoffResponseError = (
+  | acceptOutboundCampaignHandoffResponse400
+  | acceptOutboundCampaignHandoffResponse401
+  | acceptOutboundCampaignHandoffResponse403
+  | acceptOutboundCampaignHandoffResponse404
+  | acceptOutboundCampaignHandoffResponse409
+  | acceptOutboundCampaignHandoffResponse503
+) & {
+  headers: Headers;
+};
+
+export type acceptOutboundCampaignHandoffResponse =
+  | acceptOutboundCampaignHandoffResponseSuccess
+  | acceptOutboundCampaignHandoffResponseError;
+
+export const getAcceptOutboundCampaignHandoffUrl = (
+  campaignCode: string,
+  planId: string,
+) => {
+  return `/api/admin/outbound/campaign-handoffs/${campaignCode}/${planId}/accept`;
+};
+
+export const acceptOutboundCampaignHandoff = async (
+  campaignCode: string,
+  planId: string,
+  outboundCampaignHandoffAcceptRequest: OutboundCampaignHandoffAcceptRequest,
+  options?: RequestInit,
+): Promise<acceptOutboundCampaignHandoffResponse> => {
+  const res = await fetch(
+    getAcceptOutboundCampaignHandoffUrl(campaignCode, planId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(outboundCampaignHandoffAcceptRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: acceptOutboundCampaignHandoffResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as acceptOutboundCampaignHandoffResponse;
+};
+
+/**
+ * @summary Reconcile held local task-link counts without customer IDs or Provider fields
+ */
+export type reconcileOutboundCampaignHandoffResponse200 = {
+  data: OutboundCampaignHandoffReconciliation;
+  status: 200;
+};
+
+export type reconcileOutboundCampaignHandoffResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type reconcileOutboundCampaignHandoffResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reconcileOutboundCampaignHandoffResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reconcileOutboundCampaignHandoffResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type reconcileOutboundCampaignHandoffResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type reconcileOutboundCampaignHandoffResponseSuccess =
+  reconcileOutboundCampaignHandoffResponse200 & {
+    headers: Headers;
+  };
+export type reconcileOutboundCampaignHandoffResponseError = (
+  | reconcileOutboundCampaignHandoffResponse400
+  | reconcileOutboundCampaignHandoffResponse401
+  | reconcileOutboundCampaignHandoffResponse403
+  | reconcileOutboundCampaignHandoffResponse404
+  | reconcileOutboundCampaignHandoffResponse503
+) & {
+  headers: Headers;
+};
+
+export type reconcileOutboundCampaignHandoffResponse =
+  | reconcileOutboundCampaignHandoffResponseSuccess
+  | reconcileOutboundCampaignHandoffResponseError;
+
+export const getReconcileOutboundCampaignHandoffUrl = (
+  campaignCode: string,
+  planId: string,
+) => {
+  return `/api/admin/outbound/campaign-handoffs/${campaignCode}/${planId}/reconciliation`;
+};
+
+export const reconcileOutboundCampaignHandoff = async (
+  campaignCode: string,
+  planId: string,
+  options?: RequestInit,
+): Promise<reconcileOutboundCampaignHandoffResponse> => {
+  const res = await fetch(
+    getReconcileOutboundCampaignHandoffUrl(campaignCode, planId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reconcileOutboundCampaignHandoffResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reconcileOutboundCampaignHandoffResponse;
 };
 
 /**

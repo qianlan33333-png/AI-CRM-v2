@@ -4789,6 +4789,96 @@ func (e LocalProductLifecycleShareReason) Valid() bool {
 	}
 }
 
+// Defines values for OutboundCampaignHandoffReconciliationStatus.
+const (
+	OutboundCampaignHandoffReconciliationStatusHeld OutboundCampaignHandoffReconciliationStatus = "held"
+)
+
+// Valid indicates whether the value is a known member of the OutboundCampaignHandoffReconciliationStatus enum.
+func (e OutboundCampaignHandoffReconciliationStatus) Valid() bool {
+	switch e {
+	case OutboundCampaignHandoffReconciliationStatusHeld:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutboundCampaignHandoffSafetyDeliveryProven.
+const (
+	OutboundCampaignHandoffSafetyDeliveryProvenFalse OutboundCampaignHandoffSafetyDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the OutboundCampaignHandoffSafetyDeliveryProven enum.
+func (e OutboundCampaignHandoffSafetyDeliveryProven) Valid() bool {
+	switch e {
+	case OutboundCampaignHandoffSafetyDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutboundCampaignHandoffSafetyLocalOnly.
+const (
+	OutboundCampaignHandoffSafetyLocalOnlyTrue OutboundCampaignHandoffSafetyLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the OutboundCampaignHandoffSafetyLocalOnly enum.
+func (e OutboundCampaignHandoffSafetyLocalOnly) Valid() bool {
+	switch e {
+	case OutboundCampaignHandoffSafetyLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutboundCampaignHandoffSafetyProviderExecutionEligible.
+const (
+	OutboundCampaignHandoffSafetyProviderExecutionEligibleFalse OutboundCampaignHandoffSafetyProviderExecutionEligible = false
+)
+
+// Valid indicates whether the value is a known member of the OutboundCampaignHandoffSafetyProviderExecutionEligible enum.
+func (e OutboundCampaignHandoffSafetyProviderExecutionEligible) Valid() bool {
+	switch e {
+	case OutboundCampaignHandoffSafetyProviderExecutionEligibleFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutboundCampaignHandoffSafetyRealExternalCallExecuted.
+const (
+	OutboundCampaignHandoffSafetyRealExternalCallExecutedFalse OutboundCampaignHandoffSafetyRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the OutboundCampaignHandoffSafetyRealExternalCallExecuted enum.
+func (e OutboundCampaignHandoffSafetyRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case OutboundCampaignHandoffSafetyRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OutboundCampaignHandoffSummaryStatus.
+const (
+	OutboundCampaignHandoffSummaryStatusHeld OutboundCampaignHandoffSummaryStatus = "held"
+)
+
+// Valid indicates whether the value is a known member of the OutboundCampaignHandoffSummaryStatus enum.
+func (e OutboundCampaignHandoffSummaryStatus) Valid() bool {
+	switch e {
+	case OutboundCampaignHandoffSummaryStatusHeld:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PublicSurveyAnalyticsState.
 const (
 	PublicSurveyAnalyticsStateDisabled PublicSurveyAnalyticsState = "disabled"
@@ -6228,13 +6318,13 @@ func (e SetupWizardSaveResponseRuntimeApplied) Valid() bool {
 
 // Defines values for SetupWizardUnavailableMaskedSettingConfigured.
 const (
-	SetupWizardUnavailableMaskedSettingConfiguredFalse SetupWizardUnavailableMaskedSettingConfigured = false
+	False SetupWizardUnavailableMaskedSettingConfigured = false
 )
 
 // Valid indicates whether the value is a known member of the SetupWizardUnavailableMaskedSettingConfigured enum.
 func (e SetupWizardUnavailableMaskedSettingConfigured) Valid() bool {
 	switch e {
-	case SetupWizardUnavailableMaskedSettingConfiguredFalse:
+	case False:
 		return true
 	default:
 		return false
@@ -6243,13 +6333,13 @@ func (e SetupWizardUnavailableMaskedSettingConfigured) Valid() bool {
 
 // Defines values for SetupWizardUnavailableMaskedSettingMasked.
 const (
-	True SetupWizardUnavailableMaskedSettingMasked = true
+	SetupWizardUnavailableMaskedSettingMaskedTrue SetupWizardUnavailableMaskedSettingMasked = true
 )
 
 // Valid indicates whether the value is a known member of the SetupWizardUnavailableMaskedSettingMasked enum.
 func (e SetupWizardUnavailableMaskedSettingMasked) Valid() bool {
 	switch e {
-	case True:
+	case SetupWizardUnavailableMaskedSettingMaskedTrue:
 		return true
 	default:
 		return false
@@ -8914,6 +9004,70 @@ type LocalTagListResponse struct {
 	Items []LocalTag `json:"items"`
 }
 
+// OutboundCampaignHandoffAcceptRequest defines model for OutboundCampaignHandoffAcceptRequest.
+type OutboundCampaignHandoffAcceptRequest struct {
+	ExpectedReviewVersion int64 `json:"expected_review_version"`
+}
+
+// OutboundCampaignHandoffReconciliation defines model for OutboundCampaignHandoffReconciliation.
+type OutboundCampaignHandoffReconciliation struct {
+	AcceptedAt         time.Time                                   `json:"accepted_at"`
+	BlockedCount       int32                                       `json:"blocked_count"`
+	CampaignCode       string                                      `json:"campaign_code"`
+	ContactPolicyCount int32                                       `json:"contact_policy_count"`
+	EligibleCount      int32                                       `json:"eligible_count"`
+	HeldCount          int32                                       `json:"held_count"`
+	Id                 int64                                       `json:"id"`
+	InactiveCount      int32                                       `json:"inactive_count"`
+	NotEvaluatedCount  int32                                       `json:"not_evaluated_count"`
+	PendingCount       int32                                       `json:"pending_count"`
+	PlanId             string                                      `json:"plan_id"`
+	ReviewVersion      int64                                       `json:"review_version"`
+	Safety             OutboundCampaignHandoffSafety               `json:"safety"`
+	Status             OutboundCampaignHandoffReconciliationStatus `json:"status"`
+	StepCount          int32                                       `json:"step_count"`
+	TargetCount        int32                                       `json:"target_count"`
+}
+
+// OutboundCampaignHandoffReconciliationStatus defines model for OutboundCampaignHandoffReconciliation.Status.
+type OutboundCampaignHandoffReconciliationStatus string
+
+// OutboundCampaignHandoffSafety defines model for OutboundCampaignHandoffSafety.
+type OutboundCampaignHandoffSafety struct {
+	DeliveryProven            OutboundCampaignHandoffSafetyDeliveryProven            `json:"delivery_proven"`
+	LocalOnly                 OutboundCampaignHandoffSafetyLocalOnly                 `json:"local_only"`
+	ProviderExecutionEligible OutboundCampaignHandoffSafetyProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  OutboundCampaignHandoffSafetyRealExternalCallExecuted  `json:"real_external_call_executed"`
+}
+
+// OutboundCampaignHandoffSafetyDeliveryProven defines model for OutboundCampaignHandoffSafety.DeliveryProven.
+type OutboundCampaignHandoffSafetyDeliveryProven bool
+
+// OutboundCampaignHandoffSafetyLocalOnly defines model for OutboundCampaignHandoffSafety.LocalOnly.
+type OutboundCampaignHandoffSafetyLocalOnly bool
+
+// OutboundCampaignHandoffSafetyProviderExecutionEligible defines model for OutboundCampaignHandoffSafety.ProviderExecutionEligible.
+type OutboundCampaignHandoffSafetyProviderExecutionEligible bool
+
+// OutboundCampaignHandoffSafetyRealExternalCallExecuted defines model for OutboundCampaignHandoffSafety.RealExternalCallExecuted.
+type OutboundCampaignHandoffSafetyRealExternalCallExecuted bool
+
+// OutboundCampaignHandoffSummary defines model for OutboundCampaignHandoffSummary.
+type OutboundCampaignHandoffSummary struct {
+	AcceptedAt    time.Time                            `json:"accepted_at"`
+	CampaignCode  string                               `json:"campaign_code"`
+	Id            int64                                `json:"id"`
+	PlanId        string                               `json:"plan_id"`
+	ReviewVersion int64                                `json:"review_version"`
+	Safety        OutboundCampaignHandoffSafety        `json:"safety"`
+	Status        OutboundCampaignHandoffSummaryStatus `json:"status"`
+	StepCount     int32                                `json:"step_count"`
+	TargetCount   int32                                `json:"target_count"`
+}
+
+// OutboundCampaignHandoffSummaryStatus defines model for OutboundCampaignHandoffSummary.Status.
+type OutboundCampaignHandoffSummaryStatus string
+
 // Product defines model for Product.
 type Product struct {
 	CreatedAt     time.Time `json:"created_at"`
@@ -10304,6 +10458,15 @@ type AcknowledgeAdminOpsMessageBatchParams struct {
 	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
 }
 
+// AcceptOutboundCampaignHandoffParams defines parameters for AcceptOutboundCampaignHandoff.
+type AcceptOutboundCampaignHandoffParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // ListLegacyOutboundJobsParams defines parameters for ListLegacyOutboundJobs.
 type ListLegacyOutboundJobsParams struct {
 	Status      *ListLegacyOutboundJobsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
@@ -11033,6 +11196,9 @@ type RunAdminOpsArchiveSyncPlanJSONRequestBody = AdminOpsConfirmedActionRequest
 
 // AcknowledgeAdminOpsMessageBatchJSONRequestBody defines body for AcknowledgeAdminOpsMessageBatch for application/json ContentType.
 type AcknowledgeAdminOpsMessageBatchJSONRequestBody = AdminOpsBatchAckRequest
+
+// AcceptOutboundCampaignHandoffJSONRequestBody defines body for AcceptOutboundCampaignHandoff for application/json ContentType.
+type AcceptOutboundCampaignHandoffJSONRequestBody = OutboundCampaignHandoffAcceptRequest
 
 // DisableQuestionnairePublicDefinitionJSONRequestBody defines body for DisableQuestionnairePublicDefinition for application/json ContentType.
 type DisableQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyDisableRequest
@@ -12463,6 +12629,15 @@ type ServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request)
+	// Read a recipient-safe local accepted Campaign handoff summary
+	// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id})
+	GetOutboundCampaignHandoffSummary(w http.ResponseWriter, r *http.Request, campaignCode string, planId string)
+	// Accept an approved Campaign handoff as held local facts only
+	// (POST /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept)
+	AcceptOutboundCampaignHandoff(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, params AcceptOutboundCampaignHandoffParams)
+	// Reconcile held local task-link counts without customer IDs or Provider fields
+	// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation)
+	ReconcileOutboundCampaignHandoff(w http.ResponseWriter, r *http.Request, campaignCode string, planId string)
 	// Read bounded local outbound-job projections without starting a worker or provider call
 	// (GET /api/admin/push-center/jobs)
 	ListLegacyOutboundJobs(w http.ResponseWriter, r *http.Request, params ListLegacyOutboundJobsParams)
@@ -13093,6 +13268,24 @@ func (_ Unimplemented) GetAdminOpsJobsSummary(w http.ResponseWriter, r *http.Req
 // List local webhook-plan records without any webhook locator
 // (GET /api/admin/jobs/webhook-deliveries)
 func (_ Unimplemented) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read a recipient-safe local accepted Campaign handoff summary
+// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id})
+func (_ Unimplemented) GetOutboundCampaignHandoffSummary(w http.ResponseWriter, r *http.Request, campaignCode string, planId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Accept an approved Campaign handoff as held local facts only
+// (POST /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept)
+func (_ Unimplemented) AcceptOutboundCampaignHandoff(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, params AcceptOutboundCampaignHandoffParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Reconcile held local task-link counts without customer IDs or Provider fields
+// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation)
+func (_ Unimplemented) ReconcileOutboundCampaignHandoff(w http.ResponseWriter, r *http.Request, campaignCode string, planId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -16299,6 +16492,177 @@ func (siw *ServerInterfaceWrapper) ListAdminOpsWebhookDeliveryJobs(w http.Respon
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAdminOpsWebhookDeliveryJobs(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOutboundCampaignHandoffSummary operation middleware
+func (siw *ServerInterfaceWrapper) GetOutboundCampaignHandoffSummary(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "campaign_code" -------------
+	var campaignCode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "campaign_code", chi.URLParam(r, "campaign_code"), &campaignCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "campaign_code", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "plan_id" -------------
+	var planId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "plan_id", chi.URLParam(r, "plan_id"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOutboundCampaignHandoffSummary(w, r, campaignCode, planId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AcceptOutboundCampaignHandoff operation middleware
+func (siw *ServerInterfaceWrapper) AcceptOutboundCampaignHandoff(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "campaign_code" -------------
+	var campaignCode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "campaign_code", chi.URLParam(r, "campaign_code"), &campaignCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "campaign_code", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "plan_id" -------------
+	var planId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "plan_id", chi.URLParam(r, "plan_id"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AcceptOutboundCampaignHandoffParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcceptOutboundCampaignHandoff(w, r, campaignCode, planId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReconcileOutboundCampaignHandoff operation middleware
+func (siw *ServerInterfaceWrapper) ReconcileOutboundCampaignHandoff(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "campaign_code" -------------
+	var campaignCode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "campaign_code", chi.URLParam(r, "campaign_code"), &campaignCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "campaign_code", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "plan_id" -------------
+	var planId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "plan_id", chi.URLParam(r, "plan_id"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReconcileOutboundCampaignHandoff(w, r, campaignCode, planId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -22971,6 +23335,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/jobs/webhook-deliveries", wrapper.ListAdminOpsWebhookDeliveryJobs)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}", wrapper.GetOutboundCampaignHandoffSummary)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept", wrapper.AcceptOutboundCampaignHandoff)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation", wrapper.ReconcileOutboundCampaignHandoff)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/push-center/jobs", wrapper.ListLegacyOutboundJobs)
 	})
 	r.Group(func(r chi.Router) {
@@ -26362,6 +26735,206 @@ func (response ListAdminOpsWebhookDeliveryJobs409JSONResponse) VisitListAdminOps
 type ListAdminOpsWebhookDeliveryJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListAdminOpsWebhookDeliveryJobs503JSONResponse) VisitListAdminOpsWebhookDeliveryJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundCampaignHandoffSummaryRequestObject struct {
+	CampaignCode string `json:"campaign_code"`
+	PlanId       string `json:"plan_id"`
+}
+
+type GetOutboundCampaignHandoffSummaryResponseObject interface {
+	VisitGetOutboundCampaignHandoffSummaryResponse(w http.ResponseWriter) error
+}
+
+type GetOutboundCampaignHandoffSummary200JSONResponse OutboundCampaignHandoffSummary
+
+func (response GetOutboundCampaignHandoffSummary200JSONResponse) VisitGetOutboundCampaignHandoffSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundCampaignHandoffSummary400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetOutboundCampaignHandoffSummary400JSONResponse) VisitGetOutboundCampaignHandoffSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundCampaignHandoffSummary401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetOutboundCampaignHandoffSummary401JSONResponse) VisitGetOutboundCampaignHandoffSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundCampaignHandoffSummary403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetOutboundCampaignHandoffSummary403JSONResponse) VisitGetOutboundCampaignHandoffSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundCampaignHandoffSummary404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetOutboundCampaignHandoffSummary404JSONResponse) VisitGetOutboundCampaignHandoffSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundCampaignHandoffSummary503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetOutboundCampaignHandoffSummary503JSONResponse) VisitGetOutboundCampaignHandoffSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcceptOutboundCampaignHandoffRequestObject struct {
+	CampaignCode string `json:"campaign_code"`
+	PlanId       string `json:"plan_id"`
+	Params       AcceptOutboundCampaignHandoffParams
+	Body         *AcceptOutboundCampaignHandoffJSONRequestBody
+}
+
+type AcceptOutboundCampaignHandoffResponseObject interface {
+	VisitAcceptOutboundCampaignHandoffResponse(w http.ResponseWriter) error
+}
+
+type AcceptOutboundCampaignHandoff200JSONResponse OutboundCampaignHandoffReconciliation
+
+func (response AcceptOutboundCampaignHandoff200JSONResponse) VisitAcceptOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcceptOutboundCampaignHandoff400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AcceptOutboundCampaignHandoff400JSONResponse) VisitAcceptOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcceptOutboundCampaignHandoff401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AcceptOutboundCampaignHandoff401JSONResponse) VisitAcceptOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcceptOutboundCampaignHandoff403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AcceptOutboundCampaignHandoff403JSONResponse) VisitAcceptOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcceptOutboundCampaignHandoff404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AcceptOutboundCampaignHandoff404JSONResponse) VisitAcceptOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcceptOutboundCampaignHandoff409JSONResponse struct{ ConflictJSONResponse }
+
+func (response AcceptOutboundCampaignHandoff409JSONResponse) VisitAcceptOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcceptOutboundCampaignHandoff503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response AcceptOutboundCampaignHandoff503JSONResponse) VisitAcceptOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileOutboundCampaignHandoffRequestObject struct {
+	CampaignCode string `json:"campaign_code"`
+	PlanId       string `json:"plan_id"`
+}
+
+type ReconcileOutboundCampaignHandoffResponseObject interface {
+	VisitReconcileOutboundCampaignHandoffResponse(w http.ResponseWriter) error
+}
+
+type ReconcileOutboundCampaignHandoff200JSONResponse OutboundCampaignHandoffReconciliation
+
+func (response ReconcileOutboundCampaignHandoff200JSONResponse) VisitReconcileOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileOutboundCampaignHandoff400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReconcileOutboundCampaignHandoff400JSONResponse) VisitReconcileOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileOutboundCampaignHandoff401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReconcileOutboundCampaignHandoff401JSONResponse) VisitReconcileOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileOutboundCampaignHandoff403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReconcileOutboundCampaignHandoff403JSONResponse) VisitReconcileOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileOutboundCampaignHandoff404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReconcileOutboundCampaignHandoff404JSONResponse) VisitReconcileOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileOutboundCampaignHandoff503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ReconcileOutboundCampaignHandoff503JSONResponse) VisitReconcileOutboundCampaignHandoffResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -33376,6 +33949,15 @@ type StrictServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(ctx context.Context, request ListAdminOpsWebhookDeliveryJobsRequestObject) (ListAdminOpsWebhookDeliveryJobsResponseObject, error)
+	// Read a recipient-safe local accepted Campaign handoff summary
+	// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id})
+	GetOutboundCampaignHandoffSummary(ctx context.Context, request GetOutboundCampaignHandoffSummaryRequestObject) (GetOutboundCampaignHandoffSummaryResponseObject, error)
+	// Accept an approved Campaign handoff as held local facts only
+	// (POST /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept)
+	AcceptOutboundCampaignHandoff(ctx context.Context, request AcceptOutboundCampaignHandoffRequestObject) (AcceptOutboundCampaignHandoffResponseObject, error)
+	// Reconcile held local task-link counts without customer IDs or Provider fields
+	// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation)
+	ReconcileOutboundCampaignHandoff(ctx context.Context, request ReconcileOutboundCampaignHandoffRequestObject) (ReconcileOutboundCampaignHandoffResponseObject, error)
 	// Read bounded local outbound-job projections without starting a worker or provider call
 	// (GET /api/admin/push-center/jobs)
 	ListLegacyOutboundJobs(ctx context.Context, request ListLegacyOutboundJobsRequestObject) (ListLegacyOutboundJobsResponseObject, error)
@@ -35216,6 +35798,95 @@ func (sh *strictHandler) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAdminOpsWebhookDeliveryJobsResponseObject); ok {
 		if err := validResponse.VisitListAdminOpsWebhookDeliveryJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOutboundCampaignHandoffSummary operation middleware
+func (sh *strictHandler) GetOutboundCampaignHandoffSummary(w http.ResponseWriter, r *http.Request, campaignCode string, planId string) {
+	var request GetOutboundCampaignHandoffSummaryRequestObject
+
+	request.CampaignCode = campaignCode
+	request.PlanId = planId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOutboundCampaignHandoffSummary(ctx, request.(GetOutboundCampaignHandoffSummaryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOutboundCampaignHandoffSummary")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOutboundCampaignHandoffSummaryResponseObject); ok {
+		if err := validResponse.VisitGetOutboundCampaignHandoffSummaryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AcceptOutboundCampaignHandoff operation middleware
+func (sh *strictHandler) AcceptOutboundCampaignHandoff(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, params AcceptOutboundCampaignHandoffParams) {
+	var request AcceptOutboundCampaignHandoffRequestObject
+
+	request.CampaignCode = campaignCode
+	request.PlanId = planId
+	request.Params = params
+
+	var body AcceptOutboundCampaignHandoffJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AcceptOutboundCampaignHandoff(ctx, request.(AcceptOutboundCampaignHandoffRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AcceptOutboundCampaignHandoff")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AcceptOutboundCampaignHandoffResponseObject); ok {
+		if err := validResponse.VisitAcceptOutboundCampaignHandoffResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReconcileOutboundCampaignHandoff operation middleware
+func (sh *strictHandler) ReconcileOutboundCampaignHandoff(w http.ResponseWriter, r *http.Request, campaignCode string, planId string) {
+	var request ReconcileOutboundCampaignHandoffRequestObject
+
+	request.CampaignCode = campaignCode
+	request.PlanId = planId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReconcileOutboundCampaignHandoff(ctx, request.(ReconcileOutboundCampaignHandoffRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReconcileOutboundCampaignHandoff")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReconcileOutboundCampaignHandoffResponseObject); ok {
+		if err := validResponse.VisitReconcileOutboundCampaignHandoffResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

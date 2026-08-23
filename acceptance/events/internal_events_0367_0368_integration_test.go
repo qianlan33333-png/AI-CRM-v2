@@ -428,6 +428,7 @@ func assertAdminReadRegistry(t *testing.T, got []eventport.AdminReadBinding) {
 		{Consumer: "stats.tag-applied.v1", EventTypes: []string{"customer.tag_applied"}},
 		{Consumer: "operation-cycle.fact.v1", EventTypes: []string{"operation_cycle.fact_recorded"}},
 		{Consumer: "cloud-campaign.fact.v1", EventTypes: []string{"cloud_campaign.fact_recorded"}},
+		{Consumer: "outbound-campaign-handoff.fact.v1", EventTypes: []string{"outbound.campaign_handoff_fact_recorded"}},
 	}
 	if len(got) != len(want) {
 		t.Fatalf("consumer registry length=%d want=%d", len(got), len(want))

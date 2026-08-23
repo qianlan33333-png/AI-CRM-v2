@@ -201,8 +201,7 @@ func createOutboundCustomers(t *testing.T, ctx context.Context, pool *pgxpool.Po
 
 func resetOutboundBatchFixture(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	_, err := pool.Exec(context.Background(), `TRUNCATE outbound_control_receipts, outbound_task_job_links, outbound_send_attempt_history, outbound_send_attempts, outbound_batch_chunks, outbound_enqueue_receipts, outbound_tasks, outbound_batches`)
-	if err != nil {
+	if err := truncateOutboundTaskFixtures(pool); err != nil {
 		t.Fatalf("reset outbound batch fixture: %v", err)
 	}
 }

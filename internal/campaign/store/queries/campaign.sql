@@ -182,3 +182,54 @@ LIMIT sqlc.arg(page_limit);
 SELECT plan_id, customer_id
 FROM public.cloud_campaign_touch_plan_targets
 WHERE plan_id = sqlc.arg(plan_id) AND customer_id = sqlc.arg(customer_id) AND EXISTS (SELECT 1 FROM public.cloud_campaign_touch_plans WHERE id = sqlc.arg(plan_id) AND campaign_code = sqlc.arg(campaign_code));
+
+-- name: LockApprovedCampaignTouchPlanHandoff :one
+SELECT plan.id, plan.campaign_code, plan.campaign_version, plan.source_kind,
+       plan.customer_selection_id, plan.customer_selection_version, plan.segment_id,
+       plan.audience_package_id, plan.audience_package_version, plan.member_snapshot_watermark,
+       plan.source_digest, plan.target_digest, plan.content_digest, plan.target_count, plan.content_step_count,
+       plan.candidate_count, plan.active_customer_count, plan.inactive_excluded_count,
+       plan.policy_excluded_count, plan.owner_actor_id, plan.created_at AS plan_created_at,
+       plan.local_only, plan.provider_execution_eligible, plan.runtime_executed,
+       plan.real_external_call_executed, plan.delivery_proven,
+       review.version AS review_version, review.reviewed_at,
+       handoff.status AS handoff_status, handoff.created_at AS handoff_created_at,
+       handoff.local_only AS handoff_local_only,
+       handoff.provider_execution_eligible AS handoff_provider_execution_eligible,
+       handoff.real_external_call_executed AS handoff_real_external_call_executed,
+       handoff.delivery_proven AS handoff_delivery_proven
+FROM public.cloud_campaign_touch_plans AS plan
+JOIN public.cloud_campaign_touch_plan_reviews AS review ON review.plan_id = plan.id
+JOIN public.cloud_campaign_touch_plan_handoffs AS handoff ON handoff.plan_id = plan.id
+WHERE plan.id = sqlc.arg(plan_id) AND plan.campaign_code = sqlc.arg(campaign_code)
+  AND review.campaign_code = plan.campaign_code AND review.status = 'approved'
+  AND handoff.review_version = review.version
+FOR KEY SHARE OF plan, review, handoff;
+
+-- name: ListApprovedCampaignTouchPlanTargets :many
+SELECT target.customer_id
+FROM public.cloud_campaign_touch_plan_targets AS target
+WHERE target.plan_id = sqlc.arg(plan_id)
+  AND EXISTS (
+    SELECT 1 FROM public.cloud_campaign_touch_plans AS plan
+    JOIN public.cloud_campaign_touch_plan_reviews AS review ON review.plan_id = plan.id
+    JOIN public.cloud_campaign_touch_plan_handoffs AS handoff ON handoff.plan_id = plan.id
+    WHERE plan.id = target.plan_id AND plan.campaign_code = sqlc.arg(campaign_code)
+      AND review.campaign_code = plan.campaign_code AND review.status = 'approved'
+      AND handoff.review_version = review.version
+  )
+ORDER BY target.customer_id ASC;
+
+-- name: ListApprovedCampaignTouchPlanSteps :many
+SELECT step.step_index, step.delay_minutes, step.content
+FROM public.cloud_campaign_touch_plan_steps AS step
+WHERE step.plan_id = sqlc.arg(plan_id)
+  AND EXISTS (
+    SELECT 1 FROM public.cloud_campaign_touch_plans AS plan
+    JOIN public.cloud_campaign_touch_plan_reviews AS review ON review.plan_id = plan.id
+    JOIN public.cloud_campaign_touch_plan_handoffs AS handoff ON handoff.plan_id = plan.id
+    WHERE plan.id = step.plan_id AND plan.campaign_code = sqlc.arg(campaign_code)
+      AND review.campaign_code = plan.campaign_code AND review.status = 'approved'
+      AND handoff.review_version = review.version
+  )
+ORDER BY step.step_index ASC;
