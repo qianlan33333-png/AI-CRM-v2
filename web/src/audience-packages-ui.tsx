@@ -4,6 +4,7 @@ import {
   type AudiencePackageRole,
   type AudiencePackageRoute,
 } from "./audience-packages";
+import { campaignSourceHref } from "./cloud-orchestrator";
 
 function WorkspaceNavigation() {
   return (
@@ -35,10 +36,15 @@ function PackageListWorkspace() {
 }
 
 function PackageDetailWorkspace({ packageID }: { readonly packageID: string }) {
+  const campaignHref = campaignSourceHref(
+    "ai_audience_package_members",
+    packageID,
+  );
   return (
     <section aria-labelledby="audience-packages-title">
       <h1 id="audience-packages-title">AI Audience 人群包明细</h1>
       <p>本地人群包标识：{packageID}</p>
+      {campaignHref && <a href={campaignHref}>以 package ID 发起 Campaign</a>}
       <section aria-labelledby="audience-package-config-title">
         <h2 id="audience-package-config-title">基础配置与筛选模板</h2>
         <p>名称、分组、刷新方式、模板、筛选条件和预览必须由闭合本地合同提供；这里不制造成员数或刷新状态。</p>

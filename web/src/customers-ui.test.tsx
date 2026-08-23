@@ -132,6 +132,28 @@ describe("CustomerListContent states", () => {
     expect(onCustomerNavigate).toHaveBeenCalledWith(click);
   });
 
+  it.each(["admin", "ops"] as const)(
+    "offers only the canonical OneID Campaign entry to %s",
+    (role) => {
+      const html = renderToStaticMarkup(
+        <CustomerRows items={page.items} role={role} />,
+      );
+      expect(html).toContain(
+        'href="/admin/cloud-orchestrator/campaigns?source_kind=customer_selection&amp;source_id=7"',
+      );
+      expect(html).toContain("以 OneID 7 发起 Campaign");
+      expect(html).not.toContain("keyword=");
+      expect(html).not.toContain("external_userid");
+    },
+  );
+
+  it("keeps the Campaign entry hidden for sales", () => {
+    const html = renderToStaticMarkup(
+      <CustomerRows items={page.items} role="sales" />,
+    );
+    expect(html).not.toContain("发起 Campaign");
+  });
+
   it("renders a semantic result table with watermark, 10k+ marker, and opaque page controls", () => {
     const screen: CustomerListScreen = {
       kind: "ready",

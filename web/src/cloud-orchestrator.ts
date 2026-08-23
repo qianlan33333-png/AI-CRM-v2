@@ -59,19 +59,83 @@ function safePlanID(value: string): string | undefined {
   return decoded;
 }
 
+function sourceKind(value: string): CloudCampaignSourceKind | undefined {
+  return value === "customer_selection" ||
+    value === "segment_members" ||
+    value === "ai_audience_package_members"
+    ? value
+    : undefined;
+}
+
+function sourceID(value: string): string | undefined {
+  if (!/^[1-9][0-9]{0,18}$/u.test(value)) return undefined;
+  const parsed = BigInt(value);
+  if (parsed > 9_223_372_036_854_775_807n) return undefined;
+  return value;
+}
+
+function campaignRoute(
+  search: string,
+  requireCanonicalOrder: boolean,
+): Extract<CloudOrchestratorRoute, { readonly kind: "campaigns" }> | undefined {
+  if (search === "") {
+    return { kind: "campaigns", pathname: CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH };
+  }
+  let query: URLSearchParams;
+  try {
+    query = new URLSearchParams(search);
+  } catch {
+    return undefined;
+  }
+  const entries = [...query.entries()];
+  if (entries.length !== 2) return undefined;
+  const kind = sourceKind(query.get("source_kind") ?? "");
+  const id = sourceID(query.get("source_id") ?? "");
+  if (!kind || !id || query.getAll("source_kind").length !== 1 || query.getAll("source_id").length !== 1) {
+    return undefined;
+  }
+  const canonical = `source_kind=${kind}&source_id=${id}`;
+  const reverse = `source_id=${id}&source_kind=${kind}`;
+  const raw = search.startsWith("?") ? search.slice(1) : search;
+  if (raw !== canonical && (requireCanonicalOrder || raw !== reverse)) return undefined;
+  return {
+    kind: "campaigns",
+    pathname: CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
+    source_kind: kind,
+    source_id: id,
+  };
+}
+
+export function campaignSourceHref(
+  kind: CloudCampaignSourceKind,
+  id: string | number,
+): string | undefined {
+  const canonicalKind = sourceKind(kind);
+  const canonicalID =
+    typeof id === "number" && (!Number.isSafeInteger(id) || id < 1)
+      ? undefined
+      : sourceID(String(id));
+  return canonicalKind && canonicalID
+    ? `${CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH}?source_kind=${canonicalKind}&source_id=${canonicalID}`
+    : undefined;
+}
+
 // This parser recognizes only the five approved page capabilities. It does
 // not infer a plan state, audience, approval payload, quality metric, or
 // executable workflow from the URL.
 export function cloudOrchestratorRoute(
   pathname: string,
+  search = "",
 ): CloudOrchestratorRoute | undefined {
+  if (pathname === CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH) {
+    return campaignRoute(search, true);
+  }
+  if (search !== "") return undefined;
   switch (pathname) {
     case CLOUD_ORCHESTRATOR_ROOT_PATH:
       return { kind: "root", pathname };
     case CLOUD_ORCHESTRATOR_PLANS_PATH:
       return { kind: "plans", pathname };
-    case CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH:
-      return { kind: "campaigns", pathname };
     case CLOUD_ORCHESTRATOR_OBSERVABILITY_PATH:
       return { kind: "observability", pathname };
   }
@@ -108,39 +172,7 @@ export function cloudOrchestratorCarrierRoute(
     return undefined;
   }
 
-  const rawQuery = inner.slice(separator + 1);
-  const query = new URLSearchParams(rawQuery);
-  const queryEntries = [...query.entries()];
-  if (queryEntries.length !== 2) return undefined;
-  const kinds = query.getAll("source_kind");
-  const ids = query.getAll("source_id");
-  if (kinds.length !== 1 || ids.length !== 1) return undefined;
-
-  const sourceKind = kinds[0];
-  const sourceID = ids[0];
-  if (
-    sourceKind !== "customer_selection" &&
-    sourceKind !== "segment_members" &&
-    sourceKind !== "ai_audience_package_members"
-  ) {
-    return undefined;
-  }
-  if (
-    !/^[1-9][0-9]{0,18}$/u.test(sourceID) ||
-    (sourceID.length === 19 && sourceID > "9223372036854775807")
-  ) {
-    return undefined;
-  }
-
-  const kindFirst = `source_kind=${sourceKind}&source_id=${sourceID}`;
-  const idFirst = `source_id=${sourceID}&source_kind=${sourceKind}`;
-  if (rawQuery !== kindFirst && rawQuery !== idFirst) return undefined;
-  return {
-    kind: "campaigns",
-    pathname: CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
-    source_kind: sourceKind,
-    source_id: sourceID,
-  };
+  return campaignRoute(inner.slice(separator + 1), false);
 }
 
 export interface CloudOrchestratorWorkspaceLink {

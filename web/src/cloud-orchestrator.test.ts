@@ -4,9 +4,11 @@ import {
   CLOUD_ORCHESTRATOR_OBSERVABILITY_PATH,
   CLOUD_ORCHESTRATOR_PLANS_PATH,
   CLOUD_ORCHESTRATOR_ROOT_PATH,
+  campaignSourceHref,
   cloudOrchestratorCarrierRoute,
   cloudOrchestratorRoute,
   cloudOrchestratorWorkspaceLinks,
+  type CloudCampaignSourceKind,
 } from "./cloud-orchestrator";
 
 describe("cloud orchestrator approved page routes", () => {
@@ -29,6 +31,51 @@ describe("cloud orchestrator approved page routes", () => {
     });
   });
 
+  it("builds and parses only the closed direct Campaign source URL", () => {
+    expect(campaignSourceHref("customer_selection", 7)).toBe(
+      `${CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH}?source_kind=customer_selection&source_id=7`,
+    );
+    expect(
+      cloudOrchestratorRoute(
+        CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
+        "?source_kind=customer_selection&source_id=7",
+      ),
+    ).toEqual({
+      kind: "campaigns",
+      pathname: CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
+      source_kind: "customer_selection",
+      source_id: "7",
+    });
+  });
+
+  it("preserves a canonical int64 string in the direct Campaign URL", () => {
+    const sourceID = "9223372036854775807";
+    expect(campaignSourceHref("ai_audience_package_members", sourceID)).toBe(
+      `${CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH}?source_kind=ai_audience_package_members&source_id=${sourceID}`,
+    );
+    expect(
+      cloudOrchestratorRoute(
+        CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
+        `?source_kind=ai_audience_package_members&source_id=${sourceID}`,
+      ),
+    ).toEqual({
+      kind: "campaigns",
+      pathname: CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
+      source_kind: "ai_audience_package_members",
+      source_id: sourceID,
+    });
+  });
+
+  it.each([
+    ["customer_selection", 0],
+    ["customer_selection", Number.MAX_SAFE_INTEGER + 1],
+    ["customer_selection", "07"],
+    ["customer_selection", "7&filter=private"],
+    ["untrusted" as CloudCampaignSourceKind, 7],
+  ] as const)("rejects a noncanonical source URL input %s/%s", (kind, id) => {
+    expect(campaignSourceHref(kind, id)).toBeUndefined();
+  });
+
   it.each([
     "",
     "/admin/cloud-orchestrator/unknown",
@@ -39,6 +86,17 @@ describe("cloud orchestrator approved page routes", () => {
     `${CLOUD_ORCHESTRATOR_PLANS_PATH}/..`,
   ])("rejects unapproved or unsafe path %s", (pathname) => {
     expect(cloudOrchestratorRoute(pathname)).toBeUndefined();
+  });
+
+  it.each([
+    "?source_kind=customer_selection",
+    "?source_kind=customer_selection&source_id=7&filter=private",
+    "?source_id=7&source_kind=customer_selection",
+    "?source_kind=customer_selection&source_id=07",
+  ])("rejects a noncanonical direct Campaign query %s", (search) => {
+    expect(
+      cloudOrchestratorRoute(CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH, search),
+    ).toBeUndefined();
   });
 
   it("accepts only an exact single carrier parameter", () => {
