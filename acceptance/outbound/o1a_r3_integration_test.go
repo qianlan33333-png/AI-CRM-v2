@@ -304,7 +304,7 @@ func openOutboundPool(t *testing.T) *pgxpool.Pool {
 	if *outboundDatabaseURL == "" {
 		t.Skip("database-url is not set")
 	}
-	if err := acceptancefixtures.ValidateDatabaseURL(*outboundDatabaseURL); err != nil {
+	if err := validateOutboundDatabaseURL(*outboundDatabaseURL, *outboundO6ARealRiver); err != nil {
 		t.Fatalf("unsafe outbound database URL: %v", err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -319,6 +319,31 @@ func openOutboundPool(t *testing.T) *pgxpool.Pool {
 		t.Fatalf("PostgreSQL version=%q err=%v, want 160014", version, err)
 	}
 	return pool
+}
+
+func validateOutboundDatabaseURL(databaseURL string, allowO6ATemporary bool) error {
+	err := acceptancefixtures.ValidateDatabaseURL(databaseURL)
+	if err == nil || !allowO6ATemporary {
+		return err
+	}
+	return acceptancefixtures.ValidateDatabaseURLForDatabase(databaseURL, acceptancefixtures.O6ARetryDatabaseName)
+}
+
+func TestOutboundDatabaseURLValidationIsClosed(t *testing.T) {
+	t.Parallel()
+	temporaryURL := "postgres://postgres:postgres@127.0.0.1:5432/" + acceptancefixtures.O6ARetryDatabaseName + "?sslmode=disable"
+	if err := validateOutboundDatabaseURL(acceptancefixtures.DefaultDatabaseURL, true); err != nil {
+		t.Fatalf("shared O6A database rejected: %v", err)
+	}
+	if err := validateOutboundDatabaseURL(temporaryURL, true); err != nil {
+		t.Fatalf("dedicated O6A database rejected: %v", err)
+	}
+	if err := validateOutboundDatabaseURL(temporaryURL, false); !errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
+		t.Fatalf("dedicated O6A database accepted outside O6A: %v", err)
+	}
+	if err := validateOutboundDatabaseURL("postgres://postgres:postgres@127.0.0.1:5432/aicrm_test_other?sslmode=disable", true); !errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
+		t.Fatalf("unapproved O6A database accepted: %v", err)
+	}
 }
 
 func resetOutboundFixture(t *testing.T, pool *pgxpool.Pool) {
