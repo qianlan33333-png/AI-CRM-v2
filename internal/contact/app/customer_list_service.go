@@ -89,13 +89,44 @@ func (service *CustomerListService) List(
 	} else if err := applyCustomerListCursor(&query, input.Cursor, filterHash); err != nil {
 		return CustomerListResult{}, errors.Join(ErrInvalidCustomerListQuery, err)
 	}
-
-	var stored CustomerListStoreResult
+	var result CustomerListResult
 	err = service.uow.Within(ctx, func(txCtx context.Context) error {
-		var storeErr error
-		stored, storeErr = service.store.ListCustomers(txCtx, query)
-		return storeErr
+		var readErr error
+		result, readErr = service.listNormalizedInTransaction(txCtx, query, filterHash)
+		return readErr
 	})
+	if err != nil {
+		if errors.Is(err, ErrInvalidCustomerListQuery) {
+			return CustomerListResult{}, err
+		}
+		return CustomerListResult{}, errors.Join(ErrCustomerListUnavailable, err)
+	}
+	return result, nil
+}
+
+// ListInTransaction reuses Contact's exact query normalization and
+// filter-bound cursor rules inside an already-open caller UnitOfWork.
+func (service *CustomerListService) ListInTransaction(ctx context.Context, input CustomerListInput) (CustomerListResult, error) {
+	if ctx == nil || service == nil || service.store == nil || service.now == nil || ctx.Err() != nil {
+		return CustomerListResult{}, ErrCustomerListUnavailable
+	}
+	query, filterHash, err := service.normalize(input)
+	if err != nil {
+		return CustomerListResult{}, err
+	}
+	if input.Cursor == "" {
+		query.Watermark = service.now().UTC()
+		if query.Watermark.IsZero() {
+			return CustomerListResult{}, ErrCustomerListUnavailable
+		}
+	} else if err := applyCustomerListCursor(&query, input.Cursor, filterHash); err != nil {
+		return CustomerListResult{}, errors.Join(ErrInvalidCustomerListQuery, err)
+	}
+	return service.listNormalizedInTransaction(ctx, query, filterHash)
+}
+
+func (service *CustomerListService) listNormalizedInTransaction(ctx context.Context, query CustomerListQuery, filterHash string) (CustomerListResult, error) {
+	stored, err := service.store.ListCustomers(ctx, query)
 	if err != nil {
 		return CustomerListResult{}, errors.Join(ErrCustomerListUnavailable, err)
 	}

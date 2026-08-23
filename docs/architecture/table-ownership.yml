@@ -215,6 +215,16 @@ owners:
       group_ops_plan_webhook_descriptors: opaque_safe_descriptors_without_url_credential_payload_or_dispatch
       group_ops_operation_receipts: transaction_scoped_actor_idempotency_receipts
 
+  userops:
+    package: internal/userops
+    tables: [user_ops_dnd, user_ops_local_plans, user_ops_local_plan_targets, user_ops_send_records, user_ops_operation_receipts]
+    constraints:
+      user_ops_dnd: local_canonical_OneID_preference_without_contact_foreign_key_or_provider_consent_claim
+      user_ops_local_plans: local_draft_or_pending_review_content_snapshot_without_outbound_or_provider_execution
+      user_ops_local_plan_targets: canonical_OneID_targets_validated_by_transaction_bound_composition_reader_without_contact_foreign_key
+      user_ops_send_records: local_plan_technical_status_only_without_provider_receipt_or_delivery_claim
+      user_ops_operation_receipts: actor_scoped_transactional_local_mutation_idempotency_receipts
+
   hxc:
     package: internal/hxc
     tables: [hxc_sender_configs]

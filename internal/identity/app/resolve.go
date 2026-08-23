@@ -34,7 +34,7 @@ func NewResolveService(uow platformport.UnitOfWork, store ResolveStore) *Resolve
 }
 
 func (service *ResolveService) Resolve(ctx context.Context, ref identityport.IDRef) (identityport.ResolveResult, error) {
-	normalized, err := Normalize(ref)
+	_, err := Normalize(ref)
 	if err != nil {
 		return identityport.ResolveResult{}, err
 	}
@@ -42,26 +42,37 @@ func (service *ResolveService) Resolve(ctx context.Context, ref identityport.IDR
 		return identityport.ResolveResult{}, ErrIdentityResolveFailed
 	}
 
-	result := identityport.ResolveResult{Status: identityport.ResolveNotFound}
+	var result identityport.ResolveResult
 	err = service.uow.Within(ctx, func(txCtx context.Context) error {
-		record, err := service.store.LookupNormalized(txCtx, normalized)
-		if err != nil {
-			return err
-		}
-		switch {
-		case record.Conflict:
-			result = identityport.ResolveResult{Status: identityport.ResolveConflict}
-		case record.CustomerID == 0:
-			result = identityport.ResolveResult{Status: identityport.ResolveNotFound}
-		case record.CustomerID > 0:
-			result = identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: contactport.CustomerID(record.CustomerID)}
-		default:
-			return ErrIdentityResolveFailed
-		}
-		return nil
+		var readErr error
+		result, readErr = service.ResolveInTransaction(txCtx, ref)
+		return readErr
 	})
 	if err != nil {
 		return identityport.ResolveResult{}, errors.Join(ErrIdentityResolveFailed, err)
 	}
 	return result, nil
+}
+
+// ResolveInTransaction retains Identity normalization and conflict semantics
+// for a caller that already owns the UnitOfWork.
+func (service *ResolveService) ResolveInTransaction(ctx context.Context, ref identityport.IDRef) (identityport.ResolveResult, error) {
+	normalized, err := Normalize(ref)
+	if err != nil || service == nil || service.store == nil || ctx == nil || ctx.Err() != nil {
+		return identityport.ResolveResult{}, ErrIdentityResolveFailed
+	}
+	record, err := service.store.LookupNormalized(ctx, normalized)
+	if err != nil {
+		return identityport.ResolveResult{}, errors.Join(ErrIdentityResolveFailed, err)
+	}
+	switch {
+	case record.Conflict:
+		return identityport.ResolveResult{Status: identityport.ResolveConflict}, nil
+	case record.CustomerID == 0:
+		return identityport.ResolveResult{Status: identityport.ResolveNotFound}, nil
+	case record.CustomerID > 0:
+		return identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: contactport.CustomerID(record.CustomerID)}, nil
+	default:
+		return identityport.ResolveResult{}, ErrIdentityResolveFailed
+	}
 }

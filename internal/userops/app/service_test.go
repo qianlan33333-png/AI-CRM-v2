@@ -87,6 +87,28 @@ func TestCreateLocalPlanStrictReadbackAndNoExternalEffect(t *testing.T) {
 	}
 }
 
+func TestCreateLocalPlanReplaySurvivesLaterDNDAndMaterialDrift(t *testing.T) {
+	plan := testPlan(72, domain.LocalPlanPendingReview, []domain.CustomerID{1})
+	repository := &repositoryStub{replayPlan: func(_ context.Context, _ useropsport.CreateLocalPlanInput, content domain.ContentSnapshot) (useropsport.PlanMutation, error) {
+		if !sameContentSnapshot(content, plan.Content) {
+			t.Fatalf("content = %#v", content)
+		}
+		return useropsport.PlanMutation{Mutation: useropsport.Mutation{Replayed: true}, Plan: &plan}, nil
+	}}
+	service := testServiceWithMaterials(&directoryStub{resolve: func(context.Context, []domain.CustomerID) ([]useropsport.CustomerSummary, error) {
+		t.Fatal("directory must not run for replay after drift")
+		return nil, nil
+	}}, &detailStub{}, &materialStub{image: func(context.Context, int64) (bool, error) {
+		t.Fatal("material validation must not run for replay after drift")
+		return false, nil
+	}}, repository, &eventStub{})
+	result, err := service.CreateLocalPlan(context.Background(), useropsport.CreateLocalPlanInput{CustomerIDs: []domain.CustomerID{1}, ExpectedTargetDigest: plan.TargetDigest, Content: contentInputFromSnapshot(plan.Content), ExpectedContentDigest: plan.Content.ContentDigest, State: plan.State, ActorID: 19, IdempotencyKey: "userops-plan-replay"})
+	if err != nil || !reflect.DeepEqual(result.Plan, plan) {
+		t.Fatalf("result/error = %#v / %v", result, err)
+	}
+	assertLocalSafety(t, result.Safety)
+}
+
 func TestCreateLocalPlanRejectsStalePreviewBeforeWrite(t *testing.T) {
 	repository := &repositoryStub{}
 	events := &eventStub{}
@@ -113,7 +135,7 @@ func TestCreateLocalPlanRejectsStalePreviewBeforeWrite(t *testing.T) {
 func TestCreateLocalPlanReplayUsesSnapshotWithoutDuplicateEvent(t *testing.T) {
 	plan := testPlan(73, domain.LocalPlanDraft, []domain.CustomerID{1})
 	repository := &repositoryStub{
-		createPlan: func(context.Context, useropsport.CreateLocalPlanInput, []domain.CustomerID, string, domain.ContentSnapshot) (useropsport.PlanMutation, error) {
+		replayPlan: func(context.Context, useropsport.CreateLocalPlanInput, domain.ContentSnapshot) (useropsport.PlanMutation, error) {
 			return useropsport.PlanMutation{Mutation: useropsport.Mutation{Replayed: true}, Plan: &plan}, nil
 		},
 		readPlan: func(context.Context, domain.PlanID) (domain.LocalPlan, error) {
@@ -542,6 +564,7 @@ type repositoryStub struct {
 	lockDnd         func(context.Context, []domain.CustomerID) ([]domain.DoNotDisturb, error)
 	upsertDnd       func(context.Context, useropsport.UpsertDNDInput) (useropsport.DNDMutation, error)
 	clearDnd        func(context.Context, useropsport.ClearDNDInput) (useropsport.DNDMutation, error)
+	replayPlan      func(context.Context, useropsport.CreateLocalPlanInput, domain.ContentSnapshot) (useropsport.PlanMutation, error)
 	createPlan      func(context.Context, useropsport.CreateLocalPlanInput, []domain.CustomerID, string, domain.ContentSnapshot) (useropsport.PlanMutation, error)
 	readPlan        func(context.Context, domain.PlanID) (domain.LocalPlan, error)
 	records         func(context.Context, useropsport.SendRecordQuery) (useropsport.SendRecordPageRead, error)
@@ -593,6 +616,13 @@ func (stub *repositoryStub) ClearDND(ctx context.Context, input useropsport.Clea
 		return useropsport.DNDMutation{Cleared: true}, nil
 	}
 	return stub.clearDnd(ctx, input)
+}
+
+func (stub *repositoryStub) ReplayLocalPlan(ctx context.Context, input useropsport.CreateLocalPlanInput, content domain.ContentSnapshot) (useropsport.PlanMutation, error) {
+	if stub.replayPlan == nil {
+		return useropsport.PlanMutation{}, nil
+	}
+	return stub.replayPlan(ctx, input, content)
 }
 
 func (stub *repositoryStub) CreateLocalPlan(ctx context.Context, input useropsport.CreateLocalPlanInput, targets []domain.CustomerID, digest string, content domain.ContentSnapshot) (useropsport.PlanMutation, error) {

@@ -295,6 +295,10 @@ type Repository interface {
 	LockActiveDND(context.Context, []domain.CustomerID) ([]domain.DoNotDisturb, error)
 	UpsertDND(context.Context, UpsertDNDInput) (DNDMutation, error)
 	ClearDND(context.Context, ClearDNDInput) (DNDMutation, error)
+	// ReplayLocalPlan checks only the actor-scoped receipt. It intentionally
+	// precedes target, DND and material validation so a completed request is
+	// stable even after those independent local facts later change.
+	ReplayLocalPlan(context.Context, CreateLocalPlanInput, domain.ContentSnapshot) (PlanMutation, error)
 	CreateLocalPlan(context.Context, CreateLocalPlanInput, []domain.CustomerID, string, domain.ContentSnapshot) (PlanMutation, error)
 	ReadLocalPlan(context.Context, domain.PlanID) (domain.LocalPlan, error)
 	ListSendRecords(context.Context, SendRecordQuery) (SendRecordPageRead, error)

@@ -244,6 +244,17 @@ func (service *Service) CreateLocalPlan(ctx context.Context, input useropsport.C
 	}
 	var result domain.LocalPlan
 	err = service.uow.Within(ctx, func(tx context.Context) error {
+		replay, replayErr := service.repository.ReplayLocalPlan(tx, input, content)
+		if replayErr != nil {
+			return replayErr
+		}
+		if replay.Replayed {
+			if replay.Plan == nil || !validPlan(*replay.Plan) || replay.Plan.State != input.State || !sameContentSnapshot(replay.Plan.Content, content) {
+				return useropsport.ErrUnavailable
+			}
+			result = *replay.Plan
+			return nil
+		}
 		targets, _, resolveErr := service.resolveTargets(tx, ids, true)
 		if resolveErr != nil {
 			return resolveErr
@@ -263,11 +274,7 @@ func (service *Service) CreateLocalPlan(ctx context.Context, input useropsport.C
 			return mutationErr
 		}
 		if mutation.Replayed {
-			if mutation.Plan == nil || !validPlan(*mutation.Plan) || mutation.Plan.TargetDigest != digest || mutation.Plan.TargetCount != int32(len(targets)) || mutation.Plan.State != input.State || !sameContentSnapshot(mutation.Plan.Content, content) {
-				return useropsport.ErrUnavailable
-			}
-			result = *mutation.Plan
-			return nil
+			return useropsport.ErrUnavailable
 		}
 		if !mutation.PlanID.Valid() {
 			return useropsport.ErrUnavailable

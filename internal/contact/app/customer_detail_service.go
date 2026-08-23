@@ -67,12 +67,31 @@ func (service *CustomerDetailService) Get(
 		return CustomerDetailStoreResult{}, errors.Join(ErrCustomerDetailUnavailable, err)
 	}
 
-	var stored CustomerDetailStoreResult
+	var result CustomerDetailStoreResult
 	err := service.uow.Within(ctx, func(txCtx context.Context) error {
-		var storeErr error
-		stored, storeErr = service.store.GetCustomerDetail(txCtx, cloneCustomerDetailInput(input))
-		return storeErr
+		var readErr error
+		result, readErr = service.GetInTransaction(txCtx, input)
+		return readErr
 	})
+	if err != nil {
+		if errors.Is(err, ErrCustomerNotFound) {
+			return CustomerDetailStoreResult{}, ErrCustomerNotFound
+		}
+		return CustomerDetailStoreResult{}, errors.Join(ErrCustomerDetailUnavailable, err)
+	}
+	return result, nil
+}
+
+// GetInTransaction preserves the ordinary detail validation while reusing an
+// already-open UnitOfWork owned by a composed local workflow.
+func (service *CustomerDetailService) GetInTransaction(ctx context.Context, input CustomerDetailInput) (CustomerDetailStoreResult, error) {
+	if ctx == nil || input.ID <= 0 || (input.OwnerStaffID != nil && *input.OwnerStaffID <= 0) {
+		return CustomerDetailStoreResult{}, ErrInvalidCustomerDetailQuery
+	}
+	if service == nil || nilCustomerDetailDependency(service.store) || ctx.Err() != nil {
+		return CustomerDetailStoreResult{}, ErrCustomerDetailUnavailable
+	}
+	stored, err := service.store.GetCustomerDetail(ctx, cloneCustomerDetailInput(input))
 	if err != nil {
 		if errors.Is(err, ErrCustomerNotFound) {
 			return CustomerDetailStoreResult{}, ErrCustomerNotFound
