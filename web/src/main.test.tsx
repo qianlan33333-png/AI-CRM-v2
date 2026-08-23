@@ -1192,6 +1192,20 @@ describe("legacy admin path carrier", () => {
     );
   });
 
+  it("restores a Campaign launch carrier on reload or a new tab", () => {
+    const inner =
+      "/admin/cloud-orchestrator/campaigns?source_kind=ai_audience_package_members&source_id=9223372036854775807";
+    const search = `?legacy_admin_path=${encodeURIComponent(inner)}`;
+    expect(carrierPathname("/", search)).toBe(
+      "/admin/cloud-orchestrator/campaigns",
+    );
+
+    vi.stubGlobal("window", { location: { pathname: "/", search } });
+    const html = renderToStaticMarkup(<App initialSession={adminSession} />);
+    expect(html).toContain("Campaign 审阅工作区");
+    expect(html).not.toContain("运营工作台骨架已就绪");
+  });
+
   it("lands on the WeCom tags page after a carrier refresh", () => {
     vi.stubGlobal("window", {
       location: {
