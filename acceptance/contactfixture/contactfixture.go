@@ -8,9 +8,11 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrNilTransaction = errors.New("contact fixture requires a transaction")
+var ErrInvalidStaffFixture = errors.New("invalid contact staff fixture")
 
 // CreateCustomer creates one channel-neutral Contact customer and returns its OneID.
 // Callers must provide the transaction that owns their acceptance scenario.
@@ -45,14 +47,63 @@ func CreateStaffWithDetails(ctx context.Context, tx pgx.Tx, wecomUserID, name st
 	if tx == nil || wecomUserID == "" {
 		return 0, ErrNilTransaction
 	}
+	return createStaff(ctx, tx, wecomUserID, name, active, updatedAt)
+}
+
+// CreateStaffRecord creates committed Contact-owned staff for an acceptance
+// scenario that spans multiple transactions or database connections.
+func CreateStaffRecord(ctx context.Context, pool *pgxpool.Pool, wecomUserID, name string, active bool, updatedAt time.Time) (int64, error) {
+	if pool == nil || wecomUserID == "" {
+		return 0, ErrInvalidStaffFixture
+	}
+	return createStaff(ctx, pool, wecomUserID, name, active, updatedAt)
+}
+
+type staffRowQuerier interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}
+
+func createStaff(ctx context.Context, db staffRowQuerier, wecomUserID, name string, active bool, updatedAt time.Time) (int64, error) {
 	var id int64
-	if err := tx.QueryRow(ctx, `
+	if err := db.QueryRow(ctx, `
 INSERT INTO staff (wecom_userid, name, is_active, updated_at)
 VALUES ($1::text, $2::text, $3::boolean, $4::timestamptz)
 RETURNING id`, wecomUserID, name, active, updatedAt.UTC()).Scan(&id); err != nil {
 		return 0, fmt.Errorf("create contact-owned acceptance staff: %w", err)
 	}
 	return id, nil
+}
+
+// SetStaffActive changes the Contact-owned activity fact used by an acceptance
+// scenario while retaining real PostgreSQL locking behavior.
+func SetStaffActive(ctx context.Context, pool *pgxpool.Pool, staffID int64, active bool) error {
+	if pool == nil || staffID <= 0 {
+		return ErrInvalidStaffFixture
+	}
+	result, err := pool.Exec(ctx, `UPDATE staff SET is_active = $2::boolean WHERE id = $1::bigint`, staffID, active)
+	if err != nil {
+		return fmt.Errorf("set contact-owned acceptance staff activity: %w", err)
+	}
+	if result.RowsAffected() != 1 {
+		return fmt.Errorf("set contact-owned acceptance staff activity: not found")
+	}
+	return nil
+}
+
+// DeleteStaff removes Contact-owned staff created only for an acceptance
+// scenario after all referencing transactions have rolled back.
+func DeleteStaff(ctx context.Context, pool *pgxpool.Pool, staffID int64) error {
+	if pool == nil || staffID <= 0 {
+		return ErrInvalidStaffFixture
+	}
+	result, err := pool.Exec(ctx, `DELETE FROM staff WHERE id = $1::bigint`, staffID)
+	if err != nil {
+		return fmt.Errorf("delete contact-owned acceptance staff: %w", err)
+	}
+	if result.RowsAffected() != 1 {
+		return fmt.Errorf("delete contact-owned acceptance staff: not found")
+	}
+	return nil
 }
 
 // AssignCustomerOwner updates the Contact-owned relationship for a fixture.
