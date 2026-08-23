@@ -16,10 +16,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
+	couponfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/store/acceptancefixture"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
+	orderfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store/acceptancefixture"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
@@ -144,15 +147,17 @@ func TestI01BProductCASAndLocalEntitlementLifecycleUseOneUoW(t *testing.T) {
 		t.Fatalf("create product=%+v err=%v", created, err)
 	}
 
-	var customerID, orderID int64
-	if err = pool.QueryRow(ctx, `INSERT INTO customers (name) VALUES ('I01B 本地客户') RETURNING id`).Scan(&customerID); err != nil {
+	customerID, err := contactfixture.CreateCustomerWithDetails(ctx, pool, "I01B 本地客户", []byte(`{}`))
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err = pool.QueryRow(ctx, `INSERT INTO order_list_projections (
-		provider,provider_label,merchant_order_no,customer_id,product_id,product_code,product_name_snapshot,
-		amount_minor,currency,status,status_label,detail_url,created_at,updated_at
-	) VALUES ('wechat','微信支付',$1,$2,$3,$4,'本地权益产品',1200,'CNY','paid','已支付',$5,now(),now()) RETURNING id`,
-		"i01b-order-"+code, customerID, int64(created.ID), code, "/orders/i01b-"+code).Scan(&orderID); err != nil {
+	var orderID int64
+	orderID, err = orderfixture.CreatePaidProjection(ctx, pool, orderfixture.PaidProjection{
+		ProviderLabel: "微信支付", MerchantOrderNo: "i01b-order-" + code, CustomerID: customerID,
+		ProductID: int64(created.ID), ProductCode: code, ProductName: "本地权益产品", AmountMinor: 1200,
+		Currency: "CNY", StatusLabel: "已支付", DetailURL: "/orders/i01b-" + code,
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -325,7 +330,9 @@ func TestI01AConcurrentReplayAndProductCodeConflict(t *testing.T) {
 		go func() {
 			defer group.Done()
 			<-start
-			product, err := service.Create(ctx, command)
+			call := command
+			call.Images = append([]string(nil), command.Images...)
+			product, err := service.Create(ctx, call)
 			if err != nil {
 				errorsFound <- err
 				return
@@ -437,8 +444,7 @@ func TestI01ADeleteReferenceLocksRejectConcurrentCouponAndOrderInsert(t *testing
 		productID, productCode := seedDeleteLockProduct(t, pool, ctx, "coupon")
 		couponID := seedDeleteLockCoupon(t, pool, ctx, "coupon")
 		assertDeleteLockRejectsInsert(t, pool, ctx, productID, productCode, "coupon_targets", func(tx pgx.Tx) error {
-			_, err := tx.Exec(ctx, `INSERT INTO coupon_targets(coupon_id,position,target_ref,product_id) VALUES ($1,0,$2,$3)`, couponID, "standard_product:"+fmt.Sprint(productID), productID)
-			return err
+			return couponfixture.CreateProductTarget(ctx, tx, couponID, productID)
 		}, func() (int, error) {
 			var count int
 			err := pool.QueryRow(ctx, `SELECT count(*) FROM coupon_targets WHERE product_id=$1`, productID).Scan(&count)
@@ -448,9 +454,11 @@ func TestI01ADeleteReferenceLocksRejectConcurrentCouponAndOrderInsert(t *testing
 	t.Run("order_list_projections", func(t *testing.T) {
 		productID, productCode := seedDeleteLockProduct(t, pool, ctx, "order")
 		assertDeleteLockRejectsInsert(t, pool, ctx, productID, productCode, "order_list_projections", func(tx pgx.Tx) error {
-			_, err := tx.Exec(ctx, `INSERT INTO order_list_projections
-      (provider,provider_label,merchant_order_no,platform_transaction_no,product_id,product_code,product_name_snapshot,amount_minor,currency,status,status_label,detail_url,created_at,updated_at)
-      VALUES ('wechat','wechat',$1,$2,$3,$4,'并发删除测试',1,'CNY','paid','已支付','/api/admin/orders/lock-test',now(),now())`, uniqueCode("lock-order"), uniqueCode("lock-tx"), productID, productCode)
+			_, err := orderfixture.CreatePaidProjection(ctx, tx, orderfixture.PaidProjection{
+				ProviderLabel: "wechat", MerchantOrderNo: uniqueCode("lock-order"), PlatformTransactionNo: uniqueCode("lock-tx"),
+				ProductID: productID, ProductCode: productCode, ProductName: "并发删除测试", AmountMinor: 1,
+				Currency: "CNY", StatusLabel: "已支付", DetailURL: "/api/admin/orders/lock-test",
+			})
 			return err
 		}, func() (int, error) {
 			var count int
@@ -561,11 +569,9 @@ func seedDeleteLockProduct(t *testing.T, pool *pgxpool.Pool, ctx context.Context
 
 func seedDeleteLockCoupon(t *testing.T, pool *pgxpool.Pool, ctx context.Context, suffix string) int64 {
 	t.Helper()
-	var id int64
 	now := time.Now().UTC()
-	if err := pool.QueryRow(ctx, `INSERT INTO coupons
-      (name,discount_amount_total,currency,status,total_issue_limit,per_user_issue_limit,claim_starts_at,claim_ends_at,validity_mode,relative_validity_days,created_by,updated_by,created_at,updated_at)
-      VALUES ($1,1,'CNY','draft',1,1,$2,$3,'relative_days',1,1,1,$2,$2) RETURNING id`, uniqueCode("delete-lock-"+suffix), now, now.Add(time.Hour)).Scan(&id); err != nil {
+	id, err := couponfixture.CreateDraftCoupon(ctx, pool, uniqueCode("delete-lock-"+suffix), now, now.Add(time.Hour))
+	if err != nil {
 		t.Fatal(err)
 	}
 	return id

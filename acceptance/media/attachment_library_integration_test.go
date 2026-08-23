@@ -14,6 +14,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	automationfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/automationfixture"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
@@ -25,6 +27,7 @@ import (
 	radarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/app"
 	radarport "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/port"
 	radarstore "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/store"
+	radarfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/store/acceptancefixture"
 )
 
 // This suite deliberately accepts only the dedicated, disposable attachment
@@ -344,10 +347,8 @@ func assertAttachmentSQLState(t *testing.T, err error, want string) {
 
 func seedAttachmentAutomationReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, attachmentID int64) int64 {
 	t.Helper()
-	var id int64
-	if err := pool.QueryRow(ctx, `INSERT INTO automation_agent_configurations (
-  agent_name,agent_code,automation_type,status,fixed_content_package_json,created_by,updated_by,created_at,updated_at
-) VALUES ($1,$2,'fixed_script','active',jsonb_build_object('attachment_library_ids',jsonb_build_array($3::bigint)),1,1,now(),now()) RETURNING id`, unique("attachment-agent"), unique("attachment-agent-code"), attachmentID).Scan(&id); err != nil {
+	id, err := automationfixture.CreateAttachmentReference(ctx, pool, unique("attachment-agent"), unique("attachment-agent-code"), attachmentID)
+	if err != nil {
 		t.Fatal(err)
 	}
 	return id
@@ -355,10 +356,8 @@ func seedAttachmentAutomationReference(t *testing.T, ctx context.Context, pool *
 
 func seedAttachmentChannelReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, attachmentID int64) int64 {
 	t.Helper()
-	var id int64
-	if err := pool.QueryRow(ctx, `INSERT INTO channels (
-  name,code,status,config,created_by,updated_by,created_at,updated_at
-) VALUES ($1,$2,'active',jsonb_build_object('schema_version',1,'welcome_attachment_library_ids',jsonb_build_array($3::bigint)),1,1,now(),now()) RETURNING id`, unique("attachment-channel"), unique("attachment-channel-code"), attachmentID).Scan(&id); err != nil {
+	id, err := contactfixture.CreateAttachmentReference(ctx, pool, unique("attachment-channel"), unique("attachment-channel-code"), attachmentID)
+	if err != nil {
 		t.Fatal(err)
 	}
 	return id
@@ -366,11 +365,9 @@ func seedAttachmentChannelReference(t *testing.T, ctx context.Context, pool *pgx
 
 func seedAttachmentRadarReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, attachmentID int64) int64 {
 	t.Helper()
-	var id int64
 	code := fmt.Sprintf("rd_%022d", attachmentID)
-	if err := pool.QueryRow(ctx, `INSERT INTO radar_links (
-  public_code,name,title,destination_url,attachment_id,status,version,created_by,updated_by,created_at,updated_at
-) VALUES ($1,$2,$3,'https://example.com/attachment-reference',$4,'draft',1,1,1,now(),now()) RETURNING id`, code, unique("attachment-radar"), unique("attachment radar"), attachmentID).Scan(&id); err != nil {
+	id, err := radarfixture.CreateDraftAttachmentLink(ctx, pool, code, unique("attachment-radar"), unique("attachment radar"), "https://example.com/attachment-reference", attachmentID, 1)
+	if err != nil {
 		t.Fatal(err)
 	}
 	return id

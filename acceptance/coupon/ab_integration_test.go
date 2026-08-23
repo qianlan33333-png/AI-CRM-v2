@@ -15,6 +15,7 @@ import (
 	couponapp "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/app"
 	couponport "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/port"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
+	productfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/acceptancefixture"
 )
 
 func TestP4CouponABClaimConcurrencyReplayAndClaimedRuleFreeze(t *testing.T) {
@@ -178,7 +179,7 @@ func TestP4CouponABS200KAvailableLookupUsesTargetIndex(t *testing.T) {
 	// Keep each target reference selective for the index plan while satisfying
 	// the product-reference FK on a fresh PG16 acceptance database. The whole
 	// performance fixture is rolled back with this transaction.
-	if _, err = tx.Exec(ctx, `INSERT INTO products(id,product_code,name,price_minor,currency,stock_quantity,created_by,created_at,updated_at,legacy_admin_projection,version,local_lifecycle) OVERRIDING SYSTEM VALUE SELECT id,'p4ab-index-product-'||id,'P4AB index product',1,'CNY',0,771,now(),now(),'{"schema_version":1}'::jsonb,1,'draft' FROM coupons WHERE name LIKE $1`, prefix+"%"); err != nil {
+	if err = productfixture.CreateProductsForCouponIDs(ctx, tx, prefix+"%"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = tx.Exec(ctx, `INSERT INTO coupon_targets(coupon_id,position,target_ref,product_id) SELECT id,0,'standard_product:'||id,id FROM coupons WHERE name LIKE $1`, prefix+"%"); err != nil {

@@ -22,6 +22,7 @@ import (
 	radarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/app"
 	radarport "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/port"
 	radarstore "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/store"
+	radarfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/store/acceptancefixture"
 )
 
 func TestImageDelete0362PostgreSQLHardDeleteReplayAndCascades(t *testing.T) {
@@ -400,9 +401,9 @@ func seedDeleteChannelReference(t *testing.T, ctx context.Context, pool *pgxpool
 
 func seedDeleteRadarReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, imageID int64) int64 {
 	t.Helper()
-	var id int64
 	code := fmt.Sprintf("rd_%022d", imageID)
-	if err := pool.QueryRow(ctx, `INSERT INTO radar_links (public_code,name,title,destination_url,cover_image_id,status,version,created_by,updated_by,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,'draft',1,1,1,now(),now()) RETURNING id`, code, unique("delete-radar"), unique("delete radar"), "https://example.com/delete-radar", imageID).Scan(&id); err != nil {
+	id, err := radarfixture.CreateDraftLink(ctx, pool, code, unique("delete-radar"), unique("delete radar"), "https://example.com/delete-radar", imageID, 1)
+	if err != nil {
 		t.Fatal(err)
 	}
 	return id

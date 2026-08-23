@@ -10,8 +10,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	eventsfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store/acceptancefixture"
 	groupopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/app"
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -38,12 +40,13 @@ func TestRepositoryPostgreSQLAtomicRoundTripAndRollback(t *testing.T) {
 	uow := platformstore.NewUnitOfWork(pool)
 	service := groupopsapp.NewService(groupOpsIntegrationUOW{}, repository, contactstore.NewStaffDirectoryRepository(pool), events)
 	key := fmt.Sprintf("group-ops-store-integration-%d", time.Now().UnixNano())
-	var activeStaffID int64
-	if err = pool.QueryRow(ctx, `INSERT INTO staff (wecom_userid, name, is_active) VALUES ($1, $2, TRUE) RETURNING id`, key+"-staff", "Group Ops integration staff").Scan(&activeStaffID); err != nil {
+	staffUserID := key + "-staff"
+	activeStaffID, err := contactfixture.CreateStaffWithDetails(ctx, pool, staffUserID, "Group Ops integration staff", true, time.Now().UTC())
+	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() { _, _ = pool.Exec(context.Background(), `DELETE FROM staff WHERE id = $1`, activeStaffID) }()
-	assertActiveStaffShareLock(t, ctx, pool, uow, activeStaffID)
+	defer func() { _ = contactfixture.DeleteStaff(context.Background(), pool, activeStaffID) }()
+	assertActiveStaffShareLock(t, ctx, pool, uow, activeStaffID, staffUserID)
 	err = uow.Within(ctx, func(tx context.Context) error {
 		db, txErr := platformstore.TxFromContext(tx)
 		if txErr != nil {
@@ -152,7 +155,7 @@ func TestRepositoryPostgreSQLAtomicRoundTripAndRollback(t *testing.T) {
 	}
 }
 
-func assertActiveStaffShareLock(t *testing.T, ctx context.Context, pool *pgxpool.Pool, uow *platformstore.UnitOfWork, staffID int64) {
+func assertActiveStaffShareLock(t *testing.T, ctx context.Context, pool *pgxpool.Pool, uow *platformstore.UnitOfWork, staffID int64, staffUserID string) {
 	t.Helper()
 	reader := contactstore.NewStaffDirectoryRepository(pool)
 	err := uow.Within(ctx, func(tx context.Context) error {
@@ -162,7 +165,7 @@ func assertActiveStaffShareLock(t *testing.T, ctx context.Context, pool *pgxpool
 		}
 		updateCtx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 		defer cancel()
-		_, err = pool.Exec(updateCtx, `UPDATE staff SET is_active = FALSE WHERE id = $1`, staffID)
+		err = contactfixture.SetStaffActiveByWeComUserID(updateCtx, pool, staffUserID, false)
 		if isLockTimeout(err) {
 			return nil
 		}
@@ -171,10 +174,10 @@ func assertActiveStaffShareLock(t *testing.T, ctx context.Context, pool *pgxpool
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = pool.Exec(ctx, `UPDATE staff SET is_active = FALSE WHERE id = $1`, staffID); err != nil {
+	if err = contactfixture.SetStaffActiveByWeComUserID(ctx, pool, staffUserID, false); err != nil {
 		t.Fatalf("deactivation after reader commit: %v", err)
 	}
-	if _, err = pool.Exec(ctx, `UPDATE staff SET is_active = TRUE WHERE id = $1`, staffID); err != nil {
+	if err = contactfixture.SetStaffActiveByWeComUserID(ctx, pool, staffUserID, true); err != nil {
 		t.Fatalf("restore active staff: %v", err)
 	}
 }
@@ -202,14 +205,8 @@ func (groupOpsIntegrationEventAppender) Append(ctx context.Context, event eventp
 	if err != nil {
 		return 0, err
 	}
-	var id int64
-	err = db.QueryRow(ctx, `INSERT INTO event_log (event_type, payload, occurred_at, idempotency_key)
-VALUES ($1, $2::jsonb, $3, $4)
-RETURNING id`, event.Type, event.Payload, event.OccurredAt, event.IdempotencyKey).Scan(&id)
-	if err != nil {
-		return 0, err
-	}
-	return eventport.EventID(id), nil
+	id, err := eventsfixture.CreateEvent(ctx, db, event)
+	return eventport.EventID(id), err
 }
 
 var errGroupOpsRepositoryRollback = errors.New("rollback group ops repository integration")

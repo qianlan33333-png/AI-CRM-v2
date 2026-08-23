@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
+	orderfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store/acceptancefixture"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	membergrid "github.com/qianlan33333-png/AI-CRM-v2/internal/product/membergrid"
 )
@@ -39,17 +41,16 @@ func TestLaneD2MemberGridRepositoryPG16_14(t *testing.T) {
 
 	names := []string{"精确客户甲", "精确客户乙", "精确客户丙", "精确客户丁"}
 	customerIDs := make([]int64, len(names))
+	var err error
 	for index, name := range names {
 		extra := fmt.Sprintf(`{"unionid":"raw-union-%d","external_userid":"raw-external-%d","mobile":"1380013800%d"}`, index, index, index)
-		if err := pool.QueryRow(ctx, `INSERT INTO customers (name,extra) VALUES ($1,$2::jsonb) RETURNING id`, name, extra).Scan(&customerIDs[index]); err != nil {
+		customerIDs[index], err = contactfixture.CreateCustomerWithDetails(ctx, pool, name, []byte(extra))
+		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	var trapCustomerID int64
-	if err := pool.QueryRow(ctx, `INSERT INTO customers (name,extra) VALUES (
-		'禁止猜测命中的客户',
-		'{"unionid":"raw-union-0","external_userid":"raw-external-0","mobile":"13800138000"}'::jsonb
-	) RETURNING id`).Scan(&trapCustomerID); err != nil {
+	trapCustomerID, err := contactfixture.CreateCustomerWithDetails(ctx, pool, "禁止猜测命中的客户", []byte(`{"unionid":"raw-union-0","external_userid":"raw-external-0","mobile":"13800138000"}`))
+	if err != nil {
 		t.Fatal(err)
 	}
 
@@ -57,18 +58,13 @@ func TestLaneD2MemberGridRepositoryPG16_14(t *testing.T) {
 	for index, customerID := range customerIDs {
 		merchantOrder := fmt.Sprintf("%s-order-%d", code, index)
 		detailURL := fmt.Sprintf("/orders/%s-%d", code, index)
-		if err := pool.QueryRow(ctx, `INSERT INTO order_list_projections (
-			provider,provider_label,merchant_order_no,platform_transaction_no,customer_id,
-			payer_name_snapshot,mobile_snapshot,identity_kind,identity_value,
-			product_id,product_code,product_name_snapshot,amount_minor,currency,status,status_label,
-			detail_url,created_at,updated_at
-		) VALUES (
-			'wechat','微信支付',$1,$2,$3,$4,$5,'unionid',$6,$7,$8,'周期会员商品',0,'CNY','paid','已支付',$9,$10,$10
-		) RETURNING id`,
-			merchantOrder, "raw-transaction-"+merchantOrder, customerID,
-			"raw-payer-"+fmt.Sprint(index), fmt.Sprintf("1380013800%d", index), "raw-union-"+fmt.Sprint(index),
-			productID, code, detailURL, now,
-		).Scan(&orderIDs[index]); err != nil {
+		orderIDs[index], err = orderfixture.CreatePaidProjection(ctx, pool, orderfixture.PaidProjection{
+			ProviderLabel: "微信支付", MerchantOrderNo: merchantOrder, PlatformTransactionNo: "raw-transaction-" + merchantOrder,
+			CustomerID: customerID, PayerName: "raw-payer-" + fmt.Sprint(index), Mobile: fmt.Sprintf("1380013800%d", index),
+			IdentityKind: "unionid", IdentityValue: "raw-union-" + fmt.Sprint(index), ProductID: productID,
+			ProductCode: code, ProductName: "周期会员商品", Currency: "CNY", StatusLabel: "已支付", DetailURL: detailURL, CreatedAt: now,
+		})
+		if err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -97,10 +93,10 @@ func TestLaneD2MemberGridRepositoryPG16_14(t *testing.T) {
 
 	t.Cleanup(func() {
 		_, _ = pool.Exec(ctx, `DELETE FROM product_local_entitlements WHERE product_id IN ($1,$2,$3)`, productID, emptyProductID, ordinaryProductID)
-		_, _ = pool.Exec(ctx, `DELETE FROM order_list_projections WHERE product_id IN ($1,$2,$3)`, productID, emptyProductID, ordinaryProductID)
+		_ = orderfixture.DeleteByProductIDs(ctx, pool, []int64{productID, emptyProductID, ordinaryProductID})
 		_, _ = pool.Exec(ctx, `DELETE FROM products WHERE id IN ($1,$2,$3)`, productID, emptyProductID, ordinaryProductID)
 		allCustomers := append(append([]int64(nil), customerIDs...), trapCustomerID)
-		_, _ = pool.Exec(ctx, `DELETE FROM customers WHERE id = ANY($1::bigint[])`, allCustomers)
+		_ = contactfixture.DeleteCustomers(ctx, pool, allCustomers)
 	})
 
 	codec, err := membergrid.NewCursorCodec(bytes.Repeat([]byte("lane-d2-pg16-managed-secret-"), 2))
