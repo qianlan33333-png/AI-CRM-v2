@@ -13,6 +13,7 @@ import (
 	"io"
 	"math"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
@@ -629,6 +630,7 @@ func classifyEntitlement(err error) error {
 	}
 }
 func normalize(c productport.CreateCommand) (productport.CreateCommand, [32]byte, error) {
+	c.Images = slices.Clone(c.Images)
 	c.Name = strings.TrimSpace(c.Name)
 	c.ProductCode = strings.TrimSpace(c.ProductCode)
 	c.Description = strings.TrimSpace(c.Description)

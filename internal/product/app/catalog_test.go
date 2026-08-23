@@ -230,6 +230,20 @@ func validTestProduct(id int64) productport.Product {
 		CreatedBy: 7, CreatedAt: now, UpdatedAt: now, Version: 1, LegacyAdminProjection: DefaultLegacyAdminProjection()}
 }
 
+func TestNormalizeClonesImagesWithoutCollapsingEmptySlice(t *testing.T) {
+	command := productport.CreateCommand{
+		ProductCode: "sku-empty-images", Name: "商品", Currency: "CNY", Images: []string{},
+		Actor: 7, IdempotencyKey: "product-empty-images", LegacyAdminProjection: DefaultLegacyAdminProjection(),
+	}
+	normalized, _, err := normalize(command)
+	if err != nil {
+		t.Fatalf("normalize() error = %v", err)
+	}
+	if normalized.Images == nil {
+		t.Fatal("normalize() collapsed a non-nil empty image list")
+	}
+}
+
 func validServicePeriodProjection(t *testing.T, status string, enabled bool) json.RawMessage {
 	t.Helper()
 	projection, err := CanonicalLegacyAdminProjection(json.RawMessage(`{"schema_version":1,"status":"` + status + `","enabled":` + map[bool]string{false: "false", true: "true"}[enabled] + `}`))
