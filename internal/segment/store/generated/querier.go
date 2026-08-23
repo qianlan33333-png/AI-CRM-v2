@@ -21,6 +21,8 @@ type Querier interface {
 	GetSegment(ctx context.Context, segmentID int64) (GetSegmentRow, error)
 	GetSegmentOperationReceipt(ctx context.Context, arg GetSegmentOperationReceiptParams) (GetSegmentOperationReceiptRow, error)
 	InsertSegmentMembersForRefresh(ctx context.Context, arg InsertSegmentMembersForRefreshParams) error
+	LegacyAudiencePackageExists(ctx context.Context, packageID int64) (bool, error)
+	ListLegacyAudienceMembers(ctx context.Context, arg ListLegacyAudienceMembersParams) ([]ListLegacyAudienceMembersRow, error)
 	ListScheduledSegmentRefreshes(ctx context.Context) ([]ListScheduledSegmentRefreshesRow, error)
 	ListSegmentMemberRecords(ctx context.Context, arg ListSegmentMemberRecordsParams) ([]Customer, error)
 	ListSegments(ctx context.Context, arg ListSegmentsParams) ([]ListSegmentsRow, error)
