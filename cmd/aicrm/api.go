@@ -1989,7 +1989,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				capability      authport.Capability
 				csrf            bool
 			}{
-				{http.MethodGet, campaign.RoutePrefix, authport.CapabilityAdminRead, false},
+				{http.MethodGet, campaign.RoutePrefix, authport.CapabilityOperationsRead, false},
 				{http.MethodPost, campaign.RoutePrefix + "/batch-start", authport.CapabilityOperationsManage, true},
 				{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}", authport.CapabilityAdminRead, false},
 				{http.MethodDelete, campaign.RoutePrefix + "/{campaign_code}", authport.CapabilityOperationsManage, true},

@@ -43,7 +43,7 @@ func NewRouteFragment(application Application, authorizer Authorizer, csrf CSRFV
 	return &RouteFragment{application, authorizer, csrf}, nil
 }
 func (h *RouteFragment) Routes() []Route {
-	return []Route{{stdhttp.MethodGet, RoutePrefix, CapabilityAdminRead, false}, {stdhttp.MethodPost, RoutePrefix + "/batch-start", CapabilityManageAutomation, true}, {stdhttp.MethodGet, RoutePrefix + "/{campaign_code}", CapabilityAdminRead, false}, {stdhttp.MethodDelete, RoutePrefix + "/{campaign_code}", CapabilityManageAutomation, true}, {stdhttp.MethodPost, RoutePrefix + "/{campaign_code}/approve", CapabilityManageAutomation, true}, {stdhttp.MethodPost, RoutePrefix + "/{campaign_code}/reject", CapabilityManageAutomation, true}, {stdhttp.MethodPost, RoutePrefix + "/{campaign_code}/pause", CapabilityManageAutomation, true}, {stdhttp.MethodPost, RoutePrefix + "/{campaign_code}/start", CapabilityManageAutomation, true}, {stdhttp.MethodPost, RoutePrefix + "/{campaign_code}/steps", CapabilityManageAutomation, true}, {stdhttp.MethodPatch, RoutePrefix + "/{campaign_code}/steps/{step_index}", CapabilityManageAutomation, true}, {stdhttp.MethodDelete, RoutePrefix + "/{campaign_code}/steps/{step_index}", CapabilityManageAutomation, true}}
+	return []Route{{stdhttp.MethodGet, RoutePrefix, CapabilityOperationsRead, false}, {stdhttp.MethodPost, RoutePrefix + "/batch-start", CapabilityManageAutomation, true}, {stdhttp.MethodGet, RoutePrefix + "/{campaign_code}", CapabilityAdminRead, false}, {stdhttp.MethodDelete, RoutePrefix + "/{campaign_code}", CapabilityManageAutomation, true}, {stdhttp.MethodPost, RoutePrefix + "/{campaign_code}/approve", CapabilityManageAutomation, true}, {stdhttp.MethodPost, RoutePrefix + "/{campaign_code}/reject", CapabilityManageAutomation, true}, {stdhttp.MethodPost, RoutePrefix + "/{campaign_code}/pause", CapabilityManageAutomation, true}, {stdhttp.MethodPost, RoutePrefix + "/{campaign_code}/start", CapabilityManageAutomation, true}, {stdhttp.MethodPost, RoutePrefix + "/{campaign_code}/steps", CapabilityManageAutomation, true}, {stdhttp.MethodPatch, RoutePrefix + "/{campaign_code}/steps/{step_index}", CapabilityManageAutomation, true}, {stdhttp.MethodDelete, RoutePrefix + "/{campaign_code}/steps/{step_index}", CapabilityManageAutomation, true}}
 }
 func (h *RouteFragment) ServeHTTP(w stdhttp.ResponseWriter, r *stdhttp.Request) {
 	if h == nil || nilish(h.application) || nilish(h.authorizer) || nilish(h.csrf) || r == nil || r.URL == nil {
@@ -124,7 +124,7 @@ func (h *RouteFragment) list(w stdhttp.ResponseWriter, r *stdhttp.Request) {
 		writeHTTPError(w, 400, "MALFORMED_REQUEST")
 		return
 	}
-	if _, ok := h.authorize(w, r, CapabilityAdminRead, false); !ok {
+	if _, ok := h.authorize(w, r, CapabilityOperationsRead, false); !ok {
 		return
 	}
 	input, valid := parseListInput(r.URL.RawQuery)
