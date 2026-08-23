@@ -9,7 +9,7 @@ import (
 	automationhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/http"
 )
 
-func TestFinalRouterMountsAudiencePackagePageCarriersWithAdminRead(t *testing.T) {
+func TestFinalRouterMountsAudiencePackagePageCarriersWithOperationsRead(t *testing.T) {
 	router, auth := legacySurveyRouter(t, &legacySurveyStub{item: legacySurveyItem()})
 	tests := []struct {
 		path     string
@@ -33,8 +33,34 @@ func TestFinalRouterMountsAudiencePackagePageCarriersWithAdminRead(t *testing.T)
 		t.Fatalf("capabilities=%v", capabilities)
 	}
 	for _, capability := range capabilities {
-		if capability != authport.CapabilityAdminRead {
+		if capability != authport.CapabilityOperationsRead {
 			t.Fatalf("capabilities=%v", capabilities)
+		}
+	}
+}
+
+func TestFinalRouterKeepsCloudCarrierCapabilitiesRouteSpecific(t *testing.T) {
+	router, auth := legacySurveyRouter(t, &legacySurveyStub{item: legacySurveyItem()})
+	tests := []struct {
+		path       string
+		location   string
+		capability authport.Capability
+	}{
+		{path: automationhttp.CloudOrchestratorRootPath, location: automationhttp.CloudOrchestratorPlansPath, capability: authport.CapabilityAdminRead},
+		{path: automationhttp.CloudOrchestratorPlansPath, location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans", capability: authport.CapabilityAdminRead},
+		{path: automationhttp.CloudOrchestratorPlansPath + "/plan_A-42", location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans%2Fplan_A-42", capability: authport.CapabilityAdminRead},
+		{path: automationhttp.CloudOrchestratorCampaignsPath, location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns", capability: authport.CapabilityOperationsRead},
+		{path: automationhttp.CloudOrchestratorObservabilityPath, location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fobservability", capability: authport.CapabilityAdminRead},
+	}
+	for index, test := range tests {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, legacyRequest(http.MethodGet, test.path, legacyToken(194)))
+		if response.Code != http.StatusFound || response.Header().Get("Location") != test.location {
+			t.Fatalf("GET %s status/location=%d/%q", test.path, response.Code, response.Header().Get("Location"))
+		}
+		capabilities := auth.capabilities()
+		if len(capabilities) != index+1 || capabilities[index] != test.capability {
+			t.Fatalf("GET %s capabilities=%v", test.path, capabilities)
 		}
 	}
 }

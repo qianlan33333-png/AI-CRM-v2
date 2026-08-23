@@ -19,14 +19,16 @@ func TestAudiencePackagePagesCarryOnlyApprovedWorkspaces(t *testing.T) {
 		{path: "/admin/automation-conversion/packages/9007199254740993", location: "/?legacy_admin_path=%2Fadmin%2Fautomation-conversion%2Fpackages%2F9007199254740993"},
 	}
 	for _, test := range tests {
-		t.Run(test.path, func(t *testing.T) {
-			response := httptest.NewRecorder()
-			NewAudiencePackagePages().ServeHTTP(response, authorizedAudiencePackageRequest(http.MethodGet, test.path))
-			if response.Code != http.StatusFound || response.Header().Get("Location") != test.location {
-				t.Fatalf("status/location=%d/%q", response.Code, response.Header().Get("Location"))
-			}
-			assertAudiencePackageHeaders(t, response)
-		})
+		for _, role := range []authport.Role{authport.RoleAdmin, authport.RoleOps} {
+			t.Run(test.path+"/"+string(role), func(t *testing.T) {
+				response := httptest.NewRecorder()
+				NewAudiencePackagePages().ServeHTTP(response, authorizedAudiencePackageRequest(http.MethodGet, test.path, role))
+				if response.Code != http.StatusFound || response.Header().Get("Location") != test.location {
+					t.Fatalf("status/location=%d/%q", response.Code, response.Header().Get("Location"))
+				}
+				assertAudiencePackageHeaders(t, response)
+			})
+		}
 	}
 }
 
@@ -36,10 +38,10 @@ func TestAudiencePackagePagesFailClosedForIdentityAndScopeDrift(t *testing.T) {
 		principal     authport.Principal
 		authorization authport.Authorization
 	}{
-		{name: "missing principal", authorization: authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeGlobal}},
-		{name: "ops", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleOps}, authorization: authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeGlobal}},
-		{name: "wrong capability", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}, authorization: authport.Authorization{Capability: authport.CapabilityConfigOverviewRead, Scope: authport.ScopeGlobal}},
-		{name: "owner scope", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}, authorization: authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeOwnerStaff, OwnerStaffID: 9}},
+		{name: "missing principal", authorization: authport.Authorization{Capability: authport.CapabilityOperationsRead, Scope: authport.ScopeGlobal}},
+		{name: "sales", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleSales}, authorization: authport.Authorization{Capability: authport.CapabilityOperationsRead, Scope: authport.ScopeGlobal}},
+		{name: "wrong capability", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}, authorization: authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeGlobal}},
+		{name: "owner scope", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleOps}, authorization: authport.Authorization{Capability: authport.CapabilityOperationsRead, Scope: authport.ScopeOwnerStaff, OwnerStaffID: 9}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -88,7 +90,7 @@ func TestAudiencePackagePagesRejectUnknownOrNonCanonicalPackageIDs(t *testing.T)
 		AudiencePackagesPath + "/packages/42%0Aheader",
 	} {
 		response := httptest.NewRecorder()
-		NewAudiencePackagePages().ServeHTTP(response, authorizedAudiencePackageRequest(http.MethodGet, path))
+		NewAudiencePackagePages().ServeHTTP(response, authorizedAudiencePackageRequest(http.MethodGet, path, authport.RoleAdmin))
 		if response.Code != http.StatusNotFound || response.Header().Get("Location") != "" {
 			t.Fatalf("path/status/location=%q/%d/%q", path, response.Code, response.Header().Get("Location"))
 		}
@@ -107,10 +109,10 @@ func TestAudiencePackagePagePatternRegistryIsExact(t *testing.T) {
 	}
 }
 
-func authorizedAudiencePackageRequest(method, path string) *http.Request {
+func authorizedAudiencePackageRequest(method, path string, role authport.Role) *http.Request {
 	request := httptest.NewRequest(method, path, nil)
-	ctx := authport.WithAuthenticatedSession(request.Context(), authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}, authport.SessionRef("session"))
-	ctx, err := authport.WithAuthorization(ctx, authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeGlobal})
+	ctx := authport.WithAuthenticatedSession(request.Context(), authport.Principal{AdminUserID: 7, Role: role}, authport.SessionRef("session"))
+	ctx, err := authport.WithAuthorization(ctx, authport.Authorization{Capability: authport.CapabilityOperationsRead, Scope: authport.ScopeGlobal})
 	if err != nil {
 		panic(err)
 	}

@@ -12,23 +12,60 @@ import (
 
 func TestCloudOrchestratorPagesCarryOnlyApprovedWorkspaces(t *testing.T) {
 	tests := []struct {
+		name     string
 		path     string
 		location string
+		role     authport.Role
+		cap      authport.Capability
 	}{
-		{path: CloudOrchestratorRootPath, location: CloudOrchestratorPlansPath},
-		{path: CloudOrchestratorPlansPath, location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans"},
-		{path: CloudOrchestratorPlansPath + "/plan_A-42", location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans%2Fplan_A-42"},
-		{path: CloudOrchestratorCampaignsPath, location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns"},
-		{path: CloudOrchestratorObservabilityPath, location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fobservability"},
+		{name: "root admin", path: CloudOrchestratorRootPath, location: CloudOrchestratorPlansPath, role: authport.RoleAdmin, cap: authport.CapabilityAdminRead},
+		{name: "plans admin", path: CloudOrchestratorPlansPath, location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans", role: authport.RoleAdmin, cap: authport.CapabilityAdminRead},
+		{name: "plan detail admin", path: CloudOrchestratorPlansPath + "/plan_A-42", location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans%2Fplan_A-42", role: authport.RoleAdmin, cap: authport.CapabilityAdminRead},
+		{name: "campaigns admin", path: CloudOrchestratorCampaignsPath, location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns", role: authport.RoleAdmin, cap: authport.CapabilityOperationsRead},
+		{name: "campaigns ops", path: CloudOrchestratorCampaignsPath, location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fcampaigns", role: authport.RoleOps, cap: authport.CapabilityOperationsRead},
+		{name: "observability admin", path: CloudOrchestratorObservabilityPath, location: "/?legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fobservability", role: authport.RoleAdmin, cap: authport.CapabilityAdminRead},
 	}
 	for _, test := range tests {
-		t.Run(test.path, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			response := httptest.NewRecorder()
-			NewCloudOrchestratorPages().ServeHTTP(response, authorizedCloudOrchestratorRequest(http.MethodGet, test.path))
+			NewCloudOrchestratorPages().ServeHTTP(response, authorizedCloudOrchestratorRequest(http.MethodGet, test.path, test.role, test.cap))
 			if response.Code != http.StatusFound || response.Header().Get("Location") != test.location {
 				t.Fatalf("status/location=%d/%q", response.Code, response.Header().Get("Location"))
 			}
 			assertCloudOrchestratorHeaders(t, response)
+		})
+	}
+}
+
+func TestCloudOrchestratorCampaignsPageFailsClosedForRoleCapabilityAndScopeDrift(t *testing.T) {
+	tests := []struct {
+		name          string
+		principal     authport.Principal
+		authorization authport.Authorization
+	}{
+		{name: "missing principal", authorization: authport.Authorization{Capability: authport.CapabilityOperationsRead, Scope: authport.ScopeGlobal}},
+		{name: "sales", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleSales}, authorization: authport.Authorization{Capability: authport.CapabilityOperationsRead, Scope: authport.ScopeGlobal}},
+		{name: "wrong capability", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}, authorization: authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeGlobal}},
+		{name: "owner scope", principal: authport.Principal{AdminUserID: 7, Role: authport.RoleOps}, authorization: authport.Authorization{Capability: authport.CapabilityOperationsRead, Scope: authport.ScopeOwnerStaff, OwnerStaffID: 9}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, CloudOrchestratorCampaignsPath, nil)
+			ctx := request.Context()
+			if test.principal.AdminUserID > 0 {
+				ctx = authport.WithAuthenticatedSession(ctx, test.principal, authport.SessionRef("session"))
+			}
+			if test.authorization.Capability != "" {
+				if authorizedContext, err := authport.WithAuthorization(ctx, test.authorization); err == nil {
+					ctx = authorizedContext
+				}
+			}
+			response := httptest.NewRecorder()
+			NewCloudOrchestratorPages().ServeHTTP(response, request.WithContext(ctx))
+			if response.Code != http.StatusForbidden || response.Header().Get("Location") != "" {
+				t.Fatalf("status/location=%d/%q", response.Code, response.Header().Get("Location"))
+			}
+			assertCloudOrchestratorError(t, response, "UNAUTHORIZED")
 		})
 	}
 }
@@ -86,7 +123,7 @@ func TestCloudOrchestratorPagesRejectUnknownAndNestedDetailPaths(t *testing.T) {
 		CloudOrchestratorPlansPath + "/plan\\nested",
 		CloudOrchestratorPlansPath + "/plan%0Aheader",
 	} {
-		request := authorizedCloudOrchestratorRequest(http.MethodGet, path)
+		request := authorizedCloudOrchestratorRequest(http.MethodGet, path, authport.RoleAdmin, authport.CapabilityAdminRead)
 		response := httptest.NewRecorder()
 		NewCloudOrchestratorPages().ServeHTTP(response, request)
 		if response.Code != http.StatusNotFound || response.Header().Get("Location") != "" {
@@ -108,10 +145,10 @@ func TestCloudOrchestratorPageTargetDoesNotInventBusinessState(t *testing.T) {
 	}
 }
 
-func authorizedCloudOrchestratorRequest(method, path string) *http.Request {
+func authorizedCloudOrchestratorRequest(method, path string, role authport.Role, capability authport.Capability) *http.Request {
 	request := httptest.NewRequest(method, path, nil)
-	ctx := authport.WithAuthenticatedSession(request.Context(), authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}, authport.SessionRef("session"))
-	ctx, err := authport.WithAuthorization(ctx, authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeGlobal})
+	ctx := authport.WithAuthenticatedSession(request.Context(), authport.Principal{AdminUserID: 7, Role: role}, authport.SessionRef("session"))
+	ctx, err := authport.WithAuthorization(ctx, authport.Authorization{Capability: capability, Scope: authport.ScopeGlobal})
 	if err != nil {
 		panic(err)
 	}

@@ -20275,7 +20275,7 @@ export const getCloudOrchestratorPlanDetailWorkspace = async (
 };
 
 /**
- * @summary Carry an authorized administrator to the local campaign review shell
+ * @summary Carry an authorized administrator or operations user to the local campaign review shell
  */
 export type getCloudOrchestratorCampaignsWorkspaceResponse302 = {
   data: void;
@@ -20518,7 +20518,7 @@ export const getGroupOpsPlanDetailWorkspace = async (
 };
 
 /**
- * @summary Carry an authorized administrator to the safe local audience-package workspace
+ * @summary Carry an authorized administrator or operations user to the safe local audience-package workspace
  */
 export type getAudiencePackagesWorkspaceResponse302 = {
   data: void;
@@ -20577,7 +20577,7 @@ export const getAudiencePackagesWorkspace = async (
 };
 
 /**
- * @summary Carry an authorized administrator to one safe local audience-package detail workspace
+ * @summary Carry an authorized administrator or operations user to one safe local audience-package detail workspace
  */
 export type getAudiencePackageDetailWorkspaceResponse302 = {
   data: void;

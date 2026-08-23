@@ -80,8 +80,14 @@ func cloudOrchestratorPageTarget(path string) (target string, root bool, matched
 func cloudOrchestratorPageAuthorized(request *http.Request) bool {
 	principal, principalOK := authport.PrincipalFromContext(request.Context())
 	authorization, authorizationOK := authport.AuthorizationFromContext(request.Context())
-	return principalOK && principal.AdminUserID > 0 && principal.Role == authport.RoleAdmin &&
-		authorizationOK && authorization.Capability == authport.CapabilityAdminRead &&
+	allowedRole := principal.Role == authport.RoleAdmin
+	requiredCapability := authport.CapabilityAdminRead
+	if request.URL.Path == CloudOrchestratorCampaignsPath {
+		allowedRole = allowedRole || principal.Role == authport.RoleOps
+		requiredCapability = authport.CapabilityOperationsRead
+	}
+	return principalOK && principal.AdminUserID > 0 && allowedRole &&
+		authorizationOK && authorization.Capability == requiredCapability &&
 		authorization.Scope == authport.ScopeGlobal && authorization.OwnerStaffID == 0
 }
 
