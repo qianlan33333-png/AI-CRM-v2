@@ -6,10 +6,29 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var ErrInvalidImageReference = errors.New("invalid automation image reference fixture")
+
+type queryer interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}
+
+func CreateActiveAgent(ctx context.Context, db queryer, name, code, automationType string) (int64, error) {
+	if db == nil || name == "" || code == "" || automationType == "" {
+		return 0, ErrInvalidImageReference
+	}
+	var id int64
+	if err := db.QueryRow(ctx, `
+INSERT INTO automation_agent_configurations (agent_name,agent_code,automation_type,status,created_by,updated_by,created_at,updated_at)
+VALUES ($1,$2,$3,'active',7,7,now(),now())
+RETURNING id`, name, code, automationType).Scan(&id); err != nil {
+		return 0, fmt.Errorf("create automation-owned active agent: %w", err)
+	}
+	return id, nil
+}
 
 func CreateImageReference(ctx context.Context, pool *pgxpool.Pool, name, code string, imageID int64) (int64, error) {
 	if pool == nil || name == "" || code == "" || imageID < 1 {
@@ -35,6 +54,20 @@ INSERT INTO automation_agent_configurations (agent_name,agent_code,automation_ty
 VALUES ($1,$2,'agent','active',jsonb_build_object('image_library_ids',$3::jsonb),1,1,now(),now())
 RETURNING id`, name, code, rawIDs).Scan(&id); err != nil {
 		return 0, fmt.Errorf("create automation-owned malformed image reference: %w", err)
+	}
+	return id, nil
+}
+
+func CreateAttachmentReference(ctx context.Context, pool *pgxpool.Pool, name, code string, attachmentID int64) (int64, error) {
+	if pool == nil || name == "" || code == "" || attachmentID < 1 {
+		return 0, ErrInvalidImageReference
+	}
+	var id int64
+	if err := pool.QueryRow(ctx, `
+INSERT INTO automation_agent_configurations (agent_name,agent_code,automation_type,status,fixed_content_package_json,created_by,updated_by,created_at,updated_at)
+VALUES ($1,$2,'fixed_script','active',jsonb_build_object('attachment_library_ids',jsonb_build_array($3::bigint)),1,1,now(),now())
+RETURNING id`, name, code, attachmentID).Scan(&id); err != nil {
+		return 0, fmt.Errorf("create automation-owned attachment reference: %w", err)
 	}
 	return id, nil
 }

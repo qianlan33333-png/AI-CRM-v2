@@ -18,6 +18,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
+	eventfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store/acceptancefixture"
 )
 
 var campaignMigrationDatabaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 campaign migration database")
@@ -366,13 +367,7 @@ func clearCampaignFacts(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 		if _, err := pool.Exec(ctx, truncate); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := pool.Exec(ctx, `DELETE FROM public.event_deliveries WHERE event_id IN (
-  SELECT id FROM public.event_log
-  WHERE event_type = 'cloud_campaign.fact_recorded' AND payload ->> 'audit_type' IN ('touch_plan_created', 'touch_plan_submitted', 'approved', 'rejected', 'handoff_created')
-)`); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := pool.Exec(ctx, `DELETE FROM public.event_log WHERE event_type = 'cloud_campaign.fact_recorded' AND payload ->> 'audit_type' IN ('touch_plan_created', 'touch_plan_submitted', 'approved', 'rejected', 'handoff_created')`); err != nil {
+		if err := eventfixture.DeleteEventsByTypeAndAuditTypes(ctx, pool, "cloud_campaign.fact_recorded", []string{"touch_plan_created", "touch_plan_submitted", "approved", "rejected", "handoff_created"}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -438,23 +433,8 @@ func seedCompletedInitiationPlanInTx(ctx context.Context, tx pgx.Tx, campaignCod
 	if _, err := tx.Exec(ctx, `INSERT INTO public.cloud_campaign_touch_plan_steps (plan_id, step_index, delay_minutes, content) VALUES ($1, 1, 0, 'local only')`, planID); err != nil {
 		return err
 	}
-	var eventID int64
-	if err := tx.QueryRow(ctx, `INSERT INTO public.event_log (event_type, payload, occurred_at, idempotency_key)
-VALUES (
-  'cloud_campaign.fact_recorded',
-  jsonb_build_object(
-    'audit_type', 'touch_plan_created',
-    'plan_id', $1::text,
-    'campaign_code', $2::text,
-    'owner_actor_id', 1,
-    'target_digest', repeat('02', 32),
-    'target_count', $3::integer,
-    'content_digest', repeat('03', 32)
-  ),
-  now(),
-  'campaign-initiation-acceptance:' || $1::text
-)
-RETURNING id`, planID, campaignCode, declaredTargets).Scan(&eventID); err != nil {
+	eventID, err := eventfixture.CreateCampaignTouchPlanCreatedFact(ctx, tx, planID, campaignCode, declaredTargets)
+	if err != nil {
 		return err
 	}
 	var receiptID int64

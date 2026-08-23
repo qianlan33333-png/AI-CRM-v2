@@ -2,6 +2,7 @@ package campaign_acceptance
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -9,11 +10,14 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	campaignapp "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/app"
 	campaignport "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/port"
 	campaignstore "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/store"
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	eventfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store/acceptancefixture"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -114,7 +118,7 @@ func TestApprovedTouchPlanHandoffReaderUsesCallerTransactionAndRevalidatesFullSn
 	customerIDs := seedInitiationCustomers(t, ctx, pool, campaignCode, 2)
 	t.Cleanup(func() {
 		clearCampaignFacts(t, ctx, pool)
-		if _, err := pool.Exec(ctx, `DELETE FROM public.customers WHERE id=ANY($1::bigint[])`, customerIDs); err != nil {
+		if err := contactfixture.DeleteCustomers(ctx, pool, customerIDs); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -264,14 +268,21 @@ func assertTamperedReviewSnapshotRejected(t *testing.T, ctx context.Context, poo
 			if err != nil {
 				t.Fatal(err)
 			}
-			var eventID, receiptID int64
-			if err = tx.QueryRow(ctx, `INSERT INTO public.event_log (event_type, payload, occurred_at, idempotency_key)
-VALUES ('cloud_campaign.fact_recorded', jsonb_build_object(
-  'audit_type', 'touch_plan_submitted', 'plan_id', $1::text, 'campaign_code', $2::text, 'review_version', 2, 'actor_id', 71
-), now(), 'review-tampered-snapshot-event:' || $1::text || ':' || $3::text)
-RETURNING id`, planID, campaignCode, test.name).Scan(&eventID); err != nil {
+			payload, err := json.Marshal(map[string]any{
+				"audit_type": "touch_plan_submitted", "plan_id": planID, "campaign_code": campaignCode,
+				"review_version": 2, "actor_id": 71,
+			})
+			if err != nil {
 				t.Fatal(err)
 			}
+			eventID, err := eventfixture.CreateEvent(ctx, tx, eventport.Event{
+				Type: "cloud_campaign.fact_recorded", Payload: payload, OccurredAt: time.Now().UTC(),
+				IdempotencyKey: "review-tampered-snapshot-event:" + planID + ":" + test.name,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var receiptID int64
 			if err = tx.QueryRow(ctx, `INSERT INTO public.cloud_campaign_touch_plan_review_receipts (
   actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, created_at
 ) VALUES (

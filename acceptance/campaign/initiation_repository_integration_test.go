@@ -3,11 +3,11 @@ package campaign_acceptance
 import (
 	"context"
 	"fmt"
-	"sort"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	campaignapp "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/app"
 	campaignport "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/port"
@@ -16,6 +16,7 @@ import (
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
+	segmentfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store/acceptancefixture"
 )
 
 type allEligibleInitiationChecker struct{}
@@ -48,7 +49,7 @@ func TestCampaignInitiationRepositoryPostgreSQLStrictReadbackAndReplay(t *testin
 	customerIDs := seedInitiationCustomers(t, ctx, pool, prefix, 2)
 	t.Cleanup(func() {
 		clearCampaignFacts(t, ctx, pool)
-		if _, err := pool.Exec(ctx, `DELETE FROM public.customers WHERE id = ANY($1::bigint[])`, customerIDs); err != nil {
+		if err := contactfixture.DeleteCustomers(ctx, pool, customerIDs); err != nil {
 			t.Fatal(err)
 		}
 	})
@@ -124,30 +125,18 @@ func TestSegmentTouchPlanSnapshotSerializesRefreshWriter(t *testing.T) {
 	prefix := fmt.Sprintf("initiation-segment-%d", time.Now().UnixNano())
 	customerIDs := seedInitiationCustomers(t, ctx, pool, prefix, 2)
 	refreshedAt := time.Now().UTC().Truncate(time.Microsecond)
-	var segmentID int64
-	if err := pool.QueryRow(ctx, `INSERT INTO public.segments (name,definition,refresh_mode,member_count,refreshed_at,refresh_status,lifecycle_status,created_at,updated_at)
-VALUES ($1,'{}','manual',2,$2,'idle','active',$2,$2)
-RETURNING id`, prefix, refreshedAt).Scan(&segmentID); err != nil {
+	segmentID, err := segmentfixture.CreateAudienceSnapshot(ctx, pool, prefix, customerIDs, refreshedAt, 7)
+	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		if _, err := pool.Exec(ctx, `DELETE FROM public.segments WHERE id=$1`, segmentID); err != nil {
+		if err := segmentfixture.DeleteAudienceSnapshot(ctx, pool, segmentID); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := pool.Exec(ctx, `DELETE FROM public.customers WHERE id = ANY($1::bigint[])`, customerIDs); err != nil {
+		if err := contactfixture.DeleteCustomers(ctx, pool, customerIDs); err != nil {
 			t.Fatal(err)
 		}
 	})
-	for _, customerID := range customerIDs {
-		if _, err := pool.Exec(ctx, `INSERT INTO public.segment_members (segment_id,customer_id,computed_at) VALUES ($1,$2,$3)`, segmentID, customerID, refreshedAt); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if _, err := pool.Exec(ctx, `INSERT INTO public.ai_audience_package_metadata (segment_id,lifecycle,version,created_by,updated_by,created_at,updated_at)
-VALUES ($1,'active',7,1,1,$2,$2)`, segmentID, refreshedAt); err != nil {
-		t.Fatal(err)
-	}
-
 	uow := platformstore.NewUnitOfWork(pool)
 	reader := segmentstore.NewTouchPlanSnapshotRepository()
 	if err := uow.Within(ctx, func(tx context.Context) error {
@@ -238,23 +227,14 @@ VALUES ($1,'active',7,1,1,$2,$2)`, segmentID, refreshedAt); err != nil {
 
 func seedInitiationCustomers(t *testing.T, ctx context.Context, pool *pgxpool.Pool, prefix string, count int) []int64 {
 	t.Helper()
-	rows, err := pool.Query(ctx, `INSERT INTO public.customers (name) SELECT $1 || '-' || value::text FROM generate_series(1,$2) AS value RETURNING id`, prefix, count)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer rows.Close()
 	result := make([]int64, 0, count)
-	for rows.Next() {
-		var customerID int64
-		if err = rows.Scan(&customerID); err != nil {
+	for index := 1; index <= count; index++ {
+		customerID, err := contactfixture.CreateCustomerWithDetails(ctx, pool, fmt.Sprintf("%s-%d", prefix, index), []byte(`{}`))
+		if err != nil {
 			t.Fatal(err)
 		}
 		result = append(result, customerID)
 	}
-	if err = rows.Err(); err != nil {
-		t.Fatal(err)
-	}
-	sort.Slice(result, func(left, right int) bool { return result[left] < result[right] })
 	return result
 }
 

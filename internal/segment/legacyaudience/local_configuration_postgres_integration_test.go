@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	automationfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/automationfixture"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 )
 
 // TestLocalConfigurationSQLRepositoryPG16 runs against a database migrated
@@ -28,7 +30,7 @@ func TestLocalConfigurationSQLRepositoryPG16(t *testing.T) {
 	}
 	defer connection.Close(ctx)
 	var version int
-	if err = connection.QueryRow(ctx, "SHOW server_version_num").Scan(&version); err != nil {
+	if err = connection.QueryRow(ctx, "SELECT current_setting('server_version_num')::int").Scan(&version); err != nil {
 		t.Fatal(err)
 	}
 	if version/10000 != 16 {
@@ -136,7 +138,7 @@ func TestLocalConfigurationSQLRepositoryPG16SerializesStaffDeactivationAndSender
 	}
 	t.Cleanup(func() {
 		_, _ = connection.Exec(context.Background(), `DELETE FROM public.segments WHERE id = $1`, packageID)
-		_, _ = connection.Exec(context.Background(), `DELETE FROM public.staff WHERE wecom_userid = $1`, senderUserID)
+		_ = contactfixture.DeleteStaffByWeComUserID(context.Background(), connection, senderUserID)
 	})
 
 	transaction, err := connection.Begin(ctx)
@@ -160,8 +162,7 @@ func TestLocalConfigurationSQLRepositoryPG16SerializesStaffDeactivationAndSender
 
 	deactivationDone := make(chan error, 1)
 	go func() {
-		_, updateErr := competitor.Exec(ctx, `UPDATE public.staff SET is_active = false WHERE wecom_userid = $1`, senderUserID)
-		deactivationDone <- updateErr
+		deactivationDone <- contactfixture.SetStaffActiveByWeComUserID(ctx, competitor, senderUserID, false)
 	}()
 	select {
 	case updateErr := <-deactivationDone:
@@ -238,13 +239,9 @@ VALUES ($1, 'active', 1, 7, 7)`, packageID); err != nil {
 
 func insertLocalConfigurationAgent(t *testing.T, ctx context.Context, transaction pgx.Tx) int64 {
 	t.Helper()
-	var agentID int64
 	code := fmt.Sprintf("audience_local_config_%d", time.Now().UnixNano())
-	if err := transaction.QueryRow(ctx, `
-INSERT INTO public.automation_agent_configurations
-  (agent_name, agent_code, automation_type, status, created_by, updated_by, created_at, updated_at)
-VALUES ('Audience local configuration agent', $1, 'agent', 'active', 7, 7, now(), now())
-RETURNING id`, code).Scan(&agentID); err != nil {
+	agentID, err := automationfixture.CreateActiveAgent(ctx, transaction, "Audience local configuration agent", code, "agent")
+	if err != nil {
 		t.Fatal(err)
 	}
 	return agentID
@@ -253,9 +250,7 @@ RETURNING id`, code).Scan(&agentID); err != nil {
 func insertLocalConfigurationStaff(t *testing.T, ctx context.Context, transaction pgx.Tx, suffix string) string {
 	t.Helper()
 	userID := fmt.Sprintf("audience_local_%s_%d", suffix, time.Now().UnixNano())
-	if _, err := transaction.Exec(ctx, `
-INSERT INTO public.staff (wecom_userid, name, is_active)
-VALUES ($1, 'Audience local configuration staff', true)`, userID); err != nil {
+	if _, err := contactfixture.CreateStaffWithDetails(ctx, transaction, userID, "Audience local configuration staff", true, time.Now().UTC()); err != nil {
 		t.Fatal(err)
 	}
 	return userID
@@ -274,6 +269,10 @@ func (localConfigurationPGProvider) IsNoRows(err error) bool { return errors.Is(
 type localConfigurationPGExecutor struct{ transaction pgx.Tx }
 
 func (executor localConfigurationPGExecutor) Exec(ctx context.Context, query string, arguments ...any) (int64, error) {
+	if len(arguments) == 1 && arguments[0] != nil && query == `
+SELECT pg_advisory_xact_lock(hashtextextended('ai_audience.package.senders.v1:' || $1::text, 0))` {
+		arguments[0] = fmt.Sprint(arguments[0])
+	}
 	tag, err := executor.transaction.Exec(ctx, query, arguments...)
 	return tag.RowsAffected(), err
 }

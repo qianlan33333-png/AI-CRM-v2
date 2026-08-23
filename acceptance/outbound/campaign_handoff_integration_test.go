@@ -2,6 +2,8 @@ package outbound_acceptance
 
 import (
 	"context"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -22,6 +24,7 @@ import (
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	eventfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store/acceptancefixture"
 	outbound "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound"
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
 	outboundport "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/port"
@@ -408,10 +411,7 @@ func resetOutboundCampaignHandoffFixture(t *testing.T, ctx context.Context, pool
   public.outbound_batches`); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pool.Exec(ctx, `DELETE FROM public.event_deliveries WHERE event_id IN (SELECT id FROM public.event_log WHERE event_type=$1)`, eventport.EvOutboundCampaignHandoffFact); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := pool.Exec(ctx, `DELETE FROM public.event_log WHERE event_type=$1`, eventport.EvOutboundCampaignHandoffFact); err != nil {
+	if err := eventfixture.DeleteEventsByType(ctx, pool, eventport.EvOutboundCampaignHandoffFact); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -478,26 +478,44 @@ VALUES ($1,decode(repeat('84',32),'hex'),decode(repeat('85',32),'hex'),$2,$3,now
 	}
 	handoffID := insertRawCampaignHandoffHeader(t, ctx, tx, campaignCode, planID, actorID)
 	insertRawCampaignHandoffChildren(t, ctx, tx, handoffID)
-	var eventID int64
-	eventPayload := `jsonb_build_object(
-  'audit_type','accepted','handoff_id',handoff.id,'campaign_code',handoff.campaign_code,'plan_id',handoff.plan_id,
-  'review_version',handoff.review_version,'target_digest',encode(handoff.target_digest,'hex'),'content_digest',encode(handoff.content_digest,'hex'),
-  'target_count',handoff.target_count,'step_count',handoff.step_count,'actor_id',handoff.accepted_by_actor_id,
-  'local_only',handoff.local_only,'provider_execution_eligible',handoff.provider_execution_eligible,
-  'real_external_call_executed',handoff.real_external_call_executed,'delivery_proven',handoff.delivery_proven)`
-	if tamper == "event-extra-key" {
-		eventPayload += ` || jsonb_build_object('provider_message_id','forbidden')`
+	var reviewVersion int64
+	var targetDigest, contentDigest []byte
+	var targetCount, stepCount int32
+	var localOnly, providerEligible, externalCall, deliveryProven bool
+	if err := tx.QueryRow(ctx, `SELECT review_version,target_digest,content_digest,target_count,step_count,
+  local_only,provider_execution_eligible,real_external_call_executed,delivery_proven
+FROM public.outbound_campaign_handoffs WHERE id=$1`, handoffID).Scan(
+		&reviewVersion, &targetDigest, &contentDigest, &targetCount, &stepCount,
+		&localOnly, &providerEligible, &externalCall, &deliveryProven,
+	); err != nil {
+		t.Fatal(err)
 	}
-	statement := fmt.Sprintf(`INSERT INTO public.event_log (event_type,payload,occurred_at,idempotency_key)
-SELECT $1,%s,now(),'outbound-campaign-handoff-tamper:' || $2 FROM public.outbound_campaign_handoffs AS handoff WHERE handoff.id=$3 RETURNING id`, eventPayload)
-	if err := tx.QueryRow(ctx, statement, eventport.EvOutboundCampaignHandoffFact, planID, handoffID).Scan(&eventID); err != nil {
+	eventPayload := map[string]any{
+		"audit_type": "accepted", "handoff_id": handoffID, "campaign_code": campaignCode, "plan_id": planID,
+		"review_version": reviewVersion, "target_digest": hex.EncodeToString(targetDigest), "content_digest": hex.EncodeToString(contentDigest),
+		"target_count": targetCount, "step_count": stepCount, "actor_id": actorID,
+		"local_only": localOnly, "provider_execution_eligible": providerEligible,
+		"real_external_call_executed": externalCall, "delivery_proven": deliveryProven,
+	}
+	if tamper == "event-extra-key" {
+		eventPayload["provider_message_id"] = "forbidden"
+	}
+	payload, err := json.Marshal(eventPayload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	eventID, err := eventfixture.CreateEvent(ctx, tx, eventport.Event{
+		Type: eventport.EvOutboundCampaignHandoffFact, Payload: payload, OccurredAt: time.Now().UTC(),
+		IdempotencyKey: "outbound-campaign-handoff-tamper:" + planID,
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
 	heldCount := 1
 	if tamper == "result-count" {
 		heldCount = 0
 	}
-	_, err := tx.Exec(ctx, `UPDATE public.outbound_campaign_handoff_receipts AS receipt SET
+	_, err = tx.Exec(ctx, `UPDATE public.outbound_campaign_handoff_receipts AS receipt SET
   state='completed',handoff_id=handoff.id,event_id=$2,completed_at=now(),result_snapshot=jsonb_build_object(
     'id',handoff.id,'campaign_code',handoff.campaign_code,'plan_id',handoff.plan_id,'review_version',handoff.review_version,'status',handoff.status,
     'target_count',handoff.target_count,'step_count',handoff.step_count,'held_count',$3::integer,'blocked_count',0,'pending_count',0,

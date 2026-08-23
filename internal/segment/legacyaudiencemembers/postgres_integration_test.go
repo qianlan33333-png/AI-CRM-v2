@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 )
 
 // TestSQLRepositoryPG16UsesMigratedSegmentSnapshotAndStablePagination runs
@@ -27,7 +28,7 @@ func TestSQLRepositoryPG16UsesMigratedSegmentSnapshotAndStablePagination(t *test
 	defer connection.Close(ctx)
 
 	var serverVersion int
-	if err = connection.QueryRow(ctx, "SHOW server_version_num").Scan(&serverVersion); err != nil {
+	if err = connection.QueryRow(ctx, "SELECT current_setting('server_version_num')::int").Scan(&serverVersion); err != nil {
 		t.Fatal(err)
 	}
 	if serverVersion/10000 != 16 {
@@ -124,11 +125,8 @@ func insertAudienceMemberCustomers(t *testing.T, ctx context.Context, transactio
 	t.Helper()
 	ids := make(map[string]int64, 4)
 	for _, name := range []string{"Oldest", "Tie named", "", "Newest"} {
-		var id int64
-		if err := transaction.QueryRow(ctx, `
-INSERT INTO public.customers (name)
-VALUES ($1)
-RETURNING id`, name).Scan(&id); err != nil {
+		id, err := contactfixture.CreateCustomerWithDetails(ctx, transaction, name, []byte(`{}`))
+		if err != nil {
 			t.Fatal(err)
 		}
 		ids[name] = id

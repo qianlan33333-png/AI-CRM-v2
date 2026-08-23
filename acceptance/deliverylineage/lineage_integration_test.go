@@ -76,11 +76,7 @@ func TestDeliveryLineagePostgreSQLReadOnlyProjection(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		if _, cleanupErr := pool.Exec(ctx, `DELETE FROM event_deliveries WHERE event_id = ANY($1::bigint[])`, []int64{completedEventID, unknownEventID}); cleanupErr != nil {
-			t.Errorf("cleanup delivery-lineage event deliveries: %v", cleanupErr)
-			return
-		}
-		if _, cleanupErr := pool.Exec(ctx, `DELETE FROM event_log WHERE id = ANY($1::bigint[])`, []int64{completedEventID, unknownEventID}); cleanupErr != nil {
+		if cleanupErr := eventfixture.DeleteEvents(ctx, pool, []int64{completedEventID, unknownEventID}); cleanupErr != nil {
 			t.Errorf("cleanup delivery-lineage events: %v", cleanupErr)
 		}
 	})
