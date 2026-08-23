@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	segmentdb "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store/generated"
 )
 
@@ -27,6 +29,11 @@ func TestSQLRepositoryPG16UsesMigratedSegmentSnapshotAndStablePagination(t *test
 		t.Fatal(err)
 	}
 	defer connection.Close(ctx)
+	contactPool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(contactPool.Close)
 
 	var serverVersionText string
 	if err = connection.QueryRow(ctx, "SHOW server_version_num").Scan(&serverVersionText); err != nil {
@@ -47,7 +54,7 @@ func TestSQLRepositoryPG16UsesMigratedSegmentSnapshotAndStablePagination(t *test
 	defer transaction.Rollback(ctx) //nolint:errcheck -- rollback is fixture cleanup.
 
 	assertMigratedAudienceMemberTables(t, ctx, transaction)
-	customerIDs := insertAudienceMemberCustomers(t, ctx, transaction)
+	customerIDs := insertAudienceMemberCustomers(t, ctx, contactPool)
 	segmentID := insertAudienceMemberSegment(t, ctx, transaction)
 	if _, err = transaction.Exec(ctx, `
 INSERT INTO public.ai_audience_package_metadata
@@ -126,15 +133,20 @@ SELECT
 	}
 }
 
-func insertAudienceMemberCustomers(t *testing.T, ctx context.Context, transaction pgx.Tx) map[string]int64 {
+func insertAudienceMemberCustomers(t *testing.T, ctx context.Context, pool *pgxpool.Pool) map[string]int64 {
 	t.Helper()
 	ids := make(map[string]int64, 4)
+	t.Cleanup(func() {
+		for _, id := range ids {
+			_ = contactfixture.DeleteCustomer(context.Background(), pool, id)
+		}
+	})
 	for _, name := range []string{"Oldest", "Tie named", "", "Newest"} {
-		var id int64
-		if err := transaction.QueryRow(ctx, `
-INSERT INTO public.customers (name)
-VALUES ($1)
-RETURNING id`, name).Scan(&id); err != nil {
+		id, err := contactfixture.CreateCustomerRecord(ctx, pool)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = contactfixture.SetCustomerName(ctx, pool, id, name); err != nil {
 			t.Fatal(err)
 		}
 		ids[name] = id
