@@ -513,7 +513,7 @@ func (repository *SQLRepository) ReplacePackageSenders(
 	// first writers. The package-scoped transaction advisory lock covers the
 	// exact full-replacement set without blocking another package.
 	if _, err = database.Exec(ctx, `
-SELECT pg_advisory_xact_lock(hashtextextended('ai_audience.package.senders.v1:' || $1::text, 0))`, packageID); err != nil {
+SELECT pg_advisory_xact_lock(hashtextextended('ai_audience.package.senders.v1:' || $1::bigint::text, 0))`, packageID); err != nil {
 		return nil, false, classifySQLError(err)
 	}
 	current, err := listPackageSenders(ctx, database, packageID, true)
