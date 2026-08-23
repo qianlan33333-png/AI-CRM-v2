@@ -65,6 +65,7 @@ const (
 	p4ExternalEffectsReadonlyEvidence = "P4-EXTERNAL-EFFECTS-READONLY-2026-08-21"
 	p4AIAudienceConfigurationEvidence = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22"
 	p4GroupOpsLocalEvidence           = "P4-GROUP-OPS-LOCAL-ONLY-2026-08-23"
+	p4UserOpsLocalEvidence            = "P4-USER-OPS-LOCAL-ONLY-2026-08-23"
 	p4ServicePeriodMembersEvidence    = "P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23"
 	p4OrderSafeExportEvidence         = "P4-ORDER-SAFE-EXPORT-2026-08-23"
 )
@@ -162,6 +163,15 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"deleteAIAudienceAutomationBinding":          {"/api/admin/ai-audience/packages/{package_id}/automation-binding", "DELETE", p4AIAudienceConfigurationEvidence, "segments.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getAIAudiencePackageSenders":                {"/api/admin/ai-audience/packages/{package_id}/senders", "GET", p4AIAudienceConfigurationEvidence, "segments.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"replaceAIAudiencePackageSenders":            {"/api/admin/ai-audience/packages/{package_id}/senders", "PUT", p4AIAudienceConfigurationEvidence, "segments.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"getUserOpsOverview":                         {"/api/admin/user-ops/overview", "GET", p4UserOpsLocalEvidence, "operations.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"listUserOpsCustomers":                       {"/api/admin/user-ops/customers", "GET", p4UserOpsLocalEvidence, "operations.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"getUserOpsCustomerDetail":                   {"/api/admin/user-ops/customers/{customer_id}", "GET", p4UserOpsLocalEvidence, "operations.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"previewUserOpsSafeExport":                   {"/api/admin/user-ops/customers/export", "POST", p4UserOpsLocalEvidence, "operations.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"previewUserOpsBatch":                        {"/api/admin/user-ops/batch-preview", "POST", p4UserOpsLocalEvidence, "operations.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"createUserOpsLocalPlan":                     {"/api/admin/user-ops/plans", "POST", p4UserOpsLocalEvidence, "operations.manage", "human_session", "internal_pii", "local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"setUserOpsCustomerDnd":                      {"/api/admin/user-ops/customers/{customer_id}/dnd", "PUT", p4UserOpsLocalEvidence, "operations.manage", "human_session", "internal_pii", "local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"clearUserOpsCustomerDnd":                    {"/api/admin/user-ops/customers/{customer_id}/dnd", "DELETE", p4UserOpsLocalEvidence, "operations.manage", "human_session", "internal_pii", "local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"listUserOpsSendRecords":                     {"/api/admin/user-ops/plans/{plan_id}/send-records", "GET", p4UserOpsLocalEvidence, "operations.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 }
 
 // nativePackagePathParameters freezes identifiers which must cross generated
@@ -178,6 +188,12 @@ var nativePackagePathParameters = map[string]nativePackagePathParameter{
 		name:      "package_id",
 		typeName:  "string",
 		pattern:   "^[1-9][0-9]{0,18}$",
+		maxLength: 19,
+	},
+	"listUserOpsSendRecords": {
+		name:      "plan_id",
+		typeName:  "string",
+		pattern:   "^(?:[1-9][0-9]{0,17}|[1-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-7])$",
 		maxLength: 19,
 	},
 }

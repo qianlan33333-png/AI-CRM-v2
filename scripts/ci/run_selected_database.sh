@@ -79,6 +79,7 @@ while [[ -n "$remaining_groups" ]]; do
       run_make_acceptance P4C01_CHANNEL_TEST_DATABASE_URL p4-c01-channel-acceptance
       run_make_acceptance P4B02AB_TAG_TEST_DATABASE_URL p4-b02ab-tag-acceptance
       run_make_acceptance P4CHANNELENTRANTS_TEST_DATABASE_URL p4-channel-entrants-acceptance
+      run_make_acceptance P4USEROPS_TEST_DATABASE_URL p4-user-ops-acceptance
       ;;
     coupon)
       run_make_acceptance P4J01_COUPON_TEST_DATABASE_URL p4-j01-coupon-acceptance

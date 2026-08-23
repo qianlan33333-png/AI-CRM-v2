@@ -179,3 +179,12 @@ FROM (
     LIMIT sqlc.arg(total_limit)::integer
   )
 ) AS bounded_customer_ids;
+
+-- name: LockActiveCustomerReferences :many
+SELECT
+  c.id
+FROM customers AS c
+WHERE c.id = ANY(sqlc.arg(customer_ids)::bigint[])
+  AND NOT c.is_deleted
+ORDER BY c.id
+FOR SHARE;

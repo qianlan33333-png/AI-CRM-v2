@@ -242,8 +242,18 @@ type SendRecordPage struct {
 type CustomerDirectoryReader interface {
 	ReadOverview(context.Context, DirectoryQuery) (DirectoryOverviewRead, error)
 	ListCustomers(context.Context, DirectoryQuery) (DirectoryPageRead, error)
-	ResolveCustomers(context.Context, []domain.CustomerID) ([]CustomerSummary, error)
+	ResolveCustomers(context.Context, []domain.CustomerID, CustomerResolutionMode) ([]CustomerSummary, error)
 }
+
+// CustomerResolutionMode makes the lock requirement explicit at the User Ops
+// boundary. Local-plan creation must retain a customer reference lock through
+// target insertion; previews may use the same safe read implementation.
+type CustomerResolutionMode string
+
+const (
+	CustomerResolutionRead     CustomerResolutionMode = "read"
+	CustomerResolutionForWrite CustomerResolutionMode = "for_write"
+)
 
 // CustomerDetailReader is a narrow safe Customer 360 bridge. It must accept
 // only canonical local OneID values.
@@ -315,6 +325,7 @@ type UnitOfWork interface {
 // fact; it must not dispatch an external effect.
 type LocalEvent struct {
 	Type           string
+	ActorID        int64
 	CustomerID     domain.CustomerID
 	PlanID         domain.PlanID
 	Version        int64

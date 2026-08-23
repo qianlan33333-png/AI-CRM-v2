@@ -27,3 +27,4 @@ output-options:
     - p4-setup-wizard
     - p4-survey
     - p4-adminops-safe
+    - p4-user-ops

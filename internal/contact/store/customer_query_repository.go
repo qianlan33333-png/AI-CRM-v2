@@ -24,6 +24,7 @@ var (
 type CustomerQueryRepository struct{}
 
 var _ contactapp.CustomerQueryStore = (*CustomerQueryRepository)(nil)
+var _ contactapp.CustomerReferenceStore = (*CustomerQueryRepository)(nil)
 
 func NewCustomerQueryRepository() *CustomerQueryRepository {
 	return &CustomerQueryRepository{}
@@ -68,6 +69,37 @@ func (*CustomerQueryRepository) ListCustomers(ctx context.Context, query contact
 		BoundedTotal: boundedTotal,
 		HasMore:      hasMore,
 	}, nil
+}
+
+// ReadActiveCustomerReferences provides one sorted, transaction-bound SHARE
+// read for composed local workflows. The caller validates exact
+// membership and keeps the reference lock through its own write.
+func (*CustomerQueryRepository) ReadActiveCustomerReferences(ctx context.Context, customerIDs []contactport.CustomerID) ([]contactapp.CustomerReferenceRecord, error) {
+	if len(customerIDs) == 0 {
+		return nil, errInvalidCustomerListQuery
+	}
+	ids := make([]int64, len(customerIDs))
+	for index, customerID := range customerIDs {
+		if customerID <= 0 || index > 0 && customerIDs[index-1] >= customerID {
+			return nil, errInvalidCustomerListQuery
+		}
+		ids[index] = int64(customerID)
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := contactdb.New(customerQueryDBTX{Tx: tx}).LockActiveCustomerReferences(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]contactapp.CustomerReferenceRecord, len(rows))
+	for index, row := range rows {
+		items[index] = contactapp.CustomerReferenceRecord{
+			ID: contactport.CustomerID(row),
+		}
+	}
+	return items, nil
 }
 
 // customerQueryDBTX keeps these parameter-sensitive optional-filter queries

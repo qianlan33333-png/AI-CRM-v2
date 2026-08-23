@@ -83,6 +83,15 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodPost, "/api/admin/questionnaires/1/public-publish", authport.CapabilityQuestionnairesWrite},
 		{http.MethodPost, "/api/admin/questionnaires/1/public-disable", authport.CapabilityQuestionnairesWrite},
 		{http.MethodGet, "/api/admin/questionnaires/1/public-analytics?definition_version=1", authport.CapabilityQuestionnairesRead},
+		{http.MethodGet, "/api/admin/user-ops/overview", authport.CapabilityOperationsRead},
+		{http.MethodGet, "/api/admin/user-ops/customers", authport.CapabilityOperationsRead},
+		{http.MethodPost, "/api/admin/user-ops/customers/export", authport.CapabilityOperationsRead},
+		{http.MethodGet, "/api/admin/user-ops/customers/1", authport.CapabilityOperationsRead},
+		{http.MethodPut, "/api/admin/user-ops/customers/1/dnd", authport.CapabilityOperationsManage},
+		{http.MethodDelete, "/api/admin/user-ops/customers/1/dnd", authport.CapabilityOperationsManage},
+		{http.MethodPost, "/api/admin/user-ops/batch-preview", authport.CapabilityOperationsRead},
+		{http.MethodPost, "/api/admin/user-ops/plans", authport.CapabilityOperationsManage},
+		{http.MethodGet, "/api/admin/user-ops/plans/1/send-records", authport.CapabilityOperationsRead},
 	}
 	for _, test := range tests {
 		t.Run(test.method+" "+test.path, func(t *testing.T) {
@@ -110,6 +119,11 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 			if test.capability == authport.CapabilityQuestionnairesWrite {
 				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
 				request.Header.Set("Idempotency-Key", "router-public-survey-key")
+				request.Header.Set("Content-Type", "application/json")
+			}
+			if test.capability == authport.CapabilityOperationsManage {
+				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
+				request.Header.Set("Idempotency-Key", "router-user-ops-key")
 				request.Header.Set("Content-Type", "application/json")
 			}
 			if test.capability == authport.CapabilityIdentityReviewWrite {
@@ -168,6 +182,9 @@ func TestFinalRouterRejectsProtectedWriteWithoutValidCSRF(t *testing.T) {
 		{http.MethodDelete, "/api/v1/stages/1", ``},
 		{http.MethodPost, "/api/admin/questionnaires/1/public-publish", `{"expected_questionnaire_version":1}`},
 		{http.MethodPost, "/api/admin/questionnaires/1/public-disable", `{"expected_definition_version":1}`},
+		{http.MethodPut, "/api/admin/user-ops/customers/1/dnd", `{"reason":"local preference"}`},
+		{http.MethodDelete, "/api/admin/user-ops/customers/1/dnd", `{"expected_version":1}`},
+		{http.MethodPost, "/api/admin/user-ops/plans", `{"customer_ids":[1],"expected_target_digest":"","content":{"text":"local","image_library_ids":[],"miniprogram_library_ids":[],"attachment_library_ids":[]},"expected_content_digest":"","state":"draft"}`},
 	} {
 		service.reset()
 		request := httptest.NewRequest(test.method, test.path, strings.NewReader(test.body))

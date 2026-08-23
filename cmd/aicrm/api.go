@@ -89,6 +89,9 @@ import (
 	safeadminhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http/safeadmin"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
 	surveystore "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/store"
+	useropsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/userops/app"
+	useropshttp "github.com/qianlan33333-png/AI-CRM-v2/internal/userops/http"
+	useropsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/userops/store"
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
@@ -152,6 +155,7 @@ type candidateHandler struct {
 	segmentRefresh            *segmenthttp.RefreshHandler
 	identityReviews           *identityhttp.ReviewHandler
 	identityConsole           *identityhttp.ConsoleHandler
+	userOps                   *useropshttp.Handler
 	automationRuns            interface {
 		List(context.Context, automationstore.TriggerListInput) (automationstore.TriggerListResult, error)
 	}
@@ -614,7 +618,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	customerService := contactapp.NewCustomerListService(uow, contactstore.NewCustomerQueryRepository())
+	customerQueryRepository := contactstore.NewCustomerQueryRepository()
+	customerService := contactapp.NewCustomerListService(uow, customerQueryRepository)
 	customerHandler, err := contacthttp.NewCustomerListHandler(customerService)
 	if err != nil {
 		pool.Close()
@@ -633,8 +638,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	customerEventRepository := contactstore.NewCustomerEventRepository()
 	customerEventHandler, err := contacthttp.NewCustomerEventHandler(contactapp.NewCustomerEventService(
-		uow, contactstore.NewCustomerEventRepository(),
+		uow, customerEventRepository,
 	))
 	if err != nil {
 		pool.Close()
@@ -966,6 +972,26 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	identityRepository := identitystore.NewRepository()
 	identityResolver := identityapp.NewResolveService(uow, identityRepository)
+	userOpsHandler, err := useropshttp.NewHandler(
+		useropsapp.NewService(
+			uow,
+			userOpsDirectoryReader{
+				customers:  customerService,
+				references: contactapp.NewCustomerReferenceReader(customerQueryRepository),
+				identities: identityResolver,
+			},
+			userOpsCustomerDetailReader{details: customerDetailService, events: customerEventRepository},
+			userOpsMaterialReader{images: mediaRepository, miniPrograms: miniProgramRepository, attachments: attachmentRepository},
+			useropsstore.NewRepository(),
+			userOpsEventAppender{appender: eventstore.NewAppender()},
+		),
+		userOpsAuthorizer{},
+		userOpsCanonicalCSRF{},
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	legacyUnionIDResolver := identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
 	customerIdentityMatcher := identityapp.NewCustomerMatcherService(uow, identityRepository)
 	customerAnswerService := surveyapp.NewCustomerAnswerService(
@@ -1020,6 +1046,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		segmentRefresh:       segmentRefreshHandler,
 		identityReviews:      identityReviewHandler,
 		identityConsole:      identityConsoleHandler,
+		userOps:              userOpsHandler,
 		automationRuns:       automationstore.NewRepository(pool),
 		domainVerification:   domainVerification,
 		legacyHealth: legacyhealth.NewHandler(legacyhealth.NewQuery(legacyhealth.RuntimeSnapshot{
@@ -1510,6 +1537,15 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-publish", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.PublishQuestionnairePublicDefinition)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-disable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.DisableQuestionnairePublicDefinition)},
 		{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/public-analytics", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(wrapper.GetQuestionnairePublicAnalytics)},
+		{http.MethodGet, "/api/admin/user-ops/overview", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetUserOpsOverview)},
+		{http.MethodGet, "/api/admin/user-ops/customers", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListUserOpsCustomers)},
+		{http.MethodPost, "/api/admin/user-ops/customers/export", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.PreviewUserOpsSafeExport)},
+		{http.MethodGet, "/api/admin/user-ops/customers/{customer_id}", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetUserOpsCustomerDetail)},
+		{http.MethodPut, "/api/admin/user-ops/customers/{customer_id}/dnd", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.SetUserOpsCustomerDnd)},
+		{http.MethodDelete, "/api/admin/user-ops/customers/{customer_id}/dnd", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.ClearUserOpsCustomerDnd)},
+		{http.MethodPost, "/api/admin/user-ops/batch-preview", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.PreviewUserOpsBatch)},
+		{http.MethodPost, "/api/admin/user-ops/plans", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.CreateUserOpsLocalPlan)},
+		{http.MethodGet, "/api/admin/user-ops/plans/{plan_id}/send-records", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListUserOpsSendRecords)},
 	}
 	for _, route := range routes {
 		if err = register(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {

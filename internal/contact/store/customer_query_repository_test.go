@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -112,6 +113,57 @@ func TestCustomerQueryRepositoryRequiresTransactionBoundContext(t *testing.T) {
 	_, err := NewCustomerQueryRepository().ListCustomers(context.Background(), validCustomerListQuery())
 	if !errors.Is(err, platformport.ErrTransactionRequired) {
 		t.Fatalf("ListCustomers() error = %v, want transaction requirement", err)
+	}
+}
+
+func TestCustomerQueryRepositoryLocksOneThousandActiveReferencesWithOneQuery(t *testing.T) {
+	ids := make([]contactport.CustomerID, contactapp.CustomerListMaximumLimit*5)
+	references := make([]int64, len(ids))
+	for index := range ids {
+		ids[index] = contactport.CustomerID(index + 1)
+		references[index] = int64(index + 1)
+	}
+	tx := &customerQueryTx{referenceRows: references}
+	uow := platformstore.NewUnitOfWork(&customerQueryBeginner{tx: tx})
+	var result []contactapp.CustomerReferenceRecord
+	err := uow.Within(context.Background(), func(txCtx context.Context) error {
+		var readErr error
+		result, readErr = NewCustomerQueryRepository().ReadActiveCustomerReferences(txCtx, ids)
+		return readErr
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tx.referenceQueries != 1 || !reflect.DeepEqual(tx.referenceArgs, references) || len(result) != len(ids) {
+		t.Fatalf("queries/args/result = %d/%d/%d, want 1/%d/%d", tx.referenceQueries, len(tx.referenceArgs), len(result), len(ids), len(ids))
+	}
+	for index, reference := range result {
+		if reference.ID != ids[index] {
+			t.Fatalf("reference %d = %d, want %d", index, reference.ID, ids[index])
+		}
+	}
+}
+
+func TestLockActiveCustomerReferencesQueryIsSortedAndShared(t *testing.T) {
+	contents, err := os.ReadFile("queries/customers.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	start := strings.Index(string(contents), "-- name: LockActiveCustomerReferences :many")
+	if start < 0 {
+		t.Fatal("LockActiveCustomerReferences query is missing")
+	}
+	query := string(contents)[start:]
+	for _, required := range []string{
+		"SELECT\n  c.id",
+		"c.id = ANY(sqlc.arg(customer_ids)::bigint[])",
+		"AND NOT c.is_deleted",
+		"ORDER BY c.id",
+		"FOR SHARE",
+	} {
+		if !strings.Contains(query, required) {
+			t.Fatalf("reference query missing %q", required)
+		}
 	}
 }
 
@@ -309,11 +361,14 @@ func (beginner *customerQueryBeginner) BeginTx(context.Context, pgx.TxOptions) (
 type customerQueryTx struct {
 	boundedTotal      int64
 	rows              []contactdb.Customer
+	referenceRows     []int64
 	boundedArgs       []any
 	listArgs          []any
+	referenceArgs     []int64
 	commits           int
 	rollbacks         int
 	customPlanQueries int
+	referenceQueries  int
 }
 
 func (*customerQueryTx) Begin(context.Context) (pgx.Tx, error) {
@@ -347,6 +402,17 @@ func (tx *customerQueryTx) Query(_ context.Context, statement string, args ...an
 	case strings.Contains(statement, "-- name: ListCustomers :many"):
 		tx.listArgs = append([]any(nil), args...)
 		return &customerQueryRows{rows: tx.rows}, nil
+	case strings.Contains(statement, "-- name: LockActiveCustomerReferences :many"):
+		if len(args) != 1 {
+			return nil, errors.New("unexpected customer reference arguments")
+		}
+		ids, ok := args[0].([]int64)
+		if !ok {
+			return nil, errors.New("unexpected customer reference argument type")
+		}
+		tx.referenceQueries++
+		tx.referenceArgs = append([]int64(nil), ids...)
+		return &customerReferenceRows{rows: tx.referenceRows}, nil
 	default:
 		return nil, errors.New("unexpected query")
 	}
@@ -435,3 +501,38 @@ func (rows *customerQueryRows) Scan(dest ...any) error {
 func (*customerQueryRows) Values() ([]any, error) { return nil, errors.New("not implemented") }
 func (*customerQueryRows) RawValues() [][]byte    { return nil }
 func (*customerQueryRows) Conn() *pgx.Conn        { return nil }
+
+type customerReferenceRows struct {
+	rows    []int64
+	index   int
+	current int64
+}
+
+func (*customerReferenceRows) Close()                        {}
+func (*customerReferenceRows) Err() error                    { return nil }
+func (*customerReferenceRows) CommandTag() pgconn.CommandTag { return pgconn.CommandTag{} }
+func (*customerReferenceRows) FieldDescriptions() []pgconn.FieldDescription {
+	return nil
+}
+func (rows *customerReferenceRows) Next() bool {
+	if rows.index >= len(rows.rows) {
+		return false
+	}
+	rows.current = rows.rows[rows.index]
+	rows.index++
+	return true
+}
+func (rows *customerReferenceRows) Scan(dest ...any) error {
+	if len(dest) != 1 {
+		return errors.New("unexpected customer reference scan destination count")
+	}
+	target, ok := dest[0].(*int64)
+	if !ok {
+		return errors.New("unexpected customer reference scan destination")
+	}
+	*target = rows.current
+	return nil
+}
+func (*customerReferenceRows) Values() ([]any, error) { return nil, errors.New("not implemented") }
+func (*customerReferenceRows) RawValues() [][]byte    { return nil }
+func (*customerReferenceRows) Conn() *pgx.Conn        { return nil }

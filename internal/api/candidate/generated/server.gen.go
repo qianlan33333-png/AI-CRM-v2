@@ -5629,6 +5629,123 @@ func (e UpdateSegmentRequestRefreshMode) Valid() bool {
 	}
 }
 
+// Defines values for UserOpsDeliveryProven.
+const (
+	UserOpsDeliveryProvenFalse UserOpsDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the UserOpsDeliveryProven enum.
+func (e UserOpsDeliveryProven) Valid() bool {
+	switch e {
+	case UserOpsDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserOpsLocalPlanState.
+const (
+	UserOpsLocalPlanStateDraft         UserOpsLocalPlanState = "draft"
+	UserOpsLocalPlanStatePendingReview UserOpsLocalPlanState = "pending_review"
+)
+
+// Valid indicates whether the value is a known member of the UserOpsLocalPlanState enum.
+func (e UserOpsLocalPlanState) Valid() bool {
+	switch e {
+	case UserOpsLocalPlanStateDraft:
+		return true
+	case UserOpsLocalPlanStatePendingReview:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserOpsProviderExecutionEligible.
+const (
+	UserOpsProviderExecutionEligibleFalse UserOpsProviderExecutionEligible = false
+)
+
+// Valid indicates whether the value is a known member of the UserOpsProviderExecutionEligible enum.
+func (e UserOpsProviderExecutionEligible) Valid() bool {
+	switch e {
+	case UserOpsProviderExecutionEligibleFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserOpsRealExternalCallExecuted.
+const (
+	UserOpsRealExternalCallExecutedFalse UserOpsRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the UserOpsRealExternalCallExecuted enum.
+func (e UserOpsRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case UserOpsRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserOpsSafeExportField.
+const (
+	UserOpsSafeExportFieldAddedAt        UserOpsSafeExportField = "added_at"
+	UserOpsSafeExportFieldChannelID      UserOpsSafeExportField = "channel_id"
+	UserOpsSafeExportFieldCustomerID     UserOpsSafeExportField = "customer_id"
+	UserOpsSafeExportFieldLastInteractAt UserOpsSafeExportField = "last_interact_at"
+	UserOpsSafeExportFieldName           UserOpsSafeExportField = "name"
+	UserOpsSafeExportFieldOwnerStaffID   UserOpsSafeExportField = "owner_staff_id"
+	UserOpsSafeExportFieldStageID        UserOpsSafeExportField = "stage_id"
+)
+
+// Valid indicates whether the value is a known member of the UserOpsSafeExportField enum.
+func (e UserOpsSafeExportField) Valid() bool {
+	switch e {
+	case UserOpsSafeExportFieldAddedAt:
+		return true
+	case UserOpsSafeExportFieldChannelID:
+		return true
+	case UserOpsSafeExportFieldCustomerID:
+		return true
+	case UserOpsSafeExportFieldLastInteractAt:
+		return true
+	case UserOpsSafeExportFieldName:
+		return true
+	case UserOpsSafeExportFieldOwnerStaffID:
+		return true
+	case UserOpsSafeExportFieldStageID:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserOpsSendTechnicalState.
+const (
+	UserOpsSendTechnicalStateDraft         UserOpsSendTechnicalState = "draft"
+	UserOpsSendTechnicalStateNotDispatched UserOpsSendTechnicalState = "not_dispatched"
+	UserOpsSendTechnicalStatePendingReview UserOpsSendTechnicalState = "pending_review"
+)
+
+// Valid indicates whether the value is a known member of the UserOpsSendTechnicalState enum.
+func (e UserOpsSendTechnicalState) Valid() bool {
+	switch e {
+	case UserOpsSendTechnicalStateDraft:
+		return true
+	case UserOpsSendTechnicalStateNotDispatched:
+		return true
+	case UserOpsSendTechnicalStatePendingReview:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListAutomationTriggerRunsParamsVisibility.
 const (
 	ListAutomationTriggerRunsParamsVisibilityMasked ListAutomationTriggerRunsParamsVisibility = "masked"
@@ -8865,6 +8982,225 @@ type UpdateSegmentRequest struct {
 // UpdateSegmentRequestRefreshMode defines model for UpdateSegmentRequest.RefreshMode.
 type UpdateSegmentRequestRefreshMode string
 
+// UserOpsBatchPreviewRequest defines model for UserOpsBatchPreviewRequest.
+type UserOpsBatchPreviewRequest struct {
+	Content     UserOpsContentInput `json:"content"`
+	CustomerIds []int64             `json:"customer_ids"`
+}
+
+// UserOpsBatchPreviewResponse defines model for UserOpsBatchPreviewResponse.
+type UserOpsBatchPreviewResponse struct {
+	Content                   UserOpsContentSnapshot           `json:"content"`
+	DeliveryProven            UserOpsDeliveryProven            `json:"delivery_proven"`
+	ExcludedDndCount          int32                            `json:"excluded_dnd_count"`
+	ProviderExecutionEligible UserOpsProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  UserOpsRealExternalCallExecuted  `json:"real_external_call_executed"`
+	TargetCustomerIds         []int64                          `json:"target_customer_ids"`
+	TargetDigest              string                           `json:"target_digest"`
+}
+
+// UserOpsClearDndRequest defines model for UserOpsClearDndRequest.
+type UserOpsClearDndRequest struct {
+	ExpectedVersion int64 `json:"expected_version"`
+}
+
+// UserOpsContentInput defines model for UserOpsContentInput.
+type UserOpsContentInput struct {
+	AttachmentLibraryIds  []int64 `json:"attachment_library_ids"`
+	ImageLibraryIds       []int64 `json:"image_library_ids"`
+	MiniprogramLibraryIds []int64 `json:"miniprogram_library_ids"`
+	Text                  string  `json:"text"`
+}
+
+// UserOpsContentSnapshot defines model for UserOpsContentSnapshot.
+type UserOpsContentSnapshot struct {
+	AttachmentLibraryIds  []int64 `json:"attachment_library_ids"`
+	ContentDigest         string  `json:"content_digest"`
+	ImageLibraryIds       []int64 `json:"image_library_ids"`
+	MiniprogramLibraryIds []int64 `json:"miniprogram_library_ids"`
+	Text                  string  `json:"text"`
+}
+
+// UserOpsCreateLocalPlanRequest defines model for UserOpsCreateLocalPlanRequest.
+type UserOpsCreateLocalPlanRequest struct {
+	Content               UserOpsContentInput   `json:"content"`
+	CustomerIds           []int64               `json:"customer_ids"`
+	ExpectedContentDigest string                `json:"expected_content_digest"`
+	ExpectedTargetDigest  string                `json:"expected_target_digest"`
+	State                 UserOpsLocalPlanState `json:"state"`
+}
+
+// UserOpsCustomer defines model for UserOpsCustomer.
+type UserOpsCustomer struct {
+	AddedAt        *time.Time `json:"added_at,omitempty"`
+	ChannelId      *int64     `json:"channel_id,omitempty"`
+	CustomerId     int64      `json:"customer_id"`
+	LastInteractAt *time.Time `json:"last_interact_at,omitempty"`
+	Name           string     `json:"name"`
+	OwnerStaffId   *int64     `json:"owner_staff_id,omitempty"`
+	StageId        *int64     `json:"stage_id,omitempty"`
+}
+
+// UserOpsCustomerDetailResponse defines model for UserOpsCustomerDetailResponse.
+type UserOpsCustomerDetailResponse struct {
+	Customer                  UserOpsCustomer                  `json:"customer"`
+	DeliveryProven            UserOpsDeliveryProven            `json:"delivery_proven"`
+	Dnd                       *UserOpsDnd                      `json:"dnd,omitempty"`
+	ProviderExecutionEligible UserOpsProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  UserOpsRealExternalCallExecuted  `json:"real_external_call_executed"`
+	Tags                      []UserOpsCustomerTag             `json:"tags"`
+	Timeline                  []UserOpsTimelineEntry           `json:"timeline"`
+}
+
+// UserOpsCustomerPage defines model for UserOpsCustomerPage.
+type UserOpsCustomerPage struct {
+	DeliveryProven            UserOpsDeliveryProven            `json:"delivery_proven"`
+	Items                     []UserOpsCustomer                `json:"items"`
+	NextCursor                *string                          `json:"next_cursor,omitempty"`
+	ProviderExecutionEligible UserOpsProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  UserOpsRealExternalCallExecuted  `json:"real_external_call_executed"`
+	Total                     int64                            `json:"total"`
+	TotalIsEstimate           bool                             `json:"total_is_estimate"`
+}
+
+// UserOpsCustomerTag defines model for UserOpsCustomerTag.
+type UserOpsCustomerTag struct {
+	GroupId   *int64  `json:"group_id,omitempty"`
+	GroupName *string `json:"group_name,omitempty"`
+	Id        int64   `json:"id"`
+	Name      string  `json:"name"`
+}
+
+// UserOpsDeliveryProven defines model for UserOpsDeliveryProven.
+type UserOpsDeliveryProven bool
+
+// UserOpsDirectoryQuery defines model for UserOpsDirectoryQuery.
+type UserOpsDirectoryQuery struct {
+	ChannelId    *int64  `json:"channel_id,omitempty"`
+	Cursor       *string `json:"cursor,omitempty"`
+	Keyword      *string `json:"keyword,omitempty"`
+	Limit        *int32  `json:"limit,omitempty"`
+	OwnerStaffId *int64  `json:"owner_staff_id,omitempty"`
+	PhoneExact   *string `json:"phone_exact,omitempty"`
+	StageId      *int64  `json:"stage_id,omitempty"`
+	TagId        *int64  `json:"tag_id,omitempty"`
+}
+
+// UserOpsDnd defines model for UserOpsDnd.
+type UserOpsDnd struct {
+	CreatedAt  time.Time `json:"created_at"`
+	CustomerId int64     `json:"customer_id"`
+	Reason     string    `json:"reason"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	Version    int64     `json:"version"`
+}
+
+// UserOpsDndMutationResponse defines model for UserOpsDndMutationResponse.
+type UserOpsDndMutationResponse struct {
+	Cleared                   bool                             `json:"cleared"`
+	DeliveryProven            UserOpsDeliveryProven            `json:"delivery_proven"`
+	Dnd                       *UserOpsDnd                      `json:"dnd,omitempty"`
+	ProviderExecutionEligible UserOpsProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  UserOpsRealExternalCallExecuted  `json:"real_external_call_executed"`
+}
+
+// UserOpsLocalPlan defines model for UserOpsLocalPlan.
+type UserOpsLocalPlan struct {
+	Content      UserOpsContentSnapshot `json:"content"`
+	CreatedAt    time.Time              `json:"created_at"`
+	PlanId       string                 `json:"plan_id"`
+	State        UserOpsLocalPlanState  `json:"state"`
+	TargetCount  int32                  `json:"target_count"`
+	TargetDigest string                 `json:"target_digest"`
+	UpdatedAt    time.Time              `json:"updated_at"`
+	Version      int64                  `json:"version"`
+}
+
+// UserOpsLocalPlanResponse defines model for UserOpsLocalPlanResponse.
+type UserOpsLocalPlanResponse struct {
+	DeliveryProven            UserOpsDeliveryProven            `json:"delivery_proven"`
+	Plan                      UserOpsLocalPlan                 `json:"plan"`
+	ProviderExecutionEligible UserOpsProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  UserOpsRealExternalCallExecuted  `json:"real_external_call_executed"`
+}
+
+// UserOpsLocalPlanState defines model for UserOpsLocalPlanState.
+type UserOpsLocalPlanState string
+
+// UserOpsOverviewResponse defines model for UserOpsOverviewResponse.
+type UserOpsOverviewResponse struct {
+	ActiveDndCount            int64                            `json:"active_dnd_count"`
+	CustomerCount             int64                            `json:"customer_count"`
+	CustomerCountIsEstimate   bool                             `json:"customer_count_is_estimate"`
+	DeliveryProven            UserOpsDeliveryProven            `json:"delivery_proven"`
+	DraftPlanCount            int64                            `json:"draft_plan_count"`
+	PendingReviewPlanCount    int64                            `json:"pending_review_plan_count"`
+	ProviderExecutionEligible UserOpsProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  UserOpsRealExternalCallExecuted  `json:"real_external_call_executed"`
+}
+
+// UserOpsProviderExecutionEligible defines model for UserOpsProviderExecutionEligible.
+type UserOpsProviderExecutionEligible bool
+
+// UserOpsRealExternalCallExecuted defines model for UserOpsRealExternalCallExecuted.
+type UserOpsRealExternalCallExecuted bool
+
+// UserOpsSafeExportField defines model for UserOpsSafeExportField.
+type UserOpsSafeExportField string
+
+// UserOpsSafeExportRequest defines model for UserOpsSafeExportRequest.
+type UserOpsSafeExportRequest struct {
+	Fields []UserOpsSafeExportField `json:"fields"`
+	Query  UserOpsDirectoryQuery    `json:"query"`
+}
+
+// UserOpsSafeExportResponse defines model for UserOpsSafeExportResponse.
+type UserOpsSafeExportResponse struct {
+	DeliveryProven            UserOpsDeliveryProven            `json:"delivery_proven"`
+	Fields                    []UserOpsSafeExportField         `json:"fields"`
+	NextCursor                *string                          `json:"next_cursor,omitempty"`
+	ProviderExecutionEligible UserOpsProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  UserOpsRealExternalCallExecuted  `json:"real_external_call_executed"`
+	Rows                      [][]string                       `json:"rows"`
+	Total                     int64                            `json:"total"`
+	TotalIsEstimate           bool                             `json:"total_is_estimate"`
+}
+
+// UserOpsSendRecord defines model for UserOpsSendRecord.
+type UserOpsSendRecord struct {
+	CreatedAt       time.Time                 `json:"created_at"`
+	CustomerId      int64                     `json:"customer_id"`
+	PlanId          string                    `json:"plan_id"`
+	SendRecordId    string                    `json:"send_record_id"`
+	TechnicalStatus UserOpsSendTechnicalState `json:"technical_status"`
+	UpdatedAt       time.Time                 `json:"updated_at"`
+}
+
+// UserOpsSendRecordPage defines model for UserOpsSendRecordPage.
+type UserOpsSendRecordPage struct {
+	DeliveryProven            UserOpsDeliveryProven            `json:"delivery_proven"`
+	Items                     []UserOpsSendRecord              `json:"items"`
+	NextCursor                *string                          `json:"next_cursor,omitempty"`
+	ProviderExecutionEligible UserOpsProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  UserOpsRealExternalCallExecuted  `json:"real_external_call_executed"`
+	Total                     int64                            `json:"total"`
+}
+
+// UserOpsSendTechnicalState defines model for UserOpsSendTechnicalState.
+type UserOpsSendTechnicalState string
+
+// UserOpsSetDndRequest defines model for UserOpsSetDndRequest.
+type UserOpsSetDndRequest struct {
+	ExpectedVersion *int64 `json:"expected_version,omitempty"`
+	Reason          string `json:"reason"`
+}
+
+// UserOpsTimelineEntry defines model for UserOpsTimelineEntry.
+type UserOpsTimelineEntry struct {
+	EventType  string    `json:"event_type"`
+	OccurredAt time.Time `json:"occurred_at"`
+}
+
 // VersionedDeleteRequest defines model for VersionedDeleteRequest.
 type VersionedDeleteRequest struct {
 	ExpectedVersion int64 `json:"expected_version"`
@@ -9019,6 +9355,18 @@ type TagID = int64
 
 // TagIDFilter defines model for TagIDFilter.
 type TagIDFilter = int64
+
+// UserOpsIdempotencyKey defines model for UserOpsIdempotencyKey.
+type UserOpsIdempotencyKey = string
+
+// UserOpsLimit defines model for UserOpsLimit.
+type UserOpsLimit = int
+
+// UserOpsPhoneExact defines model for UserOpsPhoneExact.
+type UserOpsPhoneExact = string
+
+// UserOpsPlanID defines model for UserOpsPlanID.
+type UserOpsPlanID = string
 
 // AdminOpsBlockedRedline defines model for AdminOpsBlockedRedline.
 type AdminOpsBlockedRedline = AdminOpsLocalResponse
@@ -9530,6 +9878,51 @@ type SaveSetupWizardParams struct {
 	IdempotencyKey SetupWizardIdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ListUserOpsCustomersParams defines parameters for ListUserOpsCustomers.
+type ListUserOpsCustomersParams struct {
+	Keyword      *CustomerKeyword    `form:"keyword,omitempty" json:"keyword,omitempty"`
+	OwnerStaffId *OwnerStaffIDFilter `form:"owner_staff_id,omitempty" json:"owner_staff_id,omitempty"`
+	StageId      *StageIDFilter      `form:"stage_id,omitempty" json:"stage_id,omitempty"`
+	ChannelId    *ChannelIDFilter    `form:"channel_id,omitempty" json:"channel_id,omitempty"`
+	TagId        *TagIDFilter        `form:"tag_id,omitempty" json:"tag_id,omitempty"`
+
+	// PhoneExact Phone lookup input resolved only by Identity; it is never returned in a User Ops projection.
+	PhoneExact *UserOpsPhoneExact `form:"phone_exact,omitempty" json:"phone_exact,omitempty"`
+
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum local User Ops rows returned in one page.
+	Limit *UserOpsLimit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ClearUserOpsCustomerDndParams defines parameters for ClearUserOpsCustomerDnd.
+type ClearUserOpsCustomerDndParams struct {
+	// IdempotencyKey Stable local User Ops command key; exact retries replay and mismatches conflict.
+	IdempotencyKey UserOpsIdempotencyKey `json:"Idempotency-Key"`
+}
+
+// SetUserOpsCustomerDndParams defines parameters for SetUserOpsCustomerDnd.
+type SetUserOpsCustomerDndParams struct {
+	// IdempotencyKey Stable local User Ops command key; exact retries replay and mismatches conflict.
+	IdempotencyKey UserOpsIdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CreateUserOpsLocalPlanParams defines parameters for CreateUserOpsLocalPlan.
+type CreateUserOpsLocalPlanParams struct {
+	// IdempotencyKey Stable local User Ops command key; exact retries replay and mismatches conflict.
+	IdempotencyKey UserOpsIdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListUserOpsSendRecordsParams defines parameters for ListUserOpsSendRecords.
+type ListUserOpsSendRecordsParams struct {
+	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
+	Cursor *Cursor `form:"cursor,omitempty" json:"cursor,omitempty"`
+
+	// Limit Maximum local User Ops rows returned in one page.
+	Limit *UserOpsLimit `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // DeleteLegacyWechatPayProductParams defines parameters for DeleteLegacyWechatPayProduct.
 type DeleteLegacyWechatPayProductParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -10033,6 +10426,21 @@ type RemoveServicePeriodMemberJSONRequestBody = ServicePeriodMemberTransitionReq
 
 // SaveSetupWizardJSONRequestBody defines body for SaveSetupWizard for application/json ContentType.
 type SaveSetupWizardJSONRequestBody = SetupWizardSaveRequest
+
+// PreviewUserOpsBatchJSONRequestBody defines body for PreviewUserOpsBatch for application/json ContentType.
+type PreviewUserOpsBatchJSONRequestBody = UserOpsBatchPreviewRequest
+
+// PreviewUserOpsSafeExportJSONRequestBody defines body for PreviewUserOpsSafeExport for application/json ContentType.
+type PreviewUserOpsSafeExportJSONRequestBody = UserOpsSafeExportRequest
+
+// ClearUserOpsCustomerDndJSONRequestBody defines body for ClearUserOpsCustomerDnd for application/json ContentType.
+type ClearUserOpsCustomerDndJSONRequestBody = UserOpsClearDndRequest
+
+// SetUserOpsCustomerDndJSONRequestBody defines body for SetUserOpsCustomerDnd for application/json ContentType.
+type SetUserOpsCustomerDndJSONRequestBody = UserOpsSetDndRequest
+
+// CreateUserOpsLocalPlanJSONRequestBody defines body for CreateUserOpsLocalPlan for application/json ContentType.
+type CreateUserOpsLocalPlanJSONRequestBody = UserOpsCreateLocalPlanRequest
 
 // DeleteLegacyWechatPayProductJSONRequestBody defines body for DeleteLegacyWechatPayProduct for application/json ContentType.
 type DeleteLegacyWechatPayProductJSONRequestBody = LocalProductLifecycleVersionRequest
@@ -11249,6 +11657,33 @@ type ServerInterface interface {
 	// Atomically save two local setup-wizard settings
 	// (POST /api/admin/setup-wizard)
 	SaveSetupWizard(w http.ResponseWriter, r *http.Request, params SaveSetupWizardParams)
+	// Compute current local targets and content digest without creating a plan or delivery
+	// (POST /api/admin/user-ops/batch-preview)
+	PreviewUserOpsBatch(w http.ResponseWriter, r *http.Request)
+	// List safe local CRM customer projections for User Ops
+	// (GET /api/admin/user-ops/customers)
+	ListUserOpsCustomers(w http.ResponseWriter, r *http.Request, params ListUserOpsCustomersParams)
+	// Produce a whitelist-projected local export preview without creating a download or external effect
+	// (POST /api/admin/user-ops/customers/export)
+	PreviewUserOpsSafeExport(w http.ResponseWriter, r *http.Request)
+	// Read one safe local Customer 360 projection and local DND fact
+	// (GET /api/admin/user-ops/customers/{customer_id})
+	GetUserOpsCustomerDetail(w http.ResponseWriter, r *http.Request, customerId CustomerID)
+	// Clear one local DND preference with optimistic concurrency and no provider effect
+	// (DELETE /api/admin/user-ops/customers/{customer_id}/dnd)
+	ClearUserOpsCustomerDnd(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ClearUserOpsCustomerDndParams)
+	// Set one local DND preference with optimistic concurrency and no provider effect
+	// (PUT /api/admin/user-ops/customers/{customer_id}/dnd)
+	SetUserOpsCustomerDnd(w http.ResponseWriter, r *http.Request, customerId CustomerID, params SetUserOpsCustomerDndParams)
+	// Read CRM-local User Ops overview without creating a delivery or provider effect
+	// (GET /api/admin/user-ops/overview)
+	GetUserOpsOverview(w http.ResponseWriter, r *http.Request)
+	// Create a local draft or pending-review plan without dispatching, sending, or invoking a provider
+	// (POST /api/admin/user-ops/plans)
+	CreateUserOpsLocalPlan(w http.ResponseWriter, r *http.Request, params CreateUserOpsLocalPlanParams)
+	// List local plan technical records; these are not proof of dispatch or delivery
+	// (GET /api/admin/user-ops/plans/{plan_id}/send-records)
+	ListUserOpsSendRecords(w http.ResponseWriter, r *http.Request, planId UserOpsPlanID, params ListUserOpsSendRecordsParams)
 	// Delete only an unreferenced CRM-local draft product
 	// (DELETE /api/admin/wechat-pay/products/{product_id})
 	DeleteLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params DeleteLegacyWechatPayProductParams)
@@ -11942,6 +12377,60 @@ func (_ Unimplemented) GetSetupWizard(w http.ResponseWriter, r *http.Request) {
 // Atomically save two local setup-wizard settings
 // (POST /api/admin/setup-wizard)
 func (_ Unimplemented) SaveSetupWizard(w http.ResponseWriter, r *http.Request, params SaveSetupWizardParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Compute current local targets and content digest without creating a plan or delivery
+// (POST /api/admin/user-ops/batch-preview)
+func (_ Unimplemented) PreviewUserOpsBatch(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List safe local CRM customer projections for User Ops
+// (GET /api/admin/user-ops/customers)
+func (_ Unimplemented) ListUserOpsCustomers(w http.ResponseWriter, r *http.Request, params ListUserOpsCustomersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Produce a whitelist-projected local export preview without creating a download or external effect
+// (POST /api/admin/user-ops/customers/export)
+func (_ Unimplemented) PreviewUserOpsSafeExport(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one safe local Customer 360 projection and local DND fact
+// (GET /api/admin/user-ops/customers/{customer_id})
+func (_ Unimplemented) GetUserOpsCustomerDetail(w http.ResponseWriter, r *http.Request, customerId CustomerID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Clear one local DND preference with optimistic concurrency and no provider effect
+// (DELETE /api/admin/user-ops/customers/{customer_id}/dnd)
+func (_ Unimplemented) ClearUserOpsCustomerDnd(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ClearUserOpsCustomerDndParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Set one local DND preference with optimistic concurrency and no provider effect
+// (PUT /api/admin/user-ops/customers/{customer_id}/dnd)
+func (_ Unimplemented) SetUserOpsCustomerDnd(w http.ResponseWriter, r *http.Request, customerId CustomerID, params SetUserOpsCustomerDndParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read CRM-local User Ops overview without creating a delivery or provider effect
+// (GET /api/admin/user-ops/overview)
+func (_ Unimplemented) GetUserOpsOverview(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a local draft or pending-review plan without dispatching, sending, or invoking a provider
+// (POST /api/admin/user-ops/plans)
+func (_ Unimplemented) CreateUserOpsLocalPlan(w http.ResponseWriter, r *http.Request, params CreateUserOpsLocalPlanParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List local plan technical records; these are not proof of dispatch or delivery
+// (GET /api/admin/user-ops/plans/{plan_id}/send-records)
+func (_ Unimplemented) ListUserOpsSendRecords(w http.ResponseWriter, r *http.Request, planId UserOpsPlanID, params ListUserOpsSendRecordsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -17129,6 +17618,404 @@ func (siw *ServerInterfaceWrapper) SaveSetupWizard(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// PreviewUserOpsBatch operation middleware
+func (siw *ServerInterfaceWrapper) PreviewUserOpsBatch(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PreviewUserOpsBatch(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListUserOpsCustomers operation middleware
+func (siw *ServerInterfaceWrapper) ListUserOpsCustomers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListUserOpsCustomersParams
+
+	// ------------- Optional query parameter "keyword" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "keyword", r.URL.Query(), &params.Keyword, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "keyword", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "owner_staff_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "owner_staff_id", r.URL.Query(), &params.OwnerStaffId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "owner_staff_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "stage_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "stage_id", r.URL.Query(), &params.StageId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "stage_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "channel_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "channel_id", r.URL.Query(), &params.ChannelId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channel_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "tag_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "tag_id", r.URL.Query(), &params.TagId, runtime.BindQueryParameterOptions{Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "tag_id", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "phone_exact" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "phone_exact", r.URL.Query(), &params.PhoneExact, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "phone_exact", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListUserOpsCustomers(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PreviewUserOpsSafeExport operation middleware
+func (siw *ServerInterfaceWrapper) PreviewUserOpsSafeExport(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PreviewUserOpsSafeExport(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUserOpsCustomerDetail operation middleware
+func (siw *ServerInterfaceWrapper) GetUserOpsCustomerDetail(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUserOpsCustomerDetail(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ClearUserOpsCustomerDnd operation middleware
+func (siw *ServerInterfaceWrapper) ClearUserOpsCustomerDnd(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ClearUserOpsCustomerDndParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey UserOpsIdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ClearUserOpsCustomerDnd(w, r, customerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetUserOpsCustomerDnd operation middleware
+func (siw *ServerInterfaceWrapper) SetUserOpsCustomerDnd(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetUserOpsCustomerDndParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey UserOpsIdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetUserOpsCustomerDnd(w, r, customerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetUserOpsOverview operation middleware
+func (siw *ServerInterfaceWrapper) GetUserOpsOverview(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetUserOpsOverview(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateUserOpsLocalPlan operation middleware
+func (siw *ServerInterfaceWrapper) CreateUserOpsLocalPlan(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateUserOpsLocalPlanParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey UserOpsIdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateUserOpsLocalPlan(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListUserOpsSendRecords operation middleware
+func (siw *ServerInterfaceWrapper) ListUserOpsSendRecords(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "plan_id" -------------
+	var planId UserOpsPlanID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "plan_id", chi.URLParam(r, "plan_id"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListUserOpsSendRecordsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListUserOpsSendRecords(w, r, planId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // DeleteLegacyWechatPayProduct operation middleware
 func (siw *ServerInterfaceWrapper) DeleteLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request) {
 
@@ -21050,6 +21937,33 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/setup-wizard", wrapper.SaveSetupWizard)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/user-ops/batch-preview", wrapper.PreviewUserOpsBatch)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/user-ops/customers", wrapper.ListUserOpsCustomers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/user-ops/customers/export", wrapper.PreviewUserOpsSafeExport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/user-ops/customers/{customer_id}", wrapper.GetUserOpsCustomerDetail)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/admin/user-ops/customers/{customer_id}/dnd", wrapper.ClearUserOpsCustomerDnd)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/admin/user-ops/customers/{customer_id}/dnd", wrapper.SetUserOpsCustomerDnd)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/user-ops/overview", wrapper.GetUserOpsOverview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/user-ops/plans", wrapper.CreateUserOpsLocalPlan)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/user-ops/plans/{plan_id}/send-records", wrapper.ListUserOpsSendRecords)
 	})
 	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}", wrapper.DeleteLegacyWechatPayProduct)
@@ -26476,6 +27390,578 @@ func (response SaveSetupWizard503JSONResponse) VisitSaveSetupWizardResponse(w ht
 	return json.NewEncoder(w).Encode(response)
 }
 
+type PreviewUserOpsBatchRequestObject struct {
+	Body *PreviewUserOpsBatchJSONRequestBody
+}
+
+type PreviewUserOpsBatchResponseObject interface {
+	VisitPreviewUserOpsBatchResponse(w http.ResponseWriter) error
+}
+
+type PreviewUserOpsBatch200JSONResponse UserOpsBatchPreviewResponse
+
+func (response PreviewUserOpsBatch200JSONResponse) VisitPreviewUserOpsBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PreviewUserOpsBatch400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response PreviewUserOpsBatch400JSONResponse) VisitPreviewUserOpsBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PreviewUserOpsBatch401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PreviewUserOpsBatch401JSONResponse) VisitPreviewUserOpsBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PreviewUserOpsBatch403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response PreviewUserOpsBatch403JSONResponse) VisitPreviewUserOpsBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PreviewUserOpsBatch404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PreviewUserOpsBatch404JSONResponse) VisitPreviewUserOpsBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PreviewUserOpsBatch409JSONResponse struct{ ConflictJSONResponse }
+
+func (response PreviewUserOpsBatch409JSONResponse) VisitPreviewUserOpsBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PreviewUserOpsBatch503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response PreviewUserOpsBatch503JSONResponse) VisitPreviewUserOpsBatchResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUserOpsCustomersRequestObject struct {
+	Params ListUserOpsCustomersParams
+}
+
+type ListUserOpsCustomersResponseObject interface {
+	VisitListUserOpsCustomersResponse(w http.ResponseWriter) error
+}
+
+type ListUserOpsCustomers200JSONResponse UserOpsCustomerPage
+
+func (response ListUserOpsCustomers200JSONResponse) VisitListUserOpsCustomersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUserOpsCustomers400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListUserOpsCustomers400JSONResponse) VisitListUserOpsCustomersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUserOpsCustomers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListUserOpsCustomers401JSONResponse) VisitListUserOpsCustomersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUserOpsCustomers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListUserOpsCustomers403JSONResponse) VisitListUserOpsCustomersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUserOpsCustomers503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListUserOpsCustomers503JSONResponse) VisitListUserOpsCustomersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PreviewUserOpsSafeExportRequestObject struct {
+	Body *PreviewUserOpsSafeExportJSONRequestBody
+}
+
+type PreviewUserOpsSafeExportResponseObject interface {
+	VisitPreviewUserOpsSafeExportResponse(w http.ResponseWriter) error
+}
+
+type PreviewUserOpsSafeExport200JSONResponse UserOpsSafeExportResponse
+
+func (response PreviewUserOpsSafeExport200JSONResponse) VisitPreviewUserOpsSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PreviewUserOpsSafeExport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response PreviewUserOpsSafeExport400JSONResponse) VisitPreviewUserOpsSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PreviewUserOpsSafeExport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PreviewUserOpsSafeExport401JSONResponse) VisitPreviewUserOpsSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PreviewUserOpsSafeExport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response PreviewUserOpsSafeExport403JSONResponse) VisitPreviewUserOpsSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PreviewUserOpsSafeExport503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response PreviewUserOpsSafeExport503JSONResponse) VisitPreviewUserOpsSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserOpsCustomerDetailRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+}
+
+type GetUserOpsCustomerDetailResponseObject interface {
+	VisitGetUserOpsCustomerDetailResponse(w http.ResponseWriter) error
+}
+
+type GetUserOpsCustomerDetail200JSONResponse UserOpsCustomerDetailResponse
+
+func (response GetUserOpsCustomerDetail200JSONResponse) VisitGetUserOpsCustomerDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserOpsCustomerDetail400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetUserOpsCustomerDetail400JSONResponse) VisitGetUserOpsCustomerDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserOpsCustomerDetail401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetUserOpsCustomerDetail401JSONResponse) VisitGetUserOpsCustomerDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserOpsCustomerDetail403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetUserOpsCustomerDetail403JSONResponse) VisitGetUserOpsCustomerDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserOpsCustomerDetail404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetUserOpsCustomerDetail404JSONResponse) VisitGetUserOpsCustomerDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserOpsCustomerDetail503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetUserOpsCustomerDetail503JSONResponse) VisitGetUserOpsCustomerDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ClearUserOpsCustomerDndRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     ClearUserOpsCustomerDndParams
+	Body       *ClearUserOpsCustomerDndJSONRequestBody
+}
+
+type ClearUserOpsCustomerDndResponseObject interface {
+	VisitClearUserOpsCustomerDndResponse(w http.ResponseWriter) error
+}
+
+type ClearUserOpsCustomerDnd200JSONResponse UserOpsDndMutationResponse
+
+func (response ClearUserOpsCustomerDnd200JSONResponse) VisitClearUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ClearUserOpsCustomerDnd400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ClearUserOpsCustomerDnd400JSONResponse) VisitClearUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ClearUserOpsCustomerDnd401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ClearUserOpsCustomerDnd401JSONResponse) VisitClearUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ClearUserOpsCustomerDnd403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ClearUserOpsCustomerDnd403JSONResponse) VisitClearUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ClearUserOpsCustomerDnd404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ClearUserOpsCustomerDnd404JSONResponse) VisitClearUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ClearUserOpsCustomerDnd409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ClearUserOpsCustomerDnd409JSONResponse) VisitClearUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ClearUserOpsCustomerDnd503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ClearUserOpsCustomerDnd503JSONResponse) VisitClearUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetUserOpsCustomerDndRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     SetUserOpsCustomerDndParams
+	Body       *SetUserOpsCustomerDndJSONRequestBody
+}
+
+type SetUserOpsCustomerDndResponseObject interface {
+	VisitSetUserOpsCustomerDndResponse(w http.ResponseWriter) error
+}
+
+type SetUserOpsCustomerDnd200JSONResponse UserOpsDndMutationResponse
+
+func (response SetUserOpsCustomerDnd200JSONResponse) VisitSetUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetUserOpsCustomerDnd400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SetUserOpsCustomerDnd400JSONResponse) VisitSetUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetUserOpsCustomerDnd401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SetUserOpsCustomerDnd401JSONResponse) VisitSetUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetUserOpsCustomerDnd403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SetUserOpsCustomerDnd403JSONResponse) VisitSetUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetUserOpsCustomerDnd404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response SetUserOpsCustomerDnd404JSONResponse) VisitSetUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetUserOpsCustomerDnd409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SetUserOpsCustomerDnd409JSONResponse) VisitSetUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetUserOpsCustomerDnd503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response SetUserOpsCustomerDnd503JSONResponse) VisitSetUserOpsCustomerDndResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserOpsOverviewRequestObject struct {
+}
+
+type GetUserOpsOverviewResponseObject interface {
+	VisitGetUserOpsOverviewResponse(w http.ResponseWriter) error
+}
+
+type GetUserOpsOverview200JSONResponse UserOpsOverviewResponse
+
+func (response GetUserOpsOverview200JSONResponse) VisitGetUserOpsOverviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserOpsOverview400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetUserOpsOverview400JSONResponse) VisitGetUserOpsOverviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserOpsOverview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetUserOpsOverview401JSONResponse) VisitGetUserOpsOverviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserOpsOverview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetUserOpsOverview403JSONResponse) VisitGetUserOpsOverviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetUserOpsOverview503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetUserOpsOverview503JSONResponse) VisitGetUserOpsOverviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateUserOpsLocalPlanRequestObject struct {
+	Params CreateUserOpsLocalPlanParams
+	Body   *CreateUserOpsLocalPlanJSONRequestBody
+}
+
+type CreateUserOpsLocalPlanResponseObject interface {
+	VisitCreateUserOpsLocalPlanResponse(w http.ResponseWriter) error
+}
+
+type CreateUserOpsLocalPlan201JSONResponse UserOpsLocalPlanResponse
+
+func (response CreateUserOpsLocalPlan201JSONResponse) VisitCreateUserOpsLocalPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateUserOpsLocalPlan400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateUserOpsLocalPlan400JSONResponse) VisitCreateUserOpsLocalPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateUserOpsLocalPlan401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateUserOpsLocalPlan401JSONResponse) VisitCreateUserOpsLocalPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateUserOpsLocalPlan403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateUserOpsLocalPlan403JSONResponse) VisitCreateUserOpsLocalPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateUserOpsLocalPlan404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateUserOpsLocalPlan404JSONResponse) VisitCreateUserOpsLocalPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateUserOpsLocalPlan409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateUserOpsLocalPlan409JSONResponse) VisitCreateUserOpsLocalPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateUserOpsLocalPlan503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateUserOpsLocalPlan503JSONResponse) VisitCreateUserOpsLocalPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUserOpsSendRecordsRequestObject struct {
+	PlanId UserOpsPlanID `json:"plan_id"`
+	Params ListUserOpsSendRecordsParams
+}
+
+type ListUserOpsSendRecordsResponseObject interface {
+	VisitListUserOpsSendRecordsResponse(w http.ResponseWriter) error
+}
+
+type ListUserOpsSendRecords200JSONResponse UserOpsSendRecordPage
+
+func (response ListUserOpsSendRecords200JSONResponse) VisitListUserOpsSendRecordsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUserOpsSendRecords400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListUserOpsSendRecords400JSONResponse) VisitListUserOpsSendRecordsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUserOpsSendRecords401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListUserOpsSendRecords401JSONResponse) VisitListUserOpsSendRecordsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUserOpsSendRecords403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListUserOpsSendRecords403JSONResponse) VisitListUserOpsSendRecordsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUserOpsSendRecords404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListUserOpsSendRecords404JSONResponse) VisitListUserOpsSendRecordsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListUserOpsSendRecords503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListUserOpsSendRecords503JSONResponse) VisitListUserOpsSendRecordsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type DeleteLegacyWechatPayProductRequestObject struct {
 	ProductId ProductID `json:"product_id"`
 	Params    DeleteLegacyWechatPayProductParams
@@ -30772,6 +32258,33 @@ type StrictServerInterface interface {
 	// Atomically save two local setup-wizard settings
 	// (POST /api/admin/setup-wizard)
 	SaveSetupWizard(ctx context.Context, request SaveSetupWizardRequestObject) (SaveSetupWizardResponseObject, error)
+	// Compute current local targets and content digest without creating a plan or delivery
+	// (POST /api/admin/user-ops/batch-preview)
+	PreviewUserOpsBatch(ctx context.Context, request PreviewUserOpsBatchRequestObject) (PreviewUserOpsBatchResponseObject, error)
+	// List safe local CRM customer projections for User Ops
+	// (GET /api/admin/user-ops/customers)
+	ListUserOpsCustomers(ctx context.Context, request ListUserOpsCustomersRequestObject) (ListUserOpsCustomersResponseObject, error)
+	// Produce a whitelist-projected local export preview without creating a download or external effect
+	// (POST /api/admin/user-ops/customers/export)
+	PreviewUserOpsSafeExport(ctx context.Context, request PreviewUserOpsSafeExportRequestObject) (PreviewUserOpsSafeExportResponseObject, error)
+	// Read one safe local Customer 360 projection and local DND fact
+	// (GET /api/admin/user-ops/customers/{customer_id})
+	GetUserOpsCustomerDetail(ctx context.Context, request GetUserOpsCustomerDetailRequestObject) (GetUserOpsCustomerDetailResponseObject, error)
+	// Clear one local DND preference with optimistic concurrency and no provider effect
+	// (DELETE /api/admin/user-ops/customers/{customer_id}/dnd)
+	ClearUserOpsCustomerDnd(ctx context.Context, request ClearUserOpsCustomerDndRequestObject) (ClearUserOpsCustomerDndResponseObject, error)
+	// Set one local DND preference with optimistic concurrency and no provider effect
+	// (PUT /api/admin/user-ops/customers/{customer_id}/dnd)
+	SetUserOpsCustomerDnd(ctx context.Context, request SetUserOpsCustomerDndRequestObject) (SetUserOpsCustomerDndResponseObject, error)
+	// Read CRM-local User Ops overview without creating a delivery or provider effect
+	// (GET /api/admin/user-ops/overview)
+	GetUserOpsOverview(ctx context.Context, request GetUserOpsOverviewRequestObject) (GetUserOpsOverviewResponseObject, error)
+	// Create a local draft or pending-review plan without dispatching, sending, or invoking a provider
+	// (POST /api/admin/user-ops/plans)
+	CreateUserOpsLocalPlan(ctx context.Context, request CreateUserOpsLocalPlanRequestObject) (CreateUserOpsLocalPlanResponseObject, error)
+	// List local plan technical records; these are not proof of dispatch or delivery
+	// (GET /api/admin/user-ops/plans/{plan_id}/send-records)
+	ListUserOpsSendRecords(ctx context.Context, request ListUserOpsSendRecordsRequestObject) (ListUserOpsSendRecordsResponseObject, error)
 	// Delete only an unreferenced CRM-local draft product
 	// (DELETE /api/admin/wechat-pay/products/{product_id})
 	DeleteLegacyWechatPayProduct(ctx context.Context, request DeleteLegacyWechatPayProductRequestObject) (DeleteLegacyWechatPayProductResponseObject, error)
@@ -33445,6 +34958,272 @@ func (sh *strictHandler) SaveSetupWizard(w http.ResponseWriter, r *http.Request,
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(SaveSetupWizardResponseObject); ok {
 		if err := validResponse.VisitSaveSetupWizardResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PreviewUserOpsBatch operation middleware
+func (sh *strictHandler) PreviewUserOpsBatch(w http.ResponseWriter, r *http.Request) {
+	var request PreviewUserOpsBatchRequestObject
+
+	var body PreviewUserOpsBatchJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PreviewUserOpsBatch(ctx, request.(PreviewUserOpsBatchRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PreviewUserOpsBatch")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PreviewUserOpsBatchResponseObject); ok {
+		if err := validResponse.VisitPreviewUserOpsBatchResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListUserOpsCustomers operation middleware
+func (sh *strictHandler) ListUserOpsCustomers(w http.ResponseWriter, r *http.Request, params ListUserOpsCustomersParams) {
+	var request ListUserOpsCustomersRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListUserOpsCustomers(ctx, request.(ListUserOpsCustomersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListUserOpsCustomers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListUserOpsCustomersResponseObject); ok {
+		if err := validResponse.VisitListUserOpsCustomersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PreviewUserOpsSafeExport operation middleware
+func (sh *strictHandler) PreviewUserOpsSafeExport(w http.ResponseWriter, r *http.Request) {
+	var request PreviewUserOpsSafeExportRequestObject
+
+	var body PreviewUserOpsSafeExportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PreviewUserOpsSafeExport(ctx, request.(PreviewUserOpsSafeExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PreviewUserOpsSafeExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PreviewUserOpsSafeExportResponseObject); ok {
+		if err := validResponse.VisitPreviewUserOpsSafeExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetUserOpsCustomerDetail operation middleware
+func (sh *strictHandler) GetUserOpsCustomerDetail(w http.ResponseWriter, r *http.Request, customerId CustomerID) {
+	var request GetUserOpsCustomerDetailRequestObject
+
+	request.CustomerId = customerId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUserOpsCustomerDetail(ctx, request.(GetUserOpsCustomerDetailRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUserOpsCustomerDetail")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetUserOpsCustomerDetailResponseObject); ok {
+		if err := validResponse.VisitGetUserOpsCustomerDetailResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ClearUserOpsCustomerDnd operation middleware
+func (sh *strictHandler) ClearUserOpsCustomerDnd(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ClearUserOpsCustomerDndParams) {
+	var request ClearUserOpsCustomerDndRequestObject
+
+	request.CustomerId = customerId
+	request.Params = params
+
+	var body ClearUserOpsCustomerDndJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ClearUserOpsCustomerDnd(ctx, request.(ClearUserOpsCustomerDndRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ClearUserOpsCustomerDnd")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ClearUserOpsCustomerDndResponseObject); ok {
+		if err := validResponse.VisitClearUserOpsCustomerDndResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SetUserOpsCustomerDnd operation middleware
+func (sh *strictHandler) SetUserOpsCustomerDnd(w http.ResponseWriter, r *http.Request, customerId CustomerID, params SetUserOpsCustomerDndParams) {
+	var request SetUserOpsCustomerDndRequestObject
+
+	request.CustomerId = customerId
+	request.Params = params
+
+	var body SetUserOpsCustomerDndJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetUserOpsCustomerDnd(ctx, request.(SetUserOpsCustomerDndRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetUserOpsCustomerDnd")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetUserOpsCustomerDndResponseObject); ok {
+		if err := validResponse.VisitSetUserOpsCustomerDndResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetUserOpsOverview operation middleware
+func (sh *strictHandler) GetUserOpsOverview(w http.ResponseWriter, r *http.Request) {
+	var request GetUserOpsOverviewRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetUserOpsOverview(ctx, request.(GetUserOpsOverviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetUserOpsOverview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetUserOpsOverviewResponseObject); ok {
+		if err := validResponse.VisitGetUserOpsOverviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateUserOpsLocalPlan operation middleware
+func (sh *strictHandler) CreateUserOpsLocalPlan(w http.ResponseWriter, r *http.Request, params CreateUserOpsLocalPlanParams) {
+	var request CreateUserOpsLocalPlanRequestObject
+
+	request.Params = params
+
+	var body CreateUserOpsLocalPlanJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateUserOpsLocalPlan(ctx, request.(CreateUserOpsLocalPlanRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateUserOpsLocalPlan")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateUserOpsLocalPlanResponseObject); ok {
+		if err := validResponse.VisitCreateUserOpsLocalPlanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListUserOpsSendRecords operation middleware
+func (sh *strictHandler) ListUserOpsSendRecords(w http.ResponseWriter, r *http.Request, planId UserOpsPlanID, params ListUserOpsSendRecordsParams) {
+	var request ListUserOpsSendRecordsRequestObject
+
+	request.PlanId = planId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListUserOpsSendRecords(ctx, request.(ListUserOpsSendRecordsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListUserOpsSendRecords")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListUserOpsSendRecordsResponseObject); ok {
+		if err := validResponse.VisitListUserOpsSendRecordsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

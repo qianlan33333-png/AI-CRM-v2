@@ -22,7 +22,7 @@ func TestPreviewBatchExcludesDNDAndUsesCanonicalDigest(t *testing.T) {
 		}
 		return []domain.DoNotDisturb{testDND(2, "local suppression", 1)}, nil
 	}}
-	service := testService(&directoryStub{resolve: func(_ context.Context, ids []domain.CustomerID) ([]useropsport.CustomerSummary, error) {
+	service := testService(&directoryStub{resolve: func(_ context.Context, ids []domain.CustomerID, _ useropsport.CustomerResolutionMode) ([]useropsport.CustomerSummary, error) {
 		return []useropsport.CustomerSummary{testCustomer(3), testCustomer(1), testCustomer(2)}, nil
 	}}, &detailStub{}, repository, &eventStub{})
 
@@ -60,7 +60,7 @@ func TestCreateLocalPlanStrictReadbackAndNoExternalEffect(t *testing.T) {
 		},
 	}
 	events := &eventStub{}
-	service := testService(&directoryStub{resolve: customersForIDs}, &detailStub{}, repository, events)
+	service := testService(&directoryStub{resolve: customersForIDsWithMode}, &detailStub{}, repository, events)
 
 	result, err := service.CreateLocalPlan(context.Background(), useropsport.CreateLocalPlanInput{
 		CustomerIDs:           []domain.CustomerID{2, 1},
@@ -95,7 +95,7 @@ func TestCreateLocalPlanReplaySurvivesLaterDNDAndMaterialDrift(t *testing.T) {
 		}
 		return useropsport.PlanMutation{Mutation: useropsport.Mutation{Replayed: true}, Plan: &plan}, nil
 	}}
-	service := testServiceWithMaterials(&directoryStub{resolve: func(context.Context, []domain.CustomerID) ([]useropsport.CustomerSummary, error) {
+	service := testServiceWithMaterials(&directoryStub{resolve: func(context.Context, []domain.CustomerID, useropsport.CustomerResolutionMode) ([]useropsport.CustomerSummary, error) {
 		t.Fatal("directory must not run for replay after drift")
 		return nil, nil
 	}}, &detailStub{}, &materialStub{image: func(context.Context, int64) (bool, error) {
@@ -112,7 +112,7 @@ func TestCreateLocalPlanReplaySurvivesLaterDNDAndMaterialDrift(t *testing.T) {
 func TestCreateLocalPlanRejectsStalePreviewBeforeWrite(t *testing.T) {
 	repository := &repositoryStub{}
 	events := &eventStub{}
-	service := testService(&directoryStub{resolve: customersForIDs}, &detailStub{}, repository, events)
+	service := testService(&directoryStub{resolve: customersForIDsWithMode}, &detailStub{}, repository, events)
 
 	content := testContentSnapshot("draft local text")
 	_, err := service.CreateLocalPlan(context.Background(), useropsport.CreateLocalPlanInput{
@@ -144,7 +144,7 @@ func TestCreateLocalPlanReplayUsesSnapshotWithoutDuplicateEvent(t *testing.T) {
 		},
 	}
 	events := &eventStub{}
-	service := testService(&directoryStub{resolve: customersForIDs}, &detailStub{}, repository, events)
+	service := testService(&directoryStub{resolve: customersForIDsWithMode}, &detailStub{}, repository, events)
 
 	result, err := service.CreateLocalPlan(context.Background(), useropsport.CreateLocalPlanInput{
 		CustomerIDs:           []domain.CustomerID{1},
@@ -166,7 +166,7 @@ func TestCreateLocalPlanRejectsTamperedContentBeforeWrite(t *testing.T) {
 	tampered.Text = "changed local text"
 	repository := &repositoryStub{}
 	events := &eventStub{}
-	service := testService(&directoryStub{resolve: customersForIDs}, &detailStub{}, repository, events)
+	service := testService(&directoryStub{resolve: customersForIDsWithMode}, &detailStub{}, repository, events)
 
 	_, err := service.CreateLocalPlan(context.Background(), useropsport.CreateLocalPlanInput{
 		CustomerIDs:           []domain.CustomerID{1},
@@ -202,7 +202,7 @@ func TestCreateLocalPlanRejectsExpiredMaterialBeforeWrite(t *testing.T) {
 		miniProgram: func(context.Context, int64) (bool, error) { return true, nil },
 		attachment:  func(context.Context, int64) (bool, error) { return false, nil },
 	}
-	service := testServiceWithMaterials(&directoryStub{resolve: customersForIDs}, &detailStub{}, materials, repository, events)
+	service := testServiceWithMaterials(&directoryStub{resolve: customersForIDsWithMode}, &detailStub{}, materials, repository, events)
 
 	_, err = service.CreateLocalPlan(context.Background(), useropsport.CreateLocalPlanInput{
 		CustomerIDs:           []domain.CustomerID{1},
@@ -403,7 +403,9 @@ func TestOverviewListDetailAndSendRecordsFailClosedOnUnsafeShapes(t *testing.T) 
 
 	t.Run("send records", func(t *testing.T) {
 		plan := testPlan(81, domain.LocalPlanDraft, []domain.CustomerID{7})
-		service := testService(&directoryStub{}, &detailStub{}, &repositoryStub{records: func(context.Context, useropsport.SendRecordQuery) (useropsport.SendRecordPageRead, error) {
+		service := testService(&directoryStub{}, &detailStub{}, &repositoryStub{readPlan: func(context.Context, domain.PlanID) (domain.LocalPlan, error) {
+			return plan, nil
+		}, records: func(context.Context, useropsport.SendRecordQuery) (useropsport.SendRecordPageRead, error) {
 			return useropsport.SendRecordPageRead{Items: []domain.SendRecord{{ID: 1, PlanID: plan.ID, CustomerID: 7, TechnicalStatus: domain.SendTechnicalStateNotDispatched, CreatedAt: testNow, UpdatedAt: testNow}}, Total: 1}, nil
 		}}, &eventStub{})
 		result, err := service.ListSendRecords(context.Background(), useropsport.SendRecordQuery{PlanID: plan.ID})
@@ -411,6 +413,16 @@ func TestOverviewListDetailAndSendRecordsFailClosedOnUnsafeShapes(t *testing.T) 
 			t.Fatalf("result/error = %#v / %v", result, err)
 		}
 		assertLocalSafety(t, result.Safety)
+	})
+
+	t.Run("missing plan", func(t *testing.T) {
+		service := testService(&directoryStub{}, &detailStub{}, &repositoryStub{readPlan: func(context.Context, domain.PlanID) (domain.LocalPlan, error) {
+			return domain.LocalPlan{}, useropsport.ErrNotFound
+		}}, &eventStub{})
+		_, err := service.ListSendRecords(context.Background(), useropsport.SendRecordQuery{PlanID: 81})
+		if !errors.Is(err, useropsport.ErrNotFound) {
+			t.Fatalf("error = %v", err)
+		}
 	})
 }
 
@@ -490,6 +502,10 @@ func customersForIDs(_ context.Context, ids []domain.CustomerID) ([]useropsport.
 	return items, nil
 }
 
+func customersForIDsWithMode(ctx context.Context, ids []domain.CustomerID, _ useropsport.CustomerResolutionMode) ([]useropsport.CustomerSummary, error) {
+	return customersForIDs(ctx, ids)
+}
+
 func assertLocalSafety(t *testing.T, safety useropsport.Safety) {
 	t.Helper()
 	if safety.ProviderExecutionEligible || safety.RealExternalCallExecuted || safety.DeliveryProven {
@@ -522,7 +538,7 @@ func (uowStub) Within(ctx context.Context, callback func(context.Context) error)
 type directoryStub struct {
 	overview func(context.Context, useropsport.DirectoryQuery) (useropsport.DirectoryOverviewRead, error)
 	list     func(context.Context, useropsport.DirectoryQuery) (useropsport.DirectoryPageRead, error)
-	resolve  func(context.Context, []domain.CustomerID) ([]useropsport.CustomerSummary, error)
+	resolve  func(context.Context, []domain.CustomerID, useropsport.CustomerResolutionMode) ([]useropsport.CustomerSummary, error)
 }
 
 func (stub *directoryStub) ReadOverview(ctx context.Context, input useropsport.DirectoryQuery) (useropsport.DirectoryOverviewRead, error) {
@@ -539,11 +555,11 @@ func (stub *directoryStub) ListCustomers(ctx context.Context, input useropsport.
 	return stub.list(ctx, input)
 }
 
-func (stub *directoryStub) ResolveCustomers(ctx context.Context, ids []domain.CustomerID) ([]useropsport.CustomerSummary, error) {
+func (stub *directoryStub) ResolveCustomers(ctx context.Context, ids []domain.CustomerID, mode useropsport.CustomerResolutionMode) ([]useropsport.CustomerSummary, error) {
 	if stub.resolve == nil {
 		return customersForIDs(ctx, ids)
 	}
-	return stub.resolve(ctx, ids)
+	return stub.resolve(ctx, ids, mode)
 }
 
 type detailStub struct {

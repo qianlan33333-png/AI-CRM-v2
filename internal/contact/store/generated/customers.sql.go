@@ -299,3 +299,33 @@ func (q *Queries) ListCustomers(ctx context.Context, arg ListCustomersParams) ([
 	}
 	return items, nil
 }
+
+const lockActiveCustomerReferences = `-- name: LockActiveCustomerReferences :many
+SELECT
+  c.id
+FROM customers AS c
+WHERE c.id = ANY($1::bigint[])
+  AND NOT c.is_deleted
+ORDER BY c.id
+FOR SHARE
+`
+
+func (q *Queries) LockActiveCustomerReferences(ctx context.Context, customerIds []int64) ([]int64, error) {
+	rows, err := q.db.Query(ctx, lockActiveCustomerReferences, customerIds)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

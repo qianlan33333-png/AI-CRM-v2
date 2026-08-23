@@ -288,6 +288,7 @@ func (service *Service) CreateLocalPlan(ctx context.Context, input useropsport.C
 		}
 		return service.events.Append(tx, useropsport.LocalEvent{
 			Type:           eventLocalPlanCreated,
+			ActorID:        input.ActorID,
 			PlanID:         result.ID,
 			Version:        result.Version,
 			TargetCount:    result.TargetCount,
@@ -343,6 +344,7 @@ func (service *Service) SetDND(ctx context.Context, input useropsport.UpsertDNDI
 		result = *stored
 		return service.events.Append(tx, useropsport.LocalEvent{
 			Type:           eventDNDSet,
+			ActorID:        input.ActorID,
 			CustomerID:     result.CustomerID,
 			Version:        result.Version,
 			OccurredAt:     now,
@@ -386,6 +388,7 @@ func (service *Service) ClearDND(ctx context.Context, input useropsport.ClearDND
 		}
 		return service.events.Append(tx, useropsport.LocalEvent{
 			Type:           eventDNDCleared,
+			ActorID:        input.ActorID,
 			CustomerID:     input.CustomerID,
 			Version:        input.ExpectedVersion,
 			OccurredAt:     now,
@@ -403,9 +406,17 @@ func (service *Service) ListSendRecords(ctx context.Context, input useropsport.S
 	if err != nil || !service.ready(service.repository) || ctx == nil {
 		return useropsport.SendRecordPage{}, invalidOrUnavailable(err, service.ready(service.repository), ctx)
 	}
+	var plan domain.LocalPlan
 	var page useropsport.SendRecordPageRead
 	err = service.uow.Within(ctx, func(tx context.Context) error {
 		var readErr error
+		plan, readErr = service.repository.ReadLocalPlan(tx, query.PlanID)
+		if readErr != nil {
+			return readErr
+		}
+		if !validPlan(plan) || plan.ID != query.PlanID {
+			return useropsport.ErrUnavailable
+		}
 		page, readErr = service.repository.ListSendRecords(tx, query)
 		return readErr
 	})
@@ -424,7 +435,11 @@ func (service *Service) ListSendRecords(ctx context.Context, input useropsport.S
 }
 
 func (service *Service) resolveTargets(ctx context.Context, ids []domain.CustomerID, lockDND bool) ([]domain.CustomerID, int32, error) {
-	resolved, err := service.directory.ResolveCustomers(ctx, ids)
+	resolutionMode := useropsport.CustomerResolutionRead
+	if lockDND {
+		resolutionMode = useropsport.CustomerResolutionForWrite
+	}
+	resolved, err := service.directory.ResolveCustomers(ctx, ids, resolutionMode)
 	if err != nil {
 		return nil, 0, err
 	}

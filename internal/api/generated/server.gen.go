@@ -179,6 +179,9 @@ type TagGroupID = int64
 // TagID defines model for TagID.
 type TagID = int64
 
+// UserOpsPlanID defines model for UserOpsPlanID.
+type UserOpsPlanID = string
+
 // AsSegmentDefinitionAnd returns the union data inside the SegmentDefinition as a SegmentDefinitionAnd
 func (t SegmentDefinition) AsSegmentDefinitionAnd() (SegmentDefinitionAnd, error) {
 	var body SegmentDefinitionAnd

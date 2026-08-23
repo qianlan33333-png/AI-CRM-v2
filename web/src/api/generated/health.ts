@@ -12101,6 +12101,329 @@ export interface AutomationTriggerRunListResponse {
   visibility: AutomationTriggerRunListResponseVisibility;
 }
 
+export type UserOpsProviderExecutionEligible = boolean;
+
+export type UserOpsRealExternalCallExecuted = boolean;
+
+export type UserOpsDeliveryProven = boolean;
+
+export interface UserOpsDirectoryQuery {
+  /** @maxLength 200 */
+  keyword?: string;
+  /** @minimum 1 */
+  owner_staff_id?: number;
+  /** @minimum 1 */
+  stage_id?: number;
+  /** @minimum 1 */
+  channel_id?: number;
+  /** @minimum 1 */
+  tag_id?: number;
+  /**
+   * @minLength 1
+   * @maxLength 64
+   */
+  phone_exact?: string;
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+}
+
+export interface UserOpsCustomer {
+  /** @minimum 1 */
+  customer_id: number;
+  name: string;
+  /** @minimum 1 */
+  owner_staff_id?: number;
+  /** @minimum 1 */
+  stage_id?: number;
+  /** @minimum 1 */
+  channel_id?: number;
+  added_at?: string;
+  last_interact_at?: string;
+}
+
+export interface UserOpsCustomerTag {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  group_id?: number;
+  group_name?: string;
+  name: string;
+}
+
+export interface UserOpsTimelineEntry {
+  /** @minLength 1 */
+  event_type: string;
+  occurred_at: string;
+}
+
+export interface UserOpsDnd {
+  /** @minimum 1 */
+  customer_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+  /** @minimum 1 */
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserOpsOverviewResponse {
+  /** @minimum 0 */
+  customer_count: number;
+  customer_count_is_estimate: boolean;
+  /** @minimum 0 */
+  active_dnd_count: number;
+  /** @minimum 0 */
+  draft_plan_count: number;
+  /** @minimum 0 */
+  pending_review_plan_count: number;
+  provider_execution_eligible: UserOpsProviderExecutionEligible;
+  real_external_call_executed: UserOpsRealExternalCallExecuted;
+  delivery_proven: UserOpsDeliveryProven;
+}
+
+export interface UserOpsCustomerPage {
+  items: UserOpsCustomer[];
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  next_cursor?: string;
+  /** @minimum 0 */
+  total: number;
+  total_is_estimate: boolean;
+  provider_execution_eligible: UserOpsProviderExecutionEligible;
+  real_external_call_executed: UserOpsRealExternalCallExecuted;
+  delivery_proven: UserOpsDeliveryProven;
+}
+
+export interface UserOpsCustomerDetailResponse {
+  customer: UserOpsCustomer;
+  tags: UserOpsCustomerTag[];
+  /** @maxItems 30 */
+  timeline: UserOpsTimelineEntry[];
+  dnd?: UserOpsDnd;
+  provider_execution_eligible: UserOpsProviderExecutionEligible;
+  real_external_call_executed: UserOpsRealExternalCallExecuted;
+  delivery_proven: UserOpsDeliveryProven;
+}
+
+export type UserOpsSafeExportField =
+  (typeof UserOpsSafeExportField)[keyof typeof UserOpsSafeExportField];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UserOpsSafeExportField = {
+  UserOpsSafeExportFieldCustomerID: "customer_id",
+  UserOpsSafeExportFieldName: "name",
+  UserOpsSafeExportFieldOwnerStaffID: "owner_staff_id",
+  UserOpsSafeExportFieldStageID: "stage_id",
+  UserOpsSafeExportFieldChannelID: "channel_id",
+  UserOpsSafeExportFieldAddedAt: "added_at",
+  UserOpsSafeExportFieldLastInteractAt: "last_interact_at",
+} as const;
+
+export interface UserOpsSafeExportRequest {
+  query: UserOpsDirectoryQuery;
+  /**
+   * @minItems 1
+   * @maxItems 7
+   */
+  fields: UserOpsSafeExportField[];
+}
+
+export interface UserOpsSafeExportResponse {
+  /**
+   * @minItems 1
+   * @maxItems 7
+   */
+  fields: UserOpsSafeExportField[];
+  rows: string[][];
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  next_cursor?: string;
+  /** @minimum 0 */
+  total: number;
+  total_is_estimate: boolean;
+  provider_execution_eligible: UserOpsProviderExecutionEligible;
+  real_external_call_executed: UserOpsRealExternalCallExecuted;
+  delivery_proven: UserOpsDeliveryProven;
+}
+
+export interface UserOpsContentInput {
+  /** @maxLength 4000 */
+  text: string;
+  /** @maxItems 3 */
+  image_library_ids: number[];
+  /** @maxItems 1 */
+  miniprogram_library_ids: number[];
+  /** @maxItems 9 */
+  attachment_library_ids: number[];
+}
+
+export interface UserOpsContentSnapshot {
+  /** @maxLength 4000 */
+  text: string;
+  /** @maxItems 3 */
+  image_library_ids: number[];
+  /** @maxItems 1 */
+  miniprogram_library_ids: number[];
+  /** @maxItems 9 */
+  attachment_library_ids: number[];
+  /** @pattern ^[a-f0-9]{64}$ */
+  content_digest: string;
+}
+
+export interface UserOpsBatchPreviewRequest {
+  /**
+   * @minItems 1
+   * @maxItems 1000
+   */
+  customer_ids: number[];
+  content: UserOpsContentInput;
+}
+
+export interface UserOpsBatchPreviewResponse {
+  /** @maxItems 1000 */
+  target_customer_ids: number[];
+  /** @minimum 0 */
+  excluded_dnd_count: number;
+  /** @pattern ^[a-f0-9]{64}$ */
+  target_digest: string;
+  content: UserOpsContentSnapshot;
+  provider_execution_eligible: UserOpsProviderExecutionEligible;
+  real_external_call_executed: UserOpsRealExternalCallExecuted;
+  delivery_proven: UserOpsDeliveryProven;
+}
+
+export type UserOpsLocalPlanState =
+  (typeof UserOpsLocalPlanState)[keyof typeof UserOpsLocalPlanState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UserOpsLocalPlanState = {
+  UserOpsLocalPlanStateDraft: "draft",
+  UserOpsLocalPlanStatePendingReview: "pending_review",
+} as const;
+
+export interface UserOpsCreateLocalPlanRequest {
+  /**
+   * @minItems 1
+   * @maxItems 1000
+   */
+  customer_ids: number[];
+  /** @pattern ^[a-f0-9]{64}$ */
+  expected_target_digest: string;
+  content: UserOpsContentInput;
+  /** @pattern ^[a-f0-9]{64}$ */
+  expected_content_digest: string;
+  state: UserOpsLocalPlanState;
+}
+
+export interface UserOpsLocalPlan {
+  /**
+   * @minLength 1
+   * @maxLength 19
+   * @pattern ^(?:[1-9][0-9]{0,17}|[1-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-7])$
+   */
+  plan_id: string;
+  state: UserOpsLocalPlanState;
+  content: UserOpsContentSnapshot;
+  /** @pattern ^[a-f0-9]{64}$ */
+  target_digest: string;
+  /** @minimum 1 */
+  target_count: number;
+  /** @minimum 1 */
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserOpsLocalPlanResponse {
+  plan: UserOpsLocalPlan;
+  provider_execution_eligible: UserOpsProviderExecutionEligible;
+  real_external_call_executed: UserOpsRealExternalCallExecuted;
+  delivery_proven: UserOpsDeliveryProven;
+}
+
+export interface UserOpsSetDndRequest {
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+  /** @minimum 1 */
+  expected_version?: number;
+}
+
+export interface UserOpsClearDndRequest {
+  /** @minimum 1 */
+  expected_version: number;
+}
+
+export interface UserOpsDndMutationResponse {
+  dnd?: UserOpsDnd;
+  cleared: boolean;
+  provider_execution_eligible: UserOpsProviderExecutionEligible;
+  real_external_call_executed: UserOpsRealExternalCallExecuted;
+  delivery_proven: UserOpsDeliveryProven;
+}
+
+export type UserOpsSendTechnicalState =
+  (typeof UserOpsSendTechnicalState)[keyof typeof UserOpsSendTechnicalState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UserOpsSendTechnicalState = {
+  UserOpsSendTechnicalStateDraft: "draft",
+  UserOpsSendTechnicalStatePendingReview: "pending_review",
+  UserOpsSendTechnicalStateNotDispatched: "not_dispatched",
+} as const;
+
+export interface UserOpsSendRecord {
+  /**
+   * @minLength 1
+   * @maxLength 19
+   * @pattern ^(?:[1-9][0-9]{0,17}|[1-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-7])$
+   */
+  send_record_id: string;
+  /**
+   * @minLength 1
+   * @maxLength 19
+   * @pattern ^(?:[1-9][0-9]{0,17}|[1-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-7])$
+   */
+  plan_id: string;
+  /** @minimum 1 */
+  customer_id: number;
+  technical_status: UserOpsSendTechnicalState;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserOpsSendRecordPage {
+  items: UserOpsSendRecord[];
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  next_cursor?: string;
+  /** @minimum 0 */
+  total: number;
+  provider_execution_eligible: UserOpsProviderExecutionEligible;
+  real_external_call_executed: UserOpsRealExternalCallExecuted;
+  delivery_proven: UserOpsDeliveryProven;
+}
+
 /**
  * Closed CRM-local safe projection; no provider or external call was executed.
  */
@@ -12207,6 +12530,21 @@ export type CSRFTokenParameter = string;
  * Stable caller key; reusing it with a different normalized command is a conflict.
  */
 export type IdempotencyKeyParameter = string;
+
+/**
+ * Stable local User Ops command key; exact retries replay and mismatches conflict.
+ */
+export type UserOpsIdempotencyKeyParameter = string;
+
+/**
+ * Phone lookup input resolved only by Identity; it is never returned in a User Ops projection.
+ */
+export type UserOpsPhoneExactParameter = string;
+
+/**
+ * Maximum local User Ops rows returned in one page.
+ */
+export type UserOpsLimitParameter = number;
 
 /**
  * Stable local-only setup-wizard request key; exact retries replay and mismatches conflict.
@@ -12602,6 +12940,63 @@ export type ListAutomationTriggerRunsVisibility =
 export const ListAutomationTriggerRunsVisibility = {
   masked: "masked",
 } as const;
+
+export type ListUserOpsCustomersParams = {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  keyword?: CustomerKeywordParameter;
+  /**
+   * @minimum 1
+   */
+  owner_staff_id?: OwnerStaffIDFilterParameter;
+  /**
+   * @minimum 1
+   */
+  stage_id?: StageIDFilterParameter;
+  /**
+   * @minimum 1
+   */
+  channel_id?: ChannelIDFilterParameter;
+  /**
+   * @minimum 1
+   */
+  tag_id?: TagIDFilterParameter;
+  /**
+   * Phone lookup input resolved only by Identity; it is never returned in a User Ops projection.
+   * @minLength 1
+   * @maxLength 64
+   */
+  phone_exact?: UserOpsPhoneExactParameter;
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * Maximum local User Ops rows returned in one page.
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: UserOpsLimitParameter;
+};
+
+export type ListUserOpsSendRecordsParams = {
+  /**
+   * Opaque keyset cursor; clients must not parse or synthesize it.
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: CursorParameter;
+  /**
+   * Maximum local User Ops rows returned in one page.
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: UserOpsLimitParameter;
+};
 
 export type CreateLegacyWecomTag200 =
   LegacyTagCreateSuccess | LegacyTagCreateValidatedSuccess;
@@ -19795,6 +20190,728 @@ export const getAudiencePackageDetailWorkspace = async (
     status: res.status,
     headers: res.headers,
   } as getAudiencePackageDetailWorkspaceResponse;
+};
+
+/**
+ * @summary Read CRM-local User Ops overview without creating a delivery or provider effect
+ */
+export type getUserOpsOverviewResponse200 = {
+  data: UserOpsOverviewResponse;
+  status: 200;
+};
+
+export type getUserOpsOverviewResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getUserOpsOverviewResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getUserOpsOverviewResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getUserOpsOverviewResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getUserOpsOverviewResponseSuccess =
+  getUserOpsOverviewResponse200 & {
+    headers: Headers;
+  };
+export type getUserOpsOverviewResponseError = (
+  | getUserOpsOverviewResponse400
+  | getUserOpsOverviewResponse401
+  | getUserOpsOverviewResponse403
+  | getUserOpsOverviewResponse503
+) & {
+  headers: Headers;
+};
+
+export type getUserOpsOverviewResponse =
+  getUserOpsOverviewResponseSuccess | getUserOpsOverviewResponseError;
+
+export const getGetUserOpsOverviewUrl = () => {
+  return `/api/admin/user-ops/overview`;
+};
+
+export const getUserOpsOverview = async (
+  options?: RequestInit,
+): Promise<getUserOpsOverviewResponse> => {
+  const res = await fetch(getGetUserOpsOverviewUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getUserOpsOverviewResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getUserOpsOverviewResponse;
+};
+
+/**
+ * @summary List safe local CRM customer projections for User Ops
+ */
+export type listUserOpsCustomersResponse200 = {
+  data: UserOpsCustomerPage;
+  status: 200;
+};
+
+export type listUserOpsCustomersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listUserOpsCustomersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listUserOpsCustomersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listUserOpsCustomersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listUserOpsCustomersResponseSuccess =
+  listUserOpsCustomersResponse200 & {
+    headers: Headers;
+  };
+export type listUserOpsCustomersResponseError = (
+  | listUserOpsCustomersResponse400
+  | listUserOpsCustomersResponse401
+  | listUserOpsCustomersResponse403
+  | listUserOpsCustomersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listUserOpsCustomersResponse =
+  listUserOpsCustomersResponseSuccess | listUserOpsCustomersResponseError;
+
+export const getListUserOpsCustomersUrl = (
+  params?: ListUserOpsCustomersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/user-ops/customers?${stringifiedParams}`
+    : `/api/admin/user-ops/customers`;
+};
+
+export const listUserOpsCustomers = async (
+  params?: ListUserOpsCustomersParams,
+  options?: RequestInit,
+): Promise<listUserOpsCustomersResponse> => {
+  const res = await fetch(getListUserOpsCustomersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listUserOpsCustomersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listUserOpsCustomersResponse;
+};
+
+/**
+ * @summary Read one safe local Customer 360 projection and local DND fact
+ */
+export type getUserOpsCustomerDetailResponse200 = {
+  data: UserOpsCustomerDetailResponse;
+  status: 200;
+};
+
+export type getUserOpsCustomerDetailResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getUserOpsCustomerDetailResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getUserOpsCustomerDetailResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getUserOpsCustomerDetailResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getUserOpsCustomerDetailResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getUserOpsCustomerDetailResponseSuccess =
+  getUserOpsCustomerDetailResponse200 & {
+    headers: Headers;
+  };
+export type getUserOpsCustomerDetailResponseError = (
+  | getUserOpsCustomerDetailResponse400
+  | getUserOpsCustomerDetailResponse401
+  | getUserOpsCustomerDetailResponse403
+  | getUserOpsCustomerDetailResponse404
+  | getUserOpsCustomerDetailResponse503
+) & {
+  headers: Headers;
+};
+
+export type getUserOpsCustomerDetailResponse =
+  | getUserOpsCustomerDetailResponseSuccess
+  | getUserOpsCustomerDetailResponseError;
+
+export const getGetUserOpsCustomerDetailUrl = (customerId: number) => {
+  return `/api/admin/user-ops/customers/${customerId}`;
+};
+
+export const getUserOpsCustomerDetail = async (
+  customerId: number,
+  options?: RequestInit,
+): Promise<getUserOpsCustomerDetailResponse> => {
+  const res = await fetch(getGetUserOpsCustomerDetailUrl(customerId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getUserOpsCustomerDetailResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getUserOpsCustomerDetailResponse;
+};
+
+/**
+ * @summary Produce a whitelist-projected local export preview without creating a download or external effect
+ */
+export type previewUserOpsSafeExportResponse200 = {
+  data: UserOpsSafeExportResponse;
+  status: 200;
+};
+
+export type previewUserOpsSafeExportResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type previewUserOpsSafeExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type previewUserOpsSafeExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type previewUserOpsSafeExportResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type previewUserOpsSafeExportResponseSuccess =
+  previewUserOpsSafeExportResponse200 & {
+    headers: Headers;
+  };
+export type previewUserOpsSafeExportResponseError = (
+  | previewUserOpsSafeExportResponse400
+  | previewUserOpsSafeExportResponse401
+  | previewUserOpsSafeExportResponse403
+  | previewUserOpsSafeExportResponse503
+) & {
+  headers: Headers;
+};
+
+export type previewUserOpsSafeExportResponse =
+  | previewUserOpsSafeExportResponseSuccess
+  | previewUserOpsSafeExportResponseError;
+
+export const getPreviewUserOpsSafeExportUrl = () => {
+  return `/api/admin/user-ops/customers/export`;
+};
+
+export const previewUserOpsSafeExport = async (
+  userOpsSafeExportRequest: UserOpsSafeExportRequest,
+  options?: RequestInit,
+): Promise<previewUserOpsSafeExportResponse> => {
+  const res = await fetch(getPreviewUserOpsSafeExportUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(userOpsSafeExportRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: previewUserOpsSafeExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as previewUserOpsSafeExportResponse;
+};
+
+/**
+ * @summary Compute current local targets and content digest without creating a plan or delivery
+ */
+export type previewUserOpsBatchResponse200 = {
+  data: UserOpsBatchPreviewResponse;
+  status: 200;
+};
+
+export type previewUserOpsBatchResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type previewUserOpsBatchResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type previewUserOpsBatchResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type previewUserOpsBatchResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type previewUserOpsBatchResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type previewUserOpsBatchResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type previewUserOpsBatchResponseSuccess =
+  previewUserOpsBatchResponse200 & {
+    headers: Headers;
+  };
+export type previewUserOpsBatchResponseError = (
+  | previewUserOpsBatchResponse400
+  | previewUserOpsBatchResponse401
+  | previewUserOpsBatchResponse403
+  | previewUserOpsBatchResponse404
+  | previewUserOpsBatchResponse409
+  | previewUserOpsBatchResponse503
+) & {
+  headers: Headers;
+};
+
+export type previewUserOpsBatchResponse =
+  previewUserOpsBatchResponseSuccess | previewUserOpsBatchResponseError;
+
+export const getPreviewUserOpsBatchUrl = () => {
+  return `/api/admin/user-ops/batch-preview`;
+};
+
+export const previewUserOpsBatch = async (
+  userOpsBatchPreviewRequest: UserOpsBatchPreviewRequest,
+  options?: RequestInit,
+): Promise<previewUserOpsBatchResponse> => {
+  const res = await fetch(getPreviewUserOpsBatchUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(userOpsBatchPreviewRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: previewUserOpsBatchResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as previewUserOpsBatchResponse;
+};
+
+/**
+ * @summary Create a local draft or pending-review plan without dispatching, sending, or invoking a provider
+ */
+export type createUserOpsLocalPlanResponse201 = {
+  data: UserOpsLocalPlanResponse;
+  status: 201;
+};
+
+export type createUserOpsLocalPlanResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createUserOpsLocalPlanResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createUserOpsLocalPlanResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createUserOpsLocalPlanResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type createUserOpsLocalPlanResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createUserOpsLocalPlanResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createUserOpsLocalPlanResponseSuccess =
+  createUserOpsLocalPlanResponse201 & {
+    headers: Headers;
+  };
+export type createUserOpsLocalPlanResponseError = (
+  | createUserOpsLocalPlanResponse400
+  | createUserOpsLocalPlanResponse401
+  | createUserOpsLocalPlanResponse403
+  | createUserOpsLocalPlanResponse404
+  | createUserOpsLocalPlanResponse409
+  | createUserOpsLocalPlanResponse503
+) & {
+  headers: Headers;
+};
+
+export type createUserOpsLocalPlanResponse =
+  createUserOpsLocalPlanResponseSuccess | createUserOpsLocalPlanResponseError;
+
+export const getCreateUserOpsLocalPlanUrl = () => {
+  return `/api/admin/user-ops/plans`;
+};
+
+export const createUserOpsLocalPlan = async (
+  userOpsCreateLocalPlanRequest: UserOpsCreateLocalPlanRequest,
+  options?: RequestInit,
+): Promise<createUserOpsLocalPlanResponse> => {
+  const res = await fetch(getCreateUserOpsLocalPlanUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(userOpsCreateLocalPlanRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createUserOpsLocalPlanResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createUserOpsLocalPlanResponse;
+};
+
+/**
+ * @summary Set one local DND preference with optimistic concurrency and no provider effect
+ */
+export type setUserOpsCustomerDndResponse200 = {
+  data: UserOpsDndMutationResponse;
+  status: 200;
+};
+
+export type setUserOpsCustomerDndResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type setUserOpsCustomerDndResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type setUserOpsCustomerDndResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type setUserOpsCustomerDndResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type setUserOpsCustomerDndResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type setUserOpsCustomerDndResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type setUserOpsCustomerDndResponseSuccess =
+  setUserOpsCustomerDndResponse200 & {
+    headers: Headers;
+  };
+export type setUserOpsCustomerDndResponseError = (
+  | setUserOpsCustomerDndResponse400
+  | setUserOpsCustomerDndResponse401
+  | setUserOpsCustomerDndResponse403
+  | setUserOpsCustomerDndResponse404
+  | setUserOpsCustomerDndResponse409
+  | setUserOpsCustomerDndResponse503
+) & {
+  headers: Headers;
+};
+
+export type setUserOpsCustomerDndResponse =
+  setUserOpsCustomerDndResponseSuccess | setUserOpsCustomerDndResponseError;
+
+export const getSetUserOpsCustomerDndUrl = (customerId: number) => {
+  return `/api/admin/user-ops/customers/${customerId}/dnd`;
+};
+
+export const setUserOpsCustomerDnd = async (
+  customerId: number,
+  userOpsSetDndRequest: UserOpsSetDndRequest,
+  options?: RequestInit,
+): Promise<setUserOpsCustomerDndResponse> => {
+  const res = await fetch(getSetUserOpsCustomerDndUrl(customerId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(userOpsSetDndRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: setUserOpsCustomerDndResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as setUserOpsCustomerDndResponse;
+};
+
+/**
+ * @summary Clear one local DND preference with optimistic concurrency and no provider effect
+ */
+export type clearUserOpsCustomerDndResponse200 = {
+  data: UserOpsDndMutationResponse;
+  status: 200;
+};
+
+export type clearUserOpsCustomerDndResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type clearUserOpsCustomerDndResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type clearUserOpsCustomerDndResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type clearUserOpsCustomerDndResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type clearUserOpsCustomerDndResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type clearUserOpsCustomerDndResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type clearUserOpsCustomerDndResponseSuccess =
+  clearUserOpsCustomerDndResponse200 & {
+    headers: Headers;
+  };
+export type clearUserOpsCustomerDndResponseError = (
+  | clearUserOpsCustomerDndResponse400
+  | clearUserOpsCustomerDndResponse401
+  | clearUserOpsCustomerDndResponse403
+  | clearUserOpsCustomerDndResponse404
+  | clearUserOpsCustomerDndResponse409
+  | clearUserOpsCustomerDndResponse503
+) & {
+  headers: Headers;
+};
+
+export type clearUserOpsCustomerDndResponse =
+  clearUserOpsCustomerDndResponseSuccess | clearUserOpsCustomerDndResponseError;
+
+export const getClearUserOpsCustomerDndUrl = (customerId: number) => {
+  return `/api/admin/user-ops/customers/${customerId}/dnd`;
+};
+
+export const clearUserOpsCustomerDnd = async (
+  customerId: number,
+  userOpsClearDndRequest: UserOpsClearDndRequest,
+  options?: RequestInit,
+): Promise<clearUserOpsCustomerDndResponse> => {
+  const res = await fetch(getClearUserOpsCustomerDndUrl(customerId), {
+    ...options,
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(userOpsClearDndRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: clearUserOpsCustomerDndResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as clearUserOpsCustomerDndResponse;
+};
+
+/**
+ * @summary List local plan technical records; these are not proof of dispatch or delivery
+ */
+export type listUserOpsSendRecordsResponse200 = {
+  data: UserOpsSendRecordPage;
+  status: 200;
+};
+
+export type listUserOpsSendRecordsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listUserOpsSendRecordsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listUserOpsSendRecordsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listUserOpsSendRecordsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listUserOpsSendRecordsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listUserOpsSendRecordsResponseSuccess =
+  listUserOpsSendRecordsResponse200 & {
+    headers: Headers;
+  };
+export type listUserOpsSendRecordsResponseError = (
+  | listUserOpsSendRecordsResponse400
+  | listUserOpsSendRecordsResponse401
+  | listUserOpsSendRecordsResponse403
+  | listUserOpsSendRecordsResponse404
+  | listUserOpsSendRecordsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listUserOpsSendRecordsResponse =
+  listUserOpsSendRecordsResponseSuccess | listUserOpsSendRecordsResponseError;
+
+export const getListUserOpsSendRecordsUrl = (
+  planId: string,
+  params?: ListUserOpsSendRecordsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/user-ops/plans/${planId}/send-records?${stringifiedParams}`
+    : `/api/admin/user-ops/plans/${planId}/send-records`;
+};
+
+export const listUserOpsSendRecords = async (
+  planId: string,
+  params?: ListUserOpsSendRecordsParams,
+  options?: RequestInit,
+): Promise<listUserOpsSendRecordsResponse> => {
+  const res = await fetch(getListUserOpsSendRecordsUrl(planId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listUserOpsSendRecordsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listUserOpsSendRecordsResponse;
 };
 
 /**
