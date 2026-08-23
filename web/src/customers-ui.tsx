@@ -14,6 +14,7 @@ import {
   type CustomerRole,
   type CustomerTransport,
 } from "./customers";
+import { campaignSourceHref } from "./cloud-orchestrator";
 import "./customers-list.css";
 
 export interface CustomerListPageProps {
@@ -74,15 +75,22 @@ function totalLabel(page: CustomerListPage): string {
 
 export function CustomerRows({
   items,
+  role,
   onCustomerNavigate,
 }: {
   readonly items: readonly CustomerRecord[];
+  readonly role?: CustomerRole;
   readonly onCustomerNavigate?: CustomerNavigateHandler;
 }) {
   return (
     <tbody>
-      {items.map((customer) => (
-        <tr key={customer.id}>
+      {items.map((customer) => {
+        const campaignHref =
+          role === "admin" || role === "ops"
+            ? campaignSourceHref("customer_selection", customer.id)
+            : undefined;
+        return (
+          <tr key={customer.id}>
           <th scope="row">
             <a
               className="customer-list__customer-name"
@@ -94,6 +102,11 @@ export function CustomerRows({
             <span className="customer-list__customer-id">
               OneID {customer.id}
             </span>
+            {campaignHref && (
+              <a className="customer-list__campaign-entry" href={campaignHref}>
+                以 OneID {customer.id} 发起 Campaign
+              </a>
+            )}
           </th>
           <td>{valueOrPlaceholder(customer.ownerStaffID, "未分配")}</td>
           <td>{valueOrPlaceholder(customer.stageID, "未设置")}</td>
@@ -101,8 +114,9 @@ export function CustomerRows({
           <td>{dateTimeCell(customer.addedAt)}</td>
           <td>{dateTimeCell(customer.lastInteractAt)}</td>
           <td>{customer.isDeleted ? "已删除" : "正常"}</td>
-        </tr>
-      ))}
+          </tr>
+        );
+      })}
     </tbody>
   );
 }
@@ -186,6 +200,7 @@ export function CustomerListContent({
           </thead>
           <CustomerRows
             items={page.items}
+            role={role}
             onCustomerNavigate={onCustomerNavigate}
           />
         </table>

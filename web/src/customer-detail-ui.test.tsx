@@ -81,6 +81,36 @@ describe("CustomerDetailPage", () => {
     expect(html).not.toContain("X-CSRF-Token");
   });
 
+  it.each(["admin", "ops"] as const)(
+    "offers the current canonical OneID Campaign entry to %s",
+    (role) => {
+      const html = renderToStaticMarkup(
+        <CustomerDetailPage
+          customerID={7}
+          initialSnapshot={snapshot}
+          role={role}
+          transport={transport()}
+        />,
+      );
+      expect(html).toContain(
+        'href="/admin/cloud-orchestrator/campaigns?source_kind=customer_selection&amp;source_id=7"',
+      );
+      expect(html).toContain("以 OneID 7 发起 Campaign");
+    },
+  );
+
+  it("keeps the detail Campaign entry hidden for sales", () => {
+    const html = renderToStaticMarkup(
+      <CustomerDetailPage
+        customerID={7}
+        initialSnapshot={snapshot}
+        role="sales"
+        transport={transport()}
+      />,
+    );
+    expect(html).not.toContain("发起 Campaign");
+  });
+
   it("renders the 404-safe missing state with an explicit return to the list", () => {
     const html = renderToStaticMarkup(<CustomerDetailMissingState />);
     expect(html).toContain('role="alert"');

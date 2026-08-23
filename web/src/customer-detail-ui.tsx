@@ -13,6 +13,8 @@ import type {
   CustomerChatActivityTransport,
 } from "./customer-chat-activity";
 import type { CustomerActivityAnalyticsTransport } from "./customer-activity-analytics";
+import { campaignSourceHref } from "./cloud-orchestrator";
+import type { CustomerRole } from "./customers";
 import {
   generatedCustomerDetailTransport,
   isCustomerGender,
@@ -36,6 +38,7 @@ import "./customer-detail.css";
 
 export interface CustomerDetailPageProps {
   readonly customerID: number;
+  readonly role?: CustomerRole;
   readonly transport?: CustomerDetailTransport;
   readonly contextTransport?: CustomerContextTransport;
   readonly mergeHistoryRole?: CustomerMergeHistoryRole;
@@ -221,6 +224,7 @@ export function startCustomerMutation(
 
 export function CustomerDetailPage({
   customerID,
+  role,
   transport = generatedCustomerDetailTransport,
   contextTransport,
   mergeHistoryRole,
@@ -517,6 +521,10 @@ export function CustomerDetailPage({
   } = page.snapshot;
   const attachedTagIDs = new Set(tags.map((tag) => tag.id));
   const availableTags = tagCatalog.filter((tag) => !attachedTagIDs.has(tag.id));
+  const campaignHref =
+    role === "admin" || role === "ops"
+      ? campaignSourceHref("customer_selection", customer.id)
+      : undefined;
 
   return (
     <section className="customer-detail-page" aria-labelledby="app-title">
@@ -530,6 +538,9 @@ export function CustomerDetailPage({
         </div>
         <div>
           <CustomerDetailReadNavigation includeCustomer360 />
+          {campaignHref && (
+            <a href={campaignHref}>以 OneID {customer.id} 发起 Campaign</a>
+          )}
           <button
             className="button-secondary"
             disabled={mutationPending}

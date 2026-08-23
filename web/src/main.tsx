@@ -734,6 +734,7 @@ function PageContent({
   if (customerPage?.kind === "detail") {
     const detailProps = {
       customerID: customerPage.customerID,
+      role: principal.role,
       transport: customerDetailTransport,
       mergeHistoryRole: principal.role,
       mergeHistoryTransport: customerMergeHistoryTransport,
@@ -1184,7 +1185,11 @@ export function App({
   const route = routeForPathname(effectivePathname);
   const customerPage = customerPageRoute(effectivePathname);
   const cloudOrchestrator =
-    cloudOrchestratorCarrier ?? cloudOrchestratorRoute(effectivePathname);
+    cloudOrchestratorCarrier ??
+    cloudOrchestratorRoute(
+      effectivePathname,
+      pathname === effectivePathname ? search : "",
+    );
   const groupOps = groupOpsRoute(effectivePathname);
   const audiencePackage = audiencePackageRoute(effectivePathname);
   const commerceWorkspace = commerceWorkspaceRoute(effectivePathname);

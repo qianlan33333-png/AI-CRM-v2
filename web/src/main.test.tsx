@@ -707,6 +707,38 @@ describe("Web shell routes", () => {
     }
   });
 
+  it("accepts only the closed direct Campaign source query for admin and ops", () => {
+    vi.stubGlobal("window", {
+      location: {
+        pathname: "/admin/cloud-orchestrator/campaigns",
+        search: "?source_kind=customer_selection&source_id=7",
+      },
+    });
+    for (const role of ["admin", "ops"] as const) {
+      const html = renderToStaticMarkup(
+        <App
+          initialSession={{
+            status: "authenticated",
+            principal: { adminUserID: 7, role },
+          }}
+        />,
+      );
+      expect(html).toContain("单个 Customer OneID #7");
+      expect(html).not.toContain("filter=private");
+    }
+
+    const sales = renderToStaticMarkup(
+      <App
+        initialSession={{
+          status: "authenticated",
+          principal: { adminUserID: 9, role: "sales", staffID: 11 },
+        }}
+      />,
+    );
+    expect(sales).toContain("当前账号没有 AI 助手本地审阅权限");
+    expect(sales).not.toContain("单个 Customer OneID #7");
+  });
+
   it("connects the admin-only group-operations carriers to the safe local workspace", () => {
     vi.stubGlobal("window", {
       location: {

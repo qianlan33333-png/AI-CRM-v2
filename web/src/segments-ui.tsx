@@ -16,6 +16,7 @@ import {
   type SegmentRole,
   type SegmentTransport,
 } from "./segments";
+import { campaignSourceHref } from "./cloud-orchestrator";
 import "./segments.css";
 
 export interface SegmentsPageProps {
@@ -72,13 +73,22 @@ function ConditionEditor({ value, onChange }: { readonly value: SegmentCondition
   return <div className="segment-condition"><label>字段<select value={value.field} onChange={(event) => onChange(normalizedCondition({ ...value, field: event.currentTarget.value as typeof value.field }))}>{fields.map(([field, label]) => <option key={field} value={field}>{label}</option>)}</select></label><label>操作符<select value={value.operator} onChange={(event) => onChange({ ...value, operator: event.currentTarget.value as typeof value.operator })}>{allowed.map(([operator, label]) => <option key={operator} value={operator}>{label}</option>)}</select></label><label>条件值{value.field === "is_deleted" ? <select value={value.value} onChange={(event) => onChange({ ...value, value: event.currentTarget.value })}><option value="false">否（正常）</option><option value="true">是（已删除）</option></select> : <input aria-label="条件值" value={value.value} placeholder={inputHint} onChange={(event) => onChange({ ...value, value: event.currentTarget.value })} />}</label></div>;
 }
 
+export function SegmentCampaignEntry({
+  segment,
+}: {
+  readonly segment: Pick<SegmentRecord, "id">;
+}): React.ReactElement | null {
+  const href = campaignSourceHref("segment_members", segment.id);
+  return href ? <a href={href}>以 Segment ID 发起 Campaign</a> : null;
+}
+
 export function SegmentsPage({ role, transport = generatedSegmentTransport, readCookie = browserCookie, onUnauthenticated }: SegmentsPageProps): React.ReactElement {
   const canWrite = role === "admin" || role === "ops";
   const [list, setList] = useState<ListState>({ kind: "loading" });
   const [members, setMembers] = useState<MembersState>({ kind: "idle" });
   const [selected, setSelected] = useState<SegmentRecord>();
   const [draft, setDraft] = useState<SegmentEditorDraft>(editorDraft());
-  const [notice, setNotice] = useState<string>();
+  const [notice, setNotice] = useState<React.ReactNode>();
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -99,7 +109,7 @@ export function SegmentsPage({ role, transport = generatedSegmentTransport, read
   }, [onUnauthenticated, transport]);
   useEffect(() => { if (canWrite) void loadList(); }, [canWrite, loadList]);
 
-  const select = (segment: SegmentRecord) => { setSelected(segment); setDraft(editorDraft(segment)); setNotice(undefined); void loadMembers(segment); };
+  const select = (segment: SegmentRecord) => { setSelected(segment); setDraft(editorDraft(segment)); setNotice(<SegmentCampaignEntry segment={segment} />); void loadMembers(segment); };
   const csrf = (): string | undefined => { try { return readCSRFCookie(readCookie()); } catch { return undefined; } };
   const save = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

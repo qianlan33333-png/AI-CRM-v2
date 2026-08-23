@@ -58,6 +58,19 @@ describe("AudiencePackageWorkspace", () => {
     expect(detail).toContain("9007199254740993");
     expect(detail).toContain("不证明发送权限、Provider 状态或任何消息已经发送");
     expect(detail).toContain("没有回执时不会标记为已送达");
+    const campaignDetail = renderToStaticMarkup(
+      <AudiencePackageWorkspace
+        role="admin"
+        route={{
+          kind: "package_detail",
+          pathname: "/admin/automation-conversion/packages/42",
+          packageID: "42",
+        }}
+      />,
+    );
+    expect(campaignDetail).toContain(
+      'href="/admin/cloud-orchestrator/campaigns?source_kind=ai_audience_package_members&amp;source_id=42"',
+    );
   });
 
   it.each(["ops", "sales"] as const)("denies the %s role", (role) => {
