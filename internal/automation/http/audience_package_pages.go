@@ -18,7 +18,7 @@ const (
 
 var errAudiencePackagePageNotFound = errors.New("audience package page not found")
 
-// AudiencePackagePages carries administrators only to the approved local
+// AudiencePackagePages carries administrators and operations users to approved local
 // audience-package workspaces. It deliberately owns no package, member,
 // sender, automation binding, send record, provider, or outbound fact.
 type AudiencePackagePages struct{}
@@ -77,8 +77,9 @@ func audiencePackagePageTarget(path string) (string, bool) {
 func audiencePackagePageAuthorized(request *http.Request) bool {
 	principal, principalOK := authport.PrincipalFromContext(request.Context())
 	authorization, authorizationOK := authport.AuthorizationFromContext(request.Context())
-	return principalOK && principal.AdminUserID > 0 && principal.Role == authport.RoleAdmin &&
-		authorizationOK && authorization.Capability == authport.CapabilityAdminRead &&
+	allowedRole := principal.Role == authport.RoleAdmin || principal.Role == authport.RoleOps
+	return principalOK && principal.AdminUserID > 0 && allowedRole &&
+		authorizationOK && authorization.Capability == authport.CapabilityOperationsRead &&
 		authorization.Scope == authport.ScopeGlobal && authorization.OwnerStaffID == 0
 }
 

@@ -295,6 +295,33 @@ func TestCancelledUserOpsPageCarriersRemainAbsent(t *testing.T) {
 	}
 }
 
+func TestOperationsWorkspaceCarrierRBACRemainsNarrow(t *testing.T) {
+	wantOperationsRead := map[string]string{
+		"getCloudOrchestratorCampaignsWorkspace": "operations.read",
+		"getAudiencePackagesWorkspace":           "operations.read",
+		"getAudiencePackageDetailWorkspace":      "operations.read",
+	}
+	for operationID, capability := range wantOperationsRead {
+		contract := nativePackageOperations[operationID]
+		if contract.capability != capability || !reflect.DeepEqual(contract.scopes, map[string]string{"admin": "global", "ops": "global"}) {
+			t.Fatalf("%s capability/scopes=%q/%v", operationID, contract.capability, contract.scopes)
+		}
+	}
+	for _, operationID := range []string{
+		"getCloudOrchestratorWorkspace",
+		"getCloudOrchestratorPlansWorkspace",
+		"getCloudOrchestratorPlanDetailWorkspace",
+		"getCloudOrchestratorObservabilityWorkspace",
+		"getGroupOpsPlansWorkspace",
+		"getGroupOpsPlanDetailWorkspace",
+	} {
+		contract := nativePackageOperations[operationID]
+		if contract.capability != "admin.read" || !reflect.DeepEqual(contract.scopes, map[string]string{"admin": "global"}) {
+			t.Fatalf("%s capability/scopes=%q/%v", operationID, contract.capability, contract.scopes)
+		}
+	}
+}
+
 func TestCampaignReviewHandoffContractRemainsSeparateFromInitiation(t *testing.T) {
 	doc, inventory := fresh(t)
 	operations := map[string]struct{ path, method string }{

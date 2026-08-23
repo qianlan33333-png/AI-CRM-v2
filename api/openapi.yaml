@@ -1975,10 +1975,10 @@ paths:
     get:
       tags: [p4-cloud-orchestrator]
       operationId: getCloudOrchestratorCampaignsWorkspace
-      summary: Carry an authorized administrator to the local campaign review shell
+      summary: Carry an authorized administrator or operations user to the local campaign review shell
       x-p4-decision-evidence: P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20
-      x-aicrm-capability: admin.read
-      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: none
       x-aicrm-data-classification: internal
@@ -2093,10 +2093,10 @@ paths:
     get:
       tags: [p4-audience-package-workspaces]
       operationId: getAudiencePackagesWorkspace
-      summary: Carry an authorized administrator to the safe local audience-package workspace
+      summary: Carry an authorized administrator or operations user to the safe local audience-package workspace
       x-p4-decision-evidence: P4-AI-AUDIENCE-WORKSPACE-CARRIERS-2026-08-20
-      x-aicrm-capability: admin.read
-      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: none
       x-aicrm-data-classification: internal
@@ -2126,10 +2126,10 @@ paths:
     get:
       tags: [p4-audience-package-workspaces]
       operationId: getAudiencePackageDetailWorkspace
-      summary: Carry an authorized administrator to one safe local audience-package detail workspace
+      summary: Carry an authorized administrator or operations user to one safe local audience-package detail workspace
       x-p4-decision-evidence: P4-AI-AUDIENCE-WORKSPACE-CARRIERS-2026-08-20
-      x-aicrm-capability: admin.read
-      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: none
       x-aicrm-data-classification: internal
