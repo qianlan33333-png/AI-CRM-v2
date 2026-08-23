@@ -242,4 +242,21 @@ describe("Campaign touch-plan read contract", () => {
       ),
     ).resolves.toEqual({ status: "unavailable" });
   });
+
+  it("rejects a continuation prior when its cursor is omitted", async () => {
+    await expect(
+      loadTouchPlanRecipients(
+        transport({
+          items: [{ canonical_customer_id: 2 }],
+          next_cursor: null,
+          ...recipientSafety,
+        }),
+        "spring",
+        planID,
+        2,
+        undefined,
+        [1],
+      ),
+    ).resolves.toEqual({ status: "unavailable" });
+  });
 });

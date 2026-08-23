@@ -389,6 +389,7 @@ export async function loadTouchPlanRecipients(
     !planID(id) ||
     !positive(targetCount, 1000) ||
     (cursor !== undefined && !decimalCursor(cursor)) ||
+    (cursor === undefined) !== (prior.length === 0) ||
     (cursor !== undefined && cursor !== String(prior.at(-1))) ||
     prior.some(
       (item, index) =>
@@ -430,8 +431,7 @@ export async function loadTouchPlanRecipients(
       )
       .filter((item): item is number => positive(item));
     const lower = cursor === undefined ? (prior.at(-1) ?? 0) : Number(cursor);
-    const terminal =
-      body.next_cursor === null || body.next_cursor === undefined;
+    const terminal = body.next_cursor === null || body.next_cursor === undefined;
     return recipients.length === body.items.length &&
       recipients.every(
         (item, index) =>
