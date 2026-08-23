@@ -26,6 +26,18 @@ waterline() {
   psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied"
 }
 
+prepare_group_ops_waterline() {
+  latest_waterline="$(waterline)"
+  [[ "$latest_waterline" -ge "63" ]]
+  "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 63 >/dev/null
+  [[ "$(waterline)" = "63" ]]
+}
+
+restore_latest_waterline() {
+  "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to "$latest_waterline" >/dev/null
+  [[ "$(waterline)" = "$latest_waterline" ]]
+}
+
 expect_facts_reject_down() {
   local output
   if output="$("$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down 2>&1)"; then
@@ -38,6 +50,7 @@ expect_facts_reject_down() {
 }
 
 fresh_database
+prepare_group_ops_waterline
 AICRM_GROUP_OPS_TEST_DATABASE_URL="$database_url" /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" test -race -count=1 -timeout=180s ./internal/groupops/... ./internal/contact/store
 psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "INSERT INTO group_ops_plans (name, status, revision, created_by, updated_by, created_at, updated_at) VALUES ('migration guard plan', 'draft', 1, 1, 1, now(), now())"
@@ -45,7 +58,9 @@ expect_facts_reject_down
 [[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c 'SELECT count(*) FROM group_ops_plans')" = "1" ]]
 psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "DELETE FROM group_ops_plans WHERE name = 'migration guard plan'"
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >/dev/null
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
+[[ "$(waterline)" = "62" ]]
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 63 >/dev/null
+[[ "$(waterline)" = "63" ]]
 
 psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "INSERT INTO group_ops_operation_receipts (operation, actor_scope, key_digest, payload_digest, state, result_snapshot, created_at, completed_at) VALUES ('plan_create', 'admin:1', decode(repeat('01', 32), 'hex'), decode(repeat('02', 32), 'hex'), 'completed', '{}'::jsonb, now(), now())"
 expect_facts_reject_down
@@ -54,8 +69,11 @@ expect_facts_reject_down
 # Completed receipts are intentionally immutable. Recreate only this isolated
 # test database, then prove empty-schema down/up remains reversible.
 fresh_database
+prepare_group_ops_waterline
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >/dev/null
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
+[[ "$(waterline)" = "62" ]]
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 63 >/dev/null
 [[ "$(waterline)" = "63" ]]
+restore_latest_waterline
 
-printf 'P4 Group Ops migration compatibility: PASS (63 fact guard, empty down/up)\n'
+printf 'P4 Group Ops migration compatibility: PASS (63 fact guard, empty 62/63 down/up, restored %s)\n' "$latest_waterline"
