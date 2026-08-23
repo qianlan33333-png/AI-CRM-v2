@@ -5,6 +5,7 @@ import {
   type CloudOrchestratorRole,
   type CloudOrchestratorRoute,
 } from "./cloud-orchestrator";
+import { CampaignTouchPlansWorkspace } from "./campaign-touch-plans-ui";
 
 export function CloudOrchestratorBoundary(): React.ReactElement {
   return (
@@ -65,17 +66,21 @@ function PlanDetailWorkspace({
   );
 }
 
-function CampaignsWorkspace(): React.ReactElement {
+function CampaignsWorkspace({
+  role,
+  readCookie,
+  onUnauthenticated,
+}: {
+  readonly role: CloudOrchestratorRole;
+  readonly readCookie?: () => string;
+  readonly onUnauthenticated?: () => void;
+}): React.ReactElement {
   return (
-    <section aria-labelledby="cloud-orchestrator-title">
-      <h1 id="cloud-orchestrator-title">Campaign 审阅工作区</h1>
-      <CloudOrchestratorBoundary />
-      <p role="status">
-        页面载体已就绪；素材、群聊或 Campaign 执行事实必须由各自 owner
-        的已冻结合同接入。
-      </p>
-      <a href="/admin/cloud-orchestrator/observability">查看可观察性入口</a>
-    </section>
+    <CampaignTouchPlansWorkspace
+      role={role}
+      readCookie={readCookie}
+      onUnauthenticated={onUnauthenticated}
+    />
   );
 }
 
@@ -109,11 +114,15 @@ function ObservabilityWorkspace(): React.ReactElement {
 export function CloudOrchestratorWorkspace({
   role,
   route,
+  readCookie,
+  onUnauthenticated,
 }: {
   readonly role: CloudOrchestratorRole;
   readonly route: CloudOrchestratorRoute;
+  readonly readCookie?: () => string;
+  readonly onUnauthenticated?: () => void;
 }): React.ReactElement {
-  if (role !== "admin") {
+  if (role !== "admin" && role !== "ops") {
     return (
       <section aria-labelledby="cloud-orchestrator-title">
         <h1 id="cloud-orchestrator-title">AI 助手</h1>
@@ -131,7 +140,13 @@ export function CloudOrchestratorWorkspace({
       {route.kind === "plan_detail" ? (
         <PlanDetailWorkspace planID={route.planID} />
       ) : null}
-      {route.kind === "campaigns" ? <CampaignsWorkspace /> : null}
+      {route.kind === "campaigns" ? (
+        <CampaignsWorkspace
+          role={role}
+          readCookie={readCookie}
+          onUnauthenticated={onUnauthenticated}
+        />
+      ) : null}
       {route.kind === "observability" ? <ObservabilityWorkspace /> : null}
     </main>
   );

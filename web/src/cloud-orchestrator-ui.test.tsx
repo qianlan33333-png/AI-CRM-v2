@@ -40,12 +40,12 @@ describe("CloudOrchestratorWorkspace", () => {
     expect(html).not.toContain("<button");
   });
 
-  it("renders the campaign workspace and observability navigation without execution claims", () => {
+  it("renders the Campaign local-review flow without execution claims", () => {
     const html = render(CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH);
-    expect(html).toContain("Campaign 审阅工作区");
-    expect(html).toContain('href="/admin/cloud-orchestrator/observability"');
-    expect(html).toContain("Provider 已调用");
-    expect(html).toContain("外部发送已执行");
+    expect(html).toContain("Campaign 本地审核");
+    expect(html).toContain("从人群包冻结 touch plan");
+    expect(html).toContain("不表示外部调用");
+    expect(html).toContain("内部 Events delivery");
   });
 
   it("renders only the four approved observability entry labels", () => {
@@ -57,8 +57,13 @@ describe("CloudOrchestratorWorkspace", () => {
     expect(html).not.toContain("质量分");
   });
 
-  it.each(["ops", "sales"] as const)("fails closed for the %s role", (role) => {
-    const html = render(CLOUD_ORCHESTRATOR_PLANS_PATH, role);
+  it("allows ops to use the same local review workspace", () => {
+    const html = render(CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH, "ops");
+    expect(html).toContain("Campaign 本地审核");
+  });
+
+  it("fails closed for sales", () => {
+    const html = render(CLOUD_ORCHESTRATOR_PLANS_PATH, "sales");
     expect(html).toContain("没有 AI 助手本地审阅权限");
     expect(html).not.toContain("运营计划审阅");
   });

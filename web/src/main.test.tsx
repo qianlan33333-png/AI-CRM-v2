@@ -61,7 +61,6 @@ import {
 } from "./commerce-workspaces";
 import { GROUP_OPS_PLANS_PATH } from "./group-ops";
 import { AUDIENCE_PACKAGES_PATH } from "./audience-packages";
-import { USER_OPS_PATH } from "./user-ops";
 
 const adminSession = {
   status: "authenticated",
@@ -364,7 +363,7 @@ describe("Web shell routes", () => {
     expect(admin).toContain('<h1 id="app-title">投递处理谱系</h1>');
     expect(admin).toContain("正在读取投递处理谱系。");
     expect(admin).toContain(`href="${DELIVERY_LINEAGE_PATH}"`);
-    for (const role of ["ops", "sales"] as const) {
+    for (const role of ["sales"] as const) {
       const html = renderToStaticMarkup(
         <App
           deliveryLineageTransport={client}
@@ -682,7 +681,7 @@ describe("Web shell routes", () => {
     expect(client.save).not.toHaveBeenCalled();
   });
 
-  it("connects the admin-only AI assistant carrier to the local read-only workspace", () => {
+  it("connects the admin-and-ops AI assistant carrier to the local read-only workspace", () => {
     vi.stubGlobal("window", {
       location: { pathname: "/admin/cloud-orchestrator/plans" },
     });
@@ -691,7 +690,7 @@ describe("Web shell routes", () => {
     expect(admin).toContain("不表示 Provider 已调用");
     expect(admin).toContain('href="/admin/cloud-orchestrator/plans"');
 
-    for (const role of ["ops", "sales"] as const) {
+    for (const role of ["sales"] as const) {
       const html = renderToStaticMarkup(
         <App
           initialSession={{
@@ -770,33 +769,6 @@ describe("Web shell routes", () => {
     }
   });
 
-  it("connects the admin-only user-operations carriers to the safe local workspace", () => {
-    vi.stubGlobal("window", {
-      location: { pathname: USER_OPS_PATH, search: "" },
-    });
-    const admin = renderToStaticMarkup(<App initialSession={adminSession} />);
-    expect(admin).toContain("用户运营批量审阅");
-    expect(admin).toContain("pending_review");
-    expect(admin).toContain("不执行发送");
-    expect(admin).not.toContain("导出客户明细");
-
-    for (const role of ["ops", "sales"] as const) {
-      const html = renderToStaticMarkup(
-        <App
-          initialSession={{
-            status: "authenticated",
-            principal:
-              role === "sales"
-                ? { adminUserID: 9, role, staffID: 11 }
-                : { adminUserID: 8, role },
-          }}
-        />,
-      );
-      expect(html).toContain("当前角色无权访问此工作区");
-      expect(html).not.toContain("pending_review");
-    }
-  });
-
   it("mounts commerce workspaces and keeps payment and refund effects closed", () => {
     vi.stubGlobal("window", {
       location: {
@@ -828,7 +800,7 @@ describe("Web shell routes", () => {
   });
 
   it("matches only the frozen pathname routes and renders a 404 for all others", () => {
-    expect(routes).toHaveLength(37);
+    expect(routes).toHaveLength(36);
 
     for (const route of routes) {
       expect(routeForPathname(route.path)).toEqual(route);
@@ -968,9 +940,9 @@ describe("Web shell routes", () => {
       "/admin/automation-runs",
       AUTOMATION_AGENTS_PATH,
       "/admin/cloud-orchestrator/plans",
+      "/admin/cloud-orchestrator/campaigns",
       GROUP_OPS_PLANS_PATH,
       AUDIENCE_PACKAGES_PATH,
-      USER_OPS_PATH,
       SERVICE_PRODUCTS_PATH,
       WECHAT_PAY_TRANSACTIONS_PATH,
       WECHAT_SHOP_TRANSACTIONS_PATH,
@@ -1000,6 +972,7 @@ describe("Web shell routes", () => {
       "/admin/wecom-tags",
       "/admin/channels",
       "/admin/coupons",
+      "/admin/cloud-orchestrator/campaigns",
       "/admin/group-invite-library",
       "/admin/orders",
       PRODUCTS_PATH,
@@ -1026,9 +999,9 @@ describe("Web shell routes", () => {
     expect(html).toContain('href="/admin/automation-runs"');
     expect(html).toContain(`href="${AUTOMATION_AGENTS_PATH}"`);
     expect(html).toContain('href="/admin/cloud-orchestrator/plans"');
+    expect(html).toContain('href="/admin/cloud-orchestrator/campaigns"');
     expect(html).toContain(`href="${GROUP_OPS_PLANS_PATH}"`);
     expect(html).toContain(`href="${AUDIENCE_PACKAGES_PATH}"`);
-    expect(html).toContain(`href="${USER_OPS_PATH}"`);
     expect(html).toContain(`href="${SERVICE_PRODUCTS_PATH}"`);
     expect(html).toContain(`href="${WECHAT_PAY_TRANSACTIONS_PATH}"`);
     expect(html).toContain(`href="${WECHAT_SHOP_TRANSACTIONS_PATH}"`);
@@ -1131,12 +1104,12 @@ describe("legacy admin path carrier", () => {
         "?legacy_admin_path=%2Fadmin%2Fautomation-conversion%2Fpackages%2F9007199254740993",
       ),
     ).toBe("/admin/automation-conversion/packages/9007199254740993");
-    expect(
-      carrierPathname("/", "?legacy_admin_path=%2Fadmin%2Fuser-ops"),
-    ).toBe(USER_OPS_PATH);
+    expect(carrierPathname("/", "?legacy_admin_path=%2Fadmin%2Fuser-ops")).toBe(
+      "/",
+    );
     expect(
       carrierPathname("/", "?legacy_admin_path=%2Fadmin%2Fuser-ops%2Fui"),
-    ).toBe("/admin/user-ops/ui");
+    ).toBe("/");
     expect(
       carrierPathname("/", `?legacy_admin_path=${EXECUTION_RUNTIME_PATH}`),
     ).toBe(EXECUTION_RUNTIME_PATH);
@@ -1241,19 +1214,9 @@ describe("legacy admin path carrier", () => {
       },
     });
     const html = renderToStaticMarkup(<App initialSession={adminSession} />);
-    expect(html).toContain('<h1 id="audience-packages-title">AI Audience 人群包</h1>');
-    expect(html).not.toContain("AI-CRM 运营指挥台");
-  });
-
-  it("lands on the user-operations workspace after a carrier refresh", () => {
-    vi.stubGlobal("window", {
-      location: {
-        pathname: "/",
-        search: "?legacy_admin_path=%2Fadmin%2Fuser-ops%2Fui",
-      },
-    });
-    const html = renderToStaticMarkup(<App initialSession={adminSession} />);
-    expect(html).toContain('<h1 id="user-ops-title">用户运营批量审阅</h1>');
+    expect(html).toContain(
+      '<h1 id="audience-packages-title">AI Audience 人群包</h1>',
+    );
     expect(html).not.toContain("AI-CRM 运营指挥台");
   });
 });
