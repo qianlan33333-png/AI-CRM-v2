@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -27,9 +28,13 @@ func TestLocalConfigurationSQLRepositoryPG16(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer connection.Close(ctx)
-	var version int
-	if err = connection.QueryRow(ctx, "SHOW server_version_num").Scan(&version); err != nil {
+	var versionText string
+	if err = connection.QueryRow(ctx, "SHOW server_version_num").Scan(&versionText); err != nil {
 		t.Fatal(err)
+	}
+	version, err := strconv.Atoi(versionText)
+	if err != nil {
+		t.Fatalf("parse PostgreSQL version %q: %v", versionText, err)
 	}
 	if version/10000 != 16 {
 		t.Fatalf("PostgreSQL major=%d, want 16", version/10000)
