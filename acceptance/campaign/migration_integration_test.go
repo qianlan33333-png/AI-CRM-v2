@@ -251,7 +251,9 @@ func openCampaignPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 		t.Skip("database-url is not set")
 	}
 	if err := acceptancefixtures.ValidateDatabaseURL(*campaignMigrationDatabaseURL); err != nil {
-		t.Fatal(err)
+		if dedicatedErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*campaignMigrationDatabaseURL, acceptancefixtures.OutboundCampaignHandoffDatabaseName); dedicatedErr != nil {
+			t.Fatal(err)
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	t.Cleanup(cancel)

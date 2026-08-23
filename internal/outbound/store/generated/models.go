@@ -3,3 +3,27 @@
 //   sqlc v1.28.0
 
 package outbounddb
+
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+// Outbound-owned local-only accepted Campaign handoff; no send task or Provider execution fact.
+type OutboundCampaignHandoff struct {
+	ID                        int64              `json:"id"`
+	CampaignCode              string             `json:"campaign_code"`
+	PlanID                    string             `json:"plan_id"`
+	ReviewVersion             int64              `json:"review_version"`
+	SourceDigest              []byte             `json:"source_digest"`
+	TargetDigest              []byte             `json:"target_digest"`
+	ContentDigest             []byte             `json:"content_digest"`
+	TargetCount               int32              `json:"target_count"`
+	StepCount                 int32              `json:"step_count"`
+	Status                    string             `json:"status"`
+	AcceptedByActorID         int64              `json:"accepted_by_actor_id"`
+	AcceptedAt                pgtype.Timestamptz `json:"accepted_at"`
+	LocalOnly                 bool               `json:"local_only"`
+	ProviderExecutionEligible bool               `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  bool               `json:"real_external_call_executed"`
+	DeliveryProven            bool               `json:"delivery_proven"`
+}

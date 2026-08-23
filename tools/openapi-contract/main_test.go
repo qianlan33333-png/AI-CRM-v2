@@ -30,6 +30,20 @@ func TestFrozenOpenAPI(t *testing.T) {
 	}
 }
 
+func TestInternalEventRegistryContractRemainsClosed(t *testing.T) {
+	doc, inventory := fresh(t)
+	if err := validateInternalEventRegistryContract(doc); err != nil {
+		t.Fatal(err)
+	}
+
+	registry := doc.Components.Schemas["LegacyInternalEventDiagnosticsResponse"].Value.Properties["consumer_registry"].Value
+	registry.MinItems = 4
+	registry.MaxItems = uint64Pointer(4)
+	reject(t, doc, inventory)
+}
+
+func uint64Pointer(value uint64) *uint64 { return &value }
+
 func TestAdminOpsSafeProjectionContractRemainsClosed(t *testing.T) {
 	doc, inventory := fresh(t)
 	job := doc.Components.Schemas["AdminOpsJob"].Value

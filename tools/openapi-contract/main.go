@@ -70,6 +70,7 @@ const (
 	p4ContactPolicyEvidence           = "P4-CONTACT-POLICY-2026-08-23"
 	p4CampaignInitiationEvidence      = "P4-CAMPAIGN-INITIATION-SNAPSHOTS-00066-2026-08-23"
 	p4CampaignReviewHandoffEvidence   = "P4-CAMPAIGN-REVIEW-HANDOFF-00067-2026-08-23"
+	p4OutboundCampaignHandoffEvidence = "P4-OUTBOUND-CAMPAIGN-HANDOFF-2026-08-23"
 )
 
 var nativePackageOperations = map[string]nativePackageOperation{
@@ -84,6 +85,9 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getCloudCampaignTouchPlanRecipient":   {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}", "GET", p4CampaignReviewHandoffEvidence, "operations.read", "human_session", "internal", "campaign.touch_plan.targets", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"getCloudCampaignTouchPlanReview":      {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review", "GET", p4CampaignReviewHandoffEvidence, "operations.read", "human_session", "internal", "campaign.touch_plan.review_local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"mutateCloudCampaignTouchPlanReview":   {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review/{operation}", "POST", p4CampaignReviewHandoffEvidence, "operations.manage", "human_session", "internal", "campaign.touch_plan.review_local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"getOutboundCampaignHandoffSummary":    {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}", "GET", p4OutboundCampaignHandoffEvidence, "operations.read", "human_session", "internal", "outbound_campaign_handoffs.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"acceptOutboundCampaignHandoff":        {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept", "POST", p4OutboundCampaignHandoffEvidence, "operations.manage", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"reconcileOutboundCampaignHandoff":     {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation", "GET", p4OutboundCampaignHandoffEvidence, "operations.read", "human_session", "internal", "outbound_campaign_handoffs.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"reorderStages":                        {"/api/v1/stages/reorder", "PUT", p4ClassificationPackageEvidence, "stages.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"archiveStage":                         {"/api/v1/stages/{stage_id}", "DELETE", p4ClassificationPackageEvidence, "stages.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"listTagGroups":                        {"/api/v1/tag-groups", "GET", p4ClassificationPackageEvidence, "customers.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
@@ -194,6 +198,24 @@ var nativePackagePathParameters = map[string]nativePackagePathParameter{
 		maxLength: 19,
 	},
 	"getCloudCampaignTouchPlan": {
+		name:      "plan_id",
+		typeName:  "string",
+		pattern:   "^ctp_[0-9a-f]{64}$",
+		maxLength: 68,
+	},
+	"getOutboundCampaignHandoffSummary": {
+		name:      "plan_id",
+		typeName:  "string",
+		pattern:   "^ctp_[0-9a-f]{64}$",
+		maxLength: 68,
+	},
+	"acceptOutboundCampaignHandoff": {
+		name:      "plan_id",
+		typeName:  "string",
+		pattern:   "^ctp_[0-9a-f]{64}$",
+		maxLength: 68,
+	},
+	"reconcileOutboundCampaignHandoff": {
 		name:      "plan_id",
 		typeName:  "string",
 		pattern:   "^ctp_[0-9a-f]{64}$",
@@ -1352,6 +1374,122 @@ func validateOutboundSafeProjectionContract(doc *openapi3.T) error {
 	return nil
 }
 
+func validateOutboundCampaignHandoffContract(doc *openapi3.T) error {
+	operations := map[string]struct {
+		method, schema, status string
+	}{
+		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}":                {"GET", "OutboundCampaignHandoffSummary", "200"},
+		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept":         {"POST", "OutboundCampaignHandoffReconciliation", "200"},
+		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation": {"GET", "OutboundCampaignHandoffReconciliation", "200"},
+	}
+	for path := range doc.Paths.Map() {
+		if strings.HasPrefix(path, "/api/admin/outbound/campaign-handoffs/") {
+			if _, allowed := operations[path]; !allowed {
+				return fmt.Errorf("Outbound Campaign dispatch/release route must remain EXTERNAL_GATE: %s", path)
+			}
+		}
+	}
+	for path, contract := range operations {
+		item := doc.Paths.Value(path)
+		if item == nil {
+			return fmt.Errorf("%s Outbound Campaign handoff path is missing", path)
+		}
+		operation := operationForMethod(item, contract.method)
+		if operation == nil || operation.Extensions["x-aicrm-local-only"] != true ||
+			!operationResponseUsesStatusLocalSchema(operation, contract.status, contract.schema) {
+			return fmt.Errorf("%s %s Outbound Campaign handoff contract drifted", contract.method, path)
+		}
+		if contract.method == "POST" {
+			if !strings.Contains(operation.Description, "internal Events delivery River job") ||
+				!strings.Contains(operation.Description, "no Outbound send job") || !strings.Contains(operation.Description, "no Provider") {
+				return errors.New("Outbound Campaign accept must disclose its exact local Events job boundary")
+			}
+			want := map[string]string{"X-CSRF-Token": "header", "Idempotency-Key": "header"}
+			for _, reference := range operation.Parameters {
+				if reference == nil || reference.Value == nil || !reference.Value.Required || want[reference.Value.Name] != reference.Value.In {
+					return errors.New("Outbound Campaign accept header contract drifted")
+				}
+				delete(want, reference.Value.Name)
+			}
+			if len(want) != 0 {
+				return errors.New("Outbound Campaign accept header contract drifted")
+			}
+		}
+	}
+	for _, name := range []string{"OutboundCampaignHandoffSummary", "OutboundCampaignHandoffReconciliation"} {
+		schema := doc.Components.Schemas[name]
+		if schema == nil || schema.Value == nil || schema.Value.AdditionalProperties.Has == nil || *schema.Value.AdditionalProperties.Has {
+			return fmt.Errorf("%s must remain a closed safe projection", name)
+		}
+		for _, forbidden := range []string{"customer_id", "customer_ids", "outbound_task_id", "provider_message_id", "provider_code", "last_error", "raw_identity", "event_id"} {
+			if schema.Value.Properties[forbidden] != nil {
+				return fmt.Errorf("%s exposes forbidden field %s", name, forbidden)
+			}
+		}
+	}
+	safety := doc.Components.Schemas["OutboundCampaignHandoffSafety"]
+	if safety == nil || safety.Value == nil || safety.Value.AdditionalProperties.Has == nil || *safety.Value.AdditionalProperties.Has ||
+		!legacyTagBooleanEnum(safety.Value, "local_only", true) ||
+		!legacyTagBooleanEnum(safety.Value, "provider_execution_eligible", false) ||
+		!legacyTagBooleanEnum(safety.Value, "real_external_call_executed", false) ||
+		!legacyTagBooleanEnum(safety.Value, "delivery_proven", false) {
+		return errors.New("Outbound Campaign handoff safety contract drifted")
+	}
+	return nil
+}
+
+func validateInternalEventRegistryContract(doc *openapi3.T) error {
+	wantConsumers := []string{
+		"automation.tag-trigger.v1",
+		"stats.tag-applied.v1",
+		"operation-cycle.fact.v1",
+		"cloud-campaign.fact.v1",
+		"outbound-campaign-handoff.fact.v1",
+	}
+	for _, path := range []string{"/api/admin/internal-events", "/api/admin/internal-events/diagnostics"} {
+		item := doc.Paths.Value(path)
+		if item == nil || item.Get == nil {
+			return fmt.Errorf("internal Events registry path is missing: %s", path)
+		}
+		parameter := item.Get.Parameters.GetByInAndName("query", "consumer")
+		if parameter == nil || parameter.Schema == nil || parameter.Schema.Value == nil || !reflect.DeepEqual(parameter.Schema.Value.Enum, stringsToAny(wantConsumers)) {
+			return fmt.Errorf("internal Events consumer query registry drifted: %s", path)
+		}
+	}
+
+	delivery := doc.Components.Schemas["LegacyInternalEventDelivery"]
+	filters := doc.Components.Schemas["LegacyInternalEventFilters"]
+	binding := doc.Components.Schemas["LegacyInternalEventConsumerBinding"]
+	diagnostics := doc.Components.Schemas["LegacyInternalEventDiagnosticsResponse"]
+	if delivery == nil || delivery.Value == nil || filters == nil || filters.Value == nil || binding == nil || binding.Value == nil || diagnostics == nil || diagnostics.Value == nil {
+		return errors.New("internal Events registry schema is missing")
+	}
+	if !reflect.DeepEqual(delivery.Value.Properties["consumer"].Value.Enum, stringsToAny(wantConsumers)) ||
+		!reflect.DeepEqual(filters.Value.Properties["consumer"].Value.Enum, stringsToAny(append([]string{""}, wantConsumers...))) ||
+		!reflect.DeepEqual(binding.Value.Properties["consumer"].Value.Enum, stringsToAny(wantConsumers)) {
+		return errors.New("internal Events consumer schema registry drifted")
+	}
+	wantEventTypes := []string{"customer.tag_applied", "operation_cycle.fact_recorded", "cloud_campaign.fact_recorded", "outbound.campaign_handoff_fact_recorded"}
+	eventTypes := binding.Value.Properties["event_types"]
+	if eventTypes == nil || eventTypes.Value == nil || eventTypes.Value.Items == nil || eventTypes.Value.Items.Value == nil ||
+		!reflect.DeepEqual(eventTypes.Value.Items.Value.Enum, stringsToAny(wantEventTypes)) {
+		return errors.New("internal Events event type registry drifted")
+	}
+	registry := diagnostics.Value.Properties["consumer_registry"]
+	if registry == nil || registry.Value == nil || registry.Value.MinItems != uint64(len(wantConsumers)) || registry.Value.MaxItems == nil || *registry.Value.MaxItems != uint64(len(wantConsumers)) {
+		return errors.New("internal Events diagnostics registry count drifted")
+	}
+	return nil
+}
+
+func stringsToAny(values []string) []any {
+	result := make([]any, len(values))
+	for index, value := range values {
+		result[index] = value
+	}
+	return result
+}
+
 func closedOutboundProjectionSchema(reference *openapi3.SchemaRef, includeFailure bool) bool {
 	if reference == nil || reference.Value == nil || reference.Value.AdditionalProperties.Has == nil || *reference.Value.AdditionalProperties.Has {
 		return false
@@ -2211,6 +2349,12 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 		return err
 	}
 	if err := validateOutboundSafeProjectionContract(doc); err != nil {
+		return err
+	}
+	if err := validateOutboundCampaignHandoffContract(doc); err != nil {
+		return err
+	}
+	if err := validateInternalEventRegistryContract(doc); err != nil {
 		return err
 	}
 	if err := validateConfigSettingsContract(doc); err != nil {

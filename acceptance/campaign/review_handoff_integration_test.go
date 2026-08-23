@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	campaignapp "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/app"
+	campaignport "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/port"
 	campaignstore "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/store"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -101,6 +102,90 @@ func TestCampaignTouchPlanReviewHandoffPostgreSQLFreshReplayScopeAndImmutability
 		}
 	}
 	assertStandaloneReviewTransitionsRejected(t, ctx, pool)
+}
+
+func TestApprovedTouchPlanHandoffReaderUsesCallerTransactionAndRevalidatesFullSnapshot(t *testing.T) {
+	pool, ctx := openCampaignPool(t)
+	if campaignMigrationWaterline(t, ctx, pool) < 68 {
+		t.Fatal("outbound campaign handoff migration is not applied")
+	}
+	clearCampaignFacts(t, ctx, pool)
+	campaignCode := fmt.Sprintf("approved-reader-%d", time.Now().UnixNano())
+	customerIDs := seedInitiationCustomers(t, ctx, pool, campaignCode, 2)
+	t.Cleanup(func() {
+		clearCampaignFacts(t, ctx, pool)
+		if _, err := pool.Exec(ctx, `DELETE FROM public.customers WHERE id=ANY($1::bigint[])`, customerIDs); err != nil {
+			t.Fatal(err)
+		}
+	})
+	if _, err := pool.Exec(ctx, `INSERT INTO public.cloud_campaigns (campaign_code,name,approval_status,runtime_status,version,created_by,updated_by,created_at,updated_at)
+VALUES ($1,'approved reader','draft','idle',1,1,1,now(),now())`, campaignCode); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO public.cloud_campaign_steps (campaign_code,step_index,delay_minutes,content)
+VALUES ($1,1,0,'first immutable step'),($1,2,15,'second immutable step')`, campaignCode); err != nil {
+		t.Fatal(err)
+	}
+	repository := campaignstore.NewRepository()
+	audits, err := campaignstore.NewInitiationEventLogAdapter(eventstore.NewAppender())
+	if err != nil {
+		t.Fatal(err)
+	}
+	uow := platformstore.NewUnitOfWork(pool)
+	initiationService, err := campaignapp.NewService(uow, repository, nil, allEligibleInitiationChecker{}, repository, audits)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, err := initiationService.CreateDraftTouchPlan(ctx, campaign.CreateDraftTouchPlanCommand{
+		CampaignCode: campaignCode, ExpectedCampaignVersion: 1,
+		Source: campaign.InitiationSourceRequest{Kind: campaign.InitiationSourceCustomerSelection, CustomerIDs: []int64{customerIDs[1], customerIDs[0]}},
+		Owner:  campaign.Actor{ID: 91}, IdempotencyKey: "approved-reader-initiation-key-0001",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reviews := reviewHandoffService(t, pool)
+	submitted, err := reviews.Submit(ctx, campaign.SubmitTouchPlanReviewCommand{
+		CampaignCode: campaignCode, PlanID: plan.ID, ExpectedVersion: 1,
+		Actor: campaign.Actor{ID: 92}, IdempotencyKey: "approved-reader-submit-key-0001",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	approved, err := reviews.Approve(ctx, campaign.DecideTouchPlanReviewCommand{
+		CampaignCode: campaignCode, PlanID: plan.ID, ExpectedVersion: submitted.Version,
+		Actor: campaign.Actor{ID: 93}, IdempotencyKey: "approved-reader-approve-key-0001",
+		Confirmation: campaign.ReviewConfirmation("approve", plan.ID),
+	})
+	if err != nil || approved.Handoff == nil {
+		t.Fatalf("approve=%#v err=%v", approved, err)
+	}
+	if _, err = repository.LockApprovedTouchPlanHandoff(ctx, campaignCode, plan.ID); err == nil {
+		t.Fatal("approved handoff reader accepted a context without the caller transaction")
+	}
+	var snapshot campaignport.ApprovedTouchPlanHandoffSnapshot
+	err = uow.Within(ctx, func(transaction context.Context) error {
+		var readErr error
+		snapshot, readErr = repository.LockApprovedTouchPlanHandoff(transaction, campaignCode, plan.ID)
+		return readErr
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snapshot.CampaignCode != campaignCode || snapshot.PlanID != plan.ID || snapshot.ReviewVersion != approved.Review.Version ||
+		plan.Source.CustomerSelection == nil || snapshot.SourceDigest != plan.Source.CustomerSelection.Digest ||
+		snapshot.TargetDigest != plan.Targets.Digest || snapshot.ContentDigest != plan.Content.Digest ||
+		!reflect.DeepEqual(snapshot.CustomerIDs, plan.Targets.CustomerIDs) || !reflect.DeepEqual(snapshot.Steps, plan.Content.Steps) ||
+		!snapshot.ApprovedAt.Equal(approved.Review.ReviewedAt) || !snapshot.HandoffCreatedAt.Equal(approved.Handoff.CreatedAt) {
+		t.Fatalf("locked approved snapshot=%#v, plan=%#v approved=%#v", snapshot, plan, approved)
+	}
+	err = uow.Within(ctx, func(transaction context.Context) error {
+		_, readErr := repository.LockApprovedTouchPlanHandoff(transaction, campaignCode+"-other", plan.ID)
+		return readErr
+	})
+	if !errors.Is(err, campaign.ErrNotFound) {
+		t.Fatalf("cross-campaign locked reader error=%v, want not found", err)
+	}
 }
 
 func TestCampaignTouchPlanReviewHandoffFactsBlockRollback(t *testing.T) {

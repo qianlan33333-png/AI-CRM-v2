@@ -76,6 +76,8 @@ const diagnostics = {
     { consumer: "automation.tag-trigger.v1", event_types: ["customer.tag_applied"] },
     { consumer: "stats.tag-applied.v1", event_types: ["customer.tag_applied"] },
     { consumer: "operation-cycle.fact.v1", event_types: ["operation_cycle.fact_recorded"] },
+    { consumer: "cloud-campaign.fact.v1", event_types: ["cloud_campaign.fact_recorded"] },
+    { consumer: "outbound-campaign-handoff.fact.v1", event_types: ["outbound.campaign_handoff_fact_recorded"] },
   ],
   observed_at: "2026-08-19T08:00:02Z",
   registry_id: "v2-internal-events.v1",

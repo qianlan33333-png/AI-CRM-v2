@@ -484,6 +484,92 @@ func (q *Queries) InsertCampaignTouchPlanTargets(ctx context.Context, arg Insert
 	return err
 }
 
+const listApprovedCampaignTouchPlanSteps = `-- name: ListApprovedCampaignTouchPlanSteps :many
+SELECT step.step_index, step.delay_minutes, step.content
+FROM public.cloud_campaign_touch_plan_steps AS step
+WHERE step.plan_id = $1
+  AND EXISTS (
+    SELECT 1 FROM public.cloud_campaign_touch_plans AS plan
+    JOIN public.cloud_campaign_touch_plan_reviews AS review ON review.plan_id = plan.id
+    JOIN public.cloud_campaign_touch_plan_handoffs AS handoff ON handoff.plan_id = plan.id
+    WHERE plan.id = step.plan_id AND plan.campaign_code = $2
+      AND review.campaign_code = plan.campaign_code AND review.status = 'approved'
+      AND handoff.review_version = review.version
+  )
+ORDER BY step.step_index ASC
+`
+
+type ListApprovedCampaignTouchPlanStepsParams struct {
+	PlanID       string `json:"plan_id"`
+	CampaignCode string `json:"campaign_code"`
+}
+
+type ListApprovedCampaignTouchPlanStepsRow struct {
+	StepIndex    int32  `json:"step_index"`
+	DelayMinutes int32  `json:"delay_minutes"`
+	Content      string `json:"content"`
+}
+
+func (q *Queries) ListApprovedCampaignTouchPlanSteps(ctx context.Context, arg ListApprovedCampaignTouchPlanStepsParams) ([]ListApprovedCampaignTouchPlanStepsRow, error) {
+	rows, err := q.db.Query(ctx, listApprovedCampaignTouchPlanSteps, arg.PlanID, arg.CampaignCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListApprovedCampaignTouchPlanStepsRow{}
+	for rows.Next() {
+		var i ListApprovedCampaignTouchPlanStepsRow
+		if err := rows.Scan(&i.StepIndex, &i.DelayMinutes, &i.Content); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listApprovedCampaignTouchPlanTargets = `-- name: ListApprovedCampaignTouchPlanTargets :many
+SELECT target.customer_id
+FROM public.cloud_campaign_touch_plan_targets AS target
+WHERE target.plan_id = $1
+  AND EXISTS (
+    SELECT 1 FROM public.cloud_campaign_touch_plans AS plan
+    JOIN public.cloud_campaign_touch_plan_reviews AS review ON review.plan_id = plan.id
+    JOIN public.cloud_campaign_touch_plan_handoffs AS handoff ON handoff.plan_id = plan.id
+    WHERE plan.id = target.plan_id AND plan.campaign_code = $2
+      AND review.campaign_code = plan.campaign_code AND review.status = 'approved'
+      AND handoff.review_version = review.version
+  )
+ORDER BY target.customer_id ASC
+`
+
+type ListApprovedCampaignTouchPlanTargetsParams struct {
+	PlanID       string `json:"plan_id"`
+	CampaignCode string `json:"campaign_code"`
+}
+
+func (q *Queries) ListApprovedCampaignTouchPlanTargets(ctx context.Context, arg ListApprovedCampaignTouchPlanTargetsParams) ([]int64, error) {
+	rows, err := q.db.Query(ctx, listApprovedCampaignTouchPlanTargets, arg.PlanID, arg.CampaignCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []int64{}
+	for rows.Next() {
+		var customer_id int64
+		if err := rows.Scan(&customer_id); err != nil {
+			return nil, err
+		}
+		items = append(items, customer_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCampaignStepsForTouchPlan = `-- name: ListCampaignStepsForTouchPlan :many
 SELECT step_index, delay_minutes, content
 FROM public.cloud_campaign_steps
@@ -722,6 +808,114 @@ func (q *Queries) ListCampaignTouchPlanTargets(ctx context.Context, planID strin
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockApprovedCampaignTouchPlanHandoff = `-- name: LockApprovedCampaignTouchPlanHandoff :one
+SELECT plan.id, plan.campaign_code, plan.campaign_version, plan.source_kind,
+       plan.customer_selection_id, plan.customer_selection_version, plan.segment_id,
+       plan.audience_package_id, plan.audience_package_version, plan.member_snapshot_watermark,
+       plan.source_digest, plan.target_digest, plan.content_digest, plan.target_count, plan.content_step_count,
+       plan.candidate_count, plan.active_customer_count, plan.inactive_excluded_count,
+       plan.policy_excluded_count, plan.owner_actor_id, plan.created_at AS plan_created_at,
+       plan.local_only, plan.provider_execution_eligible, plan.runtime_executed,
+       plan.real_external_call_executed, plan.delivery_proven,
+       review.version AS review_version, review.reviewed_at,
+       handoff.status AS handoff_status, handoff.created_at AS handoff_created_at,
+       handoff.local_only AS handoff_local_only,
+       handoff.provider_execution_eligible AS handoff_provider_execution_eligible,
+       handoff.real_external_call_executed AS handoff_real_external_call_executed,
+       handoff.delivery_proven AS handoff_delivery_proven
+FROM public.cloud_campaign_touch_plans AS plan
+JOIN public.cloud_campaign_touch_plan_reviews AS review ON review.plan_id = plan.id
+JOIN public.cloud_campaign_touch_plan_handoffs AS handoff ON handoff.plan_id = plan.id
+WHERE plan.id = $1 AND plan.campaign_code = $2
+  AND review.campaign_code = plan.campaign_code AND review.status = 'approved'
+  AND handoff.review_version = review.version
+FOR KEY SHARE OF plan, review, handoff
+`
+
+type LockApprovedCampaignTouchPlanHandoffParams struct {
+	PlanID       string `json:"plan_id"`
+	CampaignCode string `json:"campaign_code"`
+}
+
+type LockApprovedCampaignTouchPlanHandoffRow struct {
+	ID                               string             `json:"id"`
+	CampaignCode                     string             `json:"campaign_code"`
+	CampaignVersion                  int64              `json:"campaign_version"`
+	SourceKind                       string             `json:"source_kind"`
+	CustomerSelectionID              pgtype.Text        `json:"customer_selection_id"`
+	CustomerSelectionVersion         pgtype.Text        `json:"customer_selection_version"`
+	SegmentID                        pgtype.Int8        `json:"segment_id"`
+	AudiencePackageID                pgtype.Int8        `json:"audience_package_id"`
+	AudiencePackageVersion           pgtype.Int8        `json:"audience_package_version"`
+	MemberSnapshotWatermark          pgtype.Timestamptz `json:"member_snapshot_watermark"`
+	SourceDigest                     []byte             `json:"source_digest"`
+	TargetDigest                     []byte             `json:"target_digest"`
+	ContentDigest                    []byte             `json:"content_digest"`
+	TargetCount                      int32              `json:"target_count"`
+	ContentStepCount                 int32              `json:"content_step_count"`
+	CandidateCount                   int32              `json:"candidate_count"`
+	ActiveCustomerCount              int32              `json:"active_customer_count"`
+	InactiveExcludedCount            int32              `json:"inactive_excluded_count"`
+	PolicyExcludedCount              int32              `json:"policy_excluded_count"`
+	OwnerActorID                     int64              `json:"owner_actor_id"`
+	PlanCreatedAt                    pgtype.Timestamptz `json:"plan_created_at"`
+	LocalOnly                        bool               `json:"local_only"`
+	ProviderExecutionEligible        bool               `json:"provider_execution_eligible"`
+	RuntimeExecuted                  bool               `json:"runtime_executed"`
+	RealExternalCallExecuted         bool               `json:"real_external_call_executed"`
+	DeliveryProven                   bool               `json:"delivery_proven"`
+	ReviewVersion                    int64              `json:"review_version"`
+	ReviewedAt                       pgtype.Timestamptz `json:"reviewed_at"`
+	HandoffStatus                    string             `json:"handoff_status"`
+	HandoffCreatedAt                 pgtype.Timestamptz `json:"handoff_created_at"`
+	HandoffLocalOnly                 bool               `json:"handoff_local_only"`
+	HandoffProviderExecutionEligible bool               `json:"handoff_provider_execution_eligible"`
+	HandoffRealExternalCallExecuted  bool               `json:"handoff_real_external_call_executed"`
+	HandoffDeliveryProven            bool               `json:"handoff_delivery_proven"`
+}
+
+func (q *Queries) LockApprovedCampaignTouchPlanHandoff(ctx context.Context, arg LockApprovedCampaignTouchPlanHandoffParams) (LockApprovedCampaignTouchPlanHandoffRow, error) {
+	row := q.db.QueryRow(ctx, lockApprovedCampaignTouchPlanHandoff, arg.PlanID, arg.CampaignCode)
+	var i LockApprovedCampaignTouchPlanHandoffRow
+	err := row.Scan(
+		&i.ID,
+		&i.CampaignCode,
+		&i.CampaignVersion,
+		&i.SourceKind,
+		&i.CustomerSelectionID,
+		&i.CustomerSelectionVersion,
+		&i.SegmentID,
+		&i.AudiencePackageID,
+		&i.AudiencePackageVersion,
+		&i.MemberSnapshotWatermark,
+		&i.SourceDigest,
+		&i.TargetDigest,
+		&i.ContentDigest,
+		&i.TargetCount,
+		&i.ContentStepCount,
+		&i.CandidateCount,
+		&i.ActiveCustomerCount,
+		&i.InactiveExcludedCount,
+		&i.PolicyExcludedCount,
+		&i.OwnerActorID,
+		&i.PlanCreatedAt,
+		&i.LocalOnly,
+		&i.ProviderExecutionEligible,
+		&i.RuntimeExecuted,
+		&i.RealExternalCallExecuted,
+		&i.DeliveryProven,
+		&i.ReviewVersion,
+		&i.ReviewedAt,
+		&i.HandoffStatus,
+		&i.HandoffCreatedAt,
+		&i.HandoffLocalOnly,
+		&i.HandoffProviderExecutionEligible,
+		&i.HandoffRealExternalCallExecuted,
+		&i.HandoffDeliveryProven,
+	)
+	return i, err
 }
 
 const lockCampaignDraftForTouchPlan = `-- name: LockCampaignDraftForTouchPlan :one

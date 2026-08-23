@@ -160,11 +160,12 @@ type candidateHandler struct {
 	domainVerification interface {
 		Read(string) (string, error)
 	}
-	legacyHealth       *legacyhealth.Handler
-	campaignInitiation http.Handler
-	campaignReview     http.Handler
-	adminOps           http.Handler
-	outboundLegacy     *Handler
+	legacyHealth            *legacyhealth.Handler
+	campaignInitiation      http.Handler
+	campaignReview          http.Handler
+	outboundCampaignHandoff *outboundhttp.CampaignHandoffHandler
+	adminOps                http.Handler
+	outboundLegacy          *Handler
 }
 
 type identityConsoleApplication struct {
@@ -591,6 +592,30 @@ func (handler *candidateHandler) serveCampaignReview(writer http.ResponseWriter,
 		return
 	}
 	handler.campaignReview.ServeHTTP(writer, request)
+}
+
+func (handler *candidateHandler) GetOutboundCampaignHandoffSummary(writer http.ResponseWriter, request *http.Request, campaignCode string, planID string) {
+	if handler == nil || handler.outboundCampaignHandoff == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.outboundCampaignHandoff.Summary(writer, request, campaignCode, planID)
+}
+
+func (handler *candidateHandler) AcceptOutboundCampaignHandoff(writer http.ResponseWriter, request *http.Request, campaignCode string, planID string, _ api.AcceptOutboundCampaignHandoffParams) {
+	if handler == nil || handler.outboundCampaignHandoff == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.outboundCampaignHandoff.Accept(writer, request, campaignCode, planID)
+}
+
+func (handler *candidateHandler) ReconcileOutboundCampaignHandoff(writer http.ResponseWriter, request *http.Request, campaignCode string, planID string) {
+	if handler == nil || handler.outboundCampaignHandoff == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.outboundCampaignHandoff.Reconciliation(writer, request, campaignCode, planID)
 }
 
 func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
@@ -1036,6 +1061,28 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	outboundCampaignSource, err := newOutboundCampaignHandoffSourceAdapter(campaignRepository)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	outboundCampaignEvents, err := outboundstore.NewCampaignHandoffEventLogAdapter(eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	outboundCampaignService, err := outboundapp.NewCampaignHandoffService(
+		uow, outboundCampaignSource, outboundstore.NewCampaignHandoffRepository(), outboundCampaignEvents,
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	outboundCampaignHandler, err := outboundhttp.NewCampaignHandoffHandler(outboundCampaignService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	memberGridManagementFragment, err := membergrid.NewManagementRouteFragment(memberGridManagementHandler)
 	if err != nil {
 		pool.Close()
@@ -1127,8 +1174,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			WeChatShopCallbackTokenPresent:      config.LegacyHealth.WeChatShopCallbackTokenPresent,
 			AllowMissingWeChatShopCallbackToken: config.LegacyHealth.AllowMissingWeChatShopCallbackToken,
 		})),
-		campaignInitiation: campaignInitiationFragment,
-		campaignReview:     campaignReviewFragment,
+		campaignInitiation:      campaignInitiationFragment,
+		campaignReview:          campaignReviewFragment,
+		outboundCampaignHandoff: outboundCampaignHandler,
 	}
 	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
 	if err != nil {
@@ -1617,6 +1665,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}/recipients", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListCloudCampaignTouchPlanRecipients)},
 		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetCloudCampaignTouchPlanRecipient)},
 		{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}/review/{operation}", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.MutateCloudCampaignTouchPlanReview)},
+		{http.MethodGet, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetOutboundCampaignHandoffSummary)},
+		{http.MethodPost, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.AcceptOutboundCampaignHandoff)},
+		{http.MethodGet, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ReconcileOutboundCampaignHandoff)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-publish", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.PublishQuestionnairePublicDefinition)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-disable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.DisableQuestionnairePublicDefinition)},
 		{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/public-analytics", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(wrapper.GetQuestionnairePublicAnalytics)},

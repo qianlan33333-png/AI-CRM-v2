@@ -14,29 +14,30 @@ import (
 )
 
 const (
-	Schema                         = "acceptance_fixtures"
-	DefaultDatabaseURL             = "postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable"
-	H01A1DatabaseName              = "aicrm_test_h01a1"
-	H03DatabaseName                = "aicrm_test_h03"
-	I01BDatabaseName               = "aicrm_test_i01b"
-	F01ADatabaseName               = "aicrm_test_f01a"
-	F01ABDatabaseName              = "aicrm_test_f01ab"
-	F01PublicDatabaseName          = "aicrm_test_f01public"
-	AutomationAgentsABDatabaseName = "aicrm_test_automation_agents_ab"
-	AdminOpsABDatabaseName         = "aicrm_test_adminops_ab"
-	C01ChannelDatabaseName         = "aicrm_test_c01_channel"
-	J01CouponDatabaseName          = "aicrm_test_j01_coupon"
-	CouponABDatabaseName           = "aicrm_test_coupon_ab"
-	I03OrderDatabaseName           = "aicrm_test_i03_order"
-	OrderABDatabaseName            = "aicrm_test_order_ab"
-	MessageArchiveDatabaseName     = "aicrm_test_message_archive"
-	PushCenterDatabaseName         = "aicrm_test_pushcenter"
-	MiniProgramLibraryDatabaseName = "aicrm_test_miniprogram_library"
-	ImageUpdateDatabaseName        = "aicrm_test_image_update"
-	AttachmentLibraryDatabaseName  = "aicrm_test_attachment_library"
-	HXCSenderDatabaseName          = "aicrm_test_hxc_sender"
-	ContactPolicyDatabaseName      = "aicrm_test_contact_policy_00065"
-	advisoryLockKey                = int64(0x414943524d503230)
+	Schema                              = "acceptance_fixtures"
+	DefaultDatabaseURL                  = "postgres://postgres:postgres@127.0.0.1:5432/aicrm_test?sslmode=disable"
+	H01A1DatabaseName                   = "aicrm_test_h01a1"
+	H03DatabaseName                     = "aicrm_test_h03"
+	I01BDatabaseName                    = "aicrm_test_i01b"
+	F01ADatabaseName                    = "aicrm_test_f01a"
+	F01ABDatabaseName                   = "aicrm_test_f01ab"
+	F01PublicDatabaseName               = "aicrm_test_f01public"
+	AutomationAgentsABDatabaseName      = "aicrm_test_automation_agents_ab"
+	AdminOpsABDatabaseName              = "aicrm_test_adminops_ab"
+	C01ChannelDatabaseName              = "aicrm_test_c01_channel"
+	J01CouponDatabaseName               = "aicrm_test_j01_coupon"
+	CouponABDatabaseName                = "aicrm_test_coupon_ab"
+	I03OrderDatabaseName                = "aicrm_test_i03_order"
+	OrderABDatabaseName                 = "aicrm_test_order_ab"
+	MessageArchiveDatabaseName          = "aicrm_test_message_archive"
+	PushCenterDatabaseName              = "aicrm_test_pushcenter"
+	MiniProgramLibraryDatabaseName      = "aicrm_test_miniprogram_library"
+	ImageUpdateDatabaseName             = "aicrm_test_image_update"
+	AttachmentLibraryDatabaseName       = "aicrm_test_attachment_library"
+	HXCSenderDatabaseName               = "aicrm_test_hxc_sender"
+	ContactPolicyDatabaseName           = "aicrm_test_contact_policy_00065"
+	OutboundCampaignHandoffDatabaseName = "aicrm_test_p4_outbound_00068"
+	advisoryLockKey                     = int64(0x414943524d503230)
 )
 
 var (
@@ -93,7 +94,7 @@ func ValidateDatabaseURL(databaseURL string) error {
 // ValidateDatabaseURLForDatabase accepts only named, locally-created
 // acceptance databases on the dedicated loopback PostgreSQL service.
 func ValidateDatabaseURLForDatabase(databaseURL, databaseName string) error {
-	if databaseName != "aicrm_test" && databaseName != H01A1DatabaseName && databaseName != H03DatabaseName && databaseName != I01BDatabaseName && databaseName != F01ADatabaseName && databaseName != F01ABDatabaseName && databaseName != F01PublicDatabaseName && databaseName != AutomationAgentsABDatabaseName && databaseName != AdminOpsABDatabaseName && databaseName != C01ChannelDatabaseName && databaseName != J01CouponDatabaseName && databaseName != CouponABDatabaseName && databaseName != I03OrderDatabaseName && databaseName != OrderABDatabaseName && databaseName != MessageArchiveDatabaseName && databaseName != PushCenterDatabaseName && databaseName != MiniProgramLibraryDatabaseName && databaseName != ImageUpdateDatabaseName && databaseName != AttachmentLibraryDatabaseName && databaseName != HXCSenderDatabaseName && databaseName != ContactPolicyDatabaseName {
+	if databaseName != "aicrm_test" && databaseName != H01A1DatabaseName && databaseName != H03DatabaseName && databaseName != I01BDatabaseName && databaseName != F01ADatabaseName && databaseName != F01ABDatabaseName && databaseName != F01PublicDatabaseName && databaseName != AutomationAgentsABDatabaseName && databaseName != AdminOpsABDatabaseName && databaseName != C01ChannelDatabaseName && databaseName != J01CouponDatabaseName && databaseName != CouponABDatabaseName && databaseName != I03OrderDatabaseName && databaseName != OrderABDatabaseName && databaseName != MessageArchiveDatabaseName && databaseName != PushCenterDatabaseName && databaseName != MiniProgramLibraryDatabaseName && databaseName != ImageUpdateDatabaseName && databaseName != AttachmentLibraryDatabaseName && databaseName != HXCSenderDatabaseName && databaseName != ContactPolicyDatabaseName && databaseName != OutboundCampaignHandoffDatabaseName {
 		return ErrUnsafeDatabaseURL
 	}
 	parsed, err := url.Parse(databaseURL)
