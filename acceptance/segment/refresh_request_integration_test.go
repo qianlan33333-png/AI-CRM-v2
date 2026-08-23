@@ -86,4 +86,27 @@ func TestRefreshRequestRepositoryPersistsAcceptedReceiptAndHeavyJob(t *testing.T
 	if receiptCount != 1 || jobCount != 1 {
 		t.Fatalf("receipt/job counts = %d/%d, want exactly one persisted command", receiptCount, jobCount)
 	}
+	if _, err = pool.Exec(ctx, `UPDATE segments SET lifecycle_status = 'archived', archived_at = now(), archived_by = 'h6-segment-fixture' WHERE id = $1`, conflictingSegmentID); err != nil {
+		t.Fatal(err)
+	}
+	var jobsBefore int
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM river_job`).Scan(&jobsBefore); err != nil {
+		t.Fatal(err)
+	}
+	archivedCommand := segmentport.RefreshCommand{
+		SegmentID: segmentport.SegmentID(conflictingSegmentID), Actor: "admin:archived", IdempotencyKey: "s5a-archived-command",
+	}
+	if _, err = service.RequestRefresh(ctx, archivedCommand); !errors.Is(err, segmentapp.ErrSegmentNotFound) {
+		t.Fatalf("archived RequestRefresh() error = %v, want segment not found", err)
+	}
+	var archivedReceiptCount, jobsAfter int
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM segment_refresh_receipts WHERE idempotency_scope = $1 AND idempotency_key = $2`, archivedCommand.Actor, archivedCommand.IdempotencyKey).Scan(&archivedReceiptCount); err != nil {
+		t.Fatal(err)
+	}
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM river_job`).Scan(&jobsAfter); err != nil {
+		t.Fatal(err)
+	}
+	if archivedReceiptCount != 0 || jobsAfter != jobsBefore {
+		t.Fatalf("archived receipt/job delta = %d/%d, want 0/0", archivedReceiptCount, jobsAfter-jobsBefore)
+	}
 }

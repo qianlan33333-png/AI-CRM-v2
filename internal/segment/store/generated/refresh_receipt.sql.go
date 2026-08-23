@@ -45,6 +45,21 @@ func (q *Queries) AcceptSegmentRefreshReceipt(ctx context.Context, arg AcceptSeg
 	return i, err
 }
 
+const ensureSegmentRefreshable = `-- name: EnsureSegmentRefreshable :one
+SELECT id
+FROM segments
+WHERE id = $1::bigint
+  AND lifecycle_status = 'active'
+FOR UPDATE
+`
+
+func (q *Queries) EnsureSegmentRefreshable(ctx context.Context, segmentID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, ensureSegmentRefreshable, segmentID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const reserveSegmentRefreshReceipt = `-- name: ReserveSegmentRefreshReceipt :one
 INSERT INTO segment_refresh_receipts (idempotency_scope, idempotency_key, segment_id)
 SELECT

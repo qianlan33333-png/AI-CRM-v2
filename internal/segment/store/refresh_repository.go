@@ -29,15 +29,11 @@ func (repository *RefreshRepository) LockDefinition(
 	if repository == nil || segmentID <= 0 {
 		return nil, segmentapp.ErrInvalidSegmentRefresh
 	}
-	tx, err := platformstore.TxFromContext(ctx)
+	queries, err := refreshQueriesFromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var definition []byte
-	err = tx.QueryRow(ctx, `
-		SELECT definition FROM segments
-		WHERE id = $1 AND lifecycle_status = 'active'
-		FOR UPDATE`, int64(segmentID)).Scan(&definition)
+	definition, err := queries.LockSegmentDefinitionForRefresh(ctx, int64(segmentID))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, segmentapp.ErrSegmentNotFound
 	}

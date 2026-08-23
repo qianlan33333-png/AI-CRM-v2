@@ -17,6 +17,7 @@ type Querier interface {
 	CompleteSegmentRefresh(ctx context.Context, arg CompleteSegmentRefreshParams) (int64, error)
 	CreateSegment(ctx context.Context, arg CreateSegmentParams) (CreateSegmentRow, error)
 	DeleteSegmentMembersForRefresh(ctx context.Context, segmentID int64) error
+	EnsureSegmentRefreshable(ctx context.Context, segmentID int64) (int64, error)
 	GetSegment(ctx context.Context, segmentID int64) (GetSegmentRow, error)
 	GetSegmentOperationReceipt(ctx context.Context, arg GetSegmentOperationReceiptParams) (GetSegmentOperationReceiptRow, error)
 	InsertSegmentMembersForRefresh(ctx context.Context, arg InsertSegmentMembersForRefreshParams) error
