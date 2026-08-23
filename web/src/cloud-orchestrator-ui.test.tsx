@@ -62,4 +62,16 @@ describe("CloudOrchestratorWorkspace", () => {
     expect(html).toContain("没有 AI 助手本地审阅权限");
     expect(html).not.toContain("运营计划审阅");
   });
+
+  it("allows ops to open only the Campaign carrier and keeps sales closed", () => {
+    const ops = render(CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH, "ops");
+    expect(ops).toContain("Campaign 审阅工作区");
+    expect(ops).toContain("Campaign 审阅");
+    expect(ops).not.toContain("运营计划");
+    expect(ops).not.toContain("可观察性");
+
+    const sales = render(CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH, "sales");
+    expect(sales).toContain("没有 AI 助手本地审阅权限");
+    expect(sales).not.toContain("Campaign 审阅工作区");
+  });
 });

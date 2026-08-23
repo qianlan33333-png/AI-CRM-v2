@@ -77,6 +77,7 @@ import type { AutomationRunsTransport } from "./automation-runs";
 import { AutomationAgentsPage } from "./automation-agents-ui";
 import type { AutomationAgentsTransport } from "./automation-agents";
 import { CloudOrchestratorWorkspace } from "./cloud-orchestrator-ui";
+import type { CampaignTouchPlanTransport } from "./campaign-touch-plan-core";
 import {
   CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH,
   CLOUD_ORCHESTRATOR_OBSERVABILITY_PATH,
@@ -426,6 +427,7 @@ export interface AppProps {
   couponsTransport?: CouponsTransport;
   automationRunsTransport?: AutomationRunsTransport;
   automationAgentsTransport?: AutomationAgentsTransport;
+  campaignTouchPlanTransport?: CampaignTouchPlanTransport;
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   deliveryLineageTransport?: DeliveryLineageTransport;
   dataHealthTransport?: DataHealthTransport;
@@ -643,6 +645,7 @@ function PageContent({
   couponsTransport,
   automationRunsTransport,
   automationAgentsTransport,
+  campaignTouchPlanTransport,
   groupInviteLibraryTransport,
   deliveryLineageTransport,
   dataHealthTransport,
@@ -683,6 +686,7 @@ function PageContent({
   couponsTransport?: CouponsTransport;
   automationRunsTransport?: AutomationRunsTransport;
   automationAgentsTransport?: AutomationAgentsTransport;
+  campaignTouchPlanTransport?: CampaignTouchPlanTransport;
   groupInviteLibraryTransport?: GroupInviteLibraryTransport;
   deliveryLineageTransport?: DeliveryLineageTransport;
   dataHealthTransport?: DataHealthTransport;
@@ -719,6 +723,10 @@ function PageContent({
       <CloudOrchestratorWorkspace
         role={principal.role}
         route={cloudOrchestrator}
+        actorID={principal.adminUserID}
+        campaignTransport={campaignTouchPlanTransport}
+        readCookie={cookieHeader}
+        onUnauthenticated={onUnauthenticated}
       />
     );
   }
@@ -1150,6 +1158,7 @@ export function App({
   couponsTransport,
   automationRunsTransport,
   automationAgentsTransport,
+  campaignTouchPlanTransport,
   groupInviteLibraryTransport,
   deliveryLineageTransport,
   dataHealthTransport,
@@ -1348,6 +1357,7 @@ export function App({
             couponsTransport={couponsTransport}
             automationRunsTransport={automationRunsTransport}
             automationAgentsTransport={automationAgentsTransport}
+            campaignTouchPlanTransport={campaignTouchPlanTransport}
             groupInviteLibraryTransport={groupInviteLibraryTransport}
             deliveryLineageTransport={deliveryLineageTransport}
             dataHealthTransport={dataHealthTransport}
