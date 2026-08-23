@@ -11,6 +11,7 @@ import (
 	platformscheduler "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/scheduler"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
+	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 	segmentworker "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/worker"
 )
@@ -42,6 +43,14 @@ ALTER TABLE segments
 	finder, err := segmentstore.NewScheduledRefreshRepository(pool)
 	if err != nil {
 		t.Fatal(err)
+	}
+	archivedSegmentID := insertRefreshSegment(t, ctx, pool, `{"field":"is_deleted","op":"eq","value":false}`)
+	if _, err = pool.Exec(ctx, `UPDATE segments SET refresh_mode='scheduled', refresh_cron='* * * * *', lifecycle_status='archived' WHERE id=$1`, archivedSegmentID); err != nil {
+		t.Fatal(err)
+	}
+	candidates, err := finder.ListScheduledRefreshCandidates(ctx)
+	if err != nil || len(candidates) != 1 || candidates[0].SegmentID != segmentport.SegmentID(segmentID) {
+		t.Fatalf("scheduled candidates = %#v, %v; want only active segment %d", candidates, err, segmentID)
 	}
 	refreshWorker, err := segmentworker.NewScheduledRefreshWorker(finder, service, func() time.Time { return reference })
 	if err != nil {
