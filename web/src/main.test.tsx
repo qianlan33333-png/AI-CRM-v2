@@ -1235,6 +1235,7 @@ describe("legacy admin path carrier", () => {
     vi.stubGlobal("window", { location: { pathname: "/", search } });
     const html = renderToStaticMarkup(<App initialSession={adminSession} />);
     expect(html).toContain("Campaign 审阅工作区");
+    expect(html).toContain("本地触达计划审阅");
     expect(html).toContain("AI Audience package #9223372036854775807");
     expect(html).toContain("BLOCKED_REDLINE");
     expect(html).not.toContain("运营工作台骨架已就绪");
