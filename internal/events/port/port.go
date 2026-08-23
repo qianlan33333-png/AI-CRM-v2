@@ -58,6 +58,9 @@ const (
 	// dispatcher binding is registered for it, so it cannot send a group
 	// message, invoke a webhook, or call a provider.
 	EvGroupOpsPlanUpdated = "group_ops.plan_updated"
+	// EvCustomerContactPolicyChanged records a Contact-owned local policy
+	// mutation. It has no delivery binding and cannot invoke a provider.
+	EvCustomerContactPolicyChanged = "customer.contact_policy_changed"
 
 	ConsumerAutomationTagTrigger = "automation.tag-trigger.v1"
 	ConsumerStatsTagApplied      = "stats.tag-applied.v1"

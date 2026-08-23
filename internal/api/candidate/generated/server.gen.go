@@ -907,6 +907,87 @@ func (e CustomerChatActivityResponseRealExternalCallExecuted) Valid() bool {
 	}
 }
 
+// Defines values for CustomerContactPolicyReasonCode.
+const (
+	ContactPolicyComplianceHold CustomerContactPolicyReasonCode = "compliance_hold"
+	ContactPolicyManualOptOut   CustomerContactPolicyReasonCode = "manual_opt_out"
+	ContactPolicyOperatorHold   CustomerContactPolicyReasonCode = "operator_hold"
+)
+
+// Valid indicates whether the value is a known member of the CustomerContactPolicyReasonCode enum.
+func (e CustomerContactPolicyReasonCode) Valid() bool {
+	switch e {
+	case ContactPolicyComplianceHold:
+		return true
+	case ContactPolicyManualOptOut:
+		return true
+	case ContactPolicyOperatorHold:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerContactPolicyResponseDeliveryProven.
+const (
+	CustomerContactPolicyResponseDeliveryProvenFalse CustomerContactPolicyResponseDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerContactPolicyResponseDeliveryProven enum.
+func (e CustomerContactPolicyResponseDeliveryProven) Valid() bool {
+	switch e {
+	case CustomerContactPolicyResponseDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerContactPolicyResponseLocalOnly.
+const (
+	CustomerContactPolicyResponseLocalOnlyTrue CustomerContactPolicyResponseLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CustomerContactPolicyResponseLocalOnly enum.
+func (e CustomerContactPolicyResponseLocalOnly) Valid() bool {
+	switch e {
+	case CustomerContactPolicyResponseLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerContactPolicyResponseProviderExecutionEligible.
+const (
+	CustomerContactPolicyResponseProviderExecutionEligibleFalse CustomerContactPolicyResponseProviderExecutionEligible = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerContactPolicyResponseProviderExecutionEligible enum.
+func (e CustomerContactPolicyResponseProviderExecutionEligible) Valid() bool {
+	switch e {
+	case CustomerContactPolicyResponseProviderExecutionEligibleFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerContactPolicyResponseRealExternalCallExecuted.
+const (
+	CustomerContactPolicyResponseRealExternalCallExecutedFalse CustomerContactPolicyResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerContactPolicyResponseRealExternalCallExecuted enum.
+func (e CustomerContactPolicyResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerContactPolicyResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CustomerContextChatEntryChatType.
 const (
 	CustomerContextChatEntryChatTypeGroup   CustomerContextChatEntryChatType = "group"
@@ -5583,13 +5664,13 @@ func (e SetupWizardSaveResponseRuntimeApplied) Valid() bool {
 
 // Defines values for SetupWizardUnavailableMaskedSettingConfigured.
 const (
-	SetupWizardUnavailableMaskedSettingConfiguredFalse SetupWizardUnavailableMaskedSettingConfigured = false
+	False SetupWizardUnavailableMaskedSettingConfigured = false
 )
 
 // Valid indicates whether the value is a known member of the SetupWizardUnavailableMaskedSettingConfigured enum.
 func (e SetupWizardUnavailableMaskedSettingConfigured) Valid() bool {
 	switch e {
-	case SetupWizardUnavailableMaskedSettingConfiguredFalse:
+	case False:
 		return true
 	default:
 		return false
@@ -5598,13 +5679,13 @@ func (e SetupWizardUnavailableMaskedSettingConfigured) Valid() bool {
 
 // Defines values for SetupWizardUnavailableMaskedSettingMasked.
 const (
-	SetupWizardUnavailableMaskedSettingMaskedTrue SetupWizardUnavailableMaskedSettingMasked = true
+	True SetupWizardUnavailableMaskedSettingMasked = true
 )
 
 // Valid indicates whether the value is a known member of the SetupWizardUnavailableMaskedSettingMasked enum.
 func (e SetupWizardUnavailableMaskedSettingMasked) Valid() bool {
 	switch e {
-	case SetupWizardUnavailableMaskedSettingMaskedTrue:
+	case True:
 		return true
 	default:
 		return false
@@ -6183,6 +6264,11 @@ type BindIdentityResponse struct {
 	union json.RawMessage
 }
 
+// ClearCustomerContactPolicyRequest defines model for ClearCustomerContactPolicyRequest.
+type ClearCustomerContactPolicyRequest struct {
+	ExpectedVersion int64 `json:"expected_version"`
+}
+
 // CreateLocalTagGroupRequest defines model for CreateLocalTagGroupRequest.
 type CreateLocalTagGroupRequest struct {
 	FirstTagName string `json:"first_tag_name"`
@@ -6330,6 +6416,40 @@ type CustomerChatActivityResponseProviderReceiptsIncluded bool
 
 // CustomerChatActivityResponseRealExternalCallExecuted defines model for CustomerChatActivityResponse.RealExternalCallExecuted.
 type CustomerChatActivityResponseRealExternalCallExecuted bool
+
+// CustomerContactPolicyReasonCode defines model for CustomerContactPolicyReasonCode.
+type CustomerContactPolicyReasonCode string
+
+// CustomerContactPolicyResponse defines model for CustomerContactPolicyResponse.
+type CustomerContactPolicyResponse struct {
+	CustomerId     int64                                       `json:"customer_id"`
+	DeliveryProven CustomerContactPolicyResponseDeliveryProven `json:"delivery_proven"`
+
+	// Eligible The related transaction-bound Contact eligibility checker accepts at most 1000 unique customer IDs per preview or dispatch check.
+	Eligible      bool                                   `json:"eligible"`
+	LocalOnly     CustomerContactPolicyResponseLocalOnly `json:"local_only"`
+	PolicyPresent bool                                   `json:"policy_present"`
+
+	// ProviderExecutionEligible This local policy API neither validates nor executes a Provider; false does not mean the customer can never be sent to.
+	ProviderExecutionEligible CustomerContactPolicyResponseProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  CustomerContactPolicyResponseRealExternalCallExecuted  `json:"real_external_call_executed"`
+	ReasonCode                *CustomerContactPolicyReasonCode                       `json:"reason_code"`
+	SuppressedUntil           *time.Time                                             `json:"suppressed_until"`
+	SuppressionActive         bool                                                   `json:"suppression_active"`
+	Version                   int64                                                  `json:"version"`
+}
+
+// CustomerContactPolicyResponseDeliveryProven defines model for CustomerContactPolicyResponse.DeliveryProven.
+type CustomerContactPolicyResponseDeliveryProven bool
+
+// CustomerContactPolicyResponseLocalOnly defines model for CustomerContactPolicyResponse.LocalOnly.
+type CustomerContactPolicyResponseLocalOnly bool
+
+// CustomerContactPolicyResponseProviderExecutionEligible This local policy API neither validates nor executes a Provider; false does not mean the customer can never be sent to.
+type CustomerContactPolicyResponseProviderExecutionEligible bool
+
+// CustomerContactPolicyResponseRealExternalCallExecuted defines model for CustomerContactPolicyResponse.RealExternalCallExecuted.
+type CustomerContactPolicyResponseRealExternalCallExecuted bool
 
 // CustomerContextChatEntry defines model for CustomerContextChatEntry.
 type CustomerContextChatEntry struct {
@@ -8655,6 +8775,13 @@ type ServicePeriodVersionRequest struct {
 	ExpectedVersion int64 `json:"expected_version"`
 }
 
+// SetCustomerContactPolicyRequest defines model for SetCustomerContactPolicyRequest.
+type SetCustomerContactPolicyRequest struct {
+	ExpectedVersion int64                           `json:"expected_version"`
+	ReasonCode      CustomerContactPolicyReasonCode `json:"reason_code"`
+	SuppressedUntil *time.Time                      `json:"suppressed_until,omitempty"`
+}
+
 // SetCustomerStageRequest defines model for SetCustomerStageRequest.
 type SetCustomerStageRequest struct {
 	StageId *int64 `json:"stage_id"`
@@ -9618,6 +9745,24 @@ type ListCustomerChatActivityParams struct {
 // ListCustomerChatActivityParamsChatType defines parameters for ListCustomerChatActivity.
 type ListCustomerChatActivityParamsChatType string
 
+// DeleteCustomerContactPolicyParams defines parameters for DeleteCustomerContactPolicy.
+type DeleteCustomerContactPolicyParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// PutCustomerContactPolicyParams defines parameters for PutCustomerContactPolicy.
+type PutCustomerContactPolicyParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // GetCustomerContextParams defines parameters for GetCustomerContext.
 type GetCustomerContextParams struct {
 	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
@@ -10054,6 +10199,12 @@ type QueryPublicSurveySubmissionResultJSONRequestBody = PublicSurveyResultQueryR
 
 // UpdateCustomerJSONRequestBody defines body for UpdateCustomer for application/json ContentType.
 type UpdateCustomerJSONRequestBody = CustomerUpdateRequest
+
+// DeleteCustomerContactPolicyJSONRequestBody defines body for DeleteCustomerContactPolicy for application/json ContentType.
+type DeleteCustomerContactPolicyJSONRequestBody = ClearCustomerContactPolicyRequest
+
+// PutCustomerContactPolicyJSONRequestBody defines body for PutCustomerContactPolicy for application/json ContentType.
+type PutCustomerContactPolicyJSONRequestBody = SetCustomerContactPolicyRequest
 
 // SetCustomerStageJSONRequestBody defines body for SetCustomerStage for application/json ContentType.
 type SetCustomerStageJSONRequestBody = SetCustomerStageRequest
@@ -11297,6 +11448,15 @@ type ServerInterface interface {
 	// List zero-body local chat activity facts for one visible customer
 	// (GET /api/v1/customers/{customer_id}/chat-activity)
 	ListCustomerChatActivity(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerChatActivityParams)
+	// Clear the Contact-owned local customer suppression policy
+	// (DELETE /api/v1/customers/{customer_id}/contact-policy)
+	DeleteCustomerContactPolicy(w http.ResponseWriter, r *http.Request, customerId CustomerID, params DeleteCustomerContactPolicyParams)
+	// Read the Contact-owned local customer suppression policy
+	// (GET /api/v1/customers/{customer_id}/contact-policy)
+	GetCustomerContactPolicy(w http.ResponseWriter, r *http.Request, customerId CustomerID)
+	// Create or replace the Contact-owned local customer suppression policy
+	// (PUT /api/v1/customers/{customer_id}/contact-policy)
+	PutCustomerContactPolicy(w http.ResponseWriter, r *http.Request, customerId CustomerID, params PutCustomerContactPolicyParams)
 	// Read a safe local Customer 360 context without external identities or message bodies
 	// (GET /api/v1/customers/{customer_id}/context)
 	GetCustomerContext(w http.ResponseWriter, r *http.Request, customerId CustomerID, params GetCustomerContextParams)
@@ -12038,6 +12198,24 @@ func (_ Unimplemented) GetCustomerActivityAnalytics(w http.ResponseWriter, r *ht
 // List zero-body local chat activity facts for one visible customer
 // (GET /api/v1/customers/{customer_id}/chat-activity)
 func (_ Unimplemented) ListCustomerChatActivity(w http.ResponseWriter, r *http.Request, customerId CustomerID, params ListCustomerChatActivityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Clear the Contact-owned local customer suppression policy
+// (DELETE /api/v1/customers/{customer_id}/contact-policy)
+func (_ Unimplemented) DeleteCustomerContactPolicy(w http.ResponseWriter, r *http.Request, customerId CustomerID, params DeleteCustomerContactPolicyParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the Contact-owned local customer suppression policy
+// (GET /api/v1/customers/{customer_id}/contact-policy)
+func (_ Unimplemented) GetCustomerContactPolicy(w http.ResponseWriter, r *http.Request, customerId CustomerID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create or replace the Contact-owned local customer suppression policy
+// (PUT /api/v1/customers/{customer_id}/contact-policy)
+func (_ Unimplemented) PutCustomerContactPolicy(w http.ResponseWriter, r *http.Request, customerId CustomerID, params PutCustomerContactPolicyParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -17961,6 +18139,201 @@ func (siw *ServerInterfaceWrapper) ListCustomerChatActivity(w http.ResponseWrite
 	handler.ServeHTTP(w, r)
 }
 
+// DeleteCustomerContactPolicy operation middleware
+func (siw *ServerInterfaceWrapper) DeleteCustomerContactPolicy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params DeleteCustomerContactPolicyParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteCustomerContactPolicy(w, r, customerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCustomerContactPolicy operation middleware
+func (siw *ServerInterfaceWrapper) GetCustomerContactPolicy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCustomerContactPolicy(w, r, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutCustomerContactPolicy operation middleware
+func (siw *ServerInterfaceWrapper) PutCustomerContactPolicy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId CustomerID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PutCustomerContactPolicyParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutCustomerContactPolicy(w, r, customerId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetCustomerContext operation middleware
 func (siw *ServerInterfaceWrapper) GetCustomerContext(w http.ResponseWriter, r *http.Request) {
 
@@ -21098,6 +21471,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/customers/{customer_id}/chat-activity", wrapper.ListCustomerChatActivity)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/v1/customers/{customer_id}/contact-policy", wrapper.DeleteCustomerContactPolicy)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/customers/{customer_id}/contact-policy", wrapper.GetCustomerContactPolicy)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/customers/{customer_id}/contact-policy", wrapper.PutCustomerContactPolicy)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/customers/{customer_id}/context", wrapper.GetCustomerContext)
@@ -27465,6 +27847,205 @@ func (response ListCustomerChatActivity503JSONResponse) VisitListCustomerChatAct
 	return json.NewEncoder(w).Encode(response)
 }
 
+type DeleteCustomerContactPolicyRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     DeleteCustomerContactPolicyParams
+	Body       *DeleteCustomerContactPolicyJSONRequestBody
+}
+
+type DeleteCustomerContactPolicyResponseObject interface {
+	VisitDeleteCustomerContactPolicyResponse(w http.ResponseWriter) error
+}
+
+type DeleteCustomerContactPolicy200JSONResponse CustomerContactPolicyResponse
+
+func (response DeleteCustomerContactPolicy200JSONResponse) VisitDeleteCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteCustomerContactPolicy400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DeleteCustomerContactPolicy400JSONResponse) VisitDeleteCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteCustomerContactPolicy401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteCustomerContactPolicy401JSONResponse) VisitDeleteCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteCustomerContactPolicy403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteCustomerContactPolicy403JSONResponse) VisitDeleteCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteCustomerContactPolicy404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteCustomerContactPolicy404JSONResponse) VisitDeleteCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteCustomerContactPolicy409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DeleteCustomerContactPolicy409JSONResponse) VisitDeleteCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DeleteCustomerContactPolicy503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response DeleteCustomerContactPolicy503JSONResponse) VisitDeleteCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContactPolicyRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+}
+
+type GetCustomerContactPolicyResponseObject interface {
+	VisitGetCustomerContactPolicyResponse(w http.ResponseWriter) error
+}
+
+type GetCustomerContactPolicy200JSONResponse CustomerContactPolicyResponse
+
+func (response GetCustomerContactPolicy200JSONResponse) VisitGetCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContactPolicy401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCustomerContactPolicy401JSONResponse) VisitGetCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContactPolicy403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCustomerContactPolicy403JSONResponse) VisitGetCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContactPolicy404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetCustomerContactPolicy404JSONResponse) VisitGetCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerContactPolicy503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetCustomerContactPolicy503JSONResponse) VisitGetCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutCustomerContactPolicyRequestObject struct {
+	CustomerId CustomerID `json:"customer_id"`
+	Params     PutCustomerContactPolicyParams
+	Body       *PutCustomerContactPolicyJSONRequestBody
+}
+
+type PutCustomerContactPolicyResponseObject interface {
+	VisitPutCustomerContactPolicyResponse(w http.ResponseWriter) error
+}
+
+type PutCustomerContactPolicy200JSONResponse CustomerContactPolicyResponse
+
+func (response PutCustomerContactPolicy200JSONResponse) VisitPutCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutCustomerContactPolicy400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response PutCustomerContactPolicy400JSONResponse) VisitPutCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutCustomerContactPolicy401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PutCustomerContactPolicy401JSONResponse) VisitPutCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutCustomerContactPolicy403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response PutCustomerContactPolicy403JSONResponse) VisitPutCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutCustomerContactPolicy404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PutCustomerContactPolicy404JSONResponse) VisitPutCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutCustomerContactPolicy409JSONResponse struct{ ConflictJSONResponse }
+
+func (response PutCustomerContactPolicy409JSONResponse) VisitPutCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutCustomerContactPolicy503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response PutCustomerContactPolicy503JSONResponse) VisitPutCustomerContactPolicyResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetCustomerContextRequestObject struct {
 	CustomerId CustomerID `json:"customer_id"`
 	Params     GetCustomerContextParams
@@ -30820,6 +31401,15 @@ type StrictServerInterface interface {
 	// List zero-body local chat activity facts for one visible customer
 	// (GET /api/v1/customers/{customer_id}/chat-activity)
 	ListCustomerChatActivity(ctx context.Context, request ListCustomerChatActivityRequestObject) (ListCustomerChatActivityResponseObject, error)
+	// Clear the Contact-owned local customer suppression policy
+	// (DELETE /api/v1/customers/{customer_id}/contact-policy)
+	DeleteCustomerContactPolicy(ctx context.Context, request DeleteCustomerContactPolicyRequestObject) (DeleteCustomerContactPolicyResponseObject, error)
+	// Read the Contact-owned local customer suppression policy
+	// (GET /api/v1/customers/{customer_id}/contact-policy)
+	GetCustomerContactPolicy(ctx context.Context, request GetCustomerContactPolicyRequestObject) (GetCustomerContactPolicyResponseObject, error)
+	// Create or replace the Contact-owned local customer suppression policy
+	// (PUT /api/v1/customers/{customer_id}/contact-policy)
+	PutCustomerContactPolicy(ctx context.Context, request PutCustomerContactPolicyRequestObject) (PutCustomerContactPolicyResponseObject, error)
 	// Read a safe local Customer 360 context without external identities or message bodies
 	// (GET /api/v1/customers/{customer_id}/context)
 	GetCustomerContext(ctx context.Context, request GetCustomerContextRequestObject) (GetCustomerContextResponseObject, error)
@@ -33911,6 +34501,100 @@ func (sh *strictHandler) ListCustomerChatActivity(w http.ResponseWriter, r *http
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListCustomerChatActivityResponseObject); ok {
 		if err := validResponse.VisitListCustomerChatActivityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteCustomerContactPolicy operation middleware
+func (sh *strictHandler) DeleteCustomerContactPolicy(w http.ResponseWriter, r *http.Request, customerId CustomerID, params DeleteCustomerContactPolicyParams) {
+	var request DeleteCustomerContactPolicyRequestObject
+
+	request.CustomerId = customerId
+	request.Params = params
+
+	var body DeleteCustomerContactPolicyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DeleteCustomerContactPolicy(ctx, request.(DeleteCustomerContactPolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteCustomerContactPolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteCustomerContactPolicyResponseObject); ok {
+		if err := validResponse.VisitDeleteCustomerContactPolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCustomerContactPolicy operation middleware
+func (sh *strictHandler) GetCustomerContactPolicy(w http.ResponseWriter, r *http.Request, customerId CustomerID) {
+	var request GetCustomerContactPolicyRequestObject
+
+	request.CustomerId = customerId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCustomerContactPolicy(ctx, request.(GetCustomerContactPolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCustomerContactPolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCustomerContactPolicyResponseObject); ok {
+		if err := validResponse.VisitGetCustomerContactPolicyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutCustomerContactPolicy operation middleware
+func (sh *strictHandler) PutCustomerContactPolicy(w http.ResponseWriter, r *http.Request, customerId CustomerID, params PutCustomerContactPolicyParams) {
+	var request PutCustomerContactPolicyRequestObject
+
+	request.CustomerId = customerId
+	request.Params = params
+
+	var body PutCustomerContactPolicyJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutCustomerContactPolicy(ctx, request.(PutCustomerContactPolicyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutCustomerContactPolicy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutCustomerContactPolicyResponseObject); ok {
+		if err := validResponse.VisitPutCustomerContactPolicyResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -12,7 +12,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
 .PHONY: p4-h01a1-media-acceptance p4-h03-media-acceptance p4-miniprogram-library-ab-acceptance p4-hxc-sender-read-acceptance p4-delivery-lineage-0308-acceptance p4-customer-profile-tags-0301-acceptance p4-i01b-product-entitlement-acceptance
 .PHONY: p4-f01a-survey-acceptance p4-f01ab-survey-acceptance p4-group-ops-acceptance
-.PHONY: p4-c01-channel-acceptance
+.PHONY: p4-c01-channel-acceptance p4-contact-policy-acceptance
 .PHONY: p4-f01a-survey-acceptance
 .PHONY: p4-c01-channel-acceptance p4-b02ab-tag-acceptance
 .PHONY: p4-channel-entrants-acceptance
@@ -586,6 +586,10 @@ p4-channel-entrants-acceptance:
 	@test -n "$${P4CHANNELENTRANTS_TEST_DATABASE_URL:-}" || { echo "P4CHANNELENTRANTS_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres "$$P4CHANNELENTRANTS_TEST_DATABASE_URL" up
 	@P4CHANNELENTRANTS_TEST_DATABASE_URL="$$P4CHANNELENTRANTS_TEST_DATABASE_URL" /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=120s -run '^TestChannelEntrantsPG16Integration$$' ./internal/contact/acceptance
+
+p4-contact-policy-acceptance:
+	@test -n "$${P4CONTACTPOLICY_TEST_DATABASE_URL:-}" || { echo "P4CONTACTPOLICY_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/contact/contact_policy_migration_compatibility.sh
 
 p4-b02ab-tag-acceptance:
 	@test -n "$${P4B02AB_TAG_TEST_DATABASE_URL:-}" || { echo "P4B02AB_TAG_TEST_DATABASE_URL is required" >&2; exit 2; }

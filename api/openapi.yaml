@@ -665,6 +665,82 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
+  /api/v1/customers/{customer_id}/contact-policy:
+    parameters:
+      - $ref: "#/components/parameters/CustomerID"
+    get:
+      tags: [p4-contact-policy]
+      operationId: getCustomerContactPolicy
+      summary: Read the Contact-owned local customer suppression policy
+      x-p4-decision-evidence: P4-CONTACT-POLICY-2026-08-23
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { description: Local policy projection, content: { application/json: { schema: { $ref: "#/components/schemas/CustomerContactPolicyResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-contact-policy]
+      operationId: putCustomerContactPolicy
+      summary: Create or replace the Contact-owned local customer suppression policy
+      x-p4-decision-evidence: P4-CONTACT-POLICY-2026-08-23
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SetCustomerContactPolicyRequest" }
+      responses:
+        "200": { description: Strictly read-back local policy projection, content: { application/json: { schema: { $ref: "#/components/schemas/CustomerContactPolicyResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    delete:
+      tags: [p4-contact-policy]
+      operationId: deleteCustomerContactPolicy
+      summary: Clear the Contact-owned local customer suppression policy
+      x-p4-decision-evidence: P4-CONTACT-POLICY-2026-08-23
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_command
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ClearCustomerContactPolicyRequest" }
+      responses:
+        "200": { description: Strictly read-back eligible local projection, content: { application/json: { schema: { $ref: "#/components/schemas/CustomerContactPolicyResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/v1/customers/{customer_id}/tags/{tag_id}:
     parameters:
       - $ref: "#/components/parameters/CustomerID"
@@ -13717,6 +13793,45 @@ components:
       properties:
         customer: { $ref: "#/components/schemas/Customer" }
         tags: { type: array, items: { $ref: "#/components/schemas/Tag" } }
+    CustomerContactPolicyReasonCode:
+      type: string
+      enum: [manual_opt_out, compliance_hold, operator_hold]
+      x-enum-varnames: [ContactPolicyManualOptOut, ContactPolicyComplianceHold, ContactPolicyOperatorHold]
+    SetCustomerContactPolicyRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version, reason_code]
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 0 }
+        reason_code: { $ref: "#/components/schemas/CustomerContactPolicyReasonCode" }
+        suppressed_until: { type: string, format: date-time, nullable: true }
+    ClearCustomerContactPolicyRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 1 }
+    CustomerContactPolicyResponse:
+      type: object
+      additionalProperties: false
+      required: [customer_id, version, policy_present, eligible, suppression_active, reason_code, suppressed_until, local_only, provider_execution_eligible, real_external_call_executed, delivery_proven]
+      properties:
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        version: { type: integer, format: int64, minimum: 0 }
+        policy_present: { type: boolean }
+        eligible:
+          type: boolean
+          description: The related transaction-bound Contact eligibility checker accepts at most 1000 unique customer IDs per preview or dispatch check.
+        suppression_active: { type: boolean }
+        reason_code: { allOf: [{ $ref: "#/components/schemas/CustomerContactPolicyReasonCode" }], nullable: true }
+        suppressed_until: { type: string, format: date-time, nullable: true }
+        local_only: { type: boolean, enum: [true] }
+        provider_execution_eligible:
+          type: boolean
+          enum: [false]
+          description: This local policy API neither validates nor executes a Provider; false does not mean the customer can never be sent to.
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
     CustomerEvent:
       type: object
       additionalProperties: false

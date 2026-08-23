@@ -24,6 +24,16 @@ type Customer struct {
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
+// Contact-owned local suppression policy keyed only by canonical customer OneID.
+type CustomerContactPolicy struct {
+	CustomerID      int64              `json:"customer_id"`
+	ReasonCode      string             `json:"reason_code"`
+	SuppressedUntil pgtype.Timestamptz `json:"suppressed_until"`
+	Version         int64              `json:"version"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
 type TagGroup struct {
 	ID        int64  `json:"id"`
 	Name      string `json:"name"`
