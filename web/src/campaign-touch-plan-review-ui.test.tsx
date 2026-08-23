@@ -447,4 +447,22 @@ describe("CampaignTouchPlanReviewPanel", () => {
     expect(getReview).not.toHaveBeenCalled();
     await act(async () => root.unmount());
   });
+
+  it("emits only the closed approved handoff and synchronously clears it on identity changes and unmount", async () => {
+    const selected = vi.fn();
+    const next = deferred<{ status: number; data: unknown }>();
+    let calls = 0;
+    const transport: CampaignTouchPlanReviewTransport = {
+      getReview: vi.fn(() => ++calls === 1 ? Promise.resolve({ status: 200, data: approved }) : next.promise),
+      mutateReview: vi.fn(),
+    };
+    const common = { role: "ops" as const, plan, transport, onReviewSelected: selected };
+    const { root } = mount();
+    await act(async () => root.render(<CampaignTouchPlanReviewPanel {...common} actorID={7} />));
+    expect(selected).toHaveBeenLastCalledWith(expect.objectContaining({ review: expect.objectContaining({ status: "approved" }), handoff: expect.objectContaining({ status: "pending_outbound_acceptance" }) }));
+    await act(async () => root.render(<CampaignTouchPlanReviewPanel {...common} actorID={8} />));
+    expect(selected).toHaveBeenLastCalledWith(undefined);
+    await act(async () => root.unmount());
+    expect(selected).toHaveBeenLastCalledWith(undefined);
+  });
 });
