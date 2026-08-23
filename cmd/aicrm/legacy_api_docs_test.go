@@ -644,6 +644,20 @@ func TestLegacyAPIDocsModelBuildsFromEmbeddedCanonicalSpec(t *testing.T) {
 
 // ---- page handler tests ----------------------------------------------------
 
+func TestLegacyAPIDocsHandlersReuseImmutableEmbeddedModel(t *testing.T) {
+	first, err := newLegacyAPIDocsHandler()
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := newLegacyAPIDocsHandler()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.model == nil || first.model != second.model {
+		t.Fatal("embedded API docs model was reparsed")
+	}
+}
+
 func TestLegacyAPIDocsHandlerServesFrozenPageShell(t *testing.T) {
 	handler, err := newLegacyAPIDocsHandler()
 	if err != nil {

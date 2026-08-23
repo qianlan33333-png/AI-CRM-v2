@@ -20,6 +20,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"sync"
 
 	_ "embed"
 
@@ -743,11 +744,15 @@ type legacyAPIDocsHandler struct {
 	model *legacyAPIDocsPageModel
 }
 
+var loadLegacyAPIDocsModel = sync.OnceValues(func() (*legacyAPIDocsPageModel, error) {
+	return buildLegacyAPIDocsModel(contractapi.OpenAPISpec())
+})
+
 // newLegacyAPIDocsHandler parses the embedded canonical contract and prepares
 // the immutable page model. Any failure aborts construction, which fails the
 // composition-root startup wiring.
 func newLegacyAPIDocsHandler() (*legacyAPIDocsHandler, error) {
-	model, err := buildLegacyAPIDocsModel(contractapi.OpenAPISpec())
+	model, err := loadLegacyAPIDocsModel()
 	if err != nil {
 		return nil, err
 	}
