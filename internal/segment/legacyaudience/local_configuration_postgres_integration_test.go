@@ -14,6 +14,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	automationfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/automationfixture"
 	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 )
 
@@ -249,13 +250,9 @@ VALUES ($1, 'active', 1, 7, 7)`, packageID); err != nil {
 
 func insertLocalConfigurationAgent(t *testing.T, ctx context.Context, transaction pgx.Tx) int64 {
 	t.Helper()
-	var agentID int64
 	code := fmt.Sprintf("audience_local_config_%d", time.Now().UnixNano())
-	if err := transaction.QueryRow(ctx, `
-INSERT INTO public.automation_agent_configurations
-  (agent_name, agent_code, automation_type, status, created_by, updated_by, created_at, updated_at)
-VALUES ('Audience local configuration agent', $1, 'agent', 'active', 7, 7, now(), now())
-RETURNING id`, code).Scan(&agentID); err != nil {
+	agentID, err := automationfixture.CreateAgentConfiguration(ctx, transaction, code)
+	if err != nil {
 		t.Fatal(err)
 	}
 	return agentID
