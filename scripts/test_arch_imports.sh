@@ -21,12 +21,14 @@ seed() {
     "$root/internal/identity/port" "$root/internal/identity/store" \
     "$root/internal/automation/app" "$root/internal/stats/app" "$root/internal/events/store" \
     "$root/internal/outbound/app" "$root/internal/product/app" "$root/internal/media/app" "$root/internal/survey/app" \
+    "$root/internal/radar/app" "$root/internal/radar/port" \
     "$root/internal/platform/store" "$root/internal/api/generated" \
     "$root/internal/config"
   printf '%s\n' 'package app' \
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"' \
     >"$root/internal/contact/app/use.go"
   printf '%s\n' 'package main' \
+    'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/app"' \
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"' \
     >"$root/cmd/aicrm/main.go"
   printf '%s\n' 'package main' \
@@ -48,8 +50,11 @@ seed() {
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"' \
     >"$root/internal/product/app/use.go"
   printf '%s\n' 'package app' \
-    'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"' \
+    'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/port"' \
     >"$root/internal/media/app/use.go"
+  printf '%s\n' 'package app' \
+    'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"' \
+    >"$root/internal/radar/app/use.go"
   printf '%s\n' 'package app' \
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"' \
     >"$root/internal/survey/app/use.go"
@@ -99,6 +104,8 @@ mutate() {
       printf '%s\n' 'package app' 'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"' >"$root/internal/automation/app/use.go" ;;
     stats-events-store)
       printf '%s\n' 'package app' 'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"' >"$root/internal/stats/app/use.go" ;;
+    radar-events-store)
+      printf '%s\n' 'package app' 'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"' >"$root/internal/radar/app/use.go" ;;
     nested-port)
       printf '%s\n' 'package app' 'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port/internal"' >"$root/internal/contact/app/use.go" ;;
     platform-domain)
@@ -138,6 +145,7 @@ mutate() {
 reject concrete 'forbidden cross-module import'
 reject automation-events-store 'forbidden cross-module import'
 reject stats-events-store 'forbidden cross-module import'
+reject radar-events-store 'forbidden cross-module import'
 reject nested-port 'forbidden cross-module import'
 reject platform-domain 'forbidden cross-module import'
 reject api-domain 'forbidden cross-module import'

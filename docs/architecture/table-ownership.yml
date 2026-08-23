@@ -28,6 +28,8 @@ owners:
       - legacy_tag_sync_receipts
       - legacy_tag_live_mutation_receipts
       - legacy_tag_execution_status
+      - stage_operation_receipts
+      - tag_catalog_operation_receipts
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
@@ -40,6 +42,8 @@ owners:
       legacy_tag_sync_receipts: actor_scoped_local_sync_queue_acceptance_receipts_without_provider_execution
       legacy_tag_live_mutation_receipts: actor_scoped_opaque_live_mutation_queue_acceptance_receipts_without_provider_execution
       legacy_tag_execution_status: singleton_fail_closed_local_execution_gate_projection
+      stage_operation_receipts: actor_scoped_transactional_stage_mutation_idempotency_receipts
+      tag_catalog_operation_receipts: actor_scoped_transactional_tag_catalog_mutation_idempotency_receipts
 
   identity:
     package: internal/identity
@@ -56,10 +60,15 @@ owners:
 
   segment:
     package: internal/segment
-    tables: [segments, segment_members, segment_refresh_receipts, segment_operation_receipts, ai_audience_package_metadata]
+    tables: [segments, segment_members, segment_refresh_receipts, segment_operation_receipts, ai_audience_package_metadata, ai_audience_package_groups, ai_audience_operation_receipts, ai_audience_package_automation_bindings, ai_audience_package_senders, ai_audience_local_configuration_receipts]
     constraints:
       segment_operation_receipts: transaction_scoped_crud_idempotency_receipts
       ai_audience_package_metadata: local_package_lifecycle_and_version_over_authoritative_segment_members
+      ai_audience_package_groups: local_package_group_metadata_without_provider_or_send_execution
+      ai_audience_operation_receipts: actor_scoped_transactional_package_lifecycle_idempotency_receipts
+      ai_audience_package_automation_bindings: package_local_automation_references_without_agent_execution
+      ai_audience_package_senders: package_local_sender_references_without_provider_directory_validation_or_send
+      ai_audience_local_configuration_receipts: actor_scoped_transactional_local_configuration_idempotency_receipts
 
   automation:
     package: internal/automation
@@ -92,7 +101,7 @@ owners:
 
   survey:
     package: internal/survey
-    tables: [questionnaires, questionnaire_questions, questionnaire_options, questionnaire_catalog_counters, questionnaire_operation_receipts, questionnaire_management_receipts, questionnaire_submissions, questionnaire_submission_answers]
+    tables: [questionnaires, questionnaire_questions, questionnaire_options, questionnaire_catalog_counters, questionnaire_operation_receipts, questionnaire_management_receipts, questionnaire_submissions, questionnaire_submission_answers, questionnaire_operations, questionnaire_operations_receipts, questionnaire_external_push_test_runs, questionnaire_public_definitions, questionnaire_public_definition_questions, questionnaire_public_definition_options, questionnaire_public_submission_receipts, questionnaire_public_submissions, questionnaire_public_submission_answers, questionnaire_public_submission_rate_windows, questionnaire_public_management_receipts]
     constraints:
       questionnaires: single_instance_f01_definition_without_assessment_or_submission_execution
       questionnaire_questions: ordered_frozen_old_UI_question_schema
@@ -102,6 +111,17 @@ owners:
       questionnaire_management_receipts: actor_scoped_transactional_F01B_update_enable_disable_delete_idempotency_receipts
       questionnaire_submissions: immutable_opaque_identity_submission_snapshots_with_counter_sync
       questionnaire_submission_answers: immutable_question_and_option_snapshot_rows_without_definition_fk
+      questionnaire_operations: local_operations_configuration_without_navigation_or_provider_execution
+      questionnaire_operations_receipts: actor_scoped_transactional_operations_configuration_idempotency_receipts
+      questionnaire_external_push_test_runs: queued_local_test_facts_with_zero_provider_effect_and_no_retry
+      questionnaire_public_definitions: immutable_versioned_public_definition_snapshots
+      questionnaire_public_definition_questions: immutable_public_question_snapshots
+      questionnaire_public_definition_options: immutable_public_option_snapshots
+      questionnaire_public_submission_receipts: anonymous_digest_scoped_transactional_submission_idempotency_receipts
+      questionnaire_public_submissions: immutable_public_submission_headers
+      questionnaire_public_submission_answers: immutable_public_submission_answer_snapshots
+      questionnaire_public_submission_rate_windows: anonymous_digest_scoped_local_rate_windows
+      questionnaire_public_management_receipts: actor_scoped_transactional_publish_disable_idempotency_receipts
 
   ai:
     package: internal/ai
@@ -140,7 +160,7 @@ owners:
 
   product:
     package: internal/product
-    tables: [products, product_images, product_catalog_counters, product_operation_receipts, service_period_members, service_period_member_operation_receipts]
+    tables: [products, product_images, product_catalog_counters, product_operation_receipts, service_period_members, service_period_member_operation_receipts, product_local_entitlements, entitlement_operation_receipts, service_period_member_views, service_period_member_grid_collaborators]
     constraints:
       products: ordinary_product_catalog_and_allowlisted_legacy_admin_projection
       product_images: product_owned_native_image_urls_only
@@ -148,6 +168,10 @@ owners:
       product_operation_receipts: transaction_scoped_create_idempotency_receipts
       service_period_members: local_OneID_membership_facts_with_opaque_member_reference_and_no_external_identifiers
       service_period_member_operation_receipts: actor_scoped_transactional_member_mutation_idempotency_receipts
+      product_local_entitlements: local_customer_entitlement_facts_without_payment_or_provider_execution
+      entitlement_operation_receipts: actor_scoped_transactional_entitlement_mutation_idempotency_receipts
+      service_period_member_views: local_saved_member_grid_views_without_arbitrary_SQL_or_member_mutation
+      service_period_member_grid_collaborators: local_staff_metadata_without_invitation_or_permission_escalation
 
   coupon:
     package: internal/coupon
@@ -174,7 +198,7 @@ owners:
 
   media:
     package: internal/media
-    tables: [media_images, media_image_blobs, media_image_upload_receipts, media_image_delete_receipts, media_group_invites, media_group_invite_operation_receipts, media_thumbnail_cache_entries, media_miniprograms, media_miniprogram_import_preflights, media_miniprogram_import_ledger, media_miniprogram_operation_receipts]
+    tables: [media_images, media_image_blobs, media_image_upload_receipts, media_image_delete_receipts, media_group_invites, media_group_invite_operation_receipts, media_thumbnail_cache_entries, media_miniprograms, media_miniprogram_import_preflights, media_miniprogram_import_ledger, media_miniprogram_operation_receipts, media_attachments, media_attachment_blobs, media_attachment_mutation_receipts]
     constraints:
       media_images: validated_single_instance_image_metadata
       media_image_blobs: exact_validated_image_bytes_owned_by_media
@@ -187,6 +211,16 @@ owners:
       media_miniprogram_import_preflights: immutable_external_gate_snapshot_with_one_way_reconciliation_state
       media_miniprogram_import_ledger: immutable_per_source_row_remap_rebuild_drop_and_human_decision_lineage
       media_miniprogram_operation_receipts: actor_operation_business_target_digest_state_and_result_receipts
+      media_attachments: validated_local_PDF_attachment_metadata
+      media_attachment_blobs: exact_validated_local_PDF_bytes
+      media_attachment_mutation_receipts: actor_scoped_transactional_attachment_mutation_idempotency_receipts
+
+  radar:
+    package: internal/radar
+    tables: [radar_links, radar_link_idempotency_records]
+    constraints:
+      radar_links: local_only_link_facts_without_public_route_click_tracking_or_provider_effect
+      radar_link_idempotency_records: actor_scoped_transactional_mutation_deduplication_without_raw_keys_or_provider_data
 
   operationcycle:
     package: internal/operationcycle
@@ -255,9 +289,10 @@ owners:
 
   hxc:
     package: internal/hxc
-    tables: [hxc_sender_configs]
+    tables: [hxc_sender_configs, hxc_sender_config_receipts]
     constraints:
       hxc_sender_configs: single_instance_local_sender_configuration_without_provider_directory_or_broadcast_execution
+      hxc_sender_config_receipts: actor_scoped_transactional_sender_configuration_idempotency_receipts
 
   ops:
     package: internal/ops
