@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -16,12 +17,15 @@ import (
 )
 
 type legacyOrderBoardStub struct {
-	filter        orderport.BoardFilter
-	listCalls     int
-	refundCommand orderport.RefundCommand
-	retryID       int64
-	page          orderport.Page
-	refund        orderport.Refund
+	filter         orderport.BoardFilter
+	listCalls      int
+	refundCommand  orderport.RefundCommand
+	previewCommand orderport.ExportCommand
+	exportCommand  orderport.ExportCommand
+	getActor       int64
+	retryID        int64
+	page           orderport.Page
+	refund         orderport.Refund
 }
 
 func (s *legacyOrderBoardStub) ListOrders(_ context.Context, filter orderport.BoardFilter) (orderport.Page, error) {
@@ -35,10 +39,16 @@ func (*legacyOrderBoardStub) GetOrder(context.Context, string, string) (orderpor
 func (*legacyOrderBoardStub) ListRefunds(context.Context, orderport.RefundFilter) (orderport.RefundPage, error) {
 	return orderport.RefundPage{}, nil
 }
-func (*legacyOrderBoardStub) CreateExport(context.Context, orderport.ExportCommand) (orderport.ExportJob, error) {
+func (s *legacyOrderBoardStub) PreviewExport(_ context.Context, command orderport.ExportCommand) (orderport.ExportPreview, error) {
+	s.previewCommand = command
+	return orderport.ExportPreview{}, nil
+}
+func (s *legacyOrderBoardStub) CreateExport(_ context.Context, command orderport.ExportCommand) (orderport.ExportJob, error) {
+	s.exportCommand = command
 	return orderport.ExportJob{}, nil
 }
-func (*legacyOrderBoardStub) GetExport(context.Context, string) (orderport.ExportJob, error) {
+func (s *legacyOrderBoardStub) GetExport(_ context.Context, _ string, actor int64) (orderport.ExportJob, error) {
+	s.getActor = actor
 	return orderport.ExportJob{}, nil
 }
 func (s *legacyOrderBoardStub) RequestRefund(_ context.Context, command orderport.RefundCommand) (orderport.Refund, error) {
@@ -196,6 +206,40 @@ func TestOrderABRejectsOpaqueCursorInsteadOfGuessingItsCodec(t *testing.T) {
 	router.ServeHTTP(response, legacyRequest(http.MethodGet, "/api/admin/orders?cursor=unproven", legacyToken(98)))
 	if response.Code != http.StatusBadRequest || !strings.Contains(response.Body.String(), `"error_code":"invalid_argument"`) {
 		t.Fatalf("cursor status=%d body=%s", response.Code, response.Body.String())
+	}
+}
+
+func TestOrderSafeExportTransportAllowsOnlyTheWhitelistedFilter(t *testing.T) {
+	writer := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/admin/exports/preview", strings.NewReader(`{"resource":"orders","format":"csv","filter":{"provider":"wechat","status":"paid","product_code":"sku-1","local_id":11}}`))
+	command, err := legacyPreviewExportCommand(writer, request, 7)
+	if err != nil || command.Actor != 7 || command.Filter.Provider != "wechat" || command.Filter.Status != "paid" || command.Filter.ProductCode != "sku-1" || command.Filter.LocalID == nil || *command.Filter.LocalID != 11 || command.IdempotencyKey != "" {
+		t.Fatalf("command=%+v err=%v", command, err)
+	}
+	writer = httptest.NewRecorder()
+	request = httptest.NewRequest(http.MethodPost, "/api/admin/exports/preview", strings.NewReader(`{"resource":"orders","format":"csv","filter":{"mobile":"13800000000"}}`))
+	if _, err := legacyPreviewExportCommand(writer, request, 7); err == nil {
+		t.Fatal("identity filter was accepted")
+	}
+}
+
+func TestOrderExternalEffectPublicProjectionNeverLeaksProviderReceipt(t *testing.T) {
+	now := time.Date(2026, 8, 23, 12, 0, 0, 0, time.UTC)
+	effect := orderport.ExternalEffect{ID: 9, OrderID: 11, Provider: "wechat", EffectKind: "refund", State: "outcome_unknown", AutoRetryAllowed: false, ProviderReceipt: []byte("provider-receipt-must-not-leak"), CreatedAt: now, UpdatedAt: now}
+	encoded, err := json.Marshal(mapLegacyOrderExternalEffect(effect))
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(encoded)
+	for _, forbidden := range []string{"provider-receipt-must-not-leak", `"provider_receipt":`, "base64"} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("unsafe effect projection leaked %q: %s", forbidden, body)
+		}
+	}
+	for _, required := range []string{`"receipt_state":"present"`, `"provider_receipt_present":true`, `"delivery_proven":false`, `"local_fact_only":true`, `"real_external_call_executed":false`, `"delivery_semantics":"local_state_not_delivery_proof"`} {
+		if !strings.Contains(body, required) {
+			t.Fatalf("effect projection missing %q: %s", required, body)
+		}
 	}
 }
 

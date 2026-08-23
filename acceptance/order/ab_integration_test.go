@@ -3,6 +3,7 @@ package order_acceptance
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -33,6 +34,22 @@ func TestP4OrderABLocalExportRefundIntentReplayAndOutcomeUnknownGate(t *testing.
 	}
 	if replay, replayErr := service.CreateExport(ctx, orderport.ExportCommand{Resource: "orders", Format: "csv", Actor: 701, IdempotencyKey: exportKey}); replayErr != nil || replay.JobID != export.JobID {
 		t.Fatalf("export replay=%#v err=%v", replay, replayErr)
+	}
+	for _, forbidden := range []string{prefix + "-M", prefix + "-T", prefix + "-identity", "13800000000", "merchant_order_no", "transaction_id"} {
+		if strings.Contains(export.ContentText, forbidden) {
+			t.Fatalf("safe export leaked %q: %q", forbidden, export.ContentText)
+		}
+	}
+	preview, err := service.PreviewExport(ctx, orderport.ExportCommand{Resource: "orders", Format: "csv", Actor: 701})
+	if err != nil || preview.Total < 1 || preview.ContentText == "" {
+		t.Fatalf("preview=%#v err=%v", preview, err)
+	}
+	var exportReceiptCount, exportJobCount, exportEventCount int
+	if err = pool.QueryRow(ctx, `SELECT
+      (SELECT count(*) FROM order_operation_receipts WHERE actor_scope='admin:701'),
+      (SELECT count(*) FROM order_export_jobs),
+      (SELECT count(*) FROM event_log WHERE event_type='order.export_created')`).Scan(&exportReceiptCount, &exportJobCount, &exportEventCount); err != nil || exportReceiptCount != 1 || exportJobCount != 1 || exportEventCount != 1 {
+		t.Fatalf("preview wrote durable facts receipt/job/event=%d/%d/%d err=%v", exportReceiptCount, exportJobCount, exportEventCount, err)
 	}
 
 	refundKey := "p4-order-ab-refund-" + prefix

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
@@ -23,8 +24,9 @@ type legacyOrderBoardApplication interface {
 	ListOrders(context.Context, orderport.BoardFilter) (orderport.Page, error)
 	GetOrder(context.Context, string, string) (orderport.Detail, error)
 	ListRefunds(context.Context, orderport.RefundFilter) (orderport.RefundPage, error)
+	PreviewExport(context.Context, orderport.ExportCommand) (orderport.ExportPreview, error)
 	CreateExport(context.Context, orderport.ExportCommand) (orderport.ExportJob, error)
-	GetExport(context.Context, string) (orderport.ExportJob, error)
+	GetExport(context.Context, string, int64) (orderport.ExportJob, error)
 	RequestRefund(context.Context, orderport.RefundCommand) (orderport.Refund, error)
 	ListExternalEffects(context.Context, string, string) (orderport.ExternalEffectPage, error)
 	RequestExternalEffectRetry(context.Context, int64, int64, string) (orderport.ExternalEffect, error)
@@ -170,6 +172,31 @@ func (handler *Handler) CreateOrderBoardExport(writer http.ResponseWriter, reque
 	handler.createOrderBoardExport(writer, request, false)
 }
 
+// PreviewOrderBoardExport is intentionally read-only: it has no idempotency
+// key because it never creates a receipt, event, or durable export job.
+func (handler *Handler) PreviewOrderBoardExport(writer http.ResponseWriter, request *http.Request) {
+	board := handler.orderBoardOrFail(writer)
+	if board == nil {
+		return
+	}
+	principal, err := orderBoardActor(request)
+	if err != nil {
+		writeOrderError(writer, err)
+		return
+	}
+	command, err := legacyPreviewExportCommand(writer, request, principal.AdminUserID)
+	if err != nil {
+		writeOrderError(writer, err)
+		return
+	}
+	result, err := board.PreviewExport(request.Context(), command)
+	if err != nil {
+		writeOrderError(writer, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, result)
+}
+
 func (handler *Handler) CreateWechatOrderBoardExport(writer http.ResponseWriter, request *http.Request) {
 	handler.createOrderBoardExport(writer, request, true)
 }
@@ -206,7 +233,12 @@ func (handler *Handler) GetOrderBoardExport(writer http.ResponseWriter, request 
 		writeOrderError(writer, orderapp.ErrInvalidBoardCommand)
 		return
 	}
-	result, err := board.GetExport(request.Context(), chi.URLParam(request, "job_id"))
+	principal, err := orderBoardActor(request)
+	if err != nil {
+		writeOrderError(writer, err)
+		return
+	}
+	result, err := board.GetExport(request.Context(), chi.URLParam(request, "job_id"), principal.AdminUserID)
 	if err != nil {
 		writeOrderError(writer, err)
 		return
@@ -266,7 +298,7 @@ func (handler *Handler) ListWechatOrderExternalEffects(writer http.ResponseWrite
 		writeOrderError(writer, err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, page)
+	writeJSON(writer, http.StatusOK, mapLegacyOrderExternalEffectPage(page))
 }
 
 func (handler *Handler) ReviewWechatOrderExternalEffect(writer http.ResponseWriter, request *http.Request) {
@@ -309,7 +341,7 @@ func (handler *Handler) ReviewWechatOrderExternalEffect(writer http.ResponseWrit
 		writeOrderError(writer, err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, result)
+	writeJSON(writer, http.StatusOK, mapLegacyOrderExternalEffect(result))
 }
 
 func (handler *Handler) orderBoardOrFail(writer http.ResponseWriter) legacyOrderBoardApplication {
@@ -442,8 +474,9 @@ func singleOrderBoardQueryValues(query map[string][]string, allowed map[string]b
 }
 
 type legacyOrderExportRequest struct {
-	Resource string `json:"resource"`
-	Format   string `json:"format"`
+	Resource string                 `json:"resource"`
+	Format   string                 `json:"format"`
+	Filter   orderport.ExportFilter `json:"filter"`
 }
 
 func legacyExportCommand(writer http.ResponseWriter, request *http.Request, actor int64, key string, wechatOnly bool) (orderport.ExportCommand, error) {
@@ -459,7 +492,17 @@ func legacyExportCommand(writer http.ResponseWriter, request *http.Request, acto
 	if decoder.Decode(&body) != nil || !errors.Is(decoder.Decode(&struct{}{}), io.EOF) {
 		return orderport.ExportCommand{}, orderapp.ErrInvalidBoardCommand
 	}
-	return orderport.ExportCommand{Resource: strings.TrimSpace(body.Resource), Format: strings.TrimSpace(body.Format), Actor: actor, IdempotencyKey: key}, nil
+	return orderport.ExportCommand{Resource: strings.TrimSpace(body.Resource), Format: strings.TrimSpace(body.Format), Filter: body.Filter, Actor: actor, IdempotencyKey: key}, nil
+}
+
+func legacyPreviewExportCommand(writer http.ResponseWriter, request *http.Request, actor int64) (orderport.ExportCommand, error) {
+	decoder := json.NewDecoder(http.MaxBytesReader(writer, request.Body, 64<<10))
+	decoder.DisallowUnknownFields()
+	var body legacyOrderExportRequest
+	if decoder.Decode(&body) != nil || !errors.Is(decoder.Decode(&struct{}{}), io.EOF) {
+		return orderport.ExportCommand{}, orderapp.ErrInvalidBoardCommand
+	}
+	return orderport.ExportCommand{Resource: strings.TrimSpace(body.Resource), Format: strings.TrimSpace(body.Format), Filter: body.Filter, Actor: actor}, nil
 }
 
 type legacyOrderRefundRequest struct {
@@ -498,18 +541,81 @@ func legacyRefundCommand(writer http.ResponseWriter, request *http.Request, acto
 }
 
 func orderBoardActorAndKey(request *http.Request) (authport.Principal, string, error) {
-	if request == nil {
-		return authport.Principal{}, "", orderapp.ErrInvalidBoardCommand
-	}
-	principal, ok := authport.PrincipalFromContext(request.Context())
-	if !ok || principal.AdminUserID < 1 {
-		return authport.Principal{}, "", authport.ErrUnauthorized
+	principal, err := orderBoardActor(request)
+	if err != nil {
+		return authport.Principal{}, "", err
 	}
 	values := request.Header.Values("Idempotency-Key")
 	if len(values) != 1 || strings.TrimSpace(values[0]) != values[0] || len(values[0]) < 16 || len(values[0]) > 128 {
 		return authport.Principal{}, "", orderapp.ErrInvalidBoardCommand
 	}
 	return principal, values[0], nil
+}
+
+func orderBoardActor(request *http.Request) (authport.Principal, error) {
+	if request == nil {
+		return authport.Principal{}, orderapp.ErrInvalidBoardCommand
+	}
+	principal, ok := authport.PrincipalFromContext(request.Context())
+	if !ok || principal.AdminUserID < 1 {
+		return authport.Principal{}, authport.ErrUnauthorized
+	}
+	return principal, nil
+}
+
+const legacyOrderDeliverySemantics = "local_state_not_delivery_proof"
+
+// legacyOrderExternalEffect is the only public projection for local payment
+// effect facts. Provider receipts remain an internal database fact: even a
+// completed local state is never delivery or provider-success proof.
+type legacyOrderExternalEffect struct {
+	ID                       int64        `json:"id"`
+	OrderID                  orderport.ID `json:"order_id"`
+	Provider                 string       `json:"provider"`
+	EffectKind               string       `json:"effect_kind"`
+	State                    string       `json:"state"`
+	AutoRetryAllowed         bool         `json:"auto_retry_allowed"`
+	ManualReviewRequestedAt  *time.Time   `json:"manual_review_requested_at,omitempty"`
+	ReceiptState             string       `json:"receipt_state"`
+	ProviderReceiptPresent   bool         `json:"provider_receipt_present"`
+	DeliveryProven           bool         `json:"delivery_proven"`
+	LocalFactOnly            bool         `json:"local_fact_only"`
+	RealExternalCallExecuted bool         `json:"real_external_call_executed"`
+	DeliverySemantics        string       `json:"delivery_semantics"`
+	CreatedAt                time.Time    `json:"created_at"`
+	UpdatedAt                time.Time    `json:"updated_at"`
+}
+
+type legacyOrderExternalEffectPage struct {
+	Items []legacyOrderExternalEffect `json:"items"`
+	Total int64                       `json:"total"`
+}
+
+func mapLegacyOrderExternalEffect(effect orderport.ExternalEffect) legacyOrderExternalEffect {
+	receiptPresent := len(effect.ProviderReceipt) > 0
+	receiptState := "absent"
+	if receiptPresent {
+		receiptState = "present"
+	}
+	var reviewedAt *time.Time
+	if !effect.ManualReviewRequested.IsZero() {
+		value := effect.ManualReviewRequested.UTC()
+		reviewedAt = &value
+	}
+	return legacyOrderExternalEffect{ID: effect.ID, OrderID: effect.OrderID, Provider: effect.Provider,
+		EffectKind: effect.EffectKind, State: effect.State, AutoRetryAllowed: false,
+		ManualReviewRequestedAt: reviewedAt, ReceiptState: receiptState,
+		ProviderReceiptPresent: receiptPresent, DeliveryProven: false, LocalFactOnly: true,
+		RealExternalCallExecuted: false, DeliverySemantics: legacyOrderDeliverySemantics,
+		CreatedAt: effect.CreatedAt.UTC(), UpdatedAt: effect.UpdatedAt.UTC()}
+}
+
+func mapLegacyOrderExternalEffectPage(page orderport.ExternalEffectPage) legacyOrderExternalEffectPage {
+	items := make([]legacyOrderExternalEffect, len(page.Items))
+	for index, effect := range page.Items {
+		items[index] = mapLegacyOrderExternalEffect(effect)
+	}
+	return legacyOrderExternalEffectPage{Items: items, Total: page.Total}
 }
 
 func emptyOrderBoardBody(writer http.ResponseWriter, request *http.Request) bool {

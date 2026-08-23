@@ -397,6 +397,43 @@ func (q *Queries) GetBoardOrder(ctx context.Context, arg GetBoardOrderParams) (O
 	return i, err
 }
 
+const getBoardOrderByID = `-- name: GetBoardOrderByID :one
+SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+       customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
+       product_id, product_code, product_name_snapshot, amount_minor, currency,
+       status, status_label, detail_url, created_at, updated_at
+FROM order_list_projections
+WHERE id = $1::bigint
+`
+
+func (q *Queries) GetBoardOrderByID(ctx context.Context, id int64) (OrderListProjection, error) {
+	row := q.db.QueryRow(ctx, getBoardOrderByID, id)
+	var i OrderListProjection
+	err := row.Scan(
+		&i.ID,
+		&i.Provider,
+		&i.ProviderLabel,
+		&i.MerchantOrderNo,
+		&i.PlatformTransactionNo,
+		&i.CustomerID,
+		&i.PayerNameSnapshot,
+		&i.MobileSnapshot,
+		&i.IdentityKind,
+		&i.IdentityValue,
+		&i.ProductID,
+		&i.ProductCode,
+		&i.ProductNameSnapshot,
+		&i.AmountMinor,
+		&i.Currency,
+		&i.Status,
+		&i.StatusLabel,
+		&i.DetailUrl,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const getBoardOrderForUpdate = `-- name: GetBoardOrderForUpdate :one
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
@@ -553,6 +590,59 @@ func (q *Queries) GetOrderOperationReceipt(ctx context.Context, arg GetOrderOper
 		&i.PayloadDigest,
 		&i.State,
 		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
+const getOrderRefundByID = `-- name: GetOrderRefundByID :one
+SELECT refund.id, refund.order_id, refund.external_effect_id, refund.provider, refund.refund_id,
+       refund.out_refund_no, refund.refund_amount_total, refund.currency, refund.reason,
+       refund.status, refund.created_at, order_projection.merchant_order_no,
+       order_projection.platform_transaction_no, effect.state AS external_effect_state,
+       effect.auto_retry_allowed
+FROM order_refunds AS refund
+JOIN order_list_projections AS order_projection ON order_projection.id = refund.order_id
+JOIN order_external_effects AS effect ON effect.id = refund.external_effect_id
+WHERE refund.id = $1::bigint
+`
+
+type GetOrderRefundByIDRow struct {
+	ID                    int64              `json:"id"`
+	OrderID               int64              `json:"order_id"`
+	ExternalEffectID      int64              `json:"external_effect_id"`
+	Provider              string             `json:"provider"`
+	RefundID              string             `json:"refund_id"`
+	OutRefundNo           string             `json:"out_refund_no"`
+	RefundAmountTotal     int64              `json:"refund_amount_total"`
+	Currency              string             `json:"currency"`
+	Reason                string             `json:"reason"`
+	Status                string             `json:"status"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	MerchantOrderNo       string             `json:"merchant_order_no"`
+	PlatformTransactionNo string             `json:"platform_transaction_no"`
+	ExternalEffectState   string             `json:"external_effect_state"`
+	AutoRetryAllowed      bool               `json:"auto_retry_allowed"`
+}
+
+func (q *Queries) GetOrderRefundByID(ctx context.Context, id int64) (GetOrderRefundByIDRow, error) {
+	row := q.db.QueryRow(ctx, getOrderRefundByID, id)
+	var i GetOrderRefundByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.ExternalEffectID,
+		&i.Provider,
+		&i.RefundID,
+		&i.OutRefundNo,
+		&i.RefundAmountTotal,
+		&i.Currency,
+		&i.Reason,
+		&i.Status,
+		&i.CreatedAt,
+		&i.MerchantOrderNo,
+		&i.PlatformTransactionNo,
+		&i.ExternalEffectState,
+		&i.AutoRetryAllowed,
 	)
 	return i, err
 }

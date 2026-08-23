@@ -33,14 +33,17 @@ func (e *boardTestEvents) Append(ctx context.Context, event eventport.Event) (ev
 }
 
 type boardTestStore struct {
-	record       orderport.Record
-	records      []orderport.Record
-	receipts     map[string]BoardReceipt
-	effects      map[int64]orderport.ExternalEffect
-	refunds      []orderport.Refund
-	exports      map[string]orderport.ExportJob
-	nextEffectID int64
-	nextRefundID int64
+	record          orderport.Record
+	records         []orderport.Record
+	receipts        map[string]BoardReceipt
+	effects         map[int64]orderport.ExternalEffect
+	refunds         []orderport.Refund
+	exports         map[string]orderport.ExportJob
+	refundListCalls int
+	orderFilter     orderport.BoardFilter
+	refundFilter    orderport.RefundFilter
+	nextEffectID    int64
+	nextRefundID    int64
 }
 
 func newBoardTestStore(now time.Time) *boardTestStore {
@@ -50,6 +53,7 @@ func newBoardTestStore(now time.Time) *boardTestStore {
 }
 
 func (s *boardTestStore) ListBoardOrders(_ context.Context, filter orderport.BoardFilter) ([]orderport.Record, error) {
+	s.orderFilter = filter
 	start := int(filter.Offset)
 	if start >= len(s.records) {
 		return []orderport.Record{}, nil
@@ -60,12 +64,24 @@ func (s *boardTestStore) ListBoardOrders(_ context.Context, filter orderport.Boa
 	}
 	return append([]orderport.Record(nil), s.records[start:end]...), nil
 }
-func (s *boardTestStore) CountBoardOrders(_ context.Context, _ orderport.BoardFilter) (int64, error) {
+func (s *boardTestStore) CountBoardOrders(_ context.Context, filter orderport.BoardFilter) (int64, error) {
+	s.orderFilter = filter
 	return int64(len(s.records)), nil
 }
 func (s *boardTestStore) GetBoardOrder(_ context.Context, provider, reference string) (orderport.Record, error) {
-	if (provider == "auto" || provider == s.record.Provider) && (reference == s.record.MerchantOrderNo || reference == s.record.PlatformTransactionNo || reference == fmt.Sprint(s.record.ID)) {
-		return s.record, nil
+	for index := len(s.records) - 1; index >= 0; index-- {
+		record := s.records[index]
+		if (provider == "auto" || provider == record.Provider) && (reference == record.MerchantOrderNo || reference == record.PlatformTransactionNo || reference == fmt.Sprint(record.ID)) {
+			return record, nil
+		}
+	}
+	return orderport.Record{}, ErrNotFound
+}
+func (s *boardTestStore) GetBoardOrderByID(_ context.Context, id orderport.ID) (orderport.Record, error) {
+	for _, record := range s.records {
+		if record.ID == id {
+			return record, nil
+		}
 	}
 	return orderport.Record{}, ErrNotFound
 }
@@ -170,8 +186,18 @@ func (s *boardTestStore) CreateRefund(ctx context.Context, refund orderport.Refu
 	s.refunds = append(s.refunds, refund)
 	return refund, nil
 }
-func (s *boardTestStore) ListRefunds(_ context.Context, _ orderport.RefundFilter) ([]orderport.Refund, int64, error) {
+func (s *boardTestStore) ListRefunds(_ context.Context, filter orderport.RefundFilter) ([]orderport.Refund, int64, error) {
+	s.refundListCalls++
+	s.refundFilter = filter
 	return append([]orderport.Refund(nil), s.refunds...), int64(len(s.refunds)), nil
+}
+func (s *boardTestStore) GetRefundByID(_ context.Context, id int64) (orderport.Refund, error) {
+	for _, refund := range s.refunds {
+		if refund.ID == id {
+			return refund, nil
+		}
+	}
+	return orderport.Refund{}, ErrNotFound
 }
 
 func boardTestService(now time.Time, store *boardTestStore, events *boardTestEvents) (*BoardService, *boardTestUOW) {
@@ -235,5 +261,108 @@ func TestOrderBoardExportCarriesEveryPage(t *testing.T) {
 	job, err := service.CreateExport(context.Background(), orderport.ExportCommand{Resource: "orders", Format: "csv", Actor: 9, IdempotencyKey: "cccccccccccccccc"})
 	if err != nil || strings.Count(job.ContentText, "\n") != int(MaximumLimit)+2 || len(events.rows) != 1 {
 		t.Fatalf("job=%#v err=%v csv_lines=%d events=%d", job, err, strings.Count(job.ContentText, "\n"), len(events.rows))
+	}
+}
+
+func TestOrderBoardSafeExportPreviewIsReadOnlyAndStripsSensitiveFields(t *testing.T) {
+	now := time.Date(2026, 8, 23, 9, 0, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	store.record.ProductCode = "=SUM(A1)\r\nnext"
+	store.record.MerchantOrderNo = "merchant-secret"
+	store.record.PlatformTransactionNo = "provider-receipt"
+	store.record.IdentityKind, store.record.IdentityValue = "unionid", "identity-secret"
+	store.record.MobileSnapshot, store.record.DetailURL = "13800000000", "https://must-not-be-valid"
+	// Keep the source fact valid: the detail URL is never projected by this
+	// export and production rows are required to use a local path.
+	store.record.DetailURL = "/api/admin/orders/11"
+	store.records = []orderport.Record{store.record}
+	service, _ := boardTestService(now, store, events)
+	preview, err := service.PreviewExport(context.Background(), orderport.ExportCommand{Resource: "orders", Format: "csv", Actor: 9})
+	if err != nil || preview.Total != 1 || preview.Truncated || len(store.receipts) != 0 || len(store.exports) != 0 || len(events.rows) != 0 {
+		t.Fatalf("preview=%#v err=%v receipts=%d exports=%d events=%d", preview, err, len(store.receipts), len(store.exports), len(events.rows))
+	}
+	for _, leaked := range []string{"merchant-secret", "provider-receipt", "identity-secret", "13800000000", "detail_url", "transaction_id", "order_no"} {
+		if strings.Contains(preview.ContentText, leaked) {
+			t.Fatalf("preview leaked %q: %q", leaked, preview.ContentText)
+		}
+	}
+	if !strings.Contains(preview.ContentText, "local_id,provider,product_code,amount_minor,currency,status,created_at") || !strings.Contains(preview.ContentText, "'=SUM(A1)next") || strings.Contains(preview.ContentText, "\r") {
+		t.Fatalf("unsafe CSV projection: %q", preview.ContentText)
+	}
+}
+
+func TestOrderBoardSafeExportUsesAllProviderForEmptyFilter(t *testing.T) {
+	now := time.Date(2026, 8, 23, 9, 30, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	service, _ := boardTestService(now, store, events)
+	if _, err := service.PreviewExport(context.Background(), orderport.ExportCommand{Resource: "orders", Format: "csv", Actor: 9}); err != nil || store.orderFilter.Provider != "all" {
+		t.Fatalf("order preview error=%v provider=%q", err, store.orderFilter.Provider)
+	}
+	store.refunds = []orderport.Refund{{ID: 7, OrderID: 11, Provider: "wechat", OrderNo: "merchant-secret", TransactionID: "transaction-secret", RefundID: "rfd_target", OutRefundNo: "rfd_target", RefundAmountTotal: 1990, Currency: "CNY", Status: "pending_external_gate", ExternalEffectID: 8, ExternalEffectState: "pending_external_gate", CreatedAt: now}}
+	if _, err := service.PreviewExport(context.Background(), orderport.ExportCommand{Resource: "refunds", Format: "csv", Actor: 9}); err != nil || store.refundFilter.Provider != "all" {
+		t.Fatalf("refund preview error=%v provider=%q", err, store.refundFilter.Provider)
+	}
+}
+
+func TestOrderBoardSafeExportOwnerScopeAndPaymentsRedline(t *testing.T) {
+	now := time.Date(2026, 8, 23, 9, 0, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	service, _ := boardTestService(now, store, events)
+	if _, err := service.PreviewExport(context.Background(), orderport.ExportCommand{Resource: "payments", Format: "csv", Actor: 9}); !errors.Is(err, ErrBoardBlockedRedline) {
+		t.Fatalf("payments preview error=%v", err)
+	}
+	job, err := service.CreateExport(context.Background(), orderport.ExportCommand{Resource: "orders", Format: "csv", Actor: 9, IdempotencyKey: "dddddddddddddddd"})
+	if err != nil || len(events.rows) != 1 || len(store.receipts) != 1 || len(store.exports) != 1 {
+		t.Fatalf("job=%#v err=%v receipts=%d exports=%d events=%d", job, err, len(store.receipts), len(store.exports), len(events.rows))
+	}
+	if _, err := service.GetExport(context.Background(), job.JobID, 10); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("foreign owner error=%v", err)
+	}
+	readback, err := service.GetExport(context.Background(), job.JobID, 9)
+	if err != nil || readback != job {
+		t.Fatalf("readback=%#v err=%v job=%#v", readback, err, job)
+	}
+}
+
+func TestOrderBoardSafeRefundExportExcludesProviderReferences(t *testing.T) {
+	now := time.Date(2026, 8, 23, 9, 0, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	store.refunds = []orderport.Refund{{ID: 7, OrderID: 11, Provider: "wechat", OrderNo: "merchant-secret", TransactionID: "transaction-secret", RefundID: "rfd_provider-secret", OutRefundNo: "rfd_merchant-secret", RefundAmountTotal: 1990, Currency: "CNY", Reason: "sensitive reason", Status: "pending_external_gate", ExternalEffectID: 8, ExternalEffectState: "pending_external_gate", CreatedAt: now}}
+	service, _ := boardTestService(now, store, events)
+	preview, err := service.PreviewExport(context.Background(), orderport.ExportCommand{Resource: "refunds", Format: "csv", Actor: 9})
+	if err != nil || preview.Total != 1 || len(store.receipts) != 0 || len(store.exports) != 0 || len(events.rows) != 0 {
+		t.Fatalf("preview=%#v err=%v receipts=%d exports=%d events=%d", preview, err, len(store.receipts), len(store.exports), len(events.rows))
+	}
+	for _, leaked := range []string{"merchant-secret", "transaction-secret", "provider-secret", "sensitive reason", "refund_id", "out_refund_no"} {
+		if strings.Contains(preview.ContentText, leaked) {
+			t.Fatalf("refund preview leaked %q: %q", leaked, preview.ContentText)
+		}
+	}
+	if !strings.Contains(preview.ContentText, "local_id,order_local_id,provider,refund_amount_total,currency,status,created_at") {
+		t.Fatalf("unexpected refund projection: %q", preview.ContentText)
+	}
+}
+
+func TestOrderBoardSafeExportLocalIDUsesExactReaders(t *testing.T) {
+	now := time.Date(2026, 8, 23, 9, 0, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	target := store.record
+	target.ID, target.ProductCode = 11, "target-sku"
+	collision := store.record
+	collision.ID, collision.MerchantOrderNo, collision.ProductCode = 99, "11", "colliding-provider-reference"
+	store.records = []orderport.Record{target, collision}
+	service, _ := boardTestService(now, store, events)
+	orderID := int64(11)
+	preview, err := service.PreviewExport(context.Background(), orderport.ExportCommand{Resource: "orders", Format: "csv", Filter: orderport.ExportFilter{LocalID: &orderID}, Actor: 9})
+	if err != nil || preview.Total != 1 || !strings.Contains(preview.ContentText, "target-sku") || strings.Contains(preview.ContentText, "colliding-provider-reference") {
+		t.Fatalf("order preview=%#v err=%v", preview, err)
+	}
+	targetRefund := orderport.Refund{ID: 7, OrderID: 11, Provider: "wechat", OrderNo: "merchant-secret", TransactionID: "transaction-secret", RefundID: "rfd_target", OutRefundNo: "rfd_target", RefundAmountTotal: 1990, Currency: "CNY", Reason: "reason", Status: "pending_external_gate", ExternalEffectID: 8, ExternalEffectState: "pending_external_gate", CreatedAt: now}
+	store.refunds = make([]orderport.Refund, safeExportMaximumRows+1)
+	store.refunds[0] = targetRefund
+	refundID := int64(7)
+	preview, err = service.PreviewExport(context.Background(), orderport.ExportCommand{Resource: "refunds", Format: "csv", Filter: orderport.ExportFilter{LocalID: &refundID}, Actor: 9})
+	if err != nil || preview.Total != 1 || store.refundListCalls != 0 || !strings.Contains(preview.ContentText, "7,11,wechat,1990,CNY,pending_external_gate") {
+		t.Fatalf("refund preview=%#v err=%v list_calls=%d", preview, err, store.refundListCalls)
 	}
 }

@@ -80,6 +80,14 @@ WHERE (sqlc.arg(provider)::text = 'auto' OR provider = sqlc.arg(provider)::text)
        OR id::text = sqlc.arg(order_reference)::text)
 ORDER BY id DESC LIMIT 1;
 
+-- name: GetBoardOrderByID :one
+SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+       customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
+       product_id, product_code, product_name_snapshot, amount_minor, currency,
+       status, status_label, detail_url, created_at, updated_at
+FROM order_list_projections
+WHERE id = sqlc.arg(id)::bigint;
+
 -- name: GetBoardOrderForUpdate :one
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
@@ -204,3 +212,14 @@ WHERE (sqlc.narg(provider)::text IS NULL OR refund.provider = sqlc.narg(provider
   AND (sqlc.narg(status)::text IS NULL OR refund.status = sqlc.narg(status)::text)
   AND (sqlc.narg(created_from)::timestamptz IS NULL OR refund.created_at >= sqlc.narg(created_from)::timestamptz)
   AND (sqlc.narg(created_to)::timestamptz IS NULL OR refund.created_at <= sqlc.narg(created_to)::timestamptz);
+
+-- name: GetOrderRefundByID :one
+SELECT refund.id, refund.order_id, refund.external_effect_id, refund.provider, refund.refund_id,
+       refund.out_refund_no, refund.refund_amount_total, refund.currency, refund.reason,
+       refund.status, refund.created_at, order_projection.merchant_order_no,
+       order_projection.platform_transaction_no, effect.state AS external_effect_state,
+       effect.auto_retry_allowed
+FROM order_refunds AS refund
+JOIN order_list_projections AS order_projection ON order_projection.id = refund.order_id
+JOIN order_external_effects AS effect ON effect.id = refund.external_effect_id
+WHERE refund.id = sqlc.arg(id)::bigint;

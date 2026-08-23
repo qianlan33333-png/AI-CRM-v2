@@ -13,8 +13,10 @@ import (
 	"io"
 	"math/big"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
 
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
@@ -26,6 +28,13 @@ var (
 	ErrInvalidBoardCommand = errors.New("invalid order board command")
 	ErrBoardConflict       = errors.New("order board conflict")
 	ErrBoardUnavailable    = errors.New("order board unavailable")
+	ErrBoardBlockedRedline = errors.New("order board capability blocked by redline")
+)
+
+const (
+	safeExportMaximumRows  int64 = 10_000
+	safeExportPreviewRows  int64 = 100
+	safeExportMaximumBytes       = 5 << 20
 )
 
 type BoardReceipt struct {
@@ -48,6 +57,7 @@ type BoardStore interface {
 	ListBoardOrders(context.Context, orderport.BoardFilter) ([]orderport.Record, error)
 	CountBoardOrders(context.Context, orderport.BoardFilter) (int64, error)
 	GetBoardOrder(context.Context, string, string) (orderport.Record, error)
+	GetBoardOrderByID(context.Context, orderport.ID) (orderport.Record, error)
 	LockBoardOrder(context.Context, string, string) (orderport.Record, error)
 	CountActiveRefundAmount(context.Context, orderport.ID) (int64, error)
 	ReserveBoardReceipt(context.Context, BoardReservation) (BoardReceipt, bool, error)
@@ -60,6 +70,7 @@ type BoardStore interface {
 	RequestExternalEffectReview(context.Context, int64, time.Time) (orderport.ExternalEffect, error)
 	CreateRefund(context.Context, orderport.Refund) (orderport.Refund, error)
 	ListRefunds(context.Context, orderport.RefundFilter) ([]orderport.Refund, int64, error)
+	GetRefundByID(context.Context, int64) (orderport.Refund, error)
 }
 
 type BoardService struct {
@@ -160,17 +171,24 @@ func (s *BoardService) ListRefunds(ctx context.Context, filter orderport.RefundF
 }
 
 func (s *BoardService) CreateExport(ctx context.Context, command orderport.ExportCommand) (orderport.ExportJob, error) {
-	if !boardReady(s) || !validExport(command) {
+	command, err := normalizeExportCommand(ctx, command)
+	if err != nil || !boardReady(s) {
+		return orderport.ExportJob{}, boardClassify(err)
+	}
+	if command.Resource == "payments" {
+		return orderport.ExportJob{}, ErrBoardBlockedRedline
+	}
+	if !validExport(command) {
 		return orderport.ExportJob{}, ErrInvalidBoardCommand
 	}
 	now := s.now().UTC()
 	payload, _ := json.Marshal(struct {
 		Resource, Format string
-		Filters          json.RawMessage
-	}{command.Resource, command.Format, command.Filters})
+		Filter           orderport.ExportFilter
+	}{command.Resource, command.Format, command.Filter})
 	reservation := BoardReservation{Operation: "export", ActorScope: actorScope(command.Actor), KeyDigest: sha256.Sum256([]byte(command.IdempotencyKey)), PayloadDigest: sha256.Sum256(payload), CreatedAt: now}
 	var result orderport.ExportJob
-	err := s.uow.Within(ctx, func(tx context.Context) error {
+	err = s.uow.Within(ctx, func(tx context.Context) error {
 		receipt, owned, e := s.store.ReserveBoardReceipt(tx, reservation)
 		if e != nil {
 			return e
@@ -184,12 +202,16 @@ func (s *BoardService) CreateExport(ctx context.Context, command orderport.Expor
 			}
 			return nil
 		}
-		content, e := s.exportCSV(tx, command)
+		content, e := s.exportCSV(tx, command, safeExportMaximumRows, true)
 		if e != nil {
 			return e
 		}
 		result, e = s.store.CreateExportJob(tx, orderport.ExportJob{JobID: fmt.Sprintf("exp_%016x", receipt.ID), Resource: command.Resource, Format: command.Format, Status: "completed", Operator: command.Actor, ContentText: content, CreatedAt: now})
 		if e != nil || !validExportJob(result) {
+			return ErrBoardUnavailable
+		}
+		result, e = s.store.GetExportJob(tx, result.JobID)
+		if e != nil || result.Operator != command.Actor || !validExportJob(result) {
 			return ErrBoardUnavailable
 		}
 		if e = s.append(tx, eventport.EvOrderExportCreated, reservation.KeyDigest, map[string]any{"job_id": result.JobID, "resource": result.Resource}); e != nil {
@@ -203,14 +225,51 @@ func (s *BoardService) CreateExport(ctx context.Context, command orderport.Expor
 	return result, nil
 }
 
-func (s *BoardService) GetExport(ctx context.Context, jobID string) (orderport.ExportJob, error) {
-	if !boardReady(s) || !validText(jobID, 68) || !strings.HasPrefix(jobID, "exp_") {
+func (s *BoardService) GetExport(ctx context.Context, jobID string, actor int64) (orderport.ExportJob, error) {
+	if !boardReady(s) || actor < 1 || !validText(jobID, 68) || !strings.HasPrefix(jobID, "exp_") {
 		return orderport.ExportJob{}, ErrInvalidBoardCommand
 	}
 	var result orderport.ExportJob
 	err := s.uow.Within(ctx, func(tx context.Context) error { var e error; result, e = s.store.GetExportJob(tx, jobID); return e })
-	if err != nil || !validExportJob(result) {
+	if err != nil {
 		return orderport.ExportJob{}, boardClassify(err)
+	}
+	if result.Resource == "payments" {
+		return orderport.ExportJob{}, ErrBoardBlockedRedline
+	}
+	if !validExportJob(result) {
+		return orderport.ExportJob{}, ErrBoardUnavailable
+	}
+	if result.Operator != actor {
+		return orderport.ExportJob{}, ErrNotFound
+	}
+	return result, nil
+}
+
+// PreviewExport shares the durable export projection but creates no job,
+// idempotency receipt, or event.
+func (s *BoardService) PreviewExport(ctx context.Context, command orderport.ExportCommand) (orderport.ExportPreview, error) {
+	command, err := normalizeExportCommand(ctx, command)
+	if err != nil || !boardReady(s) {
+		return orderport.ExportPreview{}, boardClassify(err)
+	}
+	if command.Resource == "payments" {
+		return orderport.ExportPreview{}, ErrBoardBlockedRedline
+	}
+	if !validExportPreview(command) {
+		return orderport.ExportPreview{}, ErrInvalidBoardCommand
+	}
+	result := orderport.ExportPreview{Resource: command.Resource, Format: command.Format}
+	err = s.uow.Within(ctx, func(tx context.Context) error {
+		content, total, truncated, e := s.exportCSVPreview(tx, command)
+		if e != nil {
+			return e
+		}
+		result.Total, result.Truncated, result.ContentText = total, truncated, content
+		return nil
+	})
+	if err != nil {
+		return orderport.ExportPreview{}, boardClassify(err)
 	}
 	return result, nil
 }
@@ -383,84 +442,226 @@ func (s *BoardService) append(ctx context.Context, typ string, key [32]byte, pay
 	_, err = s.events.Append(ctx, eventport.Event{Type: typ, Payload: encoded, OccurredAt: s.now().UTC(), IdempotencyKey: "order.board:" + typ + ":" + hex.EncodeToString(key[:])})
 	return err
 }
-func (s *BoardService) exportCSV(ctx context.Context, command orderport.ExportCommand) (string, error) {
-	// The frozen export mapping proves resource and csv, but not a filter DTO.
-	// Reject an unproven filter rather than silently accepting or reinterpreting it.
-	if len(command.Filters) > 0 && string(command.Filters) != "{}" {
-		return "", ErrInvalidBoardCommand
+func (s *BoardService) exportCSV(ctx context.Context, command orderport.ExportCommand, rowLimit int64, requireComplete bool) (string, error) {
+	content, _, _, err := s.exportSafeCSV(ctx, command, rowLimit, requireComplete)
+	return content, err
+}
+
+func (s *BoardService) exportCSVPreview(ctx context.Context, command orderport.ExportCommand) (string, int64, bool, error) {
+	return s.exportSafeCSV(ctx, command, safeExportPreviewRows, false)
+}
+
+func (s *BoardService) exportSafeCSV(ctx context.Context, command orderport.ExportCommand, rowLimit int64, requireComplete bool) (string, int64, bool, error) {
+	if rowLimit < 1 || rowLimit > safeExportMaximumRows {
+		return "", 0, false, ErrInvalidBoardCommand
 	}
-	const maximumBoardExportRecords = int64(MaximumOffset) + int64(MaximumLimit)
+	if command.Resource == "orders" {
+		return s.exportSafeOrders(ctx, command.Filter, rowLimit, requireComplete)
+	}
 	if command.Resource == "refunds" {
-		filter, err := normalizeRefundFilter(ctx, orderport.RefundFilter{Limit: MaximumLimit})
+		return s.exportSafeRefunds(ctx, command.Filter, rowLimit, requireComplete)
+	}
+	return "", 0, false, ErrBoardBlockedRedline
+}
+
+func (s *BoardService) exportSafeOrders(ctx context.Context, filter orderport.ExportFilter, rowLimit int64, requireComplete bool) (string, int64, bool, error) {
+	provider := filter.Provider
+	if provider == "" {
+		provider = "all"
+	}
+	boardFilter := orderport.BoardFilter{Provider: provider, Status: filter.Status, ProductCode: filter.ProductCode, CreatedFrom: filter.CreatedFrom, CreatedTo: filter.CreatedTo, Limit: MaximumLimit}
+	var rows []orderport.Record
+	var total int64
+	if filter.LocalID != nil {
+		row, err := s.store.GetBoardOrderByID(ctx, orderport.ID(*filter.LocalID))
 		if err != nil {
-			return "", err
+			return "", 0, false, err
 		}
-		refunds := make([]orderport.Refund, 0)
-		var total int64
-		for offset := int32(0); ; offset += MaximumLimit {
-			filter.Offset = offset
-			page, count, pageErr := s.store.ListRefunds(ctx, filter)
-			if pageErr != nil || count < 0 || count > maximumBoardExportRecords {
-				if pageErr != nil {
-					return "", pageErr
-				}
-				return "", ErrInvalidBoardCommand
-			}
-			total = count
-			refunds = append(refunds, page...)
-			if int64(len(refunds)) >= total {
-				break
+		if !validRecord(row) || !matchesSafeOrderFilter(row, filter) {
+			return "", 0, false, ErrNotFound
+		}
+		rows, total = []orderport.Record{row}, 1
+	} else {
+		var err error
+		total, err = s.store.CountBoardOrders(ctx, boardFilter)
+		if err != nil || total < 0 {
+			return "", 0, false, err
+		}
+		if requireComplete && total > rowLimit {
+			return "", 0, false, ErrInvalidBoardCommand
+		}
+		readLimit := total
+		if readLimit > rowLimit {
+			readLimit = rowLimit
+		}
+		for offset := int32(0); int64(len(rows)) < readLimit; offset += MaximumLimit {
+			boardFilter.Offset = offset
+			page, pageErr := s.store.ListBoardOrders(ctx, boardFilter)
+			if pageErr != nil {
+				return "", 0, false, pageErr
 			}
 			if len(page) == 0 {
-				return "", ErrBoardUnavailable
+				return "", 0, false, ErrBoardUnavailable
 			}
-		}
-		return csvText([][]string{{"refund_id", "out_refund_no", "order_no", "transaction_id", "amount", "currency", "status", "provider"}}, func(write func([]string) error) error {
-			for _, item := range refunds {
-				if err := write([]string{item.RefundID, item.OutRefundNo, item.OrderNo, item.TransactionID, fmt.Sprint(item.RefundAmountTotal), item.Currency, item.Status, item.Provider}); err != nil {
-					return err
-				}
+			remaining := int(readLimit) - len(rows)
+			if len(page) > remaining {
+				page = page[:remaining]
 			}
-			return nil
-		})
-	}
-	filter, err := normalizeBoardFilter(ctx, orderport.BoardFilter{Limit: MaximumLimit})
-	if err != nil {
-		return "", err
-	}
-	total, err := s.store.CountBoardOrders(ctx, filter)
-	if err != nil || total < 0 || total > maximumBoardExportRecords {
-		if err != nil {
-			return "", err
-		}
-		return "", ErrInvalidBoardCommand
-	}
-	orders := make([]orderport.Record, 0, total)
-	for offset := int32(0); int64(offset) < total; offset += MaximumLimit {
-		filter.Offset = offset
-		page, pageErr := s.store.ListBoardOrders(ctx, filter)
-		if pageErr != nil {
-			return "", pageErr
-		}
-		orders = append(orders, page...)
-		if int64(len(orders)) >= total {
-			break
-		}
-		if len(page) == 0 {
-			return "", ErrBoardUnavailable
+			rows = append(rows, page...)
 		}
 	}
-	return csvText([][]string{{"order_no", "transaction_id", "provider", "product_code", "amount", "currency", "status", "created_at"}}, func(write func([]string) error) error {
-		for _, item := range orders {
-			if !validRecord(item) {
+	if int64(len(rows)) > rowLimit {
+		return "", 0, false, ErrBoardUnavailable
+	}
+	content, err := safeCSVText([]string{"local_id", "provider", "product_code", "amount_minor", "currency", "status", "created_at"}, func(write func([]string) error) error {
+		for _, row := range rows {
+			if !validRecord(row) || !matchesSafeOrderFilter(row, filter) {
 				return ErrBoardUnavailable
 			}
-			if err := write([]string{item.MerchantOrderNo, item.PlatformTransactionNo, item.Provider, item.ProductCode, fmt.Sprint(item.AmountMinor), item.Currency, item.Status, item.CreatedAt.UTC().Format(time.RFC3339)}); err != nil {
+			if err := write([]string{strconv.FormatInt(int64(row.ID), 10), row.Provider, row.ProductCode, strconv.FormatInt(row.AmountMinor, 10), row.Currency, row.Status, row.CreatedAt.UTC().Format(time.RFC3339)}); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
+	return content, total, total > int64(len(rows)), err
+}
+
+func (s *BoardService) exportSafeRefunds(ctx context.Context, filter orderport.ExportFilter, rowLimit int64, requireComplete bool) (string, int64, bool, error) {
+	if filter.ProductCode != "" {
+		return "", 0, false, ErrInvalidBoardCommand
+	}
+	provider := filter.Provider
+	if provider == "" {
+		provider = "all"
+	}
+	refundFilter := orderport.RefundFilter{Provider: provider, Status: filter.Status, CreatedFrom: filter.CreatedFrom, CreatedTo: filter.CreatedTo, Limit: MaximumLimit}
+	var rows []orderport.Refund
+	var total int64
+	if filter.LocalID != nil {
+		row, err := s.store.GetRefundByID(ctx, *filter.LocalID)
+		if err != nil {
+			return "", 0, false, err
+		}
+		if !validRefund(row) || !matchesSafeRefundFilter(row, filter) {
+			return "", 0, false, ErrNotFound
+		}
+		rows, total = []orderport.Refund{row}, 1
+	} else {
+		for offset := int32(0); ; offset += MaximumLimit {
+			refundFilter.Offset = offset
+			page, count, err := s.store.ListRefunds(ctx, refundFilter)
+			if err != nil || count < 0 {
+				return "", 0, false, err
+			}
+			total = count
+			if requireComplete && total > rowLimit {
+				return "", 0, false, ErrInvalidBoardCommand
+			}
+			if int64(len(rows)) >= rowLimit {
+				break
+			}
+			for _, row := range page {
+				rows = append(rows, row)
+				if int64(len(rows)) >= rowLimit {
+					break
+				}
+			}
+			if int64(offset)+int64(len(page)) >= total {
+				break
+			}
+			if len(page) == 0 {
+				return "", 0, false, ErrBoardUnavailable
+			}
+		}
+	}
+	if int64(len(rows)) > rowLimit {
+		return "", 0, false, ErrBoardUnavailable
+	}
+	content, err := safeCSVText([]string{"local_id", "order_local_id", "provider", "refund_amount_total", "currency", "status", "created_at"}, func(write func([]string) error) error {
+		for _, row := range rows {
+			if !validRefund(row) {
+				return ErrBoardUnavailable
+			}
+			if err := write([]string{strconv.FormatInt(row.ID, 10), strconv.FormatInt(int64(row.OrderID), 10), row.Provider, strconv.FormatInt(row.RefundAmountTotal, 10), row.Currency, row.Status, row.CreatedAt.UTC().Format(time.RFC3339)}); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return content, total, total > int64(len(rows)), err
+}
+
+func safeCSVText(header []string, rows func(func([]string) error) error) (string, error) {
+	var out strings.Builder
+	writer := csv.NewWriter(&out)
+	if err := writer.Write(safeCSVRow(header)); err != nil {
+		return "", err
+	}
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return "", err
+	}
+	if err := rows(func(row []string) error {
+		if err := writer.Write(safeCSVRow(row)); err != nil {
+			return err
+		}
+		writer.Flush()
+		if err := writer.Error(); err != nil {
+			return err
+		}
+		if out.Len() > safeExportMaximumBytes {
+			return ErrInvalidBoardCommand
+		}
+		return nil
+	}); err != nil {
+		return "", err
+	}
+	writer.Flush()
+	if err := writer.Error(); err != nil {
+		return "", err
+	}
+	if out.Len() > safeExportMaximumBytes {
+		return "", ErrInvalidBoardCommand
+	}
+	return out.String(), nil
+}
+
+func safeCSVRow(row []string) []string {
+	result := make([]string, len(row))
+	for index, value := range row {
+		value = strings.Map(func(r rune) rune {
+			if unicode.IsControl(r) {
+				return -1
+			}
+			return r
+		}, value)
+		if first := strings.TrimLeft(value, " \u00a0"); first != "" && strings.ContainsRune("=+-@", rune(first[0])) {
+			value = "'" + value
+		}
+		result[index] = value
+	}
+	return result
+}
+
+func matchesSafeOrderFilter(row orderport.Record, filter orderport.ExportFilter) bool {
+	if filter.LocalID != nil && int64(row.ID) != *filter.LocalID || filter.Provider != "" && row.Provider != filter.Provider || filter.Status != "" && row.Status != filter.Status || filter.ProductCode != "" && row.ProductCode != filter.ProductCode {
+		return false
+	}
+	if filter.CreatedFrom != nil && row.CreatedAt.Before(*filter.CreatedFrom) || filter.CreatedTo != nil && row.CreatedAt.After(*filter.CreatedTo) {
+		return false
+	}
+	return true
+}
+
+func matchesSafeRefundFilter(row orderport.Refund, filter orderport.ExportFilter) bool {
+	if filter.LocalID != nil && row.ID != *filter.LocalID || filter.Provider != "" && row.Provider != filter.Provider || filter.Status != "" && row.Status != filter.Status {
+		return false
+	}
+	if filter.CreatedFrom != nil && row.CreatedAt.Before(*filter.CreatedFrom) || filter.CreatedTo != nil && row.CreatedAt.After(*filter.CreatedTo) {
+		return false
+	}
+	return true
 }
 func csvText(headers [][]string, rows func(func([]string) error) error) (string, error) {
 	var out strings.Builder
@@ -568,8 +769,26 @@ func normalizeRefundCommand(ctx context.Context, command orderport.RefundCommand
 	}
 	return command, nil
 }
+
+func normalizeExportCommand(ctx context.Context, command orderport.ExportCommand) (orderport.ExportCommand, error) {
+	if ctx == nil || ctx.Err() != nil {
+		return orderport.ExportCommand{}, ErrInvalidBoardCommand
+	}
+	command.Resource, command.Format, command.IdempotencyKey = strings.ToLower(strings.TrimSpace(command.Resource)), strings.ToLower(strings.TrimSpace(command.Format)), strings.TrimSpace(command.IdempotencyKey)
+	filter := command.Filter
+	filter.Provider, filter.Status, filter.ProductCode = strings.ToLower(strings.TrimSpace(filter.Provider)), strings.ToLower(strings.TrimSpace(filter.Status)), strings.TrimSpace(filter.ProductCode)
+	if filter.Provider != "" && filter.Provider != "wechat" && filter.Provider != "alipay" && filter.Provider != "wechat_shop" || !validText(filter.Status, 64) || !validText(filter.ProductCode, 200) || filter.LocalID != nil && *filter.LocalID < 1 || invalidTime(filter.CreatedFrom) || invalidTime(filter.CreatedTo) || filter.CreatedFrom != nil && filter.CreatedTo != nil && filter.CreatedFrom.After(*filter.CreatedTo) {
+		return orderport.ExportCommand{}, ErrInvalidBoardCommand
+	}
+	filter.CreatedFrom, filter.CreatedTo = utcTime(filter.CreatedFrom), utcTime(filter.CreatedTo)
+	command.Filter = filter
+	return command, nil
+}
 func validExport(command orderport.ExportCommand) bool {
-	return command.Actor > 0 && (command.Resource == "orders" || command.Resource == "payments" || command.Resource == "refunds") && command.Format == "csv" && validBoardKey(command.IdempotencyKey) && (len(command.Filters) == 0 || string(command.Filters) == "{}")
+	return command.Actor > 0 && (command.Resource == "orders" || command.Resource == "refunds") && command.Format == "csv" && validBoardKey(command.IdempotencyKey)
+}
+func validExportPreview(command orderport.ExportCommand) bool {
+	return command.Actor > 0 && (command.Resource == "orders" || command.Resource == "refunds") && command.Format == "csv"
 }
 func validBoardKey(value string) bool {
 	return strings.TrimSpace(value) == value && utf8.ValidString(value) && len(value) >= 16 && len(value) <= 128
@@ -578,7 +797,7 @@ func validRefund(value orderport.Refund) bool {
 	return value.ID > 0 && value.OrderID > 0 && value.ExternalEffectID > 0 && (value.Provider == "wechat" || value.Provider == "alipay" || value.Provider == "wechat_shop") && validText(value.OrderNo, 200) && value.OrderNo != "" && validText(value.TransactionID, 200) && value.TransactionID != "" && strings.HasPrefix(value.RefundID, "rfd_") && strings.HasPrefix(value.OutRefundNo, "rfd_") && value.RefundAmountTotal > 0 && value.Currency == "CNY" && value.Status != "" && value.ExternalEffectState != "" && !value.AutoRetryAllowed && !value.CreatedAt.IsZero()
 }
 func validExportJob(value orderport.ExportJob) bool {
-	return strings.HasPrefix(value.JobID, "exp_") && (value.Resource == "orders" || value.Resource == "payments" || value.Resource == "refunds") && value.Format == "csv" && value.Status == "completed" && value.Operator > 0 && !value.CreatedAt.IsZero() && value.ContentText != ""
+	return strings.HasPrefix(value.JobID, "exp_") && (value.Resource == "orders" || value.Resource == "refunds") && value.Format == "csv" && value.Status == "completed" && value.Operator > 0 && !value.CreatedAt.IsZero() && value.ContentText != ""
 }
 func validEffect(value orderport.ExternalEffect) bool {
 	return value.ID > 0 && value.OrderID > 0 && (value.Provider == "wechat" || value.Provider == "alipay" || value.Provider == "wechat_shop") && (value.EffectKind == "refund" || value.EffectKind == "external_push") && (value.State == "pending_external_gate" || value.State == "outcome_unknown" || value.State == "completed" || value.State == "final_failed") && !value.AutoRetryAllowed && !value.CreatedAt.IsZero() && !value.UpdatedAt.IsZero() && !value.UpdatedAt.Before(value.CreatedAt)
@@ -595,7 +814,7 @@ func boardClassify(err error) error {
 		return ErrBoardUnavailable
 	}
 	switch {
-	case errors.Is(err, ErrInvalidBoardCommand), errors.Is(err, ErrNotFound), errors.Is(err, ErrBoardConflict), errors.Is(err, ErrBoardUnavailable):
+	case errors.Is(err, ErrInvalidBoardCommand), errors.Is(err, ErrNotFound), errors.Is(err, ErrBoardConflict), errors.Is(err, ErrBoardUnavailable), errors.Is(err, ErrBoardBlockedRedline):
 		return err
 	default:
 		return errors.Join(ErrBoardUnavailable, err)
