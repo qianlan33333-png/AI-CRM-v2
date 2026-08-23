@@ -58,7 +58,6 @@ const (
 	p4CloudOrchestratorEvidence       = "P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20"
 	p4GroupOpsWorkspaceEvidence       = "P4-GROUP-OPS-WORKSPACE-CARRIERS-2026-08-20"
 	p4AudienceWorkspaceEvidence       = "P4-AI-AUDIENCE-WORKSPACE-CARRIERS-2026-08-20"
-	p4UserOpsWorkspaceEvidence        = "P4-USER-OPS-REVIEW-WORKSPACE-CARRIERS-2026-08-20"
 	p4OutboundOperationsEvidence      = "P4-OUTBOUND-OPERATIONS-2026-08-20"
 	p4CommerceWorkspaceEvidence       = "P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20"
 	p4HXCSenderManagementEvidence     = "P4-HXC-SENDER-MANAGEMENT-2026-08-20"
@@ -154,8 +153,6 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getGroupOpsPlanDetailWorkspace":             {"/admin/automation-conversion/group-ops/plans/{plan_id}", "GET", p4GroupOpsWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getAudiencePackagesWorkspace":               {"/admin/automation-conversion", "GET", p4AudienceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getAudiencePackageDetailWorkspace":          {"/admin/automation-conversion/packages/{package_id}", "GET", p4AudienceWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
-	"getUserOpsReviewWorkspace":                  {"/admin/user-ops", "GET", p4UserOpsWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
-	"getUserOpsReviewWorkspaceAlias":             {"/admin/user-ops/ui", "GET", p4UserOpsWorkspaceEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getLegacyOutboundJob":                       {"/api/admin/push-center/jobs/{job_id}", "GET", p4OutboundOperationsEvidence, "outbound.read", "human_session", "internal_pii", "outbound_tasks.local_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"cancelLegacyOutboundJob":                    {"/api/admin/push-center/jobs/{job_id}/cancel", "POST", p4OutboundOperationsEvidence, "outbound.control", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"retryLegacyOutboundJob":                     {"/api/admin/push-center/jobs/{job_id}/retry", "POST", p4OutboundOperationsEvidence, "outbound.control", "human_session", "internal_pii", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
