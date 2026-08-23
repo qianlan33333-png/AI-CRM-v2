@@ -29,6 +29,7 @@ import (
 )
 
 var d01DatabaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 D01 database")
+var d01MigrationProof = flag.Bool("d01-migration-proof", false, "run isolated D01 migration compatibility proof")
 
 func TestD01ContactProducerAndAutomationConsumerCloseOneObservableLoop(t *testing.T) {
 	pool, ctx := openPool(t)
@@ -294,10 +295,8 @@ func openPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	if *d01DatabaseURL == "" {
 		t.Skip("database-url is not set")
 	}
-	if err := acceptancefixtures.ValidateDatabaseURL(*d01DatabaseURL); err != nil {
-		if agentsErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*d01DatabaseURL, acceptancefixtures.AutomationAgentsABDatabaseName); agentsErr != nil {
-			t.Fatal(err)
-		}
+	if err := validateD01DatabaseURL(*d01DatabaseURL, *d01MigrationProof); err != nil {
+		t.Fatal(err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	t.Cleanup(cancel)
@@ -311,6 +310,42 @@ func openPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 		t.Fatalf("PostgreSQL version=%q err=%v", version, err)
 	}
 	return pool, ctx
+}
+
+func validateD01DatabaseURL(databaseURL string, allowMigrationProof bool) error {
+	err := acceptancefixtures.ValidateDatabaseURL(databaseURL)
+	if err == nil {
+		return nil
+	}
+	if acceptancefixtures.ValidateDatabaseURLForDatabase(databaseURL, acceptancefixtures.AutomationAgentsABDatabaseName) == nil {
+		return nil
+	}
+	if allowMigrationProof {
+		return acceptancefixtures.ValidateDatabaseURLForDatabase(databaseURL, acceptancefixtures.W0D01AutomationDatabaseName)
+	}
+	return err
+}
+
+func TestD01DatabaseURLValidationIsClosed(t *testing.T) {
+	t.Parallel()
+	databaseURL := func(name string) string {
+		return "postgres://postgres:postgres@127.0.0.1:5432/" + name + "?sslmode=disable"
+	}
+	if err := validateD01DatabaseURL(acceptancefixtures.DefaultDatabaseURL, true); err != nil {
+		t.Fatalf("shared D01 database rejected: %v", err)
+	}
+	if err := validateD01DatabaseURL(databaseURL(acceptancefixtures.AutomationAgentsABDatabaseName), false); err != nil {
+		t.Fatalf("Automation Agents database rejected: %v", err)
+	}
+	if err := validateD01DatabaseURL(databaseURL(acceptancefixtures.W0D01AutomationDatabaseName), true); err != nil {
+		t.Fatalf("dedicated D01 database rejected: %v", err)
+	}
+	if err := validateD01DatabaseURL(databaseURL(acceptancefixtures.W0D01AutomationDatabaseName), false); !errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
+		t.Fatalf("dedicated D01 database accepted outside migration proof: %v", err)
+	}
+	if err := validateD01DatabaseURL(databaseURL(acceptancefixtures.W0L01StatsDatabaseName), true); !errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
+		t.Fatalf("dedicated L01 database accepted by D01: %v", err)
+	}
 }
 
 func ensureRiver(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {

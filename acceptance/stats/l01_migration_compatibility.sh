@@ -4,9 +4,22 @@ set -euo pipefail
 : "${P4W0L01_STATS_TEST_DATABASE_URL:?P4W0L01_STATS_TEST_DATABASE_URL is required}"
 go_command="${GO:-go}"
 tools_mod="${TOOLS_MOD:-tools/go.mod}"
-database_url="$P4W0L01_STATS_TEST_DATABASE_URL"
+base_database_url="$P4W0L01_STATS_TEST_DATABASE_URL"
+temporary_database="aicrm_test_p4_w0_l01_stats"
+database_url="${base_database_url/aicrm_test/$temporary_database}"
 
-MIGRATION_TEST_DATABASE_URL="$database_url" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+MIGRATION_TEST_DATABASE_URL="$base_database_url" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  "$go_command" run ./acceptance/fixtures/cmd/validate-database-url
+
+cleanup() {
+  psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null
+}
+trap cleanup EXIT
+cleanup
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "CREATE DATABASE $temporary_database" >/dev/null
+
+MIGRATION_TEST_DATABASE_URL="$database_url" MIGRATION_TEST_DATABASE_NAME="$temporary_database" \
+  GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" run ./acceptance/fixtures/cmd/validate-database-url
 
 has_migration_table="$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c \
@@ -19,7 +32,7 @@ fi
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" test -race -count=1 -timeout=90s -run '^TestL01MigrationHistoryFixture$' \
-  ./acceptance/stats -args -database-url "$database_url"
+  ./acceptance/stats -args -database-url "$database_url" -l01-migration-proof
 
 read -r history_event_id history_stats_job <<<"$(
   psql "$database_url" -X -v ON_ERROR_STOP=1 -At -F ' ' -c \
@@ -51,7 +64,7 @@ read -r upgrade_waterline daily_table receipt_table daily_index <<<"$(
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" test -race -count=1 -timeout=90s -run '^TestL01ConsumeMigrationHistory$' \
-  ./acceptance/stats -args -database-url "$database_url"
+  ./acceptance/stats -args -database-url "$database_url" -l01-migration-proof
 
 read -r receipt_count projection_value delivery_status automation_receipt job_count <<<"$(
   psql "$database_url" -X -v ON_ERROR_STOP=1 -At -F ' ' -c \

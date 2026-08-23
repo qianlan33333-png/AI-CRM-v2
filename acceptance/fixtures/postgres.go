@@ -40,6 +40,8 @@ const (
 	O6ARetryDatabaseName                = "aicrm_test_p3_o6a_retry"
 	O6B1CancelDatabaseName              = "aicrm_test_p3_o6b1_cancel"
 	O6B2ManualRetryDatabaseName         = "aicrm_test_p3_o6b2_manual_retry"
+	W0D01AutomationDatabaseName         = "aicrm_test_p4_w0_d01_automation"
+	W0L01StatsDatabaseName              = "aicrm_test_p4_w0_l01_stats"
 	advisoryLockKey                     = int64(0x414943524d503230)
 )
 
@@ -97,7 +99,7 @@ func ValidateDatabaseURL(databaseURL string) error {
 // ValidateDatabaseURLForDatabase accepts only named, locally-created
 // acceptance databases on the dedicated loopback PostgreSQL service.
 func ValidateDatabaseURLForDatabase(databaseURL, databaseName string) error {
-	if databaseName != "aicrm_test" && databaseName != H01A1DatabaseName && databaseName != H03DatabaseName && databaseName != I01BDatabaseName && databaseName != F01ADatabaseName && databaseName != F01ABDatabaseName && databaseName != F01PublicDatabaseName && databaseName != AutomationAgentsABDatabaseName && databaseName != AdminOpsABDatabaseName && databaseName != C01ChannelDatabaseName && databaseName != J01CouponDatabaseName && databaseName != CouponABDatabaseName && databaseName != I03OrderDatabaseName && databaseName != OrderABDatabaseName && databaseName != MessageArchiveDatabaseName && databaseName != PushCenterDatabaseName && databaseName != MiniProgramLibraryDatabaseName && databaseName != ImageUpdateDatabaseName && databaseName != AttachmentLibraryDatabaseName && databaseName != HXCSenderDatabaseName && databaseName != ContactPolicyDatabaseName && databaseName != OutboundCampaignHandoffDatabaseName && databaseName != O6ARetryDatabaseName && databaseName != O6B1CancelDatabaseName && databaseName != O6B2ManualRetryDatabaseName {
+	if databaseName != "aicrm_test" && databaseName != H01A1DatabaseName && databaseName != H03DatabaseName && databaseName != I01BDatabaseName && databaseName != F01ADatabaseName && databaseName != F01ABDatabaseName && databaseName != F01PublicDatabaseName && databaseName != AutomationAgentsABDatabaseName && databaseName != AdminOpsABDatabaseName && databaseName != C01ChannelDatabaseName && databaseName != J01CouponDatabaseName && databaseName != CouponABDatabaseName && databaseName != I03OrderDatabaseName && databaseName != OrderABDatabaseName && databaseName != MessageArchiveDatabaseName && databaseName != PushCenterDatabaseName && databaseName != MiniProgramLibraryDatabaseName && databaseName != ImageUpdateDatabaseName && databaseName != AttachmentLibraryDatabaseName && databaseName != HXCSenderDatabaseName && databaseName != ContactPolicyDatabaseName && databaseName != OutboundCampaignHandoffDatabaseName && databaseName != O6ARetryDatabaseName && databaseName != O6B1CancelDatabaseName && databaseName != O6B2ManualRetryDatabaseName && databaseName != W0D01AutomationDatabaseName && databaseName != W0L01StatsDatabaseName {
 		return ErrUnsafeDatabaseURL
 	}
 	parsed, err := url.Parse(databaseURL)
