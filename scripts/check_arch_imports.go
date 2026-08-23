@@ -22,6 +22,7 @@ var domains = map[string]bool{
 	"stats": true, "product": true, "media": true, "coupon": true, "order": true, "ops": true, "adminops": true,
 	"operationcycle": true, "pushcenter": true, "customer360": true,
 	"hxc": true, "groupops": true, "campaign": true,
+	"radar": true,
 }
 
 var compositionRoots = map[string]bool{

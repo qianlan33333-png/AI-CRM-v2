@@ -15,8 +15,18 @@ import (
 )
 
 var (
-	sqlPattern  = regexp.MustCompile(`(?i)\b(select\s+|insert\s+into\s+|update\s+|delete\s+from\s+|merge\s+into\s+|copy\s+|truncate\s+)`)
-	cronPattern = regexp.MustCompile(`(^|/)cron(/|$)`)
+	sqlPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?is)(?:^|[;\r\n])[ \t]*select[ \t]+(?:[^;]*?\b(?:from|where|join|union|intersect|except|for[ \t]+(?:update|share))\b|(?:[0-9]+|\$[0-9]+|true|false|null|[a-z_][a-z0-9_]*[ \t]*\([^;]*\))[ \t]*(?:;|$))`),
+		regexp.MustCompile(`(?im)(?:^|[;\r\n])[ \t]*insert[ \t]+into[ \t]+[a-z0-9_.$"]+`),
+		regexp.MustCompile(`(?is)(?:^|[;\r\n])[ \t]*update[ \t]+(?:only[ \t]+)?[a-z0-9_.$"]+[^;]*?\bset\b`),
+		regexp.MustCompile(`(?im)(?:^|[;\r\n])[ \t]*delete[ \t]+from[ \t]+(?:only[ \t]+)?[a-z0-9_.$"]+`),
+		regexp.MustCompile(`(?im)(?:^|[;\r\n])[ \t]*merge[ \t]+into[ \t]+[a-z0-9_.$"]+`),
+		regexp.MustCompile(`(?is)(?:^|[;\r\n])[ \t]*copy[ \t]+[a-z0-9_.$"]+(?:[ \t]*\([^;]*?\))?[ \t\r\n]+from\b`),
+		regexp.MustCompile(`(?im)(?:^|[;\r\n])[ \t]*truncate[ \t]+(?:table[ \t]+)?(?:only[ \t]+)?[a-z0-9_.$"]+`),
+	}
+	ctePattern              = regexp.MustCompile(`(?is)(?:^|[;\r\n])[ \t]*with(?:[ \t\r\n]+recursive)?[ \t\r\n]+(?:"(?:[^"]|"")*"|[a-z_][a-z0-9_$]*)[ \t\r\n]*(?:\([^;]*?\))?[ \t\r\n]+as\b[ \t\r\n]*(?:(?:not[ \t\r\n]+)?materialized[ \t\r\n]*)?\(`)
+	statementKeywordPattern = regexp.MustCompile(`(?i)\b(?:select|insert|update|delete|merge|copy|truncate|with)\b`)
+	cronPattern             = regexp.MustCompile(`(^|/)cron(/|$)`)
 )
 
 func main() {
@@ -99,6 +109,8 @@ func checkGo(path, rel string) error {
 	module := sourceModule(rel)
 	allowDirectDatabase := performanceAcceptanceCommand(rel)
 	allowedCustomerQuerySelectors := customerQueryPlanSelectors(file, rel)
+	allowedMemberGridQuerySelectors := memberGridHTTPQuerySelectors(file, rel)
+	allowedMemberGridServiceTestQuerySelectors := memberGridServiceTestQuerySelectors(file, rel)
 	aliases := map[string]string{}
 	for _, spec := range file.Imports {
 		value, err := strconv.Unquote(spec.Path.Value)
@@ -132,20 +144,64 @@ func checkGo(path, rel string) error {
 		switch item := node.(type) {
 		case *ast.BasicLit:
 			if item.Kind == token.STRING {
-				if value, err := strconv.Unquote(item.Value); err == nil && sqlPattern.MatchString(value) && !allowDirectDatabase {
+				if value, err := strconv.Unquote(item.Value); err == nil && containsHandwrittenSQL(value) && !allowDirectDatabase {
 					result = fmt.Errorf("handwritten SQL forbidden in %s", rel)
 				}
 			}
 		case *ast.BinaryExpr:
-			if value, ok := constantString(item); ok && sqlPattern.MatchString(value) && !allowDirectDatabase {
+			if value, ok := constantString(item); ok && containsHandwrittenSQL(value) && !allowDirectDatabase {
 				result = fmt.Errorf("constructed SQL forbidden in %s", rel)
 			}
 		case *ast.SelectorExpr:
-			result = checkSelector(item, aliases, module, rel, allowDirectDatabase, allowedCustomerQuerySelectors[item.Pos()])
+			result = checkSelector(item, aliases, module, rel, allowDirectDatabase,
+				allowedCustomerQuerySelectors[item.Pos()] || allowedMemberGridQuerySelectors[item.Pos()] ||
+					allowedMemberGridServiceTestQuerySelectors[item.Pos()])
 		}
 		return result == nil
 	})
 	return result
+}
+
+func containsHandwrittenSQL(value string) bool {
+	value = trimLeadingSQLComments(value)
+	if ctePattern.MatchString(value) {
+		return true
+	}
+	for _, pattern := range sqlPatterns {
+		if pattern.MatchString(value) {
+			return true
+		}
+	}
+	return false
+}
+
+func trimLeadingSQLComments(value string) string {
+	value = strings.TrimSpace(value)
+	for {
+		switch {
+		case strings.HasPrefix(value, "--"):
+			end := strings.IndexAny(value, "\r\n")
+			comment := value[2:]
+			if end >= 0 {
+				comment = value[2:end]
+			}
+			if start := statementKeywordPattern.FindStringIndex(comment); start != nil {
+				return strings.TrimSpace(comment[start[0]:])
+			}
+			if end < 0 {
+				return ""
+			}
+			value = strings.TrimSpace(value[end+1:])
+		case strings.HasPrefix(value, "/*"):
+			end := strings.Index(value[2:], "*/")
+			if end < 0 {
+				return ""
+			}
+			value = strings.TrimSpace(value[end+4:])
+		default:
+			return value
+		}
+	}
 }
 
 func performanceAcceptanceCommand(rel string) bool {
@@ -235,5 +291,89 @@ func customerQueryPlanSelectors(file *ast.File, rel string) map[token.Pos]bool {
 			return true
 		})
 	}
+	return result
+}
+
+func memberGridHTTPQuerySelectors(file *ast.File, rel string) map[token.Pos]bool {
+	result := map[token.Pos]bool{}
+	if rel != "internal/product/membergrid/http.go" {
+		return result
+	}
+	for _, declaration := range file.Decls {
+		function, ok := declaration.(*ast.FuncDecl)
+		if !ok || function.Recv == nil || len(function.Recv.List) != 1 || function.Name == nil {
+			continue
+		}
+		receiver := function.Recv.List[0]
+		if len(receiver.Names) != 1 {
+			continue
+		}
+		receiverType := receiver.Type
+		if pointer, ok := receiverType.(*ast.StarExpr); ok {
+			receiverType = pointer.X
+		}
+		typeName, ok := receiverType.(*ast.Ident)
+		if !ok {
+			continue
+		}
+		field := ""
+		switch {
+		case typeName.Name == "Handler" && function.Name.Name == "Query":
+			field = "application"
+		case typeName.Name == "routeFragment" && function.Name.Name == "ServeHTTP":
+			field = "handler"
+		default:
+			continue
+		}
+		ast.Inspect(function.Body, func(node ast.Node) bool {
+			selector, ok := node.(*ast.SelectorExpr)
+			if !ok || selector.Sel.Name != "Query" {
+				return true
+			}
+			embedded, ok := selector.X.(*ast.SelectorExpr)
+			if !ok || embedded.Sel.Name != field {
+				return true
+			}
+			identifier, ok := embedded.X.(*ast.Ident)
+			if ok && identifier.Obj != nil && identifier.Obj == receiver.Names[0].Obj {
+				result[selector.Pos()] = true
+			}
+			return true
+		})
+	}
+	return result
+}
+
+func memberGridServiceTestQuerySelectors(file *ast.File, rel string) map[token.Pos]bool {
+	result := map[token.Pos]bool{}
+	if rel != "internal/product/membergrid/service_test.go" {
+		return result
+	}
+	ast.Inspect(file, func(node ast.Node) bool {
+		selector, ok := node.(*ast.SelectorExpr)
+		if !ok || selector.Sel.Name != "Query" {
+			return true
+		}
+		identifier, ok := selector.X.(*ast.Ident)
+		if !ok || identifier.Obj == nil {
+			return true
+		}
+		assignment, ok := identifier.Obj.Decl.(*ast.AssignStmt)
+		if !ok {
+			return true
+		}
+		for _, expression := range assignment.Rhs {
+			call, ok := expression.(*ast.CallExpr)
+			if !ok {
+				continue
+			}
+			constructor, ok := call.Fun.(*ast.Ident)
+			if ok && constructor.Name == "newTestService" {
+				result[selector.Pos()] = true
+				break
+			}
+		}
+		return true
+	})
 	return result
 }

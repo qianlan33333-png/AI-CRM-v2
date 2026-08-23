@@ -10,6 +10,7 @@ seed() {
   local root="$1"
   mkdir -p "$root/cmd/aicrm" "$root/internal/platform/runtime" "$root/internal/config/source" \
     "$root/internal/contact/store/queries" "$root/internal/contact/store/generated" "$root/internal/contact/app" \
+    "$root/internal/product/membergrid" \
     "$root/internal/events/dispatcher" "$root/internal/stats/app" \
     "$root/internal/api/candidate/generated"
   echo 'package main' >"$root/cmd/aicrm/main.go"
@@ -22,6 +23,24 @@ seed() {
   echo 'package generated; const query = "SELECT 1"; func call(){ db.QueryRow(ctx, query) }' >"$root/internal/contact/store/generated/query.go"
   echo 'package generated; const query = "SELECT 1"; func call(){ db.Query(query) }' >"$root/internal/api/candidate/generated/server.gen.go"
   printf '%s\n' 'package app' 'import "net/http"' 'func readQuery(r *http.Request){ _ = r.URL.Query() }' >"$root/internal/contact/app/app.go"
+  printf '%s\n' 'package main' \
+    'const page = `<label>State <select name="state"><option>all</option></select></label>`' \
+    'const updateMessage = "invalid image update request"' \
+    'const copyMessage = "copy replay remained stable"' \
+    >"$root/cmd/aicrm/non_sql_text.go"
+  printf '%s\n' 'package membergrid' \
+    'type Application interface { Query() }' \
+    'type Handler struct { application Application }' \
+    'func (handler *Handler) Query(){ handler.application.Query() }' \
+    'type routeFragment struct { handler *Handler }' \
+    'func (fragment *routeFragment) ServeHTTP(){ fragment.handler.Query() }' \
+    >"$root/internal/product/membergrid/http.go"
+  printf '%s\n' 'package membergrid' \
+    'type Service struct{}' \
+    'func (*Service) Query(){}' \
+    'func newTestService() *Service { return &Service{} }' \
+    'func testQuery(){ service := newTestService(); service.Query() }' \
+    >"$root/internal/product/membergrid/service_test.go"
   printf '%s\n' 'package store' 'type customerQueryDBTX struct{ Tx database }' 'func (db customerQueryDBTX) Query(){ db.Tx.Query() }' 'func (db customerQueryDBTX) QueryRow(){ db.Tx.QueryRow() }' >"$root/internal/contact/store/customer_query_repository.go"
 }
 run_checker() {
@@ -43,6 +62,15 @@ mutate() {
     sql-path) echo 'SELECT 1;' >"$root/internal/contact/store/direct.sql" ;;
     sql-literal) echo 'package app; const q = "UPDATE customers SET name=$1"' >"$root/internal/contact/app/app.go" ;;
     sql-split) echo 'package app; const q = "SEL"+("ECT 1")' >"$root/internal/contact/app/app.go" ;;
+    sql-leading-block-comment) echo 'package app; const q = "/* audit */ SELECT id FROM customers"' >"$root/internal/contact/app/app.go" ;;
+    sql-leading-line-comment) echo 'package app; const q = "-- audit SELECT id FROM customers"' >"$root/internal/contact/app/app.go" ;;
+    sql-with-select) echo 'package app; const q = "WITH visible AS(SELECT id FROM customers) SELECT id FROM visible"' >"$root/internal/contact/app/app.go" ;;
+    sql-with-update) echo 'package app; const q = "WITH visible AS MATERIALIZED (SELECT id FROM customers) UPDATE customers SET name=$1 FROM visible WHERE customers.id=visible.id"' >"$root/internal/contact/app/app.go" ;;
+    sql-insert) echo 'package app; const q = "INSERT INTO customers DEFAULT VALUES"' >"$root/internal/contact/app/app.go" ;;
+    sql-delete) echo 'package app; const q = "DELETE FROM customers"' >"$root/internal/contact/app/app.go" ;;
+    sql-merge) echo 'package app; const q = "MERGE INTO customers USING source ON false WHEN NOT MATCHED THEN DO NOTHING"' >"$root/internal/contact/app/app.go" ;;
+    sql-copy) echo 'package app; const q = "COPY customers FROM STDIN"' >"$root/internal/contact/app/app.go" ;;
+    sql-truncate) echo 'package app; const q = "TRUNCATE TABLE customers"' >"$root/internal/contact/app/app.go" ;;
     db-call) echo 'package app; func f(){ db.Query("SELECT * FROM customers") }' >"$root/internal/contact/app/app.go" ;;
     dispatcher-savepoint) echo 'package dispatcher; func f(){ db.Exec("SAVEPOINT automation_delivery") }' >"$root/internal/events/dispatcher/jobs.go" ;;
     stats-runtime-sql) echo 'package app; func f(){ db.Query("SELECT value FROM stats_daily") }' >"$root/internal/stats/app/app.go" ;;
@@ -62,6 +90,10 @@ mutate() {
 }
 reject env 'environment read forbidden'; reject env-loader 'environment loader forbidden'
 reject sql-path 'SQL source outside'; reject sql-literal 'handwritten SQL forbidden'; reject sql-split 'constructed SQL forbidden'
+reject sql-leading-block-comment 'handwritten SQL forbidden'; reject sql-leading-line-comment 'handwritten SQL forbidden'
+reject sql-with-select 'handwritten SQL forbidden'; reject sql-with-update 'handwritten SQL forbidden'
+reject sql-insert 'handwritten SQL forbidden'; reject sql-delete 'handwritten SQL forbidden'
+reject sql-merge 'handwritten SQL forbidden'; reject sql-copy 'handwritten SQL forbidden'; reject sql-truncate 'handwritten SQL forbidden'
 reject db-call 'direct database call forbidden'; reject candidate-manual 'direct database call forbidden'; reject orm 'dynamic SQL library forbidden'
 reject dispatcher-savepoint 'direct database call forbidden'
 reject stats-runtime-sql 'direct database call forbidden'

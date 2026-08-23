@@ -14,6 +14,8 @@ seed() {
     "$root/internal/wecom/store" "$root/internal/platform/store" \
     "$root/internal/events/store/queries" \
     "$root/internal/media/store/queries" \
+    "$root/internal/product/store/queries" "$root/internal/hxc/store/queries" \
+    "$root/internal/radar/store/queries" "$root/internal/survey/store/queries" \
     "$root/internal/automation/store/queries" "$root/internal/stats/store/queries" \
     "$root/acceptance/fixtures" "$root/acceptance/contactfixture" \
     "$root/acceptance/automationfixture" "$root/acceptance/mediafixture"
@@ -41,6 +43,46 @@ seed() {
     'ON CONFLICT (idempotency_key) DO UPDATE SET idempotency_key = EXCLUDED.idempotency_key;' \
     'SELECT id FROM event_log FOR UPDATE SKIP LOCKED;' \
     >"$root/internal/events/store/queries/upsert.sql"
+  printf '%s\n' \
+    'INSERT INTO stage_operation_receipts DEFAULT VALUES;' \
+    'INSERT INTO tag_catalog_operation_receipts DEFAULT VALUES;' \
+    >"$root/internal/contact/store/queries/current-tables.sql"
+  printf '%s\n' \
+    'INSERT INTO ai_audience_package_groups DEFAULT VALUES;' \
+    'INSERT INTO ai_audience_operation_receipts DEFAULT VALUES;' \
+    'INSERT INTO ai_audience_package_automation_bindings DEFAULT VALUES;' \
+    'INSERT INTO ai_audience_package_senders DEFAULT VALUES;' \
+    'INSERT INTO ai_audience_local_configuration_receipts DEFAULT VALUES;' \
+    >"$root/internal/segment/store/queries/current-tables.sql"
+  printf '%s\n' \
+    'INSERT INTO product_local_entitlements DEFAULT VALUES;' \
+    'INSERT INTO entitlement_operation_receipts DEFAULT VALUES;' \
+    'INSERT INTO service_period_member_views DEFAULT VALUES;' \
+    'INSERT INTO service_period_member_grid_collaborators DEFAULT VALUES;' \
+    >"$root/internal/product/store/queries/current-tables.sql"
+  echo 'INSERT INTO hxc_sender_config_receipts DEFAULT VALUES;' >"$root/internal/hxc/store/queries/current-tables.sql"
+  printf '%s\n' \
+    'INSERT INTO media_attachments DEFAULT VALUES;' \
+    'INSERT INTO media_attachment_blobs DEFAULT VALUES;' \
+    'INSERT INTO media_attachment_mutation_receipts DEFAULT VALUES;' \
+    >"$root/internal/media/store/queries/current-tables.sql"
+  printf '%s\n' \
+    'INSERT INTO radar_links DEFAULT VALUES;' \
+    'INSERT INTO radar_link_idempotency_records DEFAULT VALUES;' \
+    >"$root/internal/radar/store/queries/current-tables.sql"
+  printf '%s\n' \
+    'INSERT INTO questionnaire_operations DEFAULT VALUES;' \
+    'INSERT INTO questionnaire_operations_receipts DEFAULT VALUES;' \
+    'INSERT INTO questionnaire_external_push_test_runs DEFAULT VALUES;' \
+    'INSERT INTO questionnaire_public_definitions DEFAULT VALUES;' \
+    'INSERT INTO questionnaire_public_definition_questions DEFAULT VALUES;' \
+    'INSERT INTO questionnaire_public_definition_options DEFAULT VALUES;' \
+    'INSERT INTO questionnaire_public_submission_receipts DEFAULT VALUES;' \
+    'INSERT INTO questionnaire_public_submissions DEFAULT VALUES;' \
+    'INSERT INTO questionnaire_public_submission_answers DEFAULT VALUES;' \
+    'INSERT INTO questionnaire_public_submission_rate_windows DEFAULT VALUES;' \
+    'INSERT INTO questionnaire_public_management_receipts DEFAULT VALUES;' \
+    >"$root/internal/survey/store/queries/current-tables.sql"
 }
 run_checker() {
   (cd / && env -u BASH_ENV -u ENV -u GOFLAGS -u GIT_DIR -u GIT_WORK_TREE \
