@@ -7942,7 +7942,7 @@ paths:
       tags: [p4-cloud-campaign]
       x-p4-decision-evidence: P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22
       x-legacy-mapping-ids: [LEGACY-API-0209]
-      x-aicrm-capability: admin.read
+      x-aicrm-capability: operations.read
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: none
