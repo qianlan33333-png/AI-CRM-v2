@@ -24,6 +24,7 @@ import (
 
 var outboundDatabaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 outbound database")
 var outboundO6B1MigrationProof = flag.Bool("o6b1-migration-proof", false, "run isolated O6B1 migration compatibility proof")
+var outboundO6B2MigrationProof = flag.Bool("o6b2-migration-proof", false, "run isolated O6B2 migration compatibility proof")
 
 func TestOutboundStorageCatalogWaterlineAndIdentity(t *testing.T) {
 	pool := openOutboundPool(t)
@@ -305,7 +306,7 @@ func openOutboundPool(t *testing.T) *pgxpool.Pool {
 	if *outboundDatabaseURL == "" {
 		t.Skip("database-url is not set")
 	}
-	if err := validateOutboundDatabaseURL(*outboundDatabaseURL, *outboundO6ARealRiver, *outboundO6B1MigrationProof); err != nil {
+	if err := validateOutboundDatabaseURL(*outboundDatabaseURL, *outboundO6ARealRiver, *outboundO6B1MigrationProof, *outboundO6B2MigrationProof); err != nil {
 		t.Fatalf("unsafe outbound database URL: %v", err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -322,7 +323,7 @@ func openOutboundPool(t *testing.T) *pgxpool.Pool {
 	return pool
 }
 
-func validateOutboundDatabaseURL(databaseURL string, allowO6ATemporary, allowO6B1Temporary bool) error {
+func validateOutboundDatabaseURL(databaseURL string, allowO6ATemporary, allowO6B1Temporary, allowO6B2Temporary bool) error {
 	err := acceptancefixtures.ValidateDatabaseURL(databaseURL)
 	if err == nil {
 		return err
@@ -330,8 +331,11 @@ func validateOutboundDatabaseURL(databaseURL string, allowO6ATemporary, allowO6B
 	if allowO6ATemporary && acceptancefixtures.ValidateDatabaseURLForDatabase(databaseURL, acceptancefixtures.O6ARetryDatabaseName) == nil {
 		return nil
 	}
-	if allowO6B1Temporary {
-		return acceptancefixtures.ValidateDatabaseURLForDatabase(databaseURL, acceptancefixtures.O6B1CancelDatabaseName)
+	if allowO6B1Temporary && acceptancefixtures.ValidateDatabaseURLForDatabase(databaseURL, acceptancefixtures.O6B1CancelDatabaseName) == nil {
+		return nil
+	}
+	if allowO6B2Temporary {
+		return acceptancefixtures.ValidateDatabaseURLForDatabase(databaseURL, acceptancefixtures.O6B2ManualRetryDatabaseName)
 	}
 	return err
 }
@@ -340,22 +344,29 @@ func TestOutboundDatabaseURLValidationIsClosed(t *testing.T) {
 	t.Parallel()
 	o6aTemporaryURL := "postgres://postgres:postgres@127.0.0.1:5432/" + acceptancefixtures.O6ARetryDatabaseName + "?sslmode=disable"
 	o6b1TemporaryURL := "postgres://postgres:postgres@127.0.0.1:5432/" + acceptancefixtures.O6B1CancelDatabaseName + "?sslmode=disable"
-	if err := validateOutboundDatabaseURL(acceptancefixtures.DefaultDatabaseURL, true, true); err != nil {
+	o6b2TemporaryURL := "postgres://postgres:postgres@127.0.0.1:5432/" + acceptancefixtures.O6B2ManualRetryDatabaseName + "?sslmode=disable"
+	if err := validateOutboundDatabaseURL(acceptancefixtures.DefaultDatabaseURL, true, true, true); err != nil {
 		t.Fatalf("shared O6A database rejected: %v", err)
 	}
-	if err := validateOutboundDatabaseURL(o6aTemporaryURL, true, false); err != nil {
+	if err := validateOutboundDatabaseURL(o6aTemporaryURL, true, false, false); err != nil {
 		t.Fatalf("dedicated O6A database rejected: %v", err)
 	}
-	if err := validateOutboundDatabaseURL(o6aTemporaryURL, false, false); !errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
+	if err := validateOutboundDatabaseURL(o6aTemporaryURL, false, false, false); !errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
 		t.Fatalf("dedicated O6A database accepted outside O6A: %v", err)
 	}
-	if err := validateOutboundDatabaseURL(o6b1TemporaryURL, false, true); err != nil {
+	if err := validateOutboundDatabaseURL(o6b1TemporaryURL, false, true, false); err != nil {
 		t.Fatalf("dedicated O6B1 database rejected: %v", err)
 	}
-	if err := validateOutboundDatabaseURL(o6b1TemporaryURL, false, false); !errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
+	if err := validateOutboundDatabaseURL(o6b1TemporaryURL, false, false, false); !errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
 		t.Fatalf("dedicated O6B1 database accepted outside O6B1: %v", err)
 	}
-	if err := validateOutboundDatabaseURL("postgres://postgres:postgres@127.0.0.1:5432/aicrm_test_other?sslmode=disable", true, true); !errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
+	if err := validateOutboundDatabaseURL(o6b2TemporaryURL, false, false, true); err != nil {
+		t.Fatalf("dedicated O6B2 database rejected: %v", err)
+	}
+	if err := validateOutboundDatabaseURL(o6b2TemporaryURL, false, false, false); !errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
+		t.Fatalf("dedicated O6B2 database accepted outside O6B2: %v", err)
+	}
+	if err := validateOutboundDatabaseURL("postgres://postgres:postgres@127.0.0.1:5432/aicrm_test_other?sslmode=disable", true, true, true); !errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
 		t.Fatalf("unapproved outbound database accepted: %v", err)
 	}
 }
