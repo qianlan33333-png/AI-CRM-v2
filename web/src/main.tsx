@@ -100,13 +100,6 @@ import {
   audiencePackageRoute,
   type AudiencePackageRoute,
 } from "./audience-packages";
-import { UserOpsWorkspace } from "./user-ops-ui";
-import {
-  USER_OPS_PATH,
-  userOpsCarrierRoute,
-  userOpsRoute,
-  type UserOpsRoute,
-} from "./user-ops";
 import { CommerceWorkspaces } from "./commerce-workspaces-ui";
 import {
   ALIPAY_TRANSACTIONS_PATH,
@@ -292,12 +285,6 @@ export const routes = [
     navigationLabel: "AI 人群包",
     title: "AI Audience 人群包",
     description: "人群包管理的本地安全工作区载体。",
-  },
-  {
-    path: USER_OPS_PATH,
-    navigationLabel: "用户运营审阅",
-    title: "用户运营批量审阅",
-    description: "用户运营批量审阅的本地安全工作区载体。",
   },
   {
     path: SERVICE_PRODUCTS_PATH,
@@ -521,8 +508,6 @@ export function carrierPathname(pathname: string, search: string): string {
   if (groupOpsCarrier) return groupOpsCarrier.pathname;
   const audiencePackageCarrier = audiencePackageCarrierRoute(search);
   if (audiencePackageCarrier) return audiencePackageCarrier.pathname;
-  const userOpsCarrier = userOpsCarrierRoute(search);
-  if (userOpsCarrier) return userOpsCarrier.pathname;
   const commerceCarrier = commerceWorkspaceCarrierRoute(search);
   if (commerceCarrier) return commerceCarrier.pathname;
   let params: URLSearchParams;
@@ -635,7 +620,6 @@ function PageContent({
   cloudOrchestrator,
   groupOps,
   audiencePackage,
-  userOps,
   commerceWorkspace,
   principal,
   customerTransport,
@@ -676,7 +660,6 @@ function PageContent({
   cloudOrchestrator?: CloudOrchestratorRoute;
   groupOps?: GroupOpsRoute;
   audiencePackage?: AudiencePackageRoute;
-  userOps?: UserOpsRoute;
   commerceWorkspace?: CommerceWorkspaceRoute;
   principal: AuthPrincipal;
   customerTransport?: CustomerTransport;
@@ -720,9 +703,6 @@ function PageContent({
     return (
       <AudiencePackageWorkspace role={principal.role} route={audiencePackage} />
     );
-  }
-  if (userOps) {
-    return <UserOpsWorkspace role={principal.role} route={userOps} />;
   }
   if (commerceWorkspace) {
     return (
@@ -1117,7 +1097,6 @@ export function navigationLinks(
     permitted.add(CLOUD_ORCHESTRATOR_PLANS_PATH);
     permitted.add(GROUP_OPS_PLANS_PATH);
     permitted.add(AUDIENCE_PACKAGES_PATH);
-    permitted.add(USER_OPS_PATH);
     permitted.add(SERVICE_PRODUCTS_PATH);
     permitted.add(WECHAT_PAY_TRANSACTIONS_PATH);
     permitted.add(WECHAT_SHOP_TRANSACTIONS_PATH);
@@ -1196,7 +1175,6 @@ export function App({
   const cloudOrchestrator = cloudOrchestratorRoute(effectivePathname);
   const groupOps = groupOpsRoute(effectivePathname);
   const audiencePackage = audiencePackageRoute(effectivePathname);
-  const userOps = userOpsRoute(effectivePathname);
   const commerceWorkspace = commerceWorkspaceRoute(effectivePathname);
   const publicSurvey = pathname === "/" ? publicSurveySlug(search) : undefined;
   const missingReturnPath = isAdminCustomerNamespace(effectivePathname)
@@ -1342,7 +1320,6 @@ export function App({
             cloudOrchestrator={cloudOrchestrator}
             groupOps={groupOps}
             audiencePackage={audiencePackage}
-            userOps={userOps}
             commerceWorkspace={commerceWorkspace}
             principal={session.principal}
             customerTransport={customerTransport}
