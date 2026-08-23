@@ -20,6 +20,7 @@ output-options:
     - p4-classification
     - p4-customer-360
     - p4-campaign-initiation
+    - p4-campaign-review-handoff
     - p4-contact-policy
     - p4-domain-verification
     - p4-execution-runtime-compat

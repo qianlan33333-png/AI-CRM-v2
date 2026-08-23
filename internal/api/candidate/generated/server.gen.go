@@ -859,6 +859,21 @@ func (e CloudCampaignTouchPlanDetailResponseRuntimeExecuted) Valid() bool {
 	}
 }
 
+// Defines values for CloudCampaignTouchPlanHandoffStatus.
+const (
+	PendingOutboundAcceptance CloudCampaignTouchPlanHandoffStatus = "pending_outbound_acceptance"
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanHandoffStatus enum.
+func (e CloudCampaignTouchPlanHandoffStatus) Valid() bool {
+	switch e {
+	case PendingOutboundAcceptance:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CloudCampaignTouchPlanListResponseDeliveryProven.
 const (
 	CloudCampaignTouchPlanListResponseDeliveryProvenFalse CloudCampaignTouchPlanListResponseDeliveryProven = false
@@ -928,6 +943,210 @@ const (
 func (e CloudCampaignTouchPlanListResponseRuntimeExecuted) Valid() bool {
 	switch e {
 	case CloudCampaignTouchPlanListResponseRuntimeExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignTouchPlanRecipientListResponseDeliveryProven.
+const (
+	CloudCampaignTouchPlanRecipientListResponseDeliveryProvenFalse CloudCampaignTouchPlanRecipientListResponseDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanRecipientListResponseDeliveryProven enum.
+func (e CloudCampaignTouchPlanRecipientListResponseDeliveryProven) Valid() bool {
+	switch e {
+	case CloudCampaignTouchPlanRecipientListResponseDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignTouchPlanRecipientListResponseLocalOnly.
+const (
+	CloudCampaignTouchPlanRecipientListResponseLocalOnlyTrue CloudCampaignTouchPlanRecipientListResponseLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanRecipientListResponseLocalOnly enum.
+func (e CloudCampaignTouchPlanRecipientListResponseLocalOnly) Valid() bool {
+	switch e {
+	case CloudCampaignTouchPlanRecipientListResponseLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignTouchPlanRecipientListResponseProviderExecutionEligible.
+const (
+	CloudCampaignTouchPlanRecipientListResponseProviderExecutionEligibleFalse CloudCampaignTouchPlanRecipientListResponseProviderExecutionEligible = false
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanRecipientListResponseProviderExecutionEligible enum.
+func (e CloudCampaignTouchPlanRecipientListResponseProviderExecutionEligible) Valid() bool {
+	switch e {
+	case CloudCampaignTouchPlanRecipientListResponseProviderExecutionEligibleFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignTouchPlanRecipientListResponseRealExternalCallExecuted.
+const (
+	CloudCampaignTouchPlanRecipientListResponseRealExternalCallExecutedFalse CloudCampaignTouchPlanRecipientListResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanRecipientListResponseRealExternalCallExecuted enum.
+func (e CloudCampaignTouchPlanRecipientListResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CloudCampaignTouchPlanRecipientListResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignTouchPlanRecipientResponseDeliveryProven.
+const (
+	CloudCampaignTouchPlanRecipientResponseDeliveryProvenFalse CloudCampaignTouchPlanRecipientResponseDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanRecipientResponseDeliveryProven enum.
+func (e CloudCampaignTouchPlanRecipientResponseDeliveryProven) Valid() bool {
+	switch e {
+	case CloudCampaignTouchPlanRecipientResponseDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignTouchPlanRecipientResponseLocalOnly.
+const (
+	CloudCampaignTouchPlanRecipientResponseLocalOnlyTrue CloudCampaignTouchPlanRecipientResponseLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanRecipientResponseLocalOnly enum.
+func (e CloudCampaignTouchPlanRecipientResponseLocalOnly) Valid() bool {
+	switch e {
+	case CloudCampaignTouchPlanRecipientResponseLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignTouchPlanRecipientResponseProviderExecutionEligible.
+const (
+	CloudCampaignTouchPlanRecipientResponseProviderExecutionEligibleFalse CloudCampaignTouchPlanRecipientResponseProviderExecutionEligible = false
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanRecipientResponseProviderExecutionEligible enum.
+func (e CloudCampaignTouchPlanRecipientResponseProviderExecutionEligible) Valid() bool {
+	switch e {
+	case CloudCampaignTouchPlanRecipientResponseProviderExecutionEligibleFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignTouchPlanRecipientResponseRealExternalCallExecuted.
+const (
+	CloudCampaignTouchPlanRecipientResponseRealExternalCallExecutedFalse CloudCampaignTouchPlanRecipientResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanRecipientResponseRealExternalCallExecuted enum.
+func (e CloudCampaignTouchPlanRecipientResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CloudCampaignTouchPlanRecipientResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignTouchPlanReviewStatus.
+const (
+	CloudCampaignTouchPlanReviewStatusApproved      CloudCampaignTouchPlanReviewStatus = "approved"
+	CloudCampaignTouchPlanReviewStatusDraft         CloudCampaignTouchPlanReviewStatus = "draft"
+	CloudCampaignTouchPlanReviewStatusPendingReview CloudCampaignTouchPlanReviewStatus = "pending_review"
+	CloudCampaignTouchPlanReviewStatusRejected      CloudCampaignTouchPlanReviewStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanReviewStatus enum.
+func (e CloudCampaignTouchPlanReviewStatus) Valid() bool {
+	switch e {
+	case CloudCampaignTouchPlanReviewStatusApproved:
+		return true
+	case CloudCampaignTouchPlanReviewStatusDraft:
+		return true
+	case CloudCampaignTouchPlanReviewStatusPendingReview:
+		return true
+	case CloudCampaignTouchPlanReviewStatusRejected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignTouchPlanReviewMutationResponseDeliveryProven.
+const (
+	CloudCampaignTouchPlanReviewMutationResponseDeliveryProvenFalse CloudCampaignTouchPlanReviewMutationResponseDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanReviewMutationResponseDeliveryProven enum.
+func (e CloudCampaignTouchPlanReviewMutationResponseDeliveryProven) Valid() bool {
+	switch e {
+	case CloudCampaignTouchPlanReviewMutationResponseDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignTouchPlanReviewMutationResponseLocalOnly.
+const (
+	CloudCampaignTouchPlanReviewMutationResponseLocalOnlyTrue CloudCampaignTouchPlanReviewMutationResponseLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanReviewMutationResponseLocalOnly enum.
+func (e CloudCampaignTouchPlanReviewMutationResponseLocalOnly) Valid() bool {
+	switch e {
+	case CloudCampaignTouchPlanReviewMutationResponseLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignTouchPlanReviewMutationResponseProviderExecutionEligible.
+const (
+	CloudCampaignTouchPlanReviewMutationResponseProviderExecutionEligibleFalse CloudCampaignTouchPlanReviewMutationResponseProviderExecutionEligible = false
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanReviewMutationResponseProviderExecutionEligible enum.
+func (e CloudCampaignTouchPlanReviewMutationResponseProviderExecutionEligible) Valid() bool {
+	switch e {
+	case CloudCampaignTouchPlanReviewMutationResponseProviderExecutionEligibleFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CloudCampaignTouchPlanReviewMutationResponseRealExternalCallExecuted.
+const (
+	CloudCampaignTouchPlanReviewMutationResponseRealExternalCallExecutedFalse CloudCampaignTouchPlanReviewMutationResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CloudCampaignTouchPlanReviewMutationResponseRealExternalCallExecuted enum.
+func (e CloudCampaignTouchPlanReviewMutationResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CloudCampaignTouchPlanReviewMutationResponseRealExternalCallExecutedFalse:
 		return true
 	default:
 		return false
@@ -6009,13 +6228,13 @@ func (e SetupWizardSaveResponseRuntimeApplied) Valid() bool {
 
 // Defines values for SetupWizardUnavailableMaskedSettingConfigured.
 const (
-	False SetupWizardUnavailableMaskedSettingConfigured = false
+	SetupWizardUnavailableMaskedSettingConfiguredFalse SetupWizardUnavailableMaskedSettingConfigured = false
 )
 
 // Valid indicates whether the value is a known member of the SetupWizardUnavailableMaskedSettingConfigured enum.
 func (e SetupWizardUnavailableMaskedSettingConfigured) Valid() bool {
 	switch e {
-	case False:
+	case SetupWizardUnavailableMaskedSettingConfiguredFalse:
 		return true
 	default:
 		return false
@@ -6024,13 +6243,13 @@ func (e SetupWizardUnavailableMaskedSettingConfigured) Valid() bool {
 
 // Defines values for SetupWizardUnavailableMaskedSettingMasked.
 const (
-	SetupWizardUnavailableMaskedSettingMaskedTrue SetupWizardUnavailableMaskedSettingMasked = true
+	True SetupWizardUnavailableMaskedSettingMasked = true
 )
 
 // Valid indicates whether the value is a known member of the SetupWizardUnavailableMaskedSettingMasked enum.
 func (e SetupWizardUnavailableMaskedSettingMasked) Valid() bool {
 	switch e {
-	case SetupWizardUnavailableMaskedSettingMaskedTrue:
+	case True:
 		return true
 	default:
 		return false
@@ -6165,19 +6384,19 @@ func (e ListCustomerChatActivityParamsChatType) Valid() bool {
 
 // Defines values for ListIdentityMergeReviewsParamsStatus.
 const (
-	Approved ListIdentityMergeReviewsParamsStatus = "approved"
-	Pending  ListIdentityMergeReviewsParamsStatus = "pending"
-	Rejected ListIdentityMergeReviewsParamsStatus = "rejected"
+	ListIdentityMergeReviewsParamsStatusApproved ListIdentityMergeReviewsParamsStatus = "approved"
+	ListIdentityMergeReviewsParamsStatusPending  ListIdentityMergeReviewsParamsStatus = "pending"
+	ListIdentityMergeReviewsParamsStatusRejected ListIdentityMergeReviewsParamsStatus = "rejected"
 )
 
 // Valid indicates whether the value is a known member of the ListIdentityMergeReviewsParamsStatus enum.
 func (e ListIdentityMergeReviewsParamsStatus) Valid() bool {
 	switch e {
-	case Approved:
+	case ListIdentityMergeReviewsParamsStatusApproved:
 		return true
-	case Pending:
+	case ListIdentityMergeReviewsParamsStatusPending:
 		return true
-	case Rejected:
+	case ListIdentityMergeReviewsParamsStatusRejected:
 		return true
 	default:
 		return false
@@ -6734,6 +6953,16 @@ type CloudCampaignTouchPlanDetailResponseRealExternalCallExecuted bool
 // CloudCampaignTouchPlanDetailResponseRuntimeExecuted defines model for CloudCampaignTouchPlanDetailResponse.RuntimeExecuted.
 type CloudCampaignTouchPlanDetailResponseRuntimeExecuted bool
 
+// CloudCampaignTouchPlanHandoff defines model for CloudCampaignTouchPlanHandoff.
+type CloudCampaignTouchPlanHandoff struct {
+	CreatedAt     time.Time                           `json:"created_at"`
+	ReviewVersion int64                               `json:"review_version"`
+	Status        CloudCampaignTouchPlanHandoffStatus `json:"status"`
+}
+
+// CloudCampaignTouchPlanHandoffStatus defines model for CloudCampaignTouchPlanHandoff.Status.
+type CloudCampaignTouchPlanHandoffStatus string
+
 // CloudCampaignTouchPlanListResponse defines model for CloudCampaignTouchPlanListResponse.
 type CloudCampaignTouchPlanListResponse struct {
 	DeliveryProven            CloudCampaignTouchPlanListResponseDeliveryProven            `json:"delivery_proven"`
@@ -6767,6 +6996,95 @@ type CloudCampaignTouchPlanPreviewExclusionSummary struct {
 	InactiveExcludedCount int32 `json:"inactive_excluded_count"`
 	PolicyExcludedCount   int32 `json:"policy_excluded_count"`
 }
+
+// CloudCampaignTouchPlanRecipient defines model for CloudCampaignTouchPlanRecipient.
+type CloudCampaignTouchPlanRecipient struct {
+	CanonicalCustomerId int64 `json:"canonical_customer_id"`
+}
+
+// CloudCampaignTouchPlanRecipientListResponse defines model for CloudCampaignTouchPlanRecipientListResponse.
+type CloudCampaignTouchPlanRecipientListResponse struct {
+	DeliveryProven            CloudCampaignTouchPlanRecipientListResponseDeliveryProven            `json:"delivery_proven"`
+	Items                     []CloudCampaignTouchPlanRecipient                                    `json:"items"`
+	LocalOnly                 CloudCampaignTouchPlanRecipientListResponseLocalOnly                 `json:"local_only"`
+	NextCursor                *string                                                              `json:"next_cursor,omitempty"`
+	ProviderExecutionEligible CloudCampaignTouchPlanRecipientListResponseProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  CloudCampaignTouchPlanRecipientListResponseRealExternalCallExecuted  `json:"real_external_call_executed"`
+}
+
+// CloudCampaignTouchPlanRecipientListResponseDeliveryProven defines model for CloudCampaignTouchPlanRecipientListResponse.DeliveryProven.
+type CloudCampaignTouchPlanRecipientListResponseDeliveryProven bool
+
+// CloudCampaignTouchPlanRecipientListResponseLocalOnly defines model for CloudCampaignTouchPlanRecipientListResponse.LocalOnly.
+type CloudCampaignTouchPlanRecipientListResponseLocalOnly bool
+
+// CloudCampaignTouchPlanRecipientListResponseProviderExecutionEligible defines model for CloudCampaignTouchPlanRecipientListResponse.ProviderExecutionEligible.
+type CloudCampaignTouchPlanRecipientListResponseProviderExecutionEligible bool
+
+// CloudCampaignTouchPlanRecipientListResponseRealExternalCallExecuted defines model for CloudCampaignTouchPlanRecipientListResponse.RealExternalCallExecuted.
+type CloudCampaignTouchPlanRecipientListResponseRealExternalCallExecuted bool
+
+// CloudCampaignTouchPlanRecipientResponse defines model for CloudCampaignTouchPlanRecipientResponse.
+type CloudCampaignTouchPlanRecipientResponse struct {
+	CanonicalCustomerId       int64                                                            `json:"canonical_customer_id"`
+	DeliveryProven            CloudCampaignTouchPlanRecipientResponseDeliveryProven            `json:"delivery_proven"`
+	LocalOnly                 CloudCampaignTouchPlanRecipientResponseLocalOnly                 `json:"local_only"`
+	ProviderExecutionEligible CloudCampaignTouchPlanRecipientResponseProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  CloudCampaignTouchPlanRecipientResponseRealExternalCallExecuted  `json:"real_external_call_executed"`
+}
+
+// CloudCampaignTouchPlanRecipientResponseDeliveryProven defines model for CloudCampaignTouchPlanRecipientResponse.DeliveryProven.
+type CloudCampaignTouchPlanRecipientResponseDeliveryProven bool
+
+// CloudCampaignTouchPlanRecipientResponseLocalOnly defines model for CloudCampaignTouchPlanRecipientResponse.LocalOnly.
+type CloudCampaignTouchPlanRecipientResponseLocalOnly bool
+
+// CloudCampaignTouchPlanRecipientResponseProviderExecutionEligible defines model for CloudCampaignTouchPlanRecipientResponse.ProviderExecutionEligible.
+type CloudCampaignTouchPlanRecipientResponseProviderExecutionEligible bool
+
+// CloudCampaignTouchPlanRecipientResponseRealExternalCallExecuted defines model for CloudCampaignTouchPlanRecipientResponse.RealExternalCallExecuted.
+type CloudCampaignTouchPlanRecipientResponseRealExternalCallExecuted bool
+
+// CloudCampaignTouchPlanReview defines model for CloudCampaignTouchPlanReview.
+type CloudCampaignTouchPlanReview struct {
+	ReviewedAt         *time.Time                         `json:"reviewed_at,omitempty"`
+	ReviewedByActorId  *int64                             `json:"reviewed_by_actor_id,omitempty"`
+	Status             CloudCampaignTouchPlanReviewStatus `json:"status"`
+	SubmittedAt        *time.Time                         `json:"submitted_at,omitempty"`
+	SubmittedByActorId *int64                             `json:"submitted_by_actor_id,omitempty"`
+	Version            int64                              `json:"version"`
+}
+
+// CloudCampaignTouchPlanReviewStatus defines model for CloudCampaignTouchPlanReview.Status.
+type CloudCampaignTouchPlanReviewStatus string
+
+// CloudCampaignTouchPlanReviewMutationRequest defines model for CloudCampaignTouchPlanReviewMutationRequest.
+type CloudCampaignTouchPlanReviewMutationRequest struct {
+	Confirmation    *string `json:"confirmation,omitempty"`
+	ExpectedVersion int64   `json:"expected_version"`
+}
+
+// CloudCampaignTouchPlanReviewMutationResponse defines model for CloudCampaignTouchPlanReviewMutationResponse.
+type CloudCampaignTouchPlanReviewMutationResponse struct {
+	DeliveryProven            CloudCampaignTouchPlanReviewMutationResponseDeliveryProven            `json:"delivery_proven"`
+	Handoff                   *CloudCampaignTouchPlanHandoff                                        `json:"handoff,omitempty"`
+	LocalOnly                 CloudCampaignTouchPlanReviewMutationResponseLocalOnly                 `json:"local_only"`
+	ProviderExecutionEligible CloudCampaignTouchPlanReviewMutationResponseProviderExecutionEligible `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  CloudCampaignTouchPlanReviewMutationResponseRealExternalCallExecuted  `json:"real_external_call_executed"`
+	Review                    CloudCampaignTouchPlanReview                                          `json:"review"`
+}
+
+// CloudCampaignTouchPlanReviewMutationResponseDeliveryProven defines model for CloudCampaignTouchPlanReviewMutationResponse.DeliveryProven.
+type CloudCampaignTouchPlanReviewMutationResponseDeliveryProven bool
+
+// CloudCampaignTouchPlanReviewMutationResponseLocalOnly defines model for CloudCampaignTouchPlanReviewMutationResponse.LocalOnly.
+type CloudCampaignTouchPlanReviewMutationResponseLocalOnly bool
+
+// CloudCampaignTouchPlanReviewMutationResponseProviderExecutionEligible defines model for CloudCampaignTouchPlanReviewMutationResponse.ProviderExecutionEligible.
+type CloudCampaignTouchPlanReviewMutationResponseProviderExecutionEligible bool
+
+// CloudCampaignTouchPlanReviewMutationResponseRealExternalCallExecuted defines model for CloudCampaignTouchPlanReviewMutationResponse.RealExternalCallExecuted.
+type CloudCampaignTouchPlanReviewMutationResponseRealExternalCallExecuted bool
 
 // CloudCampaignTouchPlanSegmentMembersRequest defines model for CloudCampaignTouchPlanSegmentMembersRequest.
 type CloudCampaignTouchPlanSegmentMembersRequest struct {
@@ -9872,6 +10190,21 @@ type CreateCloudCampaignTouchPlanParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ListCloudCampaignTouchPlanRecipientsParams defines parameters for ListCloudCampaignTouchPlanRecipients.
+type ListCloudCampaignTouchPlanRecipientsParams struct {
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int32  `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// MutateCloudCampaignTouchPlanReviewParams defines parameters for MutateCloudCampaignTouchPlanReview.
+type MutateCloudCampaignTouchPlanReviewParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // CheckAdminOpsCategoryParams defines parameters for CheckAdminOpsCategory.
 type CheckAdminOpsCategoryParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -10664,6 +10997,9 @@ type UpdateLegacyChannelJSONRequestBody = LegacyChannelWriteRequest
 
 // CreateCloudCampaignTouchPlanJSONRequestBody defines body for CreateCloudCampaignTouchPlan for application/json ContentType.
 type CreateCloudCampaignTouchPlanJSONRequestBody = CloudCampaignTouchPlanCreateRequest
+
+// MutateCloudCampaignTouchPlanReviewJSONRequestBody defines body for MutateCloudCampaignTouchPlanReview for application/json ContentType.
+type MutateCloudCampaignTouchPlanReviewJSONRequestBody = CloudCampaignTouchPlanReviewMutationRequest
 
 // CheckAdminOpsCategoryJSONRequestBody defines body for CheckAdminOpsCategory for application/json ContentType.
 type CheckAdminOpsCategoryJSONRequestBody = AdminOpsActionRequest
@@ -12037,6 +12373,18 @@ type ServerInterface interface {
 	// Read one recipient-safe immutable local Campaign touch-plan snapshot
 	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id})
 	GetCloudCampaignTouchPlan(w http.ResponseWriter, r *http.Request, campaignCode string, planId string)
+	// List immutable touch-plan canonical customer IDs
+	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients)
+	ListCloudCampaignTouchPlanRecipients(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, params ListCloudCampaignTouchPlanRecipientsParams)
+	// Read one immutable touch-plan canonical customer ID
+	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id})
+	GetCloudCampaignTouchPlanRecipient(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, customerId int64)
+	// Read current local touch-plan review and optional handoff
+	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review)
+	GetCloudCampaignTouchPlanReview(w http.ResponseWriter, r *http.Request, campaignCode string, planId string)
+	// Submit or decide immutable touch-plan review
+	// (POST /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review/{operation})
+	MutateCloudCampaignTouchPlanReview(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, operation string, params MutateCloudCampaignTouchPlanReviewParams)
 	// List local configuration categories using a closed settings projection
 	// (GET /api/admin/config/categories)
 	ListAdminOpsCategories(w http.ResponseWriter, r *http.Request)
@@ -12565,6 +12913,30 @@ func (_ Unimplemented) CreateCloudCampaignTouchPlan(w http.ResponseWriter, r *ht
 // Read one recipient-safe immutable local Campaign touch-plan snapshot
 // (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id})
 func (_ Unimplemented) GetCloudCampaignTouchPlan(w http.ResponseWriter, r *http.Request, campaignCode string, planId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List immutable touch-plan canonical customer IDs
+// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients)
+func (_ Unimplemented) ListCloudCampaignTouchPlanRecipients(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, params ListCloudCampaignTouchPlanRecipientsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one immutable touch-plan canonical customer ID
+// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id})
+func (_ Unimplemented) GetCloudCampaignTouchPlanRecipient(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, customerId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read current local touch-plan review and optional handoff
+// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review)
+func (_ Unimplemented) GetCloudCampaignTouchPlanReview(w http.ResponseWriter, r *http.Request, campaignCode string, planId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Submit or decide immutable touch-plan review
+// (POST /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review/{operation})
+func (_ Unimplemented) MutateCloudCampaignTouchPlanReview(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, operation string, params MutateCloudCampaignTouchPlanReviewParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -14493,6 +14865,254 @@ func (siw *ServerInterfaceWrapper) GetCloudCampaignTouchPlan(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCloudCampaignTouchPlan(w, r, campaignCode, planId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListCloudCampaignTouchPlanRecipients operation middleware
+func (siw *ServerInterfaceWrapper) ListCloudCampaignTouchPlanRecipients(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "campaign_code" -------------
+	var campaignCode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "campaign_code", chi.URLParam(r, "campaign_code"), &campaignCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "campaign_code", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "plan_id" -------------
+	var planId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "plan_id", chi.URLParam(r, "plan_id"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCloudCampaignTouchPlanRecipientsParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCloudCampaignTouchPlanRecipients(w, r, campaignCode, planId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCloudCampaignTouchPlanRecipient operation middleware
+func (siw *ServerInterfaceWrapper) GetCloudCampaignTouchPlanRecipient(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "campaign_code" -------------
+	var campaignCode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "campaign_code", chi.URLParam(r, "campaign_code"), &campaignCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "campaign_code", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "plan_id" -------------
+	var planId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "plan_id", chi.URLParam(r, "plan_id"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "customer_id" -------------
+	var customerId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "customer_id", chi.URLParam(r, "customer_id"), &customerId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "customer_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCloudCampaignTouchPlanRecipient(w, r, campaignCode, planId, customerId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCloudCampaignTouchPlanReview operation middleware
+func (siw *ServerInterfaceWrapper) GetCloudCampaignTouchPlanReview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "campaign_code" -------------
+	var campaignCode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "campaign_code", chi.URLParam(r, "campaign_code"), &campaignCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "campaign_code", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "plan_id" -------------
+	var planId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "plan_id", chi.URLParam(r, "plan_id"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCloudCampaignTouchPlanReview(w, r, campaignCode, planId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// MutateCloudCampaignTouchPlanReview operation middleware
+func (siw *ServerInterfaceWrapper) MutateCloudCampaignTouchPlanReview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "campaign_code" -------------
+	var campaignCode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "campaign_code", chi.URLParam(r, "campaign_code"), &campaignCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "campaign_code", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "plan_id" -------------
+	var planId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "plan_id", chi.URLParam(r, "plan_id"), &planId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "plan_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "operation" -------------
+	var operation string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "operation", chi.URLParam(r, "operation"), &operation, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "operation", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params MutateCloudCampaignTouchPlanReviewParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.MutateCloudCampaignTouchPlanReview(w, r, campaignCode, planId, operation, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -22261,6 +22881,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}", wrapper.GetCloudCampaignTouchPlan)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients", wrapper.ListCloudCampaignTouchPlanRecipients)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}", wrapper.GetCloudCampaignTouchPlanRecipient)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review", wrapper.GetCloudCampaignTouchPlanReview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review/{operation}", wrapper.MutateCloudCampaignTouchPlanReview)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/config/categories", wrapper.ListAdminOpsCategories)
 	})
 	r.Group(func(r chi.Router) {
@@ -24038,6 +24670,272 @@ func (response GetCloudCampaignTouchPlan404JSONResponse) VisitGetCloudCampaignTo
 type GetCloudCampaignTouchPlan503JSONResponse CloudCampaignError
 
 func (response GetCloudCampaignTouchPlan503JSONResponse) VisitGetCloudCampaignTouchPlanResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudCampaignTouchPlanRecipientsRequestObject struct {
+	CampaignCode string `json:"campaign_code"`
+	PlanId       string `json:"plan_id"`
+	Params       ListCloudCampaignTouchPlanRecipientsParams
+}
+
+type ListCloudCampaignTouchPlanRecipientsResponseObject interface {
+	VisitListCloudCampaignTouchPlanRecipientsResponse(w http.ResponseWriter) error
+}
+
+type ListCloudCampaignTouchPlanRecipients200JSONResponse CloudCampaignTouchPlanRecipientListResponse
+
+func (response ListCloudCampaignTouchPlanRecipients200JSONResponse) VisitListCloudCampaignTouchPlanRecipientsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudCampaignTouchPlanRecipients400JSONResponse CloudCampaignError
+
+func (response ListCloudCampaignTouchPlanRecipients400JSONResponse) VisitListCloudCampaignTouchPlanRecipientsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudCampaignTouchPlanRecipients401JSONResponse CloudCampaignError
+
+func (response ListCloudCampaignTouchPlanRecipients401JSONResponse) VisitListCloudCampaignTouchPlanRecipientsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudCampaignTouchPlanRecipients403JSONResponse CloudCampaignError
+
+func (response ListCloudCampaignTouchPlanRecipients403JSONResponse) VisitListCloudCampaignTouchPlanRecipientsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudCampaignTouchPlanRecipients404JSONResponse CloudCampaignError
+
+func (response ListCloudCampaignTouchPlanRecipients404JSONResponse) VisitListCloudCampaignTouchPlanRecipientsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListCloudCampaignTouchPlanRecipients503JSONResponse CloudCampaignError
+
+func (response ListCloudCampaignTouchPlanRecipients503JSONResponse) VisitListCloudCampaignTouchPlanRecipientsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCloudCampaignTouchPlanRecipientRequestObject struct {
+	CampaignCode string `json:"campaign_code"`
+	PlanId       string `json:"plan_id"`
+	CustomerId   int64  `json:"customer_id"`
+}
+
+type GetCloudCampaignTouchPlanRecipientResponseObject interface {
+	VisitGetCloudCampaignTouchPlanRecipientResponse(w http.ResponseWriter) error
+}
+
+type GetCloudCampaignTouchPlanRecipient200JSONResponse CloudCampaignTouchPlanRecipientResponse
+
+func (response GetCloudCampaignTouchPlanRecipient200JSONResponse) VisitGetCloudCampaignTouchPlanRecipientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCloudCampaignTouchPlanRecipient400JSONResponse CloudCampaignError
+
+func (response GetCloudCampaignTouchPlanRecipient400JSONResponse) VisitGetCloudCampaignTouchPlanRecipientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCloudCampaignTouchPlanRecipient401JSONResponse CloudCampaignError
+
+func (response GetCloudCampaignTouchPlanRecipient401JSONResponse) VisitGetCloudCampaignTouchPlanRecipientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCloudCampaignTouchPlanRecipient403JSONResponse CloudCampaignError
+
+func (response GetCloudCampaignTouchPlanRecipient403JSONResponse) VisitGetCloudCampaignTouchPlanRecipientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCloudCampaignTouchPlanRecipient404JSONResponse CloudCampaignError
+
+func (response GetCloudCampaignTouchPlanRecipient404JSONResponse) VisitGetCloudCampaignTouchPlanRecipientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCloudCampaignTouchPlanRecipient503JSONResponse CloudCampaignError
+
+func (response GetCloudCampaignTouchPlanRecipient503JSONResponse) VisitGetCloudCampaignTouchPlanRecipientResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCloudCampaignTouchPlanReviewRequestObject struct {
+	CampaignCode string `json:"campaign_code"`
+	PlanId       string `json:"plan_id"`
+}
+
+type GetCloudCampaignTouchPlanReviewResponseObject interface {
+	VisitGetCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error
+}
+
+type GetCloudCampaignTouchPlanReview200JSONResponse CloudCampaignTouchPlanReviewMutationResponse
+
+func (response GetCloudCampaignTouchPlanReview200JSONResponse) VisitGetCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCloudCampaignTouchPlanReview400JSONResponse CloudCampaignError
+
+func (response GetCloudCampaignTouchPlanReview400JSONResponse) VisitGetCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCloudCampaignTouchPlanReview401JSONResponse CloudCampaignError
+
+func (response GetCloudCampaignTouchPlanReview401JSONResponse) VisitGetCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCloudCampaignTouchPlanReview403JSONResponse CloudCampaignError
+
+func (response GetCloudCampaignTouchPlanReview403JSONResponse) VisitGetCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCloudCampaignTouchPlanReview404JSONResponse CloudCampaignError
+
+func (response GetCloudCampaignTouchPlanReview404JSONResponse) VisitGetCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCloudCampaignTouchPlanReview503JSONResponse CloudCampaignError
+
+func (response GetCloudCampaignTouchPlanReview503JSONResponse) VisitGetCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type MutateCloudCampaignTouchPlanReviewRequestObject struct {
+	CampaignCode string `json:"campaign_code"`
+	PlanId       string `json:"plan_id"`
+	Operation    string `json:"operation"`
+	Params       MutateCloudCampaignTouchPlanReviewParams
+	Body         *MutateCloudCampaignTouchPlanReviewJSONRequestBody
+}
+
+type MutateCloudCampaignTouchPlanReviewResponseObject interface {
+	VisitMutateCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error
+}
+
+type MutateCloudCampaignTouchPlanReview200JSONResponse CloudCampaignTouchPlanReviewMutationResponse
+
+func (response MutateCloudCampaignTouchPlanReview200JSONResponse) VisitMutateCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type MutateCloudCampaignTouchPlanReview400JSONResponse CloudCampaignError
+
+func (response MutateCloudCampaignTouchPlanReview400JSONResponse) VisitMutateCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type MutateCloudCampaignTouchPlanReview401JSONResponse CloudCampaignError
+
+func (response MutateCloudCampaignTouchPlanReview401JSONResponse) VisitMutateCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type MutateCloudCampaignTouchPlanReview403JSONResponse CloudCampaignError
+
+func (response MutateCloudCampaignTouchPlanReview403JSONResponse) VisitMutateCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type MutateCloudCampaignTouchPlanReview404JSONResponse CloudCampaignError
+
+func (response MutateCloudCampaignTouchPlanReview404JSONResponse) VisitMutateCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type MutateCloudCampaignTouchPlanReview409JSONResponse CloudCampaignError
+
+func (response MutateCloudCampaignTouchPlanReview409JSONResponse) VisitMutateCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type MutateCloudCampaignTouchPlanReview503JSONResponse CloudCampaignError
+
+func (response MutateCloudCampaignTouchPlanReview503JSONResponse) VisitMutateCloudCampaignTouchPlanReviewResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -32388,6 +33286,18 @@ type StrictServerInterface interface {
 	// Read one recipient-safe immutable local Campaign touch-plan snapshot
 	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id})
 	GetCloudCampaignTouchPlan(ctx context.Context, request GetCloudCampaignTouchPlanRequestObject) (GetCloudCampaignTouchPlanResponseObject, error)
+	// List immutable touch-plan canonical customer IDs
+	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients)
+	ListCloudCampaignTouchPlanRecipients(ctx context.Context, request ListCloudCampaignTouchPlanRecipientsRequestObject) (ListCloudCampaignTouchPlanRecipientsResponseObject, error)
+	// Read one immutable touch-plan canonical customer ID
+	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id})
+	GetCloudCampaignTouchPlanRecipient(ctx context.Context, request GetCloudCampaignTouchPlanRecipientRequestObject) (GetCloudCampaignTouchPlanRecipientResponseObject, error)
+	// Read current local touch-plan review and optional handoff
+	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review)
+	GetCloudCampaignTouchPlanReview(ctx context.Context, request GetCloudCampaignTouchPlanReviewRequestObject) (GetCloudCampaignTouchPlanReviewResponseObject, error)
+	// Submit or decide immutable touch-plan review
+	// (POST /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review/{operation})
+	MutateCloudCampaignTouchPlanReview(ctx context.Context, request MutateCloudCampaignTouchPlanReviewRequestObject) (MutateCloudCampaignTouchPlanReviewResponseObject, error)
 	// List local configuration categories using a closed settings projection
 	// (GET /api/admin/config/categories)
 	ListAdminOpsCategories(ctx context.Context, request ListAdminOpsCategoriesRequestObject) (ListAdminOpsCategoriesResponseObject, error)
@@ -33446,6 +34356,125 @@ func (sh *strictHandler) GetCloudCampaignTouchPlan(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetCloudCampaignTouchPlanResponseObject); ok {
 		if err := validResponse.VisitGetCloudCampaignTouchPlanResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListCloudCampaignTouchPlanRecipients operation middleware
+func (sh *strictHandler) ListCloudCampaignTouchPlanRecipients(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, params ListCloudCampaignTouchPlanRecipientsParams) {
+	var request ListCloudCampaignTouchPlanRecipientsRequestObject
+
+	request.CampaignCode = campaignCode
+	request.PlanId = planId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListCloudCampaignTouchPlanRecipients(ctx, request.(ListCloudCampaignTouchPlanRecipientsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListCloudCampaignTouchPlanRecipients")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListCloudCampaignTouchPlanRecipientsResponseObject); ok {
+		if err := validResponse.VisitListCloudCampaignTouchPlanRecipientsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCloudCampaignTouchPlanRecipient operation middleware
+func (sh *strictHandler) GetCloudCampaignTouchPlanRecipient(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, customerId int64) {
+	var request GetCloudCampaignTouchPlanRecipientRequestObject
+
+	request.CampaignCode = campaignCode
+	request.PlanId = planId
+	request.CustomerId = customerId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCloudCampaignTouchPlanRecipient(ctx, request.(GetCloudCampaignTouchPlanRecipientRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCloudCampaignTouchPlanRecipient")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCloudCampaignTouchPlanRecipientResponseObject); ok {
+		if err := validResponse.VisitGetCloudCampaignTouchPlanRecipientResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCloudCampaignTouchPlanReview operation middleware
+func (sh *strictHandler) GetCloudCampaignTouchPlanReview(w http.ResponseWriter, r *http.Request, campaignCode string, planId string) {
+	var request GetCloudCampaignTouchPlanReviewRequestObject
+
+	request.CampaignCode = campaignCode
+	request.PlanId = planId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCloudCampaignTouchPlanReview(ctx, request.(GetCloudCampaignTouchPlanReviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCloudCampaignTouchPlanReview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCloudCampaignTouchPlanReviewResponseObject); ok {
+		if err := validResponse.VisitGetCloudCampaignTouchPlanReviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// MutateCloudCampaignTouchPlanReview operation middleware
+func (sh *strictHandler) MutateCloudCampaignTouchPlanReview(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, operation string, params MutateCloudCampaignTouchPlanReviewParams) {
+	var request MutateCloudCampaignTouchPlanReviewRequestObject
+
+	request.CampaignCode = campaignCode
+	request.PlanId = planId
+	request.Operation = operation
+	request.Params = params
+
+	var body MutateCloudCampaignTouchPlanReviewJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.MutateCloudCampaignTouchPlanReview(ctx, request.(MutateCloudCampaignTouchPlanReviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "MutateCloudCampaignTouchPlanReview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(MutateCloudCampaignTouchPlanReviewResponseObject); ok {
+		if err := validResponse.VisitMutateCloudCampaignTouchPlanReviewResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

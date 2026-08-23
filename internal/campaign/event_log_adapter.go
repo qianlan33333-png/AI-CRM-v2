@@ -28,6 +28,19 @@ type TouchPlanCreatedAuditEvent struct {
 	IdempotencyKey string
 }
 
+// TouchPlanReviewAuditEvent keeps review decisions as Campaign-owned local
+// facts. The dispatcher uses the existing EvCloudCampaignFact binding, whose
+// only consumer completes an internal Events delivery receipt.
+type TouchPlanReviewAuditEvent struct {
+	AuditType      string
+	PlanID         string
+	CampaignCode   string
+	ReviewVersion  int64
+	ActorID        int64
+	OccurredAt     time.Time
+	IdempotencyKey string
+}
+
 func NewEventLogAdapter(appender eventport.Appender) (*EventLogAdapter, error) {
 	if appender == nil {
 		return nil, ErrUnavailable
@@ -75,6 +88,24 @@ func (a *EventLogAdapter) AppendTouchPlanCreated(ctx context.Context, event Touc
 		return 0, ErrUnavailable
 	}
 	return a.appendCampaignFact(ctx, payload, event.OccurredAt, strings.Join([]string{"campaign.touch_plan.event.v1", event.IdempotencyKey}, "\x00"))
+}
+
+func (a *EventLogAdapter) AppendTouchPlanReview(ctx context.Context, event TouchPlanReviewAuditEvent) (eventport.EventID, error) {
+	if a == nil || a.appender == nil || !ValidReviewAuditType(event.AuditType) || !ValidTouchPlanReviewID(event.PlanID) || !validCode(event.CampaignCode) || event.ReviewVersion < 1 || event.ActorID < 1 ||
+		event.OccurredAt.IsZero() || !event.OccurredAt.Equal(event.OccurredAt.UTC().Truncate(time.Microsecond)) || strings.TrimSpace(event.IdempotencyKey) == "" {
+		return 0, ErrUnavailable
+	}
+	payload, err := json.Marshal(struct {
+		AuditType     string `json:"audit_type"`
+		PlanID        string `json:"plan_id"`
+		CampaignCode  string `json:"campaign_code"`
+		ReviewVersion int64  `json:"review_version"`
+		ActorID       int64  `json:"actor_id"`
+	}{event.AuditType, event.PlanID, event.CampaignCode, event.ReviewVersion, event.ActorID})
+	if err != nil {
+		return 0, ErrUnavailable
+	}
+	return a.appendCampaignFact(ctx, payload, event.OccurredAt, strings.Join([]string{"campaign.touch_plan.review.v1", event.IdempotencyKey}, "\x00"))
 }
 
 func (a *EventLogAdapter) appendCampaignFact(ctx context.Context, payload []byte, occurredAt time.Time, keyMaterial string) (eventport.EventID, error) {

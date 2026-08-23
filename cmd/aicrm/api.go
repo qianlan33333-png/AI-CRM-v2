@@ -162,6 +162,7 @@ type candidateHandler struct {
 	}
 	legacyHealth       *legacyhealth.Handler
 	campaignInitiation http.Handler
+	campaignReview     http.Handler
 	adminOps           http.Handler
 	outboundLegacy     *Handler
 }
@@ -570,6 +571,26 @@ func (handler *candidateHandler) serveCampaignInitiation(writer http.ResponseWri
 		return
 	}
 	handler.campaignInitiation.ServeHTTP(writer, request)
+}
+
+func (handler *candidateHandler) ListCloudCampaignTouchPlanRecipients(writer http.ResponseWriter, request *http.Request, _ string, _ string, _ api.ListCloudCampaignTouchPlanRecipientsParams) {
+	handler.serveCampaignReview(writer, request)
+}
+func (handler *candidateHandler) GetCloudCampaignTouchPlanRecipient(writer http.ResponseWriter, request *http.Request, _ string, _ string, _ int64) {
+	handler.serveCampaignReview(writer, request)
+}
+func (handler *candidateHandler) GetCloudCampaignTouchPlanReview(writer http.ResponseWriter, request *http.Request, _ string, _ string) {
+	handler.serveCampaignReview(writer, request)
+}
+func (handler *candidateHandler) MutateCloudCampaignTouchPlanReview(writer http.ResponseWriter, request *http.Request, _ string, _ string, _ string, _ api.MutateCloudCampaignTouchPlanReviewParams) {
+	handler.serveCampaignReview(writer, request)
+}
+func (handler *candidateHandler) serveCampaignReview(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || handler.campaignReview == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.campaignReview.ServeHTTP(writer, request)
 }
 
 func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
@@ -1000,6 +1021,21 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	campaignReviewAudit, err := campaignstore.NewReviewHandoffEventLogAdapter(eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignReviewService, err := campaignapp.NewReviewHandoffService(uow, campaignRepository, campaignReviewAudit)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignReviewFragment, err := campaign.NewReviewHandoffRouteFragment(campaignReviewService, legacyCampaignAuthorizer{})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	memberGridManagementFragment, err := membergrid.NewManagementRouteFragment(memberGridManagementHandler)
 	if err != nil {
 		pool.Close()
@@ -1092,6 +1128,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			AllowMissingWeChatShopCallbackToken: config.LegacyHealth.AllowMissingWeChatShopCallbackToken,
 		})),
 		campaignInitiation: campaignInitiationFragment,
+		campaignReview:     campaignReviewFragment,
 	}
 	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
 	if err != nil {
@@ -1576,6 +1613,10 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListCloudCampaignTouchPlans)},
 		{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/touch-plans", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.CreateCloudCampaignTouchPlan)},
 		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetCloudCampaignTouchPlan)},
+		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}/review", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetCloudCampaignTouchPlanReview)},
+		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}/recipients", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListCloudCampaignTouchPlanRecipients)},
+		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetCloudCampaignTouchPlanRecipient)},
+		{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}/review/{operation}", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.MutateCloudCampaignTouchPlanReview)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-publish", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.PublishQuestionnairePublicDefinition)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-disable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.DisableQuestionnairePublicDefinition)},
 		{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/public-analytics", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(wrapper.GetQuestionnairePublicAnalytics)},

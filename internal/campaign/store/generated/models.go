@@ -3,3 +3,36 @@
 //   sqlc v1.28.0
 
 package campaigndb
+
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+// Campaign-owned immutable local handoff pending later Outbound acceptance; no Provider execution fact.
+type CloudCampaignTouchPlanHandoff struct {
+	PlanID                    string             `json:"plan_id"`
+	ReviewVersion             int64              `json:"review_version"`
+	Status                    string             `json:"status"`
+	LocalOnly                 bool               `json:"local_only"`
+	ProviderExecutionEligible bool               `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  bool               `json:"real_external_call_executed"`
+	DeliveryProven            bool               `json:"delivery_proven"`
+	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
+}
+
+type CloudCampaignTouchPlanReview struct {
+	PlanID             string             `json:"plan_id"`
+	CampaignCode       string             `json:"campaign_code"`
+	Status             string             `json:"status"`
+	Version            int64              `json:"version"`
+	SubmittedByActorID pgtype.Int8        `json:"submitted_by_actor_id"`
+	SubmittedAt        pgtype.Timestamptz `json:"submitted_at"`
+	ReviewedByActorID  pgtype.Int8        `json:"reviewed_by_actor_id"`
+	ReviewedAt         pgtype.Timestamptz `json:"reviewed_at"`
+	ConfirmationDigest []byte             `json:"confirmation_digest"`
+}
+
+type CloudCampaignTouchPlanTarget struct {
+	PlanID     string `json:"plan_id"`
+	CustomerID int64  `json:"customer_id"`
+}

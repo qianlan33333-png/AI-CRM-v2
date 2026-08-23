@@ -4,7 +4,10 @@
 LOCK TABLE public.cloud_campaign_local_plans,
   public.cloud_campaign_local_commands,
   public.cloud_campaign_touch_plans,
-  public.cloud_campaign_touch_plan_receipts IN SHARE MODE;
+  public.cloud_campaign_touch_plan_receipts,
+  public.cloud_campaign_touch_plan_reviews,
+  public.cloud_campaign_touch_plan_review_receipts,
+  public.cloud_campaign_touch_plan_handoffs IN SHARE MODE;
 
 -- name: LockCampaignDraftForTouchPlan :one
 SELECT campaign_code, version, approval_status, runtime_status
@@ -106,3 +109,76 @@ SELECT step_index, delay_minutes, content
 FROM public.cloud_campaign_touch_plan_steps
 WHERE plan_id = sqlc.arg(plan_id)
 ORDER BY step_index ASC;
+
+-- name: ReserveCampaignTouchPlanReviewReceipt :one
+INSERT INTO public.cloud_campaign_touch_plan_review_receipts (
+  actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, created_at
+) VALUES (
+  sqlc.arg(actor_id), sqlc.arg(operation), sqlc.arg(key_digest), sqlc.arg(payload_digest), sqlc.arg(plan_id), sqlc.arg(campaign_code), sqlc.arg(created_at)
+)
+ON CONFLICT (actor_id, key_digest) DO NOTHING
+RETURNING id, actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, event_id, handoff_event_id, state, result_snapshot;
+
+-- name: GetCampaignTouchPlanReviewReceiptForUpdate :one
+SELECT id, actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, event_id, handoff_event_id, state, result_snapshot
+FROM public.cloud_campaign_touch_plan_review_receipts
+WHERE actor_id = sqlc.arg(actor_id) AND key_digest = sqlc.arg(key_digest)
+FOR UPDATE;
+
+-- name: LockCampaignTouchPlanReview :one
+SELECT review.plan_id, review.campaign_code, review.status, review.version,
+       review.submitted_by_actor_id, review.submitted_at,
+       review.reviewed_by_actor_id, review.reviewed_at, review.confirmation_digest
+FROM public.cloud_campaign_touch_plans AS plan
+JOIN public.cloud_campaign_touch_plan_reviews AS review ON review.plan_id = plan.id
+WHERE plan.id = sqlc.arg(plan_id) AND plan.campaign_code = sqlc.arg(campaign_code)
+FOR KEY SHARE OF plan FOR UPDATE OF review;
+
+-- name: SaveCampaignTouchPlanReview :one
+UPDATE public.cloud_campaign_touch_plan_reviews
+SET status = sqlc.arg(status), version = sqlc.arg(version),
+    submitted_by_actor_id = sqlc.narg(submitted_by_actor_id), submitted_at = sqlc.narg(submitted_at),
+    reviewed_by_actor_id = sqlc.narg(reviewed_by_actor_id), reviewed_at = sqlc.narg(reviewed_at),
+    confirmation_digest = sqlc.narg(confirmation_digest)
+WHERE plan_id = sqlc.arg(plan_id) AND version = sqlc.arg(expected_version)
+RETURNING plan_id, campaign_code, status, version, submitted_by_actor_id, submitted_at, reviewed_by_actor_id, reviewed_at, confirmation_digest;
+
+-- name: GetCampaignTouchPlanReview :one
+SELECT plan_id, campaign_code, status, version, submitted_by_actor_id, submitted_at,
+       reviewed_by_actor_id, reviewed_at, confirmation_digest
+FROM public.cloud_campaign_touch_plan_reviews
+WHERE plan_id = sqlc.arg(plan_id) AND campaign_code = sqlc.arg(campaign_code);
+
+-- name: InsertCampaignTouchPlanHandoff :exec
+INSERT INTO public.cloud_campaign_touch_plan_handoffs (
+  plan_id, review_version, status, local_only, provider_execution_eligible,
+  real_external_call_executed, delivery_proven, created_at
+) VALUES (
+  sqlc.arg(plan_id), sqlc.arg(review_version), sqlc.arg(status), sqlc.arg(local_only), sqlc.arg(provider_execution_eligible),
+  sqlc.arg(real_external_call_executed), sqlc.arg(delivery_proven), sqlc.arg(created_at)
+);
+
+-- name: GetCampaignTouchPlanHandoff :one
+SELECT plan_id, review_version, status, local_only, provider_execution_eligible,
+       real_external_call_executed, delivery_proven, created_at
+FROM public.cloud_campaign_touch_plan_handoffs AS handoff
+WHERE plan_id = sqlc.arg(plan_id) AND EXISTS (SELECT 1 FROM public.cloud_campaign_touch_plans WHERE id = handoff.plan_id AND campaign_code = sqlc.arg(campaign_code));
+
+-- name: CompleteCampaignTouchPlanReviewReceipt :one
+UPDATE public.cloud_campaign_touch_plan_review_receipts
+SET state = 'completed', event_id = sqlc.arg(event_id), handoff_event_id = sqlc.narg(handoff_event_id), result_snapshot = sqlc.arg(result_snapshot),
+    completed_at = sqlc.arg(completed_at)
+WHERE id = sqlc.arg(id) AND state = 'reserved'
+RETURNING id, actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, event_id, handoff_event_id, state, result_snapshot;
+
+-- name: ListCampaignTouchPlanReviewRecipients :many
+SELECT plan_id, customer_id
+FROM public.cloud_campaign_touch_plan_targets
+WHERE plan_id = sqlc.arg(plan_id) AND customer_id > sqlc.arg(after_customer_id) AND EXISTS (SELECT 1 FROM public.cloud_campaign_touch_plans WHERE id = sqlc.arg(plan_id) AND campaign_code = sqlc.arg(campaign_code))
+ORDER BY customer_id ASC
+LIMIT sqlc.arg(page_limit);
+
+-- name: GetCampaignTouchPlanReviewRecipient :one
+SELECT plan_id, customer_id
+FROM public.cloud_campaign_touch_plan_targets
+WHERE plan_id = sqlc.arg(plan_id) AND customer_id = sqlc.arg(customer_id) AND EXISTS (SELECT 1 FROM public.cloud_campaign_touch_plans WHERE id = sqlc.arg(plan_id) AND campaign_code = sqlc.arg(campaign_code));
