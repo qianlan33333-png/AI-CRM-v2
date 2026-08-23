@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	memberapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/app"
@@ -28,7 +29,7 @@ func TestRepositoryPostgreSQL16AtomicLifecycleIdempotencyAndRollback(t *testing.
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer pool.Close()
+	t.Cleanup(pool.Close)
 	var version string
 	if err = pool.QueryRow(ctx, "SHOW server_version_num").Scan(&version); err != nil || version != "160014" {
 		t.Fatalf("PostgreSQL version=%q err=%v", version, err)
@@ -51,12 +52,12 @@ VALUES ($1,'service member integration','local only',0,'CNY',0,7001,$2,$2,$3::js
 	productID = insertProduct(key, `{"schema_version":1,"status":"service_period_enabled","enabled":true}`)
 	archivedProductID = insertProduct(key+"-archived", `{"schema_version":1,"status":"service_period_archived","enabled":false}`)
 	ordinaryProductID = insertProduct(key+"-ordinary", `{"schema_version":1}`)
-	if err = pool.QueryRow(ctx, `INSERT INTO customers (name) VALUES ('service member OneID') RETURNING id`).Scan(&customerID); err != nil {
+	if customerID, err = contactfixture.CreateCustomerRecord(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
 		_, _ = pool.Exec(context.Background(), `DELETE FROM products WHERE id=ANY($1::bigint[])`, []int64{productID, archivedProductID, ordinaryProductID})
-		_, _ = pool.Exec(context.Background(), `DELETE FROM customers WHERE id=$1`, customerID)
+		_ = contactfixture.DeleteCustomer(context.Background(), pool, customerID)
 	})
 
 	codec, err := memberapp.NewCursorCodec(bytes.Repeat([]byte("service-member-pg16-secret-"), 2))

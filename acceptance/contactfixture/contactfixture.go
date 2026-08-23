@@ -12,6 +12,7 @@ import (
 )
 
 var ErrNilTransaction = errors.New("contact fixture requires a transaction")
+var ErrInvalidCustomerFixture = errors.New("invalid contact customer fixture")
 var ErrInvalidStaffFixture = errors.New("invalid contact staff fixture")
 
 // CreateCustomer creates one channel-neutral Contact customer and returns its OneID.
@@ -28,6 +29,37 @@ RETURNING id`, "acceptance-contact-fixture").Scan(&id); err != nil {
 		return 0, fmt.Errorf("create contact-owned acceptance customer: %w", err)
 	}
 	return id, nil
+}
+
+// CreateCustomerRecord creates a committed Contact-owned customer for an
+// acceptance scenario that spans multiple transactions or connections.
+func CreateCustomerRecord(ctx context.Context, pool *pgxpool.Pool) (int64, error) {
+	if pool == nil {
+		return 0, ErrInvalidCustomerFixture
+	}
+	var id int64
+	if err := pool.QueryRow(ctx, `
+INSERT INTO customers (name)
+VALUES ($1::text)
+RETURNING id`, "acceptance-contact-fixture").Scan(&id); err != nil {
+		return 0, fmt.Errorf("create committed contact-owned acceptance customer: %w", err)
+	}
+	return id, nil
+}
+
+// DeleteCustomer removes a committed Contact-owned acceptance customer.
+func DeleteCustomer(ctx context.Context, pool *pgxpool.Pool, customerID int64) error {
+	if pool == nil || customerID <= 0 {
+		return ErrInvalidCustomerFixture
+	}
+	result, err := pool.Exec(ctx, `DELETE FROM customers WHERE id = $1::bigint`, customerID)
+	if err != nil {
+		return fmt.Errorf("delete contact-owned acceptance customer: %w", err)
+	}
+	if result.RowsAffected() != 1 {
+		return fmt.Errorf("delete contact-owned acceptance customer: not found")
+	}
+	return nil
 }
 
 // CreateStaff creates a Contact-owned owner row for acceptance scenarios.
