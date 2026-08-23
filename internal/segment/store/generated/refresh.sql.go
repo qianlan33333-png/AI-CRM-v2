@@ -68,6 +68,7 @@ const lockSegmentDefinitionForRefresh = `-- name: LockSegmentDefinitionForRefres
 SELECT definition
 FROM segments
 WHERE id = $1::bigint
+  AND lifecycle_status = 'active'
 FOR UPDATE
 `
 

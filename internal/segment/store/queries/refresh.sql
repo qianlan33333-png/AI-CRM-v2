@@ -2,6 +2,7 @@
 SELECT definition
 FROM segments
 WHERE id = sqlc.arg(segment_id)::bigint
+  AND lifecycle_status = 'active'
 FOR UPDATE;
 
 -- name: DeleteSegmentMembersForRefresh :exec

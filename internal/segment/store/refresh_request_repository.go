@@ -45,19 +45,19 @@ func (repository *RefreshRequestRepository) EnsureRefreshable(ctx context.Contex
 	if repository == nil || segmentID <= 0 {
 		return segmentapp.ErrInvalidRefreshRequest
 	}
-	tx, err := platformstore.TxFromContext(ctx)
+	queries, err := refreshRequestQueries(ctx)
 	if err != nil {
 		return err
 	}
-	var active bool
-	if err := tx.QueryRow(ctx, `SELECT lifecycle_status = 'active' FROM public.segments WHERE id = $1 FOR UPDATE`, int64(segmentID)).Scan(&active); err != nil {
+	lockedID, err := queries.EnsureSegmentRefreshable(ctx, int64(segmentID))
+	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return segmentapp.ErrSegmentNotFound
 		}
 		return err
 	}
-	if !active {
-		return segmentapp.ErrSegmentNotFound
+	if lockedID != int64(segmentID) {
+		return segmentapp.ErrRefreshRequestFailed
 	}
 	return nil
 }

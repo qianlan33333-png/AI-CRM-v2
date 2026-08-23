@@ -184,6 +184,7 @@ func openRefreshPool(t *testing.T, ctx context.Context) *pgxpool.Pool {
 		 member_count BIGINT NOT NULL DEFAULT 0,
 		 refreshed_at TIMESTAMPTZ,
 		 refresh_status TEXT NOT NULL DEFAULT 'idle',
+		 lifecycle_status TEXT NOT NULL DEFAULT 'active',
 		 updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 		)`,
 		`CREATE TABLE acceptance_fixtures.segment_members (

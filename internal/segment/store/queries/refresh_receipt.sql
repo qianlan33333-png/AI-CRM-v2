@@ -1,3 +1,10 @@
+-- name: EnsureSegmentRefreshable :one
+SELECT id
+FROM segments
+WHERE id = sqlc.arg(segment_id)::bigint
+  AND lifecycle_status = 'active'
+FOR UPDATE;
+
 -- name: ReserveSegmentRefreshReceipt :one
 INSERT INTO segment_refresh_receipts (idempotency_scope, idempotency_key, segment_id)
 SELECT
