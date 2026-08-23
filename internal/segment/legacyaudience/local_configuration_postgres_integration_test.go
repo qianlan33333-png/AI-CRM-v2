@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 )
 
 // TestLocalConfigurationSQLRepositoryPG16 runs against a database migrated
@@ -124,24 +126,28 @@ func TestLocalConfigurationSQLRepositoryPG16SerializesStaffDeactivationAndSender
 		t.Fatal(err)
 	}
 	defer connection.Close(ctx)
-	competitor, err := pgx.Connect(ctx, dsn)
+	fixturePool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer competitor.Close(ctx)
+	t.Cleanup(fixturePool.Close)
 
 	setup, err := connection.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	packageID := insertLocalConfigurationPackage(t, ctx, setup, "staff-lock")
-	senderUserID := insertLocalConfigurationStaff(t, ctx, setup, "staff-lock")
+	senderUserID := fmt.Sprintf("audience_local_staff-lock_%d", time.Now().UnixNano())
+	staffID, err := contactfixture.CreateStaffRecord(ctx, fixturePool, senderUserID, "Audience local configuration staff", true, time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err = setup.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		_, _ = connection.Exec(context.Background(), `DELETE FROM public.segments WHERE id = $1`, packageID)
-		_, _ = connection.Exec(context.Background(), `DELETE FROM public.staff WHERE wecom_userid = $1`, senderUserID)
+		_, _ = fixturePool.Exec(context.Background(), `DELETE FROM public.segments WHERE id = $1`, packageID)
+		_ = contactfixture.DeleteStaff(context.Background(), fixturePool, staffID)
 	})
 
 	transaction, err := connection.Begin(ctx)
@@ -165,7 +171,7 @@ func TestLocalConfigurationSQLRepositoryPG16SerializesStaffDeactivationAndSender
 
 	deactivationDone := make(chan error, 1)
 	go func() {
-		_, updateErr := competitor.Exec(ctx, `UPDATE public.staff SET is_active = false WHERE wecom_userid = $1`, senderUserID)
+		updateErr := contactfixture.SetStaffActive(ctx, fixturePool, staffID, false)
 		deactivationDone <- updateErr
 	}()
 	select {
@@ -253,17 +259,6 @@ RETURNING id`, code).Scan(&agentID); err != nil {
 		t.Fatal(err)
 	}
 	return agentID
-}
-
-func insertLocalConfigurationStaff(t *testing.T, ctx context.Context, transaction pgx.Tx, suffix string) string {
-	t.Helper()
-	userID := fmt.Sprintf("audience_local_%s_%d", suffix, time.Now().UnixNano())
-	if _, err := transaction.Exec(ctx, `
-INSERT INTO public.staff (wecom_userid, name, is_active)
-VALUES ($1, 'Audience local configuration staff', true)`, userID); err != nil {
-		t.Fatal(err)
-	}
-	return userID
 }
 
 type localConfigurationPGProvider struct{ transaction pgx.Tx }
