@@ -117,6 +117,36 @@ func (q *Queries) AppendHistoricalImportRowReceipt(ctx context.Context, arg Appe
 	return result.RowsAffected(), nil
 }
 
+const claimHistoricalImportLease = `-- name: ClaimHistoricalImportLease :one
+UPDATE legacy_contact_identity_import_runs
+SET lease_token_hmac = $1::bytea,
+    lease_generation = lease_generation + 1,
+    lease_expires_at = $2::timestamptz
+WHERE id = $3::bigint
+  AND lease_generation = $4::bigint
+  AND (lease_token_hmac IS NULL OR lease_expires_at < now())
+RETURNING lease_generation
+`
+
+type ClaimHistoricalImportLeaseParams struct {
+	NewTokenHmac       []byte             `json:"new_token_hmac"`
+	LeaseExpiresAt     pgtype.Timestamptz `json:"lease_expires_at"`
+	RunID              int64              `json:"run_id"`
+	ExpectedGeneration int64              `json:"expected_generation"`
+}
+
+func (q *Queries) ClaimHistoricalImportLease(ctx context.Context, arg ClaimHistoricalImportLeaseParams) (int64, error) {
+	row := q.db.QueryRow(ctx, claimHistoricalImportLease,
+		arg.NewTokenHmac,
+		arg.LeaseExpiresAt,
+		arg.RunID,
+		arg.ExpectedGeneration,
+	)
+	var lease_generation int64
+	err := row.Scan(&lease_generation)
+	return lease_generation, err
+}
+
 const createHistoricalImportCustomer = `-- name: CreateHistoricalImportCustomer :one
 INSERT INTO customers (name, avatar_url, gender, owner_staff_id, added_at, last_interact_at, created_at, updated_at)
 VALUES (
@@ -447,4 +477,33 @@ func (q *Queries) LockUniqueActiveStaffForHistoricalImport(ctx context.Context, 
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const renewHistoricalImportLease = `-- name: RenewHistoricalImportLease :one
+UPDATE legacy_contact_identity_import_runs
+SET lease_expires_at = $1::timestamptz
+WHERE id = $2::bigint
+  AND lease_generation = $3::bigint
+  AND lease_token_hmac = $4::bytea
+  AND lease_expires_at >= now()
+RETURNING lease_generation
+`
+
+type RenewHistoricalImportLeaseParams struct {
+	LeaseExpiresAt     pgtype.Timestamptz `json:"lease_expires_at"`
+	RunID              int64              `json:"run_id"`
+	ExpectedGeneration int64              `json:"expected_generation"`
+	TokenHmac          []byte             `json:"token_hmac"`
+}
+
+func (q *Queries) RenewHistoricalImportLease(ctx context.Context, arg RenewHistoricalImportLeaseParams) (int64, error) {
+	row := q.db.QueryRow(ctx, renewHistoricalImportLease,
+		arg.LeaseExpiresAt,
+		arg.RunID,
+		arg.ExpectedGeneration,
+		arg.TokenHmac,
+	)
+	var lease_generation int64
+	err := row.Scan(&lease_generation)
+	return lease_generation, err
 }

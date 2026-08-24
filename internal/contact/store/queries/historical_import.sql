@@ -26,6 +26,25 @@ FROM staff
 WHERE wecom_userid = sqlc.arg(wecom_userid)::text
 FOR UPDATE;
 
+-- name: ClaimHistoricalImportLease :one
+UPDATE legacy_contact_identity_import_runs
+SET lease_token_hmac = sqlc.arg(new_token_hmac)::bytea,
+    lease_generation = lease_generation + 1,
+    lease_expires_at = sqlc.arg(lease_expires_at)::timestamptz
+WHERE id = sqlc.arg(run_id)::bigint
+  AND lease_generation = sqlc.arg(expected_generation)::bigint
+  AND (lease_token_hmac IS NULL OR lease_expires_at < now())
+RETURNING lease_generation;
+
+-- name: RenewHistoricalImportLease :one
+UPDATE legacy_contact_identity_import_runs
+SET lease_expires_at = sqlc.arg(lease_expires_at)::timestamptz
+WHERE id = sqlc.arg(run_id)::bigint
+  AND lease_generation = sqlc.arg(expected_generation)::bigint
+  AND lease_token_hmac = sqlc.arg(token_hmac)::bytea
+  AND lease_expires_at >= now()
+RETURNING lease_generation;
+
 -- name: LockUniqueActiveStaffForHistoricalImport :one
 SELECT id
 FROM staff
