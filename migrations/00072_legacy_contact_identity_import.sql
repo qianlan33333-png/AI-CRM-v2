@@ -129,6 +129,9 @@ FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_import_immutable_guard();
 CREATE TRIGGER legacy_contact_identity_historical_archive_immutable
 BEFORE UPDATE OR DELETE ON legacy_contact_identity_historical_archives
 FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_import_immutable_guard();
+CREATE TRIGGER legacy_contact_identity_import_quarantine_immutable
+BEFORE UPDATE OR DELETE ON legacy_contact_identity_import_quarantines
+FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_import_immutable_guard();
 
 CREATE FUNCTION legacy_contact_identity_source_mapping_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
@@ -146,12 +149,39 @@ END $$;
 CREATE TRIGGER legacy_contact_identity_source_mapping_guard
 BEFORE UPDATE ON legacy_contact_identity_source_mappings
 FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_source_mapping_guard();
+CREATE TRIGGER legacy_contact_identity_source_mapping_immutable_delete
+BEFORE DELETE ON legacy_contact_identity_source_mappings
+FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_import_immutable_guard();
+
+CREATE FUNCTION legacy_contact_identity_import_run_fact_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+  IF NEW.source_manifest_sha256 <> OLD.source_manifest_sha256
+    OR NEW.source_repository_sha <> OLD.source_repository_sha
+    OR NEW.snapshot_id <> OLD.snapshot_id
+    OR NEW.mode <> OLD.mode
+    OR NEW.upper_watermark <> OLD.upper_watermark
+    OR NEW.hmac_key_version <> OLD.hmac_key_version THEN
+    RAISE EXCEPTION 'DM01 run fact is immutable' USING ERRCODE = '55000';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER legacy_contact_identity_import_run_fact_guard
+BEFORE UPDATE ON legacy_contact_identity_import_runs
+FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_import_run_fact_guard();
 -- +goose Down
 DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM legacy_contact_identity_import_runs WHERE state IN ('imported','reconciling','reconciled')) THEN
+  IF EXISTS (SELECT 1 FROM legacy_contact_identity_source_mappings)
+    OR EXISTS (SELECT 1 FROM legacy_contact_identity_import_row_receipts)
+    OR EXISTS (SELECT 1 FROM legacy_contact_identity_import_quarantines)
+    OR EXISTS (SELECT 1 FROM legacy_contact_identity_historical_archives)
+    OR EXISTS (SELECT 1 FROM legacy_contact_identity_import_receipts) THEN
     RAISE EXCEPTION '00072 down refused: materialized DM01 import exists' USING ERRCODE = '55000';
   END IF;
 END $$;
+DROP TRIGGER legacy_contact_identity_import_run_fact_guard ON legacy_contact_identity_import_runs;
+DROP TRIGGER legacy_contact_identity_source_mapping_immutable_delete ON legacy_contact_identity_source_mappings;
+DROP TRIGGER legacy_contact_identity_import_quarantine_immutable ON legacy_contact_identity_import_quarantines;
 DROP TRIGGER legacy_contact_identity_source_mapping_guard ON legacy_contact_identity_source_mappings;
 DROP TRIGGER legacy_contact_identity_historical_archive_immutable ON legacy_contact_identity_historical_archives;
 DROP TRIGGER legacy_contact_identity_import_receipt_immutable ON legacy_contact_identity_import_receipts;
@@ -159,6 +189,7 @@ DROP TRIGGER legacy_contact_identity_import_row_receipt_immutable ON legacy_cont
 DROP TRIGGER legacy_contact_identity_import_checkpoint_immutable ON legacy_contact_identity_import_checkpoints;
 DROP TRIGGER legacy_contact_identity_import_run_transition_guard ON legacy_contact_identity_import_runs;
 DROP FUNCTION legacy_contact_identity_source_mapping_guard();
+DROP FUNCTION legacy_contact_identity_import_run_fact_guard();
 DROP FUNCTION legacy_contact_identity_import_immutable_guard();
 DROP FUNCTION legacy_contact_identity_import_run_transition_guard();
 DROP TABLE legacy_contact_identity_import_receipts;
