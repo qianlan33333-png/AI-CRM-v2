@@ -53,6 +53,35 @@ $$;
 -- +goose StatementEnd
 CREATE TRIGGER customer_safe_export_receipts_transition BEFORE UPDATE OR DELETE ON public.customer_safe_export_receipts
 FOR EACH ROW EXECUTE FUNCTION public.aicrm_customer_safe_export_receipt_transition_valid();
+-- +goose StatementBegin
+CREATE FUNCTION public.aicrm_customer_safe_export_snapshot_immutable()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+BEGIN
+  RAISE EXCEPTION 'customer safe export snapshots are immutable' USING ERRCODE = '55000';
+END;
+$$;
+-- +goose StatementEnd
+CREATE TRIGGER customer_safe_exports_immutable BEFORE UPDATE OR DELETE ON public.customer_safe_exports
+FOR EACH ROW EXECUTE FUNCTION public.aicrm_customer_safe_export_snapshot_immutable();
+-- +goose StatementBegin
+CREATE FUNCTION public.aicrm_customer_safe_export_row_transition_valid()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+BEGIN
+  IF TG_OP <> 'INSERT' THEN
+    RAISE EXCEPTION 'customer safe export rows are immutable' USING ERRCODE = '55000';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.customer_safe_export_receipts
+    WHERE export_id = NEW.export_id AND state = 'completed'
+  ) THEN
+    RAISE EXCEPTION 'cannot append completed customer safe export rows' USING ERRCODE = '55000';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+-- +goose StatementEnd
+CREATE TRIGGER customer_safe_export_rows_transition BEFORE INSERT OR UPDATE OR DELETE ON public.customer_safe_export_rows
+FOR EACH ROW EXECUTE FUNCTION public.aicrm_customer_safe_export_row_transition_valid();
 COMMENT ON TABLE public.customer_safe_exports IS 'Contact-owned actor-bound local customer export snapshots; no provider, external identity, mobile, or outbound fact.';
 -- +goose Down
 LOCK TABLE public.customer_safe_export_receipts, public.customer_safe_export_rows, public.customer_safe_exports IN SHARE ROW EXCLUSIVE MODE;
@@ -65,6 +94,10 @@ END $$;
 -- +goose StatementEnd
 DROP TRIGGER customer_safe_export_receipts_transition ON public.customer_safe_export_receipts;
 DROP FUNCTION public.aicrm_customer_safe_export_receipt_transition_valid();
+DROP TRIGGER customer_safe_export_rows_transition ON public.customer_safe_export_rows;
+DROP FUNCTION public.aicrm_customer_safe_export_row_transition_valid();
+DROP TRIGGER customer_safe_exports_immutable ON public.customer_safe_exports;
+DROP FUNCTION public.aicrm_customer_safe_export_snapshot_immutable();
 DROP TABLE public.customer_safe_export_receipts;
 DROP TABLE public.customer_safe_export_rows;
 DROP TABLE public.customer_safe_exports;

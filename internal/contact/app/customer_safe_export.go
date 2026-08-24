@@ -37,10 +37,11 @@ type CustomerSafeExportCreate struct {
 }
 
 type CustomerSafeExport struct {
-	ID          string    `json:"id"`
-	RecordCount int       `json:"record_count"`
-	Watermark   time.Time `json:"watermark"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID                string    `json:"id"`
+	RecordCount       int       `json:"record_count"`
+	Watermark         time.Time `json:"watermark"`
+	CreatedAt         time.Time `json:"created_at"`
+	OwnerScopeStaffID *int64    `json:"-"`
 }
 
 // CustomerSafeExportRow is deliberately a closed, local-only CSV whitelist.
@@ -117,6 +118,12 @@ func (service *CustomerSafeExportService) Create(ctx context.Context, command Cu
 	}
 	keyDigest := sha256.Sum256([]byte(command.IdempotencyKey))
 	payloadDigest := sha256.Sum256(payload)
+	filterDigestBytes, decodeErr := hex.DecodeString(filterHash)
+	if decodeErr != nil || len(filterDigestBytes) != sha256.Size {
+		return CustomerSafeExport{}, ErrCustomerSafeExportUnavailable
+	}
+	var filterDigest [sha256.Size]byte
+	copy(filterDigest[:], filterDigestBytes)
 	id, err := newCustomerSafeExportID()
 	if err != nil {
 		return CustomerSafeExport{}, ErrCustomerSafeExportUnavailable
@@ -136,7 +143,7 @@ func (service *CustomerSafeExportService) Create(ctx context.Context, command Cu
 			}
 			return nil
 		}
-		rows, createErr := service.store.CreateCustomerSafeExport(txCtx, result, command.ActorID, command.OwnerScopeStaffID, payloadDigest, query)
+		rows, createErr := service.store.CreateCustomerSafeExport(txCtx, result, command.ActorID, command.OwnerScopeStaffID, filterDigest, query)
 		if createErr != nil {
 			return createErr
 		}
@@ -175,7 +182,7 @@ func (service *CustomerSafeExportService) Create(ctx context.Context, command Cu
 	return result, nil
 }
 
-func (service *CustomerSafeExportService) Get(ctx context.Context, id string, actorID int64) (CustomerSafeExport, error) {
+func (service *CustomerSafeExportService) Get(ctx context.Context, id string, actorID int64, ownerScopeStaffID *int64) (CustomerSafeExport, error) {
 	if !customerSafeExportReady(service) || ctx == nil || ctx.Err() != nil || actorID < 1 || !validCustomerSafeExportID(id) {
 		return CustomerSafeExport{}, ErrCustomerSafeExportInvalid
 	}
@@ -183,6 +190,9 @@ func (service *CustomerSafeExportService) Get(ctx context.Context, id string, ac
 	err := service.uow.Within(ctx, func(txCtx context.Context) error {
 		var readErr error
 		result, readErr = service.store.ReadCustomerSafeExport(txCtx, id, actorID)
+		if readErr == nil && !customerSafeExportScopeMatches(result.OwnerScopeStaffID, ownerScopeStaffID) {
+			return ErrCustomerSafeExportConflict
+		}
 		return readErr
 	})
 	if err != nil {
@@ -203,6 +213,9 @@ func (service *CustomerSafeExportService) Download(ctx context.Context, id strin
 		if readErr != nil {
 			return readErr
 		}
+		if !customerSafeExportScopeMatches(result.OwnerScopeStaffID, ownerScopeStaffID) {
+			return ErrCustomerSafeExportConflict
+		}
 		rows, readErr = service.store.ReadCustomerSafeExportRows(txCtx, id, actorID, ownerScopeStaffID)
 		return readErr
 	})
@@ -210,6 +223,13 @@ func (service *CustomerSafeExportService) Download(ctx context.Context, id strin
 		return CustomerSafeExport{}, nil, classifyCustomerSafeExportError(err)
 	}
 	return result, rows, nil
+}
+
+func customerSafeExportScopeMatches(stored, current *int64) bool {
+	if stored == nil || current == nil {
+		return stored == nil && current == nil
+	}
+	return *stored == *current
 }
 
 func customerSafeExportReady(service *CustomerSafeExportService) bool {

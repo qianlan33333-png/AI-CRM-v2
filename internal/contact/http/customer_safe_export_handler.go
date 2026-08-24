@@ -21,7 +21,7 @@ import (
 
 type customerSafeExportApplication interface {
 	Create(context.Context, contactapp.CustomerSafeExportCreate) (contactapp.CustomerSafeExport, error)
-	Get(context.Context, string, int64) (contactapp.CustomerSafeExport, error)
+	Get(context.Context, string, int64, *int64) (contactapp.CustomerSafeExport, error)
 	Download(context.Context, string, int64, *int64) (contactapp.CustomerSafeExport, []contactapp.CustomerSafeExportRow, error)
 }
 
@@ -58,12 +58,12 @@ func (handler *CustomerSafeExportHandler) Create(writer http.ResponseWriter, req
 }
 
 func (handler *CustomerSafeExportHandler) Get(writer http.ResponseWriter, request *http.Request, exportID generated.CustomerSafeExportID) {
-	actorID, _, err := customerSafeExportActor(request)
+	actorID, scope, err := customerSafeExportActor(request)
 	if err == nil && (handler == nil || handler.application == nil) {
 		err = contactapp.ErrCustomerSafeExportUnavailable
 	}
 	if err == nil {
-		export, getErr := handler.application.Get(request.Context(), string(exportID), actorID)
+		export, getErr := handler.application.Get(request.Context(), string(exportID), actorID, scope)
 		if getErr == nil {
 			writeCustomerSafeExportJSON(writer, http.StatusOK, export)
 			return
@@ -226,7 +226,8 @@ func writeCustomerSafeExportError(writer http.ResponseWriter, request *http.Requ
 }
 
 func csvSafe(value string) string {
-	if value != "" && strings.ContainsAny(value[:1], "=+-@") {
+	trimmed := strings.TrimLeft(value, " \t\r\n")
+	if trimmed != "" && strings.ContainsAny(trimmed[:1], "=+-@") {
 		return "'" + value
 	}
 	return value

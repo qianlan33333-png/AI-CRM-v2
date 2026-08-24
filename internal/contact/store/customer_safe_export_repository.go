@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
+	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -21,89 +23,77 @@ func NewCustomerSafeExportRepository() *CustomerSafeExportRepository {
 }
 
 func (repository *CustomerSafeExportRepository) ReserveCustomerSafeExportReceipt(ctx context.Context, actorID int64, keyDigest, payloadDigest [32]byte, createdAt time.Time) (contactapp.CustomerSafeExportReceipt, bool, error) {
-	tx, err := customerSafeExportTx(ctx)
-	if repository == nil || err != nil {
-		return contactapp.CustomerSafeExportReceipt{}, false, customerSafeExportUnavailable(err)
+	queries, err := customerSafeExportQueries(ctx, repository)
+	if err != nil {
+		return contactapp.CustomerSafeExportReceipt{}, false, err
 	}
-	var result contactapp.CustomerSafeExportReceipt
-	var returnedDigest []byte
-	err = tx.QueryRow(ctx, `
-INSERT INTO public.customer_safe_export_receipts(actor_id,key_digest,payload_digest,created_at)
-VALUES($1,$2,$3,$4) ON CONFLICT(actor_id,key_digest) DO NOTHING
-RETURNING id,payload_digest,result_snapshot,state='completed'`, actorID, keyDigest[:], payloadDigest[:], createdAt).Scan(&result.ID, &returnedDigest, &result.ResultSnapshot, &result.Completed)
+	reserved, err := queries.ReserveCustomerSafeExportReceipt(ctx, contactdb.ReserveCustomerSafeExportReceiptParams{
+		ActorID: actorID, KeyDigest: keyDigest[:], PayloadDigest: payloadDigest[:], CreatedAt: timestampValue(createdAt),
+	})
 	if err == nil {
-		if len(returnedDigest) != len(result.PayloadDigest) {
-			return contactapp.CustomerSafeExportReceipt{}, false, contactapp.ErrCustomerSafeExportUnavailable
+		receipt, receiptErr := customerSafeExportReceipt(reserved.ID, reserved.PayloadDigest, reserved.ResultSnapshot, reserved.Completed)
+		if receiptErr != nil {
+			return contactapp.CustomerSafeExportReceipt{}, false, receiptErr
 		}
-		copy(result.PayloadDigest[:], returnedDigest)
-		return result, true, nil
+		return receipt, true, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return contactapp.CustomerSafeExportReceipt{}, false, customerSafeExportUnavailable(err)
 	}
-	var storedDigest []byte
-	err = tx.QueryRow(ctx, `
-SELECT id,payload_digest,result_snapshot,state='completed'
-FROM public.customer_safe_export_receipts
-WHERE actor_id=$1 AND key_digest=$2 FOR UPDATE`, actorID, keyDigest[:]).Scan(&result.ID, &storedDigest, &result.ResultSnapshot, &result.Completed)
+	existing, err := queries.GetCustomerSafeExportReceipt(ctx, contactdb.GetCustomerSafeExportReceiptParams{ActorID: actorID, KeyDigest: keyDigest[:]})
 	if err != nil {
 		return contactapp.CustomerSafeExportReceipt{}, false, customerSafeExportUnavailable(err)
 	}
-	if len(storedDigest) != len(result.PayloadDigest) || subtle.ConstantTimeCompare(storedDigest, payloadDigest[:]) != 1 {
+	receipt, receiptErr := customerSafeExportReceipt(existing.ID, existing.PayloadDigest, existing.ResultSnapshot, existing.Completed)
+	if receiptErr != nil {
+		return contactapp.CustomerSafeExportReceipt{}, false, receiptErr
+	}
+	if subtle.ConstantTimeCompare(receipt.PayloadDigest[:], payloadDigest[:]) != 1 {
 		return contactapp.CustomerSafeExportReceipt{}, false, contactapp.ErrCustomerSafeExportConflict
 	}
-	copy(result.PayloadDigest[:], storedDigest)
-	return result, false, nil
+	return receipt, false, nil
 }
 
 func (repository *CustomerSafeExportRepository) CreateCustomerSafeExport(ctx context.Context, export contactapp.CustomerSafeExport, actorID int64, ownerScopeStaffID *int64, filterDigest [32]byte, query contactapp.CustomerListQuery) ([]contactapp.CustomerSafeExportRow, error) {
-	tx, err := customerSafeExportTx(ctx)
-	if repository == nil || err != nil {
-		return nil, customerSafeExportUnavailable(err)
+	queries, err := customerSafeExportQueries(ctx, repository)
+	if err != nil {
+		return nil, err
 	}
-	rows, err := tx.Query(ctx, `
-SELECT c.id,c.name,c.owner_staff_id,c.stage_id,c.channel_id,c.added_at,c.last_interact_at
-FROM public.customers c
-WHERE c.updated_at <= $1
-  AND NOT c.is_deleted
-  AND ($2::text IS NULL OR lower(c.name) % lower($2))
-  AND ($3::bigint IS NULL OR c.owner_staff_id=$3)
-  AND ($4::bigint IS NULL OR c.stage_id=$4)
-  AND ($5::bigint IS NULL OR c.channel_id=$5)
-  AND ($6::bigint IS NULL OR EXISTS (SELECT 1 FROM public.customer_tags ct WHERE ct.customer_id=c.id AND ct.tag_id=$6))
-  AND ($7::timestamptz IS NULL OR c.added_at >= $7)
-  AND ($8::timestamptz IS NULL OR c.added_at <= $8)
-  AND ($9::timestamptz IS NULL OR c.last_interact_at >= $9)
-  AND ($10::timestamptz IS NULL OR c.last_interact_at <= $10)
-ORDER BY c.updated_at DESC,c.id DESC
-LIMIT $11`, query.Watermark, nullableString(query.Keyword), query.OwnerStaffID, query.StageID, query.ChannelID, query.TagID, query.AddedAfter, query.AddedBefore, query.LastInteractAfter, query.LastInteractBefore, contactapp.CustomerSafeExportMaximumRows+1)
+	rows, err := queries.ListCustomerSafeExportSnapshotRows(ctx, contactdb.ListCustomerSafeExportSnapshotRowsParams{
+		Watermark:          timestampValue(query.Watermark),
+		Keyword:            nullableKeyword(query.Keyword),
+		OwnerStaffID:       nullableInt64(query.OwnerStaffID),
+		StageID:            nullableInt64(query.StageID),
+		ChannelID:          nullableInt64(query.ChannelID),
+		TagID:              nullableInt64(query.TagID),
+		AddedAfter:         nullableTimestamp(query.AddedAfter),
+		AddedBefore:        nullableTimestamp(query.AddedBefore),
+		LastInteractAfter:  nullableTimestamp(query.LastInteractAfter),
+		LastInteractBefore: nullableTimestamp(query.LastInteractBefore),
+		RowLimit:           int32(contactapp.CustomerSafeExportMaximumRows + 1),
+	})
 	if err != nil {
 		return nil, customerSafeExportUnavailable(err)
 	}
-	defer rows.Close()
-	result := make([]contactapp.CustomerSafeExportRow, 0)
-	for rows.Next() {
-		var row contactapp.CustomerSafeExportRow
-		if err = rows.Scan(&row.CustomerID, &row.DisplayName, &row.OwnerStaffID, &row.StageID, &row.ChannelID, &row.AddedAt, &row.LastInteractAt); err != nil {
-			return nil, customerSafeExportUnavailable(err)
-		}
-		result = append(result, row)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, customerSafeExportUnavailable(err)
-	}
-	if len(result) > contactapp.CustomerSafeExportMaximumRows {
+	if len(rows) > contactapp.CustomerSafeExportMaximumRows {
 		return nil, contactapp.ErrCustomerSafeExportConflict
 	}
-	if _, err = tx.Exec(ctx, `
-INSERT INTO public.customer_safe_exports(id,actor_id,owner_scope_staff_id,filter_digest,watermark,record_count,created_at)
-VALUES($1,$2,$3,$4,$5,$6,$7)`, export.ID, actorID, ownerScopeStaffID, filterDigest[:], export.Watermark, len(result), export.CreatedAt); err != nil {
+	result := make([]contactapp.CustomerSafeExportRow, 0, len(rows))
+	for _, row := range rows {
+		result = append(result, customerSafeExportRowFromSnapshot(row))
+	}
+	if err := queries.InsertCustomerSafeExport(ctx, contactdb.InsertCustomerSafeExportParams{
+		ID: export.ID, ActorID: actorID, OwnerScopeStaffID: nullableInt64(ownerScopeStaffID), FilterDigest: filterDigest[:],
+		Watermark: timestampValue(export.Watermark), RecordCount: int32(len(result)), CreatedAt: timestampValue(export.CreatedAt),
+	}); err != nil {
 		return nil, customerSafeExportUnavailable(err)
 	}
 	for index, row := range result {
-		if _, err = tx.Exec(ctx, `
-INSERT INTO public.customer_safe_export_rows(export_id,row_index,customer_id,display_name,owner_staff_id,stage_id,channel_id,added_at,last_interact_at)
-VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, export.ID, index+1, row.CustomerID, row.DisplayName, row.OwnerStaffID, row.StageID, row.ChannelID, row.AddedAt, row.LastInteractAt); err != nil {
+		if err := queries.InsertCustomerSafeExportRow(ctx, contactdb.InsertCustomerSafeExportRowParams{
+			ExportID: export.ID, RowIndex: int32(index + 1), CustomerID: row.CustomerID, DisplayName: row.DisplayName,
+			OwnerStaffID: nullableInt64(row.OwnerStaffID), StageID: nullableInt64(row.StageID), ChannelID: nullableInt64(row.ChannelID),
+			AddedAt: nullableTimestamp(row.AddedAt), LastInteractAt: nullableTimestamp(row.LastInteractAt),
+		}); err != nil {
 			return nil, customerSafeExportUnavailable(err)
 		}
 	}
@@ -111,88 +101,95 @@ VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`, export.ID, index+1, row.CustomerID, row.Dis
 }
 
 func (repository *CustomerSafeExportRepository) CompleteCustomerSafeExportReceipt(ctx context.Context, receiptID int64, exportID string, snapshot json.RawMessage, completedAt time.Time) (contactapp.CustomerSafeExportReceipt, error) {
-	tx, err := customerSafeExportTx(ctx)
-	if repository == nil || err != nil || receiptID < 1 || len(snapshot) == 0 {
-		return contactapp.CustomerSafeExportReceipt{}, customerSafeExportUnavailable(err)
+	if receiptID < 1 || len(snapshot) == 0 {
+		return contactapp.CustomerSafeExportReceipt{}, contactapp.ErrCustomerSafeExportUnavailable
 	}
-	var result contactapp.CustomerSafeExportReceipt
-	var returnedDigest []byte
-	err = tx.QueryRow(ctx, `
-UPDATE public.customer_safe_export_receipts
-SET export_id=$2,state='completed',result_snapshot=$3,completed_at=$4
-WHERE id=$1 AND state='reserved'
-RETURNING id,payload_digest,result_snapshot,state='completed'`, receiptID, exportID, snapshot, completedAt).Scan(&result.ID, &returnedDigest, &result.ResultSnapshot, &result.Completed)
+	queries, err := customerSafeExportQueries(ctx, repository)
+	if err != nil {
+		return contactapp.CustomerSafeExportReceipt{}, err
+	}
+	completed, err := queries.CompleteCustomerSafeExportReceipt(ctx, contactdb.CompleteCustomerSafeExportReceiptParams{
+		ID: receiptID, ExportID: pgtype.Text{String: exportID, Valid: true}, ResultSnapshot: snapshot, CompletedAt: timestampValue(completedAt),
+	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return contactapp.CustomerSafeExportReceipt{}, contactapp.ErrCustomerSafeExportConflict
 	}
 	if err != nil {
 		return contactapp.CustomerSafeExportReceipt{}, customerSafeExportUnavailable(err)
 	}
-	if len(returnedDigest) != len(result.PayloadDigest) {
-		return contactapp.CustomerSafeExportReceipt{}, contactapp.ErrCustomerSafeExportUnavailable
-	}
-	copy(result.PayloadDigest[:], returnedDigest)
-	return result, nil
+	return customerSafeExportReceipt(completed.ID, completed.PayloadDigest, completed.ResultSnapshot, completed.Completed)
 }
 
 func (repository *CustomerSafeExportRepository) ReadCustomerSafeExport(ctx context.Context, exportID string, actorID int64) (contactapp.CustomerSafeExport, error) {
-	tx, err := customerSafeExportTx(ctx)
-	if repository == nil || err != nil {
-		return contactapp.CustomerSafeExport{}, customerSafeExportUnavailable(err)
+	queries, err := customerSafeExportQueries(ctx, repository)
+	if err != nil {
+		return contactapp.CustomerSafeExport{}, err
 	}
-	var result contactapp.CustomerSafeExport
-	err = tx.QueryRow(ctx, `SELECT id,record_count,watermark,created_at FROM public.customer_safe_exports WHERE id=$1 AND actor_id=$2`, exportID, actorID).Scan(&result.ID, &result.RecordCount, &result.Watermark, &result.CreatedAt)
+	row, err := queries.GetCustomerSafeExport(ctx, contactdb.GetCustomerSafeExportParams{ID: exportID, ActorID: actorID})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return contactapp.CustomerSafeExport{}, contactapp.ErrCustomerSafeExportNotFound
 	}
 	if err != nil {
 		return contactapp.CustomerSafeExport{}, customerSafeExportUnavailable(err)
 	}
-	return result, nil
+	return contactapp.CustomerSafeExport{
+		ID: row.ID, RecordCount: int(row.RecordCount), Watermark: row.Watermark.Time, CreatedAt: row.CreatedAt.Time,
+		OwnerScopeStaffID: int64Pointer(row.OwnerScopeStaffID),
+	}, nil
 }
 
 func (repository *CustomerSafeExportRepository) ReadCustomerSafeExportRows(ctx context.Context, exportID string, actorID int64, ownerScopeStaffID *int64) ([]contactapp.CustomerSafeExportRow, error) {
-	tx, err := customerSafeExportTx(ctx)
-	if repository == nil || err != nil {
-		return nil, customerSafeExportUnavailable(err)
+	queries, err := customerSafeExportQueries(ctx, repository)
+	if err != nil {
+		return nil, err
 	}
-	if ownerScopeStaffID != nil {
-		var drifted bool
-		err = tx.QueryRow(ctx, `
-SELECT EXISTS(
- SELECT 1 FROM public.customer_safe_export_rows r
- LEFT JOIN public.customers c ON c.id=r.customer_id
- WHERE r.export_id=$1 AND (c.id IS NULL OR c.is_deleted OR c.owner_staff_id IS DISTINCT FROM $2)
-)`, exportID, *ownerScopeStaffID).Scan(&drifted)
-		if err != nil {
-			return nil, customerSafeExportUnavailable(err)
-		}
-		if drifted {
-			return nil, contactapp.ErrCustomerSafeExportConflict
-		}
-	}
-	rows, err := tx.Query(ctx, `
-SELECT r.customer_id,r.display_name,r.owner_staff_id,r.stage_id,r.channel_id,r.added_at,r.last_interact_at
-FROM public.customer_safe_export_rows r
-JOIN public.customer_safe_exports e ON e.id=r.export_id
-WHERE r.export_id=$1 AND e.actor_id=$2
-ORDER BY r.row_index`, exportID, actorID)
+	rows, err := queries.ListLockedCustomerSafeExportRows(ctx, contactdb.ListLockedCustomerSafeExportRowsParams{ExportID: exportID, ActorID: actorID})
 	if err != nil {
 		return nil, customerSafeExportUnavailable(err)
 	}
-	defer rows.Close()
-	result := make([]contactapp.CustomerSafeExportRow, 0)
-	for rows.Next() {
-		var row contactapp.CustomerSafeExportRow
-		if err = rows.Scan(&row.CustomerID, &row.DisplayName, &row.OwnerStaffID, &row.StageID, &row.ChannelID, &row.AddedAt, &row.LastInteractAt); err != nil {
-			return nil, customerSafeExportUnavailable(err)
+	result := make([]contactapp.CustomerSafeExportRow, 0, len(rows))
+	for _, row := range rows {
+		currentOwnerStaffID := int64Pointer(row.CurrentOwnerStaffID)
+		if ownerScopeStaffID != nil && (row.IsDeleted || currentOwnerStaffID == nil || *currentOwnerStaffID != *ownerScopeStaffID) {
+			return nil, contactapp.ErrCustomerSafeExportConflict
 		}
-		result = append(result, row)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, customerSafeExportUnavailable(err)
+		result = append(result, contactapp.CustomerSafeExportRow{
+			CustomerID: row.CustomerID, DisplayName: row.DisplayName, OwnerStaffID: int64Pointer(row.OwnerStaffID),
+			StageID: int64Pointer(row.StageID), ChannelID: int64Pointer(row.ChannelID), AddedAt: timestampPointer(row.AddedAt), LastInteractAt: timestampPointer(row.LastInteractAt),
+		})
 	}
 	return result, nil
+}
+
+func customerSafeExportQueries(ctx context.Context, repository *CustomerSafeExportRepository) (*contactdb.Queries, error) {
+	if repository == nil {
+		return nil, contactapp.ErrCustomerSafeExportUnavailable
+	}
+	tx, err := customerSafeExportTx(ctx)
+	if err != nil {
+		return nil, customerSafeExportUnavailable(err)
+	}
+	return contactdb.New(tx), nil
+}
+
+func customerSafeExportReceipt(id int64, payloadDigest, resultSnapshot []byte, completed bool) (contactapp.CustomerSafeExportReceipt, error) {
+	if len(payloadDigest) != 32 {
+		return contactapp.CustomerSafeExportReceipt{}, contactapp.ErrCustomerSafeExportUnavailable
+	}
+	var digest [32]byte
+	copy(digest[:], payloadDigest)
+	return contactapp.CustomerSafeExportReceipt{ID: id, PayloadDigest: digest, ResultSnapshot: append(json.RawMessage(nil), resultSnapshot...), Completed: completed}, nil
+}
+
+func customerSafeExportRowFromSnapshot(row contactdb.ListCustomerSafeExportSnapshotRowsRow) contactapp.CustomerSafeExportRow {
+	return contactapp.CustomerSafeExportRow{
+		CustomerID: row.ID, DisplayName: row.Name, OwnerStaffID: int64Pointer(row.OwnerStaffID), StageID: int64Pointer(row.StageID),
+		ChannelID: int64Pointer(row.ChannelID), AddedAt: timestampPointer(row.AddedAt), LastInteractAt: timestampPointer(row.LastInteractAt),
+	}
+}
+
+func timestampValue(value time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{Time: value.UTC(), Valid: true}
 }
 
 func customerSafeExportTx(ctx context.Context) (pgx.Tx, error) {
@@ -207,11 +204,4 @@ func customerSafeExportUnavailable(err error) error {
 		return nil
 	}
 	return errors.Join(contactapp.ErrCustomerSafeExportUnavailable, err)
-}
-
-func nullableString(value string) *string {
-	if value == "" {
-		return nil
-	}
-	return &value
 }

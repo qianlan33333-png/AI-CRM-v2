@@ -1,13 +1,15 @@
-package store_test
+package contact_test
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
@@ -36,10 +38,50 @@ func TestCustomerSafeExportLocalCorePG16(t *testing.T) {
 		t.Fatalf("different payload error=%v", err)
 	}
 	assertCustomerSafeExportFacts(t, ctx, pool, facts.actor, first.ID, facts.customer)
+	if _, err = service.Get(ctx, first.ID, facts.actor, &facts.owner); err != nil {
+		t.Fatalf("sales get: %v", err)
+	}
+	if _, err = service.Get(ctx, first.ID, facts.actor, nil); !errors.Is(err, contactapp.ErrCustomerSafeExportConflict) {
+		t.Fatalf("global actor scope get error=%v", err)
+	}
+	if _, err = service.Get(ctx, first.ID, facts.actor, &facts.otherOwner); !errors.Is(err, contactapp.ErrCustomerSafeExportConflict) {
+		t.Fatalf("other sales scope get error=%v", err)
+	}
+	if _, _, err = service.Download(ctx, first.ID, facts.actor, nil); !errors.Is(err, contactapp.ErrCustomerSafeExportConflict) {
+		t.Fatalf("global actor scope download error=%v", err)
+	}
+	if _, _, err = service.Download(ctx, first.ID, facts.actor, &facts.otherOwner); !errors.Is(err, contactapp.ErrCustomerSafeExportConflict) {
+		t.Fatalf("other sales scope download error=%v", err)
+	}
+	assertCustomerSafeExportImmutable(t, ctx, pool, first.ID, facts.customer)
 
-	if _, err = pool.Exec(ctx, `UPDATE public.customers SET owner_staff_id=$2,updated_at=now() WHERE id=$1`, facts.customer, facts.otherOwner); err != nil {
+	tx, err := pool.Begin(ctx)
+	if err != nil {
 		t.Fatal(err)
 	}
+	if _, err = tx.Exec(ctx, `SELECT id FROM public.customers WHERE id=$1 FOR UPDATE`, facts.customer); err != nil {
+		t.Fatal(err)
+	}
+	downloadDone := make(chan error, 1)
+	var wait sync.WaitGroup
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		_, _, downloadErr := service.Download(context.Background(), first.ID, facts.actor, &facts.owner)
+		downloadDone <- downloadErr
+	}()
+	time.Sleep(50 * time.Millisecond)
+	if _, err = tx.Exec(ctx, `UPDATE public.customers SET owner_staff_id=$2,updated_at=now() WHERE id=$1`, facts.customer, facts.otherOwner); err != nil {
+		t.Fatal(err)
+	}
+	if err = tx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	wait.Wait()
+	if err = <-downloadDone; !errors.Is(err, contactapp.ErrCustomerSafeExportConflict) {
+		t.Fatalf("locked owner drift download error=%v", err)
+	}
+
 	if _, _, err = service.Download(ctx, first.ID, facts.actor, &facts.owner); !errors.Is(err, contactapp.ErrCustomerSafeExportConflict) {
 		t.Fatalf("owner drift download error=%v", err)
 	}
@@ -54,6 +96,32 @@ func TestCustomerSafeExportLocalCorePG16(t *testing.T) {
 	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.customer_safe_exports WHERE actor_id=$1 AND id <> $2`, facts.actor, first.ID).Scan(&count); err != nil || count != 0 {
 		t.Fatalf("rollback snapshots=%d err=%v", count, err)
 	}
+}
+
+func assertCustomerSafeExportImmutable(t *testing.T, ctx context.Context, pool *pgxpool.Pool, exportID string, customerID int64) {
+	t.Helper()
+	for _, test := range []struct {
+		statement string
+		args      []any
+	}{
+		{statement: `UPDATE public.customer_safe_exports SET record_count=0 WHERE id=$1`, args: []any{exportID}},
+		{statement: `DELETE FROM public.customer_safe_exports WHERE id=$1`, args: []any{exportID}},
+		{statement: `UPDATE public.customer_safe_export_rows SET display_name='changed' WHERE export_id=$1`, args: []any{exportID}},
+		{statement: `DELETE FROM public.customer_safe_export_rows WHERE export_id=$1`, args: []any{exportID}},
+		{statement: `INSERT INTO public.customer_safe_export_rows(export_id,row_index,customer_id,display_name) VALUES($1,2,$2,'late')`, args: []any{exportID, customerID}},
+	} {
+		if _, err := pool.Exec(ctx, test.statement, test.args...); err == nil || pgErrorCode(err) != "55000" {
+			t.Fatalf("immutable statement=%q error=%v", test.statement, err)
+		}
+	}
+}
+
+func pgErrorCode(err error) string {
+	var databaseErr *pgconn.PgError
+	if errors.As(err, &databaseErr) {
+		return databaseErr.Code
+	}
+	return ""
 }
 
 type customerSafeExportFacts struct{ actor, owner, otherOwner, customer int64 }
@@ -109,6 +177,15 @@ SELECT (SELECT count(*) FROM public.customer_safe_export_rows WHERE export_id=$1
 	var recorded int64
 	if err = pool.QueryRow(ctx, `SELECT customer_id FROM public.customer_safe_export_rows WHERE export_id=$1`, exportID).Scan(&recorded); err != nil || recorded != customer {
 		t.Fatalf("customer=%d want=%d err=%v", recorded, customer, err)
+	}
+	var exportDigest, eventDigest string
+	err = pool.QueryRow(ctx, `
+SELECT encode(e.filter_digest,'hex'),l.payload->>'filter_digest'
+FROM public.customer_safe_exports e
+JOIN public.event_log l ON l.event_type=$2 AND l.payload->>'export_id'=e.id
+WHERE e.id=$1`, exportID, eventport.EvCustomerSafeExportCreated).Scan(&exportDigest, &eventDigest)
+	if err != nil || exportDigest != eventDigest {
+		t.Fatalf("export digest=%q event digest=%q err=%v", exportDigest, eventDigest, err)
 	}
 }
 

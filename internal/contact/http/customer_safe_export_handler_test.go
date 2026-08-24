@@ -21,7 +21,7 @@ func (stub *customerSafeExportApplicationStub) Create(_ context.Context, command
 	stub.command = command
 	return contactapp.CustomerSafeExport{ID: "cse_0123456789abcdef0123456789abcdef", Watermark: time.Date(2026, 8, 24, 0, 0, 0, 0, time.UTC), CreatedAt: time.Date(2026, 8, 24, 0, 0, 0, 0, time.UTC)}, nil
 }
-func (*customerSafeExportApplicationStub) Get(context.Context, string, int64) (contactapp.CustomerSafeExport, error) {
+func (*customerSafeExportApplicationStub) Get(context.Context, string, int64, *int64) (contactapp.CustomerSafeExport, error) {
 	return contactapp.CustomerSafeExport{}, nil
 }
 func (*customerSafeExportApplicationStub) Download(context.Context, string, int64, *int64) (contactapp.CustomerSafeExport, []contactapp.CustomerSafeExportRow, error) {
@@ -50,7 +50,7 @@ func TestCustomerSafeExportHandlerScopesSalesAndUsesReceiptKey(t *testing.T) {
 }
 
 func TestCustomerSafeExportCSVFormulaSafety(t *testing.T) {
-	for _, testCase := range []struct{ in, want string }{{"=x", "'=x"}, {"+x", "'+x"}, {"-x", "'-x"}, {"@x", "'@x"}, {"normal", "normal"}} {
+	for _, testCase := range []struct{ in, want string }{{"=x", "'=x"}, {"+x", "'+x"}, {"-x", "'-x"}, {"@x", "'@x"}, {"\t=tab", "'\t=tab"}, {"\r+cr", "'\r+cr"}, {"\n-at", "'\n-at"}, {"  -space", "'  -space"}, {"normal", "normal"}} {
 		if got := csvSafe(testCase.in); got != testCase.want {
 			t.Fatalf("csvSafe(%q)=%q want=%q", testCase.in, got, testCase.want)
 		}
