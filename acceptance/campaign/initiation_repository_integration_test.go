@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	campaignapp "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/app"
 	campaignport "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/port"
@@ -48,9 +49,7 @@ func TestCampaignInitiationRepositoryPostgreSQLStrictReadbackAndReplay(t *testin
 	customerIDs := seedInitiationCustomers(t, ctx, pool, prefix, 2)
 	t.Cleanup(func() {
 		clearCampaignFacts(t, ctx, pool)
-		if _, err := pool.Exec(ctx, `DELETE FROM public.customers WHERE id = ANY($1::bigint[])`, customerIDs); err != nil {
-			t.Fatal(err)
-		}
+		deleteInitiationCustomers(t, ctx, pool, customerIDs)
 	})
 	code := prefix
 	if _, err := pool.Exec(ctx, `INSERT INTO public.cloud_campaigns (campaign_code,name,approval_status,runtime_status,version,created_by,updated_by,created_at,updated_at)
@@ -134,9 +133,7 @@ RETURNING id`, prefix, refreshedAt).Scan(&segmentID); err != nil {
 		if _, err := pool.Exec(ctx, `DELETE FROM public.segments WHERE id=$1`, segmentID); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := pool.Exec(ctx, `DELETE FROM public.customers WHERE id = ANY($1::bigint[])`, customerIDs); err != nil {
-			t.Fatal(err)
-		}
+		deleteInitiationCustomers(t, ctx, pool, customerIDs)
 	})
 	for _, customerID := range customerIDs {
 		if _, err := pool.Exec(ctx, `INSERT INTO public.segment_members (segment_id,customer_id,computed_at) VALUES ($1,$2,$3)`, segmentID, customerID, refreshedAt); err != nil {
@@ -236,26 +233,30 @@ VALUES ($1,'active',7,1,1,$2,$2)`, segmentID, refreshedAt); err != nil {
 	}
 }
 
-func seedInitiationCustomers(t *testing.T, ctx context.Context, pool *pgxpool.Pool, prefix string, count int) []int64 {
+func seedInitiationCustomers(t *testing.T, ctx context.Context, pool *pgxpool.Pool, _ string, count int) []int64 {
 	t.Helper()
-	rows, err := pool.Query(ctx, `INSERT INTO public.customers (name) SELECT $1 || '-' || value::text FROM generate_series(1,$2) AS value RETURNING id`, prefix, count)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer rows.Close()
 	result := make([]int64, 0, count)
-	for rows.Next() {
-		var customerID int64
-		if err = rows.Scan(&customerID); err != nil {
+	for range count {
+		customerID, err := contactfixture.CreateCustomerRecord(ctx, pool)
+		if err != nil {
+			for _, createdID := range result {
+				_ = contactfixture.DeleteCustomer(context.Background(), pool, createdID)
+			}
 			t.Fatal(err)
 		}
 		result = append(result, customerID)
 	}
-	if err = rows.Err(); err != nil {
-		t.Fatal(err)
-	}
 	sort.Slice(result, func(left, right int) bool { return result[left] < result[right] })
 	return result
+}
+
+func deleteInitiationCustomers(t *testing.T, ctx context.Context, pool *pgxpool.Pool, customerIDs []int64) {
+	t.Helper()
+	for _, customerID := range customerIDs {
+		if err := contactfixture.DeleteCustomer(ctx, pool, customerID); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
 
 func waitForCampaignInitiationLock(t *testing.T, ctx context.Context, pool *pgxpool.Pool, holderPID, writerPID int32) {
