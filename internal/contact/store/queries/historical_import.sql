@@ -20,6 +20,12 @@ INSERT INTO legacy_contact_identity_source_mappings (
 ON CONFLICT DO NOTHING
 RETURNING staff_id;
 
+-- name: LockHistoricalImportStaffForMatch :one
+SELECT id, name, is_active, created_at, updated_at
+FROM staff
+WHERE wecom_userid = sqlc.arg(wecom_userid)::text
+FOR UPDATE;
+
 -- name: CreateHistoricalImportCustomer :one
 INSERT INTO customers (name, avatar_url, gender, owner_staff_id, added_at, last_interact_at, created_at, updated_at)
 VALUES (

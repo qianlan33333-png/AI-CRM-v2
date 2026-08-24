@@ -78,6 +78,7 @@ type Querier interface {
 	LockCustomerContactPolicyKeys(ctx context.Context, customerIds []int64) error
 	LockCustomersForMerge(ctx context.Context, customerIds []int64) ([]LockCustomersForMergeRow, error)
 	LockExternalEventIdempotencyKey(ctx context.Context, idempotencyKey string) error
+	LockHistoricalImportStaffForMatch(ctx context.Context, wecomUserid string) (LockHistoricalImportStaffForMatchRow, error)
 	MarkCustomerMerged(ctx context.Context, mergedCustomerID int64) (int64, error)
 	ReadCustomerProjection(ctx context.Context, customerID int64) (ReadCustomerProjectionRow, error)
 	RemoveCustomerTag(ctx context.Context, arg RemoveCustomerTagParams) (int64, error)

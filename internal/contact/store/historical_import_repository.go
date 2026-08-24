@@ -2,9 +2,11 @@ package store
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -49,7 +51,26 @@ func (HistoricalImportRepository) CreateCustomer(ctx context.Context, name strin
 }
 
 var ErrInvalidHistoricalImport = historicalImportError("invalid DM01 historical import")
+var ErrHistoricalImportTargetDrift = historicalImportError("DM01 historical import target drift")
 
 type historicalImportError string
 
 func (e historicalImportError) Error() string { return string(e) }
+
+func (HistoricalImportRepository) LockMatchingExistingStaff(ctx context.Context, userID, name string, active bool, createdAt, updatedAt time.Time) (int64, error) {
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	row, err := contactdb.New(tx).LockHistoricalImportStaffForMatch(ctx, userID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	if row.Name != name || row.IsActive != active || !row.CreatedAt.Valid || !row.UpdatedAt.Valid || !row.CreatedAt.Time.Equal(createdAt) || !row.UpdatedAt.Time.Equal(updatedAt) {
+		return 0, ErrHistoricalImportTargetDrift
+	}
+	return row.ID, nil
+}

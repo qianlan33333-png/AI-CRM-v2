@@ -138,3 +138,31 @@ func (q *Queries) InsertHistoricalImportStaffMapping(ctx context.Context, arg In
 	err := row.Scan(&staff_id)
 	return staff_id, err
 }
+
+const lockHistoricalImportStaffForMatch = `-- name: LockHistoricalImportStaffForMatch :one
+SELECT id, name, is_active, created_at, updated_at
+FROM staff
+WHERE wecom_userid = $1::text
+FOR UPDATE
+`
+
+type LockHistoricalImportStaffForMatchRow struct {
+	ID        int64              `json:"id"`
+	Name      string             `json:"name"`
+	IsActive  bool               `json:"is_active"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) LockHistoricalImportStaffForMatch(ctx context.Context, wecomUserid string) (LockHistoricalImportStaffForMatchRow, error) {
+	row := q.db.QueryRow(ctx, lockHistoricalImportStaffForMatch, wecomUserid)
+	var i LockHistoricalImportStaffForMatchRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
