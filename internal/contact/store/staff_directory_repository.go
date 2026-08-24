@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	contact "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -79,24 +80,14 @@ func (*StaffDirectoryRepository) LockUniqueActiveStaffForHistoricalImport(ctx co
 	if err != nil {
 		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceUnavailable
 	}
-	rows, err := tx.Query(ctx, `SELECT id FROM staff WHERE wecom_userid = $1 AND is_active FOR SHARE`, weComUserID)
+	id, err := contactdb.New(tx).LockUniqueActiveStaffForHistoricalImport(ctx, weComUserID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceNotFound
+	}
 	if err != nil {
 		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceUnavailable
 	}
-	defer rows.Close()
-	var result contact.HistoricalImportStaff
-	for rows.Next() {
-		if result.ID != 0 || rows.Scan(&result.ID) != nil {
-			return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceUnavailable
-		}
-	}
-	if rows.Err() != nil {
-		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceUnavailable
-	}
-	if result.ID == 0 {
-		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceNotFound
-	}
-	return result, nil
+	return contact.HistoricalImportStaff{ID: id}, nil
 }
 
 // IsActiveStaff holds a shared lock on the Contact-owned active row in the

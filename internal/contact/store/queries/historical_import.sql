@@ -26,6 +26,12 @@ FROM staff
 WHERE wecom_userid = sqlc.arg(wecom_userid)::text
 FOR UPDATE;
 
+-- name: LockUniqueActiveStaffForHistoricalImport :one
+SELECT id
+FROM staff
+WHERE wecom_userid = sqlc.arg(wecom_userid)::text AND is_active
+FOR SHARE;
+
 -- name: CreateHistoricalImportCustomer :one
 INSERT INTO customers (name, avatar_url, gender, owner_staff_id, added_at, last_interact_at, created_at, updated_at)
 VALUES (
@@ -51,4 +57,68 @@ INSERT INTO legacy_contact_identity_source_mappings (
   'wecom_external_contact_identity_map', sqlc.arg(source_key_hmac)::bytea,
   sqlc.arg(identity_id)::bigint, sqlc.arg(run_id)::bigint, sqlc.arg(run_id)::bigint,
   sqlc.arg(payload_hmac)::bytea
+);
+
+-- name: LockHistoricalImportSource :exec
+SELECT pg_advisory_xact_lock(hashtextextended(
+  sqlc.arg(source_table)::text || ':' || encode(sqlc.arg(source_key_hmac)::bytea, 'hex'), 0
+));
+
+-- name: FindHistoricalImportRowReceipt :one
+SELECT payload_hmac, field_digest, disposition
+FROM legacy_contact_identity_import_row_receipts
+WHERE run_id = sqlc.arg(run_id)::bigint
+  AND source_table = sqlc.arg(source_table)::text
+  AND source_key_hmac = sqlc.arg(source_key_hmac)::bytea
+FOR UPDATE;
+
+-- name: LockHistoricalImportLineage :one
+SELECT staff_id, customer_id, identity_id, payload_hmac
+FROM legacy_contact_identity_source_mappings
+WHERE source_table = sqlc.arg(source_table)::text
+  AND source_key_hmac = sqlc.arg(source_key_hmac)::bytea
+FOR UPDATE;
+
+-- name: LockHistoricalImportCustomerForMatch :one
+SELECT name, avatar_url, gender, owner_staff_id, added_at, last_interact_at, created_at, updated_at
+FROM customers
+WHERE id = sqlc.arg(customer_id)::bigint AND NOT is_deleted
+FOR UPDATE;
+
+-- name: IsHistoricalImportActiveStaff :one
+SELECT is_active FROM staff WHERE id = sqlc.arg(staff_id)::bigint FOR SHARE;
+
+-- name: LockHistoricalImportCustomerRoot :one
+SELECT TRUE AS found
+FROM customers
+WHERE id = sqlc.arg(customer_id)::bigint AND NOT is_deleted
+FOR SHARE;
+
+-- name: AppendHistoricalImportLineage :execrows
+INSERT INTO legacy_contact_identity_source_mappings (
+  source_table, source_key_hmac, staff_id, customer_id, identity_id,
+  first_run_id, last_run_id, payload_hmac
+) VALUES (
+  sqlc.arg(source_table)::text, sqlc.arg(source_key_hmac)::bytea,
+  sqlc.narg(staff_id)::bigint, sqlc.narg(customer_id)::bigint,
+  sqlc.narg(identity_id)::bigint, sqlc.arg(run_id)::bigint,
+  sqlc.arg(run_id)::bigint, sqlc.arg(payload_hmac)::bytea
+);
+
+-- name: AppendHistoricalImportQuarantine :execrows
+INSERT INTO legacy_contact_identity_import_quarantines (
+  run_id, source_table, source_key_hmac, reason_code, payload_hmac, field_digest
+) VALUES (
+  sqlc.arg(run_id)::bigint, sqlc.arg(source_table)::text,
+  sqlc.arg(source_key_hmac)::bytea, sqlc.arg(reason_code)::text,
+  sqlc.arg(payload_hmac)::bytea, sqlc.arg(field_digest)::bytea
+);
+
+-- name: AppendHistoricalImportRowReceipt :execrows
+INSERT INTO legacy_contact_identity_import_row_receipts (
+  run_id, source_table, source_key_hmac, payload_hmac, field_digest, disposition
+) VALUES (
+  sqlc.arg(run_id)::bigint, sqlc.arg(source_table)::text,
+  sqlc.arg(source_key_hmac)::bytea, sqlc.arg(payload_hmac)::bytea,
+  sqlc.arg(field_digest)::bytea, sqlc.arg(disposition)::text
 );

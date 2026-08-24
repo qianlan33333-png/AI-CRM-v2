@@ -11,6 +11,112 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const appendHistoricalImportLineage = `-- name: AppendHistoricalImportLineage :execrows
+INSERT INTO legacy_contact_identity_source_mappings (
+  source_table, source_key_hmac, staff_id, customer_id, identity_id,
+  first_run_id, last_run_id, payload_hmac
+) VALUES (
+  $1::text, $2::bytea,
+  $3::bigint, $4::bigint,
+  $5::bigint, $6::bigint,
+  $6::bigint, $7::bytea
+)
+`
+
+type AppendHistoricalImportLineageParams struct {
+	SourceTable   string      `json:"source_table"`
+	SourceKeyHmac []byte      `json:"source_key_hmac"`
+	StaffID       pgtype.Int8 `json:"staff_id"`
+	CustomerID    pgtype.Int8 `json:"customer_id"`
+	IdentityID    pgtype.Int8 `json:"identity_id"`
+	RunID         int64       `json:"run_id"`
+	PayloadHmac   []byte      `json:"payload_hmac"`
+}
+
+func (q *Queries) AppendHistoricalImportLineage(ctx context.Context, arg AppendHistoricalImportLineageParams) (int64, error) {
+	result, err := q.db.Exec(ctx, appendHistoricalImportLineage,
+		arg.SourceTable,
+		arg.SourceKeyHmac,
+		arg.StaffID,
+		arg.CustomerID,
+		arg.IdentityID,
+		arg.RunID,
+		arg.PayloadHmac,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const appendHistoricalImportQuarantine = `-- name: AppendHistoricalImportQuarantine :execrows
+INSERT INTO legacy_contact_identity_import_quarantines (
+  run_id, source_table, source_key_hmac, reason_code, payload_hmac, field_digest
+) VALUES (
+  $1::bigint, $2::text,
+  $3::bytea, $4::text,
+  $5::bytea, $6::bytea
+)
+`
+
+type AppendHistoricalImportQuarantineParams struct {
+	RunID         int64  `json:"run_id"`
+	SourceTable   string `json:"source_table"`
+	SourceKeyHmac []byte `json:"source_key_hmac"`
+	ReasonCode    string `json:"reason_code"`
+	PayloadHmac   []byte `json:"payload_hmac"`
+	FieldDigest   []byte `json:"field_digest"`
+}
+
+func (q *Queries) AppendHistoricalImportQuarantine(ctx context.Context, arg AppendHistoricalImportQuarantineParams) (int64, error) {
+	result, err := q.db.Exec(ctx, appendHistoricalImportQuarantine,
+		arg.RunID,
+		arg.SourceTable,
+		arg.SourceKeyHmac,
+		arg.ReasonCode,
+		arg.PayloadHmac,
+		arg.FieldDigest,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const appendHistoricalImportRowReceipt = `-- name: AppendHistoricalImportRowReceipt :execrows
+INSERT INTO legacy_contact_identity_import_row_receipts (
+  run_id, source_table, source_key_hmac, payload_hmac, field_digest, disposition
+) VALUES (
+  $1::bigint, $2::text,
+  $3::bytea, $4::bytea,
+  $5::bytea, $6::text
+)
+`
+
+type AppendHistoricalImportRowReceiptParams struct {
+	RunID         int64  `json:"run_id"`
+	SourceTable   string `json:"source_table"`
+	SourceKeyHmac []byte `json:"source_key_hmac"`
+	PayloadHmac   []byte `json:"payload_hmac"`
+	FieldDigest   []byte `json:"field_digest"`
+	Disposition   string `json:"disposition"`
+}
+
+func (q *Queries) AppendHistoricalImportRowReceipt(ctx context.Context, arg AppendHistoricalImportRowReceiptParams) (int64, error) {
+	result, err := q.db.Exec(ctx, appendHistoricalImportRowReceipt,
+		arg.RunID,
+		arg.SourceTable,
+		arg.SourceKeyHmac,
+		arg.PayloadHmac,
+		arg.FieldDigest,
+		arg.Disposition,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const createHistoricalImportCustomer = `-- name: CreateHistoricalImportCustomer :one
 INSERT INTO customers (name, avatar_url, gender, owner_staff_id, added_at, last_interact_at, created_at, updated_at)
 VALUES (
@@ -47,6 +153,34 @@ func (q *Queries) CreateHistoricalImportCustomer(ctx context.Context, arg Create
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const findHistoricalImportRowReceipt = `-- name: FindHistoricalImportRowReceipt :one
+SELECT payload_hmac, field_digest, disposition
+FROM legacy_contact_identity_import_row_receipts
+WHERE run_id = $1::bigint
+  AND source_table = $2::text
+  AND source_key_hmac = $3::bytea
+FOR UPDATE
+`
+
+type FindHistoricalImportRowReceiptParams struct {
+	RunID         int64  `json:"run_id"`
+	SourceTable   string `json:"source_table"`
+	SourceKeyHmac []byte `json:"source_key_hmac"`
+}
+
+type FindHistoricalImportRowReceiptRow struct {
+	PayloadHmac []byte `json:"payload_hmac"`
+	FieldDigest []byte `json:"field_digest"`
+	Disposition string `json:"disposition"`
+}
+
+func (q *Queries) FindHistoricalImportRowReceipt(ctx context.Context, arg FindHistoricalImportRowReceiptParams) (FindHistoricalImportRowReceiptRow, error) {
+	row := q.db.QueryRow(ctx, findHistoricalImportRowReceipt, arg.RunID, arg.SourceTable, arg.SourceKeyHmac)
+	var i FindHistoricalImportRowReceiptRow
+	err := row.Scan(&i.PayloadHmac, &i.FieldDigest, &i.Disposition)
+	return i, err
 }
 
 const insertHistoricalImportCustomerMapping = `-- name: InsertHistoricalImportCustomerMapping :exec
@@ -166,6 +300,113 @@ func (q *Queries) InsertHistoricalImportStaffMapping(ctx context.Context, arg In
 	return staff_id, err
 }
 
+const isHistoricalImportActiveStaff = `-- name: IsHistoricalImportActiveStaff :one
+SELECT is_active FROM staff WHERE id = $1::bigint FOR SHARE
+`
+
+func (q *Queries) IsHistoricalImportActiveStaff(ctx context.Context, staffID int64) (bool, error) {
+	row := q.db.QueryRow(ctx, isHistoricalImportActiveStaff, staffID)
+	var is_active bool
+	err := row.Scan(&is_active)
+	return is_active, err
+}
+
+const lockHistoricalImportCustomerForMatch = `-- name: LockHistoricalImportCustomerForMatch :one
+SELECT name, avatar_url, gender, owner_staff_id, added_at, last_interact_at, created_at, updated_at
+FROM customers
+WHERE id = $1::bigint AND NOT is_deleted
+FOR UPDATE
+`
+
+type LockHistoricalImportCustomerForMatchRow struct {
+	Name           string             `json:"name"`
+	AvatarUrl      pgtype.Text        `json:"avatar_url"`
+	Gender         pgtype.Int2        `json:"gender"`
+	OwnerStaffID   pgtype.Int8        `json:"owner_staff_id"`
+	AddedAt        pgtype.Timestamptz `json:"added_at"`
+	LastInteractAt pgtype.Timestamptz `json:"last_interact_at"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) LockHistoricalImportCustomerForMatch(ctx context.Context, customerID int64) (LockHistoricalImportCustomerForMatchRow, error) {
+	row := q.db.QueryRow(ctx, lockHistoricalImportCustomerForMatch, customerID)
+	var i LockHistoricalImportCustomerForMatchRow
+	err := row.Scan(
+		&i.Name,
+		&i.AvatarUrl,
+		&i.Gender,
+		&i.OwnerStaffID,
+		&i.AddedAt,
+		&i.LastInteractAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const lockHistoricalImportCustomerRoot = `-- name: LockHistoricalImportCustomerRoot :one
+SELECT TRUE AS found
+FROM customers
+WHERE id = $1::bigint AND NOT is_deleted
+FOR SHARE
+`
+
+func (q *Queries) LockHistoricalImportCustomerRoot(ctx context.Context, customerID int64) (bool, error) {
+	row := q.db.QueryRow(ctx, lockHistoricalImportCustomerRoot, customerID)
+	var found bool
+	err := row.Scan(&found)
+	return found, err
+}
+
+const lockHistoricalImportLineage = `-- name: LockHistoricalImportLineage :one
+SELECT staff_id, customer_id, identity_id, payload_hmac
+FROM legacy_contact_identity_source_mappings
+WHERE source_table = $1::text
+  AND source_key_hmac = $2::bytea
+FOR UPDATE
+`
+
+type LockHistoricalImportLineageParams struct {
+	SourceTable   string `json:"source_table"`
+	SourceKeyHmac []byte `json:"source_key_hmac"`
+}
+
+type LockHistoricalImportLineageRow struct {
+	StaffID     pgtype.Int8 `json:"staff_id"`
+	CustomerID  pgtype.Int8 `json:"customer_id"`
+	IdentityID  pgtype.Int8 `json:"identity_id"`
+	PayloadHmac []byte      `json:"payload_hmac"`
+}
+
+func (q *Queries) LockHistoricalImportLineage(ctx context.Context, arg LockHistoricalImportLineageParams) (LockHistoricalImportLineageRow, error) {
+	row := q.db.QueryRow(ctx, lockHistoricalImportLineage, arg.SourceTable, arg.SourceKeyHmac)
+	var i LockHistoricalImportLineageRow
+	err := row.Scan(
+		&i.StaffID,
+		&i.CustomerID,
+		&i.IdentityID,
+		&i.PayloadHmac,
+	)
+	return i, err
+}
+
+const lockHistoricalImportSource = `-- name: LockHistoricalImportSource :exec
+SELECT pg_advisory_xact_lock(hashtextextended(
+  $1::text || ':' || encode($2::bytea, 'hex'), 0
+))
+`
+
+type LockHistoricalImportSourceParams struct {
+	SourceTable   string `json:"source_table"`
+	SourceKeyHmac []byte `json:"source_key_hmac"`
+}
+
+func (q *Queries) LockHistoricalImportSource(ctx context.Context, arg LockHistoricalImportSourceParams) error {
+	_, err := q.db.Exec(ctx, lockHistoricalImportSource, arg.SourceTable, arg.SourceKeyHmac)
+	return err
+}
+
 const lockHistoricalImportStaffForMatch = `-- name: LockHistoricalImportStaffForMatch :one
 SELECT id, name, is_active, created_at, updated_at
 FROM staff
@@ -192,4 +433,18 @@ func (q *Queries) LockHistoricalImportStaffForMatch(ctx context.Context, wecomUs
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const lockUniqueActiveStaffForHistoricalImport = `-- name: LockUniqueActiveStaffForHistoricalImport :one
+SELECT id
+FROM staff
+WHERE wecom_userid = $1::text AND is_active
+FOR SHARE
+`
+
+func (q *Queries) LockUniqueActiveStaffForHistoricalImport(ctx context.Context, wecomUserid string) (int64, error) {
+	row := q.db.QueryRow(ctx, lockUniqueActiveStaffForHistoricalImport, wecomUserid)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
 }

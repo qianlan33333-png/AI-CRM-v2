@@ -11,8 +11,12 @@ import (
 	"strings"
 )
 
-const SourceEnvironment = "AICRM_DM01_SOURCE_DATABASE_URL"
 const LegacyRepositorySHA = "2b7a80126d7becb6f95cf1ec5945dcb78a42f531"
+
+var (
+	hexHMACPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
+	scopeIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$`)
+)
 
 type Manifest struct {
 	ContractVersion     int               `json:"contract_version"`
@@ -23,6 +27,7 @@ type Manifest struct {
 	WeComCorpID         string            `json:"wecom_corp_id"`
 	OpenPlatformAccount string            `json:"open_platform_account,omitempty"`
 	WeChatAppScopes     map[string]string `json:"wechat_app_scopes,omitempty"`
+	OwnerAllowlistHMACs []string          `json:"owner_allowlist_hmacs"`
 	HMACKeyVersion      int               `json:"hmac_key_version"`
 	Tables              []Table           `json:"tables"`
 }
@@ -56,8 +61,25 @@ func LoadManifest(path, wantHex string) (Manifest, [32]byte, error) {
 	return m, digest, nil
 }
 func (m Manifest) Valid() error {
-	if m.ContractVersion != 1 || m.SourceSystem == "" || m.LegacyRepositorySHA != LegacyRepositorySHA || m.SnapshotID == "" || !m.SingleCorp || m.WeComCorpID == "" || m.HMACKeyVersion < 1 {
+	if m.ContractVersion != 1 || m.SourceSystem == "" || m.LegacyRepositorySHA != LegacyRepositorySHA || m.SnapshotID == "" || !m.SingleCorp || m.WeComCorpID == "" || m.HMACKeyVersion < 1 || len(m.OwnerAllowlistHMACs) == 0 {
 		return errors.New("invalid DM01 manifest")
+	}
+	for index, value := range m.OwnerAllowlistHMACs {
+		if !hexHMACPattern.MatchString(value) || (index > 0 && value <= m.OwnerAllowlistHMACs[index-1]) {
+			return errors.New("invalid DM01 owner allowlist")
+		}
+	}
+	// UnionID and OpenID scopes are optional because DM01 uses unionid only as
+	// a source join key and does not create an OpenID identity. When supplied
+	// for a future scoped projection, both account and app scope identifiers
+	// remain closed identifiers rather than arbitrary metadata.
+	if m.OpenPlatformAccount != "" && !scopeIDPattern.MatchString(m.OpenPlatformAccount) {
+		return errors.New("invalid DM01 unionid scope")
+	}
+	for appID, scope := range m.WeChatAppScopes {
+		if !scopeIDPattern.MatchString(appID) || !scopeIDPattern.MatchString(scope) {
+			return errors.New("invalid DM01 openid scope")
+		}
 	}
 	want := map[string][3]string{
 		"owner_role_map": {"userid", "updated_at+userid", "import_staff"}, "crm_user_identity": {"unionid", "updated_at+unionid", "import_customer"},
@@ -70,7 +92,7 @@ func (m Manifest) Valid() error {
 	seen := map[string]bool{}
 	for _, t := range m.Tables {
 		spec, ok := want[t.Name]
-		if !ok || seen[t.Name] || t.PrimaryKey != spec[0] || t.Watermark != spec[1] || t.Action != spec[2] || !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(t.SchemaDigest) || (t.Mode != "full" && t.Mode != "incremental") {
+		if !ok || seen[t.Name] || t.PrimaryKey != spec[0] || t.Watermark != spec[1] || t.Action != spec[2] || !hexHMACPattern.MatchString(t.SchemaDigest) || (t.Mode != "full" && t.Mode != "incremental") {
 			return errors.New("invalid DM01 table manifest")
 		}
 		seen[t.Name] = true

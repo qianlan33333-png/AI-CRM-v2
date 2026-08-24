@@ -1,21 +1,26 @@
 package migration
 
 import (
+	"errors"
 	"testing"
 )
 
-func TestManifestRejectsUnsupportedReaderTable(t *testing.T) {
-	m := Manifest{
-		ContractVersion: 1, SourceSystem: "repo1", LegacyRepositorySHA: LegacyRepositorySHA,
-		SnapshotID: "snapshot", SingleCorp: true, WeComCorpID: "corp", HMACKeyVersion: 1,
-		Tables: []Table{
-			{Name: "owner_role_map", PrimaryKey: "userid", Watermark: "updated_at+userid", SchemaDigest: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Mode: "full"},
-			{Name: "crm_user_identity", PrimaryKey: "unionid", Watermark: "updated_at+unionid", SchemaDigest: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Mode: "full"},
-			{Name: "wecom_external_contact_identity_map", PrimaryKey: "id", Watermark: "updated_at+id", SchemaDigest: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Mode: "full"},
-			{Name: "unknown", PrimaryKey: "id", Watermark: "updated_at+id", SchemaDigest: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", Mode: "full"},
-		},
+func TestCanonicalSchemaDigestFailsClosed(t *testing.T) {
+	columns := []SourceColumn{
+		{Ordinal: 1, Name: "id", DataType: "bigint", NotNull: true},
+		{Ordinal: 2, Name: "updated_at", DataType: "timestamp with time zone", NotNull: true},
 	}
-	if err := m.Valid(); err == nil {
-		t.Fatal("unsupported source table was accepted")
+	digest, err := CanonicalSchemaDigest(columns)
+	if err != nil || len(digest) != 64 {
+		t.Fatalf("digest = %q, err = %v", digest, err)
+	}
+	changed := append([]SourceColumn(nil), columns...)
+	changed[1].NotNull = false
+	changedDigest, err := CanonicalSchemaDigest(changed)
+	if err != nil || changedDigest == digest {
+		t.Fatal("column drift did not change canonical digest")
+	}
+	if _, err := CanonicalSchemaDigest([]SourceColumn{{Ordinal: 2, Name: "id", DataType: "bigint", NotNull: true}, {Ordinal: 1, Name: "name", DataType: "text", NotNull: true}}); !errors.Is(err, ErrSourceSchemaDrift) {
+		t.Fatalf("invalid ordinal error = %v", err)
 	}
 }

@@ -62,11 +62,37 @@ sql:
         omit_unused_structs: true
   - engine: postgresql
     schema: migrations
-    queries: internal/contact/store/queries
+    queries:
+      - internal/contact/store/queries/channels.sql
+      - internal/contact/store/queries/contact_policies.sql
+      - internal/contact/store/queries/customer_detail.sql
+      - internal/contact/store/queries/customer_event_analytics.sql
+      - internal/contact/store/queries/customer_events.sql
+      - internal/contact/store/queries/customer_mutations.sql
+      - internal/contact/store/queries/customer_safe_exports.sql
+      - internal/contact/store/queries/customers.sql
+      - internal/contact/store/queries/event_partitions.sql
+      - internal/contact/store/queries/external_events.sql
+      - internal/contact/store/queries/historical_import.sql
+      - internal/contact/store/queries/order_read_port.sql
+      - internal/contact/store/queries/stages.sql
+      - internal/contact/store/queries/tags.sql
     gen:
       go:
         package: contactdb
         out: internal/contact/store/generated
+        sql_package: pgx/v5
+        emit_interface: true
+        emit_json_tags: true
+        emit_empty_slices: true
+        omit_unused_structs: true
+  - engine: postgresql
+    schema: tools/sqlc/dm01_legacy_schema.sql
+    queries: internal/contact/store/queries/dm01_legacy_source.sql
+    gen:
+      go:
+        package: legacysourcedb
+        out: internal/contact/store/legacysource/generated
         sql_package: pgx/v5
         emit_interface: true
         emit_json_tags: true

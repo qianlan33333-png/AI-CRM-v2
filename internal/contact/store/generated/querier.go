@@ -15,6 +15,9 @@ type Querier interface {
 	AcceptLegacyTagSyncReceipt(ctx context.Context, arg AcceptLegacyTagSyncReceiptParams) (AcceptLegacyTagSyncReceiptRow, error)
 	AddCustomerTag(ctx context.Context, arg AddCustomerTagParams) (int64, error)
 	AppendCustomerEvent(ctx context.Context, arg AppendCustomerEventParams) (int64, error)
+	AppendHistoricalImportLineage(ctx context.Context, arg AppendHistoricalImportLineageParams) (int64, error)
+	AppendHistoricalImportQuarantine(ctx context.Context, arg AppendHistoricalImportQuarantineParams) (int64, error)
+	AppendHistoricalImportRowReceipt(ctx context.Context, arg AppendHistoricalImportRowReceiptParams) (int64, error)
 	ArchiveLegacyTag(ctx context.Context, id int64) (ArchiveLegacyTagRow, error)
 	ArchiveLegacyTagGroup(ctx context.Context, groupID int64) (TagGroup, error)
 	CompleteChannelOperationReceipt(ctx context.Context, arg CompleteChannelOperationReceiptParams) (CompleteChannelOperationReceiptRow, error)
@@ -30,6 +33,7 @@ type Querier interface {
 	CreateLegacyTagGroup(ctx context.Context, name string) (TagGroup, error)
 	DeleteCustomerContactPolicy(ctx context.Context, arg DeleteCustomerContactPolicyParams) (int64, error)
 	EnsureCustomerEventPartitions(ctx context.Context, arg EnsureCustomerEventPartitionsParams) error
+	FindHistoricalImportRowReceipt(ctx context.Context, arg FindHistoricalImportRowReceiptParams) (FindHistoricalImportRowReceiptRow, error)
 	GetChannel(ctx context.Context, channelID int64) (GetChannelRow, error)
 	GetChannelOperationReceipt(ctx context.Context, arg GetChannelOperationReceiptParams) (GetChannelOperationReceiptRow, error)
 	GetCustomerContactPolicy(ctx context.Context, customerID int64) (CustomerContactPolicy, error)
@@ -55,6 +59,7 @@ type Querier interface {
 	InsertHistoricalImportStaff(ctx context.Context, arg InsertHistoricalImportStaffParams) (int64, error)
 	InsertHistoricalImportStaffMapping(ctx context.Context, arg InsertHistoricalImportStaffMappingParams) (pgtype.Int8, error)
 	InsertStage(ctx context.Context, arg InsertStageParams) (InsertStageRow, error)
+	IsHistoricalImportActiveStaff(ctx context.Context, staffID int64) (bool, error)
 	ListChannelAttachmentReferencePackages(ctx context.Context) ([]ListChannelAttachmentReferencePackagesRow, error)
 	ListChannelImageReferencePackages(ctx context.Context) ([]ListChannelImageReferencePackagesRow, error)
 	// Contact owns the local channel catalog; WeCom remains a provider adapter.
@@ -79,7 +84,12 @@ type Querier interface {
 	LockCustomerContactPolicyKeys(ctx context.Context, customerIds []int64) error
 	LockCustomersForMerge(ctx context.Context, customerIds []int64) ([]LockCustomersForMergeRow, error)
 	LockExternalEventIdempotencyKey(ctx context.Context, idempotencyKey string) error
+	LockHistoricalImportCustomerForMatch(ctx context.Context, customerID int64) (LockHistoricalImportCustomerForMatchRow, error)
+	LockHistoricalImportCustomerRoot(ctx context.Context, customerID int64) (bool, error)
+	LockHistoricalImportLineage(ctx context.Context, arg LockHistoricalImportLineageParams) (LockHistoricalImportLineageRow, error)
+	LockHistoricalImportSource(ctx context.Context, arg LockHistoricalImportSourceParams) error
 	LockHistoricalImportStaffForMatch(ctx context.Context, wecomUserid string) (LockHistoricalImportStaffForMatchRow, error)
+	LockUniqueActiveStaffForHistoricalImport(ctx context.Context, wecomUserid string) (int64, error)
 	MarkCustomerMerged(ctx context.Context, mergedCustomerID int64) (int64, error)
 	ReadCustomerProjection(ctx context.Context, customerID int64) (ReadCustomerProjectionRow, error)
 	RemoveCustomerTag(ctx context.Context, arg RemoveCustomerTagParams) (int64, error)

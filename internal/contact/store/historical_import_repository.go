@@ -116,8 +116,7 @@ func (HistoricalImportRepository) LockHistoricalImportSource(ctx context.Context
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1 || ':' || encode($2::bytea, 'hex'), 0))`, sourceTable, sourceKeyHMAC)
-	return err
+	return contactdb.New(tx).LockHistoricalImportSource(ctx, contactdb.LockHistoricalImportSourceParams{SourceTable: sourceTable, SourceKeyHmac: sourceKeyHMAC})
 }
 
 func (HistoricalImportRepository) FindHistoricalImportRowReceipt(ctx context.Context, runID int64, source contactport.HistoricalImportSource, sourceKeyHMAC []byte) (contactport.HistoricalImportRowReceipt, bool, error) {
@@ -129,16 +128,15 @@ func (HistoricalImportRepository) FindHistoricalImportRowReceipt(ctx context.Con
 	if err != nil {
 		return contactport.HistoricalImportRowReceipt{}, false, err
 	}
-	var receipt contactport.HistoricalImportRowReceipt
-	var disposition string
-	err = tx.QueryRow(ctx, `SELECT payload_hmac, field_digest, disposition FROM legacy_contact_identity_import_row_receipts WHERE run_id=$1 AND source_table=$2 AND source_key_hmac=$3 FOR UPDATE`, runID, sourceTable, sourceKeyHMAC).Scan(&receipt.PayloadHMAC, &receipt.FieldDigest, &disposition)
+	row, err := contactdb.New(tx).FindHistoricalImportRowReceipt(ctx, contactdb.FindHistoricalImportRowReceiptParams{RunID: runID, SourceTable: sourceTable, SourceKeyHmac: sourceKeyHMAC})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return contactport.HistoricalImportRowReceipt{}, false, nil
 	}
 	if err != nil {
 		return contactport.HistoricalImportRowReceipt{}, false, err
 	}
-	switch disposition {
+	receipt := contactport.HistoricalImportRowReceipt{PayloadHMAC: row.PayloadHmac, FieldDigest: row.FieldDigest}
+	switch row.Disposition {
 	case "imported":
 		receipt.Disposition = contactport.HistoricalImportImported
 	case "quarantined":
@@ -158,9 +156,7 @@ func (HistoricalImportRepository) LockHistoricalImportLineage(ctx context.Contex
 	if err != nil {
 		return contactport.HistoricalImportLineage{}, false, err
 	}
-	var staffID, customerID, identityID pgtype.Int8
-	var payloadHMAC []byte
-	err = tx.QueryRow(ctx, `SELECT staff_id, customer_id, identity_id, payload_hmac FROM legacy_contact_identity_source_mappings WHERE source_table=$1 AND source_key_hmac=$2 FOR UPDATE`, sourceTable, sourceKeyHMAC).Scan(&staffID, &customerID, &identityID, &payloadHMAC)
+	row, err := contactdb.New(tx).LockHistoricalImportLineage(ctx, contactdb.LockHistoricalImportLineageParams{SourceTable: sourceTable, SourceKeyHmac: sourceKeyHMAC})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return contactport.HistoricalImportLineage{}, false, nil
 	}
@@ -170,22 +166,22 @@ func (HistoricalImportRepository) LockHistoricalImportLineage(ctx context.Contex
 	targetID := int64(0)
 	switch source {
 	case contactport.HistoricalImportOwnerRoleMap:
-		if staffID.Valid {
-			targetID = staffID.Int64
+		if row.StaffID.Valid {
+			targetID = row.StaffID.Int64
 		}
 	case contactport.HistoricalImportCustomerIdentity:
-		if customerID.Valid {
-			targetID = customerID.Int64
+		if row.CustomerID.Valid {
+			targetID = row.CustomerID.Int64
 		}
 	case contactport.HistoricalImportExternalIdentity:
-		if identityID.Valid {
-			targetID = identityID.Int64
+		if row.IdentityID.Valid {
+			targetID = row.IdentityID.Int64
 		}
 	}
-	if targetID < 1 || len(payloadHMAC) != 32 {
+	if targetID < 1 || len(row.PayloadHmac) != 32 {
 		return contactport.HistoricalImportLineage{}, false, ErrHistoricalImportTargetDrift
 	}
-	return contactport.HistoricalImportLineage{TargetID: targetID, PayloadHMAC: payloadHMAC}, true, nil
+	return contactport.HistoricalImportLineage{TargetID: targetID, PayloadHMAC: row.PayloadHmac}, true, nil
 }
 
 func (repository HistoricalImportRepository) EnsureHistoricalImportStaff(ctx context.Context, fact contactport.HistoricalImportStaffFact) (int64, error) {
@@ -225,19 +221,14 @@ func (HistoricalImportRepository) ValidateHistoricalImportCustomer(ctx context.C
 	if err != nil {
 		return err
 	}
-	var name string
-	var avatar pgtype.Text
-	var gender pgtype.Int2
-	var owner pgtype.Int8
-	var firstSeen, lastSeen, createdAt, updatedAt pgtype.Timestamptz
-	err = tx.QueryRow(ctx, `SELECT name, avatar_url, gender, owner_staff_id, added_at, last_interact_at, created_at, updated_at FROM customers WHERE id=$1 AND NOT is_deleted FOR UPDATE`, customerID).Scan(&name, &avatar, &gender, &owner, &firstSeen, &lastSeen, &createdAt, &updatedAt)
+	row, err := contactdb.New(tx).LockHistoricalImportCustomerForMatch(ctx, customerID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrHistoricalImportTargetDrift
 	}
 	if err != nil {
 		return err
 	}
-	if name != fact.Name || !sameOptionalString(avatar, fact.AvatarURL) || !sameOptionalInt16(gender, fact.Gender) || !sameOptionalInt64(owner, fact.OwnerStaffID) || !sameTime(firstSeen, fact.FirstSeenAt) || !sameTime(lastSeen, fact.LastSeenAt) || !sameTime(createdAt, fact.CreatedAt) || !sameTime(updatedAt, fact.UpdatedAt) {
+	if row.Name != fact.Name || !sameOptionalString(row.AvatarUrl, fact.AvatarURL) || !sameOptionalInt16(row.Gender, fact.Gender) || !sameOptionalInt64(row.OwnerStaffID, fact.OwnerStaffID) || !sameTime(row.AddedAt, fact.FirstSeenAt) || !sameTime(row.LastInteractAt, fact.LastSeenAt) || !sameTime(row.CreatedAt, fact.CreatedAt) || !sameTime(row.UpdatedAt, fact.UpdatedAt) {
 		return ErrHistoricalImportTargetDrift
 	}
 	return nil
@@ -251,8 +242,7 @@ func (HistoricalImportRepository) IsHistoricalImportActiveStaff(ctx context.Cont
 	if err != nil {
 		return false, err
 	}
-	var active bool
-	err = tx.QueryRow(ctx, `SELECT is_active FROM staff WHERE id=$1 FOR SHARE`, staffID).Scan(&active)
+	active, err := contactdb.New(tx).IsHistoricalImportActiveStaff(ctx, staffID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
@@ -267,8 +257,7 @@ func (HistoricalImportRepository) ValidateHistoricalImportCustomerRoot(ctx conte
 	if err != nil {
 		return err
 	}
-	var found bool
-	err = tx.QueryRow(ctx, `SELECT TRUE FROM customers WHERE id=$1 AND NOT is_deleted FOR SHARE`, customerID).Scan(&found)
+	found, err := contactdb.New(tx).LockHistoricalImportCustomerRoot(ctx, customerID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrHistoricalImportTargetDrift
 	}
@@ -290,20 +279,20 @@ func (HistoricalImportRepository) AppendHistoricalImportLineage(ctx context.Cont
 	if err != nil {
 		return err
 	}
-	var staffID, customerID, identityID any
+	var staffID, customerID, identityID pgtype.Int8
 	switch source {
 	case contactport.HistoricalImportOwnerRoleMap:
-		staffID = targetID
+		staffID = pgtype.Int8{Int64: targetID, Valid: true}
 	case contactport.HistoricalImportCustomerIdentity:
-		customerID = targetID
+		customerID = pgtype.Int8{Int64: targetID, Valid: true}
 	case contactport.HistoricalImportExternalIdentity:
-		identityID = targetID
+		identityID = pgtype.Int8{Int64: targetID, Valid: true}
 	}
-	tag, err := tx.Exec(ctx, `INSERT INTO legacy_contact_identity_source_mappings(source_table,source_key_hmac,staff_id,customer_id,identity_id,first_run_id,last_run_id,payload_hmac) VALUES($1,$2,$3,$4,$5,$6,$6,$7)`, sourceTable, fact.SourceKeyHMAC, staffID, customerID, identityID, runID, fact.PayloadHMAC)
+	rows, err := contactdb.New(tx).AppendHistoricalImportLineage(ctx, contactdb.AppendHistoricalImportLineageParams{SourceTable: sourceTable, SourceKeyHmac: fact.SourceKeyHMAC, StaffID: staffID, CustomerID: customerID, IdentityID: identityID, RunID: runID, PayloadHmac: fact.PayloadHMAC})
 	if err != nil {
 		return err
 	}
-	if tag.RowsAffected() != 1 {
+	if rows != 1 {
 		return ErrHistoricalImportTargetDrift
 	}
 	return nil
@@ -318,11 +307,11 @@ func (HistoricalImportRepository) AppendHistoricalImportQuarantine(ctx context.C
 	if err != nil {
 		return err
 	}
-	tag, err := tx.Exec(ctx, `INSERT INTO legacy_contact_identity_import_quarantines(run_id,source_table,source_key_hmac,reason_code,payload_hmac,field_digest) VALUES($1,$2,$3,$4,$5,$6)`, quarantine.RunID, sourceTable, quarantine.SourceFact.SourceKeyHMAC, quarantine.ReasonCode, quarantine.SourceFact.PayloadHMAC, quarantine.SourceFact.FieldDigest)
+	rows, err := contactdb.New(tx).AppendHistoricalImportQuarantine(ctx, contactdb.AppendHistoricalImportQuarantineParams{RunID: quarantine.RunID, SourceTable: sourceTable, SourceKeyHmac: quarantine.SourceFact.SourceKeyHMAC, ReasonCode: quarantine.ReasonCode, PayloadHmac: quarantine.SourceFact.PayloadHMAC, FieldDigest: quarantine.SourceFact.FieldDigest})
 	if err != nil {
 		return err
 	}
-	if tag.RowsAffected() != 1 {
+	if rows != 1 {
 		return ErrHistoricalImportTargetDrift
 	}
 	return nil
@@ -346,11 +335,11 @@ func (HistoricalImportRepository) AppendHistoricalImportRowReceipt(ctx context.C
 	if err != nil {
 		return err
 	}
-	tag, err := tx.Exec(ctx, `INSERT INTO legacy_contact_identity_import_row_receipts(run_id,source_table,source_key_hmac,payload_hmac,field_digest,disposition) VALUES($1,$2,$3,$4,$5,$6)`, runID, sourceTable, fact.SourceKeyHMAC, fact.PayloadHMAC, fact.FieldDigest, dispositionText)
+	rows, err := contactdb.New(tx).AppendHistoricalImportRowReceipt(ctx, contactdb.AppendHistoricalImportRowReceiptParams{RunID: runID, SourceTable: sourceTable, SourceKeyHmac: fact.SourceKeyHMAC, PayloadHmac: fact.PayloadHMAC, FieldDigest: fact.FieldDigest, Disposition: dispositionText})
 	if err != nil {
 		return err
 	}
-	if tag.RowsAffected() != 1 {
+	if rows != 1 {
 		return ErrHistoricalImportTargetDrift
 	}
 	return nil
