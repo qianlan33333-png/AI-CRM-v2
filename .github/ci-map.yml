@@ -38,6 +38,11 @@
       "effects": {"api": true,"web": true,"web_mode": "build"}
     },
     {
+      "name": "openapi-contract-tool",
+      "patterns": ["tools/openapi-contract/**"],
+      "effects": {"api": true}
+    },
+    {
       "name": "migrations",
       "patterns": ["migrations/**"],
       "effects": {"database": true,"database_mode": "selected","sqlc": true}

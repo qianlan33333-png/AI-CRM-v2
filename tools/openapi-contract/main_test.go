@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"reflect"
 	"regexp"
 	"strings"
@@ -16,7 +15,7 @@ const mappingPath = "../../docs/api-mapping.jsonl"
 
 var (
 	freshOnce      sync.Once
-	freshDocument  []byte
+	freshDocument  *openapi3.T
 	freshInventory mappingInventory
 	freshErr       error
 )
@@ -1292,19 +1291,13 @@ func fresh(t *testing.T) (*openapi3.T, mappingInventory) {
 			freshErr = err
 			return
 		}
-		freshDocument, freshErr = json.Marshal(doc)
+		freshDocument = doc
 		freshInventory = inventory
 	})
 	if freshErr != nil {
 		t.Fatal(freshErr)
 	}
-	loader := openapi3.NewLoader()
-	loader.IsExternalRefsAllowed = false
-	doc, err := loader.LoadFromData(freshDocument)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return doc, cloneMappingInventory(freshInventory)
+	return cloneOpenAPIDocument(freshDocument), cloneMappingInventory(freshInventory)
 }
 
 func cloneMappingInventory(source mappingInventory) mappingInventory {
