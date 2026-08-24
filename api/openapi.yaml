@@ -15038,8 +15038,8 @@ components:
       additionalProperties: false
       properties:
         event_type: { type: string, maxLength: 200 }
-        consumer: { type: string, enum: ["", automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1, cloud-campaign.fact.v1, outbound-campaign-handoff.fact.v1] }
-        status: { type: string, enum: ["", pending, processing, completed, final_failed, outcome_unknown] }
+        consumer: { type: string, enum: ["", automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1, cloud-campaign.fact.v1, outbound-campaign-handoff.fact.v1], x-enum-varnames: [InternalEventSafeExportRequestConsumerEmpty, InternalEventSafeExportRequestConsumerAutomationTagTriggerV1, InternalEventSafeExportRequestConsumerStatsTagAppliedV1, InternalEventSafeExportRequestConsumerOperationCycleFactV1, InternalEventSafeExportRequestConsumerCloudCampaignFactV1, InternalEventSafeExportRequestConsumerOutboundCampaignHandoffFactV1] }
+        status: { type: string, enum: ["", pending, processing, completed, final_failed, outcome_unknown], x-enum-varnames: [InternalEventSafeExportRequestStatusEmpty, InternalEventSafeExportRequestStatusPending, InternalEventSafeExportRequestStatusProcessing, InternalEventSafeExportRequestStatusCompleted, InternalEventSafeExportRequestStatusFinalFailed, InternalEventSafeExportRequestStatusOutcomeUnknown] }
     InternalEventSafeExportResponse:
       type: object
       additionalProperties: false
@@ -15050,8 +15050,8 @@ components:
         watermark: { type: string, format: date-time }
         created_at: { type: string, format: date-time }
         download_url: { type: string, pattern: '^/api/admin/internal-events/exports/ese_[0-9a-f]{32}/download$' }
-        local_only: { type: boolean, enum: [true] }
-        real_external_call_executed: { type: boolean, enum: [false] }
+        local_only: { type: boolean, enum: [true], x-enum-varnames: [InternalEventSafeExportResponseLocalOnlyTrue] }
+        real_external_call_executed: { type: boolean, enum: [false], x-enum-varnames: [InternalEventSafeExportResponseRealExternalCallExecutedFalse] }
     CustomerDetailResponse:
       type: object
       additionalProperties: false

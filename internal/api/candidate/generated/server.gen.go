@@ -3768,13 +3768,13 @@ func (e LegacyOutboundRetryReceiptRealExternalCallExecuted) Valid() bool {
 
 // Defines values for LegacyOutboundRetryReceiptState.
 const (
-	Completed LegacyOutboundRetryReceiptState = "completed"
+	LegacyOutboundRetryReceiptStateCompleted LegacyOutboundRetryReceiptState = "completed"
 )
 
 // Valid indicates whether the value is a known member of the LegacyOutboundRetryReceiptState enum.
 func (e LegacyOutboundRetryReceiptState) Valid() bool {
 	switch e {
-	case Completed:
+	case LegacyOutboundRetryReceiptStateCompleted:
 		return true
 	default:
 		return false
@@ -4830,19 +4830,19 @@ func (e LegacyRuntimeHealthSnapshotStatus) Valid() bool {
 
 // Defines values for LegacyRuntimeHealthSnapshotWarning.
 const (
-	LegacyRuntimeHealthSnapshotWarningEmpty                                                       LegacyRuntimeHealthSnapshotWarning = ""
-	LegacyRuntimeHealthSnapshotWarningFixtureDataMode                                             LegacyRuntimeHealthSnapshotWarning = "fixture data mode"
-	LegacyRuntimeHealthSnapshotWarningProductionRuntimeIsUsingFixtureDataProductionDataIsNotReady LegacyRuntimeHealthSnapshotWarning = "production runtime is using fixture data; production data is not ready"
+	Empty                                                       LegacyRuntimeHealthSnapshotWarning = ""
+	FixtureDataMode                                             LegacyRuntimeHealthSnapshotWarning = "fixture data mode"
+	ProductionRuntimeIsUsingFixtureDataProductionDataIsNotReady LegacyRuntimeHealthSnapshotWarning = "production runtime is using fixture data; production data is not ready"
 )
 
 // Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotWarning enum.
 func (e LegacyRuntimeHealthSnapshotWarning) Valid() bool {
 	switch e {
-	case LegacyRuntimeHealthSnapshotWarningEmpty:
+	case Empty:
 		return true
-	case LegacyRuntimeHealthSnapshotWarningFixtureDataMode:
+	case FixtureDataMode:
 		return true
-	case LegacyRuntimeHealthSnapshotWarningProductionRuntimeIsUsingFixtureDataProductionDataIsNotReady:
+	case ProductionRuntimeIsUsingFixtureDataProductionDataIsNotReady:
 		return true
 	default:
 		return false
@@ -6549,13 +6549,13 @@ func (e SidebarSafeChoiceAnswerQuestionType) Valid() bool {
 
 // Defines values for SidebarSafetyLocalOnly.
 const (
-	True SidebarSafetyLocalOnly = true
+	SidebarSafetyLocalOnlyTrue SidebarSafetyLocalOnly = true
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyLocalOnly enum.
 func (e SidebarSafetyLocalOnly) Valid() bool {
 	switch e {
-	case True:
+	case SidebarSafetyLocalOnlyTrue:
 		return true
 	default:
 		return false
@@ -6579,13 +6579,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	False SidebarSafetyRealExternalCallExecuted = false
+	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case False:
+	case SidebarSafetyRealExternalCallExecutedFalse:
 		return true
 	default:
 		return false
