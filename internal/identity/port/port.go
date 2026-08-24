@@ -4,10 +4,13 @@ package port
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 )
+
+var ErrHistoricalScopedIdentityConflict = errors.New("historical scoped identity conflict")
 
 type IDKind string
 type Assurance string
@@ -47,6 +50,7 @@ type HistoricalScopedIdentity struct {
 	Scope          string
 	ExternalUserID string
 	SourceKeyHMAC  []byte
+	HMACKeyVersion int16
 }
 
 type HistoricalScopedIdentityResult struct {

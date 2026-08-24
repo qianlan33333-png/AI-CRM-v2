@@ -39,7 +39,7 @@ INSERT INTO identities (
 ) VALUES (
   sqlc.arg(customer_id)::bigint, 'wecom_external_userid', sqlc.arg(scope)::text,
   sqlc.arg(external_userid)::text, 1, 'declared', 'dm01.legacy_import',
-  substring(sqlc.arg(source_key_hmac)::bytea FROM 1 FOR 16), 1, now()
+  substring(sqlc.arg(source_key_hmac)::bytea FROM 1 FOR 16), sqlc.arg(fingerprint_key_version)::smallint, now()
 )
 ON CONFLICT (kind, scope, normalized_value) DO UPDATE
 SET customer_id = EXCLUDED.customer_id,

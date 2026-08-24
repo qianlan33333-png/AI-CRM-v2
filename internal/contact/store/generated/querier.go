@@ -90,6 +90,7 @@ type Querier interface {
 	UpdateLegacyTag(ctx context.Context, arg UpdateLegacyTagParams) (UpdateLegacyTagRow, error)
 	UpdateLegacyTagGroup(ctx context.Context, arg UpdateLegacyTagGroupParams) (TagGroup, error)
 	UpdateSidebarCustomerProfile(ctx context.Context, arg UpdateSidebarCustomerProfileParams) (UpdateSidebarCustomerProfileRow, error)
+	UpsertHistoricalImportStaff(ctx context.Context, arg UpsertHistoricalImportStaffParams) (int64, error)
 }
 
 var _ Querier = (*Queries)(nil)

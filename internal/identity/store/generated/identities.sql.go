@@ -38,7 +38,7 @@ INSERT INTO identities (
 ) VALUES (
   $1::bigint, 'wecom_external_userid', $2::text,
   $3::text, 1, 'declared', 'dm01.legacy_import',
-  substring($4::bytea FROM 1 FOR 16), 1, now()
+  substring($4::bytea FROM 1 FOR 16), $5::smallint, now()
 )
 ON CONFLICT (kind, scope, normalized_value) DO UPDATE
 SET customer_id = EXCLUDED.customer_id,
@@ -48,10 +48,11 @@ RETURNING id, customer_id = $1::bigint AS bound
 `
 
 type BindHistoricalScopedWeComIdentityParams struct {
-	CustomerID     int64  `json:"customer_id"`
-	Scope          string `json:"scope"`
-	ExternalUserid string `json:"external_userid"`
-	SourceKeyHmac  []byte `json:"source_key_hmac"`
+	CustomerID            int64  `json:"customer_id"`
+	Scope                 string `json:"scope"`
+	ExternalUserid        string `json:"external_userid"`
+	SourceKeyHmac         []byte `json:"source_key_hmac"`
+	FingerprintKeyVersion int16  `json:"fingerprint_key_version"`
 }
 
 type BindHistoricalScopedWeComIdentityRow struct {
@@ -65,6 +66,7 @@ func (q *Queries) BindHistoricalScopedWeComIdentity(ctx context.Context, arg Bin
 		arg.Scope,
 		arg.ExternalUserid,
 		arg.SourceKeyHmac,
+		arg.FingerprintKeyVersion,
 	)
 	var i BindHistoricalScopedWeComIdentityRow
 	err := row.Scan(&i.ID, &i.Bound)
