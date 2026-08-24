@@ -10,6 +10,7 @@ import (
 )
 
 var ErrInvalidImageReference = errors.New("invalid automation image reference fixture")
+var ErrInvalidAttachmentReference = errors.New("invalid automation attachment reference fixture")
 
 func CreateImageReference(ctx context.Context, pool *pgxpool.Pool, name, code string, imageID int64) (int64, error) {
 	if pool == nil || name == "" || code == "" || imageID < 1 {
@@ -21,6 +22,20 @@ INSERT INTO automation_agent_configurations (agent_name,agent_code,automation_ty
 VALUES ($1,$2,'agent','active',jsonb_build_object('image_library_ids',jsonb_build_array($3::bigint)),1,1,now(),now())
 RETURNING id`, name, code, imageID).Scan(&id); err != nil {
 		return 0, fmt.Errorf("create automation-owned image reference: %w", err)
+	}
+	return id, nil
+}
+
+func CreateAttachmentReference(ctx context.Context, pool *pgxpool.Pool, name, code string, attachmentID int64) (int64, error) {
+	if pool == nil || name == "" || code == "" || attachmentID < 1 {
+		return 0, ErrInvalidAttachmentReference
+	}
+	var id int64
+	if err := pool.QueryRow(ctx, `
+INSERT INTO automation_agent_configurations (agent_name,agent_code,automation_type,status,fixed_content_package_json,created_by,updated_by,created_at,updated_at)
+VALUES ($1,$2,'fixed_script','active',jsonb_build_object('attachment_library_ids',jsonb_build_array($3::bigint)),1,1,now(),now())
+RETURNING id`, name, code, attachmentID).Scan(&id); err != nil {
+		return 0, fmt.Errorf("create automation-owned attachment reference: %w", err)
 	}
 	return id, nil
 }
