@@ -51,7 +51,6 @@ p4-hxc-sender-0051-0348|0049|P4HXC_SENDER_TEST_DATABASE_URL|script|acceptance/hx
 p4-delivery-lineage-0308|0050|P4DELIVERYLINEAGE_TEST_DATABASE_URL|legacy-make|p4-delivery-lineage-0308-acceptance|-
 p4-image-delete-0362|0051|P4IMAGEDELETE_TEST_DATABASE_URL|legacy-make|p4-image-delete-0362-acceptance|-
 internal-events-0367-0368|0052|P4INTERNAL_EVENTS_TEST_DATABASE_URL|legacy-make|p4-internal-events-0367-0368-acceptance|-
-ee01-internal-event-safe-export|0073|P4EE01_TEST_DATABASE_URL|legacy-make|p4-ee01-internal-event-safe-export-acceptance|-
 p4-customer-profile-tags-0301|0053|P4CUSTOMERPROFILETAGS_TEST_DATABASE_URL|legacy-make|p4-customer-profile-tags-0301-acceptance|-
 p4-i01b-product-entitlement|0054|P4I01B_PRODUCT_TEST_DATABASE_URL|legacy-make|p4-i01b-product-entitlement-acceptance|-
 p4-channel-entrants|0055|P4CHANNELENTRANTS_TEST_DATABASE_URL|legacy-make|p4-channel-entrants-acceptance|-
@@ -59,3 +58,4 @@ p4-setup-wizard|0056|-|go-test|./cmd/aicrm|^TestSetupWizard
 p4-service-period-members|0057|AICRM_SERVICE_PERIOD_MEMBER_TEST_DATABASE_URL|go-test|./internal/product/serviceperiodmember/store|^TestRepositoryPostgreSQL16
 p4-contact-policy|0058|P4CONTACTPOLICY_TEST_DATABASE_URL|legacy-make|p4-contact-policy-acceptance|-
 p4-outbound-campaign-handoff|0059|P4OUTBOUNDCAMPAIGNHANDOFF_TEST_DATABASE_URL|legacy-make|p4-outbound-campaign-handoff-acceptance|-
+ee01-internal-event-safe-export|0060|P4EE01_TEST_DATABASE_URL|legacy-make|p4-ee01-internal-event-safe-export-acceptance|-
