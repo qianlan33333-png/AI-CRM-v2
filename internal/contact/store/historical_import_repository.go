@@ -17,6 +17,27 @@ import (
 // transaction-bound and intentionally has no role, Provider, or event method.
 type HistoricalImportRepository struct{}
 
+type LeaseFence struct {
+	RunID      int64
+	Generation int64
+	TokenHMAC  []byte
+}
+
+func (HistoricalImportRepository) AssertLease(ctx context.Context, fence LeaseFence) error {
+	if fence.RunID < 1 || fence.Generation < 1 || len(fence.TokenHMAC) != 32 {
+		return ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = contactdb.New(tx).AssertHistoricalImportLease(ctx, contactdb.AssertHistoricalImportLeaseParams{RunID: fence.RunID, ExpectedGeneration: fence.Generation, TokenHmac: fence.TokenHMAC})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrHistoricalImportTargetDrift
+	}
+	return err
+}
+
 var _ contactport.HistoricalImportTarget = HistoricalImportRepository{}
 
 func (HistoricalImportRepository) UpsertStaff(ctx context.Context, userID, name string, active bool, createdAt, updatedAt time.Time) (int64, error) {

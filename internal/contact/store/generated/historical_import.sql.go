@@ -117,6 +117,29 @@ func (q *Queries) AppendHistoricalImportRowReceipt(ctx context.Context, arg Appe
 	return result.RowsAffected(), nil
 }
 
+const assertHistoricalImportLease = `-- name: AssertHistoricalImportLease :one
+SELECT id
+FROM legacy_contact_identity_import_runs
+WHERE id = $1::bigint
+  AND lease_generation = $2::bigint
+  AND lease_token_hmac = $3::bytea
+  AND lease_expires_at >= now()
+FOR SHARE
+`
+
+type AssertHistoricalImportLeaseParams struct {
+	RunID              int64  `json:"run_id"`
+	ExpectedGeneration int64  `json:"expected_generation"`
+	TokenHmac          []byte `json:"token_hmac"`
+}
+
+func (q *Queries) AssertHistoricalImportLease(ctx context.Context, arg AssertHistoricalImportLeaseParams) (int64, error) {
+	row := q.db.QueryRow(ctx, assertHistoricalImportLease, arg.RunID, arg.ExpectedGeneration, arg.TokenHmac)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const claimHistoricalImportLease = `-- name: ClaimHistoricalImportLease :one
 UPDATE legacy_contact_identity_import_runs
 SET lease_token_hmac = $1::bytea,

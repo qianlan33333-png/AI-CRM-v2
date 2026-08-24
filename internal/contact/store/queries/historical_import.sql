@@ -55,6 +55,15 @@ WHERE id = sqlc.arg(run_id)::bigint
   AND lease_expires_at >= now()
 RETURNING lease_generation;
 
+-- name: AssertHistoricalImportLease :one
+SELECT id
+FROM legacy_contact_identity_import_runs
+WHERE id = sqlc.arg(run_id)::bigint
+  AND lease_generation = sqlc.arg(expected_generation)::bigint
+  AND lease_token_hmac = sqlc.arg(token_hmac)::bytea
+  AND lease_expires_at >= now()
+FOR SHARE;
+
 -- name: LockUniqueActiveStaffForHistoricalImport :one
 SELECT id
 FROM staff

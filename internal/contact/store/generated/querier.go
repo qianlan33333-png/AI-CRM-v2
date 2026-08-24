@@ -20,6 +20,7 @@ type Querier interface {
 	AppendHistoricalImportRowReceipt(ctx context.Context, arg AppendHistoricalImportRowReceiptParams) (int64, error)
 	ArchiveLegacyTag(ctx context.Context, id int64) (ArchiveLegacyTagRow, error)
 	ArchiveLegacyTagGroup(ctx context.Context, groupID int64) (TagGroup, error)
+	AssertHistoricalImportLease(ctx context.Context, arg AssertHistoricalImportLeaseParams) (int64, error)
 	ClaimHistoricalImportLease(ctx context.Context, arg ClaimHistoricalImportLeaseParams) (int64, error)
 	CompleteChannelOperationReceipt(ctx context.Context, arg CompleteChannelOperationReceiptParams) (CompleteChannelOperationReceiptRow, error)
 	CompleteCustomerContactPolicyReceipt(ctx context.Context, arg CompleteCustomerContactPolicyReceiptParams) (CompleteCustomerContactPolicyReceiptRow, error)
