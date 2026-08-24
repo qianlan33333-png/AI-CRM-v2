@@ -5,6 +5,8 @@
 - `prototypes/`：被拒绝原型的脱敏结论、哈希和来源链接；不含源码包。
 - `governance/`：仓库可见性、平台治理能力与 GitHub 操作证据；不改写历史证据。
 - `phases/`：阶段累计 main SHA、最终 CI 与未验证外部门的权威 closeout。
+- `p4/backend-capability-ledger.md`：P4 后端四个 V2 业务包的冻结分母、Matrix
+  边界、主线实现与分层验收状态。
 - `slices/<slice-id>.md`：后续每片的输入/输出哈希、命令、退出码、PR 和
   外部门状态。
 - `docs/execution/slice-ledger.yml`：机器可读的全局索引。
