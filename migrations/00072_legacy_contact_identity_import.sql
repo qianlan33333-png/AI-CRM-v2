@@ -7,6 +7,7 @@ CREATE TABLE legacy_contact_identity_import_runs (
   source_repository_sha TEXT NOT NULL CHECK (source_repository_sha ~ '^[0-9a-f]{40}$'),
   snapshot_id TEXT NOT NULL CHECK (btrim(snapshot_id) <> ''),
   mode TEXT NOT NULL CHECK (mode IN ('preflight','full','incremental','reconcile')),
+  -- Audit only; each source table has its own fixed upper bound below.
   upper_watermark TIMESTAMPTZ NOT NULL,
   hmac_key_version SMALLINT NOT NULL CHECK (hmac_key_version > 0),
   state TEXT NOT NULL CHECK (state IN ('reserved','preflighted','importing','imported','reconciling','reconciled','failed')),
@@ -19,7 +20,9 @@ CREATE TABLE legacy_contact_identity_import_runs (
 CREATE TABLE legacy_contact_identity_import_checkpoints (
   run_id BIGINT NOT NULL REFERENCES legacy_contact_identity_import_runs(id) ON DELETE RESTRICT,
   source_table TEXT NOT NULL CHECK (source_table IN ('owner_role_map','crm_user_identity','wecom_external_contact_identity_map','crm_user_identity_merge_audit','crm_user_identity_resolution_queue','admin_wecom_directory_members','contacts','crm_user_identity_conflicts','external_contact_bindings','people','wecom_external_contact_follow_users')),
-  source_key_hmac BYTEA NOT NULL CHECK (octet_length(source_key_hmac) = 32),
+  -- Emit one final checkpoint only after the full bounded table scan. Row
+  -- receipts, not an HMAC ordering cursor, make a resumed scan idempotent.
+  final_source_key_hmac BYTEA NOT NULL CHECK (octet_length(final_source_key_hmac) = 32),
   payload_hmac BYTEA NOT NULL CHECK (octet_length(payload_hmac) = 32),
   field_digest BYTEA NOT NULL CHECK (octet_length(field_digest) = 32),
   watermark TIMESTAMPTZ,
@@ -27,7 +30,7 @@ CREATE TABLE legacy_contact_identity_import_checkpoints (
   upper_bound_empty BOOLEAN NOT NULL DEFAULT FALSE,
   CHECK ((upper_bound_empty AND watermark IS NULL AND upper_source_key_hmac IS NULL) OR (NOT upper_bound_empty AND watermark IS NOT NULL AND upper_source_key_hmac IS NOT NULL)),
   PRIMARY KEY (run_id, source_table),
-  UNIQUE (run_id, source_key_hmac)
+  UNIQUE (run_id, final_source_key_hmac)
 );
 CREATE TABLE legacy_contact_identity_source_mappings (
   source_table TEXT NOT NULL,

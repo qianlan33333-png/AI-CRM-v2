@@ -55,7 +55,7 @@ func LoadManifest(path, wantHex string) (Manifest, [32]byte, error) {
 	return m, digest, nil
 }
 func (m Manifest) Valid() error {
-	if m.ContractVersion != 1 || m.SourceSystem == "" || m.LegacyRepositorySHA != LegacyRepositorySHA || m.SnapshotID == "" || m.WeComCorpID == "" || m.HMACKeyVersion < 1 {
+	if m.ContractVersion != 1 || m.SourceSystem == "" || m.LegacyRepositorySHA != LegacyRepositorySHA || m.SnapshotID == "" || !m.SingleCorp || m.WeComCorpID == "" || m.HMACKeyVersion < 1 {
 		return errors.New("invalid DM01 manifest")
 	}
 	want := map[string][2]string{
@@ -63,7 +63,7 @@ func (m Manifest) Valid() error {
 		"wecom_external_contact_identity_map": {"id", "updated_at+id"}, "crm_user_identity_merge_audit": {"id", "created_at+id"},
 		"crm_user_identity_resolution_queue": {"id", "updated_at+id"}, "admin_wecom_directory_members": {"id", "last_synced_at+id"},
 		"contacts": {"id", "updated_at+id"}, "crm_user_identity_conflicts": {"id", "updated_at+id"},
-		"external_contact_bindings": {"id", "updated_at+id"}, "people": {"id", "updated_at+id"},
+		"external_contact_bindings": {"external_userid", "updated_at+external_userid"}, "people": {"id", "updated_at+id"},
 		"wecom_external_contact_follow_users": {"id", "updated_at+id"},
 	}
 	seen := map[string]bool{}
