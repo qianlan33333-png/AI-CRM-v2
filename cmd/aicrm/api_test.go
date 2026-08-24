@@ -42,6 +42,9 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodGet, "/api/sidebar/v2/materials", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/sidebar/v2/materials/image/1/thumbnail", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead},
+		{http.MethodPost, "/api/v1/customer-exports", authport.CapabilityCustomersRead},
+		{http.MethodGet, "/api/v1/customer-exports/cse_0123456789abcdef0123456789abcdef", authport.CapabilityCustomersRead},
+		{http.MethodGet, "/api/v1/customer-exports/cse_0123456789abcdef0123456789abcdef/download", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/v1/customers/1", authport.CapabilityCustomersRead},
 		{http.MethodPatch, "/api/v1/customers/1", authport.CapabilityCustomersWrite},
 		{http.MethodPut, "/api/v1/customers/1/stage", authport.CapabilityCustomersWrite},
@@ -103,6 +106,11 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 			if test.capability == authport.CapabilityAuthSessionLogout {
 				request.Header.Set("X-CSRF-Token", "router-test-csrf")
 			}
+			if test.method == http.MethodPost && strings.Contains(test.path, "/customer-exports") {
+				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
+				request.Header.Set("Idempotency-Key", "router-customer-export-key")
+				request.Header.Set("Content-Type", "application/json")
+			}
 			if test.capability == authport.CapabilityStagesWrite ||
 				test.capability == authport.CapabilitySegmentsWrite ||
 				test.capability == authport.CapabilityCustomersWrite ||
@@ -160,6 +168,7 @@ func TestFinalRouterRejectsProtectedWriteWithoutValidCSRF(t *testing.T) {
 		{http.MethodPut, "/api/v1/customers/1/tags/2", ""},
 		{http.MethodDelete, "/api/v1/customers/1/tags/2", ""},
 		{http.MethodPost, "/api/v1/identity/bind", `{}`},
+		{http.MethodPost, "/api/v1/customer-exports", `{}`},
 		{http.MethodPost, "/api/v1/identity/ingest", `{}`},
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/approve", `{"expected_version":1,"primary_customer_id":1,"reason":"confirm"}`},
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/reject", `{"expected_version":1,"reason":"reject"}`},

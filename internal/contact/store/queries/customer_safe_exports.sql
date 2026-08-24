@@ -36,10 +36,18 @@ INSERT INTO public.customer_safe_export_rows(export_id,row_index,customer_id,dis
 VALUES(sqlc.arg(export_id),sqlc.arg(row_index),sqlc.arg(customer_id),sqlc.arg(display_name),sqlc.narg(owner_staff_id),sqlc.narg(stage_id),sqlc.narg(channel_id),sqlc.narg(added_at),sqlc.narg(last_interact_at));
 
 -- name: CompleteCustomerSafeExportReceipt :one
-UPDATE public.customer_safe_export_receipts
+WITH locked_export AS (
+  SELECT e.id
+  FROM public.customer_safe_exports e
+  JOIN public.customer_safe_export_receipts r ON r.id=sqlc.arg(id) AND r.actor_id=e.actor_id
+  WHERE e.id=sqlc.arg(export_id)
+  FOR UPDATE OF e
+)
+UPDATE public.customer_safe_export_receipts r
 SET export_id=sqlc.arg(export_id),state='completed',result_snapshot=sqlc.arg(result_snapshot),completed_at=sqlc.arg(completed_at)
-WHERE id=sqlc.arg(id) AND state='reserved'
-RETURNING id,payload_digest,result_snapshot,state='completed' AS completed;
+FROM locked_export
+WHERE r.id=sqlc.arg(id) AND r.state='reserved'
+RETURNING r.id,r.payload_digest,r.result_snapshot,r.state='completed' AS completed;
 
 -- name: GetCustomerSafeExport :one
 SELECT id,record_count,watermark,created_at,owner_scope_staff_id

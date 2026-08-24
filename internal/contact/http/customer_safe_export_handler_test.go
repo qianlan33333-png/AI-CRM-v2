@@ -14,18 +14,60 @@ import (
 )
 
 type customerSafeExportApplicationStub struct {
-	command contactapp.CustomerSafeExportCreate
+	command                 contactapp.CustomerSafeExportCreate
+	export                  contactapp.CustomerSafeExport
+	rows                    []contactapp.CustomerSafeExportRow
+	getErr                  error
+	downloadErr             error
+	getActor, downloadActor int64
 }
 
 func (stub *customerSafeExportApplicationStub) Create(_ context.Context, command contactapp.CustomerSafeExportCreate) (contactapp.CustomerSafeExport, error) {
 	stub.command = command
 	return contactapp.CustomerSafeExport{ID: "cse_0123456789abcdef0123456789abcdef", Watermark: time.Date(2026, 8, 24, 0, 0, 0, 0, time.UTC), CreatedAt: time.Date(2026, 8, 24, 0, 0, 0, 0, time.UTC)}, nil
 }
-func (*customerSafeExportApplicationStub) Get(context.Context, string, int64, *int64) (contactapp.CustomerSafeExport, error) {
-	return contactapp.CustomerSafeExport{}, nil
+func (stub *customerSafeExportApplicationStub) Get(_ context.Context, _ string, actor int64, _ *int64) (contactapp.CustomerSafeExport, error) {
+	stub.getActor = actor
+	return stub.export, stub.getErr
 }
-func (*customerSafeExportApplicationStub) Download(context.Context, string, int64, *int64) (contactapp.CustomerSafeExport, []contactapp.CustomerSafeExportRow, error) {
-	return contactapp.CustomerSafeExport{}, nil, nil
+func (stub *customerSafeExportApplicationStub) Download(_ context.Context, _ string, actor int64, _ *int64) (contactapp.CustomerSafeExport, []contactapp.CustomerSafeExportRow, error) {
+	stub.downloadActor = actor
+	return stub.export, stub.rows, stub.downloadErr
+}
+
+func TestCustomerSafeExportDownloadHTTPHeadersAndErrors(t *testing.T) {
+	owner := int64(42)
+	application := &customerSafeExportApplicationStub{export: contactapp.CustomerSafeExport{ID: "cse_0123456789abcdef0123456789abcdef", Watermark: time.Date(2026, 8, 24, 0, 0, 0, 0, time.UTC), CreatedAt: time.Date(2026, 8, 24, 0, 0, 0, 0, time.UTC)}, rows: []contactapp.CustomerSafeExportRow{{CustomerID: 7, DisplayName: "Doe, \"A\"\n\t=formula"}}}
+	handler, err := NewCustomerSafeExportHandler(application)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := authport.WithAuthenticatedSession(context.Background(), authport.Principal{AdminUserID: 7, Role: authport.RoleSales, StaffID: &owner}, "safe-export")
+	ctx, err = authport.WithAuthorization(ctx, authport.Authorization{Capability: authport.CapabilityCustomersRead, Scope: authport.ScopeOwnerStaff, OwnerStaffID: owner})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := httptest.NewRecorder()
+	handler.Download(response, httptest.NewRequest(http.MethodGet, "/api/v1/customer-exports/cse_0123456789abcdef0123456789abcdef/download", nil).WithContext(ctx), "cse_0123456789abcdef0123456789abcdef")
+	if response.Code != http.StatusOK || response.Header().Get("Content-Type") != "text/csv; charset=utf-8" || response.Header().Get("Cache-Control") != "no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" || !bytes.Contains(response.Body.Bytes(), []byte("\"Doe, \"\"A\"\"\n\t=formula\"")) {
+		t.Fatalf("status=%d headers=%v body=%q", response.Code, response.Header(), response.Body.String())
+	}
+	application.downloadErr = contactapp.ErrCustomerSafeExportNotFound
+	response = httptest.NewRecorder()
+	handler.Download(response, httptest.NewRequest(http.MethodGet, "/api/v1/customer-exports/cse_0123456789abcdef0123456789abcdef/download", nil).WithContext(ctx), "cse_0123456789abcdef0123456789abcdef")
+	if response.Code != http.StatusNotFound || bytes.Contains(response.Body.Bytes(), []byte("customer_id")) {
+		t.Fatalf("cross actor error status=%d body=%q", response.Code, response.Body.String())
+	}
+	badCtx := authport.WithAuthenticatedSession(context.Background(), authport.Principal{AdminUserID: 7, Role: authport.RoleAdmin}, "safe-export")
+	badCtx, err = authport.WithAuthorization(badCtx, authport.Authorization{Capability: authport.CapabilityCustomersWrite, Scope: authport.ScopeGlobal})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response = httptest.NewRecorder()
+	handler.Get(response, httptest.NewRequest(http.MethodGet, "/", nil).WithContext(badCtx), "cse_0123456789abcdef0123456789abcdef")
+	if response.Code != http.StatusForbidden {
+		t.Fatalf("wrong capability status=%d", response.Code)
+	}
 }
 
 func TestCustomerSafeExportHandlerScopesSalesAndUsesReceiptKey(t *testing.T) {

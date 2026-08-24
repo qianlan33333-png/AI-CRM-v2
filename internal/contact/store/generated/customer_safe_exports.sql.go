@@ -12,10 +12,18 @@ import (
 )
 
 const completeCustomerSafeExportReceipt = `-- name: CompleteCustomerSafeExportReceipt :one
-UPDATE public.customer_safe_export_receipts
+WITH locked_export AS (
+  SELECT e.id
+  FROM public.customer_safe_exports e
+  JOIN public.customer_safe_export_receipts r ON r.id=$4 AND r.actor_id=e.actor_id
+  WHERE e.id=$1
+  FOR UPDATE OF e
+)
+UPDATE public.customer_safe_export_receipts r
 SET export_id=$1,state='completed',result_snapshot=$2,completed_at=$3
-WHERE id=$4 AND state='reserved'
-RETURNING id,payload_digest,result_snapshot,state='completed' AS completed
+FROM locked_export
+WHERE r.id=$4 AND r.state='reserved'
+RETURNING r.id,r.payload_digest,r.result_snapshot,r.state='completed' AS completed
 `
 
 type CompleteCustomerSafeExportReceiptParams struct {
