@@ -35,6 +35,25 @@ type IDRef struct {
 	Source    string
 }
 
+// HistoricalScopedIdentityBinder is a transaction-bound DM01-only port. It
+// supports exactly one scoped WeCom identity binding and cannot merge, emit an
+// event, invoke a Provider, or expose arbitrary identity SQL.
+type HistoricalScopedIdentityBinder interface {
+	BindHistoricalScopedWeComIdentity(context.Context, HistoricalScopedIdentity) (HistoricalScopedIdentityResult, error)
+}
+
+type HistoricalScopedIdentity struct {
+	CustomerID     contactport.CustomerID
+	Scope          string
+	ExternalUserID string
+	SourceKeyHMAC  []byte
+}
+
+type HistoricalScopedIdentityResult struct {
+	IdentityID int64
+	Bound      bool
+}
+
 type ResolveStatus string
 
 const (

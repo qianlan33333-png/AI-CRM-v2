@@ -148,6 +148,17 @@ type StaffDirectoryEntry struct {
 	UpdatedAt   time.Time
 }
 
+// HistoricalImportStaffReader is narrower than the ordinary directory read.
+// The manifest's single-corp authorization is checked by DM01 before this
+// call; staff has no corp_id and legacy roles never cross this boundary.
+type HistoricalImportStaffReader interface {
+	LockUniqueActiveStaffForHistoricalImport(context.Context, string) (HistoricalImportStaff, error)
+}
+
+type HistoricalImportStaff struct {
+	ID int64
+}
+
 type Stage struct {
 	ID        StageID
 	Name      string

@@ -15,6 +15,7 @@ type StaffDirectoryRepository struct{ pool *pgxpool.Pool }
 
 var _ contact.ActiveStaffReader = (*StaffDirectoryRepository)(nil)
 var _ contact.EligibleStaffReferenceReader = (*StaffDirectoryRepository)(nil)
+var _ contact.HistoricalImportStaffReader = (*StaffDirectoryRepository)(nil)
 var _ contact.StaffDirectoryReader = (*StaffDirectoryRepository)(nil)
 
 func NewStaffDirectoryRepository(pool *pgxpool.Pool) *StaffDirectoryRepository {
@@ -66,6 +67,34 @@ func (*StaffDirectoryRepository) LockEligibleStaffByWeComUserID(ctx context.Cont
 	}
 	if result.WeComUserID == "" {
 		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceNotFound
+	}
+	return result, nil
+}
+
+func (*StaffDirectoryRepository) LockUniqueActiveStaffForHistoricalImport(ctx context.Context, weComUserID string) (contact.HistoricalImportStaff, error) {
+	if ctx == nil || strings.TrimSpace(weComUserID) != weComUserID || weComUserID == "" {
+		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceNotFound
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceUnavailable
+	}
+	rows, err := tx.Query(ctx, `SELECT id FROM staff WHERE wecom_userid = $1 AND is_active FOR SHARE`, weComUserID)
+	if err != nil {
+		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceUnavailable
+	}
+	defer rows.Close()
+	var result contact.HistoricalImportStaff
+	for rows.Next() {
+		if result.ID != 0 || rows.Scan(&result.ID) != nil {
+			return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceUnavailable
+		}
+	}
+	if rows.Err() != nil {
+		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceUnavailable
+	}
+	if result.ID == 0 {
+		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceNotFound
 	}
 	return result, nil
 }
