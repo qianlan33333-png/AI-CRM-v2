@@ -901,7 +901,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"disableRadarLink":                           {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
 	"getRadarLinkShareProjection":                {"admin.read", map[string]string{"admin": "global", "ops": "global"}},
 	"listCloudCampaigns":                         {"operations.read", map[string]string{"admin": "global", "ops": "global"}},
-	"getCloudCampaign":                           {"admin.read", map[string]string{"admin": "global"}},
+	"getCloudCampaign":                           {"operations.read", map[string]string{"admin": "global", "ops": "global"}},
 	"batchStartCloudCampaigns":                   {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteCloudCampaign":                        {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
 	"addCloudCampaignStep":                       {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
@@ -1823,10 +1823,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				read := op.OperationID == "listCloudCampaigns" || op.OperationID == "getCloudCampaign"
 				wantCapability, wantCSRF, wantSource := "operations.manage", "required", "local_command"
 				if read {
-					wantCapability, wantCSRF, wantSource = "admin.read", "none", "local_read_model"
-					if op.OperationID == "listCloudCampaigns" {
-						wantCapability = "operations.read"
-					}
+					wantCapability, wantCSRF, wantSource = "operations.read", "none", "local_read_model"
 				}
 				if op.Extensions["x-p4-decision-evidence"] != p4CloudCampaignEvidence || op.Extensions["x-aicrm-capability"] != wantCapability ||
 					op.Extensions["x-aicrm-auth-scheme"] != "human_session" || op.Extensions["x-aicrm-session-bound-csrf"] != wantCSRF ||

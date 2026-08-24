@@ -100,7 +100,6 @@ func TestCampaignListFinalRouterAllowsOnlyGlobalOperationsRead(t *testing.T) {
 		{"sales", &campaignListRBACAuth{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &owner}}, campaign.RoutePrefix},
 		{"owner scope", &campaignListRBACAuth{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleOps}, authorization: &authport.Authorization{Capability: authport.CapabilityOperationsRead, Scope: authport.ScopeOwnerStaff, OwnerStaffID: owner}}, campaign.RoutePrefix},
 		{"wrong capability", &campaignListRBACAuth{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleOps}, authorization: &authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeGlobal}}, campaign.RoutePrefix},
-		{"admin-only detail sibling", &campaignListRBACAuth{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleOps}, allowed: authport.CapabilityOperationsRead}, campaign.RoutePrefix + "/spring"},
 		{"manage sibling", &campaignListRBACAuth{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleOps}, allowed: authport.CapabilityOperationsRead}, campaign.RoutePrefix + "/batch-start"},
 	}
 	for _, test := range tests {
@@ -110,6 +109,41 @@ func TestCampaignListFinalRouterAllowsOnlyGlobalOperationsRead(t *testing.T) {
 				request = httptest.NewRequest(http.MethodPost, test.path, strings.NewReader(`{"items":[]}`))
 			}
 			request.AddCookie(&http.Cookie{Name: LegacySessionCookieName, Value: legacyToken(72)})
+			response := httptest.NewRecorder()
+			campaignListFinalRouter(t, test.auth).ServeHTTP(response, request)
+			if response.Code != http.StatusForbidden {
+				t.Fatalf("status=%d capabilities=%v body=%s", response.Code, test.auth.seen, response.Body.String())
+			}
+		})
+	}
+}
+
+func TestCampaignDetailFinalRouterAllowsOnlyGlobalOperationsRead(t *testing.T) {
+	for _, role := range []authport.Role{authport.RoleAdmin, authport.RoleOps} {
+		t.Run(string(role), func(t *testing.T) {
+			auth := &campaignListRBACAuth{principal: authport.Principal{AdminUserID: 7, Role: role}, allowed: authport.CapabilityOperationsRead}
+			request := httptest.NewRequest(http.MethodGet, campaign.RoutePrefix+"/spring", nil)
+			request.AddCookie(&http.Cookie{Name: LegacySessionCookieName, Value: legacyToken(73)})
+			response := httptest.NewRecorder()
+			campaignListFinalRouter(t, auth).ServeHTTP(response, request)
+			if response.Code != http.StatusOK || len(auth.seen) != 1 || auth.seen[0] != authport.CapabilityOperationsRead || !strings.Contains(response.Body.String(), `"campaign_code":"spring"`) {
+				t.Fatalf("status=%d capabilities=%v body=%s", response.Code, auth.seen, response.Body.String())
+			}
+		})
+	}
+
+	owner := int64(9)
+	for _, test := range []struct {
+		name string
+		auth *campaignListRBACAuth
+	}{
+		{"sales", &campaignListRBACAuth{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &owner}}},
+		{"owner scope", &campaignListRBACAuth{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleOps}, authorization: &authport.Authorization{Capability: authport.CapabilityOperationsRead, Scope: authport.ScopeOwnerStaff, OwnerStaffID: owner}}},
+		{"wrong capability", &campaignListRBACAuth{principal: authport.Principal{AdminUserID: 9, Role: authport.RoleOps}, authorization: &authport.Authorization{Capability: authport.CapabilityAdminRead, Scope: authport.ScopeGlobal}}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, campaign.RoutePrefix+"/spring", nil)
+			request.AddCookie(&http.Cookie{Name: LegacySessionCookieName, Value: legacyToken(74)})
 			response := httptest.NewRecorder()
 			campaignListFinalRouter(t, test.auth).ServeHTTP(response, request)
 			if response.Code != http.StatusForbidden {

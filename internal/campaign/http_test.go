@@ -42,7 +42,7 @@ func TestRouteFragmentReadWriteSecurityAndMethodClosure(t *testing.T) {
 	auth.calls = nil
 	read := httptest.NewRecorder()
 	handler.ServeHTTP(read, httptest.NewRequest(http.MethodGet, RoutePrefix+"/spring", nil))
-	if read.Code != http.StatusOK || len(auth.calls) != 1 || auth.calls[0].Capability != CapabilityAdminRead || csrf.calls != 0 {
+	if read.Code != http.StatusOK || len(auth.calls) != 1 || auth.calls[0].Capability != CapabilityOperationsRead || csrf.calls != 0 {
 		t.Fatalf("read status=%d calls=%+v csrf=%d body=%s", read.Code, auth.calls, csrf.calls, read.Body.String())
 	}
 	bad := httptest.NewRecorder()
