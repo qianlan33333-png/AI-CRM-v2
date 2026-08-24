@@ -6,6 +6,7 @@ CREATE TABLE legacy_contact_identity_import_runs (
   source_manifest_sha256 BYTEA NOT NULL CHECK (octet_length(source_manifest_sha256) = 32),
   source_repository_sha TEXT NOT NULL CHECK (source_repository_sha ~ '^[0-9a-f]{40}$'),
   snapshot_id TEXT NOT NULL CHECK (btrim(snapshot_id) <> ''),
+  parent_run_id BIGINT REFERENCES legacy_contact_identity_import_runs(id) ON DELETE RESTRICT,
   mode TEXT NOT NULL CHECK (mode IN ('preflight','full','incremental','reconcile')),
   -- Audit only; each source table has its own fixed upper bound below.
   upper_watermark TIMESTAMPTZ NOT NULL,
@@ -16,6 +17,7 @@ CREATE TABLE legacy_contact_identity_import_runs (
   lease_expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   completed_at TIMESTAMPTZ,
+  CHECK ((mode = 'reconcile' AND parent_run_id IS NOT NULL) OR (mode <> 'reconcile' AND parent_run_id IS NULL)),
   UNIQUE (source_manifest_sha256, mode, upper_watermark)
 );
 CREATE TABLE legacy_contact_identity_import_checkpoints (
@@ -106,7 +108,7 @@ BEGIN
   IF OLD.mode IN ('full', 'incremental') AND NEW.state = 'reconciling' THEN
     RAISE EXCEPTION 'DM01 import mode cannot reconcile in the same run' USING ERRCODE = '55000';
   END IF;
-  IF OLD.mode = 'reconcile' AND NEW.state IN ('importing', 'imported') THEN
+  IF OLD.mode = 'reconcile' AND NOT (OLD.state = 'reserved' AND NEW.state IN ('reconciling', 'failed')) AND NOT (OLD.state = 'reconciling' AND NEW.state IN ('reconciled', 'failed')) THEN
     RAISE EXCEPTION 'DM01 reconcile mode cannot import rows' USING ERRCODE = '55000';
   END IF;
   IF (OLD.state = 'reserved' AND NEW.state IN ('preflighted', 'reconciling', 'failed'))
@@ -179,6 +181,21 @@ END $$;
 CREATE TRIGGER legacy_contact_identity_import_run_fact_guard
 BEFORE UPDATE ON legacy_contact_identity_import_runs
 FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_import_run_fact_guard();
+CREATE FUNCTION legacy_contact_identity_reconcile_parent_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE parent legacy_contact_identity_import_runs;
+BEGIN
+  IF NEW.mode <> 'reconcile' THEN RETURN NEW; END IF;
+  SELECT * INTO parent FROM legacy_contact_identity_import_runs WHERE id = NEW.parent_run_id FOR SHARE;
+  IF NOT FOUND OR parent.mode NOT IN ('full', 'incremental') OR parent.state <> 'imported'
+    OR parent.source_manifest_sha256 <> NEW.source_manifest_sha256 OR parent.snapshot_id <> NEW.snapshot_id THEN
+    RAISE EXCEPTION 'invalid DM01 reconcile parent run' USING ERRCODE = '55000';
+  END IF;
+  RETURN NEW;
+END $$;
+CREATE TRIGGER legacy_contact_identity_reconcile_parent_guard
+BEFORE INSERT ON legacy_contact_identity_import_runs
+FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_reconcile_parent_guard();
 -- +goose Down
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM legacy_contact_identity_source_mappings)
@@ -190,6 +207,7 @@ DO $$ BEGIN
   END IF;
 END $$;
 DROP TRIGGER legacy_contact_identity_import_run_fact_guard ON legacy_contact_identity_import_runs;
+DROP TRIGGER legacy_contact_identity_reconcile_parent_guard ON legacy_contact_identity_import_runs;
 DROP TRIGGER legacy_contact_identity_source_mapping_immutable_delete ON legacy_contact_identity_source_mappings;
 DROP TRIGGER legacy_contact_identity_import_quarantine_immutable ON legacy_contact_identity_import_quarantines;
 DROP TRIGGER legacy_contact_identity_source_mapping_guard ON legacy_contact_identity_source_mappings;
@@ -200,6 +218,7 @@ DROP TRIGGER legacy_contact_identity_import_checkpoint_immutable ON legacy_conta
 DROP TRIGGER legacy_contact_identity_import_run_transition_guard ON legacy_contact_identity_import_runs;
 DROP FUNCTION legacy_contact_identity_source_mapping_guard();
 DROP FUNCTION legacy_contact_identity_import_run_fact_guard();
+DROP FUNCTION legacy_contact_identity_reconcile_parent_guard();
 DROP FUNCTION legacy_contact_identity_import_immutable_guard();
 DROP FUNCTION legacy_contact_identity_import_run_transition_guard();
 DROP TABLE legacy_contact_identity_import_receipts;
