@@ -13,7 +13,7 @@ func TestArchiveEncryptionBindsAADAndPayloadHMAC(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	aad, err := ArchiveAAD(7, "crm_user_identity_merge_audit", bytes.Repeat([]byte{2}, 32), payloadHMAC, 3)
+	aad, err := ArchiveAAD(7, "crm_user_identity_merge_audit", bytes.Repeat([]byte{2}, 32), payloadHMAC, bytes.Repeat([]byte{3}, 32), 3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,6 +27,13 @@ func TestArchiveEncryptionBindsAADAndPayloadHMAC(t *testing.T) {
 	}
 	if _, err := DecryptArchiveBound(key, hmacKey, append(aad, 1), nonce, ciphertext, payloadHMAC); err == nil {
 		t.Fatal("AAD tampering was accepted")
+	}
+	otherFieldAAD, err := ArchiveAAD(7, "crm_user_identity_merge_audit", bytes.Repeat([]byte{2}, 32), payloadHMAC, bytes.Repeat([]byte{4}, 32), 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := DecryptArchiveBound(key, hmacKey, otherFieldAAD, nonce, ciphertext, payloadHMAC); err == nil {
+		t.Fatal("field digest AAD drift was accepted")
 	}
 	if _, _, err := EncryptArchiveBound(make([]byte, 31), aad, []byte("x")); err == nil {
 		t.Fatal("short archive key accepted")

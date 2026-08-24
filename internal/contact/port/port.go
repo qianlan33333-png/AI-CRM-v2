@@ -219,6 +219,69 @@ type HistoricalImportQuarantine struct {
 	ReasonCode string
 }
 
+type NonActiveSource uint8
+
+const (
+	NonActiveMergeAudit NonActiveSource = iota + 1
+	NonActiveResolutionQueue
+	NonActiveContacts
+	NonActiveIdentityConflicts
+	NonActivePeople
+	NonActiveFollowUsers
+	NonActiveDirectoryMembers
+	NonActiveExternalBindings
+)
+
+type NonActiveDisposition uint8
+
+const (
+	NonActiveArchived NonActiveDisposition = iota + 1
+	NonActiveSkipped
+	NonActiveQuarantined
+)
+
+type NonActiveLeaseFence struct {
+	RunID      int64
+	Generation int64
+	TokenHMAC  []byte
+}
+
+type NonActiveRowReceipt struct {
+	PayloadHMAC []byte
+	FieldDigest []byte
+	Disposition NonActiveDisposition
+}
+
+type NonActiveArchive struct {
+	RunID      int64
+	Source     NonActiveSource
+	SourceFact HistoricalImportSourceFact
+	Nonce      []byte
+	Ciphertext []byte
+	KeyVersion int16
+}
+
+type NonActiveQuarantine struct {
+	RunID      int64
+	Source     NonActiveSource
+	SourceFact HistoricalImportSourceFact
+	ReasonCode string
+}
+
+// NonActiveTarget is the closed Contact-owned boundary for the eight DM01
+// sources that do not materialize active roots. Receipt append is lease-fenced
+// and is the final write for every newly processed row.
+type NonActiveTarget interface {
+	AssertNonActiveLease(context.Context, NonActiveLeaseFence) error
+	LockNonActiveSource(context.Context, NonActiveSource, []byte) error
+	FindNonActiveReceipt(context.Context, int64, NonActiveSource, []byte) (NonActiveRowReceipt, bool, error)
+	FindNonActiveArchive(context.Context, int64, NonActiveSource, []byte) (NonActiveArchive, bool, error)
+	FindNonActiveQuarantine(context.Context, int64, NonActiveSource, []byte) (NonActiveQuarantine, bool, error)
+	AppendNonActiveArchive(context.Context, NonActiveArchive) error
+	AppendNonActiveQuarantine(context.Context, NonActiveQuarantine) error
+	AppendNonActiveReceipt(context.Context, NonActiveLeaseFence, NonActiveSource, HistoricalImportSourceFact, NonActiveDisposition) error
+}
+
 // HistoricalImportTarget is the closed Contact-owned target boundary for
 // DM01. Every method requires the transaction context supplied by UnitOfWork.
 // It has no event, merge, Provider, role, or arbitrary SQL capability.

@@ -11,6 +11,46 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const appendHistoricalImportArchive = `-- name: AppendHistoricalImportArchive :execrows
+INSERT INTO legacy_contact_identity_historical_archives (
+  run_id, source_table, source_key_hmac, payload_hmac, field_digest,
+  archive_nonce, archive_ciphertext, archive_key_version
+) VALUES (
+  $1::bigint, $2::text,
+  $3::bytea, $4::bytea,
+  $5::bytea, $6::bytea,
+  $7::bytea, $8::smallint
+)
+`
+
+type AppendHistoricalImportArchiveParams struct {
+	RunID             int64  `json:"run_id"`
+	SourceTable       string `json:"source_table"`
+	SourceKeyHmac     []byte `json:"source_key_hmac"`
+	PayloadHmac       []byte `json:"payload_hmac"`
+	FieldDigest       []byte `json:"field_digest"`
+	ArchiveNonce      []byte `json:"archive_nonce"`
+	ArchiveCiphertext []byte `json:"archive_ciphertext"`
+	ArchiveKeyVersion int16  `json:"archive_key_version"`
+}
+
+func (q *Queries) AppendHistoricalImportArchive(ctx context.Context, arg AppendHistoricalImportArchiveParams) (int64, error) {
+	result, err := q.db.Exec(ctx, appendHistoricalImportArchive,
+		arg.RunID,
+		arg.SourceTable,
+		arg.SourceKeyHmac,
+		arg.PayloadHmac,
+		arg.FieldDigest,
+		arg.ArchiveNonce,
+		arg.ArchiveCiphertext,
+		arg.ArchiveKeyVersion,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const appendHistoricalImportLineage = `-- name: AppendHistoricalImportLineage :execrows
 INSERT INTO legacy_contact_identity_source_mappings (
   source_table, source_key_hmac, staff_id, customer_id, identity_id,
@@ -117,6 +157,50 @@ func (q *Queries) AppendHistoricalImportRowReceipt(ctx context.Context, arg Appe
 	return result.RowsAffected(), nil
 }
 
+const appendHistoricalImportRowReceiptFenced = `-- name: AppendHistoricalImportRowReceiptFenced :execrows
+INSERT INTO legacy_contact_identity_import_row_receipts (
+  run_id, source_table, source_key_hmac, payload_hmac, field_digest, disposition
+)
+SELECT r.id, $1::text, $2::bytea,
+       $3::bytea, $4::bytea,
+       $5::text
+FROM legacy_contact_identity_import_runs AS r
+WHERE r.id = $6::bigint
+  AND r.lease_generation = $7::bigint
+  AND r.lease_token_hmac = $8::bytea
+  AND r.lease_expires_at >= now()
+  AND r.state = 'importing'
+  AND r.mode IN ('full', 'incremental')
+`
+
+type AppendHistoricalImportRowReceiptFencedParams struct {
+	SourceTable        string `json:"source_table"`
+	SourceKeyHmac      []byte `json:"source_key_hmac"`
+	PayloadHmac        []byte `json:"payload_hmac"`
+	FieldDigest        []byte `json:"field_digest"`
+	Disposition        string `json:"disposition"`
+	RunID              int64  `json:"run_id"`
+	ExpectedGeneration int64  `json:"expected_generation"`
+	TokenHmac          []byte `json:"token_hmac"`
+}
+
+func (q *Queries) AppendHistoricalImportRowReceiptFenced(ctx context.Context, arg AppendHistoricalImportRowReceiptFencedParams) (int64, error) {
+	result, err := q.db.Exec(ctx, appendHistoricalImportRowReceiptFenced,
+		arg.SourceTable,
+		arg.SourceKeyHmac,
+		arg.PayloadHmac,
+		arg.FieldDigest,
+		arg.Disposition,
+		arg.RunID,
+		arg.ExpectedGeneration,
+		arg.TokenHmac,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const assertHistoricalImportLease = `-- name: AssertHistoricalImportLease :one
 SELECT id
 FROM legacy_contact_identity_import_runs
@@ -206,6 +290,77 @@ func (q *Queries) CreateHistoricalImportCustomer(ctx context.Context, arg Create
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const findHistoricalImportArchive = `-- name: FindHistoricalImportArchive :one
+SELECT payload_hmac, field_digest, archive_nonce, archive_ciphertext, archive_key_version
+FROM legacy_contact_identity_historical_archives
+WHERE run_id = $1::bigint
+  AND source_table = $2::text
+  AND source_key_hmac = $3::bytea
+FOR UPDATE
+`
+
+type FindHistoricalImportArchiveParams struct {
+	RunID         int64  `json:"run_id"`
+	SourceTable   string `json:"source_table"`
+	SourceKeyHmac []byte `json:"source_key_hmac"`
+}
+
+type FindHistoricalImportArchiveRow struct {
+	PayloadHmac       []byte `json:"payload_hmac"`
+	FieldDigest       []byte `json:"field_digest"`
+	ArchiveNonce      []byte `json:"archive_nonce"`
+	ArchiveCiphertext []byte `json:"archive_ciphertext"`
+	ArchiveKeyVersion int16  `json:"archive_key_version"`
+}
+
+func (q *Queries) FindHistoricalImportArchive(ctx context.Context, arg FindHistoricalImportArchiveParams) (FindHistoricalImportArchiveRow, error) {
+	row := q.db.QueryRow(ctx, findHistoricalImportArchive, arg.RunID, arg.SourceTable, arg.SourceKeyHmac)
+	var i FindHistoricalImportArchiveRow
+	err := row.Scan(
+		&i.PayloadHmac,
+		&i.FieldDigest,
+		&i.ArchiveNonce,
+		&i.ArchiveCiphertext,
+		&i.ArchiveKeyVersion,
+	)
+	return i, err
+}
+
+const findHistoricalImportQuarantine = `-- name: FindHistoricalImportQuarantine :one
+SELECT payload_hmac, field_digest, reason_code
+FROM legacy_contact_identity_import_quarantines
+WHERE run_id = $1::bigint
+  AND source_table = $2::text
+  AND source_key_hmac = $3::bytea
+  AND reason_code = $4::text
+FOR UPDATE
+`
+
+type FindHistoricalImportQuarantineParams struct {
+	RunID         int64  `json:"run_id"`
+	SourceTable   string `json:"source_table"`
+	SourceKeyHmac []byte `json:"source_key_hmac"`
+	ReasonCode    string `json:"reason_code"`
+}
+
+type FindHistoricalImportQuarantineRow struct {
+	PayloadHmac []byte `json:"payload_hmac"`
+	FieldDigest []byte `json:"field_digest"`
+	ReasonCode  string `json:"reason_code"`
+}
+
+func (q *Queries) FindHistoricalImportQuarantine(ctx context.Context, arg FindHistoricalImportQuarantineParams) (FindHistoricalImportQuarantineRow, error) {
+	row := q.db.QueryRow(ctx, findHistoricalImportQuarantine,
+		arg.RunID,
+		arg.SourceTable,
+		arg.SourceKeyHmac,
+		arg.ReasonCode,
+	)
+	var i FindHistoricalImportQuarantineRow
+	err := row.Scan(&i.PayloadHmac, &i.FieldDigest, &i.ReasonCode)
+	return i, err
 }
 
 const findHistoricalImportRowReceipt = `-- name: FindHistoricalImportRowReceipt :one

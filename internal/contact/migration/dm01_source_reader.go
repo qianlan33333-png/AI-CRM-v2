@@ -26,6 +26,14 @@ type SourceSnapshot interface {
 	EachOwnerRoleMap(context.Context, SourceUpperBound, func(OwnerRoleMapRow) error) error
 	EachCustomerIdentity(context.Context, SourceUpperBound, func(CustomerIdentityRow) error) error
 	EachExternalIdentityMap(context.Context, SourceUpperBound, func(ExternalIdentityMapRow) error) error
+	EachMergeAudit(context.Context, SourceUpperBound, func(MergeAuditRow) error) error
+	EachResolutionQueue(context.Context, SourceUpperBound, func(ResolutionQueueRow) error) error
+	EachDirectoryMember(context.Context, SourceUpperBound, func(DirectoryMemberRow) error) error
+	EachContact(context.Context, SourceUpperBound, func(ContactRow) error) error
+	EachIdentityConflict(context.Context, SourceUpperBound, func(IdentityConflictRow) error) error
+	EachExternalBinding(context.Context, SourceUpperBound, func(ExternalBindingRow) error) error
+	EachPerson(context.Context, SourceUpperBound, func(PersonRow) error) error
+	EachFollowUser(context.Context, SourceUpperBound, func(FollowUserRow) error) error
 }
 
 type SourceUpperBound struct {
@@ -95,4 +103,45 @@ type ExternalIdentityMapRow struct {
 	CorpID         string
 	UpdatedAt      time.Time
 	Payload        json.RawMessage
+}
+
+type MergeAuditRow struct {
+	ID        int64
+	CreatedAt time.Time
+	Payload   json.RawMessage
+}
+type ResolutionQueueRow struct {
+	ID        int64
+	UpdatedAt time.Time
+	Payload   json.RawMessage
+}
+type DirectoryMemberRow struct {
+	ID           int64
+	LastSyncedAt time.Time
+	Payload      json.RawMessage
+}
+type ContactRow struct {
+	ID        int64
+	UpdatedAt time.Time
+	Payload   json.RawMessage
+}
+type IdentityConflictRow struct {
+	ID        int64
+	UpdatedAt time.Time
+	Payload   json.RawMessage
+}
+type ExternalBindingRow struct {
+	ExternalUserID string
+	UpdatedAt      time.Time
+	Payload        json.RawMessage
+}
+type PersonRow struct {
+	ID        int64
+	UpdatedAt time.Time
+	Payload   json.RawMessage
+}
+type FollowUserRow struct {
+	ID        int64
+	UpdatedAt time.Time
+	Payload   json.RawMessage
 }

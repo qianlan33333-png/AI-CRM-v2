@@ -270,6 +270,150 @@ func (snapshot *dm01SourceSnapshot) EachExternalIdentityMap(ctx context.Context,
 	}
 }
 
+func eachNumericSource[T any](ctx context.Context, snapshot *dm01SourceSnapshot, table string, upper migration.SourceUpperBound, callbackPresent bool, list func(int64, int32) ([]T, error), emit func(T) error) error {
+	if err := snapshot.validateBound(table, upper, callbackPresent); err != nil {
+		return err
+	}
+	if upper.Empty {
+		return nil
+	}
+	upperKey, err := strconv.ParseInt(upper.SourceKey, 10, 64)
+	if err != nil || upperKey < 1 {
+		return migration.ErrSourceSchemaDrift
+	}
+	for offset := int32(0); ; offset += dm01SourcePageSize {
+		rows, err := list(upperKey, offset)
+		if err != nil {
+			return err
+		}
+		for _, row := range rows {
+			if err := emit(row); err != nil {
+				return err
+			}
+		}
+		if len(rows) < int(dm01SourcePageSize) {
+			return nil
+		}
+	}
+}
+
+func (snapshot *dm01SourceSnapshot) EachMergeAudit(ctx context.Context, upper migration.SourceUpperBound, fn func(migration.MergeAuditRow) error) error {
+	return eachNumericSource(ctx, snapshot, "crm_user_identity_merge_audit", upper, fn != nil,
+		func(key int64, offset int32) ([]legacysourcedb.ListDM01MergeAuditRow, error) {
+			return snapshot.queries.ListDM01MergeAudit(ctx, legacysourcedb.ListDM01MergeAuditParams{UpperWatermark: sourceTime(upper.Watermark), UpperKey: key, PageSize: dm01SourcePageSize, PageOffset: offset})
+		},
+		func(row legacysourcedb.ListDM01MergeAuditRow) error {
+			if !row.CreatedAt.Valid {
+				return migration.ErrSourceSchemaDrift
+			}
+			return fn(migration.MergeAuditRow{ID: row.ID, CreatedAt: row.CreatedAt.Time.UTC(), Payload: row.Payload})
+		})
+}
+
+func (snapshot *dm01SourceSnapshot) EachResolutionQueue(ctx context.Context, upper migration.SourceUpperBound, fn func(migration.ResolutionQueueRow) error) error {
+	return eachNumericSource(ctx, snapshot, "crm_user_identity_resolution_queue", upper, fn != nil,
+		func(key int64, offset int32) ([]legacysourcedb.ListDM01ResolutionQueueRow, error) {
+			return snapshot.queries.ListDM01ResolutionQueue(ctx, legacysourcedb.ListDM01ResolutionQueueParams{UpperWatermark: sourceTime(upper.Watermark), UpperKey: key, PageSize: dm01SourcePageSize, PageOffset: offset})
+		},
+		func(row legacysourcedb.ListDM01ResolutionQueueRow) error {
+			if !row.UpdatedAt.Valid {
+				return migration.ErrSourceSchemaDrift
+			}
+			return fn(migration.ResolutionQueueRow{ID: row.ID, UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload})
+		})
+}
+
+func (snapshot *dm01SourceSnapshot) EachDirectoryMember(ctx context.Context, upper migration.SourceUpperBound, fn func(migration.DirectoryMemberRow) error) error {
+	return eachNumericSource(ctx, snapshot, "admin_wecom_directory_members", upper, fn != nil,
+		func(key int64, offset int32) ([]legacysourcedb.ListDM01DirectoryMemberRow, error) {
+			return snapshot.queries.ListDM01DirectoryMember(ctx, legacysourcedb.ListDM01DirectoryMemberParams{UpperWatermark: sourceTime(upper.Watermark), UpperKey: key, PageSize: dm01SourcePageSize, PageOffset: offset})
+		},
+		func(row legacysourcedb.ListDM01DirectoryMemberRow) error {
+			if !row.LastSyncedAt.Valid {
+				return migration.ErrSourceSchemaDrift
+			}
+			return fn(migration.DirectoryMemberRow{ID: row.ID, LastSyncedAt: row.LastSyncedAt.Time.UTC(), Payload: row.Payload})
+		})
+}
+
+func (snapshot *dm01SourceSnapshot) EachContact(ctx context.Context, upper migration.SourceUpperBound, fn func(migration.ContactRow) error) error {
+	return eachNumericSource(ctx, snapshot, "contacts", upper, fn != nil,
+		func(key int64, offset int32) ([]legacysourcedb.ListDM01ContactRow, error) {
+			return snapshot.queries.ListDM01Contact(ctx, legacysourcedb.ListDM01ContactParams{UpperWatermark: sourceTime(upper.Watermark), UpperKey: key, PageSize: dm01SourcePageSize, PageOffset: offset})
+		},
+		func(row legacysourcedb.ListDM01ContactRow) error {
+			if !row.UpdatedAt.Valid {
+				return migration.ErrSourceSchemaDrift
+			}
+			return fn(migration.ContactRow{ID: row.ID, UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload})
+		})
+}
+
+func (snapshot *dm01SourceSnapshot) EachIdentityConflict(ctx context.Context, upper migration.SourceUpperBound, fn func(migration.IdentityConflictRow) error) error {
+	return eachNumericSource(ctx, snapshot, "crm_user_identity_conflicts", upper, fn != nil,
+		func(key int64, offset int32) ([]legacysourcedb.ListDM01IdentityConflictRow, error) {
+			return snapshot.queries.ListDM01IdentityConflict(ctx, legacysourcedb.ListDM01IdentityConflictParams{UpperWatermark: sourceTime(upper.Watermark), UpperKey: key, PageSize: dm01SourcePageSize, PageOffset: offset})
+		},
+		func(row legacysourcedb.ListDM01IdentityConflictRow) error {
+			if !row.UpdatedAt.Valid {
+				return migration.ErrSourceSchemaDrift
+			}
+			return fn(migration.IdentityConflictRow{ID: row.ID, UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload})
+		})
+}
+
+func (snapshot *dm01SourceSnapshot) EachPerson(ctx context.Context, upper migration.SourceUpperBound, fn func(migration.PersonRow) error) error {
+	return eachNumericSource(ctx, snapshot, "people", upper, fn != nil,
+		func(key int64, offset int32) ([]legacysourcedb.ListDM01PersonRow, error) {
+			return snapshot.queries.ListDM01Person(ctx, legacysourcedb.ListDM01PersonParams{UpperWatermark: sourceTime(upper.Watermark), UpperKey: key, PageSize: dm01SourcePageSize, PageOffset: offset})
+		},
+		func(row legacysourcedb.ListDM01PersonRow) error {
+			if !row.UpdatedAt.Valid {
+				return migration.ErrSourceSchemaDrift
+			}
+			return fn(migration.PersonRow{ID: row.ID, UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload})
+		})
+}
+
+func (snapshot *dm01SourceSnapshot) EachFollowUser(ctx context.Context, upper migration.SourceUpperBound, fn func(migration.FollowUserRow) error) error {
+	return eachNumericSource(ctx, snapshot, "wecom_external_contact_follow_users", upper, fn != nil,
+		func(key int64, offset int32) ([]legacysourcedb.ListDM01FollowUserRow, error) {
+			return snapshot.queries.ListDM01FollowUser(ctx, legacysourcedb.ListDM01FollowUserParams{UpperWatermark: sourceTime(upper.Watermark), UpperKey: key, PageSize: dm01SourcePageSize, PageOffset: offset})
+		},
+		func(row legacysourcedb.ListDM01FollowUserRow) error {
+			if !row.UpdatedAt.Valid {
+				return migration.ErrSourceSchemaDrift
+			}
+			return fn(migration.FollowUserRow{ID: row.ID, UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload})
+		})
+}
+
+func (snapshot *dm01SourceSnapshot) EachExternalBinding(ctx context.Context, upper migration.SourceUpperBound, fn func(migration.ExternalBindingRow) error) error {
+	if err := snapshot.validateBound("external_contact_bindings", upper, fn != nil); err != nil {
+		return err
+	}
+	if upper.Empty {
+		return nil
+	}
+	for offset := int32(0); ; offset += dm01SourcePageSize {
+		rows, err := snapshot.queries.ListDM01ExternalBinding(ctx, legacysourcedb.ListDM01ExternalBindingParams{UpperWatermark: sourceTime(upper.Watermark), UpperKey: upper.SourceKey, PageSize: dm01SourcePageSize, PageOffset: offset})
+		if err != nil {
+			return err
+		}
+		for _, row := range rows {
+			if !row.UpdatedAt.Valid || row.ExternalUserid == "" {
+				return migration.ErrSourceSchemaDrift
+			}
+			if err := fn(migration.ExternalBindingRow{ExternalUserID: row.ExternalUserid, UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload}); err != nil {
+				return err
+			}
+		}
+		if len(rows) < int(dm01SourcePageSize) {
+			return nil
+		}
+	}
+}
+
 func sourceTime(value time.Time) pgtype.Timestamptz {
 	return pgtype.Timestamptz{Time: value, Valid: !value.IsZero()}
 }

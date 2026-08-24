@@ -20,9 +20,17 @@ type Querier interface {
 	GetDM01OwnerRoleMapUpperBound(ctx context.Context) (GetDM01OwnerRoleMapUpperBoundRow, error)
 	GetDM01PersonUpperBound(ctx context.Context) (GetDM01PersonUpperBoundRow, error)
 	GetDM01ResolutionQueueUpperBound(ctx context.Context) (GetDM01ResolutionQueueUpperBoundRow, error)
+	ListDM01Contact(ctx context.Context, arg ListDM01ContactParams) ([]ListDM01ContactRow, error)
 	ListDM01CustomerIdentity(ctx context.Context, arg ListDM01CustomerIdentityParams) ([]ListDM01CustomerIdentityRow, error)
+	ListDM01DirectoryMember(ctx context.Context, arg ListDM01DirectoryMemberParams) ([]ListDM01DirectoryMemberRow, error)
+	ListDM01ExternalBinding(ctx context.Context, arg ListDM01ExternalBindingParams) ([]ListDM01ExternalBindingRow, error)
 	ListDM01ExternalIdentityMap(ctx context.Context, arg ListDM01ExternalIdentityMapParams) ([]ListDM01ExternalIdentityMapRow, error)
+	ListDM01FollowUser(ctx context.Context, arg ListDM01FollowUserParams) ([]ListDM01FollowUserRow, error)
+	ListDM01IdentityConflict(ctx context.Context, arg ListDM01IdentityConflictParams) ([]ListDM01IdentityConflictRow, error)
+	ListDM01MergeAudit(ctx context.Context, arg ListDM01MergeAuditParams) ([]ListDM01MergeAuditRow, error)
 	ListDM01OwnerRoleMap(ctx context.Context, arg ListDM01OwnerRoleMapParams) ([]ListDM01OwnerRoleMapRow, error)
+	ListDM01Person(ctx context.Context, arg ListDM01PersonParams) ([]ListDM01PersonRow, error)
+	ListDM01ResolutionQueue(ctx context.Context, arg ListDM01ResolutionQueueParams) ([]ListDM01ResolutionQueueRow, error)
 	ListDM01SourceColumns(ctx context.Context, tableName string) ([]ListDM01SourceColumnsRow, error)
 }
 

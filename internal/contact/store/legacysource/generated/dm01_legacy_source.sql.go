@@ -187,6 +187,51 @@ func (q *Queries) GetDM01ResolutionQueueUpperBound(ctx context.Context) (GetDM01
 	return i, err
 }
 
+const listDM01Contact = `-- name: ListDM01Contact :many
+SELECT id, updated_at, jsonb_build_object('id', id, 'unionid', unionid, 'created_at', created_at, 'updated_at', updated_at) AS payload
+FROM contacts
+WHERE (updated_at, id) <= ($1::timestamptz, $2::bigint)
+ORDER BY updated_at, id LIMIT $4::integer OFFSET $3::integer
+`
+
+type ListDM01ContactParams struct {
+	UpperWatermark pgtype.Timestamptz `json:"upper_watermark"`
+	UpperKey       int64              `json:"upper_key"`
+	PageOffset     int32              `json:"page_offset"`
+	PageSize       int32              `json:"page_size"`
+}
+
+type ListDM01ContactRow struct {
+	ID        int64              `json:"id"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Payload   []byte             `json:"payload"`
+}
+
+func (q *Queries) ListDM01Contact(ctx context.Context, arg ListDM01ContactParams) ([]ListDM01ContactRow, error) {
+	rows, err := q.db.Query(ctx, listDM01Contact,
+		arg.UpperWatermark,
+		arg.UpperKey,
+		arg.PageOffset,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDM01ContactRow{}
+	for rows.Next() {
+		var i ListDM01ContactRow
+		if err := rows.Scan(&i.ID, &i.UpdatedAt, &i.Payload); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDM01CustomerIdentity = `-- name: ListDM01CustomerIdentity :many
 SELECT unionid, customer_name, avatar, gender, primary_owner_userid,
        first_seen_at, last_seen_at, updated_at,
@@ -274,6 +319,106 @@ func (q *Queries) ListDM01CustomerIdentity(ctx context.Context, arg ListDM01Cust
 	return items, nil
 }
 
+const listDM01DirectoryMember = `-- name: ListDM01DirectoryMember :many
+SELECT id, last_synced_at, jsonb_build_object(
+  'id', id, 'corp_id', corp_id, 'wecom_userid', wecom_userid,
+  'display_name', display_name, 'department_ids_json', department_ids_json,
+  'department_name', department_name, 'position', position, 'mobile', mobile,
+  'avatar_url', avatar_url, 'wecom_status', wecom_status, 'is_active', is_active,
+  'raw_payload_json', raw_payload_json, 'first_seen_at', first_seen_at,
+  'last_synced_at', last_synced_at, 'created_at', created_at,
+  'updated_at', updated_at, 'updated_by', updated_by) AS payload
+FROM admin_wecom_directory_members
+WHERE (last_synced_at, id) <= ($1::timestamptz, $2::bigint)
+ORDER BY last_synced_at, id LIMIT $4::integer OFFSET $3::integer
+`
+
+type ListDM01DirectoryMemberParams struct {
+	UpperWatermark pgtype.Timestamptz `json:"upper_watermark"`
+	UpperKey       int64              `json:"upper_key"`
+	PageOffset     int32              `json:"page_offset"`
+	PageSize       int32              `json:"page_size"`
+}
+
+type ListDM01DirectoryMemberRow struct {
+	ID           int64              `json:"id"`
+	LastSyncedAt pgtype.Timestamptz `json:"last_synced_at"`
+	Payload      []byte             `json:"payload"`
+}
+
+func (q *Queries) ListDM01DirectoryMember(ctx context.Context, arg ListDM01DirectoryMemberParams) ([]ListDM01DirectoryMemberRow, error) {
+	rows, err := q.db.Query(ctx, listDM01DirectoryMember,
+		arg.UpperWatermark,
+		arg.UpperKey,
+		arg.PageOffset,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDM01DirectoryMemberRow{}
+	for rows.Next() {
+		var i ListDM01DirectoryMemberRow
+		if err := rows.Scan(&i.ID, &i.LastSyncedAt, &i.Payload); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDM01ExternalBinding = `-- name: ListDM01ExternalBinding :many
+SELECT external_userid, updated_at, jsonb_build_object(
+  'external_userid', external_userid, 'person_id', person_id,
+  'first_owner_userid', first_owner_userid, 'last_owner_userid', last_owner_userid,
+  'updated_at', updated_at) AS payload
+FROM external_contact_bindings
+WHERE (updated_at, external_userid) <= ($1::timestamptz, $2::text)
+ORDER BY updated_at, external_userid LIMIT $4::integer OFFSET $3::integer
+`
+
+type ListDM01ExternalBindingParams struct {
+	UpperWatermark pgtype.Timestamptz `json:"upper_watermark"`
+	UpperKey       string             `json:"upper_key"`
+	PageOffset     int32              `json:"page_offset"`
+	PageSize       int32              `json:"page_size"`
+}
+
+type ListDM01ExternalBindingRow struct {
+	ExternalUserid string             `json:"external_userid"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	Payload        []byte             `json:"payload"`
+}
+
+func (q *Queries) ListDM01ExternalBinding(ctx context.Context, arg ListDM01ExternalBindingParams) ([]ListDM01ExternalBindingRow, error) {
+	rows, err := q.db.Query(ctx, listDM01ExternalBinding,
+		arg.UpperWatermark,
+		arg.UpperKey,
+		arg.PageOffset,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDM01ExternalBindingRow{}
+	for rows.Next() {
+		var i ListDM01ExternalBindingRow
+		if err := rows.Scan(&i.ExternalUserid, &i.UpdatedAt, &i.Payload); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDM01ExternalIdentityMap = `-- name: ListDM01ExternalIdentityMap :many
 SELECT id, external_userid, unionid, corp_id, updated_at,
        (jsonb_build_object('id', id, 'external_userid', external_userid,
@@ -343,6 +488,156 @@ func (q *Queries) ListDM01ExternalIdentityMap(ctx context.Context, arg ListDM01E
 	return items, nil
 }
 
+const listDM01FollowUser = `-- name: ListDM01FollowUser :many
+SELECT id, updated_at, jsonb_build_object(
+  'id', id, 'external_userid', external_userid, 'user_id', user_id,
+  'relation_status', relation_status, 'is_primary', is_primary, 'remark', remark,
+  'description', description, 'updated_at', updated_at, 'corp_id', corp_id,
+  'raw_follow_user', raw_follow_user, 'first_seen_at', first_seen_at,
+  'last_seen_at', last_seen_at, 'created_at', created_at) AS payload
+FROM wecom_external_contact_follow_users
+WHERE (updated_at, id) <= ($1::timestamptz, $2::bigint)
+ORDER BY updated_at, id LIMIT $4::integer OFFSET $3::integer
+`
+
+type ListDM01FollowUserParams struct {
+	UpperWatermark pgtype.Timestamptz `json:"upper_watermark"`
+	UpperKey       int64              `json:"upper_key"`
+	PageOffset     int32              `json:"page_offset"`
+	PageSize       int32              `json:"page_size"`
+}
+
+type ListDM01FollowUserRow struct {
+	ID        int64              `json:"id"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Payload   []byte             `json:"payload"`
+}
+
+func (q *Queries) ListDM01FollowUser(ctx context.Context, arg ListDM01FollowUserParams) ([]ListDM01FollowUserRow, error) {
+	rows, err := q.db.Query(ctx, listDM01FollowUser,
+		arg.UpperWatermark,
+		arg.UpperKey,
+		arg.PageOffset,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDM01FollowUserRow{}
+	for rows.Next() {
+		var i ListDM01FollowUserRow
+		if err := rows.Scan(&i.ID, &i.UpdatedAt, &i.Payload); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDM01IdentityConflict = `-- name: ListDM01IdentityConflict :many
+SELECT id, updated_at, jsonb_build_object(
+  'id', id, 'conflict_type', conflict_type, 'unionid', unionid,
+  'candidate_unionid', candidate_unionid, 'external_userid', external_userid,
+  'openid', openid, 'mobile', mobile, 'source_type', source_type,
+  'source_key', source_key, 'payload_json', payload_json,
+  'source_payload_json', source_payload_json, 'status', status,
+  'resolution_status', resolution_status, 'resolution_note', resolution_note,
+  'created_at', created_at, 'updated_at', updated_at, 'resolved_at', resolved_at) AS payload
+FROM crm_user_identity_conflicts
+WHERE (updated_at, id) <= ($1::timestamptz, $2::bigint)
+ORDER BY updated_at, id LIMIT $4::integer OFFSET $3::integer
+`
+
+type ListDM01IdentityConflictParams struct {
+	UpperWatermark pgtype.Timestamptz `json:"upper_watermark"`
+	UpperKey       int64              `json:"upper_key"`
+	PageOffset     int32              `json:"page_offset"`
+	PageSize       int32              `json:"page_size"`
+}
+
+type ListDM01IdentityConflictRow struct {
+	ID        int64              `json:"id"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Payload   []byte             `json:"payload"`
+}
+
+func (q *Queries) ListDM01IdentityConflict(ctx context.Context, arg ListDM01IdentityConflictParams) ([]ListDM01IdentityConflictRow, error) {
+	rows, err := q.db.Query(ctx, listDM01IdentityConflict,
+		arg.UpperWatermark,
+		arg.UpperKey,
+		arg.PageOffset,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDM01IdentityConflictRow{}
+	for rows.Next() {
+		var i ListDM01IdentityConflictRow
+		if err := rows.Scan(&i.ID, &i.UpdatedAt, &i.Payload); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDM01MergeAudit = `-- name: ListDM01MergeAudit :many
+SELECT id, created_at, jsonb_build_object(
+  'id', id, 'from_unionid', from_unionid, 'to_unionid', to_unionid,
+  'reason', reason, 'before_json', before_json, 'after_json', after_json,
+  'operator', operator, 'created_at', created_at) AS payload
+FROM crm_user_identity_merge_audit
+WHERE (created_at, id) <= ($1::timestamptz, $2::bigint)
+ORDER BY created_at, id LIMIT $4::integer OFFSET $3::integer
+`
+
+type ListDM01MergeAuditParams struct {
+	UpperWatermark pgtype.Timestamptz `json:"upper_watermark"`
+	UpperKey       int64              `json:"upper_key"`
+	PageOffset     int32              `json:"page_offset"`
+	PageSize       int32              `json:"page_size"`
+}
+
+type ListDM01MergeAuditRow struct {
+	ID        int64              `json:"id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	Payload   []byte             `json:"payload"`
+}
+
+func (q *Queries) ListDM01MergeAudit(ctx context.Context, arg ListDM01MergeAuditParams) ([]ListDM01MergeAuditRow, error) {
+	rows, err := q.db.Query(ctx, listDM01MergeAudit,
+		arg.UpperWatermark,
+		arg.UpperKey,
+		arg.PageOffset,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDM01MergeAuditRow{}
+	for rows.Next() {
+		var i ListDM01MergeAuditRow
+		if err := rows.Scan(&i.ID, &i.CreatedAt, &i.Payload); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listDM01OwnerRoleMap = `-- name: ListDM01OwnerRoleMap :many
 SELECT userid, display_name, active, updated_at,
        jsonb_build_object('userid', userid, 'display_name', display_name,
@@ -391,6 +686,108 @@ func (q *Queries) ListDM01OwnerRoleMap(ctx context.Context, arg ListDM01OwnerRol
 			&i.UpdatedAt,
 			&i.Payload,
 		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDM01Person = `-- name: ListDM01Person :many
+SELECT id, updated_at, jsonb_build_object('id', id, 'mobile', mobile, 'third_party_user_id', third_party_user_id, 'updated_at', updated_at) AS payload
+FROM people
+WHERE (updated_at, id) <= ($1::timestamptz, $2::bigint)
+ORDER BY updated_at, id LIMIT $4::integer OFFSET $3::integer
+`
+
+type ListDM01PersonParams struct {
+	UpperWatermark pgtype.Timestamptz `json:"upper_watermark"`
+	UpperKey       int64              `json:"upper_key"`
+	PageOffset     int32              `json:"page_offset"`
+	PageSize       int32              `json:"page_size"`
+}
+
+type ListDM01PersonRow struct {
+	ID        int64              `json:"id"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Payload   []byte             `json:"payload"`
+}
+
+func (q *Queries) ListDM01Person(ctx context.Context, arg ListDM01PersonParams) ([]ListDM01PersonRow, error) {
+	rows, err := q.db.Query(ctx, listDM01Person,
+		arg.UpperWatermark,
+		arg.UpperKey,
+		arg.PageOffset,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDM01PersonRow{}
+	for rows.Next() {
+		var i ListDM01PersonRow
+		if err := rows.Scan(&i.ID, &i.UpdatedAt, &i.Payload); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listDM01ResolutionQueue = `-- name: ListDM01ResolutionQueue :many
+SELECT id, updated_at, jsonb_build_object(
+  'id', id, 'source_type', source_type, 'source_key', source_key,
+  'source_table', source_table, 'source_id', source_id, 'corp_id', corp_id,
+  'external_userid', external_userid, 'openid', openid, 'mobile', mobile,
+  'payload_json', payload_json, 'raw_payload_json', raw_payload_json,
+  'reason', reason, 'status', status, 'resolved_unionid', resolved_unionid,
+  'conflict_reason', conflict_reason, 'attempts', attempts, 'attempt_count', attempt_count,
+  'last_error', last_error, 'next_attempt_at', next_attempt_at, 'resolved_at', resolved_at,
+  'first_seen_at', first_seen_at, 'last_seen_at', last_seen_at, 'created_at', created_at,
+  'updated_at', updated_at, 'execution_id', execution_id,
+  'parent_execution_id', parent_execution_id, 'external_effect_job_id', external_effect_job_id,
+  'lane', lane, 'row_version', row_version, 'hold_reason', hold_reason,
+  'held_at', held_at, 'completed_at', completed_at) AS payload
+FROM crm_user_identity_resolution_queue
+WHERE (updated_at, id) <= ($1::timestamptz, $2::bigint)
+ORDER BY updated_at, id LIMIT $4::integer OFFSET $3::integer
+`
+
+type ListDM01ResolutionQueueParams struct {
+	UpperWatermark pgtype.Timestamptz `json:"upper_watermark"`
+	UpperKey       int64              `json:"upper_key"`
+	PageOffset     int32              `json:"page_offset"`
+	PageSize       int32              `json:"page_size"`
+}
+
+type ListDM01ResolutionQueueRow struct {
+	ID        int64              `json:"id"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Payload   []byte             `json:"payload"`
+}
+
+func (q *Queries) ListDM01ResolutionQueue(ctx context.Context, arg ListDM01ResolutionQueueParams) ([]ListDM01ResolutionQueueRow, error) {
+	rows, err := q.db.Query(ctx, listDM01ResolutionQueue,
+		arg.UpperWatermark,
+		arg.UpperKey,
+		arg.PageOffset,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListDM01ResolutionQueueRow{}
+	for rows.Next() {
+		var i ListDM01ResolutionQueueRow
+		if err := rows.Scan(&i.ID, &i.UpdatedAt, &i.Payload); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

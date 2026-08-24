@@ -12,17 +12,18 @@ import (
 )
 
 // ArchiveAAD binds ciphertext to its run, table, source row, payload and key.
-func ArchiveAAD(runID int64, sourceTable string, sourceKeyHMAC, payloadHMAC []byte, keyVersion int) ([]byte, error) {
-	if runID < 1 || sourceTable == "" || len(sourceKeyHMAC) != sha256.Size || len(payloadHMAC) != sha256.Size || keyVersion < 1 {
+func ArchiveAAD(runID int64, sourceTable string, sourceKeyHMAC, payloadHMAC, fieldDigest []byte, keyVersion int) ([]byte, error) {
+	if runID < 1 || sourceTable == "" || len(sourceKeyHMAC) != sha256.Size || len(payloadHMAC) != sha256.Size || len(fieldDigest) != sha256.Size || keyVersion < 1 {
 		return nil, errors.New("invalid DM01 archive AAD")
 	}
-	aad := make([]byte, 10+len(sourceTable)+sha256.Size+sha256.Size+4)
+	aad := make([]byte, 10+len(sourceTable)+sha256.Size+sha256.Size+sha256.Size+4)
 	binary.BigEndian.PutUint64(aad[:8], uint64(runID))
 	binary.BigEndian.PutUint16(aad[8:10], uint16(len(sourceTable)))
 	offset := 10
 	offset += copy(aad[offset:], sourceTable)
 	offset += copy(aad[offset:], sourceKeyHMAC)
 	offset += copy(aad[offset:], payloadHMAC)
+	offset += copy(aad[offset:], fieldDigest)
 	binary.BigEndian.PutUint32(aad[offset:], uint32(keyVersion))
 	return aad, nil
 }

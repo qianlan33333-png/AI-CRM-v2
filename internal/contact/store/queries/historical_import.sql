@@ -160,3 +160,46 @@ INSERT INTO legacy_contact_identity_import_row_receipts (
   sqlc.arg(source_key_hmac)::bytea, sqlc.arg(payload_hmac)::bytea,
   sqlc.arg(field_digest)::bytea, sqlc.arg(disposition)::text
 );
+
+-- name: FindHistoricalImportArchive :one
+SELECT payload_hmac, field_digest, archive_nonce, archive_ciphertext, archive_key_version
+FROM legacy_contact_identity_historical_archives
+WHERE run_id = sqlc.arg(run_id)::bigint
+  AND source_table = sqlc.arg(source_table)::text
+  AND source_key_hmac = sqlc.arg(source_key_hmac)::bytea
+FOR UPDATE;
+
+-- name: FindHistoricalImportQuarantine :one
+SELECT payload_hmac, field_digest, reason_code
+FROM legacy_contact_identity_import_quarantines
+WHERE run_id = sqlc.arg(run_id)::bigint
+  AND source_table = sqlc.arg(source_table)::text
+  AND source_key_hmac = sqlc.arg(source_key_hmac)::bytea
+  AND reason_code = sqlc.arg(reason_code)::text
+FOR UPDATE;
+
+-- name: AppendHistoricalImportArchive :execrows
+INSERT INTO legacy_contact_identity_historical_archives (
+  run_id, source_table, source_key_hmac, payload_hmac, field_digest,
+  archive_nonce, archive_ciphertext, archive_key_version
+) VALUES (
+  sqlc.arg(run_id)::bigint, sqlc.arg(source_table)::text,
+  sqlc.arg(source_key_hmac)::bytea, sqlc.arg(payload_hmac)::bytea,
+  sqlc.arg(field_digest)::bytea, sqlc.arg(archive_nonce)::bytea,
+  sqlc.arg(archive_ciphertext)::bytea, sqlc.arg(archive_key_version)::smallint
+);
+
+-- name: AppendHistoricalImportRowReceiptFenced :execrows
+INSERT INTO legacy_contact_identity_import_row_receipts (
+  run_id, source_table, source_key_hmac, payload_hmac, field_digest, disposition
+)
+SELECT r.id, sqlc.arg(source_table)::text, sqlc.arg(source_key_hmac)::bytea,
+       sqlc.arg(payload_hmac)::bytea, sqlc.arg(field_digest)::bytea,
+       sqlc.arg(disposition)::text
+FROM legacy_contact_identity_import_runs AS r
+WHERE r.id = sqlc.arg(run_id)::bigint
+  AND r.lease_generation = sqlc.arg(expected_generation)::bigint
+  AND r.lease_token_hmac = sqlc.arg(token_hmac)::bytea
+  AND r.lease_expires_at >= now()
+  AND r.state = 'importing'
+  AND r.mode IN ('full', 'incremental');
