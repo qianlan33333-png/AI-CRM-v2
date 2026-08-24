@@ -131,6 +131,9 @@ var capabilityPolicies = map[authport.Capability]capabilityPolicy{
 	authport.CapabilityAdminShellRead: {
 		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
 	},
+	authport.CapabilityContactOwnerReassignment: {
+		admin: authport.ScopeGlobal,
+	},
 }
 
 func authorize(principal authport.Principal, capability authport.Capability) (authport.Authorization, error) {

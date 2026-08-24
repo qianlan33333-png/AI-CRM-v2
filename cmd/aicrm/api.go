@@ -143,6 +143,7 @@ type candidateHandler struct {
 	customerActivityAnalytics *contacthttp.CustomerActivityAnalyticsHandler
 	customerMergeHistory      *identityhttp.MergeHistoryHandler
 	mutations                 *contacthttp.CustomerMutationHandler
+	ownerReassignments        *contacthttp.OwnerReassignmentHandler
 	contactPolicy             *contacthttp.ContactPolicyHandler
 	tags                      *contacthttp.TagCatalogHandler
 	localTags                 *contacthttp.LocalTagCatalogHandler
@@ -709,6 +710,13 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	ownerReassignmentHandler, err := contacthttp.NewOwnerReassignmentHandler(contactapp.NewOwnerReassignmentService(
+		uow, contactstore.NewOwnerReassignmentRepository(), eventstore.NewAppender(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	contactPolicyHandler, err := contacthttp.NewContactPolicyHandler(contactapp.NewContactPolicyService(
 		uow, contactstore.NewContactPolicyRepository(), eventstore.NewAppender(),
 	))
@@ -1151,7 +1159,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		customerSurveyAnswers: customerAnswerService, customerEvents: customerEventHandler, customerContext: customerContextHandler,
 		customerChatActivity: customerChatActivityHandler, customerActivityAnalytics: customerActivityAnalyticsHandler,
 		customerMergeHistory: customerMergeHistoryHandler,
-		mutations:            mutationHandler, contactPolicy: contactPolicyHandler,
+		mutations:            mutationHandler, ownerReassignments: ownerReassignmentHandler, contactPolicy: contactPolicyHandler,
 		tags: tagCatalogHandler, localTags: localTagCatalogHandler, stages: stageHandler,
 		segments:             segmentCRUDHandler,
 		products:             productHandler,
@@ -1636,6 +1644,12 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/v1/admin/config/overview", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(wrapper.GetAdminConfigOverview)},
 		{http.MethodPost, "/api/v1/auth/logout", authport.CapabilityAuthSessionLogout, false, http.HandlerFunc(wrapper.LogoutAdmin)},
 		{http.MethodGet, "/api/v1/auth/session", authport.CapabilityAuthSessionRead, false, http.HandlerFunc(wrapper.GetAuthSession)},
+		{http.MethodGet, "/api/v1/contact-owner-reassignments/template", authport.CapabilityContactOwnerReassignment, false, http.HandlerFunc(wrapper.DownloadContactOwnerReassignmentTemplate)},
+		{http.MethodPost, "/api/v1/contact-owner-reassignments/previews", authport.CapabilityContactOwnerReassignment, true, http.HandlerFunc(wrapper.CreateContactOwnerReassignmentPreview)},
+		{http.MethodGet, "/api/v1/contact-owner-reassignments/previews/{preview_id}", authport.CapabilityContactOwnerReassignment, false, http.HandlerFunc(wrapper.GetContactOwnerReassignmentPreview)},
+		{http.MethodPost, "/api/v1/contact-owner-reassignments/previews/{preview_id}/execute", authport.CapabilityContactOwnerReassignment, true, http.HandlerFunc(wrapper.ExecuteContactOwnerReassignmentPreview)},
+		{http.MethodGet, "/api/v1/contact-owner-reassignments/previews/{preview_id}/errors.csv", authport.CapabilityContactOwnerReassignment, false, http.HandlerFunc(wrapper.DownloadContactOwnerReassignmentErrors)},
+		{http.MethodGet, "/api/v1/contact-owner-reassignments/previews/{preview_id}/results.csv", authport.CapabilityContactOwnerReassignment, false, http.HandlerFunc(wrapper.DownloadContactOwnerReassignmentResults)},
 		{http.MethodGet, "/api/sidebar/v2/workbench", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarWorkbench)},
 		{http.MethodPut, "/api/sidebar/v2/profile", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateSidebarProfile)},
 		{http.MethodGet, "/api/sidebar/v2/questionnaires", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarQuestionnaires)},

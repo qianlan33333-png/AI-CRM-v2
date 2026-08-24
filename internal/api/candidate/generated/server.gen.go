@@ -1258,6 +1258,36 @@ func (e CloudCampaignTouchPlanSummaryRuntimeExecuted) Valid() bool {
 	}
 }
 
+// Defines values for ContactOwnerReassignmentExecuteRequestConfirmation.
+const (
+	CONFIRMOWNERREASSIGNMENT ContactOwnerReassignmentExecuteRequestConfirmation = "CONFIRM OWNER REASSIGNMENT"
+)
+
+// Valid indicates whether the value is a known member of the ContactOwnerReassignmentExecuteRequestConfirmation enum.
+func (e ContactOwnerReassignmentExecuteRequestConfirmation) Valid() bool {
+	switch e {
+	case CONFIRMOWNERREASSIGNMENT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ContactOwnerReassignmentIssueCode.
+const (
+	InvalidRow ContactOwnerReassignmentIssueCode = "invalid_row"
+)
+
+// Valid indicates whether the value is a known member of the ContactOwnerReassignmentIssueCode enum.
+func (e ContactOwnerReassignmentIssueCode) Valid() bool {
+	switch e {
+	case InvalidRow:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CreateSegmentRequestRefreshMode.
 const (
 	CreateSegmentRequestRefreshModeManual    CreateSegmentRequestRefreshMode = "manual"
@@ -7394,6 +7424,51 @@ type CloudCampaignTouchPlanSummaryRealExternalCallExecuted bool
 // CloudCampaignTouchPlanSummaryRuntimeExecuted defines model for CloudCampaignTouchPlanSummary.RuntimeExecuted.
 type CloudCampaignTouchPlanSummaryRuntimeExecuted bool
 
+// ContactOwnerReassignmentExecuteRequest defines model for ContactOwnerReassignmentExecuteRequest.
+type ContactOwnerReassignmentExecuteRequest struct {
+	Confirmation ContactOwnerReassignmentExecuteRequestConfirmation `json:"confirmation"`
+	PreviewHash  string                                             `json:"preview_hash"`
+}
+
+// ContactOwnerReassignmentExecuteRequestConfirmation defines model for ContactOwnerReassignmentExecuteRequest.Confirmation.
+type ContactOwnerReassignmentExecuteRequestConfirmation string
+
+// ContactOwnerReassignmentIssue defines model for ContactOwnerReassignmentIssue.
+type ContactOwnerReassignmentIssue struct {
+	Code ContactOwnerReassignmentIssueCode `json:"code"`
+	Line int                               `json:"line"`
+}
+
+// ContactOwnerReassignmentIssueCode defines model for ContactOwnerReassignmentIssue.Code.
+type ContactOwnerReassignmentIssueCode string
+
+// ContactOwnerReassignmentPreview defines model for ContactOwnerReassignmentPreview.
+type ContactOwnerReassignmentPreview struct {
+	Executed  bool                                 `json:"executed"`
+	ExpiresAt time.Time                            `json:"expires_at"`
+	Hash      string                               `json:"hash"`
+	Id        string                               `json:"id"`
+	Issues    []ContactOwnerReassignmentIssue      `json:"issues"`
+	Result    *[]ContactOwnerReassignmentResultRow `json:"result,omitempty"`
+	Rows      []ContactOwnerReassignmentRow        `json:"rows"`
+}
+
+// ContactOwnerReassignmentResultRow defines model for ContactOwnerReassignmentResultRow.
+type ContactOwnerReassignmentResultRow struct {
+	CustomerId           int64     `json:"customer_id"`
+	PreviousOwnerStaffId int64     `json:"previous_owner_staff_id"`
+	TargetOwnerStaffId   int64     `json:"target_owner_staff_id"`
+	UpdatedAt            time.Time `json:"updated_at"`
+}
+
+// ContactOwnerReassignmentRow defines model for ContactOwnerReassignmentRow.
+type ContactOwnerReassignmentRow struct {
+	CustomerId           int64     `json:"customer_id"`
+	ExpectedOwnerStaffId int64     `json:"expected_owner_staff_id"`
+	ExpectedUpdatedAt    time.Time `json:"expected_updated_at"`
+	TargetOwnerStaffId   int64     `json:"target_owner_staff_id"`
+}
+
 // CreateLocalTagGroupRequest defines model for CreateLocalTagGroupRequest.
 type CreateLocalTagGroupRequest struct {
 	FirstTagName string `json:"first_tag_name"`
@@ -10405,6 +10480,9 @@ type CSRFToken = string
 // ChannelIDFilter defines model for ChannelIDFilter.
 type ChannelIDFilter = int64
 
+// ContactOwnerReassignmentPreviewID defines model for ContactOwnerReassignmentPreviewID.
+type ContactOwnerReassignmentPreviewID = string
+
 // Cursor defines model for Cursor.
 type Cursor = string
 
@@ -11213,6 +11291,24 @@ type LogoutAdminParams struct {
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 }
 
+// CreateContactOwnerReassignmentPreviewParams defines parameters for CreateContactOwnerReassignmentPreview.
+type CreateContactOwnerReassignmentPreviewParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ExecuteContactOwnerReassignmentPreviewParams defines parameters for ExecuteContactOwnerReassignmentPreview.
+type ExecuteContactOwnerReassignmentPreviewParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // ListCustomersParams defines parameters for ListCustomers.
 type ListCustomersParams struct {
 	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
@@ -11728,6 +11824,9 @@ type UpdateSidebarPeriodicRemarkJSONRequestBody UpdateSidebarPeriodicRemarkJSONB
 
 // UpdateSidebarProfileJSONRequestBody defines body for UpdateSidebarProfile for application/json ContentType.
 type UpdateSidebarProfileJSONRequestBody UpdateSidebarProfileJSONBody
+
+// ExecuteContactOwnerReassignmentPreviewJSONRequestBody defines body for ExecuteContactOwnerReassignmentPreview for application/json ContentType.
+type ExecuteContactOwnerReassignmentPreviewJSONRequestBody = ContactOwnerReassignmentExecuteRequest
 
 // UpdateCustomerJSONRequestBody defines body for UpdateCustomer for application/json ContentType.
 type UpdateCustomerJSONRequestBody = CustomerUpdateRequest
@@ -13260,6 +13359,24 @@ type ServerInterface interface {
 	// Return the authenticated admin principal
 	// (GET /api/v1/auth/session)
 	GetAuthSession(w http.ResponseWriter, r *http.Request)
+	// Parse and persist one bounded local owner-reassignment CSV preview
+	// (POST /api/v1/contact-owner-reassignments/previews)
+	CreateContactOwnerReassignmentPreview(w http.ResponseWriter, r *http.Request, params CreateContactOwnerReassignmentPreviewParams)
+	// Read one durable local owner-reassignment preview
+	// (GET /api/v1/contact-owner-reassignments/previews/{preview_id})
+	GetContactOwnerReassignmentPreview(w http.ResponseWriter, r *http.Request, previewId ContactOwnerReassignmentPreviewID)
+	// Download a redacted local owner-reassignment error CSV
+	// (GET /api/v1/contact-owner-reassignments/previews/{preview_id}/errors.csv)
+	DownloadContactOwnerReassignmentErrors(w http.ResponseWriter, r *http.Request, previewId ContactOwnerReassignmentPreviewID)
+	// Execute one confirmed single-use local owner-reassignment preview
+	// (POST /api/v1/contact-owner-reassignments/previews/{preview_id}/execute)
+	ExecuteContactOwnerReassignmentPreview(w http.ResponseWriter, r *http.Request, previewId ContactOwnerReassignmentPreviewID, params ExecuteContactOwnerReassignmentPreviewParams)
+	// Download a redacted local owner-reassignment result CSV
+	// (GET /api/v1/contact-owner-reassignments/previews/{preview_id}/results.csv)
+	DownloadContactOwnerReassignmentResults(w http.ResponseWriter, r *http.Request, previewId ContactOwnerReassignmentPreviewID)
+	// Download the safe local owner-reassignment CSV template
+	// (GET /api/v1/contact-owner-reassignments/template)
+	DownloadContactOwnerReassignmentTemplate(w http.ResponseWriter, r *http.Request)
 	// List customers using a keyset cursor
 	// (GET /api/v1/customers)
 	ListCustomers(w http.ResponseWriter, r *http.Request, params ListCustomersParams)
@@ -14109,6 +14226,42 @@ func (_ Unimplemented) LogoutAdmin(w http.ResponseWriter, r *http.Request, param
 // Return the authenticated admin principal
 // (GET /api/v1/auth/session)
 func (_ Unimplemented) GetAuthSession(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Parse and persist one bounded local owner-reassignment CSV preview
+// (POST /api/v1/contact-owner-reassignments/previews)
+func (_ Unimplemented) CreateContactOwnerReassignmentPreview(w http.ResponseWriter, r *http.Request, params CreateContactOwnerReassignmentPreviewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one durable local owner-reassignment preview
+// (GET /api/v1/contact-owner-reassignments/previews/{preview_id})
+func (_ Unimplemented) GetContactOwnerReassignmentPreview(w http.ResponseWriter, r *http.Request, previewId ContactOwnerReassignmentPreviewID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Download a redacted local owner-reassignment error CSV
+// (GET /api/v1/contact-owner-reassignments/previews/{preview_id}/errors.csv)
+func (_ Unimplemented) DownloadContactOwnerReassignmentErrors(w http.ResponseWriter, r *http.Request, previewId ContactOwnerReassignmentPreviewID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Execute one confirmed single-use local owner-reassignment preview
+// (POST /api/v1/contact-owner-reassignments/previews/{preview_id}/execute)
+func (_ Unimplemented) ExecuteContactOwnerReassignmentPreview(w http.ResponseWriter, r *http.Request, previewId ContactOwnerReassignmentPreviewID, params ExecuteContactOwnerReassignmentPreviewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Download a redacted local owner-reassignment result CSV
+// (GET /api/v1/contact-owner-reassignments/previews/{preview_id}/results.csv)
+func (_ Unimplemented) DownloadContactOwnerReassignmentResults(w http.ResponseWriter, r *http.Request, previewId ContactOwnerReassignmentPreviewID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Download the safe local owner-reassignment CSV template
+// (GET /api/v1/contact-owner-reassignments/template)
+func (_ Unimplemented) DownloadContactOwnerReassignmentTemplate(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -20965,6 +21118,274 @@ func (siw *ServerInterfaceWrapper) GetAuthSession(w http.ResponseWriter, r *http
 	handler.ServeHTTP(w, r)
 }
 
+// CreateContactOwnerReassignmentPreview operation middleware
+func (siw *ServerInterfaceWrapper) CreateContactOwnerReassignmentPreview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateContactOwnerReassignmentPreviewParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateContactOwnerReassignmentPreview(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetContactOwnerReassignmentPreview operation middleware
+func (siw *ServerInterfaceWrapper) GetContactOwnerReassignmentPreview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "preview_id" -------------
+	var previewId ContactOwnerReassignmentPreviewID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "preview_id", chi.URLParam(r, "preview_id"), &previewId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "preview_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetContactOwnerReassignmentPreview(w, r, previewId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadContactOwnerReassignmentErrors operation middleware
+func (siw *ServerInterfaceWrapper) DownloadContactOwnerReassignmentErrors(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "preview_id" -------------
+	var previewId ContactOwnerReassignmentPreviewID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "preview_id", chi.URLParam(r, "preview_id"), &previewId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "preview_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadContactOwnerReassignmentErrors(w, r, previewId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ExecuteContactOwnerReassignmentPreview operation middleware
+func (siw *ServerInterfaceWrapper) ExecuteContactOwnerReassignmentPreview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "preview_id" -------------
+	var previewId ContactOwnerReassignmentPreviewID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "preview_id", chi.URLParam(r, "preview_id"), &previewId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "preview_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ExecuteContactOwnerReassignmentPreviewParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ExecuteContactOwnerReassignmentPreview(w, r, previewId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadContactOwnerReassignmentResults operation middleware
+func (siw *ServerInterfaceWrapper) DownloadContactOwnerReassignmentResults(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "preview_id" -------------
+	var previewId ContactOwnerReassignmentPreviewID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "preview_id", chi.URLParam(r, "preview_id"), &previewId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "preview_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadContactOwnerReassignmentResults(w, r, previewId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadContactOwnerReassignmentTemplate operation middleware
+func (siw *ServerInterfaceWrapper) DownloadContactOwnerReassignmentTemplate(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadContactOwnerReassignmentTemplate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListCustomers operation middleware
 func (siw *ServerInterfaceWrapper) ListCustomers(w http.ResponseWriter, r *http.Request) {
 
@@ -24658,6 +25079,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/auth/session", wrapper.GetAuthSession)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/contact-owner-reassignments/previews", wrapper.CreateContactOwnerReassignmentPreview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/contact-owner-reassignments/previews/{preview_id}", wrapper.GetContactOwnerReassignmentPreview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/contact-owner-reassignments/previews/{preview_id}/errors.csv", wrapper.DownloadContactOwnerReassignmentErrors)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/contact-owner-reassignments/previews/{preview_id}/execute", wrapper.ExecuteContactOwnerReassignmentPreview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/contact-owner-reassignments/previews/{preview_id}/results.csv", wrapper.DownloadContactOwnerReassignmentResults)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/contact-owner-reassignments/template", wrapper.DownloadContactOwnerReassignmentTemplate)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/customers", wrapper.ListCustomers)
@@ -31960,6 +32399,419 @@ func (response GetAuthSession401JSONResponse) VisitGetAuthSessionResponse(w http
 	return json.NewEncoder(w).Encode(response)
 }
 
+type CreateContactOwnerReassignmentPreviewRequestObject struct {
+	Params CreateContactOwnerReassignmentPreviewParams
+	Body   io.Reader
+}
+
+type CreateContactOwnerReassignmentPreviewResponseObject interface {
+	VisitCreateContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error
+}
+
+type CreateContactOwnerReassignmentPreview201JSONResponse ContactOwnerReassignmentPreview
+
+func (response CreateContactOwnerReassignmentPreview201JSONResponse) VisitCreateContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateContactOwnerReassignmentPreview400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateContactOwnerReassignmentPreview400JSONResponse) VisitCreateContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateContactOwnerReassignmentPreview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateContactOwnerReassignmentPreview401JSONResponse) VisitCreateContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateContactOwnerReassignmentPreview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateContactOwnerReassignmentPreview403JSONResponse) VisitCreateContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateContactOwnerReassignmentPreview409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateContactOwnerReassignmentPreview409JSONResponse) VisitCreateContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateContactOwnerReassignmentPreview503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateContactOwnerReassignmentPreview503JSONResponse) VisitCreateContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactOwnerReassignmentPreviewRequestObject struct {
+	PreviewId ContactOwnerReassignmentPreviewID `json:"preview_id"`
+}
+
+type GetContactOwnerReassignmentPreviewResponseObject interface {
+	VisitGetContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error
+}
+
+type GetContactOwnerReassignmentPreview200JSONResponse ContactOwnerReassignmentPreview
+
+func (response GetContactOwnerReassignmentPreview200JSONResponse) VisitGetContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactOwnerReassignmentPreview400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetContactOwnerReassignmentPreview400JSONResponse) VisitGetContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactOwnerReassignmentPreview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetContactOwnerReassignmentPreview401JSONResponse) VisitGetContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactOwnerReassignmentPreview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetContactOwnerReassignmentPreview403JSONResponse) VisitGetContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactOwnerReassignmentPreview404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetContactOwnerReassignmentPreview404JSONResponse) VisitGetContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactOwnerReassignmentPreview409JSONResponse struct{ ConflictJSONResponse }
+
+func (response GetContactOwnerReassignmentPreview409JSONResponse) VisitGetContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetContactOwnerReassignmentPreview503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetContactOwnerReassignmentPreview503JSONResponse) VisitGetContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentErrorsRequestObject struct {
+	PreviewId ContactOwnerReassignmentPreviewID `json:"preview_id"`
+}
+
+type DownloadContactOwnerReassignmentErrorsResponseObject interface {
+	VisitDownloadContactOwnerReassignmentErrorsResponse(w http.ResponseWriter) error
+}
+
+type DownloadContactOwnerReassignmentErrors200TextcsvResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response DownloadContactOwnerReassignmentErrors200TextcsvResponse) VisitDownloadContactOwnerReassignmentErrorsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/csv")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DownloadContactOwnerReassignmentErrors400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DownloadContactOwnerReassignmentErrors400JSONResponse) VisitDownloadContactOwnerReassignmentErrorsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentErrors401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DownloadContactOwnerReassignmentErrors401JSONResponse) VisitDownloadContactOwnerReassignmentErrorsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentErrors403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DownloadContactOwnerReassignmentErrors403JSONResponse) VisitDownloadContactOwnerReassignmentErrorsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentErrors404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DownloadContactOwnerReassignmentErrors404JSONResponse) VisitDownloadContactOwnerReassignmentErrorsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentErrors409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DownloadContactOwnerReassignmentErrors409JSONResponse) VisitDownloadContactOwnerReassignmentErrorsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentErrors503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response DownloadContactOwnerReassignmentErrors503JSONResponse) VisitDownloadContactOwnerReassignmentErrorsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ExecuteContactOwnerReassignmentPreviewRequestObject struct {
+	PreviewId ContactOwnerReassignmentPreviewID `json:"preview_id"`
+	Params    ExecuteContactOwnerReassignmentPreviewParams
+	Body      *ExecuteContactOwnerReassignmentPreviewJSONRequestBody
+}
+
+type ExecuteContactOwnerReassignmentPreviewResponseObject interface {
+	VisitExecuteContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error
+}
+
+type ExecuteContactOwnerReassignmentPreview200JSONResponse ContactOwnerReassignmentPreview
+
+func (response ExecuteContactOwnerReassignmentPreview200JSONResponse) VisitExecuteContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ExecuteContactOwnerReassignmentPreview400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ExecuteContactOwnerReassignmentPreview400JSONResponse) VisitExecuteContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ExecuteContactOwnerReassignmentPreview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ExecuteContactOwnerReassignmentPreview401JSONResponse) VisitExecuteContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ExecuteContactOwnerReassignmentPreview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ExecuteContactOwnerReassignmentPreview403JSONResponse) VisitExecuteContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ExecuteContactOwnerReassignmentPreview404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ExecuteContactOwnerReassignmentPreview404JSONResponse) VisitExecuteContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ExecuteContactOwnerReassignmentPreview409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ExecuteContactOwnerReassignmentPreview409JSONResponse) VisitExecuteContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ExecuteContactOwnerReassignmentPreview503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ExecuteContactOwnerReassignmentPreview503JSONResponse) VisitExecuteContactOwnerReassignmentPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentResultsRequestObject struct {
+	PreviewId ContactOwnerReassignmentPreviewID `json:"preview_id"`
+}
+
+type DownloadContactOwnerReassignmentResultsResponseObject interface {
+	VisitDownloadContactOwnerReassignmentResultsResponse(w http.ResponseWriter) error
+}
+
+type DownloadContactOwnerReassignmentResults200TextcsvResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response DownloadContactOwnerReassignmentResults200TextcsvResponse) VisitDownloadContactOwnerReassignmentResultsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/csv")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DownloadContactOwnerReassignmentResults400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DownloadContactOwnerReassignmentResults400JSONResponse) VisitDownloadContactOwnerReassignmentResultsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentResults401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DownloadContactOwnerReassignmentResults401JSONResponse) VisitDownloadContactOwnerReassignmentResultsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentResults403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DownloadContactOwnerReassignmentResults403JSONResponse) VisitDownloadContactOwnerReassignmentResultsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentResults404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DownloadContactOwnerReassignmentResults404JSONResponse) VisitDownloadContactOwnerReassignmentResultsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentResults409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DownloadContactOwnerReassignmentResults409JSONResponse) VisitDownloadContactOwnerReassignmentResultsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentResults503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response DownloadContactOwnerReassignmentResults503JSONResponse) VisitDownloadContactOwnerReassignmentResultsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentTemplateRequestObject struct {
+}
+
+type DownloadContactOwnerReassignmentTemplateResponseObject interface {
+	VisitDownloadContactOwnerReassignmentTemplateResponse(w http.ResponseWriter) error
+}
+
+type DownloadContactOwnerReassignmentTemplate200TextcsvResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response DownloadContactOwnerReassignmentTemplate200TextcsvResponse) VisitDownloadContactOwnerReassignmentTemplateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/csv")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DownloadContactOwnerReassignmentTemplate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DownloadContactOwnerReassignmentTemplate401JSONResponse) VisitDownloadContactOwnerReassignmentTemplateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadContactOwnerReassignmentTemplate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DownloadContactOwnerReassignmentTemplate403JSONResponse) VisitDownloadContactOwnerReassignmentTemplateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListCustomersRequestObject struct {
 	Params ListCustomersParams
 }
@@ -35845,6 +36697,24 @@ type StrictServerInterface interface {
 	// Return the authenticated admin principal
 	// (GET /api/v1/auth/session)
 	GetAuthSession(ctx context.Context, request GetAuthSessionRequestObject) (GetAuthSessionResponseObject, error)
+	// Parse and persist one bounded local owner-reassignment CSV preview
+	// (POST /api/v1/contact-owner-reassignments/previews)
+	CreateContactOwnerReassignmentPreview(ctx context.Context, request CreateContactOwnerReassignmentPreviewRequestObject) (CreateContactOwnerReassignmentPreviewResponseObject, error)
+	// Read one durable local owner-reassignment preview
+	// (GET /api/v1/contact-owner-reassignments/previews/{preview_id})
+	GetContactOwnerReassignmentPreview(ctx context.Context, request GetContactOwnerReassignmentPreviewRequestObject) (GetContactOwnerReassignmentPreviewResponseObject, error)
+	// Download a redacted local owner-reassignment error CSV
+	// (GET /api/v1/contact-owner-reassignments/previews/{preview_id}/errors.csv)
+	DownloadContactOwnerReassignmentErrors(ctx context.Context, request DownloadContactOwnerReassignmentErrorsRequestObject) (DownloadContactOwnerReassignmentErrorsResponseObject, error)
+	// Execute one confirmed single-use local owner-reassignment preview
+	// (POST /api/v1/contact-owner-reassignments/previews/{preview_id}/execute)
+	ExecuteContactOwnerReassignmentPreview(ctx context.Context, request ExecuteContactOwnerReassignmentPreviewRequestObject) (ExecuteContactOwnerReassignmentPreviewResponseObject, error)
+	// Download a redacted local owner-reassignment result CSV
+	// (GET /api/v1/contact-owner-reassignments/previews/{preview_id}/results.csv)
+	DownloadContactOwnerReassignmentResults(ctx context.Context, request DownloadContactOwnerReassignmentResultsRequestObject) (DownloadContactOwnerReassignmentResultsResponseObject, error)
+	// Download the safe local owner-reassignment CSV template
+	// (GET /api/v1/contact-owner-reassignments/template)
+	DownloadContactOwnerReassignmentTemplate(ctx context.Context, request DownloadContactOwnerReassignmentTemplateRequestObject) (DownloadContactOwnerReassignmentTemplateResponseObject, error)
 	// List customers using a keyset cursor
 	// (GET /api/v1/customers)
 	ListCustomers(ctx context.Context, request ListCustomersRequestObject) (ListCustomersResponseObject, error)
@@ -39372,6 +40242,170 @@ func (sh *strictHandler) GetAuthSession(w http.ResponseWriter, r *http.Request) 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetAuthSessionResponseObject); ok {
 		if err := validResponse.VisitGetAuthSessionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateContactOwnerReassignmentPreview operation middleware
+func (sh *strictHandler) CreateContactOwnerReassignmentPreview(w http.ResponseWriter, r *http.Request, params CreateContactOwnerReassignmentPreviewParams) {
+	var request CreateContactOwnerReassignmentPreviewRequestObject
+
+	request.Params = params
+
+	request.Body = r.Body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateContactOwnerReassignmentPreview(ctx, request.(CreateContactOwnerReassignmentPreviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateContactOwnerReassignmentPreview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateContactOwnerReassignmentPreviewResponseObject); ok {
+		if err := validResponse.VisitCreateContactOwnerReassignmentPreviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetContactOwnerReassignmentPreview operation middleware
+func (sh *strictHandler) GetContactOwnerReassignmentPreview(w http.ResponseWriter, r *http.Request, previewId ContactOwnerReassignmentPreviewID) {
+	var request GetContactOwnerReassignmentPreviewRequestObject
+
+	request.PreviewId = previewId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetContactOwnerReassignmentPreview(ctx, request.(GetContactOwnerReassignmentPreviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetContactOwnerReassignmentPreview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetContactOwnerReassignmentPreviewResponseObject); ok {
+		if err := validResponse.VisitGetContactOwnerReassignmentPreviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadContactOwnerReassignmentErrors operation middleware
+func (sh *strictHandler) DownloadContactOwnerReassignmentErrors(w http.ResponseWriter, r *http.Request, previewId ContactOwnerReassignmentPreviewID) {
+	var request DownloadContactOwnerReassignmentErrorsRequestObject
+
+	request.PreviewId = previewId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadContactOwnerReassignmentErrors(ctx, request.(DownloadContactOwnerReassignmentErrorsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadContactOwnerReassignmentErrors")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadContactOwnerReassignmentErrorsResponseObject); ok {
+		if err := validResponse.VisitDownloadContactOwnerReassignmentErrorsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ExecuteContactOwnerReassignmentPreview operation middleware
+func (sh *strictHandler) ExecuteContactOwnerReassignmentPreview(w http.ResponseWriter, r *http.Request, previewId ContactOwnerReassignmentPreviewID, params ExecuteContactOwnerReassignmentPreviewParams) {
+	var request ExecuteContactOwnerReassignmentPreviewRequestObject
+
+	request.PreviewId = previewId
+	request.Params = params
+
+	var body ExecuteContactOwnerReassignmentPreviewJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ExecuteContactOwnerReassignmentPreview(ctx, request.(ExecuteContactOwnerReassignmentPreviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ExecuteContactOwnerReassignmentPreview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ExecuteContactOwnerReassignmentPreviewResponseObject); ok {
+		if err := validResponse.VisitExecuteContactOwnerReassignmentPreviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadContactOwnerReassignmentResults operation middleware
+func (sh *strictHandler) DownloadContactOwnerReassignmentResults(w http.ResponseWriter, r *http.Request, previewId ContactOwnerReassignmentPreviewID) {
+	var request DownloadContactOwnerReassignmentResultsRequestObject
+
+	request.PreviewId = previewId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadContactOwnerReassignmentResults(ctx, request.(DownloadContactOwnerReassignmentResultsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadContactOwnerReassignmentResults")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadContactOwnerReassignmentResultsResponseObject); ok {
+		if err := validResponse.VisitDownloadContactOwnerReassignmentResultsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadContactOwnerReassignmentTemplate operation middleware
+func (sh *strictHandler) DownloadContactOwnerReassignmentTemplate(w http.ResponseWriter, r *http.Request) {
+	var request DownloadContactOwnerReassignmentTemplateRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadContactOwnerReassignmentTemplate(ctx, request.(DownloadContactOwnerReassignmentTemplateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadContactOwnerReassignmentTemplate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadContactOwnerReassignmentTemplateResponseObject); ok {
+		if err := validResponse.VisitDownloadContactOwnerReassignmentTemplateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

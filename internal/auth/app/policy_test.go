@@ -57,6 +57,7 @@ func TestAuthorizeFrozenCapabilityMatrix(t *testing.T) {
 		// Admin Shell grant, so ops must remain denied.
 		{authport.CapabilityAdminRead, authport.ScopeGlobal, "", ""},
 		{authport.CapabilityAdminShellRead, authport.ScopeGlobal, authport.ScopeGlobal, ""},
+		{authport.CapabilityContactOwnerReassignment, authport.ScopeGlobal, "", ""},
 	}
 	principals := []struct {
 		name      string

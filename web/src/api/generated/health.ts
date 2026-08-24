@@ -5,6 +5,69 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface ContactOwnerReassignmentRow {
+  /** @minimum 1 */
+  customer_id: number;
+  /** @minimum 1 */
+  expected_owner_staff_id: number;
+  expected_updated_at: string;
+  /** @minimum 1 */
+  target_owner_staff_id: number;
+}
+
+export type ContactOwnerReassignmentIssueCode =
+  (typeof ContactOwnerReassignmentIssueCode)[keyof typeof ContactOwnerReassignmentIssueCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ContactOwnerReassignmentIssueCode = {
+  invalid_row: "invalid_row",
+} as const;
+
+export interface ContactOwnerReassignmentIssue {
+  /** @minimum 2 */
+  line: number;
+  code: ContactOwnerReassignmentIssueCode;
+}
+
+export interface ContactOwnerReassignmentPreview {
+  /** @pattern ^cor_[A-Za-z0-9_-]{22}$ */
+  id: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  hash: string;
+  /** @maxItems 500 */
+  rows: ContactOwnerReassignmentRow[];
+  /** @maxItems 500 */
+  issues: ContactOwnerReassignmentIssue[];
+  expires_at: string;
+  executed: boolean;
+  /** @maxItems 500 */
+  result?: ContactOwnerReassignmentResultRow[];
+}
+
+export interface ContactOwnerReassignmentResultRow {
+  /** @minimum 1 */
+  customer_id: number;
+  /** @minimum 1 */
+  previous_owner_staff_id: number;
+  /** @minimum 1 */
+  target_owner_staff_id: number;
+  updated_at: string;
+}
+
+export type ContactOwnerReassignmentExecuteRequestConfirmation =
+  (typeof ContactOwnerReassignmentExecuteRequestConfirmation)[keyof typeof ContactOwnerReassignmentExecuteRequestConfirmation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ContactOwnerReassignmentExecuteRequestConfirmation = {
+  CONFIRM_OWNER_REASSIGNMENT: "CONFIRM OWNER REASSIGNMENT",
+} as const;
+
+export interface ContactOwnerReassignmentExecuteRequest {
+  /** @pattern ^[a-f0-9]{64}$ */
+  preview_hash: string;
+  confirmation: ContactOwnerReassignmentExecuteRequestConfirmation;
+}
+
 export interface SidebarSafety {
   local_only: boolean;
   provider_execution_eligible: boolean;
@@ -14555,6 +14618,487 @@ export type ListCloudCampaignTouchPlanRecipientsParams = {
    * @maximum 100
    */
   limit?: number;
+};
+
+/**
+ * @summary Download the safe local owner-reassignment CSV template
+ */
+export type downloadContactOwnerReassignmentTemplateResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type downloadContactOwnerReassignmentTemplateResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type downloadContactOwnerReassignmentTemplateResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type downloadContactOwnerReassignmentTemplateResponseSuccess =
+  downloadContactOwnerReassignmentTemplateResponse200 & {
+    headers: Headers;
+  };
+export type downloadContactOwnerReassignmentTemplateResponseError = (
+  | downloadContactOwnerReassignmentTemplateResponse401
+  | downloadContactOwnerReassignmentTemplateResponse403
+) & {
+  headers: Headers;
+};
+
+export type downloadContactOwnerReassignmentTemplateResponse =
+  | downloadContactOwnerReassignmentTemplateResponseSuccess
+  | downloadContactOwnerReassignmentTemplateResponseError;
+
+export const getDownloadContactOwnerReassignmentTemplateUrl = () => {
+  return `/api/v1/contact-owner-reassignments/template`;
+};
+
+export const downloadContactOwnerReassignmentTemplate = async (
+  options?: RequestInit,
+): Promise<downloadContactOwnerReassignmentTemplateResponse> => {
+  const res = await fetch(getDownloadContactOwnerReassignmentTemplateUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: downloadContactOwnerReassignmentTemplateResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as downloadContactOwnerReassignmentTemplateResponse;
+};
+
+/**
+ * @summary Parse and persist one bounded local owner-reassignment CSV preview
+ */
+export type createContactOwnerReassignmentPreviewResponse201 = {
+  data: ContactOwnerReassignmentPreview;
+  status: 201;
+};
+
+export type createContactOwnerReassignmentPreviewResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createContactOwnerReassignmentPreviewResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createContactOwnerReassignmentPreviewResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createContactOwnerReassignmentPreviewResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createContactOwnerReassignmentPreviewResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createContactOwnerReassignmentPreviewResponseSuccess =
+  createContactOwnerReassignmentPreviewResponse201 & {
+    headers: Headers;
+  };
+export type createContactOwnerReassignmentPreviewResponseError = (
+  | createContactOwnerReassignmentPreviewResponse400
+  | createContactOwnerReassignmentPreviewResponse401
+  | createContactOwnerReassignmentPreviewResponse403
+  | createContactOwnerReassignmentPreviewResponse409
+  | createContactOwnerReassignmentPreviewResponse503
+) & {
+  headers: Headers;
+};
+
+export type createContactOwnerReassignmentPreviewResponse =
+  | createContactOwnerReassignmentPreviewResponseSuccess
+  | createContactOwnerReassignmentPreviewResponseError;
+
+export const getCreateContactOwnerReassignmentPreviewUrl = () => {
+  return `/api/v1/contact-owner-reassignments/previews`;
+};
+
+export const createContactOwnerReassignmentPreview = async (
+  createContactOwnerReassignmentPreviewBody: string,
+  options?: RequestInit,
+): Promise<createContactOwnerReassignmentPreviewResponse> => {
+  const res = await fetch(getCreateContactOwnerReassignmentPreviewUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "text/csv", ...options?.headers },
+    body: JSON.stringify(createContactOwnerReassignmentPreviewBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createContactOwnerReassignmentPreviewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createContactOwnerReassignmentPreviewResponse;
+};
+
+/**
+ * @summary Read one durable local owner-reassignment preview
+ */
+export type getContactOwnerReassignmentPreviewResponse200 = {
+  data: ContactOwnerReassignmentPreview;
+  status: 200;
+};
+
+export type getContactOwnerReassignmentPreviewResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getContactOwnerReassignmentPreviewResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getContactOwnerReassignmentPreviewResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getContactOwnerReassignmentPreviewResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getContactOwnerReassignmentPreviewResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type getContactOwnerReassignmentPreviewResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getContactOwnerReassignmentPreviewResponseSuccess =
+  getContactOwnerReassignmentPreviewResponse200 & {
+    headers: Headers;
+  };
+export type getContactOwnerReassignmentPreviewResponseError = (
+  | getContactOwnerReassignmentPreviewResponse400
+  | getContactOwnerReassignmentPreviewResponse401
+  | getContactOwnerReassignmentPreviewResponse403
+  | getContactOwnerReassignmentPreviewResponse404
+  | getContactOwnerReassignmentPreviewResponse409
+  | getContactOwnerReassignmentPreviewResponse503
+) & {
+  headers: Headers;
+};
+
+export type getContactOwnerReassignmentPreviewResponse =
+  | getContactOwnerReassignmentPreviewResponseSuccess
+  | getContactOwnerReassignmentPreviewResponseError;
+
+export const getGetContactOwnerReassignmentPreviewUrl = (previewId: string) => {
+  return `/api/v1/contact-owner-reassignments/previews/${previewId}`;
+};
+
+export const getContactOwnerReassignmentPreview = async (
+  previewId: string,
+  options?: RequestInit,
+): Promise<getContactOwnerReassignmentPreviewResponse> => {
+  const res = await fetch(getGetContactOwnerReassignmentPreviewUrl(previewId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getContactOwnerReassignmentPreviewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getContactOwnerReassignmentPreviewResponse;
+};
+
+/**
+ * @summary Execute one confirmed single-use local owner-reassignment preview
+ */
+export type executeContactOwnerReassignmentPreviewResponse200 = {
+  data: ContactOwnerReassignmentPreview;
+  status: 200;
+};
+
+export type executeContactOwnerReassignmentPreviewResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type executeContactOwnerReassignmentPreviewResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type executeContactOwnerReassignmentPreviewResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type executeContactOwnerReassignmentPreviewResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type executeContactOwnerReassignmentPreviewResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type executeContactOwnerReassignmentPreviewResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type executeContactOwnerReassignmentPreviewResponseSuccess =
+  executeContactOwnerReassignmentPreviewResponse200 & {
+    headers: Headers;
+  };
+export type executeContactOwnerReassignmentPreviewResponseError = (
+  | executeContactOwnerReassignmentPreviewResponse400
+  | executeContactOwnerReassignmentPreviewResponse401
+  | executeContactOwnerReassignmentPreviewResponse403
+  | executeContactOwnerReassignmentPreviewResponse404
+  | executeContactOwnerReassignmentPreviewResponse409
+  | executeContactOwnerReassignmentPreviewResponse503
+) & {
+  headers: Headers;
+};
+
+export type executeContactOwnerReassignmentPreviewResponse =
+  | executeContactOwnerReassignmentPreviewResponseSuccess
+  | executeContactOwnerReassignmentPreviewResponseError;
+
+export const getExecuteContactOwnerReassignmentPreviewUrl = (
+  previewId: string,
+) => {
+  return `/api/v1/contact-owner-reassignments/previews/${previewId}/execute`;
+};
+
+export const executeContactOwnerReassignmentPreview = async (
+  previewId: string,
+  contactOwnerReassignmentExecuteRequest: ContactOwnerReassignmentExecuteRequest,
+  options?: RequestInit,
+): Promise<executeContactOwnerReassignmentPreviewResponse> => {
+  const res = await fetch(
+    getExecuteContactOwnerReassignmentPreviewUrl(previewId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(contactOwnerReassignmentExecuteRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: executeContactOwnerReassignmentPreviewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as executeContactOwnerReassignmentPreviewResponse;
+};
+
+/**
+ * @summary Download a redacted local owner-reassignment error CSV
+ */
+export type downloadContactOwnerReassignmentErrorsResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type downloadContactOwnerReassignmentErrorsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type downloadContactOwnerReassignmentErrorsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type downloadContactOwnerReassignmentErrorsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type downloadContactOwnerReassignmentErrorsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type downloadContactOwnerReassignmentErrorsResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type downloadContactOwnerReassignmentErrorsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type downloadContactOwnerReassignmentErrorsResponseSuccess =
+  downloadContactOwnerReassignmentErrorsResponse200 & {
+    headers: Headers;
+  };
+export type downloadContactOwnerReassignmentErrorsResponseError = (
+  | downloadContactOwnerReassignmentErrorsResponse400
+  | downloadContactOwnerReassignmentErrorsResponse401
+  | downloadContactOwnerReassignmentErrorsResponse403
+  | downloadContactOwnerReassignmentErrorsResponse404
+  | downloadContactOwnerReassignmentErrorsResponse409
+  | downloadContactOwnerReassignmentErrorsResponse503
+) & {
+  headers: Headers;
+};
+
+export type downloadContactOwnerReassignmentErrorsResponse =
+  | downloadContactOwnerReassignmentErrorsResponseSuccess
+  | downloadContactOwnerReassignmentErrorsResponseError;
+
+export const getDownloadContactOwnerReassignmentErrorsUrl = (
+  previewId: string,
+) => {
+  return `/api/v1/contact-owner-reassignments/previews/${previewId}/errors.csv`;
+};
+
+export const downloadContactOwnerReassignmentErrors = async (
+  previewId: string,
+  options?: RequestInit,
+): Promise<downloadContactOwnerReassignmentErrorsResponse> => {
+  const res = await fetch(
+    getDownloadContactOwnerReassignmentErrorsUrl(previewId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: downloadContactOwnerReassignmentErrorsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as downloadContactOwnerReassignmentErrorsResponse;
+};
+
+/**
+ * @summary Download a redacted local owner-reassignment result CSV
+ */
+export type downloadContactOwnerReassignmentResultsResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type downloadContactOwnerReassignmentResultsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type downloadContactOwnerReassignmentResultsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type downloadContactOwnerReassignmentResultsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type downloadContactOwnerReassignmentResultsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type downloadContactOwnerReassignmentResultsResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type downloadContactOwnerReassignmentResultsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type downloadContactOwnerReassignmentResultsResponseSuccess =
+  downloadContactOwnerReassignmentResultsResponse200 & {
+    headers: Headers;
+  };
+export type downloadContactOwnerReassignmentResultsResponseError = (
+  | downloadContactOwnerReassignmentResultsResponse400
+  | downloadContactOwnerReassignmentResultsResponse401
+  | downloadContactOwnerReassignmentResultsResponse403
+  | downloadContactOwnerReassignmentResultsResponse404
+  | downloadContactOwnerReassignmentResultsResponse409
+  | downloadContactOwnerReassignmentResultsResponse503
+) & {
+  headers: Headers;
+};
+
+export type downloadContactOwnerReassignmentResultsResponse =
+  | downloadContactOwnerReassignmentResultsResponseSuccess
+  | downloadContactOwnerReassignmentResultsResponseError;
+
+export const getDownloadContactOwnerReassignmentResultsUrl = (
+  previewId: string,
+) => {
+  return `/api/v1/contact-owner-reassignments/previews/${previewId}/results.csv`;
+};
+
+export const downloadContactOwnerReassignmentResults = async (
+  previewId: string,
+  options?: RequestInit,
+): Promise<downloadContactOwnerReassignmentResultsResponse> => {
+  const res = await fetch(
+    getDownloadContactOwnerReassignmentResultsUrl(previewId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: downloadContactOwnerReassignmentResultsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as downloadContactOwnerReassignmentResultsResponse;
 };
 
 /**
