@@ -42,3 +42,12 @@ preview 有解析错误仍作为稳定、可下载 errors 的耐久资源；含�
   保留事实，非空 migration down 返回 SQLSTATE 55000。
 - local receipt/result 只证明本地提交、重放和数据库写入；它**不等于**企微转属、Provider 成功、
   Nightly、合并、部署或任何外部效果。
+
+## PG16 业务验收
+
+`acceptance/contact_owner_reassignment/local_core_pg16.sh` 在隔离临时库中执行 fresh 1..70、
+empty down/up，并运行真实 app/store PG16 验收：preview create replay/conflict、execute 的
+customers/customer_events/event_log/preview/receipt 原子事实、同 key 并发单提交/replay、与同一
+`customers FOR UPDATE` 竞争后的 CAS conflict、inactive target 与事件故障回滚。业务事实随后
+使 00070 down 以 SQLSTATE 55000 fail-closed，trap 删除临时库。已执行的 preview 不受 TTL
+读取限制，以保留本地 result CSV/receipt 可追溯性；未执行 preview 仍在 TTL 后 conflict。

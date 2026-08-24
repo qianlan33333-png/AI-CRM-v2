@@ -139,7 +139,7 @@ func (s *OwnerReassignmentService) Preview(ctx context.Context, actor int64, id 
 		p, e = s.store.ReadOwnerReassignmentPreview(tx, id, actor)
 		return e
 	})
-	if err == nil && s.now().UTC().After(p.ExpiresAt) {
+	if err == nil && !p.Executed && s.now().UTC().After(p.ExpiresAt) {
 		return OwnerReassignmentPreview{}, ErrOwnerReassignmentExpired
 	}
 	return p, mapOwnerReassignmentError(err)

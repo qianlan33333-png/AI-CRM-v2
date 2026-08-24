@@ -197,3 +197,21 @@ func TestOwnerReassignmentExecuteDoesNotReplayReservedReceipt(t *testing.T) {
 		t.Fatalf("reserved receipt replay err=%v", err)
 	}
 }
+
+func TestOwnerReassignmentPreviewExpiresOnlyBeforeExecution(t *testing.T) {
+	now := time.Date(2026, 8, 24, 9, 0, 0, 0, time.UTC)
+	store := &ownerReassignmentStoreFake{preview: OwnerReassignmentPreview{
+		ID: "cor_abcdefghijklmnopqrstuv", ExpiresAt: now.Add(-time.Second),
+	}}
+	service := NewOwnerReassignmentService(ownerReassignmentUOW{}, store, ownerReassignmentEvents{})
+	service.now = func() time.Time { return now }
+	if _, err := service.Preview(context.Background(), 11, store.preview.ID); !errors.Is(err, ErrOwnerReassignmentExpired) {
+		t.Fatalf("unexecuted expired preview err=%v", err)
+	}
+	store.preview.Executed = true
+	store.preview.Result = []OwnerReassignmentResultRow{{CustomerID: 41, PreviousOwnerStaffID: 7, TargetOwnerStaffID: 9, UpdatedAt: now}}
+	got, err := service.Preview(context.Background(), 11, store.preview.ID)
+	if err != nil || !got.Executed || len(got.Result) != 1 {
+		t.Fatalf("executed expired preview=%+v err=%v", got, err)
+	}
+}

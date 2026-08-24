@@ -17,7 +17,9 @@ psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c 'CREATE DATABASE aicrm_tes
 [[ "$(psql "$database_url" -X -q -At -c 'SELECT max(version_id) FROM goose_db_version WHERE is_applied')" = "70" ]]
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >/dev/null
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
-psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "INSERT INTO public.contact_owner_reassignment_previews(id,actor_id,idempotency_key_digest,payload_digest,preview_hash,rows,created_at,expires_at) VALUES ('cor_abcdefghijklmnopqrstuv',1,decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex'),decode(repeat('00',32),'hex'),'[]','2026-08-24T00:00:00Z','2026-08-24T00:15:00Z')" >/dev/null
+P4CONTACT_OWNER_REASSIGNMENT_ACCEPTANCE_DATABASE_URL="$database_url" \
+  GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  "$go_command" test -count=1 -race -run '^TestContactOwnerReassignmentLocalCorePG16$' ./internal/contact/store
 if "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >/tmp/aicrm-owner-reassignment-down.log 2>&1; then
   echo 'owner reassignment facts unexpectedly allowed migration rollback' >&2
   exit 1
