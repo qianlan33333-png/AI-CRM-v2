@@ -17,6 +17,7 @@ import (
 	"github.com/qianlan33333-png/AI-CRM-v2/acceptance/automationfixture"
 	"github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
+	"github.com/qianlan33333-png/AI-CRM-v2/acceptance/radarfixture"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
@@ -364,11 +365,9 @@ func seedAttachmentChannelReference(t *testing.T, ctx context.Context, pool *pgx
 
 func seedAttachmentRadarReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, attachmentID int64) int64 {
 	t.Helper()
-	var id int64
 	code := fmt.Sprintf("rd_%022d", attachmentID)
-	if err := pool.QueryRow(ctx, `INSERT INTO radar_links (
-  public_code,name,title,destination_url,attachment_id,status,version,created_by,updated_by,created_at,updated_at
-) VALUES ($1,$2,$3,'https://example.com/attachment-reference',$4,'draft',1,1,1,now(),now()) RETURNING id`, code, unique("attachment-radar"), unique("attachment radar"), attachmentID).Scan(&id); err != nil {
+	id, err := radarfixture.CreateAttachmentReference(ctx, pool, code, unique("attachment-radar"), unique("attachment radar"), attachmentID)
+	if err != nil {
 		t.Fatal(err)
 	}
 	return id
