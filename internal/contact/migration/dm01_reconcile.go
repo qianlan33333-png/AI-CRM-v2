@@ -266,7 +266,9 @@ func validReconcileCompanion(table ReconcileTable, receipt ReconcileReceipt) boo
 
 func validReconcileDisposition(table ReconcileTable, disposition string) bool {
 	switch table {
-	case ReconcileOwnerRoleMap, ReconcileCustomerIdentity, ReconcileExternalIdentity:
+	case ReconcileOwnerRoleMap:
+		return disposition == "imported" || disposition == "quarantined" || disposition == "skipped"
+	case ReconcileCustomerIdentity, ReconcileExternalIdentity:
 		return disposition == "imported" || disposition == "quarantined"
 	case ReconcileMergeAudit, ReconcileResolutionQueue:
 		return disposition == "archived"

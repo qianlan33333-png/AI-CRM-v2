@@ -837,6 +837,11 @@ func (HistoricalImportRepository) AppendHistoricalImportRowReceipt(ctx context.C
 		dispositionText = "imported"
 	case contactport.HistoricalImportQuarantined:
 		dispositionText = "quarantined"
+	case contactport.HistoricalImportSkipped:
+		if source != contactport.HistoricalImportOwnerRoleMap {
+			return ErrInvalidHistoricalImport
+		}
+		dispositionText = "skipped"
 	default:
 		return ErrInvalidHistoricalImport
 	}

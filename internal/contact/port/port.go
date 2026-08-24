@@ -172,6 +172,7 @@ type HistoricalImportDisposition uint8
 const (
 	HistoricalImportImported HistoricalImportDisposition = iota + 1
 	HistoricalImportQuarantined
+	HistoricalImportSkipped
 )
 
 // HistoricalImportSourceFact carries only secret-backed digests. Raw legacy

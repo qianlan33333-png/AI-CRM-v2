@@ -205,6 +205,7 @@ func (executor *Executor) runImport(ctx context.Context, snapshot SourceSnapshot
 		allowlist[value] = false
 	}
 	staff := make([]StaffActiveRoot, 0, executorPageSize)
+	skippedOwners := make([]contactport.HistoricalImportSourceFact, 0, executorPageSize)
 	tracker := newTableTracker("owner_role_map", bounds["owner_role_map"], command.HMACKey)
 	err := snapshot.EachOwnerRoleMap(ctx, bounds[tracker.table], func(row OwnerRoleMapRow) error {
 		ownerHMAC, ownerErr := OwnerAllowlistHMAC(command.HMACKey, row.UserID)
@@ -222,18 +223,23 @@ func (executor *Executor) runImport(ctx context.Context, snapshot SourceSnapshot
 		if err != nil {
 			return err
 		}
-		staff = append(staff, StaffActiveRoot{Source: fact, Target: contactport.HistoricalImportStaffFact{WeComUserID: row.UserID, Name: row.DisplayName, Active: row.Active, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}})
-		if len(staff) == executorPageSize {
+		if !allowlist[ownerDigest] {
+			skippedOwners = append(skippedOwners, fact)
+		} else {
+			staff = append(staff, StaffActiveRoot{Source: fact, Target: contactport.HistoricalImportStaffFact{WeComUserID: row.UserID, Name: row.DisplayName, Active: row.Active, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}})
+		}
+		if len(staff)+len(skippedOwners) == executorPageSize {
 			if err = executor.renew(ctx, fence); err == nil {
-				_, err = executor.active.Process(ctx, ActiveRootsCommand{Fence: nonActiveFence(fence), CorpID: command.Manifest.WeComCorpID, HMACKeyVersion: int16(command.Manifest.HMACKeyVersion), DigestKey: command.HMACKey, Staff: staff})
+				_, err = executor.active.Process(ctx, ActiveRootsCommand{Fence: nonActiveFence(fence), CorpID: command.Manifest.WeComCorpID, HMACKeyVersion: int16(command.Manifest.HMACKeyVersion), DigestKey: command.HMACKey, Staff: staff, SkippedOwners: skippedOwners})
 			}
 			staff = staff[:0]
+			skippedOwners = skippedOwners[:0]
 		}
 		return err
 	})
-	if err == nil && len(staff) > 0 {
+	if err == nil && len(staff)+len(skippedOwners) > 0 {
 		if err = executor.renew(ctx, fence); err == nil {
-			_, err = executor.active.Process(ctx, ActiveRootsCommand{Fence: nonActiveFence(fence), CorpID: command.Manifest.WeComCorpID, HMACKeyVersion: int16(command.Manifest.HMACKeyVersion), DigestKey: command.HMACKey, Staff: staff})
+			_, err = executor.active.Process(ctx, ActiveRootsCommand{Fence: nonActiveFence(fence), CorpID: command.Manifest.WeComCorpID, HMACKeyVersion: int16(command.Manifest.HMACKeyVersion), DigestKey: command.HMACKey, Staff: staff, SkippedOwners: skippedOwners})
 		}
 	}
 	if err != nil {

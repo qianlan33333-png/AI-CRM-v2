@@ -50,6 +50,7 @@ type ActiveRootsCommand struct {
 	HMACKeyVersion int16
 	DigestKey      []byte
 	Staff          []StaffActiveRoot
+	SkippedOwners  []contactport.HistoricalImportSourceFact
 	Customers      []CustomerActiveRoot
 	Identities     []ExternalIdentityActiveRoot
 }
@@ -89,6 +90,11 @@ func (service *ActiveRootService) Process(ctx context.Context, command ActiveRoo
 	}
 	var result ActiveRootsResult
 	err := service.uow.Within(ctx, func(txCtx context.Context) error {
+		for _, fact := range command.SkippedOwners {
+			if err := service.processSkippedOwner(txCtx, command, fact, &result); err != nil {
+				return err
+			}
+		}
 		for _, row := range command.Staff {
 			if err := service.processStaff(txCtx, command, row, &result); err != nil {
 				return err
@@ -110,6 +116,35 @@ func (service *ActiveRootService) Process(ctx context.Context, command ActiveRoo
 		return ActiveRootsResult{}, err
 	}
 	return result, nil
+}
+
+func (service *ActiveRootService) processSkippedOwner(ctx context.Context, command ActiveRootsCommand, fact contactport.HistoricalImportSourceFact, result *ActiveRootsResult) error {
+	receipt, replay, err := service.lockReceipt(ctx, command.Fence.RunID, contactport.HistoricalImportOwnerRoleMap, fact)
+	if err != nil {
+		return err
+	}
+	lineage, state, err := service.matchLineage(ctx, contactport.HistoricalImportOwnerRoleMap, fact)
+	if err != nil {
+		return err
+	}
+	if state != lineageMissing || lineage.TargetID != 0 {
+		return ErrActiveRootDrift
+	}
+	if replay {
+		if receipt.Disposition != contactport.HistoricalImportSkipped || !hmac.Equal(receipt.PayloadHMAC, fact.PayloadHMAC) || !hmac.Equal(receipt.FieldDigest, fact.FieldDigest) {
+			return ErrSourcePayloadDrift
+		}
+		result.Replayed++
+		return nil
+	}
+	if err = service.contacts.LockHistoricalImportSource(ctx, contactport.HistoricalImportOwnerRoleMap, fact.SourceKeyHMAC); err != nil {
+		return err
+	}
+	if err = service.contacts.AppendHistoricalImportRowReceipt(ctx, command.Fence, contactport.HistoricalImportOwnerRoleMap, fact, contactport.HistoricalImportSkipped); err != nil {
+		return err
+	}
+	result.Replayed++
+	return nil
 }
 
 func (service *ActiveRootService) processStaff(ctx context.Context, command ActiveRootsCommand, row StaffActiveRoot, result *ActiveRootsResult) error {
@@ -502,11 +537,16 @@ func driftOr(err error) error {
 }
 
 func validActiveRoots(command ActiveRootsCommand) bool {
-	rowCount := len(command.Staff) + len(command.Customers) + len(command.Identities)
+	rowCount := len(command.Staff) + len(command.SkippedOwners) + len(command.Customers) + len(command.Identities)
 	if command.Fence.RunID < 1 || command.Fence.Generation < 1 || len(command.Fence.TokenHMAC) != 32 || command.HMACKeyVersion < 1 || len(command.DigestKey) < 32 || command.CorpID == "" || strings.TrimSpace(command.CorpID) != command.CorpID || rowCount < 1 || rowCount > MaximumActiveRootBatchRows {
 		return false
 	}
 	seen := map[contactport.HistoricalImportSource]map[string]bool{contactport.HistoricalImportOwnerRoleMap: {}, contactport.HistoricalImportCustomerIdentity: {}, contactport.HistoricalImportExternalIdentity: {}}
+	for _, fact := range command.SkippedOwners {
+		if !validSourceFact(fact) || !uniqueSource(seen, contactport.HistoricalImportOwnerRoleMap, fact.SourceKeyHMAC) {
+			return false
+		}
+	}
 	for _, row := range command.Staff {
 		if !validSourceFact(row.Source) || !uniqueSource(seen, contactport.HistoricalImportOwnerRoleMap, row.Source.SourceKeyHMAC) || row.Target.WeComUserID == "" || strings.TrimSpace(row.Target.WeComUserID) != row.Target.WeComUserID || row.Target.Name == "" || strings.TrimSpace(row.Target.Name) != row.Target.Name || row.Target.CreatedAt.IsZero() || row.Target.UpdatedAt.IsZero() || row.Target.CreatedAt.After(row.Target.UpdatedAt) {
 			return false
