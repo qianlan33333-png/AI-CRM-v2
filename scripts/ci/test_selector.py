@@ -199,6 +199,26 @@ class ClassificationMatrixTests(unittest.TestCase):
             vulnerability="true",
         )
 
+    def test_openapi_contract_tool_selects_api_without_widening_other_tools(self) -> None:
+        self.assert_flags(
+            ["tools/openapi-contract/main_test.go"],
+            api="true",
+            web="false",
+            go="true",
+            go_mode="full",
+            shared="true",
+            vulnerability="true",
+        )
+        self.assert_flags(
+            ["tools/p1-reconciliation/main_test.go"],
+            api="false",
+            web="false",
+            go="true",
+            go_mode="full",
+            shared="true",
+            vulnerability="true",
+        )
+
     def test_repository_go_tool_is_known(self) -> None:
         values = self.assert_flags(
             ["scripts/ownership/main.go"],
