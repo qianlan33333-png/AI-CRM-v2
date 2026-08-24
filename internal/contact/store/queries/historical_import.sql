@@ -45,6 +45,16 @@ WHERE id = sqlc.arg(run_id)::bigint
   AND lease_expires_at >= now()
 RETURNING lease_generation;
 
+-- name: TransitionHistoricalImportRun :one
+UPDATE legacy_contact_identity_import_runs
+SET state = sqlc.arg(next_state)::text,
+    completed_at = CASE WHEN sqlc.arg(next_state)::text IN ('preflighted', 'imported', 'reconciled', 'failed') THEN now() ELSE completed_at END
+WHERE id = sqlc.arg(run_id)::bigint
+  AND lease_generation = sqlc.arg(expected_generation)::bigint
+  AND lease_token_hmac = sqlc.arg(token_hmac)::bytea
+  AND lease_expires_at >= now()
+RETURNING lease_generation;
+
 -- name: LockUniqueActiveStaffForHistoricalImport :one
 SELECT id
 FROM staff

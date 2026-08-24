@@ -104,6 +104,7 @@ type Querier interface {
 	ReserveSidebarCustomerProfileReceipt(ctx context.Context, arg ReserveSidebarCustomerProfileReceiptParams) (ReserveSidebarCustomerProfileReceiptRow, error)
 	ResolveEffectiveCustomerRoot(ctx context.Context, customerID int64) (int64, error)
 	SetCustomerStage(ctx context.Context, arg SetCustomerStageParams) (Customer, error)
+	TransitionHistoricalImportRun(ctx context.Context, arg TransitionHistoricalImportRunParams) (int64, error)
 	UpdateChannel(ctx context.Context, arg UpdateChannelParams) (UpdateChannelRow, error)
 	UpdateCustomer(ctx context.Context, arg UpdateCustomerParams) (Customer, error)
 	UpdateCustomerContactPolicy(ctx context.Context, arg UpdateCustomerContactPolicyParams) (CustomerContactPolicy, error)

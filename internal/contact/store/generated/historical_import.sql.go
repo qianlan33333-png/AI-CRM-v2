@@ -507,3 +507,33 @@ func (q *Queries) RenewHistoricalImportLease(ctx context.Context, arg RenewHisto
 	err := row.Scan(&lease_generation)
 	return lease_generation, err
 }
+
+const transitionHistoricalImportRun = `-- name: TransitionHistoricalImportRun :one
+UPDATE legacy_contact_identity_import_runs
+SET state = $1::text,
+    completed_at = CASE WHEN $1::text IN ('preflighted', 'imported', 'reconciled', 'failed') THEN now() ELSE completed_at END
+WHERE id = $2::bigint
+  AND lease_generation = $3::bigint
+  AND lease_token_hmac = $4::bytea
+  AND lease_expires_at >= now()
+RETURNING lease_generation
+`
+
+type TransitionHistoricalImportRunParams struct {
+	NextState          string `json:"next_state"`
+	RunID              int64  `json:"run_id"`
+	ExpectedGeneration int64  `json:"expected_generation"`
+	TokenHmac          []byte `json:"token_hmac"`
+}
+
+func (q *Queries) TransitionHistoricalImportRun(ctx context.Context, arg TransitionHistoricalImportRunParams) (int64, error) {
+	row := q.db.QueryRow(ctx, transitionHistoricalImportRun,
+		arg.NextState,
+		arg.RunID,
+		arg.ExpectedGeneration,
+		arg.TokenHmac,
+	)
+	var lease_generation int64
+	err := row.Scan(&lease_generation)
+	return lease_generation, err
+}
