@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"encoding/csv"
 	"encoding/json"
@@ -47,7 +48,9 @@ func (h *SafeExportHandler) Create(w stdhttp.ResponseWriter, r *stdhttp.Request)
 	if err == nil {
 		decoder := json.NewDecoder(stdhttp.MaxBytesReader(w, r.Body, 1024))
 		decoder.DisallowUnknownFields()
-		if err = decoder.Decode(&input); err == nil {
+		if decodeErr := decoder.Decode(&input); decodeErr != nil {
+			err = eventapp.ErrInternalEventSafeExportInvalid
+		} else {
 			var extra any
 			if decoder.Decode(&extra) != io.EOF {
 				err = eventapp.ErrInternalEventSafeExportInvalid
@@ -81,17 +84,18 @@ func (h *SafeExportHandler) Download(w stdhttp.ResponseWriter, r *stdhttp.Reques
 	if err == nil {
 		result, rows, downloadErr := h.application.Download(r.Context(), safeExportID(strings.TrimSuffix(r.URL.Path, "/download")), actor)
 		if downloadErr == nil {
+			var body bytes.Buffer
+			if writeErr := writeSafeExportCSV(&body, rows); writeErr != nil {
+				err = errors.Join(eventapp.ErrInternalEventSafeExportUnavailable, writeErr)
+				writeSafeExportError(w, r, err)
+				return
+			}
 			w.Header().Set("Cache-Control", "no-store")
 			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=internal-event-safe-export-%s.csv", result.ID))
 			w.WriteHeader(stdhttp.StatusOK)
-			out := csv.NewWriter(w)
-			_ = out.Write([]string{"event_id", "event_type", "occurred_at", "dispatched", "consumer", "status", "attempt_count", "completed_at"})
-			for _, row := range rows {
-				_ = out.Write([]string{strconv.FormatInt(int64(row.EventID), 10), safeCSV(row.EventType), row.OccurredAt.UTC().Format("2006-01-02T15:04:05.999999999Z07:00"), strconv.FormatBool(row.Dispatched), safeCSV(row.Consumer), safeCSV(row.Status), safeInt(row.AttemptCount), safeTime(row.CompletedAt)})
-			}
-			out.Flush()
+			_, _ = w.Write(body.Bytes())
 			return
 		}
 		err = downloadErr
@@ -114,11 +118,27 @@ func safeExportActor(r *stdhttp.Request) (int64, error) {
 }
 func safeExportID(path string) string { return strings.TrimPrefix(path, SafeExportPath+"/") }
 func safeCSV(v string) string {
-	trimmed := strings.TrimLeft(v, " \t\r\n")
+	trimmed := strings.TrimLeft(v, " \t\r\n\v\f")
 	if trimmed != "" && strings.ContainsAny(trimmed[:1], "=+-@") {
 		return "'" + v
 	}
 	return v
+}
+func writeSafeExportCSV(destination io.Writer, rows []eventapp.InternalEventSafeExportRow) error {
+	if destination == nil {
+		return errors.New("safe export CSV destination is required")
+	}
+	out := csv.NewWriter(destination)
+	if err := out.Write([]string{"event_id", "event_type", "occurred_at", "dispatched", "consumer", "status", "attempt_count", "completed_at"}); err != nil {
+		return err
+	}
+	for _, row := range rows {
+		if err := out.Write([]string{strconv.FormatInt(int64(row.EventID), 10), safeCSV(row.EventType), row.OccurredAt.UTC().Format("2006-01-02T15:04:05.999999999Z07:00"), strconv.FormatBool(row.Dispatched), safeCSV(row.Consumer), safeCSV(row.Status), safeInt(row.AttemptCount), safeTime(row.CompletedAt)}); err != nil {
+			return err
+		}
+	}
+	out.Flush()
+	return out.Error()
 }
 func safeInt(v *int32) string {
 	if v == nil {

@@ -14,20 +14,23 @@ import (
 const completeInternalEventSafeExportReceipt = `-- name: CompleteInternalEventSafeExportReceipt :one
 UPDATE public.internal_event_safe_export_receipts
 SET export_id=$1::text,state='completed',result_snapshot=$2::jsonb,completed_at=$3::timestamptz
-WHERE id=$4::bigint AND state='reserved'
-RETURNING id,payload_digest,result_snapshot,(state='completed') AS completed
+    ,result_digest=$4::bytea
+WHERE id=$5::bigint AND state='reserved'
+RETURNING id,payload_digest,result_digest,result_snapshot,(state='completed') AS completed
 `
 
 type CompleteInternalEventSafeExportReceiptParams struct {
 	ExportID       string             `json:"export_id"`
 	ResultSnapshot []byte             `json:"result_snapshot"`
 	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
+	ResultDigest   []byte             `json:"result_digest"`
 	ID             int64              `json:"id"`
 }
 
 type CompleteInternalEventSafeExportReceiptRow struct {
 	ID             int64  `json:"id"`
 	PayloadDigest  []byte `json:"payload_digest"`
+	ResultDigest   []byte `json:"result_digest"`
 	ResultSnapshot []byte `json:"result_snapshot"`
 	Completed      bool   `json:"completed"`
 }
@@ -37,12 +40,14 @@ func (q *Queries) CompleteInternalEventSafeExportReceipt(ctx context.Context, ar
 		arg.ExportID,
 		arg.ResultSnapshot,
 		arg.CompletedAt,
+		arg.ResultDigest,
 		arg.ID,
 	)
 	var i CompleteInternalEventSafeExportReceiptRow
 	err := row.Scan(
 		&i.ID,
 		&i.PayloadDigest,
+		&i.ResultDigest,
 		&i.ResultSnapshot,
 		&i.Completed,
 	)
@@ -50,7 +55,7 @@ func (q *Queries) CompleteInternalEventSafeExportReceipt(ctx context.Context, ar
 }
 
 const getInternalEventSafeExport = `-- name: GetInternalEventSafeExport :one
-SELECT id,record_count,watermark,created_at
+SELECT id,actor_id,filter_digest,digest_version,rows_digest,result_digest,upper_event_id,record_count,watermark,created_at
 FROM public.internal_event_safe_exports
 WHERE id=$1::text AND actor_id=$2::bigint
 `
@@ -61,10 +66,16 @@ type GetInternalEventSafeExportParams struct {
 }
 
 type GetInternalEventSafeExportRow struct {
-	ID          string             `json:"id"`
-	RecordCount int32              `json:"record_count"`
-	Watermark   pgtype.Timestamptz `json:"watermark"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	ID            string             `json:"id"`
+	ActorID       int64              `json:"actor_id"`
+	FilterDigest  []byte             `json:"filter_digest"`
+	DigestVersion int16              `json:"digest_version"`
+	RowsDigest    []byte             `json:"rows_digest"`
+	ResultDigest  []byte             `json:"result_digest"`
+	UpperEventID  int64              `json:"upper_event_id"`
+	RecordCount   int32              `json:"record_count"`
+	Watermark     pgtype.Timestamptz `json:"watermark"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) GetInternalEventSafeExport(ctx context.Context, arg GetInternalEventSafeExportParams) (GetInternalEventSafeExportRow, error) {
@@ -72,6 +83,12 @@ func (q *Queries) GetInternalEventSafeExport(ctx context.Context, arg GetInterna
 	var i GetInternalEventSafeExportRow
 	err := row.Scan(
 		&i.ID,
+		&i.ActorID,
+		&i.FilterDigest,
+		&i.DigestVersion,
+		&i.RowsDigest,
+		&i.ResultDigest,
+		&i.UpperEventID,
 		&i.RecordCount,
 		&i.Watermark,
 		&i.CreatedAt,
@@ -79,8 +96,47 @@ func (q *Queries) GetInternalEventSafeExport(ctx context.Context, arg GetInterna
 	return i, err
 }
 
+const getInternalEventSafeExportIntegrity = `-- name: GetInternalEventSafeExportIntegrity :one
+SELECT receipt.id AS receipt_id,receipt.payload_digest,receipt.result_digest AS receipt_result_digest,
+       receipt.result_snapshot,event.event_type AS audit_event_type,
+       event.idempotency_key AS audit_idempotency_key,event.occurred_at AS audit_occurred_at,
+       event.payload AS audit_payload
+FROM public.internal_event_safe_export_receipts AS receipt
+JOIN public.event_log AS event
+  ON event.idempotency_key='internal-event-safe-export:' || receipt.id::text
+WHERE receipt.export_id=$1::text AND receipt.state='completed'
+FOR SHARE OF event
+`
+
+type GetInternalEventSafeExportIntegrityRow struct {
+	ReceiptID           int64              `json:"receipt_id"`
+	PayloadDigest       []byte             `json:"payload_digest"`
+	ReceiptResultDigest []byte             `json:"receipt_result_digest"`
+	ResultSnapshot      []byte             `json:"result_snapshot"`
+	AuditEventType      string             `json:"audit_event_type"`
+	AuditIdempotencyKey string             `json:"audit_idempotency_key"`
+	AuditOccurredAt     pgtype.Timestamptz `json:"audit_occurred_at"`
+	AuditPayload        []byte             `json:"audit_payload"`
+}
+
+func (q *Queries) GetInternalEventSafeExportIntegrity(ctx context.Context, exportID string) (GetInternalEventSafeExportIntegrityRow, error) {
+	row := q.db.QueryRow(ctx, getInternalEventSafeExportIntegrity, exportID)
+	var i GetInternalEventSafeExportIntegrityRow
+	err := row.Scan(
+		&i.ReceiptID,
+		&i.PayloadDigest,
+		&i.ReceiptResultDigest,
+		&i.ResultSnapshot,
+		&i.AuditEventType,
+		&i.AuditIdempotencyKey,
+		&i.AuditOccurredAt,
+		&i.AuditPayload,
+	)
+	return i, err
+}
+
 const getInternalEventSafeExportReceipt = `-- name: GetInternalEventSafeExportReceipt :one
-SELECT id,payload_digest,result_snapshot,(state='completed') AS completed
+SELECT id,payload_digest,result_digest,result_snapshot,(state='completed') AS completed
 FROM public.internal_event_safe_export_receipts
 WHERE actor_id=$1::bigint AND key_digest=$2::bytea
 FOR UPDATE
@@ -94,6 +150,7 @@ type GetInternalEventSafeExportReceiptParams struct {
 type GetInternalEventSafeExportReceiptRow struct {
 	ID             int64  `json:"id"`
 	PayloadDigest  []byte `json:"payload_digest"`
+	ResultDigest   []byte `json:"result_digest"`
 	ResultSnapshot []byte `json:"result_snapshot"`
 	Completed      bool   `json:"completed"`
 }
@@ -104,38 +161,29 @@ func (q *Queries) GetInternalEventSafeExportReceipt(ctx context.Context, arg Get
 	err := row.Scan(
 		&i.ID,
 		&i.PayloadDigest,
+		&i.ResultDigest,
 		&i.ResultSnapshot,
 		&i.Completed,
 	)
 	return i, err
 }
 
-const getInternalEventSafeExportUpperEventID = `-- name: GetInternalEventSafeExportUpperEventID :one
-SELECT COALESCE(max(id),0)::bigint AS upper_event_id
-FROM public.event_log
-WHERE occurred_at <= $1::timestamptz
-`
-
-func (q *Queries) GetInternalEventSafeExportUpperEventID(ctx context.Context, watermark pgtype.Timestamptz) (int64, error) {
-	row := q.db.QueryRow(ctx, getInternalEventSafeExportUpperEventID, watermark)
-	var upper_event_id int64
-	err := row.Scan(&upper_event_id)
-	return upper_event_id, err
-}
-
 const insertInternalEventSafeExport = `-- name: InsertInternalEventSafeExport :exec
-INSERT INTO public.internal_event_safe_exports(id,actor_id,filter_digest,watermark,upper_event_id,record_count,created_at)
-VALUES ($1::text,$2::bigint,$3::bytea,$4::timestamptz,$5::bigint,$6::integer,$7::timestamptz)
+INSERT INTO public.internal_event_safe_exports(id,actor_id,filter_digest,digest_version,rows_digest,result_digest,watermark,upper_event_id,record_count,created_at)
+VALUES ($1::text,$2::bigint,$3::bytea,$4::smallint,$5::bytea,$6::bytea,$7::timestamptz,$8::bigint,$9::integer,$10::timestamptz)
 `
 
 type InsertInternalEventSafeExportParams struct {
-	ID           string             `json:"id"`
-	ActorID      int64              `json:"actor_id"`
-	FilterDigest []byte             `json:"filter_digest"`
-	Watermark    pgtype.Timestamptz `json:"watermark"`
-	UpperEventID int64              `json:"upper_event_id"`
-	RecordCount  int32              `json:"record_count"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	ID            string             `json:"id"`
+	ActorID       int64              `json:"actor_id"`
+	FilterDigest  []byte             `json:"filter_digest"`
+	DigestVersion int16              `json:"digest_version"`
+	RowsDigest    []byte             `json:"rows_digest"`
+	ResultDigest  []byte             `json:"result_digest"`
+	Watermark     pgtype.Timestamptz `json:"watermark"`
+	UpperEventID  int64              `json:"upper_event_id"`
+	RecordCount   int32              `json:"record_count"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) InsertInternalEventSafeExport(ctx context.Context, arg InsertInternalEventSafeExportParams) error {
@@ -143,6 +191,9 @@ func (q *Queries) InsertInternalEventSafeExport(ctx context.Context, arg InsertI
 		arg.ID,
 		arg.ActorID,
 		arg.FilterDigest,
+		arg.DigestVersion,
+		arg.RowsDigest,
+		arg.ResultDigest,
 		arg.Watermark,
 		arg.UpperEventID,
 		arg.RecordCount,
@@ -183,6 +234,25 @@ func (q *Queries) InsertInternalEventSafeExportRow(ctx context.Context, arg Inse
 		arg.CompletedAt,
 	)
 	return err
+}
+
+const internalEventSafeExportReceiptExists = `-- name: InternalEventSafeExportReceiptExists :one
+SELECT EXISTS(
+  SELECT 1 FROM public.internal_event_safe_export_receipts
+  WHERE export_id=$1::text AND actor_id=$2::bigint
+) AS receipt_exists
+`
+
+type InternalEventSafeExportReceiptExistsParams struct {
+	ExportID string `json:"export_id"`
+	ActorID  int64  `json:"actor_id"`
+}
+
+func (q *Queries) InternalEventSafeExportReceiptExists(ctx context.Context, arg InternalEventSafeExportReceiptExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, internalEventSafeExportReceiptExists, arg.ExportID, arg.ActorID)
+	var receipt_exists bool
+	err := row.Scan(&receipt_exists)
+	return receipt_exists, err
 }
 
 const listInternalEventSafeExportRows = `-- name: ListInternalEventSafeExportRows :many
@@ -232,44 +302,53 @@ func (q *Queries) ListInternalEventSafeExportRows(ctx context.Context, exportID 
 	return items, nil
 }
 
-const listInternalEventSafeExportSourceRows = `-- name: ListInternalEventSafeExportSourceRows :many
-SELECT event.id,event.event_type,event.occurred_at,event.dispatched,
-       delivery.consumer,delivery.status,delivery.attempt_count,delivery.completed_at
-FROM event_log AS event
-LEFT JOIN event_deliveries AS delivery ON delivery.event_id=event.id
-WHERE event.occurred_at <= $1::timestamptz
-  AND event.id <= $2::bigint
-  AND ($3::text='' OR event.event_type=$3::text)
-  AND ($4::text='' OR delivery.consumer=$4::text)
-  AND ($5::text='' OR delivery.status=$5::text)
-ORDER BY event.occurred_at,event.id,delivery.consumer NULLS FIRST
-LIMIT $6::integer
+const listInternalEventSafeExportSourceSnapshot = `-- name: ListInternalEventSafeExportSourceSnapshot :many
+WITH bounds AS (
+  SELECT statement_timestamp() AS watermark,
+         COALESCE((SELECT max(id) FROM public.event_log WHERE occurred_at <= statement_timestamp()),0)::bigint AS upper_event_id
+), source AS (
+  SELECT event.id,event.event_type,event.occurred_at,event.dispatched,
+         delivery.consumer,delivery.status,delivery.attempt_count,delivery.completed_at
+  FROM bounds
+  JOIN public.event_log AS event
+    ON event.occurred_at <= bounds.watermark AND event.id <= bounds.upper_event_id
+  LEFT JOIN public.event_deliveries AS delivery ON delivery.event_id=event.id
+  WHERE ($1::text='' OR event.event_type=$1::text)
+    AND ($2::text='' OR delivery.consumer=$2::text)
+    AND ($3::text='' OR delivery.status=$3::text)
+  ORDER BY event.occurred_at,event.id,delivery.consumer NULLS FIRST
+  LIMIT $4::integer
+)
+SELECT bounds.watermark::timestamptz AS watermark,bounds.upper_event_id,
+       source.id,source.event_type,source.occurred_at,source.dispatched,
+       source.consumer,source.status,source.attempt_count,source.completed_at
+FROM bounds
+LEFT JOIN source ON TRUE
+ORDER BY source.occurred_at,source.id,source.consumer NULLS FIRST
 `
 
-type ListInternalEventSafeExportSourceRowsParams struct {
-	Watermark    pgtype.Timestamptz `json:"watermark"`
-	UpperEventID int64              `json:"upper_event_id"`
-	EventType    string             `json:"event_type"`
-	Consumer     string             `json:"consumer"`
-	Status       string             `json:"status"`
-	RowLimit     int32              `json:"row_limit"`
+type ListInternalEventSafeExportSourceSnapshotParams struct {
+	EventType string `json:"event_type"`
+	Consumer  string `json:"consumer"`
+	Status    string `json:"status"`
+	RowLimit  int32  `json:"row_limit"`
 }
 
-type ListInternalEventSafeExportSourceRowsRow struct {
-	ID           int64              `json:"id"`
-	EventType    string             `json:"event_type"`
+type ListInternalEventSafeExportSourceSnapshotRow struct {
+	Watermark    pgtype.Timestamptz `json:"watermark"`
+	UpperEventID int64              `json:"upper_event_id"`
+	ID           pgtype.Int8        `json:"id"`
+	EventType    pgtype.Text        `json:"event_type"`
 	OccurredAt   pgtype.Timestamptz `json:"occurred_at"`
-	Dispatched   bool               `json:"dispatched"`
+	Dispatched   pgtype.Bool        `json:"dispatched"`
 	Consumer     pgtype.Text        `json:"consumer"`
 	Status       pgtype.Text        `json:"status"`
 	AttemptCount pgtype.Int4        `json:"attempt_count"`
 	CompletedAt  pgtype.Timestamptz `json:"completed_at"`
 }
 
-func (q *Queries) ListInternalEventSafeExportSourceRows(ctx context.Context, arg ListInternalEventSafeExportSourceRowsParams) ([]ListInternalEventSafeExportSourceRowsRow, error) {
-	rows, err := q.db.Query(ctx, listInternalEventSafeExportSourceRows,
-		arg.Watermark,
-		arg.UpperEventID,
+func (q *Queries) ListInternalEventSafeExportSourceSnapshot(ctx context.Context, arg ListInternalEventSafeExportSourceSnapshotParams) ([]ListInternalEventSafeExportSourceSnapshotRow, error) {
+	rows, err := q.db.Query(ctx, listInternalEventSafeExportSourceSnapshot,
 		arg.EventType,
 		arg.Consumer,
 		arg.Status,
@@ -279,10 +358,12 @@ func (q *Queries) ListInternalEventSafeExportSourceRows(ctx context.Context, arg
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListInternalEventSafeExportSourceRowsRow{}
+	items := []ListInternalEventSafeExportSourceSnapshotRow{}
 	for rows.Next() {
-		var i ListInternalEventSafeExportSourceRowsRow
+		var i ListInternalEventSafeExportSourceSnapshotRow
 		if err := rows.Scan(
+			&i.Watermark,
+			&i.UpperEventID,
 			&i.ID,
 			&i.EventType,
 			&i.OccurredAt,
@@ -306,7 +387,7 @@ const reserveInternalEventSafeExportReceipt = `-- name: ReserveInternalEventSafe
 INSERT INTO public.internal_event_safe_export_receipts(actor_id,key_digest,payload_digest,created_at)
 VALUES ($1::bigint,$2::bytea,$3::bytea,$4::timestamptz)
 ON CONFLICT (actor_id,key_digest) DO NOTHING
-RETURNING id,payload_digest,result_snapshot,(state='completed') AS completed
+RETURNING id,payload_digest,result_digest,result_snapshot,(state='completed') AS completed
 `
 
 type ReserveInternalEventSafeExportReceiptParams struct {
@@ -319,6 +400,7 @@ type ReserveInternalEventSafeExportReceiptParams struct {
 type ReserveInternalEventSafeExportReceiptRow struct {
 	ID             int64  `json:"id"`
 	PayloadDigest  []byte `json:"payload_digest"`
+	ResultDigest   []byte `json:"result_digest"`
 	ResultSnapshot []byte `json:"result_snapshot"`
 	Completed      bool   `json:"completed"`
 }
@@ -334,6 +416,7 @@ func (q *Queries) ReserveInternalEventSafeExportReceipt(ctx context.Context, arg
 	err := row.Scan(
 		&i.ID,
 		&i.PayloadDigest,
+		&i.ResultDigest,
 		&i.ResultSnapshot,
 		&i.Completed,
 	)

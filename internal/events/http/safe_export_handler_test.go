@@ -6,6 +6,7 @@ import (
 	"errors"
 	stdhttp "net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -86,4 +87,38 @@ func TestSafeExportHTTPRejectsWrongRoleAndMismatchedErrors(t *testing.T) {
 		t.Fatalf("unavailable=%d", w.Code)
 	}
 	_ = platformhttp.CodeConflict
+}
+
+func TestSafeExportHTTPRejectsMalformedUnknownAndOversizedJSON(t *testing.T) {
+	h, _ := NewSafeExportHandler(&safeExportApplicationStub{})
+	for name, body := range map[string]string{
+		"malformed": `{`,
+		"unknown":   `{"payload":"forbidden"}`,
+		"oversized": `{"event_type":"` + strings.Repeat("x", 1100) + `"}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			request := safeExportRequest(stdhttp.MethodPost, SafeExportPath, []byte(body))
+			request.Header.Set("Idempotency-Key", "internal-event-safe-export-key-01")
+			response := httptest.NewRecorder()
+			h.Create(response, request)
+			if response.Code != stdhttp.StatusBadRequest {
+				t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+			}
+		})
+	}
+}
+
+type safeExportFailingWriter struct{}
+
+func (safeExportFailingWriter) Write([]byte) (int, error) { return 0, errors.New("write failed") }
+
+func TestSafeExportCSVFormulaSafetyAndWriterFailure(t *testing.T) {
+	for _, value := range []string{"=formula", "+formula", "-formula", "@formula", " \t\r\n=formula"} {
+		if got := safeCSV(value); got != "'"+value {
+			t.Fatalf("safeCSV(%q)=%q", value, got)
+		}
+	}
+	if err := writeSafeExportCSV(safeExportFailingWriter{}, []eventapp.InternalEventSafeExportRow{{EventID: 1, EventType: "safe.event", OccurredAt: time.Now()}}); err == nil {
+		t.Fatal("CSV writer failure was ignored")
+	}
 }

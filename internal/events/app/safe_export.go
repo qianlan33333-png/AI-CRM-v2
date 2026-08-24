@@ -1,13 +1,16 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -17,7 +20,10 @@ import (
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 )
 
-const InternalEventSafeExportMaximumRows = 10000
+const (
+	InternalEventSafeExportMaximumRows   = 10000
+	InternalEventSafeExportDigestVersion = int16(1)
+)
 
 var (
 	ErrInternalEventSafeExportInvalid     = errors.New("invalid internal event safe export")
@@ -50,16 +56,40 @@ type InternalEventSafeExportRow struct {
 type InternalEventSafeExportReceipt struct {
 	ID             int64
 	PayloadDigest  [32]byte
+	ResultDigest   [32]byte
 	ResultSnapshot json.RawMessage
 	Completed      bool
+}
+type InternalEventSafeExportSourceSnapshot struct {
+	Watermark    time.Time
+	UpperEventID int64
+	Rows         []InternalEventSafeExportRow
+}
+type InternalEventSafeExportStoredSnapshot struct {
+	Export                InternalEventSafeExport
+	ActorID               int64
+	FilterDigest          [32]byte
+	UpperEventID          int64
+	DigestVersion         int16
+	RowsDigest            [32]byte
+	ResultDigest          [32]byte
+	Rows                  []InternalEventSafeExportRow
+	ReceiptID             int64
+	ReceiptPayloadDigest  [32]byte
+	ReceiptResultDigest   [32]byte
+	ReceiptResultSnapshot json.RawMessage
+	AuditEventType        string
+	AuditIdempotencyKey   string
+	AuditOccurredAt       time.Time
+	AuditPayload          json.RawMessage
 }
 
 type InternalEventSafeExportStore interface {
 	ReserveInternalEventSafeExportReceipt(context.Context, int64, [32]byte, [32]byte, time.Time) (InternalEventSafeExportReceipt, bool, error)
-	CreateInternalEventSafeExport(context.Context, InternalEventSafeExport, int64, [32]byte, InternalEventSafeExportFilter) ([]InternalEventSafeExportRow, error)
-	CompleteInternalEventSafeExportReceipt(context.Context, int64, string, json.RawMessage, time.Time) (InternalEventSafeExportReceipt, error)
-	ReadInternalEventSafeExport(context.Context, string, int64) (InternalEventSafeExport, error)
-	ReadInternalEventSafeExportRows(context.Context, string, int64) ([]InternalEventSafeExportRow, error)
+	ReadInternalEventSafeExportSourceSnapshot(context.Context, InternalEventSafeExportFilter, int) (InternalEventSafeExportSourceSnapshot, error)
+	CreateInternalEventSafeExport(context.Context, InternalEventSafeExport, int64, [32]byte, int64, [32]byte, [32]byte, []InternalEventSafeExportRow) error
+	CompleteInternalEventSafeExportReceipt(context.Context, int64, string, [32]byte, json.RawMessage, time.Time) (InternalEventSafeExportReceipt, error)
+	ReadInternalEventSafeExportSnapshot(context.Context, string, int64) (InternalEventSafeExportStoredSnapshot, error)
 }
 
 type InternalEventSafeExportService struct {
@@ -77,61 +107,76 @@ func (s *InternalEventSafeExportService) Create(ctx context.Context, command Int
 	if s == nil || s.uow == nil || s.store == nil || s.events == nil || s.now == nil || ctx == nil || command.ActorID < 1 || !validInternalEventSafeExportKey(command.IdempotencyKey) || !validInternalEventSafeExportFilter(command.Filter) {
 		return InternalEventSafeExport{}, ErrInternalEventSafeExportInvalid
 	}
-	now := s.now().UTC()
-	if now.IsZero() {
+	createdAt := s.now().UTC().Truncate(time.Microsecond)
+	if createdAt.IsZero() {
 		return InternalEventSafeExport{}, ErrInternalEventSafeExportUnavailable
 	}
-	payload, err := json.Marshal(command.Filter)
+	filterDigest, err := internalEventSafeExportFilterDigest(command.Filter)
 	if err != nil {
 		return InternalEventSafeExport{}, ErrInternalEventSafeExportUnavailable
 	}
-	key := sha256.Sum256([]byte(command.IdempotencyKey))
-	digest := sha256.Sum256(payload)
+	keyDigest := sha256.Sum256([]byte(command.IdempotencyKey))
 	id, err := newInternalEventSafeExportID()
 	if err != nil {
 		return InternalEventSafeExport{}, ErrInternalEventSafeExportUnavailable
 	}
-	result := InternalEventSafeExport{ID: id, Watermark: now, CreatedAt: now}
+	result := InternalEventSafeExport{ID: id, CreatedAt: createdAt}
 	err = s.uow.Within(ctx, func(tx context.Context) error {
-		receipt, owned, reserveErr := s.store.ReserveInternalEventSafeExportReceipt(tx, command.ActorID, key, digest, now)
+		receipt, owned, reserveErr := s.store.ReserveInternalEventSafeExportReceipt(tx, command.ActorID, keyDigest, filterDigest, createdAt)
 		if reserveErr != nil {
 			return reserveErr
 		}
-		if receipt.ID < 1 || subtle.ConstantTimeCompare(receipt.PayloadDigest[:], digest[:]) != 1 {
+		if receipt.ID < 1 || subtle.ConstantTimeCompare(receipt.PayloadDigest[:], filterDigest[:]) != 1 {
 			return ErrInternalEventSafeExportConflict
 		}
 		if !owned {
 			if !receipt.Completed || !decodeInternalEventSafeExport(receipt.ResultSnapshot, &result) {
 				return ErrInternalEventSafeExportUnavailable
 			}
+			stored, readErr := s.store.ReadInternalEventSafeExportSnapshot(tx, result.ID, command.ActorID)
+			if readErr != nil || !verifyInternalEventSafeExportSnapshot(stored) || stored.Export != result || subtle.ConstantTimeCompare(stored.ResultDigest[:], receipt.ResultDigest[:]) != 1 {
+				return errors.Join(ErrInternalEventSafeExportUnavailable, readErr)
+			}
 			return nil
 		}
-		rows, createErr := s.store.CreateInternalEventSafeExport(tx, result, command.ActorID, digest, command.Filter)
-		if createErr != nil {
-			return createErr
+
+		source, sourceErr := s.store.ReadInternalEventSafeExportSourceSnapshot(tx, command.Filter, InternalEventSafeExportMaximumRows+1)
+		if sourceErr != nil {
+			return sourceErr
 		}
-		if len(rows) > InternalEventSafeExportMaximumRows {
+		if len(source.Rows) > InternalEventSafeExportMaximumRows {
 			return ErrInternalEventSafeExportConflict
 		}
-		result.RecordCount = len(rows)
-		eventPayload, marshalErr := json.Marshal(struct {
-			ExportID     string `json:"export_id"`
-			RecordCount  int    `json:"record_count"`
-			FilterDigest string `json:"filter_digest"`
-		}{result.ID, result.RecordCount, hex.EncodeToString(digest[:])})
+		if source.Watermark.IsZero() || source.UpperEventID < 0 {
+			return ErrInternalEventSafeExportUnavailable
+		}
+		rowsDigest, digestErr := internalEventSafeExportRowsDigest(source.Rows)
+		if digestErr != nil {
+			return digestErr
+		}
+		result.Watermark = source.Watermark.UTC()
+		result.RecordCount = len(source.Rows)
+		resultDigest, digestErr := internalEventSafeExportResultDigest(result, command.ActorID, filterDigest, source.UpperEventID, rowsDigest)
+		if digestErr != nil {
+			return digestErr
+		}
+		if createErr := s.store.CreateInternalEventSafeExport(tx, result, command.ActorID, filterDigest, source.UpperEventID, rowsDigest, resultDigest, source.Rows); createErr != nil {
+			return createErr
+		}
+		eventPayload, marshalErr := json.Marshal(internalEventSafeExportAuditPayload(result, command.ActorID, filterDigest, rowsDigest, resultDigest))
 		if marshalErr != nil {
 			return marshalErr
 		}
-		if _, appendErr := s.events.Append(tx, eventport.Event{Type: eventport.EvInternalEventSafeExportCreated, Payload: eventPayload, OccurredAt: now, IdempotencyKey: "internal-event-safe-export:" + strconv.FormatInt(receipt.ID, 10)}); appendErr != nil {
+		if _, appendErr := s.events.Append(tx, eventport.Event{Type: eventport.EvInternalEventSafeExportCreated, Payload: eventPayload, OccurredAt: createdAt, IdempotencyKey: internalEventSafeExportAuditKey(receipt.ID)}); appendErr != nil {
 			return appendErr
 		}
 		snapshot, marshalErr := json.Marshal(result)
 		if marshalErr != nil {
 			return marshalErr
 		}
-		completed, completeErr := s.store.CompleteInternalEventSafeExportReceipt(tx, receipt.ID, result.ID, snapshot, now)
+		completed, completeErr := s.store.CompleteInternalEventSafeExportReceipt(tx, receipt.ID, result.ID, resultDigest, snapshot, createdAt)
 		var decoded InternalEventSafeExport
-		if completeErr != nil || !completed.Completed || !decodeInternalEventSafeExport(completed.ResultSnapshot, &decoded) || decoded != result {
+		if completeErr != nil || !completed.Completed || !decodeInternalEventSafeExport(completed.ResultSnapshot, &decoded) || decoded != result || subtle.ConstantTimeCompare(completed.ResultDigest[:], resultDigest[:]) != 1 {
 			return errors.Join(ErrInternalEventSafeExportUnavailable, completeErr)
 		}
 		return nil
@@ -141,42 +186,184 @@ func (s *InternalEventSafeExportService) Create(ctx context.Context, command Int
 	}
 	return result, nil
 }
+
 func (s *InternalEventSafeExportService) Get(ctx context.Context, id string, actor int64) (InternalEventSafeExport, error) {
-	if s == nil || s.uow == nil || s.store == nil || ctx == nil || actor < 1 || !validInternalEventSafeExportID(id) {
-		return InternalEventSafeExport{}, ErrInternalEventSafeExportInvalid
-	}
-	var result InternalEventSafeExport
-	err := s.uow.Within(ctx, func(tx context.Context) error {
-		var e error
-		result, e = s.store.ReadInternalEventSafeExport(tx, id, actor)
-		return e
-	})
+	stored, err := s.readVerified(ctx, id, actor)
 	if err != nil {
-		return InternalEventSafeExport{}, classifyInternalEventSafeExport(err)
+		return InternalEventSafeExport{}, err
 	}
-	return result, nil
+	return stored.Export, nil
 }
+
 func (s *InternalEventSafeExportService) Download(ctx context.Context, id string, actor int64) (InternalEventSafeExport, []InternalEventSafeExportRow, error) {
-	if s == nil || s.uow == nil || s.store == nil || ctx == nil || actor < 1 || !validInternalEventSafeExportID(id) {
-		return InternalEventSafeExport{}, nil, ErrInternalEventSafeExportInvalid
+	stored, err := s.readVerified(ctx, id, actor)
+	if err != nil {
+		return InternalEventSafeExport{}, nil, err
 	}
-	var result InternalEventSafeExport
-	var rows []InternalEventSafeExportRow
+	return stored.Export, stored.Rows, nil
+}
+
+func (s *InternalEventSafeExportService) readVerified(ctx context.Context, id string, actor int64) (InternalEventSafeExportStoredSnapshot, error) {
+	if s == nil || s.uow == nil || s.store == nil || ctx == nil || actor < 1 || !validInternalEventSafeExportID(id) {
+		return InternalEventSafeExportStoredSnapshot{}, ErrInternalEventSafeExportInvalid
+	}
+	var stored InternalEventSafeExportStoredSnapshot
 	err := s.uow.Within(ctx, func(tx context.Context) error {
-		var e error
-		result, e = s.store.ReadInternalEventSafeExport(tx, id, actor)
-		if e == nil {
-			rows, e = s.store.ReadInternalEventSafeExportRows(tx, id, actor)
+		var readErr error
+		stored, readErr = s.store.ReadInternalEventSafeExportSnapshot(tx, id, actor)
+		if readErr == nil && !verifyInternalEventSafeExportSnapshot(stored) {
+			return ErrInternalEventSafeExportUnavailable
 		}
-		return e
+		return readErr
 	})
 	if err != nil {
-		return InternalEventSafeExport{}, nil, classifyInternalEventSafeExport(err)
+		return InternalEventSafeExportStoredSnapshot{}, classifyInternalEventSafeExport(err)
 	}
-	return result, rows, nil
+	return stored, nil
 }
+
+type internalEventSafeExportCanonicalRow struct {
+	RowIndex     int     `json:"row_index"`
+	EventID      int64   `json:"event_id"`
+	EventType    string  `json:"event_type"`
+	OccurredAt   string  `json:"occurred_at"`
+	Dispatched   bool    `json:"dispatched"`
+	Consumer     string  `json:"consumer"`
+	Status       string  `json:"status"`
+	AttemptCount *int32  `json:"attempt_count"`
+	CompletedAt  *string `json:"completed_at"`
+}
+
+type internalEventSafeExportCanonicalResult struct {
+	DigestVersion int16  `json:"digest_version"`
+	ExportID      string `json:"export_id"`
+	ActorID       int64  `json:"actor_id"`
+	FilterDigest  string `json:"filter_digest"`
+	Watermark     string `json:"watermark"`
+	UpperEventID  int64  `json:"upper_event_id"`
+	RecordCount   int    `json:"record_count"`
+	RowsDigest    string `json:"rows_digest"`
+	CreatedAt     string `json:"created_at"`
+}
+
+type internalEventSafeExportCanonicalFilter struct {
+	DigestVersion int16  `json:"digest_version"`
+	EventType     string `json:"event_type"`
+	Consumer      string `json:"consumer"`
+	Status        string `json:"status"`
+}
+
+type internalEventSafeExportAudit struct {
+	DigestVersion int16  `json:"digest_version"`
+	ExportID      string `json:"export_id"`
+	ActorID       int64  `json:"actor_id"`
+	RecordCount   int    `json:"record_count"`
+	FilterDigest  string `json:"filter_digest"`
+	RowsDigest    string `json:"rows_digest"`
+	ResultDigest  string `json:"result_digest"`
+}
+
+func internalEventSafeExportRowsDigest(rows []InternalEventSafeExportRow) ([32]byte, error) {
+	hash := sha256.New()
+	_, _ = hash.Write([]byte("aicrm/internal-event-safe-export/rows/v1\x00"))
+	seen := make(map[string]struct{}, len(rows))
+	for index, row := range rows {
+		if !validInternalEventSafeExportRow(row) {
+			return [32]byte{}, ErrInternalEventSafeExportUnavailable
+		}
+		key := strconv.FormatInt(int64(row.EventID), 10) + "\x00" + row.Consumer
+		if _, exists := seen[key]; exists {
+			return [32]byte{}, ErrInternalEventSafeExportUnavailable
+		}
+		seen[key] = struct{}{}
+		var completedAt *string
+		if row.CompletedAt != nil {
+			value := row.CompletedAt.UTC().Format(time.RFC3339Nano)
+			completedAt = &value
+		}
+		encoded, err := json.Marshal(internalEventSafeExportCanonicalRow{RowIndex: index + 1, EventID: int64(row.EventID), EventType: row.EventType, OccurredAt: row.OccurredAt.UTC().Format(time.RFC3339Nano), Dispatched: row.Dispatched, Consumer: row.Consumer, Status: row.Status, AttemptCount: row.AttemptCount, CompletedAt: completedAt})
+		if err != nil {
+			return [32]byte{}, ErrInternalEventSafeExportUnavailable
+		}
+		var size [8]byte
+		binary.BigEndian.PutUint64(size[:], uint64(len(encoded)))
+		_, _ = hash.Write(size[:])
+		_, _ = hash.Write(encoded)
+	}
+	var digest [32]byte
+	copy(digest[:], hash.Sum(nil))
+	return digest, nil
+}
+
+func internalEventSafeExportFilterDigest(filter InternalEventSafeExportFilter) ([32]byte, error) {
+	encoded, err := json.Marshal(internalEventSafeExportCanonicalFilter{DigestVersion: InternalEventSafeExportDigestVersion, EventType: filter.EventType, Consumer: filter.Consumer, Status: filter.Status})
+	if err != nil {
+		return [32]byte{}, ErrInternalEventSafeExportUnavailable
+	}
+	return sha256.Sum256(append([]byte("aicrm/internal-event-safe-export/filter/v1\x00"), encoded...)), nil
+}
+
+func internalEventSafeExportResultDigest(export InternalEventSafeExport, actor int64, filterDigest [32]byte, upperEventID int64, rowsDigest [32]byte) ([32]byte, error) {
+	if actor < 1 || upperEventID < 0 || !decodeInternalEventSafeExportMust(export) {
+		return [32]byte{}, ErrInternalEventSafeExportUnavailable
+	}
+	encoded, err := json.Marshal(internalEventSafeExportCanonicalResult{DigestVersion: InternalEventSafeExportDigestVersion, ExportID: export.ID, ActorID: actor, FilterDigest: hex.EncodeToString(filterDigest[:]), Watermark: export.Watermark.UTC().Format(time.RFC3339Nano), UpperEventID: upperEventID, RecordCount: export.RecordCount, RowsDigest: hex.EncodeToString(rowsDigest[:]), CreatedAt: export.CreatedAt.UTC().Format(time.RFC3339Nano)})
+	if err != nil {
+		return [32]byte{}, ErrInternalEventSafeExportUnavailable
+	}
+	return sha256.Sum256(append([]byte("aicrm/internal-event-safe-export/result/v1\x00"), encoded...)), nil
+}
+
+func verifyInternalEventSafeExportSnapshot(stored InternalEventSafeExportStoredSnapshot) bool {
+	if stored.ActorID < 1 || stored.UpperEventID < 0 || stored.DigestVersion != InternalEventSafeExportDigestVersion || stored.Export.RecordCount != len(stored.Rows) || stored.ReceiptID < 1 || !decodeInternalEventSafeExportMust(stored.Export) {
+		return false
+	}
+	if subtle.ConstantTimeCompare(stored.FilterDigest[:], stored.ReceiptPayloadDigest[:]) != 1 || subtle.ConstantTimeCompare(stored.ResultDigest[:], stored.ReceiptResultDigest[:]) != 1 {
+		return false
+	}
+	rowsDigest, err := internalEventSafeExportRowsDigest(stored.Rows)
+	if err != nil || subtle.ConstantTimeCompare(rowsDigest[:], stored.RowsDigest[:]) != 1 {
+		return false
+	}
+	resultDigest, err := internalEventSafeExportResultDigest(stored.Export, stored.ActorID, stored.FilterDigest, stored.UpperEventID, stored.RowsDigest)
+	if err != nil || subtle.ConstantTimeCompare(resultDigest[:], stored.ResultDigest[:]) != 1 {
+		return false
+	}
+	var receiptResult InternalEventSafeExport
+	if !decodeInternalEventSafeExport(stored.ReceiptResultSnapshot, &receiptResult) || receiptResult != stored.Export {
+		return false
+	}
+	expectedAudit := internalEventSafeExportAuditPayload(stored.Export, stored.ActorID, stored.FilterDigest, stored.RowsDigest, stored.ResultDigest)
+	var actualAudit internalEventSafeExportAudit
+	if !decodeStrictJSON(stored.AuditPayload, &actualAudit) || actualAudit != expectedAudit {
+		return false
+	}
+	return stored.AuditEventType == eventport.EvInternalEventSafeExportCreated && stored.AuditIdempotencyKey == internalEventSafeExportAuditKey(stored.ReceiptID) && stored.AuditOccurredAt.UTC().Equal(stored.Export.CreatedAt.UTC())
+}
+
+func internalEventSafeExportAuditPayload(export InternalEventSafeExport, actor int64, filterDigest, rowsDigest, resultDigest [32]byte) internalEventSafeExportAudit {
+	return internalEventSafeExportAudit{DigestVersion: InternalEventSafeExportDigestVersion, ExportID: export.ID, ActorID: actor, RecordCount: export.RecordCount, FilterDigest: hex.EncodeToString(filterDigest[:]), RowsDigest: hex.EncodeToString(rowsDigest[:]), ResultDigest: hex.EncodeToString(resultDigest[:])}
+}
+
+func internalEventSafeExportAuditKey(receiptID int64) string {
+	return "internal-event-safe-export:" + strconv.FormatInt(receiptID, 10)
+}
+
+func validInternalEventSafeExportRow(row InternalEventSafeExportRow) bool {
+	if row.EventID < 1 || !validAdminReadText(row.EventType) || row.OccurredAt.IsZero() {
+		return false
+	}
+	if row.Consumer == "" {
+		return row.Status == "" && row.AttemptCount == nil && row.CompletedAt == nil
+	}
+	if !validAdminReadText(row.Consumer) || !adminReadBindingMatches(row.EventType, row.Consumer) || row.AttemptCount == nil {
+		return false
+	}
+	return validAdminReadDelivery(eventport.AdminReadDelivery{EventID: row.EventID, Consumer: row.Consumer, Status: row.Status, AttemptCount: *row.AttemptCount, CompletedAt: row.CompletedAt})
+}
+
 func validInternalEventSafeExportFilter(f InternalEventSafeExportFilter) bool {
-	if strings.TrimSpace(f.EventType) != f.EventType || strings.TrimSpace(f.Consumer) != f.Consumer || strings.TrimSpace(f.Status) != f.Status || len(f.EventType) > 200 {
+	if f.EventType != "" && !validAdminReadText(f.EventType) {
 		return false
 	}
 	if f.Consumer != "" {
@@ -184,17 +371,9 @@ func validInternalEventSafeExportFilter(f InternalEventSafeExportFilter) bool {
 			return false
 		}
 	}
-	if f.Status != "" {
-		found := false
-		for _, status := range eventport.AdminReadStatuses() {
-			found = found || status == f.Status
-		}
-		if !found {
-			return false
-		}
-	}
-	return true
+	return f.Status == "" || validAdminReadStatus(f.Status)
 }
+
 func validInternalEventSafeExportKey(v string) bool {
 	return utf8.ValidString(v) && strings.TrimSpace(v) == v && utf8.RuneCountInString(v) >= 16 && utf8.RuneCountInString(v) <= 128
 }
@@ -213,7 +392,18 @@ func newInternalEventSafeExportID() (string, error) {
 	return "ese_" + hex.EncodeToString(raw), nil
 }
 func decodeInternalEventSafeExport(raw json.RawMessage, result *InternalEventSafeExport) bool {
-	return result != nil && json.Unmarshal(raw, result) == nil && validInternalEventSafeExportID(result.ID) && result.RecordCount >= 0 && result.RecordCount <= InternalEventSafeExportMaximumRows && !result.Watermark.IsZero() && !result.CreatedAt.IsZero()
+	return result != nil && decodeStrictJSON(raw, result) && decodeInternalEventSafeExportMust(*result)
+}
+func decodeInternalEventSafeExportMust(result InternalEventSafeExport) bool {
+	return validInternalEventSafeExportID(result.ID) && result.RecordCount >= 0 && result.RecordCount <= InternalEventSafeExportMaximumRows && !result.Watermark.IsZero() && !result.CreatedAt.IsZero()
+}
+func decodeStrictJSON(raw []byte, value any) bool {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if decoder.Decode(value) != nil {
+		return false
+	}
+	return decoder.Decode(&struct{}{}) == io.EOF
 }
 func classifyInternalEventSafeExport(err error) error {
 	switch {
