@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 )
@@ -16,6 +17,7 @@ type DM01Runtime struct {
 	TargetDatabaseURL string
 	SourceHMACKey     string
 	ArchiveKey        string
+	SourceAllowlist   []string
 }
 
 func LoadDM01RuntimeEnvironment() DM01Runtime {
@@ -24,5 +26,13 @@ func LoadDM01RuntimeEnvironment() DM01Runtime {
 		TargetDatabaseURL: os.Getenv("AICRM_DATABASE_URL"),
 		SourceHMACKey:     os.Getenv("AICRM_DM01_SOURCE_HMAC_KEY"),
 		ArchiveKey:        os.Getenv("AICRM_DM01_ARCHIVE_KEY"),
+		SourceAllowlist:   splitDM01SourceAllowlist(os.Getenv("AICRM_DM01_SOURCE_IDENTITY_ALLOWLIST")),
 	}
+}
+
+func splitDM01SourceAllowlist(value string) []string {
+	if value == "" {
+		return nil
+	}
+	return strings.Split(value, ",")
 }

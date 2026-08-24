@@ -16,6 +16,32 @@ ORDER BY a.attnum;
 SELECT system_identifier::text AS server_id, current_database()::text AS database
 FROM pg_control_system();
 
+-- name: GetDM01SourceReadRole :one
+WITH source_tables(table_name) AS (VALUES
+  ('owner_role_map'), ('crm_user_identity'), ('wecom_external_contact_identity_map'),
+  ('crm_user_identity_merge_audit'), ('crm_user_identity_resolution_queue'),
+  ('admin_wecom_directory_members'), ('contacts'), ('crm_user_identity_conflicts'),
+  ('external_contact_bindings'), ('people'), ('wecom_external_contact_follow_users')
+)
+SELECT roles.rolname::text AS role,
+       (current_setting('transaction_read_only') = 'on'
+        AND NOT roles.rolsuper AND NOT roles.rolcreaterole
+        AND NOT roles.rolcreatedb AND NOT roles.rolreplication
+        AND NOT roles.rolbypassrls
+        AND NOT has_schema_privilege(current_user, 'public', 'CREATE')
+        AND bool_and(has_table_privilege(current_user,
+              format('%I.%I', 'public', source_tables.table_name), 'SELECT'))
+        AND bool_and(NOT has_table_privilege(current_user,
+              format('%I.%I', 'public', source_tables.table_name),
+              'INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER'))
+       )::boolean AS read_only
+FROM pg_catalog.pg_roles AS roles
+CROSS JOIN source_tables
+WHERE roles.rolname = current_user
+GROUP BY roles.rolname, roles.rolsuper,
+         roles.rolcreaterole, roles.rolcreatedb, roles.rolreplication,
+         roles.rolbypassrls;
+
 -- name: GetDM01OwnerRoleMapUpperBound :one
 SELECT updated_at, userid AS source_key FROM owner_role_map ORDER BY updated_at DESC, userid DESC LIMIT 1;
 -- name: GetDM01CustomerIdentityUpperBound :one
@@ -104,7 +130,7 @@ WHERE (created_at, id) <= (sqlc.arg(upper_watermark)::timestamptz, sqlc.arg(uppe
 ORDER BY created_at, id LIMIT sqlc.arg(page_size)::integer OFFSET sqlc.arg(page_offset)::integer;
 
 -- name: ListDM01ResolutionQueue :many
-SELECT id, updated_at, jsonb_build_object(
+SELECT id, corp_id, updated_at, jsonb_build_object(
   'id', id, 'source_type', source_type, 'source_key', source_key,
   'source_table', source_table, 'source_id', source_id, 'corp_id', corp_id,
   'external_userid', external_userid, 'openid', openid, 'mobile', mobile,
@@ -122,7 +148,7 @@ WHERE (updated_at, id) <= (sqlc.arg(upper_watermark)::timestamptz, sqlc.arg(uppe
 ORDER BY updated_at, id LIMIT sqlc.arg(page_size)::integer OFFSET sqlc.arg(page_offset)::integer;
 
 -- name: ListDM01DirectoryMember :many
-SELECT id, last_synced_at, jsonb_build_object(
+SELECT id, corp_id, last_synced_at, jsonb_build_object(
   'id', id, 'corp_id', corp_id, 'wecom_userid', wecom_userid,
   'display_name', display_name, 'department_ids_json', department_ids_json,
   'department_name', department_name, 'position', position, 'mobile', mobile,
@@ -169,7 +195,7 @@ WHERE (updated_at, id) <= (sqlc.arg(upper_watermark)::timestamptz, sqlc.arg(uppe
 ORDER BY updated_at, id LIMIT sqlc.arg(page_size)::integer OFFSET sqlc.arg(page_offset)::integer;
 
 -- name: ListDM01FollowUser :many
-SELECT id, updated_at, jsonb_build_object(
+SELECT id, corp_id, updated_at, jsonb_build_object(
   'id', id, 'external_userid', external_userid, 'user_id', user_id,
   'relation_status', relation_status, 'is_primary', is_primary, 'remark', remark,
   'description', description, 'updated_at', updated_at, 'corp_id', corp_id,

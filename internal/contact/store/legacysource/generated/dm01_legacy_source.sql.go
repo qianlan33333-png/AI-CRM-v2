@@ -204,6 +204,45 @@ func (q *Queries) GetDM01SourceDatabaseIdentity(ctx context.Context) (GetDM01Sou
 	return i, err
 }
 
+const getDM01SourceReadRole = `-- name: GetDM01SourceReadRole :one
+WITH source_tables(table_name) AS (VALUES
+  ('owner_role_map'), ('crm_user_identity'), ('wecom_external_contact_identity_map'),
+  ('crm_user_identity_merge_audit'), ('crm_user_identity_resolution_queue'),
+  ('admin_wecom_directory_members'), ('contacts'), ('crm_user_identity_conflicts'),
+  ('external_contact_bindings'), ('people'), ('wecom_external_contact_follow_users')
+)
+SELECT roles.rolname::text AS role,
+       (current_setting('transaction_read_only') = 'on'
+        AND NOT roles.rolsuper AND NOT roles.rolcreaterole
+        AND NOT roles.rolcreatedb AND NOT roles.rolreplication
+        AND NOT roles.rolbypassrls
+        AND NOT has_schema_privilege(current_user, 'public', 'CREATE')
+        AND bool_and(has_table_privilege(current_user,
+              format('%I.%I', 'public', source_tables.table_name), 'SELECT'))
+        AND bool_and(NOT has_table_privilege(current_user,
+              format('%I.%I', 'public', source_tables.table_name),
+              'INSERT,UPDATE,DELETE,TRUNCATE,TRIGGER'))
+       )::boolean AS read_only
+FROM pg_catalog.pg_roles AS roles
+CROSS JOIN source_tables
+WHERE roles.rolname = current_user
+GROUP BY roles.rolname, roles.rolsuper,
+         roles.rolcreaterole, roles.rolcreatedb, roles.rolreplication,
+         roles.rolbypassrls
+`
+
+type GetDM01SourceReadRoleRow struct {
+	Role     string `json:"role"`
+	ReadOnly bool   `json:"read_only"`
+}
+
+func (q *Queries) GetDM01SourceReadRole(ctx context.Context) (GetDM01SourceReadRoleRow, error) {
+	row := q.db.QueryRow(ctx, getDM01SourceReadRole)
+	var i GetDM01SourceReadRoleRow
+	err := row.Scan(&i.Role, &i.ReadOnly)
+	return i, err
+}
+
 const listDM01Contact = `-- name: ListDM01Contact :many
 SELECT id, updated_at, jsonb_build_object('id', id, 'unionid', unionid, 'created_at', created_at, 'updated_at', updated_at) AS payload
 FROM contacts
@@ -339,7 +378,7 @@ func (q *Queries) ListDM01CustomerIdentity(ctx context.Context, arg ListDM01Cust
 }
 
 const listDM01DirectoryMember = `-- name: ListDM01DirectoryMember :many
-SELECT id, last_synced_at, jsonb_build_object(
+SELECT id, corp_id, last_synced_at, jsonb_build_object(
   'id', id, 'corp_id', corp_id, 'wecom_userid', wecom_userid,
   'display_name', display_name, 'department_ids_json', department_ids_json,
   'department_name', department_name, 'position', position, 'mobile', mobile,
@@ -361,6 +400,7 @@ type ListDM01DirectoryMemberParams struct {
 
 type ListDM01DirectoryMemberRow struct {
 	ID           int64              `json:"id"`
+	CorpID       string             `json:"corp_id"`
 	LastSyncedAt pgtype.Timestamptz `json:"last_synced_at"`
 	Payload      []byte             `json:"payload"`
 }
@@ -379,7 +419,12 @@ func (q *Queries) ListDM01DirectoryMember(ctx context.Context, arg ListDM01Direc
 	items := []ListDM01DirectoryMemberRow{}
 	for rows.Next() {
 		var i ListDM01DirectoryMemberRow
-		if err := rows.Scan(&i.ID, &i.LastSyncedAt, &i.Payload); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.CorpID,
+			&i.LastSyncedAt,
+			&i.Payload,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -508,7 +553,7 @@ func (q *Queries) ListDM01ExternalIdentityMap(ctx context.Context, arg ListDM01E
 }
 
 const listDM01FollowUser = `-- name: ListDM01FollowUser :many
-SELECT id, updated_at, jsonb_build_object(
+SELECT id, corp_id, updated_at, jsonb_build_object(
   'id', id, 'external_userid', external_userid, 'user_id', user_id,
   'relation_status', relation_status, 'is_primary', is_primary, 'remark', remark,
   'description', description, 'updated_at', updated_at, 'corp_id', corp_id,
@@ -528,6 +573,7 @@ type ListDM01FollowUserParams struct {
 
 type ListDM01FollowUserRow struct {
 	ID        int64              `json:"id"`
+	CorpID    string             `json:"corp_id"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 	Payload   []byte             `json:"payload"`
 }
@@ -546,7 +592,12 @@ func (q *Queries) ListDM01FollowUser(ctx context.Context, arg ListDM01FollowUser
 	items := []ListDM01FollowUserRow{}
 	for rows.Next() {
 		var i ListDM01FollowUserRow
-		if err := rows.Scan(&i.ID, &i.UpdatedAt, &i.Payload); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.CorpID,
+			&i.UpdatedAt,
+			&i.Payload,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -763,7 +814,7 @@ func (q *Queries) ListDM01Person(ctx context.Context, arg ListDM01PersonParams) 
 }
 
 const listDM01ResolutionQueue = `-- name: ListDM01ResolutionQueue :many
-SELECT id, updated_at, jsonb_build_object(
+SELECT id, corp_id, updated_at, jsonb_build_object(
   'id', id, 'source_type', source_type, 'source_key', source_key,
   'source_table', source_table, 'source_id', source_id, 'corp_id', corp_id,
   'external_userid', external_userid, 'openid', openid, 'mobile', mobile,
@@ -790,6 +841,7 @@ type ListDM01ResolutionQueueParams struct {
 
 type ListDM01ResolutionQueueRow struct {
 	ID        int64              `json:"id"`
+	CorpID    string             `json:"corp_id"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 	Payload   []byte             `json:"payload"`
 }
@@ -808,7 +860,12 @@ func (q *Queries) ListDM01ResolutionQueue(ctx context.Context, arg ListDM01Resol
 	items := []ListDM01ResolutionQueueRow{}
 	for rows.Next() {
 		var i ListDM01ResolutionQueueRow
-		if err := rows.Scan(&i.ID, &i.UpdatedAt, &i.Payload); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.CorpID,
+			&i.UpdatedAt,
+			&i.Payload,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

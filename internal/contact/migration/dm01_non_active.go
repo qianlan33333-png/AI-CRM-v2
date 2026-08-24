@@ -185,6 +185,8 @@ func nonActivePolicy(source contactport.NonActiveSource) (contactport.NonActiveD
 	case contactport.NonActiveFollowUsers:
 		return contactport.NonActiveQuarantined, "multiple_follow_users_deferred", false
 	case contactport.NonActiveContacts, contactport.NonActiveDirectoryMembers, contactport.NonActiveExternalBindings:
+		// Legacy 149 is DROP and 006/176 are REBUILD inputs. They remain
+		// source-read-only, create no V2 fact, and close only with a skipped receipt.
 		return contactport.NonActiveSkipped, "", false
 	default:
 		return 0, "", false

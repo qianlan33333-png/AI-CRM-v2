@@ -309,9 +309,13 @@ INSERT INTO legacy_contact_identity_historical_archives (
 
 -- name: AppendHistoricalImportRowReceiptFenced :execrows
 INSERT INTO legacy_contact_identity_import_row_receipts (
-  run_id, source_table, source_key_hmac, payload_hmac, field_digest, disposition
+  run_id, source_table, source_ordinal, source_key_hmac, payload_hmac, field_digest, disposition
 )
-SELECT r.id, sqlc.arg(source_table)::text, sqlc.arg(source_key_hmac)::bytea,
+SELECT r.id, sqlc.arg(source_table)::text,
+       (SELECT COALESCE(max(prior.source_ordinal), 0) + 1
+        FROM legacy_contact_identity_import_row_receipts AS prior
+        WHERE prior.run_id = r.id AND prior.source_table = sqlc.arg(source_table)::text),
+       sqlc.arg(source_key_hmac)::bytea,
        sqlc.arg(payload_hmac)::bytea, sqlc.arg(field_digest)::bytea,
        sqlc.arg(disposition)::text
 FROM legacy_contact_identity_import_runs AS r
@@ -337,7 +341,7 @@ WHERE child.id = sqlc.arg(run_id)::bigint
 FOR SHARE OF child, parent;
 
 -- name: ListHistoricalReconcileReceiptsPage :many
-SELECT r.source_key_hmac, r.payload_hmac, r.field_digest, r.disposition,
+SELECT r.source_ordinal, r.source_key_hmac, r.payload_hmac, r.field_digest, r.disposition,
        (SELECT count(*) FROM legacy_contact_identity_historical_archives AS a
         WHERE a.run_id = r.run_id AND a.source_table = r.source_table
           AND a.source_key_hmac = r.source_key_hmac)::bigint AS archive_count,
@@ -347,9 +351,8 @@ SELECT r.source_key_hmac, r.payload_hmac, r.field_digest, r.disposition,
 FROM legacy_contact_identity_import_row_receipts AS r
 WHERE r.run_id = sqlc.arg(parent_run_id)::bigint
   AND r.source_table = sqlc.arg(source_table)::text
-  AND (sqlc.narg(after_source_key_hmac)::bytea IS NULL
-       OR r.source_key_hmac > sqlc.narg(after_source_key_hmac)::bytea)
-ORDER BY r.source_key_hmac
+  AND r.source_ordinal > sqlc.arg(after_source_ordinal)::bigint
+ORDER BY r.source_ordinal
 LIMIT sqlc.arg(page_size)::integer;
 
 -- name: CountHistoricalReconcileCompanions :one

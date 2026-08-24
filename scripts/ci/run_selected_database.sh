@@ -67,6 +67,7 @@ while [[ -n "$remaining_groups" ]]; do
     dm01)
       [[ -n "${DM01_SOURCE_TEST_DATABASE_URL:-}" ]] || fail "DM01_SOURCE_TEST_DATABASE_URL is required"
       [[ -n "${DM01_TARGET_TEST_DATABASE_URL:-}" ]] || fail "DM01_TARGET_TEST_DATABASE_URL is required"
+      P4_DM01_TEST_DATABASE_URL="$DM01_TARGET_TEST_DATABASE_URL" make --no-print-directory p4-dm01-migration-acceptance
       make --no-print-directory p4-dm01-two-pg-acceptance
       ;;
     adminops)

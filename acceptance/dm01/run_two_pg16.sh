@@ -18,5 +18,18 @@ MIGRATION_TEST_DATABASE_URL="$target_url" MIGRATION_TEST_DATABASE_NAME=aicrm_tes
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   go tool -modfile=tools/go.mod goose -dir migrations postgres "$target_url" up
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  go tool -modfile=tools/go.mod goose -dir migrations postgres "$target_url" down
+GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  go tool -modfile=tools/go.mod goose -dir migrations postgres "$target_url" up
+GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   go test -race -count=1 -timeout=300s ./acceptance/dm01 -args \
     -source-database-url "$source_url" -target-database-url "$target_url"
+
+down_log="$(mktemp -t aicrm-dm01-target-down.XXXXXX)"
+trap 'rm -f "$down_log"' EXIT
+if GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  go tool -modfile=tools/go.mod goose -dir migrations postgres "$target_url" down >"$down_log" 2>&1; then
+  echo "DM01 materialized target unexpectedly allowed migration rollback" >&2
+  exit 1
+fi
+grep -Fq 'SQLSTATE 55000' "$down_log"

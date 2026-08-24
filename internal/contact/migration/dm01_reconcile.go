@@ -50,17 +50,27 @@ type ReconcileReceipt struct {
 
 type ReconcileCompanionCounts struct{ Archives, Quarantines int64 }
 
+type ReconcileArchive struct {
+	SourceFact contactport.HistoricalImportSourceFact
+	Nonce      []byte
+	Ciphertext []byte
+	KeyVersion int16
+}
+
 type ReconcileTarget interface {
 	LockReconcileRun(context.Context, contactport.NonActiveLeaseFence) (int64, error)
 	StreamReconcileReceipts(context.Context, int64, ReconcileTable, func(ReconcileReceipt) error) error
 	CountReconcileCompanions(context.Context, int64, ReconcileTable) (ReconcileCompanionCounts, error)
+	ReadReconcileArchive(context.Context, int64, ReconcileTable, []byte) (ReconcileArchive, bool, error)
 	AppendReconcileResult(context.Context, contactport.NonActiveLeaseFence, []byte) error
 	CompleteReconcileRun(context.Context, contactport.NonActiveLeaseFence) error
 }
 
 type ReconcileCommand struct {
-	Fence   contactport.NonActiveLeaseFence
-	Sources []ReconcileSourceSummary
+	Fence      contactport.NonActiveLeaseFence
+	Sources    []ReconcileSourceSummary
+	ArchiveKey []byte
+	HMACKey    []byte
 }
 
 type ReconcileDispositionCounts struct{ Imported, Quarantined, Archived, Skipped int64 }
@@ -108,6 +118,26 @@ func (service *ReconcileService) Reconcile(ctx context.Context, command Reconcil
 			err = service.target.StreamReconcileReceipts(txCtx, parentRunID, table, func(receipt ReconcileReceipt) error {
 				if err := digest.Add(receipt.SourceFact); err != nil || !validReconcileCompanion(table, receipt) {
 					return ErrReconcileMismatch
+				}
+				if receipt.Disposition == "archived" {
+					archive, found, readErr := service.target.ReadReconcileArchive(txCtx, parentRunID, table, receipt.SourceFact.SourceKeyHMAC)
+					if readErr != nil {
+						return readErr
+					}
+					if !found || archive.KeyVersion < 1 || !sameSourceFact(archive.SourceFact, receipt.SourceFact) {
+						return ErrReconcileMismatch
+					}
+					aad, aadErr := ArchiveAAD(parentRunID, ReconcileTableName(table), receipt.SourceFact.SourceKeyHMAC, receipt.SourceFact.PayloadHMAC, receipt.SourceFact.FieldDigest, int(archive.KeyVersion))
+					if aadErr != nil {
+						return ErrReconcileMismatch
+					}
+					plaintext, decryptErr := DecryptArchiveBound(command.ArchiveKey, command.HMACKey, ReconcileTableName(table), aad, archive.Nonce, archive.Ciphertext, receipt.SourceFact.PayloadHMAC)
+					for index := range plaintext {
+						plaintext[index] = 0
+					}
+					if decryptErr != nil {
+						return ErrReconcileMismatch
+					}
 				}
 				archives += receipt.ArchiveCount
 				quarantines += receipt.QuarantineCount
@@ -159,26 +189,29 @@ func (service *ReconcileService) Reconcile(ctx context.Context, command Reconcil
 }
 
 type ReconcileDigest struct {
-	accumulator [sha256.Size]byte
-	count       int64
+	stream hash.Hash
+	count  int64
 }
 
-func NewReconcileDigest() *ReconcileDigest { return &ReconcileDigest{} }
+func NewReconcileDigest() *ReconcileDigest {
+	stream := sha256.New()
+	stream.Write([]byte("dm01-reconcile-stream-v2"))
+	return &ReconcileDigest{stream: stream}
+}
 func (digest *ReconcileDigest) Add(fact contactport.HistoricalImportSourceFact) error {
-	if digest == nil || !validSourceFact(fact) {
+	if digest == nil || digest.stream == nil || !validSourceFact(fact) {
 		return ErrInvalidReconcile
 	}
-	row := sha256.New()
-	row.Write(fact.SourceKeyHMAC)
-	row.Write(fact.PayloadHMAC)
-	for index, value := range row.Sum(nil) {
-		digest.accumulator[index] ^= value
-	}
 	digest.count++
+	var ordinal [8]byte
+	binary.BigEndian.PutUint64(ordinal[:], uint64(digest.count))
+	digest.stream.Write(ordinal[:])
+	digest.stream.Write(fact.SourceKeyHMAC)
+	digest.stream.Write(fact.PayloadHMAC)
 	return nil
 }
 func (digest *ReconcileDigest) Count() int64 {
-	if digest == nil {
+	if digest == nil || digest.stream == nil {
 		return 0
 	}
 	return digest.count
@@ -188,16 +221,16 @@ func (digest *ReconcileDigest) Sum() []byte {
 		return nil
 	}
 	output := sha256.New()
-	output.Write([]byte("dm01-reconcile-source-v1"))
+	output.Write([]byte("dm01-reconcile-source-v2"))
 	var count [8]byte
 	binary.BigEndian.PutUint64(count[:], uint64(digest.count))
 	output.Write(count[:])
-	output.Write(digest.accumulator[:])
+	output.Write(digest.stream.Sum(nil))
 	return output.Sum(nil)
 }
 
 func validReconcileCommand(command ReconcileCommand) (map[ReconcileTable]ReconcileSourceSummary, bool) {
-	if command.Fence.RunID < 1 || command.Fence.Generation < 1 || len(command.Fence.TokenHMAC) != sha256.Size || len(command.Sources) != len(reconcileTableOrder) {
+	if command.Fence.RunID < 1 || command.Fence.Generation < 1 || len(command.Fence.TokenHMAC) != sha256.Size || len(command.Sources) != len(reconcileTableOrder) || len(command.ArchiveKey) != 32 || len(command.HMACKey) < 32 {
 		return nil, false
 	}
 	result := make(map[ReconcileTable]ReconcileSourceSummary, len(command.Sources))

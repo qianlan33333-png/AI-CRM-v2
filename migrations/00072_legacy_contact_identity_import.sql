@@ -36,7 +36,7 @@ CREATE TABLE legacy_contact_identity_import_checkpoints (
   UNIQUE (run_id, final_source_key_hmac)
 );
 CREATE TABLE legacy_contact_identity_source_mappings (
-  source_table TEXT NOT NULL,
+  source_table TEXT NOT NULL CHECK (source_table IN ('owner_role_map','crm_user_identity','wecom_external_contact_identity_map')),
   source_key_hmac BYTEA NOT NULL CHECK (octet_length(source_key_hmac) = 32),
   staff_id BIGINT REFERENCES staff(id),
   customer_id BIGINT REFERENCES customers(id),
@@ -56,18 +56,20 @@ CREATE TABLE legacy_contact_identity_source_mappings (
 );
 CREATE TABLE legacy_contact_identity_import_row_receipts (
   run_id BIGINT NOT NULL REFERENCES legacy_contact_identity_import_runs(id) ON DELETE RESTRICT,
-  source_table TEXT NOT NULL,
+  source_table TEXT NOT NULL CHECK (source_table IN ('owner_role_map','crm_user_identity','wecom_external_contact_identity_map','crm_user_identity_merge_audit','crm_user_identity_resolution_queue','admin_wecom_directory_members','contacts','crm_user_identity_conflicts','external_contact_bindings','people','wecom_external_contact_follow_users')),
+  source_ordinal BIGINT NOT NULL CHECK (source_ordinal > 0),
   source_key_hmac BYTEA NOT NULL CHECK (octet_length(source_key_hmac) = 32),
   payload_hmac BYTEA NOT NULL CHECK (octet_length(payload_hmac) = 32),
   field_digest BYTEA NOT NULL CHECK (octet_length(field_digest) = 32),
   disposition TEXT NOT NULL CHECK (disposition IN ('imported','quarantined','archived','skipped')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  PRIMARY KEY (run_id, source_table, source_key_hmac)
+  PRIMARY KEY (run_id, source_table, source_key_hmac),
+  UNIQUE (run_id, source_table, source_ordinal)
 );
 CREATE TABLE legacy_contact_identity_import_quarantines (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   run_id BIGINT NOT NULL REFERENCES legacy_contact_identity_import_runs(id) ON DELETE RESTRICT,
-  source_table TEXT NOT NULL,
+  source_table TEXT NOT NULL CHECK (source_table IN ('owner_role_map','crm_user_identity','wecom_external_contact_identity_map','crm_user_identity_merge_audit','crm_user_identity_resolution_queue','admin_wecom_directory_members','contacts','crm_user_identity_conflicts','external_contact_bindings','people','wecom_external_contact_follow_users')),
   source_key_hmac BYTEA NOT NULL CHECK (octet_length(source_key_hmac) = 32),
   reason_code TEXT NOT NULL CHECK (btrim(reason_code) <> ''),
   payload_hmac BYTEA NOT NULL CHECK (octet_length(payload_hmac) = 32),
@@ -209,7 +211,9 @@ FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_reconcile_parent_guard();
 -- +goose Down
 -- +goose StatementBegin
 DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM legacy_contact_identity_source_mappings)
+  IF EXISTS (SELECT 1 FROM legacy_contact_identity_import_runs WHERE state IN ('imported','reconciling','reconciled'))
+    OR EXISTS (SELECT 1 FROM legacy_contact_identity_import_checkpoints)
+    OR EXISTS (SELECT 1 FROM legacy_contact_identity_source_mappings)
     OR EXISTS (SELECT 1 FROM legacy_contact_identity_import_row_receipts)
     OR EXISTS (SELECT 1 FROM legacy_contact_identity_import_quarantines)
     OR EXISTS (SELECT 1 FROM legacy_contact_identity_historical_archives)

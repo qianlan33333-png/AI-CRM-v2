@@ -210,9 +210,13 @@ func (q *Queries) AppendHistoricalImportRowReceipt(ctx context.Context, arg Appe
 
 const appendHistoricalImportRowReceiptFenced = `-- name: AppendHistoricalImportRowReceiptFenced :execrows
 INSERT INTO legacy_contact_identity_import_row_receipts (
-  run_id, source_table, source_key_hmac, payload_hmac, field_digest, disposition
+  run_id, source_table, source_ordinal, source_key_hmac, payload_hmac, field_digest, disposition
 )
-SELECT r.id, $1::text, $2::bytea,
+SELECT r.id, $1::text,
+       (SELECT COALESCE(max(prior.source_ordinal), 0) + 1
+        FROM legacy_contact_identity_import_row_receipts AS prior
+        WHERE prior.run_id = r.id AND prior.source_table = $1::text),
+       $2::bytea,
        $3::bytea, $4::bytea,
        $5::text
 FROM legacy_contact_identity_import_runs AS r
@@ -712,7 +716,7 @@ func (q *Queries) IsHistoricalImportActiveStaff(ctx context.Context, staffID int
 }
 
 const listHistoricalReconcileReceiptsPage = `-- name: ListHistoricalReconcileReceiptsPage :many
-SELECT r.source_key_hmac, r.payload_hmac, r.field_digest, r.disposition,
+SELECT r.source_ordinal, r.source_key_hmac, r.payload_hmac, r.field_digest, r.disposition,
        (SELECT count(*) FROM legacy_contact_identity_historical_archives AS a
         WHERE a.run_id = r.run_id AND a.source_table = r.source_table
           AND a.source_key_hmac = r.source_key_hmac)::bigint AS archive_count,
@@ -722,20 +726,20 @@ SELECT r.source_key_hmac, r.payload_hmac, r.field_digest, r.disposition,
 FROM legacy_contact_identity_import_row_receipts AS r
 WHERE r.run_id = $1::bigint
   AND r.source_table = $2::text
-  AND ($3::bytea IS NULL
-       OR r.source_key_hmac > $3::bytea)
-ORDER BY r.source_key_hmac
+  AND r.source_ordinal > $3::bigint
+ORDER BY r.source_ordinal
 LIMIT $4::integer
 `
 
 type ListHistoricalReconcileReceiptsPageParams struct {
 	ParentRunID        int64  `json:"parent_run_id"`
 	SourceTable        string `json:"source_table"`
-	AfterSourceKeyHmac []byte `json:"after_source_key_hmac"`
+	AfterSourceOrdinal int64  `json:"after_source_ordinal"`
 	PageSize           int32  `json:"page_size"`
 }
 
 type ListHistoricalReconcileReceiptsPageRow struct {
+	SourceOrdinal   int64  `json:"source_ordinal"`
 	SourceKeyHmac   []byte `json:"source_key_hmac"`
 	PayloadHmac     []byte `json:"payload_hmac"`
 	FieldDigest     []byte `json:"field_digest"`
@@ -748,7 +752,7 @@ func (q *Queries) ListHistoricalReconcileReceiptsPage(ctx context.Context, arg L
 	rows, err := q.db.Query(ctx, listHistoricalReconcileReceiptsPage,
 		arg.ParentRunID,
 		arg.SourceTable,
-		arg.AfterSourceKeyHmac,
+		arg.AfterSourceOrdinal,
 		arg.PageSize,
 	)
 	if err != nil {
@@ -759,6 +763,7 @@ func (q *Queries) ListHistoricalReconcileReceiptsPage(ctx context.Context, arg L
 	for rows.Next() {
 		var i ListHistoricalReconcileReceiptsPageRow
 		if err := rows.Scan(
+			&i.SourceOrdinal,
 			&i.SourceKeyHmac,
 			&i.PayloadHmac,
 			&i.FieldDigest,

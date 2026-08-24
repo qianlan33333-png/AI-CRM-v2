@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
@@ -154,7 +155,7 @@ func (executor *Executor) Execute(ctx context.Context, command ExecuteCommand) (
 			if err != nil {
 				return err
 			}
-			if err = executor.runReconcile(ctx, snapshot, bounds, fence, command.HMACKey); err == nil {
+			if err = executor.runReconcile(ctx, snapshot, bounds, fence, command); err == nil {
 				result.State = "reconciled"
 			} else {
 				_ = executor.transition(ctx, fence, "failed")
@@ -250,6 +251,9 @@ func (executor *Executor) runImport(ctx context.Context, snapshot SourceSnapshot
 	customers := make([]CustomerActiveRoot, 0, executorPageSize)
 	tracker = newTableTracker("crm_user_identity", bounds["crm_user_identity"], command.HMACKey)
 	err = snapshot.EachCustomerIdentity(ctx, bounds[tracker.table], func(row CustomerIdentityRow) error {
+		if !validCustomerSourceRow(row) {
+			return ErrInvalidExecutor
+		}
 		fact, addErr := tracker.add(row.UnionID, row.Payload)
 		if addErr != nil {
 			return addErr
@@ -292,7 +296,7 @@ func (executor *Executor) runImport(ctx context.Context, snapshot SourceSnapshot
 	identities := make([]ExternalIdentityActiveRoot, 0, executorPageSize)
 	tracker = newTableTracker("wecom_external_contact_identity_map", bounds["wecom_external_contact_identity_map"], command.HMACKey)
 	err = snapshot.EachExternalIdentityMap(ctx, bounds[tracker.table], func(row ExternalIdentityMapRow) error {
-		if row.CorpID != command.Manifest.WeComCorpID {
+		if !validExternalIdentitySourceRow(row) || row.CorpID != command.Manifest.WeComCorpID {
 			return fmt.Errorf("%w: corp mismatch", ErrInvalidExecutor)
 		}
 		fact, addErr := tracker.add(strconv.FormatInt(row.ID, 10), row.Payload)
@@ -324,7 +328,7 @@ func (executor *Executor) runImport(ctx context.Context, snapshot SourceSnapshot
 }
 
 func (executor *Executor) runNonActive(ctx context.Context, snapshot SourceSnapshot, bounds map[string]SourceUpperBound, fence RunFence, command ExecuteCommand) error {
-	for _, spec := range nonActiveScans(snapshot) {
+	for _, spec := range nonActiveScans(snapshot, command.Manifest.WeComCorpID) {
 		tracker := newTableTracker(spec.table, bounds[spec.table], command.HMACKey)
 		rows := make([]NonActiveRow, 0, executorPageSize)
 		err := spec.each(ctx, bounds[spec.table], func(key string, payload []byte) error {
@@ -360,10 +364,10 @@ func (executor *Executor) runNonActive(ctx context.Context, snapshot SourceSnaps
 	return nil
 }
 
-func (executor *Executor) runReconcile(ctx context.Context, snapshot SourceSnapshot, bounds map[string]SourceUpperBound, fence RunFence, key []byte) error {
+func (executor *Executor) runReconcile(ctx context.Context, snapshot SourceSnapshot, bounds map[string]SourceUpperBound, fence RunFence, command ExecuteCommand) error {
 	summaries := make([]ReconcileSourceSummary, 0, len(reconcileTableOrder))
-	for _, spec := range allScans(snapshot) {
-		tracker := newTableTracker(spec.table, bounds[spec.table], key)
+	for _, spec := range allScans(snapshot, command.Manifest.WeComCorpID) {
+		tracker := newTableTracker(spec.table, bounds[spec.table], command.HMACKey)
 		digest := NewReconcileDigest()
 		var pageRows int
 		if err := spec.each(ctx, bounds[spec.table], func(raw string, payload []byte) error {
@@ -385,7 +389,7 @@ func (executor *Executor) runReconcile(ctx context.Context, snapshot SourceSnaps
 		}
 		summaries = append(summaries, ReconcileSourceSummary{Table: spec.reconcile, Count: digest.Count(), Digest: digest.Sum()})
 	}
-	_, err := executor.reconcile.Reconcile(ctx, ReconcileCommand{Fence: nonActiveFence(fence), Sources: summaries})
+	_, err := executor.reconcile.Reconcile(ctx, ReconcileCommand{Fence: nonActiveFence(fence), Sources: summaries, ArchiveKey: command.ArchiveKey, HMACKey: command.HMACKey})
 	return err
 }
 
@@ -446,7 +450,7 @@ func (tracker *tableTracker) checkpoint() FinalCheckpoint {
 	if tracker.count == 0 {
 		payload, _ := SourcePayloadHMAC(tracker.key, tracker.table, nil)
 		fields, _ := SourceFieldsHMAC(tracker.key, tracker.table, nil)
-		sourceKey, _ := SourceKeyHMAC(tracker.key, tracker.table, "")
+		sourceKey, _ := emptySourceKeyHMAC(tracker.key, tracker.table)
 		tracker.last = contactport.HistoricalImportSourceFact{SourceKeyHMAC: sourceKey, PayloadHMAC: payload, FieldDigest: fields}
 	}
 	var upper []byte
@@ -468,7 +472,7 @@ func validateBounds(input []SourceUpperBound) (map[string]SourceUpperBound, time
 	result := make(map[string]SourceUpperBound, len(input))
 	var upper time.Time
 	for _, bound := range input {
-		if _, ok := want[bound.Table]; !ok || result[bound.Table].Table != "" || (!bound.Empty && (bound.Watermark.IsZero() || bound.SourceKey == "")) {
+		if _, ok := want[bound.Table]; !ok || result[bound.Table].Table != "" || (!bound.Empty && (bound.Watermark.IsZero() || bound.SourceKey == "" || strings.TrimSpace(bound.SourceKey) != bound.SourceKey)) {
 			return nil, time.Time{}, ErrSourceSchemaDrift
 		}
 		result[bound.Table] = bound
@@ -497,25 +501,45 @@ type sourceScan struct {
 	each      func(context.Context, SourceUpperBound, func(string, []byte) error) error
 }
 
-func allScans(snapshot SourceSnapshot) []sourceScan {
+func allScans(snapshot SourceSnapshot, corpID string) []sourceScan {
 	return []sourceScan{
 		{"owner_role_map", ReconcileOwnerRoleMap, 0, false, func(c context.Context, b SourceUpperBound, e func(string, []byte) error) error {
 			return snapshot.EachOwnerRoleMap(c, b, func(r OwnerRoleMapRow) error { return e(r.UserID, r.Payload) })
 		}},
 		{"crm_user_identity", ReconcileCustomerIdentity, 0, false, func(c context.Context, b SourceUpperBound, e func(string, []byte) error) error {
-			return snapshot.EachCustomerIdentity(c, b, func(r CustomerIdentityRow) error { return e(r.UnionID, r.Payload) })
+			return snapshot.EachCustomerIdentity(c, b, func(r CustomerIdentityRow) error {
+				if !validCustomerSourceRow(r) {
+					return ErrInvalidExecutor
+				}
+				return e(r.UnionID, r.Payload)
+			})
 		}},
 		{"wecom_external_contact_identity_map", ReconcileExternalIdentity, 0, false, func(c context.Context, b SourceUpperBound, e func(string, []byte) error) error {
-			return snapshot.EachExternalIdentityMap(c, b, func(r ExternalIdentityMapRow) error { return e(strconv.FormatInt(r.ID, 10), r.Payload) })
+			return snapshot.EachExternalIdentityMap(c, b, func(r ExternalIdentityMapRow) error {
+				if !validExternalIdentitySourceRow(r) || r.CorpID != corpID {
+					return ErrInvalidExecutor
+				}
+				return e(strconv.FormatInt(r.ID, 10), r.Payload)
+			})
 		}},
 		{"crm_user_identity_merge_audit", ReconcileMergeAudit, contactport.NonActiveMergeAudit, true, func(c context.Context, b SourceUpperBound, e func(string, []byte) error) error {
 			return snapshot.EachMergeAudit(c, b, func(r MergeAuditRow) error { return e(strconv.FormatInt(r.ID, 10), r.Payload) })
 		}},
 		{"crm_user_identity_resolution_queue", ReconcileResolutionQueue, contactport.NonActiveResolutionQueue, true, func(c context.Context, b SourceUpperBound, e func(string, []byte) error) error {
-			return snapshot.EachResolutionQueue(c, b, func(r ResolutionQueueRow) error { return e(strconv.FormatInt(r.ID, 10), r.Payload) })
+			return snapshot.EachResolutionQueue(c, b, func(r ResolutionQueueRow) error {
+				if r.CorpID != corpID {
+					return ErrInvalidExecutor
+				}
+				return e(strconv.FormatInt(r.ID, 10), r.Payload)
+			})
 		}},
 		{"admin_wecom_directory_members", ReconcileDirectoryMembers, contactport.NonActiveDirectoryMembers, false, func(c context.Context, b SourceUpperBound, e func(string, []byte) error) error {
-			return snapshot.EachDirectoryMember(c, b, func(r DirectoryMemberRow) error { return e(strconv.FormatInt(r.ID, 10), r.Payload) })
+			return snapshot.EachDirectoryMember(c, b, func(r DirectoryMemberRow) error {
+				if r.CorpID != corpID {
+					return ErrInvalidExecutor
+				}
+				return e(strconv.FormatInt(r.ID, 10), r.Payload)
+			})
 		}},
 		{"contacts", ReconcileContacts, contactport.NonActiveContacts, false, func(c context.Context, b SourceUpperBound, e func(string, []byte) error) error {
 			return snapshot.EachContact(c, b, func(r ContactRow) error { return e(strconv.FormatInt(r.ID, 10), r.Payload) })
@@ -530,8 +554,23 @@ func allScans(snapshot SourceSnapshot) []sourceScan {
 			return snapshot.EachPerson(c, b, func(r PersonRow) error { return e(strconv.FormatInt(r.ID, 10), r.Payload) })
 		}},
 		{"wecom_external_contact_follow_users", ReconcileFollowUsers, contactport.NonActiveFollowUsers, false, func(c context.Context, b SourceUpperBound, e func(string, []byte) error) error {
-			return snapshot.EachFollowUser(c, b, func(r FollowUserRow) error { return e(strconv.FormatInt(r.ID, 10), r.Payload) })
+			return snapshot.EachFollowUser(c, b, func(r FollowUserRow) error {
+				if r.CorpID != corpID {
+					return ErrInvalidExecutor
+				}
+				return e(strconv.FormatInt(r.ID, 10), r.Payload)
+			})
 		}},
 	}
 }
-func nonActiveScans(snapshot SourceSnapshot) []sourceScan { return allScans(snapshot)[3:] }
+func nonActiveScans(snapshot SourceSnapshot, corpID string) []sourceScan {
+	return allScans(snapshot, corpID)[3:]
+}
+
+func validCustomerSourceRow(row CustomerIdentityRow) bool {
+	return row.UnionID != "" && strings.TrimSpace(row.UnionID) == row.UnionID && strings.TrimSpace(row.PrimaryOwnerUser) == row.PrimaryOwnerUser
+}
+
+func validExternalIdentitySourceRow(row ExternalIdentityMapRow) bool {
+	return row.ID > 0 && row.ExternalUserID != "" && strings.TrimSpace(row.ExternalUserID) == row.ExternalUserID && row.UnionID != "" && strings.TrimSpace(row.UnionID) == row.UnionID && row.CorpID != "" && strings.TrimSpace(row.CorpID) == row.CorpID
+}

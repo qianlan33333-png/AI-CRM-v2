@@ -14,8 +14,9 @@ import (
 const LegacyRepositorySHA = "2b7a80126d7becb6f95cf1ec5945dcb78a42f531"
 
 var (
-	hexHMACPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
-	scopeIDPattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$`)
+	hexHMACPattern  = regexp.MustCompile(`^[0-9a-f]{64}$`)
+	scopeIDPattern  = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$`)
+	serverIDPattern = regexp.MustCompile(`^[0-9]{1,20}$`)
 )
 
 type Manifest struct {
@@ -23,6 +24,9 @@ type Manifest struct {
 	SourceSystem        string            `json:"source_system"`
 	LegacyRepositorySHA string            `json:"legacy_repository_sha"`
 	SnapshotID          string            `json:"snapshot_id"`
+	SourceServerID      string            `json:"source_server_id"`
+	SourceDatabase      string            `json:"source_database"`
+	SourceReadRole      string            `json:"source_read_role"`
 	SingleCorp          bool              `json:"single_corp"`
 	WeComCorpID         string            `json:"wecom_corp_id"`
 	OpenPlatformAccount string            `json:"open_platform_account,omitempty"`
@@ -61,7 +65,7 @@ func LoadManifest(path, wantHex string) (Manifest, [32]byte, error) {
 	return m, digest, nil
 }
 func (m Manifest) Valid() error {
-	if m.ContractVersion != 1 || m.SourceSystem == "" || m.LegacyRepositorySHA != LegacyRepositorySHA || m.SnapshotID == "" || !m.SingleCorp || m.WeComCorpID == "" || m.HMACKeyVersion < 1 || len(m.OwnerAllowlistHMACs) == 0 {
+	if m.ContractVersion != 1 || m.SourceSystem == "" || m.LegacyRepositorySHA != LegacyRepositorySHA || m.SnapshotID == "" || !serverIDPattern.MatchString(m.SourceServerID) || !scopeIDPattern.MatchString(m.SourceDatabase) || !scopeIDPattern.MatchString(m.SourceReadRole) || !m.SingleCorp || m.WeComCorpID == "" || m.HMACKeyVersion < 1 || len(m.OwnerAllowlistHMACs) == 0 {
 		return errors.New("invalid DM01 manifest")
 	}
 	for index, value := range m.OwnerAllowlistHMACs {

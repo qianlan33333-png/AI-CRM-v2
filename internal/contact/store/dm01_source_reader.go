@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -52,8 +53,12 @@ func (reader *DM01SourceReader) DatabaseIdentity(ctx context.Context) (migration
 		return migration.DatabaseIdentity{}, errors.New("invalid DM01 source reader")
 	}
 	row, err := legacysourcedb.New(reader.pool).GetDM01SourceDatabaseIdentity(ctx)
-	identity := migration.DatabaseIdentity{ServerID: row.ServerID, Database: row.Database}
-	if err != nil || identity.ServerID == "" || identity.Database == "" {
+	if err != nil {
+		return migration.DatabaseIdentity{}, err
+	}
+	role, err := legacysourcedb.New(reader.pool).GetDM01SourceReadRole(ctx)
+	identity := migration.DatabaseIdentity{ServerID: row.ServerID, Database: row.Database, Role: role.Role, ReadOnly: role.ReadOnly}
+	if err != nil || identity.ServerID == "" || identity.Database == "" || identity.Role == "" {
 		return migration.DatabaseIdentity{}, err
 	}
 	return identity, nil
@@ -218,7 +223,7 @@ func (snapshot *dm01SourceSnapshot) EachOwnerRoleMap(ctx context.Context, upper 
 			return err
 		}
 		for _, row := range rows {
-			if !row.CreatedAt.Valid || !row.UpdatedAt.Valid {
+			if !row.CreatedAt.Valid || !row.UpdatedAt.Valid || row.Userid == "" || strings.TrimSpace(row.Userid) != row.Userid {
 				return migration.ErrSourceSchemaDrift
 			}
 			if err := fn(migration.OwnerRoleMapRow{UserID: row.Userid, DisplayName: row.DisplayName, Active: row.Active, CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload}); err != nil {
@@ -244,7 +249,7 @@ func (snapshot *dm01SourceSnapshot) EachCustomerIdentity(ctx context.Context, up
 			return err
 		}
 		for _, row := range rows {
-			if !row.FirstSeenAt.Valid || !row.LastSeenAt.Valid || !row.CreatedAt.Valid || !row.UpdatedAt.Valid {
+			if !row.FirstSeenAt.Valid || !row.LastSeenAt.Valid || !row.CreatedAt.Valid || !row.UpdatedAt.Valid || row.Unionid == "" || strings.TrimSpace(row.Unionid) != row.Unionid || strings.TrimSpace(row.PrimaryOwnerUserid) != row.PrimaryOwnerUserid {
 				return migration.ErrSourceSchemaDrift
 			}
 			var gender *int16
@@ -282,7 +287,7 @@ func (snapshot *dm01SourceSnapshot) EachExternalIdentityMap(ctx context.Context,
 			return err
 		}
 		for _, row := range rows {
-			if !row.UpdatedAt.Valid {
+			if !row.UpdatedAt.Valid || row.ExternalUserid == "" || strings.TrimSpace(row.ExternalUserid) != row.ExternalUserid || row.Unionid == "" || strings.TrimSpace(row.Unionid) != row.Unionid || row.CorpID == "" || strings.TrimSpace(row.CorpID) != row.CorpID {
 				return migration.ErrSourceSchemaDrift
 			}
 			if err := fn(migration.ExternalIdentityMapRow{ID: row.ID, ExternalUserID: row.ExternalUserid, UnionID: row.Unionid, CorpID: row.CorpID, UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload}); err != nil {
@@ -341,10 +346,10 @@ func (snapshot *dm01SourceSnapshot) EachResolutionQueue(ctx context.Context, upp
 			return snapshot.queries.ListDM01ResolutionQueue(ctx, legacysourcedb.ListDM01ResolutionQueueParams{UpperWatermark: sourceTime(upper.Watermark), UpperKey: key, PageSize: dm01SourcePageSize, PageOffset: offset})
 		},
 		func(row legacysourcedb.ListDM01ResolutionQueueRow) error {
-			if !row.UpdatedAt.Valid {
+			if !row.UpdatedAt.Valid || row.CorpID == "" || strings.TrimSpace(row.CorpID) != row.CorpID {
 				return migration.ErrSourceSchemaDrift
 			}
-			return fn(migration.ResolutionQueueRow{ID: row.ID, UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload})
+			return fn(migration.ResolutionQueueRow{ID: row.ID, CorpID: row.CorpID, UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload})
 		})
 }
 
@@ -354,10 +359,10 @@ func (snapshot *dm01SourceSnapshot) EachDirectoryMember(ctx context.Context, upp
 			return snapshot.queries.ListDM01DirectoryMember(ctx, legacysourcedb.ListDM01DirectoryMemberParams{UpperWatermark: sourceTime(upper.Watermark), UpperKey: key, PageSize: dm01SourcePageSize, PageOffset: offset})
 		},
 		func(row legacysourcedb.ListDM01DirectoryMemberRow) error {
-			if !row.LastSyncedAt.Valid {
+			if !row.LastSyncedAt.Valid || row.CorpID == "" || strings.TrimSpace(row.CorpID) != row.CorpID {
 				return migration.ErrSourceSchemaDrift
 			}
-			return fn(migration.DirectoryMemberRow{ID: row.ID, LastSyncedAt: row.LastSyncedAt.Time.UTC(), Payload: row.Payload})
+			return fn(migration.DirectoryMemberRow{ID: row.ID, CorpID: row.CorpID, LastSyncedAt: row.LastSyncedAt.Time.UTC(), Payload: row.Payload})
 		})
 }
 
@@ -406,10 +411,10 @@ func (snapshot *dm01SourceSnapshot) EachFollowUser(ctx context.Context, upper mi
 			return snapshot.queries.ListDM01FollowUser(ctx, legacysourcedb.ListDM01FollowUserParams{UpperWatermark: sourceTime(upper.Watermark), UpperKey: key, PageSize: dm01SourcePageSize, PageOffset: offset})
 		},
 		func(row legacysourcedb.ListDM01FollowUserRow) error {
-			if !row.UpdatedAt.Valid {
+			if !row.UpdatedAt.Valid || row.CorpID == "" || strings.TrimSpace(row.CorpID) != row.CorpID {
 				return migration.ErrSourceSchemaDrift
 			}
-			return fn(migration.FollowUserRow{ID: row.ID, UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload})
+			return fn(migration.FollowUserRow{ID: row.ID, CorpID: row.CorpID, UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload})
 		})
 }
 
@@ -426,7 +431,7 @@ func (snapshot *dm01SourceSnapshot) EachExternalBinding(ctx context.Context, upp
 			return err
 		}
 		for _, row := range rows {
-			if !row.UpdatedAt.Valid || row.ExternalUserid == "" {
+			if !row.UpdatedAt.Valid || row.ExternalUserid == "" || strings.TrimSpace(row.ExternalUserid) != row.ExternalUserid {
 				return migration.ErrSourceSchemaDrift
 			}
 			if err := fn(migration.ExternalBindingRow{ExternalUserID: row.ExternalUserid, UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload}); err != nil {
@@ -449,7 +454,7 @@ func (snapshot *dm01SourceSnapshot) validateBound(table string, upper migration.
 	}
 	for _, captured := range snapshot.bounds {
 		if captured == upper {
-			if !upper.Empty && (upper.Watermark.IsZero() || upper.SourceKey == "") {
+			if !upper.Empty && (upper.Watermark.IsZero() || upper.SourceKey == "" || strings.TrimSpace(upper.SourceKey) != upper.SourceKey) {
 				return migration.ErrSourceSchemaDrift
 			}
 			return nil

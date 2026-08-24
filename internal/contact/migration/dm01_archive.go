@@ -9,11 +9,12 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"strings"
 )
 
 // ArchiveAAD binds ciphertext to its run, table, source row, payload and key.
 func ArchiveAAD(runID int64, sourceTable string, sourceKeyHMAC, payloadHMAC, fieldDigest []byte, keyVersion int) ([]byte, error) {
-	if runID < 1 || sourceTable == "" || len(sourceKeyHMAC) != sha256.Size || len(payloadHMAC) != sha256.Size || len(fieldDigest) != sha256.Size || keyVersion < 1 {
+	if runID < 1 || sourceTable == "" || len(sourceTable) > 1<<16-1 || len(sourceKeyHMAC) != sha256.Size || len(payloadHMAC) != sha256.Size || len(fieldDigest) != sha256.Size || keyVersion < 1 {
 		return nil, errors.New("invalid DM01 archive AAD")
 	}
 	aad := make([]byte, 10+len(sourceTable)+sha256.Size+sha256.Size+sha256.Size+4)
@@ -51,7 +52,14 @@ func domainHMAC(key []byte, domain, table string, value []byte) ([]byte, error) 
 }
 
 func SourceKeyHMAC(key []byte, table, sourceKey string) ([]byte, error) {
+	if sourceKey == "" || strings.TrimSpace(sourceKey) != sourceKey {
+		return nil, errors.New("invalid DM01 canonical source key")
+	}
 	return domainHMAC(key, "source-key/v1", table, []byte(sourceKey))
+}
+
+func emptySourceKeyHMAC(key []byte, table string) ([]byte, error) {
+	return domainHMAC(key, "source-key-empty/v1", table, nil)
 }
 
 func SourcePayloadHMAC(key []byte, table string, payload []byte) ([]byte, error) {

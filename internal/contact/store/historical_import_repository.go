@@ -192,21 +192,21 @@ func (HistoricalImportRepository) StreamReconcileReceipts(ctx context.Context, p
 		return err
 	}
 	queries := contactdb.New(tx)
-	var after []byte
+	var after int64
 	for {
-		rows, err := queries.ListHistoricalReconcileReceiptsPage(ctx, contactdb.ListHistoricalReconcileReceiptsPageParams{ParentRunID: parentRunID, SourceTable: tableName, AfterSourceKeyHmac: after, PageSize: 500})
+		rows, err := queries.ListHistoricalReconcileReceiptsPage(ctx, contactdb.ListHistoricalReconcileReceiptsPageParams{ParentRunID: parentRunID, SourceTable: tableName, AfterSourceOrdinal: after, PageSize: 500})
 		if err != nil {
 			return err
 		}
 		for _, row := range rows {
 			fact := contactport.HistoricalImportSourceFact{SourceKeyHMAC: row.SourceKeyHmac, PayloadHMAC: row.PayloadHmac, FieldDigest: row.FieldDigest}
-			if !validHistoricalSourceFact(fact) {
+			if !validHistoricalSourceFact(fact) || row.SourceOrdinal != after+1 {
 				return ErrHistoricalImportTargetDrift
 			}
 			if err := emit(migration.ReconcileReceipt{SourceFact: fact, Disposition: row.Disposition, ArchiveCount: row.ArchiveCount, QuarantineCount: row.QuarantineCount}); err != nil {
 				return err
 			}
-			after = append(after[:0], row.SourceKeyHmac...)
+			after = row.SourceOrdinal
 		}
 		if len(rows) < 500 {
 			return nil
@@ -228,6 +228,26 @@ func (HistoricalImportRepository) CountReconcileCompanions(ctx context.Context, 
 		return migration.ReconcileCompanionCounts{}, err
 	}
 	return migration.ReconcileCompanionCounts{Archives: row.ArchiveCount, Quarantines: row.QuarantineCount}, nil
+}
+
+func (HistoricalImportRepository) ReadReconcileArchive(ctx context.Context, parentRunID int64, table migration.ReconcileTable, key []byte) (migration.ReconcileArchive, bool, error) {
+	tableName := migration.ReconcileTableName(table)
+	if parentRunID < 1 || (table != migration.ReconcileMergeAudit && table != migration.ReconcileResolutionQueue) || len(key) != 32 {
+		return migration.ReconcileArchive{}, false, ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return migration.ReconcileArchive{}, false, err
+	}
+	row, err := contactdb.New(tx).FindHistoricalImportArchive(ctx, contactdb.FindHistoricalImportArchiveParams{RunID: parentRunID, SourceTable: tableName, SourceKeyHmac: key})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return migration.ReconcileArchive{}, false, nil
+	}
+	if err != nil {
+		return migration.ReconcileArchive{}, false, err
+	}
+	fact := contactport.HistoricalImportSourceFact{SourceKeyHMAC: key, PayloadHMAC: row.PayloadHmac, FieldDigest: row.FieldDigest}
+	return migration.ReconcileArchive{SourceFact: fact, Nonce: row.ArchiveNonce, Ciphertext: row.ArchiveCiphertext, KeyVersion: row.ArchiveKeyVersion}, true, nil
 }
 
 func (HistoricalImportRepository) AppendReconcileResult(ctx context.Context, fence contactport.NonActiveLeaseFence, resultDigest []byte) error {

@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
@@ -39,7 +40,7 @@ func run(args []string, runtime appconfig.DM01Runtime) error {
 		return fmt.Errorf("parent-run-id is required only for reconcile")
 	}
 	source, target, hmacKey, archiveKey := runtime.SourceDatabaseURL, runtime.TargetDatabaseURL, runtime.SourceHMACKey, runtime.ArchiveKey
-	if source == "" || target == "" || hmacKey == "" || archiveKey == "" {
+	if source == "" || target == "" || hmacKey == "" || archiveKey == "" || len(runtime.SourceAllowlist) == 0 {
 		return fmt.Errorf("DM01 runtime configuration is incomplete")
 	}
 	if source == target {
@@ -77,12 +78,34 @@ func run(args []string, runtime appconfig.DM01Runtime) error {
 	if err != nil {
 		return fmt.Errorf("identify target database: %w", err)
 	}
-	if sourceIdentity == targetIdentity {
+	if sourceIdentity.ServerID == targetIdentity.ServerID && sourceIdentity.Database == targetIdentity.Database {
 		return fmt.Errorf("source and target resolve to the same database")
+	}
+	if !sourceIdentityAllowed(sourceIdentity, manifest, runtime.SourceAllowlist) {
+		return fmt.Errorf("source database identity or read-only role is not authorized")
 	}
 	uow := platformstore.NewUnitOfWork(targetPool)
 	contacts := contactstore.HistoricalImportRepository{}
 	executor := migration.NewExecutor(sourceReader, uow, contacts, contacts, identitystore.NewRepository())
 	_, err = executor.Execute(ctx, migration.ExecuteCommand{Manifest: manifest, ManifestDigest: digest[:], Mode: migration.RunMode(*mode), ParentRunID: *parentRunID, HMACKey: []byte(hmacKey), ArchiveKey: []byte(archiveKey)})
 	return err
+}
+
+func sourceIdentityAllowed(identity migration.DatabaseIdentity, manifest migration.Manifest, allowlist []string) bool {
+	if !identity.ReadOnly || identity.ServerID != manifest.SourceServerID || identity.Database != manifest.SourceDatabase || identity.Role != manifest.SourceReadRole {
+		return false
+	}
+	want := identity.AllowlistValue()
+	seen, found := make(map[string]struct{}, len(allowlist)), false
+	for _, value := range allowlist {
+		if value == "" || strings.TrimSpace(value) != value {
+			return false
+		}
+		if _, duplicate := seen[value]; duplicate {
+			return false
+		}
+		seen[value] = struct{}{}
+		found = found || value == want
+	}
+	return found
 }

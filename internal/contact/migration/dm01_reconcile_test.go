@@ -1,8 +1,10 @@
 package migration
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -14,18 +16,24 @@ var errReconcileInjected = errors.New("reconcile injected failure")
 type reconcileState struct {
 	rows         map[ReconcileTable][]ReconcileReceipt
 	companions   map[ReconcileTable]ReconcileCompanionCounts
+	archives     map[ReconcileTable]ReconcileArchive
 	resultDigest []byte
 	completed    bool
 	writes       []string
 }
 
 func (state *reconcileState) clone() *reconcileState {
-	next := &reconcileState{rows: map[ReconcileTable][]ReconcileReceipt{}, companions: map[ReconcileTable]ReconcileCompanionCounts{}, resultDigest: append([]byte(nil), state.resultDigest...), completed: state.completed, writes: append([]string(nil), state.writes...)}
+	next := &reconcileState{rows: map[ReconcileTable][]ReconcileReceipt{}, companions: map[ReconcileTable]ReconcileCompanionCounts{}, archives: map[ReconcileTable]ReconcileArchive{}, resultDigest: append([]byte(nil), state.resultDigest...), completed: state.completed, writes: append([]string(nil), state.writes...)}
 	for table, rows := range state.rows {
 		next.rows[table] = append([]ReconcileReceipt(nil), rows...)
 	}
 	for table, counts := range state.companions {
 		next.companions[table] = counts
+	}
+	for table, archive := range state.archives {
+		archive.Nonce = append([]byte(nil), archive.Nonce...)
+		archive.Ciphertext = append([]byte(nil), archive.Ciphertext...)
+		next.archives[table] = archive
 	}
 	return next
 }
@@ -69,6 +77,10 @@ func (world *reconcileWorld) StreamReconcileReceipts(_ context.Context, _ int64,
 func (world *reconcileWorld) CountReconcileCompanions(_ context.Context, _ int64, table ReconcileTable) (ReconcileCompanionCounts, error) {
 	return world.tx.companions[table], world.fail("companions")
 }
+func (world *reconcileWorld) ReadReconcileArchive(_ context.Context, _ int64, table ReconcileTable, _ []byte) (ReconcileArchive, bool, error) {
+	archive, found := world.tx.archives[table]
+	return archive, found, world.fail("archive")
+}
 func (world *reconcileWorld) AppendReconcileResult(_ context.Context, _ contactport.NonActiveLeaseFence, digest []byte) error {
 	if err := world.fail("result"); err != nil {
 		return err
@@ -87,14 +99,19 @@ func (world *reconcileWorld) CompleteReconcileRun(context.Context, contactport.N
 }
 
 func reconcileFixture() (*reconcileWorld, ReconcileCommand) {
-	state := &reconcileState{rows: map[ReconcileTable][]ReconcileReceipt{}, companions: map[ReconcileTable]ReconcileCompanionCounts{}}
+	state := &reconcileState{rows: map[ReconcileTable][]ReconcileReceipt{}, companions: map[ReconcileTable]ReconcileCompanionCounts{}, archives: map[ReconcileTable]ReconcileArchive{}}
 	dispositions := map[ReconcileTable]string{ReconcileOwnerRoleMap: "imported", ReconcileCustomerIdentity: "imported", ReconcileExternalIdentity: "imported", ReconcileMergeAudit: "archived", ReconcileResolutionQueue: "archived", ReconcileDirectoryMembers: "skipped", ReconcileContacts: "skipped", ReconcileIdentityConflicts: "quarantined", ReconcileExternalBindings: "skipped", ReconcilePeople: "quarantined", ReconcileFollowUsers: "quarantined"}
-	command := ReconcileCommand{Fence: contactport.NonActiveLeaseFence{RunID: 51, Generation: 4, TokenHMAC: digest(90)}}
+	command := ReconcileCommand{Fence: contactport.NonActiveLeaseFence{RunID: 51, Generation: 4, TokenHMAC: digest(90)}, ArchiveKey: bytes.Repeat([]byte{7}, 32), HMACKey: bytes.Repeat([]byte{8}, 32)}
 	for _, table := range reconcileTableOrder {
 		row := ReconcileReceipt{SourceFact: sourceFact(byte(table * 3)), Disposition: dispositions[table]}
 		switch row.Disposition {
 		case "archived":
 			row.ArchiveCount = 1
+			plaintext := []byte(fmt.Sprintf(`{"table":%d}`, table))
+			row.SourceFact.PayloadHMAC, _ = SourcePayloadHMAC(command.HMACKey, ReconcileTableName(table), plaintext)
+			aad, _ := ArchiveAAD(41, ReconcileTableName(table), row.SourceFact.SourceKeyHMAC, row.SourceFact.PayloadHMAC, row.SourceFact.FieldDigest, 1)
+			nonce, ciphertext, _ := EncryptArchiveBound(command.ArchiveKey, aad, plaintext)
+			state.archives[table] = ReconcileArchive{SourceFact: row.SourceFact, Nonce: nonce, Ciphertext: ciphertext, KeyVersion: 1}
 		case "quarantined":
 			row.QuarantineCount = 1
 		}
@@ -136,6 +153,11 @@ func TestReconcileMismatchWritesNothing(t *testing.T) {
 			row.Disposition = "archived"
 			world.committed.rows[ReconcileContacts][0] = row
 		},
+		func(world *reconcileWorld, _ *ReconcileCommand) {
+			archive := world.committed.archives[ReconcileMergeAudit]
+			archive.Ciphertext[0]++
+			world.committed.archives[ReconcileMergeAudit] = archive
+		},
 	} {
 		world, command := reconcileFixture()
 		mutate(world, &command)
@@ -146,6 +168,18 @@ func TestReconcileMismatchWritesNothing(t *testing.T) {
 		if !reflect.DeepEqual(world.committed, before) {
 			t.Fatal("mismatch wrote or repaired state")
 		}
+	}
+}
+
+func TestReconcileDigestIsOrderSensitive(t *testing.T) {
+	left, right := NewReconcileDigest(), NewReconcileDigest()
+	first, second := sourceFact(1), sourceFact(2)
+	_ = left.Add(first)
+	_ = left.Add(second)
+	_ = right.Add(second)
+	_ = right.Add(first)
+	if bytes.Equal(left.Sum(), right.Sum()) {
+		t.Fatal("reconcile stream digest ignored row order")
 	}
 }
 

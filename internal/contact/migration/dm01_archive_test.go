@@ -2,6 +2,7 @@ package migration
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 )
 
@@ -38,6 +39,21 @@ func TestArchiveEncryptionBindsAADAndPayloadHMAC(t *testing.T) {
 	}
 	if _, _, err := EncryptArchiveBound(make([]byte, 31), aad, []byte("x")); err == nil {
 		t.Fatal("short archive key accepted")
+	}
+}
+
+func TestArchiveAADRejectsOversizedTableName(t *testing.T) {
+	value := bytes.Repeat([]byte{1}, 32)
+	if _, err := ArchiveAAD(1, strings.Repeat("x", 1<<16), value, value, value, 1); err == nil {
+		t.Fatal("uint16 table length overflow accepted")
+	}
+}
+
+func TestSourceKeyHMACRejectsNonCanonicalKey(t *testing.T) {
+	for _, value := range []string{"", " key", "key "} {
+		if _, err := SourceKeyHMAC(bytes.Repeat([]byte{1}, 32), "people", value); err == nil {
+			t.Fatalf("source key %q accepted", value)
+		}
 	}
 }
 

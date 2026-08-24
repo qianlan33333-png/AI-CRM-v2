@@ -91,7 +91,7 @@ func TestManifestRejectsUnsupportedReaderTable(t *testing.T) {
 }
 
 func validManifestForTest() Manifest {
-	m := Manifest{ContractVersion: 1, SourceSystem: "repo1", LegacyRepositorySHA: LegacyRepositorySHA, SnapshotID: "s", SingleCorp: true, WeComCorpID: "c", HMACKeyVersion: 1, OwnerAllowlistHMACs: []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}
+	m := Manifest{ContractVersion: 1, SourceSystem: "repo1", LegacyRepositorySHA: LegacyRepositorySHA, SnapshotID: "s", SourceServerID: "1", SourceDatabase: "legacy", SourceReadRole: "dm01_reader", SingleCorp: true, WeComCorpID: "c", HMACKeyVersion: 1, OwnerAllowlistHMACs: []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}}
 	for name, spec := range map[string][2]string{
 		"owner_role_map": {"userid", "updated_at+userid"}, "crm_user_identity": {"unionid", "updated_at+unionid"}, "wecom_external_contact_identity_map": {"id", "updated_at+id"},
 		"crm_user_identity_merge_audit": {"id", "created_at+id"}, "crm_user_identity_resolution_queue": {"id", "updated_at+id"}, "admin_wecom_directory_members": {"id", "last_synced_at+id"},

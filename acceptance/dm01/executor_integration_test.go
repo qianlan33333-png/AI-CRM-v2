@@ -2,10 +2,13 @@ package dm01_acceptance
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
+	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,6 +26,8 @@ import (
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
+
+const dm01SourceReadRole = "aicrm_dm01_source_reader"
 
 var (
 	sourceDatabaseURL = flag.String("source-database-url", "", "dedicated PostgreSQL 16 DM01 source database")
@@ -75,7 +80,8 @@ func TestDM01ExecutorTwoPostgreSQLDatabases(t *testing.T) {
 		t.Fatal(err)
 	}
 	resetTarget(t, ctx, target)
-	seedSource(t, ctx, source, "Customer One", time.Date(2026, 8, 25, 1, 0, 0, 0, time.UTC))
+	seedSource(t, ctx, source, "Customer One", "corp-1", time.Date(2026, 8, 25, 1, 0, 0, 0, time.UTC))
+	sourceRuntimeURL := configureSourceReader(t, ctx, source, *sourceDatabaseURL)
 
 	hmacKey := []byte("dm01-source-hmac-key-32-bytes!!!")
 	archiveKey := []byte("dm01-archive-aes-key-32-bytes!!!")
@@ -83,22 +89,26 @@ func TestDM01ExecutorTwoPostgreSQLDatabases(t *testing.T) {
 		t.Fatal("test key length")
 	}
 	fullManifestPath, fullManifestDigest := writeManifest(t, ctx, source, hmacKey, "full")
-	if output, runErr := runDM01CLI(ctx, repoRoot, "preflight", 0, fullManifestPath, fullManifestDigest, *sourceDatabaseURL, strings.Replace(*sourceDatabaseURL, "127.0.0.1", "localhost", 1), hmacKey, archiveKey); runErr == nil {
+	if output, runErr := runDM01CLI(ctx, repoRoot, "preflight", 0, fullManifestPath, fullManifestDigest, *sourceDatabaseURL, *targetDatabaseURL, hmacKey, archiveKey); runErr == nil {
+		t.Fatal("writable source role accepted: " + string(output))
+	}
+	assertCount(t, ctx, target, `SELECT count(*) FROM legacy_contact_identity_import_runs`, 0)
+	if output, runErr := runDM01CLI(ctx, repoRoot, "preflight", 0, fullManifestPath, fullManifestDigest, sourceRuntimeURL, strings.Replace(sourceRuntimeURL, "127.0.0.1", "localhost", 1), hmacKey, archiveKey); runErr == nil {
 		t.Fatal("same physical database accepted: " + string(output))
 	}
 	assertCount(t, ctx, target, `SELECT count(*) FROM legacy_contact_identity_import_runs`, 0)
 	driftPath, driftDigest := driftManifest(t, fullManifestPath)
-	if output, runErr := runDM01CLI(ctx, repoRoot, "preflight", 0, driftPath, driftDigest, *sourceDatabaseURL, *targetDatabaseURL, hmacKey, archiveKey); runErr == nil {
+	if output, runErr := runDM01CLI(ctx, repoRoot, "preflight", 0, driftPath, driftDigest, sourceRuntimeURL, *targetDatabaseURL, hmacKey, archiveKey); runErr == nil {
 		t.Fatal("schema drift accepted: " + string(output))
 	}
 	assertCount(t, ctx, target, `SELECT count(*) FROM legacy_contact_identity_import_runs`, 0)
-	if output, runErr := runDM01CLI(ctx, repoRoot, "incremental", 0, fullManifestPath, fullManifestDigest, *sourceDatabaseURL, *targetDatabaseURL, hmacKey, archiveKey); runErr == nil {
+	if output, runErr := runDM01CLI(ctx, repoRoot, "incremental", 0, fullManifestPath, fullManifestDigest, sourceRuntimeURL, *targetDatabaseURL, hmacKey, archiveKey); runErr == nil {
 		t.Fatal("incremental accepted full table mode: " + string(output))
 	}
 	assertCount(t, ctx, target, `SELECT count(*) FROM legacy_contact_identity_import_runs`, 0)
 	mustRun := func(mode string, parent int64, path, digest string) {
 		t.Helper()
-		if output, runErr := runDM01CLI(ctx, repoRoot, mode, parent, path, digest, *sourceDatabaseURL, *targetDatabaseURL, hmacKey, archiveKey); runErr != nil {
+		if output, runErr := runDM01CLI(ctx, repoRoot, mode, parent, path, digest, sourceRuntimeURL, *targetDatabaseURL, hmacKey, archiveKey); runErr != nil {
 			t.Fatalf("%s: %v: %s", mode, runErr, output)
 		}
 	}
@@ -111,10 +121,11 @@ func TestDM01ExecutorTwoPostgreSQLDatabases(t *testing.T) {
 	assertCount(t, ctx, target, `SELECT count(*) FROM legacy_contact_identity_import_runs WHERE mode='full'`, 1)
 	assertStaleLeasePageRollback(t, ctx, target, hmacKey)
 	boundPath, boundDigest := rewriteManifestSnapshot(t, fullManifestPath, "dm01-bound")
-	assertBoundExcludesLateRow(t, ctx, repoRoot, source, target, boundPath, boundDigest, hmacKey, archiveKey)
-	resetSource(t, ctx, source, schema, "Customer One", time.Date(2026, 8, 25, 1, 0, 0, 0, time.UTC))
+	assertBoundExcludesLateRow(t, ctx, repoRoot, source, target, sourceRuntimeURL, boundPath, boundDigest, hmacKey, archiveKey)
+	resetSource(t, ctx, source, schema, "Customer One", "corp-1", time.Date(2026, 8, 25, 1, 0, 0, 0, time.UTC))
+	grantSourceReader(t, ctx, source)
 	resumePath, resumeDigest := rewriteManifestSnapshot(t, fullManifestPath, "dm01-resume")
-	assertExpiredRunResumes(t, ctx, repoRoot, target, resumePath, resumeDigest, hmacKey, archiveKey)
+	assertExpiredRunResumes(t, ctx, repoRoot, target, sourceRuntimeURL, resumePath, resumeDigest, hmacKey, archiveKey)
 	var fullParent int64
 	if err = target.QueryRow(ctx, `SELECT id FROM legacy_contact_identity_import_runs WHERE mode='full' AND snapshot_id='dm01-e2e'`).Scan(&fullParent); err != nil {
 		t.Fatal(err)
@@ -122,7 +133,7 @@ func TestDM01ExecutorTwoPostgreSQLDatabases(t *testing.T) {
 	if err = contactfixture.DeleteDM01Archives(ctx, target); err != nil {
 		t.Fatal(err)
 	}
-	if output, runErr := runDM01CLI(ctx, repoRoot, "reconcile", fullParent, fullManifestPath, fullManifestDigest, *sourceDatabaseURL, *targetDatabaseURL, hmacKey, archiveKey); runErr == nil {
+	if output, runErr := runDM01CLI(ctx, repoRoot, "reconcile", fullParent, fullManifestPath, fullManifestDigest, sourceRuntimeURL, *targetDatabaseURL, hmacKey, archiveKey); runErr == nil {
 		t.Fatal("companion tamper reconciled: " + string(output))
 	}
 	assertCount(t, ctx, target, `SELECT count(*) FROM legacy_contact_identity_historical_archives`, 0)
@@ -130,7 +141,8 @@ func TestDM01ExecutorTwoPostgreSQLDatabases(t *testing.T) {
 	if err = contactfixture.EditDM01CustomerName(ctx, target, "Operator Edit"); err != nil {
 		t.Fatal(err)
 	}
-	resetSource(t, ctx, source, schema, "Source Edit", time.Date(2026, 8, 25, 2, 0, 0, 0, time.UTC))
+	resetSource(t, ctx, source, schema, "Source Edit", "corp-1", time.Date(2026, 8, 25, 2, 0, 0, 0, time.UTC))
+	grantSourceReader(t, ctx, source)
 	incrementalPath, incrementalDigest := writeManifest(t, ctx, source, hmacKey, "incremental")
 	mustRun("incremental", 0, incrementalPath, incrementalDigest)
 	var customerName string
@@ -150,6 +162,7 @@ func TestDM01ExecutorTwoPostgreSQLDatabases(t *testing.T) {
 	assertCount(t, ctx, target, `SELECT count(*) FROM outbound_task_job_links`, 0)
 	assertCount(t, ctx, target, `SELECT count(*) FROM admin_ops_jobs`, 0)
 	assertCount(t, ctx, target, `SELECT count(*) FROM order_export_jobs`, 0)
+	assertCount(t, ctx, target, `SELECT count(*) FROM legacy_contact_identity_import_row_receipts WHERE disposition='skipped' AND source_table IN ('contacts','admin_wecom_directory_members','external_contact_bindings')`, 12)
 
 	var preflighted, imported, reconciled, staff, customers, identities, receipts, checkpoints, archives int
 	queries := []struct {
@@ -170,7 +183,7 @@ func TestDM01ExecutorTwoPostgreSQLDatabases(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if preflighted != 1 || imported != 4 || reconciled != 1 || staff != 1 || customers != 1 || identities != 1 || receipts != 16 || checkpoints != 66 || archives != 1 {
+	if preflighted != 1 || imported != 4 || reconciled != 1 || staff != 1 || customers != 1 || identities != 1 || receipts != 44 || checkpoints != 66 || archives != 2 {
 		t.Fatalf("states=%d/%d/%d roots=%d/%d/%d receipts=%d checkpoints=%d archives=%d", preflighted, imported, reconciled, staff, customers, identities, receipts, checkpoints, archives)
 	}
 }
@@ -199,7 +212,16 @@ func runDM01CLI(ctx context.Context, repoRoot, mode string, parent int64, manife
 	}
 	command := exec.CommandContext(ctx, "go", args...)
 	command.Dir = repoRoot
-	command.Env = append(os.Environ(), "GOWORK=off", "AICRM_DM01_SOURCE_DATABASE_URL="+sourceURL, "AICRM_DATABASE_URL="+targetURL, "AICRM_DM01_SOURCE_HMAC_KEY="+string(hmacKey), "AICRM_DM01_ARCHIVE_KEY="+string(archiveKey))
+	payload, err := os.ReadFile(manifestPath)
+	if err != nil {
+		return nil, err
+	}
+	var manifest migration.Manifest
+	if err = json.Unmarshal(payload, &manifest); err != nil {
+		return nil, err
+	}
+	allowlist := manifest.SourceServerID + "/" + manifest.SourceDatabase + "/" + manifest.SourceReadRole
+	command.Env = append(os.Environ(), "GOWORK=off", "AICRM_DM01_SOURCE_DATABASE_URL="+sourceURL, "AICRM_DATABASE_URL="+targetURL, "AICRM_DM01_SOURCE_HMAC_KEY="+string(hmacKey), "AICRM_DM01_ARCHIVE_KEY="+string(archiveKey), "AICRM_DM01_SOURCE_IDENTITY_ALLOWLIST="+allowlist)
 	return command.CombinedOutput()
 }
 
@@ -257,7 +279,7 @@ func rewriteManifestSnapshot(t *testing.T, path, snapshot string) (string, strin
 	return next, hex.EncodeToString(digest[:])
 }
 
-func assertBoundExcludesLateRow(t *testing.T, ctx context.Context, repoRoot string, source, target *pgxpool.Pool, manifestPath, manifestDigest string, hmacKey, archiveKey []byte) {
+func assertBoundExcludesLateRow(t *testing.T, ctx context.Context, repoRoot string, source, target *pgxpool.Pool, sourceRuntimeURL, manifestPath, manifestDigest string, hmacKey, archiveKey []byte) {
 	t.Helper()
 	lock, err := target.Begin(ctx)
 	if err != nil {
@@ -269,7 +291,7 @@ func assertBoundExcludesLateRow(t *testing.T, ctx context.Context, repoRoot stri
 	}
 	done := make(chan error, 1)
 	go func() {
-		_, runErr := runDM01CLI(ctx, repoRoot, "full", 0, manifestPath, manifestDigest, *sourceDatabaseURL, *targetDatabaseURL, hmacKey, archiveKey)
+		_, runErr := runDM01CLI(ctx, repoRoot, "full", 0, manifestPath, manifestDigest, sourceRuntimeURL, *targetDatabaseURL, hmacKey, archiveKey)
 		done <- runErr
 	}()
 	deadline := time.Now().Add(10 * time.Second)
@@ -299,7 +321,7 @@ func assertBoundExcludesLateRow(t *testing.T, ctx context.Context, repoRoot stri
 	assertCount(t, ctx, target, `SELECT count(*) FROM staff WHERE wecom_userid='late-staff'`, 0)
 }
 
-func assertExpiredRunResumes(t *testing.T, ctx context.Context, repoRoot string, target *pgxpool.Pool, manifestPath, manifestDigest string, hmacKey, archiveKey []byte) {
+func assertExpiredRunResumes(t *testing.T, ctx context.Context, repoRoot string, target *pgxpool.Pool, sourceRuntimeURL, manifestPath, manifestDigest string, hmacKey, archiveKey []byte) {
 	t.Helper()
 	digest, err := hex.DecodeString(manifestDigest)
 	if err != nil {
@@ -311,7 +333,7 @@ func assertExpiredRunResumes(t *testing.T, ctx context.Context, repoRoot string,
 	if err != nil {
 		t.Fatal(err)
 	}
-	if output, runErr := runDM01CLI(ctx, repoRoot, "full", 0, manifestPath, manifestDigest, *sourceDatabaseURL, *targetDatabaseURL, hmacKey, archiveKey); runErr != nil {
+	if output, runErr := runDM01CLI(ctx, repoRoot, "full", 0, manifestPath, manifestDigest, sourceRuntimeURL, *targetDatabaseURL, hmacKey, archiveKey); runErr != nil {
 		t.Fatalf("resume: %v: %s", runErr, output)
 	}
 	var gotID, generation int64
@@ -329,20 +351,34 @@ func assertExpiredRunResumes(t *testing.T, ctx context.Context, repoRoot string,
 
 func assertArchiveDecrypts(t *testing.T, ctx context.Context, pool *pgxpool.Pool, hmacKey, archiveKey []byte, runID int64) {
 	t.Helper()
-	var table string
-	var sourceKey, payloadHMAC, fieldDigest, nonce, ciphertext []byte
-	var keyVersion int16
-	err := pool.QueryRow(ctx, `SELECT source_table,source_key_hmac,payload_hmac,field_digest,archive_nonce,archive_ciphertext,archive_key_version FROM legacy_contact_identity_historical_archives WHERE run_id=$1`, runID).Scan(&table, &sourceKey, &payloadHMAC, &fieldDigest, &nonce, &ciphertext, &keyVersion)
+	rows, err := pool.Query(ctx, `SELECT source_table,source_key_hmac,payload_hmac,field_digest,archive_nonce,archive_ciphertext,archive_key_version FROM legacy_contact_identity_historical_archives WHERE run_id=$1 ORDER BY source_table`, runID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	aad, err := migration.ArchiveAAD(runID, table, sourceKey, payloadHMAC, fieldDigest, int(keyVersion))
-	if err != nil {
+	defer rows.Close()
+	seen := map[string]bool{}
+	for rows.Next() {
+		var table string
+		var sourceKey, payloadHMAC, fieldDigest, nonce, ciphertext []byte
+		var keyVersion int16
+		if err = rows.Scan(&table, &sourceKey, &payloadHMAC, &fieldDigest, &nonce, &ciphertext, &keyVersion); err != nil {
+			t.Fatal(err)
+		}
+		aad, aadErr := migration.ArchiveAAD(runID, table, sourceKey, payloadHMAC, fieldDigest, int(keyVersion))
+		if aadErr != nil {
+			t.Fatal(aadErr)
+		}
+		plain, decryptErr := migration.DecryptArchiveBound(archiveKey, hmacKey, table, aad, nonce, ciphertext, payloadHMAC)
+		if decryptErr != nil || !json.Valid(plain) {
+			t.Fatalf("archive %s decrypt=%q/%v", table, plain, decryptErr)
+		}
+		seen[table] = true
+	}
+	if err = rows.Err(); err != nil {
 		t.Fatal(err)
 	}
-	plain, err := migration.DecryptArchiveBound(archiveKey, hmacKey, table, aad, nonce, ciphertext, payloadHMAC)
-	if err != nil || !json.Valid(plain) {
-		t.Fatalf("archive decrypt=%q/%v", plain, err)
+	if !seen["crm_user_identity_merge_audit"] || !seen["crm_user_identity_resolution_queue"] || len(seen) != 2 {
+		t.Fatalf("archive tables = %v", seen)
 	}
 }
 
@@ -412,7 +448,48 @@ func resetTarget(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 	}
 }
 
-func resetSource(t *testing.T, ctx context.Context, pool *pgxpool.Pool, schema []byte, customerName string, updated time.Time) {
+func configureSourceReader(t *testing.T, ctx context.Context, pool *pgxpool.Pool, adminURL string) string {
+	t.Helper()
+	passwordBytes := make([]byte, 24)
+	if _, err := rand.Read(passwordBytes); err != nil {
+		t.Fatal(err)
+	}
+	password := hex.EncodeToString(passwordBytes)
+	role := pgx.Identifier{dm01SourceReadRole}.Sanitize()
+	if _, err := pool.Exec(ctx, fmt.Sprintf(`DO $role$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname=%[1]s) THEN CREATE ROLE %[2]s LOGIN; END IF; END $role$; ALTER ROLE %[2]s LOGIN PASSWORD '%[3]s'; ALTER ROLE %[2]s SET default_transaction_read_only=on`, "'"+dm01SourceReadRole+"'", role, password)); err != nil {
+		t.Fatal(err)
+	}
+	grantSourceReader(t, ctx, pool)
+	parsed, err := url.Parse(adminURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parsed.User = url.UserPassword(dm01SourceReadRole, password)
+	return parsed.String()
+}
+
+func grantSourceReader(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+	t.Helper()
+	var database string
+	if err := pool.QueryRow(ctx, `SELECT current_database()`).Scan(&database); err != nil {
+		t.Fatal(err)
+	}
+	role := pgx.Identifier{dm01SourceReadRole}.Sanitize()
+	databaseIdentifier := pgx.Identifier{database}.Sanitize()
+	statements := []string{
+		"GRANT CONNECT ON DATABASE " + databaseIdentifier + " TO " + role,
+		"REVOKE CREATE ON SCHEMA public FROM " + role,
+		"GRANT USAGE ON SCHEMA public TO " + role,
+		"GRANT SELECT ON ALL TABLES IN SCHEMA public TO " + role,
+	}
+	for _, statement := range statements {
+		if _, err := pool.Exec(ctx, statement); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func resetSource(t *testing.T, ctx context.Context, pool *pgxpool.Pool, schema []byte, customerName, corpID string, updated time.Time) {
 	t.Helper()
 	if _, err := pool.Exec(ctx, `DROP SCHEMA public CASCADE; CREATE SCHEMA public`); err != nil {
 		t.Fatal(err)
@@ -420,10 +497,10 @@ func resetSource(t *testing.T, ctx context.Context, pool *pgxpool.Pool, schema [
 	if _, err := pool.Exec(ctx, string(schema)); err != nil {
 		t.Fatal(err)
 	}
-	seedSource(t, ctx, pool, customerName, updated)
+	seedSource(t, ctx, pool, customerName, corpID, updated)
 }
 
-func seedSource(t *testing.T, ctx context.Context, pool *pgxpool.Pool, customerName string, updated time.Time) {
+func seedSource(t *testing.T, ctx context.Context, pool *pgxpool.Pool, customerName, corpID string, updated time.Time) {
 	t.Helper()
 	created := time.Date(2026, 8, 25, 0, 0, 0, 0, time.UTC)
 	one := time.Date(2026, 8, 25, 1, 0, 0, 0, time.UTC)
@@ -435,8 +512,15 @@ func seedSource(t *testing.T, ctx context.Context, pool *pgxpool.Pool, customerN
 	}
 	copyRow("owner_role_map", []string{"userid", "display_name", "role", "active", "source", "raw_payload_json", "created_at", "updated_at"}, []any{"staff-1", "Staff One", "owner", true, "legacy", "{}", created, one})
 	copyRow("crm_user_identity", []string{"unionid", "primary_external_userid", "external_userids_json", "primary_openid", "openids_json", "mobile", "mobile_normalized", "mobile_verified", "mobile_source", "customer_name", "remark", "description", "avatar", "gender", "profile_json", "primary_owner_userid", "follow_users_json", "legacy_person_id", "legacy_identity_map_ids_json", "legacy_sources_json", "identity_status", "unionid_resolved_at", "first_seen_at", "last_seen_at", "last_polled_at", "next_poll_at", "poll_attempt_count", "last_poll_error", "created_at", "updated_at"}, []any{"union-1", "external-1", "[]", "", "[]", "", "", false, "", customerName, "", "", "", nil, "{}", "staff-1", "[]", "", "[]", "[]", "active", nil, created, one, nil, nil, 0, "", created, updated})
-	copyRow("wecom_external_contact_identity_map", []string{"id", "external_userid", "unionid", "openid", "follow_user_userid", "name", "status", "updated_at", "corp_id", "avatar", "gender", "raw_profile", "first_seen_at", "last_seen_at", "created_at"}, []any{int64(1), "external-1", "union-1", "", "staff-1", "Customer One", "active", one, "corp-1", "", nil, "{}", created, one, created})
+	copyRow("wecom_external_contact_identity_map", []string{"id", "external_userid", "unionid", "openid", "follow_user_userid", "name", "status", "updated_at", "corp_id", "avatar", "gender", "raw_profile", "first_seen_at", "last_seen_at", "created_at"}, []any{int64(1), "external-1", "union-1", "", "staff-1", "Customer One", "active", one, corpID, "", nil, "{}", created, one, created})
 	copyRow("crm_user_identity_merge_audit", []string{"id", "from_unionid", "to_unionid", "reason", "before_json", "after_json", "operator", "created_at"}, []any{int64(1), "from", "union-1", "historical", "{}", "{}", "operator", one})
+	copyRow("crm_user_identity_resolution_queue", []string{"id", "source_type", "source_key", "source_table", "source_id", "corp_id", "external_userid", "openid", "mobile", "payload_json", "raw_payload_json", "reason", "status", "resolved_unionid", "conflict_reason", "attempts", "attempt_count", "last_error", "next_attempt_at", "resolved_at", "first_seen_at", "last_seen_at", "created_at", "updated_at", "execution_id", "parent_execution_id", "external_effect_job_id", "lane", "row_version", "hold_reason", "held_at", "completed_at"}, []any{int64(1), "external", "external-1", "legacy", "1", corpID, "external-1", "", "", "{}", "{}", "historical", "pending", "", "", 0, 0, "", nil, nil, created, one, created, one, "", "", nil, "", int64(1), "", nil, nil})
+	copyRow("admin_wecom_directory_members", []string{"id", "corp_id", "wecom_userid", "display_name", "department_ids_json", "department_name", "position", "mobile", "avatar_url", "wecom_status", "is_active", "raw_payload_json", "first_seen_at", "last_synced_at", "created_at", "updated_at", "updated_by"}, []any{int64(1), corpID, "directory-1", "Directory", "[]", "", "", "", "", 1, true, "{}", created, one, created, one, "legacy"})
+	copyRow("contacts", []string{"id", "unionid", "created_at", "updated_at"}, []any{int64(1), "union-legacy", created, one})
+	copyRow("crm_user_identity_conflicts", []string{"id", "conflict_type", "unionid", "candidate_unionid", "external_userid", "openid", "mobile", "source_type", "source_key", "payload_json", "source_payload_json", "status", "resolution_status", "resolution_note", "created_at", "updated_at", "resolved_at"}, []any{int64(1), "historical", "union-1", "union-2", "external-1", "", "", "legacy", "1", "{}", "{}", "pending", "pending", "", created, one, nil})
+	copyRow("external_contact_bindings", []string{"external_userid", "person_id", "first_owner_userid", "last_owner_userid", "updated_at"}, []any{"external-binding-1", nil, "staff-1", "staff-1", one})
+	copyRow("people", []string{"id", "mobile", "third_party_user_id", "updated_at"}, []any{int64(1), "", "legacy-person-1", one})
+	copyRow("wecom_external_contact_follow_users", []string{"id", "external_userid", "user_id", "relation_status", "is_primary", "remark", "description", "updated_at", "corp_id", "raw_follow_user", "first_seen_at", "last_seen_at", "created_at"}, []any{int64(1), "external-1", "staff-1", "active", true, "", "", one, corpID, "{}", created, one, created})
 }
 
 func writeManifest(t *testing.T, ctx context.Context, pool *pgxpool.Pool, hmacKey []byte, tableMode string) (string, string) {
@@ -447,7 +531,11 @@ func writeManifest(t *testing.T, ctx context.Context, pool *pgxpool.Pool, hmacKe
 		{"contacts", "id", "updated_at+id", "drop"}, {"crm_user_identity_conflicts", "id", "updated_at+id", "defer_quarantine"}, {"external_contact_bindings", "external_userid", "updated_at+external_userid", "rebuild"},
 		{"people", "id", "updated_at+id", "defer_quarantine"}, {"wecom_external_contact_follow_users", "id", "updated_at+id", "defer_quarantine"},
 	}
-	manifest := migration.Manifest{ContractVersion: 1, SourceSystem: "legacy", LegacyRepositorySHA: migration.LegacyRepositorySHA, SnapshotID: "dm01-e2e", SingleCorp: true, WeComCorpID: "corp-1", HMACKeyVersion: 1}
+	var serverID, database string
+	if err := pool.QueryRow(ctx, `SELECT system_identifier::text,current_database() FROM pg_control_system()`).Scan(&serverID, &database); err != nil {
+		t.Fatal(err)
+	}
+	manifest := migration.Manifest{ContractVersion: 1, SourceSystem: "legacy", LegacyRepositorySHA: migration.LegacyRepositorySHA, SnapshotID: "dm01-e2e", SourceServerID: serverID, SourceDatabase: database, SourceReadRole: dm01SourceReadRole, SingleCorp: true, WeComCorpID: "corp-1", HMACKeyVersion: 1}
 	owner, err := migration.OwnerAllowlistHMAC(hmacKey, "staff-1")
 	if err != nil {
 		t.Fatal(err)

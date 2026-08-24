@@ -22,7 +22,14 @@ type SourceReader interface {
 	Close()
 }
 
-type DatabaseIdentity struct{ ServerID, Database string }
+type DatabaseIdentity struct {
+	ServerID, Database, Role string
+	ReadOnly                 bool
+}
+
+func (identity DatabaseIdentity) AllowlistValue() string {
+	return identity.ServerID + "/" + identity.Database + "/" + identity.Role
+}
 
 type SourceSnapshot interface {
 	Bounds() []SourceUpperBound
@@ -117,11 +124,13 @@ type MergeAuditRow struct {
 }
 type ResolutionQueueRow struct {
 	ID        int64
+	CorpID    string
 	UpdatedAt time.Time
 	Payload   json.RawMessage
 }
 type DirectoryMemberRow struct {
 	ID           int64
+	CorpID       string
 	LastSyncedAt time.Time
 	Payload      json.RawMessage
 }
@@ -147,6 +156,7 @@ type PersonRow struct {
 }
 type FollowUserRow struct {
 	ID        int64
+	CorpID    string
 	UpdatedAt time.Time
 	Payload   json.RawMessage
 }
