@@ -79,9 +79,19 @@ const (
 	p4CampaignInitiationEvidence      = "P4-CAMPAIGN-INITIATION-SNAPSHOTS-00066-2026-08-23"
 	p4CampaignReviewHandoffEvidence   = "P4-CAMPAIGN-REVIEW-HANDOFF-00067-2026-08-23"
 	p4OutboundCampaignHandoffEvidence = "P4-OUTBOUND-CAMPAIGN-HANDOFF-2026-08-23"
+	p4SidebarLocalCoreEvidence        = "P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24"
 )
 
 var nativePackageOperations = map[string]nativePackageOperation{
+	"mintSidebarContext":                   {"/api/sidebar/context-token", "POST", p4SidebarLocalCoreEvidence, "customers.read", "optional_human_session", "internal_pii", "identity.local_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"getSidebarWorkbench":                  {"/api/sidebar/v2/workbench", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "internal_pii", "sidebar.local_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"updateSidebarProfile":                 {"/api/sidebar/v2/profile", "PUT", p4SidebarLocalCoreEvidence, "customers.write", "human_session_and_sidebar_context", "internal_pii", "contact.local_command", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listSidebarQuestionnaires":            {"/api/sidebar/v2/questionnaires", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "internal_deidentified", "survey.local_safe_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listSidebarOrders":                    {"/api/sidebar/v2/orders", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "financial", "order.local_safe_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listSidebarPeriodicOrders":            {"/api/sidebar/v2/periodic-orders", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "internal_pii", "service_period_members.local_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"updateSidebarPeriodicRemark":          {"/api/sidebar/v2/periodic-orders/{service_product_id}/members/{member_ref}/remark", "PUT", p4SidebarLocalCoreEvidence, "customers.write", "human_session_and_sidebar_context", "internal_pii", "service_period_members.local_command", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listSidebarMaterials":                 {"/api/sidebar/v2/materials", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "internal", "media.local_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"getSidebarMaterialThumbnailStatus":    {"/api/sidebar/v2/materials/image/{image_id}/thumbnail", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "internal", "media.local_existence_read", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"previewLegacyOrderExport":             {"/api/admin/exports/preview", "POST", p4OrderSafeExportEvidence, "order.read", "human_session", "internal", "order.local_safe_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"getCustomerContactPolicy":             {"/api/v1/customers/{customer_id}/contact-policy", "GET", p4ContactPolicyEvidence, "operations.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"putCustomerContactPolicy":             {"/api/v1/customers/{customer_id}/contact-policy", "PUT", p4ContactPolicyEvidence, "operations.manage", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},

@@ -47,7 +47,7 @@ func (repository *Repository) List(ctx context.Context, filter orderport.Filter)
 		Provider: optionalText(filter.Provider, "all"), OrderNo: optionalText(filter.OrderNo, ""),
 		Mobile: optionalText(filter.Mobile, ""), ProductCode: optionalText(filter.ProductCode, ""),
 		Status: optionalText(filter.Status, ""), CreatedFrom: optionalTime(filter.CreatedFrom),
-		CreatedTo: optionalTime(filter.CreatedTo), RowLimit: filter.Limit, RowOffset: filter.Offset,
+		CreatedTo: optionalTime(filter.CreatedTo), CustomerID: optionalInt64Value(filter.CustomerID), RowLimit: filter.Limit, RowOffset: filter.Offset,
 	})
 	if err != nil {
 		return nil, unavailable(err)
@@ -72,7 +72,7 @@ func (repository *Repository) Count(ctx context.Context, filter orderport.Filter
 	if repository == nil || err != nil {
 		return 0, unavailable(err)
 	}
-	if filter.Provider == "all" && filter.OrderNo == "" && filter.Mobile == "" && filter.ProductCode == "" && filter.Status == "" && filter.CreatedFrom == nil && filter.CreatedTo == nil {
+	if filter.Provider == "all" && filter.OrderNo == "" && filter.Mobile == "" && filter.ProductCode == "" && filter.Status == "" && filter.CustomerID == nil && filter.CreatedFrom == nil && filter.CreatedTo == nil {
 		count, countErr := queries.CountAllOrderProjections(ctx)
 		if countErr != nil {
 			return 0, unavailable(countErr)
@@ -83,6 +83,7 @@ func (repository *Repository) Count(ctx context.Context, filter orderport.Filter
 		Provider: optionalText(filter.Provider, "all"), OrderNo: optionalText(filter.OrderNo, ""),
 		Mobile: optionalText(filter.Mobile, ""), ProductCode: optionalText(filter.ProductCode, ""),
 		Status: optionalText(filter.Status, ""), CreatedFrom: optionalTime(filter.CreatedFrom), CreatedTo: optionalTime(filter.CreatedTo),
+		CustomerID: optionalInt64Value(filter.CustomerID),
 	})
 	if err != nil {
 		return 0, unavailable(err)
@@ -115,6 +116,12 @@ func optionalInt64(value pgtype.Int8) *int64 {
 	}
 	result := value.Int64
 	return &result
+}
+func optionalInt64Value(value *int64) pgtype.Int8 {
+	if value == nil {
+		return pgtype.Int8{}
+	}
+	return pgtype.Int8{Int64: *value, Valid: true}
 }
 func unavailable(err error) error {
 	if err == nil {

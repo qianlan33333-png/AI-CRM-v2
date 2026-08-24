@@ -105,6 +105,16 @@ WHERE service_product_id = sqlc.arg(product_id)
 ORDER BY updated_at DESC, member_ref DESC
 LIMIT sqlc.arg(row_limit);
 
+-- name: ListServicePeriodMembersByCustomer :many
+SELECT member_ref, service_product_id, customer_id, state, source,
+  starts_at, expires_at, expired_at, removed_at, remark, alliance,
+  version, created_at, updated_at
+FROM public.service_period_members
+WHERE customer_id = sqlc.arg(customer_id)
+ORDER BY updated_at DESC, service_product_id DESC, member_ref DESC
+LIMIT sqlc.arg(row_limit)
+OFFSET sqlc.arg(row_offset);
+
 -- name: ReserveServicePeriodMemberReceipt :one
 INSERT INTO public.service_period_member_operation_receipts (
   operation, actor_scope, key_digest, payload_digest, state, created_at

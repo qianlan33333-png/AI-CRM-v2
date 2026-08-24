@@ -169,6 +169,28 @@ func (*Repository) List(ctx context.Context, query memberport.StoreListQuery) ([
 	return result, nil
 }
 
+func (*Repository) ListCustomer(ctx context.Context, query memberport.CustomerListQuery) ([]memberdomain.Member, error) {
+	q, err := queries(ctx)
+	if err != nil || query.CustomerID < 1 || query.Limit < 1 || query.Offset < 0 {
+		return nil, classify(err)
+	}
+	rows, err := q.ListServicePeriodMembersByCustomer(ctx, productdb.ListServicePeriodMembersByCustomerParams{
+		CustomerID: query.CustomerID, RowLimit: int32(query.Limit), RowOffset: int32(query.Offset),
+	})
+	if err != nil {
+		return nil, classify(err)
+	}
+	result := make([]memberdomain.Member, len(rows))
+	for index, row := range rows {
+		result[index], err = mapMember(row.MemberRef, row.ServiceProductID, row.CustomerID, row.State, row.Source, row.StartsAt,
+			row.ExpiresAt, row.ExpiredAt, row.RemovedAt, row.Remark, row.Alliance, row.Version, row.CreatedAt, row.UpdatedAt)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return result, nil
+}
+
 func (*Repository) ReserveReceipt(ctx context.Context, reservation memberport.ReceiptReservation) (memberport.Receipt, bool, error) {
 	q, err := queries(ctx)
 	if err != nil {

@@ -64,6 +64,44 @@ func (handler *Handler) Authenticate(next http.Handler) http.Handler {
 	})
 }
 
+// AuthenticateOptional attaches a valid browser session when present. Missing
+// cookies pass through so an endpoint can return an explicit local viewer
+// state; malformed, expired, or unavailable sessions still fail closed.
+func (handler *Handler) AuthenticateOptional(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if handler == nil || handler.auth == nil || next == nil {
+			platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, authport.ErrAuthenticationUnavailable))
+			return
+		}
+		cookie, err := request.Cookie(SessionCookieName)
+		if errors.Is(err, http.ErrNoCookie) {
+			next.ServeHTTP(writer, request)
+			return
+		}
+		if err != nil {
+			platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthenticated, authport.ErrUnauthenticated))
+			return
+		}
+		session := authport.SessionRef(cookie.Value)
+		principal, err := handler.auth.Authenticate(request.Context(), session)
+		if err != nil {
+			code := platformhttp.CodeUnauthenticated
+			if errors.Is(err, authport.ErrAuthenticationUnavailable) {
+				code = platformhttp.CodeDependencyUnavailable
+			}
+			platformhttp.WriteError(writer, request, platformhttp.NewError(code, err))
+			return
+		}
+		ctx := authport.WithAuthenticatedSession(request.Context(), principal, session)
+		ctx, err = platformhttp.ContextWithAccountID(ctx, accountID(principal.AdminUserID))
+		if err != nil {
+			platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeInternal, err))
+			return
+		}
+		next.ServeHTTP(writer, request.WithContext(ctx))
+	})
+}
+
 func (handler *Handler) GetAuthSession(writer http.ResponseWriter, request *http.Request) {
 	principal, ok := authport.PrincipalFromContext(request.Context())
 	if !ok || principal.AdminUserID < 1 || !validRole(principal.Role) {

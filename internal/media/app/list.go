@@ -93,6 +93,27 @@ func (service *Service) ListImages(ctx context.Context, query mediaport.ImageLis
 	return mediaport.ImageListPage{Items: items, Total: read.Total, Limit: limit, Offset: offset}, nil
 }
 
+func (service *Service) LocalImageExists(ctx context.Context, imageID int64) (bool, error) {
+	if service == nil || ctx == nil || service.uow == nil || service.store == nil || imageID < 1 {
+		return false, ErrListUnavailable
+	}
+	reader, ok := service.store.(mediaport.ImageMetadataReader)
+	if !ok {
+		return false, ErrListUnavailable
+	}
+	var exists bool
+	if err := service.uow.Within(ctx, func(tx context.Context) error {
+		var readErr error
+		exists, readErr = reader.ImageExists(tx, imageID)
+		return readErr
+	}); err != nil {
+		return false, ErrListUnavailable
+	}
+	return exists, nil
+}
+
+var _ mediaport.ImageLibraryReader = (*Service)(nil)
+
 func clampImageListPage(limit, offset int64) (int64, int64) {
 	switch {
 	case limit == 0:

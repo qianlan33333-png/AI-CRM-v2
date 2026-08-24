@@ -33,6 +33,14 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodGet, "/api/v1/admin/config/overview", authport.CapabilityConfigOverviewRead},
 		{http.MethodPost, "/api/v1/auth/logout", authport.CapabilityAuthSessionLogout},
 		{http.MethodGet, "/api/v1/auth/session", authport.CapabilityAuthSessionRead},
+		{http.MethodGet, "/api/sidebar/v2/workbench", authport.CapabilityCustomersRead},
+		{http.MethodPut, "/api/sidebar/v2/profile", authport.CapabilityCustomersWrite},
+		{http.MethodGet, "/api/sidebar/v2/questionnaires", authport.CapabilityCustomersRead},
+		{http.MethodGet, "/api/sidebar/v2/orders", authport.CapabilityCustomersRead},
+		{http.MethodGet, "/api/sidebar/v2/periodic-orders", authport.CapabilityCustomersRead},
+		{http.MethodPut, "/api/sidebar/v2/periodic-orders/71/members/spm_abcdefghijklmnopqrstuv/remark", authport.CapabilityCustomersWrite},
+		{http.MethodGet, "/api/sidebar/v2/materials", authport.CapabilityCustomersRead},
+		{http.MethodGet, "/api/sidebar/v2/materials/image/1/thumbnail", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/v1/customers/1", authport.CapabilityCustomersRead},
 		{http.MethodPatch, "/api/v1/customers/1", authport.CapabilityCustomersWrite},
@@ -146,6 +154,8 @@ func TestFinalRouterRejectsProtectedWriteWithoutValidCSRF(t *testing.T) {
 		body         string
 	}{
 		{http.MethodPatch, "/api/v1/customers/1", `{"name":"安全写入"}`},
+		{http.MethodPut, "/api/sidebar/v2/profile", `{"expected_updated_at":"2026-08-24T00:00:00Z","patch":{"needs":"renewal"}}`},
+		{http.MethodPut, "/api/sidebar/v2/periodic-orders/71/members/spm_abcdefghijklmnopqrstuv/remark", `{"expected_version":1,"remark":"renewal"}`},
 		{http.MethodPut, "/api/v1/customers/1/stage", `{"stage_id":null}`},
 		{http.MethodPut, "/api/v1/customers/1/tags/2", ""},
 		{http.MethodDelete, "/api/v1/customers/1/tags/2", ""},

@@ -223,6 +223,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"ListLegacyOutboundJobs", "GetLegacyOutboundJob", "GetLegacyOutboundJobReconciliation", "CancelLegacyOutboundJob", "RetryLegacyOutboundJob",
 		"AcceptOutboundCampaignHandoff", "GetOutboundCampaignHandoffSummary", "ReconcileOutboundCampaignHandoff",
 		"CreateCloudCampaignTouchPlan", "GetCloudCampaignTouchPlan", "ListCloudCampaignTouchPlans", "GetCloudCampaignTouchPlanRecipient", "GetCloudCampaignTouchPlanReview", "ListCloudCampaignTouchPlanRecipients", "MutateCloudCampaignTouchPlanReview",
+		"MintSidebarContext", "GetSidebarWorkbench", "UpdateSidebarProfile", "ListSidebarQuestionnaires", "ListSidebarOrders", "ListSidebarPeriodicOrders", "UpdateSidebarPeriodicRemark", "ListSidebarMaterials", "GetSidebarMaterialThumbnailStatus",
 	})
 }
 

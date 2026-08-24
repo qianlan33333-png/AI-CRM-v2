@@ -67,6 +67,50 @@ WHERE c.id = sqlc.arg(customer_id)::bigint
   AND NOT c.is_deleted
 FOR UPDATE;
 
+-- name: GetSidebarCustomerProfile :one
+SELECT id, name, owner_staff_id, extra, updated_at
+FROM public.customers
+WHERE id = sqlc.arg(customer_id)::bigint
+  AND (
+    sqlc.arg(owner_staff_id)::bigint = 0
+    OR owner_staff_id = sqlc.arg(owner_staff_id)::bigint
+  )
+  AND NOT is_deleted;
+
+-- name: UpdateSidebarCustomerProfile :one
+UPDATE public.customers
+SET extra = jsonb_set(extra, '{sidebar_profile}', sqlc.arg(profile)::jsonb, true),
+    updated_at = sqlc.arg(updated_at)::timestamptz
+WHERE id = sqlc.arg(customer_id)::bigint
+  AND owner_staff_id = sqlc.arg(owner_staff_id)::bigint
+  AND updated_at = sqlc.arg(expected_updated_at)::timestamptz
+  AND NOT is_deleted
+RETURNING id, name, owner_staff_id, extra, updated_at;
+
+-- name: ReserveSidebarCustomerProfileReceipt :one
+INSERT INTO public.sidebar_customer_profile_operation_receipts (
+  actor_scope, key_digest, payload_digest, created_at
+) VALUES (
+  sqlc.arg(actor_scope)::text, sqlc.arg(key_digest)::bytea,
+  sqlc.arg(payload_digest)::bytea, sqlc.arg(created_at)::timestamptz
+)
+ON CONFLICT (actor_scope, key_digest) DO NOTHING
+RETURNING id, actor_scope, key_digest, payload_digest, state, result_snapshot;
+
+-- name: GetSidebarCustomerProfileReceipt :one
+SELECT id, actor_scope, key_digest, payload_digest, state, result_snapshot
+FROM public.sidebar_customer_profile_operation_receipts
+WHERE actor_scope = sqlc.arg(actor_scope)::text
+  AND key_digest = sqlc.arg(key_digest)::bytea
+FOR UPDATE;
+
+-- name: CompleteSidebarCustomerProfileReceipt :one
+UPDATE public.sidebar_customer_profile_operation_receipts
+SET state = 'completed', result_snapshot = sqlc.arg(result_snapshot)::jsonb,
+    completed_at = sqlc.arg(completed_at)::timestamptz
+WHERE id = sqlc.arg(id)::bigint AND state = 'reserved'
+RETURNING id, actor_scope, key_digest, payload_digest, state, result_snapshot;
+
 -- name: SetCustomerStage :one
 UPDATE customers AS c
 SET

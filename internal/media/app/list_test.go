@@ -26,6 +26,9 @@ type imageListTestStore struct {
 	err        error
 	calls      int
 	writeCalls int
+	exists     bool
+	existsErr  error
+	existsID   int64
 	filter     ImageListFilter
 	limit      int64
 	offset     int64
@@ -65,6 +68,25 @@ func (store *imageListTestStore) Create(context.Context, CreateInput) (mediaport
 func (store *imageListTestStore) Complete(context.Context, int64, json.RawMessage, time.Time) (Receipt, error) {
 	store.writeCalls++
 	return Receipt{}, errors.New("unexpected complete")
+}
+
+func (store *imageListTestStore) ImageExists(ctx context.Context, imageID int64) (bool, error) {
+	store.existsID = imageID
+	store.marker, _ = ctx.Value(imageListSnapshotKey{}).(string)
+	return store.exists, store.existsErr
+}
+
+func TestLocalImageExistsUsesOnlyMetadataReader(t *testing.T) {
+	store := &imageListTestStore{exists: true}
+	uow := &imageListTestUOW{marker: "local-existence-uow"}
+	exists, err := NewService(uow, store, nil).LocalImageExists(context.Background(), 42)
+	if err != nil || !exists || uow.calls != 1 || store.existsID != 42 || store.marker != "local-existence-uow" || store.writeCalls != 0 {
+		t.Fatalf("exists/uow/id/marker/writes/err=%t/%d/%d/%q/%d/%v", exists, uow.calls, store.existsID, store.marker, store.writeCalls, err)
+	}
+	store.existsErr = errors.New("database unavailable")
+	if _, err = NewService(uow, store, nil).LocalImageExists(context.Background(), 42); !errors.Is(err, ErrListUnavailable) {
+		t.Fatalf("dependency error=%v", err)
+	}
 }
 
 func TestImageListRepositoryContractUsesOneCombinedSameSnapshotRead(t *testing.T) {

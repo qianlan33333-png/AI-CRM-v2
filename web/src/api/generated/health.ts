@@ -5,6 +5,279 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface SidebarSafety {
+  local_only: boolean;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type SidebarContextResponseState =
+  (typeof SidebarContextResponseState)[keyof typeof SidebarContextResponseState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarContextResponseState = {
+  ready: "ready",
+  viewer_session_required: "viewer_session_required",
+  customer_not_bound: "customer_not_bound",
+} as const;
+
+export interface SidebarContextResponse {
+  state: SidebarContextResponseState;
+  /**
+   * @minLength 64
+   * @maxLength 4096
+   */
+  context_token?: string;
+  expires_at?: string;
+  /** @minimum 1 */
+  customer_id?: number;
+  /** @minimum 1 */
+  owner_staff_id?: number;
+  safety: SidebarSafety;
+}
+
+export interface SidebarProfile {
+  /** @minimum 1 */
+  customer_id: number;
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 1 */
+  owner_staff_id: number;
+  /** @maxLength 200 */
+  source: string;
+  /** @maxLength 200 */
+  industry: string;
+  /** @maxLength 2000 */
+  description: string;
+  /** @maxLength 2000 */
+  needs: string;
+  /** @maxLength 2000 */
+  pain_points: string;
+  updated_at: string;
+}
+
+export interface SidebarProfileResponse {
+  profile: SidebarProfile;
+  safety: SidebarSafety;
+}
+
+export type SidebarSafeChoiceAnswerQuestionType =
+  (typeof SidebarSafeChoiceAnswerQuestionType)[keyof typeof SidebarSafeChoiceAnswerQuestionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarSafeChoiceAnswerQuestionType = {
+  single_choice: "single_choice",
+  multi_choice: "multi_choice",
+} as const;
+
+export interface SidebarSafeChoiceAnswer {
+  /** @minimum 1 */
+  question_id: number;
+  question_type: SidebarSafeChoiceAnswerQuestionType;
+  /** @minimum 0 */
+  sort_order: number;
+  /** @maxItems 100 */
+  option_ids: number[];
+}
+
+export interface SidebarQuestionnaireItem {
+  /** @minimum 1 */
+  submission_id: number;
+  /** @minimum 1 */
+  questionnaire_id: number;
+  submitted_at: string;
+  score: number;
+  /** @maxItems 100 */
+  choice_answers: SidebarSafeChoiceAnswer[];
+}
+
+export interface SidebarQuestionnaireResponse {
+  /** @maxItems 100 */
+  items: SidebarQuestionnaireItem[];
+  scan_truncated: boolean;
+  result_truncated: boolean;
+  safety: SidebarSafety;
+}
+
+export interface SidebarOrderItem {
+  created_at: string;
+  merchant_order_no: string;
+  product_code: string;
+  product_name: string;
+  /** @pattern ^-?[0-9]+\.[0-9]{2}$ */
+  amount_yuan: string;
+  /**
+   * @minLength 1
+   * @maxLength 16
+   */
+  currency: string;
+  status: string;
+  status_label: string;
+  provider: string;
+  provider_label: string;
+}
+
+export interface SidebarOrderResponse {
+  /** @maxItems 100 */
+  items: SidebarOrderItem[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  has_more: boolean;
+  safety: SidebarSafety;
+}
+
+export type SidebarServicePeriodMemberState =
+  (typeof SidebarServicePeriodMemberState)[keyof typeof SidebarServicePeriodMemberState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarServicePeriodMemberState = {
+  active: "active",
+  expired: "expired",
+  removed: "removed",
+} as const;
+
+export type SidebarServicePeriodMemberSource =
+  (typeof SidebarServicePeriodMemberSource)[keyof typeof SidebarServicePeriodMemberSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarServicePeriodMemberSource = {
+  manual: "manual",
+  paid_order: "paid_order",
+} as const;
+
+export interface SidebarServicePeriodMember {
+  /** @pattern ^spm_[A-Za-z0-9_-]{22}$ */
+  member_ref: string;
+  /** @minimum 1 */
+  service_product_id: number;
+  /** @minimum 1 */
+  customer_id: number;
+  state: SidebarServicePeriodMemberState;
+  source: SidebarServicePeriodMemberSource;
+  starts_at: string;
+  expires_at?: string;
+  expired_at?: string;
+  removed_at?: string;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  remark?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  alliance?: string;
+  /** @minimum 1 */
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SidebarPeriodicOrderResponse {
+  /** @maxItems 100 */
+  items: SidebarServicePeriodMember[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  has_more: boolean;
+  safety: SidebarSafety;
+}
+
+export interface SidebarPeriodicRemarkResponse {
+  member: SidebarServicePeriodMember;
+  safety: SidebarSafety;
+}
+
+export type SidebarMaterialItemThumbnailStatus =
+  (typeof SidebarMaterialItemThumbnailStatus)[keyof typeof SidebarMaterialItemThumbnailStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarMaterialItemThumbnailStatus = {
+  pending: "pending",
+} as const;
+
+export interface SidebarMaterialItem {
+  /** @minimum 1 */
+  id: number;
+  name: string;
+  /** @minLength 1 */
+  file_name: string;
+  /** @minLength 1 */
+  mime_type: string;
+  /** @minimum 1 */
+  file_size: number;
+  description: string;
+  tags: string[];
+  category: string;
+  /** @minimum 1 */
+  width: number;
+  /** @minimum 1 */
+  height: number;
+  updated_at: string;
+  thumbnail_status: SidebarMaterialItemThumbnailStatus;
+}
+
+export interface SidebarMaterialResponse {
+  /** @maxItems 100 */
+  items: SidebarMaterialItem[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  quick_keywords: string[];
+  safety: SidebarSafety;
+}
+
+export interface SidebarWorkbenchResponse {
+  profile: SidebarProfile;
+  /**
+   * @minimum 0
+   * @maximum 20
+   */
+  questionnaire_count: number;
+  /** @minimum 0 */
+  order_count: number;
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  periodic_order_count: number;
+  /** @minimum 0 */
+  material_count: number;
+  safety: SidebarSafety;
+}
+
+export type SidebarThumbnailPendingResponseStatus =
+  (typeof SidebarThumbnailPendingResponseStatus)[keyof typeof SidebarThumbnailPendingResponseStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarThumbnailPendingResponseStatus = {
+  pending: "pending",
+} as const;
+
+export interface SidebarThumbnailPendingResponse {
+  status: SidebarThumbnailPendingResponseStatus;
+  safety: SidebarSafety;
+}
+
 export interface AdminOpsCategorySettings {
   enabled?: boolean;
 }
@@ -12770,6 +13043,11 @@ export type PublicSurveyGetOnlyResponse = PublicSurveyError;
  */
 export type PublicSurveyPostOnlyResponse = PublicSurveyError;
 
+/**
+ * Short-lived HMAC-authenticated corp, customer, owner, and viewer scoped token.
+ */
+export type SidebarContextTokenParameter = string;
+
 export type EntitlementLimitParameter = number;
 
 /**
@@ -12852,6 +13130,98 @@ export type PushCenterCreatedToFilterParameter = string;
  * Route-bound token. Required either here or in the closed JSON body.
  */
 export type AdminOpsActionTokenParameter = string;
+
+export type MintSidebarContextBody = {
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  external_userid: string;
+};
+
+export type UpdateSidebarProfileBodyPatch = {
+  /** @maxLength 200 */
+  source?: string;
+  /** @maxLength 200 */
+  industry?: string;
+  /** @maxLength 2000 */
+  description?: string;
+  /** @maxLength 2000 */
+  needs?: string;
+  /** @maxLength 2000 */
+  pain_points?: string;
+};
+
+export type UpdateSidebarProfileBody = {
+  expected_updated_at: string;
+  patch: UpdateSidebarProfileBodyPatch;
+};
+
+export type ListSidebarQuestionnairesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type ListSidebarOrdersParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListSidebarPeriodicOrdersParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type UpdateSidebarPeriodicRemarkBody = {
+  /** @minimum 1 */
+  expected_version: number;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  remark: string;
+};
+
+export type ListSidebarMaterialsParams = {
+  /**
+   * @maxLength 200
+   */
+  q?: string;
+  /**
+   * @maxLength 200
+   */
+  category?: string;
+  /**
+   * @maxLength 500
+   */
+  tags?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
 
 export type ListProductsParams = {
   /**
@@ -14185,6 +14555,729 @@ export type ListCloudCampaignTouchPlanRecipientsParams = {
    * @maximum 100
    */
   limit?: number;
+};
+
+/**
+ * @summary Resolve one local customer and mint a short-lived owner-scoped sidebar token
+ */
+export type mintSidebarContextResponse200 = {
+  data: SidebarContextResponse;
+  status: 200;
+};
+
+export type mintSidebarContextResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type mintSidebarContextResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type mintSidebarContextResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type mintSidebarContextResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type mintSidebarContextResponseSuccess =
+  mintSidebarContextResponse200 & {
+    headers: Headers;
+  };
+export type mintSidebarContextResponseError = (
+  | mintSidebarContextResponse400
+  | mintSidebarContextResponse401
+  | mintSidebarContextResponse403
+  | mintSidebarContextResponse503
+) & {
+  headers: Headers;
+};
+
+export type mintSidebarContextResponse =
+  mintSidebarContextResponseSuccess | mintSidebarContextResponseError;
+
+export const getMintSidebarContextUrl = () => {
+  return `/api/sidebar/context-token`;
+};
+
+export const mintSidebarContext = async (
+  mintSidebarContextBody: MintSidebarContextBody,
+  options?: RequestInit,
+): Promise<mintSidebarContextResponse> => {
+  const res = await fetch(getMintSidebarContextUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(mintSidebarContextBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: mintSidebarContextResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as mintSidebarContextResponse;
+};
+
+/**
+ * @summary Read the customer sidebar local workbench aggregate
+ */
+export type getSidebarWorkbenchResponse200 = {
+  data: SidebarWorkbenchResponse;
+  status: 200;
+};
+
+export type getSidebarWorkbenchResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getSidebarWorkbenchResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getSidebarWorkbenchResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getSidebarWorkbenchResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getSidebarWorkbenchResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getSidebarWorkbenchResponseSuccess =
+  getSidebarWorkbenchResponse200 & {
+    headers: Headers;
+  };
+export type getSidebarWorkbenchResponseError = (
+  | getSidebarWorkbenchResponse400
+  | getSidebarWorkbenchResponse401
+  | getSidebarWorkbenchResponse403
+  | getSidebarWorkbenchResponse404
+  | getSidebarWorkbenchResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSidebarWorkbenchResponse =
+  getSidebarWorkbenchResponseSuccess | getSidebarWorkbenchResponseError;
+
+export const getGetSidebarWorkbenchUrl = () => {
+  return `/api/sidebar/v2/workbench`;
+};
+
+export const getSidebarWorkbench = async (
+  options?: RequestInit,
+): Promise<getSidebarWorkbenchResponse> => {
+  const res = await fetch(getGetSidebarWorkbenchUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSidebarWorkbenchResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSidebarWorkbenchResponse;
+};
+
+/**
+ * @summary Update Contact-owned sidebar fields with CAS and a durable receipt
+ */
+export type updateSidebarProfileResponse200 = {
+  data: SidebarProfileResponse;
+  status: 200;
+};
+
+export type updateSidebarProfileResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateSidebarProfileResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateSidebarProfileResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateSidebarProfileResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateSidebarProfileResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateSidebarProfileResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateSidebarProfileResponseSuccess =
+  updateSidebarProfileResponse200 & {
+    headers: Headers;
+  };
+export type updateSidebarProfileResponseError = (
+  | updateSidebarProfileResponse400
+  | updateSidebarProfileResponse401
+  | updateSidebarProfileResponse403
+  | updateSidebarProfileResponse404
+  | updateSidebarProfileResponse409
+  | updateSidebarProfileResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateSidebarProfileResponse =
+  updateSidebarProfileResponseSuccess | updateSidebarProfileResponseError;
+
+export const getUpdateSidebarProfileUrl = () => {
+  return `/api/sidebar/v2/profile`;
+};
+
+export const updateSidebarProfile = async (
+  updateSidebarProfileBody: UpdateSidebarProfileBody,
+  options?: RequestInit,
+): Promise<updateSidebarProfileResponse> => {
+  const res = await fetch(getUpdateSidebarProfileUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateSidebarProfileBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateSidebarProfileResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateSidebarProfileResponse;
+};
+
+/**
+ * @summary List bounded safe-choice questionnaire answers for one scoped customer
+ */
+export type listSidebarQuestionnairesResponse200 = {
+  data: SidebarQuestionnaireResponse;
+  status: 200;
+};
+
+export type listSidebarQuestionnairesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSidebarQuestionnairesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSidebarQuestionnairesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSidebarQuestionnairesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSidebarQuestionnairesResponseSuccess =
+  listSidebarQuestionnairesResponse200 & {
+    headers: Headers;
+  };
+export type listSidebarQuestionnairesResponseError = (
+  | listSidebarQuestionnairesResponse400
+  | listSidebarQuestionnairesResponse401
+  | listSidebarQuestionnairesResponse403
+  | listSidebarQuestionnairesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSidebarQuestionnairesResponse =
+  | listSidebarQuestionnairesResponseSuccess
+  | listSidebarQuestionnairesResponseError;
+
+export const getListSidebarQuestionnairesUrl = (
+  params?: ListSidebarQuestionnairesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/sidebar/v2/questionnaires?${stringifiedParams}`
+    : `/api/sidebar/v2/questionnaires`;
+};
+
+export const listSidebarQuestionnaires = async (
+  params?: ListSidebarQuestionnairesParams,
+  options?: RequestInit,
+): Promise<listSidebarQuestionnairesResponse> => {
+  const res = await fetch(getListSidebarQuestionnairesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSidebarQuestionnairesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSidebarQuestionnairesResponse;
+};
+
+/**
+ * @summary List customer-scoped local orders without payer or identity fields
+ */
+export type listSidebarOrdersResponse200 = {
+  data: SidebarOrderResponse;
+  status: 200;
+};
+
+export type listSidebarOrdersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSidebarOrdersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSidebarOrdersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSidebarOrdersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSidebarOrdersResponseSuccess = listSidebarOrdersResponse200 & {
+  headers: Headers;
+};
+export type listSidebarOrdersResponseError = (
+  | listSidebarOrdersResponse400
+  | listSidebarOrdersResponse401
+  | listSidebarOrdersResponse403
+  | listSidebarOrdersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSidebarOrdersResponse =
+  listSidebarOrdersResponseSuccess | listSidebarOrdersResponseError;
+
+export const getListSidebarOrdersUrl = (params?: ListSidebarOrdersParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/sidebar/v2/orders?${stringifiedParams}`
+    : `/api/sidebar/v2/orders`;
+};
+
+export const listSidebarOrders = async (
+  params?: ListSidebarOrdersParams,
+  options?: RequestInit,
+): Promise<listSidebarOrdersResponse> => {
+  const res = await fetch(getListSidebarOrdersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSidebarOrdersResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSidebarOrdersResponse;
+};
+
+/**
+ * @summary List canonical service-period members for one scoped customer
+ */
+export type listSidebarPeriodicOrdersResponse200 = {
+  data: SidebarPeriodicOrderResponse;
+  status: 200;
+};
+
+export type listSidebarPeriodicOrdersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSidebarPeriodicOrdersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSidebarPeriodicOrdersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSidebarPeriodicOrdersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSidebarPeriodicOrdersResponseSuccess =
+  listSidebarPeriodicOrdersResponse200 & {
+    headers: Headers;
+  };
+export type listSidebarPeriodicOrdersResponseError = (
+  | listSidebarPeriodicOrdersResponse400
+  | listSidebarPeriodicOrdersResponse401
+  | listSidebarPeriodicOrdersResponse403
+  | listSidebarPeriodicOrdersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSidebarPeriodicOrdersResponse =
+  | listSidebarPeriodicOrdersResponseSuccess
+  | listSidebarPeriodicOrdersResponseError;
+
+export const getListSidebarPeriodicOrdersUrl = (
+  params?: ListSidebarPeriodicOrdersParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/sidebar/v2/periodic-orders?${stringifiedParams}`
+    : `/api/sidebar/v2/periodic-orders`;
+};
+
+export const listSidebarPeriodicOrders = async (
+  params?: ListSidebarPeriodicOrdersParams,
+  options?: RequestInit,
+): Promise<listSidebarPeriodicOrdersResponse> => {
+  const res = await fetch(getListSidebarPeriodicOrdersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSidebarPeriodicOrdersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSidebarPeriodicOrdersResponse;
+};
+
+/**
+ * @summary Update a scoped service-period member remark by canonical key and CAS version
+ */
+export type updateSidebarPeriodicRemarkResponse200 = {
+  data: SidebarPeriodicRemarkResponse;
+  status: 200;
+};
+
+export type updateSidebarPeriodicRemarkResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateSidebarPeriodicRemarkResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateSidebarPeriodicRemarkResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateSidebarPeriodicRemarkResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateSidebarPeriodicRemarkResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateSidebarPeriodicRemarkResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateSidebarPeriodicRemarkResponseSuccess =
+  updateSidebarPeriodicRemarkResponse200 & {
+    headers: Headers;
+  };
+export type updateSidebarPeriodicRemarkResponseError = (
+  | updateSidebarPeriodicRemarkResponse400
+  | updateSidebarPeriodicRemarkResponse401
+  | updateSidebarPeriodicRemarkResponse403
+  | updateSidebarPeriodicRemarkResponse404
+  | updateSidebarPeriodicRemarkResponse409
+  | updateSidebarPeriodicRemarkResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateSidebarPeriodicRemarkResponse =
+  | updateSidebarPeriodicRemarkResponseSuccess
+  | updateSidebarPeriodicRemarkResponseError;
+
+export const getUpdateSidebarPeriodicRemarkUrl = (
+  serviceProductId: number,
+  memberRef: string,
+) => {
+  return `/api/sidebar/v2/periodic-orders/${serviceProductId}/members/${memberRef}/remark`;
+};
+
+export const updateSidebarPeriodicRemark = async (
+  serviceProductId: number,
+  memberRef: string,
+  updateSidebarPeriodicRemarkBody: UpdateSidebarPeriodicRemarkBody,
+  options?: RequestInit,
+): Promise<updateSidebarPeriodicRemarkResponse> => {
+  const res = await fetch(
+    getUpdateSidebarPeriodicRemarkUrl(serviceProductId, memberRef),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateSidebarPeriodicRemarkBody),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateSidebarPeriodicRemarkResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateSidebarPeriodicRemarkResponse;
+};
+
+/**
+ * @summary List local enabled image metadata and quick keywords without creating variants
+ */
+export type listSidebarMaterialsResponse200 = {
+  data: SidebarMaterialResponse;
+  status: 200;
+};
+
+export type listSidebarMaterialsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSidebarMaterialsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSidebarMaterialsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSidebarMaterialsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSidebarMaterialsResponseSuccess =
+  listSidebarMaterialsResponse200 & {
+    headers: Headers;
+  };
+export type listSidebarMaterialsResponseError = (
+  | listSidebarMaterialsResponse400
+  | listSidebarMaterialsResponse401
+  | listSidebarMaterialsResponse403
+  | listSidebarMaterialsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSidebarMaterialsResponse =
+  listSidebarMaterialsResponseSuccess | listSidebarMaterialsResponseError;
+
+export const getListSidebarMaterialsUrl = (
+  params?: ListSidebarMaterialsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/sidebar/v2/materials?${stringifiedParams}`
+    : `/api/sidebar/v2/materials`;
+};
+
+export const listSidebarMaterials = async (
+  params?: ListSidebarMaterialsParams,
+  options?: RequestInit,
+): Promise<listSidebarMaterialsResponse> => {
+  const res = await fetch(getListSidebarMaterialsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSidebarMaterialsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSidebarMaterialsResponse;
+};
+
+/**
+ * @summary Return pending for a local image without generating a thumbnail
+ */
+export type getSidebarMaterialThumbnailStatusResponse202 = {
+  data: SidebarThumbnailPendingResponse;
+  status: 202;
+};
+
+export type getSidebarMaterialThumbnailStatusResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getSidebarMaterialThumbnailStatusResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getSidebarMaterialThumbnailStatusResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getSidebarMaterialThumbnailStatusResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getSidebarMaterialThumbnailStatusResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getSidebarMaterialThumbnailStatusResponseSuccess =
+  getSidebarMaterialThumbnailStatusResponse202 & {
+    headers: Headers;
+  };
+export type getSidebarMaterialThumbnailStatusResponseError = (
+  | getSidebarMaterialThumbnailStatusResponse400
+  | getSidebarMaterialThumbnailStatusResponse401
+  | getSidebarMaterialThumbnailStatusResponse403
+  | getSidebarMaterialThumbnailStatusResponse404
+  | getSidebarMaterialThumbnailStatusResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSidebarMaterialThumbnailStatusResponse =
+  | getSidebarMaterialThumbnailStatusResponseSuccess
+  | getSidebarMaterialThumbnailStatusResponseError;
+
+export const getGetSidebarMaterialThumbnailStatusUrl = (imageId: number) => {
+  return `/api/sidebar/v2/materials/image/${imageId}/thumbnail`;
+};
+
+export const getSidebarMaterialThumbnailStatus = async (
+  imageId: number,
+  options?: RequestInit,
+): Promise<getSidebarMaterialThumbnailStatusResponse> => {
+  const res = await fetch(getGetSidebarMaterialThumbnailStatusUrl(imageId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSidebarMaterialThumbnailStatusResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSidebarMaterialThumbnailStatusResponse;
 };
 
 /**

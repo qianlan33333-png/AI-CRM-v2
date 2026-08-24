@@ -70,6 +70,15 @@ type ImageListPage struct {
 	Offset int64
 }
 
+// ImageLibraryReader is the narrow Media-owned local projection consumed by
+// sidebar workbench reads. Implementations must not invoke a provider or create
+// image variants while serving these methods.
+type ImageLibraryReader interface {
+	ListImages(context.Context, ImageListQuery) (ImageListPage, error)
+	Facets(context.Context) (ImageFacets, error)
+	LocalImageExists(context.Context, int64) (bool, error)
+}
+
 type UploadCommand struct {
 	Actor          int64
 	IdempotencyKey string

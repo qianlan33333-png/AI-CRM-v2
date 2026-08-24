@@ -30,6 +30,7 @@ type PaidOrderReader interface {
 
 type Filter struct {
 	Provider, OrderNo, Mobile, ProductCode, Status string
+	CustomerID                                     *int64
 	CreatedFrom, CreatedTo                         *time.Time
 	Limit, Offset                                  int32
 }

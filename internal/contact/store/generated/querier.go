@@ -17,6 +17,7 @@ type Querier interface {
 	ArchiveLegacyTagGroup(ctx context.Context, groupID int64) (TagGroup, error)
 	CompleteChannelOperationReceipt(ctx context.Context, arg CompleteChannelOperationReceiptParams) (CompleteChannelOperationReceiptRow, error)
 	CompleteCustomerContactPolicyReceipt(ctx context.Context, arg CompleteCustomerContactPolicyReceiptParams) (CompleteCustomerContactPolicyReceiptRow, error)
+	CompleteSidebarCustomerProfileReceipt(ctx context.Context, arg CompleteSidebarCustomerProfileReceiptParams) (CompleteSidebarCustomerProfileReceiptRow, error)
 	CopyCustomerTagsForMerge(ctx context.Context, arg CopyCustomerTagsForMergeParams) (int64, error)
 	CountCustomerIDsBounded(ctx context.Context, arg CountCustomerIDsBoundedParams) (int64, error)
 	CreateChannel(ctx context.Context, arg CreateChannelParams) (CreateChannelRow, error)
@@ -36,6 +37,8 @@ type Querier interface {
 	GetLegacyTagExecutionStatus(ctx context.Context) (GetLegacyTagExecutionStatusRow, error)
 	GetLegacyTagLiveMutationReceipt(ctx context.Context, arg GetLegacyTagLiveMutationReceiptParams) (GetLegacyTagLiveMutationReceiptRow, error)
 	GetLegacyTagSyncReceipt(ctx context.Context, arg GetLegacyTagSyncReceiptParams) (GetLegacyTagSyncReceiptRow, error)
+	GetSidebarCustomerProfile(ctx context.Context, arg GetSidebarCustomerProfileParams) (GetSidebarCustomerProfileRow, error)
+	GetSidebarCustomerProfileReceipt(ctx context.Context, arg GetSidebarCustomerProfileReceiptParams) (GetSidebarCustomerProfileReceiptRow, error)
 	InsertCustomerContactPolicy(ctx context.Context, arg InsertCustomerContactPolicyParams) (CustomerContactPolicy, error)
 	InsertCustomerMergeLineage(ctx context.Context, arg InsertCustomerMergeLineageParams) (int64, error)
 	InsertExternalEventIdempotency(ctx context.Context, arg InsertExternalEventIdempotencyParams) (int64, error)
@@ -70,6 +73,7 @@ type Querier interface {
 	ReserveCustomerContactPolicyReceipt(ctx context.Context, arg ReserveCustomerContactPolicyReceiptParams) (ReserveCustomerContactPolicyReceiptRow, error)
 	ReserveLegacyTagLiveMutationReceipt(ctx context.Context, arg ReserveLegacyTagLiveMutationReceiptParams) (ReserveLegacyTagLiveMutationReceiptRow, error)
 	ReserveLegacyTagSyncReceipt(ctx context.Context, arg ReserveLegacyTagSyncReceiptParams) (ReserveLegacyTagSyncReceiptRow, error)
+	ReserveSidebarCustomerProfileReceipt(ctx context.Context, arg ReserveSidebarCustomerProfileReceiptParams) (ReserveSidebarCustomerProfileReceiptRow, error)
 	ResolveEffectiveCustomerRoot(ctx context.Context, customerID int64) (int64, error)
 	SetCustomerStage(ctx context.Context, arg SetCustomerStageParams) (Customer, error)
 	UpdateChannel(ctx context.Context, arg UpdateChannelParams) (UpdateChannelRow, error)
@@ -77,6 +81,7 @@ type Querier interface {
 	UpdateCustomerContactPolicy(ctx context.Context, arg UpdateCustomerContactPolicyParams) (CustomerContactPolicy, error)
 	UpdateLegacyTag(ctx context.Context, arg UpdateLegacyTagParams) (UpdateLegacyTagRow, error)
 	UpdateLegacyTagGroup(ctx context.Context, arg UpdateLegacyTagGroupParams) (TagGroup, error)
+	UpdateSidebarCustomerProfile(ctx context.Context, arg UpdateSidebarCustomerProfileParams) (UpdateSidebarCustomerProfileRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -158,6 +158,9 @@ func normalizeFilter(ctx context.Context, filter orderport.Filter) (orderport.Fi
 	if filter.Limit < 1 || filter.Limit > MaximumLimit || filter.Offset < 0 || filter.Offset > MaximumOffset {
 		return orderport.Filter{}, ErrInvalidArgument
 	}
+	if filter.CustomerID != nil && *filter.CustomerID < 1 {
+		return orderport.Filter{}, ErrInvalidArgument
+	}
 	if invalidTime(filter.CreatedFrom) || invalidTime(filter.CreatedTo) || filter.CreatedFrom != nil && filter.CreatedTo != nil && filter.CreatedFrom.After(*filter.CreatedTo) {
 		return orderport.Filter{}, ErrInvalidArgument
 	}

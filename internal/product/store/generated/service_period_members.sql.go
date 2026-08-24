@@ -309,6 +309,75 @@ func (q *Queries) ListServicePeriodMembers(ctx context.Context, arg ListServiceP
 	return items, nil
 }
 
+const listServicePeriodMembersByCustomer = `-- name: ListServicePeriodMembersByCustomer :many
+SELECT member_ref, service_product_id, customer_id, state, source,
+  starts_at, expires_at, expired_at, removed_at, remark, alliance,
+  version, created_at, updated_at
+FROM public.service_period_members
+WHERE customer_id = $1
+ORDER BY updated_at DESC, service_product_id DESC, member_ref DESC
+LIMIT $3
+OFFSET $2
+`
+
+type ListServicePeriodMembersByCustomerParams struct {
+	CustomerID int64 `json:"customer_id"`
+	RowOffset  int32 `json:"row_offset"`
+	RowLimit   int32 `json:"row_limit"`
+}
+
+type ListServicePeriodMembersByCustomerRow struct {
+	MemberRef        string             `json:"member_ref"`
+	ServiceProductID int64              `json:"service_product_id"`
+	CustomerID       int64              `json:"customer_id"`
+	State            string             `json:"state"`
+	Source           string             `json:"source"`
+	StartsAt         pgtype.Timestamptz `json:"starts_at"`
+	ExpiresAt        pgtype.Timestamptz `json:"expires_at"`
+	ExpiredAt        pgtype.Timestamptz `json:"expired_at"`
+	RemovedAt        pgtype.Timestamptz `json:"removed_at"`
+	Remark           pgtype.Text        `json:"remark"`
+	Alliance         pgtype.Text        `json:"alliance"`
+	Version          int64              `json:"version"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListServicePeriodMembersByCustomer(ctx context.Context, arg ListServicePeriodMembersByCustomerParams) ([]ListServicePeriodMembersByCustomerRow, error) {
+	rows, err := q.db.Query(ctx, listServicePeriodMembersByCustomer, arg.CustomerID, arg.RowOffset, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListServicePeriodMembersByCustomerRow{}
+	for rows.Next() {
+		var i ListServicePeriodMembersByCustomerRow
+		if err := rows.Scan(
+			&i.MemberRef,
+			&i.ServiceProductID,
+			&i.CustomerID,
+			&i.State,
+			&i.Source,
+			&i.StartsAt,
+			&i.ExpiresAt,
+			&i.ExpiredAt,
+			&i.RemovedAt,
+			&i.Remark,
+			&i.Alliance,
+			&i.Version,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockServicePeriodMember = `-- name: LockServicePeriodMember :one
 SELECT member_ref, service_product_id, customer_id, state, source,
   starts_at, expires_at, expired_at, removed_at, remark, alliance,

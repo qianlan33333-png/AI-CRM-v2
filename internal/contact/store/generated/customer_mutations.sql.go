@@ -76,6 +76,43 @@ func (q *Queries) AppendCustomerEvent(ctx context.Context, arg AppendCustomerEve
 	return id, err
 }
 
+const completeSidebarCustomerProfileReceipt = `-- name: CompleteSidebarCustomerProfileReceipt :one
+UPDATE public.sidebar_customer_profile_operation_receipts
+SET state = 'completed', result_snapshot = $1::jsonb,
+    completed_at = $2::timestamptz
+WHERE id = $3::bigint AND state = 'reserved'
+RETURNING id, actor_scope, key_digest, payload_digest, state, result_snapshot
+`
+
+type CompleteSidebarCustomerProfileReceiptParams struct {
+	ResultSnapshot []byte             `json:"result_snapshot"`
+	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
+	ID             int64              `json:"id"`
+}
+
+type CompleteSidebarCustomerProfileReceiptRow struct {
+	ID             int64  `json:"id"`
+	ActorScope     string `json:"actor_scope"`
+	KeyDigest      []byte `json:"key_digest"`
+	PayloadDigest  []byte `json:"payload_digest"`
+	State          string `json:"state"`
+	ResultSnapshot []byte `json:"result_snapshot"`
+}
+
+func (q *Queries) CompleteSidebarCustomerProfileReceipt(ctx context.Context, arg CompleteSidebarCustomerProfileReceiptParams) (CompleteSidebarCustomerProfileReceiptRow, error) {
+	row := q.db.QueryRow(ctx, completeSidebarCustomerProfileReceipt, arg.ResultSnapshot, arg.CompletedAt, arg.ID)
+	var i CompleteSidebarCustomerProfileReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorScope,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
 const copyCustomerTagsForMerge = `-- name: CopyCustomerTagsForMerge :execrows
 INSERT INTO customer_tags (
   customer_id,
@@ -156,6 +193,79 @@ func (q *Queries) GetCustomerTag(ctx context.Context, tagID int64) (int64, error
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const getSidebarCustomerProfile = `-- name: GetSidebarCustomerProfile :one
+SELECT id, name, owner_staff_id, extra, updated_at
+FROM public.customers
+WHERE id = $1::bigint
+  AND (
+    $2::bigint = 0
+    OR owner_staff_id = $2::bigint
+  )
+  AND NOT is_deleted
+`
+
+type GetSidebarCustomerProfileParams struct {
+	CustomerID   int64 `json:"customer_id"`
+	OwnerStaffID int64 `json:"owner_staff_id"`
+}
+
+type GetSidebarCustomerProfileRow struct {
+	ID           int64              `json:"id"`
+	Name         string             `json:"name"`
+	OwnerStaffID pgtype.Int8        `json:"owner_staff_id"`
+	Extra        []byte             `json:"extra"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetSidebarCustomerProfile(ctx context.Context, arg GetSidebarCustomerProfileParams) (GetSidebarCustomerProfileRow, error) {
+	row := q.db.QueryRow(ctx, getSidebarCustomerProfile, arg.CustomerID, arg.OwnerStaffID)
+	var i GetSidebarCustomerProfileRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.OwnerStaffID,
+		&i.Extra,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getSidebarCustomerProfileReceipt = `-- name: GetSidebarCustomerProfileReceipt :one
+SELECT id, actor_scope, key_digest, payload_digest, state, result_snapshot
+FROM public.sidebar_customer_profile_operation_receipts
+WHERE actor_scope = $1::text
+  AND key_digest = $2::bytea
+FOR UPDATE
+`
+
+type GetSidebarCustomerProfileReceiptParams struct {
+	ActorScope string `json:"actor_scope"`
+	KeyDigest  []byte `json:"key_digest"`
+}
+
+type GetSidebarCustomerProfileReceiptRow struct {
+	ID             int64  `json:"id"`
+	ActorScope     string `json:"actor_scope"`
+	KeyDigest      []byte `json:"key_digest"`
+	PayloadDigest  []byte `json:"payload_digest"`
+	State          string `json:"state"`
+	ResultSnapshot []byte `json:"result_snapshot"`
+}
+
+func (q *Queries) GetSidebarCustomerProfileReceipt(ctx context.Context, arg GetSidebarCustomerProfileReceiptParams) (GetSidebarCustomerProfileReceiptRow, error) {
+	row := q.db.QueryRow(ctx, getSidebarCustomerProfileReceipt, arg.ActorScope, arg.KeyDigest)
+	var i GetSidebarCustomerProfileReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorScope,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
 }
 
 const insertCustomerMergeLineage = `-- name: InsertCustomerMergeLineage :execrows
@@ -309,6 +419,52 @@ func (q *Queries) RemoveCustomerTag(ctx context.Context, arg RemoveCustomerTagPa
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const reserveSidebarCustomerProfileReceipt = `-- name: ReserveSidebarCustomerProfileReceipt :one
+INSERT INTO public.sidebar_customer_profile_operation_receipts (
+  actor_scope, key_digest, payload_digest, created_at
+) VALUES (
+  $1::text, $2::bytea,
+  $3::bytea, $4::timestamptz
+)
+ON CONFLICT (actor_scope, key_digest) DO NOTHING
+RETURNING id, actor_scope, key_digest, payload_digest, state, result_snapshot
+`
+
+type ReserveSidebarCustomerProfileReceiptParams struct {
+	ActorScope    string             `json:"actor_scope"`
+	KeyDigest     []byte             `json:"key_digest"`
+	PayloadDigest []byte             `json:"payload_digest"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type ReserveSidebarCustomerProfileReceiptRow struct {
+	ID             int64  `json:"id"`
+	ActorScope     string `json:"actor_scope"`
+	KeyDigest      []byte `json:"key_digest"`
+	PayloadDigest  []byte `json:"payload_digest"`
+	State          string `json:"state"`
+	ResultSnapshot []byte `json:"result_snapshot"`
+}
+
+func (q *Queries) ReserveSidebarCustomerProfileReceipt(ctx context.Context, arg ReserveSidebarCustomerProfileReceiptParams) (ReserveSidebarCustomerProfileReceiptRow, error) {
+	row := q.db.QueryRow(ctx, reserveSidebarCustomerProfileReceipt,
+		arg.ActorScope,
+		arg.KeyDigest,
+		arg.PayloadDigest,
+		arg.CreatedAt,
+	)
+	var i ReserveSidebarCustomerProfileReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorScope,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
 }
 
 const resolveEffectiveCustomerRoot = `-- name: ResolveEffectiveCustomerRoot :one
@@ -482,6 +638,52 @@ func (q *Queries) UpdateCustomer(ctx context.Context, arg UpdateCustomerParams) 
 		&i.IsDeleted,
 		&i.Extra,
 		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const updateSidebarCustomerProfile = `-- name: UpdateSidebarCustomerProfile :one
+UPDATE public.customers
+SET extra = jsonb_set(extra, '{sidebar_profile}', $1::jsonb, true),
+    updated_at = $2::timestamptz
+WHERE id = $3::bigint
+  AND owner_staff_id = $4::bigint
+  AND updated_at = $5::timestamptz
+  AND NOT is_deleted
+RETURNING id, name, owner_staff_id, extra, updated_at
+`
+
+type UpdateSidebarCustomerProfileParams struct {
+	Profile           []byte             `json:"profile"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	CustomerID        int64              `json:"customer_id"`
+	OwnerStaffID      int64              `json:"owner_staff_id"`
+	ExpectedUpdatedAt pgtype.Timestamptz `json:"expected_updated_at"`
+}
+
+type UpdateSidebarCustomerProfileRow struct {
+	ID           int64              `json:"id"`
+	Name         string             `json:"name"`
+	OwnerStaffID pgtype.Int8        `json:"owner_staff_id"`
+	Extra        []byte             `json:"extra"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) UpdateSidebarCustomerProfile(ctx context.Context, arg UpdateSidebarCustomerProfileParams) (UpdateSidebarCustomerProfileRow, error) {
+	row := q.db.QueryRow(ctx, updateSidebarCustomerProfile,
+		arg.Profile,
+		arg.UpdatedAt,
+		arg.CustomerID,
+		arg.OwnerStaffID,
+		arg.ExpectedUpdatedAt,
+	)
+	var i UpdateSidebarCustomerProfileRow
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.OwnerStaffID,
+		&i.Extra,
 		&i.UpdatedAt,
 	)
 	return i, err
