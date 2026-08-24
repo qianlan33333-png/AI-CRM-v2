@@ -739,6 +739,7 @@ function PageContent({
   if (customerPage?.kind === "detail") {
     const detailProps = {
       customerID: customerPage.customerID,
+      actorID: principal.adminUserID,
       role: principal.role,
       transport: customerDetailTransport,
       mergeHistoryRole: principal.role,

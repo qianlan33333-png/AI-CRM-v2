@@ -1,11 +1,16 @@
 import {
   addCustomerTag,
+  deleteCustomerContactPolicy,
   getCustomer,
+  getCustomerContactPolicy,
   listCustomerEvents,
   listTags,
+  putCustomerContactPolicy,
   removeCustomerTag,
   setCustomerStage,
   updateCustomer,
+  type ClearCustomerContactPolicyRequest,
+  type SetCustomerContactPolicyRequest,
   type CustomerUpdateRequest,
   type ListCustomerEventsParams,
   type SetCustomerStageRequest,
@@ -38,6 +43,20 @@ export interface CustomerTimelineEvent {
   readonly eventType: string;
   readonly actor: string;
   readonly occurredAt: string;
+}
+
+export type CustomerContactPolicyReason =
+  "manual_opt_out" | "compliance_hold" | "operator_hold";
+
+export interface CustomerContactPolicy {
+  readonly customerID: number;
+  readonly version: number;
+  readonly policyPresent: boolean;
+  readonly eligible: boolean;
+  readonly suppressionActive: boolean;
+  readonly reasonCode: CustomerContactPolicyReason | null;
+  readonly suppressedUntil: string | null;
+  readonly localOnly: true;
 }
 
 export interface CustomerDetailSnapshot {
@@ -122,6 +141,36 @@ async function loadGeneratedTags(
   return { status: response.status, data: response.data };
 }
 
+async function loadGeneratedCustomerContactPolicy(
+  customerID: number,
+  options: RequestInit,
+): Promise<CustomerDetailTransportResponse> {
+  const response = await getCustomerContactPolicy(customerID, options);
+  return { status: response.status, data: response.data };
+}
+
+async function setGeneratedCustomerContactPolicy(
+  customerID: number,
+  request: SetCustomerContactPolicyRequest,
+  options: RequestInit,
+): Promise<CustomerDetailTransportResponse> {
+  const response = await putCustomerContactPolicy(customerID, request, options);
+  return { status: response.status, data: response.data };
+}
+
+async function clearGeneratedCustomerContactPolicy(
+  customerID: number,
+  request: ClearCustomerContactPolicyRequest,
+  options: RequestInit,
+): Promise<CustomerDetailTransportResponse> {
+  const response = await deleteCustomerContactPolicy(
+    customerID,
+    request,
+    options,
+  );
+  return { status: response.status, data: response.data };
+}
+
 export interface CustomerDetailTransport {
   readonly get: typeof loadGeneratedCustomer;
   readonly update: typeof updateGeneratedCustomer;
@@ -130,6 +179,9 @@ export interface CustomerDetailTransport {
   readonly removeTag: typeof removeGeneratedCustomerTag;
   readonly listEvents: typeof loadGeneratedCustomerEvents;
   readonly listTags: typeof loadGeneratedTags;
+  readonly getContactPolicy: typeof loadGeneratedCustomerContactPolicy;
+  readonly setContactPolicy: typeof setGeneratedCustomerContactPolicy;
+  readonly clearContactPolicy: typeof clearGeneratedCustomerContactPolicy;
 }
 
 export const generatedCustomerDetailTransport: CustomerDetailTransport = {
@@ -140,6 +192,9 @@ export const generatedCustomerDetailTransport: CustomerDetailTransport = {
   removeTag: removeGeneratedCustomerTag,
   listEvents: loadGeneratedCustomerEvents,
   listTags: loadGeneratedTags,
+  getContactPolicy: loadGeneratedCustomerContactPolicy,
+  setContactPolicy: setGeneratedCustomerContactPolicy,
+  clearContactPolicy: clearGeneratedCustomerContactPolicy,
 };
 
 export type CustomerDetailLoadResult =
@@ -169,6 +224,23 @@ export type CustomerMutationFailure =
   | "conflict"
   | "invalid"
   | "unavailable";
+
+export type CustomerContactPolicyLoadResult =
+  | { readonly status: "loaded"; readonly policy: CustomerContactPolicy }
+  | { readonly status: "unauthenticated" }
+  | { readonly status: "forbidden" }
+  | { readonly status: "not_found" }
+  | { readonly status: "unavailable" };
+
+export type CustomerContactPolicyMutationResult =
+  | { readonly status: "succeeded"; readonly policy: CustomerContactPolicy }
+  | { readonly status: "unauthenticated" }
+  | { readonly status: "forbidden" }
+  | { readonly status: "not_found" }
+  | { readonly status: "conflict" }
+  | { readonly status: "invalid" }
+  | { readonly status: "unavailable" }
+  | { readonly status: "outcome_unknown" };
 
 export type CustomerMutationResult =
   | { readonly status: "succeeded" }
@@ -255,6 +327,10 @@ function optionalAvatarURL(value: unknown): value is string | null | undefined {
 
 function optionalString(value: unknown): value is string | null | undefined {
   return value === undefined || value === null || typeof value === "string";
+}
+
+function nonNegativeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
 function exactObject(
@@ -484,6 +560,104 @@ export function parseTagCatalog(
   return parseTags(value.items);
 }
 
+const contactPolicyReasons = new Set<CustomerContactPolicyReason>([
+  "manual_opt_out",
+  "compliance_hold",
+  "operator_hold",
+]);
+
+function contactPolicyReason(
+  value: unknown,
+): value is CustomerContactPolicyReason {
+  return (
+    typeof value === "string" &&
+    contactPolicyReasons.has(value as CustomerContactPolicyReason)
+  );
+}
+
+export function parseCustomerContactPolicy(
+  value: unknown,
+  customerID: number,
+): CustomerContactPolicy | undefined {
+  const keys = [
+    "customer_id",
+    "version",
+    "policy_present",
+    "eligible",
+    "suppression_active",
+    "reason_code",
+    "suppressed_until",
+    "local_only",
+    "provider_execution_eligible",
+    "real_external_call_executed",
+    "delivery_proven",
+  ];
+  if (!positiveInteger(customerID) || !exactObject(value, keys, keys)) {
+    return undefined;
+  }
+  if (
+    value.customer_id !== customerID ||
+    !nonNegativeInteger(value.version) ||
+    typeof value.policy_present !== "boolean" ||
+    typeof value.eligible !== "boolean" ||
+    typeof value.suppression_active !== "boolean" ||
+    !(value.reason_code === null || contactPolicyReason(value.reason_code)) ||
+    !(value.suppressed_until === null || timestamp(value.suppressed_until)) ||
+    value.local_only !== true ||
+    value.provider_execution_eligible !== false ||
+    value.real_external_call_executed !== false ||
+    value.delivery_proven !== false ||
+    value.eligible === value.suppression_active
+  ) {
+    return undefined;
+  }
+  if (!value.policy_present) {
+    if (
+      value.version !== 0 ||
+      value.reason_code !== null ||
+      value.suppressed_until !== null ||
+      !value.eligible ||
+      value.suppression_active
+    ) {
+      return undefined;
+    }
+  } else if (value.version < 1 || !contactPolicyReason(value.reason_code)) {
+    return undefined;
+  }
+  return {
+    customerID,
+    version: value.version,
+    policyPresent: value.policy_present,
+    eligible: value.eligible,
+    suppressionActive: value.suppression_active,
+    reasonCode: value.reason_code,
+    suppressedUntil: value.suppressed_until,
+    localOnly: true,
+  };
+}
+
+export async function loadCustomerContactPolicy(
+  transport: CustomerDetailTransport,
+  customerID: number,
+  signal?: AbortSignal,
+): Promise<CustomerContactPolicyLoadResult> {
+  if (!positiveInteger(customerID)) return { status: "unavailable" };
+  try {
+    const response = await transport.getContactPolicy(customerID, {
+      ...SAME_ORIGIN,
+      ...(signal ? { signal } : {}),
+    });
+    if (response.status === 401) return { status: "unauthenticated" };
+    if (response.status === 403) return { status: "forbidden" };
+    if (response.status === 404) return { status: "not_found" };
+    if (response.status !== 200) return { status: "unavailable" };
+    const policy = parseCustomerContactPolicy(response.data, customerID);
+    return policy ? { status: "loaded", policy } : { status: "unavailable" };
+  } catch {
+    return { status: "unavailable" };
+  }
+}
+
 function readFailure(
   statuses: readonly number[],
 ): CustomerDetailReadFailure | undefined {
@@ -593,6 +767,131 @@ function mutationOptions(csrfToken: string): RequestInit | undefined {
     credentials: "same-origin",
     headers: { "X-CSRF-Token": csrfToken },
   };
+}
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function newCustomerContactPolicyIdempotencyKey(
+  operation: "set" | "clear",
+  source: { readonly randomUUID: () => string } | undefined = globalThis.crypto,
+): string | undefined {
+  try {
+    const uuid = source?.randomUUID();
+    return typeof uuid === "string" && UUID_PATTERN.test(uuid)
+      ? `customer-contact-policy:${operation}:${uuid}`
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function contactPolicyMutationOptions(
+  csrfToken: string,
+  idempotencyKey: string,
+): RequestInit | undefined {
+  const options = mutationOptions(csrfToken);
+  if (
+    !options ||
+    typeof idempotencyKey !== "string" ||
+    idempotencyKey.length === 0 ||
+    idempotencyKey.length > 200 ||
+    idempotencyKey.trim() !== idempotencyKey
+  ) {
+    return undefined;
+  }
+  return {
+    ...options,
+    headers: { ...options.headers, "Idempotency-Key": idempotencyKey },
+  };
+}
+
+function contactPolicyMutationFailure(
+  status: number,
+): Exclude<
+  CustomerContactPolicyMutationResult,
+  { readonly status: "succeeded" }
+> {
+  if (status === 401) return { status: "unauthenticated" };
+  if (status === 403) return { status: "forbidden" };
+  if (status === 404) return { status: "not_found" };
+  if (status === 409) return { status: "conflict" };
+  if (status === 400 || status === 422) return { status: "invalid" };
+  return { status: "unavailable" };
+}
+
+export async function submitCustomerContactPolicySet(
+  transport: CustomerDetailTransport,
+  customerID: number,
+  request: {
+    readonly expectedVersion: number;
+    readonly reasonCode: CustomerContactPolicyReason;
+    readonly suppressedUntil: string | null;
+  },
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<CustomerContactPolicyMutationResult> {
+  const options = contactPolicyMutationOptions(csrfToken, idempotencyKey);
+  if (
+    !positiveInteger(customerID) ||
+    !options ||
+    !nonNegativeInteger(request.expectedVersion) ||
+    !contactPolicyReason(request.reasonCode) ||
+    !(request.suppressedUntil === null || timestamp(request.suppressedUntil))
+  ) {
+    return { status: "invalid" };
+  }
+  try {
+    const response = await transport.setContactPolicy(
+      customerID,
+      {
+        expected_version: request.expectedVersion,
+        reason_code: request.reasonCode,
+        suppressed_until: request.suppressedUntil,
+      },
+      options,
+    );
+    if (response.status !== 200)
+      return contactPolicyMutationFailure(response.status);
+    const policy = parseCustomerContactPolicy(response.data, customerID);
+    return policy
+      ? { status: "succeeded", policy }
+      : { status: "outcome_unknown" };
+  } catch {
+    return { status: "outcome_unknown" };
+  }
+}
+
+export async function submitCustomerContactPolicyClear(
+  transport: CustomerDetailTransport,
+  customerID: number,
+  expectedVersion: number,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<CustomerContactPolicyMutationResult> {
+  const options = contactPolicyMutationOptions(csrfToken, idempotencyKey);
+  if (
+    !positiveInteger(customerID) ||
+    !options ||
+    !positiveInteger(expectedVersion)
+  ) {
+    return { status: "invalid" };
+  }
+  try {
+    const response = await transport.clearContactPolicy(
+      customerID,
+      { expected_version: expectedVersion },
+      options,
+    );
+    if (response.status !== 200)
+      return contactPolicyMutationFailure(response.status);
+    const policy = parseCustomerContactPolicy(response.data, customerID);
+    return policy
+      ? { status: "succeeded", policy }
+      : { status: "outcome_unknown" };
+  } catch {
+    return { status: "outcome_unknown" };
+  }
 }
 
 function validMutationCustomerID(customerID: number): boolean {
