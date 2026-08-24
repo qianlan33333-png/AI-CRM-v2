@@ -47,6 +47,12 @@ SET customer_id = EXCLUDED.customer_id,
 WHERE identities.customer_id IS NULL OR identities.customer_id = EXCLUDED.customer_id
 RETURNING id, customer_id = sqlc.arg(customer_id)::bigint AS bound;
 
+-- name: LockHistoricalScopedWeComIdentity :one
+SELECT customer_id, kind, scope, normalized_value
+FROM identities
+WHERE id = sqlc.arg(identity_id)::bigint
+FOR UPDATE;
+
 -- name: ListPrimaryWeComExternalUserIDs :many
 SELECT
   customer_id,

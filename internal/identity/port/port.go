@@ -43,6 +43,7 @@ type IDRef struct {
 // event, invoke a Provider, or expose arbitrary identity SQL.
 type HistoricalScopedIdentityBinder interface {
 	BindHistoricalScopedWeComIdentity(context.Context, HistoricalScopedIdentity) (HistoricalScopedIdentityResult, error)
+	ValidateHistoricalScopedWeComIdentity(context.Context, int64, HistoricalScopedIdentity) error
 }
 
 type HistoricalScopedIdentity struct {

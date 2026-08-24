@@ -159,6 +159,84 @@ type HistoricalImportStaff struct {
 	ID int64
 }
 
+type HistoricalImportSource uint8
+
+const (
+	HistoricalImportOwnerRoleMap HistoricalImportSource = iota + 1
+	HistoricalImportCustomerIdentity
+	HistoricalImportExternalIdentity
+)
+
+type HistoricalImportDisposition uint8
+
+const (
+	HistoricalImportImported HistoricalImportDisposition = iota + 1
+	HistoricalImportQuarantined
+)
+
+// HistoricalImportSourceFact carries only secret-backed digests. Raw legacy
+// source keys and payloads never cross into the target ledger boundary.
+type HistoricalImportSourceFact struct {
+	SourceKeyHMAC []byte
+	PayloadHMAC   []byte
+	FieldDigest   []byte
+}
+
+type HistoricalImportStaffFact struct {
+	WeComUserID string
+	Name        string
+	Active      bool
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+type HistoricalImportCustomerFact struct {
+	Name         string
+	AvatarURL    *string
+	Gender       *int16
+	OwnerStaffID *int64
+	FirstSeenAt  time.Time
+	LastSeenAt   time.Time
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+type HistoricalImportLineage struct {
+	TargetID    int64
+	PayloadHMAC []byte
+}
+
+type HistoricalImportRowReceipt struct {
+	PayloadHMAC []byte
+	FieldDigest []byte
+	Disposition HistoricalImportDisposition
+}
+
+type HistoricalImportQuarantine struct {
+	RunID      int64
+	Source     HistoricalImportSource
+	SourceFact HistoricalImportSourceFact
+	ReasonCode string
+}
+
+// HistoricalImportTarget is the closed Contact-owned target boundary for
+// DM01. Every method requires the transaction context supplied by UnitOfWork.
+// It has no event, merge, Provider, role, or arbitrary SQL capability.
+type HistoricalImportTarget interface {
+	LockHistoricalImportSource(context.Context, HistoricalImportSource, []byte) error
+	FindHistoricalImportRowReceipt(context.Context, int64, HistoricalImportSource, []byte) (HistoricalImportRowReceipt, bool, error)
+	LockHistoricalImportLineage(context.Context, HistoricalImportSource, []byte) (HistoricalImportLineage, bool, error)
+	EnsureHistoricalImportStaff(context.Context, HistoricalImportStaffFact) (int64, error)
+	CreateHistoricalImportCustomer(context.Context, HistoricalImportCustomerFact) (int64, error)
+	ValidateHistoricalImportStaff(context.Context, int64, HistoricalImportStaffFact) error
+	ValidateHistoricalImportCustomer(context.Context, int64, HistoricalImportCustomerFact) error
+	IsHistoricalImportActiveStaff(context.Context, int64) (bool, error)
+	ValidateHistoricalImportCustomerRoot(context.Context, int64) error
+	AppendHistoricalImportLineage(context.Context, int64, HistoricalImportSource, HistoricalImportSourceFact, int64) error
+	AppendHistoricalImportQuarantine(context.Context, HistoricalImportQuarantine) error
+	AppendHistoricalImportRowReceipt(context.Context, int64, HistoricalImportSource, HistoricalImportSourceFact, HistoricalImportDisposition) error
+}
+
 type Stage struct {
 	ID        StageID
 	Name      string

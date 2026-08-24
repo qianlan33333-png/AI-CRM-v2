@@ -53,6 +53,31 @@ func (repository *Repository) BindHistoricalScopedWeComIdentity(ctx context.Cont
 	return identityport.HistoricalScopedIdentityResult{IdentityID: row.ID, Bound: row.Bound}, nil
 }
 
+func (repository *Repository) ValidateHistoricalScopedWeComIdentity(ctx context.Context, identityID int64, command identityport.HistoricalScopedIdentity) error {
+	if repository == nil || identityID < 1 || command.CustomerID < 1 || len(command.SourceKeyHMAC) != 32 || command.HMACKeyVersion < 1 {
+		return identityapp.ErrInvalidIdentity
+	}
+	normalized, err := identityapp.Normalize(identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: command.Scope, Value: command.ExternalUserID})
+	if err != nil {
+		return identityapp.ErrInvalidIdentity
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	row, err := identitydb.New(tx).LockHistoricalScopedWeComIdentity(ctx, identityID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return identityport.ErrHistoricalScopedIdentityConflict
+	}
+	if err != nil {
+		return err
+	}
+	if !row.CustomerID.Valid || row.CustomerID.Int64 != int64(command.CustomerID) || row.Kind != string(identityport.KindWeComExternalUserID) || row.Scope != normalized.Scope || row.NormalizedValue != normalized.NormalizedValue {
+		return identityport.ErrHistoricalScopedIdentityConflict
+	}
+	return nil
+}
+
 func (repository *Repository) ListCustomerMergeHistory(
 	ctx context.Context,
 	customerID contactport.CustomerID,

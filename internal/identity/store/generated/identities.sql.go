@@ -973,6 +973,32 @@ func (q *Queries) LockActiveMergeReviewCustomers(ctx context.Context, customerId
 	return items, nil
 }
 
+const lockHistoricalScopedWeComIdentity = `-- name: LockHistoricalScopedWeComIdentity :one
+SELECT customer_id, kind, scope, normalized_value
+FROM identities
+WHERE id = $1::bigint
+FOR UPDATE
+`
+
+type LockHistoricalScopedWeComIdentityRow struct {
+	CustomerID      pgtype.Int8 `json:"customer_id"`
+	Kind            string      `json:"kind"`
+	Scope           string      `json:"scope"`
+	NormalizedValue string      `json:"normalized_value"`
+}
+
+func (q *Queries) LockHistoricalScopedWeComIdentity(ctx context.Context, identityID int64) (LockHistoricalScopedWeComIdentityRow, error) {
+	row := q.db.QueryRow(ctx, lockHistoricalScopedWeComIdentity, identityID)
+	var i LockHistoricalScopedWeComIdentityRow
+	err := row.Scan(
+		&i.CustomerID,
+		&i.Kind,
+		&i.Scope,
+		&i.NormalizedValue,
+	)
+	return i, err
+}
+
 const lockIdentityForBind = `-- name: LockIdentityForBind :one
 SELECT id, customer_id
 FROM identities
