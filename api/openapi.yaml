@@ -1155,6 +1155,76 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/internal-events/exports:
+    post:
+      tags: [p4-internal-event-safe-export]
+      operationId: createInternalEventSafeExport
+      summary: Freeze an admin-only local event and delivery safe CSV snapshot
+      x-p4-decision-evidence: P4-EE01-INTERNAL-EVENT-SAFE-EXPORT-2026-08-25
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: event_log_and_event_deliveries.local_frozen_snapshot
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      security: [{ AdminSession: [] }]
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/InternalEventSafeExportRequest" } } } }
+      responses:
+        "201": { description: "Frozen local event and delivery snapshot only; it is not River, Outbound, Provider, or external-delivery proof.", content: { application/json: { schema: { $ref: "#/components/schemas/InternalEventSafeExportResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/internal-events/exports/{export_id}:
+    parameters: [{ $ref: "#/components/parameters/InternalEventSafeExportID" }]
+    get:
+      tags: [p4-internal-event-safe-export]
+      operationId: getInternalEventSafeExport
+      summary: Read actor-bound local internal event safe export metadata
+      x-p4-decision-evidence: P4-EE01-INTERNAL-EVENT-SAFE-EXPORT-2026-08-25
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: event_log_and_event_deliveries.local_frozen_snapshot
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      security: [{ AdminSession: [] }]
+      responses:
+        "200": { description: Actor-bound local snapshot metadata, content: { application/json: { schema: { $ref: "#/components/schemas/InternalEventSafeExportResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/internal-events/exports/{export_id}/download:
+    parameters: [{ $ref: "#/components/parameters/InternalEventSafeExportID" }]
+    get:
+      tags: [p4-internal-event-safe-export]
+      operationId: downloadInternalEventSafeExport
+      summary: Download a formula-safe actor-bound local internal event CSV
+      x-p4-decision-evidence: P4-EE01-INTERNAL-EVENT-SAFE-EXPORT-2026-08-25
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: event_log_and_event_deliveries.local_frozen_snapshot
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      security: [{ AdminSession: [] }]
+      responses:
+        "200": { description: Formula-safe local CSV snapshot only., headers: { Cache-Control: { required: true, schema: { type: string, enum: [no-store] } }, X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }, Content-Disposition: { required: true, schema: { type: string } } }, content: { text/csv: { schema: { type: string, format: binary } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/v1/customers/{customer_id}/tags/{tag_id}:
     parameters:
       - $ref: "#/components/parameters/CustomerID"
@@ -9685,6 +9755,12 @@ components:
       required: true
       description: Opaque Contact-owned local snapshot identifier.
       schema: { type: string, pattern: '^cse_[0-9a-f]{32}$', minLength: 36, maxLength: 36 }
+    InternalEventSafeExportID:
+      name: export_id
+      in: path
+      required: true
+      description: Opaque Events-owned local snapshot identifier.
+      schema: { type: string, pattern: '^ese_[0-9a-f]{32}$', minLength: 36, maxLength: 36 }
     ServicePeriodMemberRef:
       name: member_ref
       in: path
@@ -14957,6 +15033,25 @@ components:
         download_url: { type: string, pattern: '^/api/v1/customer-exports/cse_[0-9a-f]{32}/download$' }
         local_only: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
+    InternalEventSafeExportRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        event_type: { type: string, maxLength: 200 }
+        consumer: { type: string, enum: ["", automation.tag-trigger.v1, stats.tag-applied.v1, operation-cycle.fact.v1, cloud-campaign.fact.v1, outbound-campaign-handoff.fact.v1], x-enum-varnames: [InternalEventSafeExportRequestConsumerEmpty, InternalEventSafeExportRequestConsumerAutomationTagTriggerV1, InternalEventSafeExportRequestConsumerStatsTagAppliedV1, InternalEventSafeExportRequestConsumerOperationCycleFactV1, InternalEventSafeExportRequestConsumerCloudCampaignFactV1, InternalEventSafeExportRequestConsumerOutboundCampaignHandoffFactV1] }
+        status: { type: string, enum: ["", pending, processing, completed, final_failed, outcome_unknown], x-enum-varnames: [InternalEventSafeExportRequestStatusEmpty, InternalEventSafeExportRequestStatusPending, InternalEventSafeExportRequestStatusProcessing, InternalEventSafeExportRequestStatusCompleted, InternalEventSafeExportRequestStatusFinalFailed, InternalEventSafeExportRequestStatusOutcomeUnknown] }
+    InternalEventSafeExportResponse:
+      type: object
+      additionalProperties: false
+      required: [id, record_count, watermark, created_at, download_url, local_only, real_external_call_executed]
+      properties:
+        id: { type: string, pattern: '^ese_[0-9a-f]{32}$' }
+        record_count: { type: integer, minimum: 0, maximum: 10000 }
+        watermark: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+        download_url: { type: string, pattern: '^/api/admin/internal-events/exports/ese_[0-9a-f]{32}/download$' }
+        local_only: { type: boolean, enum: [true], x-enum-varnames: [InternalEventSafeExportResponseLocalOnlyTrue] }
+        real_external_call_executed: { type: boolean, enum: [false], x-enum-varnames: [InternalEventSafeExportResponseRealExternalCallExecutedFalse] }
     CustomerDetailResponse:
       type: object
       additionalProperties: false

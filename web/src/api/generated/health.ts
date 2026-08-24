@@ -10710,6 +10710,60 @@ export interface CustomerSafeExportResponse {
   real_external_call_executed: boolean;
 }
 
+export type InternalEventSafeExportRequestConsumer =
+  (typeof InternalEventSafeExportRequestConsumer)[keyof typeof InternalEventSafeExportRequestConsumer];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InternalEventSafeExportRequestConsumer = {
+  InternalEventSafeExportRequestConsumerEmpty: "",
+  InternalEventSafeExportRequestConsumerAutomationTagTriggerV1:
+    "automation.tag-trigger.v1",
+  InternalEventSafeExportRequestConsumerStatsTagAppliedV1:
+    "stats.tag-applied.v1",
+  InternalEventSafeExportRequestConsumerOperationCycleFactV1:
+    "operation-cycle.fact.v1",
+  InternalEventSafeExportRequestConsumerCloudCampaignFactV1:
+    "cloud-campaign.fact.v1",
+  InternalEventSafeExportRequestConsumerOutboundCampaignHandoffFactV1:
+    "outbound-campaign-handoff.fact.v1",
+} as const;
+
+export type InternalEventSafeExportRequestStatus =
+  (typeof InternalEventSafeExportRequestStatus)[keyof typeof InternalEventSafeExportRequestStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InternalEventSafeExportRequestStatus = {
+  InternalEventSafeExportRequestStatusEmpty: "",
+  InternalEventSafeExportRequestStatusPending: "pending",
+  InternalEventSafeExportRequestStatusProcessing: "processing",
+  InternalEventSafeExportRequestStatusCompleted: "completed",
+  InternalEventSafeExportRequestStatusFinalFailed: "final_failed",
+  InternalEventSafeExportRequestStatusOutcomeUnknown: "outcome_unknown",
+} as const;
+
+export interface InternalEventSafeExportRequest {
+  /** @maxLength 200 */
+  event_type?: string;
+  consumer?: InternalEventSafeExportRequestConsumer;
+  status?: InternalEventSafeExportRequestStatus;
+}
+
+export interface InternalEventSafeExportResponse {
+  /** @pattern ^ese_[0-9a-f]{32}$ */
+  id: string;
+  /**
+   * @minimum 0
+   * @maximum 10000
+   */
+  record_count: number;
+  watermark: string;
+  created_at: string;
+  /** @pattern ^/api/admin/internal-events/exports/ese_[0-9a-f]{32}/download$ */
+  download_url: string;
+  local_only: boolean;
+  real_external_call_executed: boolean;
+}
+
 export interface CustomerDetailResponse {
   customer: Customer;
   tags: Tag[];
@@ -18355,6 +18409,236 @@ export const downloadCustomerSafeExport = async (
     status: res.status,
     headers: res.headers,
   } as downloadCustomerSafeExportResponse;
+};
+
+/**
+ * @summary Freeze an admin-only local event and delivery safe CSV snapshot
+ */
+export type createInternalEventSafeExportResponse201 = {
+  data: InternalEventSafeExportResponse;
+  status: 201;
+};
+
+export type createInternalEventSafeExportResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createInternalEventSafeExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createInternalEventSafeExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createInternalEventSafeExportResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createInternalEventSafeExportResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createInternalEventSafeExportResponseSuccess =
+  createInternalEventSafeExportResponse201 & {
+    headers: Headers;
+  };
+export type createInternalEventSafeExportResponseError = (
+  | createInternalEventSafeExportResponse400
+  | createInternalEventSafeExportResponse401
+  | createInternalEventSafeExportResponse403
+  | createInternalEventSafeExportResponse409
+  | createInternalEventSafeExportResponse503
+) & {
+  headers: Headers;
+};
+
+export type createInternalEventSafeExportResponse =
+  | createInternalEventSafeExportResponseSuccess
+  | createInternalEventSafeExportResponseError;
+
+export const getCreateInternalEventSafeExportUrl = () => {
+  return `/api/admin/internal-events/exports`;
+};
+
+export const createInternalEventSafeExport = async (
+  internalEventSafeExportRequest: InternalEventSafeExportRequest,
+  options?: RequestInit,
+): Promise<createInternalEventSafeExportResponse> => {
+  const res = await fetch(getCreateInternalEventSafeExportUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(internalEventSafeExportRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createInternalEventSafeExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createInternalEventSafeExportResponse;
+};
+
+/**
+ * @summary Read actor-bound local internal event safe export metadata
+ */
+export type getInternalEventSafeExportResponse200 = {
+  data: InternalEventSafeExportResponse;
+  status: 200;
+};
+
+export type getInternalEventSafeExportResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getInternalEventSafeExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getInternalEventSafeExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getInternalEventSafeExportResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getInternalEventSafeExportResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getInternalEventSafeExportResponseSuccess =
+  getInternalEventSafeExportResponse200 & {
+    headers: Headers;
+  };
+export type getInternalEventSafeExportResponseError = (
+  | getInternalEventSafeExportResponse400
+  | getInternalEventSafeExportResponse401
+  | getInternalEventSafeExportResponse403
+  | getInternalEventSafeExportResponse404
+  | getInternalEventSafeExportResponse503
+) & {
+  headers: Headers;
+};
+
+export type getInternalEventSafeExportResponse =
+  | getInternalEventSafeExportResponseSuccess
+  | getInternalEventSafeExportResponseError;
+
+export const getGetInternalEventSafeExportUrl = (exportId: string) => {
+  return `/api/admin/internal-events/exports/${exportId}`;
+};
+
+export const getInternalEventSafeExport = async (
+  exportId: string,
+  options?: RequestInit,
+): Promise<getInternalEventSafeExportResponse> => {
+  const res = await fetch(getGetInternalEventSafeExportUrl(exportId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getInternalEventSafeExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getInternalEventSafeExportResponse;
+};
+
+/**
+ * @summary Download a formula-safe actor-bound local internal event CSV
+ */
+export type downloadInternalEventSafeExportResponse200 = {
+  data: Blob;
+  status: 200;
+};
+
+export type downloadInternalEventSafeExportResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type downloadInternalEventSafeExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type downloadInternalEventSafeExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type downloadInternalEventSafeExportResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type downloadInternalEventSafeExportResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type downloadInternalEventSafeExportResponseSuccess =
+  downloadInternalEventSafeExportResponse200 & {
+    headers: Headers;
+  };
+export type downloadInternalEventSafeExportResponseError = (
+  | downloadInternalEventSafeExportResponse400
+  | downloadInternalEventSafeExportResponse401
+  | downloadInternalEventSafeExportResponse403
+  | downloadInternalEventSafeExportResponse404
+  | downloadInternalEventSafeExportResponse503
+) & {
+  headers: Headers;
+};
+
+export type downloadInternalEventSafeExportResponse =
+  | downloadInternalEventSafeExportResponseSuccess
+  | downloadInternalEventSafeExportResponseError;
+
+export const getDownloadInternalEventSafeExportUrl = (exportId: string) => {
+  return `/api/admin/internal-events/exports/${exportId}/download`;
+};
+
+export const downloadInternalEventSafeExport = async (
+  exportId: string,
+  options?: RequestInit,
+): Promise<downloadInternalEventSafeExportResponse> => {
+  const res = await fetch(getDownloadInternalEventSafeExportUrl(exportId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: downloadInternalEventSafeExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as downloadInternalEventSafeExportResponse;
 };
 
 /**

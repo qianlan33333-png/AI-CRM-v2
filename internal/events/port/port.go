@@ -68,6 +68,10 @@ const (
 	// EvCustomerSafeExportCreated records a Contact-owned frozen local CSV
 	// snapshot. It has no delivery binding and cannot invoke a provider.
 	EvCustomerSafeExportCreated = "customer.safe_export_created"
+	// EvInternalEventSafeExportCreated records an Events-owned frozen local CSV
+	// snapshot. It has no delivery binding and cannot invoke River, outbound,
+	// a provider, or prove external delivery.
+	EvInternalEventSafeExportCreated = "events.safe_export_created"
 
 	ConsumerAutomationTagTrigger        = "automation.tag-trigger.v1"
 	ConsumerStatsTagApplied             = "stats.tag-applied.v1"
