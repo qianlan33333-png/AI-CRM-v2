@@ -127,7 +127,7 @@ func newIdentityUpsertService(pool *pgxpool.Pool, events eventport.Appender) *id
 
 func resetIdentityUpsert(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	if _, err := pool.Exec(context.Background(), `TRUNCATE legacy_contact_identity_source_mappings, identity_operation_receipts, pending_events, customer_merges, identities`); err != nil {
+	if _, err := pool.Exec(context.Background(), `TRUNCATE identity_operation_receipts, pending_events, customer_merges, identities CASCADE`); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := pool.Exec(context.Background(), `SELECT setval('identities_id_seq', $1::bigint, false)`, time.Now().UnixNano()); err != nil {
