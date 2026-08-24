@@ -58,7 +58,11 @@ WHERE id=sqlc.arg(id) AND actor_id=sqlc.arg(actor_id);
 SELECT r.customer_id,r.display_name,r.owner_staff_id,r.stage_id,r.channel_id,r.added_at,r.last_interact_at,c.owner_staff_id AS current_owner_staff_id,c.is_deleted
 FROM public.customer_safe_export_rows r
 JOIN public.customer_safe_exports e ON e.id=r.export_id
-JOIN public.customers c ON c.id=r.customer_id
+JOIN LATERAL (
+  SELECT c.owner_staff_id,c.is_deleted
+  FROM public.customers c
+  WHERE c.id=r.customer_id
+  FOR SHARE
+) c ON TRUE
 WHERE r.export_id=sqlc.arg(export_id) AND e.actor_id=sqlc.arg(actor_id)
-ORDER BY r.row_index
-FOR SHARE OF c;
+ORDER BY r.row_index;
