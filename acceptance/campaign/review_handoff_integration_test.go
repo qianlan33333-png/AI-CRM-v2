@@ -14,6 +14,7 @@ import (
 	campaignport "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/port"
 	campaignstore "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/store"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	eventsfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store/acceptancefixture"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -69,6 +70,7 @@ func TestCampaignTouchPlanReviewHandoffPostgreSQLFreshReplayScopeAndImmutability
 	}
 	assertReviewReceiptCount(t, ctx, pool, prefix, planID, 1)
 	assertReviewReceiptSnapshots(t, ctx, pool, planID, 1)
+	assertInvalidSubmittedFactVersionsRejected(t, ctx, pool, prefix, planID)
 	assertTamperedReviewSnapshotRejected(t, ctx, pool, prefix, planID)
 
 	approved, err := service.Approve(ctx, campaign.DecideTouchPlanReviewCommand{
@@ -247,6 +249,37 @@ func assertReviewReceiptSnapshots(t *testing.T, ctx context.Context, pool *pgxpo
 	}
 }
 
+func assertInvalidSubmittedFactVersionsRejected(t *testing.T, ctx context.Context, pool *pgxpool.Pool, campaignCode, planID string) {
+	t.Helper()
+	for _, reviewVersion := range []int64{1, 3} {
+		reviewVersion := reviewVersion
+		t.Run(fmt.Sprintf("submitted event version %d", reviewVersion), func(t *testing.T) {
+			idempotencyKey := fmt.Sprintf("review-invalid-version-event:%s:%d", planID, reviewVersion)
+			tx, err := pool.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, appendErr := eventsfixture.AppendCloudCampaignTouchPlanSubmitted(
+				ctx, tx, planID, campaignCode, reviewVersion, 71, idempotencyKey,
+			)
+			if appendErr == nil {
+				if err = tx.Commit(ctx); err != nil {
+					t.Fatal(err)
+				}
+			} else if err = tx.Rollback(ctx); err != nil {
+				t.Fatal(err)
+			}
+			var eventCount int
+			if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.event_log WHERE idempotency_key = $1`, idempotencyKey).Scan(&eventCount); err != nil {
+				t.Fatal(err)
+			}
+			if appendErr == nil || eventCount != 0 {
+				t.Fatalf("review version %d append error=%v event count=%d, want error and zero events", reviewVersion, appendErr, eventCount)
+			}
+		})
+	}
+}
+
 func assertTamperedReviewSnapshotRejected(t *testing.T, ctx context.Context, pool *pgxpool.Pool, campaignCode, planID string) {
 	t.Helper()
 	for _, test := range []struct {
@@ -262,14 +295,14 @@ func assertTamperedReviewSnapshotRejected(t *testing.T, ctx context.Context, poo
 			if err != nil {
 				t.Fatal(err)
 			}
-			var eventID, receiptID int64
-			if err = tx.QueryRow(ctx, `INSERT INTO public.event_log (event_type, payload, occurred_at, idempotency_key)
-VALUES ('cloud_campaign.fact_recorded', jsonb_build_object(
-  'audit_type', 'touch_plan_submitted', 'plan_id', $1::text, 'campaign_code', $2::text, 'review_version', 2, 'actor_id', 71
-), now(), 'review-tampered-snapshot-event:' || $1::text || ':' || $3::text)
-RETURNING id`, planID, campaignCode, test.name).Scan(&eventID); err != nil {
+			eventID, err := eventsfixture.AppendCloudCampaignTouchPlanSubmitted(
+				ctx, tx, planID, campaignCode, 2, 71,
+				"review-tampered-snapshot-event:"+planID+":"+test.name,
+			)
+			if err != nil {
 				t.Fatal(err)
 			}
+			var receiptID int64
 			if err = tx.QueryRow(ctx, `INSERT INTO public.cloud_campaign_touch_plan_review_receipts (
   actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, created_at
 ) VALUES (
