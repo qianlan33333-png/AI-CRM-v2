@@ -11,16 +11,20 @@
 ## Layered inventory, not a release claim
 
 - Matrix disposition: 283 BACKEND_REQUIRED, 3 UI_ONLY, 8
-  RETIREMENT_APPROVED. BACKEND_REQUIRED is UNMAPPED unless independent V2
-  evidence is listed in frozen-local-assets.csv; Matrix evidence never upgrades
-  a capability to domain/API/PG verification.
+  RETIREMENT_APPROVED. UI_ONLY is FRONTEND_INTEGRATION_DEFERRED and
+  NOT_EXECUTED: frontend integration is paused pending an explicit user choice
+  and is not part of this backend replacement DoD. BACKEND_REQUIRED is UNMAPPED
+  unless independent V2 evidence is listed in frozen-local-assets.csv; Matrix
+  evidence never upgrades a capability to domain/API/PG verification.
 - Migration disposition: 86 BACKEND_REQUIRED, 72 RETIREMENT_APPROVED, 158
   DEFERRED_UNMAPPED. No data migration is marked executed.
-- Route actual breakdown: 178 EXTERNAL_PROTOCOL, 602 UNCLASSIFIED, and 1
+- Route actual breakdown: 175 EXTERNAL_PROTOCOL, 605 UNCLASSIFIED, and 1
   UNCLASSIFIED_SOURCE_DRIFT. Public H5, callback, external-integration, and
-  declared external-effect routes remain protocol inventory. In particular,
-  LEGACY-API-0778 preserves the public URL protocol but does not recreate old
-  HTML; its backing read capability remains unmapped. LEGACY-API-0053 remains
+  explicit WeCom OAuth endpoints remain protocol inventory. External effects
+  are tracked in external-effects-ledger.csv and never become protocol solely
+  because of an effect declaration. In particular, LEGACY-API-0778 preserves
+  the public URL protocol but does not recreate old HTML; its backing read
+  capability remains unmapped. LEGACY-API-0053 remains
   UNCLASSIFIED_SOURCE_DRIFT because api-mapping and route-triage disagree.
 - Frozen V2 local assets in frozen-local-assets.csv are 11 packages / 76 unique operationIds: the prior
   10-package/73-operation P4 receipt inventory plus PR #482 Customer Safe
@@ -31,7 +35,22 @@
 
 NOT_READY. UNCLASSIFIED routes, UNCLASSIFIED_SOURCE_DRIFT, DEFERRED_UNMAPPED
 migrations, UNMAPPED capabilities, and every NOT_EXECUTED external effect block
-cutover. This baseline verifies ledger structure and evidence references only.
-It makes no claim about main/Nightly success, deployment, data migration,
-Provider execution, payment/refund, callbacks, shadow traffic, or any external
-effect. Those are independent exit gates recorded in their own ledgers.
+cutover. FRONTEND_INTEGRATION_DEFERRED is intentionally excluded from the
+backend replacement DoD and remains paused. This baseline verifies ledger
+structure and evidence references only. It makes no claim about main/Nightly
+success, deployment, data migration, Provider execution, payment/refund,
+callbacks, shadow traffic, or any external effect. Those are independent exit
+gates recorded in their own ledgers.
+
+## Machine release state
+
+| Gate | State | Evidence ref |
+| --- | --- | --- |
+| release candidate | UNMAPPED | UNMAPPED |
+| artifact | UNMAPPED | UNMAPPED |
+| dependency closure | UNMAPPED | UNMAPPED |
+| receipt closure | UNMAPPED | UNMAPPED |
+| external authorization | NOT_EXECUTED | external-effects-ledger.csv |
+| rehearsal 1 | NOT_EXECUTED | UNMAPPED |
+| rehearsal 2 | NOT_EXECUTED | UNMAPPED |
+| rollback | NOT_EXECUTED | UNMAPPED |
