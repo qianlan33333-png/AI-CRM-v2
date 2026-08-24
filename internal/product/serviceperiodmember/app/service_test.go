@@ -50,6 +50,8 @@ type testStore struct {
 	createCalls        int
 	readbackCalls      int
 	listOverride       []memberdomain.Member
+	customerList       []memberdomain.Member
+	customerQuery      memberport.CustomerListQuery
 	timestampPrecision time.Duration
 }
 
@@ -139,6 +141,13 @@ func (store *testStore) List(_ context.Context, query memberport.StoreListQuery)
 		rows = rows[:query.Limit]
 	}
 	return rows, nil
+}
+func (store *testStore) ListCustomer(ctx context.Context, query memberport.CustomerListQuery) ([]memberdomain.Member, error) {
+	if ctx.Value(txKey{}) != true {
+		return nil, memberport.ErrUnavailable
+	}
+	store.customerQuery = query
+	return cloneMembers(store.customerList), nil
 }
 func (store *testStore) ReserveReceipt(_ context.Context, reservation memberport.ReceiptReservation) (memberport.Receipt, bool, error) {
 	key := reservation.Operation + ":" + string(reservation.KeyDigest[:])
@@ -359,6 +368,24 @@ func TestListCursorIsTamperProofAndFilterBound(t *testing.T) {
 	tampered := first.NextCursor[:len(first.NextCursor)-1] + "A"
 	if _, err = service.List(context.Background(), memberport.ListQuery{Filter: memberport.Filter{ServiceProductID: 7}, Limit: 1, Cursor: tampered}); !errors.Is(err, memberport.ErrInvalidInput) {
 		t.Fatalf("tamper err=%v", err)
+	}
+}
+
+func TestListCustomerIsBoundedAndRejectsCrossCustomerRows(t *testing.T) {
+	service, store, _, _ := fixture(t)
+	now := time.Date(2026, 8, 23, 1, 0, 0, 0, time.UTC)
+	store.customerList = []memberdomain.Member{
+		validMember("spm_CCCCCCCCCCCCCCCCCCCCCC", now),
+		validMember("spm_DDDDDDDDDDDDDDDDDDDDDD", now.Add(-time.Minute)),
+	}
+	result, err := service.ListCustomer(context.Background(), memberport.CustomerListQuery{CustomerID: 9, Limit: 1, Offset: 3})
+	if err != nil || len(result.Items) != 1 || !result.HasMore || result.Limit != 1 || result.Offset != 3 ||
+		store.customerQuery.CustomerID != 9 || store.customerQuery.Limit != 2 || store.customerQuery.Offset != 3 {
+		t.Fatalf("result/query/err=%+v/%+v/%v", result, store.customerQuery, err)
+	}
+	store.customerList[0].CustomerID = 10
+	if _, err = service.ListCustomer(context.Background(), memberport.CustomerListQuery{CustomerID: 9, Limit: 1}); !errors.Is(err, memberport.ErrUnavailable) {
+		t.Fatalf("cross-customer row err=%v", err)
 	}
 }
 

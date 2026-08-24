@@ -31,8 +31,12 @@ var (
 )
 
 var (
-	ErrCustomerReadNotFound    = errors.New("customer read projection not found")
-	ErrCustomerReadUnavailable = errors.New("customer read projection unavailable")
+	ErrCustomerReadNotFound      = errors.New("customer read projection not found")
+	ErrCustomerReadUnavailable   = errors.New("customer read projection unavailable")
+	ErrSidebarProfileInvalid     = errors.New("sidebar customer profile invalid")
+	ErrSidebarProfileNotFound    = errors.New("sidebar customer profile not found")
+	ErrSidebarProfileConflict    = errors.New("sidebar customer profile conflict")
+	ErrSidebarProfileUnavailable = errors.New("sidebar customer profile unavailable")
 )
 
 // CustomerProjection is deliberately channel neutral. Phone numbers and
@@ -44,6 +48,43 @@ type CustomerProjection struct {
 
 type CustomerReader interface {
 	ReadCustomer(context.Context, CustomerID) (CustomerProjection, error)
+}
+
+// SidebarProfile is the Contact-owned, channel-neutral subset exposed to the
+// customer sidebar. External identity values never fit in this contract.
+type SidebarProfile struct {
+	CustomerID   CustomerID `json:"customer_id"`
+	Name         string     `json:"name"`
+	OwnerStaffID int64      `json:"owner_staff_id"`
+	Source       string     `json:"source"`
+	Industry     string     `json:"industry"`
+	Description  string     `json:"description"`
+	Needs        string     `json:"needs"`
+	PainPoints   string     `json:"pain_points"`
+	UpdatedAt    time.Time  `json:"updated_at"`
+}
+
+type SidebarProfilePatch struct {
+	Source      *string `json:"source,omitempty"`
+	Industry    *string `json:"industry,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Needs       *string `json:"needs,omitempty"`
+	PainPoints  *string `json:"pain_points,omitempty"`
+}
+
+type SidebarProfileUpdateCommand struct {
+	CustomerID        CustomerID          `json:"customer_id"`
+	OwnerStaffID      int64               `json:"owner_staff_id"`
+	ExpectedUpdatedAt time.Time           `json:"expected_updated_at"`
+	Patch             SidebarProfilePatch `json:"patch"`
+	Actor             Actor               `json:"actor"`
+	IdempotencyKey    string              `json:"idempotency_key"`
+}
+
+type SidebarProfileService interface {
+	ResolveSidebarProfile(context.Context, CustomerID) (SidebarProfile, error)
+	ReadSidebarProfile(context.Context, CustomerID, int64) (SidebarProfile, error)
+	UpdateSidebarProfile(context.Context, SidebarProfileUpdateCommand) (SidebarProfile, error)
 }
 
 // ImageReferenceReader is the Contact-owned read-only answer to whether a

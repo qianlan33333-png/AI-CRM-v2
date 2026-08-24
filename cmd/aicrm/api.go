@@ -84,6 +84,8 @@ import (
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/segment/legacyaudience"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/segment/legacyaudiencemembers"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
+	sidebarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/sidebar/app"
+	sidebarhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/sidebar/http"
 	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
 	surveyhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http"
 	surveyoperationshttp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/http/operations"
@@ -150,6 +152,7 @@ type candidateHandler struct {
 	productLocal              *producthttp.LocalMutationHandler
 	productLifecycle          *producthttp.LocalProductLifecycleHandler
 	servicePeriodMembers      *memberhttp.Handler
+	sidebar                   *sidebarhttp.Handler
 	surveyPublic              *surveyhttp.PublicHandler
 	segmentRefresh            *segmenthttp.RefreshHandler
 	identityReviews           *identityhttp.ReviewHandler
@@ -1199,6 +1202,25 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	configRepository := configstore.NewRepository()
 	configManager := configapp.NewManager(uow, configRepository, eventstore.NewAppender())
+	sidebarService, err := sidebarapp.NewService(
+		sidebarCorpReader{settings: configManager, fallback: config.WeCom.OAuth.CorpID},
+		identityResolver,
+		contactapp.NewSidebarProfileService(uow, contactstore.NewSidebarProfileRepository(), eventstore.NewAppender()),
+		customerAnswerService,
+		orderapp.NewService(uow, orderstore.NewRepository(), contactstore.NewCustomerDetailRepository(), productstore.NewCatalogRepository()),
+		sidebarMemberAdapter{source: servicePeriodMemberService},
+		mediaService,
+		config.Identity.HMACKey.Value(),
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	candidate.sidebar, err = sidebarhttp.NewHandler(sidebarService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	setupWizardService, err := configapp.NewSetupWizardService(configManager, configapp.SetupWizardSecretConfigured{
 		WeComSecret:         config.WeCom.OAuth.Enabled,
 		WeComCallbackToken:  config.WeCom.Callback.Enabled,
@@ -1581,6 +1603,26 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		router.Method(method, pattern, tail)
 		return nil
 	}
+	registerOptionalSidebar := func(pattern string, endpoint http.Handler) error {
+		tail, wrapErr := recovery(endpoint)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		tail, wrapErr = gateway.TimeoutMiddleware(tail)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		tail = authHandler.AuthenticateOptional(tail)
+		tail, wrapErr = gateway.RoutePatternMiddleware(pattern, tail)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		router.Method(http.MethodPost, pattern, tail)
+		return nil
+	}
+	if err = registerOptionalSidebar("/api/sidebar/context-token", http.HandlerFunc(wrapper.MintSidebarContext)); err != nil {
+		return nil, err
+	}
 	routes := []struct {
 		method, pattern string
 		capability      authport.Capability
@@ -1590,6 +1632,14 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/v1/admin/config/overview", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(wrapper.GetAdminConfigOverview)},
 		{http.MethodPost, "/api/v1/auth/logout", authport.CapabilityAuthSessionLogout, false, http.HandlerFunc(wrapper.LogoutAdmin)},
 		{http.MethodGet, "/api/v1/auth/session", authport.CapabilityAuthSessionRead, false, http.HandlerFunc(wrapper.GetAuthSession)},
+		{http.MethodGet, "/api/sidebar/v2/workbench", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarWorkbench)},
+		{http.MethodPut, "/api/sidebar/v2/profile", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateSidebarProfile)},
+		{http.MethodGet, "/api/sidebar/v2/questionnaires", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarQuestionnaires)},
+		{http.MethodGet, "/api/sidebar/v2/orders", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarOrders)},
+		{http.MethodGet, "/api/sidebar/v2/periodic-orders", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarPeriodicOrders)},
+		{http.MethodPut, "/api/sidebar/v2/periodic-orders/{service_product_id}/members/{member_ref}/remark", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateSidebarPeriodicRemark)},
+		{http.MethodGet, "/api/sidebar/v2/materials", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarMaterials)},
+		{http.MethodGet, "/api/sidebar/v2/materials/image/{image_id}/thumbnail", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarMaterialThumbnailStatus)},
 		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListCustomers)},
 		{http.MethodGet, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetCustomer)},
 		{http.MethodPatch, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateCustomer)},

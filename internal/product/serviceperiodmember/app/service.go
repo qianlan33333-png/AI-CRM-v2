@@ -234,6 +234,49 @@ func (service *Service) List(ctx context.Context, query memberport.ListQuery) (m
 	return result, nil
 }
 
+func (service *Service) ListCustomer(ctx context.Context, query memberport.CustomerListQuery) (memberport.CustomerListResult, error) {
+	if query.Limit == 0 {
+		query.Limit = memberport.DefaultLimit
+	}
+	if !ready(service) || ctx == nil || query.CustomerID < 1 || query.Limit < 1 || query.Limit > memberport.MaximumLimit || query.Offset < 0 || query.Offset > 1_000_000 {
+		return memberport.CustomerListResult{}, memberport.ErrInvalidInput
+	}
+	store, ok := service.store.(memberport.CustomerStore)
+	if !ok {
+		return memberport.CustomerListResult{}, memberport.ErrUnavailable
+	}
+	var rows []memberdomain.Member
+	err := service.uow.Within(ctx, func(tx context.Context) error {
+		var readErr error
+		rows, readErr = store.ListCustomer(tx, memberport.CustomerListQuery{
+			CustomerID: query.CustomerID, Limit: query.Limit + 1, Offset: query.Offset,
+		})
+		return readErr
+	})
+	if err != nil {
+		return memberport.CustomerListResult{}, classify(err)
+	}
+	if len(rows) > query.Limit+1 {
+		return memberport.CustomerListResult{}, memberport.ErrUnavailable
+	}
+	for _, member := range rows {
+		if !member.Valid() || member.CustomerID != query.CustomerID {
+			return memberport.CustomerListResult{}, memberport.ErrUnavailable
+		}
+	}
+	hasMore := len(rows) > query.Limit
+	if hasMore {
+		rows = rows[:query.Limit]
+	}
+	items := make([]memberdomain.Member, len(rows))
+	for index := range rows {
+		items[index] = cloneMember(rows[index])
+	}
+	return memberport.CustomerListResult{Items: items, Limit: query.Limit, Offset: query.Offset, HasMore: hasMore}, nil
+}
+
+var _ memberport.CustomerReader = (*Service)(nil)
+
 func (service *Service) Export(ctx context.Context, query memberport.ExportQuery) (memberport.ExportResult, error) {
 	if !ready(service) || ctx == nil || !validFilter(query.Filter) || !validExportColumns(query.Columns) {
 		return memberport.ExportResult{}, memberport.ErrInvalidInput

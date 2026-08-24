@@ -37,6 +37,7 @@ type Querier interface {
 	ListProducts(ctx context.Context, arg ListProductsParams) ([]ListProductsRow, error)
 	ListProductsOffset(ctx context.Context, arg ListProductsOffsetParams) ([]ListProductsOffsetRow, error)
 	ListServicePeriodMembers(ctx context.Context, arg ListServicePeriodMembersParams) ([]ListServicePeriodMembersRow, error)
+	ListServicePeriodMembersByCustomer(ctx context.Context, arg ListServicePeriodMembersByCustomerParams) ([]ListServicePeriodMembersByCustomerRow, error)
 	ListServicePeriodProductRows(ctx context.Context, arg ListServicePeriodProductRowsParams) ([]ListServicePeriodProductRowsRow, error)
 	// SHARE conflicts with the ROW EXCLUSIVE lock acquired by INSERT/UPDATE on
 	// both reference tables. The FK added by migration 00059 is the final

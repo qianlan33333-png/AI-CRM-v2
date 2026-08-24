@@ -9,6 +9,7 @@ WHERE (sqlc.narg(provider)::text IS NULL OR provider = sqlc.narg(provider)::text
   AND (sqlc.narg(mobile)::text IS NULL OR mobile_snapshot ILIKE '%' || sqlc.narg(mobile)::text || '%')
   AND (sqlc.narg(product_code)::text IS NULL OR product_code = sqlc.narg(product_code)::text)
   AND (sqlc.narg(status)::text IS NULL OR status = sqlc.narg(status)::text)
+  AND (sqlc.narg(customer_id)::bigint IS NULL OR customer_id = sqlc.narg(customer_id)::bigint)
   AND (sqlc.narg(created_from)::timestamptz IS NULL OR created_at >= sqlc.narg(created_from)::timestamptz)
   AND (sqlc.narg(created_to)::timestamptz IS NULL OR created_at <= sqlc.narg(created_to)::timestamptz)
 ORDER BY created_at DESC, id DESC
@@ -34,6 +35,7 @@ WHERE (sqlc.narg(provider)::text IS NULL OR provider = sqlc.narg(provider)::text
   AND (sqlc.narg(mobile)::text IS NULL OR mobile_snapshot ILIKE '%' || sqlc.narg(mobile)::text || '%')
   AND (sqlc.narg(product_code)::text IS NULL OR product_code = sqlc.narg(product_code)::text)
   AND (sqlc.narg(status)::text IS NULL OR status = sqlc.narg(status)::text)
+  AND (sqlc.narg(customer_id)::bigint IS NULL OR customer_id = sqlc.narg(customer_id)::bigint)
   AND (sqlc.narg(created_from)::timestamptz IS NULL OR created_at >= sqlc.narg(created_from)::timestamptz)
   AND (sqlc.narg(created_to)::timestamptz IS NULL OR created_at <= sqlc.narg(created_to)::timestamptz);
 

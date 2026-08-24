@@ -126,8 +126,9 @@ WHERE ($1::text IS NULL OR provider = $1::text)
   AND ($3::text IS NULL OR mobile_snapshot ILIKE '%' || $3::text || '%')
   AND ($4::text IS NULL OR product_code = $4::text)
   AND ($5::text IS NULL OR status = $5::text)
-  AND ($6::timestamptz IS NULL OR created_at >= $6::timestamptz)
-  AND ($7::timestamptz IS NULL OR created_at <= $7::timestamptz)
+  AND ($6::bigint IS NULL OR customer_id = $6::bigint)
+  AND ($7::timestamptz IS NULL OR created_at >= $7::timestamptz)
+  AND ($8::timestamptz IS NULL OR created_at <= $8::timestamptz)
 `
 
 type CountFilteredOrderProjectionsParams struct {
@@ -136,6 +137,7 @@ type CountFilteredOrderProjectionsParams struct {
 	Mobile      pgtype.Text        `json:"mobile"`
 	ProductCode pgtype.Text        `json:"product_code"`
 	Status      pgtype.Text        `json:"status"`
+	CustomerID  pgtype.Int8        `json:"customer_id"`
 	CreatedFrom pgtype.Timestamptz `json:"created_from"`
 	CreatedTo   pgtype.Timestamptz `json:"created_to"`
 }
@@ -147,6 +149,7 @@ func (q *Queries) CountFilteredOrderProjections(ctx context.Context, arg CountFi
 		arg.Mobile,
 		arg.ProductCode,
 		arg.Status,
+		arg.CustomerID,
 		arg.CreatedFrom,
 		arg.CreatedTo,
 	)
@@ -806,10 +809,11 @@ WHERE ($1::text IS NULL OR provider = $1::text)
   AND ($3::text IS NULL OR mobile_snapshot ILIKE '%' || $3::text || '%')
   AND ($4::text IS NULL OR product_code = $4::text)
   AND ($5::text IS NULL OR status = $5::text)
-  AND ($6::timestamptz IS NULL OR created_at >= $6::timestamptz)
-  AND ($7::timestamptz IS NULL OR created_at <= $7::timestamptz)
+  AND ($6::bigint IS NULL OR customer_id = $6::bigint)
+  AND ($7::timestamptz IS NULL OR created_at >= $7::timestamptz)
+  AND ($8::timestamptz IS NULL OR created_at <= $8::timestamptz)
 ORDER BY created_at DESC, id DESC
-LIMIT $9::integer OFFSET $8::integer
+LIMIT $10::integer OFFSET $9::integer
 `
 
 type ListOrderProjectionsParams struct {
@@ -818,6 +822,7 @@ type ListOrderProjectionsParams struct {
 	Mobile      pgtype.Text        `json:"mobile"`
 	ProductCode pgtype.Text        `json:"product_code"`
 	Status      pgtype.Text        `json:"status"`
+	CustomerID  pgtype.Int8        `json:"customer_id"`
 	CreatedFrom pgtype.Timestamptz `json:"created_from"`
 	CreatedTo   pgtype.Timestamptz `json:"created_to"`
 	RowOffset   int32              `json:"row_offset"`
@@ -831,6 +836,7 @@ func (q *Queries) ListOrderProjections(ctx context.Context, arg ListOrderProject
 		arg.Mobile,
 		arg.ProductCode,
 		arg.Status,
+		arg.CustomerID,
 		arg.CreatedFrom,
 		arg.CreatedTo,
 		arg.RowOffset,

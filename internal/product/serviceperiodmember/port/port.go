@@ -72,6 +72,19 @@ type ListResult struct {
 	HasMore    bool            `json:"has_more"`
 }
 
+type CustomerListQuery struct {
+	CustomerID int64
+	Limit      int
+	Offset     int
+}
+
+type CustomerListResult struct {
+	Items   []domain.Member `json:"items"`
+	Limit   int             `json:"limit"`
+	Offset  int             `json:"offset"`
+	HasMore bool            `json:"has_more"`
+}
+
 type ExportColumn string
 
 const (
@@ -105,6 +118,10 @@ type Application interface {
 	Get(context.Context, int64, string) (domain.Member, error)
 	List(context.Context, ListQuery) (ListResult, error)
 	Export(context.Context, ExportQuery) (ExportResult, error)
+}
+
+type CustomerReader interface {
+	ListCustomer(context.Context, CustomerListQuery) (CustomerListResult, error)
 }
 
 type Position struct {
@@ -174,4 +191,8 @@ type Store interface {
 	List(context.Context, StoreListQuery) ([]domain.Member, error)
 	ReserveReceipt(context.Context, ReceiptReservation) (Receipt, bool, error)
 	CompleteReceipt(context.Context, int64, json.RawMessage, time.Time) (Receipt, error)
+}
+
+type CustomerStore interface {
+	ListCustomer(context.Context, CustomerListQuery) ([]domain.Member, error)
 }
