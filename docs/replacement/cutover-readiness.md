@@ -19,13 +19,14 @@
 - Migration disposition: 86 BACKEND_REQUIRED, 72 RETIREMENT_APPROVED, 158
   DEFERRED_UNMAPPED. No data migration is marked executed.
 - Route actual breakdown: 175 EXTERNAL_PROTOCOL, 605 UNCLASSIFIED, and 1
-  UNCLASSIFIED_SOURCE_DRIFT. Public H5, callback, external-integration, and
+  UNCLASSIFIED_SOURCE_DRIFT (current IDs: LEGACY-API-0053). Public H5, callback, external-integration, and
   explicit WeCom OAuth endpoints remain protocol inventory. External effects
   are tracked in external-effects-ledger.csv and never become protocol solely
   because of an effect declaration. In particular, LEGACY-API-0778 preserves
   the public URL protocol but does not recreate old HTML; its backing read
-  capability remains unmapped. LEGACY-API-0053 remains
-  UNCLASSIFIED_SOURCE_DRIFT because api-mapping and route-triage disagree.
+  capability remains unmapped. Current source drift is mechanically derived
+  from api-mapping versus route-triage; when no rows conflict the ID list is
+  NONE.
 - Frozen V2 local assets in frozen-local-assets.csv are 11 packages / 76 unique operationIds: the prior
   10-package/73-operation P4 receipt inventory plus PR #482 Customer Safe
   Export (00071, 3 operations). It is a V2 backend asset and does not revive

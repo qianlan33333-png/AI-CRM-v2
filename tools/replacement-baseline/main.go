@@ -514,6 +514,11 @@ func writeReadiness(path string, data output) error {
 }
 
 func renderReadiness(data output) string {
+	driftIDs := routeIDs(data.routes, "UNCLASSIFIED_SOURCE_DRIFT")
+	driftSummary := "NONE"
+	if len(driftIDs) > 0 {
+		driftSummary = strings.Join(driftIDs, ",")
+	}
 	return fmt.Sprintf(`# P4 Backend Replacement Cutover Readiness
 
 ## Frozen sources
@@ -535,13 +540,14 @@ func renderReadiness(data output) string {
 - Migration disposition: 86 BACKEND_REQUIRED, 72 RETIREMENT_APPROVED, 158
   DEFERRED_UNMAPPED. No data migration is marked executed.
 - Route actual breakdown: %d EXTERNAL_PROTOCOL, %d UNCLASSIFIED, and %d
-  UNCLASSIFIED_SOURCE_DRIFT. Public H5, callback, external-integration, and
+  UNCLASSIFIED_SOURCE_DRIFT (current IDs: %s). Public H5, callback, external-integration, and
   explicit WeCom OAuth endpoints remain protocol inventory. External effects
   are tracked in external-effects-ledger.csv and never become protocol solely
   because of an effect declaration. In particular, LEGACY-API-0778 preserves
   the public URL protocol but does not recreate old HTML; its backing read
-  capability remains unmapped. LEGACY-API-0053 remains
-  UNCLASSIFIED_SOURCE_DRIFT because api-mapping and route-triage disagree.
+  capability remains unmapped. Current source drift is mechanically derived
+  from api-mapping versus route-triage; when no rows conflict the ID list is
+  NONE.
 - Frozen V2 local assets in frozen-local-assets.csv are 11 packages / 76 unique operationIds: the prior
   10-package/73-operation P4 receipt inventory plus PR #482 Customer Safe
   Export (00071, 3 operations). It is a V2 backend asset and does not revive
@@ -570,7 +576,7 @@ gates recorded in their own ledgers.
 | rehearsal 1 | NOT_EXECUTED | UNMAPPED |
 | rehearsal 2 | NOT_EXECUTED | UNMAPPED |
 | rollback | NOT_EXECUTED | UNMAPPED |
-`, currentMainSHA, legacySnapshotSHA, legacyMainSHA, len(data.capabilities), len(data.routes), len(data.migrations), countAt(data.routes, 22, "EXTERNAL_PROTOCOL"), countAt(data.routes, 22, "UNCLASSIFIED"), countAt(data.routes, 22, "UNCLASSIFIED_SOURCE_DRIFT"))
+`, currentMainSHA, legacySnapshotSHA, legacyMainSHA, len(data.capabilities), len(data.routes), len(data.migrations), countAt(data.routes, 22, "EXTERNAL_PROTOCOL"), countAt(data.routes, 22, "UNCLASSIFIED"), countAt(data.routes, 22, "UNCLASSIFIED_SOURCE_DRIFT"), driftSummary)
 }
 
 func countAt(rows [][]string, index int, value string) int {
@@ -581,6 +587,17 @@ func countAt(rows [][]string, index int, value string) int {
 		}
 	}
 	return count
+}
+
+func routeIDs(rows [][]string, disposition string) []string {
+	ids := []string{}
+	for _, row := range rows {
+		if row[22] == disposition {
+			ids = append(ids, row[0])
+		}
+	}
+	sort.Strings(ids)
+	return ids
 }
 
 func validate(dir string, expected output) error {
@@ -666,21 +683,16 @@ func validateBreakdowns(data output) error {
 	if len(data.routes) != 781 {
 		return fmt.Errorf("unexpected route count: %d", len(data.routes))
 	}
-	routeDisposition := map[string]int{}
 	for _, row := range data.routes {
-		routeDisposition[row[22]]++
 		if !oneOf(row[22], "EXTERNAL_PROTOCOL", "UNCLASSIFIED", "UNCLASSIFIED_SOURCE_DRIFT") || !oneOf(row[23], "INVENTORIED", "UNCLASSIFIED") {
 			return fmt.Errorf("invalid route state for %s", row[0])
 		}
 		if row[7] == "public_h5" && row[22] == "FRONTEND_PAGE_ONLY" {
 			return fmt.Errorf("public H5 route %s was incorrectly treated as UI-only", row[0])
 		}
-		if row[0] == "LEGACY-API-0053" && (row[22] != "UNCLASSIFIED_SOURCE_DRIFT" || row[23] != "UNCLASSIFIED") {
-			return errors.New("LEGACY-API-0053 source drift was lost")
+		if externalFirstRoute(row) && row[22] != "EXTERNAL_PROTOCOL" {
+			return fmt.Errorf("external-first route %s was not retained as protocol inventory", row[0])
 		}
-	}
-	if routeDisposition["EXTERNAL_PROTOCOL"] != 175 || routeDisposition["UNCLASSIFIED"] != 605 || routeDisposition["UNCLASSIFIED_SOURCE_DRIFT"] != 1 {
-		return fmt.Errorf("unexpected route breakdown: %#v", routeDisposition)
 	}
 	for _, row := range data.protocols {
 		if row[18] != "INVENTORIED" || row[20] != "NOT_EXECUTED" {
@@ -716,6 +728,11 @@ func validateBreakdowns(data output) error {
 		}
 	}
 	return nil
+}
+
+func externalFirstRoute(row []string) bool {
+	return row[7] == "public_h5" || row[7] == "callback" || row[7] == "external_integration" ||
+		(row[12] == "public" && row[9] == "provider_oauth_state" && row[13] == "auth_wecom")
 }
 
 func oneOf(value string, allowed ...string) bool {

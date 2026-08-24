@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -65,6 +66,35 @@ func TestRouteDriftClearsWhenTriageMatches(t *testing.T) {
 	got, status := classifyRoute(record, triageRecord{MappingID: record.MappingID, RecommendedTier: "A"})
 	if got != "UNCLASSIFIED" || status != "UNCLASSIFIED" {
 		t.Fatalf("matched route remained drift: %s/%s", got, status)
+	}
+}
+
+func TestValidateBreakdownsAndReadinessAllowDriftToClear(t *testing.T) {
+	data, err := build(
+		repoFile("docs/feature-matrix.csv"),
+		repoFile("docs/api-mapping.jsonl"),
+		repoFile("docs/migration-mapping.jsonl"),
+		repoFile("docs/evidence/p1/route-triage.csv"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := routeIDs(data.routes, "UNCLASSIFIED_SOURCE_DRIFT"); len(got) != 1 || got[0] != "LEGACY-API-0053" {
+		t.Fatalf("current drift IDs = %v", got)
+	}
+	if err := validateBreakdowns(data); err != nil {
+		t.Fatalf("current breakdown rejected: %v", err)
+	}
+	for _, row := range data.routes {
+		if row[0] == "LEGACY-API-0053" {
+			row[22], row[23] = "UNCLASSIFIED", "UNCLASSIFIED"
+		}
+	}
+	if err := validateBreakdowns(data); err != nil {
+		t.Fatalf("cleared drift rejected: %v", err)
+	}
+	if rendered := renderReadiness(data); !strings.Contains(rendered, "0\n  UNCLASSIFIED_SOURCE_DRIFT (current IDs: NONE)") {
+		t.Fatalf("cleared drift readiness was not rendered as NONE: %s", rendered)
 	}
 }
 
