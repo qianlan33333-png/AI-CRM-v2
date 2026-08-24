@@ -1991,7 +1991,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			}{
 				{http.MethodGet, campaign.RoutePrefix, authport.CapabilityOperationsRead, false},
 				{http.MethodPost, campaign.RoutePrefix + "/batch-start", authport.CapabilityOperationsManage, true},
-				{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}", authport.CapabilityAdminRead, false},
+				{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}", authport.CapabilityOperationsRead, false},
 				{http.MethodDelete, campaign.RoutePrefix + "/{campaign_code}", authport.CapabilityOperationsManage, true},
 				{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/approve", authport.CapabilityOperationsManage, true},
 				{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/reject", authport.CapabilityOperationsManage, true},

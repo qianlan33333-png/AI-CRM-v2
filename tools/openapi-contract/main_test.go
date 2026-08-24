@@ -322,10 +322,10 @@ func TestOperationsWorkspaceCarrierRBACRemainsNarrow(t *testing.T) {
 	}
 }
 
-func TestCloudCampaignDetailRBACRemainsAdminOnly(t *testing.T) {
+func TestCloudCampaignDetailRBACMatchesOperationsWorkspace(t *testing.T) {
 	contract := authorizationContracts["getCloudCampaign"]
-	adminOnly := map[string]string{"admin": "global"}
-	if contract.capability != "admin.read" || !reflect.DeepEqual(contract.scopes, adminOnly) {
+	operationsRead := map[string]string{"admin": "global", "ops": "global"}
+	if contract.capability != "operations.read" || !reflect.DeepEqual(contract.scopes, operationsRead) {
 		t.Fatalf("getCloudCampaign capability/scopes=%q/%v", contract.capability, contract.scopes)
 	}
 
@@ -334,14 +334,18 @@ func TestCloudCampaignDetailRBACRemainsAdminOnly(t *testing.T) {
 	if operation == nil || operation.OperationID != "getCloudCampaign" {
 		t.Fatal("getCloudCampaign operation is missing")
 	}
-	if scopes, err := stringMap(operation.Extensions["x-aicrm-rbac-scopes"]); err != nil || !reflect.DeepEqual(scopes, adminOnly) {
+	if capability, _ := operation.Extensions["x-aicrm-capability"].(string); capability != "operations.read" {
+		t.Fatalf("getCloudCampaign OAS capability=%q", capability)
+	}
+	if scopes, err := stringMap(operation.Extensions["x-aicrm-rbac-scopes"]); err != nil || !reflect.DeepEqual(scopes, operationsRead) {
 		t.Fatalf("getCloudCampaign OAS scopes=%v err=%v", scopes, err)
 	}
 	if err := validateContracts(doc, inventory, false); err != nil {
 		t.Fatal(err)
 	}
 
-	operation.Extensions["x-aicrm-rbac-scopes"] = map[string]any{"admin": "global", "ops": "global"}
+	operation.Extensions["x-aicrm-capability"] = "admin.read"
+	operation.Extensions["x-aicrm-rbac-scopes"] = map[string]any{"admin": "global"}
 	reject(t, doc, inventory)
 }
 

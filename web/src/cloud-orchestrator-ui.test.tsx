@@ -3,6 +3,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { CampaignTouchPlanTransport } from "./campaign-touch-plan-core";
 import type { CampaignTouchPlanReadTransport } from "./campaign-touch-plan-read";
 import type { CampaignTouchPlanReviewTransport } from "./campaign-touch-plan-review";
 import type { OutboundCampaignHandoffTransport } from "./outbound-campaign-handoff";
@@ -91,6 +92,26 @@ describe("CloudOrchestratorWorkspace", () => {
     expect(sales).toContain("没有 AI 助手本地审阅权限");
     expect(sales).not.toContain("Campaign 审阅工作区");
     expect(sales).not.toContain("触达计划人工审核");
+  });
+
+  it("lets ops complete the Campaign list and detail reads required before C1 creation", async () => {
+    const timestamp = "2026-08-24T01:02:03Z";
+    const summary = { campaign_code: "spring", name: "Spring", approval_status: "draft", runtime_status: "idle", version: 1, created_by: 7, updated_by: 7, created_at: timestamp, updated_at: timestamp };
+    const safety = { local_projection: true, real_external_call_executed: false, real_send: false, runtime_executed: false };
+    const transport: CampaignTouchPlanTransport = {
+      listCampaigns: vi.fn(async () => ({ status: 200, data: { items: [summary], ...safety } })),
+      getCampaign: vi.fn(async () => ({ status: 200, data: { campaign: summary, steps: [{ step_index: 1, delay_minutes: 0, content: "local" }], ...safety } })),
+      createPlan: vi.fn(),
+      getPlan: vi.fn(),
+    };
+    const route = cloudOrchestratorRoute(CLOUD_ORCHESTRATOR_CAMPAIGNS_PATH, "?source_kind=customer_selection&source_id=7")!;
+    const mounted = mount();
+    await act(async () => mounted.root.render(<CloudOrchestratorWorkspace role="ops" route={route} actorID={7} campaignTransport={transport} />));
+    await act(async () => props<{ onChange(event: { currentTarget: { value: string } }): void }>(elements(mounted.container, "select")[0]).onChange({ currentTarget: { value: "spring" } }));
+    expect(transport.listCampaigns).toHaveBeenCalledTimes(1);
+    expect(transport.getCampaign).toHaveBeenCalledWith("spring", expect.objectContaining({ credentials: "same-origin" }));
+    expect(mounted.container.textContent).toContain("1 个本地步骤");
+    await act(async () => mounted.root.unmount());
   });
 
   it("mounts held acceptance only from the verified C1 plan and closed approved C2 seam", async () => {
