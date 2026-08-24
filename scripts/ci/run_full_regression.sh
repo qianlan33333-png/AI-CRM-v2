@@ -5,6 +5,8 @@ repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
 database_url="${CI_TEST_DATABASE_URL:-}"
+dm01_source_url="${DM01_SOURCE_TEST_DATABASE_URL:-}"
+dm01_target_url="${DM01_TARGET_TEST_DATABASE_URL:-}"
 postgres_container="${POSTGRES_CONTAINER_ID:-}"
 query_base="${QUERY_PLAN_BASE_SHA:-}"
 query_head="${QUERY_PLAN_HEAD_SHA:-}"
@@ -16,6 +18,8 @@ fail() {
 
 [[ $# -eq 0 ]] || fail "unexpected argument"
 [[ -n "$database_url" ]] || fail "CI_TEST_DATABASE_URL is required"
+[[ -n "$dm01_source_url" ]] || fail "DM01_SOURCE_TEST_DATABASE_URL is required"
+[[ -n "$dm01_target_url" ]] || fail "DM01_TARGET_TEST_DATABASE_URL is required"
 [[ "$query_base" =~ ^[0-9a-f]{40}$ ]] || fail "QUERY_PLAN_BASE_SHA is invalid"
 [[ "$query_head" =~ ^[0-9a-f]{40}$ ]] || fail "QUERY_PLAN_HEAD_SHA is invalid"
 command -v go >/dev/null 2>&1 || fail "go is required"
@@ -52,6 +56,9 @@ ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 \
 MIGRATION_TEST_DATABASE_URL="$database_url" \
 CI_ACCEPTANCE_DATABASE_URL="$database_url" \
 scripts/run_ci_acceptance_manifest.sh
+
+P4_DM01_TEST_DATABASE_URL="$dm01_target_url" make --no-print-directory p4-dm01-migration-acceptance
+make --no-print-directory p4-dm01-two-pg-acceptance
 
 npm ci --ignore-scripts --no-audit --no-fund
 npm run ci

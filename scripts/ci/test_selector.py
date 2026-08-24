@@ -414,6 +414,14 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertIn("p4-dm01-migration-acceptance", full_block)
         self.assertIn("p4-dm01-two-pg-acceptance", full_block)
 
+        nightly_source = (REPO_ROOT / ".github/workflows/nightly.yml").read_text(encoding="utf-8")
+        self.assertIn("Create DM01 source and target databases", nightly_source)
+        self.assertIn("DM01_SOURCE_TEST_DATABASE_URL:", nightly_source)
+        self.assertIn("DM01_TARGET_TEST_DATABASE_URL:", nightly_source)
+        nightly_runner_source = (REPO_ROOT / "scripts/ci/run_full_regression.sh").read_text(encoding="utf-8")
+        self.assertIn("p4-dm01-migration-acceptance", nightly_runner_source)
+        self.assertIn("p4-dm01-two-pg-acceptance", nightly_runner_source)
+
     def test_events_selected_database_runner_is_migration_gated(self) -> None:
         source = (REPO_ROOT / "scripts/ci/run_selected_database.sh").read_text(encoding="utf-8")
         selected_migrations = source.index("run_migration_checks\n\n# A migration-only")
