@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/contact/migration"
+	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
 	legacysourcedb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/legacysource/generated"
 )
 
@@ -44,6 +45,30 @@ func (reader *DM01SourceReader) Close() {
 	if reader != nil && reader.pool != nil {
 		reader.pool.Close()
 	}
+}
+
+func (reader *DM01SourceReader) DatabaseIdentity(ctx context.Context) (migration.DatabaseIdentity, error) {
+	if reader == nil || reader.pool == nil {
+		return migration.DatabaseIdentity{}, errors.New("invalid DM01 source reader")
+	}
+	row, err := legacysourcedb.New(reader.pool).GetDM01SourceDatabaseIdentity(ctx)
+	identity := migration.DatabaseIdentity{ServerID: row.ServerID, Database: row.Database}
+	if err != nil || identity.ServerID == "" || identity.Database == "" {
+		return migration.DatabaseIdentity{}, err
+	}
+	return identity, nil
+}
+
+func DM01TargetDatabaseIdentity(ctx context.Context, pool *pgxpool.Pool) (migration.DatabaseIdentity, error) {
+	if pool == nil {
+		return migration.DatabaseIdentity{}, errors.New("invalid DM01 target database")
+	}
+	row, err := contactdb.New(pool).GetDM01TargetDatabaseIdentity(ctx)
+	identity := migration.DatabaseIdentity{ServerID: row.ServerID, Database: row.Database}
+	if err != nil || identity.ServerID == "" || identity.Database == "" {
+		return migration.DatabaseIdentity{}, err
+	}
+	return identity, nil
 }
 
 func (reader *DM01SourceReader) WithSnapshot(ctx context.Context, manifest migration.Manifest, fn func(migration.SourceSnapshot) error) error {
@@ -193,10 +218,10 @@ func (snapshot *dm01SourceSnapshot) EachOwnerRoleMap(ctx context.Context, upper 
 			return err
 		}
 		for _, row := range rows {
-			if !row.UpdatedAt.Valid {
+			if !row.CreatedAt.Valid || !row.UpdatedAt.Valid {
 				return migration.ErrSourceSchemaDrift
 			}
-			if err := fn(migration.OwnerRoleMapRow{UserID: row.Userid, DisplayName: row.DisplayName, Active: row.Active, UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload}); err != nil {
+			if err := fn(migration.OwnerRoleMapRow{UserID: row.Userid, DisplayName: row.DisplayName, Active: row.Active, CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload}); err != nil {
 				return err
 			}
 		}
@@ -219,7 +244,7 @@ func (snapshot *dm01SourceSnapshot) EachCustomerIdentity(ctx context.Context, up
 			return err
 		}
 		for _, row := range rows {
-			if !row.FirstSeenAt.Valid || !row.LastSeenAt.Valid || !row.UpdatedAt.Valid {
+			if !row.FirstSeenAt.Valid || !row.LastSeenAt.Valid || !row.CreatedAt.Valid || !row.UpdatedAt.Valid {
 				return migration.ErrSourceSchemaDrift
 			}
 			var gender *int16
@@ -230,7 +255,7 @@ func (snapshot *dm01SourceSnapshot) EachCustomerIdentity(ctx context.Context, up
 				value := int16(row.Gender.Int32)
 				gender = &value
 			}
-			if err := fn(migration.CustomerIdentityRow{UnionID: row.Unionid, CustomerName: row.CustomerName, AvatarURL: row.Avatar, Gender: gender, PrimaryOwnerUser: row.PrimaryOwnerUserid, FirstSeenAt: row.FirstSeenAt.Time.UTC(), LastSeenAt: row.LastSeenAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload}); err != nil {
+			if err := fn(migration.CustomerIdentityRow{UnionID: row.Unionid, CustomerName: row.CustomerName, AvatarURL: row.Avatar, Gender: gender, PrimaryOwnerUser: row.PrimaryOwnerUserid, FirstSeenAt: row.FirstSeenAt.Time.UTC(), LastSeenAt: row.LastSeenAt.Time.UTC(), CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC(), Payload: row.Payload}); err != nil {
 				return err
 			}
 		}

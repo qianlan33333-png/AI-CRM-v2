@@ -96,6 +96,7 @@ CREATE TABLE legacy_contact_identity_import_receipts (
   completed_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- +goose StatementBegin
 CREATE FUNCTION legacy_contact_identity_import_run_transition_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -120,15 +121,18 @@ BEGIN
   END IF;
   RAISE EXCEPTION 'invalid DM01 run state transition: % -> %', OLD.state, NEW.state USING ERRCODE = '55000';
 END $$;
+-- +goose StatementEnd
 CREATE TRIGGER legacy_contact_identity_import_run_transition_guard
 BEFORE UPDATE OF state ON legacy_contact_identity_import_runs
 FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_import_run_transition_guard();
 
+-- +goose StatementBegin
 CREATE FUNCTION legacy_contact_identity_import_immutable_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
   RAISE EXCEPTION 'DM01 import fact is immutable' USING ERRCODE = '55000';
 END $$;
+-- +goose StatementEnd
 CREATE TRIGGER legacy_contact_identity_import_checkpoint_immutable
 BEFORE UPDATE OR DELETE ON legacy_contact_identity_import_checkpoints
 FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_import_immutable_guard();
@@ -145,6 +149,7 @@ CREATE TRIGGER legacy_contact_identity_import_quarantine_immutable
 BEFORE UPDATE OR DELETE ON legacy_contact_identity_import_quarantines
 FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_import_immutable_guard();
 
+-- +goose StatementBegin
 CREATE FUNCTION legacy_contact_identity_source_mapping_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -158,6 +163,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+-- +goose StatementEnd
 CREATE TRIGGER legacy_contact_identity_source_mapping_guard
 BEFORE UPDATE ON legacy_contact_identity_source_mappings
 FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_source_mapping_guard();
@@ -165,6 +171,7 @@ CREATE TRIGGER legacy_contact_identity_source_mapping_immutable_delete
 BEFORE DELETE ON legacy_contact_identity_source_mappings
 FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_import_immutable_guard();
 
+-- +goose StatementBegin
 CREATE FUNCTION legacy_contact_identity_import_run_fact_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
@@ -178,9 +185,11 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+-- +goose StatementEnd
 CREATE TRIGGER legacy_contact_identity_import_run_fact_guard
 BEFORE UPDATE ON legacy_contact_identity_import_runs
 FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_import_run_fact_guard();
+-- +goose StatementBegin
 CREATE FUNCTION legacy_contact_identity_reconcile_parent_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 DECLARE parent legacy_contact_identity_import_runs;
@@ -193,10 +202,12 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+-- +goose StatementEnd
 CREATE TRIGGER legacy_contact_identity_reconcile_parent_guard
 BEFORE INSERT ON legacy_contact_identity_import_runs
 FOR EACH ROW EXECUTE FUNCTION legacy_contact_identity_reconcile_parent_guard();
 -- +goose Down
+-- +goose StatementBegin
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM legacy_contact_identity_source_mappings)
     OR EXISTS (SELECT 1 FROM legacy_contact_identity_import_row_receipts)
@@ -206,6 +217,7 @@ DO $$ BEGIN
     RAISE EXCEPTION '00072 down refused: materialized DM01 import exists' USING ERRCODE = '55000';
   END IF;
 END $$;
+-- +goose StatementEnd
 DROP TRIGGER legacy_contact_identity_import_run_fact_guard ON legacy_contact_identity_import_runs;
 DROP TRIGGER legacy_contact_identity_reconcile_parent_guard ON legacy_contact_identity_import_runs;
 DROP TRIGGER legacy_contact_identity_source_mapping_immutable_delete ON legacy_contact_identity_source_mappings;

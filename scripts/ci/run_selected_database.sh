@@ -64,6 +64,11 @@ while [[ -n "$remaining_groups" ]]; do
     remaining_groups=""
   fi
   case "$group_name" in
+    dm01)
+      [[ -n "${DM01_SOURCE_TEST_DATABASE_URL:-}" ]] || fail "DM01_SOURCE_TEST_DATABASE_URL is required"
+      [[ -n "${DM01_TARGET_TEST_DATABASE_URL:-}" ]] || fail "DM01_TARGET_TEST_DATABASE_URL is required"
+      make --no-print-directory p4-dm01-two-pg-acceptance
+      ;;
     adminops)
       run_make_acceptance P4ADMINOPS_TEST_DATABASE_URL p4-adminops-jobs-ab-acceptance
       ;;

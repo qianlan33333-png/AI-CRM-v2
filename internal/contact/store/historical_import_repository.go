@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"strings"
@@ -42,6 +43,123 @@ func (HistoricalImportRepository) AssertLease(ctx context.Context, fence LeaseFe
 var _ contactport.HistoricalImportTarget = HistoricalImportRepository{}
 var _ contactport.NonActiveTarget = HistoricalImportRepository{}
 var _ migration.ReconcileTarget = HistoricalImportRepository{}
+var _ migration.RunStore = HistoricalImportRepository{}
+
+func (HistoricalImportRepository) ReserveRun(ctx context.Context, reservation migration.RunReservation) (migration.ReservedRun, error) {
+	if len(reservation.ManifestDigest) != 32 || reservation.RepositorySHA == "" || reservation.SnapshotID == "" || !reservation.Mode.Valid() || reservation.UpperWatermark.IsZero() || reservation.HMACKeyVersion < 1 || (reservation.Mode == migration.ModeReconcile) != (reservation.ParentRunID > 0) {
+		return migration.ReservedRun{}, ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return migration.ReservedRun{}, err
+	}
+	parent := pgtype.Int8{}
+	if reservation.ParentRunID > 0 {
+		parent = pgtype.Int8{Int64: reservation.ParentRunID, Valid: true}
+	}
+	row, err := contactdb.New(tx).ReserveHistoricalImportRun(ctx, contactdb.ReserveHistoricalImportRunParams{SourceManifestSha256: reservation.ManifestDigest, SourceRepositorySha: reservation.RepositorySHA, SnapshotID: reservation.SnapshotID, ParentRunID: parent, Mode: string(reservation.Mode), UpperWatermark: pgtype.Timestamptz{Time: reservation.UpperWatermark, Valid: true}, HmacKeyVersion: reservation.HMACKeyVersion})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return migration.ReservedRun{}, ErrHistoricalImportTargetDrift
+	}
+	if err != nil || row.ID < 1 || row.LeaseGeneration < 0 || row.State == "" {
+		return migration.ReservedRun{}, driftHistoricalImport(err)
+	}
+	return migration.ReservedRun{ID: row.ID, Generation: row.LeaseGeneration, State: row.State}, nil
+}
+
+func (HistoricalImportRepository) ClaimRun(ctx context.Context, runID, expectedGeneration int64, tokenHMAC []byte, expires time.Time) (int64, error) {
+	if runID < 1 || expectedGeneration < 0 || len(tokenHMAC) != 32 || expires.IsZero() {
+		return 0, ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	generation, err := contactdb.New(tx).ClaimHistoricalImportLease(ctx, contactdb.ClaimHistoricalImportLeaseParams{RunID: runID, ExpectedGeneration: expectedGeneration, NewTokenHmac: tokenHMAC, LeaseExpiresAt: pgtype.Timestamptz{Time: expires, Valid: true}})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, ErrHistoricalImportTargetDrift
+	}
+	if err != nil || generation != expectedGeneration+1 {
+		return 0, driftHistoricalImport(err)
+	}
+	return generation, nil
+}
+
+func (HistoricalImportRepository) RenewRun(ctx context.Context, fence migration.RunFence, expires time.Time) error {
+	if fence.RunID < 1 || fence.Generation < 1 || len(fence.TokenHMAC) != 32 || expires.IsZero() {
+		return ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	generation, err := contactdb.New(tx).RenewHistoricalImportLease(ctx, contactdb.RenewHistoricalImportLeaseParams{RunID: fence.RunID, ExpectedGeneration: fence.Generation, TokenHmac: fence.TokenHMAC, LeaseExpiresAt: pgtype.Timestamptz{Time: expires, Valid: true}})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrHistoricalImportTargetDrift
+	}
+	if err != nil || generation != fence.Generation {
+		return driftHistoricalImport(err)
+	}
+	return nil
+}
+
+func (HistoricalImportRepository) TransitionRun(ctx context.Context, fence migration.RunFence, nextState string) error {
+	if fence.RunID < 1 || fence.Generation < 1 || len(fence.TokenHMAC) != 32 || nextState == "" {
+		return ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	generation, err := contactdb.New(tx).TransitionHistoricalImportRun(ctx, contactdb.TransitionHistoricalImportRunParams{RunID: fence.RunID, ExpectedGeneration: fence.Generation, TokenHmac: fence.TokenHMAC, NextState: nextState})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrHistoricalImportTargetDrift
+	}
+	if err != nil || generation != fence.Generation {
+		return driftHistoricalImport(err)
+	}
+	return nil
+}
+
+func (HistoricalImportRepository) AppendCheckpoint(ctx context.Context, fence migration.RunFence, checkpoint migration.FinalCheckpoint) error {
+	if fence.RunID < 1 || fence.Generation < 1 || len(fence.TokenHMAC) != 32 || checkpoint.Table == "" || len(checkpoint.FinalFact.SourceKeyHMAC) != 32 || len(checkpoint.FinalFact.PayloadHMAC) != 32 || len(checkpoint.FinalFact.FieldDigest) != 32 || checkpoint.UpperBoundEmpty != (len(checkpoint.UpperKeyHMAC) == 0) {
+		return ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	watermark := pgtype.Timestamptz{}
+	if !checkpoint.UpperBoundEmpty {
+		watermark = pgtype.Timestamptz{Time: checkpoint.Watermark, Valid: true}
+	}
+	rows, err := contactdb.New(tx).AppendHistoricalImportCheckpointFenced(ctx, contactdb.AppendHistoricalImportCheckpointFencedParams{SourceTable: checkpoint.Table, FinalSourceKeyHmac: checkpoint.FinalFact.SourceKeyHMAC, PayloadHmac: checkpoint.FinalFact.PayloadHMAC, FieldDigest: checkpoint.FinalFact.FieldDigest, Watermark: watermark, UpperSourceKeyHmac: checkpoint.UpperKeyHMAC, UpperBoundEmpty: checkpoint.UpperBoundEmpty, RunID: fence.RunID, ExpectedGeneration: fence.Generation, TokenHmac: fence.TokenHMAC})
+	if err != nil {
+		return err
+	}
+	if rows == 1 {
+		return nil
+	}
+	if rows != 0 {
+		return ErrHistoricalImportTargetDrift
+	}
+	queries := contactdb.New(tx)
+	if _, err = queries.AssertHistoricalImportLease(ctx, contactdb.AssertHistoricalImportLeaseParams{RunID: fence.RunID, ExpectedGeneration: fence.Generation, TokenHmac: fence.TokenHMAC}); err != nil {
+		return ErrHistoricalImportTargetDrift
+	}
+	prior, err := queries.FindHistoricalImportCheckpoint(ctx, contactdb.FindHistoricalImportCheckpointParams{RunID: fence.RunID, SourceTable: checkpoint.Table})
+	if err != nil || !bytes.Equal(prior.FinalSourceKeyHmac, checkpoint.FinalFact.SourceKeyHMAC) || !bytes.Equal(prior.PayloadHmac, checkpoint.FinalFact.PayloadHMAC) || !bytes.Equal(prior.FieldDigest, checkpoint.FinalFact.FieldDigest) || prior.UpperBoundEmpty != checkpoint.UpperBoundEmpty || !bytes.Equal(prior.UpperSourceKeyHmac, checkpoint.UpperKeyHMAC) || prior.Watermark.Valid != !checkpoint.UpperBoundEmpty || (prior.Watermark.Valid && !prior.Watermark.Time.Equal(checkpoint.Watermark)) {
+		return ErrHistoricalImportTargetDrift
+	}
+	return nil
+}
+
+func driftHistoricalImport(err error) error {
+	if err != nil {
+		return err
+	}
+	return ErrHistoricalImportTargetDrift
+}
 
 func (HistoricalImportRepository) LockReconcileRun(ctx context.Context, fence contactport.NonActiveLeaseFence) (int64, error) {
 	if fence.RunID < 1 || fence.Generation < 1 || len(fence.TokenHMAC) != 32 {
@@ -688,9 +806,9 @@ func (HistoricalImportRepository) AppendHistoricalImportQuarantine(ctx context.C
 	return nil
 }
 
-func (HistoricalImportRepository) AppendHistoricalImportRowReceipt(ctx context.Context, runID int64, source contactport.HistoricalImportSource, fact contactport.HistoricalImportSourceFact, disposition contactport.HistoricalImportDisposition) error {
+func (HistoricalImportRepository) AppendHistoricalImportRowReceipt(ctx context.Context, fence contactport.NonActiveLeaseFence, source contactport.HistoricalImportSource, fact contactport.HistoricalImportSourceFact, disposition contactport.HistoricalImportDisposition) error {
 	sourceTable, ok := historicalImportSourceTable(source)
-	if !ok || runID < 1 || !validHistoricalSourceFact(fact) {
+	if !ok || fence.RunID < 1 || fence.Generation < 1 || len(fence.TokenHMAC) != 32 || !validHistoricalSourceFact(fact) {
 		return ErrInvalidHistoricalImport
 	}
 	dispositionText := ""
@@ -706,7 +824,7 @@ func (HistoricalImportRepository) AppendHistoricalImportRowReceipt(ctx context.C
 	if err != nil {
 		return err
 	}
-	rows, err := contactdb.New(tx).AppendHistoricalImportRowReceipt(ctx, contactdb.AppendHistoricalImportRowReceiptParams{RunID: runID, SourceTable: sourceTable, SourceKeyHmac: fact.SourceKeyHMAC, PayloadHmac: fact.PayloadHMAC, FieldDigest: fact.FieldDigest, Disposition: dispositionText})
+	rows, err := contactdb.New(tx).AppendHistoricalImportRowReceiptFenced(ctx, contactdb.AppendHistoricalImportRowReceiptFencedParams{RunID: fence.RunID, ExpectedGeneration: fence.Generation, TokenHmac: fence.TokenHMAC, SourceTable: sourceTable, SourceKeyHmac: fact.SourceKeyHMAC, PayloadHmac: fact.PayloadHMAC, FieldDigest: fact.FieldDigest, Disposition: dispositionText})
 	if err != nil {
 		return err
 	}

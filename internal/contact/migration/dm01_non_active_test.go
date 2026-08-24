@@ -111,7 +111,7 @@ func nonActiveFixture(t *testing.T) NonActiveCommand {
 	rows := make([]NonActiveRow, len(sources))
 	for i, source := range sources {
 		payload := []byte(fmt.Sprintf(`{"source":%d}`, source))
-		payloadHMAC, err := PayloadHMAC(hmacKey, payload)
+		payloadHMAC, err := SourcePayloadHMAC(hmacKey, nonActiveSourceTable(source), payload)
 		if err != nil {
 			t.Fatal(err)
 		}

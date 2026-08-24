@@ -130,7 +130,7 @@ func (service *NonActiveService) validateCompanion(ctx context.Context, command 
 		if err != nil {
 			return err
 		}
-		plain, err := DecryptArchiveBound(command.ArchiveKey, command.PayloadHMACKey, aad, stored.Nonce, stored.Ciphertext, row.Fact.PayloadHMAC)
+		plain, err := DecryptArchiveBound(command.ArchiveKey, command.PayloadHMACKey, nonActiveSourceTable(row.Source), aad, stored.Nonce, stored.Ciphertext, row.Fact.PayloadHMAC)
 		if err != nil || !bytes.Equal(plain, row.ArchivePayload) {
 			return ErrNonActiveDrift
 		}
@@ -167,7 +167,7 @@ func validNonActiveCommand(command NonActiveCommand) bool {
 			return false
 		}
 		if archive {
-			payloadHMAC, err := PayloadHMAC(command.PayloadHMACKey, row.ArchivePayload)
+			payloadHMAC, err := SourcePayloadHMAC(command.PayloadHMACKey, nonActiveSourceTable(row.Source), row.ArchivePayload)
 			if err != nil || !hmac.Equal(payloadHMAC, row.Fact.PayloadHMAC) {
 				return false
 			}

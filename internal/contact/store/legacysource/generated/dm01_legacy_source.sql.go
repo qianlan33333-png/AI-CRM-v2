@@ -187,6 +187,23 @@ func (q *Queries) GetDM01ResolutionQueueUpperBound(ctx context.Context) (GetDM01
 	return i, err
 }
 
+const getDM01SourceDatabaseIdentity = `-- name: GetDM01SourceDatabaseIdentity :one
+SELECT system_identifier::text AS server_id, current_database()::text AS database
+FROM pg_control_system()
+`
+
+type GetDM01SourceDatabaseIdentityRow struct {
+	ServerID string `json:"server_id"`
+	Database string `json:"database"`
+}
+
+func (q *Queries) GetDM01SourceDatabaseIdentity(ctx context.Context) (GetDM01SourceDatabaseIdentityRow, error) {
+	row := q.db.QueryRow(ctx, getDM01SourceDatabaseIdentity)
+	var i GetDM01SourceDatabaseIdentityRow
+	err := row.Scan(&i.ServerID, &i.Database)
+	return i, err
+}
+
 const listDM01Contact = `-- name: ListDM01Contact :many
 SELECT id, updated_at, jsonb_build_object('id', id, 'unionid', unionid, 'created_at', created_at, 'updated_at', updated_at) AS payload
 FROM contacts
@@ -234,7 +251,7 @@ func (q *Queries) ListDM01Contact(ctx context.Context, arg ListDM01ContactParams
 
 const listDM01CustomerIdentity = `-- name: ListDM01CustomerIdentity :many
 SELECT unionid, customer_name, avatar, gender, primary_owner_userid,
-       first_seen_at, last_seen_at, updated_at,
+       first_seen_at, last_seen_at, created_at, updated_at,
        (jsonb_build_object('primary_external_userid', primary_external_userid,
          'external_userids_json', external_userids_json, 'mobile', mobile,
          'mobile_normalized', mobile_normalized, 'mobile_verified', mobile_verified,
@@ -278,6 +295,7 @@ type ListDM01CustomerIdentityRow struct {
 	PrimaryOwnerUserid string             `json:"primary_owner_userid"`
 	FirstSeenAt        pgtype.Timestamptz `json:"first_seen_at"`
 	LastSeenAt         pgtype.Timestamptz `json:"last_seen_at"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
 	Payload            []byte             `json:"payload"`
 }
@@ -306,6 +324,7 @@ func (q *Queries) ListDM01CustomerIdentity(ctx context.Context, arg ListDM01Cust
 			&i.PrimaryOwnerUserid,
 			&i.FirstSeenAt,
 			&i.LastSeenAt,
+			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Payload,
 		); err != nil {
@@ -639,7 +658,7 @@ func (q *Queries) ListDM01MergeAudit(ctx context.Context, arg ListDM01MergeAudit
 }
 
 const listDM01OwnerRoleMap = `-- name: ListDM01OwnerRoleMap :many
-SELECT userid, display_name, active, updated_at,
+SELECT userid, display_name, active, created_at, updated_at,
        jsonb_build_object('userid', userid, 'display_name', display_name,
          'role', role, 'active', active, 'source', source,
          'raw_payload_json', raw_payload_json, 'created_at', created_at,
@@ -661,6 +680,7 @@ type ListDM01OwnerRoleMapRow struct {
 	Userid      string             `json:"userid"`
 	DisplayName string             `json:"display_name"`
 	Active      bool               `json:"active"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 	Payload     []byte             `json:"payload"`
 }
@@ -683,6 +703,7 @@ func (q *Queries) ListDM01OwnerRoleMap(ctx context.Context, arg ListDM01OwnerRol
 			&i.Userid,
 			&i.DisplayName,
 			&i.Active,
+			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Payload,
 		); err != nil {

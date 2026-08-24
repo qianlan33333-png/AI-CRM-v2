@@ -1,6 +1,7 @@
 package migration
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"reflect"
@@ -240,7 +241,11 @@ func (world *activeRootWorld) AppendHistoricalImportQuarantine(_ context.Context
 	return nil
 }
 
-func (world *activeRootWorld) AppendHistoricalImportRowReceipt(_ context.Context, runID int64, source contactport.HistoricalImportSource, fact contactport.HistoricalImportSourceFact, disposition contactport.HistoricalImportDisposition) error {
+func (world *activeRootWorld) AppendHistoricalImportRowReceipt(_ context.Context, fence contactport.NonActiveLeaseFence, source contactport.HistoricalImportSource, fact contactport.HistoricalImportSourceFact, disposition contactport.HistoricalImportDisposition) error {
+	if fence.Generation != 1 || !bytes.Equal(fence.TokenHMAC, digest(9)) {
+		return ErrActiveRootDrift
+	}
+	runID := fence.RunID
 	if err := world.fail("append-receipt"); err != nil {
 		return err
 	}
@@ -254,6 +259,18 @@ func (world *activeRootWorld) AppendHistoricalImportRowReceipt(_ context.Context
 	}
 	world.tx.writes = append(world.tx.writes, "receipt")
 	return nil
+}
+
+func TestActiveRootServiceStaleLeaseRollsBackReceiptLastWrites(t *testing.T) {
+	world := newActiveRootWorld()
+	command := completeActiveRootsCommand()
+	command.Fence.Generation++
+	if _, err := NewActiveRootService(world, world, world).Process(context.Background(), command); !errors.Is(err, ErrActiveRootDrift) {
+		t.Fatalf("stale fence = %v", err)
+	}
+	if !reflect.DeepEqual(world.committed, newActiveRootState()) {
+		t.Fatalf("stale fence committed writes: %+v", world.committed)
+	}
 }
 
 func (world *activeRootWorld) BindHistoricalScopedWeComIdentity(_ context.Context, fact identityport.HistoricalScopedIdentity) (identityport.HistoricalScopedIdentityResult, error) {
@@ -363,7 +380,7 @@ func TestActiveRootServiceChangedSnapshotUpdatesWhenTargetStillMatches(t *testin
 		t.Fatal(err)
 	}
 	changed := completeActiveRootsCommand()
-	changed.RunID++
+	changed.Fence.RunID++
 	changed.Customers[0].Source.PayloadHMAC[0]++
 	changed.Customers[0].Target.Name = "Customer Updated"
 	result, err := service.Process(context.Background(), changed)
@@ -386,7 +403,7 @@ func TestActiveRootServiceChangedSnapshotQuarantinesTargetDrift(t *testing.T) {
 	customer.Name = "operator edit"
 	world.committed.customers[42] = customer
 	changed := completeActiveRootsCommand()
-	changed.RunID++
+	changed.Fence.RunID++
 	changed.Customers[0].Source.PayloadHMAC[0]++
 	changed.Customers[0].Target.Name = "source update"
 	result, err := service.Process(context.Background(), changed)
@@ -407,7 +424,7 @@ func TestActiveRootServiceIncrementalCASUpdatesAllClosedTargets(t *testing.T) {
 				t.Fatal(err)
 			}
 			changed := completeActiveRootsCommand()
-			changed.RunID++
+			changed.Fence.RunID++
 			switch source {
 			case "staff":
 				changed.Customers = nil
@@ -444,7 +461,7 @@ func TestActiveRootServiceIncrementalCASFailureRollsBackTargetAndLineage(t *test
 			before := world.committed.clone()
 			world.failAt = failAt
 			changed := completeActiveRootsCommand()
-			changed.RunID++
+			changed.Fence.RunID++
 			changed.Staff = nil
 			changed.Identities = nil
 			changed.Customers[0].Source.PayloadHMAC[0]++
@@ -573,7 +590,7 @@ func completeActiveRootsCommand() ActiveRootsCommand {
 	now := time.Date(2026, 8, 25, 1, 2, 3, 0, time.UTC)
 	staffKey, customerKey := digest(1), digest(4)
 	return ActiveRootsCommand{
-		RunID: 7, CorpID: "corp-a", HMACKeyVersion: 1,
+		Fence: contactport.NonActiveLeaseFence{RunID: 7, Generation: 1, TokenHMAC: digest(9)}, CorpID: "corp-a", HMACKeyVersion: 1, DigestKey: bytes.Repeat([]byte{8}, 32),
 		Staff:      []StaffActiveRoot{{Source: sourceFact(1), Target: contactport.HistoricalImportStaffFact{WeComUserID: "staff-1", Name: "Staff One", Active: true, CreatedAt: now.Add(-time.Hour), UpdatedAt: now}}},
 		Customers:  []CustomerActiveRoot{{Source: sourceFact(4), OwnerStaffSourceKeyHMAC: staffKey, Target: contactport.HistoricalImportCustomerFact{Name: "Customer One", FirstSeenAt: now.Add(-time.Hour), LastSeenAt: now, CreatedAt: now.Add(-time.Hour), UpdatedAt: now}}},
 		Identities: []ExternalIdentityActiveRoot{{Source: sourceFact(7), CustomerSourceKeyHMAC: customerKey, CorpID: "corp-a", ExternalUserID: "external-1"}},
@@ -581,7 +598,7 @@ func completeActiveRootsCommand() ActiveRootsCommand {
 }
 
 func identityOnlyCommand() ActiveRootsCommand {
-	return ActiveRootsCommand{RunID: 7, CorpID: "corp-a", HMACKeyVersion: 1, Identities: []ExternalIdentityActiveRoot{{Source: sourceFact(7), CustomerSourceKeyHMAC: digest(4), CorpID: "corp-a", ExternalUserID: "external-1"}}}
+	return ActiveRootsCommand{Fence: contactport.NonActiveLeaseFence{RunID: 7, Generation: 1, TokenHMAC: digest(9)}, CorpID: "corp-a", HMACKeyVersion: 1, DigestKey: bytes.Repeat([]byte{8}, 32), Identities: []ExternalIdentityActiveRoot{{Source: sourceFact(7), CustomerSourceKeyHMAC: digest(4), CorpID: "corp-a", ExternalUserID: "external-1"}}}
 }
 
 func sourceFact(seed byte) contactport.HistoricalImportSourceFact {

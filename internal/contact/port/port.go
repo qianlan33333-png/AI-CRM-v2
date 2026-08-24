@@ -304,7 +304,7 @@ type HistoricalImportTarget interface {
 	AppendHistoricalImportLineage(context.Context, int64, HistoricalImportSource, HistoricalImportSourceFact, int64) error
 	UpdateHistoricalImportLineageCAS(context.Context, int64, HistoricalImportSource, HistoricalImportSourceFact, HistoricalImportLineage) error
 	AppendHistoricalImportQuarantine(context.Context, HistoricalImportQuarantine) error
-	AppendHistoricalImportRowReceipt(context.Context, int64, HistoricalImportSource, HistoricalImportSourceFact, HistoricalImportDisposition) error
+	AppendHistoricalImportRowReceipt(context.Context, NonActiveLeaseFence, HistoricalImportSource, HistoricalImportSourceFact, HistoricalImportDisposition) error
 }
 
 type Stage struct {

@@ -12,6 +12,10 @@ WHERE n.nspname = 'public'
   AND NOT a.attisdropped
 ORDER BY a.attnum;
 
+-- name: GetDM01SourceDatabaseIdentity :one
+SELECT system_identifier::text AS server_id, current_database()::text AS database
+FROM pg_control_system();
+
 -- name: GetDM01OwnerRoleMapUpperBound :one
 SELECT updated_at, userid AS source_key FROM owner_role_map ORDER BY updated_at DESC, userid DESC LIMIT 1;
 -- name: GetDM01CustomerIdentityUpperBound :one
@@ -36,7 +40,7 @@ SELECT updated_at, id::text AS source_key FROM people ORDER BY updated_at DESC, 
 SELECT updated_at, id::text AS source_key FROM wecom_external_contact_follow_users ORDER BY updated_at DESC, id DESC LIMIT 1;
 
 -- name: ListDM01OwnerRoleMap :many
-SELECT userid, display_name, active, updated_at,
+SELECT userid, display_name, active, created_at, updated_at,
        jsonb_build_object('userid', userid, 'display_name', display_name,
          'role', role, 'active', active, 'source', source,
          'raw_payload_json', raw_payload_json, 'created_at', created_at,
@@ -48,7 +52,7 @@ LIMIT sqlc.arg(page_size)::integer OFFSET sqlc.arg(page_offset)::integer;
 
 -- name: ListDM01CustomerIdentity :many
 SELECT unionid, customer_name, avatar, gender, primary_owner_userid,
-       first_seen_at, last_seen_at, updated_at,
+       first_seen_at, last_seen_at, created_at, updated_at,
        (jsonb_build_object('primary_external_userid', primary_external_userid,
          'external_userids_json', external_userids_json, 'mobile', mobile,
          'mobile_normalized', mobile_normalized, 'mobile_verified', mobile_verified,

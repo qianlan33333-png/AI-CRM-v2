@@ -20,6 +20,7 @@ type Querier interface {
 	GetDM01OwnerRoleMapUpperBound(ctx context.Context) (GetDM01OwnerRoleMapUpperBoundRow, error)
 	GetDM01PersonUpperBound(ctx context.Context) (GetDM01PersonUpperBoundRow, error)
 	GetDM01ResolutionQueueUpperBound(ctx context.Context) (GetDM01ResolutionQueueUpperBoundRow, error)
+	GetDM01SourceDatabaseIdentity(ctx context.Context) (GetDM01SourceDatabaseIdentityRow, error)
 	ListDM01Contact(ctx context.Context, arg ListDM01ContactParams) ([]ListDM01ContactRow, error)
 	ListDM01CustomerIdentity(ctx context.Context, arg ListDM01CustomerIdentityParams) ([]ListDM01CustomerIdentityRow, error)
 	ListDM01DirectoryMember(ctx context.Context, arg ListDM01DirectoryMemberParams) ([]ListDM01DirectoryMemberRow, error)

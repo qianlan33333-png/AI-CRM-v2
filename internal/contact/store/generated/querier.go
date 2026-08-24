@@ -16,6 +16,7 @@ type Querier interface {
 	AddCustomerTag(ctx context.Context, arg AddCustomerTagParams) (int64, error)
 	AppendCustomerEvent(ctx context.Context, arg AppendCustomerEventParams) (int64, error)
 	AppendHistoricalImportArchive(ctx context.Context, arg AppendHistoricalImportArchiveParams) (int64, error)
+	AppendHistoricalImportCheckpointFenced(ctx context.Context, arg AppendHistoricalImportCheckpointFencedParams) (int64, error)
 	AppendHistoricalImportLineage(ctx context.Context, arg AppendHistoricalImportLineageParams) (int64, error)
 	AppendHistoricalImportQuarantine(ctx context.Context, arg AppendHistoricalImportQuarantineParams) (int64, error)
 	AppendHistoricalImportRowReceipt(ctx context.Context, arg AppendHistoricalImportRowReceiptParams) (int64, error)
@@ -35,12 +36,17 @@ type Querier interface {
 	CountHistoricalReconcileCompanions(ctx context.Context, arg CountHistoricalReconcileCompanionsParams) (CountHistoricalReconcileCompanionsRow, error)
 	CreateChannel(ctx context.Context, arg CreateChannelParams) (CreateChannelRow, error)
 	CreateCustomerForIdentity(ctx context.Context, arg CreateCustomerForIdentityParams) (int64, error)
+	CreateDM01AcceptanceExpiredImportingRun(ctx context.Context, arg CreateDM01AcceptanceExpiredImportingRunParams) (int64, error)
+	CreateDM01AcceptanceStaleRun(ctx context.Context, arg CreateDM01AcceptanceStaleRunParams) (int64, error)
 	CreateHistoricalImportCustomer(ctx context.Context, arg CreateHistoricalImportCustomerParams) (int64, error)
 	CreateLegacyTag(ctx context.Context, arg CreateLegacyTagParams) (CreateLegacyTagRow, error)
 	CreateLegacyTagGroup(ctx context.Context, name string) (TagGroup, error)
 	DeleteCustomerContactPolicy(ctx context.Context, arg DeleteCustomerContactPolicyParams) (int64, error)
+	DeleteDM01AcceptanceArchives(ctx context.Context) error
+	EditDM01AcceptanceCustomerName(ctx context.Context, name string) error
 	EnsureCustomerEventPartitions(ctx context.Context, arg EnsureCustomerEventPartitionsParams) error
 	FindHistoricalImportArchive(ctx context.Context, arg FindHistoricalImportArchiveParams) (FindHistoricalImportArchiveRow, error)
+	FindHistoricalImportCheckpoint(ctx context.Context, arg FindHistoricalImportCheckpointParams) (FindHistoricalImportCheckpointRow, error)
 	FindHistoricalImportQuarantine(ctx context.Context, arg FindHistoricalImportQuarantineParams) (FindHistoricalImportQuarantineRow, error)
 	FindHistoricalImportRowReceipt(ctx context.Context, arg FindHistoricalImportRowReceiptParams) (FindHistoricalImportRowReceiptRow, error)
 	GetChannel(ctx context.Context, channelID int64) (GetChannelRow, error)
@@ -52,6 +58,7 @@ type Querier interface {
 	GetCustomerSafeExport(ctx context.Context, arg GetCustomerSafeExportParams) (GetCustomerSafeExportRow, error)
 	GetCustomerSafeExportReceipt(ctx context.Context, arg GetCustomerSafeExportReceiptParams) (GetCustomerSafeExportReceiptRow, error)
 	GetCustomerTag(ctx context.Context, tagID int64) (int64, error)
+	GetDM01TargetDatabaseIdentity(ctx context.Context) (GetDM01TargetDatabaseIdentityRow, error)
 	GetExternalEventIdempotency(ctx context.Context, idempotencyKey string) (GetExternalEventIdempotencyRow, error)
 	GetLegacyTagExecutionStatus(ctx context.Context) (GetLegacyTagExecutionStatusRow, error)
 	GetLegacyTagLiveMutationReceipt(ctx context.Context, arg GetLegacyTagLiveMutationReceiptParams) (GetLegacyTagLiveMutationReceiptRow, error)
@@ -111,11 +118,14 @@ type Querier interface {
 	ReserveChannelOperationReceipt(ctx context.Context, arg ReserveChannelOperationReceiptParams) (ReserveChannelOperationReceiptRow, error)
 	ReserveCustomerContactPolicyReceipt(ctx context.Context, arg ReserveCustomerContactPolicyReceiptParams) (ReserveCustomerContactPolicyReceiptRow, error)
 	ReserveCustomerSafeExportReceipt(ctx context.Context, arg ReserveCustomerSafeExportReceiptParams) (ReserveCustomerSafeExportReceiptRow, error)
+	ReserveHistoricalImportRun(ctx context.Context, arg ReserveHistoricalImportRunParams) (ReserveHistoricalImportRunRow, error)
 	ReserveLegacyTagLiveMutationReceipt(ctx context.Context, arg ReserveLegacyTagLiveMutationReceiptParams) (ReserveLegacyTagLiveMutationReceiptRow, error)
 	ReserveLegacyTagSyncReceipt(ctx context.Context, arg ReserveLegacyTagSyncReceiptParams) (ReserveLegacyTagSyncReceiptRow, error)
 	ReserveSidebarCustomerProfileReceipt(ctx context.Context, arg ReserveSidebarCustomerProfileReceiptParams) (ReserveSidebarCustomerProfileReceiptRow, error)
+	ResetDM01AcceptanceFixture(ctx context.Context) error
 	ResolveEffectiveCustomerRoot(ctx context.Context, customerID int64) (int64, error)
 	SetCustomerStage(ctx context.Context, arg SetCustomerStageParams) (Customer, error)
+	SetDM01AcceptanceRunState(ctx context.Context, arg SetDM01AcceptanceRunStateParams) error
 	TransitionHistoricalImportRun(ctx context.Context, arg TransitionHistoricalImportRunParams) (int64, error)
 	UpdateChannel(ctx context.Context, arg UpdateChannelParams) (UpdateChannelRow, error)
 	UpdateCustomer(ctx context.Context, arg UpdateCustomerParams) (Customer, error)

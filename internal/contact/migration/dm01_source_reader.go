@@ -18,8 +18,11 @@ var ErrSourceSchemaDrift = errors.New("DM01 source schema drift")
 // provide SQL, table names, or database handles.
 type SourceReader interface {
 	WithSnapshot(context.Context, Manifest, func(SourceSnapshot) error) error
+	DatabaseIdentity(context.Context) (DatabaseIdentity, error)
 	Close()
 }
+
+type DatabaseIdentity struct{ ServerID, Database string }
 
 type SourceSnapshot interface {
 	Bounds() []SourceUpperBound
@@ -80,6 +83,7 @@ type OwnerRoleMapRow struct {
 	UserID      string
 	DisplayName string
 	Active      bool
+	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	Payload     json.RawMessage
 }
@@ -92,6 +96,7 @@ type CustomerIdentityRow struct {
 	PrimaryOwnerUser string
 	FirstSeenAt      time.Time
 	LastSeenAt       time.Time
+	CreatedAt        time.Time
 	UpdatedAt        time.Time
 	Payload          json.RawMessage
 }

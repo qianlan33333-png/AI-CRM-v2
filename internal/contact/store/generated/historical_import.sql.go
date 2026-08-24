@@ -51,6 +51,57 @@ func (q *Queries) AppendHistoricalImportArchive(ctx context.Context, arg AppendH
 	return result.RowsAffected(), nil
 }
 
+const appendHistoricalImportCheckpointFenced = `-- name: AppendHistoricalImportCheckpointFenced :execrows
+INSERT INTO legacy_contact_identity_import_checkpoints (
+  run_id, source_table, final_source_key_hmac, payload_hmac, field_digest,
+  watermark, upper_source_key_hmac, upper_bound_empty
+)
+SELECT r.id, $1::text,
+       $2::bytea, $3::bytea,
+       $4::bytea, $5::timestamptz,
+       $6::bytea, $7::boolean
+FROM legacy_contact_identity_import_runs AS r
+WHERE r.id = $8::bigint
+  AND r.lease_generation = $9::bigint
+  AND r.lease_token_hmac = $10::bytea
+  AND r.lease_expires_at >= now()
+  AND ((r.mode IN ('full','incremental') AND r.state = 'importing')
+       OR (r.mode = 'reconcile' AND r.state = 'reconciling'))
+ON CONFLICT (run_id, source_table) DO NOTHING
+`
+
+type AppendHistoricalImportCheckpointFencedParams struct {
+	SourceTable        string             `json:"source_table"`
+	FinalSourceKeyHmac []byte             `json:"final_source_key_hmac"`
+	PayloadHmac        []byte             `json:"payload_hmac"`
+	FieldDigest        []byte             `json:"field_digest"`
+	Watermark          pgtype.Timestamptz `json:"watermark"`
+	UpperSourceKeyHmac []byte             `json:"upper_source_key_hmac"`
+	UpperBoundEmpty    bool               `json:"upper_bound_empty"`
+	RunID              int64              `json:"run_id"`
+	ExpectedGeneration int64              `json:"expected_generation"`
+	TokenHmac          []byte             `json:"token_hmac"`
+}
+
+func (q *Queries) AppendHistoricalImportCheckpointFenced(ctx context.Context, arg AppendHistoricalImportCheckpointFencedParams) (int64, error) {
+	result, err := q.db.Exec(ctx, appendHistoricalImportCheckpointFenced,
+		arg.SourceTable,
+		arg.FinalSourceKeyHmac,
+		arg.PayloadHmac,
+		arg.FieldDigest,
+		arg.Watermark,
+		arg.UpperSourceKeyHmac,
+		arg.UpperBoundEmpty,
+		arg.RunID,
+		arg.ExpectedGeneration,
+		arg.TokenHmac,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const appendHistoricalImportLineage = `-- name: AppendHistoricalImportLineage :execrows
 INSERT INTO legacy_contact_identity_source_mappings (
   source_table, source_key_hmac, staff_id, customer_id, identity_id,
@@ -416,6 +467,42 @@ func (q *Queries) FindHistoricalImportArchive(ctx context.Context, arg FindHisto
 	return i, err
 }
 
+const findHistoricalImportCheckpoint = `-- name: FindHistoricalImportCheckpoint :one
+SELECT final_source_key_hmac, payload_hmac, field_digest, watermark,
+       upper_source_key_hmac, upper_bound_empty
+FROM legacy_contact_identity_import_checkpoints
+WHERE run_id = $1::bigint
+  AND source_table = $2::text
+`
+
+type FindHistoricalImportCheckpointParams struct {
+	RunID       int64  `json:"run_id"`
+	SourceTable string `json:"source_table"`
+}
+
+type FindHistoricalImportCheckpointRow struct {
+	FinalSourceKeyHmac []byte             `json:"final_source_key_hmac"`
+	PayloadHmac        []byte             `json:"payload_hmac"`
+	FieldDigest        []byte             `json:"field_digest"`
+	Watermark          pgtype.Timestamptz `json:"watermark"`
+	UpperSourceKeyHmac []byte             `json:"upper_source_key_hmac"`
+	UpperBoundEmpty    bool               `json:"upper_bound_empty"`
+}
+
+func (q *Queries) FindHistoricalImportCheckpoint(ctx context.Context, arg FindHistoricalImportCheckpointParams) (FindHistoricalImportCheckpointRow, error) {
+	row := q.db.QueryRow(ctx, findHistoricalImportCheckpoint, arg.RunID, arg.SourceTable)
+	var i FindHistoricalImportCheckpointRow
+	err := row.Scan(
+		&i.FinalSourceKeyHmac,
+		&i.PayloadHmac,
+		&i.FieldDigest,
+		&i.Watermark,
+		&i.UpperSourceKeyHmac,
+		&i.UpperBoundEmpty,
+	)
+	return i, err
+}
+
 const findHistoricalImportQuarantine = `-- name: FindHistoricalImportQuarantine :one
 SELECT payload_hmac, field_digest, reason_code
 FROM legacy_contact_identity_import_quarantines
@@ -476,6 +563,23 @@ func (q *Queries) FindHistoricalImportRowReceipt(ctx context.Context, arg FindHi
 	row := q.db.QueryRow(ctx, findHistoricalImportRowReceipt, arg.RunID, arg.SourceTable, arg.SourceKeyHmac)
 	var i FindHistoricalImportRowReceiptRow
 	err := row.Scan(&i.PayloadHmac, &i.FieldDigest, &i.Disposition)
+	return i, err
+}
+
+const getDM01TargetDatabaseIdentity = `-- name: GetDM01TargetDatabaseIdentity :one
+SELECT system_identifier::text AS server_id, current_database()::text AS database
+FROM pg_control_system()
+`
+
+type GetDM01TargetDatabaseIdentityRow struct {
+	ServerID string `json:"server_id"`
+	Database string `json:"database"`
+}
+
+func (q *Queries) GetDM01TargetDatabaseIdentity(ctx context.Context) (GetDM01TargetDatabaseIdentityRow, error) {
+	row := q.db.QueryRow(ctx, getDM01TargetDatabaseIdentity)
+	var i GetDM01TargetDatabaseIdentityRow
+	err := row.Scan(&i.ServerID, &i.Database)
 	return i, err
 }
 
@@ -934,6 +1038,68 @@ func (q *Queries) RenewHistoricalImportLease(ctx context.Context, arg RenewHisto
 	var lease_generation int64
 	err := row.Scan(&lease_generation)
 	return lease_generation, err
+}
+
+const reserveHistoricalImportRun = `-- name: ReserveHistoricalImportRun :one
+WITH inserted AS (
+INSERT INTO legacy_contact_identity_import_runs (
+  source_manifest_sha256, source_repository_sha, snapshot_id, parent_run_id,
+  mode, upper_watermark, hmac_key_version, state
+) VALUES (
+  $1::bytea, $2::text,
+  $3::text, $4::bigint,
+  $5::text, $6::timestamptz,
+  $7::smallint, 'reserved'
+)
+ON CONFLICT (source_manifest_sha256, mode, upper_watermark) DO NOTHING
+RETURNING id, lease_generation, state
+)
+SELECT id, lease_generation, state FROM inserted
+UNION ALL
+SELECT id, lease_generation, state
+FROM legacy_contact_identity_import_runs
+WHERE source_manifest_sha256 = $1::bytea
+  AND mode = $5::text
+  AND upper_watermark = $6::timestamptz
+  AND source_repository_sha = $2::text
+  AND snapshot_id = $3::text
+  AND parent_run_id IS NOT DISTINCT FROM $4::bigint
+  AND hmac_key_version = $7::smallint
+  AND ((mode = 'preflight' AND state IN ('reserved','preflighted'))
+       OR (mode IN ('full','incremental') AND state IN ('reserved','preflighted','importing','imported'))
+       OR (mode = 'reconcile' AND state IN ('reserved','reconciling','reconciled')))
+LIMIT 1
+`
+
+type ReserveHistoricalImportRunParams struct {
+	SourceManifestSha256 []byte             `json:"source_manifest_sha256"`
+	SourceRepositorySha  string             `json:"source_repository_sha"`
+	SnapshotID           string             `json:"snapshot_id"`
+	ParentRunID          pgtype.Int8        `json:"parent_run_id"`
+	Mode                 string             `json:"mode"`
+	UpperWatermark       pgtype.Timestamptz `json:"upper_watermark"`
+	HmacKeyVersion       int16              `json:"hmac_key_version"`
+}
+
+type ReserveHistoricalImportRunRow struct {
+	ID              int64  `json:"id"`
+	LeaseGeneration int64  `json:"lease_generation"`
+	State           string `json:"state"`
+}
+
+func (q *Queries) ReserveHistoricalImportRun(ctx context.Context, arg ReserveHistoricalImportRunParams) (ReserveHistoricalImportRunRow, error) {
+	row := q.db.QueryRow(ctx, reserveHistoricalImportRun,
+		arg.SourceManifestSha256,
+		arg.SourceRepositorySha,
+		arg.SnapshotID,
+		arg.ParentRunID,
+		arg.Mode,
+		arg.UpperWatermark,
+		arg.HmacKeyVersion,
+	)
+	var i ReserveHistoricalImportRunRow
+	err := row.Scan(&i.ID, &i.LeaseGeneration, &i.State)
+	return i, err
 }
 
 const transitionHistoricalImportRun = `-- name: TransitionHistoricalImportRun :one

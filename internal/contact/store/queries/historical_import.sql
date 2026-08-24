@@ -10,6 +10,10 @@ VALUES (
 ON CONFLICT (wecom_userid) DO NOTHING
 RETURNING id;
 
+-- name: GetDM01TargetDatabaseIdentity :one
+SELECT system_identifier::text AS server_id, current_database()::text AS database
+FROM pg_control_system();
+
 -- name: InsertHistoricalImportStaffMapping :one
 INSERT INTO legacy_contact_identity_source_mappings (
   source_table, source_key_hmac, staff_id, first_run_id, last_run_id, payload_hmac
@@ -35,6 +39,36 @@ WHERE id = sqlc.arg(run_id)::bigint
   AND lease_generation = sqlc.arg(expected_generation)::bigint
   AND (lease_token_hmac IS NULL OR lease_expires_at < now())
 RETURNING lease_generation;
+
+-- name: ReserveHistoricalImportRun :one
+WITH inserted AS (
+INSERT INTO legacy_contact_identity_import_runs (
+  source_manifest_sha256, source_repository_sha, snapshot_id, parent_run_id,
+  mode, upper_watermark, hmac_key_version, state
+) VALUES (
+  sqlc.arg(source_manifest_sha256)::bytea, sqlc.arg(source_repository_sha)::text,
+  sqlc.arg(snapshot_id)::text, sqlc.narg(parent_run_id)::bigint,
+  sqlc.arg(mode)::text, sqlc.arg(upper_watermark)::timestamptz,
+  sqlc.arg(hmac_key_version)::smallint, 'reserved'
+)
+ON CONFLICT (source_manifest_sha256, mode, upper_watermark) DO NOTHING
+RETURNING id, lease_generation, state
+)
+SELECT id, lease_generation, state FROM inserted
+UNION ALL
+SELECT id, lease_generation, state
+FROM legacy_contact_identity_import_runs
+WHERE source_manifest_sha256 = sqlc.arg(source_manifest_sha256)::bytea
+  AND mode = sqlc.arg(mode)::text
+  AND upper_watermark = sqlc.arg(upper_watermark)::timestamptz
+  AND source_repository_sha = sqlc.arg(source_repository_sha)::text
+  AND snapshot_id = sqlc.arg(snapshot_id)::text
+  AND parent_run_id IS NOT DISTINCT FROM sqlc.narg(parent_run_id)::bigint
+  AND hmac_key_version = sqlc.arg(hmac_key_version)::smallint
+  AND ((mode = 'preflight' AND state IN ('reserved','preflighted'))
+       OR (mode IN ('full','incremental') AND state IN ('reserved','preflighted','importing','imported'))
+       OR (mode = 'reconcile' AND state IN ('reserved','reconciling','reconciled')))
+LIMIT 1;
 
 -- name: RenewHistoricalImportLease :one
 UPDATE legacy_contact_identity_import_runs
@@ -63,6 +97,31 @@ WHERE id = sqlc.arg(run_id)::bigint
   AND lease_token_hmac = sqlc.arg(token_hmac)::bytea
   AND lease_expires_at >= now()
 FOR SHARE;
+
+-- name: AppendHistoricalImportCheckpointFenced :execrows
+INSERT INTO legacy_contact_identity_import_checkpoints (
+  run_id, source_table, final_source_key_hmac, payload_hmac, field_digest,
+  watermark, upper_source_key_hmac, upper_bound_empty
+)
+SELECT r.id, sqlc.arg(source_table)::text,
+       sqlc.arg(final_source_key_hmac)::bytea, sqlc.arg(payload_hmac)::bytea,
+       sqlc.arg(field_digest)::bytea, sqlc.narg(watermark)::timestamptz,
+       sqlc.narg(upper_source_key_hmac)::bytea, sqlc.arg(upper_bound_empty)::boolean
+FROM legacy_contact_identity_import_runs AS r
+WHERE r.id = sqlc.arg(run_id)::bigint
+  AND r.lease_generation = sqlc.arg(expected_generation)::bigint
+  AND r.lease_token_hmac = sqlc.arg(token_hmac)::bytea
+  AND r.lease_expires_at >= now()
+  AND ((r.mode IN ('full','incremental') AND r.state = 'importing')
+       OR (r.mode = 'reconcile' AND r.state = 'reconciling'))
+ON CONFLICT (run_id, source_table) DO NOTHING;
+
+-- name: FindHistoricalImportCheckpoint :one
+SELECT final_source_key_hmac, payload_hmac, field_digest, watermark,
+       upper_source_key_hmac, upper_bound_empty
+FROM legacy_contact_identity_import_checkpoints
+WHERE run_id = sqlc.arg(run_id)::bigint
+  AND source_table = sqlc.arg(source_table)::text;
 
 -- name: LockUniqueActiveStaffForHistoricalImport :one
 SELECT id

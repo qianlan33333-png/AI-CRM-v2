@@ -171,7 +171,6 @@ func (digest *ReconcileDigest) Add(fact contactport.HistoricalImportSourceFact) 
 	row := sha256.New()
 	row.Write(fact.SourceKeyHMAC)
 	row.Write(fact.PayloadHMAC)
-	row.Write(fact.FieldDigest)
 	for index, value := range row.Sum(nil) {
 		digest.accumulator[index] ^= value
 	}

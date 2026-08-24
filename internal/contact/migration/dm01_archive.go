@@ -37,6 +37,35 @@ func PayloadHMAC(key, payload []byte) ([]byte, error) {
 	return mac.Sum(nil), nil
 }
 
+func domainHMAC(key []byte, domain, table string, value []byte) ([]byte, error) {
+	if len(key) == 0 || domain == "" || table == "" {
+		return nil, errors.New("invalid DM01 domain HMAC input")
+	}
+	mac := hmac.New(sha256.New, key)
+	_, _ = mac.Write([]byte(domain))
+	_, _ = mac.Write([]byte{0})
+	_, _ = mac.Write([]byte(table))
+	_, _ = mac.Write([]byte{0})
+	_, _ = mac.Write(value)
+	return mac.Sum(nil), nil
+}
+
+func SourceKeyHMAC(key []byte, table, sourceKey string) ([]byte, error) {
+	return domainHMAC(key, "source-key/v1", table, []byte(sourceKey))
+}
+
+func SourcePayloadHMAC(key []byte, table string, payload []byte) ([]byte, error) {
+	return domainHMAC(key, "payload/v1", table, payload)
+}
+
+func SourceFieldsHMAC(key []byte, table string, tuple []byte) ([]byte, error) {
+	return domainHMAC(key, "fields/v1", table, tuple)
+}
+
+func OwnerAllowlistHMAC(key []byte, userID string) ([]byte, error) {
+	return domainHMAC(key, "owner-allowlist/v1", "owner_role_map", []byte(userID))
+}
+
 // EncryptArchiveBound keeps historical 154/155 payloads out of active tables
 // and logs. Its key is runtime-only and distinct from the source HMAC key.
 func EncryptArchiveBound(key, aad, plaintext []byte) (nonce, ciphertext []byte, err error) {
@@ -58,8 +87,8 @@ func EncryptArchiveBound(key, aad, plaintext []byte) (nonce, ciphertext []byte, 
 	return nonce, gcm.Seal(nil, nonce, plaintext, aad), nil
 }
 
-func DecryptArchiveBound(archiveKey, hmacKey, aad, nonce, ciphertext, wantPayloadHMAC []byte) ([]byte, error) {
-	if len(archiveKey) != 32 || len(hmacKey) == 0 || len(nonce) != 12 || len(ciphertext) <= 16 || len(wantPayloadHMAC) != sha256.Size {
+func DecryptArchiveBound(archiveKey, hmacKey []byte, sourceTable string, aad, nonce, ciphertext, wantPayloadHMAC []byte) ([]byte, error) {
+	if len(archiveKey) != 32 || len(hmacKey) == 0 || sourceTable == "" || len(nonce) != 12 || len(ciphertext) <= 16 || len(wantPayloadHMAC) != sha256.Size {
 		return nil, errors.New("invalid DM01 archive decryption input")
 	}
 	block, err := aes.NewCipher(archiveKey)
@@ -74,7 +103,7 @@ func DecryptArchiveBound(archiveKey, hmacKey, aad, nonce, ciphertext, wantPayloa
 	if err != nil {
 		return nil, err
 	}
-	got, err := PayloadHMAC(hmacKey, plain)
+	got, err := SourcePayloadHMAC(hmacKey, sourceTable, plain)
 	if err != nil || !hmac.Equal(got, wantPayloadHMAC) {
 		return nil, errors.New("DM01 archive payload HMAC mismatch")
 	}
