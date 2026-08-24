@@ -15,14 +15,16 @@ const SourceEnvironment = "AICRM_DM01_SOURCE_DATABASE_URL"
 const LegacyRepositorySHA = "2b7a80126d7becb6f95cf1ec5945dcb78a42f531"
 
 type Manifest struct {
-	ContractVersion     int     `json:"contract_version"`
-	SourceSystem        string  `json:"source_system"`
-	LegacyRepositorySHA string  `json:"legacy_repository_sha"`
-	SnapshotID          string  `json:"snapshot_id"`
-	SingleCorp          bool    `json:"single_corp"`
-	WeComCorpID         string  `json:"wecom_corp_id"`
-	HMACKeyVersion      int     `json:"hmac_key_version"`
-	Tables              []Table `json:"tables"`
+	ContractVersion     int               `json:"contract_version"`
+	SourceSystem        string            `json:"source_system"`
+	LegacyRepositorySHA string            `json:"legacy_repository_sha"`
+	SnapshotID          string            `json:"snapshot_id"`
+	SingleCorp          bool              `json:"single_corp"`
+	WeComCorpID         string            `json:"wecom_corp_id"`
+	OpenPlatformAccount string            `json:"open_platform_account,omitempty"`
+	WeChatAppScopes     map[string]string `json:"wechat_app_scopes,omitempty"`
+	HMACKeyVersion      int               `json:"hmac_key_version"`
+	Tables              []Table           `json:"tables"`
 }
 type Table struct {
 	Name         string `json:"name"`
@@ -59,7 +61,10 @@ func (m Manifest) Valid() error {
 	want := map[string][2]string{
 		"owner_role_map": {"userid", "updated_at+userid"}, "crm_user_identity": {"unionid", "updated_at+unionid"},
 		"wecom_external_contact_identity_map": {"id", "updated_at+id"}, "crm_user_identity_merge_audit": {"id", "created_at+id"},
-		"crm_user_identity_resolution_queue": {"id", "updated_at+id"},
+		"crm_user_identity_resolution_queue": {"id", "updated_at+id"}, "admin_wecom_directory_members": {"id", "last_synced_at+id"},
+		"contacts": {"id", "updated_at+id"}, "crm_user_identity_conflicts": {"id", "updated_at+id"},
+		"external_contact_bindings": {"id", "updated_at+id"}, "people": {"id", "updated_at+id"},
+		"wecom_external_contact_follow_users": {"id", "updated_at+id"},
 	}
 	seen := map[string]bool{}
 	for _, t := range m.Tables {
@@ -69,8 +74,10 @@ func (m Manifest) Valid() error {
 		}
 		seen[t.Name] = true
 	}
-	if !seen["owner_role_map"] || !seen["crm_user_identity"] || !seen["wecom_external_contact_identity_map"] {
-		return errors.New("missing DM01 active import root")
+	for table := range want {
+		if !seen[table] {
+			return errors.New("missing DM01 source table")
+		}
 	}
 	return nil
 }
