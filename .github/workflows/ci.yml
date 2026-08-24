@@ -209,7 +209,7 @@ jobs:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
         run: test "$(docker exec "$POSTGRES_CONTAINER_ID" psql -U postgres -d aicrm_test -Atqc 'SHOW server_version_num')" = "160014"
       - name: Create DM01 source and target databases
-        if: contains(needs.classify.outputs.database_groups, 'dm01')
+        if: needs.classify.outputs.database_mode == 'full' || contains(needs.classify.outputs.database_groups, 'dm01')
         env:
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
         run: |

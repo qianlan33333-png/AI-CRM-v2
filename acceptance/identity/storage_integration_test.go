@@ -316,7 +316,7 @@ func openIdentityPool(t *testing.T) *pgxpool.Pool {
 
 func resetIdentityStorage(t *testing.T, pool *pgxpool.Pool) {
 	t.Helper()
-	if _, err := pool.Exec(context.Background(), `TRUNCATE identity_operation_receipts, pending_events, customer_merges, identities RESTART IDENTITY`); err != nil {
+	if _, err := pool.Exec(context.Background(), `TRUNCATE legacy_contact_identity_source_mappings, identity_operation_receipts, pending_events, customer_merges, identities RESTART IDENTITY`); err != nil {
 		t.Fatal(err)
 	}
 }

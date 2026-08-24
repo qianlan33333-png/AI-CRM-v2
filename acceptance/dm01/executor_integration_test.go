@@ -36,7 +36,7 @@ var (
 
 func TestDM01ExecutorTwoPostgreSQLDatabases(t *testing.T) {
 	if *sourceDatabaseURL == "" || *targetDatabaseURL == "" {
-		t.Fatal("source-database-url and target-database-url are required")
+		t.Skip("source-database-url and target-database-url are required for the selected DM01 database gate")
 	}
 	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(*sourceDatabaseURL, acceptancefixtures.DM01SourceDatabaseName); err != nil {
 		t.Fatal("unsafe source database URL")
