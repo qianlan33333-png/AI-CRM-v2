@@ -17,6 +17,7 @@ import (
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
+	segmentfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store/acceptancefixture"
 )
 
 type allEligibleInitiationChecker struct{}
@@ -123,27 +124,16 @@ func TestSegmentTouchPlanSnapshotSerializesRefreshWriter(t *testing.T) {
 	prefix := fmt.Sprintf("initiation-segment-%d", time.Now().UnixNano())
 	customerIDs := seedInitiationCustomers(t, ctx, pool, prefix, 2)
 	refreshedAt := time.Now().UTC().Truncate(time.Microsecond)
-	var segmentID int64
-	if err := pool.QueryRow(ctx, `INSERT INTO public.segments (name,definition,refresh_mode,member_count,refreshed_at,refresh_status,lifecycle_status,created_at,updated_at)
-VALUES ($1,'{}','manual',2,$2,'idle','active',$2,$2)
-RETURNING id`, prefix, refreshedAt).Scan(&segmentID); err != nil {
+	segmentID, err := segmentfixture.CreateTouchPlanSnapshot(ctx, pool, prefix, customerIDs, refreshedAt, 7)
+	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		if _, err := pool.Exec(ctx, `DELETE FROM public.segments WHERE id=$1`, segmentID); err != nil {
+		if err := segmentfixture.DeleteTouchPlanSnapshot(ctx, pool, segmentID); err != nil {
 			t.Fatal(err)
 		}
 		deleteInitiationCustomers(t, ctx, pool, customerIDs)
 	})
-	for _, customerID := range customerIDs {
-		if _, err := pool.Exec(ctx, `INSERT INTO public.segment_members (segment_id,customer_id,computed_at) VALUES ($1,$2,$3)`, segmentID, customerID, refreshedAt); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if _, err := pool.Exec(ctx, `INSERT INTO public.ai_audience_package_metadata (segment_id,lifecycle,version,created_by,updated_by,created_at,updated_at)
-VALUES ($1,'active',7,1,1,$2,$2)`, segmentID, refreshedAt); err != nil {
-		t.Fatal(err)
-	}
 
 	uow := platformstore.NewUnitOfWork(pool)
 	reader := segmentstore.NewTouchPlanSnapshotRepository()
