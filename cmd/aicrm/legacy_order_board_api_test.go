@@ -77,6 +77,72 @@ func TestOrderABRootFiltersAliasesAndUsesOrderRead(t *testing.T) {
 	}
 }
 
+func TestOrderBoardProviderListsUseReadRBAC(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		path     string
+		provider string
+		limit    int32
+	}{
+		{name: "wechat pay", path: "/api/admin/wechat-pay/orders?status=paid&limit=20", provider: "wechat", limit: 20},
+		{name: "wechat shop", path: "/api/admin/orders?provider=wechat_shop&status=paid&limit=50", provider: "wechat_shop", limit: 50},
+		{name: "alipay", path: "/api/admin/alipay/transactions?payment_status=paid&limit=50", provider: "alipay", limit: 50},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			stub := &legacyOrderBoardStub{}
+			router, auth := legacyOrderBoardRouter(t, stub)
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, legacyRequest(http.MethodGet, test.path, legacyToken(99)))
+			if response.Code != http.StatusOK || stub.filter.Provider != test.provider || stub.filter.Status != "paid" || stub.filter.Limit != test.limit {
+				t.Fatalf("status=%d filter=%+v body=%s", response.Code, stub.filter, response.Body.String())
+			}
+			if got := auth.capabilities(); len(got) != 1 || got[0] != authport.CapabilityOrderRead {
+				t.Fatalf("capabilities=%v", got)
+			}
+		})
+	}
+}
+
+func TestOrderBoardProviderFilteredExportsRequireCSRFAndUseServerActor(t *testing.T) {
+	csrf := legacyToken(0x31)
+	for _, test := range []struct {
+		name     string
+		provider string
+	}{
+		{name: "wechat", provider: "wechat"},
+		{name: "wechat shop", provider: "wechat_shop"},
+		{name: "alipay", provider: "alipay"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			stub := &legacyOrderBoardStub{}
+			auth := &orderBoardExportAuth{expectedCSRF: csrf}
+			router := legacyOrderBoardRouterWithService(t, stub, auth)
+			body := `{"resource":"orders","format":"csv","filter":{"provider":"` + test.provider + `","status":"paid"}}`
+
+			missing := legacyChannelWriteRequest(http.MethodPost, "/api/admin/exports", body)
+			missing.Header.Set("Idempotency-Key", "commerce-export-key-0001")
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, missing)
+			if response.Code != http.StatusForbidden || auth.csrfCalls != 1 || stub.exportCommand.Actor != 0 {
+				t.Fatalf("missing csrf status=%d csrf=%d command=%+v body=%s", response.Code, auth.csrfCalls, stub.exportCommand, response.Body.String())
+			}
+
+			auth.csrfCalls, auth.capabilities = 0, nil
+			request := legacyChannelWriteRequest(http.MethodPost, "/api/admin/exports", body)
+			request.Header.Set("Idempotency-Key", "commerce-export-key-0001")
+			request.Header.Set("X-CSRF-Token", csrf)
+			response = httptest.NewRecorder()
+			router.ServeHTTP(response, request)
+			if response.Code != http.StatusOK || auth.csrfCalls != 1 || stub.exportCommand.Actor != 41 || stub.exportCommand.IdempotencyKey != "commerce-export-key-0001" || stub.exportCommand.Resource != "orders" || stub.exportCommand.Format != "csv" || stub.exportCommand.Filter.Provider != test.provider || stub.exportCommand.Filter.Status != "paid" {
+				t.Fatalf("status=%d csrf=%d command=%+v body=%s", response.Code, auth.csrfCalls, stub.exportCommand, response.Body.String())
+			}
+			if len(auth.capabilities) != 1 || auth.capabilities[0] != authport.CapabilityOrderWrite {
+				t.Fatalf("capabilities=%v", auth.capabilities)
+			}
+		})
+	}
+}
+
 func TestOrderListPageIsAnAuthorizedCarrierOnly(t *testing.T) {
 	for _, test := range []struct {
 		name      string
@@ -246,6 +312,11 @@ func TestOrderExternalEffectPublicProjectionNeverLeaksProviderReceipt(t *testing
 func legacyOrderBoardRouter(t *testing.T, board legacyOrderBoardApplication) (http.Handler, *recordingAuth) {
 	t.Helper()
 	service := &recordingAuth{}
+	return legacyOrderBoardRouterWithService(t, board, service), service
+}
+
+func legacyOrderBoardRouterWithService(t *testing.T, board legacyOrderBoardApplication, service authport.Service) http.Handler {
+	t.Helper()
 	legacy, err := NewHandlerWithOutboundProductsMediaAndSurvey(service, &legacyCustomerStub{result: legacyCustomerResult()}, &legacyOutboundQueryStub{}, &legacyCancelStub{}, &legacyRetryStub{}, &legacyProductStub{}, &legacyMediaStub{}, &legacySurveyStub{})
 	if err != nil {
 		t.Fatal(err)
@@ -259,5 +330,34 @@ func legacyOrderBoardRouter(t *testing.T, board legacyOrderBoardApplication) (ht
 	if err != nil {
 		t.Fatal(err)
 	}
-	return router, service
+	return router
+}
+
+type orderBoardExportAuth struct {
+	expectedCSRF string
+	csrfCalls    int
+	capabilities []authport.Capability
+}
+
+var _ authport.Service = (*orderBoardExportAuth)(nil)
+
+func (*orderBoardExportAuth) Authenticate(context.Context, authport.SessionRef) (authport.Principal, error) {
+	return authport.Principal{AdminUserID: 41, Role: authport.RoleAdmin}, nil
+}
+
+func (auth *orderBoardExportAuth) Authorize(_ context.Context, _ authport.Principal, capability authport.Capability) (authport.Authorization, error) {
+	auth.capabilities = append(auth.capabilities, capability)
+	return authport.Authorization{Capability: capability, Scope: authport.ScopeGlobal}, nil
+}
+
+func (auth *orderBoardExportAuth) ValidateCSRF(_ context.Context, _ authport.SessionRef, token authport.CSRFToken) error {
+	auth.csrfCalls++
+	if string(token) != auth.expectedCSRF {
+		return authport.ErrCSRFInvalid
+	}
+	return nil
+}
+
+func (*orderBoardExportAuth) Invalidate(context.Context, authport.SessionRef, authport.CSRFToken) error {
+	return nil
 }
