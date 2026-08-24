@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func CreateCompletedDelivery(ctx context.Context, tx pgx.Tx, consumer, payloadMarker, idempotencyKey string, at time.Time) (int64, error) {
@@ -16,6 +17,46 @@ func CreateCompletedDelivery(ctx context.Context, tx pgx.Tx, consumer, payloadMa
 
 func CreateOutcomeUnknownDelivery(ctx context.Context, tx pgx.Tx, consumer, payloadMarker, idempotencyKey string, at time.Time) (int64, error) {
 	return createDelivery(ctx, tx, consumer, payloadMarker, idempotencyKey, "outcome_unknown", at)
+}
+
+func DeleteDeliveryLineageEvents(ctx context.Context, pool *pgxpool.Pool, eventIDs []int64) error {
+	if pool == nil || len(eventIDs) == 0 {
+		return fmt.Errorf("valid events fixture pool and event IDs required")
+	}
+	seen := make(map[int64]struct{}, len(eventIDs))
+	for _, eventID := range eventIDs {
+		if eventID < 1 {
+			return fmt.Errorf("event ID must be positive")
+		}
+		if _, ok := seen[eventID]; ok {
+			return fmt.Errorf("event IDs must be unique")
+		}
+		seen[eventID] = struct{}{}
+	}
+
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin events fixture cleanup: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	deliveryResult, err := tx.Exec(ctx, `DELETE FROM event_deliveries WHERE event_id = ANY($1::bigint[])`, eventIDs)
+	if err != nil {
+		return fmt.Errorf("delete event deliveries: %w", err)
+	}
+	if deliveryResult.RowsAffected() != int64(len(eventIDs)) {
+		return fmt.Errorf("delete event deliveries: deleted %d rows, want %d", deliveryResult.RowsAffected(), len(eventIDs))
+	}
+	eventResult, err := tx.Exec(ctx, `DELETE FROM event_log WHERE id = ANY($1::bigint[])`, eventIDs)
+	if err != nil {
+		return fmt.Errorf("delete event log: %w", err)
+	}
+	if eventResult.RowsAffected() != int64(len(eventIDs)) {
+		return fmt.Errorf("delete event log: deleted %d rows, want %d", eventResult.RowsAffected(), len(eventIDs))
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit events fixture cleanup: %w", err)
+	}
+	return nil
 }
 
 func createDelivery(ctx context.Context, tx pgx.Tx, consumer, payloadMarker, idempotencyKey, status string, at time.Time) (int64, error) {
