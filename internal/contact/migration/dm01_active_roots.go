@@ -61,6 +61,7 @@ type ActiveRootsResult struct {
 	Quarantined             int
 	ChangedSourceCandidates int
 	Updated                 int
+	Skipped                 int
 }
 
 type lineageState uint8
@@ -137,13 +138,10 @@ func (service *ActiveRootService) processSkippedOwner(ctx context.Context, comma
 		result.Replayed++
 		return nil
 	}
-	if err = service.contacts.LockHistoricalImportSource(ctx, contactport.HistoricalImportOwnerRoleMap, fact.SourceKeyHMAC); err != nil {
-		return err
-	}
 	if err = service.contacts.AppendHistoricalImportRowReceipt(ctx, command.Fence, contactport.HistoricalImportOwnerRoleMap, fact, contactport.HistoricalImportSkipped); err != nil {
 		return err
 	}
-	result.Replayed++
+	result.Skipped++
 	return nil
 }
 

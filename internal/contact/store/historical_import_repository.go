@@ -553,6 +553,11 @@ func (HistoricalImportRepository) FindHistoricalImportRowReceipt(ctx context.Con
 		receipt.Disposition = contactport.HistoricalImportImported
 	case "quarantined":
 		receipt.Disposition = contactport.HistoricalImportQuarantined
+	case "skipped":
+		if source != contactport.HistoricalImportOwnerRoleMap {
+			return contactport.HistoricalImportRowReceipt{}, false, ErrHistoricalImportTargetDrift
+		}
+		receipt.Disposition = contactport.HistoricalImportSkipped
 	default:
 		return contactport.HistoricalImportRowReceipt{}, false, ErrHistoricalImportTargetDrift
 	}
