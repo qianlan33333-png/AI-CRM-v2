@@ -208,6 +208,7 @@ runner = staged("scripts/ci/run_selected_database.sh")
 migration_anchor = "run_migration_checks\n\n# A migration-only"
 events_command = '''    events)
       run_make_acceptance P4INTERNAL_EVENTS_TEST_DATABASE_URL p4-internal-events-0367-0368-acceptance
+      run_make_acceptance P4EE01_TEST_DATABASE_URL p4-ee01-internal-event-safe-export-acceptance
       ;;'''
 if migration_anchor not in runner or events_command not in runner:
     fail("selected Events acceptance must run after migration checks without skipping")

@@ -221,6 +221,7 @@ path = Path(sys.argv[1])
 source = path.read_text(encoding="utf-8")
 old = '''    events)
       run_make_acceptance P4INTERNAL_EVENTS_TEST_DATABASE_URL p4-internal-events-0367-0368-acceptance
+      run_make_acceptance P4EE01_TEST_DATABASE_URL p4-ee01-internal-event-safe-export-acceptance
       ;;'''
 if old not in source:
     raise SystemExit("events acceptance fixture anchor missing")
