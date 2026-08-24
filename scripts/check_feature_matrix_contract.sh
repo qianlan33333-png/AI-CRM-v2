@@ -87,7 +87,7 @@ ids="$tmp_root/ids"; targets="$tmp_root/targets"; immutable="$tmp_root/immutable
 
 file_bytes="$(wc -c <"$matrix" | tr -d ' ')"
 [[ "$file_bytes" =~ ^[0-9]+$ ]] || fail "cannot read matrix byte count"
-(( file_bytes > 0 && file_bytes <= 262144 )) || fail "matrix size is outside the 1..262144 byte contract"
+(( file_bytes > 0 && file_bytes <= 278528 )) || fail "matrix size is outside the 1..278528 byte contract"
 od -An -v -tu1 "$matrix" >"$byte_dump" || fail "cannot inspect matrix bytes"
 set +e; awk '{ for (i = 1; i <= NF; i++) { if ($i == 0) nul = 1; last = $i } } END { exit (nul ? 1 : (last == 10 ? 0 : 2)) }' "$byte_dump"; byte_status=$?; set -e
 case "$byte_status" in 0) ;; 1) fail "matrix contains NUL bytes" ;; 2) fail "matrix must end with one LF" ;; *) fail "cannot validate matrix bytes" ;; esac

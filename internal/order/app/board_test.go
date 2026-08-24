@@ -304,6 +304,28 @@ func TestOrderBoardSafeExportUsesAllProviderForEmptyFilter(t *testing.T) {
 	}
 }
 
+func TestOrderBoardProviderFilteredExportIsReceiptBackedAndLocal(t *testing.T) {
+	now := time.Date(2026, 8, 23, 9, 30, 0, 0, time.UTC)
+	for _, provider := range []string{"wechat", "wechat_shop", "alipay"} {
+		t.Run(provider, func(t *testing.T) {
+			store, events := newBoardTestStore(now), &boardTestEvents{}
+			store.record.Provider = provider
+			store.records = []orderport.Record{store.record}
+			service, _ := boardTestService(now, store, events)
+			command := orderport.ExportCommand{Resource: "orders", Format: "csv", Filter: orderport.ExportFilter{Provider: provider, Status: "paid"}, Actor: 9, IdempotencyKey: "provider-export-key"}
+
+			job, err := service.CreateExport(context.Background(), command)
+			if err != nil || store.orderFilter.Provider != provider || len(store.receipts) != 1 || len(store.exports) != 1 || len(events.rows) != 1 || !strings.Contains(job.ContentText, ","+provider+",") {
+				t.Fatalf("job=%#v err=%v filter=%+v receipts=%d exports=%d events=%d", job, err, store.orderFilter, len(store.receipts), len(store.exports), len(events.rows))
+			}
+			replayed, err := service.CreateExport(context.Background(), command)
+			if err != nil || replayed != job || len(store.receipts) != 1 || len(store.exports) != 1 || len(events.rows) != 1 {
+				t.Fatalf("replayed=%#v err=%v receipts=%d exports=%d events=%d", replayed, err, len(store.receipts), len(store.exports), len(events.rows))
+			}
+		})
+	}
+}
+
 func TestOrderBoardSafeExportOwnerScopeAndPaymentsRedline(t *testing.T) {
 	now := time.Date(2026, 8, 23, 9, 0, 0, 0, time.UTC)
 	store, events := newBoardTestStore(now), &boardTestEvents{}
