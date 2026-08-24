@@ -114,9 +114,7 @@ func TestApprovedTouchPlanHandoffReaderUsesCallerTransactionAndRevalidatesFullSn
 	customerIDs := seedInitiationCustomers(t, ctx, pool, campaignCode, 2)
 	t.Cleanup(func() {
 		clearCampaignFacts(t, ctx, pool)
-		if _, err := pool.Exec(ctx, `DELETE FROM public.customers WHERE id=ANY($1::bigint[])`, customerIDs); err != nil {
-			t.Fatal(err)
-		}
+		deleteInitiationCustomers(t, ctx, pool, customerIDs)
 	})
 	if _, err := pool.Exec(ctx, `INSERT INTO public.cloud_campaigns (campaign_code,name,approval_status,runtime_status,version,created_by,updated_by,created_at,updated_at)
 VALUES ($1,'approved reader','draft','idle',1,1,1,now(),now())`, campaignCode); err != nil {
