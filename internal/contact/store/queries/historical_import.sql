@@ -111,10 +111,25 @@ WHERE run_id = sqlc.arg(run_id)::bigint
 FOR UPDATE;
 
 -- name: LockHistoricalImportLineage :one
-SELECT staff_id, customer_id, identity_id, payload_hmac
-FROM legacy_contact_identity_source_mappings
-WHERE source_table = sqlc.arg(source_table)::text
-  AND source_key_hmac = sqlc.arg(source_key_hmac)::bytea
+SELECT m.staff_id, m.customer_id, m.identity_id, m.payload_hmac,
+       m.last_run_id, r.field_digest
+FROM legacy_contact_identity_source_mappings AS m
+JOIN legacy_contact_identity_import_row_receipts AS r
+  ON r.run_id = m.last_run_id AND r.source_table = m.source_table
+ AND r.source_key_hmac = m.source_key_hmac AND r.disposition = 'imported'
+WHERE m.source_table = sqlc.arg(source_table)::text
+  AND m.source_key_hmac = sqlc.arg(source_key_hmac)::bytea
+FOR UPDATE;
+
+-- name: LockHistoricalImportStaffTarget :one
+SELECT wecom_userid, name, is_active, created_at, updated_at
+FROM staff WHERE id = sqlc.arg(staff_id)::bigint FOR UPDATE;
+
+-- name: LockHistoricalImportCustomerTarget :one
+SELECT name, avatar_url, gender, owner_staff_id, added_at, last_interact_at,
+       created_at, updated_at
+FROM customers
+WHERE id = sqlc.arg(customer_id)::bigint AND NOT is_deleted
 FOR UPDATE;
 
 -- name: LockHistoricalImportCustomerForMatch :one
@@ -142,6 +157,50 @@ INSERT INTO legacy_contact_identity_source_mappings (
   sqlc.narg(identity_id)::bigint, sqlc.arg(run_id)::bigint,
   sqlc.arg(run_id)::bigint, sqlc.arg(payload_hmac)::bytea
 );
+
+-- name: UpdateHistoricalImportStaffCAS :execrows
+UPDATE staff
+SET wecom_userid = sqlc.arg(next_wecom_userid)::text,
+    name = sqlc.arg(next_name)::text,
+    is_active = sqlc.arg(next_is_active)::boolean,
+    created_at = sqlc.arg(next_created_at)::timestamptz,
+    updated_at = sqlc.arg(next_updated_at)::timestamptz
+WHERE id = sqlc.arg(staff_id)::bigint
+  AND wecom_userid = sqlc.arg(prior_wecom_userid)::text
+  AND name = sqlc.arg(prior_name)::text
+  AND is_active = sqlc.arg(prior_is_active)::boolean
+  AND created_at = sqlc.arg(prior_created_at)::timestamptz
+  AND updated_at = sqlc.arg(prior_updated_at)::timestamptz;
+
+-- name: UpdateHistoricalImportCustomerCAS :execrows
+UPDATE customers
+SET name = sqlc.arg(next_name)::text,
+    avatar_url = sqlc.narg(next_avatar_url)::text,
+    gender = sqlc.narg(next_gender)::smallint,
+    owner_staff_id = sqlc.narg(next_owner_staff_id)::bigint,
+    added_at = sqlc.arg(next_first_seen_at)::timestamptz,
+    last_interact_at = sqlc.arg(next_last_seen_at)::timestamptz,
+    created_at = sqlc.arg(next_created_at)::timestamptz,
+    updated_at = sqlc.arg(next_updated_at)::timestamptz
+WHERE id = sqlc.arg(customer_id)::bigint AND NOT is_deleted
+  AND name = sqlc.arg(prior_name)::text
+  AND avatar_url IS NOT DISTINCT FROM sqlc.narg(prior_avatar_url)::text
+  AND gender IS NOT DISTINCT FROM sqlc.narg(prior_gender)::smallint
+  AND owner_staff_id IS NOT DISTINCT FROM sqlc.narg(prior_owner_staff_id)::bigint
+  AND added_at = sqlc.arg(prior_first_seen_at)::timestamptz
+  AND last_interact_at = sqlc.arg(prior_last_seen_at)::timestamptz
+  AND created_at = sqlc.arg(prior_created_at)::timestamptz
+  AND updated_at = sqlc.arg(prior_updated_at)::timestamptz;
+
+-- name: UpdateHistoricalImportLineageCAS :execrows
+UPDATE legacy_contact_identity_source_mappings
+SET last_run_id = sqlc.arg(next_run_id)::bigint,
+    payload_hmac = sqlc.arg(next_payload_hmac)::bytea,
+    updated_at = now()
+WHERE source_table = sqlc.arg(source_table)::text
+  AND source_key_hmac = sqlc.arg(source_key_hmac)::bytea
+  AND last_run_id = sqlc.arg(prior_run_id)::bigint
+  AND payload_hmac = sqlc.arg(prior_payload_hmac)::bytea;
 
 -- name: AppendHistoricalImportQuarantine :execrows
 INSERT INTO legacy_contact_identity_import_quarantines (
@@ -203,3 +262,68 @@ WHERE r.id = sqlc.arg(run_id)::bigint
   AND r.lease_expires_at >= now()
   AND r.state = 'importing'
   AND r.mode IN ('full', 'incremental');
+
+-- name: LockHistoricalReconcileRun :one
+SELECT child.parent_run_id
+FROM legacy_contact_identity_import_runs AS child
+JOIN legacy_contact_identity_import_runs AS parent ON parent.id = child.parent_run_id
+WHERE child.id = sqlc.arg(run_id)::bigint
+  AND child.mode = 'reconcile' AND child.state = 'reconciling'
+  AND child.lease_generation = sqlc.arg(expected_generation)::bigint
+  AND child.lease_token_hmac = sqlc.arg(token_hmac)::bytea
+  AND child.lease_expires_at >= now()
+  AND parent.mode IN ('full', 'incremental') AND parent.state = 'imported'
+  AND parent.source_manifest_sha256 = child.source_manifest_sha256
+  AND parent.snapshot_id = child.snapshot_id
+FOR SHARE OF child, parent;
+
+-- name: ListHistoricalReconcileReceiptsPage :many
+SELECT r.source_key_hmac, r.payload_hmac, r.field_digest, r.disposition,
+       (SELECT count(*) FROM legacy_contact_identity_historical_archives AS a
+        WHERE a.run_id = r.run_id AND a.source_table = r.source_table
+          AND a.source_key_hmac = r.source_key_hmac)::bigint AS archive_count,
+       (SELECT count(*) FROM legacy_contact_identity_import_quarantines AS q
+        WHERE q.run_id = r.run_id AND q.source_table = r.source_table
+          AND q.source_key_hmac = r.source_key_hmac)::bigint AS quarantine_count
+FROM legacy_contact_identity_import_row_receipts AS r
+WHERE r.run_id = sqlc.arg(parent_run_id)::bigint
+  AND r.source_table = sqlc.arg(source_table)::text
+  AND (sqlc.narg(after_source_key_hmac)::bytea IS NULL
+       OR r.source_key_hmac > sqlc.narg(after_source_key_hmac)::bytea)
+ORDER BY r.source_key_hmac
+LIMIT sqlc.arg(page_size)::integer;
+
+-- name: CountHistoricalReconcileCompanions :one
+SELECT
+  (SELECT count(*) FROM legacy_contact_identity_historical_archives
+   WHERE run_id = sqlc.arg(parent_run_id)::bigint
+     AND source_table = sqlc.arg(source_table)::text)::bigint AS archive_count,
+  (SELECT count(*) FROM legacy_contact_identity_import_quarantines
+   WHERE run_id = sqlc.arg(parent_run_id)::bigint
+     AND source_table = sqlc.arg(source_table)::text)::bigint AS quarantine_count;
+
+-- name: AppendHistoricalReconcileResult :execrows
+INSERT INTO legacy_contact_identity_import_receipts (run_id, result_digest)
+SELECT child.id, sqlc.arg(result_digest)::bytea
+FROM legacy_contact_identity_import_runs AS child
+JOIN legacy_contact_identity_import_runs AS parent ON parent.id = child.parent_run_id
+WHERE child.id = sqlc.arg(run_id)::bigint
+  AND child.mode = 'reconcile' AND child.state = 'reconciling'
+  AND child.lease_generation = sqlc.arg(expected_generation)::bigint
+  AND child.lease_token_hmac = sqlc.arg(token_hmac)::bytea
+  AND child.lease_expires_at >= now()
+  AND parent.mode IN ('full', 'incremental') AND parent.state = 'imported'
+  AND parent.source_manifest_sha256 = child.source_manifest_sha256
+  AND parent.snapshot_id = child.snapshot_id;
+
+-- name: CompleteHistoricalReconcileRun :one
+UPDATE legacy_contact_identity_import_runs
+SET state = 'reconciled', completed_at = now()
+WHERE id = sqlc.arg(run_id)::bigint
+  AND mode = 'reconcile' AND state = 'reconciling'
+  AND lease_generation = sqlc.arg(expected_generation)::bigint
+  AND lease_token_hmac = sqlc.arg(token_hmac)::bytea
+  AND lease_expires_at >= now()
+  AND EXISTS (SELECT 1 FROM legacy_contact_identity_import_receipts AS receipt
+              WHERE receipt.run_id = legacy_contact_identity_import_runs.id)
+RETURNING id;

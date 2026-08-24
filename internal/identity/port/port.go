@@ -44,6 +44,8 @@ type IDRef struct {
 type HistoricalScopedIdentityBinder interface {
 	BindHistoricalScopedWeComIdentity(context.Context, HistoricalScopedIdentity) (HistoricalScopedIdentityResult, error)
 	ValidateHistoricalScopedWeComIdentity(context.Context, int64, HistoricalScopedIdentity) error
+	LockHistoricalScopedWeComIdentity(context.Context, int64, []byte) (HistoricalScopedIdentity, error)
+	UpdateHistoricalScopedWeComIdentityCAS(context.Context, int64, HistoricalScopedIdentity, HistoricalScopedIdentity) error
 }
 
 type HistoricalScopedIdentity struct {

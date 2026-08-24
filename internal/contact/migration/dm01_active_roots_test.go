@@ -46,7 +46,7 @@ func (state *activeRootState) clone() *activeRootState {
 		next.identityByName[key] = value
 	}
 	for key, value := range state.lineage {
-		next.lineage[key] = contactport.HistoricalImportLineage{TargetID: value.TargetID, PayloadHMAC: append([]byte(nil), value.PayloadHMAC...)}
+		next.lineage[key] = contactport.HistoricalImportLineage{TargetID: value.TargetID, PayloadHMAC: append([]byte(nil), value.PayloadHMAC...), FieldDigest: append([]byte(nil), value.FieldDigest...), LastRunID: value.LastRunID}
 	}
 	for key, value := range state.receipts {
 		next.receipts[key] = contactport.HistoricalImportRowReceipt{PayloadHMAC: append([]byte(nil), value.PayloadHMAC...), FieldDigest: append([]byte(nil), value.FieldDigest...), Disposition: value.Disposition}
@@ -148,6 +148,46 @@ func (world *activeRootWorld) ValidateHistoricalImportCustomer(_ context.Context
 	return world.fail("validate-customer")
 }
 
+func (world *activeRootWorld) LockHistoricalImportStaffTarget(_ context.Context, id int64) (contactport.HistoricalImportStaffFact, error) {
+	fact, found := world.tx.staff[id]
+	if !found {
+		return contactport.HistoricalImportStaffFact{}, ErrActiveRootDrift
+	}
+	return fact, world.fail("lock-staff-target")
+}
+
+func (world *activeRootWorld) LockHistoricalImportCustomerTarget(_ context.Context, id int64) (contactport.HistoricalImportCustomerFact, error) {
+	fact, found := world.tx.customers[id]
+	if !found {
+		return contactport.HistoricalImportCustomerFact{}, ErrActiveRootDrift
+	}
+	return cloneCustomerFact(fact), world.fail("lock-customer-target")
+}
+
+func (world *activeRootWorld) UpdateHistoricalImportStaffCAS(_ context.Context, id int64, prior, next contactport.HistoricalImportStaffFact) error {
+	if err := world.fail("update-staff"); err != nil {
+		return err
+	}
+	if world.tx.staff[id] != prior {
+		return ErrActiveRootDrift
+	}
+	world.tx.staff[id] = next
+	world.tx.writes = append(world.tx.writes, "update-staff")
+	return nil
+}
+
+func (world *activeRootWorld) UpdateHistoricalImportCustomerCAS(_ context.Context, id int64, prior, next contactport.HistoricalImportCustomerFact) error {
+	if err := world.fail("update-customer"); err != nil {
+		return err
+	}
+	if !reflect.DeepEqual(world.tx.customers[id], prior) {
+		return ErrActiveRootDrift
+	}
+	world.tx.customers[id] = cloneCustomerFact(next)
+	world.tx.writes = append(world.tx.writes, "update-customer")
+	return nil
+}
+
 func (world *activeRootWorld) IsHistoricalImportActiveStaff(_ context.Context, id int64) (bool, error) {
 	fact, found := world.tx.staff[id]
 	if !found {
@@ -175,6 +215,22 @@ func (world *activeRootWorld) AppendHistoricalImportLineage(_ context.Context, _
 	return nil
 }
 
+func (world *activeRootWorld) UpdateHistoricalImportLineageCAS(_ context.Context, runID int64, source contactport.HistoricalImportSource, fact contactport.HistoricalImportSourceFact, prior contactport.HistoricalImportLineage) error {
+	if err := world.fail("update-lineage"); err != nil {
+		return err
+	}
+	key := lineageKey(source, fact.SourceKeyHMAC)
+	current, found := world.tx.lineage[key]
+	if !found || current.LastRunID != prior.LastRunID || !reflect.DeepEqual(current.PayloadHMAC, prior.PayloadHMAC) {
+		return ErrActiveRootDrift
+	}
+	current.PayloadHMAC = append([]byte(nil), fact.PayloadHMAC...)
+	current.LastRunID = runID
+	world.tx.lineage[key] = current
+	world.tx.writes = append(world.tx.writes, "update-lineage")
+	return nil
+}
+
 func (world *activeRootWorld) AppendHistoricalImportQuarantine(_ context.Context, quarantine contactport.HistoricalImportQuarantine) error {
 	if err := world.fail("append-quarantine"); err != nil {
 		return err
@@ -189,6 +245,13 @@ func (world *activeRootWorld) AppendHistoricalImportRowReceipt(_ context.Context
 		return err
 	}
 	world.tx.receipts[receiptKey(runID, source, fact.SourceKeyHMAC)] = contactport.HistoricalImportRowReceipt{PayloadHMAC: append([]byte(nil), fact.PayloadHMAC...), FieldDigest: append([]byte(nil), fact.FieldDigest...), Disposition: disposition}
+	if disposition == contactport.HistoricalImportImported {
+		key := lineageKey(source, fact.SourceKeyHMAC)
+		lineage := world.tx.lineage[key]
+		lineage.FieldDigest = append([]byte(nil), fact.FieldDigest...)
+		lineage.LastRunID = runID
+		world.tx.lineage[key] = lineage
+	}
 	world.tx.writes = append(world.tx.writes, "receipt")
 	return nil
 }
@@ -218,6 +281,28 @@ func (world *activeRootWorld) ValidateHistoricalScopedWeComIdentity(_ context.Co
 		return ErrActiveRootDrift
 	}
 	return world.fail("validate-identity")
+}
+
+func (world *activeRootWorld) LockHistoricalScopedWeComIdentity(_ context.Context, id int64, _ []byte) (identityport.HistoricalScopedIdentity, error) {
+	fact, found := world.tx.identities[id]
+	if !found {
+		return identityport.HistoricalScopedIdentity{}, ErrActiveRootDrift
+	}
+	return fact, world.fail("lock-identity-target")
+}
+
+func (world *activeRootWorld) UpdateHistoricalScopedWeComIdentityCAS(_ context.Context, id int64, prior, next identityport.HistoricalScopedIdentity) error {
+	if err := world.fail("update-identity"); err != nil {
+		return err
+	}
+	if !reflect.DeepEqual(world.tx.identities[id], prior) {
+		return ErrActiveRootDrift
+	}
+	delete(world.tx.identityByName, prior.Scope+"\x00"+prior.ExternalUserID)
+	world.tx.identities[id] = next
+	world.tx.identityByName[next.Scope+"\x00"+next.ExternalUserID] = id
+	world.tx.writes = append(world.tx.writes, "update-identity")
+	return nil
 }
 
 func TestActiveRootServiceOrdersRootsAndExactReplayWritesNothing(t *testing.T) {
@@ -270,7 +355,7 @@ func TestActiveRootServicePayloadMismatchAndTargetDriftFailClosed(t *testing.T) 
 	}
 }
 
-func TestActiveRootServiceChangedSnapshotBecomesCandidate(t *testing.T) {
+func TestActiveRootServiceChangedSnapshotUpdatesWhenTargetStillMatches(t *testing.T) {
 	world := newActiveRootWorld()
 	service := NewActiveRootService(world, world, world)
 	command := completeActiveRootsCommand()
@@ -280,12 +365,97 @@ func TestActiveRootServiceChangedSnapshotBecomesCandidate(t *testing.T) {
 	changed := completeActiveRootsCommand()
 	changed.RunID++
 	changed.Customers[0].Source.PayloadHMAC[0]++
+	changed.Customers[0].Target.Name = "Customer Updated"
 	result, err := service.Process(context.Background(), changed)
-	if err != nil || result.ChangedSourceCandidates != 1 || result.Quarantined != 1 {
+	if err != nil || result != (ActiveRootsResult{Imported: 2, Updated: 1}) {
 		t.Fatalf("changed source = %+v, %v", result, err)
 	}
-	if got := world.committed.customers[42].Name; got != "Customer One" {
-		t.Fatalf("changed source mutated target: %q", got)
+	if got := world.committed.customers[42].Name; got != "Customer Updated" {
+		t.Fatalf("changed source was not applied: %q", got)
+	}
+}
+
+func TestActiveRootServiceChangedSnapshotQuarantinesTargetDrift(t *testing.T) {
+	world := newActiveRootWorld()
+	service := NewActiveRootService(world, world, world)
+	command := completeActiveRootsCommand()
+	if _, err := service.Process(context.Background(), command); err != nil {
+		t.Fatal(err)
+	}
+	customer := world.committed.customers[42]
+	customer.Name = "operator edit"
+	world.committed.customers[42] = customer
+	changed := completeActiveRootsCommand()
+	changed.RunID++
+	changed.Customers[0].Source.PayloadHMAC[0]++
+	changed.Customers[0].Target.Name = "source update"
+	result, err := service.Process(context.Background(), changed)
+	if err != nil || result.ChangedSourceCandidates != 1 || result.Quarantined != 1 {
+		t.Fatalf("target drift = %+v/%v", result, err)
+	}
+	if world.committed.customers[42].Name != "operator edit" || world.committed.quarantines[len(world.committed.quarantines)-1].ReasonCode != quarantineTargetDrift {
+		t.Fatalf("target drift was overwritten: %+v", world.committed)
+	}
+}
+
+func TestActiveRootServiceIncrementalCASUpdatesAllClosedTargets(t *testing.T) {
+	for _, source := range []string{"staff", "customer", "identity"} {
+		t.Run(source, func(t *testing.T) {
+			world := newActiveRootWorld()
+			service := NewActiveRootService(world, world, world)
+			if _, err := service.Process(context.Background(), completeActiveRootsCommand()); err != nil {
+				t.Fatal(err)
+			}
+			changed := completeActiveRootsCommand()
+			changed.RunID++
+			switch source {
+			case "staff":
+				changed.Customers = nil
+				changed.Identities = nil
+				changed.Staff[0].Source.PayloadHMAC[0]++
+				changed.Staff[0].Target.Name = "Staff Updated"
+			case "customer":
+				changed.Staff = nil
+				changed.Identities = nil
+				changed.Customers[0].Source.PayloadHMAC[0]++
+				changed.Customers[0].Target.Name = "Customer Updated"
+			case "identity":
+				changed.Staff = nil
+				changed.Customers = nil
+				changed.Identities[0].Source.PayloadHMAC[0]++
+				changed.Identities[0].ExternalUserID = "external-updated"
+			}
+			result, err := service.Process(context.Background(), changed)
+			if err != nil || result != (ActiveRootsResult{Updated: 1}) {
+				t.Fatalf("%s CAS = %+v/%v", source, result, err)
+			}
+		})
+	}
+}
+
+func TestActiveRootServiceIncrementalCASFailureRollsBackTargetAndLineage(t *testing.T) {
+	for _, failAt := range []string{"update-customer", "update-lineage", "append-receipt"} {
+		t.Run(failAt, func(t *testing.T) {
+			world := newActiveRootWorld()
+			service := NewActiveRootService(world, world, world)
+			if _, err := service.Process(context.Background(), completeActiveRootsCommand()); err != nil {
+				t.Fatal(err)
+			}
+			before := world.committed.clone()
+			world.failAt = failAt
+			changed := completeActiveRootsCommand()
+			changed.RunID++
+			changed.Staff = nil
+			changed.Identities = nil
+			changed.Customers[0].Source.PayloadHMAC[0]++
+			changed.Customers[0].Target.Name = "Customer Updated"
+			if _, err := service.Process(context.Background(), changed); !errors.Is(err, errActiveRootInjected) {
+				t.Fatalf("%s = %v", failAt, err)
+			}
+			if !reflect.DeepEqual(world.committed, before) {
+				t.Fatalf("%s retained partial CAS: %+v", failAt, world.committed)
+			}
+		})
 	}
 }
 

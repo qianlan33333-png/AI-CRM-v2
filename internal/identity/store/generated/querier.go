@@ -48,6 +48,7 @@ type Querier interface {
 	ReserveIngestReceipt(ctx context.Context, arg ReserveIngestReceiptParams) (int64, error)
 	ReserveMergeReviewReceipt(ctx context.Context, arg ReserveMergeReviewReceiptParams) (int64, error)
 	ResolveMergeReview(ctx context.Context, arg ResolveMergeReviewParams) (int64, error)
+	UpdateHistoricalScopedWeComIdentityCAS(ctx context.Context, arg UpdateHistoricalScopedWeComIdentityCASParams) (int64, error)
 	UpsertNormalizedIdentity(ctx context.Context, arg UpsertNormalizedIdentityParams) (UpsertNormalizedIdentityRow, error)
 }
 

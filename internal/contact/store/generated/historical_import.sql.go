@@ -201,6 +201,41 @@ func (q *Queries) AppendHistoricalImportRowReceiptFenced(ctx context.Context, ar
 	return result.RowsAffected(), nil
 }
 
+const appendHistoricalReconcileResult = `-- name: AppendHistoricalReconcileResult :execrows
+INSERT INTO legacy_contact_identity_import_receipts (run_id, result_digest)
+SELECT child.id, $1::bytea
+FROM legacy_contact_identity_import_runs AS child
+JOIN legacy_contact_identity_import_runs AS parent ON parent.id = child.parent_run_id
+WHERE child.id = $2::bigint
+  AND child.mode = 'reconcile' AND child.state = 'reconciling'
+  AND child.lease_generation = $3::bigint
+  AND child.lease_token_hmac = $4::bytea
+  AND child.lease_expires_at >= now()
+  AND parent.mode IN ('full', 'incremental') AND parent.state = 'imported'
+  AND parent.source_manifest_sha256 = child.source_manifest_sha256
+  AND parent.snapshot_id = child.snapshot_id
+`
+
+type AppendHistoricalReconcileResultParams struct {
+	ResultDigest       []byte `json:"result_digest"`
+	RunID              int64  `json:"run_id"`
+	ExpectedGeneration int64  `json:"expected_generation"`
+	TokenHmac          []byte `json:"token_hmac"`
+}
+
+func (q *Queries) AppendHistoricalReconcileResult(ctx context.Context, arg AppendHistoricalReconcileResultParams) (int64, error) {
+	result, err := q.db.Exec(ctx, appendHistoricalReconcileResult,
+		arg.ResultDigest,
+		arg.RunID,
+		arg.ExpectedGeneration,
+		arg.TokenHmac,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const assertHistoricalImportLease = `-- name: AssertHistoricalImportLease :one
 SELECT id
 FROM legacy_contact_identity_import_runs
@@ -252,6 +287,59 @@ func (q *Queries) ClaimHistoricalImportLease(ctx context.Context, arg ClaimHisto
 	var lease_generation int64
 	err := row.Scan(&lease_generation)
 	return lease_generation, err
+}
+
+const completeHistoricalReconcileRun = `-- name: CompleteHistoricalReconcileRun :one
+UPDATE legacy_contact_identity_import_runs
+SET state = 'reconciled', completed_at = now()
+WHERE id = $1::bigint
+  AND mode = 'reconcile' AND state = 'reconciling'
+  AND lease_generation = $2::bigint
+  AND lease_token_hmac = $3::bytea
+  AND lease_expires_at >= now()
+  AND EXISTS (SELECT 1 FROM legacy_contact_identity_import_receipts AS receipt
+              WHERE receipt.run_id = legacy_contact_identity_import_runs.id)
+RETURNING id
+`
+
+type CompleteHistoricalReconcileRunParams struct {
+	RunID              int64  `json:"run_id"`
+	ExpectedGeneration int64  `json:"expected_generation"`
+	TokenHmac          []byte `json:"token_hmac"`
+}
+
+func (q *Queries) CompleteHistoricalReconcileRun(ctx context.Context, arg CompleteHistoricalReconcileRunParams) (int64, error) {
+	row := q.db.QueryRow(ctx, completeHistoricalReconcileRun, arg.RunID, arg.ExpectedGeneration, arg.TokenHmac)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const countHistoricalReconcileCompanions = `-- name: CountHistoricalReconcileCompanions :one
+SELECT
+  (SELECT count(*) FROM legacy_contact_identity_historical_archives
+   WHERE run_id = $1::bigint
+     AND source_table = $2::text)::bigint AS archive_count,
+  (SELECT count(*) FROM legacy_contact_identity_import_quarantines
+   WHERE run_id = $1::bigint
+     AND source_table = $2::text)::bigint AS quarantine_count
+`
+
+type CountHistoricalReconcileCompanionsParams struct {
+	ParentRunID int64  `json:"parent_run_id"`
+	SourceTable string `json:"source_table"`
+}
+
+type CountHistoricalReconcileCompanionsRow struct {
+	ArchiveCount    int64 `json:"archive_count"`
+	QuarantineCount int64 `json:"quarantine_count"`
+}
+
+func (q *Queries) CountHistoricalReconcileCompanions(ctx context.Context, arg CountHistoricalReconcileCompanionsParams) (CountHistoricalReconcileCompanionsRow, error) {
+	row := q.db.QueryRow(ctx, countHistoricalReconcileCompanions, arg.ParentRunID, arg.SourceTable)
+	var i CountHistoricalReconcileCompanionsRow
+	err := row.Scan(&i.ArchiveCount, &i.QuarantineCount)
+	return i, err
 }
 
 const createHistoricalImportCustomer = `-- name: CreateHistoricalImportCustomer :one
@@ -519,6 +607,71 @@ func (q *Queries) IsHistoricalImportActiveStaff(ctx context.Context, staffID int
 	return is_active, err
 }
 
+const listHistoricalReconcileReceiptsPage = `-- name: ListHistoricalReconcileReceiptsPage :many
+SELECT r.source_key_hmac, r.payload_hmac, r.field_digest, r.disposition,
+       (SELECT count(*) FROM legacy_contact_identity_historical_archives AS a
+        WHERE a.run_id = r.run_id AND a.source_table = r.source_table
+          AND a.source_key_hmac = r.source_key_hmac)::bigint AS archive_count,
+       (SELECT count(*) FROM legacy_contact_identity_import_quarantines AS q
+        WHERE q.run_id = r.run_id AND q.source_table = r.source_table
+          AND q.source_key_hmac = r.source_key_hmac)::bigint AS quarantine_count
+FROM legacy_contact_identity_import_row_receipts AS r
+WHERE r.run_id = $1::bigint
+  AND r.source_table = $2::text
+  AND ($3::bytea IS NULL
+       OR r.source_key_hmac > $3::bytea)
+ORDER BY r.source_key_hmac
+LIMIT $4::integer
+`
+
+type ListHistoricalReconcileReceiptsPageParams struct {
+	ParentRunID        int64  `json:"parent_run_id"`
+	SourceTable        string `json:"source_table"`
+	AfterSourceKeyHmac []byte `json:"after_source_key_hmac"`
+	PageSize           int32  `json:"page_size"`
+}
+
+type ListHistoricalReconcileReceiptsPageRow struct {
+	SourceKeyHmac   []byte `json:"source_key_hmac"`
+	PayloadHmac     []byte `json:"payload_hmac"`
+	FieldDigest     []byte `json:"field_digest"`
+	Disposition     string `json:"disposition"`
+	ArchiveCount    int64  `json:"archive_count"`
+	QuarantineCount int64  `json:"quarantine_count"`
+}
+
+func (q *Queries) ListHistoricalReconcileReceiptsPage(ctx context.Context, arg ListHistoricalReconcileReceiptsPageParams) ([]ListHistoricalReconcileReceiptsPageRow, error) {
+	rows, err := q.db.Query(ctx, listHistoricalReconcileReceiptsPage,
+		arg.ParentRunID,
+		arg.SourceTable,
+		arg.AfterSourceKeyHmac,
+		arg.PageSize,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListHistoricalReconcileReceiptsPageRow{}
+	for rows.Next() {
+		var i ListHistoricalReconcileReceiptsPageRow
+		if err := rows.Scan(
+			&i.SourceKeyHmac,
+			&i.PayloadHmac,
+			&i.FieldDigest,
+			&i.Disposition,
+			&i.ArchiveCount,
+			&i.QuarantineCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockHistoricalImportCustomerForMatch = `-- name: LockHistoricalImportCustomerForMatch :one
 SELECT name, avatar_url, gender, owner_staff_id, added_at, last_interact_at, created_at, updated_at
 FROM customers
@@ -567,11 +720,50 @@ func (q *Queries) LockHistoricalImportCustomerRoot(ctx context.Context, customer
 	return found, err
 }
 
+const lockHistoricalImportCustomerTarget = `-- name: LockHistoricalImportCustomerTarget :one
+SELECT name, avatar_url, gender, owner_staff_id, added_at, last_interact_at,
+       created_at, updated_at
+FROM customers
+WHERE id = $1::bigint AND NOT is_deleted
+FOR UPDATE
+`
+
+type LockHistoricalImportCustomerTargetRow struct {
+	Name           string             `json:"name"`
+	AvatarUrl      pgtype.Text        `json:"avatar_url"`
+	Gender         pgtype.Int2        `json:"gender"`
+	OwnerStaffID   pgtype.Int8        `json:"owner_staff_id"`
+	AddedAt        pgtype.Timestamptz `json:"added_at"`
+	LastInteractAt pgtype.Timestamptz `json:"last_interact_at"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) LockHistoricalImportCustomerTarget(ctx context.Context, customerID int64) (LockHistoricalImportCustomerTargetRow, error) {
+	row := q.db.QueryRow(ctx, lockHistoricalImportCustomerTarget, customerID)
+	var i LockHistoricalImportCustomerTargetRow
+	err := row.Scan(
+		&i.Name,
+		&i.AvatarUrl,
+		&i.Gender,
+		&i.OwnerStaffID,
+		&i.AddedAt,
+		&i.LastInteractAt,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const lockHistoricalImportLineage = `-- name: LockHistoricalImportLineage :one
-SELECT staff_id, customer_id, identity_id, payload_hmac
-FROM legacy_contact_identity_source_mappings
-WHERE source_table = $1::text
-  AND source_key_hmac = $2::bytea
+SELECT m.staff_id, m.customer_id, m.identity_id, m.payload_hmac,
+       m.last_run_id, r.field_digest
+FROM legacy_contact_identity_source_mappings AS m
+JOIN legacy_contact_identity_import_row_receipts AS r
+  ON r.run_id = m.last_run_id AND r.source_table = m.source_table
+ AND r.source_key_hmac = m.source_key_hmac AND r.disposition = 'imported'
+WHERE m.source_table = $1::text
+  AND m.source_key_hmac = $2::bytea
 FOR UPDATE
 `
 
@@ -585,6 +777,8 @@ type LockHistoricalImportLineageRow struct {
 	CustomerID  pgtype.Int8 `json:"customer_id"`
 	IdentityID  pgtype.Int8 `json:"identity_id"`
 	PayloadHmac []byte      `json:"payload_hmac"`
+	LastRunID   int64       `json:"last_run_id"`
+	FieldDigest []byte      `json:"field_digest"`
 }
 
 func (q *Queries) LockHistoricalImportLineage(ctx context.Context, arg LockHistoricalImportLineageParams) (LockHistoricalImportLineageRow, error) {
@@ -595,6 +789,8 @@ func (q *Queries) LockHistoricalImportLineage(ctx context.Context, arg LockHisto
 		&i.CustomerID,
 		&i.IdentityID,
 		&i.PayloadHmac,
+		&i.LastRunID,
+		&i.FieldDigest,
 	)
 	return i, err
 }
@@ -641,6 +837,60 @@ func (q *Queries) LockHistoricalImportStaffForMatch(ctx context.Context, wecomUs
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const lockHistoricalImportStaffTarget = `-- name: LockHistoricalImportStaffTarget :one
+SELECT wecom_userid, name, is_active, created_at, updated_at
+FROM staff WHERE id = $1::bigint FOR UPDATE
+`
+
+type LockHistoricalImportStaffTargetRow struct {
+	WecomUserid string             `json:"wecom_userid"`
+	Name        string             `json:"name"`
+	IsActive    bool               `json:"is_active"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) LockHistoricalImportStaffTarget(ctx context.Context, staffID int64) (LockHistoricalImportStaffTargetRow, error) {
+	row := q.db.QueryRow(ctx, lockHistoricalImportStaffTarget, staffID)
+	var i LockHistoricalImportStaffTargetRow
+	err := row.Scan(
+		&i.WecomUserid,
+		&i.Name,
+		&i.IsActive,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const lockHistoricalReconcileRun = `-- name: LockHistoricalReconcileRun :one
+SELECT child.parent_run_id
+FROM legacy_contact_identity_import_runs AS child
+JOIN legacy_contact_identity_import_runs AS parent ON parent.id = child.parent_run_id
+WHERE child.id = $1::bigint
+  AND child.mode = 'reconcile' AND child.state = 'reconciling'
+  AND child.lease_generation = $2::bigint
+  AND child.lease_token_hmac = $3::bytea
+  AND child.lease_expires_at >= now()
+  AND parent.mode IN ('full', 'incremental') AND parent.state = 'imported'
+  AND parent.source_manifest_sha256 = child.source_manifest_sha256
+  AND parent.snapshot_id = child.snapshot_id
+FOR SHARE OF child, parent
+`
+
+type LockHistoricalReconcileRunParams struct {
+	RunID              int64  `json:"run_id"`
+	ExpectedGeneration int64  `json:"expected_generation"`
+	TokenHmac          []byte `json:"token_hmac"`
+}
+
+func (q *Queries) LockHistoricalReconcileRun(ctx context.Context, arg LockHistoricalReconcileRunParams) (pgtype.Int8, error) {
+	row := q.db.QueryRow(ctx, lockHistoricalReconcileRun, arg.RunID, arg.ExpectedGeneration, arg.TokenHmac)
+	var parent_run_id pgtype.Int8
+	err := row.Scan(&parent_run_id)
+	return parent_run_id, err
 }
 
 const lockUniqueActiveStaffForHistoricalImport = `-- name: LockUniqueActiveStaffForHistoricalImport :one
@@ -714,4 +964,155 @@ func (q *Queries) TransitionHistoricalImportRun(ctx context.Context, arg Transit
 	var lease_generation int64
 	err := row.Scan(&lease_generation)
 	return lease_generation, err
+}
+
+const updateHistoricalImportCustomerCAS = `-- name: UpdateHistoricalImportCustomerCAS :execrows
+UPDATE customers
+SET name = $1::text,
+    avatar_url = $2::text,
+    gender = $3::smallint,
+    owner_staff_id = $4::bigint,
+    added_at = $5::timestamptz,
+    last_interact_at = $6::timestamptz,
+    created_at = $7::timestamptz,
+    updated_at = $8::timestamptz
+WHERE id = $9::bigint AND NOT is_deleted
+  AND name = $10::text
+  AND avatar_url IS NOT DISTINCT FROM $11::text
+  AND gender IS NOT DISTINCT FROM $12::smallint
+  AND owner_staff_id IS NOT DISTINCT FROM $13::bigint
+  AND added_at = $14::timestamptz
+  AND last_interact_at = $15::timestamptz
+  AND created_at = $16::timestamptz
+  AND updated_at = $17::timestamptz
+`
+
+type UpdateHistoricalImportCustomerCASParams struct {
+	NextName          string             `json:"next_name"`
+	NextAvatarUrl     pgtype.Text        `json:"next_avatar_url"`
+	NextGender        pgtype.Int2        `json:"next_gender"`
+	NextOwnerStaffID  pgtype.Int8        `json:"next_owner_staff_id"`
+	NextFirstSeenAt   pgtype.Timestamptz `json:"next_first_seen_at"`
+	NextLastSeenAt    pgtype.Timestamptz `json:"next_last_seen_at"`
+	NextCreatedAt     pgtype.Timestamptz `json:"next_created_at"`
+	NextUpdatedAt     pgtype.Timestamptz `json:"next_updated_at"`
+	CustomerID        int64              `json:"customer_id"`
+	PriorName         string             `json:"prior_name"`
+	PriorAvatarUrl    pgtype.Text        `json:"prior_avatar_url"`
+	PriorGender       pgtype.Int2        `json:"prior_gender"`
+	PriorOwnerStaffID pgtype.Int8        `json:"prior_owner_staff_id"`
+	PriorFirstSeenAt  pgtype.Timestamptz `json:"prior_first_seen_at"`
+	PriorLastSeenAt   pgtype.Timestamptz `json:"prior_last_seen_at"`
+	PriorCreatedAt    pgtype.Timestamptz `json:"prior_created_at"`
+	PriorUpdatedAt    pgtype.Timestamptz `json:"prior_updated_at"`
+}
+
+func (q *Queries) UpdateHistoricalImportCustomerCAS(ctx context.Context, arg UpdateHistoricalImportCustomerCASParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateHistoricalImportCustomerCAS,
+		arg.NextName,
+		arg.NextAvatarUrl,
+		arg.NextGender,
+		arg.NextOwnerStaffID,
+		arg.NextFirstSeenAt,
+		arg.NextLastSeenAt,
+		arg.NextCreatedAt,
+		arg.NextUpdatedAt,
+		arg.CustomerID,
+		arg.PriorName,
+		arg.PriorAvatarUrl,
+		arg.PriorGender,
+		arg.PriorOwnerStaffID,
+		arg.PriorFirstSeenAt,
+		arg.PriorLastSeenAt,
+		arg.PriorCreatedAt,
+		arg.PriorUpdatedAt,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const updateHistoricalImportLineageCAS = `-- name: UpdateHistoricalImportLineageCAS :execrows
+UPDATE legacy_contact_identity_source_mappings
+SET last_run_id = $1::bigint,
+    payload_hmac = $2::bytea,
+    updated_at = now()
+WHERE source_table = $3::text
+  AND source_key_hmac = $4::bytea
+  AND last_run_id = $5::bigint
+  AND payload_hmac = $6::bytea
+`
+
+type UpdateHistoricalImportLineageCASParams struct {
+	NextRunID        int64  `json:"next_run_id"`
+	NextPayloadHmac  []byte `json:"next_payload_hmac"`
+	SourceTable      string `json:"source_table"`
+	SourceKeyHmac    []byte `json:"source_key_hmac"`
+	PriorRunID       int64  `json:"prior_run_id"`
+	PriorPayloadHmac []byte `json:"prior_payload_hmac"`
+}
+
+func (q *Queries) UpdateHistoricalImportLineageCAS(ctx context.Context, arg UpdateHistoricalImportLineageCASParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateHistoricalImportLineageCAS,
+		arg.NextRunID,
+		arg.NextPayloadHmac,
+		arg.SourceTable,
+		arg.SourceKeyHmac,
+		arg.PriorRunID,
+		arg.PriorPayloadHmac,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const updateHistoricalImportStaffCAS = `-- name: UpdateHistoricalImportStaffCAS :execrows
+UPDATE staff
+SET wecom_userid = $1::text,
+    name = $2::text,
+    is_active = $3::boolean,
+    created_at = $4::timestamptz,
+    updated_at = $5::timestamptz
+WHERE id = $6::bigint
+  AND wecom_userid = $7::text
+  AND name = $8::text
+  AND is_active = $9::boolean
+  AND created_at = $10::timestamptz
+  AND updated_at = $11::timestamptz
+`
+
+type UpdateHistoricalImportStaffCASParams struct {
+	NextWecomUserid  string             `json:"next_wecom_userid"`
+	NextName         string             `json:"next_name"`
+	NextIsActive     bool               `json:"next_is_active"`
+	NextCreatedAt    pgtype.Timestamptz `json:"next_created_at"`
+	NextUpdatedAt    pgtype.Timestamptz `json:"next_updated_at"`
+	StaffID          int64              `json:"staff_id"`
+	PriorWecomUserid string             `json:"prior_wecom_userid"`
+	PriorName        string             `json:"prior_name"`
+	PriorIsActive    bool               `json:"prior_is_active"`
+	PriorCreatedAt   pgtype.Timestamptz `json:"prior_created_at"`
+	PriorUpdatedAt   pgtype.Timestamptz `json:"prior_updated_at"`
+}
+
+func (q *Queries) UpdateHistoricalImportStaffCAS(ctx context.Context, arg UpdateHistoricalImportStaffCASParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateHistoricalImportStaffCAS,
+		arg.NextWecomUserid,
+		arg.NextName,
+		arg.NextIsActive,
+		arg.NextCreatedAt,
+		arg.NextUpdatedAt,
+		arg.StaffID,
+		arg.PriorWecomUserid,
+		arg.PriorName,
+		arg.PriorIsActive,
+		arg.PriorCreatedAt,
+		arg.PriorUpdatedAt,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

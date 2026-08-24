@@ -3,6 +3,8 @@ package migration
 import (
 	"context"
 	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"strings"
 
@@ -20,7 +22,7 @@ const (
 	quarantineMissingCustomerRoot = "missing_customer_root"
 	quarantineIdentityConflict    = "scoped_identity_customer_conflict"
 	quarantineOwnerUnresolved     = "owner_unresolved"
-	quarantineChangedSource       = "changed_source_candidate"
+	quarantineTargetDrift         = "target_drift_since_last_import"
 	MaximumActiveRootBatchRows    = 1000
 )
 
@@ -56,6 +58,7 @@ type ActiveRootsResult struct {
 	Replayed                int
 	Quarantined             int
 	ChangedSourceCandidates int
+	Updated                 int
 }
 
 type lineageState uint8
@@ -115,6 +118,9 @@ func (service *ActiveRootService) processStaff(ctx context.Context, runID int64,
 	}
 	if replay {
 		if receipt.Disposition == contactport.HistoricalImportQuarantined {
+			if !hmac.Equal(receipt.FieldDigest, row.Source.FieldDigest) {
+				return ErrSourcePayloadDrift
+			}
 			result.Replayed++
 			return nil
 		}
@@ -123,6 +129,10 @@ func (service *ActiveRootService) processStaff(ctx context.Context, runID int64,
 		}
 		lineage, state, err := service.matchLineage(ctx, contactport.HistoricalImportOwnerRoleMap, row.Source)
 		if err != nil || state != lineageSamePayload {
+			return driftOr(err)
+		}
+		current, err := service.contacts.LockHistoricalImportStaffTarget(ctx, lineage.TargetID)
+		if err != nil || !sameDigest(receipt.FieldDigest, staffTargetDigest(current)) || !sameDigest(receipt.FieldDigest, staffTargetDigest(row.Target)) {
 			return driftOr(err)
 		}
 		if err = service.contacts.ValidateHistoricalImportStaff(ctx, lineage.TargetID, row.Target); err != nil {
@@ -136,7 +146,24 @@ func (service *ActiveRootService) processStaff(ctx context.Context, runID int64,
 		return err
 	}
 	if state == lineageChangedSource {
-		return service.quarantineChangedSource(ctx, runID, contactport.HistoricalImportOwnerRoleMap, row.Source, result)
+		current, lockErr := service.contacts.LockHistoricalImportStaffTarget(ctx, lineage.TargetID)
+		if lockErr != nil {
+			return lockErr
+		}
+		if !sameDigest(lineage.FieldDigest, staffTargetDigest(current)) {
+			return service.quarantineChangedSource(ctx, runID, contactport.HistoricalImportOwnerRoleMap, row.Source, quarantineTargetDrift, result)
+		}
+		if err = service.contacts.UpdateHistoricalImportStaffCAS(ctx, lineage.TargetID, current, row.Target); err != nil {
+			return err
+		}
+		if err = service.contacts.UpdateHistoricalImportLineageCAS(ctx, runID, contactport.HistoricalImportOwnerRoleMap, row.Source, lineage); err != nil {
+			return err
+		}
+		if err = service.contacts.AppendHistoricalImportRowReceipt(ctx, runID, contactport.HistoricalImportOwnerRoleMap, withFieldDigest(row.Source, staffTargetDigest(row.Target)), contactport.HistoricalImportImported); err != nil {
+			return err
+		}
+		result.Updated++
+		return nil
 	}
 	staffID := lineage.TargetID
 	if state == lineageSamePayload {
@@ -155,7 +182,7 @@ func (service *ActiveRootService) processStaff(ctx context.Context, runID int64,
 			return err
 		}
 	}
-	if err = service.contacts.AppendHistoricalImportRowReceipt(ctx, runID, contactport.HistoricalImportOwnerRoleMap, row.Source, contactport.HistoricalImportImported); err != nil {
+	if err = service.contacts.AppendHistoricalImportRowReceipt(ctx, runID, contactport.HistoricalImportOwnerRoleMap, withFieldDigest(row.Source, staffTargetDigest(row.Target)), contactport.HistoricalImportImported); err != nil {
 		return err
 	}
 	result.Imported++
@@ -194,6 +221,9 @@ func (service *ActiveRootService) processCustomer(ctx context.Context, runID int
 	}
 	if replay {
 		if receipt.Disposition == contactport.HistoricalImportQuarantined {
+			if !hmac.Equal(receipt.FieldDigest, row.Source.FieldDigest) {
+				return ErrSourcePayloadDrift
+			}
 			result.Replayed++
 			return nil
 		}
@@ -202,6 +232,10 @@ func (service *ActiveRootService) processCustomer(ctx context.Context, runID int
 		}
 		lineage, state, err := service.matchLineage(ctx, contactport.HistoricalImportCustomerIdentity, row.Source)
 		if err != nil || state != lineageSamePayload {
+			return driftOr(err)
+		}
+		current, err := service.contacts.LockHistoricalImportCustomerTarget(ctx, lineage.TargetID)
+		if err != nil || !sameDigest(receipt.FieldDigest, customerTargetDigest(current)) || !sameDigest(receipt.FieldDigest, customerTargetDigest(target)) {
 			return driftOr(err)
 		}
 		if err = service.contacts.ValidateHistoricalImportCustomer(ctx, lineage.TargetID, target); err != nil {
@@ -215,7 +249,30 @@ func (service *ActiveRootService) processCustomer(ctx context.Context, runID int
 		return err
 	}
 	if state == lineageChangedSource {
-		return service.quarantineChangedSource(ctx, runID, contactport.HistoricalImportCustomerIdentity, row.Source, result)
+		current, lockErr := service.contacts.LockHistoricalImportCustomerTarget(ctx, lineage.TargetID)
+		if lockErr != nil {
+			return lockErr
+		}
+		if !sameDigest(lineage.FieldDigest, customerTargetDigest(current)) {
+			return service.quarantineChangedSource(ctx, runID, contactport.HistoricalImportCustomerIdentity, row.Source, quarantineTargetDrift, result)
+		}
+		if err = service.contacts.UpdateHistoricalImportCustomerCAS(ctx, lineage.TargetID, current, target); err != nil {
+			return err
+		}
+		if err = service.contacts.UpdateHistoricalImportLineageCAS(ctx, runID, contactport.HistoricalImportCustomerIdentity, row.Source, lineage); err != nil {
+			return err
+		}
+		if ownerUnresolved {
+			if err = service.contacts.AppendHistoricalImportQuarantine(ctx, contactport.HistoricalImportQuarantine{RunID: runID, Source: contactport.HistoricalImportCustomerIdentity, SourceFact: row.Source, ReasonCode: quarantineOwnerUnresolved}); err != nil {
+				return err
+			}
+			result.Quarantined++
+		}
+		if err = service.contacts.AppendHistoricalImportRowReceipt(ctx, runID, contactport.HistoricalImportCustomerIdentity, withFieldDigest(row.Source, customerTargetDigest(target)), contactport.HistoricalImportImported); err != nil {
+			return err
+		}
+		result.Updated++
+		return nil
 	}
 	customerID := lineage.TargetID
 	if state == lineageSamePayload {
@@ -240,7 +297,7 @@ func (service *ActiveRootService) processCustomer(ctx context.Context, runID int
 		}
 		result.Quarantined++
 	}
-	if err = service.contacts.AppendHistoricalImportRowReceipt(ctx, runID, contactport.HistoricalImportCustomerIdentity, row.Source, contactport.HistoricalImportImported); err != nil {
+	if err = service.contacts.AppendHistoricalImportRowReceipt(ctx, runID, contactport.HistoricalImportCustomerIdentity, withFieldDigest(row.Source, customerTargetDigest(target)), contactport.HistoricalImportImported); err != nil {
 		return err
 	}
 	result.Imported++
@@ -271,6 +328,9 @@ func (service *ActiveRootService) processIdentity(ctx context.Context, command A
 	if replay {
 		switch receipt.Disposition {
 		case contactport.HistoricalImportQuarantined:
+			if !hmac.Equal(receipt.FieldDigest, row.Source.FieldDigest) {
+				return ErrSourcePayloadDrift
+			}
 			result.Replayed++
 			return nil
 		case contactport.HistoricalImportImported:
@@ -279,6 +339,10 @@ func (service *ActiveRootService) processIdentity(ctx context.Context, command A
 			}
 			lineage, state, err := service.matchLineage(ctx, contactport.HistoricalImportExternalIdentity, row.Source)
 			if err != nil || state != lineageSamePayload {
+				return driftOr(err)
+			}
+			current, err := service.identities.LockHistoricalScopedWeComIdentity(ctx, lineage.TargetID, row.Source.SourceKeyHMAC)
+			if err != nil || !sameDigest(receipt.FieldDigest, identityTargetDigest(current)) || !sameDigest(receipt.FieldDigest, identityTargetDigest(identity)) {
 				return driftOr(err)
 			}
 			if err = service.identities.ValidateHistoricalScopedWeComIdentity(ctx, lineage.TargetID, identity); err != nil {
@@ -298,7 +362,29 @@ func (service *ActiveRootService) processIdentity(ctx context.Context, command A
 		return err
 	}
 	if state == lineageChangedSource {
-		return service.quarantineChangedSource(ctx, command.RunID, contactport.HistoricalImportExternalIdentity, row.Source, result)
+		current, lockErr := service.identities.LockHistoricalScopedWeComIdentity(ctx, lineage.TargetID, row.Source.SourceKeyHMAC)
+		if lockErr != nil {
+			return lockErr
+		}
+		if current.CustomerID != identity.CustomerID {
+			return service.quarantineIdentity(ctx, command.RunID, row.Source, quarantineIdentityConflict, result)
+		}
+		if !sameDigest(lineage.FieldDigest, identityTargetDigest(current)) {
+			return service.quarantineChangedSource(ctx, command.RunID, contactport.HistoricalImportExternalIdentity, row.Source, quarantineTargetDrift, result)
+		}
+		if err = service.identities.UpdateHistoricalScopedWeComIdentityCAS(ctx, lineage.TargetID, current, identity); errors.Is(err, identityport.ErrHistoricalScopedIdentityConflict) {
+			return service.quarantineIdentity(ctx, command.RunID, row.Source, quarantineIdentityConflict, result)
+		} else if err != nil {
+			return err
+		}
+		if err = service.contacts.UpdateHistoricalImportLineageCAS(ctx, command.RunID, contactport.HistoricalImportExternalIdentity, row.Source, lineage); err != nil {
+			return err
+		}
+		if err = service.contacts.AppendHistoricalImportRowReceipt(ctx, command.RunID, contactport.HistoricalImportExternalIdentity, withFieldDigest(row.Source, identityTargetDigest(identity)), contactport.HistoricalImportImported); err != nil {
+			return err
+		}
+		result.Updated++
+		return nil
 	}
 	if state == lineageSamePayload {
 		if err = service.identities.ValidateHistoricalScopedWeComIdentity(ctx, lineage.TargetID, identity); err != nil {
@@ -319,7 +405,7 @@ func (service *ActiveRootService) processIdentity(ctx context.Context, command A
 			return err
 		}
 	}
-	if err = service.contacts.AppendHistoricalImportRowReceipt(ctx, command.RunID, contactport.HistoricalImportExternalIdentity, row.Source, contactport.HistoricalImportImported); err != nil {
+	if err = service.contacts.AppendHistoricalImportRowReceipt(ctx, command.RunID, contactport.HistoricalImportExternalIdentity, withFieldDigest(row.Source, identityTargetDigest(identity)), contactport.HistoricalImportImported); err != nil {
 		return err
 	}
 	result.Imported++
@@ -337,8 +423,8 @@ func (service *ActiveRootService) quarantineIdentity(ctx context.Context, runID 
 	return nil
 }
 
-func (service *ActiveRootService) quarantineChangedSource(ctx context.Context, runID int64, sourceType contactport.HistoricalImportSource, source contactport.HistoricalImportSourceFact, result *ActiveRootsResult) error {
-	if err := service.contacts.AppendHistoricalImportQuarantine(ctx, contactport.HistoricalImportQuarantine{RunID: runID, Source: sourceType, SourceFact: source, ReasonCode: quarantineChangedSource}); err != nil {
+func (service *ActiveRootService) quarantineChangedSource(ctx context.Context, runID int64, sourceType contactport.HistoricalImportSource, source contactport.HistoricalImportSourceFact, reason string, result *ActiveRootsResult) error {
+	if err := service.contacts.AppendHistoricalImportQuarantine(ctx, contactport.HistoricalImportQuarantine{RunID: runID, Source: sourceType, SourceFact: source, ReasonCode: reason}); err != nil {
 		return err
 	}
 	if err := service.contacts.AppendHistoricalImportRowReceipt(ctx, runID, sourceType, source, contactport.HistoricalImportQuarantined); err != nil {
@@ -357,10 +443,31 @@ func (service *ActiveRootService) lockReceipt(ctx context.Context, runID int64, 
 	if err != nil || !found {
 		return receipt, found, err
 	}
-	if !hmac.Equal(receipt.PayloadHMAC, fact.PayloadHMAC) || !hmac.Equal(receipt.FieldDigest, fact.FieldDigest) {
+	if !hmac.Equal(receipt.PayloadHMAC, fact.PayloadHMAC) {
 		return contactport.HistoricalImportRowReceipt{}, false, ErrSourcePayloadDrift
 	}
 	return receipt, true, nil
+}
+
+func staffTargetDigest(fact contactport.HistoricalImportStaffFact) []byte { return targetDigest(fact) }
+func customerTargetDigest(fact contactport.HistoricalImportCustomerFact) []byte {
+	return targetDigest(fact)
+}
+func identityTargetDigest(fact identityport.HistoricalScopedIdentity) []byte {
+	return targetDigest(fact)
+}
+func targetDigest(fact any) []byte {
+	payload, err := json.Marshal(fact)
+	if err != nil {
+		return nil
+	}
+	digest := sha256.Sum256(payload)
+	return digest[:]
+}
+func sameDigest(left, right []byte) bool { return len(left) == sha256.Size && hmac.Equal(left, right) }
+func withFieldDigest(fact contactport.HistoricalImportSourceFact, digest []byte) contactport.HistoricalImportSourceFact {
+	fact.FieldDigest = digest
+	return fact
 }
 
 func (service *ActiveRootService) matchLineage(ctx context.Context, source contactport.HistoricalImportSource, fact contactport.HistoricalImportSourceFact) (contactport.HistoricalImportLineage, lineageState, error) {

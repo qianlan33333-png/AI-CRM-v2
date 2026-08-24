@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/qianlan33333-png/AI-CRM-v2/internal/contact/migration"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -40,6 +41,115 @@ func (HistoricalImportRepository) AssertLease(ctx context.Context, fence LeaseFe
 
 var _ contactport.HistoricalImportTarget = HistoricalImportRepository{}
 var _ contactport.NonActiveTarget = HistoricalImportRepository{}
+var _ migration.ReconcileTarget = HistoricalImportRepository{}
+
+func (HistoricalImportRepository) LockReconcileRun(ctx context.Context, fence contactport.NonActiveLeaseFence) (int64, error) {
+	if fence.RunID < 1 || fence.Generation < 1 || len(fence.TokenHMAC) != 32 {
+		return 0, ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	parent, err := contactdb.New(tx).LockHistoricalReconcileRun(ctx, contactdb.LockHistoricalReconcileRunParams{RunID: fence.RunID, ExpectedGeneration: fence.Generation, TokenHmac: fence.TokenHMAC})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return 0, ErrHistoricalImportTargetDrift
+	}
+	if err != nil {
+		return 0, err
+	}
+	if !parent.Valid || parent.Int64 < 1 {
+		return 0, ErrHistoricalImportTargetDrift
+	}
+	return parent.Int64, nil
+}
+
+func (HistoricalImportRepository) StreamReconcileReceipts(ctx context.Context, parentRunID int64, table migration.ReconcileTable, emit func(migration.ReconcileReceipt) error) error {
+	tableName := migration.ReconcileTableName(table)
+	if parentRunID < 1 || tableName == "" || emit == nil {
+		return ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	queries := contactdb.New(tx)
+	var after []byte
+	for {
+		rows, err := queries.ListHistoricalReconcileReceiptsPage(ctx, contactdb.ListHistoricalReconcileReceiptsPageParams{ParentRunID: parentRunID, SourceTable: tableName, AfterSourceKeyHmac: after, PageSize: 500})
+		if err != nil {
+			return err
+		}
+		for _, row := range rows {
+			fact := contactport.HistoricalImportSourceFact{SourceKeyHMAC: row.SourceKeyHmac, PayloadHMAC: row.PayloadHmac, FieldDigest: row.FieldDigest}
+			if !validHistoricalSourceFact(fact) {
+				return ErrHistoricalImportTargetDrift
+			}
+			if err := emit(migration.ReconcileReceipt{SourceFact: fact, Disposition: row.Disposition, ArchiveCount: row.ArchiveCount, QuarantineCount: row.QuarantineCount}); err != nil {
+				return err
+			}
+			after = append(after[:0], row.SourceKeyHmac...)
+		}
+		if len(rows) < 500 {
+			return nil
+		}
+	}
+}
+
+func (HistoricalImportRepository) CountReconcileCompanions(ctx context.Context, parentRunID int64, table migration.ReconcileTable) (migration.ReconcileCompanionCounts, error) {
+	tableName := migration.ReconcileTableName(table)
+	if parentRunID < 1 || tableName == "" {
+		return migration.ReconcileCompanionCounts{}, ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return migration.ReconcileCompanionCounts{}, err
+	}
+	row, err := contactdb.New(tx).CountHistoricalReconcileCompanions(ctx, contactdb.CountHistoricalReconcileCompanionsParams{ParentRunID: parentRunID, SourceTable: tableName})
+	if err != nil {
+		return migration.ReconcileCompanionCounts{}, err
+	}
+	return migration.ReconcileCompanionCounts{Archives: row.ArchiveCount, Quarantines: row.QuarantineCount}, nil
+}
+
+func (HistoricalImportRepository) AppendReconcileResult(ctx context.Context, fence contactport.NonActiveLeaseFence, resultDigest []byte) error {
+	if fence.RunID < 1 || fence.Generation < 1 || len(fence.TokenHMAC) != 32 || len(resultDigest) != 32 {
+		return ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := contactdb.New(tx).AppendHistoricalReconcileResult(ctx, contactdb.AppendHistoricalReconcileResultParams{RunID: fence.RunID, ExpectedGeneration: fence.Generation, TokenHmac: fence.TokenHMAC, ResultDigest: resultDigest})
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return ErrHistoricalImportTargetDrift
+	}
+	return nil
+}
+
+func (HistoricalImportRepository) CompleteReconcileRun(ctx context.Context, fence contactport.NonActiveLeaseFence) error {
+	if fence.RunID < 1 || fence.Generation < 1 || len(fence.TokenHMAC) != 32 {
+		return ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	id, err := contactdb.New(tx).CompleteHistoricalReconcileRun(ctx, contactdb.CompleteHistoricalReconcileRunParams{RunID: fence.RunID, ExpectedGeneration: fence.Generation, TokenHmac: fence.TokenHMAC})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrHistoricalImportTargetDrift
+	}
+	if err != nil {
+		return err
+	}
+	if id != fence.RunID {
+		return ErrHistoricalImportTargetDrift
+	}
+	return nil
+}
 
 func (repository HistoricalImportRepository) AssertNonActiveLease(ctx context.Context, fence contactport.NonActiveLeaseFence) error {
 	return repository.AssertLease(ctx, LeaseFence{RunID: fence.RunID, Generation: fence.Generation, TokenHMAC: fence.TokenHMAC})
@@ -342,10 +452,88 @@ func (HistoricalImportRepository) LockHistoricalImportLineage(ctx context.Contex
 			targetID = row.IdentityID.Int64
 		}
 	}
-	if targetID < 1 || len(row.PayloadHmac) != 32 {
+	if targetID < 1 || row.LastRunID < 1 || len(row.PayloadHmac) != 32 || len(row.FieldDigest) != 32 {
 		return contactport.HistoricalImportLineage{}, false, ErrHistoricalImportTargetDrift
 	}
-	return contactport.HistoricalImportLineage{TargetID: targetID, PayloadHMAC: row.PayloadHmac}, true, nil
+	return contactport.HistoricalImportLineage{TargetID: targetID, PayloadHMAC: row.PayloadHmac, FieldDigest: row.FieldDigest, LastRunID: row.LastRunID}, true, nil
+}
+
+func (HistoricalImportRepository) LockHistoricalImportStaffTarget(ctx context.Context, staffID int64) (contactport.HistoricalImportStaffFact, error) {
+	if staffID < 1 {
+		return contactport.HistoricalImportStaffFact{}, ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return contactport.HistoricalImportStaffFact{}, err
+	}
+	row, err := contactdb.New(tx).LockHistoricalImportStaffTarget(ctx, staffID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return contactport.HistoricalImportStaffFact{}, ErrHistoricalImportTargetDrift
+	}
+	if err != nil {
+		return contactport.HistoricalImportStaffFact{}, err
+	}
+	if !row.CreatedAt.Valid || !row.UpdatedAt.Valid {
+		return contactport.HistoricalImportStaffFact{}, ErrHistoricalImportTargetDrift
+	}
+	return contactport.HistoricalImportStaffFact{WeComUserID: row.WecomUserid, Name: row.Name, Active: row.IsActive, CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC()}, nil
+}
+
+func (HistoricalImportRepository) LockHistoricalImportCustomerTarget(ctx context.Context, customerID int64) (contactport.HistoricalImportCustomerFact, error) {
+	if customerID < 1 {
+		return contactport.HistoricalImportCustomerFact{}, ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return contactport.HistoricalImportCustomerFact{}, err
+	}
+	row, err := contactdb.New(tx).LockHistoricalImportCustomerTarget(ctx, customerID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return contactport.HistoricalImportCustomerFact{}, ErrHistoricalImportTargetDrift
+	}
+	if err != nil {
+		return contactport.HistoricalImportCustomerFact{}, err
+	}
+	if !row.AddedAt.Valid || !row.LastInteractAt.Valid || !row.CreatedAt.Valid || !row.UpdatedAt.Valid {
+		return contactport.HistoricalImportCustomerFact{}, ErrHistoricalImportTargetDrift
+	}
+	return contactport.HistoricalImportCustomerFact{Name: row.Name, AvatarURL: optionalString(row.AvatarUrl), Gender: optionalInt16(row.Gender), OwnerStaffID: optionalInt64(row.OwnerStaffID), FirstSeenAt: row.AddedAt.Time.UTC(), LastSeenAt: row.LastInteractAt.Time.UTC(), CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC()}, nil
+}
+
+func (HistoricalImportRepository) UpdateHistoricalImportStaffCAS(ctx context.Context, staffID int64, prior, next contactport.HistoricalImportStaffFact) error {
+	if staffID < 1 || !validHistoricalStaffFact(prior) || !validHistoricalStaffFact(next) {
+		return ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := contactdb.New(tx).UpdateHistoricalImportStaffCAS(ctx, contactdb.UpdateHistoricalImportStaffCASParams{StaffID: staffID, PriorWecomUserid: prior.WeComUserID, PriorName: prior.Name, PriorIsActive: prior.Active, PriorCreatedAt: importTime(prior.CreatedAt), PriorUpdatedAt: importTime(prior.UpdatedAt), NextWecomUserid: next.WeComUserID, NextName: next.Name, NextIsActive: next.Active, NextCreatedAt: importTime(next.CreatedAt), NextUpdatedAt: importTime(next.UpdatedAt)})
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return ErrHistoricalImportTargetDrift
+	}
+	return nil
+}
+
+func (HistoricalImportRepository) UpdateHistoricalImportCustomerCAS(ctx context.Context, customerID int64, prior, next contactport.HistoricalImportCustomerFact) error {
+	if customerID < 1 || !validHistoricalCustomerFact(prior) || !validHistoricalCustomerFact(next) {
+		return ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := contactdb.New(tx).UpdateHistoricalImportCustomerCAS(ctx, contactdb.UpdateHistoricalImportCustomerCASParams{CustomerID: customerID, PriorName: prior.Name, PriorAvatarUrl: importText(prior.AvatarURL), PriorGender: importInt16(prior.Gender), PriorOwnerStaffID: importInt64(prior.OwnerStaffID), PriorFirstSeenAt: importTime(prior.FirstSeenAt), PriorLastSeenAt: importTime(prior.LastSeenAt), PriorCreatedAt: importTime(prior.CreatedAt), PriorUpdatedAt: importTime(prior.UpdatedAt), NextName: next.Name, NextAvatarUrl: importText(next.AvatarURL), NextGender: importInt16(next.Gender), NextOwnerStaffID: importInt64(next.OwnerStaffID), NextFirstSeenAt: importTime(next.FirstSeenAt), NextLastSeenAt: importTime(next.LastSeenAt), NextCreatedAt: importTime(next.CreatedAt), NextUpdatedAt: importTime(next.UpdatedAt)})
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return ErrHistoricalImportTargetDrift
+	}
+	return nil
 }
 
 func (repository HistoricalImportRepository) EnsureHistoricalImportStaff(ctx context.Context, fact contactport.HistoricalImportStaffFact) (int64, error) {
@@ -453,6 +641,25 @@ func (HistoricalImportRepository) AppendHistoricalImportLineage(ctx context.Cont
 		identityID = pgtype.Int8{Int64: targetID, Valid: true}
 	}
 	rows, err := contactdb.New(tx).AppendHistoricalImportLineage(ctx, contactdb.AppendHistoricalImportLineageParams{SourceTable: sourceTable, SourceKeyHmac: fact.SourceKeyHMAC, StaffID: staffID, CustomerID: customerID, IdentityID: identityID, RunID: runID, PayloadHmac: fact.PayloadHMAC})
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return ErrHistoricalImportTargetDrift
+	}
+	return nil
+}
+
+func (HistoricalImportRepository) UpdateHistoricalImportLineageCAS(ctx context.Context, runID int64, source contactport.HistoricalImportSource, fact contactport.HistoricalImportSourceFact, prior contactport.HistoricalImportLineage) error {
+	sourceTable, ok := historicalImportSourceTable(source)
+	if !ok || runID < 1 || !validHistoricalSourceFact(fact) || prior.TargetID < 1 || prior.LastRunID < 1 || len(prior.PayloadHMAC) != 32 || len(prior.FieldDigest) != 32 {
+		return ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := contactdb.New(tx).UpdateHistoricalImportLineageCAS(ctx, contactdb.UpdateHistoricalImportLineageCASParams{NextRunID: runID, NextPayloadHmac: fact.PayloadHMAC, SourceTable: sourceTable, SourceKeyHmac: fact.SourceKeyHMAC, PriorRunID: prior.LastRunID, PriorPayloadHmac: prior.PayloadHMAC})
 	if err != nil {
 		return err
 	}
@@ -597,6 +804,57 @@ func parseNonActiveDisposition(value string) (contactport.NonActiveDisposition, 
 
 func validHistoricalSourceFact(fact contactport.HistoricalImportSourceFact) bool {
 	return len(fact.SourceKeyHMAC) == 32 && len(fact.PayloadHMAC) == 32 && len(fact.FieldDigest) == 32
+}
+
+func validHistoricalStaffFact(fact contactport.HistoricalImportStaffFact) bool {
+	return fact.WeComUserID != "" && strings.TrimSpace(fact.WeComUserID) == fact.WeComUserID && fact.Name != "" && strings.TrimSpace(fact.Name) == fact.Name && !fact.CreatedAt.IsZero() && !fact.UpdatedAt.IsZero() && !fact.CreatedAt.After(fact.UpdatedAt)
+}
+
+func validHistoricalCustomerFact(fact contactport.HistoricalImportCustomerFact) bool {
+	return !fact.FirstSeenAt.IsZero() && !fact.LastSeenAt.IsZero() && !fact.CreatedAt.IsZero() && !fact.UpdatedAt.IsZero() && !fact.FirstSeenAt.After(fact.LastSeenAt) && !fact.CreatedAt.After(fact.UpdatedAt)
+}
+
+func importTime(value time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{Time: value, Valid: !value.IsZero()}
+}
+func importText(value *string) pgtype.Text {
+	if value == nil {
+		return pgtype.Text{}
+	}
+	return pgtype.Text{String: *value, Valid: true}
+}
+func importInt16(value *int16) pgtype.Int2 {
+	if value == nil {
+		return pgtype.Int2{}
+	}
+	return pgtype.Int2{Int16: *value, Valid: true}
+}
+func importInt64(value *int64) pgtype.Int8 {
+	if value == nil {
+		return pgtype.Int8{}
+	}
+	return pgtype.Int8{Int64: *value, Valid: true}
+}
+func optionalString(value pgtype.Text) *string {
+	if !value.Valid {
+		return nil
+	}
+	result := value.String
+	return &result
+}
+func optionalInt16(value pgtype.Int2) *int16 {
+	if !value.Valid {
+		return nil
+	}
+	result := value.Int16
+	return &result
+}
+func optionalInt64(value pgtype.Int8) *int64 {
+	if !value.Valid {
+		return nil
+	}
+	result := value.Int64
+	return &result
 }
 
 func sameOptionalString(value pgtype.Text, expected *string) bool {

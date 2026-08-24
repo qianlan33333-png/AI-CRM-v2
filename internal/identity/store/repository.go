@@ -2,6 +2,7 @@
 package store
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -73,6 +74,53 @@ func (repository *Repository) ValidateHistoricalScopedWeComIdentity(ctx context.
 		return err
 	}
 	if !row.CustomerID.Valid || row.CustomerID.Int64 != int64(command.CustomerID) || row.Kind != string(identityport.KindWeComExternalUserID) || row.Scope != normalized.Scope || row.NormalizedValue != normalized.NormalizedValue {
+		return identityport.ErrHistoricalScopedIdentityConflict
+	}
+	return nil
+}
+
+func (repository *Repository) LockHistoricalScopedWeComIdentity(ctx context.Context, identityID int64, sourceKeyHMAC []byte) (identityport.HistoricalScopedIdentity, error) {
+	if repository == nil || identityID < 1 || len(sourceKeyHMAC) != 32 {
+		return identityport.HistoricalScopedIdentity{}, identityapp.ErrInvalidIdentity
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return identityport.HistoricalScopedIdentity{}, err
+	}
+	row, err := identitydb.New(tx).LockHistoricalScopedWeComIdentity(ctx, identityID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return identityport.HistoricalScopedIdentity{}, identityport.ErrHistoricalScopedIdentityConflict
+	}
+	if err != nil {
+		return identityport.HistoricalScopedIdentity{}, err
+	}
+	if !row.CustomerID.Valid || row.CustomerID.Int64 < 1 || row.Kind != string(identityport.KindWeComExternalUserID) || len(row.ReviewFingerprint) != 16 || !bytes.Equal(row.ReviewFingerprint, sourceKeyHMAC[:16]) {
+		return identityport.HistoricalScopedIdentity{}, identityport.ErrHistoricalScopedIdentityConflict
+	}
+	return identityport.HistoricalScopedIdentity{CustomerID: contactport.CustomerID(row.CustomerID.Int64), Scope: row.Scope, ExternalUserID: row.NormalizedValue, SourceKeyHMAC: append([]byte(nil), sourceKeyHMAC...), HMACKeyVersion: row.FingerprintKeyVersion}, nil
+}
+
+func (repository *Repository) UpdateHistoricalScopedWeComIdentityCAS(ctx context.Context, identityID int64, prior, next identityport.HistoricalScopedIdentity) error {
+	if repository == nil || identityID < 1 || prior.CustomerID < 1 || next.CustomerID != prior.CustomerID || len(prior.SourceKeyHMAC) != 32 || !bytes.Equal(prior.SourceKeyHMAC, next.SourceKeyHMAC) || prior.HMACKeyVersion < 1 || next.HMACKeyVersion < 1 {
+		return identityapp.ErrInvalidIdentity
+	}
+	priorNormalized, err := identityapp.Normalize(identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: prior.Scope, Value: prior.ExternalUserID})
+	if err != nil {
+		return identityapp.ErrInvalidIdentity
+	}
+	nextNormalized, err := identityapp.Normalize(identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: next.Scope, Value: next.ExternalUserID})
+	if err != nil {
+		return identityapp.ErrInvalidIdentity
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := identitydb.New(tx).UpdateHistoricalScopedWeComIdentityCAS(ctx, identitydb.UpdateHistoricalScopedWeComIdentityCASParams{IdentityID: identityID, PriorCustomerID: int64(prior.CustomerID), PriorScope: priorNormalized.Scope, PriorExternalUserid: priorNormalized.NormalizedValue, PriorKeyVersion: prior.HMACKeyVersion, NextScope: nextNormalized.Scope, NextExternalUserid: nextNormalized.NormalizedValue, NextKeyVersion: next.HMACKeyVersion, SourceKeyHmac: next.SourceKeyHMAC})
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
 		return identityport.ErrHistoricalScopedIdentityConflict
 	}
 	return nil

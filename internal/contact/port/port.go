@@ -204,6 +204,8 @@ type HistoricalImportCustomerFact struct {
 type HistoricalImportLineage struct {
 	TargetID    int64
 	PayloadHMAC []byte
+	FieldDigest []byte
+	LastRunID   int64
 }
 
 type HistoricalImportRowReceipt struct {
@@ -293,9 +295,14 @@ type HistoricalImportTarget interface {
 	CreateHistoricalImportCustomer(context.Context, HistoricalImportCustomerFact) (int64, error)
 	ValidateHistoricalImportStaff(context.Context, int64, HistoricalImportStaffFact) error
 	ValidateHistoricalImportCustomer(context.Context, int64, HistoricalImportCustomerFact) error
+	LockHistoricalImportStaffTarget(context.Context, int64) (HistoricalImportStaffFact, error)
+	LockHistoricalImportCustomerTarget(context.Context, int64) (HistoricalImportCustomerFact, error)
+	UpdateHistoricalImportStaffCAS(context.Context, int64, HistoricalImportStaffFact, HistoricalImportStaffFact) error
+	UpdateHistoricalImportCustomerCAS(context.Context, int64, HistoricalImportCustomerFact, HistoricalImportCustomerFact) error
 	IsHistoricalImportActiveStaff(context.Context, int64) (bool, error)
 	ValidateHistoricalImportCustomerRoot(context.Context, int64) error
 	AppendHistoricalImportLineage(context.Context, int64, HistoricalImportSource, HistoricalImportSourceFact, int64) error
+	UpdateHistoricalImportLineageCAS(context.Context, int64, HistoricalImportSource, HistoricalImportSourceFact, HistoricalImportLineage) error
 	AppendHistoricalImportQuarantine(context.Context, HistoricalImportQuarantine) error
 	AppendHistoricalImportRowReceipt(context.Context, int64, HistoricalImportSource, HistoricalImportSourceFact, HistoricalImportDisposition) error
 }

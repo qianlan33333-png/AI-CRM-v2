@@ -974,17 +974,20 @@ func (q *Queries) LockActiveMergeReviewCustomers(ctx context.Context, customerId
 }
 
 const lockHistoricalScopedWeComIdentity = `-- name: LockHistoricalScopedWeComIdentity :one
-SELECT customer_id, kind, scope, normalized_value
+SELECT customer_id, kind, scope, normalized_value, fingerprint_key_version,
+       review_fingerprint
 FROM identities
 WHERE id = $1::bigint
 FOR UPDATE
 `
 
 type LockHistoricalScopedWeComIdentityRow struct {
-	CustomerID      pgtype.Int8 `json:"customer_id"`
-	Kind            string      `json:"kind"`
-	Scope           string      `json:"scope"`
-	NormalizedValue string      `json:"normalized_value"`
+	CustomerID            pgtype.Int8 `json:"customer_id"`
+	Kind                  string      `json:"kind"`
+	Scope                 string      `json:"scope"`
+	NormalizedValue       string      `json:"normalized_value"`
+	FingerprintKeyVersion int16       `json:"fingerprint_key_version"`
+	ReviewFingerprint     []byte      `json:"review_fingerprint"`
 }
 
 func (q *Queries) LockHistoricalScopedWeComIdentity(ctx context.Context, identityID int64) (LockHistoricalScopedWeComIdentityRow, error) {
@@ -995,6 +998,8 @@ func (q *Queries) LockHistoricalScopedWeComIdentity(ctx context.Context, identit
 		&i.Kind,
 		&i.Scope,
 		&i.NormalizedValue,
+		&i.FingerprintKeyVersion,
+		&i.ReviewFingerprint,
 	)
 	return i, err
 }
@@ -1331,6 +1336,56 @@ type ResolveMergeReviewParams struct {
 
 func (q *Queries) ResolveMergeReview(ctx context.Context, arg ResolveMergeReviewParams) (int64, error) {
 	result, err := q.db.Exec(ctx, resolveMergeReview, arg.ResultStatus, arg.ReviewID, arg.ExpectedVersion)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const updateHistoricalScopedWeComIdentityCAS = `-- name: UpdateHistoricalScopedWeComIdentityCAS :execrows
+UPDATE identities
+SET scope = $1::text,
+    normalized_value = $2::text,
+    fingerprint_key_version = $3::smallint
+WHERE id = $4::bigint
+  AND customer_id = $5::bigint
+  AND kind = 'wecom_external_userid'
+  AND scope = $6::text
+  AND normalized_value = $7::text
+  AND fingerprint_key_version = $8::smallint
+  AND review_fingerprint = substring($9::bytea FROM 1 FOR 16)
+  AND NOT EXISTS (
+    SELECT 1 FROM identities AS conflict
+    WHERE conflict.id <> identities.id AND conflict.kind = 'wecom_external_userid'
+      AND conflict.scope = $1::text
+      AND conflict.normalized_value = $2::text
+  )
+`
+
+type UpdateHistoricalScopedWeComIdentityCASParams struct {
+	NextScope           string `json:"next_scope"`
+	NextExternalUserid  string `json:"next_external_userid"`
+	NextKeyVersion      int16  `json:"next_key_version"`
+	IdentityID          int64  `json:"identity_id"`
+	PriorCustomerID     int64  `json:"prior_customer_id"`
+	PriorScope          string `json:"prior_scope"`
+	PriorExternalUserid string `json:"prior_external_userid"`
+	PriorKeyVersion     int16  `json:"prior_key_version"`
+	SourceKeyHmac       []byte `json:"source_key_hmac"`
+}
+
+func (q *Queries) UpdateHistoricalScopedWeComIdentityCAS(ctx context.Context, arg UpdateHistoricalScopedWeComIdentityCASParams) (int64, error) {
+	result, err := q.db.Exec(ctx, updateHistoricalScopedWeComIdentityCAS,
+		arg.NextScope,
+		arg.NextExternalUserid,
+		arg.NextKeyVersion,
+		arg.IdentityID,
+		arg.PriorCustomerID,
+		arg.PriorScope,
+		arg.PriorExternalUserid,
+		arg.PriorKeyVersion,
+		arg.SourceKeyHmac,
+	)
 	if err != nil {
 		return 0, err
 	}
