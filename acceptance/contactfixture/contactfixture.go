@@ -62,6 +62,22 @@ func DeleteCustomer(ctx context.Context, pool *pgxpool.Pool, customerID int64) e
 	return nil
 }
 
+// SetCustomerName changes the Contact-owned display name required by an
+// acceptance scenario, including an explicitly empty name.
+func SetCustomerName(ctx context.Context, pool *pgxpool.Pool, customerID int64, name string) error {
+	if pool == nil || customerID <= 0 {
+		return ErrInvalidCustomerFixture
+	}
+	result, err := pool.Exec(ctx, `UPDATE customers SET name = $2::text WHERE id = $1::bigint`, customerID, name)
+	if err != nil {
+		return fmt.Errorf("set contact-owned acceptance customer name: %w", err)
+	}
+	if result.RowsAffected() != 1 {
+		return fmt.Errorf("set contact-owned acceptance customer name: not found")
+	}
+	return nil
+}
+
 // CreateStaff creates a Contact-owned owner row for acceptance scenarios.
 func CreateStaff(ctx context.Context, tx pgx.Tx, wecomUserID string) (int64, error) {
 	return CreateStaffWithState(ctx, tx, wecomUserID, true, time.Now().UTC())
