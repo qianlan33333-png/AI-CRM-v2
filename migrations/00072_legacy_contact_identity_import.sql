@@ -12,6 +12,7 @@ CREATE TABLE legacy_contact_identity_import_runs (
   hmac_key_version SMALLINT NOT NULL CHECK (hmac_key_version > 0),
   state TEXT NOT NULL CHECK (state IN ('reserved','preflighted','importing','imported','reconciling','reconciled','failed')),
   lease_token_hmac BYTEA CHECK (lease_token_hmac IS NULL OR octet_length(lease_token_hmac) = 32),
+  lease_generation BIGINT NOT NULL DEFAULT 0 CHECK (lease_generation >= 0),
   lease_expires_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   completed_at TIMESTAMPTZ,
@@ -99,7 +100,16 @@ BEGIN
   IF NEW.state = OLD.state THEN
     RETURN NEW;
   END IF;
-  IF (OLD.state = 'reserved' AND NEW.state IN ('preflighted', 'failed'))
+  IF OLD.mode = 'preflight' AND NOT (OLD.state = 'reserved' AND NEW.state IN ('preflighted', 'failed')) THEN
+    RAISE EXCEPTION 'invalid DM01 preflight state transition' USING ERRCODE = '55000';
+  END IF;
+  IF OLD.mode IN ('full', 'incremental') AND NEW.state = 'reconciling' THEN
+    RAISE EXCEPTION 'DM01 import mode cannot reconcile in the same run' USING ERRCODE = '55000';
+  END IF;
+  IF OLD.mode = 'reconcile' AND NEW.state IN ('importing', 'imported') THEN
+    RAISE EXCEPTION 'DM01 reconcile mode cannot import rows' USING ERRCODE = '55000';
+  END IF;
+  IF (OLD.state = 'reserved' AND NEW.state IN ('preflighted', 'reconciling', 'failed'))
     OR (OLD.state = 'preflighted' AND NEW.state IN ('importing', 'failed'))
     OR (OLD.state = 'importing' AND NEW.state IN ('imported', 'failed'))
     OR (OLD.state = 'imported' AND NEW.state IN ('reconciling', 'failed'))
