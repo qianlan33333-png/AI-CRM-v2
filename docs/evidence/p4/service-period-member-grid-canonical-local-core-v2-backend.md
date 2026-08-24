@@ -12,8 +12,8 @@ canonical local query、state/source 与 bound cursor；legacy arbitrary sort/gr
 legacy row semantics 仍未交付。其余 Service Period 旧行保持 pending。本地 grid 的 read receipt 或 cursor
 绝不等同于支付、Provider 或外部转移事实。
 
-基线分层统计为 `173 IMPLEMENTED / 3 IN_PROGRESS / 118 NOT_STARTED / 294`；纠偏后为
-`171 IMPLEMENTED / 5 IN_PROGRESS / 118 NOT_STARTED / 294`。implemented 为 **58.2%**，不把
+基线分层统计为 `179 IMPLEMENTED / 3 IN_PROGRESS / 112 NOT_STARTED / 294`；纠偏后为
+`177 IMPLEMENTED / 5 IN_PROGRESS / 112 NOT_STARTED / 294`。implemented 为 **60.2%**，不把
 IN_PROGRESS 计为完成。
 
 ## 四个既有读操作

@@ -22,7 +22,7 @@ matrix="$repo_root/docs/feature-matrix.csv"
 anchor="$repo_root/docs/evidence/p1/feature-matrix-id-anchor.v1"
 expected_header="feature_id,page,section,action,triggered_api,expected_result,notes,disposition,implementation,verification,signoff,legacy_source_sha,source_evidence,decision_evidence,implementation_evidence,verification_evidence,target_feature_id"
 g1_d02_evidence="decision=G1-D02-2026-08-10;approved_by=repository_owner;approved_at=2026-08-10;semantics=legacy_behavior_1_to_1;verification=NOT_EXECUTED"
-member_grid_partial_evidence="decision=G1-D02-2026-08-10;approved_by=repository_owner;approved_at=2026-08-10;semantics=partial_legacy_plus_v2_native_difference;verification=NOT_EXECUTED"
+member_grid_partial_evidence="decision=P4-BACKEND-RESET-2026-08-24;approved_by=repository_owner;approved_at=2026-08-24;semantics=partial_legacy_plus_v2_native_difference;verification=NOT_EXECUTED"
 
 mode_of() {
   local file_path="$1" mode
