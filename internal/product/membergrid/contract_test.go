@@ -16,7 +16,7 @@ func TestDTOJSONFieldWhitelists(t *testing.T) {
 		"can_manage_views", "can_query", "can_share", "can_view", "product_id",
 	})
 	assertJSONFields(t, MemberRow{}, []string{
-		"display_name", "entitlement_id", "granted_at", "masked_mobile", "product_id", "revoked_at", "state", "version",
+		"customer_id", "display_name", "expired_at", "expires_at", "member_ref", "removed_at", "service_product_id", "source", "starts_at", "state", "updated_at", "version",
 	})
 	assertJSONFields(t, QueryResponse{}, []string{
 		"has_more", "limit", "next_cursor", "rows",
@@ -30,7 +30,7 @@ func TestDTOJSONFieldWhitelists(t *testing.T) {
 }
 
 func TestSchemaAndViewsContainNoOpaqueOrMutableMetadata(t *testing.T) {
-	schema := SchemaResponse{ProductID: 1, Columns: cloneColumns(safeColumns)}
+	schema := SchemaResponse{ServiceProductID: 1, Columns: cloneColumns(safeColumns)}
 	views := MemberViewsResponse{ProductID: 1, Views: append([]MemberView(nil), builtInViews...)}
 	encoded, err := json.Marshal(struct {
 		Schema SchemaResponse      `json:"schema"`
@@ -42,7 +42,7 @@ func TestSchemaAndViewsContainNoOpaqueOrMutableMetadata(t *testing.T) {
 	body := strings.ToLower(string(encoded))
 	for _, forbidden := range []string{
 		"db_column", "database", "table_name", "opaque", "metadata", "sql", "collaborator",
-		"external_share", "public_token", "editable", "customer_id", "unionid", "external_userid",
+		"external_share", "public_token", "editable", "unionid", "external_userid", "remark", "alliance", "mobile",
 	} {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("metadata leaked %q: %s", forbidden, body)
@@ -56,26 +56,23 @@ func TestSchemaAndViewsContainNoOpaqueOrMutableMetadata(t *testing.T) {
 func TestRepositorySQLIsReadOnlyExactJoinAndKeyset(t *testing.T) {
 	for name, query := range map[string]string{"first": firstPageSQL, "after": afterPageSQL} {
 		lower := strings.ToLower(query)
-		if !strings.Contains(lower, "join public.customers as c on c.id = e.customer_id") {
+		if !strings.Contains(lower, "join public.customers as c on c.id = m.customer_id") {
 			t.Fatalf("%s query lacks exact customer foreign-key join: %s", name, query)
 		}
-		if strings.Count(lower, "customer_id") != 1 {
-			t.Fatalf("%s query uses customer_id outside the exact join: %s", name, query)
-		}
-		if !strings.Contains(lower, "where e.product_id = $1") ||
-			!strings.Contains(lower, "order by e.granted_at desc, e.id desc") {
+		if !strings.Contains(lower, "where m.service_product_id = $1") ||
+			!strings.Contains(lower, "order by m.updated_at desc, m.member_ref desc") {
 			t.Fatalf("%s query lacks product predicate or stable order: %s", name, query)
 		}
 		for _, forbidden := range []string{
 			" offset ", "unionid", "external_userid", "order_id", "granted_by", "revoked_by",
-			"receipt", "provider", "mobile", "c.extra", "insert ", "update ", "delete ", "merge ", "copy ", "call ",
+			"receipt", "provider", "mobile", "remark", "alliance", "c.extra", "insert ", "update ", "delete ", "merge ", "copy ", "call ",
 		} {
 			if strings.Contains(" "+lower+" ", forbidden) {
 				t.Fatalf("%s query contains forbidden token %q: %s", name, forbidden, query)
 			}
 		}
 	}
-	if !strings.Contains(strings.ToLower(afterPageSQL), "(e.granted_at, e.id) < ($3::timestamptz, $4::bigint)") {
+	if !strings.Contains(strings.ToLower(afterPageSQL), "(m.updated_at, m.member_ref) < ($4::timestamptz, $5::text)") {
 		t.Fatalf("after query does not use the composite server keyset: %s", afterPageSQL)
 	}
 }

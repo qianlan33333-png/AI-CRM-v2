@@ -60,30 +60,33 @@ type nativePackageLaunchQueryContract struct {
 }
 
 const (
-	p4ClassificationPackageEvidence    = "P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20"
-	p4ProductEntitlementEvidence       = "P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20"
-	p4SurveyPublicEvidence             = "P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20"
-	p4SurveySafeAdminEvidence          = "P4-SURVEY-SAFE-ADMIN-2026-08-21"
-	p4CloudOrchestratorEvidence        = "P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20"
-	p4GroupOpsWorkspaceEvidence        = "P4-GROUP-OPS-WORKSPACE-CARRIERS-2026-08-20"
-	p4AudienceWorkspaceEvidence        = "P4-AI-AUDIENCE-WORKSPACE-CARRIERS-2026-08-20"
-	p4OutboundOperationsEvidence       = "P4-OUTBOUND-OPERATIONS-2026-08-20"
-	p4CommerceWorkspaceEvidence        = "P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20"
-	p4HXCSenderManagementEvidence      = "P4-HXC-SENDER-MANAGEMENT-2026-08-20"
-	p4ExternalEffectsReadonlyEvidence  = "P4-EXTERNAL-EFFECTS-READONLY-2026-08-21"
-	p4AIAudienceConfigurationEvidence  = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22"
-	p4GroupOpsLocalEvidence            = "P4-GROUP-OPS-LOCAL-ONLY-2026-08-23"
-	p4ServicePeriodMembersEvidence     = "P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23"
-	p4OrderSafeExportEvidence          = "P4-ORDER-SAFE-EXPORT-2026-08-23"
-	p4ContactPolicyEvidence            = "P4-CONTACT-POLICY-2026-08-23"
-	p4CampaignInitiationEvidence       = "P4-CAMPAIGN-INITIATION-SNAPSHOTS-00066-2026-08-23"
-	p4CampaignReviewHandoffEvidence    = "P4-CAMPAIGN-REVIEW-HANDOFF-00067-2026-08-23"
-	p4OutboundCampaignHandoffEvidence  = "P4-OUTBOUND-CAMPAIGN-HANDOFF-2026-08-23"
-	p4SidebarLocalCoreEvidence         = "P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24"
-	p4ContactOwnerReassignmentEvidence = "P4-CONTACT-OWNER-REASSIGNMENT-LOCAL-CORE-2026-08-24"
+	p4ClassificationPackageEvidence            = "P4-CLASSIFICATION-SEGMENT-PACKAGE-2026-08-20"
+	p4ProductEntitlementEvidence               = "P4-PRODUCT-ENTITLEMENT-PACKAGE-2026-08-20"
+	p4SurveyPublicEvidence                     = "P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20"
+	p4SurveySafeAdminEvidence                  = "P4-SURVEY-SAFE-ADMIN-2026-08-21"
+	p4CloudOrchestratorEvidence                = "P4-CLOUD-ORCHESTRATOR-CARRIERS-2026-08-20"
+	p4GroupOpsWorkspaceEvidence                = "P4-GROUP-OPS-WORKSPACE-CARRIERS-2026-08-20"
+	p4AudienceWorkspaceEvidence                = "P4-AI-AUDIENCE-WORKSPACE-CARRIERS-2026-08-20"
+	p4OutboundOperationsEvidence               = "P4-OUTBOUND-OPERATIONS-2026-08-20"
+	p4CommerceWorkspaceEvidence                = "P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20"
+	p4HXCSenderManagementEvidence              = "P4-HXC-SENDER-MANAGEMENT-2026-08-20"
+	p4ExternalEffectsReadonlyEvidence          = "P4-EXTERNAL-EFFECTS-READONLY-2026-08-21"
+	p4AIAudienceConfigurationEvidence          = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22"
+	p4GroupOpsLocalEvidence                    = "P4-GROUP-OPS-LOCAL-ONLY-2026-08-23"
+	p4ServicePeriodMembersEvidence             = "P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23"
+	p4OrderSafeExportEvidence                  = "P4-ORDER-SAFE-EXPORT-2026-08-23"
+	p4ContactPolicyEvidence                    = "P4-CONTACT-POLICY-2026-08-23"
+	p4CampaignInitiationEvidence               = "P4-CAMPAIGN-INITIATION-SNAPSHOTS-00066-2026-08-23"
+	p4CampaignReviewHandoffEvidence            = "P4-CAMPAIGN-REVIEW-HANDOFF-00067-2026-08-23"
+	p4OutboundCampaignHandoffEvidence          = "P4-OUTBOUND-CAMPAIGN-HANDOFF-2026-08-23"
+	p4SidebarLocalCoreEvidence                 = "P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24"
+	p4ContactOwnerReassignmentEvidence         = "P4-CONTACT-OWNER-REASSIGNMENT-LOCAL-CORE-2026-08-24"
+	p4ServicePeriodMemberGridCanonicalEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24"
 )
 
 var nativePackageOperations = map[string]nativePackageOperation{
+	"getServicePeriodMemberGridSchema":         {"/api/admin/service-period-products/{service_product_id}/member-grid/schema", "GET", p4ServicePeriodMemberGridCanonicalEvidence, "products.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"queryServicePeriodMemberGrid":             {"/api/admin/service-period-products/{service_product_id}/member-grid/query", "POST", p4ServicePeriodMemberGridCanonicalEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"downloadContactOwnerReassignmentTemplate": {"/api/v1/contact-owner-reassignments/template", "GET", p4ContactOwnerReassignmentEvidence, "contact.owner_reassignment", "human_session", "internal", "contact.owner_reassignment.local_template", "none", map[string]string{"admin": "global"}},
 	"createContactOwnerReassignmentPreview":    {"/api/v1/contact-owner-reassignments/previews", "POST", p4ContactOwnerReassignmentEvidence, "contact.owner_reassignment", "human_session", "internal", "contact.owner_reassignment.local_preview", "required", map[string]string{"admin": "global"}},
 	"getContactOwnerReassignmentPreview":       {"/api/v1/contact-owner-reassignments/previews/{preview_id}", "GET", p4ContactOwnerReassignmentEvidence, "contact.owner_reassignment", "human_session", "internal", "contact.owner_reassignment.local_preview", "none", map[string]string{"admin": "global"}},
@@ -371,13 +374,13 @@ var p4ServicePeriodLifecycleLegacyMappings = map[string][]string{
 }
 
 var p4ServicePeriodMemberGridReadOperations = map[string]bool{
-	"getServicePeriodMemberGridAccess": true, "getServicePeriodMemberGridSchema": true,
-	"listServicePeriodMemberViews": true, "queryServicePeriodMemberGrid": true,
+	"getServicePeriodMemberGridAccess": true,
+	"listServicePeriodMemberViews":     true,
 }
 
 var p4ServicePeriodMemberGridReadLegacyMappings = map[string][]string{
-	"getServicePeriodMemberGridAccess": {"LEGACY-API-0476"}, "getServicePeriodMemberGridSchema": {"LEGACY-API-0482"},
-	"listServicePeriodMemberViews": {"LEGACY-API-0484"}, "queryServicePeriodMemberGrid": {"LEGACY-API-0481"},
+	"getServicePeriodMemberGridAccess": {"LEGACY-API-0476"},
+	"listServicePeriodMemberViews":     {"LEGACY-API-0484"},
 }
 
 var p4MemberGridManagementLegacyMappings = map[string][]string{
@@ -1781,9 +1784,6 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 			} else if p4ServicePeriodMemberGridReadOperations[op.OperationID] {
 				seenP4ServicePeriodMemberGridRead[op.OperationID] = true
 				capability := "products.read"
-				if op.OperationID == "queryServicePeriodMemberGrid" {
-					capability = "entitlements.read"
-				}
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
 				if linkErr != nil || !reflect.DeepEqual(ids, p4ServicePeriodMemberGridReadLegacyMappings[op.OperationID]) ||
 					op.Extensions["x-p4-decision-evidence"] != p4ServicePeriodMemberGridReadEvidence ||

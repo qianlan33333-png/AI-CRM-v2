@@ -108,15 +108,11 @@ func assertSecurityHeaders(t *testing.T, recorder *httptest.ResponseRecorder) {
 
 func TestRouteFragmentServesFourClosedRoutes(t *testing.T) {
 	stamp := time.Date(2026, 8, 21, 12, 0, 0, 0, time.UTC)
-	masked := "*******8000"
 	application := &fakeApplication{
 		accessResponse: AccessResponse{ProductID: 17, CanView: true, CanQuery: true},
-		schemaResponse: SchemaResponse{ProductID: 17, Columns: cloneColumns(safeColumns)},
+		schemaResponse: SchemaResponse{ServiceProductID: 17, Columns: cloneColumns(safeColumns)},
 		viewsResponse:  MemberViewsResponse{ProductID: 17, Views: append([]MemberView(nil), builtInViews...)},
-		queryResponse: QueryResponse{Rows: []MemberRow{{
-			EntitlementID: 9, ProductID: 17, State: "active", Version: 1,
-			GrantedAt: stamp, DisplayName: "安全客户", MaskedMobile: &masked,
-		}}, Limit: 10},
+		queryResponse:  QueryResponse{Rows: []MemberRow{{MemberRef: "spm_0000000000000000000009", ServiceProductID: 17, CustomerID: 9, State: "active", Source: "manual", StartsAt: stamp, Version: 1, UpdatedAt: stamp, DisplayName: "安全客户"}}, Limit: 10},
 	}
 	fragment := testFragment(t, application)
 
@@ -132,7 +128,7 @@ func TestRouteFragmentServesFourClosedRoutes(t *testing.T) {
 		{name: "access", method: http.MethodGet, path: "/17/member-grid/access", role: authport.RoleAdmin, capability: authport.CapabilityProductsRead, wantCall: &application.accessCalls},
 		{name: "schema", method: http.MethodGet, path: RoutePrefix + "/17/member-grid/schema", role: authport.RoleOps, capability: authport.CapabilityProductsRead, wantCall: &application.schemaCalls},
 		{name: "views", method: http.MethodGet, path: "/17/member-views", role: authport.RoleAdmin, capability: authport.CapabilityProductsRead, wantCall: &application.viewsCalls},
-		{name: "query", method: http.MethodPost, path: "/17/member-grid/query", body: `{"state":"active","limit":10,"cursor":""}`, role: authport.RoleOps, capability: authport.CapabilityEntitlementsRead, wantCall: &application.queryCalls},
+		{name: "query", method: http.MethodPost, path: "/17/member-grid/query", body: `{"state":"active","source":"manual","limit":10,"cursor":""}`, role: authport.RoleOps, capability: authport.CapabilityEntitlementsRead, wantCall: &application.queryCalls},
 	}
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
@@ -148,19 +144,15 @@ func TestRouteFragmentServesFourClosedRoutes(t *testing.T) {
 			}
 		})
 	}
-	if application.lastQuery.ProductID != 17 || application.lastQuery.State != StateActive || application.lastQuery.Limit != 10 || application.lastQuery.Cursor != "" {
+	if application.lastQuery.ProductID != 17 || application.lastQuery.State != StateActive || application.lastQuery.Source != SourceManual || application.lastQuery.Limit != 10 || application.lastQuery.Cursor != "" {
 		t.Fatalf("query input=%+v", application.lastQuery)
 	}
 }
 
 func TestQueryResponseUsesOnlyClosedSafeFields(t *testing.T) {
 	stamp := time.Now().UTC()
-	masked := "*******1234"
 	application := &fakeApplication{queryResponse: QueryResponse{
-		Rows: []MemberRow{{
-			EntitlementID: 4, ProductID: 2, State: "revoked", Version: 2,
-			GrantedAt: stamp, RevokedAt: &stamp, DisplayName: "本地客户", MaskedMobile: &masked,
-		}},
+		Rows:  []MemberRow{{MemberRef: "spm_0000000000000000000004", ServiceProductID: 2, CustomerID: 4, State: "removed", Source: "manual", StartsAt: stamp.Add(-time.Hour), RemovedAt: &stamp, Version: 2, UpdatedAt: stamp, DisplayName: "本地客户"}},
 		Limit: 1, NextCursor: "opaque", HasMore: true,
 	}}
 	recorder := httptest.NewRecorder()
@@ -170,7 +162,7 @@ func TestQueryResponseUsesOnlyClosedSafeFields(t *testing.T) {
 	}
 	body := strings.ToLower(recorder.Body.String())
 	for _, forbidden := range []string{
-		"customer_id", "unionid", "external_userid", "order_id", "granted_by", "revoked_by",
+		"unionid", "external_userid", "order_id", "granted_by", "revoked_by", "entitlement_id", "granted_at", "revoked_at", "masked_mobile", "remark", "alliance",
 		"receipt", "provider", "raw_mobile", "payment", "refund",
 	} {
 		if strings.Contains(body, forbidden) {
@@ -302,6 +294,8 @@ func TestQueryBodyIsClosedAndStrict(t *testing.T) {
 		{name: "duplicate", body: `{"limit":1,"limit":2}`, wantStatus: http.StatusBadRequest},
 		{name: "invalid state", body: `{"state":"pending"}`, wantStatus: http.StatusUnprocessableEntity},
 		{name: "null state", body: `{"state":null}`, wantStatus: http.StatusUnprocessableEntity},
+		{name: "all source", body: `{"source":"all"}`, wantStatus: http.StatusUnprocessableEntity},
+		{name: "invalid source", body: `{"source":"provider"}`, wantStatus: http.StatusUnprocessableEntity},
 		{name: "zero limit", body: `{"limit":0}`, wantStatus: http.StatusUnprocessableEntity},
 		{name: "large limit", body: `{"limit":51}`, wantStatus: http.StatusUnprocessableEntity},
 		{name: "float limit", body: `{"limit":1.5}`, wantStatus: http.StatusUnprocessableEntity},

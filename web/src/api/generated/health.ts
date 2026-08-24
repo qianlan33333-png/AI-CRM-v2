@@ -2780,14 +2780,18 @@ export type ServicePeriodMemberGridColumnKey =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ServicePeriodMemberGridColumnKey = {
-  entitlement_id: "entitlement_id",
-  product_id: "product_id",
+  member_ref: "member_ref",
+  service_product_id: "service_product_id",
+  customer_id: "customer_id",
   state: "state",
+  source: "source",
+  starts_at: "starts_at",
+  expires_at: "expires_at",
+  expired_at: "expired_at",
+  removed_at: "removed_at",
   version: "version",
-  granted_at: "granted_at",
-  revoked_at: "revoked_at",
+  updated_at: "updated_at",
   display_name: "display_name",
-  masked_mobile: "masked_mobile",
 } as const;
 
 export type ServicePeriodMemberGridColumnType =
@@ -2811,10 +2815,10 @@ export interface ServicePeriodMemberGridColumn {
 
 export interface ServicePeriodMemberGridSchema {
   /** @minimum 1 */
-  product_id: number;
+  service_product_id: number;
   /**
-   * @minItems 8
-   * @maxItems 8
+   * @minItems 12
+   * @maxItems 12
    */
   columns: ServicePeriodMemberGridColumn[];
 }
@@ -2849,12 +2853,14 @@ export type ServicePeriodMemberGridQueryRequestState =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ServicePeriodMemberGridQueryRequestState = {
   active: "active",
-  revoked: "revoked",
+  expired: "expired",
+  removed: "removed",
   all: "all",
 } as const;
 
 export interface ServicePeriodMemberGridQueryRequest {
   state?: ServicePeriodMemberGridQueryRequestState;
+  source?: ServicePeriodMemberSource;
   /**
    * @minimum 1
    * @maximum 50
@@ -2867,29 +2873,30 @@ export interface ServicePeriodMemberGridQueryRequest {
   cursor?: string | null;
 }
 
-export type ServicePeriodMemberGridMemberState =
-  (typeof ServicePeriodMemberGridMemberState)[keyof typeof ServicePeriodMemberGridMemberState];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const ServicePeriodMemberGridMemberState = {
-  active: "active",
-  revoked: "revoked",
-} as const;
-
 export interface ServicePeriodMemberGridMember {
+  /**
+   * @minLength 26
+   * @maxLength 26
+   * @pattern ^spm_[A-Za-z0-9_-]{22}$
+   */
+  member_ref: string;
   /** @minimum 1 */
-  entitlement_id: number;
+  service_product_id: number;
   /** @minimum 1 */
-  product_id: number;
-  state: ServicePeriodMemberGridMemberState;
+  customer_id: number;
+  state: ServicePeriodMemberState;
+  source: ServicePeriodMemberSource;
   /** @minimum 1 */
   version: number;
-  granted_at: string;
+  starts_at: string;
   /** @nullable */
-  revoked_at?: string | null;
+  expires_at: string | null;
+  /** @nullable */
+  expired_at: string | null;
+  /** @nullable */
+  removed_at: string | null;
+  updated_at: string;
   display_name: string;
-  /** @nullable */
-  masked_mobile?: string | null;
 }
 
 export interface ServicePeriodMemberGridQueryResponse {
@@ -38623,7 +38630,7 @@ export const getServicePeriodMemberGridSchema = async (
 };
 
 /**
- * @summary Query existing local entitlement rows; it neither adds nor expires members
+ * @summary Query canonical local service-period member rows; it neither adds nor changes members
  */
 export type queryServicePeriodMemberGridResponse200 = {
   data: ServicePeriodMemberGridQueryResponse;

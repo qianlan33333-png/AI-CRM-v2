@@ -8,31 +8,34 @@ import (
 	"time"
 )
 
-func TestCursorRoundTripIsServerOpaqueAndBound(t *testing.T) {
+func TestCursorRoundTripIsOpaqueAndBindsEveryQueryDimension(t *testing.T) {
 	codec, err := newCursorCodec(bytes.Repeat([]byte("s"), 32), &incrementingReader{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	position := Position{GrantedAt: time.Date(2026, 8, 21, 9, 10, 11, 123000000, time.UTC), EntitlementID: 987654321}
-	token, err := codec.Encode(42, StateActive, position)
+	position := Position{UpdatedAt: time.Date(2026, 8, 24, 9, 10, 11, 123000000, time.UTC), MemberRef: "spm_0000000000000000000001"}
+	token, err := codec.Encode(42, StateActive, SourceManual, 17, position)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if token == "987654321" || token == base64.RawURLEncoding.EncodeToString([]byte("987654321")) {
-		t.Fatalf("cursor exposed the client-visible last id: %q", token)
+	if token == position.MemberRef || token == base64.RawURLEncoding.EncodeToString([]byte(position.MemberRef)) {
+		t.Fatalf("cursor exposed position: %q", token)
 	}
-	decoded, err := codec.Decode(token, 42, StateActive)
-	if err != nil {
-		t.Fatal(err)
+	decoded, err := codec.Decode(token, 42, StateActive, SourceManual, 17)
+	if err != nil || decoded.MemberRef != position.MemberRef || !decoded.UpdatedAt.Equal(position.UpdatedAt) {
+		t.Fatalf("decoded=%+v error=%v", decoded, err)
 	}
-	if decoded.EntitlementID != position.EntitlementID || !decoded.GrantedAt.Equal(position.GrantedAt) {
-		t.Fatalf("decoded=%+v want=%+v", decoded, position)
-	}
-	if _, err = codec.Decode(token, 43, StateActive); !errors.Is(err, ErrInvalidCursor) {
-		t.Fatalf("cross-product decode error=%v", err)
-	}
-	if _, err = codec.Decode(token, 42, StateRevoked); !errors.Is(err, ErrInvalidCursor) {
-		t.Fatalf("cross-filter decode error=%v", err)
+	for _, mismatch := range []struct {
+		product int64
+		state   StateFilter
+		source  SourceFilter
+		limit   int
+	}{
+		{43, StateActive, SourceManual, 17}, {42, StateExpired, SourceManual, 17}, {42, StateActive, SourcePaidOrder, 17}, {42, StateActive, SourceManual, 18},
+	} {
+		if _, err = codec.Decode(token, mismatch.product, mismatch.state, mismatch.source, mismatch.limit); !errors.Is(err, ErrInvalidCursor) {
+			t.Fatalf("mismatch=%+v error=%v", mismatch, err)
+		}
 	}
 }
 
@@ -41,18 +44,14 @@ func TestCursorRejectsTamperingAndAmbiguousInputs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	token, err := codec.Encode(7, StateAll, Position{GrantedAt: time.Now().UTC(), EntitlementID: 11})
+	token, err := codec.Encode(7, StateAll, SourceAny, 50, Position{UpdatedAt: time.Now().UTC(), MemberRef: "spm_0000000000000000000002"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	tampered := token[:len(token)-1] + replacementByte(token[len(token)-1])
-	cases := []string{
-		"", "11", "mg1.11", "mg0." + token[len(cursorPrefix):], token + "=", tampered,
-		"mg1." + base64.RawURLEncoding.EncodeToString([]byte("too-short")),
-	}
-	for _, candidate := range cases {
-		if _, decodeErr := codec.Decode(candidate, 7, StateAll); !errors.Is(decodeErr, ErrInvalidCursor) {
-			t.Errorf("Decode(%q) error=%v, want ErrInvalidCursor", candidate, decodeErr)
+	for _, candidate := range []string{"", "spm_0000000000000000000002", "mg1.11", "mg0." + token[len(cursorPrefix):], token + "=", tampered, "mg2." + base64.RawURLEncoding.EncodeToString([]byte("too-short"))} {
+		if _, err = codec.Decode(candidate, 7, StateAll, SourceAny, 50); !errors.Is(err, ErrInvalidCursor) {
+			t.Errorf("Decode(%q) error=%v", candidate, err)
 		}
 	}
 }
@@ -65,17 +64,14 @@ func TestCursorUsesFreshNonceAndRequiresManagedSecret(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	position := Position{GrantedAt: time.Now().UTC(), EntitlementID: 5}
-	first, err := codec.Encode(9, StateAll, position)
+	position := Position{UpdatedAt: time.Now().UTC(), MemberRef: "spm_0000000000000000000003"}
+	first, err := codec.Encode(9, StateAll, SourceAny, 50, position)
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := codec.Encode(9, StateAll, position)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if first == second {
-		t.Fatal("two cursors reused the same nonce")
+	second, err := codec.Encode(9, StateAll, SourceAny, 50, position)
+	if err != nil || first == second {
+		t.Fatalf("second=%q error=%v", second, err)
 	}
 }
 

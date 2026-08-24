@@ -40,8 +40,8 @@ func TestManagementDTOJSONFieldWhitelists(t *testing.T) {
 }
 
 func TestManagementColumnsAreExactlyTheExistingSafeSchemaKeys(t *testing.T) {
-	want := make([]string, len(safeColumns))
-	for index, column := range safeColumns {
+	want := make([]string, len(legacySavedViewColumns))
+	for index, column := range legacySavedViewColumns {
 		want[index] = column.Key
 	}
 	if !reflect.DeepEqual(want, []string{

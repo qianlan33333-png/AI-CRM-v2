@@ -13,13 +13,13 @@ import (
 )
 
 const (
-	cursorPrefix           = "mg1."
-	cursorPayloadSize      = 26
+	cursorPrefix           = "mg2."
+	cursorPayloadSize      = 46
 	minimumCursorKey       = 32
-	cursorVersion     byte = 1
+	cursorVersion     byte = 2
 )
 
-var cursorKeyDomain = []byte("AI-CRM-v2/membergrid/cursor/v1\x00")
+var cursorKeyDomain = []byte("AI-CRM-v2/membergrid/cursor/v2\x00")
 
 type CursorCodec struct {
 	aead   cipher.AEAD
@@ -49,17 +49,19 @@ func newCursorCodec(secret []byte, random io.Reader) (*CursorCodec, error) {
 	return &CursorCodec{aead: aead, random: random}, nil
 }
 
-func (codec *CursorCodec) Encode(productID int64, state StateFilter, position Position) (string, error) {
+func (codec *CursorCodec) Encode(productID int64, state StateFilter, source SourceFilter, limit int, position Position) (string, error) {
 	if codec == nil || codec.aead == nil || codec.random == nil || productID < 1 ||
-		!state.valid() || position.EntitlementID < 1 || position.GrantedAt.IsZero() {
+		!state.validCanonicalGridState() || !source.valid() || limit < 1 || limit > MaximumLimit || !validMemberRef(position.MemberRef) || position.UpdatedAt.IsZero() {
 		return "", ErrInvalidCursor
 	}
 	payload := make([]byte, cursorPayloadSize)
 	payload[0] = cursorVersion
 	payload[1] = encodeCursorState(state)
-	binary.BigEndian.PutUint64(payload[2:10], uint64(productID))
-	binary.BigEndian.PutUint64(payload[10:18], uint64(position.GrantedAt.UTC().UnixMicro()))
-	binary.BigEndian.PutUint64(payload[18:26], uint64(position.EntitlementID))
+	payload[2] = encodeCursorSource(source)
+	payload[3] = byte(limit)
+	binary.BigEndian.PutUint64(payload[4:12], uint64(productID))
+	binary.BigEndian.PutUint64(payload[12:20], uint64(position.UpdatedAt.UTC().UnixMicro()))
+	copy(payload[20:46], position.MemberRef)
 
 	nonce := make([]byte, codec.aead.NonceSize())
 	if _, err := io.ReadFull(codec.random, nonce); err != nil {
@@ -70,8 +72,8 @@ func (codec *CursorCodec) Encode(productID int64, state StateFilter, position Po
 	return cursorPrefix + base64.RawURLEncoding.EncodeToString(token), nil
 }
 
-func (codec *CursorCodec) Decode(token string, productID int64, state StateFilter) (Position, error) {
-	if codec == nil || codec.aead == nil || productID < 1 || !state.valid() ||
+func (codec *CursorCodec) Decode(token string, productID int64, state StateFilter, source SourceFilter, limit int) (Position, error) {
+	if codec == nil || codec.aead == nil || productID < 1 || !state.validCanonicalGridState() || !source.valid() || limit < 1 || limit > MaximumLimit ||
 		len(token) <= len(cursorPrefix) || len(token) > 256 || token[:len(cursorPrefix)] != cursorPrefix {
 		return Position{}, ErrInvalidCursor
 	}
@@ -85,28 +87,31 @@ func (codec *CursorCodec) Decode(token string, productID int64, state StateFilte
 		return Position{}, ErrInvalidCursor
 	}
 	decodedState, ok := decodeCursorState(payload[1])
-	decodedProductID := int64(binary.BigEndian.Uint64(payload[2:10]))
-	grantedAtMicros := int64(binary.BigEndian.Uint64(payload[10:18]))
-	entitlementID := int64(binary.BigEndian.Uint64(payload[18:26]))
-	if !ok || decodedState != state || decodedProductID != productID || decodedProductID < 1 ||
-		entitlementID < 1 {
+	decodedSource, sourceOK := decodeCursorSource(payload[2])
+	decodedLimit := int(payload[3])
+	decodedProductID := int64(binary.BigEndian.Uint64(payload[4:12]))
+	updatedAtMicros := int64(binary.BigEndian.Uint64(payload[12:20]))
+	memberRef := string(payload[20:46])
+	if !ok || !sourceOK || decodedState != state || decodedSource != source || decodedLimit != limit || decodedProductID != productID || decodedProductID < 1 || !validMemberRef(memberRef) {
 		return Position{}, ErrInvalidCursor
 	}
-	grantedAt := time.UnixMicro(grantedAtMicros).UTC()
-	if grantedAt.IsZero() {
+	updatedAt := time.UnixMicro(updatedAtMicros).UTC()
+	if updatedAt.IsZero() {
 		return Position{}, ErrInvalidCursor
 	}
-	return Position{GrantedAt: grantedAt, EntitlementID: entitlementID}, nil
+	return Position{UpdatedAt: updatedAt, MemberRef: memberRef}, nil
 }
 
 func encodeCursorState(state StateFilter) byte {
 	switch state {
 	case StateActive:
 		return 1
-	case StateRevoked:
+	case StateExpired:
 		return 2
-	case StateAll:
+	case StateRemoved:
 		return 3
+	case StateAll:
+		return 4
 	default:
 		return 0
 	}
@@ -117,9 +122,37 @@ func decodeCursorState(value byte) (StateFilter, bool) {
 	case 1:
 		return StateActive, true
 	case 2:
-		return StateRevoked, true
+		return StateExpired, true
 	case 3:
+		return StateRemoved, true
+	case 4:
 		return StateAll, true
+	default:
+		return "", false
+	}
+}
+
+func encodeCursorSource(source SourceFilter) byte {
+	switch source {
+	case SourceAny:
+		return 0
+	case SourceManual:
+		return 1
+	case SourcePaidOrder:
+		return 2
+	default:
+		return 255
+	}
+}
+
+func decodeCursorSource(value byte) (SourceFilter, bool) {
+	switch value {
+	case 0:
+		return SourceAny, true
+	case 1:
+		return SourceManual, true
+	case 2:
+		return SourcePaidOrder, true
 	default:
 		return "", false
 	}
