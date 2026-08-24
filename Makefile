@@ -46,6 +46,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p1-reconciliation-contract
 .PHONY: openapi-p1-contract
 .PHONY: query-plan-gate query-plan-gate-test
+.PHONY: replacement-baseline-contract
 .PHONY: p3-c06a1-contract p3-c06a2-contract
 
 version-check:
@@ -390,6 +391,13 @@ migration-mapping-contract:
 migration-mapping-p1-completion: migration-mapping-contract
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./migration-mapping --completion
 
+replacement-baseline-contract: override SHELL := /bin/bash
+replacement-baseline-contract: override .SHELLFLAGS := -eu -o pipefail -c
+replacement-baseline-contract:
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools vet ./replacement-baseline
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools test -race -timeout=20s ./replacement-baseline
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) -C tools run ./replacement-baseline -check
+
 p1-reconciliation-contract: override SHELL := /bin/bash
 p1-reconciliation-contract: override .SHELLFLAGS := -eu -o pipefail -c
 p1-reconciliation-contract: override GO := go
@@ -682,4 +690,4 @@ p3-c06a2-contract:
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 ./cmd/aicrm-contact-perf
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) vet ./cmd/aicrm-contact-perf
 
-ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance p2-s04-acceptance p2-s05-acceptance p2-s07-acceptance p2-s08-acceptance p2-s09-acceptance p2-s10-acceptance p2-s11-acceptance p2-s14-acceptance p2-s15-acceptance p2-s16-acceptance p2-s18-acceptance p3-c00-acceptance p3-c01a-contract p3-c06a1-contract p3-c06a2-contract g2-runtime-image-acceptance g2-release-archive-contract g2-web-edge-contract arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test acceptance-fixtures source-policy-lint source-policy-lint-test slice-input-contract-test snapshot-gate-test legacy-route-export-test feature-matrix-contract migration-mapping-contract p1-reconciliation-contract openapi-p1-contract query-plan-gate-test
+ci-go: version-check generate-check gitless-generate-test mod-check migration-validate migration-guard-negative fmt-check vet test build vuln p0-s01-acceptance p0-s02-acceptance p0-s03-acceptance p0-s04-acceptance p2-s04-acceptance p2-s05-acceptance p2-s07-acceptance p2-s08-acceptance p2-s09-acceptance p2-s10-acceptance p2-s11-acceptance p2-s14-acceptance p2-s15-acceptance p2-s16-acceptance p2-s18-acceptance p3-c00-acceptance p3-c01a-contract p3-c06a1-contract p3-c06a2-contract g2-runtime-image-acceptance g2-release-archive-contract g2-web-edge-contract arch-import-lint arch-import-lint-test ownership-lint ownership-lint-test acceptance-fixtures source-policy-lint source-policy-lint-test slice-input-contract-test snapshot-gate-test legacy-route-export-test feature-matrix-contract migration-mapping-contract p1-reconciliation-contract openapi-p1-contract query-plan-gate-test replacement-baseline-contract

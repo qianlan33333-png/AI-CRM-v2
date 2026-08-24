@@ -1,0 +1,2 @@
+delta_id,formal_freeze_sha,legacy_commit_or_range,change_class,impact_items,absorption_pr,absorption_sha,verification,status,notes
+REPO1-INITIAL-CATCHUP,aa71de28140ca78851c2db3dfd824ad0a2cce224,6cb989c071255437d75953dabb943318a74eb8f4..aa71de28140ca78851c2db3dfd824ad0a2cce224,INITIAL_REPLACEMENT_CATCHUP,UNCLASSIFIED_SOURCE_DRIFT,UNMAPPED,UNMAPPED,NOT_EXECUTED,OPEN,Formal freeze is advisory only and not externally enforced. No exact V2 absorption SHA or verification evidence exists.
