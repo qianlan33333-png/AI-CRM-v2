@@ -6,8 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	orderfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store/acceptancefixture"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
@@ -118,28 +120,22 @@ func TestD01ServicePeriodLifecycleUsesProductCASReceiptsAndRetainsReferences(t *
 		t.Fatalf("copy lost stable Product fields source=%+v copy=%+v", disabled, copied)
 	}
 
-	var customerID, orderID int64
-	if err = pool.QueryRow(ctx, `INSERT INTO customers (name) VALUES ('D01 本地引用客户') RETURNING id`).Scan(&customerID); err != nil {
+	customerID, err := contactfixture.CreateCustomerRecord(ctx, pool)
+	if err != nil {
 		t.Fatal(err)
 	}
+	var orderID int64
 	merchantOrderNo := "d01-service-period-order-" + code
 	// order_list_projections requires a provider enum and an eligible local paid
 	// status before the existing Local Entitlement application will grant. This
 	// row is a direct local fixture only: no payment or Provider client is called,
 	// and the test makes no claim that an external payment occurred.
-	if err = pool.QueryRow(ctx, `INSERT INTO order_list_projections (
-		provider,provider_label,merchant_order_no,customer_id,product_id,product_code,product_name_snapshot,
-		amount_minor,currency,status,status_label,detail_url,created_at,updated_at
-	) VALUES ('wechat','本地引用夹具',$1,$2,$3,$4,$5,$6,$7,'paid','本地既存引用',$8,now(),now()) RETURNING id`,
-		merchantOrderNo,
-		customerID,
-		int64(disabled.ServiceProductID),
-		disabled.ProductCode,
-		disabled.Name,
-		disabled.PriceMinor,
-		disabled.Currency,
-		"/orders/"+merchantOrderNo,
-	).Scan(&orderID); err != nil {
+	orderID, err = orderfixture.CreatePaidProjection(ctx, pool, orderfixture.PaidProjection{
+		ProviderLabel: "本地引用夹具", MerchantOrderNo: merchantOrderNo, CustomerID: customerID,
+		ProductID: int64(disabled.ServiceProductID), ProductCode: disabled.ProductCode, ProductName: disabled.Name,
+		AmountMinor: disabled.PriceMinor, Currency: disabled.Currency, StatusLabel: "本地既存引用", DetailURL: "/orders/" + merchantOrderNo,
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err = entitlements.Grant(ctx, productport.GrantLocalEntitlementCommand{

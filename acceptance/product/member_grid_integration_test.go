@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
+	orderfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store/acceptancefixture"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	membergrid "github.com/qianlan33333-png/AI-CRM-v2/internal/product/membergrid"
 )
@@ -28,11 +30,12 @@ func TestLaneD2MemberGridRepositoryPG16_14(t *testing.T) {
 	ordinaryProductID := insertGridProduct(t, ctx, pool, code+"-ordinary", false, now)
 	var customerIDs [5]int64
 	for index := range customerIDs {
-		if err := pool.QueryRow(ctx, `INSERT INTO customers (name,extra)
-VALUES ($1,$2::jsonb) RETURNING id`,
+		var err error
+		customerIDs[index], err = contactfixture.CreateCustomerWithDetails(ctx, pool,
 			fmt.Sprintf("成员客户%d", index),
-			fmt.Sprintf(`{"external_userid":"decoy-%d","mobile":"1380013800%d"}`, index, index),
-		).Scan(&customerIDs[index]); err != nil {
+			[]byte(fmt.Sprintf(`{"external_userid":"decoy-%d","mobile":"1380013800%d"}`, index, index)),
+		)
+		if err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -72,12 +75,11 @@ VALUES ($1,$2::jsonb) RETURNING id`,
 		t.Fatal(err)
 	}
 
-	var orderID int64
-	if err := pool.QueryRow(ctx, `INSERT INTO order_list_projections (
-	provider,provider_label,merchant_order_no,customer_id,product_id,product_code,
-	product_name_snapshot,amount_minor,currency,status,status_label,detail_url,created_at,updated_at
-) VALUES ('wechat','legacy decoy',$1,$2,$3,$4,'legacy decoy',0,'CNY','paid','paid',$5,$6,$6)
-RETURNING id`, code+"-legacy", customerIDs[4], productID, code, "/orders/"+code, now).Scan(&orderID); err != nil {
+	orderID, err := orderfixture.CreatePaidProjection(ctx, pool, orderfixture.PaidProjection{
+		ProviderLabel: "legacy decoy", MerchantOrderNo: code + "-legacy", CustomerID: customerIDs[4],
+		ProductID: productID, ProductCode: code, ProductName: "legacy decoy", Currency: "CNY", StatusLabel: "paid", DetailURL: "/orders/" + code,
+	})
+	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := pool.Exec(ctx, `INSERT INTO product_local_entitlements (
@@ -87,10 +89,10 @@ RETURNING id`, code+"-legacy", customerIDs[4], productID, code, "/orders/"+code,
 	}
 	t.Cleanup(func() {
 		_, _ = pool.Exec(ctx, `DELETE FROM product_local_entitlements WHERE order_id=$1`, orderID)
-		_, _ = pool.Exec(ctx, `DELETE FROM order_list_projections WHERE id=$1`, orderID)
+		_ = orderfixture.DeletePaidProjections(ctx, pool, []int64{orderID})
 		_, _ = pool.Exec(ctx, `DELETE FROM service_period_members WHERE service_product_id IN ($1,$2)`, productID, otherProductID)
 		_, _ = pool.Exec(ctx, `DELETE FROM products WHERE id IN ($1,$2,$3)`, productID, otherProductID, ordinaryProductID)
-		_, _ = pool.Exec(ctx, `DELETE FROM customers WHERE id = ANY($1::bigint[])`, customerIDs[:])
+		_ = contactfixture.DeleteCustomers(ctx, pool, customerIDs[:])
 	})
 
 	codec, err := membergrid.NewCursorCodec(bytes.Repeat([]byte("member-grid-pg16-managed-secret"), 2))

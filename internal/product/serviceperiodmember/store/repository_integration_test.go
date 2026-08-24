@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
-	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	memberapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/app"
 	memberdomain "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/domain"
@@ -64,7 +64,8 @@ VALUES ($1,'service member integration','local only',0,'CNY',0,7001,$2,$2,$3::js
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := memberapp.NewService(inlineUoW{}, NewRepository(), eventstore.NewAppender(), codec)
+	events := &servicePeriodMemberIntegrationEvents{}
+	service, err := memberapp.NewService(inlineUoW{}, NewRepository(), events, codec)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -132,12 +133,11 @@ VALUES ($1,'service member integration','local only',0,'CNY',0,7001,$2,$2,$3::js
 		if addErr != nil || removed.State != memberdomain.StateRemoved || removed.Version != 4 {
 			return fmt.Errorf("remove: %w", addErr)
 		}
-		var members, receipts, events int
+		var members, receipts int
 		_ = db.QueryRow(tx, `SELECT count(*) FROM service_period_members WHERE service_product_id=$1`, productID).Scan(&members)
 		_ = db.QueryRow(tx, `SELECT count(*) FROM service_period_member_operation_receipts WHERE actor_scope='service_period_members:actor:7001'`).Scan(&receipts)
-		_ = db.QueryRow(tx, `SELECT count(*) FROM event_log WHERE idempotency_key LIKE 'service_period_member.%' AND customer_id=$1`, customerID).Scan(&events)
-		if members != 1 || receipts != 4 || events != 4 {
-			return fmt.Errorf("facts=%d/%d/%d", members, receipts, events)
+		if members != 1 || receipts != 4 || events.count != 4 {
+			return fmt.Errorf("facts=%d/%d/%d", members, receipts, events.count)
 		}
 		return errIntegrationRollback
 	})
@@ -205,6 +205,13 @@ type inlineUoW struct{}
 
 func (inlineUoW) Within(ctx context.Context, callback func(context.Context) error) error {
 	return callback(ctx)
+}
+
+type servicePeriodMemberIntegrationEvents struct{ count int }
+
+func (events *servicePeriodMemberIntegrationEvents) Append(context.Context, eventport.Event) (eventport.EventID, error) {
+	events.count++
+	return eventport.EventID(events.count), nil
 }
 
 var errIntegrationRollback = errors.New("rollback service member integration")
