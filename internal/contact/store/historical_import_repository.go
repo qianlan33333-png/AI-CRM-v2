@@ -547,21 +547,27 @@ func (HistoricalImportRepository) FindHistoricalImportRowReceipt(ctx context.Con
 	if err != nil {
 		return contactport.HistoricalImportRowReceipt{}, false, err
 	}
-	receipt := contactport.HistoricalImportRowReceipt{PayloadHMAC: row.PayloadHmac, FieldDigest: row.FieldDigest}
-	switch row.Disposition {
+	disposition, err := parseHistoricalImportReceiptDisposition(source, row.Disposition)
+	if err != nil {
+		return contactport.HistoricalImportRowReceipt{}, false, err
+	}
+	return contactport.HistoricalImportRowReceipt{PayloadHMAC: row.PayloadHmac, FieldDigest: row.FieldDigest, Disposition: disposition}, true, nil
+}
+
+func parseHistoricalImportReceiptDisposition(source contactport.HistoricalImportSource, disposition string) (contactport.HistoricalImportDisposition, error) {
+	switch disposition {
 	case "imported":
-		receipt.Disposition = contactport.HistoricalImportImported
+		return contactport.HistoricalImportImported, nil
 	case "quarantined":
-		receipt.Disposition = contactport.HistoricalImportQuarantined
+		return contactport.HistoricalImportQuarantined, nil
 	case "skipped":
 		if source != contactport.HistoricalImportOwnerRoleMap {
-			return contactport.HistoricalImportRowReceipt{}, false, ErrHistoricalImportTargetDrift
+			return 0, ErrHistoricalImportTargetDrift
 		}
-		receipt.Disposition = contactport.HistoricalImportSkipped
+		return contactport.HistoricalImportSkipped, nil
 	default:
-		return contactport.HistoricalImportRowReceipt{}, false, ErrHistoricalImportTargetDrift
+		return 0, ErrHistoricalImportTargetDrift
 	}
-	return receipt, true, nil
 }
 
 func (HistoricalImportRepository) LockHistoricalImportLineage(ctx context.Context, source contactport.HistoricalImportSource, sourceKeyHMAC []byte) (contactport.HistoricalImportLineage, bool, error) {

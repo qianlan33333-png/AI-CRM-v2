@@ -31,6 +31,13 @@ type StaffActiveRoot struct {
 	Target contactport.HistoricalImportStaffFact
 }
 
+// OwnerActiveRoot preserves the source reader order for owner_role_map. A nil
+// target is an unauthorized owner that must receive a skipped receipt only.
+type OwnerActiveRoot struct {
+	Source contactport.HistoricalImportSourceFact
+	Target *contactport.HistoricalImportStaffFact
+}
+
 type CustomerActiveRoot struct {
 	Source                  contactport.HistoricalImportSourceFact
 	OwnerStaffSourceKeyHMAC []byte
@@ -49,6 +56,7 @@ type ActiveRootsCommand struct {
 	CorpID         string
 	HMACKeyVersion int16
 	DigestKey      []byte
+	Owners         []OwnerActiveRoot
 	Staff          []StaffActiveRoot
 	SkippedOwners  []contactport.HistoricalImportSourceFact
 	Customers      []CustomerActiveRoot
@@ -91,6 +99,17 @@ func (service *ActiveRootService) Process(ctx context.Context, command ActiveRoo
 	}
 	var result ActiveRootsResult
 	err := service.uow.Within(ctx, func(txCtx context.Context) error {
+		for _, row := range command.Owners {
+			if row.Target == nil {
+				if err := service.processSkippedOwner(txCtx, command, row.Source, &result); err != nil {
+					return err
+				}
+				continue
+			}
+			if err := service.processStaff(txCtx, command, StaffActiveRoot{Source: row.Source, Target: *row.Target}, &result); err != nil {
+				return err
+			}
+		}
 		for _, fact := range command.SkippedOwners {
 			if err := service.processSkippedOwner(txCtx, command, fact, &result); err != nil {
 				return err
@@ -535,11 +554,22 @@ func driftOr(err error) error {
 }
 
 func validActiveRoots(command ActiveRootsCommand) bool {
-	rowCount := len(command.Staff) + len(command.SkippedOwners) + len(command.Customers) + len(command.Identities)
+	if len(command.Owners) != 0 && (len(command.Staff) != 0 || len(command.SkippedOwners) != 0) {
+		return false
+	}
+	rowCount := len(command.Owners) + len(command.Staff) + len(command.SkippedOwners) + len(command.Customers) + len(command.Identities)
 	if command.Fence.RunID < 1 || command.Fence.Generation < 1 || len(command.Fence.TokenHMAC) != 32 || command.HMACKeyVersion < 1 || len(command.DigestKey) < 32 || command.CorpID == "" || strings.TrimSpace(command.CorpID) != command.CorpID || rowCount < 1 || rowCount > MaximumActiveRootBatchRows {
 		return false
 	}
 	seen := map[contactport.HistoricalImportSource]map[string]bool{contactport.HistoricalImportOwnerRoleMap: {}, contactport.HistoricalImportCustomerIdentity: {}, contactport.HistoricalImportExternalIdentity: {}}
+	for _, row := range command.Owners {
+		if !validSourceFact(row.Source) || !uniqueSource(seen, contactport.HistoricalImportOwnerRoleMap, row.Source.SourceKeyHMAC) {
+			return false
+		}
+		if row.Target != nil && (row.Target.WeComUserID == "" || strings.TrimSpace(row.Target.WeComUserID) != row.Target.WeComUserID || row.Target.Name == "" || strings.TrimSpace(row.Target.Name) != row.Target.Name || row.Target.CreatedAt.IsZero() || row.Target.UpdatedAt.IsZero() || row.Target.CreatedAt.After(row.Target.UpdatedAt)) {
+			return false
+		}
+	}
 	for _, fact := range command.SkippedOwners {
 		if !validSourceFact(fact) || !uniqueSource(seen, contactport.HistoricalImportOwnerRoleMap, fact.SourceKeyHMAC) {
 			return false

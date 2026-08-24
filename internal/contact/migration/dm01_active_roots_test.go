@@ -343,6 +343,44 @@ func TestActiveRootServiceOrdersRootsAndExactReplayWritesNothing(t *testing.T) {
 	}
 }
 
+func TestActiveRootServiceSkipsUnauthorizedOwnerWithoutLineage(t *testing.T) {
+	world := newActiveRootWorld()
+	service := NewActiveRootService(world, world, world)
+	command := ActiveRootsCommand{
+		Fence:          contactport.NonActiveLeaseFence{RunID: 7, Generation: 1, TokenHMAC: digest(9)},
+		CorpID:         "corp-a",
+		HMACKeyVersion: 1,
+		DigestKey:      bytes.Repeat([]byte{8}, 32),
+		SkippedOwners:  []contactport.HistoricalImportSourceFact{sourceFact(1)},
+	}
+	result, err := service.Process(context.Background(), command)
+	if err != nil || result != (ActiveRootsResult{Skipped: 1}) {
+		t.Fatalf("skip = %+v, %v", result, err)
+	}
+	if len(world.committed.staff) != 0 || len(world.committed.lineage) != 0 {
+		t.Fatalf("unauthorized owner materialized target: %+v", world.committed)
+	}
+	receipt := world.committed.receipts[receiptKey(command.Fence.RunID, contactport.HistoricalImportOwnerRoleMap, command.SkippedOwners[0].SourceKeyHMAC)]
+	if receipt.Disposition != contactport.HistoricalImportSkipped {
+		t.Fatalf("skip receipt = %+v", receipt)
+	}
+
+	result, err = service.Process(context.Background(), command)
+	if err != nil || result != (ActiveRootsResult{Replayed: 1}) {
+		t.Fatalf("same-run replay = %+v, %v", result, err)
+	}
+	command.Fence.RunID++
+	result, err = service.Process(context.Background(), command)
+	if err != nil || result != (ActiveRootsResult{Skipped: 1}) {
+		t.Fatalf("cross-run skipped receipt = %+v, %v", result, err)
+	}
+	world.committed.lineage[lineageKey(contactport.HistoricalImportOwnerRoleMap, command.SkippedOwners[0].SourceKeyHMAC)] = contactport.HistoricalImportLineage{TargetID: 99, PayloadHMAC: append([]byte(nil), command.SkippedOwners[0].PayloadHMAC...)}
+	command.Fence.RunID++
+	if _, err = service.Process(context.Background(), command); !errors.Is(err, ErrActiveRootDrift) {
+		t.Fatalf("skipped owner with lineage = %v", err)
+	}
+}
+
 func TestActiveRootServicePayloadMismatchAndTargetDriftFailClosed(t *testing.T) {
 	world := newActiveRootWorld()
 	service := NewActiveRootService(world, world, world)

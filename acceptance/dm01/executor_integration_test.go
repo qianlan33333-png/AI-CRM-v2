@@ -115,6 +115,12 @@ func TestDM01ExecutorTwoPostgreSQLDatabases(t *testing.T) {
 	mustRun("preflight", 0, fullManifestPath, fullManifestDigest)
 	mustRun("full", 0, fullManifestPath, fullManifestDigest)
 	assertCount(t, ctx, target, `SELECT count(*) FROM staff`, 1)
+	assertCount(t, ctx, target, `SELECT count(*) FROM staff WHERE wecom_userid='staff-not-allowed'`, 0)
+	assertCount(t, ctx, target, `SELECT count(*) FROM legacy_contact_identity_import_row_receipts r JOIN legacy_contact_identity_import_runs run ON run.id=r.run_id WHERE run.mode='full' AND run.snapshot_id='dm01-e2e' AND r.source_table='owner_role_map' AND r.disposition='skipped'`, 1)
+	var ownerReceiptOrder string
+	if err = target.QueryRow(ctx, `SELECT string_agg(disposition, ',' ORDER BY source_ordinal) FROM legacy_contact_identity_import_row_receipts r JOIN legacy_contact_identity_import_runs run ON run.id=r.run_id WHERE run.mode='full' AND run.snapshot_id='dm01-e2e' AND r.source_table='owner_role_map'`).Scan(&ownerReceiptOrder); err != nil || ownerReceiptOrder != "imported,skipped" {
+		t.Fatalf("owner receipt order=%q/%v", ownerReceiptOrder, err)
+	}
 	assertCount(t, ctx, target, `SELECT count(*) FROM customers`, 1)
 	assertCount(t, ctx, target, `SELECT count(*) FROM identities`, 1)
 	mustRun("full", 0, fullManifestPath, fullManifestDigest)
@@ -163,6 +169,7 @@ func TestDM01ExecutorTwoPostgreSQLDatabases(t *testing.T) {
 	assertCount(t, ctx, target, `SELECT count(*) FROM admin_ops_jobs`, 0)
 	assertCount(t, ctx, target, `SELECT count(*) FROM order_export_jobs`, 0)
 	assertCount(t, ctx, target, `SELECT count(*) FROM legacy_contact_identity_import_row_receipts WHERE disposition='skipped' AND source_table IN ('contacts','admin_wecom_directory_members','external_contact_bindings')`, 12)
+	assertCount(t, ctx, target, `SELECT count(*) FROM legacy_contact_identity_import_row_receipts WHERE disposition='skipped' AND source_table='owner_role_map'`, 4)
 
 	var preflighted, imported, reconciled, staff, customers, identities, receipts, checkpoints, archives int
 	queries := []struct {
@@ -183,7 +190,7 @@ func TestDM01ExecutorTwoPostgreSQLDatabases(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if preflighted != 1 || imported != 4 || reconciled != 1 || staff != 1 || customers != 1 || identities != 1 || receipts != 44 || checkpoints != 66 || archives != 2 {
+	if preflighted != 1 || imported != 4 || reconciled != 1 || staff != 1 || customers != 1 || identities != 1 || receipts != 48 || checkpoints != 66 || archives != 2 {
 		t.Fatalf("states=%d/%d/%d roots=%d/%d/%d receipts=%d checkpoints=%d archives=%d", preflighted, imported, reconciled, staff, customers, identities, receipts, checkpoints, archives)
 	}
 }
@@ -511,6 +518,7 @@ func seedSource(t *testing.T, ctx context.Context, pool *pgxpool.Pool, customerN
 		}
 	}
 	copyRow("owner_role_map", []string{"userid", "display_name", "role", "active", "source", "raw_payload_json", "created_at", "updated_at"}, []any{"staff-1", "Staff One", "owner", true, "legacy", "{}", created, one})
+	copyRow("owner_role_map", []string{"userid", "display_name", "role", "active", "source", "raw_payload_json", "created_at", "updated_at"}, []any{"staff-not-allowed", "Unauthorized Owner", "owner", true, "legacy", "{}", created, one})
 	copyRow("crm_user_identity", []string{"unionid", "primary_external_userid", "external_userids_json", "primary_openid", "openids_json", "mobile", "mobile_normalized", "mobile_verified", "mobile_source", "customer_name", "remark", "description", "avatar", "gender", "profile_json", "primary_owner_userid", "follow_users_json", "legacy_person_id", "legacy_identity_map_ids_json", "legacy_sources_json", "identity_status", "unionid_resolved_at", "first_seen_at", "last_seen_at", "last_polled_at", "next_poll_at", "poll_attempt_count", "last_poll_error", "created_at", "updated_at"}, []any{"union-1", "external-1", "[]", "", "[]", "", "", false, "", customerName, "", "", "", nil, "{}", "staff-1", "[]", "", "[]", "[]", "active", nil, created, one, nil, nil, 0, "", created, updated})
 	copyRow("wecom_external_contact_identity_map", []string{"id", "external_userid", "unionid", "openid", "follow_user_userid", "name", "status", "updated_at", "corp_id", "avatar", "gender", "raw_profile", "first_seen_at", "last_seen_at", "created_at"}, []any{int64(1), "external-1", "union-1", "", "staff-1", "Customer One", "active", one, corpID, "", nil, "{}", created, one, created})
 	copyRow("crm_user_identity_merge_audit", []string{"id", "from_unionid", "to_unionid", "reason", "before_json", "after_json", "operator", "created_at"}, []any{int64(1), "from", "union-1", "historical", "{}", "{}", "operator", one})

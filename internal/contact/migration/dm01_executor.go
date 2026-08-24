@@ -204,8 +204,7 @@ func (executor *Executor) runImport(ctx context.Context, snapshot SourceSnapshot
 	for _, value := range command.Manifest.OwnerAllowlistHMACs {
 		allowlist[value] = false
 	}
-	staff := make([]StaffActiveRoot, 0, executorPageSize)
-	skippedOwners := make([]contactport.HistoricalImportSourceFact, 0, executorPageSize)
+	owners := make([]OwnerActiveRoot, 0, executorPageSize)
 	tracker := newTableTracker("owner_role_map", bounds["owner_role_map"], command.HMACKey)
 	err := snapshot.EachOwnerRoleMap(ctx, bounds[tracker.table], func(row OwnerRoleMapRow) error {
 		ownerHMAC, ownerErr := OwnerAllowlistHMAC(command.HMACKey, row.UserID)
@@ -224,22 +223,22 @@ func (executor *Executor) runImport(ctx context.Context, snapshot SourceSnapshot
 			return err
 		}
 		if !allowlist[ownerDigest] {
-			skippedOwners = append(skippedOwners, fact)
+			owners = append(owners, OwnerActiveRoot{Source: fact})
 		} else {
-			staff = append(staff, StaffActiveRoot{Source: fact, Target: contactport.HistoricalImportStaffFact{WeComUserID: row.UserID, Name: row.DisplayName, Active: row.Active, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}})
+			target := contactport.HistoricalImportStaffFact{WeComUserID: row.UserID, Name: row.DisplayName, Active: row.Active, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt}
+			owners = append(owners, OwnerActiveRoot{Source: fact, Target: &target})
 		}
-		if len(staff)+len(skippedOwners) == executorPageSize {
+		if len(owners) == executorPageSize {
 			if err = executor.renew(ctx, fence); err == nil {
-				_, err = executor.active.Process(ctx, ActiveRootsCommand{Fence: nonActiveFence(fence), CorpID: command.Manifest.WeComCorpID, HMACKeyVersion: int16(command.Manifest.HMACKeyVersion), DigestKey: command.HMACKey, Staff: staff, SkippedOwners: skippedOwners})
+				_, err = executor.active.Process(ctx, ActiveRootsCommand{Fence: nonActiveFence(fence), CorpID: command.Manifest.WeComCorpID, HMACKeyVersion: int16(command.Manifest.HMACKeyVersion), DigestKey: command.HMACKey, Owners: owners})
 			}
-			staff = staff[:0]
-			skippedOwners = skippedOwners[:0]
+			owners = owners[:0]
 		}
 		return err
 	})
-	if err == nil && len(staff)+len(skippedOwners) > 0 {
+	if err == nil && len(owners) > 0 {
 		if err = executor.renew(ctx, fence); err == nil {
-			_, err = executor.active.Process(ctx, ActiveRootsCommand{Fence: nonActiveFence(fence), CorpID: command.Manifest.WeComCorpID, HMACKeyVersion: int16(command.Manifest.HMACKeyVersion), DigestKey: command.HMACKey, Staff: staff, SkippedOwners: skippedOwners})
+			_, err = executor.active.Process(ctx, ActiveRootsCommand{Fence: nonActiveFence(fence), CorpID: command.Manifest.WeComCorpID, HMACKeyVersion: int16(command.Manifest.HMACKeyVersion), DigestKey: command.HMACKey, Owners: owners})
 		}
 	}
 	if err != nil {
