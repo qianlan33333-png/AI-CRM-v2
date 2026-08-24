@@ -149,6 +149,46 @@ func TestServiceFailsClosedForInvalidStoreFacts(t *testing.T) {
 	}
 }
 
+func TestValidRecordsRejectsInvalidCanonicalLifecycle(t *testing.T) {
+	startsAt := time.Date(2026, 8, 24, 9, 0, 0, 0, time.UTC)
+	updatedAt := startsAt.Add(time.Hour)
+	beforeStarts := startsAt.Add(-time.Second)
+	base := memberRecord("spm_0000000000000000000001", 1, StateActive, SourceManual, updatedAt, "客户")
+	for _, testCase := range []struct {
+		name   string
+		mutate func(*MemberRecord)
+	}{
+		{"illegal source", func(record *MemberRecord) { record.Source = "provider" }},
+		{"expires before starts", func(record *MemberRecord) { record.ExpiresAt = &beforeStarts }},
+		{"active with expired", func(record *MemberRecord) { record.ExpiredAt = &updatedAt }},
+		{"active with removed", func(record *MemberRecord) { record.RemovedAt = &updatedAt }},
+		{"expired missing expired at", func(record *MemberRecord) { record.State = StateExpired }},
+		{"expired before starts", func(record *MemberRecord) { record.State = StateExpired; record.ExpiredAt = &beforeStarts }},
+		{"expired with removed", func(record *MemberRecord) {
+			record.State = StateExpired
+			record.ExpiredAt = &updatedAt
+			record.RemovedAt = &updatedAt
+		}},
+		{"removed missing removed at", func(record *MemberRecord) { record.State = StateRemoved }},
+		{"removed before starts", func(record *MemberRecord) { record.State = StateRemoved; record.RemovedAt = &beforeStarts }},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			record := base
+			testCase.mutate(&record)
+			if validRecords([]MemberRecord{record}, QueryInput{ProductID: 1, State: StateAll, Limit: 1}, nil) {
+				t.Fatalf("accepted record=%+v", record)
+			}
+		})
+	}
+	removed := base
+	removed.State = StateRemoved
+	removed.ExpiredAt = &updatedAt
+	removed.RemovedAt = &updatedAt
+	if !validRecords([]MemberRecord{removed}, QueryInput{ProductID: 1, State: StateAll, Limit: 1}, nil) {
+		t.Fatalf("removed member lost allowed expired_at=%+v", removed)
+	}
+}
+
 func TestServiceMapsNotFoundAndDatabaseFailures(t *testing.T) {
 	service, _ := newTestService(t, &memoryStore{exists: false})
 	if _, err := service.Query(context.Background(), QueryInput{ProductID: 404, State: StateAll, Limit: 1}); !errors.Is(err, ErrNotFound) {

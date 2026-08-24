@@ -115,12 +115,12 @@ func TestManagementResponsesCannotClaimExternalSharingOrCentralPermission(t *tes
 
 func TestManagementEnumsRemainClosed(t *testing.T) {
 	for _, state := range []StateFilter{StateActive, StateRevoked, StateAll} {
-		if !state.valid() {
+		if !state.validLegacySavedViewState() {
 			t.Fatalf("valid state rejected=%q", state)
 		}
 	}
-	for _, state := range []StateFilter{"", "pending", "active OR 1=1"} {
-		if state.valid() {
+	for _, state := range []StateFilter{"", "pending", StateExpired, StateRemoved, "active OR 1=1"} {
+		if state.validLegacySavedViewState() {
 			t.Fatalf("invalid state accepted=%q", state)
 		}
 	}

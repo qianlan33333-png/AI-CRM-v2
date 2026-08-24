@@ -444,6 +444,35 @@ func TestManagementRejectsUnsafeColumnsAndArbitraryConfiguration(t *testing.T) {
 	}
 }
 
+func TestManagementSavedViewsRejectCanonicalOnlyStates(t *testing.T) {
+	store := newManagementMemoryStore()
+	store.products[1] = true
+	service, _ := newManagementTestService(t, store)
+	for _, state := range []StateFilter{StateExpired, StateRemoved} {
+		if _, err := service.CreateSavedView(context.Background(), CreateSavedViewCommand{
+			ServiceProductID: 1, ExpectedVersion: 0, Name: "旧视图", State: state,
+			Sort: ViewSortGrantedAtDesc, Columns: []string{"state"}, ActorID: 1, IdempotencyKey: "legacy-state-create-" + string(state),
+		}); !errors.Is(err, ErrInvalidManagementInput) {
+			t.Fatalf("create state=%q error=%v", state, err)
+		}
+	}
+	created, err := service.CreateSavedView(context.Background(), CreateSavedViewCommand{
+		ServiceProductID: 1, ExpectedVersion: 0, Name: "旧视图", State: StateActive,
+		Sort: ViewSortGrantedAtDesc, Columns: []string{"state"}, ActorID: 1, IdempotencyKey: "legacy-state-create-active",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, state := range []StateFilter{StateExpired, StateRemoved} {
+		if _, err = service.UpdateSavedView(context.Background(), UpdateSavedViewCommand{
+			ServiceProductID: 1, ViewID: created.View.ID, ExpectedVersion: created.View.Version, Name: "旧视图", State: state,
+			Sort: ViewSortGrantedAtDesc, Columns: []string{"state"}, ActorID: 1, IdempotencyKey: "legacy-state-update-" + string(state),
+		}); !errors.Is(err, ErrInvalidManagementInput) {
+			t.Fatalf("update state=%q error=%v", state, err)
+		}
+	}
+}
+
 func TestManagementCollaboratorLifecycleActiveUniqueScopeAndShareSettings(t *testing.T) {
 	store := newManagementMemoryStore()
 	store.products[1] = true

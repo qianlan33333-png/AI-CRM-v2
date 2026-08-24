@@ -507,7 +507,7 @@ func normalizeCreateSavedView(command CreateSavedViewCommand) (CreateSavedViewCo
 		return CreateSavedViewCommand{}, nil, ErrInvalidManagementInput
 	}
 	if command.SourceViewID == nil {
-		if !command.State.valid() || !command.Sort.valid() || !validColumnSelection(command.Columns) {
+		if !command.State.validLegacySavedViewState() || !command.Sort.valid() || !validColumnSelection(command.Columns) {
 			return CreateSavedViewCommand{}, nil, ErrInvalidManagementInput
 		}
 	} else if *command.SourceViewID < 1 || command.State != "" || command.Sort != "" || len(command.Columns) != 0 {
@@ -532,7 +532,7 @@ func normalizeCreateSavedView(command CreateSavedViewCommand) (CreateSavedViewCo
 func normalizeUpdateSavedView(command UpdateSavedViewCommand) (UpdateSavedViewCommand, []byte, error) {
 	command.Columns = cloneColumnsSelection(command.Columns)
 	if command.ServiceProductID < 1 || command.ViewID < 1 || command.ExpectedVersion < 1 || !validViewName(command.Name) ||
-		!command.State.valid() || !command.Sort.valid() || !validColumnSelection(command.Columns) || command.ActorID < 1 ||
+		!command.State.validLegacySavedViewState() || !command.Sort.valid() || !validColumnSelection(command.Columns) || command.ActorID < 1 ||
 		!validIdempotencyKey(command.IdempotencyKey) {
 		return UpdateSavedViewCommand{}, nil, ErrInvalidManagementInput
 	}
@@ -622,7 +622,7 @@ func normalizeDeleteCollaborator(command DeleteCollaboratorCommand) (DeleteColla
 }
 
 func validSavedView(view SavedView) bool {
-	if view.ID < 1 || view.ServiceProductID < 1 || !validViewName(view.Name) || !view.State.valid() || !view.Sort.valid() ||
+	if view.ID < 1 || view.ServiceProductID < 1 || !validViewName(view.Name) || !view.State.validLegacySavedViewState() || !view.Sort.valid() ||
 		!validColumnSelection(view.Columns) || view.Version < 1 || view.CreatedBy < 1 || view.CreatedAt.IsZero() ||
 		view.UpdatedAt.IsZero() || view.UpdatedAt.Before(view.CreatedAt) {
 		return false

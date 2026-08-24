@@ -4,11 +4,17 @@
 
 基线为 `origin/main@2615b5409dc35b49db7bd5922bbe3710159af4db`。本包只 canonical 化已有私有
 member-grid 的 schema 与 query；不新增 member 生命周期 operation、migration、receipt、public/share、
-Provider、支付或前端能力。Matrix **0 diff**。
+Provider、支付或前端能力。Matrix 仅严格纠偏下述两行。
 
-`LEGACY-S07-153/154` 的既有结论不由本包重新宣称；它们继续由旧 Matrix/evidence 管理。其余
-Service Period 旧行保持 pending。本地 grid 的 read receipt 或 cursor 绝不等同于支付、Provider 或
-外部转移事实。
+本包严格纠偏 `LEGACY-S07-153/154`：两行均为 `IN_PROGRESS/NOT_RUN`，不计为完成。153 只覆盖
+access/default view 的 legacy exact 行为与 native V2 schema；其余 legacy schema 仍未交付。154 只覆盖
+canonical local query、state/source 与 bound cursor；legacy arbitrary sort/group、saved-view switching 与
+legacy row semantics 仍未交付。其余 Service Period 旧行保持 pending。本地 grid 的 read receipt 或 cursor
+绝不等同于支付、Provider 或外部转移事实。
+
+基线分层统计为 `173 IMPLEMENTED / 3 IN_PROGRESS / 118 NOT_STARTED / 294`；纠偏后为
+`171 IMPLEMENTED / 5 IN_PROGRESS / 118 NOT_STARTED / 294`。implemented 为 **58.2%**，不把
+IN_PROGRESS 计为完成。
 
 ## 四个既有读操作
 

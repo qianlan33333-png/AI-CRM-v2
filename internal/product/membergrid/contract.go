@@ -31,12 +31,12 @@ const (
 	StateAll     StateFilter = "all"
 )
 
-func (state StateFilter) valid() bool {
-	return state == StateActive || state == StateRevoked || state == StateExpired || state == StateRemoved || state == StateAll
-}
-
 func (state StateFilter) validCanonicalGridState() bool {
 	return state == StateActive || state == StateExpired || state == StateRemoved || state == StateAll
+}
+
+func (state StateFilter) validLegacySavedViewState() bool {
+	return state == StateActive || state == StateRevoked || state == StateAll
 }
 
 type SourceFilter string
