@@ -25,29 +25,38 @@ const productExistsSQL = `SELECT EXISTS (
 )`
 
 const memberProjection = `SELECT
-  e.id,
-  e.product_id,
-  e.state,
-  e.version,
-  e.granted_at,
-  COALESCE(e.revoked_at, TIMESTAMPTZ 'epoch') AS revoked_at_value,
-  (e.revoked_at IS NOT NULL) AS has_revoked_at,
+  m.member_ref,
+  m.service_product_id,
+  m.customer_id,
+  m.state,
+  m.source,
+  m.starts_at,
+  COALESCE(m.expires_at, TIMESTAMPTZ 'epoch') AS expires_at_value,
+  (m.expires_at IS NOT NULL) AS has_expires_at,
+  COALESCE(m.expired_at, TIMESTAMPTZ 'epoch') AS expired_at_value,
+  (m.expired_at IS NOT NULL) AS has_expired_at,
+  COALESCE(m.removed_at, TIMESTAMPTZ 'epoch') AS removed_at_value,
+  (m.removed_at IS NOT NULL) AS has_removed_at,
+  m.version,
+  m.updated_at,
   c.name AS display_name
-FROM public.product_local_entitlements AS e
-JOIN public.customers AS c ON c.id = e.customer_id`
+FROM public.service_period_members AS m
+JOIN public.customers AS c ON c.id = m.customer_id`
 
 const firstPageSQL = memberProjection + `
-WHERE e.product_id = $1
-  AND ($2::text = 'all' OR e.state = $2::text)
-ORDER BY e.granted_at DESC, e.id DESC
-LIMIT $3`
+WHERE m.service_product_id = $1
+  AND ($2::text = 'all' OR m.state = $2::text)
+  AND ($3::text = '' OR m.source = $3::text)
+ORDER BY m.updated_at DESC, m.member_ref DESC
+LIMIT $4`
 
 const afterPageSQL = memberProjection + `
-WHERE e.product_id = $1
-  AND ($2::text = 'all' OR e.state = $2::text)
-  AND (e.granted_at, e.id) < ($3::timestamptz, $4::bigint)
-ORDER BY e.granted_at DESC, e.id DESC
-LIMIT $5`
+WHERE m.service_product_id = $1
+  AND ($2::text = 'all' OR m.state = $2::text)
+  AND ($3::text = '' OR m.source = $3::text)
+  AND (m.updated_at, m.member_ref) < ($4::timestamptz, $5::text)
+ORDER BY m.updated_at DESC, m.member_ref DESC
+LIMIT $6`
 
 type sqlRow interface {
 	Scan(...any) error
@@ -112,8 +121,8 @@ func (repository *Repository) ProductExists(ctx context.Context, productID int64
 
 func (repository *Repository) QueryMembers(ctx context.Context, query StoreQuery) ([]MemberRecord, error) {
 	if repository == nil || repository.executor == nil || ctx == nil || query.ProductID < 1 ||
-		!query.State.valid() || query.Limit < 1 || query.Limit > MaximumLimit+1 ||
-		(query.After != nil && (query.After.EntitlementID < 1 || query.After.GrantedAt.IsZero())) {
+		!query.State.validCanonicalGridState() || !query.Source.valid() || query.Limit < 1 || query.Limit > MaximumLimit+1 ||
+		(query.After != nil && (!validMemberRef(query.After.MemberRef) || query.After.UpdatedAt.IsZero())) {
 		return nil, ErrUnavailable
 	}
 	executor, err := repository.executor(ctx)
@@ -122,10 +131,10 @@ func (repository *Repository) QueryMembers(ctx context.Context, query StoreQuery
 	}
 	var rows sqlRows
 	if query.After == nil {
-		rows, err = executor.Query(ctx, firstPageSQL, query.ProductID, string(query.State), query.Limit)
+		rows, err = executor.Query(ctx, firstPageSQL, query.ProductID, string(query.State), string(query.Source), query.Limit)
 	} else {
 		rows, err = executor.Query(ctx, afterPageSQL, query.ProductID, string(query.State),
-			query.After.GrantedAt.UTC(), query.After.EntitlementID, query.Limit)
+			string(query.Source), query.After.UpdatedAt.UTC(), query.After.MemberRef, query.Limit)
 	}
 	if err != nil {
 		return nil, errors.Join(ErrUnavailable, err)
@@ -135,32 +144,46 @@ func (repository *Repository) QueryMembers(ctx context.Context, query StoreQuery
 	members := make([]MemberRecord, 0, query.Limit)
 	for rows.Next() {
 		var (
-			record       MemberRecord
-			state        string
-			revokedValue time.Time
-			hasRevoked   bool
+			record                                   MemberRecord
+			state, source                            string
+			expiresValue, expiredValue, removedValue time.Time
+			hasExpires, hasExpired, hasRemoved       bool
 		)
 		if err = rows.Scan(
-			&record.EntitlementID,
-			&record.ProductID,
+			&record.MemberRef,
+			&record.ServiceProductID,
+			&record.CustomerID,
 			&state,
+			&source,
+			&record.StartsAt,
+			&expiresValue,
+			&hasExpires,
+			&expiredValue,
+			&hasExpired,
+			&removedValue,
+			&hasRemoved,
 			&record.Version,
-			&record.GrantedAt,
-			&revokedValue,
-			&hasRevoked,
+			&record.UpdatedAt,
 			&record.DisplayName,
 		); err != nil {
 			return nil, errors.Join(ErrUnavailable, err)
 		}
 		record.State = StateFilter(state)
-		record.GrantedAt = record.GrantedAt.UTC()
-		if hasRevoked {
-			revokedAt := revokedValue.UTC()
-			record.RevokedAt = &revokedAt
+		record.Source = SourceFilter(source)
+		record.StartsAt = record.StartsAt.UTC()
+		record.UpdatedAt = record.UpdatedAt.UTC()
+		if hasExpires {
+			value := expiresValue.UTC()
+			record.ExpiresAt = &value
 		}
-		// Migration 00005 has no mobile column. Do not inspect customers.extra or
-		// identity tables to manufacture a value; masked_mobile stays omitted.
-		record.MaskedMobile = nil
+		if hasExpired {
+			value := expiredValue.UTC()
+			record.ExpiredAt = &value
+		}
+		if hasRemoved {
+			value := removedValue.UTC()
+			record.RemovedAt = &value
+		}
 		members = append(members, record)
 	}
 	if err = rows.Err(); err != nil {

@@ -125,6 +125,10 @@ func (handler *ManagementHandler) CreateSavedView(writer http.ResponseWriter, re
 			return
 		}
 		command.State = StateFilter(*body.State)
+		if !command.State.validLegacySavedViewState() {
+			writeProblem(writer, request, validation("state", "unsupported", ErrInvalidManagementInput))
+			return
+		}
 		command.Sort = ViewSort(*body.Sort)
 		command.Columns = cloneColumnsSelection(*body.Columns)
 	}
@@ -167,12 +171,17 @@ func (handler *ManagementHandler) UpdateSavedView(writer http.ResponseWriter, re
 		writeProblem(writer, request, malformed("view_id", "invalid", err))
 		return
 	}
+	state := StateFilter(*body.State)
+	if !state.validLegacySavedViewState() {
+		writeProblem(writer, request, validation("state", "unsupported", ErrInvalidManagementInput))
+		return
+	}
 	response, err := handler.application.UpdateSavedView(request.Context(), UpdateSavedViewCommand{
 		ServiceProductID: productID,
 		ViewID:           viewID,
 		ExpectedVersion:  *body.ExpectedVersion,
 		Name:             *body.Name,
-		State:            StateFilter(*body.State),
+		State:            state,
 		Sort:             ViewSort(*body.Sort),
 		Columns:          cloneColumnsSelection(*body.Columns),
 		ActorID:          actor.ID,

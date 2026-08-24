@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -37,7 +38,7 @@ func (service *Service) Schema(ctx context.Context, productID int64) (SchemaResp
 	if err := service.requireProduct(ctx, productID); err != nil {
 		return SchemaResponse{}, err
 	}
-	return SchemaResponse{ProductID: productID, Columns: cloneColumns(safeColumns)}, nil
+	return SchemaResponse{ServiceProductID: productID, Columns: cloneColumns(safeColumns)}, nil
 }
 
 func (service *Service) MemberViews(ctx context.Context, productID int64) (MemberViewsResponse, error) {
@@ -51,7 +52,7 @@ func (service *Service) Query(ctx context.Context, input QueryInput) (QueryRespo
 	if service == nil || nilDependency(service.uow) || nilDependency(service.store) || service.codec == nil {
 		return QueryResponse{}, ErrUnavailable
 	}
-	if ctx == nil || input.ProductID < 1 || !input.State.valid() || input.Limit < 1 || input.Limit > MaximumLimit {
+	if ctx == nil || input.ProductID < 1 || !input.State.validCanonicalGridState() || !input.Source.valid() || input.Limit < 1 || input.Limit > MaximumLimit {
 		return QueryResponse{}, ErrInvalidQuery
 	}
 	if err := ctx.Err(); err != nil {
@@ -60,7 +61,7 @@ func (service *Service) Query(ctx context.Context, input QueryInput) (QueryRespo
 
 	var after *Position
 	if input.Cursor != "" {
-		decoded, err := service.codec.Decode(input.Cursor, input.ProductID, input.State)
+		decoded, err := service.codec.Decode(input.Cursor, input.ProductID, input.State, input.Source, input.Limit)
 		if err != nil {
 			return QueryResponse{}, ErrInvalidCursor
 		}
@@ -78,6 +79,7 @@ func (service *Service) Query(ctx context.Context, input QueryInput) (QueryRespo
 		records, storeErr = service.store.QueryMembers(txCtx, StoreQuery{
 			ProductID: input.ProductID,
 			State:     input.State,
+			Source:    input.Source,
 			Limit:     input.Limit + 1,
 			After:     clonePosition(after),
 		})
@@ -108,8 +110,8 @@ func (service *Service) Query(ctx context.Context, input QueryInput) (QueryRespo
 	}
 	if hasMore && len(visible) > 0 {
 		last := visible[len(visible)-1]
-		response.NextCursor, err = service.codec.Encode(input.ProductID, input.State, Position{
-			GrantedAt: last.GrantedAt, EntitlementID: last.EntitlementID,
+		response.NextCursor, err = service.codec.Encode(input.ProductID, input.State, input.Source, input.Limit, Position{
+			UpdatedAt: last.UpdatedAt, MemberRef: last.MemberRef,
 		})
 		if err != nil {
 			return QueryResponse{}, errors.Join(ErrUnavailable, err)
@@ -144,26 +146,30 @@ func (service *Service) requireProduct(ctx context.Context, productID int64) err
 }
 
 func validRecords(records []MemberRecord, input QueryInput, after *Position) bool {
-	seen := make(map[int64]struct{}, len(records))
+	seen := make(map[string]struct{}, len(records))
 	var previous *MemberRecord
 	for index := range records {
 		record := records[index]
-		if record.EntitlementID < 1 || record.ProductID != input.ProductID || record.Version < 1 ||
-			record.GrantedAt.IsZero() || !record.State.valid() || record.State == StateAll ||
-			(input.State != StateAll && record.State != input.State) || !utf8.ValidString(record.DisplayName) {
+		if !validMemberRef(record.MemberRef) || record.ServiceProductID != input.ProductID || record.CustomerID < 1 || record.Version < 1 ||
+			record.StartsAt.IsZero() || record.UpdatedAt.IsZero() || !record.State.validCanonicalGridState() || record.State == StateAll ||
+			!record.Source.valid() || record.Source == SourceAny ||
+			(input.State != StateAll && record.State != input.State) || (input.Source != SourceAny && record.Source != input.Source) || !utf8.ValidString(record.DisplayName) {
 			return false
 		}
-		if _, duplicate := seen[record.EntitlementID]; duplicate {
+		if _, duplicate := seen[record.MemberRef]; duplicate {
 			return false
 		}
-		seen[record.EntitlementID] = struct{}{}
-		if record.State == StateActive && record.RevokedAt != nil {
+		seen[record.MemberRef] = struct{}{}
+		if record.ExpiresAt != nil && (record.ExpiresAt.IsZero() || record.ExpiresAt.Before(record.StartsAt)) {
 			return false
 		}
-		if record.State == StateRevoked && (record.RevokedAt == nil || record.RevokedAt.IsZero() || record.RevokedAt.Before(record.GrantedAt)) {
+		if record.State == StateActive && (record.ExpiredAt != nil || record.RemovedAt != nil) {
 			return false
 		}
-		if record.MaskedMobile != nil && !validMaskedMobile(*record.MaskedMobile) {
+		if record.State == StateExpired && (record.ExpiredAt == nil || record.ExpiredAt.IsZero() || record.ExpiredAt.Before(record.StartsAt) || record.RemovedAt != nil) {
+			return false
+		}
+		if record.State == StateRemoved && (record.RemovedAt == nil || record.RemovedAt.IsZero() || record.RemovedAt.Before(record.StartsAt)) {
 			return false
 		}
 		if index == 0 && after != nil && !positionBefore(record, *after) {
@@ -178,48 +184,33 @@ func validRecords(records []MemberRecord, input QueryInput, after *Position) boo
 }
 
 func recordBefore(current, previous MemberRecord) bool {
-	if current.GrantedAt.Before(previous.GrantedAt) {
+	if current.UpdatedAt.Before(previous.UpdatedAt) {
 		return true
 	}
-	return current.GrantedAt.Equal(previous.GrantedAt) && current.EntitlementID < previous.EntitlementID
+	return current.UpdatedAt.Equal(previous.UpdatedAt) && current.MemberRef < previous.MemberRef
 }
 
 func positionBefore(record MemberRecord, position Position) bool {
-	if record.GrantedAt.Before(position.GrantedAt) {
+	if record.UpdatedAt.Before(position.UpdatedAt) {
 		return true
 	}
-	return record.GrantedAt.Equal(position.GrantedAt) && record.EntitlementID < position.EntitlementID
-}
-
-func validMaskedMobile(value string) bool {
-	if len(value) < 7 || len(value) > 32 || !utf8.ValidString(value) {
-		return false
-	}
-	digits := 0
-	masked := 0
-	for _, character := range value {
-		switch {
-		case character >= '0' && character <= '9':
-			digits++
-		case character == '*':
-			masked++
-		default:
-			return false
-		}
-	}
-	return digits >= 2 && digits <= 7 && masked >= 3
+	return record.UpdatedAt.Equal(position.UpdatedAt) && record.MemberRef < position.MemberRef
 }
 
 func mapMember(record MemberRecord) MemberRow {
 	return MemberRow{
-		EntitlementID: record.EntitlementID,
-		ProductID:     record.ProductID,
-		State:         string(record.State),
-		Version:       record.Version,
-		GrantedAt:     record.GrantedAt.UTC(),
-		RevokedAt:     cloneTime(record.RevokedAt),
-		DisplayName:   record.DisplayName,
-		MaskedMobile:  cloneString(record.MaskedMobile),
+		MemberRef:        record.MemberRef,
+		ServiceProductID: record.ServiceProductID,
+		CustomerID:       record.CustomerID,
+		State:            string(record.State),
+		Source:           string(record.Source),
+		StartsAt:         record.StartsAt.UTC(),
+		ExpiresAt:        cloneTime(record.ExpiresAt),
+		ExpiredAt:        cloneTime(record.ExpiredAt),
+		RemovedAt:        cloneTime(record.RemovedAt),
+		Version:          record.Version,
+		UpdatedAt:        record.UpdatedAt.UTC(),
+		DisplayName:      record.DisplayName,
 	}
 }
 
@@ -243,12 +234,16 @@ func cloneTime(value *time.Time) *time.Time {
 	return &cloned
 }
 
-func cloneString(value *string) *string {
-	if value == nil {
-		return nil
+func validMemberRef(value string) bool {
+	if len(value) != 26 || !strings.HasPrefix(value, "spm_") {
+		return false
 	}
-	cloned := *value
-	return &cloned
+	for _, character := range value[4:] {
+		if !((character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z') || (character >= '0' && character <= '9') || character == '-' || character == '_') {
+			return false
+		}
+	}
+	return true
 }
 
 func nilDependency(value any) bool {

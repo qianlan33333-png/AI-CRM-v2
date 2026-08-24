@@ -476,14 +476,14 @@ func scanMutationReceipt(row sqlRow) (MutationReceipt, error) {
 const sha256DigestSize = 32
 
 func validCreateSavedViewRecord(record CreateSavedViewRecord) bool {
-	return record.ServiceProductID > 0 && validViewName(record.Name) && record.State.valid() && record.Sort.valid() &&
+	return record.ServiceProductID > 0 && validViewName(record.Name) && record.State.validLegacySavedViewState() && record.Sort.valid() &&
 		validColumnSelection(record.Columns) && (record.SourceViewID == nil || *record.SourceViewID > 0) &&
 		record.CreatedBy > 0 && !record.CreatedAt.IsZero()
 }
 
 func validUpdateSavedViewRecord(record UpdateSavedViewRecord) bool {
 	return record.ServiceProductID > 0 && record.ViewID > 0 && record.ExpectedVersion > 0 && validViewName(record.Name) &&
-		record.State.valid() && record.Sort.valid() && validColumnSelection(record.Columns) && !record.UpdatedAt.IsZero()
+		record.State.validLegacySavedViewState() && record.Sort.valid() && validColumnSelection(record.Columns) && !record.UpdatedAt.IsZero()
 }
 
 func validCreateCollaboratorRecord(record CreateCollaboratorRecord) bool {

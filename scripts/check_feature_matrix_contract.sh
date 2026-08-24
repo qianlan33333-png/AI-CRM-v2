@@ -22,6 +22,7 @@ matrix="$repo_root/docs/feature-matrix.csv"
 anchor="$repo_root/docs/evidence/p1/feature-matrix-id-anchor.v1"
 expected_header="feature_id,page,section,action,triggered_api,expected_result,notes,disposition,implementation,verification,signoff,legacy_source_sha,source_evidence,decision_evidence,implementation_evidence,verification_evidence,target_feature_id"
 g1_d02_evidence="decision=G1-D02-2026-08-10;approved_by=repository_owner;approved_at=2026-08-10;semantics=legacy_behavior_1_to_1;verification=NOT_EXECUTED"
+member_grid_partial_evidence="decision=P4-BACKEND-RESET-2026-08-24;approved_by=repository_owner;approved_at=2026-08-24;semantics=partial_legacy_plus_v2_native_difference;verification=NOT_EXECUTED"
 
 mode_of() {
   local file_path="$1" mode
@@ -121,7 +122,11 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   if [[ "$disposition" == UNREVIEWED ]]; then
     [[ "$signoff" == PENDING_HUMAN_SIGNOFF && -z "$decision_evidence" ]] || fail "UNREVIEWED row must await human signoff at line $line_number"
   elif [[ "$disposition" == MIGRATE ]]; then
-    [[ "$signoff" == APPROVED && "$decision_evidence" == "$g1_d02_evidence" ]] || fail "MIGRATE row lacks exact G1-D02 decision evidence at line $line_number"
+    if [[ "$feature_id" == LEGACY-S07-153 || "$feature_id" == LEGACY-S07-154 ]]; then
+      [[ "$signoff" == APPROVED && "$decision_evidence" == "$member_grid_partial_evidence" ]] || fail "member-grid partial row lacks exact approved decision evidence at line $line_number"
+    else
+      [[ "$signoff" == APPROVED && "$decision_evidence" == "$g1_d02_evidence" ]] || fail "MIGRATE row lacks exact G1-D02 decision evidence at line $line_number"
+    fi
   else
     [[ "$signoff" == APPROVED && "$decision_evidence" =~ approved_by=[^\;]+ && "$decision_evidence" =~ approved_at=[^\;]+ ]] || fail "decided row lacks approved decision evidence at line $line_number"
   fi

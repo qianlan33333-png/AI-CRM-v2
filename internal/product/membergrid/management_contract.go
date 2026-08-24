@@ -269,11 +269,11 @@ func validIdempotencyKey(key string) bool {
 }
 
 func validColumnSelection(columns []string) bool {
-	if len(columns) == 0 || len(columns) > len(safeColumns) {
+	if len(columns) == 0 || len(columns) > len(legacySavedViewColumns) {
 		return false
 	}
-	allowed := make(map[string]struct{}, len(safeColumns))
-	for _, column := range safeColumns {
+	allowed := make(map[string]struct{}, len(legacySavedViewColumns))
+	for _, column := range legacySavedViewColumns {
 		allowed[column.Key] = struct{}{}
 	}
 	seen := make(map[string]struct{}, len(columns))

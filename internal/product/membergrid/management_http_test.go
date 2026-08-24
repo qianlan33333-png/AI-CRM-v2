@@ -297,6 +297,30 @@ func TestManagementRouteFragmentDispatchesSevenClosedRoutes(t *testing.T) {
 	}
 }
 
+func TestManagementHTTPRejectsCanonicalOnlySavedViewStates(t *testing.T) {
+	application := &fakeManagementApplication{}
+	fragment := managementTestFragment(t, application, &fakeManagementAuthorizer{actor: ManagementActor{ID: 17}}, &fakeManagementCSRF{})
+	for _, state := range []string{"expired", "removed"} {
+		for _, testCase := range []struct {
+			method string
+			path   string
+			body   string
+		}{
+			{http.MethodPost, "/7/member-views", `{"expected_version":0,"name":"旧视图","state":"` + state + `","sort":"granted_at_desc","columns":["state"]}`},
+			{http.MethodPut, "/7/member-views/11", `{"expected_version":1,"name":"旧视图","state":"` + state + `","sort":"granted_at_desc","columns":["state"]}`},
+		} {
+			recorder := httptest.NewRecorder()
+			fragment.ServeHTTP(recorder, managementRequest(testCase.method, testCase.path, testCase.body, "legacy-state-http-key"))
+			if recorder.Code != http.StatusUnprocessableEntity {
+				t.Fatalf("state=%s method=%s status/body=%d/%s", state, testCase.method, recorder.Code, recorder.Body.String())
+			}
+		}
+	}
+	if application.createViewCalls != 0 || application.updateViewCalls != 0 {
+		t.Fatalf("invalid state reached application create/update=%d/%d", application.createViewCalls, application.updateViewCalls)
+	}
+}
+
 func TestManagementShareSettingsAlwaysExposeLocalOnlyFlags(t *testing.T) {
 	application := &fakeManagementApplication{shareResponse: ShareSettingsResponse{
 		ServiceProductID:                        9,

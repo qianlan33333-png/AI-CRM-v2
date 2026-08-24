@@ -1,5 +1,4 @@
-// Package membergrid restores the legacy service-period product member grid as
-// a local, read-only projection over Product and Local Entitlement facts.
+// Package membergrid provides the closed local service-period member grid.
 package membergrid
 
 import (
@@ -24,13 +23,32 @@ var (
 type StateFilter string
 
 const (
-	StateActive  StateFilter = "active"
+	StateActive StateFilter = "active"
+	// StateRevoked remains the persisted v1 saved-view value. Query never accepts it.
 	StateRevoked StateFilter = "revoked"
+	StateExpired StateFilter = "expired"
+	StateRemoved StateFilter = "removed"
 	StateAll     StateFilter = "all"
 )
 
-func (state StateFilter) valid() bool {
+func (state StateFilter) validCanonicalGridState() bool {
+	return state == StateActive || state == StateExpired || state == StateRemoved || state == StateAll
+}
+
+func (state StateFilter) validLegacySavedViewState() bool {
 	return state == StateActive || state == StateRevoked || state == StateAll
+}
+
+type SourceFilter string
+
+const (
+	SourceAny       SourceFilter = ""
+	SourceManual    SourceFilter = "manual"
+	SourcePaidOrder SourceFilter = "paid_order"
+)
+
+func (source SourceFilter) valid() bool {
+	return source == SourceAny || source == SourceManual || source == SourcePaidOrder
 }
 
 type AccessResponse struct {
@@ -49,8 +67,8 @@ type ColumnDefinition struct {
 }
 
 type SchemaResponse struct {
-	ProductID int64              `json:"product_id"`
-	Columns   []ColumnDefinition `json:"columns"`
+	ServiceProductID int64              `json:"service_product_id"`
+	Columns          []ColumnDefinition `json:"columns"`
 }
 
 type MemberView struct {
@@ -66,19 +84,24 @@ type MemberViewsResponse struct {
 }
 
 type MemberRow struct {
-	EntitlementID int64      `json:"entitlement_id"`
-	ProductID     int64      `json:"product_id"`
-	State         string     `json:"state"`
-	Version       int64      `json:"version"`
-	GrantedAt     time.Time  `json:"granted_at"`
-	RevokedAt     *time.Time `json:"revoked_at"`
-	DisplayName   string     `json:"display_name"`
-	MaskedMobile  *string    `json:"masked_mobile,omitempty"`
+	MemberRef        string     `json:"member_ref"`
+	ServiceProductID int64      `json:"service_product_id"`
+	CustomerID       int64      `json:"customer_id"`
+	State            string     `json:"state"`
+	Source           string     `json:"source"`
+	StartsAt         time.Time  `json:"starts_at"`
+	ExpiresAt        *time.Time `json:"expires_at"`
+	ExpiredAt        *time.Time `json:"expired_at"`
+	RemovedAt        *time.Time `json:"removed_at"`
+	Version          int64      `json:"version"`
+	UpdatedAt        time.Time  `json:"updated_at"`
+	DisplayName      string     `json:"display_name"`
 }
 
 type QueryInput struct {
 	ProductID int64
 	State     StateFilter
+	Source    SourceFilter
 	Limit     int
 	Cursor    string
 }
@@ -90,27 +113,31 @@ type QueryResponse struct {
 	HasMore    bool        `json:"has_more"`
 }
 
-// MemberRecord is deliberately closed: it contains no customer identifier,
-// order identifier, actor, receipt, provider, payment, or external identity.
+// MemberRecord is the grid projection over canonical service-period facts.
 type MemberRecord struct {
-	EntitlementID int64
-	ProductID     int64
-	State         StateFilter
-	Version       int64
-	GrantedAt     time.Time
-	RevokedAt     *time.Time
-	DisplayName   string
-	MaskedMobile  *string
+	MemberRef        string
+	ServiceProductID int64
+	CustomerID       int64
+	State            StateFilter
+	Source           SourceFilter
+	StartsAt         time.Time
+	ExpiresAt        *time.Time
+	ExpiredAt        *time.Time
+	RemovedAt        *time.Time
+	Version          int64
+	UpdatedAt        time.Time
+	DisplayName      string
 }
 
 type Position struct {
-	GrantedAt     time.Time
-	EntitlementID int64
+	UpdatedAt time.Time
+	MemberRef string
 }
 
 type StoreQuery struct {
 	ProductID int64
 	State     StateFilter
+	Source    SourceFilter
 	Limit     int
 	After     *Position
 }
@@ -121,14 +148,25 @@ type Store interface {
 }
 
 var safeColumns = []ColumnDefinition{
-	{Key: "entitlement_id", Label: "权益编号", Type: "integer", Nullable: false},
-	{Key: "product_id", Label: "商品编号", Type: "integer", Nullable: false},
-	{Key: "state", Label: "本地权益状态", Type: "enum", Nullable: false},
+	{Key: "member_ref", Label: "成员引用", Type: "string", Nullable: false},
+	{Key: "service_product_id", Label: "服务期商品编号", Type: "integer", Nullable: false},
+	{Key: "customer_id", Label: "客户编号", Type: "integer", Nullable: false},
+	{Key: "state", Label: "本地成员状态", Type: "enum", Nullable: false},
+	{Key: "source", Label: "本地成员来源", Type: "enum", Nullable: false},
+	{Key: "starts_at", Label: "开始时间", Type: "timestamp", Nullable: false},
+	{Key: "expires_at", Label: "到期时间", Type: "timestamp", Nullable: true},
+	{Key: "expired_at", Label: "过期时间", Type: "timestamp", Nullable: true},
+	{Key: "removed_at", Label: "移除时间", Type: "timestamp", Nullable: true},
 	{Key: "version", Label: "本地版本", Type: "integer", Nullable: false},
-	{Key: "granted_at", Label: "本地授予时间", Type: "timestamp", Nullable: false},
-	{Key: "revoked_at", Label: "本地撤销时间", Type: "timestamp", Nullable: true},
+	{Key: "updated_at", Label: "更新时间", Type: "timestamp", Nullable: false},
 	{Key: "display_name", Label: "客户显示名", Type: "string", Nullable: false},
-	{Key: "masked_mobile", Label: "脱敏手机号", Type: "string", Nullable: true},
+}
+
+// legacySavedViewColumns freezes the v1 saved-view field contract. The
+// canonical read schema above intentionally does not change saved views.
+var legacySavedViewColumns = []ColumnDefinition{
+	{Key: "entitlement_id"}, {Key: "product_id"}, {Key: "state"}, {Key: "version"},
+	{Key: "granted_at"}, {Key: "revoked_at"}, {Key: "display_name"}, {Key: "masked_mobile"},
 }
 
 var builtInViews = []MemberView{

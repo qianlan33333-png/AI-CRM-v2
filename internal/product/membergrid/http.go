@@ -178,7 +178,7 @@ type requestProblem struct {
 }
 
 func decodeQueryBody(writer http.ResponseWriter, request *http.Request) (QueryInput, *requestProblem) {
-	input := QueryInput{State: StateAll, Limit: DefaultLimit}
+	input := QueryInput{State: StateAll, Source: SourceAny, Limit: DefaultLimit}
 	if request == nil || request.Body == nil {
 		return QueryInput{}, malformed("body", "required", errors.New("query body is required"))
 	}
@@ -199,7 +199,7 @@ func decodeQueryBody(writer http.ResponseWriter, request *http.Request) (QueryIn
 		return QueryInput{}, malformed("body", "object_required", errors.New("query body must be an object"))
 	}
 
-	seen := make(map[string]struct{}, 3)
+	seen := make(map[string]struct{}, 4)
 	for decoder.More() {
 		keyToken, tokenErr := decoder.Token()
 		key, ok := keyToken.(string)
@@ -221,8 +221,17 @@ func decodeQueryBody(writer http.ResponseWriter, request *http.Request) (QueryIn
 				return QueryInput{}, validation("state", "invalid", err)
 			}
 			input.State = StateFilter(state)
-			if !input.State.valid() {
+			if !input.State.validCanonicalGridState() {
 				return QueryInput{}, validation("state", "unsupported", ErrInvalidQuery)
+			}
+		case "source":
+			var source string
+			if err = json.Unmarshal(raw, &source); err != nil {
+				return QueryInput{}, validation("source", "invalid", err)
+			}
+			input.Source = SourceFilter(source)
+			if input.Source != SourceManual && input.Source != SourcePaidOrder {
+				return QueryInput{}, validation("source", "unsupported", ErrInvalidQuery)
 			}
 		case "limit":
 			text := string(raw)

@@ -7395,8 +7395,7 @@ paths:
       tags: [p4-service-period-member-grid]
       operationId: getServicePeriodMemberGridSchema
       summary: Read the closed local member-grid schema
-      x-legacy-mapping-ids: [LEGACY-API-0482]
-      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBER-GRID-READ-2026-08-22
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24
       x-aicrm-capability: products.read
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       x-aicrm-auth-scheme: human_session
@@ -7416,9 +7415,8 @@ paths:
     post:
       tags: [p4-service-period-member-grid]
       operationId: queryServicePeriodMemberGrid
-      summary: Query existing local entitlement rows; it neither adds nor expires members
-      x-legacy-mapping-ids: [LEGACY-API-0481]
-      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBER-GRID-READ-2026-08-22
+      summary: Query canonical local service-period member rows; it neither adds nor changes members
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24
       x-aicrm-capability: entitlements.read
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       x-aicrm-auth-scheme: human_session
@@ -7429,7 +7427,7 @@ paths:
       parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberGridQueryRequest" } } } }
       responses:
-        "200": { description: Existing local entitlement rows, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberGridQueryResponse" } } } }
+        "200": { description: Canonical local service-period member rows, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberGridQueryResponse" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -11402,17 +11400,17 @@ components:
       additionalProperties: false
       required: [key, label, type, nullable]
       properties:
-        key: { type: string, enum: [entitlement_id, product_id, state, version, granted_at, revoked_at, display_name, masked_mobile] }
+        key: { type: string, enum: [member_ref, service_product_id, customer_id, state, source, starts_at, expires_at, expired_at, removed_at, version, updated_at, display_name] }
         label: { type: string, minLength: 1 }
         type: { type: string, enum: [integer, enum, timestamp, string] }
         nullable: { type: boolean }
     ServicePeriodMemberGridSchema:
       type: object
       additionalProperties: false
-      required: [product_id, columns]
+      required: [service_product_id, columns]
       properties:
-        product_id: { type: integer, format: int64, minimum: 1 }
-        columns: { type: array, minItems: 8, maxItems: 8, items: { $ref: "#/components/schemas/ServicePeriodMemberGridColumn" } }
+        service_product_id: { type: integer, format: int64, minimum: 1 }
+        columns: { type: array, minItems: 12, maxItems: 12, items: { $ref: "#/components/schemas/ServicePeriodMemberGridColumn" } }
     ServicePeriodMemberGridView:
       type: object
       additionalProperties: false
@@ -11433,22 +11431,27 @@ components:
       type: object
       additionalProperties: false
       properties:
-        state: { type: string, enum: [active, revoked, all], default: all }
+        state: { type: string, enum: [active, expired, removed, all], default: all }
+        source: { $ref: "#/components/schemas/ServicePeriodMemberSource" }
         limit: { type: integer, minimum: 1, maximum: 50, default: 50 }
         cursor: { type: string, nullable: true, maxLength: 256 }
     ServicePeriodMemberGridMember:
       type: object
       additionalProperties: false
-      required: [entitlement_id, product_id, state, version, granted_at, display_name]
+      required: [member_ref, service_product_id, customer_id, state, source, starts_at, expires_at, expired_at, removed_at, version, updated_at, display_name]
       properties:
-        entitlement_id: { type: integer, format: int64, minimum: 1 }
-        product_id: { type: integer, format: int64, minimum: 1 }
-        state: { type: string, enum: [active, revoked] }
+        member_ref: { type: string, minLength: 26, maxLength: 26, pattern: '^spm_[A-Za-z0-9_-]{22}$' }
+        service_product_id: { type: integer, format: int64, minimum: 1 }
+        customer_id: { type: integer, format: int64, minimum: 1 }
+        state: { $ref: "#/components/schemas/ServicePeriodMemberState" }
+        source: { $ref: "#/components/schemas/ServicePeriodMemberSource" }
         version: { type: integer, format: int64, minimum: 1 }
-        granted_at: { type: string, format: date-time }
-        revoked_at: { type: string, format: date-time, nullable: true }
+        starts_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time, nullable: true }
+        expired_at: { type: string, format: date-time, nullable: true }
+        removed_at: { type: string, format: date-time, nullable: true }
+        updated_at: { type: string, format: date-time }
         display_name: { type: string }
-        masked_mobile: { type: string, nullable: true }
     ServicePeriodMemberGridQueryResponse:
       type: object
       additionalProperties: false

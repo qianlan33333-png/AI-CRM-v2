@@ -25,7 +25,7 @@ func (spy *memberGridRouteSpy) Access(_ context.Context, productID int64) (membe
 }
 
 func (*memberGridRouteSpy) Schema(_ context.Context, productID int64) (membergrid.SchemaResponse, error) {
-	return membergrid.SchemaResponse{ProductID: productID}, nil
+	return membergrid.SchemaResponse{ServiceProductID: productID}, nil
 }
 
 func (*memberGridRouteSpy) MemberViews(_ context.Context, productID int64) (membergrid.MemberViewsResponse, error) {

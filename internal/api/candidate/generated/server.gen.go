@@ -5526,32 +5526,44 @@ func (e ServicePeriodMemberGridCollaboratorUpdateRequestPermission) Valid() bool
 
 // Defines values for ServicePeriodMemberGridColumnKey.
 const (
-	ServicePeriodMemberGridColumnKeyDisplayName   ServicePeriodMemberGridColumnKey = "display_name"
-	ServicePeriodMemberGridColumnKeyEntitlementId ServicePeriodMemberGridColumnKey = "entitlement_id"
-	ServicePeriodMemberGridColumnKeyGrantedAt     ServicePeriodMemberGridColumnKey = "granted_at"
-	ServicePeriodMemberGridColumnKeyMaskedMobile  ServicePeriodMemberGridColumnKey = "masked_mobile"
-	ServicePeriodMemberGridColumnKeyProductId     ServicePeriodMemberGridColumnKey = "product_id"
-	ServicePeriodMemberGridColumnKeyRevokedAt     ServicePeriodMemberGridColumnKey = "revoked_at"
-	ServicePeriodMemberGridColumnKeyState         ServicePeriodMemberGridColumnKey = "state"
-	ServicePeriodMemberGridColumnKeyVersion       ServicePeriodMemberGridColumnKey = "version"
+	ServicePeriodMemberGridColumnKeyCustomerId       ServicePeriodMemberGridColumnKey = "customer_id"
+	ServicePeriodMemberGridColumnKeyDisplayName      ServicePeriodMemberGridColumnKey = "display_name"
+	ServicePeriodMemberGridColumnKeyExpiredAt        ServicePeriodMemberGridColumnKey = "expired_at"
+	ServicePeriodMemberGridColumnKeyExpiresAt        ServicePeriodMemberGridColumnKey = "expires_at"
+	ServicePeriodMemberGridColumnKeyMemberRef        ServicePeriodMemberGridColumnKey = "member_ref"
+	ServicePeriodMemberGridColumnKeyRemovedAt        ServicePeriodMemberGridColumnKey = "removed_at"
+	ServicePeriodMemberGridColumnKeyServiceProductId ServicePeriodMemberGridColumnKey = "service_product_id"
+	ServicePeriodMemberGridColumnKeySource           ServicePeriodMemberGridColumnKey = "source"
+	ServicePeriodMemberGridColumnKeyStartsAt         ServicePeriodMemberGridColumnKey = "starts_at"
+	ServicePeriodMemberGridColumnKeyState            ServicePeriodMemberGridColumnKey = "state"
+	ServicePeriodMemberGridColumnKeyUpdatedAt        ServicePeriodMemberGridColumnKey = "updated_at"
+	ServicePeriodMemberGridColumnKeyVersion          ServicePeriodMemberGridColumnKey = "version"
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodMemberGridColumnKey enum.
 func (e ServicePeriodMemberGridColumnKey) Valid() bool {
 	switch e {
+	case ServicePeriodMemberGridColumnKeyCustomerId:
+		return true
 	case ServicePeriodMemberGridColumnKeyDisplayName:
 		return true
-	case ServicePeriodMemberGridColumnKeyEntitlementId:
+	case ServicePeriodMemberGridColumnKeyExpiredAt:
 		return true
-	case ServicePeriodMemberGridColumnKeyGrantedAt:
+	case ServicePeriodMemberGridColumnKeyExpiresAt:
 		return true
-	case ServicePeriodMemberGridColumnKeyMaskedMobile:
+	case ServicePeriodMemberGridColumnKeyMemberRef:
 		return true
-	case ServicePeriodMemberGridColumnKeyProductId:
+	case ServicePeriodMemberGridColumnKeyRemovedAt:
 		return true
-	case ServicePeriodMemberGridColumnKeyRevokedAt:
+	case ServicePeriodMemberGridColumnKeyServiceProductId:
+		return true
+	case ServicePeriodMemberGridColumnKeySource:
+		return true
+	case ServicePeriodMemberGridColumnKeyStartsAt:
 		return true
 	case ServicePeriodMemberGridColumnKeyState:
+		return true
+	case ServicePeriodMemberGridColumnKeyUpdatedAt:
 		return true
 	case ServicePeriodMemberGridColumnKeyVersion:
 		return true
@@ -5584,29 +5596,12 @@ func (e ServicePeriodMemberGridColumnType) Valid() bool {
 	}
 }
 
-// Defines values for ServicePeriodMemberGridMemberState.
-const (
-	ServicePeriodMemberGridMemberStateActive  ServicePeriodMemberGridMemberState = "active"
-	ServicePeriodMemberGridMemberStateRevoked ServicePeriodMemberGridMemberState = "revoked"
-)
-
-// Valid indicates whether the value is a known member of the ServicePeriodMemberGridMemberState enum.
-func (e ServicePeriodMemberGridMemberState) Valid() bool {
-	switch e {
-	case ServicePeriodMemberGridMemberStateActive:
-		return true
-	case ServicePeriodMemberGridMemberStateRevoked:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ServicePeriodMemberGridQueryRequestState.
 const (
 	ServicePeriodMemberGridQueryRequestStateActive  ServicePeriodMemberGridQueryRequestState = "active"
 	ServicePeriodMemberGridQueryRequestStateAll     ServicePeriodMemberGridQueryRequestState = "all"
-	ServicePeriodMemberGridQueryRequestStateRevoked ServicePeriodMemberGridQueryRequestState = "revoked"
+	ServicePeriodMemberGridQueryRequestStateExpired ServicePeriodMemberGridQueryRequestState = "expired"
+	ServicePeriodMemberGridQueryRequestStateRemoved ServicePeriodMemberGridQueryRequestState = "removed"
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodMemberGridQueryRequestState enum.
@@ -5616,7 +5611,9 @@ func (e ServicePeriodMemberGridQueryRequestState) Valid() bool {
 		return true
 	case ServicePeriodMemberGridQueryRequestStateAll:
 		return true
-	case ServicePeriodMemberGridQueryRequestStateRevoked:
+	case ServicePeriodMemberGridQueryRequestStateExpired:
+		return true
+	case ServicePeriodMemberGridQueryRequestStateRemoved:
 		return true
 	default:
 		return false
@@ -6495,19 +6492,19 @@ func (e SidebarServicePeriodMemberSource) Valid() bool {
 
 // Defines values for SidebarServicePeriodMemberState.
 const (
-	Active  SidebarServicePeriodMemberState = "active"
-	Expired SidebarServicePeriodMemberState = "expired"
-	Removed SidebarServicePeriodMemberState = "removed"
+	SidebarServicePeriodMemberStateActive  SidebarServicePeriodMemberState = "active"
+	SidebarServicePeriodMemberStateExpired SidebarServicePeriodMemberState = "expired"
+	SidebarServicePeriodMemberStateRemoved SidebarServicePeriodMemberState = "removed"
 )
 
 // Valid indicates whether the value is a known member of the SidebarServicePeriodMemberState enum.
 func (e SidebarServicePeriodMemberState) Valid() bool {
 	switch e {
-	case Active:
+	case SidebarServicePeriodMemberStateActive:
 		return true
-	case Expired:
+	case SidebarServicePeriodMemberStateExpired:
 		return true
-	case Removed:
+	case SidebarServicePeriodMemberStateRemoved:
 		return true
 	default:
 		return false
@@ -9770,23 +9767,29 @@ type ServicePeriodMemberGridColumnType string
 
 // ServicePeriodMemberGridMember defines model for ServicePeriodMemberGridMember.
 type ServicePeriodMemberGridMember struct {
-	DisplayName   string                             `json:"display_name"`
-	EntitlementId int64                              `json:"entitlement_id"`
-	GrantedAt     time.Time                          `json:"granted_at"`
-	MaskedMobile  *string                            `json:"masked_mobile,omitempty"`
-	ProductId     int64                              `json:"product_id"`
-	RevokedAt     *time.Time                         `json:"revoked_at,omitempty"`
-	State         ServicePeriodMemberGridMemberState `json:"state"`
-	Version       int64                              `json:"version"`
-}
+	CustomerId       int64      `json:"customer_id"`
+	DisplayName      string     `json:"display_name"`
+	ExpiredAt        *time.Time `json:"expired_at"`
+	ExpiresAt        *time.Time `json:"expires_at"`
+	MemberRef        string     `json:"member_ref"`
+	RemovedAt        *time.Time `json:"removed_at"`
+	ServiceProductId int64      `json:"service_product_id"`
 
-// ServicePeriodMemberGridMemberState defines model for ServicePeriodMemberGridMember.State.
-type ServicePeriodMemberGridMemberState string
+	// Source paid_order is output-compatible only until an authoritative internal order owner is established; the manual add API cannot accept it.
+	Source    ServicePeriodMemberSource `json:"source"`
+	StartsAt  time.Time                 `json:"starts_at"`
+	State     ServicePeriodMemberState  `json:"state"`
+	UpdatedAt time.Time                 `json:"updated_at"`
+	Version   int64                     `json:"version"`
+}
 
 // ServicePeriodMemberGridQueryRequest defines model for ServicePeriodMemberGridQueryRequest.
 type ServicePeriodMemberGridQueryRequest struct {
-	Cursor *string                                   `json:"cursor,omitempty"`
-	Limit  *int                                      `json:"limit,omitempty"`
+	Cursor *string `json:"cursor,omitempty"`
+	Limit  *int    `json:"limit,omitempty"`
+
+	// Source paid_order is output-compatible only until an authoritative internal order owner is established; the manual add API cannot accept it.
+	Source *ServicePeriodMemberSource                `json:"source,omitempty"`
 	State  *ServicePeriodMemberGridQueryRequestState `json:"state,omitempty"`
 }
 
@@ -9803,8 +9806,8 @@ type ServicePeriodMemberGridQueryResponse struct {
 
 // ServicePeriodMemberGridSchema defines model for ServicePeriodMemberGridSchema.
 type ServicePeriodMemberGridSchema struct {
-	Columns   []ServicePeriodMemberGridColumn `json:"columns"`
-	ProductId int64                           `json:"product_id"`
+	Columns          []ServicePeriodMemberGridColumn `json:"columns"`
+	ServiceProductId int64                           `json:"service_product_id"`
 }
 
 // ServicePeriodMemberGridShareSettings defines model for ServicePeriodMemberGridShareSettings.
@@ -13251,7 +13254,7 @@ type ServerInterface interface {
 	// Update local collaborator metadata
 	// (PUT /api/admin/service-period-products/{service_product_id}/member-grid/collaborators/{collaborator_id})
 	UpdateServicePeriodMemberGridCollaborator(w http.ResponseWriter, r *http.Request, serviceProductId int64, collaboratorId int64, params UpdateServicePeriodMemberGridCollaboratorParams)
-	// Query existing local entitlement rows; it neither adds nor expires members
+	// Query canonical local service-period member rows; it neither adds nor changes members
 	// (POST /api/admin/service-period-products/{service_product_id}/member-grid/query)
 	QueryServicePeriodMemberGrid(w http.ResponseWriter, r *http.Request, serviceProductId int64)
 	// Read the closed local member-grid schema
@@ -14013,7 +14016,7 @@ func (_ Unimplemented) UpdateServicePeriodMemberGridCollaborator(w http.Response
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Query existing local entitlement rows; it neither adds nor expires members
+// Query canonical local service-period member rows; it neither adds nor changes members
 // (POST /api/admin/service-period-products/{service_product_id}/member-grid/query)
 func (_ Unimplemented) QueryServicePeriodMemberGrid(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -36589,7 +36592,7 @@ type StrictServerInterface interface {
 	// Update local collaborator metadata
 	// (PUT /api/admin/service-period-products/{service_product_id}/member-grid/collaborators/{collaborator_id})
 	UpdateServicePeriodMemberGridCollaborator(ctx context.Context, request UpdateServicePeriodMemberGridCollaboratorRequestObject) (UpdateServicePeriodMemberGridCollaboratorResponseObject, error)
-	// Query existing local entitlement rows; it neither adds nor expires members
+	// Query canonical local service-period member rows; it neither adds nor changes members
 	// (POST /api/admin/service-period-products/{service_product_id}/member-grid/query)
 	QueryServicePeriodMemberGrid(ctx context.Context, request QueryServicePeriodMemberGridRequestObject) (QueryServicePeriodMemberGridResponseObject, error)
 	// Read the closed local member-grid schema
