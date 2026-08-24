@@ -12,7 +12,8 @@ seed() {
     "$root/internal/contact/store/queries" "$root/internal/contact/store/generated" "$root/internal/contact/app" \
     "$root/internal/product/membergrid" \
     "$root/internal/events/dispatcher" "$root/internal/stats/app" \
-    "$root/internal/api/candidate/generated"
+    "$root/internal/api/candidate/generated" "$root/scripts/sourcepolicy"
+  printf '%s\n' '# source-policy-baseline-v1: path<TAB>sorted_rule_counts<TAB>ordered_syntax_sha256' >"$root/scripts/sourcepolicy/baseline.tsv"
   echo 'package main' >"$root/cmd/aicrm/main.go"
   mkdir -p "$root/cmd/aicrm-contact-perf-data" "$root/cmd/aicrm-contact-perf"
   echo 'package main; const reset = "TRUNCATE TABLE customers"; func run(){ db.Exec(reset); db.CopyFrom() }' >"$root/cmd/aicrm-contact-perf-data/main.go"
@@ -46,8 +47,11 @@ seed() {
 run_checker() {
   (cd / && env -u BASH_ENV -u ENV -u GOFLAGS -u GIT_DIR -u GIT_WORK_TREE GOWORK=off GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off "$go_bin" run "$checker" -root "$1")
 }
+print_baseline() {
+  (cd / && env -u BASH_ENV -u ENV -u GOFLAGS -u GIT_DIR -u GIT_WORK_TREE GOWORK=off GOTOOLCHAIN=local GOPROXY=off GOSUMDB=off "$go_bin" run "$checker" -root "$1" -print-baseline)
+}
 positive="$test_root/positive"; seed "$positive"
-[[ "$(run_checker "$positive")" == "source-policy-lint: PASS" ]] || exit 1
+[[ "$(run_checker "$positive")" == "source-policy-lint: PASS_WITH_BASELINE(0)" ]] || exit 1
 reject() {
   local name="$1" expected="$2" root="$test_root/$1" output status
   seed "$root"; mutate "$name" "$root"
@@ -105,4 +109,42 @@ reject customer-plan-wrapper-shadowed-receiver 'direct database call forbidden'
 reject customer-plan-wrapper-exec 'direct database call forbidden'
 reject ticker 'business timer forbidden'; reject after-func 'business timer forbidden'
 reject cron 'third-party cron forbidden'; reject fifo 'symlink or special path forbidden'
+
+baseline="$test_root/baseline"; seed "$baseline"
+echo 'package app; func legacy(){ db.Query("SELECT id FROM customers") }' >"$baseline/internal/contact/app/debt.go"
+print_baseline "$baseline" >"$baseline/scripts/sourcepolicy/baseline.tsv"
+[[ "$(run_checker "$baseline")" == "source-policy-lint: PASS_WITH_BASELINE(1)" ]] || exit 1
+printf '%s\n' 'package app' 'func legacy() {' ' db.Query("SELECT id FROM customers")' '}' >"$baseline/internal/contact/app/debt.go"
+[[ "$(run_checker "$baseline")" == "source-policy-lint: PASS_WITH_BASELINE(1)" ]] || { echo "source-policy-tests: formatting changed a stable fingerprint" >&2; exit 1; }
+
+echo 'package app; func added(){ db.Exec("DELETE FROM customers") }' >"$baseline/internal/contact/app/added.go"
+set +e; output="$(run_checker "$baseline" 2>&1)"; status=$?; set -e
+[[ "$status" -ne 0 && "$output" == *"unexpected baseline debt"* ]] || { echo "source-policy-tests: accepted new debt: $output" >&2; exit 1; }
+rm "$baseline/internal/contact/app/added.go"
+
+echo 'package app; func legacy(){ db.Exec("DELETE FROM customers") }' >"$baseline/internal/contact/app/debt.go"
+set +e; output="$(run_checker "$baseline" 2>&1)"; status=$?; set -e
+[[ "$status" -ne 0 && "$output" == *"unexpected baseline debt"* ]] || { echo "source-policy-tests: accepted changed debt: $output" >&2; exit 1; }
+echo 'package app; func legacy(){ db.Query("SELECT id FROM customers") }' >"$baseline/internal/contact/app/debt.go"
+
+mv "$baseline/internal/contact/app/debt.go" "$baseline/internal/contact/app/moved.go"
+set +e; output="$(run_checker "$baseline" 2>&1)"; status=$?; set -e
+[[ "$status" -ne 0 && "$output" == *"unexpected baseline debt"* ]] || { echo "source-policy-tests: accepted moved debt: $output" >&2; exit 1; }
+mv "$baseline/internal/contact/app/moved.go" "$baseline/internal/contact/app/debt.go"
+
+rm "$baseline/internal/contact/app/debt.go"
+set +e; output="$(run_checker "$baseline" 2>&1)"; status=$?; set -e
+[[ "$status" -ne 0 && "$output" == *"stale baseline debt"* ]] || { echo "source-policy-tests: accepted stale baseline: $output" >&2; exit 1; }
+
+malformed="$test_root/malformed"; seed "$malformed"
+printf '%s\n' '# source-policy-baseline-v1: path<TAB>sorted_rule_counts<TAB>ordered_syntax_sha256' 'not-a-valid-entry' >"$malformed/scripts/sourcepolicy/baseline.tsv"
+set +e; output="$(run_checker "$malformed" 2>&1)"; status=$?; set -e
+[[ "$status" -ne 0 && "$output" == *"malformed baseline entry"* ]] || { echo "source-policy-tests: accepted malformed baseline: $output" >&2; exit 1; }
+
+duplicate="$test_root/duplicate"; seed "$duplicate"
+echo 'package app; func legacy(){ db.Query("SELECT id FROM customers") }' >"$duplicate/internal/contact/app/debt.go"
+print_baseline "$duplicate" >"$duplicate/scripts/sourcepolicy/baseline.tsv"
+tail -n 1 "$duplicate/scripts/sourcepolicy/baseline.tsv" >>"$duplicate/scripts/sourcepolicy/baseline.tsv"
+set +e; output="$(run_checker "$duplicate" 2>&1)"; status=$?; set -e
+[[ "$status" -ne 0 && "$output" == *"duplicate baseline entry"* ]] || { echo "source-policy-tests: accepted duplicate baseline: $output" >&2; exit 1; }
 echo "source-policy-tests: PASS"
