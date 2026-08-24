@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
 	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
@@ -42,10 +42,11 @@ func TestTrustedWeComReaderRequiresTransactionAndOmitsMissingAmbiguousAndUnverif
 		}
 		customerIDs := make([]contactport.CustomerID, 4)
 		for index := range customerIDs {
-			if txErr = tx.QueryRow(txCtx, `INSERT INTO customers(name) VALUES($1) RETURNING id`,
-				fmt.Sprintf("trusted-wecom-%d-%d", time.Now().UnixNano(), index)).Scan(&customerIDs[index]); txErr != nil {
-				return txErr
+			customerID, createErr := contactfixture.CreateCustomer(txCtx, tx)
+			if createErr != nil {
+				return createErr
 			}
+			customerIDs[index] = contactport.CustomerID(customerID)
 		}
 		for _, fixture := range []struct {
 			customerID              contactport.CustomerID
