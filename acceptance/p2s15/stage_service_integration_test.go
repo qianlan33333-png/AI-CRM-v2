@@ -118,6 +118,22 @@ func openFixture(t *testing.T) (*acceptancefixtures.PostgreSQL, context.Context)
 func createTables(t *testing.T, ctx context.Context, fixture *acceptancefixtures.PostgreSQL) {
 	t.Helper()
 	_, err := fixture.Pool().Exec(ctx, `
+CREATE TABLE acceptance_fixtures.stage_operation_receipts (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  operation TEXT NOT NULL CHECK (operation IN ('create', 'rename', 'reorder', 'archive')),
+  actor TEXT NOT NULL CHECK (btrim(actor) = actor AND actor <> '' AND char_length(actor) <= 200),
+  key_digest BYTEA NOT NULL CHECK (octet_length(key_digest) = 32),
+  payload_digest BYTEA NOT NULL CHECK (octet_length(payload_digest) = 32),
+  state TEXT NOT NULL DEFAULT 'in_progress' CHECK (state IN ('in_progress', 'completed')),
+  result_ids BIGINT[] NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL,
+  completed_at TIMESTAMPTZ,
+  CONSTRAINT stage_operation_receipts_completion CHECK (
+    (state = 'in_progress' AND cardinality(result_ids) = 0 AND completed_at IS NULL)
+    OR (state = 'completed' AND cardinality(result_ids) >= 1 AND completed_at IS NOT NULL)
+  ),
+  UNIQUE (operation, actor, key_digest)
+);
 CREATE TABLE acceptance_fixtures.stages (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   name TEXT NOT NULL,

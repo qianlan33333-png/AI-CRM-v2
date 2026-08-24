@@ -34,6 +34,11 @@ python3 scripts/ci/test_selector.py
 scripts/check_repo_contract.sh
 scripts/test_repo_contract.sh
 
+ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST=1 \
+ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 \
+MIGRATION_TEST_DATABASE_URL="$database_url" \
+make --no-print-directory migration-integration
+
 P0S03_PG_INTEGRATION=1 \
 P0S03_TEST_DATABASE_URL="$database_url" \
 ACCEPTANCE_FIXTURES_TEST_DATABASE_URL="$database_url" \
@@ -42,10 +47,6 @@ QUERY_PLAN_BASE_SHA="$query_base" \
 QUERY_PLAN_HEAD_SHA="$query_head" \
 make --no-print-directory ci-go
 
-ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST=1 \
-ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 \
-MIGRATION_TEST_DATABASE_URL="$database_url" \
-make --no-print-directory migration-integration
 ALLOW_DESTRUCTIVE_RIVER_MIGRATION_TEST=1 \
 ALLOW_DESTRUCTIVE_MIGRATION_TEST=1 \
 MIGRATION_TEST_DATABASE_URL="$database_url" \

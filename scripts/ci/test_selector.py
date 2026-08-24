@@ -515,6 +515,10 @@ class WorkflowWiringTests(unittest.TestCase):
             "scripts/test_build_slice_bundle.sh",
         ):
             self.assertIn(command, full_source)
+        migration_command = "make --no-print-directory migration-integration"
+        ci_go_command = "make --no-print-directory ci-go"
+        self.assertEqual(full_source.count(migration_command), 1)
+        self.assertLess(full_source.index(migration_command), full_source.index(ci_go_command))
 
     def test_new_workflows_and_permissions(self) -> None:
         for relative_name in ACTIVE_WORKFLOWS:
