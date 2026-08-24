@@ -14,6 +14,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/qianlan33333-png/AI-CRM-v2/acceptance/automationfixture"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
@@ -344,10 +345,8 @@ func assertAttachmentSQLState(t *testing.T, err error, want string) {
 
 func seedAttachmentAutomationReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, attachmentID int64) int64 {
 	t.Helper()
-	var id int64
-	if err := pool.QueryRow(ctx, `INSERT INTO automation_agent_configurations (
-  agent_name,agent_code,automation_type,status,fixed_content_package_json,created_by,updated_by,created_at,updated_at
-) VALUES ($1,$2,'fixed_script','active',jsonb_build_object('attachment_library_ids',jsonb_build_array($3::bigint)),1,1,now(),now()) RETURNING id`, unique("attachment-agent"), unique("attachment-agent-code"), attachmentID).Scan(&id); err != nil {
+	id, err := automationfixture.CreateAttachmentReference(ctx, pool, unique("attachment-agent"), unique("attachment-agent-code"), attachmentID)
+	if err != nil {
 		t.Fatal(err)
 	}
 	return id
