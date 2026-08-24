@@ -65,6 +65,9 @@ const (
 	// EvCustomerContactPolicyChanged records a Contact-owned local policy
 	// mutation. It has no delivery binding and cannot invoke a provider.
 	EvCustomerContactPolicyChanged = "customer.contact_policy_changed"
+	// EvCustomerSafeExportCreated records a Contact-owned frozen local CSV
+	// snapshot. It has no delivery binding and cannot invoke a provider.
+	EvCustomerSafeExportCreated = "customer.safe_export_created"
 
 	ConsumerAutomationTagTrigger        = "automation.tag-trigger.v1"
 	ConsumerStatsTagApplied             = "stats.tag-applied.v1"

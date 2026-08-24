@@ -145,6 +145,7 @@ type candidateHandler struct {
 	mutations                 *contacthttp.CustomerMutationHandler
 	ownerReassignments        *contacthttp.OwnerReassignmentHandler
 	contactPolicy             *contacthttp.ContactPolicyHandler
+	customerSafeExports       *contacthttp.CustomerSafeExportHandler
 	tags                      *contacthttp.TagCatalogHandler
 	localTags                 *contacthttp.LocalTagCatalogHandler
 	stages                    *contacthttp.Handler
@@ -401,6 +402,18 @@ func (handler *candidateHandler) AddServicePeriodMember(writer http.ResponseWrit
 
 func (handler *candidateHandler) ExportServicePeriodMembers(writer http.ResponseWriter, request *http.Request, serviceProductID int64, _ api.ExportServicePeriodMembersParams) {
 	handler.servicePeriodMembers.Export(writer, request, serviceProductID)
+}
+
+func (handler *candidateHandler) CreateCustomerSafeExport(writer http.ResponseWriter, request *http.Request, params api.CreateCustomerSafeExportParams) {
+	handler.customerSafeExports.Create(writer, request, params)
+}
+
+func (handler *candidateHandler) GetCustomerSafeExport(writer http.ResponseWriter, request *http.Request, exportID api.CustomerSafeExportID) {
+	handler.customerSafeExports.Get(writer, request, exportID)
+}
+
+func (handler *candidateHandler) DownloadCustomerSafeExport(writer http.ResponseWriter, request *http.Request, exportID api.CustomerSafeExportID) {
+	handler.customerSafeExports.Download(writer, request, exportID)
 }
 
 func (handler *candidateHandler) GetServicePeriodMember(writer http.ResponseWriter, request *http.Request, serviceProductID int64, memberRef api.ServicePeriodMemberRef) {
@@ -719,6 +732,13 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	contactPolicyHandler, err := contacthttp.NewContactPolicyHandler(contactapp.NewContactPolicyService(
 		uow, contactstore.NewContactPolicyRepository(), eventstore.NewAppender(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	customerSafeExportHandler, err := contacthttp.NewCustomerSafeExportHandler(contactapp.NewCustomerSafeExportService(
+		uow, contactstore.NewCustomerSafeExportRepository(), eventstore.NewAppender(),
 	))
 	if err != nil {
 		pool.Close()
@@ -1159,7 +1179,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		customerSurveyAnswers: customerAnswerService, customerEvents: customerEventHandler, customerContext: customerContextHandler,
 		customerChatActivity: customerChatActivityHandler, customerActivityAnalytics: customerActivityAnalyticsHandler,
 		customerMergeHistory: customerMergeHistoryHandler,
-		mutations:            mutationHandler, ownerReassignments: ownerReassignmentHandler, contactPolicy: contactPolicyHandler,
+		mutations:            mutationHandler, ownerReassignments: ownerReassignmentHandler, contactPolicy: contactPolicyHandler, customerSafeExports: customerSafeExportHandler,
 		tags: tagCatalogHandler, localTags: localTagCatalogHandler, stages: stageHandler,
 		segments:             segmentCRUDHandler,
 		products:             productHandler,
@@ -1659,6 +1679,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/sidebar/v2/materials", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarMaterials)},
 		{http.MethodGet, "/api/sidebar/v2/materials/image/{image_id}/thumbnail", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarMaterialThumbnailStatus)},
 		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListCustomers)},
+		{http.MethodPost, "/api/v1/customer-exports", authport.CapabilityCustomersRead, true, http.HandlerFunc(wrapper.CreateCustomerSafeExport)},
+		{http.MethodGet, "/api/v1/customer-exports/{export_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetCustomerSafeExport)},
+		{http.MethodGet, "/api/v1/customer-exports/{export_id}/download", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.DownloadCustomerSafeExport)},
 		{http.MethodGet, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetCustomer)},
 		{http.MethodPatch, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateCustomer)},
 		{http.MethodGet, "/api/v1/customers/{customer_id}/events", authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(wrapper.ListCustomerEvents)},

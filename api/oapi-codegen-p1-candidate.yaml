@@ -32,3 +32,4 @@ output-options:
     - p4-adminops-safe
     - p4-sidebar-local
     - p4-contact-owner-reassignment
+    - p4-customer-safe-export
