@@ -65,7 +65,7 @@ owners:
       customer_safe_export_receipts: actor_scoped_transactional_customer_export_snapshot_idempotency_receipts
       legacy_contact_identity_import_runs: operator_controlled_DM01_local_historical_import_run_without_provider_or_business_event
       legacy_contact_identity_import_checkpoints: hmac_only_resumable_DM01_source_progress
-      legacy_contact_identity_source_mappings: stable_hmac_only_DM01_source_to_local_binding_without_auto_merge
+      legacy_contact_identity_source_mappings: stable_hmac_only_DM01_one_target_source_to_local_binding_without_auto_merge
       legacy_contact_identity_import_row_receipts: immutable_hmac_only_DM01_row_dispositions
       legacy_contact_identity_import_quarantines: restricted_hmac_only_untrusted_or_unscoped_DM01_rows
       legacy_contact_identity_historical_archives: inactive_AES_GCM_encrypted_DM01_154_155_history_without_active_merge_or_pending_event

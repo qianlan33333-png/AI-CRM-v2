@@ -11,7 +11,71 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const upsertHistoricalImportStaff = `-- name: UpsertHistoricalImportStaff :one
+const createHistoricalImportCustomer = `-- name: CreateHistoricalImportCustomer :one
+INSERT INTO customers (name, avatar_url, gender, owner_staff_id, added_at, last_interact_at, created_at, updated_at)
+VALUES (
+  $1::text, $2::text, $3::smallint,
+  $4::bigint, $5::timestamptz,
+  $6::timestamptz, $7::timestamptz,
+  $8::timestamptz
+)
+RETURNING id
+`
+
+type CreateHistoricalImportCustomerParams struct {
+	Name         string             `json:"name"`
+	AvatarUrl    pgtype.Text        `json:"avatar_url"`
+	Gender       pgtype.Int2        `json:"gender"`
+	OwnerStaffID pgtype.Int8        `json:"owner_staff_id"`
+	FirstSeenAt  pgtype.Timestamptz `json:"first_seen_at"`
+	LastSeenAt   pgtype.Timestamptz `json:"last_seen_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) CreateHistoricalImportCustomer(ctx context.Context, arg CreateHistoricalImportCustomerParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createHistoricalImportCustomer,
+		arg.Name,
+		arg.AvatarUrl,
+		arg.Gender,
+		arg.OwnerStaffID,
+		arg.FirstSeenAt,
+		arg.LastSeenAt,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const insertHistoricalImportCustomerMapping = `-- name: InsertHistoricalImportCustomerMapping :exec
+INSERT INTO legacy_contact_identity_source_mappings (
+  source_table, source_key_hmac, customer_id, first_run_id, last_run_id, payload_hmac
+) VALUES (
+  'crm_user_identity', $1::bytea, $2::bigint,
+  $3::bigint, $3::bigint, $4::bytea
+)
+`
+
+type InsertHistoricalImportCustomerMappingParams struct {
+	SourceKeyHmac []byte `json:"source_key_hmac"`
+	CustomerID    int64  `json:"customer_id"`
+	RunID         int64  `json:"run_id"`
+	PayloadHmac   []byte `json:"payload_hmac"`
+}
+
+func (q *Queries) InsertHistoricalImportCustomerMapping(ctx context.Context, arg InsertHistoricalImportCustomerMappingParams) error {
+	_, err := q.db.Exec(ctx, insertHistoricalImportCustomerMapping,
+		arg.SourceKeyHmac,
+		arg.CustomerID,
+		arg.RunID,
+		arg.PayloadHmac,
+	)
+	return err
+}
+
+const insertHistoricalImportStaff = `-- name: InsertHistoricalImportStaff :one
 INSERT INTO staff (wecom_userid, name, is_active, created_at, updated_at)
 VALUES (
   $1::text,
@@ -20,14 +84,11 @@ VALUES (
   $4::timestamptz,
   $5::timestamptz
 )
-ON CONFLICT (wecom_userid) DO UPDATE
-SET name = EXCLUDED.name,
-    is_active = EXCLUDED.is_active,
-    updated_at = GREATEST(staff.updated_at, EXCLUDED.updated_at)
+ON CONFLICT (wecom_userid) DO NOTHING
 RETURNING id
 `
 
-type UpsertHistoricalImportStaffParams struct {
+type InsertHistoricalImportStaffParams struct {
 	WecomUserid string             `json:"wecom_userid"`
 	Name        string             `json:"name"`
 	IsActive    bool               `json:"is_active"`
@@ -35,8 +96,8 @@ type UpsertHistoricalImportStaffParams struct {
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
 }
 
-func (q *Queries) UpsertHistoricalImportStaff(ctx context.Context, arg UpsertHistoricalImportStaffParams) (int64, error) {
-	row := q.db.QueryRow(ctx, upsertHistoricalImportStaff,
+func (q *Queries) InsertHistoricalImportStaff(ctx context.Context, arg InsertHistoricalImportStaffParams) (int64, error) {
+	row := q.db.QueryRow(ctx, insertHistoricalImportStaff,
 		arg.WecomUserid,
 		arg.Name,
 		arg.IsActive,
@@ -46,4 +107,34 @@ func (q *Queries) UpsertHistoricalImportStaff(ctx context.Context, arg UpsertHis
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const insertHistoricalImportStaffMapping = `-- name: InsertHistoricalImportStaffMapping :one
+INSERT INTO legacy_contact_identity_source_mappings (
+  source_table, source_key_hmac, staff_id, first_run_id, last_run_id, payload_hmac
+) VALUES (
+  'owner_role_map', $1::bytea, $2::bigint,
+  $3::bigint, $3::bigint, $4::bytea
+)
+ON CONFLICT DO NOTHING
+RETURNING staff_id
+`
+
+type InsertHistoricalImportStaffMappingParams struct {
+	SourceKeyHmac []byte `json:"source_key_hmac"`
+	StaffID       int64  `json:"staff_id"`
+	RunID         int64  `json:"run_id"`
+	PayloadHmac   []byte `json:"payload_hmac"`
+}
+
+func (q *Queries) InsertHistoricalImportStaffMapping(ctx context.Context, arg InsertHistoricalImportStaffMappingParams) (pgtype.Int8, error) {
+	row := q.db.QueryRow(ctx, insertHistoricalImportStaffMapping,
+		arg.SourceKeyHmac,
+		arg.StaffID,
+		arg.RunID,
+		arg.PayloadHmac,
+	)
+	var staff_id pgtype.Int8
+	err := row.Scan(&staff_id)
+	return staff_id, err
 }

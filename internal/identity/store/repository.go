@@ -32,14 +32,18 @@ var _ identityport.HistoricalScopedIdentityBinder = (*Repository)(nil)
 func NewRepository() *Repository { return &Repository{} }
 
 func (repository *Repository) BindHistoricalScopedWeComIdentity(ctx context.Context, command identityport.HistoricalScopedIdentity) (identityport.HistoricalScopedIdentityResult, error) {
-	if repository == nil || command.CustomerID < 1 || !strings.HasPrefix(command.Scope, "wecom-corp:") || strings.TrimPrefix(command.Scope, "wecom-corp:") == "" || strings.TrimSpace(command.ExternalUserID) != command.ExternalUserID || command.ExternalUserID == "" || len(command.SourceKeyHMAC) != 32 || command.HMACKeyVersion < 1 {
+	if repository == nil || command.CustomerID < 1 || len(command.SourceKeyHMAC) != 32 || command.HMACKeyVersion < 1 {
+		return identityport.HistoricalScopedIdentityResult{}, identityapp.ErrInvalidIdentity
+	}
+	normalized, err := identityapp.Normalize(identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: command.Scope, Value: command.ExternalUserID})
+	if err != nil {
 		return identityport.HistoricalScopedIdentityResult{}, identityapp.ErrInvalidIdentity
 	}
 	tx, err := platformstore.TxFromContext(ctx)
 	if err != nil {
 		return identityport.HistoricalScopedIdentityResult{}, err
 	}
-	row, err := identitydb.New(tx).BindHistoricalScopedWeComIdentity(ctx, identitydb.BindHistoricalScopedWeComIdentityParams{CustomerID: int64(command.CustomerID), Scope: command.Scope, ExternalUserid: command.ExternalUserID, SourceKeyHmac: command.SourceKeyHMAC, FingerprintKeyVersion: command.HMACKeyVersion})
+	row, err := identitydb.New(tx).BindHistoricalScopedWeComIdentity(ctx, identitydb.BindHistoricalScopedWeComIdentityParams{CustomerID: int64(command.CustomerID), Scope: normalized.Scope, ExternalUserid: normalized.NormalizedValue, SourceKeyHmac: command.SourceKeyHMAC, FingerprintKeyVersion: command.HMACKeyVersion})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return identityport.HistoricalScopedIdentityResult{}, identityport.ErrHistoricalScopedIdentityConflict

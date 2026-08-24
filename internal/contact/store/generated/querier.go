@@ -6,6 +6,8 @@ package contactdb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -23,6 +25,7 @@ type Querier interface {
 	CountCustomerIDsBounded(ctx context.Context, arg CountCustomerIDsBoundedParams) (int64, error)
 	CreateChannel(ctx context.Context, arg CreateChannelParams) (CreateChannelRow, error)
 	CreateCustomerForIdentity(ctx context.Context, arg CreateCustomerForIdentityParams) (int64, error)
+	CreateHistoricalImportCustomer(ctx context.Context, arg CreateHistoricalImportCustomerParams) (int64, error)
 	CreateLegacyTag(ctx context.Context, arg CreateLegacyTagParams) (CreateLegacyTagRow, error)
 	CreateLegacyTagGroup(ctx context.Context, name string) (TagGroup, error)
 	DeleteCustomerContactPolicy(ctx context.Context, arg DeleteCustomerContactPolicyParams) (int64, error)
@@ -47,6 +50,9 @@ type Querier interface {
 	InsertCustomerSafeExport(ctx context.Context, arg InsertCustomerSafeExportParams) error
 	InsertCustomerSafeExportRow(ctx context.Context, arg InsertCustomerSafeExportRowParams) error
 	InsertExternalEventIdempotency(ctx context.Context, arg InsertExternalEventIdempotencyParams) (int64, error)
+	InsertHistoricalImportCustomerMapping(ctx context.Context, arg InsertHistoricalImportCustomerMappingParams) error
+	InsertHistoricalImportStaff(ctx context.Context, arg InsertHistoricalImportStaffParams) (int64, error)
+	InsertHistoricalImportStaffMapping(ctx context.Context, arg InsertHistoricalImportStaffMappingParams) (pgtype.Int8, error)
 	InsertStage(ctx context.Context, arg InsertStageParams) (InsertStageRow, error)
 	ListChannelAttachmentReferencePackages(ctx context.Context) ([]ListChannelAttachmentReferencePackagesRow, error)
 	ListChannelImageReferencePackages(ctx context.Context) ([]ListChannelImageReferencePackagesRow, error)
@@ -90,7 +96,6 @@ type Querier interface {
 	UpdateLegacyTag(ctx context.Context, arg UpdateLegacyTagParams) (UpdateLegacyTagRow, error)
 	UpdateLegacyTagGroup(ctx context.Context, arg UpdateLegacyTagGroupParams) (TagGroup, error)
 	UpdateSidebarCustomerProfile(ctx context.Context, arg UpdateSidebarCustomerProfileParams) (UpdateSidebarCustomerProfileRow, error)
-	UpsertHistoricalImportStaff(ctx context.Context, arg UpsertHistoricalImportStaffParams) (int64, error)
 }
 
 var _ Querier = (*Queries)(nil)

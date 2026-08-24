@@ -35,6 +35,7 @@ CREATE TABLE legacy_contact_identity_import_checkpoints (
 CREATE TABLE legacy_contact_identity_source_mappings (
   source_table TEXT NOT NULL,
   source_key_hmac BYTEA NOT NULL CHECK (octet_length(source_key_hmac) = 32),
+  staff_id BIGINT REFERENCES staff(id),
   customer_id BIGINT REFERENCES customers(id),
   identity_id BIGINT REFERENCES identities(id),
   first_run_id BIGINT NOT NULL REFERENCES legacy_contact_identity_import_runs(id) ON DELETE RESTRICT,
@@ -43,7 +44,7 @@ CREATE TABLE legacy_contact_identity_source_mappings (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (source_table, source_key_hmac),
-  CHECK (customer_id IS NOT NULL OR identity_id IS NOT NULL)
+  CHECK (num_nonnulls(staff_id, customer_id, identity_id) = 1)
 );
 CREATE TABLE legacy_contact_identity_import_row_receipts (
   run_id BIGINT NOT NULL REFERENCES legacy_contact_identity_import_runs(id) ON DELETE RESTRICT,
@@ -129,6 +130,7 @@ LANGUAGE plpgsql AS $$
 BEGIN
   IF NEW.source_table <> OLD.source_table
     OR NEW.source_key_hmac <> OLD.source_key_hmac
+    OR NEW.staff_id IS DISTINCT FROM OLD.staff_id
     OR NEW.customer_id IS DISTINCT FROM OLD.customer_id
     OR NEW.identity_id IS DISTINCT FROM OLD.identity_id
     OR NEW.first_run_id <> OLD.first_run_id THEN
