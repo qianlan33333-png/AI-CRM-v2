@@ -81,14 +81,14 @@ const (
 	p4OutboundCampaignHandoffEvidence          = "P4-OUTBOUND-CAMPAIGN-HANDOFF-2026-08-23"
 	p4SidebarLocalCoreEvidence                 = "P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24"
 	p4ContactOwnerReassignmentEvidence         = "P4-CONTACT-OWNER-REASSIGNMENT-LOCAL-CORE-2026-08-24"
-	p4CustomerSafeExportEvidence                = "P4-CUSTOMER-SAFE-EXPORT-LOCAL-CORE-2026-08-24"
+	p4CustomerSafeExportEvidence               = "P4-CUSTOMER-SAFE-EXPORT-LOCAL-CORE-2026-08-24"
 	p4ServicePeriodMemberGridCanonicalEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24"
 )
 
 var nativePackageOperations = map[string]nativePackageOperation{
-	"createCustomerSafeExport":               {"/api/v1/customer-exports", "POST", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
-	"getCustomerSafeExport":                  {"/api/v1/customer-exports/{export_id}", "GET", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
-	"downloadCustomerSafeExport":             {"/api/v1/customer-exports/{export_id}/download", "GET", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"createCustomerSafeExport":                 {"/api/v1/customer-exports", "POST", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"getCustomerSafeExport":                    {"/api/v1/customer-exports/{export_id}", "GET", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"downloadCustomerSafeExport":               {"/api/v1/customer-exports/{export_id}/download", "GET", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getServicePeriodMemberGridSchema":         {"/api/admin/service-period-products/{service_product_id}/member-grid/schema", "GET", p4ServicePeriodMemberGridCanonicalEvidence, "products.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"queryServicePeriodMemberGrid":             {"/api/admin/service-period-products/{service_product_id}/member-grid/query", "POST", p4ServicePeriodMemberGridCanonicalEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"downloadContactOwnerReassignmentTemplate": {"/api/v1/contact-owner-reassignments/template", "GET", p4ContactOwnerReassignmentEvidence, "contact.owner_reassignment", "human_session", "internal", "contact.owner_reassignment.local_template", "none", map[string]string{"admin": "global"}},
