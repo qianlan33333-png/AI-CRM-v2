@@ -76,8 +76,11 @@ type ExternalIdentityMapRow struct {
 
 // EachOwnerRoleMap is a closed, static projection. role/source/raw are kept
 // only in Payload for restricted archive/digest handling; none becomes RBAC.
-func (s *Snapshot) EachOwnerRoleMap(ctx context.Context, fn func(OwnerRoleMapRow) error) error {
-	rows, err := s.tx.Query(ctx, `SELECT userid, display_name, active, updated_at, jsonb_build_object('userid',userid,'display_name',display_name,'role',role,'active',active,'source',source,'raw_payload_json',raw_payload_json,'created_at',created_at,'updated_at',updated_at) FROM owner_role_map ORDER BY updated_at, userid`)
+func (s *Snapshot) EachOwnerRoleMap(ctx context.Context, upper SourceUpperBound, fn func(OwnerRoleMapRow) error) error {
+	if upper.Table != "owner_role_map" || upper.Empty {
+		return nil
+	}
+	rows, err := s.tx.Query(ctx, `SELECT userid, display_name, active, updated_at, jsonb_build_object('userid',userid,'display_name',display_name,'role',role,'active',active,'source',source,'raw_payload_json',raw_payload_json,'created_at',created_at,'updated_at',updated_at) FROM owner_role_map WHERE (updated_at, userid) <= ($1, $2) ORDER BY updated_at, userid`, upper.Watermark, upper.SourceKey)
 	if err != nil {
 		return err
 	}
@@ -96,8 +99,11 @@ func (s *Snapshot) EachOwnerRoleMap(ctx context.Context, fn func(OwnerRoleMapRow
 
 // EachCustomerIdentity keeps unionid as a source key only. Identity hints,
 // mobile, aliases and polling state remain inside the digest/archive payload.
-func (s *Snapshot) EachCustomerIdentity(ctx context.Context, fn func(CustomerIdentityRow) error) error {
-	rows, err := s.tx.Query(ctx, `SELECT unionid, customer_name, avatar, gender, primary_owner_userid, first_seen_at, last_seen_at, updated_at, jsonb_build_object('unionid',unionid,'primary_external_userid',primary_external_userid,'external_userids_json',external_userids_json,'primary_openid',primary_openid,'openids_json',openids_json,'mobile',mobile,'mobile_normalized',mobile_normalized,'mobile_verified',mobile_verified,'mobile_source',mobile_source,'customer_name',customer_name,'remark',remark,'description',description,'avatar',avatar,'gender',gender,'profile_json',profile_json,'primary_owner_userid',primary_owner_userid,'follow_users_json',follow_users_json,'legacy_person_id',legacy_person_id,'legacy_identity_map_ids_json',legacy_identity_map_ids_json,'legacy_sources_json',legacy_sources_json,'identity_status',identity_status,'unionid_resolved_at',unionid_resolved_at,'first_seen_at',first_seen_at,'last_seen_at',last_seen_at,'last_polled_at',last_polled_at,'next_poll_at',next_poll_at,'poll_attempt_count',poll_attempt_count,'last_poll_error',last_poll_error,'created_at',created_at,'updated_at',updated_at) FROM crm_user_identity ORDER BY updated_at, unionid`)
+func (s *Snapshot) EachCustomerIdentity(ctx context.Context, upper SourceUpperBound, fn func(CustomerIdentityRow) error) error {
+	if upper.Table != "crm_user_identity" || upper.Empty {
+		return nil
+	}
+	rows, err := s.tx.Query(ctx, `SELECT unionid, customer_name, avatar, gender, primary_owner_userid, first_seen_at, last_seen_at, updated_at, jsonb_build_object('unionid',unionid,'primary_external_userid',primary_external_userid,'external_userids_json',external_userids_json,'primary_openid',primary_openid,'openids_json',openids_json,'mobile',mobile,'mobile_normalized',mobile_normalized,'mobile_verified',mobile_verified,'mobile_source',mobile_source,'customer_name',customer_name,'remark',remark,'description',description,'avatar',avatar,'gender',gender,'profile_json',profile_json,'primary_owner_userid',primary_owner_userid,'follow_users_json',follow_users_json,'legacy_person_id',legacy_person_id,'legacy_identity_map_ids_json',legacy_identity_map_ids_json,'legacy_sources_json',legacy_sources_json,'identity_status',identity_status,'unionid_resolved_at',unionid_resolved_at,'first_seen_at',first_seen_at,'last_seen_at',last_seen_at,'last_polled_at',last_polled_at,'next_poll_at',next_poll_at,'poll_attempt_count',poll_attempt_count,'last_poll_error',last_poll_error,'created_at',created_at,'updated_at',updated_at) FROM crm_user_identity WHERE (updated_at, unionid) <= ($1, $2) ORDER BY updated_at, unionid`, upper.Watermark, upper.SourceKey)
 	if err != nil {
 		return err
 	}
@@ -114,8 +120,11 @@ func (s *Snapshot) EachCustomerIdentity(ctx context.Context, fn func(CustomerIde
 	return rows.Err()
 }
 
-func (s *Snapshot) EachExternalIdentityMap(ctx context.Context, fn func(ExternalIdentityMapRow) error) error {
-	rows, err := s.tx.Query(ctx, `SELECT id, external_userid, unionid, corp_id, updated_at, jsonb_build_object('id',id,'external_userid',external_userid,'unionid',unionid,'openid',openid,'follow_user_userid',follow_user_userid,'name',name,'status',status,'updated_at',updated_at,'corp_id',corp_id,'avatar',avatar,'gender',gender,'raw_profile',raw_profile,'first_seen_at',first_seen_at,'last_seen_at',last_seen_at,'created_at',created_at) FROM wecom_external_contact_identity_map ORDER BY updated_at, id`)
+func (s *Snapshot) EachExternalIdentityMap(ctx context.Context, upper SourceUpperBound, fn func(ExternalIdentityMapRow) error) error {
+	if upper.Table != "wecom_external_contact_identity_map" || upper.Empty {
+		return nil
+	}
+	rows, err := s.tx.Query(ctx, `SELECT id, external_userid, unionid, corp_id, updated_at, jsonb_build_object('id',id,'external_userid',external_userid,'unionid',unionid,'openid',openid,'follow_user_userid',follow_user_userid,'name',name,'status',status,'updated_at',updated_at,'corp_id',corp_id,'avatar',avatar,'gender',gender,'raw_profile',raw_profile,'first_seen_at',first_seen_at,'last_seen_at',last_seen_at,'created_at',created_at) FROM wecom_external_contact_identity_map WHERE (updated_at, id) <= ($1, $2::bigint) ORDER BY updated_at, id`, upper.Watermark, upper.SourceKey)
 	if err != nil {
 		return err
 	}
