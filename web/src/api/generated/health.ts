@@ -10661,6 +10661,55 @@ export interface CustomerListResponse {
   watermark: string;
 }
 
+export interface CustomerSafeExportRequest {
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  owner_staff_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  stage_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  channel_id?: number | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  tag_id?: number | null;
+  /** @maxLength 200 */
+  keyword?: string;
+  /** @nullable */
+  added_after?: string | null;
+  /** @nullable */
+  added_before?: string | null;
+  /** @nullable */
+  last_interact_after?: string | null;
+  /** @nullable */
+  last_interact_before?: string | null;
+}
+
+export interface CustomerSafeExportResponse {
+  /** @pattern ^cse_[0-9a-f]{32}$ */
+  id: string;
+  /**
+   * @minimum 0
+   * @maximum 10000
+   */
+  record_count: number;
+  watermark: string;
+  created_at: string;
+  /** @pattern ^/api/v1/customer-exports/cse_[0-9a-f]{32}/download$ */
+  download_url: string;
+  local_only: boolean;
+  real_external_call_executed: boolean;
+}
+
 export interface CustomerDetailResponse {
   customer: Customer;
   tags: Tag[];
@@ -18071,6 +18120,241 @@ export const deleteCustomerContactPolicy = async (
     status: res.status,
     headers: res.headers,
   } as deleteCustomerContactPolicyResponse;
+};
+
+/**
+ * @summary Freeze a local safe customer CSV export snapshot
+ */
+export type createCustomerSafeExportResponse201 = {
+  data: CustomerSafeExportResponse;
+  status: 201;
+};
+
+export type createCustomerSafeExportResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createCustomerSafeExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createCustomerSafeExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createCustomerSafeExportResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createCustomerSafeExportResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createCustomerSafeExportResponseSuccess =
+  createCustomerSafeExportResponse201 & {
+    headers: Headers;
+  };
+export type createCustomerSafeExportResponseError = (
+  | createCustomerSafeExportResponse400
+  | createCustomerSafeExportResponse401
+  | createCustomerSafeExportResponse403
+  | createCustomerSafeExportResponse409
+  | createCustomerSafeExportResponse503
+) & {
+  headers: Headers;
+};
+
+export type createCustomerSafeExportResponse =
+  | createCustomerSafeExportResponseSuccess
+  | createCustomerSafeExportResponseError;
+
+export const getCreateCustomerSafeExportUrl = () => {
+  return `/api/v1/customer-exports`;
+};
+
+export const createCustomerSafeExport = async (
+  customerSafeExportRequest: CustomerSafeExportRequest,
+  options?: RequestInit,
+): Promise<createCustomerSafeExportResponse> => {
+  const res = await fetch(getCreateCustomerSafeExportUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(customerSafeExportRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createCustomerSafeExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createCustomerSafeExportResponse;
+};
+
+/**
+ * @summary Read actor-bound local customer export metadata
+ */
+export type getCustomerSafeExportResponse200 = {
+  data: CustomerSafeExportResponse;
+  status: 200;
+};
+
+export type getCustomerSafeExportResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getCustomerSafeExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getCustomerSafeExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getCustomerSafeExportResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getCustomerSafeExportResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getCustomerSafeExportResponseSuccess =
+  getCustomerSafeExportResponse200 & {
+    headers: Headers;
+  };
+export type getCustomerSafeExportResponseError = (
+  | getCustomerSafeExportResponse400
+  | getCustomerSafeExportResponse401
+  | getCustomerSafeExportResponse403
+  | getCustomerSafeExportResponse404
+  | getCustomerSafeExportResponse503
+) & {
+  headers: Headers;
+};
+
+export type getCustomerSafeExportResponse =
+  getCustomerSafeExportResponseSuccess | getCustomerSafeExportResponseError;
+
+export const getGetCustomerSafeExportUrl = (exportId: string) => {
+  return `/api/v1/customer-exports/${exportId}`;
+};
+
+export const getCustomerSafeExport = async (
+  exportId: string,
+  options?: RequestInit,
+): Promise<getCustomerSafeExportResponse> => {
+  const res = await fetch(getGetCustomerSafeExportUrl(exportId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCustomerSafeExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCustomerSafeExportResponse;
+};
+
+/**
+ * @summary Download an actor-bound local customer export CSV
+ */
+export type downloadCustomerSafeExportResponse200 = {
+  data: Blob;
+  status: 200;
+};
+
+export type downloadCustomerSafeExportResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type downloadCustomerSafeExportResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type downloadCustomerSafeExportResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type downloadCustomerSafeExportResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type downloadCustomerSafeExportResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type downloadCustomerSafeExportResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type downloadCustomerSafeExportResponseSuccess =
+  downloadCustomerSafeExportResponse200 & {
+    headers: Headers;
+  };
+export type downloadCustomerSafeExportResponseError = (
+  | downloadCustomerSafeExportResponse400
+  | downloadCustomerSafeExportResponse401
+  | downloadCustomerSafeExportResponse403
+  | downloadCustomerSafeExportResponse404
+  | downloadCustomerSafeExportResponse409
+  | downloadCustomerSafeExportResponse503
+) & {
+  headers: Headers;
+};
+
+export type downloadCustomerSafeExportResponse =
+  | downloadCustomerSafeExportResponseSuccess
+  | downloadCustomerSafeExportResponseError;
+
+export const getDownloadCustomerSafeExportUrl = (exportId: string) => {
+  return `/api/v1/customer-exports/${exportId}/download`;
+};
+
+export const downloadCustomerSafeExport = async (
+  exportId: string,
+  options?: RequestInit,
+): Promise<downloadCustomerSafeExportResponse> => {
+  const res = await fetch(getDownloadCustomerSafeExportUrl(exportId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: downloadCustomerSafeExportResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as downloadCustomerSafeExportResponse;
 };
 
 /**

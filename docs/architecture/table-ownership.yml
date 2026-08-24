@@ -33,6 +33,9 @@ owners:
       - legacy_tag_execution_status
       - stage_operation_receipts
       - tag_catalog_operation_receipts
+      - customer_safe_exports
+      - customer_safe_export_rows
+      - customer_safe_export_receipts
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
@@ -50,6 +53,9 @@ owners:
       legacy_tag_execution_status: singleton_fail_closed_local_execution_gate_projection
       stage_operation_receipts: actor_scoped_transactional_stage_mutation_idempotency_receipts
       tag_catalog_operation_receipts: actor_scoped_transactional_tag_catalog_mutation_idempotency_receipts
+      customer_safe_exports: actor_bound_local_customer_export_snapshot_metadata_without_provider_or_external_identity
+      customer_safe_export_rows: closed_whitelist_rows_for_actor_bound_local_customer_csv_snapshot
+      customer_safe_export_receipts: actor_scoped_transactional_customer_export_snapshot_idempotency_receipts
 
   identity:
     package: internal/identity

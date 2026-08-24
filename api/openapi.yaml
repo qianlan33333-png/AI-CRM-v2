@@ -1082,6 +1082,79 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/customer-exports:
+    post:
+      tags: [p4-customer-safe-export]
+      operationId: createCustomerSafeExport
+      summary: Freeze a local safe customer CSV export snapshot
+      x-p4-decision-evidence: P4-CUSTOMER-SAFE-EXPORT-LOCAL-CORE-2026-08-24
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.local_frozen_snapshot
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CustomerSafeExportRequest" } } }
+      responses:
+        "201": { description: Frozen local export snapshot, content: { application/json: { schema: { $ref: "#/components/schemas/CustomerSafeExportResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/customer-exports/{export_id}:
+    parameters: [{ $ref: "#/components/parameters/CustomerSafeExportID" }]
+    get:
+      tags: [p4-customer-safe-export]
+      operationId: getCustomerSafeExport
+      summary: Read actor-bound local customer export metadata
+      x-p4-decision-evidence: P4-CUSTOMER-SAFE-EXPORT-LOCAL-CORE-2026-08-24
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.local_frozen_snapshot
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { description: Local export metadata, content: { application/json: { schema: { $ref: "#/components/schemas/CustomerSafeExportResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/customer-exports/{export_id}/download:
+    parameters: [{ $ref: "#/components/parameters/CustomerSafeExportID" }]
+    get:
+      tags: [p4-customer-safe-export]
+      operationId: downloadCustomerSafeExport
+      summary: Download an actor-bound local customer export CSV
+      x-p4-decision-evidence: P4-CUSTOMER-SAFE-EXPORT-LOCAL-CORE-2026-08-24
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: owner_staff }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.local_frozen_snapshot
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200":
+          description: Formula-safe local CSV snapshot.
+          headers: { Cache-Control: { schema: { type: string }, example: no-store }, Content-Disposition: { schema: { type: string } } }
+          content: { text/csv: { schema: { type: string, format: binary } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/v1/customers/{customer_id}/tags/{tag_id}:
     parameters:
       - $ref: "#/components/parameters/CustomerID"
@@ -9606,6 +9679,12 @@ components:
       required: true
       description: Stable caller key; reusing it with a different normalized command is a conflict.
       schema: { type: string, minLength: 16, maxLength: 128 }
+    CustomerSafeExportID:
+      name: export_id
+      in: path
+      required: true
+      description: Opaque Contact-owned local snapshot identifier.
+      schema: { type: string, pattern: '^cse_[0-9a-f]{32}$', minLength: 36, maxLength: 36 }
     ServicePeriodMemberRef:
       name: member_ref
       in: path
@@ -14853,6 +14932,31 @@ components:
         total: { type: integer, format: int64, minimum: 0 }
         total_is_estimate: { type: boolean }
         watermark: { type: string, format: date-time }
+    CustomerSafeExportRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        owner_staff_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        stage_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        channel_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        tag_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        keyword: { type: string, maxLength: 200 }
+        added_after: { type: string, format: date-time, nullable: true }
+        added_before: { type: string, format: date-time, nullable: true }
+        last_interact_after: { type: string, format: date-time, nullable: true }
+        last_interact_before: { type: string, format: date-time, nullable: true }
+    CustomerSafeExportResponse:
+      type: object
+      additionalProperties: false
+      required: [id, record_count, watermark, created_at, download_url, local_only, real_external_call_executed]
+      properties:
+        id: { type: string, pattern: '^cse_[0-9a-f]{32}$' }
+        record_count: { type: integer, minimum: 0, maximum: 10000 }
+        watermark: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+        download_url: { type: string, pattern: '^/api/v1/customer-exports/cse_[0-9a-f]{32}/download$' }
+        local_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
     CustomerDetailResponse:
       type: object
       additionalProperties: false

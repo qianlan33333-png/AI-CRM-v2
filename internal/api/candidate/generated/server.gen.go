@@ -1723,6 +1723,36 @@ func (e CustomerMergeHistoryResponseScope) Valid() bool {
 	}
 }
 
+// Defines values for CustomerSafeExportResponseLocalOnly.
+const (
+	CustomerSafeExportResponseLocalOnlyTrue CustomerSafeExportResponseLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the CustomerSafeExportResponseLocalOnly enum.
+func (e CustomerSafeExportResponseLocalOnly) Valid() bool {
+	switch e {
+	case CustomerSafeExportResponseLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CustomerSafeExportResponseRealExternalCallExecuted.
+const (
+	CustomerSafeExportResponseRealExternalCallExecutedFalse CustomerSafeExportResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CustomerSafeExportResponseRealExternalCallExecuted enum.
+func (e CustomerSafeExportResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CustomerSafeExportResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CustomerSurveyAnswerResponseFreeTextIncluded.
 const (
 	CustomerSurveyAnswerResponseFreeTextIncludedFalse CustomerSurveyAnswerResponseFreeTextIncluded = false
@@ -6429,13 +6459,13 @@ func (e SidebarSafeChoiceAnswerQuestionType) Valid() bool {
 
 // Defines values for SidebarSafetyLocalOnly.
 const (
-	True SidebarSafetyLocalOnly = true
+	SidebarSafetyLocalOnlyTrue SidebarSafetyLocalOnly = true
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyLocalOnly enum.
 func (e SidebarSafetyLocalOnly) Valid() bool {
 	switch e {
-	case True:
+	case SidebarSafetyLocalOnlyTrue:
 		return true
 	default:
 		return false
@@ -6459,13 +6489,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	False SidebarSafetyRealExternalCallExecuted = false
+	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case False:
+	case SidebarSafetyRealExternalCallExecutedFalse:
 		return true
 	default:
 		return false
@@ -7780,6 +7810,36 @@ type CustomerMergeHistoryResponseRealExternalCallExecuted bool
 
 // CustomerMergeHistoryResponseScope defines model for CustomerMergeHistoryResponse.Scope.
 type CustomerMergeHistoryResponseScope string
+
+// CustomerSafeExportRequest defines model for CustomerSafeExportRequest.
+type CustomerSafeExportRequest struct {
+	AddedAfter         *time.Time `json:"added_after,omitempty"`
+	AddedBefore        *time.Time `json:"added_before,omitempty"`
+	ChannelId          *int64     `json:"channel_id,omitempty"`
+	Keyword            *string    `json:"keyword,omitempty"`
+	LastInteractAfter  *time.Time `json:"last_interact_after,omitempty"`
+	LastInteractBefore *time.Time `json:"last_interact_before,omitempty"`
+	OwnerStaffId       *int64     `json:"owner_staff_id,omitempty"`
+	StageId            *int64     `json:"stage_id,omitempty"`
+	TagId              *int64     `json:"tag_id,omitempty"`
+}
+
+// CustomerSafeExportResponse defines model for CustomerSafeExportResponse.
+type CustomerSafeExportResponse struct {
+	CreatedAt                time.Time                                          `json:"created_at"`
+	DownloadUrl              string                                             `json:"download_url"`
+	Id                       string                                             `json:"id"`
+	LocalOnly                CustomerSafeExportResponseLocalOnly                `json:"local_only"`
+	RealExternalCallExecuted CustomerSafeExportResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	RecordCount              int                                                `json:"record_count"`
+	Watermark                time.Time                                          `json:"watermark"`
+}
+
+// CustomerSafeExportResponseLocalOnly defines model for CustomerSafeExportResponse.LocalOnly.
+type CustomerSafeExportResponseLocalOnly bool
+
+// CustomerSafeExportResponseRealExternalCallExecuted defines model for CustomerSafeExportResponse.RealExternalCallExecuted.
+type CustomerSafeExportResponseRealExternalCallExecuted bool
 
 // CustomerSurveyAnswerItem defines model for CustomerSurveyAnswerItem.
 type CustomerSurveyAnswerItem struct {
@@ -10495,6 +10555,9 @@ type CustomerID = int64
 // CustomerKeyword defines model for CustomerKeyword.
 type CustomerKeyword = string
 
+// CustomerSafeExportID defines model for CustomerSafeExportID.
+type CustomerSafeExportID = string
+
 // EntitlementID defines model for EntitlementID.
 type EntitlementID = int64
 
@@ -11312,6 +11375,15 @@ type ExecuteContactOwnerReassignmentPreviewParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// CreateCustomerSafeExportParams defines parameters for CreateCustomerSafeExport.
+type CreateCustomerSafeExportParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // ListCustomersParams defines parameters for ListCustomers.
 type ListCustomersParams struct {
 	// Cursor Opaque keyset cursor; clients must not parse or synthesize it.
@@ -11830,6 +11902,9 @@ type UpdateSidebarProfileJSONRequestBody UpdateSidebarProfileJSONBody
 
 // ExecuteContactOwnerReassignmentPreviewJSONRequestBody defines body for ExecuteContactOwnerReassignmentPreview for application/json ContentType.
 type ExecuteContactOwnerReassignmentPreviewJSONRequestBody = ContactOwnerReassignmentExecuteRequest
+
+// CreateCustomerSafeExportJSONRequestBody defines body for CreateCustomerSafeExport for application/json ContentType.
+type CreateCustomerSafeExportJSONRequestBody = CustomerSafeExportRequest
 
 // UpdateCustomerJSONRequestBody defines body for UpdateCustomer for application/json ContentType.
 type UpdateCustomerJSONRequestBody = CustomerUpdateRequest
@@ -13380,6 +13455,15 @@ type ServerInterface interface {
 	// Download the safe local owner-reassignment CSV template
 	// (GET /api/v1/contact-owner-reassignments/template)
 	DownloadContactOwnerReassignmentTemplate(w http.ResponseWriter, r *http.Request)
+	// Freeze a local safe customer CSV export snapshot
+	// (POST /api/v1/customer-exports)
+	CreateCustomerSafeExport(w http.ResponseWriter, r *http.Request, params CreateCustomerSafeExportParams)
+	// Read actor-bound local customer export metadata
+	// (GET /api/v1/customer-exports/{export_id})
+	GetCustomerSafeExport(w http.ResponseWriter, r *http.Request, exportId CustomerSafeExportID)
+	// Download an actor-bound local customer export CSV
+	// (GET /api/v1/customer-exports/{export_id}/download)
+	DownloadCustomerSafeExport(w http.ResponseWriter, r *http.Request, exportId CustomerSafeExportID)
 	// List customers using a keyset cursor
 	// (GET /api/v1/customers)
 	ListCustomers(w http.ResponseWriter, r *http.Request, params ListCustomersParams)
@@ -14265,6 +14349,24 @@ func (_ Unimplemented) DownloadContactOwnerReassignmentResults(w http.ResponseWr
 // Download the safe local owner-reassignment CSV template
 // (GET /api/v1/contact-owner-reassignments/template)
 func (_ Unimplemented) DownloadContactOwnerReassignmentTemplate(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Freeze a local safe customer CSV export snapshot
+// (POST /api/v1/customer-exports)
+func (_ Unimplemented) CreateCustomerSafeExport(w http.ResponseWriter, r *http.Request, params CreateCustomerSafeExportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read actor-bound local customer export metadata
+// (GET /api/v1/customer-exports/{export_id})
+func (_ Unimplemented) GetCustomerSafeExport(w http.ResponseWriter, r *http.Request, exportId CustomerSafeExportID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Download an actor-bound local customer export CSV
+// (GET /api/v1/customer-exports/{export_id}/download)
+func (_ Unimplemented) DownloadCustomerSafeExport(w http.ResponseWriter, r *http.Request, exportId CustomerSafeExportID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -21389,6 +21491,141 @@ func (siw *ServerInterfaceWrapper) DownloadContactOwnerReassignmentTemplate(w ht
 	handler.ServeHTTP(w, r)
 }
 
+// CreateCustomerSafeExport operation middleware
+func (siw *ServerInterfaceWrapper) CreateCustomerSafeExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateCustomerSafeExportParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCustomerSafeExport(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCustomerSafeExport operation middleware
+func (siw *ServerInterfaceWrapper) GetCustomerSafeExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "export_id" -------------
+	var exportId CustomerSafeExportID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "export_id", chi.URLParam(r, "export_id"), &exportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "export_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCustomerSafeExport(w, r, exportId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadCustomerSafeExport operation middleware
+func (siw *ServerInterfaceWrapper) DownloadCustomerSafeExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "export_id" -------------
+	var exportId CustomerSafeExportID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "export_id", chi.URLParam(r, "export_id"), &exportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "export_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadCustomerSafeExport(w, r, exportId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListCustomers operation middleware
 func (siw *ServerInterfaceWrapper) ListCustomers(w http.ResponseWriter, r *http.Request) {
 
@@ -25100,6 +25337,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/contact-owner-reassignments/template", wrapper.DownloadContactOwnerReassignmentTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/customer-exports", wrapper.CreateCustomerSafeExport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/customer-exports/{export_id}", wrapper.GetCustomerSafeExport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/customer-exports/{export_id}/download", wrapper.DownloadCustomerSafeExport)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/customers", wrapper.ListCustomers)
@@ -32815,6 +33061,220 @@ func (response DownloadContactOwnerReassignmentTemplate403JSONResponse) VisitDow
 	return json.NewEncoder(w).Encode(response)
 }
 
+type CreateCustomerSafeExportRequestObject struct {
+	Params CreateCustomerSafeExportParams
+	Body   *CreateCustomerSafeExportJSONRequestBody
+}
+
+type CreateCustomerSafeExportResponseObject interface {
+	VisitCreateCustomerSafeExportResponse(w http.ResponseWriter) error
+}
+
+type CreateCustomerSafeExport201JSONResponse CustomerSafeExportResponse
+
+func (response CreateCustomerSafeExport201JSONResponse) VisitCreateCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateCustomerSafeExport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateCustomerSafeExport400JSONResponse) VisitCreateCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateCustomerSafeExport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateCustomerSafeExport401JSONResponse) VisitCreateCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateCustomerSafeExport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateCustomerSafeExport403JSONResponse) VisitCreateCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateCustomerSafeExport409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateCustomerSafeExport409JSONResponse) VisitCreateCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateCustomerSafeExport503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateCustomerSafeExport503JSONResponse) VisitCreateCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerSafeExportRequestObject struct {
+	ExportId CustomerSafeExportID `json:"export_id"`
+}
+
+type GetCustomerSafeExportResponseObject interface {
+	VisitGetCustomerSafeExportResponse(w http.ResponseWriter) error
+}
+
+type GetCustomerSafeExport200JSONResponse CustomerSafeExportResponse
+
+func (response GetCustomerSafeExport200JSONResponse) VisitGetCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerSafeExport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetCustomerSafeExport400JSONResponse) VisitGetCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerSafeExport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCustomerSafeExport401JSONResponse) VisitGetCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerSafeExport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetCustomerSafeExport403JSONResponse) VisitGetCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerSafeExport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetCustomerSafeExport404JSONResponse) VisitGetCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetCustomerSafeExport503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetCustomerSafeExport503JSONResponse) VisitGetCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadCustomerSafeExportRequestObject struct {
+	ExportId CustomerSafeExportID `json:"export_id"`
+}
+
+type DownloadCustomerSafeExportResponseObject interface {
+	VisitDownloadCustomerSafeExportResponse(w http.ResponseWriter) error
+}
+
+type DownloadCustomerSafeExport200ResponseHeaders struct {
+	CacheControl       string
+	ContentDisposition string
+}
+
+type DownloadCustomerSafeExport200TextcsvResponse struct {
+	Body          io.Reader
+	Headers       DownloadCustomerSafeExport200ResponseHeaders
+	ContentLength int64
+}
+
+func (response DownloadCustomerSafeExport200TextcsvResponse) VisitDownloadCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/csv")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.Header().Set("Cache-Control", fmt.Sprint(response.Headers.CacheControl))
+	w.Header().Set("Content-Disposition", fmt.Sprint(response.Headers.ContentDisposition))
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DownloadCustomerSafeExport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DownloadCustomerSafeExport400JSONResponse) VisitDownloadCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadCustomerSafeExport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DownloadCustomerSafeExport401JSONResponse) VisitDownloadCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadCustomerSafeExport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DownloadCustomerSafeExport403JSONResponse) VisitDownloadCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadCustomerSafeExport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DownloadCustomerSafeExport404JSONResponse) VisitDownloadCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadCustomerSafeExport409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DownloadCustomerSafeExport409JSONResponse) VisitDownloadCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadCustomerSafeExport503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response DownloadCustomerSafeExport503JSONResponse) VisitDownloadCustomerSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListCustomersRequestObject struct {
 	Params ListCustomersParams
 }
@@ -36718,6 +37178,15 @@ type StrictServerInterface interface {
 	// Download the safe local owner-reassignment CSV template
 	// (GET /api/v1/contact-owner-reassignments/template)
 	DownloadContactOwnerReassignmentTemplate(ctx context.Context, request DownloadContactOwnerReassignmentTemplateRequestObject) (DownloadContactOwnerReassignmentTemplateResponseObject, error)
+	// Freeze a local safe customer CSV export snapshot
+	// (POST /api/v1/customer-exports)
+	CreateCustomerSafeExport(ctx context.Context, request CreateCustomerSafeExportRequestObject) (CreateCustomerSafeExportResponseObject, error)
+	// Read actor-bound local customer export metadata
+	// (GET /api/v1/customer-exports/{export_id})
+	GetCustomerSafeExport(ctx context.Context, request GetCustomerSafeExportRequestObject) (GetCustomerSafeExportResponseObject, error)
+	// Download an actor-bound local customer export CSV
+	// (GET /api/v1/customer-exports/{export_id}/download)
+	DownloadCustomerSafeExport(ctx context.Context, request DownloadCustomerSafeExportRequestObject) (DownloadCustomerSafeExportResponseObject, error)
 	// List customers using a keyset cursor
 	// (GET /api/v1/customers)
 	ListCustomers(ctx context.Context, request ListCustomersRequestObject) (ListCustomersResponseObject, error)
@@ -40409,6 +40878,91 @@ func (sh *strictHandler) DownloadContactOwnerReassignmentTemplate(w http.Respons
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(DownloadContactOwnerReassignmentTemplateResponseObject); ok {
 		if err := validResponse.VisitDownloadContactOwnerReassignmentTemplateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateCustomerSafeExport operation middleware
+func (sh *strictHandler) CreateCustomerSafeExport(w http.ResponseWriter, r *http.Request, params CreateCustomerSafeExportParams) {
+	var request CreateCustomerSafeExportRequestObject
+
+	request.Params = params
+
+	var body CreateCustomerSafeExportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateCustomerSafeExport(ctx, request.(CreateCustomerSafeExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateCustomerSafeExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateCustomerSafeExportResponseObject); ok {
+		if err := validResponse.VisitCreateCustomerSafeExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCustomerSafeExport operation middleware
+func (sh *strictHandler) GetCustomerSafeExport(w http.ResponseWriter, r *http.Request, exportId CustomerSafeExportID) {
+	var request GetCustomerSafeExportRequestObject
+
+	request.ExportId = exportId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCustomerSafeExport(ctx, request.(GetCustomerSafeExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCustomerSafeExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCustomerSafeExportResponseObject); ok {
+		if err := validResponse.VisitGetCustomerSafeExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadCustomerSafeExport operation middleware
+func (sh *strictHandler) DownloadCustomerSafeExport(w http.ResponseWriter, r *http.Request, exportId CustomerSafeExportID) {
+	var request DownloadCustomerSafeExportRequestObject
+
+	request.ExportId = exportId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadCustomerSafeExport(ctx, request.(DownloadCustomerSafeExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadCustomerSafeExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadCustomerSafeExportResponseObject); ok {
+		if err := validResponse.VisitDownloadCustomerSafeExportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

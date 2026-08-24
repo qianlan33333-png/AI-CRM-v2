@@ -164,6 +164,9 @@ type AutomationAgentID = int64
 // CustomerID defines model for CustomerID.
 type CustomerID = int64
 
+// CustomerSafeExportID defines model for CustomerSafeExportID.
+type CustomerSafeExportID = string
+
 // GroupOpsPlanID defines model for GroupOpsPlanID.
 type GroupOpsPlanID = string
 
