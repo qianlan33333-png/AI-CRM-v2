@@ -1,70 +1,183 @@
-# P4 后端能力冻结账本
+# P4 后端冻结收据总账
 
-## 口径
+## 冻结口径
 
-本账本只记录 P4 后端四个业务包，不把前端、部署或真实外部效果计入后端完成度。
-审计基线是 `origin/main` 的
-`71b9b4f43276ae55f0a0ea926152f72fbe0fc6b3`（2026-08-24）。
+本收据固定的代码基线是
+`origin/main@1aa864f9006576bf9d9d08bed41fe30b9c849301`
+（`feat(product): 上线服务期成员网格 canonical 本地后端闭环 (#472)`）。它只盘点十个
+已进入该基线、可由 OpenAPI/组合根/应用/存储/迁移/测试交叉追溯的 P4 本地后端包。
 
-这四个业务包是 V2 原生后端能力。它们不与旧 Feature Matrix 行做虚假的
-1:1 匹配，也不重复计入已经由旧 Campaign API 关闭的 Matrix 行。
-`tools/openapi-contract` 中的 `nativePackageOperations` 是机器可执行合同：
-这些操作必须保持无 `x-legacy-mapping-ids`、`external-effect: none`，并严格匹配
-已批准的 RBAC、CSRF、数据来源和数据分类。
+- 冻结分母：**10 packages、73 unique operationIds**，即 00054、00061、00063--00070。
+  canonical member-grid schema/query 属同一个 member-grid resource family：`00054` 承载
+  management DDL，canonical read 无新 migration 并复用 `00064` 的 `service_period_members`；
+  因而不另增 package。
+- `UNCLASSIFIED`：不在下列 manifest 的操作、前端页面、Provider/企微/支付退款效果、
+  未经授权的外部运行，或无法可靠归属到一个 migration/operation 闭环的事项，均不计入
+  10/73；不得把全仓遗留项或某个“剩余 116”猜测性加入分母。
+- 本总账不修改也不重写 `docs/feature-matrix.csv`。旧 Matrix 只保留各旧操作的证据和
+  状态；V2 difference 绝不被伪装为 legacy 1:1 完成。
 
-## 冻结范围
+## 73 operationId manifest
 
-| 顺序 | 业务包 | Migration | V2 operationId | 主线实现证据 | 本次本地验收 |
-| --- | --- | --- | --- | --- | --- |
-| 1 | Contact Touch Policy | `00065_customer_contact_policies.sql` | `getCustomerContactPolicy`、`putCustomerContactPolicy`、`deleteCustomerContactPolicy` | PR #410；`cf362a6bcc567662f9a729cce1aa945ae678e771` | PASS |
-| 2 | Campaign Initiation Snapshots | `00066_campaign_initiation_snapshots.sql` | `listCloudCampaignTouchPlans`、`createCloudCampaignTouchPlan`、`getCloudCampaignTouchPlan` | PR #411；`75ceaab2e34ee90f8efa07222c5c8d292b065281` | PASS |
-| 3 | Campaign Review/Handoff | `00067_campaign_touch_plan_review_handoff.sql` | `listCloudCampaignTouchPlanRecipients`、`getCloudCampaignTouchPlanRecipient`、`getCloudCampaignTouchPlanReview`、`mutateCloudCampaignTouchPlanReview` | PR #412；`369aa2e743d7de2c5048f84bc3b9326b67edb5b0` | PASS |
-| 4 | Outbound Accept/Reconcile | `00068_outbound_campaign_handoff_acceptance.sql` | `getOutboundCampaignHandoffSummary`、`acceptOutboundCampaignHandoff`、`reconcileOutboundCampaignHandoff` | PR #413；`2c96c71a1257efbde67de7267173d79261b3ffd9` | PASS |
+下列是唯一计数的机器可复核清单；每项应同时可在 `api/openapi.yaml` 和
+`tools/openapi-contract/main.go` 的合同中定位。
 
-冻结分母是 **4 个后端业务包、13 个 V2 操作**。审计基线上已实现
-**4/4、13/13**。所有写操作要求 human session、`operations.manage`、CSRF
-和幂等键；所有读操作要求 `operations.read`。四个包均只产生本地事实、审计
-事件或 held task link，不创建发送任务，不调用 Provider，也不证明送达。
+<!-- p4-backend-freeze-operation-ids:start -->
 
-## Matrix 与 USER OPS 关系
+### 00054 Service Period Member Grid Management（11）
 
-- `docs/feature-matrix.csv` 仍是 294 行旧系统行为账本；本次
-  `feature-matrix-contract` 通过，未改写其不可变旧事实。
-- `LEGACY-S06-019` 与 `LEGACY-S06-036` 至 `LEGACY-S06-042` 已按
-  `P4-UO-CANCEL-2026-08-23` 标记为 `DEPRECATED`。独立 USER OPS 不再开发。
-- 00065–00068 是旧 USER OPS 之后的 V2 后端业务流，不把 OneID、本地触达策略、
-  不可变触达快照、审核交接或 Outbound held reconciliation 硬写成旧路由的
-  1:1 实现。
-- 旧 Campaign Matrix 行仍以其原 operation/action/result 证据独立计数；本账本
-  不重复回填这些行。
+- getServicePeriodMemberGridAccess
+- getServicePeriodMemberGridSchema
+- queryServicePeriodMemberGrid
+- listServicePeriodMemberViews
+- createServicePeriodMemberView
+- updateServicePeriodMemberView
+- deleteServicePeriodMemberView
+- getServicePeriodMemberGridShareSettings
+- createServicePeriodMemberGridCollaborator
+- updateServicePeriodMemberGridCollaborator
+- deleteServicePeriodMemberGridCollaborator
 
-## 验收收据
+### 00061 Survey Operations Local Config（7）
 
-以下命令均在上述审计基线、隔离的 loopback PostgreSQL 16.14
-`aicrm_test` 派生临时库上于 2026-08-24 执行：
+- listSurveyExternalPushLogs
+- listSurveyQuestionnaireExternalPushLogs
+- getSurveyOperationsPageData
+- getSurveyOperations
+- saveSurveyCompletionOperations
+- saveSurveyExternalPushOperations
+- queueSurveyExternalPushTest
 
-| 验收 | 结果 | 证明边界 |
+### 00063 Group Ops Local Plans（20）
+
+- listGroupOpsPlans
+- createGroupOpsPlan
+- getGroupOpsPlan
+- updateGroupOpsPlan
+- activateGroupOpsPlan
+- pauseGroupOpsPlan
+- archiveGroupOpsPlan
+- listGroupOpsPlanMembers
+- addGroupOpsPlanMember
+- removeGroupOpsPlanMember
+- listGroupOpsPlanGroupAssets
+- addGroupOpsPlanGroupAsset
+- removeGroupOpsPlanGroupAsset
+- listGroupOpsPlanNodes
+- addGroupOpsPlanNode
+- updateGroupOpsPlanNode
+- removeGroupOpsPlanNode
+- getGroupOpsWebhookDescriptor
+- putGroupOpsWebhookDescriptor
+- previewGroupOpsPlanContent
+
+### 00064 Service Period Members Local Core（7）
+
+- listServicePeriodMembers
+- addServicePeriodMember
+- exportServicePeriodMembers
+- getServicePeriodMember
+- updateServicePeriodMemberFields
+- expireServicePeriodMember
+- removeServicePeriodMember
+
+### 00065 Contact Touch Policy（3）
+
+- getCustomerContactPolicy
+- putCustomerContactPolicy
+- deleteCustomerContactPolicy
+
+### 00066 Campaign Initiation Snapshots（3）
+
+- listCloudCampaignTouchPlans
+- createCloudCampaignTouchPlan
+- getCloudCampaignTouchPlan
+
+### 00067 Campaign Review/Handoff（4）
+
+- listCloudCampaignTouchPlanRecipients
+- getCloudCampaignTouchPlanRecipient
+- getCloudCampaignTouchPlanReview
+- mutateCloudCampaignTouchPlanReview
+
+### 00068 Outbound Accept/Reconcile（3）
+
+- getOutboundCampaignHandoffSummary
+- acceptOutboundCampaignHandoff
+- reconcileOutboundCampaignHandoff
+
+### 00069 S05 Sidebar Local Core（9）
+
+- mintSidebarContext
+- getSidebarWorkbench
+- updateSidebarProfile
+- listSidebarQuestionnaires
+- listSidebarOrders
+- listSidebarPeriodicOrders
+- updateSidebarPeriodicRemark
+- listSidebarMaterials
+- getSidebarMaterialThumbnailStatus
+
+### 00070 Contact Owner Reassignment Local Core（6）
+
+- downloadContactOwnerReassignmentTemplate
+- createContactOwnerReassignmentPreview
+- getContactOwnerReassignmentPreview
+- executeContactOwnerReassignmentPreview
+- downloadContactOwnerReassignmentErrors
+- downloadContactOwnerReassignmentResults
+
+<!-- p4-backend-freeze-operation-ids:end -->
+
+## 包级收据
+
+| Migration / package | Native、legacy 与 Matrix 边界 | RBAC、CSRF、幂等、UoW / receipt | Focused / PostgreSQL 证据 | 外部效果 |
+| --- | --- | --- | --- | --- |
+| Member Grid resource family（`00054_service_period_member_grid_management.sql` management DDL；canonical read 无新 migration、复用 `00064`） | 既有 member-view、协作者和 share-settings 是 legacy-compatible private management；`getServicePeriodMemberGridSchema` / `queryServicePeriodMemberGrid` 为 canonical local 演进。S07-153/154 保持 `IN_PROGRESS/NOT_RUN`：仅记录 canonical schema/query，旧任意排序、group、saved-view switching 与旧行语义仍不硬映射。 | admin/ops global；读为 `products.read` 或 `entitlements.read`，写为 `products.write`。写操作有 session CSRF、idempotency、CAS/version、UoW 与 operation receipt；读不带 CSRF。 | `internal/product/membergrid/*_test.go`；`acceptance/product/member_grid_integration_test.go`；`acceptance/product/member_grid_canonical_pg16.sh`。 | `x-aicrm-external-effect: none`；协作者是本地事实，不发邀请、不建 public share、不执行 Provider。 |
+| `00061_survey_operations_local_config.sql` — Survey Operations Local Config | legacy admin route 的数据型兼容，但只保存本地 opaque completion / external-push configuration；test 只排入本地 queued run。Matrix 仍以原 legacy operation/action/result 独立计数，本包不把 queued 写成已投递。 | admin/ops global；`questionnaires.read` / `questionnaires.write`；三个写操作要求 CSRF + Idempotency-Key。receipt 在同一 UoW 完成，payload mismatch conflict。 | `internal/survey/app/operations_test.go`；`internal/survey/http/operations/handler_test.go`；`internal/survey/store/operations_repository_integration_test.go`；`migration-validate`。 | `none`；无 Provider client、webhook payload、River job、自动重试或外部 dispatch。 |
+| `00063_group_ops_local_plans.sql` — Group Ops Local Plans | native local plan、member、asset、node、webhook descriptor 和内容预览；descriptor 只是受限 reference，不是 webhook 调用。Matrix 的旧页面/运行时语义不由此包推断完成。 | list/get/preview 为 admin global `admin.read`；写为 admin/ops global `operations.manage`。写 CSRF + Idempotency-Key；revision/CAS、单个 UoW 与 immutable completed receipt。 | `internal/groupops/app/service_test.go`；`internal/groupops/http/handler_test.go`；`internal/groupops/store/repository_integration_test.go`；`make p4-group-ops-acceptance`（PG16 migration/down guard）。 | `none`；无 group-send、runtime、provider、webhook dispatch 或 external-effect state。 |
+| `00064_service_period_members.sql` — Service Period Members Local Core | canonical `service_period_members` / `member_ref` 生命周期，不复制 legacy entitlement identity。备注/联盟字段的 CAS 是本地事实；export 是白名单安全投影。Matrix legacy 语义保持独立，不能由这七项反填。 | admin/ops global，读 `entitlements.read`、写 `entitlements.write`；命令 CSRF + idempotency。state transition / version CAS、UoW、member receipt 和 event append 同事务。 | `internal/product/serviceperiodmember/app/service_test.go`；`http/handler_test.go`；`store/repository_integration_test.go`；`acceptance/product/d01_service_period_integration_test.go`。 | `none`；没有 payment、refund、Provider 或 entitlement 外部同步。 |
+| `00065_customer_contact_policies.sql` — Contact Touch Policy | V2 原生 Contact policy，不和 USER OPS 或旧路由伪造 1:1。Matrix 保持不可变旧事实。 | admin/ops global；`operations.read` / `operations.manage`；PUT/DELETE 要 CSRF + idempotency、UoW、receipt 和 Contact event。 | `internal/contact/app/contact_policy_test.go`；`internal/contact/http/contact_policy_handler_test.go`；`internal/contact/store/contact_policy_repository_integration_test.go`；`make p4-contact-policy-acceptance`。 | `none`；仅本地 policy / audit facts。 |
+| `00066_campaign_initiation_snapshots.sql` — Campaign Initiation Snapshots | V2 immutable local touch-plan snapshots；不把旧 Campaign 页面或发送状态计入 Matrix 完成。 | admin/ops global；`operations.read` / `operations.manage`；create CSRF + idempotency，snapshot / receipt / audit 在同一 UoW。 | `internal/campaign/app/initiation_test.go`、`initiation_race_test.go`、`http_initiation_test.go`；`acceptance/campaign/initiation_repository_integration_test.go`。 | `none`；不创建 send job、不调用 Provider。 |
+| `00067_campaign_touch_plan_review_handoff.sql` — Campaign Review/Handoff | V2 review、decision、approved handoff 的本地事实；不等同旧 Campaign 操作或 delivery。 | admin/ops global；`operations.read` / `operations.manage`；mutate 要 CSRF + idempotency，review / handoff / audit 在同一 UoW。 | `internal/campaign/app/review_handoff_test.go`；`internal/campaign/http_review_handoff_test.go`；`acceptance/campaign/review_handoff_integration_test.go`。 | `none`；只产生 held handoff，不执行 dispatch。 |
+| `00068_outbound_campaign_handoff_acceptance.sql` — Outbound Accept/Reconcile | V2 held local accept / reconciliation；不能把接受、task link 或 River internal event 说成送达，Matrix 不作 legacy 硬映射。 | admin/ops global；`operations.read` / `operations.manage`；accept 要 CSRF + idempotency，UoW 中完成 receipt、handoff fact 与 event link。 | `internal/outbound/app/campaign_handoff_test.go`；`http/campaign_handoff_handler_test.go`；`acceptance/outbound/campaign_handoff_integration_test.go`；`make p4-outbound-campaign-handoff-acceptance`。 | `none`；明确不创建 Outbound send job，不调用 Provider。 |
+| `00069_sidebar_customer_profile_receipts.sql` — S05 Sidebar Local Core | 九项是 V2 后端投影/本地写入，不交付旧 UI debounce、JSSDK/OAuth 或真实 thumbnail。关联的 S05-022/023/024/026/030/031/032/033 均保持 `NOT_STARTED/NOT_RUN`。 | context mint 可选 session；其余 human session + admin/ops global 或 sales owner scope。两个 PUT 要 CSRF + idempotency；profile UoW/receipt/CAS，periodic remark 复用 member receipt。 | `internal/sidebar/app/service_test.go`；`internal/sidebar/http/handler_test.go`；`internal/contact/app/sidebar_profile_test.go`；`acceptance/sidebar/local_core_pg16.sh`。 | `none`；thumbnail 固定 local pending，不生成图片；无 Provider、发送或支付效果。 |
+| `00070_contact_owner_reassignment.sql` — Contact Owner Reassignment Local Core | 六项为 Contact-owned CSV preview/execute/result 的 V2 本地流；S07-110..115 都保持 `NOT_STARTED/NOT_RUN`，且 S07-023 被排除。local receipt/result 不等于 WeCom transfer 或旧 XLSX 行为。 | 仅 global admin `contact.owner_reassignment`；写 CSRF + Idempotency-Key，preview 和 execute 都 actor-bound。customer/staff lock、expected version、UoW、completed receipt、`customer_events` 和 event log 同事务。 | `internal/contact/app/owner_reassignment_test.go`；`internal/contact/http/owner_reassignment_handler_test.go`；`internal/contact/store/owner_reassignment_integration_test.go`；`acceptance/contact_owner_reassignment/local_core_pg16.sh`。 | `none`；不读取 WeCom userid、不调用 Provider、不做企微转属。 |
+
+所有表中命令操作都遵循其 OpenAPI `x-aicrm-session-bound-csrf` 与
+`x-aicrm-external-effect: none` 合同；“receipt”只证明本地数据库提交/重放，不证明
+Provider 接受、送达、支付、退款或生产外部事实。
+
+## 分层状态与当前 Nightly
+
+| 层级 | 当前事实 | 不可推导的结论 |
 | --- | --- | --- |
-| `make p4-contact-policy-acceptance` | PASS | 00065 store race、事实/receipt 阻止 down、空库 64→65、恢复到 68 |
-| `go test -race -count=1 -timeout=300s ./acceptance/campaign -args -database-url <isolated-00068-dsn>` | PASS | 00066 快照与并发、00067 审核/批准/拒绝/不可变交接、迁移保护 |
-| `make p4-outbound-campaign-handoff-acceptance` | PASS | 00001→00068、67/68 空库 down/up、事实保护、接纳/重放/对账 |
-| `go test -race -count=1 ./internal/contact/app ./internal/contact/http ./internal/campaign ./internal/campaign/app ./internal/outbound/app ./internal/outbound/http` | PASS | 应用与 HTTP 正常、边界、RBAC 上下文、幂等和并发合同 |
-| `go test -race -count=1 ./cmd/aicrm` | PASS | 组合根路由、CSRF 与依赖接线 |
-| `make generate-check openapi-p1-contract feature-matrix-contract` | PASS | generated 无漂移、13 个 V2 原生操作边界、旧 Matrix 294 行合同 |
+| 后端能力 | 基线中为 `10 packages / 73 unique operationIds` 的本地能力；各包的 API、应用/存储、migration 与上表 focused/PG 路径可追溯。 | 不等于前端流程完成。 |
+| 旧 Feature Matrix | 精确基线为 **177 IMPLEMENTED / 5 IN_PROGRESS / 112 NOT_STARTED / 294 total**。本提交对 Matrix 为 0 diff。 | Matrix 状态不自动证明 V2 差异、部署或外部效果。 |
+| main | 上述代码已在 `origin/main@1aa864f9006576bf9d9d08bed41fe30b9c849301`；本收据提交本身尚未进入 main。 | 不等于当前 Nightly 通过。 |
+| Nightly | [run 32715607669](https://github.com/qianlan33333-png/AI-CRM-v2/actions/runs/32715607669) 对该 exact SHA 于 2026-08-24 失败；唯一首错为 `arch-import-lint: forbidden cross-module import in internal/config/http/setup_wizard_test.go: github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http`。 | 这是既有 setup-wizard 架构门，不是十包任一业务能力失败；本 docs-only 收据不扩展修复它。 |
+| 部署 | `NOT_EXECUTED`。 | main、focused 或 PG16 不构成部署证明。 |
+| Provider / 外部效果 | `false / NOT_EXECUTED`：73 项的 OpenAPI 合同均标记 `x-aicrm-external-effect: none`。 | 不得将本地 receipt、queued test、held handoff 或 reconciliation 当作真实外部效果。 |
 
-历史实现 PR #410–#413 的 `ci / api-codegen`、`ci / database`、
-`ci / shared-regression`、`ci / secret-diff` 与 `ci / merge-gate` 均通过后合入
-main。该历史 required CI 只证明各实现 PR 的合并门，不替代当前精确 main 的
-完整 Nightly。
+## 本收据的验证
 
-## 分层状态
+本 docs-only 提交应运行下列最小合同组合；它们验证已有 OAS、Matrix 和 migration 合同，
+不借此修复任何全仓首错。
 
-| 层级 | 状态 | 说明 |
-| --- | --- | --- |
-| 后端业务能力 | `MAIN_IMPLEMENTED_LOCAL_ACCEPTANCE_PASS` | 4/4 包、13/13 操作已在审计基线并通过上述验收 |
-| 旧 Feature Matrix | `CONTRACT_PASS_294_ROWS` | 无新增硬匹配；8 行 USER OPS 已弃用 |
-| V2 后端能力账本 | `FROZEN_4_PACKAGES_13_OPERATIONS` | 本文件与 OpenAPI 原生操作合同共同承载 |
-| 当前 main 完整 Nightly | `NOT_EXECUTED_FOR_FREEZE_SHA` | 账本合入后对精确 main SHA 单独运行 |
-| 前端集中接入 | `NOT_IN_CURRENT_DOD` | 后端冻结后单独启动，不在本账本计数 |
-| 部署 | `NOT_EXECUTED` | 不由本地验收或 main 合并推导 |
-| Provider/企微/支付退款真实效果 | `NOT_EXECUTED_REQUIRES_EXPLICIT_AUTHORIZATION` | 本阶段不执行；receipt/reconciliation 需在授权后另验 |
+```text
+make feature-matrix-contract openapi-p1-contract migration-validate
+```
+
+manifest 唯一计数可用：
+
+```text
+sed -n '/p4-backend-freeze-operation-ids:start/,/p4-backend-freeze-operation-ids:end/p' \
+  docs/evidence/p4/backend-capability-ledger.md \
+  | awk '$1 == "-" && $2 ~ /^[a-z]/ { print $2 }' \
+  | sort -u | wc -l
+# 73
+```
+
+路径存在性可由 manifest 中每个 operationId 在 `api/openapi.yaml` 与
+`tools/openapi-contract/main.go` 的对应合同项复核；不将此总账扩展成 SQLC、fixture
+ownership、性能、通用安全或 setup-wizard 治理修复。
