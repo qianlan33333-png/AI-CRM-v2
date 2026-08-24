@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
-	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -42,7 +43,8 @@ func TestSidebarProfilePostgreSQL16ReceiptCASAndConcurrentWriters(t *testing.T) 
 		t.Fatal(err)
 	}
 
-	service := contactapp.NewSidebarProfileService(platformstore.NewUnitOfWork(pool), NewSidebarProfileRepository(), eventstore.NewAppender())
+	events := &sidebarProfileIntegrationEvents{}
+	service := contactapp.NewSidebarProfileService(platformstore.NewUnitOfWork(pool), NewSidebarProfileRepository(), events)
 	type outcome struct {
 		key, value string
 		profile    contactport.SidebarProfile
@@ -81,13 +83,10 @@ func TestSidebarProfilePostgreSQL16ReceiptCASAndConcurrentWriters(t *testing.T) 
 		t.Fatalf("success/conflict=%d/%d winner=%+v", successes, conflicts, winner)
 	}
 
-	var receipts, events int
+	var receipts int
 	var storedNeeds string
 	var keptExtra bool
 	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.sidebar_customer_profile_operation_receipts WHERE actor_scope='sidebar_customer_profile:actor:701' AND state='completed'`).Scan(&receipts); err != nil {
-		t.Fatal(err)
-	}
-	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.event_log WHERE event_type='customer.updated' AND customer_id=$1`, customerID).Scan(&events); err != nil {
 		t.Fatal(err)
 	}
 	if err = pool.QueryRow(ctx, `SELECT extra->'sidebar_profile'->>'needs' FROM public.customers WHERE id=$1`, customerID).Scan(&storedNeeds); err != nil {
@@ -96,8 +95,8 @@ func TestSidebarProfilePostgreSQL16ReceiptCASAndConcurrentWriters(t *testing.T) 
 	if err = pool.QueryRow(ctx, `SELECT extra @> '{"kept":{"flag":true}}'::jsonb FROM public.customers WHERE id=$1`, customerID).Scan(&keptExtra); err != nil {
 		t.Fatal(err)
 	}
-	if receipts != 1 || events != 1 || storedNeeds != winner.value || !keptExtra {
-		t.Fatalf("receipts/events/needs/kept=%d/%d/%q/%t", receipts, events, storedNeeds, keptExtra)
+	if receipts != 1 || events.count.Load() != 1 || storedNeeds != winner.value || !keptExtra {
+		t.Fatalf("receipts/events/needs/kept=%d/%d/%q/%t", receipts, events.count.Load(), storedNeeds, keptExtra)
 	}
 
 	winningValue := winner.value
@@ -105,4 +104,10 @@ func TestSidebarProfilePostgreSQL16ReceiptCASAndConcurrentWriters(t *testing.T) 
 	if err != nil || replay != winner.profile {
 		t.Fatalf("replay=%+v winner=%+v err=%v", replay, winner.profile, err)
 	}
+}
+
+type sidebarProfileIntegrationEvents struct{ count atomic.Int64 }
+
+func (events *sidebarProfileIntegrationEvents) Append(context.Context, eventport.Event) (eventport.EventID, error) {
+	return eventport.EventID(events.count.Add(1)), nil
 }

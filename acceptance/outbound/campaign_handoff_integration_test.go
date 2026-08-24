@@ -22,6 +22,7 @@ import (
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	eventsfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store/acceptancefixture"
 	outbound "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound"
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
 	outboundport "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/port"
@@ -56,8 +57,9 @@ func TestCampaignHandoffAcceptPostgreSQLConcurrencyReplayAndLocalEventDelivery(t
 	secondPool := openOutboundCampaignHandoffPool(t)
 	ctx := context.Background()
 	assertOutboundCampaignHandoffWaterline(t, ctx, pool)
-	resetOutboundCampaignHandoffFixture(t, ctx, pool)
-	t.Cleanup(func() { resetOutboundCampaignHandoffFixture(t, context.Background(), pool) })
+	resetOutboundCampaignHandoffFixture(t, ctx, pool, nil)
+	var eventIDs []int64
+	t.Cleanup(func() { resetOutboundCampaignHandoffFixture(t, context.Background(), pool, eventIDs) })
 	ensureOutboundRiverCatalog(t, ctx, pool)
 
 	var firstPID, secondPID int
@@ -122,6 +124,7 @@ func TestCampaignHandoffAcceptPostgreSQLConcurrencyReplayAndLocalEventDelivery(t
 	if winner.index < 0 || losers != 1 {
 		t.Fatalf("concurrent winner=%#v losers=%d, want one each", winner, losers)
 	}
+	eventIDs = append(eventIDs, campaignHandoffReceiptEventID(t, ctx, pool, planID))
 	assertCampaignHandoffFactCounts(t, ctx, pool, planID, 1, 1, 1, 2, 1, 0, 0)
 
 	callsBeforeReplay := source.calls.Load()
@@ -165,8 +168,8 @@ func TestCampaignHandoffMigrationRejectsIncompleteAndTamperedFacts(t *testing.T)
 	pool := openOutboundCampaignHandoffPool(t)
 	ctx := context.Background()
 	assertOutboundCampaignHandoffWaterline(t, ctx, pool)
-	resetOutboundCampaignHandoffFixture(t, ctx, pool)
-	t.Cleanup(func() { resetOutboundCampaignHandoffFixture(t, context.Background(), pool) })
+	resetOutboundCampaignHandoffFixture(t, ctx, pool, nil)
+	t.Cleanup(func() { resetOutboundCampaignHandoffFixture(t, context.Background(), pool, nil) })
 
 	t.Run("reserved receipt", func(t *testing.T) {
 		tx, err := pool.Begin(ctx)
@@ -196,6 +199,25 @@ VALUES (81,decode(repeat('81',32),'hex'),decode(repeat('82',32),'hex'),'reserved
 		assertNoCampaignHandoffPlan(t, ctx, pool, planID)
 	})
 
+	t.Run("event plan and handoff mismatch", func(t *testing.T) {
+		tx, err := pool.Begin(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() { _ = tx.Rollback(ctx) }()
+		planID := outboundCampaignHandoffPlanID('d')
+		handoffID := insertRawCampaignHandoffHeader(t, ctx, tx, "mismatched-event", planID, 83)
+		insertRawCampaignHandoffChildren(t, ctx, tx, handoffID)
+		for _, appendFact := range []func(context.Context, pgx.Tx, int64, string) (int64, error){
+			eventsfixture.AppendCampaignHandoffAcceptedFact,
+			eventsfixture.AppendCampaignHandoffAcceptedFactWithForbiddenExtraKey,
+		} {
+			if _, err = appendFact(ctx, tx, handoffID, outboundCampaignHandoffPlanID('e')); !errors.Is(err, pgx.ErrNoRows) {
+				t.Fatalf("mismatched event fact error=%v, want pgx.ErrNoRows", err)
+			}
+		}
+	})
+
 	for _, tamper := range []string{"event-extra-key", "result-count"} {
 		tamper := tamper
 		t.Run(tamper, func(t *testing.T) {
@@ -204,7 +226,7 @@ VALUES (81,decode(repeat('81',32),'hex'),decode(repeat('82',32),'hex'),'reserved
 				t.Fatal(err)
 			}
 			defer func() { _ = tx.Rollback(ctx) }()
-			planID := outboundCampaignHandoffPlanID(map[string]rune{"event-extra-key": 'd', "result-count": 'e'}[tamper])
+			planID := outboundCampaignHandoffPlanID(map[string]rune{"event-extra-key": 'f', "result-count": '1'}[tamper])
 			insertRawCompletedCampaignHandoff(t, ctx, tx, "tampered-"+tamper, planID, 83, tamper)
 			assertOutboundCampaignHandoffSQLState(t, tx.Commit(ctx), "23514")
 			assertNoCampaignHandoffPlan(t, ctx, pool, planID)
@@ -216,13 +238,14 @@ func TestCampaignHandoffMigrationFactsGuardAndEmptyDownUp(t *testing.T) {
 	pool := openOutboundCampaignHandoffPool(t)
 	ctx := context.Background()
 	assertOutboundCampaignHandoffWaterline(t, ctx, pool)
-	resetOutboundCampaignHandoffFixture(t, ctx, pool)
+	resetOutboundCampaignHandoffFixture(t, ctx, pool, nil)
 	repositoryRoot := outboundCampaignHandoffRepositoryRoot(t)
+	var eventIDs []int64
 	t.Cleanup(func() {
 		if outboundCampaignHandoffMigrationWaterline(t, context.Background(), pool) < 68 {
 			runOutboundCampaignHandoffGoose(t, context.Background(), repositoryRoot, "up-to", "68")
 		}
-		resetOutboundCampaignHandoffFixture(t, context.Background(), pool)
+		resetOutboundCampaignHandoffFixture(t, context.Background(), pool, eventIDs)
 	})
 
 	planID := outboundCampaignHandoffPlanID('f')
@@ -238,6 +261,7 @@ func TestCampaignHandoffMigrationFactsGuardAndEmptyDownUp(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
+	eventIDs = append(eventIDs, campaignHandoffReceiptEventID(t, ctx, pool, planID))
 	err := outboundCampaignHandoffGoose(ctx, repositoryRoot, "down-to", "67")
 	if err == nil || !strings.Contains(err.Error(), "55000") {
 		t.Fatalf("facts rollback error=%v, want SQLSTATE 55000", err)
@@ -247,7 +271,8 @@ func TestCampaignHandoffMigrationFactsGuardAndEmptyDownUp(t *testing.T) {
 	}
 	assertCampaignHandoffFactCounts(t, ctx, pool, planID, 1, 1, 1, 1, 1, 0, 0)
 
-	resetOutboundCampaignHandoffFixture(t, ctx, pool)
+	resetOutboundCampaignHandoffFixture(t, ctx, pool, eventIDs)
+	eventIDs = nil
 	runOutboundCampaignHandoffGoose(t, ctx, repositoryRoot, "down-to", "67")
 	if got := outboundCampaignHandoffMigrationWaterline(t, ctx, pool); got != 67 {
 		t.Fatalf("migration waterline after empty rollback=%d, want 67", got)
@@ -391,7 +416,7 @@ func outboundCampaignHandoffGoose(ctx context.Context, repositoryRoot, operation
 	return nil
 }
 
-func resetOutboundCampaignHandoffFixture(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
+func resetOutboundCampaignHandoffFixture(t *testing.T, ctx context.Context, pool *pgxpool.Pool, eventIDs []int64) {
 	t.Helper()
 	if _, err := pool.Exec(ctx, `TRUNCATE
   public.outbound_campaign_handoff_receipts,
@@ -408,12 +433,18 @@ func resetOutboundCampaignHandoffFixture(t *testing.T, ctx context.Context, pool
   public.outbound_batches`); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pool.Exec(ctx, `DELETE FROM public.event_deliveries WHERE event_id IN (SELECT id FROM public.event_log WHERE event_type=$1)`, eventport.EvOutboundCampaignHandoffFact); err != nil {
+	if err := eventsfixture.DeleteCampaignHandoffFacts(ctx, pool, eventIDs); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pool.Exec(ctx, `DELETE FROM public.event_log WHERE event_type=$1`, eventport.EvOutboundCampaignHandoffFact); err != nil {
+}
+
+func campaignHandoffReceiptEventID(t *testing.T, ctx context.Context, pool *pgxpool.Pool, planID string) int64 {
+	t.Helper()
+	var eventID int64
+	if err := pool.QueryRow(ctx, `SELECT event_id FROM public.outbound_campaign_handoff_receipts WHERE plan_id=$1`, planID).Scan(&eventID); err != nil {
 		t.Fatal(err)
 	}
+	return eventID
 }
 
 func assertCampaignHandoffFactCounts(t *testing.T, ctx context.Context, pool *pgxpool.Pool, planID string, handoffs, receipts, events, links, steps, deliveries, outboundJobs int) {
@@ -479,25 +510,23 @@ VALUES ($1,decode(repeat('84',32),'hex'),decode(repeat('85',32),'hex'),$2,$3,now
 	handoffID := insertRawCampaignHandoffHeader(t, ctx, tx, campaignCode, planID, actorID)
 	insertRawCampaignHandoffChildren(t, ctx, tx, handoffID)
 	var eventID int64
-	eventPayload := `jsonb_build_object(
-  'audit_type','accepted','handoff_id',handoff.id,'campaign_code',handoff.campaign_code,'plan_id',handoff.plan_id,
-  'review_version',handoff.review_version,'target_digest',encode(handoff.target_digest,'hex'),'content_digest',encode(handoff.content_digest,'hex'),
-  'target_count',handoff.target_count,'step_count',handoff.step_count,'actor_id',handoff.accepted_by_actor_id,
-  'local_only',handoff.local_only,'provider_execution_eligible',handoff.provider_execution_eligible,
-  'real_external_call_executed',handoff.real_external_call_executed,'delivery_proven',handoff.delivery_proven)`
-	if tamper == "event-extra-key" {
-		eventPayload += ` || jsonb_build_object('provider_message_id','forbidden')`
+	var err error
+	switch tamper {
+	case "event-extra-key":
+		eventID, err = eventsfixture.AppendCampaignHandoffAcceptedFactWithForbiddenExtraKey(ctx, tx, handoffID, planID)
+	case "result-count":
+		eventID, err = eventsfixture.AppendCampaignHandoffAcceptedFact(ctx, tx, handoffID, planID)
+	default:
+		t.Fatalf("unknown Campaign handoff tamper %q", tamper)
 	}
-	statement := fmt.Sprintf(`INSERT INTO public.event_log (event_type,payload,occurred_at,idempotency_key)
-SELECT $1,%s,now(),'outbound-campaign-handoff-tamper:' || $2 FROM public.outbound_campaign_handoffs AS handoff WHERE handoff.id=$3 RETURNING id`, eventPayload)
-	if err := tx.QueryRow(ctx, statement, eventport.EvOutboundCampaignHandoffFact, planID, handoffID).Scan(&eventID); err != nil {
+	if err != nil {
 		t.Fatal(err)
 	}
 	heldCount := 1
 	if tamper == "result-count" {
 		heldCount = 0
 	}
-	_, err := tx.Exec(ctx, `UPDATE public.outbound_campaign_handoff_receipts AS receipt SET
+	_, err = tx.Exec(ctx, `UPDATE public.outbound_campaign_handoff_receipts AS receipt SET
   state='completed',handoff_id=handoff.id,event_id=$2,completed_at=now(),result_snapshot=jsonb_build_object(
     'id',handoff.id,'campaign_code',handoff.campaign_code,'plan_id',handoff.plan_id,'review_version',handoff.review_version,'status',handoff.status,
     'target_count',handoff.target_count,'step_count',handoff.step_count,'held_count',$3::integer,'blocked_count',0,'pending_count',0,

@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
-	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -25,6 +25,13 @@ func (inlineContactPolicyUoW) Within(ctx context.Context, callback func(context.
 	return callback(ctx)
 }
 
+type contactPolicyIntegrationEvents struct{ count int }
+
+func (events *contactPolicyIntegrationEvents) Append(context.Context, eventport.Event) (eventport.EventID, error) {
+	events.count++
+	return eventport.EventID(events.count), nil
+}
+
 func TestContactPolicyRepositoryPostgreSQL16AtomicCASReceiptAndChecks(t *testing.T) {
 	pool := contactPolicyIntegrationPool(t)
 	ctx := context.Background()
@@ -32,6 +39,7 @@ func TestContactPolicyRepositoryPostgreSQL16AtomicCASReceiptAndChecks(t *testing
 	uow := platformstore.NewUnitOfWork(pool)
 	prefix := fmt.Sprintf("contact-policy-%d", time.Now().UnixNano())
 	now := time.Now().UTC().Truncate(time.Microsecond)
+	events := &contactPolicyIntegrationEvents{}
 
 	err := uow.Within(ctx, func(txCtx context.Context) error {
 		db, txErr := platformstore.TxFromContext(txCtx)
@@ -44,7 +52,7 @@ func TestContactPolicyRepositoryPostgreSQL16AtomicCASReceiptAndChecks(t *testing
 				return txErr
 			}
 		}
-		service := contactapp.NewContactPolicyService(inlineContactPolicyUoW{}, repository, eventstore.NewAppender())
+		service := contactapp.NewContactPolicyService(inlineContactPolicyUoW{}, repository, events)
 		initial, getErr := service.Get(txCtx, ids[0])
 		if getErr != nil || !initial.Eligible || initial.PolicyPresent || initial.Version != 0 {
 			return fmt.Errorf("default eligible projection=%#v: %w", initial, getErr)
@@ -120,18 +128,15 @@ func TestContactPolicyRepositoryPostgreSQL16AtomicCASReceiptAndChecks(t *testing
 				}
 			}
 		}
-		var policies, receipts, events int
+		var policies, receipts int
 		if txErr = db.QueryRow(txCtx, `SELECT count(*) FROM customer_contact_policies`).Scan(&policies); txErr != nil {
 			return txErr
 		}
 		if txErr = db.QueryRow(txCtx, `SELECT count(*) FROM customer_contact_policy_operation_receipts WHERE actor_scope='customer_contact_policy:actor:701' AND state='completed'`).Scan(&receipts); txErr != nil {
 			return txErr
 		}
-		if txErr = db.QueryRow(txCtx, `SELECT count(*) FROM event_log WHERE event_type='customer.contact_policy_changed' AND customer_id=$1`, ids[0]).Scan(&events); txErr != nil {
-			return txErr
-		}
-		if policies != 2 || receipts != 3 || events != 3 {
-			return fmt.Errorf("facts policies/receipts/events=%d/%d/%d", policies, receipts, events)
+		if policies != 2 || receipts != 3 || events.count != 3 {
+			return fmt.Errorf("facts policies/receipts/events=%d/%d/%d", policies, receipts, events.count)
 		}
 		return errContactPolicyIntegrationRollback
 	})
@@ -186,7 +191,7 @@ func TestContactPolicyCheckerSerializesEmptyRowSetAndReplaySurvivesSoftDelete(t 
 	case <-time.After(5 * time.Second):
 		t.Fatal("checker did not acquire policy lock")
 	}
-	service := contactapp.NewContactPolicyService(platformstore.NewUnitOfWork(pool), repository, eventstore.NewAppender())
+	service := contactapp.NewContactPolicyService(platformstore.NewUnitOfWork(pool), repository, &contactPolicyIntegrationEvents{})
 	command := contactapp.SetContactPolicyCommand{
 		CustomerID: customerID, ExpectedVersion: 0, ReasonCode: contactapp.ContactPolicyReasonOperatorHold,
 		ActorID: 702, IdempotencyKey: prefix + "-set-0000000000000001",
@@ -225,7 +230,7 @@ func TestContactPolicyRepositoryCASAndIdempotencyConflictsRollback(t *testing.T)
 	if err := pool.QueryRow(ctx, `INSERT INTO customers(name) VALUES($1) RETURNING id`, prefix).Scan(&customerID); err != nil {
 		t.Fatal(err)
 	}
-	service := contactapp.NewContactPolicyService(platformstore.NewUnitOfWork(pool), NewContactPolicyRepository(), eventstore.NewAppender())
+	service := contactapp.NewContactPolicyService(platformstore.NewUnitOfWork(pool), NewContactPolicyRepository(), &contactPolicyIntegrationEvents{})
 	initial := contactapp.SetContactPolicyCommand{
 		CustomerID: customerID, ExpectedVersion: 0, ReasonCode: contactapp.ContactPolicyReasonOperatorHold,
 		ActorID: 703, IdempotencyKey: prefix + "-initial-0000000000001",

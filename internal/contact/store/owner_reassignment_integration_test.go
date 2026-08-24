@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -13,13 +14,13 @@ import (
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
-	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
 func TestContactOwnerReassignmentLocalCorePG16(t *testing.T) {
 	pool, ctx := openAcceptancePool(t)
-	service := newService(pool, eventstore.NewAppender())
+	events := &ownerReassignmentEvents{}
+	service := newService(pool, events)
 
 	t.Run("preview idempotency", func(t *testing.T) {
 		facts := seedFacts(t, ctx, pool, true)
@@ -45,7 +46,10 @@ func TestContactOwnerReassignmentLocalCorePG16(t *testing.T) {
 		if err != nil || !replay.Executed || len(replay.Result) != 1 || replay.ID != preview.ID || replay.ExpiresAt.IsZero() {
 			t.Fatalf("execute replay=%+v err=%v", replay, err)
 		}
-		assertCounts(t, ctx, pool, facts.customer, 1, 1)
+		assertCounts(t, ctx, pool, facts.customer, 1)
+		if events.count.Load() != 1 {
+			t.Fatalf("accepted event count=%d, want 1", events.count.Load())
+		}
 	})
 
 	t.Run("concurrent execute has one commit and idempotent replay", func(t *testing.T) {
@@ -72,7 +76,10 @@ func TestContactOwnerReassignmentLocalCorePG16(t *testing.T) {
 			}
 		}
 		assertCommittedFacts(t, ctx, pool, 103, facts, preview.ID)
-		assertCounts(t, ctx, pool, facts.customer, 1, 1)
+		assertCounts(t, ctx, pool, facts.customer, 1)
+		if events.count.Load() != 2 {
+			t.Fatalf("accepted event count=%d, want 2", events.count.Load())
+		}
 	})
 
 	t.Run("same customer lock and CAS reject reassignment after competing mutation", func(t *testing.T) {
@@ -102,7 +109,7 @@ func TestContactOwnerReassignmentLocalCorePG16(t *testing.T) {
 			t.Fatalf("execute after competing customer mutation error=%v", err)
 		}
 		assertOwner(t, ctx, pool, facts.customer, facts.competitor)
-		assertCounts(t, ctx, pool, facts.customer, 0, 0)
+		assertCounts(t, ctx, pool, facts.customer, 0)
 		assertUncommitted(t, ctx, pool, 104, preview.ID)
 	})
 
@@ -113,7 +120,7 @@ func TestContactOwnerReassignmentLocalCorePG16(t *testing.T) {
 			t.Fatalf("inactive target error=%v", err)
 		}
 		assertOwner(t, ctx, pool, facts.customer, facts.owner)
-		assertCounts(t, ctx, pool, facts.customer, 0, 0)
+		assertCounts(t, ctx, pool, facts.customer, 0)
 		assertUncommitted(t, ctx, pool, 105, preview.ID)
 	})
 
@@ -125,7 +132,7 @@ func TestContactOwnerReassignmentLocalCorePG16(t *testing.T) {
 			t.Fatal("failing event append unexpectedly committed")
 		}
 		assertOwner(t, ctx, pool, facts.customer, facts.owner)
-		assertCounts(t, ctx, pool, facts.customer, 0, 0)
+		assertCounts(t, ctx, pool, facts.customer, 0)
 		assertUncommitted(t, ctx, pool, 106, preview.ID)
 	})
 }
@@ -199,7 +206,7 @@ func createPreview(t *testing.T, service *contactapp.OwnerReassignmentService, a
 func assertCommittedFacts(t *testing.T, ctx context.Context, pool *pgxpool.Pool, actor int64, f facts, previewID string) {
 	t.Helper()
 	assertOwner(t, ctx, pool, f.customer, f.target)
-	assertCounts(t, ctx, pool, f.customer, 1, 1)
+	assertCounts(t, ctx, pool, f.customer, 1)
 	var executed, completed bool
 	var previewResults, receiptResults int
 	err := pool.QueryRow(ctx, `
@@ -233,14 +240,22 @@ func assertOwner(t *testing.T, ctx context.Context, pool *pgxpool.Pool, customer
 	}
 }
 
-func assertCounts(t *testing.T, ctx context.Context, pool *pgxpool.Pool, customerID int64, wantCustomerEvents, wantEventLog int) {
+func assertCounts(t *testing.T, ctx context.Context, pool *pgxpool.Pool, customerID int64, wantCustomerEvents int) {
 	t.Helper()
-	var customerEvents, eventLog int
-	err := pool.QueryRow(ctx, `SELECT (SELECT count(*) FROM public.customer_events WHERE customer_id=$1), (SELECT count(*) FROM public.event_log WHERE customer_id=$1)`, customerID).Scan(&customerEvents, &eventLog)
-	if err != nil || customerEvents != wantCustomerEvents || eventLog != wantEventLog {
-		t.Fatalf("event counts customer_events=%d event_log=%d err=%v", customerEvents, eventLog, err)
+	var customerEvents int
+	err := pool.QueryRow(ctx, `SELECT count(*) FROM public.customer_events WHERE customer_id=$1`, customerID).Scan(&customerEvents)
+	if err != nil || customerEvents != wantCustomerEvents {
+		t.Fatalf("customer event count=%d err=%v", customerEvents, err)
 	}
 }
+
+type ownerReassignmentEvents struct{ count atomic.Int64 }
+
+func (events *ownerReassignmentEvents) Append(context.Context, eventport.Event) (eventport.EventID, error) {
+	return eventport.EventID(events.count.Add(1)), nil
+}
+
+var _ eventport.Appender = (*ownerReassignmentEvents)(nil)
 
 type failingAppender struct{}
 

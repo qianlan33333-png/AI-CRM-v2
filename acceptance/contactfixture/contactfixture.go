@@ -47,6 +47,22 @@ RETURNING id`, "acceptance-contact-fixture").Scan(&id); err != nil {
 	return id, nil
 }
 
+// CreateCustomerWithDetails creates a committed Contact-owned customer whose
+// display projection is needed by a cross-domain acceptance scenario.
+func CreateCustomerWithDetails(ctx context.Context, pool *pgxpool.Pool, name string, extra []byte) (int64, error) {
+	if pool == nil || name == "" || len(extra) == 0 {
+		return 0, ErrInvalidCustomerFixture
+	}
+	var id int64
+	if err := pool.QueryRow(ctx, `
+INSERT INTO customers (name, extra)
+VALUES ($1::text, $2::jsonb)
+RETURNING id`, name, extra).Scan(&id); err != nil {
+		return 0, fmt.Errorf("create detailed Contact-owned acceptance customer: %w", err)
+	}
+	return id, nil
+}
+
 // DeleteCustomer removes a committed Contact-owned acceptance customer.
 func DeleteCustomer(ctx context.Context, pool *pgxpool.Pool, customerID int64) error {
 	if pool == nil || customerID <= 0 {
@@ -58,6 +74,21 @@ func DeleteCustomer(ctx context.Context, pool *pgxpool.Pool, customerID int64) e
 	}
 	if result.RowsAffected() != 1 {
 		return fmt.Errorf("delete contact-owned acceptance customer: not found")
+	}
+	return nil
+}
+
+// DeleteCustomers removes only committed Contact-owned customer fixtures.
+func DeleteCustomers(ctx context.Context, pool *pgxpool.Pool, customerIDs []int64) error {
+	if pool == nil || len(customerIDs) == 0 {
+		return ErrInvalidCustomerFixture
+	}
+	result, err := pool.Exec(ctx, `DELETE FROM customers WHERE id = ANY($1::bigint[])`, customerIDs)
+	if err != nil {
+		return fmt.Errorf("delete Contact-owned acceptance customers: %w", err)
+	}
+	if result.RowsAffected() != int64(len(customerIDs)) {
+		return fmt.Errorf("delete Contact-owned acceptance customers: deleted %d rows, want %d", result.RowsAffected(), len(customerIDs))
 	}
 	return nil
 }

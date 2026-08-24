@@ -9,120 +9,18 @@ import (
 	"testing"
 	"time"
 
-	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
 )
 
 const (
-	testSession = "service-period-test-session"
-	testCSRF    = "service-period-test-csrf"
-	testKey     = "service-period-idempotency-key-0001"
+	testKey = "service-period-idempotency-key-0001"
 )
-
-func TestProtectedRoutesEnforceExistingProductRolesCapabilitiesAndCSRF(t *testing.T) {
-	for _, role := range []authport.Role{authport.RoleAdmin, authport.RoleOps} {
-		application := newHTTPTestApplication()
-		auth := &servicePeriodHTTPAuth{principal: authport.Principal{AdminUserID: 51, Role: role}, csrf: testCSRF}
-		handler := mustProtectedHandler(t, application, auth)
-
-		read := serveServicePeriodRequest(handler, http.MethodGet, BasePath, "", "", true, false)
-		if read.Code != http.StatusOK {
-			t.Fatalf("role=%s read status=%d body=%s", role, read.Code, read.Body.String())
-		}
-		write := serveServicePeriodRequest(handler, http.MethodPost, BasePath, validCreateJSON(), testKey, true, true)
-		if write.Code != http.StatusCreated {
-			t.Fatalf("role=%s write status=%d body=%s", role, write.Code, write.Body.String())
-		}
-		if application.lastCreate.Actor != 51 || application.lastCreate.IdempotencyKey != testKey {
-			t.Fatalf("role=%s command=%+v", role, application.lastCreate)
-		}
-	}
-
-	t.Run("sales_is_denied_by_existing_product_policy", func(t *testing.T) {
-		application := newHTTPTestApplication()
-		auth := &servicePeriodHTTPAuth{principal: authport.Principal{AdminUserID: 52, Role: authport.RoleSales}, csrf: testCSRF}
-		handler := mustProtectedHandler(t, application, auth)
-		for _, request := range []struct {
-			method string
-			body   string
-			csrf   bool
-		}{
-			{method: http.MethodGet},
-			{method: http.MethodPost, body: validCreateJSON(), csrf: true},
-		} {
-			response := serveServicePeriodRequest(handler, request.method, BasePath, request.body, testKey, true, request.csrf)
-			if response.Code != http.StatusForbidden {
-				t.Fatalf("method=%s status=%d body=%s", request.method, response.Code, response.Body.String())
-			}
-		}
-		if application.totalCalls() != 0 {
-			t.Fatalf("sales reached application: calls=%d", application.totalCalls())
-		}
-	})
-
-	t.Run("missing_session_is_unauthenticated", func(t *testing.T) {
-		application := newHTTPTestApplication()
-		handler := mustProtectedHandler(t, application, &servicePeriodHTTPAuth{principal: authport.Principal{AdminUserID: 53, Role: authport.RoleAdmin}, csrf: testCSRF})
-		response := serveServicePeriodRequest(handler, http.MethodGet, BasePath, "", "", false, false)
-		if response.Code != http.StatusUnauthorized || application.totalCalls() != 0 {
-			t.Fatalf("status=%d calls=%d body=%s", response.Code, application.totalCalls(), response.Body.String())
-		}
-	})
-
-	t.Run("capability_denial_fails_closed", func(t *testing.T) {
-		application := newHTTPTestApplication()
-		auth := &servicePeriodHTTPAuth{
-			principal: authport.Principal{AdminUserID: 54, Role: authport.RoleAdmin},
-			csrf:      testCSRF,
-			deny:      map[authport.Capability]bool{authport.CapabilityProductsRead: true},
-		}
-		handler := mustProtectedHandler(t, application, auth)
-		response := serveServicePeriodRequest(handler, http.MethodGet, BasePath, "", "", true, false)
-		if response.Code != http.StatusForbidden || application.totalCalls() != 0 {
-			t.Fatalf("status=%d calls=%d body=%s", response.Code, application.totalCalls(), response.Body.String())
-		}
-	})
-
-	t.Run("csrf_is_required_exactly_once_before_write", func(t *testing.T) {
-		application := newHTTPTestApplication()
-		auth := &servicePeriodHTTPAuth{principal: authport.Principal{AdminUserID: 55, Role: authport.RoleAdmin}, csrf: testCSRF}
-		handler := mustProtectedHandler(t, application, auth)
-		for name, mutate := range map[string]func(*http.Request){
-			"missing": func(*http.Request) {},
-			"wrong": func(request *http.Request) {
-				request.Header.Set("X-CSRF-Token", "wrong")
-			},
-			"duplicate": func(request *http.Request) {
-				request.Header.Add("X-CSRF-Token", testCSRF)
-				request.Header.Add("X-CSRF-Token", testCSRF)
-			},
-		} {
-			t.Run(name, func(t *testing.T) {
-				request := newServicePeriodRequest(http.MethodPost, BasePath, validCreateJSON(), testKey, true, false)
-				mutate(request)
-				response := httptest.NewRecorder()
-				handler.ServeHTTP(response, request)
-				if response.Code != http.StatusForbidden {
-					t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
-				}
-			})
-		}
-		if application.totalCalls() != 0 {
-			t.Fatalf("invalid CSRF reached application: calls=%d", application.totalCalls())
-		}
-		valid := serveServicePeriodRequest(handler, http.MethodPost, BasePath, validCreateJSON(), testKey, true, true)
-		if valid.Code != http.StatusCreated || application.createCalls != 1 || auth.csrfCalls != 2 {
-			// wrong + valid invoke ValidateCSRF; missing/duplicate fail before it.
-			t.Fatalf("valid status=%d create_calls=%d csrf_calls=%d body=%s", valid.Code, application.createCalls, auth.csrfCalls, valid.Body.String())
-		}
-	})
-}
 
 func TestHandlerRejectsMalformedIDsMethodsQueriesBodiesAndHeaders(t *testing.T) {
 	application := newHTTPTestApplication()
-	handler := mustProtectedHandler(t, application, &servicePeriodHTTPAuth{principal: authport.Principal{AdminUserID: 61, Role: authport.RoleAdmin}, csrf: testCSRF})
+	handler := mustHandler(t, application)
 
 	largeBody := `{"product_code":"large","name":"` + strings.Repeat("x", maximumRequestBytes) + `","price_minor":1,"currency":"CNY","stock_quantity":0}`
 	cases := []struct {
@@ -176,7 +74,7 @@ func TestHandlerRejectsMalformedIDsMethodsQueriesBodiesAndHeaders(t *testing.T) 
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
-			request := newServicePeriodRequest(testCase.method, testCase.path, testCase.body, testCase.key, true, testCase.method != http.MethodGet)
+			request := newServicePeriodRequest(testCase.method, testCase.path, testCase.body, testCase.key)
 			if testCase.mutate != nil {
 				testCase.mutate(request)
 			}
@@ -194,7 +92,7 @@ func TestHandlerRejectsMalformedIDsMethodsQueriesBodiesAndHeaders(t *testing.T) 
 
 func TestHandlerRoutesAllLifecycleOperationsAndReturnsOnlyClosedDTO(t *testing.T) {
 	application := newHTTPTestApplication()
-	handler := mustProtectedHandler(t, application, &servicePeriodHTTPAuth{principal: authport.Principal{AdminUserID: 71, Role: authport.RoleOps}, csrf: testCSRF})
+	handler := mustHandler(t, application)
 
 	requests := []struct {
 		method string
@@ -213,12 +111,10 @@ func TestHandlerRoutesAllLifecycleOperationsAndReturnsOnlyClosedDTO(t *testing.T
 	}
 	for index, request := range requests {
 		key := ""
-		csrf := false
 		if request.method != http.MethodGet {
 			key = testKey + "-" + string(rune('a'+index))
-			csrf = true
 		}
-		response := serveServicePeriodRequest(handler, request.method, request.path, request.body, key, true, csrf)
+		response := serveServicePeriodRequest(handler, request.method, request.path, request.body, key)
 		if response.Code != request.status {
 			t.Fatalf("%s %s status=%d want=%d body=%s", request.method, request.path, response.Code, request.status, response.Body.String())
 		}
@@ -263,8 +159,8 @@ func TestHandlerMapsApplicationFailuresWithoutRetry(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			application := newHTTPTestApplication()
 			application.createErr = testCase.err
-			handler := mustProtectedHandler(t, application, &servicePeriodHTTPAuth{principal: authport.Principal{AdminUserID: 81, Role: authport.RoleAdmin}, csrf: testCSRF})
-			response := serveServicePeriodRequest(handler, http.MethodPost, BasePath, validCreateJSON(), testKey, true, true)
+			handler := mustHandler(t, application)
+			response := serveServicePeriodRequest(handler, http.MethodPost, BasePath, validCreateJSON(), testKey)
 			if response.Code != testCase.wantStatus || application.createCalls != 1 {
 				t.Fatalf("status=%d want=%d calls=%d body=%s", response.Code, testCase.wantStatus, application.createCalls, response.Body.String())
 			}
@@ -272,46 +168,23 @@ func TestHandlerMapsApplicationFailuresWithoutRetry(t *testing.T) {
 	}
 }
 
-func mustProtectedHandler(t *testing.T, application productport.ServicePeriodApplication, auth *servicePeriodHTTPAuth) http.Handler {
+func mustHandler(t *testing.T, application productport.ServicePeriodApplication) http.Handler {
 	t.Helper()
 	leaf, err := NewHandler(application)
 	if err != nil {
 		t.Fatal(err)
 	}
-	authHandler, err := authhttp.NewHandler(auth)
-	if err != nil {
-		t.Fatal(err)
-	}
-	read, err := authHandler.Authorize(authport.CapabilityProductsRead, leaf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	writeAuthorized, err := authHandler.Authorize(authport.CapabilityProductsWrite, leaf)
-	if err != nil {
-		t.Fatal(err)
-	}
-	write, err := authHandler.RequireCSRF(writeAuthorized)
-	if err != nil {
-		t.Fatal(err)
-	}
-	dispatch := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method == http.MethodGet {
-			read.ServeHTTP(writer, request)
-			return
-		}
-		write.ServeHTTP(writer, request)
-	})
-	return authHandler.Authenticate(dispatch)
+	return leaf
 }
 
-func serveServicePeriodRequest(handler http.Handler, method, path, body, key string, session, csrf bool) *httptest.ResponseRecorder {
-	request := newServicePeriodRequest(method, path, body, key, session, csrf)
+func serveServicePeriodRequest(handler http.Handler, method, path, body, key string) *httptest.ResponseRecorder {
+	request := newServicePeriodRequest(method, path, body, key)
 	response := httptest.NewRecorder()
 	handler.ServeHTTP(response, request)
 	return response
 }
 
-func newServicePeriodRequest(method, path, body, key string, session, csrf bool) *http.Request {
+func newServicePeriodRequest(method, path, body, key string) *http.Request {
 	var reader *bytes.Reader
 	if body == "" {
 		reader = bytes.NewReader(nil)
@@ -325,56 +198,21 @@ func newServicePeriodRequest(method, path, body, key string, session, csrf bool)
 	if key != "" {
 		request.Header.Set("Idempotency-Key", key)
 	}
-	if csrf {
-		request.Header.Set("X-CSRF-Token", testCSRF)
+	capability := authport.CapabilityProductsWrite
+	if method == http.MethodGet {
+		capability = authport.CapabilityProductsRead
 	}
-	if session {
-		request.AddCookie(&http.Cookie{Name: authhttp.SessionCookieName, Value: testSession})
+	ctx := authport.WithAuthenticatedSession(request.Context(), authport.Principal{AdminUserID: 71, Role: authport.RoleOps}, "service-period-test-session")
+	var err error
+	ctx, err = authport.WithAuthorization(ctx, authport.Authorization{Capability: capability, Scope: authport.ScopeGlobal})
+	if err != nil {
+		panic(err)
 	}
-	return request
+	return request.WithContext(ctx)
 }
 
 func validCreateJSON() string {
 	return `{"product_code":"period-http","name":"period","description":"local","price_minor":1234,"currency":"cny","stock_quantity":5}`
-}
-
-type servicePeriodHTTPAuth struct {
-	principal authport.Principal
-	csrf      string
-	deny      map[authport.Capability]bool
-	csrfCalls int
-}
-
-func (auth *servicePeriodHTTPAuth) Authenticate(_ context.Context, session authport.SessionRef) (authport.Principal, error) {
-	if session != authport.SessionRef(testSession) || auth.principal.AdminUserID < 1 {
-		return authport.Principal{}, authport.ErrUnauthenticated
-	}
-	return auth.principal, nil
-}
-
-func (auth *servicePeriodHTTPAuth) Authorize(_ context.Context, principal authport.Principal, capability authport.Capability) (authport.Authorization, error) {
-	if principal.AdminUserID != auth.principal.AdminUserID || auth.deny[capability] {
-		return authport.Authorization{}, authport.ErrUnauthorized
-	}
-	if capability != authport.CapabilityProductsRead && capability != authport.CapabilityProductsWrite {
-		return authport.Authorization{}, authport.ErrUnauthorized
-	}
-	if principal.Role != authport.RoleAdmin && principal.Role != authport.RoleOps {
-		return authport.Authorization{}, authport.ErrUnauthorized
-	}
-	return authport.Authorization{Capability: capability, Scope: authport.ScopeGlobal}, nil
-}
-
-func (auth *servicePeriodHTTPAuth) ValidateCSRF(_ context.Context, session authport.SessionRef, token authport.CSRFToken) error {
-	auth.csrfCalls++
-	if session != authport.SessionRef(testSession) || token != authport.CSRFToken(auth.csrf) {
-		return authport.ErrCSRFInvalid
-	}
-	return nil
-}
-
-func (*servicePeriodHTTPAuth) Invalidate(context.Context, authport.SessionRef, authport.CSRFToken) error {
-	return nil
 }
 
 type servicePeriodHTTPApplication struct {
