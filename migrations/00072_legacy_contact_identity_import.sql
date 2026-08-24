@@ -44,7 +44,12 @@ CREATE TABLE legacy_contact_identity_source_mappings (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (source_table, source_key_hmac),
-  CHECK (num_nonnulls(staff_id, customer_id, identity_id) = 1)
+  CHECK (num_nonnulls(staff_id, customer_id, identity_id) = 1),
+  CHECK (
+    (source_table = 'owner_role_map' AND staff_id IS NOT NULL)
+    OR (source_table = 'crm_user_identity' AND customer_id IS NOT NULL)
+    OR (source_table = 'wecom_external_contact_identity_map' AND identity_id IS NOT NULL)
+  )
 );
 CREATE TABLE legacy_contact_identity_import_row_receipts (
   run_id BIGINT NOT NULL REFERENCES legacy_contact_identity_import_runs(id) ON DELETE RESTRICT,
