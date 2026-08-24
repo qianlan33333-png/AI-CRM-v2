@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/qianlan33333-png/AI-CRM-v2/acceptance/automationfixture"
+	"github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
@@ -354,10 +355,8 @@ func seedAttachmentAutomationReference(t *testing.T, ctx context.Context, pool *
 
 func seedAttachmentChannelReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, attachmentID int64) int64 {
 	t.Helper()
-	var id int64
-	if err := pool.QueryRow(ctx, `INSERT INTO channels (
-  name,code,status,config,created_by,updated_by,created_at,updated_at
-) VALUES ($1,$2,'active',jsonb_build_object('schema_version',1,'welcome_attachment_library_ids',jsonb_build_array($3::bigint)),1,1,now(),now()) RETURNING id`, unique("attachment-channel"), unique("attachment-channel-code"), attachmentID).Scan(&id); err != nil {
+	id, err := contactfixture.CreateAttachmentReference(ctx, pool, unique("attachment-channel"), unique("attachment-channel-code"), attachmentID)
+	if err != nil {
 		t.Fatal(err)
 	}
 	return id
