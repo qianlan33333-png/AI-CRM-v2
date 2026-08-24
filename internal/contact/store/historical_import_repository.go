@@ -50,6 +50,35 @@ func (HistoricalImportRepository) CreateCustomer(ctx context.Context, name strin
 	return contactdb.New(tx).CreateHistoricalImportCustomer(ctx, contactdb.CreateHistoricalImportCustomerParams{Name: name, AvatarUrl: avatar, Gender: genderValue, OwnerStaffID: owner, FirstSeenAt: pgtype.Timestamptz{Time: firstSeenAt, Valid: true}, LastSeenAt: pgtype.Timestamptz{Time: lastSeenAt, Valid: true}, CreatedAt: pgtype.Timestamptz{Time: createdAt, Valid: true}, UpdatedAt: pgtype.Timestamptz{Time: updatedAt, Valid: true}})
 }
 
+func (HistoricalImportRepository) CreateAndMapCustomer(ctx context.Context, runID int64, sourceKeyHMAC, payloadHMAC []byte, name string, avatarURL *string, gender *int16, ownerStaffID *int64, firstSeenAt, lastSeenAt, createdAt, updatedAt time.Time) (int64, error) {
+	if runID < 1 || len(sourceKeyHMAC) != 32 || len(payloadHMAC) != 32 {
+		return 0, ErrInvalidHistoricalImport
+	}
+	customerID, err := (HistoricalImportRepository{}).CreateCustomer(ctx, name, avatarURL, gender, ownerStaffID, firstSeenAt, lastSeenAt, createdAt, updatedAt)
+	if err != nil {
+		return 0, err
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	if err := contactdb.New(tx).InsertHistoricalImportCustomerMapping(ctx, contactdb.InsertHistoricalImportCustomerMappingParams{SourceKeyHmac: sourceKeyHMAC, CustomerID: customerID, RunID: runID, PayloadHmac: payloadHMAC}); err != nil {
+		return 0, err
+	}
+	return customerID, nil
+}
+
+func (HistoricalImportRepository) MapScopedIdentity(ctx context.Context, runID, identityID int64, sourceKeyHMAC, payloadHMAC []byte) error {
+	if runID < 1 || identityID < 1 || len(sourceKeyHMAC) != 32 || len(payloadHMAC) != 32 {
+		return ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	return contactdb.New(tx).InsertHistoricalImportIdentityMapping(ctx, contactdb.InsertHistoricalImportIdentityMappingParams{SourceKeyHmac: sourceKeyHMAC, IdentityID: identityID, RunID: runID, PayloadHmac: payloadHMAC})
+}
+
 var ErrInvalidHistoricalImport = historicalImportError("invalid DM01 historical import")
 var ErrHistoricalImportTargetDrift = historicalImportError("DM01 historical import target drift")
 

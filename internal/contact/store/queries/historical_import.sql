@@ -43,3 +43,12 @@ INSERT INTO legacy_contact_identity_source_mappings (
   'crm_user_identity', sqlc.arg(source_key_hmac)::bytea, sqlc.arg(customer_id)::bigint,
   sqlc.arg(run_id)::bigint, sqlc.arg(run_id)::bigint, sqlc.arg(payload_hmac)::bytea
 );
+
+-- name: InsertHistoricalImportIdentityMapping :exec
+INSERT INTO legacy_contact_identity_source_mappings (
+  source_table, source_key_hmac, identity_id, first_run_id, last_run_id, payload_hmac
+) VALUES (
+  'wecom_external_contact_identity_map', sqlc.arg(source_key_hmac)::bytea,
+  sqlc.arg(identity_id)::bigint, sqlc.arg(run_id)::bigint, sqlc.arg(run_id)::bigint,
+  sqlc.arg(payload_hmac)::bytea
+);

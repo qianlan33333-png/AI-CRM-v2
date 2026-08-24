@@ -51,6 +51,7 @@ type Querier interface {
 	InsertCustomerSafeExportRow(ctx context.Context, arg InsertCustomerSafeExportRowParams) error
 	InsertExternalEventIdempotency(ctx context.Context, arg InsertExternalEventIdempotencyParams) (int64, error)
 	InsertHistoricalImportCustomerMapping(ctx context.Context, arg InsertHistoricalImportCustomerMappingParams) error
+	InsertHistoricalImportIdentityMapping(ctx context.Context, arg InsertHistoricalImportIdentityMappingParams) error
 	InsertHistoricalImportStaff(ctx context.Context, arg InsertHistoricalImportStaffParams) (int64, error)
 	InsertHistoricalImportStaffMapping(ctx context.Context, arg InsertHistoricalImportStaffMappingParams) (pgtype.Int8, error)
 	InsertStage(ctx context.Context, arg InsertStageParams) (InsertStageRow, error)

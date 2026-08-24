@@ -75,6 +75,33 @@ func (q *Queries) InsertHistoricalImportCustomerMapping(ctx context.Context, arg
 	return err
 }
 
+const insertHistoricalImportIdentityMapping = `-- name: InsertHistoricalImportIdentityMapping :exec
+INSERT INTO legacy_contact_identity_source_mappings (
+  source_table, source_key_hmac, identity_id, first_run_id, last_run_id, payload_hmac
+) VALUES (
+  'wecom_external_contact_identity_map', $1::bytea,
+  $2::bigint, $3::bigint, $3::bigint,
+  $4::bytea
+)
+`
+
+type InsertHistoricalImportIdentityMappingParams struct {
+	SourceKeyHmac []byte `json:"source_key_hmac"`
+	IdentityID    int64  `json:"identity_id"`
+	RunID         int64  `json:"run_id"`
+	PayloadHmac   []byte `json:"payload_hmac"`
+}
+
+func (q *Queries) InsertHistoricalImportIdentityMapping(ctx context.Context, arg InsertHistoricalImportIdentityMappingParams) error {
+	_, err := q.db.Exec(ctx, insertHistoricalImportIdentityMapping,
+		arg.SourceKeyHmac,
+		arg.IdentityID,
+		arg.RunID,
+		arg.PayloadHmac,
+	)
+	return err
+}
+
 const insertHistoricalImportStaff = `-- name: InsertHistoricalImportStaff :one
 INSERT INTO staff (wecom_userid, name, is_active, created_at, updated_at)
 VALUES (
