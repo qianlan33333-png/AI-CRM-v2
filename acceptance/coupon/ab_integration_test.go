@@ -15,6 +15,7 @@ import (
 	couponapp "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/app"
 	couponport "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/port"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
+	productfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/acceptancefixture"
 )
 
 func TestP4CouponABClaimConcurrencyReplayAndClaimedRuleFreeze(t *testing.T) {
@@ -178,7 +179,23 @@ func TestP4CouponABS200KAvailableLookupUsesTargetIndex(t *testing.T) {
 	// Keep each target reference selective for the index plan while satisfying
 	// the product-reference FK on a fresh PG16 acceptance database. The whole
 	// performance fixture is rolled back with this transaction.
-	if _, err = tx.Exec(ctx, `INSERT INTO products(id,product_code,name,price_minor,currency,stock_quantity,created_by,created_at,updated_at,legacy_admin_projection,version,local_lifecycle) OVERRIDING SYSTEM VALUE SELECT id,'p4ab-index-product-'||id,'P4AB index product',1,'CNY',0,771,now(),now(),'{"schema_version":1}'::jsonb,1,'draft' FROM coupons WHERE name LIKE $1`, prefix+"%"); err != nil {
+	var couponIDs []int64
+	if err = tx.QueryRow(ctx, `SELECT coalesce(array_agg(id ORDER BY id), '{}'::bigint[]) FROM coupons WHERE name LIKE $1`, prefix+"%").Scan(&couponIDs); err != nil {
+		t.Fatal(err)
+	}
+	if len(couponIDs) != 200000 {
+		t.Fatalf("coupon ids=%d, want 200000", len(couponIDs))
+	}
+	for _, invalidIDs := range [][]int64{
+		{0},
+		{couponIDs[1], couponIDs[0]},
+		{couponIDs[0], couponIDs[0]},
+	} {
+		if err = productfixture.CreateCouponTargetProducts(ctx, tx, invalidIDs); err == nil {
+			t.Fatalf("invalid Product IDs accepted: %v", invalidIDs)
+		}
+	}
+	if err = productfixture.CreateCouponTargetProducts(ctx, tx, couponIDs); err != nil {
 		t.Fatal(err)
 	}
 	if _, err = tx.Exec(ctx, `INSERT INTO coupon_targets(coupon_id,position,target_ref,product_id) SELECT id,0,'standard_product:'||id,id FROM coupons WHERE name LIKE $1`, prefix+"%"); err != nil {
