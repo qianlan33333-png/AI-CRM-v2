@@ -216,10 +216,13 @@ func NewService(corp CorpReader, identity IdentityResolver, profiles contactport
 }
 
 func (service *Service) MintContext(ctx context.Context, principal authport.Principal, authenticated bool, externalUserID string) (ContextResult, error) {
+	if !validExternalUserID(externalUserID) {
+		return ContextResult{}, ErrInvalidInput
+	}
 	if !authenticated {
 		return ContextResult{State: "viewer_session_required", Safety: localSafety()}, nil
 	}
-	if !validPrincipal(principal) || !validExternalUserID(externalUserID) {
+	if !validPrincipal(principal) {
 		return ContextResult{}, ErrInvalidInput
 	}
 	corpID, err := service.corp.CorpID(ctx)
@@ -238,7 +241,7 @@ func (service *Service) MintContext(ctx context.Context, principal authport.Prin
 		return ContextResult{}, mapDependencyError(err)
 	}
 	if !principalAllowsOwner(principal, profile.OwnerStaffID) {
-		return ContextResult{}, ErrForbidden
+		return ContextResult{State: "customer_not_bound", Safety: localSafety()}, nil
 	}
 	now := service.now().UTC().Truncate(time.Second)
 	claims := tokenClaims{Version: tokenVersion, CorpID: corpID, CustomerID: int64(profile.CustomerID), OwnerStaffID: profile.OwnerStaffID, AdminUserID: principal.AdminUserID, Role: principal.Role, IssuedAt: now, ExpiresAt: now.Add(service.tokenTTL)}
@@ -268,6 +271,16 @@ func (service *Service) VerifyContext(ctx context.Context, principal authport.Pr
 		return Scope{}, ErrUnavailable
 	}
 	if claims.CorpID != corpID {
+		return Scope{}, ErrTokenInvalid
+	}
+	profile, err := service.profiles.ResolveSidebarProfile(ctx, contactport.CustomerID(claims.CustomerID))
+	if errors.Is(err, contactport.ErrSidebarProfileNotFound) {
+		return Scope{}, ErrTokenInvalid
+	}
+	if err != nil {
+		return Scope{}, ErrUnavailable
+	}
+	if int64(profile.CustomerID) != claims.CustomerID || profile.OwnerStaffID != claims.OwnerStaffID {
 		return Scope{}, ErrTokenInvalid
 	}
 	return Scope{CustomerID: claims.CustomerID, OwnerStaffID: claims.OwnerStaffID, Principal: principal}, nil
@@ -312,6 +325,11 @@ func (service *Service) PeriodicOrders(ctx context.Context, scope Scope, limit, 
 	page, err := service.members.ListCustomer(ctx, PeriodicListQuery{CustomerID: scope.CustomerID, Limit: limit, Offset: offset})
 	if err != nil {
 		return PeriodicResult{}, mapDependencyError(err)
+	}
+	for _, member := range page.Items {
+		if member.CustomerID != scope.CustomerID {
+			return PeriodicResult{}, ErrUnavailable
+		}
 	}
 	return PeriodicResult{Items: page.Items, Limit: page.Limit, Offset: page.Offset, HasMore: page.HasMore, Safety: localSafety()}, nil
 }

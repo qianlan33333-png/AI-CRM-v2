@@ -40,8 +40,9 @@ func (reader sidebarCorpReader) CorpID(ctx context.Context) (string, error) {
 }
 
 type sidebarMemberSource interface {
-	memberport.Application
-	memberport.CustomerReader
+	Get(context.Context, int64, string) (memberdomain.Member, error)
+	UpdateFields(context.Context, memberport.UpdateFieldsCommand) (memberdomain.Member, error)
+	ListCustomer(context.Context, memberport.CustomerListQuery) (memberport.CustomerListResult, error)
 }
 
 type sidebarMemberAdapter struct{ source sidebarMemberSource }

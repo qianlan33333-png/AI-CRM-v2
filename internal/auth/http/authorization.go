@@ -38,6 +38,36 @@ func (handler *Handler) Authorize(capability authport.Capability, next http.Hand
 	}), nil
 }
 
+// AuthorizeOptional preserves an anonymous request but requires the declared
+// capability whenever AuthenticateOptional attached a browser principal.
+func (handler *Handler) AuthorizeOptional(capability authport.Capability, next http.Handler) (http.Handler, error) {
+	if handler == nil || nilService(handler.auth) || !capability.Known() || next == nil {
+		return nil, authport.ErrUnauthorized
+	}
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		principal, authenticated := authport.PrincipalFromContext(request.Context())
+		if !authenticated {
+			next.ServeHTTP(writer, request)
+			return
+		}
+		authorization, err := handler.auth.Authorize(request.Context(), principal, capability)
+		if err != nil {
+			code := platformhttp.CodeUnauthorized
+			if !errors.Is(err, authport.ErrUnauthorized) {
+				code = platformhttp.CodeDependencyUnavailable
+			}
+			platformhttp.WriteError(writer, request, platformhttp.NewError(code, err))
+			return
+		}
+		ctx, err := authport.WithAuthorization(request.Context(), authorization)
+		if err != nil {
+			platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeUnauthorized, err))
+			return
+		}
+		next.ServeHTTP(writer, request.WithContext(ctx))
+	}), nil
+}
+
 // RequireCSRF validates the browser token against the current server-side
 // session. It is mounted only on cookie-authenticated state-changing routes.
 func (handler *Handler) RequireCSRF(next http.Handler) (http.Handler, error) {

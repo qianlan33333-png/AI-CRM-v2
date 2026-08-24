@@ -1612,6 +1612,10 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		if wrapErr != nil {
 			return wrapErr
 		}
+		tail, wrapErr = authHandler.AuthorizeOptional(authport.CapabilityCustomersRead, tail)
+		if wrapErr != nil {
+			return wrapErr
+		}
 		tail = authHandler.AuthenticateOptional(tail)
 		tail, wrapErr = gateway.RoutePatternMiddleware(pattern, tail)
 		if wrapErr != nil {
