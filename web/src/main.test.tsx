@@ -120,6 +120,9 @@ function customerDetailTransport(): CustomerDetailTransport {
     removeTag: vi.fn(response),
     listEvents: vi.fn(response),
     listTags: vi.fn(response),
+    getContactPolicy: vi.fn(response),
+    setContactPolicy: vi.fn(response),
+    clearContactPolicy: vi.fn(response),
   };
 }
 

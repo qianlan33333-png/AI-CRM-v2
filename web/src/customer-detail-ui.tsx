@@ -17,10 +17,14 @@ import { campaignSourceHref } from "./cloud-orchestrator";
 import type { CustomerRole } from "./customers";
 import {
   generatedCustomerDetailTransport,
+  loadCustomerContactPolicy,
   isCustomerGender,
   isSafeAvatarURL,
   loadCustomerDetail,
   loadCustomerTimelinePage,
+  newCustomerContactPolicyIdempotencyKey,
+  submitCustomerContactPolicyClear,
+  submitCustomerContactPolicySet,
   submitCustomerProfileUpdate,
   submitCustomerStageChange,
   submitCustomerTagAdd,
@@ -28,6 +32,9 @@ import {
   type CustomerDetailLoadResult,
   type CustomerDetailSnapshot,
   type CustomerDetailTransport,
+  type CustomerContactPolicy,
+  type CustomerContactPolicyMutationResult,
+  type CustomerContactPolicyReason,
   type CustomerMutationFailure,
   type CustomerMutationResult,
   type CustomerProfile,
@@ -38,6 +45,7 @@ import "./customer-detail.css";
 
 export interface CustomerDetailPageProps {
   readonly customerID: number;
+  readonly actorID?: number;
   readonly role?: CustomerRole;
   readonly transport?: CustomerDetailTransport;
   readonly contextTransport?: CustomerContextTransport;
@@ -49,6 +57,7 @@ export interface CustomerDetailPageProps {
   readonly readCookie?: () => string;
   readonly onUnauthenticated?: () => void;
   readonly initialSnapshot?: CustomerDetailSnapshot;
+  readonly contactPolicyKeySource?: { readonly randomUUID: () => string };
 }
 
 type PageState =
@@ -222,8 +231,348 @@ export function startCustomerMutation(
   })();
 }
 
+type ContactPolicyState =
+  | { readonly kind: "loading" }
+  | { readonly kind: "ready"; readonly policy: CustomerContactPolicy }
+  | { readonly kind: "unauthenticated" }
+  | { readonly kind: "forbidden" }
+  | { readonly kind: "not_found" }
+  | { readonly kind: "unavailable" };
+
+type ContactPolicyIntent =
+  | {
+      readonly kind: "set";
+      readonly key: string;
+      readonly expectedVersion: number;
+      readonly reasonCode: CustomerContactPolicyReason;
+      readonly suppressedUntil: string | null;
+    }
+  | {
+      readonly kind: "clear";
+      readonly key: string;
+      readonly expectedVersion: number;
+    };
+
+const contactPolicyReasonLabels: Record<CustomerContactPolicyReason, string> = {
+  manual_opt_out: "客户主动拒绝",
+  compliance_hold: "合规保留",
+  operator_hold: "运营暂缓",
+};
+
+function contactPolicyMessage(
+  result: CustomerContactPolicyMutationResult | undefined,
+): string | undefined {
+  if (!result) return undefined;
+  switch (result.status) {
+    case "succeeded":
+      return "本地触达策略已保存，并未验证或调用 Provider，也不证明发送或送达。";
+    case "unauthenticated":
+      return "登录状态已失效，未确认本地策略写入。";
+    case "forbidden":
+      return "当前账号没有修改本地触达策略的权限。";
+    case "not_found":
+      return "无法确认本地策略事实，未继续操作。";
+    case "conflict":
+      return "策略版本已变化，已重新读取本地事实；请重新确认。";
+    case "invalid":
+      return "策略输入或服务响应不符合安全合同，未继续操作。";
+    case "unavailable":
+      return "本地策略服务暂不可用，未确认写入。";
+    case "outcome_unknown":
+      return "写入结果未知；只允许精确重放原本地策略意图。";
+  }
+}
+
+function contactPolicyReadMessage(
+  state: ContactPolicyState,
+): string | undefined {
+  switch (state.kind) {
+    case "unauthenticated":
+      return "登录状态已失效，无法读取本地策略。";
+    case "forbidden":
+      return "当前账号无权读取本地策略。";
+    case "not_found":
+      return "无法读取本地策略事实。";
+    case "unavailable":
+      return "本地策略响应不可用或不符合安全合同。";
+    default:
+      return undefined;
+  }
+}
+
+function policySuppressedUntil(value: string): string | null | undefined {
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+  const milliseconds = Date.parse(trimmed);
+  return Number.isNaN(milliseconds)
+    ? undefined
+    : new Date(milliseconds).toISOString();
+}
+
+function ContactPolicyPanel({
+  customerID,
+  transport,
+  readCookie,
+  keySource,
+  onUnauthenticated,
+}: {
+  readonly customerID: number;
+  readonly transport: CustomerDetailTransport;
+  readonly readCookie: () => string;
+  readonly keySource?: { readonly randomUUID: () => string };
+  readonly onUnauthenticated?: () => void;
+}): React.ReactElement {
+  const [state, setState] = useState<ContactPolicyState>({ kind: "loading" });
+  const [reasonCode, setReasonCode] =
+    useState<CustomerContactPolicyReason>("manual_opt_out");
+  const [suppressedUntil, setSuppressedUntil] = useState("");
+  const [clearConfirmed, setClearConfirmed] = useState(false);
+  const [mutation, setMutation] =
+    useState<CustomerContactPolicyMutationResult>();
+  const [busy, setBusy] = useState(false);
+  const requestGeneration = useRef(0);
+  const mutationLock = useRef(false);
+  const replay = useRef<ContactPolicyIntent>();
+
+  const reload = useCallback(async () => {
+    const generation = requestGeneration.current + 1;
+    requestGeneration.current = generation;
+    setState({ kind: "loading" });
+    const result = await loadCustomerContactPolicy(transport, customerID);
+    if (requestGeneration.current !== generation) return undefined;
+    if (result.status === "unauthenticated") onUnauthenticated?.();
+    setState(
+      result.status === "loaded"
+        ? { kind: "ready", policy: result.policy }
+        : { kind: result.status },
+    );
+    return result;
+  }, [customerID, onUnauthenticated, transport]);
+
+  useEffect(() => {
+    void reload();
+    return () => {
+      requestGeneration.current += 1;
+    };
+  }, [reload]);
+
+  const csrf = (): string | undefined => {
+    try {
+      return readCSRFCookie(readCookie());
+    } catch {
+      return undefined;
+    }
+  };
+
+  const execute = async (intent: ContactPolicyIntent): Promise<void> => {
+    if (mutationLock.current) return;
+    const token = csrf();
+    if (!token) {
+      setMutation({ status: "invalid" });
+      return;
+    }
+    const generation = requestGeneration.current;
+    mutationLock.current = true;
+    setBusy(true);
+    setMutation(undefined);
+    const result =
+      intent.kind === "set"
+        ? await submitCustomerContactPolicySet(
+            transport,
+            customerID,
+            intent,
+            token,
+            intent.key,
+          )
+        : await submitCustomerContactPolicyClear(
+            transport,
+            customerID,
+            intent.expectedVersion,
+            token,
+            intent.key,
+          );
+    if (requestGeneration.current !== generation) return;
+    mutationLock.current = false;
+    setBusy(false);
+    if (result.status === "unauthenticated") onUnauthenticated?.();
+    if (result.status === "succeeded") {
+      replay.current = undefined;
+      setClearConfirmed(false);
+      setState({ kind: "ready", policy: result.policy });
+    } else if (result.status === "conflict") {
+      replay.current = undefined;
+      setClearConfirmed(false);
+      setMutation(result);
+      await reload();
+      return;
+    } else if (result.status === "outcome_unknown") {
+      replay.current = intent;
+    } else {
+      replay.current = undefined;
+    }
+    setMutation(result);
+  };
+
+  const startSet = (): void => {
+    if (state.kind !== "ready" || busy) return;
+    const until = policySuppressedUntil(suppressedUntil);
+    const key = newCustomerContactPolicyIdempotencyKey("set", keySource);
+    if (until === undefined || !key) {
+      setMutation({ status: "invalid" });
+      return;
+    }
+    void execute({
+      kind: "set",
+      key,
+      expectedVersion: state.policy.policyPresent ? state.policy.version : 0,
+      reasonCode,
+      suppressedUntil: until,
+    });
+  };
+
+  const startClear = (): void => {
+    if (
+      state.kind !== "ready" ||
+      busy ||
+      !clearConfirmed ||
+      !state.policy.policyPresent ||
+      state.policy.version < 1
+    ) {
+      return;
+    }
+    const key = newCustomerContactPolicyIdempotencyKey("clear", keySource);
+    if (!key) {
+      setMutation({ status: "invalid" });
+      return;
+    }
+    void execute({
+      kind: "clear",
+      key,
+      expectedVersion: state.policy.version,
+    });
+  };
+
+  const readMessage = contactPolicyReadMessage(state);
+  const mutationMessage = contactPolicyMessage(mutation);
+  return (
+    <section
+      className="customer-detail-page__card"
+      aria-labelledby="customer-contact-policy-title"
+    >
+      <h2 id="customer-contact-policy-title">本地客户触达策略</h2>
+      <p className="customer-detail-page__meta" role="note">
+        仅管理本地触达策略；不会验证或调用 Provider，也不证明发送或送达。
+      </p>
+      {state.kind === "loading" && <p role="status">正在读取本地策略事实…</p>}
+      {readMessage && <p role="alert">{readMessage}</p>}
+      {state.kind === "ready" && (
+        <>
+          <dl
+            className="customer-detail-page__meta"
+            aria-label="本地触达策略事实"
+          >
+            <dt>策略记录</dt>
+            <dd>{state.policy.policyPresent ? "已设置" : "未设置"}</dd>
+            <dt>当前可触达</dt>
+            <dd>{state.policy.eligible ? "是" : "否"}</dd>
+            <dt>当前抑制</dt>
+            <dd>{state.policy.suppressionActive ? "是" : "否"}</dd>
+            <dt>原因</dt>
+            <dd>
+              {state.policy.reasonCode
+                ? contactPolicyReasonLabels[state.policy.reasonCode]
+                : "未设置"}
+            </dd>
+            <dt>截止时间</dt>
+            <dd>{formatDateTime(state.policy.suppressedUntil ?? undefined)}</dd>
+            <dt>版本</dt>
+            <dd>{state.policy.version}</dd>
+            <dt>本地限定</dt>
+            <dd>{state.policy.localOnly ? "是" : "否"}</dd>
+          </dl>
+          <fieldset disabled={busy || replay.current !== undefined}>
+            <legend>设置或替换本地策略</legend>
+            <label htmlFor="customer-contact-policy-reason">策略原因</label>
+            <select
+              id="customer-contact-policy-reason"
+              value={reasonCode}
+              onChange={(event) =>
+                setReasonCode(
+                  event.currentTarget.value as CustomerContactPolicyReason,
+                )
+              }
+            >
+              {Object.entries(contactPolicyReasonLabels).map(
+                ([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ),
+              )}
+            </select>
+            <label htmlFor="customer-contact-policy-until">
+              抑制截止时间（可选）
+            </label>
+            <input
+              id="customer-contact-policy-until"
+              type="datetime-local"
+              value={suppressedUntil}
+              onChange={(event) =>
+                setSuppressedUntil(event.currentTarget.value)
+              }
+            />
+            <button type="button" onClick={startSet}>
+              {busy ? "正在保存…" : "保存本地策略"}
+            </button>
+          </fieldset>
+          {state.policy.policyPresent && state.policy.version >= 1 && (
+            <fieldset disabled={busy || replay.current !== undefined}>
+              <legend>清除本地策略</legend>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={clearConfirmed}
+                  onChange={(event) =>
+                    setClearConfirmed(event.currentTarget.checked)
+                  }
+                />
+                我已确认清除当前本地策略
+              </label>
+              <button
+                type="button"
+                disabled={!clearConfirmed}
+                onClick={startClear}
+              >
+                清除本地策略
+              </button>
+            </fieldset>
+          )}
+          <button type="button" disabled={busy} onClick={() => void reload()}>
+            刷新本地策略
+          </button>
+        </>
+      )}
+      {replay.current && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void execute(replay.current!)}
+        >
+          精确重放原策略意图
+        </button>
+      )}
+      {mutationMessage && (
+        <p role={mutation?.status === "succeeded" ? "status" : "alert"}>
+          {mutationMessage}
+        </p>
+      )}
+    </section>
+  );
+}
+
 export function CustomerDetailPage({
   customerID,
+  actorID,
   role,
   transport = generatedCustomerDetailTransport,
   contextTransport,
@@ -235,6 +584,7 @@ export function CustomerDetailPage({
   readCookie = browserCookie,
   onUnauthenticated,
   initialSnapshot,
+  contactPolicyKeySource,
 }: CustomerDetailPageProps): React.ReactElement {
   const [page, setPage] = useState<PageState>(() =>
     initialSnapshot
@@ -739,6 +1089,17 @@ export function CustomerDetailPage({
             </fieldset>
           </form>
         </section>
+
+        {(role === "admin" || role === "ops") && (
+          <ContactPolicyPanel
+            key={`${customerID}:${actorID ?? 0}:${role}`}
+            customerID={customerID}
+            transport={transport}
+            readCookie={readCookie}
+            keySource={contactPolicyKeySource}
+            onUnauthenticated={onUnauthenticated}
+          />
+        )}
       </div>
 
       <section

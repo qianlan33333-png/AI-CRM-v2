@@ -1,9 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   loadCustomerDetail,
+  loadCustomerContactPolicy,
   loadCustomerTimelinePage,
+  newCustomerContactPolicyIdempotencyKey,
+  parseCustomerContactPolicy,
   parseCustomerDetailResponse,
   parseTagCatalog,
+  submitCustomerContactPolicyClear,
+  submitCustomerContactPolicySet,
   submitCustomerProfileUpdate,
   submitCustomerStageChange,
   submitCustomerTagAdd,
@@ -64,6 +69,9 @@ function client(
     setStage: Response;
     addTag: Response;
     removeTag: Response;
+    contactPolicy: Response;
+    setContactPolicy: Response;
+    clearContactPolicy: Response;
     events: Response;
     tags: Response;
   }> = {},
@@ -80,10 +88,47 @@ function client(
     removeTag: vi.fn(
       async () => responses.removeTag ?? { status: 204, data: {} },
     ),
+    getContactPolicy: vi.fn(
+      async () => responses.contactPolicy ?? policyResponse,
+    ),
+    setContactPolicy: vi.fn(
+      async () => responses.setContactPolicy ?? policyResponse,
+    ),
+    clearContactPolicy: vi.fn(
+      async () => responses.clearContactPolicy ?? emptyPolicyResponse,
+    ),
     listEvents: vi.fn(async () => responses.events ?? eventsResponse),
     listTags: vi.fn(async () => responses.tags ?? tagsResponse),
   };
 }
+
+const policy = {
+  customer_id: 7,
+  version: 3,
+  policy_present: true,
+  eligible: false,
+  suppression_active: true,
+  reason_code: "manual_opt_out",
+  suppressed_until: null,
+  local_only: true,
+  provider_execution_eligible: false,
+  real_external_call_executed: false,
+  delivery_proven: false,
+};
+const policyResponse: Response = { status: 200, data: policy };
+const emptyPolicy = {
+  ...policy,
+  version: 0,
+  policy_present: false,
+  eligible: true,
+  suppression_active: false,
+  reason_code: null,
+  suppressed_until: null,
+};
+const emptyPolicyResponse: Response = {
+  status: 200,
+  data: emptyPolicy,
+};
 
 describe("customer detail response parsing", () => {
   it("maps only the safe, channel-neutral detail projection", () => {
@@ -178,6 +223,160 @@ describe("customer detail response parsing", () => {
     { items: [{ ...rawTag, group_name: "   " }] },
   ])("rejects an expanded or malformed tag catalog %#", (value) => {
     expect(parseTagCatalog(value)).toBeUndefined();
+  });
+});
+
+describe("customer contact policy", () => {
+  const csrf = "A".repeat(43);
+  const setRequest = {
+    expectedVersion: 0,
+    reasonCode: "manual_opt_out" as const,
+    suppressedUntil: null,
+  };
+  const setKey =
+    "customer-contact-policy:set:123e4567-e89b-42d3-a456-426614174000";
+  const clearKey =
+    "customer-contact-policy:clear:123e4567-e89b-42d3-a456-426614174000";
+
+  it("parses only the closed local policy projection, including expired policies", () => {
+    expect(parseCustomerContactPolicy(policy, 7)).toEqual({
+      customerID: 7,
+      version: 3,
+      policyPresent: true,
+      eligible: false,
+      suppressionActive: true,
+      reasonCode: "manual_opt_out",
+      suppressedUntil: null,
+      localOnly: true,
+    });
+    expect(
+      parseCustomerContactPolicy(
+        {
+          ...policy,
+          suppression_active: false,
+          eligible: true,
+          suppressed_until: "2020-01-01T00:00:00Z",
+        },
+        7,
+      ),
+    ).toMatchObject({ policyPresent: true, suppressionActive: false });
+    for (const invalid of [
+      { ...policy, customer_id: 8 },
+      { ...policy, provider_execution_eligible: true },
+      { ...policy, real_external_call_executed: true },
+      { ...policy, delivery_proven: true },
+      { ...policy, local_only: false },
+      { ...policy, eligible: true },
+      { ...policy, reason_code: "unknown" },
+      { ...policy, suppressed_until: "not-a-time" },
+      { ...policy, extra: true },
+      { ...emptyPolicy, reason_code: "manual_opt_out" },
+    ]) {
+      expect(parseCustomerContactPolicy(invalid, 7)).toBeUndefined();
+    }
+  });
+
+  it("reads with same-origin credentials and fails closed by status", async () => {
+    const transport = client();
+    await expect(
+      loadCustomerContactPolicy(transport, 7),
+    ).resolves.toMatchObject({
+      status: "loaded",
+      policy: { version: 3 },
+    });
+    expect(transport.getContactPolicy).toHaveBeenCalledWith(7, {
+      credentials: "same-origin",
+    });
+    for (const [status, want] of [
+      [401, "unauthenticated"],
+      [403, "forbidden"],
+      [404, "not_found"],
+      [503, "unavailable"],
+    ] as const) {
+      await expect(
+        loadCustomerContactPolicy(
+          client({ contactPolicy: { status, data: {} } }),
+          7,
+        ),
+      ).resolves.toEqual({ status: want });
+    }
+  });
+
+  it("uses CSRF and one caller-owned idempotency key for set and clear", async () => {
+    const transport = client();
+    await expect(
+      submitCustomerContactPolicySet(transport, 7, setRequest, csrf, setKey),
+    ).resolves.toMatchObject({ status: "succeeded", policy: { version: 3 } });
+    expect(transport.setContactPolicy).toHaveBeenCalledWith(
+      7,
+      {
+        expected_version: 0,
+        reason_code: "manual_opt_out",
+        suppressed_until: null,
+      },
+      {
+        credentials: "same-origin",
+        headers: { "X-CSRF-Token": csrf, "Idempotency-Key": setKey },
+      },
+    );
+    await expect(
+      submitCustomerContactPolicyClear(transport, 7, 3, csrf, clearKey),
+    ).resolves.toMatchObject({ status: "succeeded", policy: { version: 0 } });
+    expect(transport.clearContactPolicy).toHaveBeenCalledWith(
+      7,
+      { expected_version: 3 },
+      expect.objectContaining({
+        headers: { "X-CSRF-Token": csrf, "Idempotency-Key": clearKey },
+      }),
+    );
+  });
+
+  it.each([
+    [401, "unauthenticated"],
+    [403, "forbidden"],
+    [404, "not_found"],
+    [409, "conflict"],
+    [400, "invalid"],
+    [503, "unavailable"],
+  ] as const)("keeps set status %i fail-closed as %s", async (status, want) => {
+    await expect(
+      submitCustomerContactPolicySet(
+        client({ setContactPolicy: { status, data: {} } }),
+        7,
+        setRequest,
+        csrf,
+        setKey,
+      ),
+    ).resolves.toEqual({ status: want });
+  });
+
+  it("preserves an unknown outcome but rejects invalid client inputs before a request", async () => {
+    const transport = client();
+    vi.mocked(transport.setContactPolicy).mockRejectedValue(
+      new Error("network"),
+    );
+    await expect(
+      submitCustomerContactPolicySet(transport, 7, setRequest, csrf, setKey),
+    ).resolves.toEqual({ status: "outcome_unknown" });
+    await expect(
+      submitCustomerContactPolicySet(
+        client(),
+        7,
+        { ...setRequest, reasonCode: "invalid" as never },
+        csrf,
+        setKey,
+      ),
+    ).resolves.toEqual({ status: "invalid" });
+    expect(
+      newCustomerContactPolicyIdempotencyKey("set", {
+        randomUUID: () => "123e4567-e89b-42d3-a456-426614174000",
+      }),
+    ).toBe(setKey);
+    expect(
+      newCustomerContactPolicyIdempotencyKey("clear", {
+        randomUUID: () => "not-a-uuid",
+      }),
+    ).toBeUndefined();
   });
 });
 
