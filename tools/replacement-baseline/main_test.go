@@ -152,6 +152,43 @@ func TestFrozenAssetsAreMachineReadableAndOpenAPIPresent(t *testing.T) {
 	}
 }
 
+func TestDM01OverlayIsClosedAndDoesNotClaimCutover(t *testing.T) {
+	data, err := build(
+		repoFile("docs/feature-matrix.csv"),
+		repoFile("docs/api-mapping.jsonl"),
+		repoFile("docs/migration-mapping.jsonl"),
+		repoFile("docs/evidence/p1/route-triage.csv"),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]bool{
+		"LEGACY-T14-006": true, "LEGACY-T14-149": true, "LEGACY-T14-152": true,
+		"LEGACY-T14-153": true, "LEGACY-T14-154": true, "LEGACY-T14-155": true,
+		"LEGACY-T14-176": true, "LEGACY-T14-230": true, "LEGACY-T14-231": true,
+		"LEGACY-T14-313": true, "LEGACY-T14-314": true,
+	}
+	seen := map[string]bool{}
+	for _, row := range data.migrations {
+		if !want[row[0]] {
+			continue
+		}
+		if seen[row[0]] {
+			t.Fatalf("duplicate DM01 overlay row %s", row[0])
+		}
+		seen[row[0]] = true
+		if row[15] != "NOT_EXECUTED" || row[30] != "LOCAL_VERIFIED" || row[31] != "NOT_EXECUTED" || row[32] != "NOT_EXECUTED" || row[33] != "LOCAL_VERIFIED" {
+			t.Fatalf("%s overclaims DM01 state: %v", row[0], row[15:34])
+		}
+		if _, err := os.Stat(repoFile(row[29])); err != nil {
+			t.Fatalf("%s evidence ref is not readable: %v", row[0], err)
+		}
+	}
+	if len(seen) != len(want) {
+		t.Fatalf("DM01 overlay rows = %d, want %d", len(seen), len(want))
+	}
+}
+
 func TestValidateReadinessRejectsAnyRendererDrift(t *testing.T) {
 	data := output{}
 	path := filepath.Join(t.TempDir(), "cutover-readiness.md")

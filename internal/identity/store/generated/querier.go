@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	BindFloatingIdentity(ctx context.Context, arg BindFloatingIdentityParams) (int64, error)
+	BindHistoricalScopedWeComIdentity(ctx context.Context, arg BindHistoricalScopedWeComIdentityParams) (BindHistoricalScopedWeComIdentityRow, error)
 	ClaimPendingReplay(ctx context.Context) (ClaimPendingReplayRow, error)
 	CompleteBindReceipt(ctx context.Context, arg CompleteBindReceiptParams) (int64, error)
 	CompleteIngestReceipt(ctx context.Context, arg CompleteIngestReceiptParams) (int64, error)
@@ -36,6 +37,7 @@ type Querier interface {
 	LockActiveBindCustomer(ctx context.Context, customerID int64) (int64, error)
 	LockActiveBindCustomersForMerge(ctx context.Context, customerIds []int64) ([]int64, error)
 	LockActiveMergeReviewCustomers(ctx context.Context, customerIds []int64) ([]int64, error)
+	LockHistoricalScopedWeComIdentity(ctx context.Context, identityID int64) (LockHistoricalScopedWeComIdentityRow, error)
 	LockIdentityForBind(ctx context.Context, arg LockIdentityForBindParams) (LockIdentityForBindRow, error)
 	LockMergeReview(ctx context.Context, reviewID int64) (LockMergeReviewRow, error)
 	LockPendingReplayIdentities(ctx context.Context, identityIds []int64) ([]LockPendingReplayIdentitiesRow, error)
@@ -46,6 +48,7 @@ type Querier interface {
 	ReserveIngestReceipt(ctx context.Context, arg ReserveIngestReceiptParams) (int64, error)
 	ReserveMergeReviewReceipt(ctx context.Context, arg ReserveMergeReviewReceiptParams) (int64, error)
 	ResolveMergeReview(ctx context.Context, arg ResolveMergeReviewParams) (int64, error)
+	UpdateHistoricalScopedWeComIdentityCAS(ctx context.Context, arg UpdateHistoricalScopedWeComIdentityCASParams) (int64, error)
 	UpsertNormalizedIdentity(ctx context.Context, arg UpsertNormalizedIdentityParams) (UpsertNormalizedIdentityRow, error)
 }
 

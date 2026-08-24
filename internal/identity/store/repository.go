@@ -2,6 +2,7 @@
 package store
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -27,8 +28,103 @@ var _ identityapp.PendingReplayStore = (*Repository)(nil)
 var _ identityapp.MergeReviewStore = (*Repository)(nil)
 var _ identityapp.MessageArchiveUnionIDStore = (*Repository)(nil)
 var _ identityapp.CustomerMergeHistoryStore = (*Repository)(nil)
+var _ identityport.HistoricalScopedIdentityBinder = (*Repository)(nil)
 
 func NewRepository() *Repository { return &Repository{} }
+
+func (repository *Repository) BindHistoricalScopedWeComIdentity(ctx context.Context, command identityport.HistoricalScopedIdentity) (identityport.HistoricalScopedIdentityResult, error) {
+	if repository == nil || command.CustomerID < 1 || len(command.SourceKeyHMAC) != 32 || command.HMACKeyVersion < 1 {
+		return identityport.HistoricalScopedIdentityResult{}, identityapp.ErrInvalidIdentity
+	}
+	normalized, err := identityapp.Normalize(identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: command.Scope, Value: command.ExternalUserID})
+	if err != nil {
+		return identityport.HistoricalScopedIdentityResult{}, identityapp.ErrInvalidIdentity
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return identityport.HistoricalScopedIdentityResult{}, err
+	}
+	row, err := identitydb.New(tx).BindHistoricalScopedWeComIdentity(ctx, identitydb.BindHistoricalScopedWeComIdentityParams{CustomerID: int64(command.CustomerID), Scope: normalized.Scope, ExternalUserid: normalized.NormalizedValue, SourceKeyHmac: command.SourceKeyHMAC, FingerprintKeyVersion: command.HMACKeyVersion})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return identityport.HistoricalScopedIdentityResult{}, identityport.ErrHistoricalScopedIdentityConflict
+		}
+		return identityport.HistoricalScopedIdentityResult{}, err
+	}
+	return identityport.HistoricalScopedIdentityResult{IdentityID: row.ID, Bound: row.Bound}, nil
+}
+
+func (repository *Repository) ValidateHistoricalScopedWeComIdentity(ctx context.Context, identityID int64, command identityport.HistoricalScopedIdentity) error {
+	if repository == nil || identityID < 1 || command.CustomerID < 1 || len(command.SourceKeyHMAC) != 32 || command.HMACKeyVersion < 1 {
+		return identityapp.ErrInvalidIdentity
+	}
+	normalized, err := identityapp.Normalize(identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: command.Scope, Value: command.ExternalUserID})
+	if err != nil {
+		return identityapp.ErrInvalidIdentity
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	row, err := identitydb.New(tx).LockHistoricalScopedWeComIdentity(ctx, identityID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return identityport.ErrHistoricalScopedIdentityConflict
+	}
+	if err != nil {
+		return err
+	}
+	if !row.CustomerID.Valid || row.CustomerID.Int64 != int64(command.CustomerID) || row.Kind != string(identityport.KindWeComExternalUserID) || row.Scope != normalized.Scope || row.NormalizedValue != normalized.NormalizedValue {
+		return identityport.ErrHistoricalScopedIdentityConflict
+	}
+	return nil
+}
+
+func (repository *Repository) LockHistoricalScopedWeComIdentity(ctx context.Context, identityID int64, sourceKeyHMAC []byte) (identityport.HistoricalScopedIdentity, error) {
+	if repository == nil || identityID < 1 || len(sourceKeyHMAC) != 32 {
+		return identityport.HistoricalScopedIdentity{}, identityapp.ErrInvalidIdentity
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return identityport.HistoricalScopedIdentity{}, err
+	}
+	row, err := identitydb.New(tx).LockHistoricalScopedWeComIdentity(ctx, identityID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return identityport.HistoricalScopedIdentity{}, identityport.ErrHistoricalScopedIdentityConflict
+	}
+	if err != nil {
+		return identityport.HistoricalScopedIdentity{}, err
+	}
+	if !row.CustomerID.Valid || row.CustomerID.Int64 < 1 || row.Kind != string(identityport.KindWeComExternalUserID) || len(row.ReviewFingerprint) != 16 || !bytes.Equal(row.ReviewFingerprint, sourceKeyHMAC[:16]) {
+		return identityport.HistoricalScopedIdentity{}, identityport.ErrHistoricalScopedIdentityConflict
+	}
+	return identityport.HistoricalScopedIdentity{CustomerID: contactport.CustomerID(row.CustomerID.Int64), Scope: row.Scope, ExternalUserID: row.NormalizedValue, SourceKeyHMAC: append([]byte(nil), sourceKeyHMAC...), HMACKeyVersion: row.FingerprintKeyVersion}, nil
+}
+
+func (repository *Repository) UpdateHistoricalScopedWeComIdentityCAS(ctx context.Context, identityID int64, prior, next identityport.HistoricalScopedIdentity) error {
+	if repository == nil || identityID < 1 || prior.CustomerID < 1 || next.CustomerID != prior.CustomerID || len(prior.SourceKeyHMAC) != 32 || !bytes.Equal(prior.SourceKeyHMAC, next.SourceKeyHMAC) || prior.HMACKeyVersion < 1 || next.HMACKeyVersion < 1 {
+		return identityapp.ErrInvalidIdentity
+	}
+	priorNormalized, err := identityapp.Normalize(identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: prior.Scope, Value: prior.ExternalUserID})
+	if err != nil {
+		return identityapp.ErrInvalidIdentity
+	}
+	nextNormalized, err := identityapp.Normalize(identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: next.Scope, Value: next.ExternalUserID})
+	if err != nil {
+		return identityapp.ErrInvalidIdentity
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	rows, err := identitydb.New(tx).UpdateHistoricalScopedWeComIdentityCAS(ctx, identitydb.UpdateHistoricalScopedWeComIdentityCASParams{IdentityID: identityID, PriorCustomerID: int64(prior.CustomerID), PriorScope: priorNormalized.Scope, PriorExternalUserid: priorNormalized.NormalizedValue, PriorKeyVersion: prior.HMACKeyVersion, NextScope: nextNormalized.Scope, NextExternalUserid: nextNormalized.NormalizedValue, NextKeyVersion: next.HMACKeyVersion, SourceKeyHmac: next.SourceKeyHMAC})
+	if err != nil {
+		return err
+	}
+	if rows != 1 {
+		return identityport.ErrHistoricalScopedIdentityConflict
+	}
+	return nil
+}
 
 func (repository *Repository) ListCustomerMergeHistory(
 	ctx context.Context,

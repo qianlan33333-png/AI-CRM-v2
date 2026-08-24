@@ -4,10 +4,13 @@ package port
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"time"
 
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 )
+
+var ErrHistoricalScopedIdentityConflict = errors.New("historical scoped identity conflict")
 
 type IDKind string
 type Assurance string
@@ -33,6 +36,29 @@ type IDRef struct {
 	Value     string
 	Assurance Assurance
 	Source    string
+}
+
+// HistoricalScopedIdentityBinder is a transaction-bound DM01-only port. It
+// supports exactly one scoped WeCom identity binding and cannot merge, emit an
+// event, invoke a Provider, or expose arbitrary identity SQL.
+type HistoricalScopedIdentityBinder interface {
+	BindHistoricalScopedWeComIdentity(context.Context, HistoricalScopedIdentity) (HistoricalScopedIdentityResult, error)
+	ValidateHistoricalScopedWeComIdentity(context.Context, int64, HistoricalScopedIdentity) error
+	LockHistoricalScopedWeComIdentity(context.Context, int64, []byte) (HistoricalScopedIdentity, error)
+	UpdateHistoricalScopedWeComIdentityCAS(context.Context, int64, HistoricalScopedIdentity, HistoricalScopedIdentity) error
+}
+
+type HistoricalScopedIdentity struct {
+	CustomerID     contactport.CustomerID
+	Scope          string
+	ExternalUserID string
+	SourceKeyHMAC  []byte
+	HMACKeyVersion int16
+}
+
+type HistoricalScopedIdentityResult struct {
+	IdentityID int64
+	Bound      bool
 }
 
 type ResolveStatus string

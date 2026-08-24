@@ -1,6 +1,11 @@
 package store
 
-import "testing"
+import (
+	"errors"
+	"testing"
+
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+)
 
 func TestScanStageReceiptAcceptsAllCurrentLifecycleOperations(t *testing.T) {
 	keyDigest := make([]byte, 32)
@@ -23,6 +28,16 @@ func TestScanStageReceiptAcceptsAllCurrentLifecycleOperations(t *testing.T) {
 				t.Fatalf("receipt = %#v", receipt)
 			}
 		})
+	}
+}
+
+func TestParseHistoricalImportReceiptDispositionLimitsSkippedToOwnerRoleMap(t *testing.T) {
+	disposition, err := parseHistoricalImportReceiptDisposition(contactport.HistoricalImportOwnerRoleMap, "skipped")
+	if err != nil || disposition != contactport.HistoricalImportSkipped {
+		t.Fatalf("owner skipped = %v/%v", disposition, err)
+	}
+	if _, err = parseHistoricalImportReceiptDisposition(contactport.HistoricalImportCustomerIdentity, "skipped"); !errors.Is(err, ErrHistoricalImportTargetDrift) {
+		t.Fatalf("customer skipped = %v", err)
 	}
 }
 

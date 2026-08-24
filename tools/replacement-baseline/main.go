@@ -186,12 +186,39 @@ func build(matrixPath, apiPath, migrationPath, triagePath string) (output, error
 		"Formal freeze is advisory only and not externally enforced. No exact V2 absorption SHA or verification evidence exists.",
 		"UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED",
 	}}
+	applyDM01Overlay(&result)
 	sortRows(result.capabilities)
 	sortRows(result.routes)
 	sortRows(result.protocols)
 	sortRows(result.effects)
 	sortRows(result.migrations)
 	return result, nil
+}
+
+// applyDM01Overlay is intentionally a closed, evidence-only projection of
+// the local DM01 package. It does not claim deployment, Provider effects, or
+// cutover readiness; those columns remain NOT_EXECUTED.
+func applyDM01Overlay(result *output) {
+	ids := map[string]bool{
+		"LEGACY-T14-006": true, "LEGACY-T14-149": true, "LEGACY-T14-152": true,
+		"LEGACY-T14-153": true, "LEGACY-T14-154": true, "LEGACY-T14-155": true,
+		"LEGACY-T14-176": true, "LEGACY-T14-230": true, "LEGACY-T14-231": true,
+		"LEGACY-T14-313": true, "LEGACY-T14-314": true,
+	}
+	for _, row := range result.migrations {
+		if !ids[row[0]] {
+			continue
+		}
+		row[15] = "NOT_EXECUTED"
+		row[16] = "DM01 local dual-PG, migration and domain evidence only; deployment, external effects and cutover remain NOT_EXECUTED."
+		row[17] = "2b7a80126d7becb6f95cf1ec5945dcb78a42f531"
+		row[24], row[25], row[26] = "DM01_LOCAL_PG16", "DM01_LOCAL_PG16", "DM01_LOCAL_PG16"
+		row[29] = "docs/evidence/p4/dm01-legacy-contact-identity-import-local-core.md"
+		row[30], row[31], row[32], row[33] = "LOCAL_VERIFIED", "NOT_EXECUTED", "NOT_EXECUTED", "LOCAL_VERIFIED"
+	}
+	result.deltas = append(result.deltas,
+		[]string{"REPO1-DM01-40-41", legacyMainSHA, "96272daa;2b7a80126d7becb6f95cf1ec5945dcb78a42f531", "DM01_SOURCE_SCHEMA_CATCHUP", "LEGACY-T14-313", "UNMAPPED", "UNMAPPED", "dual_pg_migration_local_domain_verified", "OPEN", "#40 failure classification and #41 PG CAST behavior are represented in the frozen DM01 source snapshot; no deployment/external/cutover claim.", "#40;#41", "UNMAPPED", "NOT_EXECUTED", "identity_contact", "UNMAPPED", "wecom_external_contact_follow_users", "UNMAPPED", "UNMAPPED", "docs/replacement/data-migration-ledger.csv", "contact"},
+	)
 }
 
 func frozenAssets() ([][]string, error) {

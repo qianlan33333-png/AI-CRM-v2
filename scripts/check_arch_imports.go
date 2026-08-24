@@ -29,6 +29,7 @@ var compositionRoots = map[string]bool{
 	"aicrm":               true,
 	"aicrm-river-migrate": true,
 	"aicrm-contact-perf":  true,
+	"aicrm-dm01":          true,
 }
 
 func main() {

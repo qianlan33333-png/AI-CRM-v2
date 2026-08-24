@@ -36,6 +36,13 @@ owners:
       - customer_safe_exports
       - customer_safe_export_rows
       - customer_safe_export_receipts
+      - legacy_contact_identity_import_runs
+      - legacy_contact_identity_import_checkpoints
+      - legacy_contact_identity_source_mappings
+      - legacy_contact_identity_import_row_receipts
+      - legacy_contact_identity_import_quarantines
+      - legacy_contact_identity_historical_archives
+      - legacy_contact_identity_import_receipts
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
@@ -56,6 +63,13 @@ owners:
       customer_safe_exports: actor_bound_local_customer_export_snapshot_metadata_without_provider_or_external_identity
       customer_safe_export_rows: closed_whitelist_rows_for_actor_bound_local_customer_csv_snapshot
       customer_safe_export_receipts: actor_scoped_transactional_customer_export_snapshot_idempotency_receipts
+      legacy_contact_identity_import_runs: operator_controlled_DM01_local_historical_import_run_without_provider_or_business_event
+      legacy_contact_identity_import_checkpoints: hmac_only_resumable_DM01_source_progress
+      legacy_contact_identity_source_mappings: stable_hmac_only_DM01_one_target_source_to_local_binding_without_auto_merge
+      legacy_contact_identity_import_row_receipts: immutable_hmac_only_DM01_row_dispositions
+      legacy_contact_identity_import_quarantines: restricted_hmac_only_untrusted_or_unscoped_DM01_rows
+      legacy_contact_identity_historical_archives: inactive_AES_GCM_encrypted_DM01_154_155_history_without_active_merge_or_pending_event
+      legacy_contact_identity_import_receipts: immutable_DM01_completed_run_result_receipts
 
   identity:
     package: internal/identity

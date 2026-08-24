@@ -32,6 +32,47 @@ WHERE i.kind = sqlc.arg(kind)::text
   AND i.scope = sqlc.arg(scope)::text
   AND i.normalized_value = sqlc.arg(normalized_value)::text;
 
+-- name: BindHistoricalScopedWeComIdentity :one
+INSERT INTO identities (
+  customer_id, kind, scope, normalized_value, normalizer_version,
+  assurance, source, review_fingerprint, fingerprint_key_version, bound_at
+) VALUES (
+  sqlc.arg(customer_id)::bigint, 'wecom_external_userid', sqlc.arg(scope)::text,
+  sqlc.arg(external_userid)::text, 1, 'declared', 'dm01.legacy_import',
+  substring(sqlc.arg(source_key_hmac)::bytea FROM 1 FOR 16), sqlc.arg(fingerprint_key_version)::smallint, now()
+)
+ON CONFLICT (kind, scope, normalized_value) DO UPDATE
+SET customer_id = EXCLUDED.customer_id,
+    bound_at = COALESCE(identities.bound_at, EXCLUDED.bound_at)
+WHERE identities.customer_id IS NULL OR identities.customer_id = EXCLUDED.customer_id
+RETURNING id, customer_id = sqlc.arg(customer_id)::bigint AS bound;
+
+-- name: LockHistoricalScopedWeComIdentity :one
+SELECT customer_id, kind, scope, normalized_value, fingerprint_key_version,
+       review_fingerprint
+FROM identities
+WHERE id = sqlc.arg(identity_id)::bigint
+FOR UPDATE;
+
+-- name: UpdateHistoricalScopedWeComIdentityCAS :execrows
+UPDATE identities
+SET scope = sqlc.arg(next_scope)::text,
+    normalized_value = sqlc.arg(next_external_userid)::text,
+    fingerprint_key_version = sqlc.arg(next_key_version)::smallint
+WHERE id = sqlc.arg(identity_id)::bigint
+  AND customer_id = sqlc.arg(prior_customer_id)::bigint
+  AND kind = 'wecom_external_userid'
+  AND scope = sqlc.arg(prior_scope)::text
+  AND normalized_value = sqlc.arg(prior_external_userid)::text
+  AND fingerprint_key_version = sqlc.arg(prior_key_version)::smallint
+  AND review_fingerprint = substring(sqlc.arg(source_key_hmac)::bytea FROM 1 FOR 16)
+  AND NOT EXISTS (
+    SELECT 1 FROM identities AS conflict
+    WHERE conflict.id <> identities.id AND conflict.kind = 'wecom_external_userid'
+      AND conflict.scope = sqlc.arg(next_scope)::text
+      AND conflict.normalized_value = sqlc.arg(next_external_userid)::text
+  );
+
 -- name: ListPrimaryWeComExternalUserIDs :many
 SELECT
   customer_id,

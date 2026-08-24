@@ -78,6 +78,11 @@
       "effects": {"go": true,"go_groups": ["composition"],"go_mode": "selected"}
     },
     {
+      "name": "dm01-composition",
+      "patterns": ["cmd/aicrm-dm01/**","acceptance/dm01/**","acceptance/contact/dm01_migration_pg16.sh","migrations/00072_legacy_contact_identity_import.sql","internal/contact/migration/dm01*","internal/contact/store/dm01*","internal/contact/store/acceptancefixture/dm01.go","internal/contact/store/historical_import_repository.go","internal/contact/store/queries/dm01_acceptance.sql","internal/contact/store/queries/historical_import.sql","internal/identity/store/repository.go"],
+      "effects": {"go": true,"go_groups": ["contact","identity"],"go_mode": "selected","database": true,"database_groups": ["dm01"],"database_mode": "selected","sqlc": true}
+    },
+    {
       "name": "media-go",
       "patterns": ["internal/media/**","acceptance/media/**"],
       "effects": {"go": true,"go_groups": ["media"],"go_mode": "selected"}

@@ -148,6 +148,166 @@ type StaffDirectoryEntry struct {
 	UpdatedAt   time.Time
 }
 
+// HistoricalImportStaffReader is narrower than the ordinary directory read.
+// The manifest's single-corp authorization is checked by DM01 before this
+// call; staff has no corp_id and legacy roles never cross this boundary.
+type HistoricalImportStaffReader interface {
+	LockUniqueActiveStaffForHistoricalImport(context.Context, string) (HistoricalImportStaff, error)
+}
+
+type HistoricalImportStaff struct {
+	ID int64
+}
+
+type HistoricalImportSource uint8
+
+const (
+	HistoricalImportOwnerRoleMap HistoricalImportSource = iota + 1
+	HistoricalImportCustomerIdentity
+	HistoricalImportExternalIdentity
+)
+
+type HistoricalImportDisposition uint8
+
+const (
+	HistoricalImportImported HistoricalImportDisposition = iota + 1
+	HistoricalImportQuarantined
+	HistoricalImportSkipped
+)
+
+// HistoricalImportSourceFact carries only secret-backed digests. Raw legacy
+// source keys and payloads never cross into the target ledger boundary.
+type HistoricalImportSourceFact struct {
+	SourceKeyHMAC []byte
+	PayloadHMAC   []byte
+	FieldDigest   []byte
+}
+
+type HistoricalImportStaffFact struct {
+	WeComUserID string
+	Name        string
+	Active      bool
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+type HistoricalImportCustomerFact struct {
+	Name         string
+	AvatarURL    *string
+	Gender       *int16
+	OwnerStaffID *int64
+	FirstSeenAt  time.Time
+	LastSeenAt   time.Time
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+}
+
+type HistoricalImportLineage struct {
+	TargetID    int64
+	PayloadHMAC []byte
+	FieldDigest []byte
+	LastRunID   int64
+}
+
+type HistoricalImportRowReceipt struct {
+	PayloadHMAC []byte
+	FieldDigest []byte
+	Disposition HistoricalImportDisposition
+}
+
+type HistoricalImportQuarantine struct {
+	RunID      int64
+	Source     HistoricalImportSource
+	SourceFact HistoricalImportSourceFact
+	ReasonCode string
+}
+
+type NonActiveSource uint8
+
+const (
+	NonActiveMergeAudit NonActiveSource = iota + 1
+	NonActiveResolutionQueue
+	NonActiveContacts
+	NonActiveIdentityConflicts
+	NonActivePeople
+	NonActiveFollowUsers
+	NonActiveDirectoryMembers
+	NonActiveExternalBindings
+)
+
+type NonActiveDisposition uint8
+
+const (
+	NonActiveArchived NonActiveDisposition = iota + 1
+	NonActiveSkipped
+	NonActiveQuarantined
+)
+
+type NonActiveLeaseFence struct {
+	RunID      int64
+	Generation int64
+	TokenHMAC  []byte
+}
+
+type NonActiveRowReceipt struct {
+	PayloadHMAC []byte
+	FieldDigest []byte
+	Disposition NonActiveDisposition
+}
+
+type NonActiveArchive struct {
+	RunID      int64
+	Source     NonActiveSource
+	SourceFact HistoricalImportSourceFact
+	Nonce      []byte
+	Ciphertext []byte
+	KeyVersion int16
+}
+
+type NonActiveQuarantine struct {
+	RunID      int64
+	Source     NonActiveSource
+	SourceFact HistoricalImportSourceFact
+	ReasonCode string
+}
+
+// NonActiveTarget is the closed Contact-owned boundary for the eight DM01
+// sources that do not materialize active roots. Receipt append is lease-fenced
+// and is the final write for every newly processed row.
+type NonActiveTarget interface {
+	AssertNonActiveLease(context.Context, NonActiveLeaseFence) error
+	LockNonActiveSource(context.Context, NonActiveSource, []byte) error
+	FindNonActiveReceipt(context.Context, int64, NonActiveSource, []byte) (NonActiveRowReceipt, bool, error)
+	FindNonActiveArchive(context.Context, int64, NonActiveSource, []byte) (NonActiveArchive, bool, error)
+	FindNonActiveQuarantine(context.Context, int64, NonActiveSource, []byte) (NonActiveQuarantine, bool, error)
+	AppendNonActiveArchive(context.Context, NonActiveArchive) error
+	AppendNonActiveQuarantine(context.Context, NonActiveQuarantine) error
+	AppendNonActiveReceipt(context.Context, NonActiveLeaseFence, NonActiveSource, HistoricalImportSourceFact, NonActiveDisposition) error
+}
+
+// HistoricalImportTarget is the closed Contact-owned target boundary for
+// DM01. Every method requires the transaction context supplied by UnitOfWork.
+// It has no event, merge, Provider, role, or arbitrary SQL capability.
+type HistoricalImportTarget interface {
+	LockHistoricalImportSource(context.Context, HistoricalImportSource, []byte) error
+	FindHistoricalImportRowReceipt(context.Context, int64, HistoricalImportSource, []byte) (HistoricalImportRowReceipt, bool, error)
+	LockHistoricalImportLineage(context.Context, HistoricalImportSource, []byte) (HistoricalImportLineage, bool, error)
+	EnsureHistoricalImportStaff(context.Context, HistoricalImportStaffFact) (int64, error)
+	CreateHistoricalImportCustomer(context.Context, HistoricalImportCustomerFact) (int64, error)
+	ValidateHistoricalImportStaff(context.Context, int64, HistoricalImportStaffFact) error
+	ValidateHistoricalImportCustomer(context.Context, int64, HistoricalImportCustomerFact) error
+	LockHistoricalImportStaffTarget(context.Context, int64) (HistoricalImportStaffFact, error)
+	LockHistoricalImportCustomerTarget(context.Context, int64) (HistoricalImportCustomerFact, error)
+	UpdateHistoricalImportStaffCAS(context.Context, int64, HistoricalImportStaffFact, HistoricalImportStaffFact) error
+	UpdateHistoricalImportCustomerCAS(context.Context, int64, HistoricalImportCustomerFact, HistoricalImportCustomerFact) error
+	IsHistoricalImportActiveStaff(context.Context, int64) (bool, error)
+	ValidateHistoricalImportCustomerRoot(context.Context, int64) error
+	AppendHistoricalImportLineage(context.Context, int64, HistoricalImportSource, HistoricalImportSourceFact, int64) error
+	UpdateHistoricalImportLineageCAS(context.Context, int64, HistoricalImportSource, HistoricalImportSourceFact, HistoricalImportLineage) error
+	AppendHistoricalImportQuarantine(context.Context, HistoricalImportQuarantine) error
+	AppendHistoricalImportRowReceipt(context.Context, NonActiveLeaseFence, HistoricalImportSource, HistoricalImportSourceFact, HistoricalImportDisposition) error
+}
+
 type Stage struct {
 	ID        StageID
 	Name      string

@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	contact "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -15,6 +16,7 @@ type StaffDirectoryRepository struct{ pool *pgxpool.Pool }
 
 var _ contact.ActiveStaffReader = (*StaffDirectoryRepository)(nil)
 var _ contact.EligibleStaffReferenceReader = (*StaffDirectoryRepository)(nil)
+var _ contact.HistoricalImportStaffReader = (*StaffDirectoryRepository)(nil)
 var _ contact.StaffDirectoryReader = (*StaffDirectoryRepository)(nil)
 
 func NewStaffDirectoryRepository(pool *pgxpool.Pool) *StaffDirectoryRepository {
@@ -68,6 +70,24 @@ func (*StaffDirectoryRepository) LockEligibleStaffByWeComUserID(ctx context.Cont
 		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceNotFound
 	}
 	return result, nil
+}
+
+func (*StaffDirectoryRepository) LockUniqueActiveStaffForHistoricalImport(ctx context.Context, weComUserID string) (contact.HistoricalImportStaff, error) {
+	if ctx == nil || strings.TrimSpace(weComUserID) != weComUserID || weComUserID == "" {
+		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceNotFound
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceUnavailable
+	}
+	id, err := contactdb.New(tx).LockUniqueActiveStaffForHistoricalImport(ctx, weComUserID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceNotFound
+	}
+	if err != nil {
+		return contact.HistoricalImportStaff{}, contact.ErrStaffReferenceUnavailable
+	}
+	return contact.HistoricalImportStaff{ID: id}, nil
 }
 
 // IsActiveStaff holds a shared lock on the Contact-owned active row in the
