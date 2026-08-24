@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	automationfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/automationfixture"
 	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
+	radarfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/radar"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
@@ -400,9 +401,9 @@ func seedDeleteChannelReference(t *testing.T, ctx context.Context, pool *pgxpool
 
 func seedDeleteRadarReference(t *testing.T, ctx context.Context, pool *pgxpool.Pool, imageID int64) int64 {
 	t.Helper()
-	var id int64
 	code := fmt.Sprintf("rd_%022d", imageID)
-	if err := pool.QueryRow(ctx, `INSERT INTO radar_links (public_code,name,title,destination_url,cover_image_id,status,version,created_by,updated_by,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,'draft',1,1,1,now(),now()) RETURNING id`, code, unique("delete-radar"), unique("delete radar"), "https://example.com/delete-radar", imageID).Scan(&id); err != nil {
+	id, err := radarfixture.CreateImageReference(ctx, pool, code, unique("delete-radar"), unique("delete radar"), imageID)
+	if err != nil {
 		t.Fatal(err)
 	}
 	return id

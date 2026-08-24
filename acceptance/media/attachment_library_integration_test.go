@@ -17,7 +17,7 @@ import (
 	"github.com/qianlan33333-png/AI-CRM-v2/acceptance/automationfixture"
 	"github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
-	"github.com/qianlan33333-png/AI-CRM-v2/acceptance/radarfixture"
+	radarfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/radar"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
