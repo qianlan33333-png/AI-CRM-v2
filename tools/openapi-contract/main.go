@@ -336,10 +336,10 @@ var p4ProductLegacyMappings = map[string][]string{
 	"createProduct":                 {"LEGACY-API-0526"},
 	"getProduct":                    {"LEGACY-API-0530"},
 	"getLegacyProductListPage":      {"LEGACY-API-0079"},
-	"enableLegacyWechatPayProduct":  {"LEGACY-S07-167"},
-	"disableLegacyWechatPayProduct": {"LEGACY-S07-168"},
-	"copyLegacyWechatPayProduct":    {"LEGACY-S07-169"},
-	"deleteLegacyWechatPayProduct":  {"LEGACY-S07-170"},
+	"enableLegacyWechatPayProduct":  {"LEGACY-API-0534"},
+	"disableLegacyWechatPayProduct": {"LEGACY-API-0533"},
+	"copyLegacyWechatPayProduct":    {"LEGACY-API-0532"},
+	"deleteLegacyWechatPayProduct":  {"LEGACY-API-0529"},
 }
 
 const p4ServicePeriodLifecycleEvidence = "P4-SERVICE-PERIOD-LIFECYCLE-2026-08-22"

@@ -553,7 +553,7 @@ paths:
       tags: [p4-product]
       operationId: enableLegacyWechatPayProduct
       summary: Enable one CRM-local WeChat-pay product without provider effects
-      x-legacy-mapping-ids: [LEGACY-S07-167]
+      x-legacy-mapping-ids: [LEGACY-API-0534]
       x-p4-decision-evidence: P4-I01A-2026-08-14
       x-aicrm-capability: products.write
       x-aicrm-rbac-scopes: { admin: global, ops: global }
@@ -578,7 +578,7 @@ paths:
       tags: [p4-product]
       operationId: disableLegacyWechatPayProduct
       summary: Disable one CRM-local WeChat-pay product without provider effects
-      x-legacy-mapping-ids: [LEGACY-S07-168]
+      x-legacy-mapping-ids: [LEGACY-API-0533]
       x-p4-decision-evidence: P4-I01A-2026-08-14
       x-aicrm-capability: products.write
       x-aicrm-rbac-scopes: { admin: global, ops: global }
@@ -603,7 +603,7 @@ paths:
       tags: [p4-product]
       operationId: copyLegacyWechatPayProduct
       summary: Copy one CRM-local WeChat-pay product into a disabled draft
-      x-legacy-mapping-ids: [LEGACY-S07-169]
+      x-legacy-mapping-ids: [LEGACY-API-0532]
       x-p4-decision-evidence: P4-I01A-2026-08-14
       x-aicrm-capability: products.write
       x-aicrm-rbac-scopes: { admin: global, ops: global }
@@ -628,7 +628,7 @@ paths:
       tags: [p4-product]
       operationId: deleteLegacyWechatPayProduct
       summary: Delete only an unreferenced CRM-local draft product
-      x-legacy-mapping-ids: [LEGACY-S07-170]
+      x-legacy-mapping-ids: [LEGACY-API-0529]
       x-p4-decision-evidence: P4-I01A-2026-08-14
       x-aicrm-capability: products.write
       x-aicrm-rbac-scopes: { admin: global, ops: global }
