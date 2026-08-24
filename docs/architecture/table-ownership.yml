@@ -25,6 +25,8 @@ owners:
       - customer_contact_policies
       - customer_contact_policy_operation_receipts
       - sidebar_customer_profile_operation_receipts
+      - contact_owner_reassignment_previews
+      - contact_owner_reassignment_operation_receipts
       - channel_operation_receipts
       - legacy_tag_sync_receipts
       - legacy_tag_live_mutation_receipts
@@ -39,6 +41,8 @@ owners:
       customer_contact_policies: canonical_OneID_local_contact_suppression_policy_without_provider_or_outbound_execution
       customer_contact_policy_operation_receipts: actor_scoped_durable_contact_policy_mutation_receipts
       sidebar_customer_profile_operation_receipts: actor_scoped_transactional_sidebar_profile_mutation_receipts
+      contact_owner_reassignment_previews: actor_scoped_durable_local_owner_reassignment_preview_and_result
+      contact_owner_reassignment_operation_receipts: actor_scoped_transactional_local_owner_reassignment_receipts
       channels: single_instance_local_channel_resource_without_provider_truth
       channel_operation_receipts: actor_scoped_transactional_create_update_idempotency_receipts
       legacy_tag_sync_receipts: actor_scoped_local_sync_queue_acceptance_receipts_without_provider_execution

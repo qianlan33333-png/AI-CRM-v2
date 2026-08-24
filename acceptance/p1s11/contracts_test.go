@@ -224,6 +224,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"AcceptOutboundCampaignHandoff", "GetOutboundCampaignHandoffSummary", "ReconcileOutboundCampaignHandoff",
 		"CreateCloudCampaignTouchPlan", "GetCloudCampaignTouchPlan", "ListCloudCampaignTouchPlans", "GetCloudCampaignTouchPlanRecipient", "GetCloudCampaignTouchPlanReview", "ListCloudCampaignTouchPlanRecipients", "MutateCloudCampaignTouchPlanReview",
 		"MintSidebarContext", "GetSidebarWorkbench", "UpdateSidebarProfile", "ListSidebarQuestionnaires", "ListSidebarOrders", "ListSidebarPeriodicOrders", "UpdateSidebarPeriodicRemark", "ListSidebarMaterials", "GetSidebarMaterialThumbnailStatus",
+		"CreateContactOwnerReassignmentPreview", "GetContactOwnerReassignmentPreview", "DownloadContactOwnerReassignmentErrors", "ExecuteContactOwnerReassignmentPreview", "DownloadContactOwnerReassignmentResults", "DownloadContactOwnerReassignmentTemplate",
 	})
 }
 

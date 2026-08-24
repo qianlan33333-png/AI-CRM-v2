@@ -6,6 +6,97 @@ info:
 security:
   - AdminSession: []
 paths:
+  /api/v1/contact-owner-reassignments/template:
+    get:
+      tags: [p4-contact-owner-reassignment]
+      operationId: downloadContactOwnerReassignmentTemplate
+      summary: Download the safe local owner-reassignment CSV template
+      x-p4-decision-evidence: P4-CONTACT-OWNER-REASSIGNMENT-LOCAL-CORE-2026-08-24
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: contact.owner_reassignment.local_template
+      x-aicrm-external-effect: none
+      x-aicrm-capability: contact.owner_reassignment
+      x-aicrm-rbac-scopes: {admin: global}
+      x-aicrm-session-bound-csrf: none
+      responses: {"200": {description: Safe CSV template, content: {text/csv: {schema: {type: string}}}}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}}
+  /api/v1/contact-owner-reassignments/previews:
+    post:
+      tags: [p4-contact-owner-reassignment]
+      operationId: createContactOwnerReassignmentPreview
+      summary: Parse and persist one bounded local owner-reassignment CSV preview
+      x-p4-decision-evidence: P4-CONTACT-OWNER-REASSIGNMENT-LOCAL-CORE-2026-08-24
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: contact.owner_reassignment.local_preview
+      x-aicrm-external-effect: none
+      x-aicrm-capability: contact.owner_reassignment
+      x-aicrm-rbac-scopes: {admin: global}
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {text/csv: {schema: {type: string, maxLength: 1048576}}}}
+      responses: {"201": {description: Durable local preview, content: {application/json: {schema: {$ref: "#/components/schemas/ContactOwnerReassignmentPreview"}}}}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/v1/contact-owner-reassignments/previews/{preview_id}:
+    get:
+      tags: [p4-contact-owner-reassignment]
+      operationId: getContactOwnerReassignmentPreview
+      summary: Read one durable local owner-reassignment preview
+      x-p4-decision-evidence: P4-CONTACT-OWNER-REASSIGNMENT-LOCAL-CORE-2026-08-24
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: contact.owner_reassignment.local_preview
+      x-aicrm-external-effect: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-capability: contact.owner_reassignment
+      x-aicrm-rbac-scopes: {admin: global}
+      parameters: [{$ref: "#/components/parameters/ContactOwnerReassignmentPreviewID"}]
+      responses: {"200": {description: Preview, content: {application/json: {schema: {$ref: "#/components/schemas/ContactOwnerReassignmentPreview"}}}}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "404": {$ref: "#/components/responses/NotFound"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/v1/contact-owner-reassignments/previews/{preview_id}/execute:
+    post:
+      tags: [p4-contact-owner-reassignment]
+      operationId: executeContactOwnerReassignmentPreview
+      summary: Execute one confirmed single-use local owner-reassignment preview
+      x-p4-decision-evidence: P4-CONTACT-OWNER-REASSIGNMENT-LOCAL-CORE-2026-08-24
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: contact.owner_reassignment.local_transaction
+      x-aicrm-external-effect: none
+      x-aicrm-capability: contact.owner_reassignment
+      x-aicrm-rbac-scopes: {admin: global}
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: "#/components/parameters/ContactOwnerReassignmentPreviewID"}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/ContactOwnerReassignmentExecuteRequest"}}}}
+      responses: {"200": {description: Local committed result, content: {application/json: {schema: {$ref: "#/components/schemas/ContactOwnerReassignmentPreview"}}}}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "404": {$ref: "#/components/responses/NotFound"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/v1/contact-owner-reassignments/previews/{preview_id}/errors.csv:
+    get:
+      tags: [p4-contact-owner-reassignment]
+      operationId: downloadContactOwnerReassignmentErrors
+      summary: Download a redacted local owner-reassignment error CSV
+      x-p4-decision-evidence: P4-CONTACT-OWNER-REASSIGNMENT-LOCAL-CORE-2026-08-24
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: contact.owner_reassignment.local_preview
+      x-aicrm-external-effect: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-capability: contact.owner_reassignment
+      x-aicrm-rbac-scopes: {admin: global}
+      parameters: [{$ref: "#/components/parameters/ContactOwnerReassignmentPreviewID"}]
+      responses: {"200": {description: Redacted errors, content: {text/csv: {schema: {type: string}}}}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "404": {$ref: "#/components/responses/NotFound"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/v1/contact-owner-reassignments/previews/{preview_id}/results.csv:
+    get:
+      tags: [p4-contact-owner-reassignment]
+      operationId: downloadContactOwnerReassignmentResults
+      summary: Download a redacted local owner-reassignment result CSV
+      x-p4-decision-evidence: P4-CONTACT-OWNER-REASSIGNMENT-LOCAL-CORE-2026-08-24
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: contact.owner_reassignment.local_preview
+      x-aicrm-external-effect: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-capability: contact.owner_reassignment
+      x-aicrm-rbac-scopes: {admin: global}
+      parameters: [{$ref: "#/components/parameters/ContactOwnerReassignmentPreviewID"}]
+      responses: {"200": {description: Redacted results, content: {text/csv: {schema: {type: string}}}}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "404": {$ref: "#/components/responses/NotFound"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
   /api/sidebar/context-token:
     post:
       tags: [p4-sidebar-local]
@@ -9470,6 +9561,11 @@ components:
       name: aicrm_sidebar_grant
       description: Opaque owner-scoped sidebar grant; it is not interchangeable with a payment-identity session.
   parameters:
+    ContactOwnerReassignmentPreviewID:
+      name: preview_id
+      in: path
+      required: true
+      schema: {type: string, pattern: '^cor_[A-Za-z0-9_-]{22}$'}
     SidebarContextToken:
       name: X-Sidebar-Context-Token
       in: header
@@ -9749,6 +9845,48 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    ContactOwnerReassignmentRow:
+      type: object
+      additionalProperties: false
+      required: [customer_id, expected_owner_staff_id, expected_updated_at, target_owner_staff_id]
+      properties:
+        customer_id: {type: integer, format: int64, minimum: 1}
+        expected_owner_staff_id: {type: integer, format: int64, minimum: 1}
+        expected_updated_at: {type: string, format: date-time}
+        target_owner_staff_id: {type: integer, format: int64, minimum: 1}
+    ContactOwnerReassignmentIssue:
+      type: object
+      additionalProperties: false
+      required: [line, code]
+      properties: {line: {type: integer, minimum: 2}, code: {type: string, enum: [invalid_row]}}
+    ContactOwnerReassignmentPreview:
+      type: object
+      additionalProperties: false
+      required: [id, hash, rows, issues, expires_at, executed]
+      properties:
+        id: {type: string, pattern: '^cor_[A-Za-z0-9_-]{22}$'}
+        hash: {type: string, pattern: '^[a-f0-9]{64}$'}
+        rows: {type: array, maxItems: 500, items: {$ref: '#/components/schemas/ContactOwnerReassignmentRow'}}
+        issues: {type: array, maxItems: 500, items: {$ref: '#/components/schemas/ContactOwnerReassignmentIssue'}}
+        expires_at: {type: string, format: date-time}
+        executed: {type: boolean}
+        result: {type: array, maxItems: 500, items: {$ref: '#/components/schemas/ContactOwnerReassignmentResultRow'}}
+    ContactOwnerReassignmentResultRow:
+      type: object
+      additionalProperties: false
+      required: [customer_id, previous_owner_staff_id, target_owner_staff_id, updated_at]
+      properties:
+        customer_id: {type: integer, format: int64, minimum: 1}
+        previous_owner_staff_id: {type: integer, format: int64, minimum: 1}
+        target_owner_staff_id: {type: integer, format: int64, minimum: 1}
+        updated_at: {type: string, format: date-time}
+    ContactOwnerReassignmentExecuteRequest:
+      type: object
+      additionalProperties: false
+      required: [preview_hash, confirmation]
+      properties:
+        preview_hash: {type: string, pattern: '^[a-f0-9]{64}$'}
+        confirmation: {type: string, enum: ['CONFIRM OWNER REASSIGNMENT']}
     SidebarSafety:
       type: object
       additionalProperties: false
