@@ -27,8 +27,24 @@ var _ identityapp.PendingReplayStore = (*Repository)(nil)
 var _ identityapp.MergeReviewStore = (*Repository)(nil)
 var _ identityapp.MessageArchiveUnionIDStore = (*Repository)(nil)
 var _ identityapp.CustomerMergeHistoryStore = (*Repository)(nil)
+var _ identityport.HistoricalScopedIdentityBinder = (*Repository)(nil)
 
 func NewRepository() *Repository { return &Repository{} }
+
+func (repository *Repository) BindHistoricalScopedWeComIdentity(ctx context.Context, command identityport.HistoricalScopedIdentity) (identityport.HistoricalScopedIdentityResult, error) {
+	if repository == nil || command.CustomerID < 1 || strings.TrimSpace(command.Scope) != command.Scope || command.Scope == "" || strings.TrimSpace(command.ExternalUserID) != command.ExternalUserID || command.ExternalUserID == "" || len(command.SourceKeyHMAC) != 32 {
+		return identityport.HistoricalScopedIdentityResult{}, identityapp.ErrInvalidIdentity
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return identityport.HistoricalScopedIdentityResult{}, err
+	}
+	row, err := identitydb.New(tx).BindHistoricalScopedWeComIdentity(ctx, identitydb.BindHistoricalScopedWeComIdentityParams{CustomerID: int64(command.CustomerID), Scope: command.Scope, ExternalUserid: command.ExternalUserID, SourceKeyHmac: command.SourceKeyHMAC})
+	if err != nil {
+		return identityport.HistoricalScopedIdentityResult{}, err
+	}
+	return identityport.HistoricalScopedIdentityResult{IdentityID: row.ID, Bound: row.Bound}, nil
+}
 
 func (repository *Repository) ListCustomerMergeHistory(
 	ctx context.Context,

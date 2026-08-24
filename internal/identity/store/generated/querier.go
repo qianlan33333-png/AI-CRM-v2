@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	BindFloatingIdentity(ctx context.Context, arg BindFloatingIdentityParams) (int64, error)
+	BindHistoricalScopedWeComIdentity(ctx context.Context, arg BindHistoricalScopedWeComIdentityParams) (BindHistoricalScopedWeComIdentityRow, error)
 	ClaimPendingReplay(ctx context.Context) (ClaimPendingReplayRow, error)
 	CompleteBindReceipt(ctx context.Context, arg CompleteBindReceiptParams) (int64, error)
 	CompleteIngestReceipt(ctx context.Context, arg CompleteIngestReceiptParams) (int64, error)

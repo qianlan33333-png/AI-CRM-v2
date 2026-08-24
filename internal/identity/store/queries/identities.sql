@@ -32,6 +32,21 @@ WHERE i.kind = sqlc.arg(kind)::text
   AND i.scope = sqlc.arg(scope)::text
   AND i.normalized_value = sqlc.arg(normalized_value)::text;
 
+-- name: BindHistoricalScopedWeComIdentity :one
+INSERT INTO identities (
+  customer_id, kind, scope, normalized_value, normalizer_version,
+  assurance, source, review_fingerprint, fingerprint_key_version, bound_at
+) VALUES (
+  sqlc.arg(customer_id)::bigint, 'wecom_external_userid', sqlc.arg(scope)::text,
+  sqlc.arg(external_userid)::text, 1, 'declared', 'dm01.legacy_import',
+  substring(sqlc.arg(source_key_hmac)::bytea FROM 1 FOR 16), 1, now()
+)
+ON CONFLICT (kind, scope, normalized_value) DO UPDATE
+SET customer_id = EXCLUDED.customer_id,
+    bound_at = COALESCE(identities.bound_at, EXCLUDED.bound_at)
+WHERE identities.customer_id IS NULL OR identities.customer_id = EXCLUDED.customer_id
+RETURNING id, customer_id = sqlc.arg(customer_id)::bigint AS bound;
+
 -- name: ListPrimaryWeComExternalUserIDs :many
 SELECT
   customer_id,

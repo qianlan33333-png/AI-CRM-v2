@@ -31,6 +31,46 @@ func (q *Queries) BindFloatingIdentity(ctx context.Context, arg BindFloatingIden
 	return id, err
 }
 
+const bindHistoricalScopedWeComIdentity = `-- name: BindHistoricalScopedWeComIdentity :one
+INSERT INTO identities (
+  customer_id, kind, scope, normalized_value, normalizer_version,
+  assurance, source, review_fingerprint, fingerprint_key_version, bound_at
+) VALUES (
+  $1::bigint, 'wecom_external_userid', $2::text,
+  $3::text, 1, 'declared', 'dm01.legacy_import',
+  substring($4::bytea FROM 1 FOR 16), 1, now()
+)
+ON CONFLICT (kind, scope, normalized_value) DO UPDATE
+SET customer_id = EXCLUDED.customer_id,
+    bound_at = COALESCE(identities.bound_at, EXCLUDED.bound_at)
+WHERE identities.customer_id IS NULL OR identities.customer_id = EXCLUDED.customer_id
+RETURNING id, customer_id = $1::bigint AS bound
+`
+
+type BindHistoricalScopedWeComIdentityParams struct {
+	CustomerID     int64  `json:"customer_id"`
+	Scope          string `json:"scope"`
+	ExternalUserid string `json:"external_userid"`
+	SourceKeyHmac  []byte `json:"source_key_hmac"`
+}
+
+type BindHistoricalScopedWeComIdentityRow struct {
+	ID    int64 `json:"id"`
+	Bound bool  `json:"bound"`
+}
+
+func (q *Queries) BindHistoricalScopedWeComIdentity(ctx context.Context, arg BindHistoricalScopedWeComIdentityParams) (BindHistoricalScopedWeComIdentityRow, error) {
+	row := q.db.QueryRow(ctx, bindHistoricalScopedWeComIdentity,
+		arg.CustomerID,
+		arg.Scope,
+		arg.ExternalUserid,
+		arg.SourceKeyHmac,
+	)
+	var i BindHistoricalScopedWeComIdentityRow
+	err := row.Scan(&i.ID, &i.Bound)
+	return i, err
+}
+
 const claimPendingReplay = `-- name: ClaimPendingReplay :one
 SELECT id, kind, identity_ids, event_type, payload, source, idempotency_key, occurred_at, version
 FROM pending_events
