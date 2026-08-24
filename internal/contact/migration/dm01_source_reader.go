@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -24,8 +23,9 @@ type SourceUpperBound struct {
 	Empty     bool
 }
 
-func OpenSourceReader(ctx context.Context) (*SourceReader, error) {
-	dsn := os.Getenv(SourceEnvironment)
+// OpenSourceReader receives its DSN from typed command composition. Migration
+// code never reads process environment values or records the DSN.
+func OpenSourceReader(ctx context.Context, dsn string) (*SourceReader, error) {
 	if dsn == "" {
 		return nil, errors.New("DM01 source database URL is not configured")
 	}
@@ -38,7 +38,11 @@ func OpenSourceReader(ctx context.Context) (*SourceReader, error) {
 
 func NewSourceReader(pool *pgxpool.Pool) *SourceReader { return &SourceReader{pool: pool} }
 
-func (r *SourceReader) Close() { r.pool.Close() }
+func (r *SourceReader) Close() {
+	if r != nil && r.pool != nil {
+		r.pool.Close()
+	}
+}
 
 type Snapshot struct {
 	Bounds []SourceUpperBound
