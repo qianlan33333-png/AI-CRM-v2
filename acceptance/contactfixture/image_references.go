@@ -9,6 +9,7 @@ import (
 )
 
 var ErrInvalidImageReference = errors.New("invalid contact image reference fixture")
+var ErrInvalidAttachmentReference = errors.New("invalid contact attachment reference fixture")
 
 func CreateImageReference(ctx context.Context, pool *pgxpool.Pool, name, code string, imageID int64) (int64, error) {
 	if pool == nil || name == "" || code == "" || imageID < 1 {
@@ -20,6 +21,20 @@ INSERT INTO channels (name,code,status,config,created_by,updated_by,created_at,u
 VALUES ($1,$2,'archived',jsonb_build_object('schema_version',1,'welcome_image_library_ids',jsonb_build_array($3::bigint)),1,1,now(),now())
 RETURNING id`, name, code, imageID).Scan(&id); err != nil {
 		return 0, fmt.Errorf("create contact-owned image reference: %w", err)
+	}
+	return id, nil
+}
+
+func CreateAttachmentReference(ctx context.Context, pool *pgxpool.Pool, name, code string, attachmentID int64) (int64, error) {
+	if pool == nil || name == "" || code == "" || attachmentID < 1 {
+		return 0, ErrInvalidAttachmentReference
+	}
+	var id int64
+	if err := pool.QueryRow(ctx, `
+INSERT INTO channels (name,code,status,config,created_by,updated_by,created_at,updated_at)
+VALUES ($1,$2,'active',jsonb_build_object('schema_version',1,'welcome_attachment_library_ids',jsonb_build_array($3::bigint)),1,1,now(),now())
+RETURNING id`, name, code, attachmentID).Scan(&id); err != nil {
+		return 0, fmt.Errorf("create contact-owned attachment reference: %w", err)
 	}
 	return id, nil
 }
