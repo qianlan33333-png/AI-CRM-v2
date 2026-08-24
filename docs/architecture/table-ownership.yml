@@ -120,10 +120,13 @@ owners:
 
   events:
     package: internal/events
-    tables: [event_log, event_deliveries]
+    tables: [event_log, event_deliveries, internal_event_safe_exports, internal_event_safe_export_rows, internal_event_safe_export_receipts]
     constraints:
       event_log: append_and_dispatch_state_only
       event_deliveries: per_consumer_delivery_state_and_lease
+      internal_event_safe_exports: actor_bound_immutable_local_event_and_delivery_safe_snapshot_without_provider_or_external_delivery_proof
+      internal_event_safe_export_rows: closed_safe_projection_rows_for_immutable_events_owned_snapshot
+      internal_event_safe_export_receipts: actor_scoped_transactional_event_safe_export_idempotency_receipts
 
   survey:
     package: internal/survey

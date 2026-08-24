@@ -97,6 +97,7 @@ while [[ -n "$remaining_groups" ]]; do
       ;;
     events)
       run_make_acceptance P4INTERNAL_EVENTS_TEST_DATABASE_URL p4-internal-events-0367-0368-acceptance
+      run_make_acceptance P4EE01_TEST_DATABASE_URL p4-ee01-internal-event-safe-export-acceptance
       ;;
     identity)
       run_make_acceptance P3R4B_TEST_DATABASE_URL p3-r4b-identity-storage-acceptance

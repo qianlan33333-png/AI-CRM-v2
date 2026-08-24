@@ -17,18 +17,27 @@ type Querier interface {
 	ClaimEventsMissingDelivery(ctx context.Context, arg ClaimEventsMissingDeliveryParams) ([]EventLog, error)
 	ClaimUndispatchedEvents(ctx context.Context, arg ClaimUndispatchedEventsParams) ([]EventLog, error)
 	CompleteEventDelivery(ctx context.Context, arg CompleteEventDeliveryParams) (string, error)
+	CompleteInternalEventSafeExportReceipt(ctx context.Context, arg CompleteInternalEventSafeExportReceiptParams) (CompleteInternalEventSafeExportReceiptRow, error)
 	FinalFailEventDelivery(ctx context.Context, arg FinalFailEventDeliveryParams) (int64, error)
 	GetAdminDetailEvent(ctx context.Context, eventID int64) (GetAdminDetailEventRow, error)
 	GetEvent(ctx context.Context, eventID int64) (EventLog, error)
 	GetEventDelivery(ctx context.Context, arg GetEventDeliveryParams) (GetEventDeliveryRow, error)
+	GetInternalEventSafeExport(ctx context.Context, arg GetInternalEventSafeExportParams) (GetInternalEventSafeExportRow, error)
+	GetInternalEventSafeExportReceipt(ctx context.Context, arg GetInternalEventSafeExportReceiptParams) (GetInternalEventSafeExportReceiptRow, error)
+	GetInternalEventSafeExportUpperEventID(ctx context.Context, watermark pgtype.Timestamptz) (int64, error)
+	InsertInternalEventSafeExport(ctx context.Context, arg InsertInternalEventSafeExportParams) error
+	InsertInternalEventSafeExportRow(ctx context.Context, arg InsertInternalEventSafeExportRowParams) error
 	ListAdminDetailDeliveries(ctx context.Context, eventID int64) ([]ListAdminDetailDeliveriesRow, error)
 	ListAdminReadDeliveries(ctx context.Context, eventIds []int64) ([]ListAdminReadDeliveriesRow, error)
 	ListAdminReadEvents(ctx context.Context, eventType string) ([]ListAdminReadEventsRow, error)
 	ListEventDeliveryLineage(ctx context.Context, resultLimit int32) ([]ListEventDeliveryLineageRow, error)
+	ListInternalEventSafeExportRows(ctx context.Context, exportID string) ([]ListInternalEventSafeExportRowsRow, error)
+	ListInternalEventSafeExportSourceRows(ctx context.Context, arg ListInternalEventSafeExportSourceRowsParams) ([]ListInternalEventSafeExportSourceRowsRow, error)
 	MarkEventDispatched(ctx context.Context, eventID int64) (int64, error)
 	MarkEventsDispatched(ctx context.Context, eventIds []int64) (int64, error)
 	OutcomeUnknownEventDelivery(ctx context.Context, arg OutcomeUnknownEventDeliveryParams) (int64, error)
 	ReserveEventDelivery(ctx context.Context, arg ReserveEventDeliveryParams) (int64, error)
+	ReserveInternalEventSafeExportReceipt(ctx context.Context, arg ReserveInternalEventSafeExportReceiptParams) (ReserveInternalEventSafeExportReceiptRow, error)
 	RetryEventDelivery(ctx context.Context, arg RetryEventDeliveryParams) (int64, error)
 }
 

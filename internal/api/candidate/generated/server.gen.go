@@ -1948,6 +1948,96 @@ func (e IngestIdentityEventPendingStatus) Valid() bool {
 	}
 }
 
+// Defines values for InternalEventSafeExportRequestConsumer.
+const (
+	InternalEventSafeExportRequestConsumerAutomationTagTriggerV1        InternalEventSafeExportRequestConsumer = "automation.tag-trigger.v1"
+	InternalEventSafeExportRequestConsumerCloudCampaignFactV1           InternalEventSafeExportRequestConsumer = "cloud-campaign.fact.v1"
+	InternalEventSafeExportRequestConsumerEmpty                         InternalEventSafeExportRequestConsumer = ""
+	InternalEventSafeExportRequestConsumerOperationCycleFactV1          InternalEventSafeExportRequestConsumer = "operation-cycle.fact.v1"
+	InternalEventSafeExportRequestConsumerOutboundCampaignHandoffFactV1 InternalEventSafeExportRequestConsumer = "outbound-campaign-handoff.fact.v1"
+	InternalEventSafeExportRequestConsumerStatsTagAppliedV1             InternalEventSafeExportRequestConsumer = "stats.tag-applied.v1"
+)
+
+// Valid indicates whether the value is a known member of the InternalEventSafeExportRequestConsumer enum.
+func (e InternalEventSafeExportRequestConsumer) Valid() bool {
+	switch e {
+	case InternalEventSafeExportRequestConsumerAutomationTagTriggerV1:
+		return true
+	case InternalEventSafeExportRequestConsumerCloudCampaignFactV1:
+		return true
+	case InternalEventSafeExportRequestConsumerEmpty:
+		return true
+	case InternalEventSafeExportRequestConsumerOperationCycleFactV1:
+		return true
+	case InternalEventSafeExportRequestConsumerOutboundCampaignHandoffFactV1:
+		return true
+	case InternalEventSafeExportRequestConsumerStatsTagAppliedV1:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InternalEventSafeExportRequestStatus.
+const (
+	InternalEventSafeExportRequestStatusCompleted      InternalEventSafeExportRequestStatus = "completed"
+	InternalEventSafeExportRequestStatusEmpty          InternalEventSafeExportRequestStatus = ""
+	InternalEventSafeExportRequestStatusFinalFailed    InternalEventSafeExportRequestStatus = "final_failed"
+	InternalEventSafeExportRequestStatusOutcomeUnknown InternalEventSafeExportRequestStatus = "outcome_unknown"
+	InternalEventSafeExportRequestStatusPending        InternalEventSafeExportRequestStatus = "pending"
+	InternalEventSafeExportRequestStatusProcessing     InternalEventSafeExportRequestStatus = "processing"
+)
+
+// Valid indicates whether the value is a known member of the InternalEventSafeExportRequestStatus enum.
+func (e InternalEventSafeExportRequestStatus) Valid() bool {
+	switch e {
+	case InternalEventSafeExportRequestStatusCompleted:
+		return true
+	case InternalEventSafeExportRequestStatusEmpty:
+		return true
+	case InternalEventSafeExportRequestStatusFinalFailed:
+		return true
+	case InternalEventSafeExportRequestStatusOutcomeUnknown:
+		return true
+	case InternalEventSafeExportRequestStatusPending:
+		return true
+	case InternalEventSafeExportRequestStatusProcessing:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InternalEventSafeExportResponseLocalOnly.
+const (
+	InternalEventSafeExportResponseLocalOnlyTrue InternalEventSafeExportResponseLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the InternalEventSafeExportResponseLocalOnly enum.
+func (e InternalEventSafeExportResponseLocalOnly) Valid() bool {
+	switch e {
+	case InternalEventSafeExportResponseLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for InternalEventSafeExportResponseRealExternalCallExecuted.
+const (
+	InternalEventSafeExportResponseRealExternalCallExecutedFalse InternalEventSafeExportResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the InternalEventSafeExportResponseRealExternalCallExecuted enum.
+func (e InternalEventSafeExportResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case InternalEventSafeExportResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for LegacyChannelAssignmentMode.
 const (
 	LegacyChannelAssignmentModeMultiStaff  LegacyChannelAssignmentMode = "multi_staff"
@@ -3678,13 +3768,13 @@ func (e LegacyOutboundRetryReceiptRealExternalCallExecuted) Valid() bool {
 
 // Defines values for LegacyOutboundRetryReceiptState.
 const (
-	LegacyOutboundRetryReceiptStateCompleted LegacyOutboundRetryReceiptState = "completed"
+	Completed LegacyOutboundRetryReceiptState = "completed"
 )
 
 // Valid indicates whether the value is a known member of the LegacyOutboundRetryReceiptState enum.
 func (e LegacyOutboundRetryReceiptState) Valid() bool {
 	switch e {
-	case LegacyOutboundRetryReceiptStateCompleted:
+	case Completed:
 		return true
 	default:
 		return false
@@ -4740,19 +4830,19 @@ func (e LegacyRuntimeHealthSnapshotStatus) Valid() bool {
 
 // Defines values for LegacyRuntimeHealthSnapshotWarning.
 const (
-	Empty                                                       LegacyRuntimeHealthSnapshotWarning = ""
-	FixtureDataMode                                             LegacyRuntimeHealthSnapshotWarning = "fixture data mode"
-	ProductionRuntimeIsUsingFixtureDataProductionDataIsNotReady LegacyRuntimeHealthSnapshotWarning = "production runtime is using fixture data; production data is not ready"
+	LegacyRuntimeHealthSnapshotWarningEmpty                                                       LegacyRuntimeHealthSnapshotWarning = ""
+	LegacyRuntimeHealthSnapshotWarningFixtureDataMode                                             LegacyRuntimeHealthSnapshotWarning = "fixture data mode"
+	LegacyRuntimeHealthSnapshotWarningProductionRuntimeIsUsingFixtureDataProductionDataIsNotReady LegacyRuntimeHealthSnapshotWarning = "production runtime is using fixture data; production data is not ready"
 )
 
 // Valid indicates whether the value is a known member of the LegacyRuntimeHealthSnapshotWarning enum.
 func (e LegacyRuntimeHealthSnapshotWarning) Valid() bool {
 	switch e {
-	case Empty:
+	case LegacyRuntimeHealthSnapshotWarningEmpty:
 		return true
-	case FixtureDataMode:
+	case LegacyRuntimeHealthSnapshotWarningFixtureDataMode:
 		return true
-	case ProductionRuntimeIsUsingFixtureDataProductionDataIsNotReady:
+	case LegacyRuntimeHealthSnapshotWarningProductionRuntimeIsUsingFixtureDataProductionDataIsNotReady:
 		return true
 	default:
 		return false
@@ -6459,13 +6549,13 @@ func (e SidebarSafeChoiceAnswerQuestionType) Valid() bool {
 
 // Defines values for SidebarSafetyLocalOnly.
 const (
-	SidebarSafetyLocalOnlyTrue SidebarSafetyLocalOnly = true
+	True SidebarSafetyLocalOnly = true
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyLocalOnly enum.
 func (e SidebarSafetyLocalOnly) Valid() bool {
 	switch e {
-	case SidebarSafetyLocalOnlyTrue:
+	case True:
 		return true
 	default:
 		return false
@@ -6489,13 +6579,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
+	False SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case SidebarSafetyRealExternalCallExecutedFalse:
+	case False:
 		return true
 	default:
 		return false
@@ -7997,6 +8087,36 @@ type IngestIdentityEventRequest struct {
 type IngestIdentityEventResponse struct {
 	union json.RawMessage
 }
+
+// InternalEventSafeExportRequest defines model for InternalEventSafeExportRequest.
+type InternalEventSafeExportRequest struct {
+	Consumer  *InternalEventSafeExportRequestConsumer `json:"consumer,omitempty"`
+	EventType *string                                 `json:"event_type,omitempty"`
+	Status    *InternalEventSafeExportRequestStatus   `json:"status,omitempty"`
+}
+
+// InternalEventSafeExportRequestConsumer defines model for InternalEventSafeExportRequest.Consumer.
+type InternalEventSafeExportRequestConsumer string
+
+// InternalEventSafeExportRequestStatus defines model for InternalEventSafeExportRequest.Status.
+type InternalEventSafeExportRequestStatus string
+
+// InternalEventSafeExportResponse defines model for InternalEventSafeExportResponse.
+type InternalEventSafeExportResponse struct {
+	CreatedAt                time.Time                                               `json:"created_at"`
+	DownloadUrl              string                                                  `json:"download_url"`
+	Id                       string                                                  `json:"id"`
+	LocalOnly                InternalEventSafeExportResponseLocalOnly                `json:"local_only"`
+	RealExternalCallExecuted InternalEventSafeExportResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	RecordCount              int                                                     `json:"record_count"`
+	Watermark                time.Time                                               `json:"watermark"`
+}
+
+// InternalEventSafeExportResponseLocalOnly defines model for InternalEventSafeExportResponse.LocalOnly.
+type InternalEventSafeExportResponseLocalOnly bool
+
+// InternalEventSafeExportResponseRealExternalCallExecuted defines model for InternalEventSafeExportResponse.RealExternalCallExecuted.
+type InternalEventSafeExportResponseRealExternalCallExecuted bool
 
 // LegacyChannel defines model for LegacyChannel.
 type LegacyChannel struct {
@@ -10570,6 +10690,9 @@ type GroupOpsPlanID = string
 // IdempotencyKey defines model for IdempotencyKey.
 type IdempotencyKey = string
 
+// InternalEventSafeExportID defines model for InternalEventSafeExportID.
+type InternalEventSafeExportID = string
+
 // IsDeletedFilter defines model for IsDeletedFilter.
 type IsDeletedFilter = bool
 
@@ -10924,6 +11047,15 @@ type ValidateAdminOpsReleaseParams struct {
 
 	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
 	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// CreateInternalEventSafeExportParams defines parameters for CreateInternalEventSafeExport.
+type CreateInternalEventSafeExportParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // RunAdminOpsArchiveSyncPlanParams defines parameters for RunAdminOpsArchiveSyncPlan.
@@ -11800,6 +11932,9 @@ type RollbackAdminOpsReleaseJSONRequestBody = AdminOpsConfirmedActionRequest
 
 // ValidateAdminOpsReleaseJSONRequestBody defines body for ValidateAdminOpsRelease for application/json ContentType.
 type ValidateAdminOpsReleaseJSONRequestBody = AdminOpsActionRequest
+
+// CreateInternalEventSafeExportJSONRequestBody defines body for CreateInternalEventSafeExport for application/json ContentType.
+type CreateInternalEventSafeExportJSONRequestBody = InternalEventSafeExportRequest
 
 // RunAdminOpsArchiveSyncPlanJSONRequestBody defines body for RunAdminOpsArchiveSyncPlan for application/json ContentType.
 type RunAdminOpsArchiveSyncPlanJSONRequestBody = AdminOpsConfirmedActionRequest
@@ -13227,6 +13362,15 @@ type ServerInterface interface {
 	// Read one frozen observed execution timeline without asserting a provider receipt
 	// (GET /api/admin/executions/{execution_id})
 	GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request, executionId string)
+	// Freeze an admin-only local event and delivery safe CSV snapshot
+	// (POST /api/admin/internal-events/exports)
+	CreateInternalEventSafeExport(w http.ResponseWriter, r *http.Request, params CreateInternalEventSafeExportParams)
+	// Read actor-bound local internal event safe export metadata
+	// (GET /api/admin/internal-events/exports/{export_id})
+	GetInternalEventSafeExport(w http.ResponseWriter, r *http.Request, exportId InternalEventSafeExportID)
+	// Download a formula-safe actor-bound local internal event CSV
+	// (GET /api/admin/internal-events/exports/{export_id}/download)
+	DownloadInternalEventSafeExport(w http.ResponseWriter, r *http.Request, exportId InternalEventSafeExportID)
 	// List local archive-sync job records through the closed job DTO
 	// (GET /api/admin/jobs/archive-sync)
 	ListAdminOpsArchiveSyncJobs(w http.ResponseWriter, r *http.Request)
@@ -13893,6 +14037,24 @@ func (_ Unimplemented) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.
 // Read one frozen observed execution timeline without asserting a provider receipt
 // (GET /api/admin/executions/{execution_id})
 func (_ Unimplemented) GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request, executionId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Freeze an admin-only local event and delivery safe CSV snapshot
+// (POST /api/admin/internal-events/exports)
+func (_ Unimplemented) CreateInternalEventSafeExport(w http.ResponseWriter, r *http.Request, params CreateInternalEventSafeExportParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read actor-bound local internal event safe export metadata
+// (GET /api/admin/internal-events/exports/{export_id})
+func (_ Unimplemented) GetInternalEventSafeExport(w http.ResponseWriter, r *http.Request, exportId InternalEventSafeExportID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Download a formula-safe actor-bound local internal event CSV
+// (GET /api/admin/internal-events/exports/{export_id}/download)
+func (_ Unimplemented) DownloadInternalEventSafeExport(w http.ResponseWriter, r *http.Request, exportId InternalEventSafeExportID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -16981,6 +17143,141 @@ func (siw *ServerInterfaceWrapper) GetLegacyExecutionTimeline(w http.ResponseWri
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetLegacyExecutionTimeline(w, r, executionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateInternalEventSafeExport operation middleware
+func (siw *ServerInterfaceWrapper) CreateInternalEventSafeExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateInternalEventSafeExportParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateInternalEventSafeExport(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetInternalEventSafeExport operation middleware
+func (siw *ServerInterfaceWrapper) GetInternalEventSafeExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "export_id" -------------
+	var exportId InternalEventSafeExportID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "export_id", chi.URLParam(r, "export_id"), &exportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "export_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetInternalEventSafeExport(w, r, exportId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadInternalEventSafeExport operation middleware
+func (siw *ServerInterfaceWrapper) DownloadInternalEventSafeExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "export_id" -------------
+	var exportId InternalEventSafeExportID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "export_id", chi.URLParam(r, "export_id"), &exportId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "export_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadInternalEventSafeExport(w, r, exportId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -25111,6 +25408,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/executions/{execution_id}", wrapper.GetLegacyExecutionTimeline)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/internal-events/exports", wrapper.CreateInternalEventSafeExport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/internal-events/exports/{export_id}", wrapper.GetInternalEventSafeExport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/internal-events/exports/{export_id}/download", wrapper.DownloadInternalEventSafeExport)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/jobs/archive-sync", wrapper.ListAdminOpsArchiveSyncJobs)
 	})
 	r.Group(func(r chi.Router) {
@@ -28151,6 +28457,213 @@ func (response GetLegacyExecutionTimeline404JSONResponse) VisitGetLegacyExecutio
 type GetLegacyExecutionTimeline503JSONResponse LegacyExecutionTimelineUnavailable
 
 func (response GetLegacyExecutionTimeline503JSONResponse) VisitGetLegacyExecutionTimelineResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateInternalEventSafeExportRequestObject struct {
+	Params CreateInternalEventSafeExportParams
+	Body   *CreateInternalEventSafeExportJSONRequestBody
+}
+
+type CreateInternalEventSafeExportResponseObject interface {
+	VisitCreateInternalEventSafeExportResponse(w http.ResponseWriter) error
+}
+
+type CreateInternalEventSafeExport201JSONResponse InternalEventSafeExportResponse
+
+func (response CreateInternalEventSafeExport201JSONResponse) VisitCreateInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateInternalEventSafeExport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateInternalEventSafeExport400JSONResponse) VisitCreateInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateInternalEventSafeExport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateInternalEventSafeExport401JSONResponse) VisitCreateInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateInternalEventSafeExport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateInternalEventSafeExport403JSONResponse) VisitCreateInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateInternalEventSafeExport409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateInternalEventSafeExport409JSONResponse) VisitCreateInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateInternalEventSafeExport503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateInternalEventSafeExport503JSONResponse) VisitCreateInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInternalEventSafeExportRequestObject struct {
+	ExportId InternalEventSafeExportID `json:"export_id"`
+}
+
+type GetInternalEventSafeExportResponseObject interface {
+	VisitGetInternalEventSafeExportResponse(w http.ResponseWriter) error
+}
+
+type GetInternalEventSafeExport200JSONResponse InternalEventSafeExportResponse
+
+func (response GetInternalEventSafeExport200JSONResponse) VisitGetInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInternalEventSafeExport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetInternalEventSafeExport400JSONResponse) VisitGetInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInternalEventSafeExport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetInternalEventSafeExport401JSONResponse) VisitGetInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInternalEventSafeExport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetInternalEventSafeExport403JSONResponse) VisitGetInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInternalEventSafeExport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetInternalEventSafeExport404JSONResponse) VisitGetInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetInternalEventSafeExport503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetInternalEventSafeExport503JSONResponse) VisitGetInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadInternalEventSafeExportRequestObject struct {
+	ExportId InternalEventSafeExportID `json:"export_id"`
+}
+
+type DownloadInternalEventSafeExportResponseObject interface {
+	VisitDownloadInternalEventSafeExportResponse(w http.ResponseWriter) error
+}
+
+type DownloadInternalEventSafeExport200ResponseHeaders struct {
+	CacheControl        string
+	ContentDisposition  string
+	XContentTypeOptions string
+}
+
+type DownloadInternalEventSafeExport200TextcsvResponse struct {
+	Body          io.Reader
+	Headers       DownloadInternalEventSafeExport200ResponseHeaders
+	ContentLength int64
+}
+
+func (response DownloadInternalEventSafeExport200TextcsvResponse) VisitDownloadInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/csv")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.Header().Set("Cache-Control", fmt.Sprint(response.Headers.CacheControl))
+	w.Header().Set("Content-Disposition", fmt.Sprint(response.Headers.ContentDisposition))
+	w.Header().Set("X-Content-Type-Options", fmt.Sprint(response.Headers.XContentTypeOptions))
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DownloadInternalEventSafeExport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response DownloadInternalEventSafeExport400JSONResponse) VisitDownloadInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadInternalEventSafeExport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DownloadInternalEventSafeExport401JSONResponse) VisitDownloadInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadInternalEventSafeExport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DownloadInternalEventSafeExport403JSONResponse) VisitDownloadInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadInternalEventSafeExport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DownloadInternalEventSafeExport404JSONResponse) VisitDownloadInternalEventSafeExportResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type DownloadInternalEventSafeExport503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response DownloadInternalEventSafeExport503JSONResponse) VisitDownloadInternalEventSafeExportResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -36950,6 +37463,15 @@ type StrictServerInterface interface {
 	// Read one frozen observed execution timeline without asserting a provider receipt
 	// (GET /api/admin/executions/{execution_id})
 	GetLegacyExecutionTimeline(ctx context.Context, request GetLegacyExecutionTimelineRequestObject) (GetLegacyExecutionTimelineResponseObject, error)
+	// Freeze an admin-only local event and delivery safe CSV snapshot
+	// (POST /api/admin/internal-events/exports)
+	CreateInternalEventSafeExport(ctx context.Context, request CreateInternalEventSafeExportRequestObject) (CreateInternalEventSafeExportResponseObject, error)
+	// Read actor-bound local internal event safe export metadata
+	// (GET /api/admin/internal-events/exports/{export_id})
+	GetInternalEventSafeExport(ctx context.Context, request GetInternalEventSafeExportRequestObject) (GetInternalEventSafeExportResponseObject, error)
+	// Download a formula-safe actor-bound local internal event CSV
+	// (GET /api/admin/internal-events/exports/{export_id}/download)
+	DownloadInternalEventSafeExport(ctx context.Context, request DownloadInternalEventSafeExportRequestObject) (DownloadInternalEventSafeExportResponseObject, error)
 	// List local archive-sync job records through the closed job DTO
 	// (GET /api/admin/jobs/archive-sync)
 	ListAdminOpsArchiveSyncJobs(ctx context.Context, request ListAdminOpsArchiveSyncJobsRequestObject) (ListAdminOpsArchiveSyncJobsResponseObject, error)
@@ -38643,6 +39165,91 @@ func (sh *strictHandler) GetLegacyExecutionTimeline(w http.ResponseWriter, r *ht
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetLegacyExecutionTimelineResponseObject); ok {
 		if err := validResponse.VisitGetLegacyExecutionTimelineResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateInternalEventSafeExport operation middleware
+func (sh *strictHandler) CreateInternalEventSafeExport(w http.ResponseWriter, r *http.Request, params CreateInternalEventSafeExportParams) {
+	var request CreateInternalEventSafeExportRequestObject
+
+	request.Params = params
+
+	var body CreateInternalEventSafeExportJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateInternalEventSafeExport(ctx, request.(CreateInternalEventSafeExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateInternalEventSafeExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateInternalEventSafeExportResponseObject); ok {
+		if err := validResponse.VisitCreateInternalEventSafeExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetInternalEventSafeExport operation middleware
+func (sh *strictHandler) GetInternalEventSafeExport(w http.ResponseWriter, r *http.Request, exportId InternalEventSafeExportID) {
+	var request GetInternalEventSafeExportRequestObject
+
+	request.ExportId = exportId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetInternalEventSafeExport(ctx, request.(GetInternalEventSafeExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetInternalEventSafeExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetInternalEventSafeExportResponseObject); ok {
+		if err := validResponse.VisitGetInternalEventSafeExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadInternalEventSafeExport operation middleware
+func (sh *strictHandler) DownloadInternalEventSafeExport(w http.ResponseWriter, r *http.Request, exportId InternalEventSafeExportID) {
+	var request DownloadInternalEventSafeExportRequestObject
+
+	request.ExportId = exportId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.DownloadInternalEventSafeExport(ctx, request.(DownloadInternalEventSafeExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadInternalEventSafeExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadInternalEventSafeExportResponseObject); ok {
+		if err := validResponse.VisitDownloadInternalEventSafeExportResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

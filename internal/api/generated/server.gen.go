@@ -170,6 +170,9 @@ type CustomerSafeExportID = string
 // GroupOpsPlanID defines model for GroupOpsPlanID.
 type GroupOpsPlanID = string
 
+// InternalEventSafeExportID defines model for InternalEventSafeExportID.
+type InternalEventSafeExportID = string
+
 // SegmentID defines model for SegmentID.
 type SegmentID = int64
 

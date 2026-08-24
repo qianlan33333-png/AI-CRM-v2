@@ -40,6 +40,7 @@ import (
 	customer360app "github.com/qianlan33333-png/AI-CRM-v2/internal/customer360/app"
 	customer360http "github.com/qianlan33333-png/AI-CRM-v2/internal/customer360/http"
 	eventapp "github.com/qianlan33333-png/AI-CRM-v2/internal/events/app"
+	eventhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/events/http"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	groupopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/app"
@@ -146,6 +147,7 @@ type candidateHandler struct {
 	ownerReassignments        *contacthttp.OwnerReassignmentHandler
 	contactPolicy             *contacthttp.ContactPolicyHandler
 	customerSafeExports       *contacthttp.CustomerSafeExportHandler
+	internalEventSafeExports  *eventhttp.SafeExportHandler
 	tags                      *contacthttp.TagCatalogHandler
 	localTags                 *contacthttp.LocalTagCatalogHandler
 	stages                    *contacthttp.Handler
@@ -744,6 +746,13 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	internalEventSafeExportHandler, err := eventhttp.NewSafeExportHandler(eventapp.NewInternalEventSafeExportService(
+		uow, eventstore.NewInternalEventSafeExportRepository(), eventstore.NewAppender(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	customerEventHandler, err := contacthttp.NewCustomerEventHandler(contactapp.NewCustomerEventService(
 		uow, contactstore.NewCustomerEventRepository(),
 	))
@@ -1179,7 +1188,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		customerSurveyAnswers: customerAnswerService, customerEvents: customerEventHandler, customerContext: customerContextHandler,
 		customerChatActivity: customerChatActivityHandler, customerActivityAnalytics: customerActivityAnalyticsHandler,
 		customerMergeHistory: customerMergeHistoryHandler,
-		mutations:            mutationHandler, ownerReassignments: ownerReassignmentHandler, contactPolicy: contactPolicyHandler, customerSafeExports: customerSafeExportHandler,
+		mutations:            mutationHandler, ownerReassignments: ownerReassignmentHandler, contactPolicy: contactPolicyHandler, customerSafeExports: customerSafeExportHandler, internalEventSafeExports: internalEventSafeExportHandler,
 		tags: tagCatalogHandler, localTags: localTagCatalogHandler, stages: stageHandler,
 		segments:             segmentCRUDHandler,
 		products:             productHandler,
@@ -1655,6 +1664,16 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 	if err = registerOptionalSidebar("/api/sidebar/context-token", http.HandlerFunc(wrapper.MintSidebarContext)); err != nil {
 		return nil, err
 	}
+	internalEventSafeExportEndpoint := func(method func(http.ResponseWriter, *http.Request)) http.Handler {
+		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			concrete, ok := candidate.(*candidateHandler)
+			if !ok || concrete.internalEventSafeExports == nil {
+				platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+				return
+			}
+			method(writer, request)
+		})
+	}
 	routes := []struct {
 		method, pattern string
 		capability      authport.Capability
@@ -1682,6 +1701,15 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/v1/customer-exports", authport.CapabilityCustomersRead, true, http.HandlerFunc(wrapper.CreateCustomerSafeExport)},
 		{http.MethodGet, "/api/v1/customer-exports/{export_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetCustomerSafeExport)},
 		{http.MethodGet, "/api/v1/customer-exports/{export_id}/download", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.DownloadCustomerSafeExport)},
+		{http.MethodPost, eventhttp.SafeExportPath, authport.CapabilityAdminRead, true, internalEventSafeExportEndpoint(func(writer http.ResponseWriter, request *http.Request) {
+			candidate.(*candidateHandler).internalEventSafeExports.Create(writer, request)
+		})},
+		{http.MethodGet, eventhttp.SafeExportPath + "/{export_id}", authport.CapabilityAdminRead, false, internalEventSafeExportEndpoint(func(writer http.ResponseWriter, request *http.Request) {
+			candidate.(*candidateHandler).internalEventSafeExports.Get(writer, request)
+		})},
+		{http.MethodGet, eventhttp.SafeExportPath + "/{export_id}/download", authport.CapabilityAdminRead, false, internalEventSafeExportEndpoint(func(writer http.ResponseWriter, request *http.Request) {
+			candidate.(*candidateHandler).internalEventSafeExports.Download(writer, request)
+		})},
 		{http.MethodGet, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetCustomer)},
 		{http.MethodPatch, "/api/v1/customers/{customer_id}", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateCustomer)},
 		{http.MethodGet, "/api/v1/customers/{customer_id}/events", authport.CapabilityCustomerEventsRead, false, http.HandlerFunc(wrapper.ListCustomerEvents)},
