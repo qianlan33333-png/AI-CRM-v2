@@ -167,6 +167,7 @@ func TestLocalConfigurationSQLRepositoryPG16SerializesStaffDeactivationAndSender
 	if err != nil {
 		t.Fatal(err)
 	}
+	ensureLocalConfigurationActor(t, ctx, setup)
 	packageID := insertLocalConfigurationPackage(t, ctx, setup, "staff-lock")
 	senderUserID := fmt.Sprintf("audience_local_staff-lock_%d", time.Now().UnixNano())
 	staffID, err := contactfixture.CreateStaffRecord(ctx, fixturePool, senderUserID, "Audience local configuration staff", true, time.Now().UTC())
