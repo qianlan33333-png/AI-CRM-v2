@@ -68,8 +68,8 @@ if "${goose[@]}" down-to 83 >"$guard_output" 2>&1; then
   printf 'expected non-default automation binding version guard to fail\n' >&2
   exit 1
 fi
-rg -q 'cannot roll back populated AI Audience local configuration closure facts' "$guard_output"
-rg -q 'SQLSTATE 55000' "$guard_output"
+grep -Fq 'cannot roll back populated AI Audience local configuration closure facts' "$guard_output"
+grep -Fq 'SQLSTATE 55000' "$guard_output"
 psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "
   DELETE FROM public.segments WHERE name = 'audience84-binding-version-guard';
   DELETE FROM public.automation_agent_configurations WHERE agent_code = 'audience84_binding_guard';
@@ -88,8 +88,8 @@ if "${goose[@]}" down-to 83 >"$guard_output" 2>&1; then
   printf 'expected populated AI Audience 00084 down guard to fail\n' >&2
   exit 1
 fi
-rg -q 'cannot roll back populated AI Audience local configuration closure facts' "$guard_output"
-rg -q 'SQLSTATE 55000' "$guard_output"
+grep -Fq 'cannot roll back populated AI Audience local configuration closure facts' "$guard_output"
+grep -Fq 'SQLSTATE 55000' "$guard_output"
 [[ "$(psql "$database_url" -X -q -At -c 'SELECT count(*) FROM goose_db_version WHERE version_id = 84 AND is_applied')" = '1' ]]
 
 printf 'P4 AI Audience local configuration PG16.14: PASS (exact 84, HTTP-service UoW/ports/receipt replay-conflict-rollback, empty 84/83/84, binding-version and populated-receipt rollback guards; no provider)\n'
