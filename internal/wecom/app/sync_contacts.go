@@ -18,14 +18,29 @@ import (
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
 )
 
-const maxCursorAdvanceAttempts = 3
+const (
+	maxCursorAdvanceAttempts  = 3
+	ExternalContactSyncPeriod = 15 * time.Minute
+)
 
 var (
-	ErrInvalidCursorSync = errors.New("invalid WeCom cursor sync")
-	ErrCursorSyncFailed  = errors.New("WeCom cursor sync failed")
-	ErrCursorSyncDone    = errors.New("WeCom cursor sync is complete")
-	ErrCursorAdvanced    = errors.New("WeCom cursor advanced concurrently")
+	ErrInvalidCursorSync  = errors.New("invalid WeCom cursor sync")
+	ErrCursorSyncFailed   = errors.New("WeCom cursor sync failed")
+	ErrCursorSyncDone     = errors.New("WeCom cursor sync is complete")
+	ErrCursorAdvanced     = errors.New("WeCom cursor advanced concurrently")
+	ErrCursorSyncDisabled = errors.New("WeCom cursor sync is disabled")
 )
+
+const ExternalContactSyncJobKind = "wecom_external_contact_directory_sync"
+
+// ExternalContactSyncJobArgs scopes one River execution to one eligible staff
+// user. It processes one committed cursor page; central periodic wiring
+// schedules later executions, which resume from that durable cursor.
+type ExternalContactSyncJobArgs struct {
+	StaffUserID string `json:"staff_userid"`
+}
+
+func (ExternalContactSyncJobArgs) Kind() string { return ExternalContactSyncJobKind }
 
 // ExternalContactPageReader has no provider write method. The concrete W3
 // client implements it with GET /cgi-bin/externalcontact/list.
@@ -37,6 +52,7 @@ type ExternalContactPageReader interface {
 // It neither stores profiles nor writes to Contact or Identity tables.
 type SyncStateStore interface {
 	LoadCursor(context.Context, string) (CursorState, error)
+	RestartCompleted(context.Context, string) error
 	AdvanceCursor(context.Context, string, string, string, bool) error
 }
 
@@ -58,8 +74,9 @@ type SyncJobInserter interface {
 }
 
 type CursorState struct {
-	Cursor    string
-	Completed bool
+	Cursor      string
+	Completed   bool
+	CompletedAt time.Time
 }
 
 // ExternalContactSyncService makes a page visible only after its successor
@@ -80,7 +97,7 @@ func NewExternalContactSyncService(
 	reader ExternalContactPageReader,
 	state SyncStateStore,
 ) *ExternalContactSyncService {
-	return &ExternalContactSyncService{uow: uow, reader: reader, state: state}
+	return &ExternalContactSyncService{uow: uow, reader: reader, state: state, clock: time.Now}
 }
 
 func NewExternalContactSyncServiceWithHandoff(
@@ -101,7 +118,7 @@ func NewExternalContactSyncServiceWithHandoff(
 
 func (service *ExternalContactSyncService) SyncNext(ctx context.Context, staffUserID string) (wecomclient.ExternalContactPage, error) {
 	if service == nil || ctx == nil || !validStaffUserID(staffUserID) || isNilDependency(service.uow) ||
-		isNilDependency(service.reader) || isNilDependency(service.state) {
+		isNilDependency(service.reader) || isNilDependency(service.state) || service.clock == nil {
 		return wecomclient.ExternalContactPage{}, ErrInvalidCursorSync
 	}
 	key := "external_contact_list:" + staffUserID
@@ -111,10 +128,25 @@ func (service *ExternalContactSyncService) SyncNext(ctx context.Context, staffUs
 			return wecomclient.ExternalContactPage{}, fmt.Errorf("%w: %w", ErrCursorSyncFailed, err)
 		}
 		if state.Completed {
-			return wecomclient.ExternalContactPage{}, ErrCursorSyncDone
+			if state.CompletedAt.IsZero() || service.clock().UTC().Before(state.CompletedAt.Add(ExternalContactSyncPeriod)) {
+				return wecomclient.ExternalContactPage{}, ErrCursorSyncDone
+			}
+			err = service.uow.Within(ctx, func(txCtx context.Context) error {
+				return service.state.RestartCompleted(txCtx, key)
+			})
+			if errors.Is(err, ErrCursorAdvanced) {
+				continue
+			}
+			if err != nil {
+				return wecomclient.ExternalContactPage{}, fmt.Errorf("%w: %w", ErrCursorSyncFailed, err)
+			}
+			continue
 		}
 		page, err := service.reader.ListExternalContacts(ctx, staffUserID, state.Cursor)
 		if err != nil {
+			if errors.Is(err, wecomclient.ErrExternalContactReadDisabled) {
+				return wecomclient.ExternalContactPage{}, ErrCursorSyncDisabled
+			}
 			return wecomclient.ExternalContactPage{}, fmt.Errorf("%w: %w", ErrCursorSyncFailed, err)
 		}
 		if !validPage(page) || (page.NextCursor != "" && page.NextCursor == state.Cursor) {
@@ -179,7 +211,7 @@ func validPage(page wecomclient.ExternalContactPage) bool {
 	}
 	seen := make(map[string]struct{}, len(page.ExternalUserIDs))
 	for _, externalUserID := range page.ExternalUserIDs {
-		if externalUserID == "" || len(externalUserID) > 256 || strings.TrimSpace(externalUserID) != externalUserID {
+		if !validIdentityContactText(externalUserID, 256, false) {
 			return false
 		}
 		if _, duplicate := seen[externalUserID]; duplicate {

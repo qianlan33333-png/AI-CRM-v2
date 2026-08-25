@@ -52,32 +52,37 @@ func TestInboundServiceDeduplicatesAndQueuesOnlyBusinessEvents(t *testing.T) {
 }
 
 func TestInboundServiceProcessesAttributedPendingAndConflictLocally(t *testing.T) {
-	for _, status := range []identityport.IngestStatus{identityport.IngestAttributed, identityport.IngestPending, identityport.IngestConflict} {
-		t.Run(string(status), func(t *testing.T) {
-			store := &memoryInboundStore{records: []memoryInboundRecord{{id: 7, source: InboundSourceCallback, sourceKey: "sha256:" + repeatedHex('a'), corpID: "corp-a", externalUserID: "external-1", occurredAt: time.Unix(1700000000, 0).UTC(), state: "pending"}}}
-			jobs := &memoryInboundJobs{}
-			ingestor := &memoryInboundIngestor{result: identityport.IngestResult{Status: status, CustomerID: 12, EventID: 4, PendingEventID: 8}}
-			processor, err := NewIdentityContactProcessor(ingestor)
-			if err != nil {
-				t.Fatal(err)
-			}
-			service, err := NewInboundService(immediateUoW{}, store, jobs, processor, "corp-a", func() time.Time { return time.Unix(1700000100, 0) })
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err = service.Process(context.Background(), 7, "river:99"); err != nil {
-				t.Fatal(err)
-			}
-			want := "processed"
-			if status == identityport.IngestPending {
-				want = "pending_identity"
-			} else if status == identityport.IngestConflict {
-				want = "conflict"
-			}
-			if store.records[0].state != want || len(ingestor.commands) != 1 {
-				t.Fatalf("state=%q commands=%#v", store.records[0].state, ingestor.commands)
-			}
-		})
+	for _, source := range []InboundSource{InboundSourceCallback, InboundSourceSync} {
+		for _, status := range []identityport.IngestStatus{identityport.IngestAttributed, identityport.IngestPending, identityport.IngestConflict} {
+			t.Run(string(source)+"/"+string(status), func(t *testing.T) {
+				store := &memoryInboundStore{records: []memoryInboundRecord{{id: 7, source: source, sourceKey: "sha256:" + repeatedHex('a'), corpID: "corp-a", externalUserID: "external-1", occurredAt: time.Unix(1700000000, 0).UTC(), state: "pending"}}}
+				jobs := &memoryInboundJobs{}
+				ingestor := &memoryInboundIngestor{result: identityport.IngestResult{Status: status, CustomerID: 12, EventID: 4, PendingEventID: 8}}
+				processor, err := NewIdentityContactProcessor(ingestor)
+				if err != nil {
+					t.Fatal(err)
+				}
+				service, err := NewInboundService(immediateUoW{}, store, jobs, processor, "corp-a", func() time.Time { return time.Unix(1700000100, 0) })
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err = service.Process(context.Background(), 7, "river:99"); err != nil {
+					t.Fatal(err)
+				}
+				want := "processed"
+				if status == identityport.IngestPending {
+					want = "pending_identity"
+				} else if status == identityport.IngestConflict {
+					want = "conflict"
+				}
+				if store.records[0].state != want || len(ingestor.commands) != 1 {
+					t.Fatalf("state=%q commands=%#v", store.records[0].state, ingestor.commands)
+				}
+				if source == InboundSourceSync && ingestor.commands[0].Source != "wecom.sync" {
+					t.Fatalf("sync source=%q, want wecom.sync", ingestor.commands[0].Source)
+				}
+			})
+		}
 	}
 }
 

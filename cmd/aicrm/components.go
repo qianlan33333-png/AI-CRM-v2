@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -40,6 +41,7 @@ import (
 	statsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/stats/store"
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
+	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
 	wecomstore "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/store"
 	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 	wecomworker "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/worker"
@@ -217,7 +219,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	if config.WeCom.Callback.Enabled {
+	if config.WeCom.Callback.Enabled || config.WeCom.DirectorySync.Enabled {
 		inboundJobs, jobErr := wecomstore.NewRiverJobInserter(pool)
 		if jobErr != nil {
 			pool.Close()
@@ -231,9 +233,13 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 			pool.Close()
 			return nil, processorErr
 		}
+		inboundCorpID := config.WeCom.Callback.CorpID
+		if inboundCorpID == "" {
+			inboundCorpID = config.WeCom.OAuth.CorpID
+		}
+		inboundStore := wecomstore.NewInboundRepository()
 		inboundService, inboundErr := wecomapp.NewInboundService(
-			platformstore.NewUnitOfWork(pool), wecomstore.NewInboundRepository(), inboundJobs, processor,
-			config.WeCom.Callback.CorpID, time.Now,
+			platformstore.NewUnitOfWork(pool), inboundStore, inboundJobs, processor, inboundCorpID, time.Now,
 		)
 		if inboundErr != nil {
 			pool.Close()
@@ -242,6 +248,40 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		if err = wecomworker.RegisterInboundWorker(workers, inboundService); err != nil {
 			pool.Close()
 			return nil, err
+		}
+		if config.WeCom.DirectorySync.Enabled {
+			credentials, credentialErr := wecomclient.NewCredentials(config.WeCom.OAuth.CorpID, config.WeCom.OAuth.Secret.Value())
+			if credentialErr != nil {
+				pool.Close()
+				return nil, errInvalidWorkerDatabaseConfig
+			}
+			providerHTTP := &http.Client{Timeout: 5 * time.Second}
+			tokenProvider, tokenErr := wecomclient.NewTokenProvider(wecomclient.TokenProviderConfig{
+				BaseURL: wecomclient.ProductionBaseURL, Credentials: credentials, HTTPClient: providerHTTP, Now: time.Now,
+			})
+			if tokenErr != nil {
+				pool.Close()
+				return nil, errInvalidWorkerDatabaseConfig
+			}
+			reader, readerErr := wecomclient.NewExternalContactReader(wecomclient.ReaderConfig{
+				BaseURL: wecomclient.ProductionBaseURL, HTTPClient: providerHTTP, TokenProvider: tokenProvider,
+			})
+			if readerErr != nil {
+				pool.Close()
+				return nil, errInvalidWorkerDatabaseConfig
+			}
+			syncService, syncErr := wecomapp.NewExternalContactSyncServiceWithHandoff(
+				platformstore.NewUnitOfWork(pool), reader, wecomstore.NewSyncStateRepository(pool), inboundStore, inboundJobs,
+				config.WeCom.OAuth.CorpID, time.Now,
+			)
+			if syncErr != nil {
+				pool.Close()
+				return nil, syncErr
+			}
+			if syncErr = wecomworker.RegisterExternalContactSyncWorker(workers, syncService); syncErr != nil {
+				pool.Close()
+				return nil, syncErr
+			}
 		}
 	}
 	enqueuer := eventdispatcher.NewDeferredEnqueuer()
@@ -324,7 +364,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	periodicPlan, err := schedulerPlan(workers)
+	periodicPlan, err := schedulerPlan(workers, config.WeCom.DirectorySync)
 	if err != nil {
 		pool.Close()
 		return nil, err

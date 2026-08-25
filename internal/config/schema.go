@@ -14,33 +14,35 @@ import (
 )
 
 const (
-	databaseURLEnv            = "AICRM_DATABASE_URL"
-	apiListenAddressEnv       = "AICRM_HTTP_LISTEN_ADDRESS"
-	apiPoolMaxConnsEnv        = "AICRM_API_PGX_MAX_CONNS"
-	workerPoolMaxConnsEnv     = "AICRM_WORKER_PGX_MAX_CONNS"
-	criticalWorkersEnv        = "AICRM_RIVER_CRITICAL_MAX_WORKERS"
-	eventWorkersEnv           = "AICRM_RIVER_EVENT_MAX_WORKERS"
-	outboundWorkersEnv        = "AICRM_RIVER_OUTBOUND_MAX_WORKERS"
-	syncWorkersEnv            = "AICRM_RIVER_SYNC_MAX_WORKERS"
-	heavyWorkersEnv           = "AICRM_RIVER_HEAVY_MAX_WORKERS"
-	aiWorkersEnv              = "AICRM_RIVER_AI_MAX_WORKERS"
-	weComCallbackCorpIDEnv    = "AICRM_WECOM_CALLBACK_CORP_ID"
-	weComCallbackTokenEnv     = "AICRM_WECOM_CALLBACK_TOKEN"
-	weComCallbackAESKeyEnv    = "AICRM_WECOM_CALLBACK_AES_KEY"
-	weComOAuthCorpIDEnv       = "AICRM_WECOM_OAUTH_CORP_ID"
-	weComOAuthSecretEnv       = "AICRM_WECOM_OAUTH_SECRET"
-	weComOAuthCallbackEnv     = "AICRM_WECOM_OAUTH_CALLBACK_URL"
-	weComSidebarCorpIDEnv     = "AICRM_WECOM_SIDEBAR_CORP_ID"
-	weComSidebarSecretEnv     = "AICRM_WECOM_SIDEBAR_SECRET"
-	weComSidebarCallbackEnv   = "AICRM_WECOM_SIDEBAR_CALLBACK_URL"
-	weComSidebarAgentIDEnv    = "AICRM_WECOM_SIDEBAR_AGENT_ID"
-	weComSidebarHostsEnv      = "AICRM_WECOM_SIDEBAR_ALLOWED_HOSTS"
-	identityHMACKeyEnv        = "AICRM_IDENTITY_HMAC_KEY"
-	apiClientJWTSecretEnv     = "AICRM_API_CLIENT_JWT_SECRET"
-	surveyPublicKeyEnv        = "AICRM_SURVEY_PUBLIC_TOKEN_KEY"
-	domainVerificationDirEnv  = "AICRM_DOMAIN_VERIFICATION_DIR"
-	applicationEnvironmentEnv = "AICRM_ENV"
-	releaseSHAEnv             = "AICRM_RELEASE_SHA"
+	databaseURLEnv                    = "AICRM_DATABASE_URL"
+	apiListenAddressEnv               = "AICRM_HTTP_LISTEN_ADDRESS"
+	apiPoolMaxConnsEnv                = "AICRM_API_PGX_MAX_CONNS"
+	workerPoolMaxConnsEnv             = "AICRM_WORKER_PGX_MAX_CONNS"
+	criticalWorkersEnv                = "AICRM_RIVER_CRITICAL_MAX_WORKERS"
+	eventWorkersEnv                   = "AICRM_RIVER_EVENT_MAX_WORKERS"
+	outboundWorkersEnv                = "AICRM_RIVER_OUTBOUND_MAX_WORKERS"
+	syncWorkersEnv                    = "AICRM_RIVER_SYNC_MAX_WORKERS"
+	heavyWorkersEnv                   = "AICRM_RIVER_HEAVY_MAX_WORKERS"
+	aiWorkersEnv                      = "AICRM_RIVER_AI_MAX_WORKERS"
+	weComCallbackCorpIDEnv            = "AICRM_WECOM_CALLBACK_CORP_ID"
+	weComCallbackTokenEnv             = "AICRM_WECOM_CALLBACK_TOKEN"
+	weComCallbackAESKeyEnv            = "AICRM_WECOM_CALLBACK_AES_KEY"
+	weComOAuthCorpIDEnv               = "AICRM_WECOM_OAUTH_CORP_ID"
+	weComOAuthSecretEnv               = "AICRM_WECOM_OAUTH_SECRET"
+	weComOAuthCallbackEnv             = "AICRM_WECOM_OAUTH_CALLBACK_URL"
+	weComDirectorySyncEnabledEnv      = "AICRM_WECOM_DIRECTORY_SYNC_ENABLED"
+	weComDirectorySyncStaffUserIDsEnv = "AICRM_WECOM_DIRECTORY_SYNC_STAFF_USER_IDS"
+	weComSidebarCorpIDEnv             = "AICRM_WECOM_SIDEBAR_CORP_ID"
+	weComSidebarSecretEnv             = "AICRM_WECOM_SIDEBAR_SECRET"
+	weComSidebarCallbackEnv           = "AICRM_WECOM_SIDEBAR_CALLBACK_URL"
+	weComSidebarAgentIDEnv            = "AICRM_WECOM_SIDEBAR_AGENT_ID"
+	weComSidebarHostsEnv              = "AICRM_WECOM_SIDEBAR_ALLOWED_HOSTS"
+	identityHMACKeyEnv                = "AICRM_IDENTITY_HMAC_KEY"
+	apiClientJWTSecretEnv             = "AICRM_API_CLIENT_JWT_SECRET"
+	surveyPublicKeyEnv                = "AICRM_SURVEY_PUBLIC_TOKEN_KEY"
+	domainVerificationDirEnv          = "AICRM_DOMAIN_VERIFICATION_DIR"
+	applicationEnvironmentEnv         = "AICRM_ENV"
+	releaseSHAEnv                     = "AICRM_RELEASE_SHA"
 
 	legacySecretKeyEnv                        = "SECRET_KEY"
 	legacyWeChatShopCallbackTokenEnv          = "WECHAT_SHOP_CALLBACK_TOKEN"
@@ -132,6 +134,14 @@ type WeComOAuth struct {
 	CallbackURL string
 }
 
+// WeComDirectorySync is explicitly opt-in. The staff list is the complete
+// eligible scope for the provider's external-contact directory read; an empty
+// configuration never schedules a provider job.
+type WeComDirectorySync struct {
+	Enabled      bool
+	StaffUserIDs []string
+}
+
 // WeComSidebar is the independent OAuth and JSSDK configuration for the
 // embedded sidebar. It deliberately cannot reuse the administrator OAuth
 // callback, because the two browser protocols have different bindings.
@@ -145,9 +155,10 @@ type WeComSidebar struct {
 }
 
 type WeCom struct {
-	Callback WeComCallback
-	OAuth    WeComOAuth
-	Sidebar  WeComSidebar
+	Callback      WeComCallback
+	OAuth         WeComOAuth
+	DirectorySync WeComDirectorySync
+	Sidebar       WeComSidebar
 }
 
 type IdentityHMACKey struct{ value [32]byte }
@@ -269,6 +280,10 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		root.API.PoolMaxConns = parsePositiveInt32(lookup, apiPoolMaxConnsEnv, "api.pool_max_conns", &problems)
 		root.WeCom.Callback = parseWeComCallback(lookup, &problems)
 		root.WeCom.OAuth = parseWeComOAuth(lookup, &problems)
+		root.WeCom.DirectorySync = parseWeComDirectorySync(lookup, &problems)
+		if root.WeCom.DirectorySync.Enabled && !root.WeCom.OAuth.Enabled {
+			problems = append(problems, "wecom.directory_sync requires configured oauth credentials")
+		}
 		root.WeCom.Sidebar = parseWeComSidebar(lookup, &problems)
 		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
 		root.APIClient.JWTSecret = parseOptionalAPIClientJWTSecret(lookup, &problems)
@@ -294,6 +309,16 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		queueTotal := root.Worker.Queues.Total()
 		if root.Worker.PoolMaxConns > 0 && root.Worker.Queues.valid() && root.Worker.PoolMaxConns < queueTotal+2 {
 			problems = append(problems, "worker.pool_max_conns must be at least queue concurrency total + 2")
+		}
+		if !needAPI {
+			root.WeCom.DirectorySync = parseWeComDirectorySync(lookup, &problems)
+			if root.WeCom.DirectorySync.Enabled {
+				root.WeCom.OAuth = parseWeComOAuth(lookup, &problems)
+				if !root.WeCom.OAuth.Enabled {
+					problems = append(problems, "wecom.directory_sync requires configured oauth credentials")
+				}
+				root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
+			}
 		}
 	}
 	if len(problems) != 0 {
@@ -393,6 +418,50 @@ func parseWeComOAuth(lookup environmentLookup, problems *[]string) WeComOAuth {
 		*problems = append(*problems, "wecom.oauth.callback_url is invalid")
 	}
 	return WeComOAuth{Enabled: true, CorpID: corpID, Secret: OAuthSecret{value: secret}, CallbackURL: callbackURL}
+}
+
+func parseWeComDirectorySync(lookup environmentLookup, problems *[]string) WeComDirectorySync {
+	enabled, present := lookup(weComDirectorySyncEnabledEnv)
+	staffUserIDs, staffPresent := lookup(weComDirectorySyncStaffUserIDsEnv)
+	if !present && !staffPresent {
+		return WeComDirectorySync{}
+	}
+	if !present || (enabled != "true" && enabled != "false") {
+		*problems = append(*problems, "wecom.directory_sync.enabled must be true or false")
+		return WeComDirectorySync{}
+	}
+	if enabled == "false" {
+		if staffPresent && staffUserIDs != "" {
+			*problems = append(*problems, "wecom.directory_sync.staff_user_ids requires enabled=true")
+		}
+		return WeComDirectorySync{}
+	}
+	if !staffPresent || staffUserIDs == "" {
+		*problems = append(*problems, "wecom.directory_sync.staff_user_ids is required when enabled")
+		return WeComDirectorySync{}
+	}
+	parts := strings.Split(staffUserIDs, ",")
+	if len(parts) > 64 {
+		*problems = append(*problems, "wecom.directory_sync.staff_user_ids is invalid")
+		return WeComDirectorySync{}
+	}
+	seen := make(map[string]struct{}, len(parts))
+	for _, staffUserID := range parts {
+		if !validWeComDirectorySyncStaffUserID(staffUserID) {
+			*problems = append(*problems, "wecom.directory_sync.staff_user_ids is invalid")
+			return WeComDirectorySync{}
+		}
+		if _, duplicate := seen[staffUserID]; duplicate {
+			*problems = append(*problems, "wecom.directory_sync.staff_user_ids is invalid")
+			return WeComDirectorySync{}
+		}
+		seen[staffUserID] = struct{}{}
+	}
+	return WeComDirectorySync{Enabled: true, StaffUserIDs: parts}
+}
+
+func validWeComDirectorySyncStaffUserID(value string) bool {
+	return value != "" && len(value) <= 128 && strings.TrimSpace(value) == value
 }
 
 func validOAuthCallbackURL(value string) bool {

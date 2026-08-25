@@ -17,4 +17,7 @@ func TestSyncStateRepositoryRequiresTransactionForAdvance(t *testing.T) {
 	if err := repository.AdvanceCursor(context.Background(), "external_contact_list:owner", "", "next", false); !errors.Is(err, platformport.ErrTransactionRequired) {
 		t.Fatalf("AdvanceCursor() error = %v, want transaction requirement", err)
 	}
+	if err := repository.RestartCompleted(context.Background(), "external_contact_list:owner"); !errors.Is(err, platformport.ErrTransactionRequired) {
+		t.Fatalf("RestartCompleted() error = %v, want transaction requirement", err)
+	}
 }
