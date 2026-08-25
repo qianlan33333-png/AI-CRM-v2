@@ -136,7 +136,8 @@ func TestDataMigrationHarnessPG16(t *testing.T) {
 	}
 	t.Cleanup(pool.Close)
 	assertCatalog(t, ctx, pool)
-	if _, err = pool.Exec(ctx, `CREATE TABLE data_migration_fixture_targets(
+	if _, err = pool.Exec(ctx, `CREATE SCHEMA acceptance_fixtures;
+CREATE TABLE acceptance_fixtures.data_migration_fixture_targets(
 adapter_id TEXT NOT NULL,id BIGINT NOT NULL,value TEXT NOT NULL,mutation_digest BYTEA NOT NULL CHECK(octet_length(mutation_digest)=32),
 PRIMARY KEY(adapter_id,id),UNIQUE(adapter_id,mutation_digest))`); err != nil {
 		t.Fatal(err)
@@ -210,7 +211,7 @@ PRIMARY KEY(adapter_id,id),UNIQUE(adapter_id,mutation_digest))`); err != nil {
 		if _, err = targetHarness.runner.Run(ctx, migration.RunRequest{ID: "target-tamper-run", Adapter: "target-tamper"}); err != nil {
 			t.Fatal(err)
 		}
-		if _, err = pool.Exec(ctx, `UPDATE data_migration_fixture_targets SET mutation_digest=$1 WHERE adapter_id='target-tamper'`, bytesOf(migration.Sum([]byte("tampered")))); err != nil {
+		if _, err = pool.Exec(ctx, `UPDATE acceptance_fixtures.data_migration_fixture_targets SET mutation_digest=$1 WHERE adapter_id='target-tamper'`, bytesOf(migration.Sum([]byte("tampered")))); err != nil {
 			t.Fatal(err)
 		}
 		if err = targetHarness.reconciler.Reconcile(ctx, "target-tamper-run"); !errors.Is(err, migration.ErrTargetTampered) {
@@ -366,13 +367,13 @@ func newFixtureTarget(t *testing.T) *migrationstore.Target {
 				return migration.ErrInvalidRun
 			}
 			mutation := migration.Sum(raw)
-			if _, err := tx.Exec(ctx, `INSERT INTO data_migration_fixture_targets(adapter_id,id,value,mutation_digest)
+			if _, err := tx.Exec(ctx, `INSERT INTO acceptance_fixtures.data_migration_fixture_targets(adapter_id,id,value,mutation_digest)
 VALUES($1,$2,$3,$4) ON CONFLICT(adapter_id,id) DO NOTHING`, payload.Adapter, payload.ID, payload.Value, bytesOf(mutation)); err != nil {
 				return err
 			}
 			var storedValue string
 			var storedDigest []byte
-			if err := tx.QueryRow(ctx, `SELECT value,mutation_digest FROM data_migration_fixture_targets WHERE adapter_id=$1 AND id=$2`, payload.Adapter, payload.ID).Scan(&storedValue, &storedDigest); err != nil {
+			if err := tx.QueryRow(ctx, `SELECT value,mutation_digest FROM acceptance_fixtures.data_migration_fixture_targets WHERE adapter_id=$1 AND id=$2`, payload.Adapter, payload.ID).Scan(&storedValue, &storedDigest); err != nil {
 				return err
 			}
 			if storedValue != payload.Value || !bytes.Equal(storedDigest, mutation[:]) {
@@ -382,7 +383,7 @@ VALUES($1,$2,$3,$4) ON CONFLICT(adapter_id,id) DO NOTHING`, payload.Adapter, pay
 		}},
 		map[string]migrationstore.VerifyOperation{"fixture.upsert": func(ctx context.Context, tx pgx.Tx, receipt migration.ResultReceipt) error {
 			var count int
-			if err := tx.QueryRow(ctx, `SELECT count(*) FROM data_migration_fixture_targets WHERE mutation_digest=$1`, bytesOf(receipt.MutationDigest)).Scan(&count); err != nil {
+			if err := tx.QueryRow(ctx, `SELECT count(*) FROM acceptance_fixtures.data_migration_fixture_targets WHERE mutation_digest=$1`, bytesOf(receipt.MutationDigest)).Scan(&count); err != nil {
 				return err
 			}
 			if count != 1 {
@@ -422,7 +423,7 @@ func assertCatalog(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 func assertTargetCount(t *testing.T, ctx context.Context, pool *pgxpool.Pool, adapter string, want int) {
 	t.Helper()
 	var count int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM data_migration_fixture_targets WHERE adapter_id=$1`, adapter).Scan(&count); err != nil || count != want {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM acceptance_fixtures.data_migration_fixture_targets WHERE adapter_id=$1`, adapter).Scan(&count); err != nil || count != want {
 		t.Fatalf("target count adapter=%s got=%d want=%d err=%v", adapter, count, want, err)
 	}
 }
