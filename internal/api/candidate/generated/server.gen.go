@@ -12261,6 +12261,17 @@ type ReceiveWechatPayRefundCallbackParams struct {
 	WechatpaySignature WechatpaySignature `json:"Wechatpay-Signature"`
 }
 
+// CallbackSurveyH5OAuthParams defines parameters for CallbackSurveyH5OAuth.
+type CallbackSurveyH5OAuthParams struct {
+	State string `form:"state" json:"state"`
+	Code  string `form:"code" json:"code"`
+}
+
+// StartSurveyH5OAuthParams defines parameters for StartSurveyH5OAuth.
+type StartSurveyH5OAuthParams struct {
+	Next string `form:"next" json:"next"`
+}
+
 // MintSidebarContextJSONBody defines parameters for MintSidebarContext.
 type MintSidebarContextJSONBody struct {
 	ExternalUserid string `json:"external_userid"`
@@ -14593,6 +14604,12 @@ type ServerInterface interface {
 	// Read a closed local share descriptor without claiming a public purchase route
 	// (GET /api/admin/wechat-pay/products/{product_id}/share)
 	GetLegacyWechatPayProductShare(w http.ResponseWriter, r *http.Request, productId ProductID)
+	// Claim one Survey H5 OAuth state and issue a signed canonical identity proof
+	// (GET /api/h5/surveys/oauth/callback)
+	CallbackSurveyH5OAuth(w http.ResponseWriter, r *http.Request, params CallbackSurveyH5OAuthParams)
+	// Start a one-time, fail-closed Survey H5 identity gate
+	// (GET /api/h5/surveys/oauth/start)
+	StartSurveyH5OAuth(w http.ResponseWriter, r *http.Request, params StartSurveyH5OAuthParams)
 	// Read one immutable anonymous public survey definition
 	// (GET /api/public/questionnaires/{slug})
 	GetPublicSurveyDefinition(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug)
@@ -15547,6 +15564,18 @@ func (_ Unimplemented) EnableLegacyWechatPayProduct(w http.ResponseWriter, r *ht
 // Read a closed local share descriptor without claiming a public purchase route
 // (GET /api/admin/wechat-pay/products/{product_id}/share)
 func (_ Unimplemented) GetLegacyWechatPayProductShare(w http.ResponseWriter, r *http.Request, productId ProductID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Claim one Survey H5 OAuth state and issue a signed canonical identity proof
+// (GET /api/h5/surveys/oauth/callback)
+func (_ Unimplemented) CallbackSurveyH5OAuth(w http.ResponseWriter, r *http.Request, params CallbackSurveyH5OAuthParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Start a one-time, fail-closed Survey H5 identity gate
+// (GET /api/h5/surveys/oauth/start)
+func (_ Unimplemented) StartSurveyH5OAuth(w http.ResponseWriter, r *http.Request, params StartSurveyH5OAuthParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -22578,6 +22607,89 @@ func (siw *ServerInterfaceWrapper) GetLegacyWechatPayProductShare(w http.Respons
 	handler.ServeHTTP(w, r)
 }
 
+// CallbackSurveyH5OAuth operation middleware
+func (siw *ServerInterfaceWrapper) CallbackSurveyH5OAuth(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CallbackSurveyH5OAuthParams
+
+	// ------------- Required query parameter "state" -------------
+
+	if paramValue := r.URL.Query().Get("state"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		return
+	}
+
+	// ------------- Required query parameter "code" -------------
+
+	if paramValue := r.URL.Query().Get("code"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "code"})
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "code", r.URL.Query(), &params.Code, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "code", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CallbackSurveyH5OAuth(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartSurveyH5OAuth operation middleware
+func (siw *ServerInterfaceWrapper) StartSurveyH5OAuth(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params StartSurveyH5OAuthParams
+
+	// ------------- Required query parameter "next" -------------
+
+	if paramValue := r.URL.Query().Get("next"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "next"})
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "next", r.URL.Query(), &params.Next, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "next", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartSurveyH5OAuth(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetPublicSurveyDefinition operation middleware
 func (siw *ServerInterfaceWrapper) GetPublicSurveyDefinition(w http.ResponseWriter, r *http.Request) {
 
@@ -28728,6 +28840,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}/share", wrapper.GetLegacyWechatPayProductShare)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/h5/surveys/oauth/callback", wrapper.CallbackSurveyH5OAuth)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/h5/surveys/oauth/start", wrapper.StartSurveyH5OAuth)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/public/questionnaires/{slug}", wrapper.GetPublicSurveyDefinition)
@@ -36111,6 +36229,83 @@ func (response GetLegacyWechatPayProductShare503JSONResponse) VisitGetLegacyWech
 	return json.NewEncoder(w).Encode(response)
 }
 
+type CallbackSurveyH5OAuthRequestObject struct {
+	Params CallbackSurveyH5OAuthParams
+}
+
+type CallbackSurveyH5OAuthResponseObject interface {
+	VisitCallbackSurveyH5OAuthResponse(w http.ResponseWriter) error
+}
+
+type CallbackSurveyH5OAuth302Response struct {
+}
+
+func (response CallbackSurveyH5OAuth302Response) VisitCallbackSurveyH5OAuthResponse(w http.ResponseWriter) error {
+	w.WriteHeader(302)
+	return nil
+}
+
+type CallbackSurveyH5OAuth400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CallbackSurveyH5OAuth400JSONResponse) VisitCallbackSurveyH5OAuthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CallbackSurveyH5OAuth401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CallbackSurveyH5OAuth401JSONResponse) VisitCallbackSurveyH5OAuthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CallbackSurveyH5OAuth503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CallbackSurveyH5OAuth503JSONResponse) VisitCallbackSurveyH5OAuthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartSurveyH5OAuthRequestObject struct {
+	Params StartSurveyH5OAuthParams
+}
+
+type StartSurveyH5OAuthResponseObject interface {
+	VisitStartSurveyH5OAuthResponse(w http.ResponseWriter) error
+}
+
+type StartSurveyH5OAuth302Response struct {
+}
+
+func (response StartSurveyH5OAuth302Response) VisitStartSurveyH5OAuthResponse(w http.ResponseWriter) error {
+	w.WriteHeader(302)
+	return nil
+}
+
+type StartSurveyH5OAuth400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response StartSurveyH5OAuth400JSONResponse) VisitStartSurveyH5OAuthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartSurveyH5OAuth503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response StartSurveyH5OAuth503JSONResponse) VisitStartSurveyH5OAuthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetPublicSurveyDefinitionRequestObject struct {
 	Slug PublicSurveySlug `json:"slug"`
 }
@@ -42571,6 +42766,12 @@ type StrictServerInterface interface {
 	// Read a closed local share descriptor without claiming a public purchase route
 	// (GET /api/admin/wechat-pay/products/{product_id}/share)
 	GetLegacyWechatPayProductShare(ctx context.Context, request GetLegacyWechatPayProductShareRequestObject) (GetLegacyWechatPayProductShareResponseObject, error)
+	// Claim one Survey H5 OAuth state and issue a signed canonical identity proof
+	// (GET /api/h5/surveys/oauth/callback)
+	CallbackSurveyH5OAuth(ctx context.Context, request CallbackSurveyH5OAuthRequestObject) (CallbackSurveyH5OAuthResponseObject, error)
+	// Start a one-time, fail-closed Survey H5 identity gate
+	// (GET /api/h5/surveys/oauth/start)
+	StartSurveyH5OAuth(ctx context.Context, request StartSurveyH5OAuthRequestObject) (StartSurveyH5OAuthResponseObject, error)
 	// Read one immutable anonymous public survey definition
 	// (GET /api/public/questionnaires/{slug})
 	GetPublicSurveyDefinition(ctx context.Context, request GetPublicSurveyDefinitionRequestObject) (GetPublicSurveyDefinitionResponseObject, error)
@@ -46155,6 +46356,58 @@ func (sh *strictHandler) GetLegacyWechatPayProductShare(w http.ResponseWriter, r
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetLegacyWechatPayProductShareResponseObject); ok {
 		if err := validResponse.VisitGetLegacyWechatPayProductShareResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CallbackSurveyH5OAuth operation middleware
+func (sh *strictHandler) CallbackSurveyH5OAuth(w http.ResponseWriter, r *http.Request, params CallbackSurveyH5OAuthParams) {
+	var request CallbackSurveyH5OAuthRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CallbackSurveyH5OAuth(ctx, request.(CallbackSurveyH5OAuthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CallbackSurveyH5OAuth")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CallbackSurveyH5OAuthResponseObject); ok {
+		if err := validResponse.VisitCallbackSurveyH5OAuthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartSurveyH5OAuth operation middleware
+func (sh *strictHandler) StartSurveyH5OAuth(w http.ResponseWriter, r *http.Request, params StartSurveyH5OAuthParams) {
+	var request StartSurveyH5OAuthRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartSurveyH5OAuth(ctx, request.(StartSurveyH5OAuthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartSurveyH5OAuth")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartSurveyH5OAuthResponseObject); ok {
+		if err := validResponse.VisitStartSurveyH5OAuthResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

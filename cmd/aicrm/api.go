@@ -169,6 +169,7 @@ type candidateHandler struct {
 	sidebar                   *sidebarhttp.Handler
 	surveyPublic              *surveyhttp.PublicHandler
 	radarPublic               *radarthttp.PublicHandler
+	surveyH5OAuth             *surveyhttp.H5OAuthHandler
 	segmentRefresh            *segmenthttp.RefreshHandler
 	identityReviews           *identityhttp.ReviewHandler
 	identityConsole           *identityhttp.ConsoleHandler
@@ -1218,6 +1219,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	identityResolver := identityapp.NewResolveService(uow, identityRepository)
+	surveyH5OAuthService, err := surveyapp.NewH5OAuthService(oauthStates, surveyapp.DisabledH5OAuthProvider{}, identityResolver)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	surveyH5OAuthHandler := surveyhttp.NewH5OAuthHandler(surveyH5OAuthService, surveyCookieKey)
 	legacyUnionIDResolver := identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
 	customerIdentityMatcher := identityapp.NewCustomerMatcherService(uow, identityRepository)
 	customerAnswerService := surveyapp.NewCustomerAnswerService(
@@ -1340,6 +1347,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		wechatPaySettlement:  wechatPaySettlementHandler,
 		surveyPublic:         surveyPublicHandler,
 		radarPublic:          radarPublicHandler,
+		surveyH5OAuth:        surveyH5OAuthHandler,
 		segmentRefresh:       segmentRefreshHandler,
 		identityReviews:      identityReviewHandler,
 		identityConsole:      identityConsoleHandler,

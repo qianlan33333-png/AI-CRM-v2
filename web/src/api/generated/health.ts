@@ -14815,6 +14815,18 @@ export type GetQuestionnairePublicAnalyticsParams = {
   definition_version?: number;
 };
 
+export type StartSurveyH5OAuthParams = {
+  /**
+   * @pattern ^/s/[a-z0-9][a-z0-9-]{0,119}$
+   */
+  next: string;
+};
+
+export type CallbackSurveyH5OAuthParams = {
+  state: string;
+  code: string;
+};
+
 export type ListLegacyQuestionnairesParams = {
   /**
    * @minimum 1
@@ -30885,6 +30897,142 @@ export const getPublicSurveyPage = async (
     status: res.status,
     headers: res.headers,
   } as getPublicSurveyPageResponse;
+};
+
+/**
+ * @summary Start a one-time, fail-closed Survey H5 identity gate
+ */
+export type startSurveyH5OAuthResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type startSurveyH5OAuthResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type startSurveyH5OAuthResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type startSurveyH5OAuthResponseError = (
+  | startSurveyH5OAuthResponse302
+  | startSurveyH5OAuthResponse400
+  | startSurveyH5OAuthResponse503
+) & {
+  headers: Headers;
+};
+
+export type startSurveyH5OAuthResponse = startSurveyH5OAuthResponseError;
+
+export const getStartSurveyH5OAuthUrl = (params: StartSurveyH5OAuthParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/h5/surveys/oauth/start?${stringifiedParams}`
+    : `/api/h5/surveys/oauth/start`;
+};
+
+export const startSurveyH5OAuth = async (
+  params: StartSurveyH5OAuthParams,
+  options?: RequestInit,
+): Promise<startSurveyH5OAuthResponse> => {
+  const res = await fetch(getStartSurveyH5OAuthUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: startSurveyH5OAuthResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as startSurveyH5OAuthResponse;
+};
+
+/**
+ * @summary Claim one Survey H5 OAuth state and issue a signed canonical identity proof
+ */
+export type callbackSurveyH5OAuthResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type callbackSurveyH5OAuthResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type callbackSurveyH5OAuthResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type callbackSurveyH5OAuthResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type callbackSurveyH5OAuthResponseError = (
+  | callbackSurveyH5OAuthResponse302
+  | callbackSurveyH5OAuthResponse400
+  | callbackSurveyH5OAuthResponse401
+  | callbackSurveyH5OAuthResponse503
+) & {
+  headers: Headers;
+};
+
+export type callbackSurveyH5OAuthResponse = callbackSurveyH5OAuthResponseError;
+
+export const getCallbackSurveyH5OAuthUrl = (
+  params: CallbackSurveyH5OAuthParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/h5/surveys/oauth/callback?${stringifiedParams}`
+    : `/api/h5/surveys/oauth/callback`;
+};
+
+export const callbackSurveyH5OAuth = async (
+  params: CallbackSurveyH5OAuthParams,
+  options?: RequestInit,
+): Promise<callbackSurveyH5OAuthResponse> => {
+  const res = await fetch(getCallbackSurveyH5OAuthUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: callbackSurveyH5OAuthResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as callbackSurveyH5OAuthResponse;
 };
 
 /**
