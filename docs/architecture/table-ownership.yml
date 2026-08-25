@@ -174,6 +174,17 @@ owners:
       admin_ops_action_receipts: transaction_scoped_actor_idempotency_receipts
       admin_ops_notification_settings: secret_reference_and_mask_only_no_webhook_url
 
+  release:
+    package: internal/release
+    tables: [release_candidates, release_prerequisite_receipts, release_worker_leases, release_cutover_journal, release_rollback_checks, release_operation_receipts]
+    constraints:
+      release_candidates: exact_artifact_and_schema_bound_release_state
+      release_prerequisite_receipts: append_only_exact_subject_preparation_evidence
+      release_worker_leases: generation_and_fence_bound_single_active_cutover_worker
+      release_cutover_journal: append_only_ordered_local_cutover_steps
+      release_rollback_checks: append_only_rollback_precondition_evidence
+      release_operation_receipts: actor_scoped_idempotent_release_operation_receipts
+
   auth:
     package: internal/auth
     tables: [admin_users, admin_sessions, admin_oauth_states]

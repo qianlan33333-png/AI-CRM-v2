@@ -11,10 +11,10 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	authacceptance "github.com/qianlan33333-png/AI-CRM-v2/acceptance/auth"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	releaseapp "github.com/qianlan33333-png/AI-CRM-v2/internal/release/app"
 	releaseport "github.com/qianlan33333-png/AI-CRM-v2/internal/release/port"
@@ -34,7 +34,15 @@ func TestReleasePlanePG16LifecycleConcurrencyReplayAndGuards(t *testing.T) {
 	}
 	t.Cleanup(pool.Close)
 	assertReleasePG16(t, ctx, pool)
-	actorID := seedReleaseActor(t, ctx, pool)
+	authFixture, err := authacceptance.OpenPostgreSQL(ctx, *releaseDatabaseURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(authFixture.Close)
+	actorID, err := authFixture.SeedAdmin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
 	service := releaseapp.NewService(platformstore.NewUnitOfWork(pool), releasestore.NewRepository(pool))
 	assertPrerequisiteSubjectAndSameCommitGuards(t, ctx, pool, service, actorID)
 
@@ -327,17 +335,6 @@ func assertReleaseTamperingRejected(t *testing.T, ctx context.Context, pool *pgx
 		_, err := pool.Exec(ctx, statement, candidateID)
 		assertSQLState(t, err, "55000")
 	}
-}
-
-func seedReleaseActor(t *testing.T, ctx context.Context, pool *pgxpool.Pool) int64 {
-	t.Helper()
-	var actorID int64
-	err := pool.QueryRow(ctx, `INSERT INTO admin_users(auth_provider,wecom_corp_id,provider_subject_id,display_name,role) VALUES('wecom',$1,$2,'RP01 acceptance','admin') RETURNING id`,
-		fmt.Sprintf("rp01-tenant-%d", time.Now().UnixNano()), fmt.Sprintf("rp01-actor-%d", time.Now().UnixNano())).Scan(&actorID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return actorID
 }
 
 func assertReleasePG16(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
