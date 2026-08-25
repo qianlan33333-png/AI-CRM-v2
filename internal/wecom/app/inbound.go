@@ -50,9 +50,13 @@ type InboundEnvelope struct {
 	CorpID         string
 	EventType      string
 	ExternalUserID string
-	RawPayload     []byte
-	OccurredAt     time.Time
-	InitialState   string
+	// ExternalContact is present only for change_external_contact callbacks.
+	// Its sensitive fields are digest-only; persistence of the typed fields is
+	// deliberately owned by the CH03 integration migration.
+	ExternalContact *ExternalContactCallbackFact
+	RawPayload      []byte
+	OccurredAt      time.Time
+	InitialState    string
 }
 
 type InboundReservation struct {
@@ -248,8 +252,21 @@ func ParseCallbackEnvelope(message []byte, corpID string) (InboundEnvelope, erro
 	if payload.Event != "enter_agent" && payload.Event != "change_external_contact" {
 		return InboundEnvelope{}, errors.Join(ErrUnsupportedInbound, wecomcallback.ErrUnknownCallbackEvent)
 	}
-	if payload.Event == "change_external_contact" && (externalUserID == "" || !validText(externalUserID, 1024)) {
-		return InboundEnvelope{}, errors.Join(ErrInvalidInboundMessage, wecomcallback.ErrUnknownCallbackEvent)
+	if payload.Event == externalContactEvent {
+		fact, err := ParseExternalContactCallbackFact(message, corpID)
+		if err != nil {
+			return InboundEnvelope{}, err
+		}
+		digest := sha256.Sum256(message)
+		initialState := "skipped"
+		if fact.IsEntrant() {
+			initialState = "pending"
+		}
+		return InboundEnvelope{
+			Source: InboundSourceCallback, SourceKey: "sha256:" + hex.EncodeToString(digest[:]), CorpID: corpID,
+			EventType: fact.EventType(), ExternalUserID: fact.ExternalUserID, ExternalContact: &fact,
+			RawPayload: redactCallbackSecrets(message), OccurredAt: fact.OccurredAt, InitialState: initialState,
+		}, nil
 	}
 	eventType := payload.Event
 	if payload.ChangeType != "" {
@@ -265,6 +282,60 @@ func ParseCallbackEnvelope(message []byte, corpID string) (InboundEnvelope, erro
 		EventType: eventType, ExternalUserID: externalUserID, RawPayload: append([]byte(nil), message...),
 		OccurredAt: time.Unix(payload.CreateTime, 0).UTC(), InitialState: initialState,
 	}, nil
+}
+
+// redactCallbackSecrets preserves the callback's non-secret audit payload
+// while ensuring secret lifecycle values cannot reach durable storage through
+// the legacy RawPayload column. Typed parsing above has already retained only
+// their digests. The encoder also rejects malformed XML before this function
+// runs.
+func redactCallbackSecrets(message []byte) []byte {
+	decoder := xml.NewDecoder(strings.NewReader(string(message)))
+	var builder strings.Builder
+	encoder := xml.NewEncoder(&builder)
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil
+		}
+		start, isStart := token.(xml.StartElement)
+		if !isStart || !callbackSecretElement(start.Name.Local) {
+			if encoder.EncodeToken(token) != nil {
+				return nil
+			}
+			continue
+		}
+		if encoder.EncodeToken(start) != nil || encoder.EncodeToken(xml.CharData("[redacted]")) != nil {
+			return nil
+		}
+		depth := 1
+		for depth > 0 {
+			next, nextErr := decoder.Token()
+			if nextErr != nil {
+				return nil
+			}
+			switch next.(type) {
+			case xml.StartElement:
+				depth++
+			case xml.EndElement:
+				depth--
+			}
+		}
+		if encoder.EncodeToken(xml.EndElement{Name: start.Name}) != nil {
+			return nil
+		}
+	}
+	if encoder.Flush() != nil {
+		return nil
+	}
+	return []byte(builder.String())
+}
+
+func callbackSecretElement(name string) bool {
+	return name == "WelcomeCode" || name == "Source" || name == "FailReason"
 }
 
 func validCorpID(value string) bool {

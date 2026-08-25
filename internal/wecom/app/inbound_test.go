@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 )
 
 func TestParseCallbackEnvelopeExternalContactIsStableAndScoped(t *testing.T) {
-	message := []byte(`<xml><ToUserName><![CDATA[corp-a]]></ToUserName><CreateTime>1700000000</CreateTime><MsgType><![CDATA[event]]></MsgType><Event><![CDATA[change_external_contact]]></Event><ChangeType><![CDATA[add_external_contact]]></ChangeType><ExternalUserID><![CDATA[external-1]]></ExternalUserID></xml>`)
+	message := []byte(`<xml><ToUserName><![CDATA[corp-a]]></ToUserName><CreateTime>1700000000</CreateTime><MsgType><![CDATA[event]]></MsgType><Event><![CDATA[change_external_contact]]></Event><ChangeType><![CDATA[add_external_contact]]></ChangeType><UserID><![CDATA[staff-1]]></UserID><ExternalUserID><![CDATA[external-1]]></ExternalUserID></xml>`)
 	first, err := ParseCallbackEnvelope(message, "corp-a")
 	if err != nil {
 		t.Fatal(err)
@@ -25,6 +26,72 @@ func TestParseCallbackEnvelopeExternalContactIsStableAndScoped(t *testing.T) {
 	}
 }
 
+func TestParseExternalContactCallbackFactRetainsEntrantFieldsWithoutWelcomeCode(t *testing.T) {
+	message := []byte(`<xml><ToUserName><![CDATA[corp-a]]></ToUserName><CreateTime>1700000000</CreateTime><MsgType><![CDATA[event]]></MsgType><Event><![CDATA[change_external_contact]]></Event><ChangeType><![CDATA[add_external_contact]]></ChangeType><UserID><![CDATA[staff-1]]></UserID><ExternalUserID><![CDATA[external-1]]></ExternalUserID><State><![CDATA[ch02-state-1]]></State><WelcomeCode><![CDATA[welcome-code-secret]]></WelcomeCode><Source><![CDATA[link-source-secret]]></Source><FailReason><![CDATA[reason-secret]]></FailReason></xml>`)
+	fact, err := ParseExternalContactCallbackFact(message, "corp-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !fact.IsEntrant() || fact.ChangeType != addExternalContact || fact.CorpID != "corp-a" || fact.UserID != "staff-1" || fact.ExternalUserID != "external-1" || fact.State != "ch02-state-1" || !fact.OccurredAt.Equal(time.Unix(1700000000, 0).UTC()) {
+		t.Fatalf("fact = %#v", fact)
+	}
+	if !fact.WelcomeCodePresent || fact.WelcomeCodeDigest != callbackValueDigest("welcome-code-secret") || fact.SourceDigest != callbackValueDigest("link-source-secret") || fact.FailReasonDigest != callbackValueDigest("reason-secret") {
+		t.Fatalf("unsafe digest fact = %#v", fact)
+	}
+	envelope, err := ParseCallbackEnvelope(message, "corp-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if envelope.ExternalContact == nil || envelope.InitialState != "pending" || envelope.EventType != "change_external_contact:add_external_contact" {
+		t.Fatalf("envelope = %#v", envelope)
+	}
+	stored := string(envelope.RawPayload)
+	if strings.Contains(stored, "welcome-code-secret") || strings.Contains(stored, "link-source-secret") || strings.Contains(stored, "reason-secret") || !strings.Contains(stored, "[redacted]") || !strings.Contains(stored, "ch02-state-1") {
+		t.Fatalf("redacted raw payload = %q", stored)
+	}
+}
+
+func TestParseExternalContactCallbackFactHalfContactIsEntrant(t *testing.T) {
+	message := []byte(`<xml><ToUserName>corp-a</ToUserName><CreateTime>1700000000</CreateTime><MsgType>event</MsgType><Event>change_external_contact</Event><ChangeType>add_half_external_contact</ChangeType><UserID>staff-1</UserID><ExternalUserId>external-1</ExternalUserId></xml>`)
+	fact, err := ParseExternalContactCallbackFact(message, "corp-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !fact.IsEntrant() || fact.ExternalUserID != "external-1" || fact.UserID != "staff-1" || fact.WelcomeCodePresent {
+		t.Fatalf("fact = %#v", fact)
+	}
+}
+
+func TestParseCallbackEnvelopeExternalContactLifecycleDoesNotBecomeEntrant(t *testing.T) {
+	for _, changeType := range []string{"edit_external_contact", "del_external_contact", "del_follow_user", "transfer_success", "transfer_fail", "future_change"} {
+		t.Run(changeType, func(t *testing.T) {
+			message := []byte(`<xml><ToUserName>corp-a</ToUserName><CreateTime>1700000000</CreateTime><MsgType>event</MsgType><Event>change_external_contact</Event><ChangeType>` + changeType + `</ChangeType><ExternalUserID>external-1</ExternalUserID><State>state-1</State><Source>source-secret</Source><FailReason>reason-secret</FailReason></xml>`)
+			envelope, err := ParseCallbackEnvelope(message, "corp-a")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if envelope.InitialState != "skipped" || envelope.ExternalContact == nil || envelope.ExternalContact.IsEntrant() || envelope.ExternalContact.SourceDigest != callbackValueDigest("source-secret") || envelope.ExternalContact.FailReasonDigest != callbackValueDigest("reason-secret") {
+				t.Fatalf("envelope = %#v", envelope)
+			}
+		})
+	}
+}
+
+func TestParseExternalContactCallbackFactRejectsMalformedOrUnsafeEntrants(t *testing.T) {
+	valid := `<xml><ToUserName>corp-a</ToUserName><CreateTime>1700000000</CreateTime><MsgType>event</MsgType><Event>change_external_contact</Event><ChangeType>add_external_contact</ChangeType><UserID>staff-1</UserID><ExternalUserID>external-1</ExternalUserID></xml>`
+	for _, message := range []string{
+		`<xml><ToUserName>corp-a</ToUserName><CreateTime>1700000000</CreateTime><MsgType>event</MsgType><Event>change_external_contact</Event><ChangeType>add_external_contact</ChangeType><ExternalUserID>external-1</ExternalUserID></xml>`,
+		strings.Replace(valid, "corp-a", "corp-b", 1),
+		strings.Replace(valid, "</xml>", "</xml>trailing", 1),
+		strings.Replace(valid, "</ExternalUserID>", "</ExternalUserID><ExternalUserId>external-2</ExternalUserId>", 1),
+		`<xml><ToUserName>corp-a</ToUserName><CreateTime>never</CreateTime><MsgType>event</MsgType><Event>change_external_contact</Event><ChangeType>add_external_contact</ChangeType><UserID>staff-1</UserID><ExternalUserID>external-1</ExternalUserID></xml>`,
+	} {
+		if _, err := ParseExternalContactCallbackFact([]byte(message), "corp-a"); !errors.Is(err, ErrInvalidInboundMessage) {
+			t.Fatalf("ParseExternalContactCallbackFact(%q) error = %v", message, err)
+		}
+	}
+}
+
 func TestInboundServiceDeduplicatesAndQueuesOnlyBusinessEvents(t *testing.T) {
 	store := &memoryInboundStore{}
 	jobs := &memoryInboundJobs{}
@@ -32,7 +99,7 @@ func TestInboundServiceDeduplicatesAndQueuesOnlyBusinessEvents(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	message := []byte(`<xml><ToUserName>corp-a</ToUserName><CreateTime>1700000000</CreateTime><MsgType>event</MsgType><Event>change_external_contact</Event><ExternalUserID>external-1</ExternalUserID></xml>`)
+	message := []byte(`<xml><ToUserName>corp-a</ToUserName><CreateTime>1700000000</CreateTime><MsgType>event</MsgType><Event>change_external_contact</Event><ChangeType>add_external_contact</ChangeType><UserID>staff-1</UserID><ExternalUserID>external-1</ExternalUserID></xml>`)
 	if err = service.Dispatch(context.Background(), message); err != nil {
 		t.Fatal(err)
 	}
