@@ -67,6 +67,17 @@ WHERE media_attachment_upload_parts.digest = EXCLUDED.digest AND media_attachmen
 SELECT id, file_name, name, description, tags, enabled, expected_size, expected_digest, created_by, state, attachment_id
 FROM media_attachment_uploads WHERE id = sqlc.arg(upload_id) FOR UPDATE;
 
+-- name: InsertOutboundMediaEffectBinding :one
+INSERT INTO outbound_media_effect_bindings (content_package_id, target_digest, snapshot_digest, effect_id, created_at)
+VALUES (sqlc.arg(content_package_id), sqlc.arg(target_digest), sqlc.arg(snapshot_digest), sqlc.arg(effect_id), sqlc.arg(created_at))
+ON CONFLICT (content_package_id, target_digest) DO NOTHING
+RETURNING id, content_package_id, target_digest, snapshot_digest, effect_id, created_at;
+
+-- name: GetOutboundMediaEffectBinding :one
+SELECT id, content_package_id, target_digest, snapshot_digest, effect_id, created_at
+FROM outbound_media_effect_bindings
+WHERE content_package_id = sqlc.arg(content_package_id) AND target_digest = sqlc.arg(target_digest);
+
 -- name: ListMediaAttachmentUploadParts :many
 SELECT part_number, digest, content FROM media_attachment_upload_parts WHERE upload_id = sqlc.arg(upload_id) ORDER BY part_number;
 

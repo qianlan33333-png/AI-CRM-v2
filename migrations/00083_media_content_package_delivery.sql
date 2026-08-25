@@ -108,16 +108,27 @@ CREATE INDEX media_content_package_refs_attachment_idx ON public.media_content_p
 CREATE INDEX media_content_package_refs_miniprogram_idx ON public.media_content_package_refs(miniprogram_id) WHERE miniprogram_id IS NOT NULL;
 CREATE INDEX media_content_package_refs_group_invite_idx ON public.media_content_package_refs(group_invite_id) WHERE group_invite_id IS NOT NULL;
 
+CREATE TABLE public.outbound_media_effect_bindings (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  content_package_id BIGINT NOT NULL REFERENCES public.media_content_packages(id) ON DELETE RESTRICT,
+  target_digest TEXT NOT NULL CHECK (target_digest ~ '^sha256:[0-9a-f]{64}$'),
+  snapshot_digest TEXT NOT NULL CHECK (snapshot_digest ~ '^sha256:[0-9a-f]{64}$'),
+  effect_id BIGINT NOT NULL UNIQUE REFERENCES public.external_effects(id) ON DELETE RESTRICT,
+  created_at TIMESTAMPTZ NOT NULL,
+  UNIQUE (content_package_id, target_digest)
+);
+
 -- +goose Down
-LOCK TABLE public.outbound_media_acceptances, public.media_campaign_delivery_bindings, public.media_attachment_uploads, public.media_content_packages IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE public.outbound_media_effect_bindings, public.outbound_media_acceptances, public.media_campaign_delivery_bindings, public.media_attachment_uploads, public.media_content_packages IN SHARE ROW EXCLUSIVE MODE;
 -- +goose StatementBegin
 DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM public.outbound_media_acceptances) OR EXISTS (SELECT 1 FROM public.media_campaign_delivery_bindings)
+  IF EXISTS (SELECT 1 FROM public.outbound_media_effect_bindings) OR EXISTS (SELECT 1 FROM public.outbound_media_acceptances) OR EXISTS (SELECT 1 FROM public.media_campaign_delivery_bindings)
      OR EXISTS (SELECT 1 FROM public.media_attachment_uploads) OR EXISTS (SELECT 1 FROM public.media_content_packages) THEN
     RAISE EXCEPTION 'cannot roll back populated media content package and delivery facts' USING ERRCODE = '55000';
   END IF;
 END $$;
 -- +goose StatementEnd
+DROP TABLE public.outbound_media_effect_bindings;
 DROP TABLE public.outbound_media_acceptances;
 DROP TABLE public.media_campaign_delivery_bindings;
 DROP TABLE public.media_attachment_upload_parts;

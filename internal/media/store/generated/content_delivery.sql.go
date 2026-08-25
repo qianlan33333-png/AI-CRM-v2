@@ -202,6 +202,31 @@ func (q *Queries) GetMediaContentReferenceEligibility(ctx context.Context, arg G
 	return eligible, err
 }
 
+const getOutboundMediaEffectBinding = `-- name: GetOutboundMediaEffectBinding :one
+SELECT id, content_package_id, target_digest, snapshot_digest, effect_id, created_at
+FROM outbound_media_effect_bindings
+WHERE content_package_id = $1 AND target_digest = $2
+`
+
+type GetOutboundMediaEffectBindingParams struct {
+	ContentPackageID int64  `json:"content_package_id"`
+	TargetDigest     string `json:"target_digest"`
+}
+
+func (q *Queries) GetOutboundMediaEffectBinding(ctx context.Context, arg GetOutboundMediaEffectBindingParams) (OutboundMediaEffectBinding, error) {
+	row := q.db.QueryRow(ctx, getOutboundMediaEffectBinding, arg.ContentPackageID, arg.TargetDigest)
+	var i OutboundMediaEffectBinding
+	err := row.Scan(
+		&i.ID,
+		&i.ContentPackageID,
+		&i.TargetDigest,
+		&i.SnapshotDigest,
+		&i.EffectID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const initiateMediaAttachmentUpload = `-- name: InitiateMediaAttachmentUpload :one
 INSERT INTO media_attachment_uploads (file_name, name, description, tags, enabled, expected_size, expected_digest, created_by, state, created_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'initiated', $9)
@@ -309,6 +334,41 @@ type InsertMediaContentPackageMiniprogramRefParams struct {
 func (q *Queries) InsertMediaContentPackageMiniprogramRef(ctx context.Context, arg InsertMediaContentPackageMiniprogramRefParams) error {
 	_, err := q.db.Exec(ctx, insertMediaContentPackageMiniprogramRef, arg.PackageID, arg.Position, arg.RefID)
 	return err
+}
+
+const insertOutboundMediaEffectBinding = `-- name: InsertOutboundMediaEffectBinding :one
+INSERT INTO outbound_media_effect_bindings (content_package_id, target_digest, snapshot_digest, effect_id, created_at)
+VALUES ($1, $2, $3, $4, $5)
+ON CONFLICT (content_package_id, target_digest) DO NOTHING
+RETURNING id, content_package_id, target_digest, snapshot_digest, effect_id, created_at
+`
+
+type InsertOutboundMediaEffectBindingParams struct {
+	ContentPackageID int64              `json:"content_package_id"`
+	TargetDigest     string             `json:"target_digest"`
+	SnapshotDigest   string             `json:"snapshot_digest"`
+	EffectID         int64              `json:"effect_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) InsertOutboundMediaEffectBinding(ctx context.Context, arg InsertOutboundMediaEffectBindingParams) (OutboundMediaEffectBinding, error) {
+	row := q.db.QueryRow(ctx, insertOutboundMediaEffectBinding,
+		arg.ContentPackageID,
+		arg.TargetDigest,
+		arg.SnapshotDigest,
+		arg.EffectID,
+		arg.CreatedAt,
+	)
+	var i OutboundMediaEffectBinding
+	err := row.Scan(
+		&i.ID,
+		&i.ContentPackageID,
+		&i.TargetDigest,
+		&i.SnapshotDigest,
+		&i.EffectID,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const listMediaAttachmentUploadParts = `-- name: ListMediaAttachmentUploadParts :many

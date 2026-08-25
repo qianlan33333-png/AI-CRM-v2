@@ -48,3 +48,12 @@ type MediaGroupInvite struct {
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 	ArchivedAt   pgtype.Timestamptz `json:"archived_at"`
 }
+
+type OutboundMediaEffectBinding struct {
+	ID               int64              `json:"id"`
+	ContentPackageID int64              `json:"content_package_id"`
+	TargetDigest     string             `json:"target_digest"`
+	SnapshotDigest   string             `json:"snapshot_digest"`
+	EffectID         int64              `json:"effect_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}
