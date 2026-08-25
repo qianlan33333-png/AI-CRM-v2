@@ -1,8 +1,10 @@
-import { attachmentPageDto, audiencePackagePageDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, customerPageDto, executeOwnerReassignmentPreviewDto, imagePageDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, questionnairePageDto, radarPageDto, readAdminRows, saveImageItemDto, saveRadarLinkDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
+import { attachmentPageDto, audiencePackagePageDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, customerPageDto, executeOwnerReassignmentPreviewDto, imagePageDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, questionnairePageDto, radarPageDto, readAdminRows, saveCouponDto, saveImageItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
 import { HttpApi } from '../shared/api/client';
+import { getCreateProductUrl, getCreateServicePeriodProductUrl, getUpdateServicePeriodProductUrl } from './generated/health';
+import { getArchiveLegacyCouponUrl, getCopyLegacyCouponUrl, getCreateLegacyCouponUrl, getDeleteLegacyCouponUrl, getPublishLegacyCouponUrl, getStopLegacyCouponUrl, getUpdateLegacyCouponUrl } from './generated/health';
 
 function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
 const response = (data: unknown, status = 200) => ({ status, data, headers: new Headers() });
@@ -15,10 +17,17 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(getGetLegacyOrderUrl('WX-9') === '/api/admin/orders/WX-9', 'order detail URL/method');
   assert(getListProductsUrl() === '/api/v1/products', 'product list URL/method');
   assert(getGetProductUrl(7) === '/api/v1/products/7', 'product detail URL/method');
+  assert(getCreateProductUrl() === '/api/v1/products', 'product create URL');
   assert(getListServicePeriodProductsUrl() === '/api/admin/service-period-products', 'service product list URL/method');
   assert(getGetServicePeriodProductUrl(8) === '/api/admin/service-period-products/8', 'service product detail URL/method');
+  assert(getCreateServicePeriodProductUrl() === '/api/admin/service-period-products', 'service product create URL');
+  assert(getUpdateServicePeriodProductUrl(8) === '/api/admin/service-period-products/8', 'service product update URL');
   assert(getListLegacyCouponsUrl() === '/api/admin/coupons', 'coupon list URL/method');
   assert(getGetLegacyCouponUrl(3) === '/api/admin/coupons/3', 'coupon detail URL/method');
+  assert(getCreateLegacyCouponUrl() === '/api/admin/coupons', 'coupon create URL');
+  assert(getUpdateLegacyCouponUrl(3) === '/api/admin/coupons/3', 'coupon update URL');
+  assert(getPublishLegacyCouponUrl(3).endsWith('/3/publish') && getStopLegacyCouponUrl(3).endsWith('/3/stop'), 'coupon lifecycle URLs');
+  assert(getCopyLegacyCouponUrl(3).endsWith('/3/copy') && getArchiveLegacyCouponUrl(3).endsWith('/3/archive') && getDeleteLegacyCouponUrl(3) === '/api/admin/coupons/3', 'coupon copy/archive/delete URLs');
   assert(getGetLegacyImageUrl('img-1') === '/api/admin/image-library/img-1', 'image detail URL/method');
   assert(getGetLegacyAttachmentUrl('att-1') === '/api/admin/attachment-library/att-1', 'attachment detail URL/method');
   assert(getGetLegacyWecomTagUrl(5) === '/api/admin/wecom/tags/5', 'tag detail URL/method');
@@ -65,6 +74,42 @@ export async function runAdminAdapterTests(): Promise<void> {
   globalThis.fetch = async () => new Response(JSON.stringify({ code: 'bad' }), { status: 503 });
   try { await readAdminRows(); assert(false, 'failed production read must not return seed'); } catch { /* expected: no SEED_DB fallback */ }
   finally { globalThis.fetch = savedFetch; }
+
+  let productWrite: RequestInit | undefined;
+  globalThis.fetch = async (_input, init) => { productWrite = init; return new Response(JSON.stringify({ id: 21, product_code: 'P-21', name: '课程', description: '说明', price_minor: 19900, currency: 'CNY', stock_quantity: 9, images: [], created_by: 1, created_at: '', updated_at: '', version: 1 }), { status: 201 }); };
+  try {
+    const productSaved = await saveProductDto({ code: 'P-21', name: '课程', description: '说明', price: '199.00', currency: 'CNY', stockQuantity: 9 });
+    assert(productSaved.resourceId === 21 && productSaved.price === '199.00' && productWrite?.method === 'POST', 'product create method/response mapping');
+    assert(JSON.parse(String(productWrite.body)).price_minor === 19900, 'product price request mapping');
+  } finally { globalThis.fetch = savedFetch; }
+
+  const couponCalls: Array<{ input: string; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => {
+    couponCalls.push({ input: String(input), init });
+    const coupon = { id: 31, name: '新客券', discount_amount_total: 10000, total_issue_limit: 1200, issued_count: 0, per_user_issue_limit: 1, claim_starts_at: '2026-08-01T00:00:00Z', claim_ends_at: '2026-08-31T00:00:00Z', validity_mode: 'relative_days', relative_validity_days: 7, instructions: '说明', target_refs: ['SP-GROW-90'], status: init?.method === 'POST' && String(input).endsWith('/publish') ? 'published' : 'draft', version: 1 };
+    return new Response(JSON.stringify({ coupon }), { status: 201 });
+  };
+  try {
+    const coupon = await saveCouponDto({ name: '新客券', discount: '100.00', totalIssueLimit: 1200, perUserIssueLimit: 1, claimStartsAt: '2026-08-01T08:00', claimEndsAt: '2026-08-31T08:00', validityMode: 'relative_days', relativeValidityDays: 7, instructions: '说明', targetRefs: ['SP-GROW-90'] }, true);
+    assert(coupon.resourceId === 31 && coupon.status === 'published' && coupon.scope === 'SP-GROW-90', 'coupon response mapping');
+    assert(couponCalls[0].input === '/api/admin/coupons' && couponCalls[0].init?.method === 'POST', 'coupon create URL/method');
+    const couponBody = JSON.parse(String(couponCalls[0].init?.body));
+    assert(couponBody.discount_amount_total === 10000 && couponBody.target_refs[0] === 'SP-GROW-90' && couponBody.relative_validity_days === 7, 'coupon request DTO mapping');
+    assert(couponCalls[1].input.endsWith('/31/publish') && couponCalls[1].init?.method === 'POST', 'coupon publish URL/method');
+  } finally { globalThis.fetch = savedFetch; }
+
+  const serviceCalls: Array<{ input: string; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => {
+    serviceCalls.push({ input: String(input), init });
+    const product = { service_product_id: 8, product_code: 'SP-8', name: '季度', description: '说明', price_minor: 398000, currency: 'CNY', stock_quantity: 5, lifecycle: 'draft', enabled: false, archived: false, version: 3, created_at: '', updated_at: '' };
+    return new Response(JSON.stringify(init?.method === 'GET' ? { ok: true, product } : { ok: true, product: { ...product, name: '季度新版', version: 4 } }), { status: 200 });
+  };
+  try {
+    const serviceSaved = await saveServiceProductDto({ id: 8, code: 'SP-8', name: '季度新版', description: '说明', price: '3980.00', currency: 'CNY', stockQuantity: 5 });
+    assert(serviceSaved.name === '季度新版' && serviceSaved.version === 4, 'service product update response mapping');
+    assert(serviceCalls[0].init?.method === 'GET' && serviceCalls[1].init?.method === 'PUT', 'service product CAS read/update methods');
+    assert(JSON.parse(String(serviceCalls[1].init?.body)).expected_version === 3, 'service product CAS version mapping');
+  } finally { globalThis.fetch = savedFetch; }
 
   let ownerCreate: { input: string; init?: RequestInit } | undefined;
   globalThis.fetch = async (input, init) => { ownerCreate = { input: String(input), init }; return new Response(JSON.stringify(ownerPreviewApi), { status: 201 }); };

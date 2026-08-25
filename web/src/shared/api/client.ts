@@ -13,22 +13,27 @@ import type {
   AudiencePackage,
   AttachItem,
   ConfigCategory,
+  Coupon,
   Customer,
   FunnelGridRow,
   FunnelView,
   ImageItem,
   MpItem,
   OwnerReassignmentPreview,
+  Product,
   QuestionnaireOps,
   RadarEvent,
   RadarLink,
   RadarLinkInput,
   RadarMedia,
+  SpProduct,
   TagGroup,
   WecomTag,
 } from './types';
 import { SEED_DB, deepCopy } from './mockData';
-import { archiveAudiencePackage, archiveTagDto, copyAudiencePackageDto, createOwnerReassignmentPreviewDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveRadarLinkDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setRadarEnabled, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext } from '../../api/admin';
+import { deleteProductDto } from '../../api/admin';
+import { archiveCouponDto, copyCouponDto, deleteCouponDto, saveCouponDto, setCouponPublishedDto, type CouponWriteInput } from '../../api/admin';
+import { archiveAudiencePackage, archiveServiceProductDto, archiveTagDto, copyAudiencePackageDto, copyProductDto, copyServiceProductDto, createOwnerReassignmentPreviewDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setProductEnabledDto, setRadarEnabled, setServiceProductEnabledDto, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext, type ProductWriteInput } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
 
@@ -98,6 +103,23 @@ export interface AdminApi {
   getOwnerReassignmentPreview(previewId: string): Promise<OwnerReassignmentPreview>;
   executeOwnerReassignmentPreview(preview: OwnerReassignmentPreview): Promise<OwnerReassignmentPreview>;
   downloadOwnerReassignmentReport(previewId: string, kind: 'errors' | 'results'): Promise<Blob>;
+
+  /* ---- 普通商品 / 周期商品 ---- */
+  saveProduct(input: ProductWriteInput): Promise<Product>;
+  setProductEnabled(productId: number, enabled: boolean): Promise<Product>;
+  copyProduct(productId: number): Promise<Product>;
+  deleteProduct(productId: number): Promise<void>;
+  saveServiceProduct(input: ProductWriteInput): Promise<SpProduct>;
+  setServiceProductEnabled(productId: number, enabled: boolean): Promise<SpProduct>;
+  copyServiceProduct(productId: number): Promise<SpProduct>;
+  archiveServiceProduct(productId: number): Promise<void>;
+
+  /* ---- 优惠券 ---- */
+  saveCoupon(input: CouponWriteInput, publish: boolean): Promise<Coupon>;
+  setCouponPublished(couponId: number, published: boolean): Promise<Coupon>;
+  copyCoupon(couponId: number): Promise<Coupon>;
+  archiveCoupon(couponId: number): Promise<void>;
+  deleteCoupon(couponId: number): Promise<void>;
 
   /* ---- 配置中心 ---- */
   toggleConfigCategory(key: string, on: boolean): Promise<void>;
@@ -506,6 +528,34 @@ export class MockApi implements AdminApi {
     return delay(new Blob(['mock'], { type: 'text/csv' }));
   }
 
+  saveProduct(input: ProductWriteInput): Promise<Product> {
+    const item = input.id == null ? { resourceId: Date.now(), code: input.code, name: input.name, price: input.price, description: input.description, currency: input.currency, stockQuantity: input.stockQuantity, version: 1, lifecycle: 'draft', status: 'draft', tone: 'warn' as const, sold: '0', updated: '' } : this.db.rows.products.find((row) => row.resourceId === input.id)!;
+    Object.assign(item, input, { resourceId: item.resourceId, version: (item.version || 0) + 1 });
+    if (input.id == null) this.db.rows.products.push(item);
+    this.persist(); return delay(item);
+  }
+  setProductEnabled(productId: number, enabled: boolean): Promise<Product> { const item = this.db.rows.products.find((row) => row.resourceId === productId)!; item.lifecycle = item.status = enabled ? 'enabled' : 'disabled'; this.persist(); return delay(item); }
+  copyProduct(productId: number): Promise<Product> { const source = this.db.rows.products.find((row) => row.resourceId === productId)!; return this.saveProduct({ id: undefined, code: source.code + '-COPY', name: source.name + '（副本）', description: source.description || '', price: source.price, currency: source.currency || 'CNY', stockQuantity: source.stockQuantity || 0 }); }
+  deleteProduct(productId: number): Promise<void> { this.db.rows.products = this.db.rows.products.filter((row) => row.resourceId !== productId); this.persist(); return delay(undefined); }
+  saveServiceProduct(input: ProductWriteInput): Promise<SpProduct> { const item = input.id == null ? { resourceId: Date.now(), code: input.code, name: input.name, price: input.price, description: input.description, currency: input.currency, stockQuantity: input.stockQuantity, version: 1, lifecycle: 'draft', status: 'draft', tone: 'warn' as const, sold: '0', updated: '' } : this.db.rows.spProducts.find((row) => row.resourceId === input.id)!; Object.assign(item, input, { resourceId: item.resourceId, version: (item.version || 0) + 1 }); if (input.id == null) this.db.rows.spProducts.push(item); this.persist(); return delay(item); }
+  setServiceProductEnabled(productId: number, enabled: boolean): Promise<SpProduct> { const item = this.db.rows.spProducts.find((row) => row.resourceId === productId)!; item.lifecycle = item.status = enabled ? 'enabled' : 'disabled'; this.persist(); return delay(item); }
+  copyServiceProduct(productId: number): Promise<SpProduct> { const source = this.db.rows.spProducts.find((row) => row.resourceId === productId)!; return this.saveServiceProduct({ id: undefined, code: source.code + '-COPY', name: source.name + '（副本）', description: source.description || '', price: source.price, currency: source.currency || 'CNY', stockQuantity: source.stockQuantity || 0 }); }
+  archiveServiceProduct(productId: number): Promise<void> { this.db.rows.spProducts = this.db.rows.spProducts.filter((row) => row.resourceId !== productId); this.persist(); return delay(undefined); }
+
+  saveCoupon(input: CouponWriteInput, publish: boolean): Promise<Coupon> {
+    const item = input.id == null
+      ? { resourceId: Date.now(), code: `C-${Date.now()}`, name: input.name, off: `¥${input.discount}`, scope: input.targetRefs.join('、'), window: `${input.claimStartsAt} – ${input.claimEndsAt}`, issue: `0 / ${input.totalIssueLimit}`, status: 'draft', tone: 'warn' as const }
+      : this.db.rows.coupons.find((row) => row.resourceId === input.id)!;
+    Object.assign(item, input, { status: publish ? 'published' : item.status, tone: publish ? 'ok' : item.tone, version: (item.version || 0) + 1 });
+    if (input.id == null) this.db.rows.coupons.push(item);
+    this.persist();
+    return delay(item);
+  }
+  setCouponPublished(couponId: number, published: boolean): Promise<Coupon> { const item = this.db.rows.coupons.find((row) => row.resourceId === couponId)!; item.status = published ? 'published' : 'stopped'; item.tone = published ? 'ok' : 'gray'; this.persist(); return delay(item); }
+  copyCoupon(couponId: number): Promise<Coupon> { const source = this.db.rows.coupons.find((row) => row.resourceId === couponId)!; return this.saveCoupon({ id: undefined, name: source.name + '（副本）', discount: String((source.discountAmountTotal || 0) / 100), totalIssueLimit: source.totalIssueLimit || 1, perUserIssueLimit: source.perUserIssueLimit || 1, claimStartsAt: source.claimStartsAt || new Date().toISOString(), claimEndsAt: source.claimEndsAt || new Date().toISOString(), validityMode: source.validityMode || 'relative_days', useStartsAt: source.useStartsAt || undefined, useEndsAt: source.useEndsAt || undefined, relativeValidityDays: source.relativeValidityDays || undefined, instructions: source.instructions || '', targetRefs: source.targetRefs || [] }, false); }
+  archiveCoupon(couponId: number): Promise<void> { const item = this.db.rows.coupons.find((row) => row.resourceId === couponId); if (item) { item.status = 'archived'; item.tone = 'gray'; this.persist(); } return delay(undefined); }
+  deleteCoupon(couponId: number): Promise<void> { this.db.rows.coupons = this.db.rows.coupons.filter((row) => row.resourceId !== couponId); this.persist(); return delay(undefined); }
+
   /* ---------- 配置中心 ---------- */
 
   private findConfigCat(key: string): ConfigCategory | undefined {
@@ -744,6 +794,20 @@ export class HttpApi implements AdminApi {
   getOwnerReassignmentPreview(previewId: string): Promise<OwnerReassignmentPreview> { return getOwnerReassignmentPreviewDto(previewId); }
   executeOwnerReassignmentPreview(preview: OwnerReassignmentPreview): Promise<OwnerReassignmentPreview> { return executeOwnerReassignmentPreviewDto(preview); }
   downloadOwnerReassignmentReport(previewId: string, kind: 'errors' | 'results'): Promise<Blob> { return downloadOwnerReassignmentReportDto(previewId, kind); }
+
+  saveProduct(input: ProductWriteInput): Promise<Product> { return saveProductDto(input); }
+  setProductEnabled(productId: number, enabled: boolean): Promise<Product> { return setProductEnabledDto(productId, enabled); }
+  copyProduct(productId: number): Promise<Product> { return copyProductDto(productId); }
+  deleteProduct(productId: number): Promise<void> { return deleteProductDto(productId); }
+  saveServiceProduct(input: ProductWriteInput): Promise<SpProduct> { return saveServiceProductDto(input); }
+  setServiceProductEnabled(productId: number, enabled: boolean): Promise<SpProduct> { return setServiceProductEnabledDto(productId, enabled); }
+  copyServiceProduct(productId: number): Promise<SpProduct> { return copyServiceProductDto(productId); }
+  archiveServiceProduct(productId: number): Promise<void> { return archiveServiceProductDto(productId); }
+  saveCoupon(input: CouponWriteInput, publish: boolean): Promise<Coupon> { return saveCouponDto(input, publish); }
+  setCouponPublished(couponId: number, published: boolean): Promise<Coupon> { return setCouponPublishedDto(couponId, published); }
+  copyCoupon(couponId: number): Promise<Coupon> { return copyCouponDto(couponId); }
+  archiveCoupon(couponId: number): Promise<void> { return archiveCouponDto(couponId); }
+  deleteCoupon(couponId: number): Promise<void> { return deleteCouponDto(couponId); }
 
   /* ---------- 配置中心 ---------- */
 

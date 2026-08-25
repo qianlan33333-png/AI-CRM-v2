@@ -454,9 +454,15 @@ export interface OrderEvent {
 }
 
 export interface Product {
+  resourceId?: number;
   code: string;
   name: string;
   price: string;
+  description?: string;
+  currency?: string;
+  stockQuantity?: number;
+  version?: number;
+  lifecycle?: string;
   status: string;
   tone: Tone;
   sold: string;
@@ -464,9 +470,15 @@ export interface Product {
 }
 
 export interface SpProduct {
+  resourceId?: number;
   code: string;
   name: string;
   price: string;
+  description?: string;
+  currency?: string;
+  stockQuantity?: number;
+  version?: number;
+  lifecycle?: string;
   status: string;
   tone: Tone;
   sold: string;
@@ -476,6 +488,18 @@ export interface SpProduct {
 export interface Coupon {
   /** OpenAPI coupon id; only used for real detail navigation. */
   resourceId?: number;
+  discountAmountTotal?: number;
+  totalIssueLimit?: number;
+  perUserIssueLimit?: number;
+  claimStartsAt?: string;
+  claimEndsAt?: string;
+  validityMode?: 'fixed_range' | 'relative_days';
+  useStartsAt?: string | null;
+  useEndsAt?: string | null;
+  relativeValidityDays?: number | null;
+  instructions?: string;
+  targetRefs?: string[];
+  version?: number;
   name: string;
   /** 分享短码（生成分享链接 / 二维码） */
   code: string;

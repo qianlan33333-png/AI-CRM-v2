@@ -14,6 +14,7 @@ import type { AdminApi } from '../shared/api/client';
 import type { AdminDb, AudienceSender, OwnerReassignmentPreview, QuestionnaireOps, Tone } from '../shared/api/types';
 import { deepCopy } from '../shared/api/mockData';
 import { emptyAdminDb } from '../api/admin';
+import type { CouponWriteInput } from '../api/admin';
 import { toast, confirmBox, busy, simulateUpload } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
 import { copyText, renderFakeQr } from './sections/util';
@@ -715,6 +716,56 @@ export class AdminController extends PageBase {
     void this.api.checkConfigCategory(cat.key).then((msg) => toast(msg, msg.startsWith('检查发现'))).catch((error) => toast(error instanceof Error ? error.message : '配置检查失败', true));
   }
 
+  /* ================= 普通商品 / 周期商品 ================= */
+
+  private saveCommerceProduct(kind: 'product' | 'service'): void {
+    const prefix = kind === 'product' ? 'pf' : 'spf';
+    const value = (name: string): string => (document.getElementById(prefix + name) as HTMLInputElement | HTMLTextAreaElement | null)?.value.trim() || '';
+    const id = Number(this.qs().get('id') || '') || undefined;
+    const input = { id, code: value('Code'), name: value('Name'), description: value('Description'), price: value('Price'), currency: value('Currency') || 'CNY', stockQuantity: Number(value('Stock')) };
+    if (!input.code || !input.name) { toast('商品编码和名称不能为空', true); return; }
+    if (!Number.isInteger(input.stockQuantity) || input.stockQuantity < 0) { toast('库存必须是非负整数', true); return; }
+    const action = kind === 'product' ? this.api.saveProduct(input) : this.api.saveServiceProduct(input);
+    void action.then((saved) => {
+      toast(`${kind === 'product' ? '普通' : '周期'}商品已保存，服务端版本 ${saved.version || '—'}`);
+      this.goto(kind === 'product' ? 'products' : 'spProducts');
+    }).catch((error) => toast(error instanceof Error ? error.message : '商品保存失败', true));
+  }
+
+  private blocked(message: string): void {
+    toast('后端能力未就绪：' + message + '，未发送请求', true);
+  }
+
+  private saveCouponForm(publish: boolean): void {
+    const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value.trim() || '';
+    const validityMode = value('couponValidityMode') === 'fixed_range' ? 'fixed_range' : 'relative_days';
+    const input: CouponWriteInput = {
+      id: Number(this.qs().get('id') || '') || undefined,
+      name: value('couponName'),
+      discount: value('couponDiscount'),
+      totalIssueLimit: Number(value('couponTotal')),
+      perUserIssueLimit: Number(value('couponPerUser')),
+      claimStartsAt: value('couponClaimStart'),
+      claimEndsAt: value('couponClaimEnd'),
+      validityMode,
+      useStartsAt: value('couponUseStart') || undefined,
+      useEndsAt: value('couponUseEnd') || undefined,
+      relativeValidityDays: Number(value('couponRelativeDays')) || undefined,
+      instructions: value('couponInstructions'),
+      targetRefs: value('couponTargetRefs').split(/[\s,，]+/).map((item) => item.trim()).filter(Boolean),
+    };
+    if (!input.name || !/^\d+(\.\d{1,2})?$/.test(input.discount)) return toast('请填写名称与最多两位小数的非负减免金额', true);
+    if (!Number.isInteger(input.totalIssueLimit) || input.totalIssueLimit < 1 || !Number.isInteger(input.perUserIssueLimit) || input.perUserIssueLimit < 1) return toast('发行总量和单用户限领必须为正整数', true);
+    if (!input.claimStartsAt || !input.claimEndsAt || new Date(input.claimStartsAt) >= new Date(input.claimEndsAt)) return toast('领取时间范围无效', true);
+    if (!input.targetRefs.length) return toast('至少填写一个服务端商品引用', true);
+    if (validityMode === 'fixed_range' && (!input.useStartsAt || !input.useEndsAt || new Date(input.useStartsAt) >= new Date(input.useEndsAt))) return toast('固定使用时间范围无效', true);
+    if (validityMode === 'relative_days' && (!input.relativeValidityDays || input.relativeValidityDays < 1)) return toast('相对有效天数必须为正整数', true);
+    void this.api.saveCoupon(input, publish).then((saved) => {
+      toast(publish ? '优惠券已保存并发布' : `优惠券草稿已保存，服务端版本 ${saved.version || '—'}`);
+      this.goto('coupons');
+    }).catch((error) => toast(error instanceof Error ? error.message : '优惠券保存失败', true));
+  }
+
   /* ================= 模板绑定值 ================= */
 
   renderVals(): Vals {
@@ -1046,35 +1097,54 @@ export class AdminController extends PageBase {
     const productRows = rows.products.map((p) => ({
       ...p,
       cs: mk(p.tone),
-      edit: () => this.goto('productForm'),
-      shareIt: () => this.openShare('商品', p.name, p.code.toLowerCase()),
+      edit: () => p.resourceId ? this.goto('productForm', '?id=' + p.resourceId) : toast('商品缺少服务端 ID', true),
+      shareIt: () => this.blocked('商品分享投影返回 no_authoritative_public_purchase_route'),
+      copyIt: () => p.resourceId && void this.api.copyProduct(p.resourceId).then(() => { toast('商品副本已创建为草稿'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '商品复制失败', true)),
+      del: () => p.resourceId && confirmBox('删除商品', '仅未被引用的本地草稿可删除。确认继续？', '确认删除', true, () => { void this.api.deleteProduct(p.resourceId!).then(() => { toast('商品已删除'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '商品删除失败', true)); }),
       toggle: () => {
-        toast('后端能力未就绪：商品读取 DTO 未返回 lifecycle，无法安全决定启用或停用', true);
+        if (!p.resourceId) return toast('商品缺少服务端 ID', true);
+        const enabled = p.lifecycle !== 'enabled';
+        void this.api.setProductEnabled(p.resourceId, enabled).then(() => { toast(enabled ? '商品已启用' : '商品已停用'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '商品状态变更失败', true));
       },
-      toggleText: p.status === '已上架' ? '下架' : '上架',
+      toggleText: p.lifecycle === 'enabled' ? '停用' : '启用',
     }));
-    const spRows = rows.spProducts.map((p, idx) => ({
+    const spRows = rows.spProducts.map((p) => ({
       ...p,
       cs: mk(p.tone),
-      edit: () => this.goto('spProductForm'),
-      data: () => this.goto('spProductData', '?id=' + idx),
-      shareIt: () => this.openShare('周期商品', p.name, p.code.toLowerCase()),
+      edit: () => p.resourceId ? this.goto('spProductForm', '?id=' + p.resourceId) : toast('周期商品缺少服务端 ID', true),
+      data: () => p.resourceId ? this.goto('spProductData', '?id=' + p.resourceId) : toast('周期商品缺少服务端 ID', true),
+      shareIt: () => this.blocked('当前周期商品没有公开购买/分享契约'),
+      copyIt: () => p.resourceId && void this.api.copyServiceProduct(p.resourceId).then(() => { toast('周期商品副本已创建为草稿'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '周期商品复制失败', true)),
+      archive: () => p.resourceId && confirmBox('归档周期商品', '归档会保留成员历史，确认继续？', '确认归档', true, () => { void this.api.archiveServiceProduct(p.resourceId!).then(() => { toast('周期商品已归档'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '周期商品归档失败', true)); }),
       toggle: () => {
-        toast('后端能力未就绪：周期商品页面尚未绑定 lifecycle/version，未发送请求', true);
+        if (!p.resourceId) return toast('周期商品缺少服务端 ID', true);
+        const enabled = p.lifecycle !== 'enabled';
+        void this.api.setServiceProductEnabled(p.resourceId, enabled).then(() => { toast(enabled ? '周期商品已启用' : '周期商品已停用'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '周期商品状态变更失败', true));
       },
-      toggleText: p.status === '已上架' ? '下架' : '上架',
+      toggleText: p.lifecycle === 'enabled' ? '停用' : '启用',
     }));
     const couponRows = rows.coupons.map((r, idx) => ({
       ...r,
       cs: mk(r.tone),
-      data: () => this.goto('couponData', '?id=' + idx),
+      edit: () => r.resourceId ? this.goto('couponForm', '?id=' + r.resourceId) : toast('优惠券缺少服务端资源 ID', true),
+      data: () => r.resourceId ? this.goto('couponData', '?id=' + r.resourceId) : this.goto('couponData', '?id=' + idx),
+      copyIt: () => r.resourceId && void this.api.copyCoupon(r.resourceId).then(() => { toast('优惠券副本已创建为草稿'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '优惠券复制失败', true)),
+      toggle: () => {
+        if (!r.resourceId) return toast('优惠券缺少服务端资源 ID', true);
+        const published = r.status !== 'published' && r.status !== 'active';
+        const run = () => void this.api.setCouponPublished(r.resourceId!, published).then(() => { toast(published ? '优惠券已发布' : '优惠券已停用'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '优惠券状态变更失败', true));
+        if (published) run(); else confirmBox('停用优惠券', '停用后不能继续领取，已领取券仍按后端规则处理。确认停用？', '确认停用', true, run);
+      },
+      toggleText: r.status === 'published' || r.status === 'active' ? '停用' : '发布',
+      archive: () => r.resourceId && confirmBox('归档优惠券', '归档后保留领取和核销记录。确认归档？', '确认归档', true, () => { void this.api.archiveCoupon(r.resourceId!).then(() => { toast('优惠券已归档'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '优惠券归档失败', true)); }),
+      del: () => r.resourceId && confirmBox('删除优惠券草稿', '仅未发布且无领取记录的草稿可删除。确认删除？', '确认删除', true, () => { void this.api.deleteCoupon(r.resourceId!).then(() => { toast('优惠券草稿已删除'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '优惠券删除失败', true)); }),
       shareIt: () => {
         if (this.api.mode === 'mock') return this.openShare('优惠券', r.name, r.code, `/c/c-${r.resourceId || idx + 1}`);
         if (!r.resourceId) return toast('优惠券缺少服务端资源 ID，无法读取分享地址', true);
         void this.api.getCouponSharePath(r.resourceId).then((path) => this.openShare('优惠券', r.name, r.code, path)).catch((error) => toast(error instanceof Error ? error.message : '分享地址读取失败', true));
       },
     }));
-    const couponIdx = this.pageId();
+    const couponIdx = this.api.mode === 'http' ? 0 : this.pageId();
     const coupon = rows.coupons[couponIdx] || rows.coupons[0];
     const claims = this.db.couponClaims[couponIdx] || [];
     const claimRows = claims.map((c) => ({ ...c, cs: mk(c.tone) }));
@@ -1086,6 +1156,11 @@ export class AdminController extends PageBase {
       { label: '已使用', value: String(cntOf('已使用') || 0), sub: '已核销抵扣' },
       { label: '已过期', value: String(cntOf('已过期') || 0), sub: '超过有效期未使用' },
     ];
+
+    const productFormValue = this.qs().get('id') ? rows.products[0] : undefined;
+    const serviceFormValue = this.qs().get('id') ? rows.spProducts[0] : undefined;
+    const couponFormValue = this.qs().get('id') ? rows.coupons[0] : undefined;
+    const dateInput = (value?: string | null): string => value ? value.slice(0, 16) : '';
 
     /* ================= 配置中心 ================= */
     const configRows = this.db.configCategories.map((c) => ({
@@ -1147,6 +1222,39 @@ export class AdminController extends PageBase {
 
     return {
       go,
+      productFormPage: {
+        title: productFormValue ? '编辑普通商品' : '创建普通商品',
+        item: productFormValue || { code: '', name: '', price: '0.00', description: '', currency: 'CNY', stockQuantity: 0 },
+        save: () => this.saveCommerceProduct('product'),
+        blocked: () => this.blocked('页面素材、购买后动作、企微标签与外推配置没有等价商品 DTO'),
+      },
+      spProductFormPage: {
+        title: serviceFormValue ? '编辑周期商品' : '创建周期商品',
+        item: serviceFormValue || { code: '', name: '', price: '0.00', description: '', currency: 'CNY', stockQuantity: 0 },
+        save: () => this.saveCommerceProduct('service'),
+        blocked: () => this.blocked('页面素材、购买后动作与外推 URL 不属于周期商品核心写入 DTO'),
+      },
+      couponFormPage: {
+        title: couponFormValue ? '编辑优惠券' : '创建优惠券',
+        item: couponFormValue ? {
+          ...couponFormValue,
+          discount: ((couponFormValue.discountAmountTotal || 0) / 100).toFixed(2),
+          claimStartsAtInput: dateInput(couponFormValue.claimStartsAt),
+          claimEndsAtInput: dateInput(couponFormValue.claimEndsAt),
+          useStartsAtInput: dateInput(couponFormValue.useStartsAt),
+          useEndsAtInput: dateInput(couponFormValue.useEndsAt),
+          targetRefsText: (couponFormValue.targetRefs || []).join(', '),
+          fixedSelected: couponFormValue.validityMode === 'fixed_range',
+          relativeSelected: couponFormValue.validityMode !== 'fixed_range',
+        } : {
+          name: '', discount: '0.00', totalIssueLimit: 1, perUserIssueLimit: 1,
+          claimStartsAtInput: '', claimEndsAtInput: '', validityMode: 'relative_days',
+          useStartsAtInput: '', useEndsAtInput: '', relativeValidityDays: 7,
+          instructions: '', targetRefsText: '', fixedSelected: false, relativeSelected: true,
+        },
+        saveDraft: () => this.saveCouponForm(false),
+        savePublish: () => this.saveCouponForm(true),
+      },
 
       /* ---- 渠道表单 ---- */
       cgo, cn, cp,
@@ -1477,7 +1585,7 @@ export class AdminController extends PageBase {
         claims: claimRows,
         hasClaims: claimRows.length > 0,
         noClaims: claimRows.length === 0,
-        editConfig: () => this.goto('couponForm'),
+        editConfig: () => coupon?.resourceId ? this.goto('couponForm', '?id=' + coupon.resourceId) : this.goto('couponForm'),
         back: () => this.goto('coupons'),
         shareIt: () => couponRows[couponIdx]?.shareIt(),
       },
