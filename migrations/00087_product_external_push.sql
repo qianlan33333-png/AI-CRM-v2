@@ -5,14 +5,14 @@
 ALTER TABLE public.external_effects
   DROP CONSTRAINT external_effects_owner_check,
   ADD CONSTRAINT external_effects_owner_check CHECK (owner IN (
-    'campaign','contact','outbound','wecom','survey','audience','order','product'
+    'campaign','contact','outbound','wecom','survey','audience','order','group_ops','product'
   )),
   DROP CONSTRAINT external_effects_kind_check,
   ADD CONSTRAINT external_effects_kind_check CHECK (kind IN (
     'campaign_dispatch','campaign_group_announcement','contact_touch',
     'outbound_message','outbound_media','wecom_tag_sync','wecom_profile_sync',
     'survey_webhook','audience_webhook','order_payment_prepay',
-    'order_payment_capture','order_refund','product_external_push_test'
+    'order_payment_capture','order_refund','group_ops_broadcast','product_external_push_test'
   ));
 
 ALTER TABLE public.product_operation_receipts
@@ -53,7 +53,9 @@ CREATE TABLE public.product_external_push_test_bindings (
   delivery_proven BOOLEAN NOT NULL DEFAULT FALSE CHECK (delivery_proven = FALSE),
   real_external_call_executed BOOLEAN NOT NULL DEFAULT FALSE CHECK (real_external_call_executed = FALSE),
   auto_retry_allowed BOOLEAN NOT NULL DEFAULT FALSE CHECK (auto_retry_allowed = FALSE),
-  created_at TIMESTAMPTZ NOT NULL
+  created_at TIMESTAMPTZ NOT NULL,
+  CONSTRAINT product_external_push_test_bindings_configuration_once
+    UNIQUE (product_id, product_kind, configuration_digest)
 );
 CREATE INDEX product_external_push_test_bindings_product_created_idx
   ON public.product_external_push_test_bindings (product_id, created_at DESC, id DESC);
@@ -99,9 +101,9 @@ ALTER TABLE public.external_effects
     'campaign_dispatch','campaign_group_announcement','contact_touch',
     'outbound_message','outbound_media','wecom_tag_sync','wecom_profile_sync',
     'survey_webhook','audience_webhook','order_payment_prepay',
-    'order_payment_capture','order_refund'
+    'order_payment_capture','order_refund','group_ops_broadcast'
   )),
   DROP CONSTRAINT external_effects_owner_check,
   ADD CONSTRAINT external_effects_owner_check CHECK (owner IN (
-    'campaign','contact','outbound','wecom','survey','audience','order'
+    'campaign','contact','outbound','wecom','survey','audience','order','group_ops'
   ));

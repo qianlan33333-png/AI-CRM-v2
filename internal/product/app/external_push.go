@@ -30,6 +30,7 @@ type CommerceExternalPushStore interface {
 	SaveCommerceExternalPushConfiguration(context.Context, productport.ExternalPushConfiguration, time.Time) (productport.ExternalPushConfiguration, error)
 	ReserveCommerceExternalPush(context.Context, Reservation) (Receipt, bool, error)
 	CompleteCommerceExternalPush(context.Context, int64, json.RawMessage, time.Time) (Receipt, error)
+	CommerceExternalPushTestExists(context.Context, productport.ID, productport.ExternalPushProductKind, [32]byte) (bool, error)
 	CreateCommerceExternalPushTest(context.Context, productport.ExternalPushTest, [32]byte, int64) (productport.ExternalPushTest, error)
 }
 
@@ -182,9 +183,17 @@ func (service *CommerceExternalPushService) QueueExternalPushTest(
 		if !configuration.Enabled {
 			return ErrExternalPushNotConfigured
 		}
+		configurationDigest := commerceExternalPushConfigurationDigest(configuration)
+		exists, readErr := service.store.CommerceExternalPushTestExists(tx, command.ProductID, command.ProductKind, configurationDigest)
+		if readErr != nil {
+			return readErr
+		}
+		if exists {
+			return ErrConflict
+		}
 		effect, acceptErr := service.effects.AcceptProductExternalPushTest(tx, ProductExternalPushEffectCommand{
 			ProductID: command.ProductID, ProductKind: command.ProductKind,
-			ConfigurationDigest: commerceExternalPushConfigurationDigest(configuration), ReceiptKeyDigest: reservation.KeyDigest,
+			ConfigurationDigest: configurationDigest, ReceiptKeyDigest: reservation.KeyDigest,
 		})
 		if acceptErr != nil {
 			return acceptErr
@@ -192,7 +201,7 @@ func (service *CommerceExternalPushService) QueueExternalPushTest(
 		if !validExternalPushTest(effect, command.ProductID, command.ProductKind) {
 			return ErrUnavailable
 		}
-		result, readErr = service.store.CreateCommerceExternalPushTest(tx, effect, commerceExternalPushConfigurationDigest(configuration), receipt.ID)
+		result, readErr = service.store.CreateCommerceExternalPushTest(tx, effect, configurationDigest, receipt.ID)
 		if readErr != nil {
 			return readErr
 		}

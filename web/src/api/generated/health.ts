@@ -43415,17 +43415,17 @@ export type getServicePeriodProductExternalPushResponse =
   | getServicePeriodProductExternalPushResponseError;
 
 export const getGetServicePeriodProductExternalPushUrl = (
-  productId: number,
+  serviceProductId: number,
 ) => {
-  return `/api/admin/service-period-products/${productId}/external-push`;
+  return `/api/admin/service-period-products/${serviceProductId}/external-push`;
 };
 
 export const getServicePeriodProductExternalPush = async (
-  productId: number,
+  serviceProductId: number,
   options?: RequestInit,
 ): Promise<getServicePeriodProductExternalPushResponse> => {
   const res = await fetch(
-    getGetServicePeriodProductExternalPushUrl(productId),
+    getGetServicePeriodProductExternalPushUrl(serviceProductId),
     {
       ...options,
       method: "GET",
@@ -43502,18 +43502,18 @@ export type saveServicePeriodProductExternalPushResponse =
   | saveServicePeriodProductExternalPushResponseError;
 
 export const getSaveServicePeriodProductExternalPushUrl = (
-  productId: number,
+  serviceProductId: number,
 ) => {
-  return `/api/admin/service-period-products/${productId}/external-push`;
+  return `/api/admin/service-period-products/${serviceProductId}/external-push`;
 };
 
 export const saveServicePeriodProductExternalPush = async (
-  productId: number,
+  serviceProductId: number,
   commerceExternalPushConfigurationRequest: CommerceExternalPushConfigurationRequest,
   options?: RequestInit,
 ): Promise<saveServicePeriodProductExternalPushResponse> => {
   const res = await fetch(
-    getSaveServicePeriodProductExternalPushUrl(productId),
+    getSaveServicePeriodProductExternalPushUrl(serviceProductId),
     {
       ...options,
       method: "PUT",
@@ -43592,17 +43592,17 @@ export type queueServicePeriodProductExternalPushTestResponse =
   | queueServicePeriodProductExternalPushTestResponseError;
 
 export const getQueueServicePeriodProductExternalPushTestUrl = (
-  productId: number,
+  serviceProductId: number,
 ) => {
-  return `/api/admin/service-period-products/${productId}/external-push/test`;
+  return `/api/admin/service-period-products/${serviceProductId}/external-push/test`;
 };
 
 export const queueServicePeriodProductExternalPushTest = async (
-  productId: number,
+  serviceProductId: number,
   options?: RequestInit,
 ): Promise<queueServicePeriodProductExternalPushTestResponse> => {
   const res = await fetch(
-    getQueueServicePeriodProductExternalPushTestUrl(productId),
+    getQueueServicePeriodProductExternalPushTestUrl(serviceProductId),
     {
       ...options,
       method: "POST",

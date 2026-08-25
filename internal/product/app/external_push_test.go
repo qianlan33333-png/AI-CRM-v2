@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -19,11 +20,12 @@ func (uow *commerceExternalPushTestUoW) Within(ctx context.Context, callback fun
 }
 
 type commerceExternalPushTestStore struct {
-	products map[productport.ID]productport.ExternalPushProductKind
-	configs  map[productport.ID]productport.ExternalPushConfiguration
-	receipts map[string]Receipt
-	tests    []productport.ExternalPushTest
-	saves    int
+	products    map[productport.ID]productport.ExternalPushProductKind
+	configs     map[productport.ID]productport.ExternalPushConfiguration
+	receipts    map[string]Receipt
+	tests       []productport.ExternalPushTest
+	testDigests map[string]bool
+	saves       int
 }
 
 func (store *commerceExternalPushTestStore) ReadCommerceExternalPushConfiguration(_ context.Context, id productport.ID, kind productport.ExternalPushProductKind) (productport.ExternalPushConfiguration, error) {
@@ -71,9 +73,21 @@ func (store *commerceExternalPushTestStore) CompleteCommerceExternalPush(_ conte
 	return Receipt{}, ErrNotFound
 }
 
-func (store *commerceExternalPushTestStore) CreateCommerceExternalPushTest(_ context.Context, value productport.ExternalPushTest, _ [32]byte, _ int64) (productport.ExternalPushTest, error) {
+func (store *commerceExternalPushTestStore) CommerceExternalPushTestExists(_ context.Context, productID productport.ID, kind productport.ExternalPushProductKind, digest [32]byte) (bool, error) {
+	return store.testDigests[commerceExternalPushTestDigestKey(productID, kind, digest)], nil
+}
+
+func (store *commerceExternalPushTestStore) CreateCommerceExternalPushTest(_ context.Context, value productport.ExternalPushTest, digest [32]byte, _ int64) (productport.ExternalPushTest, error) {
 	store.tests = append(store.tests, value)
+	if store.testDigests == nil {
+		store.testDigests = map[string]bool{}
+	}
+	store.testDigests[commerceExternalPushTestDigestKey(value.ProductID, value.ProductKind, digest)] = true
 	return value, nil
+}
+
+func commerceExternalPushTestDigestKey(productID productport.ID, kind productport.ExternalPushProductKind, digest [32]byte) string {
+	return fmt.Sprintf("%d\x00%s\x00%x", productID, kind, digest)
 }
 
 func commerceExternalPushTestReceiptKey(reservation Reservation) string {
@@ -142,6 +156,10 @@ func TestCommerceExternalPushTestCreatesOnlyAcceptedLocalEERFactAndReplays(t *te
 	replayed, err := service.QueueExternalPushTest(context.Background(), command)
 	if err != nil || !reflect.DeepEqual(replayed, first) || len(store.tests) != 1 || effects.calls != 1 {
 		t.Fatalf("replayed=%#v tests=%d effects=%d err=%v", replayed, len(store.tests), effects.calls, err)
+	}
+	command.IdempotencyKey = "commerce-push-test-different-key"
+	if _, err = service.QueueExternalPushTest(context.Background(), command); !errors.Is(err, ErrConflict) || len(store.tests) != 1 || effects.calls != 1 {
+		t.Fatalf("different key error=%v tests=%d effects=%d", err, len(store.tests), effects.calls)
 	}
 }
 

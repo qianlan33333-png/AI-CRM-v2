@@ -8194,7 +8194,7 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
-  /api/admin/service-period-products/{product_id}/external-push:
+  /api/admin/service-period-products/{service_product_id}/external-push:
     get:
       tags: [p4-commerce-external-push]
       operationId: getServicePeriodProductExternalPush
@@ -8207,7 +8207,7 @@ paths:
       x-aicrm-data-classification: financial
       x-aicrm-data-source: product.external_push.local_configuration
       x-aicrm-external-effect: none
-      parameters: [{ name: product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
       responses:
         "200": { description: Local opaque configuration, content: { application/json: { schema: { $ref: "#/components/schemas/CommerceExternalPushConfiguration" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -8227,7 +8227,7 @@ paths:
       x-aicrm-data-classification: financial
       x-aicrm-data-source: product.external_push.local_configuration
       x-aicrm-external-effect: none
-      parameters: [{ name: product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CommerceExternalPushConfigurationRequest" } } } }
       responses:
         "200": { description: Saved local opaque configuration, content: { application/json: { schema: { $ref: "#/components/schemas/CommerceExternalPushConfiguration" } } } }
@@ -8237,7 +8237,7 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
-  /api/admin/service-period-products/{product_id}/external-push/test:
+  /api/admin/service-period-products/{service_product_id}/external-push/test:
     post:
       tags: [p4-commerce-external-push]
       operationId: queueServicePeriodProductExternalPushTest
@@ -8250,7 +8250,7 @@ paths:
       x-aicrm-data-classification: financial
       x-aicrm-data-source: product.external_push.local_accepted_effect
       x-aicrm-external-effect: none
-      parameters: [{ name: product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
       responses:
         "202": { description: Local EER accepted fact only; this is not Provider acceptance or delivery, content: { application/json: { schema: { $ref: "#/components/schemas/CommerceExternalPushTest" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }

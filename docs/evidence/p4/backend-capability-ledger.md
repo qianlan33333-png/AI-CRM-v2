@@ -131,12 +131,14 @@ request、自动重试或送达声明。
 
 - 读操作为 admin/ops global `products.read`；保存和测试为 `products.write`，都经过 human
   session、CSRF、actor-bound Idempotency-Key、同一 UoW 和 Product receipt。
+- 每个 `(product, kind, configuration digest)` 不可变配置只允许一个本地 `accepted` proof；
+  原 key 精确重放，换 key 重复测试返回 `409`，且失败事务不留下 Product/EER receipt 或 binding。
 - S07-151/152/172/173 回填的是“保存本地配置”和“返回本地测试结果”这一后端契约；`accepted`
   明确不等于 Provider accepted、delivery proven 或真实外部调用。S07-166 的复合商品表单、
   分享和支付语义仍不由本包宣称完成。
-- `make p4-commerce-external-push-acceptance` 使用专属 PG16.14 临时库，验证 exact 00087、
-  空库 down/up、populated down guard、微信支付/服务期两类商品的幂等配置和 accepted-only EER
-  事实。它不触碰共享验收库。
+- `make p4-commerce-external-push-acceptance` 使用专属 PG16.14 临时库，验证 85 的 GroupOps
+  accepted EER 可穿过 87、`87 -> 86 -> 87`、populated down guard、canonical HTTP 的
+  RBAC/CSRF/幂等/无孤儿，以及微信支付/服务期两类商品的 accepted-only EER 事实。它不触碰共享验收库。
 - `x-aicrm-external-effect: none`：无 Provider 配置、webhook、外部 I/O、job enqueue 或
   delivery receipt；部署及真实支付/外推效果均为 `NOT_EXECUTED`。
 

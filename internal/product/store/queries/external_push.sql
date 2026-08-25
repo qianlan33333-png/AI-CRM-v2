@@ -59,3 +59,26 @@ FROM accepted_effect
 RETURNING product_id, product_kind, external_effect_id, state,
           provider_accepted, delivery_proven, real_external_call_executed,
           auto_retry_allowed, created_at;
+
+-- name: ProductExternalPushTestExists :one
+SELECT EXISTS (
+  SELECT 1
+  FROM public.product_external_push_test_bindings
+  WHERE product_id = sqlc.arg(product_id)::bigint
+    AND product_kind = sqlc.arg(product_kind)::text
+    AND configuration_digest = sqlc.arg(configuration_digest)::bytea
+);
+
+-- name: CommerceExternalPushAcceptanceServerVersion :one
+SELECT current_setting('server_version_num')::text AS server_version_num;
+
+-- name: ReadCommerceExternalPushAcceptanceFacts :one
+SELECT
+  (SELECT count(*) FROM public.product_external_push_configurations WHERE product_id=sqlc.arg(product_id)::bigint)::bigint AS configurations,
+  (SELECT count(*) FROM public.product_operation_receipts WHERE operation IN ('external_push_save','external_push_test') AND state='completed')::bigint AS product_receipts,
+  (SELECT count(*) FROM public.external_effects WHERE owner='product' AND kind='product_external_push_test' AND state='accepted')::bigint AS effects,
+  (SELECT count(*) FROM public.external_effect_receipts AS r JOIN public.external_effects AS e ON e.id=r.effect_id WHERE e.owner='product' AND r.operation='accept' AND r.state='accepted')::bigint AS effect_receipts,
+  (SELECT count(*) FROM public.product_external_push_test_bindings WHERE product_id=sqlc.arg(product_id)::bigint AND state='accepted')::bigint AS bindings,
+  (SELECT count(*) FROM public.external_effect_attempts AS a JOIN public.external_effects AS e ON e.id=a.effect_id WHERE e.owner='product')::bigint AS attempts,
+  (SELECT count(*) FROM public.external_effects WHERE owner='product' AND river_job_id IS NOT NULL)::bigint AS river_bound_effects,
+  (SELECT count(*) FROM public.product_external_push_test_bindings WHERE product_id=sqlc.arg(product_id)::bigint AND (provider_accepted OR delivery_proven OR real_external_call_executed OR auto_retry_allowed))::bigint AS provider_or_delivery;

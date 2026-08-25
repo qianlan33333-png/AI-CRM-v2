@@ -12640,24 +12640,6 @@ type CreateServicePeriodProductParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
-// SaveServicePeriodProductExternalPushParams defines parameters for SaveServicePeriodProductExternalPush.
-type SaveServicePeriodProductExternalPushParams struct {
-	// XCSRFToken CSRF token bound to the server-side browser session.
-	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
-
-	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
-}
-
-// QueueServicePeriodProductExternalPushTestParams defines parameters for QueueServicePeriodProductExternalPushTest.
-type QueueServicePeriodProductExternalPushTestParams struct {
-	// XCSRFToken CSRF token bound to the server-side browser session.
-	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
-
-	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
-	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
-}
-
 // ArchiveServicePeriodProductParams defines parameters for ArchiveServicePeriodProduct.
 type ArchiveServicePeriodProductParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -12696,6 +12678,24 @@ type DisableServicePeriodProductParams struct {
 
 // EnableServicePeriodProductParams defines parameters for EnableServicePeriodProduct.
 type EnableServicePeriodProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// SaveServicePeriodProductExternalPushParams defines parameters for SaveServicePeriodProductExternalPush.
+type SaveServicePeriodProductExternalPushParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// QueueServicePeriodProductExternalPushTestParams defines parameters for QueueServicePeriodProductExternalPushTest.
+type QueueServicePeriodProductExternalPushTestParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 
@@ -13634,9 +13634,6 @@ type ReconcileSurveyExternalPushJSONRequestBody = SurveyExternalPushReconcileReq
 // CreateServicePeriodProductJSONRequestBody defines body for CreateServicePeriodProduct for application/json ContentType.
 type CreateServicePeriodProductJSONRequestBody = ServicePeriodProductCreateRequest
 
-// SaveServicePeriodProductExternalPushJSONRequestBody defines body for SaveServicePeriodProductExternalPush for application/json ContentType.
-type SaveServicePeriodProductExternalPushJSONRequestBody = CommerceExternalPushConfigurationRequest
-
 // ArchiveServicePeriodProductJSONRequestBody defines body for ArchiveServicePeriodProduct for application/json ContentType.
 type ArchiveServicePeriodProductJSONRequestBody = ServicePeriodVersionRequest
 
@@ -13651,6 +13648,9 @@ type DisableServicePeriodProductJSONRequestBody = ServicePeriodVersionRequest
 
 // EnableServicePeriodProductJSONRequestBody defines body for EnableServicePeriodProduct for application/json ContentType.
 type EnableServicePeriodProductJSONRequestBody = ServicePeriodVersionRequest
+
+// SaveServicePeriodProductExternalPushJSONRequestBody defines body for SaveServicePeriodProductExternalPush for application/json ContentType.
+type SaveServicePeriodProductExternalPushJSONRequestBody = CommerceExternalPushConfigurationRequest
 
 // CreateServicePeriodMemberGridCollaboratorJSONRequestBody defines body for CreateServicePeriodMemberGridCollaborator for application/json ContentType.
 type CreateServicePeriodMemberGridCollaboratorJSONRequestBody = ServicePeriodMemberGridCollaboratorCreateRequest
@@ -15234,15 +15234,6 @@ type ServerInterface interface {
 	// Create one local service-period product without public purchase capability
 	// (POST /api/admin/service-period-products)
 	CreateServicePeriodProduct(w http.ResponseWriter, r *http.Request, params CreateServicePeriodProductParams)
-	// Read one service-period Product-local external-push configuration without Provider access
-	// (GET /api/admin/service-period-products/{product_id}/external-push)
-	GetServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, productId int64)
-	// Save one service-period Product-local external-push configuration without Provider access
-	// (PUT /api/admin/service-period-products/{product_id}/external-push)
-	SaveServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, productId int64, params SaveServicePeriodProductExternalPushParams)
-	// Record a local accepted service-period external-push test without a Provider call or job
-	// (POST /api/admin/service-period-products/{product_id}/external-push/test)
-	QueueServicePeriodProductExternalPushTest(w http.ResponseWriter, r *http.Request, productId int64, params QueueServicePeriodProductExternalPushTestParams)
 	// Archive one local service-period product without deleting member history
 	// (DELETE /api/admin/service-period-products/{service_product_id})
 	ArchiveServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params ArchiveServicePeriodProductParams)
@@ -15261,6 +15252,15 @@ type ServerInterface interface {
 	// Enable one local service-period product without public purchase capability
 	// (POST /api/admin/service-period-products/{service_product_id}/enable)
 	EnableServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params EnableServicePeriodProductParams)
+	// Read one service-period Product-local external-push configuration without Provider access
+	// (GET /api/admin/service-period-products/{service_product_id}/external-push)
+	GetServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, serviceProductId int64)
+	// Save one service-period Product-local external-push configuration without Provider access
+	// (PUT /api/admin/service-period-products/{service_product_id}/external-push)
+	SaveServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, serviceProductId int64, params SaveServicePeriodProductExternalPushParams)
+	// Record a local accepted service-period external-push test without a Provider call or job
+	// (POST /api/admin/service-period-products/{service_product_id}/external-push/test)
+	QueueServicePeriodProductExternalPushTest(w http.ResponseWriter, r *http.Request, serviceProductId int64, params QueueServicePeriodProductExternalPushTestParams)
 	// Read local member-grid access; external sharing remains disabled
 	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/access)
 	GetServicePeriodMemberGridAccess(w http.ResponseWriter, r *http.Request, serviceProductId int64)
@@ -16212,24 +16212,6 @@ func (_ Unimplemented) CreateServicePeriodProduct(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Read one service-period Product-local external-push configuration without Provider access
-// (GET /api/admin/service-period-products/{product_id}/external-push)
-func (_ Unimplemented) GetServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, productId int64) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Save one service-period Product-local external-push configuration without Provider access
-// (PUT /api/admin/service-period-products/{product_id}/external-push)
-func (_ Unimplemented) SaveServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, productId int64, params SaveServicePeriodProductExternalPushParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Record a local accepted service-period external-push test without a Provider call or job
-// (POST /api/admin/service-period-products/{product_id}/external-push/test)
-func (_ Unimplemented) QueueServicePeriodProductExternalPushTest(w http.ResponseWriter, r *http.Request, productId int64, params QueueServicePeriodProductExternalPushTestParams) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
 // Archive one local service-period product without deleting member history
 // (DELETE /api/admin/service-period-products/{service_product_id})
 func (_ Unimplemented) ArchiveServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params ArchiveServicePeriodProductParams) {
@@ -16263,6 +16245,24 @@ func (_ Unimplemented) DisableServicePeriodProduct(w http.ResponseWriter, r *htt
 // Enable one local service-period product without public purchase capability
 // (POST /api/admin/service-period-products/{service_product_id}/enable)
 func (_ Unimplemented) EnableServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params EnableServicePeriodProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one service-period Product-local external-push configuration without Provider access
+// (GET /api/admin/service-period-products/{service_product_id}/external-push)
+func (_ Unimplemented) GetServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Save one service-period Product-local external-push configuration without Provider access
+// (PUT /api/admin/service-period-products/{service_product_id}/external-push)
+func (_ Unimplemented) SaveServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, serviceProductId int64, params SaveServicePeriodProductExternalPushParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Record a local accepted service-period external-push test without a Provider call or job
+// (POST /api/admin/service-period-products/{service_product_id}/external-push/test)
+func (_ Unimplemented) QueueServicePeriodProductExternalPushTest(w http.ResponseWriter, r *http.Request, serviceProductId int64, params QueueServicePeriodProductExternalPushTestParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -22398,201 +22398,6 @@ func (siw *ServerInterfaceWrapper) CreateServicePeriodProduct(w http.ResponseWri
 	handler.ServeHTTP(w, r)
 }
 
-// GetServicePeriodProductExternalPush operation middleware
-func (siw *ServerInterfaceWrapper) GetServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "product_id" -------------
-	var productId int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetServicePeriodProductExternalPush(w, r, productId)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// SaveServicePeriodProductExternalPush operation middleware
-func (siw *ServerInterfaceWrapper) SaveServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "product_id" -------------
-	var productId int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params SaveServicePeriodProductExternalPushParams
-
-	headers := r.Header
-
-	// ------------- Required header parameter "X-CSRF-Token" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
-		var XCSRFToken CSRFToken
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
-			return
-		}
-
-		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
-		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
-			return
-		}
-
-		params.XCSRFToken = XCSRFToken
-
-	} else {
-		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
-		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
-		return
-	}
-
-	// ------------- Required header parameter "Idempotency-Key" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
-			return
-		}
-
-		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
-		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
-			return
-		}
-
-		params.IdempotencyKey = IdempotencyKey
-
-	} else {
-		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
-		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.SaveServicePeriodProductExternalPush(w, r, productId, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// QueueServicePeriodProductExternalPushTest operation middleware
-func (siw *ServerInterfaceWrapper) QueueServicePeriodProductExternalPushTest(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-
-	// ------------- Path parameter "product_id" -------------
-	var productId int64
-
-	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
-		return
-	}
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params QueueServicePeriodProductExternalPushTestParams
-
-	headers := r.Header
-
-	// ------------- Required header parameter "X-CSRF-Token" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
-		var XCSRFToken CSRFToken
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
-			return
-		}
-
-		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
-		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
-			return
-		}
-
-		params.XCSRFToken = XCSRFToken
-
-	} else {
-		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
-		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
-		return
-	}
-
-	// ------------- Required header parameter "Idempotency-Key" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
-		var IdempotencyKey IdempotencyKey
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
-			return
-		}
-
-		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
-		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
-			return
-		}
-
-		params.IdempotencyKey = IdempotencyKey
-
-	} else {
-		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
-		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.QueueServicePeriodProductExternalPushTest(w, r, productId, params)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
 // ArchiveServicePeriodProduct operation middleware
 func (siw *ServerInterfaceWrapper) ArchiveServicePeriodProduct(w http.ResponseWriter, r *http.Request) {
 
@@ -23025,6 +22830,201 @@ func (siw *ServerInterfaceWrapper) EnableServicePeriodProduct(w http.ResponseWri
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.EnableServicePeriodProduct(w, r, serviceProductId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetServicePeriodProductExternalPush operation middleware
+func (siw *ServerInterfaceWrapper) GetServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetServicePeriodProductExternalPush(w, r, serviceProductId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveServicePeriodProductExternalPush operation middleware
+func (siw *ServerInterfaceWrapper) SaveServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SaveServicePeriodProductExternalPushParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveServicePeriodProductExternalPush(w, r, serviceProductId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// QueueServicePeriodProductExternalPushTest operation middleware
+func (siw *ServerInterfaceWrapper) QueueServicePeriodProductExternalPushTest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params QueueServicePeriodProductExternalPushTestParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.QueueServicePeriodProductExternalPushTest(w, r, serviceProductId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -31240,15 +31240,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/admin/service-period-products", wrapper.CreateServicePeriodProduct)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/api/admin/service-period-products/{product_id}/external-push", wrapper.GetServicePeriodProductExternalPush)
-	})
-	r.Group(func(r chi.Router) {
-		r.Put(options.BaseURL+"/api/admin/service-period-products/{product_id}/external-push", wrapper.SaveServicePeriodProductExternalPush)
-	})
-	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/api/admin/service-period-products/{product_id}/external-push/test", wrapper.QueueServicePeriodProductExternalPushTest)
-	})
-	r.Group(func(r chi.Router) {
 		r.Delete(options.BaseURL+"/api/admin/service-period-products/{service_product_id}", wrapper.ArchiveServicePeriodProduct)
 	})
 	r.Group(func(r chi.Router) {
@@ -31265,6 +31256,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/enable", wrapper.EnableServicePeriodProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/external-push", wrapper.GetServicePeriodProductExternalPush)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/external-push", wrapper.SaveServicePeriodProductExternalPush)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/external-push/test", wrapper.QueueServicePeriodProductExternalPushTest)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-grid/access", wrapper.GetServicePeriodMemberGridAccess)
@@ -37365,213 +37365,6 @@ func (response CreateServicePeriodProduct503JSONResponse) VisitCreateServicePeri
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetServicePeriodProductExternalPushRequestObject struct {
-	ProductId int64 `json:"product_id"`
-}
-
-type GetServicePeriodProductExternalPushResponseObject interface {
-	VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error
-}
-
-type GetServicePeriodProductExternalPush200JSONResponse CommerceExternalPushConfiguration
-
-func (response GetServicePeriodProductExternalPush200JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetServicePeriodProductExternalPush400JSONResponse struct{ BadRequestJSONResponse }
-
-func (response GetServicePeriodProductExternalPush400JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetServicePeriodProductExternalPush401JSONResponse struct{ UnauthorizedJSONResponse }
-
-func (response GetServicePeriodProductExternalPush401JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetServicePeriodProductExternalPush403JSONResponse struct{ ForbiddenJSONResponse }
-
-func (response GetServicePeriodProductExternalPush403JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetServicePeriodProductExternalPush404JSONResponse struct{ NotFoundJSONResponse }
-
-func (response GetServicePeriodProductExternalPush404JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type GetServicePeriodProductExternalPush503JSONResponse struct{ ServiceUnavailableJSONResponse }
-
-func (response GetServicePeriodProductExternalPush503JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(503)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type SaveServicePeriodProductExternalPushRequestObject struct {
-	ProductId int64 `json:"product_id"`
-	Params    SaveServicePeriodProductExternalPushParams
-	Body      *SaveServicePeriodProductExternalPushJSONRequestBody
-}
-
-type SaveServicePeriodProductExternalPushResponseObject interface {
-	VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error
-}
-
-type SaveServicePeriodProductExternalPush200JSONResponse CommerceExternalPushConfiguration
-
-func (response SaveServicePeriodProductExternalPush200JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type SaveServicePeriodProductExternalPush400JSONResponse struct{ BadRequestJSONResponse }
-
-func (response SaveServicePeriodProductExternalPush400JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type SaveServicePeriodProductExternalPush401JSONResponse struct{ UnauthorizedJSONResponse }
-
-func (response SaveServicePeriodProductExternalPush401JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type SaveServicePeriodProductExternalPush403JSONResponse struct{ ForbiddenJSONResponse }
-
-func (response SaveServicePeriodProductExternalPush403JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type SaveServicePeriodProductExternalPush404JSONResponse struct{ NotFoundJSONResponse }
-
-func (response SaveServicePeriodProductExternalPush404JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type SaveServicePeriodProductExternalPush409JSONResponse struct{ ConflictJSONResponse }
-
-func (response SaveServicePeriodProductExternalPush409JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(409)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type SaveServicePeriodProductExternalPush503JSONResponse struct{ ServiceUnavailableJSONResponse }
-
-func (response SaveServicePeriodProductExternalPush503JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(503)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type QueueServicePeriodProductExternalPushTestRequestObject struct {
-	ProductId int64 `json:"product_id"`
-	Params    QueueServicePeriodProductExternalPushTestParams
-}
-
-type QueueServicePeriodProductExternalPushTestResponseObject interface {
-	VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error
-}
-
-type QueueServicePeriodProductExternalPushTest202JSONResponse CommerceExternalPushTest
-
-func (response QueueServicePeriodProductExternalPushTest202JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(202)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type QueueServicePeriodProductExternalPushTest400JSONResponse struct{ BadRequestJSONResponse }
-
-func (response QueueServicePeriodProductExternalPushTest400JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(400)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type QueueServicePeriodProductExternalPushTest401JSONResponse struct{ UnauthorizedJSONResponse }
-
-func (response QueueServicePeriodProductExternalPushTest401JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type QueueServicePeriodProductExternalPushTest403JSONResponse struct{ ForbiddenJSONResponse }
-
-func (response QueueServicePeriodProductExternalPushTest403JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(403)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type QueueServicePeriodProductExternalPushTest404JSONResponse struct{ NotFoundJSONResponse }
-
-func (response QueueServicePeriodProductExternalPushTest404JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type QueueServicePeriodProductExternalPushTest409JSONResponse struct{ ConflictJSONResponse }
-
-func (response QueueServicePeriodProductExternalPushTest409JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(409)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
-type QueueServicePeriodProductExternalPushTest503JSONResponse struct{ ServiceUnavailableJSONResponse }
-
-func (response QueueServicePeriodProductExternalPushTest503JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(503)
-
-	return json.NewEncoder(w).Encode(response)
-}
-
 type ArchiveServicePeriodProductRequestObject struct {
 	ServiceProductId int64 `json:"service_product_id"`
 	Params           ArchiveServicePeriodProductParams
@@ -37993,6 +37786,213 @@ func (response EnableServicePeriodProduct409JSONResponse) VisitEnableServicePeri
 type EnableServicePeriodProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response EnableServicePeriodProduct503JSONResponse) VisitEnableServicePeriodProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductExternalPushRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+}
+
+type GetServicePeriodProductExternalPushResponseObject interface {
+	VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error
+}
+
+type GetServicePeriodProductExternalPush200JSONResponse CommerceExternalPushConfiguration
+
+func (response GetServicePeriodProductExternalPush200JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductExternalPush400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetServicePeriodProductExternalPush400JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductExternalPush401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetServicePeriodProductExternalPush401JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductExternalPush403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetServicePeriodProductExternalPush403JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductExternalPush404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetServicePeriodProductExternalPush404JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductExternalPush503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetServicePeriodProductExternalPush503JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPushRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	Params           SaveServicePeriodProductExternalPushParams
+	Body             *SaveServicePeriodProductExternalPushJSONRequestBody
+}
+
+type SaveServicePeriodProductExternalPushResponseObject interface {
+	VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error
+}
+
+type SaveServicePeriodProductExternalPush200JSONResponse CommerceExternalPushConfiguration
+
+func (response SaveServicePeriodProductExternalPush200JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPush400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SaveServicePeriodProductExternalPush400JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPush401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SaveServicePeriodProductExternalPush401JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPush403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SaveServicePeriodProductExternalPush403JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPush404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response SaveServicePeriodProductExternalPush404JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPush409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SaveServicePeriodProductExternalPush409JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPush503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response SaveServicePeriodProductExternalPush503JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTestRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	Params           QueueServicePeriodProductExternalPushTestParams
+}
+
+type QueueServicePeriodProductExternalPushTestResponseObject interface {
+	VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error
+}
+
+type QueueServicePeriodProductExternalPushTest202JSONResponse CommerceExternalPushTest
+
+func (response QueueServicePeriodProductExternalPushTest202JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTest400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response QueueServicePeriodProductExternalPushTest400JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTest401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response QueueServicePeriodProductExternalPushTest401JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTest403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response QueueServicePeriodProductExternalPushTest403JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTest404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response QueueServicePeriodProductExternalPushTest404JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTest409JSONResponse struct{ ConflictJSONResponse }
+
+func (response QueueServicePeriodProductExternalPushTest409JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTest503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response QueueServicePeriodProductExternalPushTest503JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -46667,15 +46667,6 @@ type StrictServerInterface interface {
 	// Create one local service-period product without public purchase capability
 	// (POST /api/admin/service-period-products)
 	CreateServicePeriodProduct(ctx context.Context, request CreateServicePeriodProductRequestObject) (CreateServicePeriodProductResponseObject, error)
-	// Read one service-period Product-local external-push configuration without Provider access
-	// (GET /api/admin/service-period-products/{product_id}/external-push)
-	GetServicePeriodProductExternalPush(ctx context.Context, request GetServicePeriodProductExternalPushRequestObject) (GetServicePeriodProductExternalPushResponseObject, error)
-	// Save one service-period Product-local external-push configuration without Provider access
-	// (PUT /api/admin/service-period-products/{product_id}/external-push)
-	SaveServicePeriodProductExternalPush(ctx context.Context, request SaveServicePeriodProductExternalPushRequestObject) (SaveServicePeriodProductExternalPushResponseObject, error)
-	// Record a local accepted service-period external-push test without a Provider call or job
-	// (POST /api/admin/service-period-products/{product_id}/external-push/test)
-	QueueServicePeriodProductExternalPushTest(ctx context.Context, request QueueServicePeriodProductExternalPushTestRequestObject) (QueueServicePeriodProductExternalPushTestResponseObject, error)
 	// Archive one local service-period product without deleting member history
 	// (DELETE /api/admin/service-period-products/{service_product_id})
 	ArchiveServicePeriodProduct(ctx context.Context, request ArchiveServicePeriodProductRequestObject) (ArchiveServicePeriodProductResponseObject, error)
@@ -46694,6 +46685,15 @@ type StrictServerInterface interface {
 	// Enable one local service-period product without public purchase capability
 	// (POST /api/admin/service-period-products/{service_product_id}/enable)
 	EnableServicePeriodProduct(ctx context.Context, request EnableServicePeriodProductRequestObject) (EnableServicePeriodProductResponseObject, error)
+	// Read one service-period Product-local external-push configuration without Provider access
+	// (GET /api/admin/service-period-products/{service_product_id}/external-push)
+	GetServicePeriodProductExternalPush(ctx context.Context, request GetServicePeriodProductExternalPushRequestObject) (GetServicePeriodProductExternalPushResponseObject, error)
+	// Save one service-period Product-local external-push configuration without Provider access
+	// (PUT /api/admin/service-period-products/{service_product_id}/external-push)
+	SaveServicePeriodProductExternalPush(ctx context.Context, request SaveServicePeriodProductExternalPushRequestObject) (SaveServicePeriodProductExternalPushResponseObject, error)
+	// Record a local accepted service-period external-push test without a Provider call or job
+	// (POST /api/admin/service-period-products/{service_product_id}/external-push/test)
+	QueueServicePeriodProductExternalPushTest(ctx context.Context, request QueueServicePeriodProductExternalPushTestRequestObject) (QueueServicePeriodProductExternalPushTestResponseObject, error)
 	// Read local member-grid access; external sharing remains disabled
 	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/access)
 	GetServicePeriodMemberGridAccess(ctx context.Context, request GetServicePeriodMemberGridAccessRequestObject) (GetServicePeriodMemberGridAccessResponseObject, error)
@@ -49843,93 +49843,6 @@ func (sh *strictHandler) CreateServicePeriodProduct(w http.ResponseWriter, r *ht
 	}
 }
 
-// GetServicePeriodProductExternalPush operation middleware
-func (sh *strictHandler) GetServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, productId int64) {
-	var request GetServicePeriodProductExternalPushRequestObject
-
-	request.ProductId = productId
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.GetServicePeriodProductExternalPush(ctx, request.(GetServicePeriodProductExternalPushRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "GetServicePeriodProductExternalPush")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(GetServicePeriodProductExternalPushResponseObject); ok {
-		if err := validResponse.VisitGetServicePeriodProductExternalPushResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// SaveServicePeriodProductExternalPush operation middleware
-func (sh *strictHandler) SaveServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, productId int64, params SaveServicePeriodProductExternalPushParams) {
-	var request SaveServicePeriodProductExternalPushRequestObject
-
-	request.ProductId = productId
-	request.Params = params
-
-	var body SaveServicePeriodProductExternalPushJSONRequestBody
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
-		return
-	}
-	request.Body = &body
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.SaveServicePeriodProductExternalPush(ctx, request.(SaveServicePeriodProductExternalPushRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "SaveServicePeriodProductExternalPush")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(SaveServicePeriodProductExternalPushResponseObject); ok {
-		if err := validResponse.VisitSaveServicePeriodProductExternalPushResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
-// QueueServicePeriodProductExternalPushTest operation middleware
-func (sh *strictHandler) QueueServicePeriodProductExternalPushTest(w http.ResponseWriter, r *http.Request, productId int64, params QueueServicePeriodProductExternalPushTestParams) {
-	var request QueueServicePeriodProductExternalPushTestRequestObject
-
-	request.ProductId = productId
-	request.Params = params
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
-		return sh.ssi.QueueServicePeriodProductExternalPushTest(ctx, request.(QueueServicePeriodProductExternalPushTestRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "QueueServicePeriodProductExternalPushTest")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(QueueServicePeriodProductExternalPushTestResponseObject); ok {
-		if err := validResponse.VisitQueueServicePeriodProductExternalPushTestResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // ArchiveServicePeriodProduct operation middleware
 func (sh *strictHandler) ArchiveServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params ArchiveServicePeriodProductParams) {
 	var request ArchiveServicePeriodProductRequestObject
@@ -50119,6 +50032,93 @@ func (sh *strictHandler) EnableServicePeriodProduct(w http.ResponseWriter, r *ht
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(EnableServicePeriodProductResponseObject); ok {
 		if err := validResponse.VisitEnableServicePeriodProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetServicePeriodProductExternalPush operation middleware
+func (sh *strictHandler) GetServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	var request GetServicePeriodProductExternalPushRequestObject
+
+	request.ServiceProductId = serviceProductId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetServicePeriodProductExternalPush(ctx, request.(GetServicePeriodProductExternalPushRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetServicePeriodProductExternalPush")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetServicePeriodProductExternalPushResponseObject); ok {
+		if err := validResponse.VisitGetServicePeriodProductExternalPushResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveServicePeriodProductExternalPush operation middleware
+func (sh *strictHandler) SaveServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, serviceProductId int64, params SaveServicePeriodProductExternalPushParams) {
+	var request SaveServicePeriodProductExternalPushRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.Params = params
+
+	var body SaveServicePeriodProductExternalPushJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveServicePeriodProductExternalPush(ctx, request.(SaveServicePeriodProductExternalPushRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveServicePeriodProductExternalPush")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveServicePeriodProductExternalPushResponseObject); ok {
+		if err := validResponse.VisitSaveServicePeriodProductExternalPushResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// QueueServicePeriodProductExternalPushTest operation middleware
+func (sh *strictHandler) QueueServicePeriodProductExternalPushTest(w http.ResponseWriter, r *http.Request, serviceProductId int64, params QueueServicePeriodProductExternalPushTestParams) {
+	var request QueueServicePeriodProductExternalPushTestRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.QueueServicePeriodProductExternalPushTest(ctx, request.(QueueServicePeriodProductExternalPushTestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "QueueServicePeriodProductExternalPushTest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(QueueServicePeriodProductExternalPushTestResponseObject); ok {
+		if err := validResponse.VisitQueueServicePeriodProductExternalPushTestResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

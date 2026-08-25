@@ -16,7 +16,7 @@ import (
 
 const (
 	WeChatPayExternalPushPathPattern     = "/api/admin/wechat-pay/products/{product_id}/external-push"
-	ServicePeriodExternalPushPathPattern = "/api/admin/service-period-products/{product_id}/external-push"
+	ServicePeriodExternalPushPathPattern = "/api/admin/service-period-products/{service_product_id}/external-push"
 )
 
 // ExternalPushAuthorizer and ExternalPushCSRFVerifier are injected by the

@@ -87,6 +87,23 @@ func (r *CatalogRepository) CompleteCommerceExternalPush(ctx context.Context, id
 	return r.Complete(ctx, id, snapshot, now)
 }
 
+func (r *CatalogRepository) CommerceExternalPushTestExists(ctx context.Context, productID productport.ID, kind productport.ExternalPushProductKind, configurationDigest [32]byte) (bool, error) {
+	if r == nil || productID < 1 || !validExternalPushKind(kind) || configurationDigest == ([32]byte{}) {
+		return false, productapp.ErrUnavailable
+	}
+	q, err := queries(ctx)
+	if err != nil {
+		return false, unavailable(err)
+	}
+	exists, err := q.ProductExternalPushTestExists(ctx, productdb.ProductExternalPushTestExistsParams{
+		ProductID: int64(productID), ProductKind: string(kind), ConfigurationDigest: configurationDigest[:],
+	})
+	if err != nil {
+		return false, unavailable(err)
+	}
+	return exists, nil
+}
+
 func (r *CatalogRepository) CreateCommerceExternalPushTest(ctx context.Context, value productport.ExternalPushTest, configurationDigest [32]byte, receiptID int64) (productport.ExternalPushTest, error) {
 	if r == nil || value.ProductID < 1 || !validExternalPushKind(value.ProductKind) || receiptID < 1 ||
 		(value.State != "accepted" && value.State != "queued") || value.ProviderAccepted || value.DeliveryProven ||

@@ -11,6 +11,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const commerceExternalPushAcceptanceServerVersion = `-- name: CommerceExternalPushAcceptanceServerVersion :one
+SELECT current_setting('server_version_num')::text AS server_version_num
+`
+
+func (q *Queries) CommerceExternalPushAcceptanceServerVersion(ctx context.Context) (string, error) {
+	row := q.db.QueryRow(ctx, commerceExternalPushAcceptanceServerVersion)
+	var server_version_num string
+	err := row.Scan(&server_version_num)
+	return server_version_num, err
+}
+
 const createProductExternalPushTestBinding = `-- name: CreateProductExternalPushTestBinding :one
 WITH accepted_effect AS (
   SELECT id
@@ -117,6 +128,68 @@ func (q *Queries) LockProductExternalPushConfiguration(ctx context.Context, arg 
 		&i.Enabled,
 		&i.ConfigurationReference,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const productExternalPushTestExists = `-- name: ProductExternalPushTestExists :one
+SELECT EXISTS (
+  SELECT 1
+  FROM public.product_external_push_test_bindings
+  WHERE product_id = $1::bigint
+    AND product_kind = $2::text
+    AND configuration_digest = $3::bytea
+)
+`
+
+type ProductExternalPushTestExistsParams struct {
+	ProductID           int64  `json:"product_id"`
+	ProductKind         string `json:"product_kind"`
+	ConfigurationDigest []byte `json:"configuration_digest"`
+}
+
+func (q *Queries) ProductExternalPushTestExists(ctx context.Context, arg ProductExternalPushTestExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, productExternalPushTestExists, arg.ProductID, arg.ProductKind, arg.ConfigurationDigest)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
+const readCommerceExternalPushAcceptanceFacts = `-- name: ReadCommerceExternalPushAcceptanceFacts :one
+SELECT
+  (SELECT count(*) FROM public.product_external_push_configurations WHERE product_id=$1::bigint)::bigint AS configurations,
+  (SELECT count(*) FROM public.product_operation_receipts WHERE operation IN ('external_push_save','external_push_test') AND state='completed')::bigint AS product_receipts,
+  (SELECT count(*) FROM public.external_effects WHERE owner='product' AND kind='product_external_push_test' AND state='accepted')::bigint AS effects,
+  (SELECT count(*) FROM public.external_effect_receipts AS r JOIN public.external_effects AS e ON e.id=r.effect_id WHERE e.owner='product' AND r.operation='accept' AND r.state='accepted')::bigint AS effect_receipts,
+  (SELECT count(*) FROM public.product_external_push_test_bindings WHERE product_id=$1::bigint AND state='accepted')::bigint AS bindings,
+  (SELECT count(*) FROM public.external_effect_attempts AS a JOIN public.external_effects AS e ON e.id=a.effect_id WHERE e.owner='product')::bigint AS attempts,
+  (SELECT count(*) FROM public.external_effects WHERE owner='product' AND river_job_id IS NOT NULL)::bigint AS river_bound_effects,
+  (SELECT count(*) FROM public.product_external_push_test_bindings WHERE product_id=$1::bigint AND (provider_accepted OR delivery_proven OR real_external_call_executed OR auto_retry_allowed))::bigint AS provider_or_delivery
+`
+
+type ReadCommerceExternalPushAcceptanceFactsRow struct {
+	Configurations     int64 `json:"configurations"`
+	ProductReceipts    int64 `json:"product_receipts"`
+	Effects            int64 `json:"effects"`
+	EffectReceipts     int64 `json:"effect_receipts"`
+	Bindings           int64 `json:"bindings"`
+	Attempts           int64 `json:"attempts"`
+	RiverBoundEffects  int64 `json:"river_bound_effects"`
+	ProviderOrDelivery int64 `json:"provider_or_delivery"`
+}
+
+func (q *Queries) ReadCommerceExternalPushAcceptanceFacts(ctx context.Context, productID int64) (ReadCommerceExternalPushAcceptanceFactsRow, error) {
+	row := q.db.QueryRow(ctx, readCommerceExternalPushAcceptanceFacts, productID)
+	var i ReadCommerceExternalPushAcceptanceFactsRow
+	err := row.Scan(
+		&i.Configurations,
+		&i.ProductReceipts,
+		&i.Effects,
+		&i.EffectReceipts,
+		&i.Bindings,
+		&i.Attempts,
+		&i.RiverBoundEffects,
+		&i.ProviderOrDelivery,
 	)
 	return i, err
 }
