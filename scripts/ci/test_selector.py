@@ -151,6 +151,23 @@ class ClassificationMatrixTests(unittest.TestCase):
             sqlc="true",
         )
 
+    def test_data_migration_harness_selects_bounded_group(self) -> None:
+        for path in (
+            "internal/migration/store/queries/runtime.sql",
+            "acceptance/datamigration/integration_test.go",
+        ):
+            self.assert_flags(
+                [path],
+                go="true",
+                go_mode="selected",
+                go_groups="migration",
+                database="true",
+                database_mode="selected",
+                database_groups="migration",
+                sqlc="true",
+                shared="false",
+            )
+
     def test_domain_stores_select_database_consumers(self) -> None:
         self.assert_flags(
             ["internal/automation/store/agents.go", "internal/contact/store/channels.go"],
@@ -401,6 +418,21 @@ class CliTests(unittest.TestCase):
 
 
 class WorkflowWiringTests(unittest.TestCase):
+    def test_data_migration_harness_runner_is_migration_gated(self) -> None:
+        source = (REPO_ROOT / "scripts/ci/run_selected_database.sh").read_text(encoding="utf-8")
+        selected_migrations = source.index("run_migration_checks\n\n# A migration-only")
+        migration_case = source.index("    migration)\n")
+        self.assertLess(selected_migrations, migration_case)
+        self.assertIn(
+            "run_make_acceptance P4DMH_TEST_DATABASE_URL p4-data-migration-harness-acceptance",
+            source,
+        )
+        makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+        self.assertIn("p4-data-migration-harness-acceptance:", makefile)
+        self.assertIn("acceptance/datamigration/run_pg16.sh", makefile)
+        manifest = (REPO_ROOT / "docs/ci/go-acceptance-manifest.tsv").read_text(encoding="utf-8")
+        self.assertIn("p4-data-migration-harness|0063|P4DMH_TEST_DATABASE_URL", manifest)
+
     def test_full_database_gate_includes_dm01(self) -> None:
         ci_source = (REPO_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
         self.assertIn(

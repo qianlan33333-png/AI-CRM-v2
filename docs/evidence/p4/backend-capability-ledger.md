@@ -20,6 +20,24 @@ Accept/Queue 与 worker Claim/Attempt/Complete/Recover 不暴露为 HTTP；共�
 - 这一包只建立后续 WeCom、Outbound、Webhook、Payment/Refund 所依赖的
   runtime；当前 `x-aicrm-external-effect: none`，不声明任何真实 Provider、支付、退款或企微效果。
 
+## DM Harness（V2-native internal migration control plane；不变更旧 Matrix 分母）
+
+`00076_data_migration_harness.sql` 交付内部数据迁移执行、断点续跑、收据与对账底座。
+它不对应公网 operationId，不把历史表硬映射为旧 Matrix 能力，也不推测无法可靠
+归属的数据。
+
+- 逐表固定 source identity / schema digest / upper bound，opaque cursor 只在同一
+  manifest 与 policy/mapping semantic digest 下续跑。
+- generation + lease fence 保证并发单 winner；target mutation、row/result receipt 与
+  checkpoint 同事务，exact replay 零重复写，payload/policy 冲突 fail-closed。
+- reconcile 要求 source/result/target 全量计数与 comparison digest 一致；quarantine
+  未清零时 readiness 不得通过。
+- `internal/migration` 保持 operator-controlled 内部控制面；当前不新增 HTTP/OpenAPI、
+  RBAC/CSRF 或前端。未来若从管理页触发，应作为独立受控 API 接入包。
+- PG16.14 acceptance 由 `p4-data-migration-harness` manifest 项执行 00076 空库
+  down/up、运行/续跑/对账与物化事实 down guard。本地验收不等于真实历史迁移、
+  部署、Provider、企微、支付或退款效果。
+
 ## RP01 Release Plane（V2-native local package；不变更旧 Matrix 分母）
 
 `00074_release_plane.sql` 交付一个 V2-native、本地 release attestation / journal

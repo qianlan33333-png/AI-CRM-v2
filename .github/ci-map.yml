@@ -163,6 +163,11 @@
       "effects": {"go": true,"go_groups": ["identity"],"go_mode": "selected"}
     },
     {
+      "name": "domain-migration",
+      "patterns": ["internal/migration/**","acceptance/datamigration/**"],
+      "effects": {"go": true,"go_groups": ["migration"],"go_mode": "selected"}
+    },
+    {
       "name": "domain-operationcycle",
       "patterns": ["internal/operationcycle/**","acceptance/operationcycle/**"],
       "effects": {"go": true,"go_groups": ["operationcycle"],"go_mode": "selected"}
@@ -223,6 +228,7 @@
         "internal/events/store/**","acceptance/events/**",
         "internal/externaleffects/store/**","acceptance/externaleffects/**",
         "internal/identity/store/**","acceptance/identity/**",
+        "internal/migration/store/**","acceptance/datamigration/**",
         "internal/operationcycle/store/**","acceptance/operationcycle/**",
         "internal/order/store/**","acceptance/order/**",
         "internal/outbound/store/**","acceptance/outbound/**",
@@ -264,6 +270,11 @@
       "name": "database-identity",
       "patterns": ["internal/identity/store/**","acceptance/identity/**"],
       "effects": {"database": true,"database_groups": ["identity"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-migration",
+      "patterns": ["internal/migration/store/**","acceptance/datamigration/**"],
+      "effects": {"database": true,"database_groups": ["migration"],"database_mode": "selected"}
     },
     {
       "name": "database-events",
@@ -325,7 +336,7 @@
       "patterns": ["internal/*/store/**"],
       "exclude": [
         "internal/adminops/store/**","internal/auth/store/**","internal/automation/store/**",
-        "internal/contact/store/**","internal/coupon/store/**","internal/events/store/**","internal/identity/store/**",
+        "internal/contact/store/**","internal/coupon/store/**","internal/events/store/**","internal/identity/store/**","internal/migration/store/**",
         "internal/media/store/**","internal/operationcycle/store/**","internal/order/store/**",
         "internal/outbound/store/**","internal/product/store/**","internal/pushcenter/store/**",
         "internal/segment/store/**","internal/stats/store/**","internal/survey/store/**",

@@ -194,6 +194,19 @@ owners:
       external_effect_receipts: actor_bound_http_or_domain_scoped_idempotent_operation_receipts
       external_effect_reconciliations: digest_only_outcome_unknown_reconciliation_evidence
 
+  migration:
+    package: internal/migration
+    tables: [data_migration_runs, data_migration_run_tables, data_migration_run_leases, data_migration_row_receipts, data_migration_result_receipts, data_migration_quarantines, data_migration_archives, data_migration_reconciliation_receipts]
+    constraints:
+      data_migration_runs: immutable_source_identity_schema_and_manifest_fence_with_closed_phase_transitions
+      data_migration_run_tables: fixed_upper_bound_cursor_checkpoint_with_active_lease_fence
+      data_migration_run_leases: single_active_generation_and_opaque_fence_per_run
+      data_migration_row_receipts: immutable_semantic_digest_receipts_without_raw_source_rows
+      data_migration_result_receipts: immutable_target_result_receipts_bound_to_row_receipts
+      data_migration_quarantines: immutable_digest_only_unclassified_or_rejected_row_facts
+      data_migration_archives: immutable_digest_only_archive_facts_without_raw_rows
+      data_migration_reconciliation_receipts: immutable_source_result_target_count_and_digest_reconciliation
+
   auth:
     package: internal/auth
     tables: [admin_users, admin_sessions, admin_oauth_states]
