@@ -43,6 +43,7 @@ const (
 	OwnerAudience Owner = "audience"
 	OwnerOrder    Owner = "order"
 	OwnerGroupOps Owner = "group_ops"
+	OwnerProduct  Owner = "product"
 )
 
 type Kind string
@@ -61,6 +62,7 @@ const (
 	KindOrderPaymentCapture       Kind = "order_payment_capture"
 	KindOrderRefund               Kind = "order_refund"
 	KindGroupOpsBroadcast         Kind = "group_ops_broadcast"
+	KindProductExternalPushTest   Kind = "product_external_push_test"
 )
 
 func validOwnerKind(owner Owner, kind Kind) bool {
@@ -81,6 +83,8 @@ func validOwnerKind(owner Owner, kind Kind) bool {
 		return kind == KindOrderPaymentPrepay || kind == KindOrderPaymentCapture || kind == KindOrderRefund
 	case OwnerGroupOps:
 		return kind == KindGroupOpsBroadcast
+	case OwnerProduct:
+		return kind == KindProductExternalPushTest
 	default:
 		return false
 	}
