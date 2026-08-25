@@ -10464,6 +10464,92 @@ paths:
       parameters: [{name: action_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
       requestBody: {required: true, content: {application/json: {schema: {type: object, additionalProperties: false, required: [generation, fence, lease_expires_at, evidence_digest], properties: {generation: {type: integer, format: int64, minimum: 1}, fence: {type: integer, format: int64, minimum: 1}, lease_expires_at: {type: string, format: date-time}, evidence_digest: {type: string, pattern: '^sha256:[0-9a-f]{64}$'}}}}}}
       responses: {"200": {description: Reconciled local action projection; never delivery proof.}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "404": {$ref: "#/components/responses/NotFound"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/admin/content-packages/preview:
+    post:
+      tags: [p4-media-content-delivery]
+      operationId: previewMediaContentPackage
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentPackageRequest'}}}}
+      responses: {'200': {description: Local validation preview, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentPackage'}}}}, '400': {$ref: '#/components/responses/BadRequest'}}
+  /api/admin/content-packages:
+    post:
+      tags: [p4-media-content-delivery]
+      operationId: createMediaContentPackage
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentPackageRequest'}}}}
+      responses: {'200': {description: Local package, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentPackage'}}}}, '409': {$ref: '#/components/responses/Conflict'}}
+  /api/admin/content-packages/{package_id}:
+    put:
+      tags: [p4-media-content-delivery]
+      operationId: updateMediaContentPackage
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: package_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentPackageRequest'}}}}
+      responses: {'200': {description: CAS-updated local package, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentPackage'}}}}, '409': {$ref: '#/components/responses/Conflict'}}
+  /api/admin/attachment-library/uploads:
+    post:
+      tags: [p4-media-content-delivery]
+      operationId: initiateMediaAttachmentMultipartUpload
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaAttachmentUploadInitiateRequest'}}}}
+      responses: {'201': {description: Local private upload, content: {application/json: {schema: {type: object, required: [upload_id], properties: {upload_id: {type: integer, format: int64}}}}}}}
+  /api/admin/attachment-library/uploads/{upload_id}/parts/{part_number}:
+    put:
+      tags: [p4-media-content-delivery]
+      operationId: putMediaAttachmentMultipartPart
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: upload_id, in: path, required: true, schema: {type: integer, format: int64}}, {name: part_number, in: path, required: true, schema: {type: integer, minimum: 1}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaAttachmentUploadPartRequest'}}}}
+      responses: {'204': {description: Idempotent local part persisted}}
+  /api/admin/attachment-library/uploads/{upload_id}/complete:
+    post:
+      tags: [p4-media-content-delivery]
+      operationId: completeMediaAttachmentMultipartUpload
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: upload_id, in: path, required: true, schema: {type: integer, format: int64}}]
+      responses: {'200': {description: Canonical private attachment created, content: {application/json: {schema: {type: object, required: [attachment_id], properties: {attachment_id: {type: integer, format: int64}}}}}}}
+  /api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding:
+    get:
+      tags: [p4-media-content-delivery]
+      operationId: getMediaContentDeliveryBinding
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.read
+      x-aicrm-session-bound-csrf: none
+      parameters: [{name: campaign_code, in: path, required: true, schema: {type: string}}, {name: plan_id, in: path, required: true, schema: {type: string}}]
+      responses: {'200': {description: Local binding, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBinding'}}}}}
+    post:
+      tags: [p4-media-content-delivery]
+      operationId: createMediaContentDeliveryBinding
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: campaign_code, in: path, required: true, schema: {type: string}}, {name: plan_id, in: path, required: true, schema: {type: string}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBindingRequest'}}}}
+      responses: {'200': {description: Local binding, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBinding'}}}}}
+    put:
+      tags: [p4-media-content-delivery]
+      operationId: updateMediaContentDeliveryBinding
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: campaign_code, in: path, required: true, schema: {type: string}}, {name: plan_id, in: path, required: true, schema: {type: string}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBindingRequest'}}}}
+      responses: {'200': {description: CAS-updated local binding, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBinding'}}}}, '409': {$ref: '#/components/responses/Conflict'}}
 components:
   securitySchemes:
     AdminSession:
@@ -10812,6 +10898,30 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    MediaContentRef:
+      type: object
+      required: [kind, id]
+      properties: {kind: {type: string, enum: [image, attachment, miniprogram, group_invite]}, id: {type: integer, format: int64, minimum: 1}}
+    MediaContentPackageRequest:
+      type: object
+      required: [name, content_text, enabled, refs]
+      properties: {name: {type: string, minLength: 1, maxLength: 200}, content_text: {type: string, maxLength: 10000}, enabled: {type: boolean}, refs: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/MediaContentRef'}}, expected_version: {type: integer, format: int64, minimum: 1}}
+    MediaContentPackage:
+      allOf: [{$ref: '#/components/schemas/MediaContentPackageRequest'}, {type: object, required: [id, version], properties: {id: {type: integer, format: int64}, version: {type: integer, format: int64}}}]
+    MediaAttachmentUploadInitiateRequest:
+      type: object
+      required: [file_name, name, size, sha256]
+      properties: {file_name: {type: string, maxLength: 255}, name: {type: string, maxLength: 200}, description: {type: string, maxLength: 10000}, size: {type: integer, minimum: 1, maximum: 10485760}, sha256: {type: string, pattern: '^sha256:[0-9a-f]{64}$'}, enabled: {type: boolean}}
+    MediaAttachmentUploadPartRequest:
+      type: object
+      required: [sha256, content]
+      properties: {sha256: {type: string, pattern: '^sha256:[0-9a-f]{64}$'}, content: {type: string, format: byte}}
+    MediaContentDeliveryBindingRequest:
+      type: object
+      required: [package_id, group_invite_id]
+      properties: {package_id: {type: integer, format: int64, minimum: 1}, group_invite_id: {type: integer, format: int64, minimum: 1}, expected_version: {type: integer, format: int64, minimum: 1}}
+    MediaContentDeliveryBinding:
+      allOf: [{$ref: '#/components/schemas/MediaContentDeliveryBindingRequest'}, {type: object, required: [id, campaign_code, plan_id, version], properties: {id: {type: integer, format: int64}, campaign_code: {type: string}, plan_id: {type: string}, version: {type: integer, format: int64}}}]
     ReleaseCandidateState:
       type: string
       enum: [draft, prepared, cutover_active, activated, rollback_pending, rolled_back]
