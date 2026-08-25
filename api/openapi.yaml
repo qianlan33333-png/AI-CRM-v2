@@ -16163,13 +16163,13 @@ components:
     ChannelAcquisitionEntrantReceipt:
       type: object
       additionalProperties: false
-      required: [receipt_id, channel_id, effect_id, kind, asset_version, status, occurred_at, created_at, updated_at]
+      required: [receipt_id, status, occurred_at, created_at, updated_at]
       properties:
         receipt_id: { type: integer, format: int64, minimum: 1 }
-        channel_id: { type: integer, format: int64, minimum: 1 }
-        effect_id: { type: string, pattern: '^eer_[1-9][0-9]*$' }
-        kind: { type: string, enum: [contact_way_qrcode, customer_acquisition_link] }
-        asset_version: { type: integer, format: int64, minimum: 1 }
+        channel_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        effect_id: { type: string, pattern: '^eer_[1-9][0-9]*$', nullable: true }
+        kind: { type: string, enum: [contact_way_qrcode, customer_acquisition_link], nullable: true }
+        asset_version: { type: integer, format: int64, minimum: 1, nullable: true }
         status: { type: string, enum: [correlated, attributed, pending_identity, unmatched_asset, ambiguous_asset, conflict, ignored, reconciled] }
         customer_id: { type: integer, format: int64, minimum: 1 }
         customer_event_id: { type: integer, format: int64, minimum: 1 }

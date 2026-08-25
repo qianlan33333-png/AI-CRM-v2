@@ -96,5 +96,6 @@ type ChannelAcquisitionEntrantReceipt struct {
 // one transaction. A pending_identity -> attributed CAS creates exactly one
 // event; attributed/reconciled replays return the existing receipt/event.
 type ChannelAcquisitionEntrantRecorder interface {
+	FindTerminalChannelAcquisitionEntrant(context.Context, int64, string) (ChannelAcquisitionEntrantReceipt, bool, error)
 	RecordChannelAcquisitionEntrant(context.Context, ChannelAcquisitionEntrantCommand) (ChannelAcquisitionEntrantReceipt, error)
 }

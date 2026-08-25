@@ -25,6 +25,34 @@ func NewChannelAcquisitionEntrantRepository() *ChannelAcquisitionEntrantReposito
 	return &ChannelAcquisitionEntrantRepository{}
 }
 
+func (repository *ChannelAcquisitionEntrantRepository) FindTerminalChannelAcquisitionEntrant(ctx context.Context, inboxID int64, inputDigest string) (contactport.ChannelAcquisitionEntrantReceipt, bool, error) {
+	if repository == nil || inboxID < 1 || !validEntrantDigest(inputDigest) {
+		return contactport.ChannelAcquisitionEntrantReceipt{}, false, contactport.ErrExternalEventConflict
+	}
+	queries, err := channelQueries(ctx)
+	if err != nil {
+		return contactport.ChannelAcquisitionEntrantReceipt{}, false, err
+	}
+	existing, err := queries.LockChannelAcquisitionEntrantReceipt(ctx, inboxID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return contactport.ChannelAcquisitionEntrantReceipt{}, false, nil
+	}
+	if err != nil {
+		return contactport.ChannelAcquisitionEntrantReceipt{}, false, err
+	}
+	if existing.InputDigest != inputDigest {
+		return contactport.ChannelAcquisitionEntrantReceipt{}, false, contactport.ErrExternalEventConflict
+	}
+	if existing.Status != string(contactport.ChannelAcquisitionEntrantAttributed) && existing.Status != string(contactport.ChannelAcquisitionEntrantReconciled) {
+		return contactport.ChannelAcquisitionEntrantReceipt{}, false, nil
+	}
+	receipt, err := entrantReceipt(existing.ID, existing.InboxID, existing.InputDigest, existing.Status, existing.EffectID, existing.ChannelID, existing.AssetKind, existing.AssetVersion, existing.CustomerID, existing.CustomerEventID, existing.OccurredAt)
+	if err != nil {
+		return contactport.ChannelAcquisitionEntrantReceipt{}, false, err
+	}
+	return receipt, true, nil
+}
+
 func (repository *ChannelAcquisitionEntrantRepository) RecordChannelAcquisitionEntrant(ctx context.Context, command contactport.ChannelAcquisitionEntrantCommand) (contactport.ChannelAcquisitionEntrantReceipt, error) {
 	if repository == nil || !validEntrantCommand(command) {
 		return contactport.ChannelAcquisitionEntrantReceipt{}, contactport.ErrExternalEventConflict

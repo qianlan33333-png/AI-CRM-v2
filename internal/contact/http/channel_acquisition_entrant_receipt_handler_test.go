@@ -57,6 +57,22 @@ func TestCH03EntrantReceiptReadIsSafeAndChannelScoped(t *testing.T) {
 	}
 }
 
+func TestCH03EntrantReceiptReadExposesUnboundDispositionWithoutAssetFields(t *testing.T) {
+	now := time.Date(2026, 8, 26, 12, 0, 0, 0, time.UTC)
+	stub := &entrantReceiptServiceStub{item: contactapp.ChannelAcquisitionEntrantReceiptItem{ReceiptID: 92, Status: contactport.ChannelAcquisitionEntrantIgnored, OccurredAt: now, CreatedAt: now, UpdatedAt: now}}
+	handler := mustEntrantReceiptFragment(t, stub)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, acquisitionAssetRequest(http.MethodGet, "/api/admin/channels/41/acquisition-entrant-receipts/92", "", authport.CapabilityChannelsRead))
+	if response.Code != http.StatusOK || stub.calls != 1 {
+		t.Fatalf("status/calls/body=%d/%d/%s", response.Code, stub.calls, response.Body.String())
+	}
+	for _, absent := range []string{"channel_id", "effect_id", "kind", "asset_version"} {
+		if strings.Contains(response.Body.String(), `"`+absent+`"`) {
+			t.Fatalf("unbound response exposed %q: %s", absent, response.Body.String())
+		}
+	}
+}
+
 func TestCH03EntrantReceiptReconcileRequiresWriteCSRFFixedBodyAndIdempotency(t *testing.T) {
 	stub := &entrantReceiptServiceStub{item: contactapp.ChannelAcquisitionEntrantReceiptItem{ReceiptID: 91, ChannelID: 41, EffectID: "eer_7", Kind: contactport.AcquisitionAssetQRCode, AssetVersion: 3, Status: contactport.ChannelAcquisitionEntrantReconciled, CustomerID: 22, CustomerEventID: 16, OccurredAt: time.Now(), CreatedAt: time.Now(), UpdatedAt: time.Now()}}
 	handler := mustEntrantReceiptFragment(t, stub)
@@ -74,6 +90,16 @@ func TestCH03EntrantReceiptReconcileRequiresWriteCSRFFixedBodyAndIdempotency(t *
 	handler.ServeHTTP(wrong, acquisitionAssetRequest(http.MethodPost, "/api/admin/channels/41/acquisition-entrant-receipts/91/reconcile", `{"effect_id":"eer_7","customer_id":22,"reason":"verified"}`, authport.CapabilityChannelsRead))
 	if wrong.Code != http.StatusForbidden || stub.calls != 1 {
 		t.Fatalf("wrong=%d calls=%d", wrong.Code, stub.calls)
+	}
+}
+
+func TestCH03EntrantReceiptNonReconcileableStateReturnsConflict(t *testing.T) {
+	stub := &entrantReceiptServiceStub{err: contactapp.ErrChannelAcquisitionEntrantReceiptConflict}
+	handler := mustEntrantReceiptFragment(t, stub)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, acquisitionAssetRequest(http.MethodPost, "/api/admin/channels/41/acquisition-entrant-receipts/92/reconcile", `{"effect_id":"eer_7","customer_id":22,"reason":"verified"}`, authport.CapabilityChannelsWrite))
+	if response.Code != http.StatusConflict || stub.calls != 1 {
+		t.Fatalf("status/calls/body=%d/%d/%s", response.Code, stub.calls, response.Body.String())
 	}
 }
 

@@ -39,7 +39,7 @@ SET state = 'processing',
     updated_at = now()
 WHERE id = sqlc.arg(id)::bigint
   AND (
-    state IN ('pending', 'failed')
+    state IN ('pending', 'pending_identity', 'failed')
     OR (state = 'processing' AND lease_expires_at < now() AND lease_owner = sqlc.arg(lease_owner)::text)
   )
 RETURNING id, source, source_key, corp_id, event_type, external_userid, raw_payload,

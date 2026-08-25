@@ -7751,8 +7751,12 @@ export interface ChannelAcquisitionAssetReconciliation {
   entrant_ready: boolean;
 }
 
+/**
+ * @nullable
+ */
 export type ChannelAcquisitionEntrantReceiptKind =
-  (typeof ChannelAcquisitionEntrantReceiptKind)[keyof typeof ChannelAcquisitionEntrantReceiptKind];
+  | (typeof ChannelAcquisitionEntrantReceiptKind)[keyof typeof ChannelAcquisitionEntrantReceiptKind]
+  | null;
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const ChannelAcquisitionEntrantReceiptKind = {
@@ -7778,13 +7782,23 @@ export const ChannelAcquisitionEntrantReceiptStatus = {
 export interface ChannelAcquisitionEntrantReceipt {
   /** @minimum 1 */
   receipt_id: number;
-  /** @minimum 1 */
-  channel_id: number;
-  /** @pattern ^eer_[1-9][0-9]*$ */
-  effect_id: string;
-  kind: ChannelAcquisitionEntrantReceiptKind;
-  /** @minimum 1 */
-  asset_version: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  channel_id?: number | null;
+  /**
+   * @nullable
+   * @pattern ^eer_[1-9][0-9]*$
+   */
+  effect_id?: string | null;
+  /** @nullable */
+  kind?: ChannelAcquisitionEntrantReceiptKind;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  asset_version?: number | null;
   status: ChannelAcquisitionEntrantReceiptStatus;
   /** @minimum 1 */
   customer_id?: number;

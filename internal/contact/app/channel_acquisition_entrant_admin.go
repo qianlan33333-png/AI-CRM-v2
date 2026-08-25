@@ -27,10 +27,10 @@ var (
 
 type ChannelAcquisitionEntrantReceiptItem struct {
 	ReceiptID       int64                                       `json:"receipt_id"`
-	ChannelID       int64                                       `json:"channel_id"`
-	EffectID        string                                      `json:"effect_id"`
-	Kind            contactport.AcquisitionAssetKind            `json:"kind"`
-	AssetVersion    int64                                       `json:"asset_version"`
+	ChannelID       int64                                       `json:"channel_id,omitempty"`
+	EffectID        string                                      `json:"effect_id,omitempty"`
+	Kind            contactport.AcquisitionAssetKind            `json:"kind,omitempty"`
+	AssetVersion    int64                                       `json:"asset_version,omitempty"`
 	Status          contactport.ChannelAcquisitionEntrantStatus `json:"status"`
 	CustomerID      int64                                       `json:"customer_id,omitempty"`
 	CustomerEventID int64                                       `json:"customer_event_id,omitempty"`

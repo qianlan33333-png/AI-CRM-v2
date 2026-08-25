@@ -134,7 +134,12 @@ func TestInboundServiceProcessesAttributedPendingAndConflictLocally(t *testing.T
 				if err != nil {
 					t.Fatal(err)
 				}
-				if err = service.Process(context.Background(), 7, "river:99"); err != nil {
+				err = service.Process(context.Background(), 7, "river:99")
+				if status == identityport.IngestPending {
+					if !errors.Is(err, ErrInboundIdentityPending) {
+						t.Fatalf("pending error = %v", err)
+					}
+				} else if err != nil {
 					t.Fatal(err)
 				}
 				want := "processed"
@@ -198,6 +203,33 @@ func TestInboundServiceAttributesPendingEntrantAfterIdentityIngest(t *testing.T)
 	}
 }
 
+func TestInboundServiceReclaimsPendingIdentityWithoutDuplicatingEntrantEvent(t *testing.T) {
+	entrants, correlation, identities, receipts := entrantServiceFixture(t)
+	correlation.result = contactport.AcquisitionAssetCorrelationResolution{Cardinality: contactport.AcquisitionAssetCorrelationOne, Match: entrantMatch(41, 7, contactport.AcquisitionAssetQRCode, 3)}
+	identities.result = identityport.AcquisitionEntrantIdentityResolution{Status: identityport.AcquisitionEntrantIdentityNotFound}
+	ingestor := &memoryInboundIngestor{result: identityport.IngestResult{Status: identityport.IngestPending, PendingEventID: 8}}
+	processor, err := NewIdentityContactProcessor(ingestor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fact := entrantInput().Fact
+	store := &memoryInboundStore{records: []memoryInboundRecord{{id: 7, source: InboundSourceCallback, sourceKey: "sha256:" + repeatedHex('a'), corpID: fact.CorpID, eventType: fact.EventType(), externalUserID: fact.ExternalUserID, externalContact: &fact, occurredAt: fact.OccurredAt, state: "pending"}}}
+	service, err := NewInboundServiceWithEntrants(immediateUoW{}, store, &memoryInboundJobs{}, processor, entrants, "corp-a", time.Now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = service.Process(context.Background(), 7, "river:99"); !errors.Is(err, ErrInboundIdentityPending) || store.records[0].state != "pending_identity" || receipts.events != 0 {
+		t.Fatalf("first process: state=%q events=%d err=%v", store.records[0].state, receipts.events, err)
+	}
+	identities.result = identityport.AcquisitionEntrantIdentityResolution{Status: identityport.AcquisitionEntrantIdentityFound, CustomerID: 22}
+	if err = service.Process(context.Background(), 7, "river:99"); err != nil {
+		t.Fatal(err)
+	}
+	if store.records[0].state != "processed" || receipts.events != 1 || receipts.byInbox[7].Status != contactport.ChannelAcquisitionEntrantAttributed || len(ingestor.commands) != 1 {
+		t.Fatalf("replay: state=%q events=%d receipt=%#v ingests=%d", store.records[0].state, receipts.events, receipts.byInbox[7], len(ingestor.commands))
+	}
+}
+
 type memoryInboundRecord struct {
 	id, fence       int64
 	source          InboundSource
@@ -233,7 +265,7 @@ func (store *memoryInboundStore) MarkInboundQueued(context.Context, int64, int64
 func (store *memoryInboundStore) ClaimInbound(_ context.Context, id int64, _ string, _ time.Time) (InboundRecord, error) {
 	for index := range store.records {
 		if store.records[index].id == id {
-			if store.records[index].state != "pending" && store.records[index].state != "failed" {
+			if store.records[index].state != "pending" && store.records[index].state != "pending_identity" && store.records[index].state != "failed" {
 				return InboundRecord{}, ErrInboundAlreadyDone
 			}
 			store.records[index].state = "processing"

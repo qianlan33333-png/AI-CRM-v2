@@ -17,16 +17,18 @@ import (
 )
 
 const (
-	InboundContactJobKind = "wecom_contact_inbound"
-	InboundLease          = 2 * time.Minute
+	InboundContactJobKind      = "wecom_contact_inbound"
+	InboundLease               = 2 * time.Minute
+	InboundIdentityRetryPeriod = 5 * time.Minute
 )
 
 var (
-	ErrInvalidInboundService = errors.New("invalid WeCom inbound service")
-	ErrInvalidInboundMessage = errors.New("invalid WeCom inbound message")
-	ErrUnsupportedInbound    = errors.New("unsupported WeCom inbound event")
-	ErrInboundAlreadyDone    = errors.New("WeCom inbound fact is already complete or leased")
-	ErrInboundProcess        = errors.New("WeCom inbound processing failed")
+	ErrInvalidInboundService  = errors.New("invalid WeCom inbound service")
+	ErrInvalidInboundMessage  = errors.New("invalid WeCom inbound message")
+	ErrUnsupportedInbound     = errors.New("unsupported WeCom inbound event")
+	ErrInboundAlreadyDone     = errors.New("WeCom inbound fact is already complete or leased")
+	ErrInboundIdentityPending = errors.New("WeCom inbound identity is pending")
+	ErrInboundProcess         = errors.New("WeCom inbound processing failed")
 )
 
 // InboundJobArgs is the only River payload emitted by this package. The job
@@ -173,8 +175,8 @@ func (service *InboundService) accept(ctx context.Context, envelope InboundEnvel
 }
 
 // Process claims one local inbox fact and invokes only the existing Identity
-// port. Attributed, pending, and conflict are all terminal local outcomes;
-// transaction failures are returned to River for retry.
+// port. Pending identity is persisted and returned as a controlled snooze
+// signal; transaction failures are returned to River for retry.
 func (service *InboundService) Process(ctx context.Context, inboxID int64, owner string) error {
 	if service == nil || ctx == nil || inboxID <= 0 || strings.TrimSpace(owner) != owner || owner == "" ||
 		isNilDependency(service.uow) || isNilDependency(service.store) || (service.processor == nil && service.entrants == nil) || service.clock == nil {
@@ -277,6 +279,9 @@ func (service *InboundService) complete(ctx context.Context, record InboundRecor
 	})
 	if err != nil {
 		return errors.Join(ErrInboundProcess, err)
+	}
+	if state == "pending_identity" {
+		return ErrInboundIdentityPending
 	}
 	return nil
 }

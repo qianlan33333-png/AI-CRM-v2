@@ -24,9 +24,15 @@ const entrantReceiptProjection = `SELECT r.id, r.channel_id, r.effect_id, r.asse
        r.customer_id, r.customer_event_id, r.occurred_at, r.reconciled_at, r.reconcile_reason, r.created_at, r.updated_at
 FROM channel_acquisition_entrant_receipts r
 JOIN wecom_contact_inbox i ON i.id = r.inbox_id
-JOIN channel_acquisition_asset_bindings b ON (b.effect_id,b.channel_id,b.asset_kind,b.asset_version) = (r.effect_id,r.channel_id,r.asset_kind,r.asset_version)
-JOIN admin_users a ON a.id = $1 AND a.is_active AND a.login_enabled AND a.wecom_corp_id = i.corp_id AND a.wecom_corp_id = b.corp_id
-WHERE r.channel_id = $2`
+LEFT JOIN channel_acquisition_asset_bindings b ON (b.effect_id,b.channel_id,b.asset_kind,b.asset_version) = (r.effect_id,r.channel_id,r.asset_kind,r.asset_version) AND b.corp_id = i.corp_id
+JOIN admin_users a ON a.id = $1 AND a.is_active AND a.login_enabled AND a.wecom_corp_id = i.corp_id
+WHERE (
+  (r.channel_id = $2 AND b.corp_id = i.corp_id)
+  OR (r.channel_id IS NULL AND EXISTS (
+    SELECT 1 FROM channel_acquisition_asset_bindings scope
+    WHERE scope.channel_id = $2 AND scope.corp_id = i.corp_id
+  ))
+)`
 
 func (repository *ChannelAcquisitionEntrantReceiptRepository) ListChannelAcquisitionEntrantReceipts(ctx context.Context, actorID, channelID int64, limit int, after int64) ([]contactapp.ChannelAcquisitionEntrantReceiptItem, error) {
 	tx, err := platformstore.TxFromContext(ctx)
@@ -82,9 +88,19 @@ const entrantReceiptReconcileScopeSQL = `SELECT r.id, r.status, r.effect_id, r.c
 FROM channel_acquisition_entrant_receipts r
 JOIN wecom_contact_inbox i ON i.id=r.inbox_id
 JOIN admin_users a ON a.id=$1 AND a.is_active AND a.login_enabled AND a.wecom_corp_id=i.corp_id
-JOIN channel_acquisition_asset_bindings b ON b.effect_id=$4 AND b.channel_id=$2 AND b.corp_id=i.corp_id
-WHERE r.id=$3
-FOR UPDATE OF r, b`
+LEFT JOIN channel_acquisition_asset_bindings b ON b.effect_id=$4 AND b.channel_id=$2 AND b.corp_id=i.corp_id
+WHERE r.id=$3 AND (
+  (r.channel_id=$2 AND EXISTS (
+    SELECT 1 FROM channel_acquisition_asset_bindings current_binding
+    WHERE (current_binding.effect_id,current_binding.channel_id,current_binding.asset_kind,current_binding.asset_version) = (r.effect_id,r.channel_id,r.asset_kind,r.asset_version)
+      AND current_binding.corp_id=i.corp_id
+  ))
+  OR (r.channel_id IS NULL AND EXISTS (
+    SELECT 1 FROM channel_acquisition_asset_bindings scope
+    WHERE scope.channel_id=$2 AND scope.corp_id=i.corp_id
+  ))
+)
+FOR UPDATE OF r`
 
 func (repository *ChannelAcquisitionEntrantReceiptRepository) ReconcileChannelAcquisitionEntrantReceipt(ctx context.Context, command contactapp.ReconcileChannelAcquisitionEntrantReceiptCommand, keyDigest, payloadDigest string) (contactapp.ChannelAcquisitionEntrantReceiptItem, error) {
 	tx, err := platformstore.TxFromContext(ctx)
@@ -95,11 +111,11 @@ func (repository *ChannelAcquisitionEntrantReceiptRepository) ReconcileChannelAc
 	if effectID < 1 {
 		return contactapp.ChannelAcquisitionEntrantReceiptItem{}, contactapp.ErrInvalidChannelAcquisitionEntrantReceipt
 	}
-	var status, targetKind, externalUserID, callbackUserID, corpID string
+	var status, externalUserID, callbackUserID, corpID string
 	var priorEffect, priorChannel, priorVersion, priorCustomer, priorEvent, priorActor pgtype.Int8
-	var priorKind, priorKey, priorPayload pgtype.Text
+	var priorKind, priorKey, priorPayload, targetKind pgtype.Text
 	var occurredAt, publishedAt pgtype.Timestamptz
-	var targetVersion int64
+	var targetVersion pgtype.Int8
 	var assignees []string
 	err = tx.QueryRow(ctx, entrantReceiptReconcileScopeSQL, command.ActorID, command.ChannelID, command.ReceiptID, effectID).Scan(
 		new(int64), &status, &priorEffect, &priorChannel, &priorKind, &priorVersion, &priorCustomer, &priorEvent, &occurredAt, &priorActor, &priorKey, &priorPayload,
@@ -128,11 +144,14 @@ func (repository *ChannelAcquisitionEntrantReceiptRepository) ReconcileChannelAc
 	if current == contactport.ChannelAcquisitionEntrantIgnored || current == contactport.ChannelAcquisitionEntrantAttributed || !current.CanTransitionTo(contactport.ChannelAcquisitionEntrantReconciled) {
 		return contactapp.ChannelAcquisitionEntrantReceiptItem{}, contactapp.ErrChannelAcquisitionEntrantReceiptConflict
 	}
+	if !targetKind.Valid || !targetVersion.Valid {
+		return contactapp.ChannelAcquisitionEntrantReceiptItem{}, contactapp.ErrChannelAcquisitionEntrantReceiptNotFound
+	}
 	if !publishedAt.Valid || publishedAt.Time.After(occurredAt.Time) || !containsEntrantAssignee(assignees, callbackUserID) {
 		return contactapp.ChannelAcquisitionEntrantReceiptItem{}, contactapp.ErrChannelAcquisitionEntrantReceiptConflict
 	}
 	if (current == contactport.ChannelAcquisitionEntrantPendingIdentity || current == contactport.ChannelAcquisitionEntrantConflict) &&
-		(!priorEffect.Valid || priorEffect.Int64 != effectID || !priorChannel.Valid || priorChannel.Int64 != command.ChannelID || !priorVersion.Valid || priorVersion.Int64 != targetVersion || !priorKind.Valid || priorKind.String != targetKind) {
+		(!priorEffect.Valid || priorEffect.Int64 != effectID || !priorChannel.Valid || priorChannel.Int64 != command.ChannelID || !priorVersion.Valid || priorVersion.Int64 != targetVersion.Int64 || !priorKind.Valid || priorKind.String != targetKind.String) {
 		return contactapp.ChannelAcquisitionEntrantReceiptItem{}, contactapp.ErrChannelAcquisitionEntrantReceiptConflict
 	}
 	var customerExists bool
@@ -150,13 +169,13 @@ func (repository *ChannelAcquisitionEntrantReceiptRepository) ReconcileChannelAc
 	eventAt := time.Now().UTC()
 	var eventID int64
 	err = tx.QueryRow(ctx, `INSERT INTO customer_events(customer_id,event_type,actor,payload,occurred_at)
-VALUES($1,'channel.acquisition.entrant.reconciled',$2, jsonb_build_object('receipt_id',$3::bigint,'channel_id',$4::bigint,'effect_id',$5::text,'asset_version',$6::bigint), $7) RETURNING id`, command.CustomerID, "admin:"+strconv.FormatInt(command.ActorID, 10), command.ReceiptID, command.ChannelID, command.EffectID, targetVersion, eventAt).Scan(&eventID)
+VALUES($1,'channel.acquisition.entrant.reconciled',$2, jsonb_build_object('receipt_id',$3::bigint,'channel_id',$4::bigint,'effect_id',$5::text,'asset_version',$6::bigint), $7) RETURNING id`, command.CustomerID, "admin:"+strconv.FormatInt(command.ActorID, 10), command.ReceiptID, command.ChannelID, command.EffectID, targetVersion.Int64, eventAt).Scan(&eventID)
 	if err != nil {
 		return contactapp.ChannelAcquisitionEntrantReceiptItem{}, err
 	}
 	result, err := tx.Exec(ctx, `UPDATE channel_acquisition_entrant_receipts SET status='reconciled', effect_id=$1, channel_id=$2, asset_kind=$3, asset_version=$4,
 customer_id=$5, customer_event_id=$6, customer_event_occurred_at=$7, reconciled_at=$7, reconcile_reason=$8,
-reconcile_actor_id=$9, reconcile_key_digest=$10, reconcile_payload_digest=$11, updated_at=$7 WHERE id=$12 AND status=$13`, effectID, command.ChannelID, targetKind, targetVersion, command.CustomerID, eventID, eventAt, command.Reason, command.ActorID, keyDigest, payloadDigest, command.ReceiptID, status)
+reconcile_actor_id=$9, reconcile_key_digest=$10, reconcile_payload_digest=$11, updated_at=$7 WHERE id=$12 AND status=$13`, effectID, command.ChannelID, targetKind.String, targetVersion.Int64, command.CustomerID, eventID, eventAt, command.Reason, command.ActorID, keyDigest, payloadDigest, command.ReceiptID, status)
 	if err != nil || result.RowsAffected() != 1 {
 		return contactapp.ChannelAcquisitionEntrantReceiptItem{}, contactapp.ErrChannelAcquisitionEntrantReceiptConflict
 	}
@@ -167,17 +186,25 @@ type entrantReceiptScanner interface{ Scan(...any) error }
 
 func scanEntrantReceipt(row entrantReceiptScanner) (contactapp.ChannelAcquisitionEntrantReceiptItem, error) {
 	var item contactapp.ChannelAcquisitionEntrantReceiptItem
-	var effectID int64
-	var kind, status string
-	var customerID, eventID pgtype.Int8
+	var channelID, effectID, version, customerID, eventID pgtype.Int8
+	var kind pgtype.Text
+	var status string
 	var occurred, reconciled, created, updated pgtype.Timestamptz
-	err := row.Scan(&item.ReceiptID, &item.ChannelID, &effectID, &kind, &item.AssetVersion, &status, &customerID, &eventID, &occurred, &reconciled, &item.ReconcileReason, &created, &updated)
+	err := row.Scan(&item.ReceiptID, &channelID, &effectID, &kind, &version, &status, &customerID, &eventID, &occurred, &reconciled, &item.ReconcileReason, &created, &updated)
 	if err != nil {
 		return item, err
 	}
-	item.EffectID = "eer_" + strconv.FormatInt(effectID, 10)
-	item.Kind = contactport.AcquisitionAssetKind(kind)
 	item.Status = contactport.ChannelAcquisitionEntrantStatus(status)
+	hasBinding := channelID.Valid || effectID.Valid || kind.Valid || version.Valid
+	if hasBinding {
+		if !channelID.Valid || !effectID.Valid || !kind.Valid || !version.Valid || channelID.Int64 < 1 || effectID.Int64 < 1 || version.Int64 < 1 {
+			return contactapp.ChannelAcquisitionEntrantReceiptItem{}, contactapp.ErrChannelAcquisitionEntrantReceiptUnavailable
+		}
+		item.ChannelID = channelID.Int64
+		item.EffectID = "eer_" + strconv.FormatInt(effectID.Int64, 10)
+		item.Kind = contactport.AcquisitionAssetKind(kind.String)
+		item.AssetVersion = version.Int64
+	}
 	if customerID.Valid {
 		item.CustomerID = customerID.Int64
 	}
@@ -191,10 +218,14 @@ func scanEntrantReceipt(row entrantReceiptScanner) (contactapp.ChannelAcquisitio
 		value := reconciled.Time.UTC()
 		item.ReconciledAt = &value
 	}
-	if item.ReceiptID < 1 || item.ChannelID < 1 || effectID < 1 || item.AssetVersion < 1 ||
-		(item.Kind != contactport.AcquisitionAssetQRCode && item.Kind != contactport.AcquisitionAssetLink) || !item.Status.Valid() ||
+	needsBinding := entrantStatusNeedsBinding(item.Status)
+	hasCustomer := customerID.Valid || eventID.Valid
+	needsCustomer := item.Status == contactport.ChannelAcquisitionEntrantAttributed || item.Status == contactport.ChannelAcquisitionEntrantReconciled
+	if item.ReceiptID < 1 || !item.Status.Valid() || hasBinding != needsBinding ||
+		(hasBinding && item.Kind != contactport.AcquisitionAssetQRCode && item.Kind != contactport.AcquisitionAssetLink) ||
+		(customerID.Valid != eventID.Valid) || hasCustomer != needsCustomer ||
 		item.OccurredAt.IsZero() || item.CreatedAt.IsZero() || item.UpdatedAt.IsZero() ||
-		((item.Status == contactport.ChannelAcquisitionEntrantAttributed || item.Status == contactport.ChannelAcquisitionEntrantReconciled) && (item.CustomerID < 1 || item.CustomerEventID < 1)) ||
+		(needsCustomer && (item.CustomerID < 1 || item.CustomerEventID < 1)) ||
 		(item.Status == contactport.ChannelAcquisitionEntrantReconciled) != (item.ReconciledAt != nil && item.ReconcileReason != "") {
 		return contactapp.ChannelAcquisitionEntrantReceiptItem{}, contactapp.ErrChannelAcquisitionEntrantReceiptUnavailable
 	}

@@ -72,6 +72,18 @@ func (service *ChannelAcquisitionEntrantService) Process(ctx context.Context, in
 
 	var result ChannelAcquisitionEntrantResult
 	err := service.uow.Within(ctx, func(txCtx context.Context) error {
+		inputDigest := channelAcquisitionEntrantInputDigest(input)
+		terminal, found, terminalErr := service.receipts.FindTerminalChannelAcquisitionEntrant(txCtx, input.InboxID, inputDigest)
+		if terminalErr != nil {
+			return errors.Join(ErrChannelAcquisitionEntrantFailed, terminalErr)
+		}
+		if found {
+			if !validTerminalChannelAcquisitionEntrantReceipt(terminal, input.InboxID, inputDigest) {
+				return ErrChannelAcquisitionEntrantFailed
+			}
+			result.Receipt = terminal
+			return nil
+		}
 		if !input.Fact.IsEntrant() {
 			receipt, err := service.record(txCtx, input, contactport.ChannelAcquisitionEntrantIgnored, contactport.AcquisitionAssetCorrelationMatch{}, 0)
 			result.Receipt = receipt
@@ -143,6 +155,13 @@ func (service *ChannelAcquisitionEntrantService) Process(ctx context.Context, in
 		return ChannelAcquisitionEntrantResult{}, err
 	}
 	return result, nil
+}
+
+func validTerminalChannelAcquisitionEntrantReceipt(receipt contactport.ChannelAcquisitionEntrantReceipt, inboxID int64, inputDigest string) bool {
+	return receipt.ID > 0 && receipt.InboxID == inboxID && receipt.InputDigest == inputDigest &&
+		(receipt.Status == contactport.ChannelAcquisitionEntrantAttributed || receipt.Status == contactport.ChannelAcquisitionEntrantReconciled) &&
+		validCorrelationMatch(contactport.AcquisitionAssetCorrelationMatch{EffectID: receipt.EffectID, ChannelID: receipt.ChannelID, Kind: receipt.Kind, AssetVersion: receipt.AssetVersion}) &&
+		receipt.CustomerID > 0 && receipt.CustomerEventID > 0 && !receipt.OccurredAt.IsZero()
 }
 
 func (service *ChannelAcquisitionEntrantService) record(

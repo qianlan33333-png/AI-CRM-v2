@@ -50,8 +50,8 @@ func TestChannelAcquisitionEntrantReplaysReconciledReceipt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if first.Receipt != second.Receipt || first.Receipt.Status != contactport.ChannelAcquisitionEntrantReconciled || receipts.calls != 2 {
-		t.Fatalf("replays = %#v / %#v, calls=%d", first, second, receipts.calls)
+	if first.Receipt != second.Receipt || first.Receipt.Status != contactport.ChannelAcquisitionEntrantReconciled || receipts.calls != 1 || correlation.calls != 1 || identities.calls != 1 {
+		t.Fatalf("replays = %#v / %#v, receipt_calls=%d correlation_calls=%d identity_calls=%d", first, second, receipts.calls, correlation.calls, identities.calls)
 	}
 }
 
@@ -103,8 +103,8 @@ func TestChannelAcquisitionEntrantRejectsSameInboxDifferentInputDigest(t *testin
 			}
 		})
 	}
-	if receipts.events != 1 {
-		t.Fatalf("events=%d, want 1", receipts.events)
+	if receipts.events != 1 || correlation.calls != 1 || identities.calls != 1 {
+		t.Fatalf("events=%d correlation=%d identity=%d, want terminal short circuit", receipts.events, correlation.calls, identities.calls)
 	}
 }
 
@@ -120,32 +120,53 @@ func TestChannelAcquisitionEntrantNotFoundTerminalReplayDoesNotRequestPending(t 
 			receipts.byInbox[71] = receiptWithStatus(receipts.byInbox[71], status)
 			identities.result = identityport.AcquisitionEntrantIdentityResolution{Status: identityport.AcquisitionEntrantIdentityNotFound}
 			result, err := service.Process(context.Background(), entrantInput())
-			if err != nil || result.IdentityPendingRequired || result.Receipt.Status != status || receipts.events != 1 {
-				t.Fatalf("result=%#v events=%d err=%v", result, receipts.events, err)
+			if err != nil || result.IdentityPendingRequired || result.Receipt.Status != status || receipts.events != 1 || correlation.calls != 1 || identities.calls != 1 {
+				t.Fatalf("result=%#v events=%d correlation=%d identity=%d err=%v", result, receipts.events, correlation.calls, identities.calls, err)
 			}
 		})
 	}
 }
 
-func TestChannelAcquisitionEntrantRejectsTerminalReplayWithDifferentAssetOrCustomer(t *testing.T) {
+func TestChannelAcquisitionEntrantTerminalReplayIgnoresTransientResolverDrift(t *testing.T) {
 	service, correlation, identities, receipts := entrantServiceFixture(t)
 	match := entrantMatch(41, 7, contactport.AcquisitionAssetQRCode, 1)
 	correlation.result = contactport.AcquisitionAssetCorrelationResolution{Cardinality: contactport.AcquisitionAssetCorrelationOne, Match: match}
 	identities.result = identityport.AcquisitionEntrantIdentityResolution{Status: identityport.AcquisitionEntrantIdentityFound, CustomerID: 22}
-	if _, err := service.Process(context.Background(), entrantInput()); err != nil {
+	first, err := service.Process(context.Background(), entrantInput())
+	if err != nil {
 		t.Fatal(err)
 	}
 	correlation.result.Match = entrantMatch(42, 7, contactport.AcquisitionAssetQRCode, 2)
-	if _, err := service.Process(context.Background(), entrantInput()); !errors.Is(err, ErrChannelAcquisitionEntrantFailed) {
-		t.Fatalf("different asset replay error = %v", err)
-	}
-	correlation.result.Match = match
 	identities.result.CustomerID = 23
-	if _, err := service.Process(context.Background(), entrantInput()); !errors.Is(err, ErrChannelAcquisitionEntrantFailed) {
-		t.Fatalf("different customer replay error = %v", err)
+	second, err := service.Process(context.Background(), entrantInput())
+	if err != nil || second.Receipt != first.Receipt || correlation.calls != 1 || identities.calls != 1 {
+		t.Fatalf("terminal replay=%#v/%#v correlation=%d identity=%d err=%v", first, second, correlation.calls, identities.calls, err)
 	}
 	if receipts.events != 1 {
 		t.Fatalf("events=%d, want 1", receipts.events)
+	}
+}
+
+func TestChannelAcquisitionEntrantRejectsMalformedTerminalReceipt(t *testing.T) {
+	for _, mutate := range []func(*contactport.ChannelAcquisitionEntrantReceipt){
+		func(receipt *contactport.ChannelAcquisitionEntrantReceipt) { receipt.AssetVersion = 0 },
+		func(receipt *contactport.ChannelAcquisitionEntrantReceipt) { receipt.CustomerID = 0 },
+	} {
+		service, correlation, identities, receipts := entrantServiceFixture(t)
+		correlation.result = contactport.AcquisitionAssetCorrelationResolution{Cardinality: contactport.AcquisitionAssetCorrelationOne, Match: entrantMatch(41, 7, contactport.AcquisitionAssetQRCode, 1)}
+		identities.result = identityport.AcquisitionEntrantIdentityResolution{Status: identityport.AcquisitionEntrantIdentityFound, CustomerID: 22}
+		if _, err := service.Process(context.Background(), entrantInput()); err != nil {
+			t.Fatal(err)
+		}
+		terminal := receipts.byInbox[71]
+		mutate(&terminal)
+		receipts.byInbox[71] = terminal
+		if _, err := service.Process(context.Background(), entrantInput()); !errors.Is(err, ErrChannelAcquisitionEntrantFailed) {
+			t.Fatalf("malformed terminal error = %v", err)
+		}
+		if correlation.calls != 1 || identities.calls != 1 || receipts.events != 1 {
+			t.Fatalf("terminal replay touched resolvers/events: correlation=%d identity=%d events=%d", correlation.calls, identities.calls, receipts.events)
+		}
 	}
 }
 
@@ -297,7 +318,23 @@ type entrantReceipts struct {
 	command      contactport.ChannelAcquisitionEntrantCommand
 	resultStatus contactport.ChannelAcquisitionEntrantStatus
 	byInbox      map[int64]contactport.ChannelAcquisitionEntrantReceipt
+	findErr      error
 	err          error
+}
+
+func (receipts *entrantReceipts) FindTerminalChannelAcquisitionEntrant(_ context.Context, inboxID int64, inputDigest string) (contactport.ChannelAcquisitionEntrantReceipt, bool, error) {
+	if receipts.findErr != nil {
+		return contactport.ChannelAcquisitionEntrantReceipt{}, false, receipts.findErr
+	}
+	existing, found := receipts.byInbox[inboxID]
+	if !found {
+		return contactport.ChannelAcquisitionEntrantReceipt{}, false, nil
+	}
+	if existing.InputDigest != inputDigest {
+		return contactport.ChannelAcquisitionEntrantReceipt{}, false, errors.New("inbox input digest conflict")
+	}
+	terminal := existing.Status == contactport.ChannelAcquisitionEntrantAttributed || existing.Status == contactport.ChannelAcquisitionEntrantReconciled
+	return existing, terminal, nil
 }
 
 func (receipts *entrantReceipts) RecordChannelAcquisitionEntrant(_ context.Context, command contactport.ChannelAcquisitionEntrantCommand) (contactport.ChannelAcquisitionEntrantReceipt, error) {

@@ -21,7 +21,7 @@ SET state = 'processing',
     updated_at = now()
 WHERE id = $3::bigint
   AND (
-    state IN ('pending', 'failed')
+    state IN ('pending', 'pending_identity', 'failed')
     OR (state = 'processing' AND lease_expires_at < now() AND lease_owner = $1::text)
   )
 RETURNING id, source, source_key, corp_id, event_type, external_userid, raw_payload,
