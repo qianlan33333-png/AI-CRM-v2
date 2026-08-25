@@ -41,6 +41,10 @@ func (repository *InboundRepository) ReserveInbound(ctx context.Context, envelop
 		EventType: envelope.EventType, ExternalUserid: envelope.ExternalUserID,
 		RawPayload: envelope.RawPayload, PayloadDigest: "sha256:" + hex.EncodeToString(digest[:]),
 		OccurredAt: pgtype.Timestamptz{Time: envelope.OccurredAt.UTC(), Valid: true}, State: initialState(envelope),
+		ExternalContactChangeType: externalContactChangeType(envelope), ExternalContactWecomUserid: externalContactUserID(envelope),
+		ExternalContactState: externalContactState(envelope), ExternalContactWelcomePresent: externalContactWelcomePresent(envelope),
+		ExternalContactWelcomeDigest: externalContactWelcomeDigest(envelope), ExternalContactSourceDigest: externalContactSourceDigest(envelope),
+		ExternalContactFailReasonDigest: externalContactFailReasonDigest(envelope),
 	})
 	if err == nil {
 		return wecomapp.InboundReservation{ID: row.ID, Inserted: true, State: row.State}, nil
@@ -153,6 +157,12 @@ func validEnvelope(envelope wecomapp.InboundEnvelope) bool {
 		len(envelope.ExternalUserID) > 1024 || len(envelope.RawPayload) == 0 || len(envelope.RawPayload) > 1<<20 || envelope.OccurredAt.IsZero() {
 		return false
 	}
+	if envelope.ExternalContact != nil {
+		fact := envelope.ExternalContact
+		if envelope.Source != wecomapp.InboundSourceCallback || fact.CorpID != envelope.CorpID || fact.ExternalUserID != envelope.ExternalUserID || fact.OccurredAt.UTC() != envelope.OccurredAt.UTC() || fact.EventType() != envelope.EventType || fact.ChangeType == "" || (fact.WelcomeCodePresent != (fact.WelcomeCodeDigest != "")) || !validOptionalDigest(fact.WelcomeCodeDigest) || !validOptionalDigest(fact.SourceDigest) || !validOptionalDigest(fact.FailReasonDigest) {
+			return false
+		}
+	}
 	return true
 }
 
@@ -183,5 +193,62 @@ func inboundRecord(row wecomdb.ClaimWeComContactInboxRow) wecomapp.InboundRecord
 	if row.RiverJobID.Valid {
 		result.RiverJobID = row.RiverJobID.Int64
 	}
+	if row.ExternalContactChangeType != "" {
+		result.ExternalContact = &wecomapp.ExternalContactCallbackFact{CorpID: row.CorpID, ChangeType: row.ExternalContactChangeType, ExternalUserID: row.ExternalUserid, UserID: row.ExternalContactWecomUserid, State: row.ExternalContactState, OccurredAt: row.OccurredAt.Time.UTC(), WelcomeCodePresent: row.ExternalContactWelcomePresent, WelcomeCodeDigest: row.ExternalContactWelcomeDigest, SourceDigest: row.ExternalContactSourceDigest, FailReasonDigest: row.ExternalContactFailReasonDigest}
+	}
 	return result
+}
+
+func externalContactChangeType(envelope wecomapp.InboundEnvelope) string {
+	if envelope.ExternalContact == nil {
+		return ""
+	}
+	return envelope.ExternalContact.ChangeType
+}
+func externalContactUserID(envelope wecomapp.InboundEnvelope) string {
+	if envelope.ExternalContact == nil {
+		return ""
+	}
+	return envelope.ExternalContact.UserID
+}
+func externalContactState(envelope wecomapp.InboundEnvelope) string {
+	if envelope.ExternalContact == nil {
+		return ""
+	}
+	return envelope.ExternalContact.State
+}
+func externalContactWelcomePresent(envelope wecomapp.InboundEnvelope) bool {
+	return envelope.ExternalContact != nil && envelope.ExternalContact.WelcomeCodePresent
+}
+func externalContactWelcomeDigest(envelope wecomapp.InboundEnvelope) string {
+	if envelope.ExternalContact == nil {
+		return ""
+	}
+	return envelope.ExternalContact.WelcomeCodeDigest
+}
+func externalContactSourceDigest(envelope wecomapp.InboundEnvelope) string {
+	if envelope.ExternalContact == nil {
+		return ""
+	}
+	return envelope.ExternalContact.SourceDigest
+}
+func externalContactFailReasonDigest(envelope wecomapp.InboundEnvelope) string {
+	if envelope.ExternalContact == nil {
+		return ""
+	}
+	return envelope.ExternalContact.FailReasonDigest
+}
+func validOptionalDigest(value string) bool {
+	if value == "" {
+		return true
+	}
+	if len(value) != 71 || !strings.HasPrefix(value, "sha256:") {
+		return false
+	}
+	for _, char := range value[7:] {
+		if !(char >= '0' && char <= '9' || char >= 'a' && char <= 'f') {
+			return false
+		}
+	}
+	return true
 }

@@ -72,13 +72,16 @@ type InboundRecord struct {
 	CorpID         string
 	EventType      string
 	ExternalUserID string
-	RawPayload     []byte
-	OccurredAt     time.Time
-	State          string
-	AttemptCount   int32
-	LeaseFence     int64
-	LeaseOwner     string
-	RiverJobID     int64
+	// ExternalContact is reconstructed exclusively from the persisted typed
+	// fields. Process must never reparse the raw callback XML.
+	ExternalContact *ExternalContactCallbackFact
+	RawPayload      []byte
+	OccurredAt      time.Time
+	State           string
+	AttemptCount    int32
+	LeaseFence      int64
+	LeaseOwner      string
+	RiverJobID      int64
 }
 
 type InboundStore interface {
@@ -104,6 +107,7 @@ type InboundService struct {
 	store     InboundStore
 	jobs      JobInserter
 	processor *IdentityContactProcessor
+	entrants  *ChannelAcquisitionEntrantService
 	corpID    string
 	clock     func() time.Time
 }
@@ -116,11 +120,26 @@ func NewInboundService(
 	corpID string,
 	clock func() time.Time,
 ) (*InboundService, error) {
+	return NewInboundServiceWithEntrants(uow, store, jobs, processor, nil, corpID, clock)
+}
+
+// NewInboundServiceWithEntrants keeps the historical composition constructor
+// stable while allowing CH03's transaction-bound domain service to be wired
+// by the central composition root.
+func NewInboundServiceWithEntrants(
+	uow inboundUnitOfWork,
+	store InboundStore,
+	jobs JobInserter,
+	processor *IdentityContactProcessor,
+	entrants *ChannelAcquisitionEntrantService,
+	corpID string,
+	clock func() time.Time,
+) (*InboundService, error) {
 	if isNilDependency(uow) || isNilDependency(store) || isNilDependency(jobs) ||
 		!validCorpID(corpID) || clock == nil {
 		return nil, ErrInvalidInboundService
 	}
-	return &InboundService{uow: uow, store: store, jobs: jobs, processor: processor, corpID: corpID, clock: clock}, nil
+	return &InboundService{uow: uow, store: store, jobs: jobs, processor: processor, entrants: entrants, corpID: corpID, clock: clock}, nil
 }
 
 // Dispatch is the callback.MessageDispatcher implementation. It only
@@ -157,7 +176,7 @@ func (service *InboundService) accept(ctx context.Context, envelope InboundEnvel
 // transaction failures are returned to River for retry.
 func (service *InboundService) Process(ctx context.Context, inboxID int64, owner string) error {
 	if service == nil || ctx == nil || inboxID <= 0 || strings.TrimSpace(owner) != owner || owner == "" ||
-		isNilDependency(service.uow) || isNilDependency(service.store) || service.processor == nil || service.clock == nil {
+		isNilDependency(service.uow) || isNilDependency(service.store) || (service.processor == nil && service.entrants == nil) || service.clock == nil {
 		return ErrInvalidInboundService
 	}
 	var record InboundRecord
@@ -174,6 +193,12 @@ func (service *InboundService) Process(ctx context.Context, inboxID int64, owner
 	}
 	if err != nil {
 		return err
+	}
+	if record.ExternalContact != nil {
+		if service.entrants == nil {
+			return service.complete(ctx, record, "skipped")
+		}
+		return service.processChannelAcquisitionEntrant(ctx, record)
 	}
 	if record.State == "skipped" || record.ExternalUserID == "" {
 		return service.complete(ctx, record, "skipped")
@@ -198,6 +223,41 @@ func (service *InboundService) Process(ctx context.Context, inboxID int64, owner
 		state = "conflict"
 	}
 	return service.complete(ctx, record, state)
+}
+
+func (service *InboundService) processChannelAcquisitionEntrant(ctx context.Context, record InboundRecord) error {
+	result, err := service.entrants.Process(ctx, ChannelAcquisitionEntrantInput{InboxID: record.ID, SourceKey: record.SourceKey, Fact: *record.ExternalContact})
+	if err != nil {
+		_ = service.uow.Within(ctx, func(txCtx context.Context) error {
+			return service.store.FailInbound(txCtx, record.ID, record.LeaseFence, err.Error())
+		})
+		return errors.Join(ErrInboundProcess, err)
+	}
+	if result.IdentityPendingRequired {
+		if service.processor == nil {
+			return ErrInvalidInboundService
+		}
+		identityResult, processErr := service.processor.Process(ctx, IdentityContactFact{Source: identityContactSource(record.Source), FactID: record.SourceKey, CorpID: record.CorpID, ExternalUserID: record.ExternalUserID, OccurredAt: record.OccurredAt})
+		if processErr != nil {
+			_ = service.uow.Within(ctx, func(txCtx context.Context) error {
+				return service.store.FailInbound(txCtx, record.ID, record.LeaseFence, processErr.Error())
+			})
+			return errors.Join(ErrInboundProcess, processErr)
+		}
+		state := "pending_identity"
+		if identityResult.Status == identityport.IngestConflict {
+			state = "conflict"
+		}
+		return service.complete(ctx, record, state)
+	}
+	switch result.Receipt.Status {
+	case "ignored":
+		return service.complete(ctx, record, "skipped")
+	case "conflict":
+		return service.complete(ctx, record, "conflict")
+	default:
+		return service.complete(ctx, record, "processed")
+	}
 }
 
 func (service *InboundService) complete(ctx context.Context, record InboundRecord, state string) error {
@@ -258,10 +318,9 @@ func ParseCallbackEnvelope(message []byte, corpID string) (InboundEnvelope, erro
 			return InboundEnvelope{}, err
 		}
 		digest := sha256.Sum256(message)
-		initialState := "skipped"
-		if fact.IsEntrant() {
-			initialState = "pending"
-		}
+		// Lifecycle callbacks are queued too: CH03 records an ignored receipt
+		// instead of routing a non-entrant through legacy identity ingest.
+		initialState := "pending"
 		return InboundEnvelope{
 			Source: InboundSourceCallback, SourceKey: "sha256:" + hex.EncodeToString(digest[:]), CorpID: corpID,
 			EventType: fact.EventType(), ExternalUserID: fact.ExternalUserID, ExternalContact: &fact,

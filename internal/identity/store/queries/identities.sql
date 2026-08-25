@@ -32,6 +32,22 @@ WHERE i.kind = sqlc.arg(kind)::text
   AND i.scope = sqlc.arg(scope)::text
   AND i.normalized_value = sqlc.arg(normalized_value)::text;
 
+-- name: LockVerifiedAcquisitionEntrantIdentity :one
+SELECT customer_id
+FROM identities
+WHERE kind = 'wecom_external_userid'
+  AND scope = sqlc.arg(scope)::text
+  AND normalized_value = sqlc.arg(normalized_value)::text
+  AND assurance = 'verified'
+FOR UPDATE;
+
+-- name: LockActiveAcquisitionEntrantCustomer :one
+SELECT id
+FROM customers
+WHERE id = sqlc.arg(customer_id)::bigint
+  AND is_deleted = FALSE
+FOR UPDATE;
+
 -- name: BindHistoricalScopedWeComIdentity :one
 INSERT INTO identities (
   customer_id, kind, scope, normalized_value, normalizer_version,

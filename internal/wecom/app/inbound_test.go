@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 )
 
@@ -70,7 +71,7 @@ func TestParseCallbackEnvelopeExternalContactLifecycleDoesNotBecomeEntrant(t *te
 			if err != nil {
 				t.Fatal(err)
 			}
-			if envelope.InitialState != "skipped" || envelope.ExternalContact == nil || envelope.ExternalContact.IsEntrant() || envelope.ExternalContact.SourceDigest != callbackValueDigest("source-secret") || envelope.ExternalContact.FailReasonDigest != callbackValueDigest("reason-secret") {
+			if envelope.InitialState != "pending" || envelope.ExternalContact == nil || envelope.ExternalContact.IsEntrant() || envelope.ExternalContact.SourceDigest != callbackValueDigest("source-secret") || envelope.ExternalContact.FailReasonDigest != callbackValueDigest("reason-secret") {
 				t.Fatalf("envelope = %#v", envelope)
 			}
 		})
@@ -153,16 +154,35 @@ func TestInboundServiceProcessesAttributedPendingAndConflictLocally(t *testing.T
 	}
 }
 
+func TestInboundServiceUsesPersistedTypedEntrantWithoutRawXMLReparse(t *testing.T) {
+	entrants, correlation, identities, receipts := entrantServiceFixture(t)
+	correlation.result = contactport.AcquisitionAssetCorrelationResolution{Cardinality: contactport.AcquisitionAssetCorrelationOne, Match: entrantMatch(41, 7, contactport.AcquisitionAssetQRCode, 3)}
+	identities.result = identityport.AcquisitionEntrantIdentityResolution{Status: identityport.AcquisitionEntrantIdentityFound, CustomerID: 22}
+	fact := entrantInput().Fact
+	store := &memoryInboundStore{records: []memoryInboundRecord{{id: 7, source: InboundSourceCallback, sourceKey: "sha256:" + repeatedHex('a'), corpID: fact.CorpID, eventType: fact.EventType(), externalUserID: fact.ExternalUserID, externalContact: &fact, rawPayload: []byte("not XML"), occurredAt: fact.OccurredAt, state: "pending"}}}
+	service, err := NewInboundServiceWithEntrants(immediateUoW{}, store, &memoryInboundJobs{}, nil, entrants, "corp-a", func() time.Time { return time.Unix(1700000100, 0) })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = service.Process(context.Background(), 7, "river:99"); err != nil {
+		t.Fatal(err)
+	}
+	if store.records[0].state != "processed" || correlation.calls != 1 || identities.calls != 1 || receipts.events != 1 {
+		t.Fatalf("state=%q correlation=%d identities=%d events=%d", store.records[0].state, correlation.calls, identities.calls, receipts.events)
+	}
+}
+
 type memoryInboundRecord struct {
-	id, fence      int64
-	source         InboundSource
-	sourceKey      string
-	corpID         string
-	eventType      string
-	externalUserID string
-	rawPayload     []byte
-	occurredAt     time.Time
-	state          string
+	id, fence       int64
+	source          InboundSource
+	sourceKey       string
+	corpID          string
+	eventType       string
+	externalUserID  string
+	rawPayload      []byte
+	externalContact *ExternalContactCallbackFact
+	occurredAt      time.Time
+	state           string
 }
 
 type memoryInboundStore struct{ records []memoryInboundRecord }
@@ -177,7 +197,7 @@ func (store *memoryInboundStore) ReserveInbound(_ context.Context, envelope Inbo
 	if state == "" {
 		state = "pending"
 	}
-	record := memoryInboundRecord{id: int64(len(store.records) + 1), source: envelope.Source, sourceKey: envelope.SourceKey, corpID: envelope.CorpID, eventType: envelope.EventType, externalUserID: envelope.ExternalUserID, rawPayload: append([]byte(nil), envelope.RawPayload...), occurredAt: envelope.OccurredAt, state: state}
+	record := memoryInboundRecord{id: int64(len(store.records) + 1), source: envelope.Source, sourceKey: envelope.SourceKey, corpID: envelope.CorpID, eventType: envelope.EventType, externalUserID: envelope.ExternalUserID, externalContact: envelope.ExternalContact, rawPayload: append([]byte(nil), envelope.RawPayload...), occurredAt: envelope.OccurredAt, state: state}
 	store.records = append(store.records, record)
 	return InboundReservation{ID: record.id, Inserted: true, State: record.state}, nil
 }
@@ -192,7 +212,7 @@ func (store *memoryInboundStore) ClaimInbound(_ context.Context, id int64, _ str
 			}
 			store.records[index].state = "processing"
 			store.records[index].fence++
-			return InboundRecord{ID: id, Source: store.records[index].source, SourceKey: store.records[index].sourceKey, CorpID: store.records[index].corpID, ExternalUserID: store.records[index].externalUserID, OccurredAt: store.records[index].occurredAt, State: "processing", LeaseFence: store.records[index].fence}, nil
+			return InboundRecord{ID: id, Source: store.records[index].source, SourceKey: store.records[index].sourceKey, CorpID: store.records[index].corpID, EventType: store.records[index].eventType, ExternalUserID: store.records[index].externalUserID, ExternalContact: store.records[index].externalContact, RawPayload: append([]byte(nil), store.records[index].rawPayload...), OccurredAt: store.records[index].occurredAt, State: "processing", LeaseFence: store.records[index].fence}, nil
 		}
 	}
 	return InboundRecord{}, ErrInboundAlreadyDone

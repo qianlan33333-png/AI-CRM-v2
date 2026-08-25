@@ -25,7 +25,10 @@ WHERE id = $3::bigint
     OR (state = 'processing' AND lease_expires_at < now() AND lease_owner = $1::text)
   )
 RETURNING id, source, source_key, corp_id, event_type, external_userid, raw_payload,
-  occurred_at, state, attempt_count, lease_fence, lease_owner, river_job_id
+  occurred_at, state, attempt_count, lease_fence, lease_owner, river_job_id,
+  external_contact_change_type, external_contact_wecom_userid, external_contact_state,
+  external_contact_welcome_present, external_contact_welcome_digest,
+  external_contact_source_digest, external_contact_fail_reason_digest
 `
 
 type ClaimWeComContactInboxParams struct {
@@ -35,19 +38,26 @@ type ClaimWeComContactInboxParams struct {
 }
 
 type ClaimWeComContactInboxRow struct {
-	ID             int64              `json:"id"`
-	Source         string             `json:"source"`
-	SourceKey      string             `json:"source_key"`
-	CorpID         string             `json:"corp_id"`
-	EventType      string             `json:"event_type"`
-	ExternalUserid string             `json:"external_userid"`
-	RawPayload     []byte             `json:"raw_payload"`
-	OccurredAt     pgtype.Timestamptz `json:"occurred_at"`
-	State          string             `json:"state"`
-	AttemptCount   int32              `json:"attempt_count"`
-	LeaseFence     int64              `json:"lease_fence"`
-	LeaseOwner     string             `json:"lease_owner"`
-	RiverJobID     pgtype.Int8        `json:"river_job_id"`
+	ID                              int64              `json:"id"`
+	Source                          string             `json:"source"`
+	SourceKey                       string             `json:"source_key"`
+	CorpID                          string             `json:"corp_id"`
+	EventType                       string             `json:"event_type"`
+	ExternalUserid                  string             `json:"external_userid"`
+	RawPayload                      []byte             `json:"raw_payload"`
+	OccurredAt                      pgtype.Timestamptz `json:"occurred_at"`
+	State                           string             `json:"state"`
+	AttemptCount                    int32              `json:"attempt_count"`
+	LeaseFence                      int64              `json:"lease_fence"`
+	LeaseOwner                      string             `json:"lease_owner"`
+	RiverJobID                      pgtype.Int8        `json:"river_job_id"`
+	ExternalContactChangeType       string             `json:"external_contact_change_type"`
+	ExternalContactWecomUserid      string             `json:"external_contact_wecom_userid"`
+	ExternalContactState            string             `json:"external_contact_state"`
+	ExternalContactWelcomePresent   bool               `json:"external_contact_welcome_present"`
+	ExternalContactWelcomeDigest    string             `json:"external_contact_welcome_digest"`
+	ExternalContactSourceDigest     string             `json:"external_contact_source_digest"`
+	ExternalContactFailReasonDigest string             `json:"external_contact_fail_reason_digest"`
 }
 
 func (q *Queries) ClaimWeComContactInbox(ctx context.Context, arg ClaimWeComContactInboxParams) (ClaimWeComContactInboxRow, error) {
@@ -67,6 +77,13 @@ func (q *Queries) ClaimWeComContactInbox(ctx context.Context, arg ClaimWeComCont
 		&i.LeaseFence,
 		&i.LeaseOwner,
 		&i.RiverJobID,
+		&i.ExternalContactChangeType,
+		&i.ExternalContactWecomUserid,
+		&i.ExternalContactState,
+		&i.ExternalContactWelcomePresent,
+		&i.ExternalContactWelcomeDigest,
+		&i.ExternalContactSourceDigest,
+		&i.ExternalContactFailReasonDigest,
 	)
 	return i, err
 }
@@ -175,27 +192,41 @@ func (q *Queries) GetWeComContactInboxByKey(ctx context.Context, arg GetWeComCon
 const insertWeComContactInbox = `-- name: InsertWeComContactInbox :one
 INSERT INTO wecom_contact_inbox (
   source, source_key, corp_id, event_type, external_userid, raw_payload,
-  payload_digest, occurred_at, state, processed_at
+  payload_digest, occurred_at, state, processed_at,
+  external_contact_change_type, external_contact_wecom_userid, external_contact_state,
+  external_contact_welcome_present, external_contact_welcome_digest,
+  external_contact_source_digest, external_contact_fail_reason_digest
 ) VALUES (
   $1::text, $2::text, $3::text,
   $4::text, $5::text, $6::bytea,
   $7::text, $8::timestamptz, $9::text,
-  CASE WHEN $9::text = 'skipped' THEN now() ELSE NULL END
+  CASE WHEN $9::text = 'skipped' THEN now() ELSE NULL END,
+  $10::text, $11::text,
+  $12::text, $13::boolean,
+  $14::text, $15::text,
+  $16::text
 )
 ON CONFLICT (source, source_key) DO NOTHING
 RETURNING id, state, river_job_id
 `
 
 type InsertWeComContactInboxParams struct {
-	Source         string             `json:"source"`
-	SourceKey      string             `json:"source_key"`
-	CorpID         string             `json:"corp_id"`
-	EventType      string             `json:"event_type"`
-	ExternalUserid string             `json:"external_userid"`
-	RawPayload     []byte             `json:"raw_payload"`
-	PayloadDigest  string             `json:"payload_digest"`
-	OccurredAt     pgtype.Timestamptz `json:"occurred_at"`
-	State          string             `json:"state"`
+	Source                          string             `json:"source"`
+	SourceKey                       string             `json:"source_key"`
+	CorpID                          string             `json:"corp_id"`
+	EventType                       string             `json:"event_type"`
+	ExternalUserid                  string             `json:"external_userid"`
+	RawPayload                      []byte             `json:"raw_payload"`
+	PayloadDigest                   string             `json:"payload_digest"`
+	OccurredAt                      pgtype.Timestamptz `json:"occurred_at"`
+	State                           string             `json:"state"`
+	ExternalContactChangeType       string             `json:"external_contact_change_type"`
+	ExternalContactWecomUserid      string             `json:"external_contact_wecom_userid"`
+	ExternalContactState            string             `json:"external_contact_state"`
+	ExternalContactWelcomePresent   bool               `json:"external_contact_welcome_present"`
+	ExternalContactWelcomeDigest    string             `json:"external_contact_welcome_digest"`
+	ExternalContactSourceDigest     string             `json:"external_contact_source_digest"`
+	ExternalContactFailReasonDigest string             `json:"external_contact_fail_reason_digest"`
 }
 
 type InsertWeComContactInboxRow struct {
@@ -215,6 +246,13 @@ func (q *Queries) InsertWeComContactInbox(ctx context.Context, arg InsertWeComCo
 		arg.PayloadDigest,
 		arg.OccurredAt,
 		arg.State,
+		arg.ExternalContactChangeType,
+		arg.ExternalContactWecomUserid,
+		arg.ExternalContactState,
+		arg.ExternalContactWelcomePresent,
+		arg.ExternalContactWelcomeDigest,
+		arg.ExternalContactSourceDigest,
+		arg.ExternalContactFailReasonDigest,
 	)
 	var i InsertWeComContactInboxRow
 	err := row.Scan(&i.ID, &i.State, &i.RiverJobID)

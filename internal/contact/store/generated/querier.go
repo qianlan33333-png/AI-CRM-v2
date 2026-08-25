@@ -73,6 +73,7 @@ type Querier interface {
 	InsertChannelAcquisitionAssetBinding(ctx context.Context, arg InsertChannelAcquisitionAssetBindingParams) (ChannelAcquisitionAssetBinding, error)
 	InsertChannelAcquisitionAssetObservedResult(ctx context.Context, arg InsertChannelAcquisitionAssetObservedResultParams) error
 	InsertChannelAcquisitionAssetReconciliationFact(ctx context.Context, arg InsertChannelAcquisitionAssetReconciliationFactParams) error
+	InsertChannelAcquisitionEntrantReceipt(ctx context.Context, arg InsertChannelAcquisitionEntrantReceiptParams) (InsertChannelAcquisitionEntrantReceiptRow, error)
 	InsertCustomerContactPolicy(ctx context.Context, arg InsertCustomerContactPolicyParams) (CustomerContactPolicy, error)
 	InsertCustomerMergeLineage(ctx context.Context, arg InsertCustomerMergeLineageParams) (int64, error)
 	InsertCustomerSafeExport(ctx context.Context, arg InsertCustomerSafeExportParams) error
@@ -110,6 +111,9 @@ type Querier interface {
 	LockChannelAcquisitionAssetActorReceipt(ctx context.Context, arg LockChannelAcquisitionAssetActorReceiptParams) (ChannelAcquisitionAssetActorReceipt, error)
 	LockChannelAcquisitionAssetBinding(ctx context.Context, effectID int64) (ChannelAcquisitionAssetBinding, error)
 	LockChannelAcquisitionAssetBindingForChannel(ctx context.Context, arg LockChannelAcquisitionAssetBindingForChannelParams) (ChannelAcquisitionAssetBinding, error)
+	LockChannelAcquisitionEntrantBinding(ctx context.Context, arg LockChannelAcquisitionEntrantBindingParams) (LockChannelAcquisitionEntrantBindingRow, error)
+	LockChannelAcquisitionEntrantReceipt(ctx context.Context, inboxID int64) (LockChannelAcquisitionEntrantReceiptRow, error)
+	LockChannelAcquisitionEntrantReceiptKey(ctx context.Context, inboxID string) error
 	LockChannelAcquisitionSnapshot(ctx context.Context, channelID int64) (LockChannelAcquisitionSnapshotRow, error)
 	LockCustomerContactPolicyKey(ctx context.Context, customerID int64) error
 	LockCustomerContactPolicyKeys(ctx context.Context, customerIds []int64) error
@@ -146,6 +150,7 @@ type Querier interface {
 	ResolveEffectiveCustomerRoot(ctx context.Context, customerID int64) (int64, error)
 	SetCustomerStage(ctx context.Context, arg SetCustomerStageParams) (Customer, error)
 	SetDM01AcceptanceRunState(ctx context.Context, arg SetDM01AcceptanceRunStateParams) error
+	TransitionChannelAcquisitionEntrantPending(ctx context.Context, arg TransitionChannelAcquisitionEntrantPendingParams) (TransitionChannelAcquisitionEntrantPendingRow, error)
 	TransitionHistoricalImportRun(ctx context.Context, arg TransitionHistoricalImportRunParams) (int64, error)
 	UpdateChannel(ctx context.Context, arg UpdateChannelParams) (UpdateChannelRow, error)
 	UpdateCustomer(ctx context.Context, arg UpdateCustomerParams) (Customer, error)
