@@ -25,5 +25,5 @@ set +e
 task_rc=$?
 set -e
 [[ $task_rc -ne 0 ]]
-grep -Fq 'cannot roll back populated WeCom contact inbox' /tmp/aicrm-b01-inbound-down.out
-printf 'P4 B01 WeCom inbound PG16 acceptance: PASS (77 down/up, callback inbox idempotency, critical local job, no provider effect)\n'
+grep -Fq 'cannot roll back populated CH03 entrant facts' /tmp/aicrm-b01-inbound-down.out
+printf 'P4 B01 WeCom inbound PG16 acceptance: PASS (77 down/up, callback inbox idempotency, CH03 populated hard-stop, critical local job, no provider effect)\n'
