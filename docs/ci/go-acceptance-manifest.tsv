@@ -67,3 +67,4 @@ p4-outbound-campaign-dispatch|0065|P4OUTBOUNDCAMPAIGNDISPATCH_TEST_DATABASE_URL|
 p4-pe01-wechat-pay-settlement|0066|P4PE01_TEST_DATABASE_URL|legacy-make|p4-pe01-wechat-pay-settlement-acceptance|-
 p4-automation-rules-runtime|0067|P4AUTOMATIONRULES_TEST_DATABASE_URL|legacy-make|p4-automation-rules-runtime-acceptance|-
 p4-radar-local-tracking|0068|P4_RADAR_TRACKING_TEST_DATABASE_URL|legacy-make|p4-radar-local-tracking-acceptance|-
+p4-commerce-refund-v2|0069|P4COMMERCE_REFUND_V2_TEST_DATABASE_URL|legacy-make|p4-commerce-refund-v2-acceptance|-

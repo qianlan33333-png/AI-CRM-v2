@@ -243,26 +243,18 @@ func orderPageRouter(t *testing.T, service authport.Service, board legacyOrderBo
 	return router
 }
 
-func TestOrderABRefundUsesServerActorIdempotencyAndOrderWrite(t *testing.T) {
-	now := time.Date(2026, 8, 15, 17, 0, 0, 0, time.UTC)
-	stub := &legacyOrderBoardStub{refund: orderport.Refund{ID: 1, OrderID: 11, Provider: "wechat", OrderNo: "M-11", TransactionID: "WX-11", RefundID: "rfd_abcdefghijkl", OutRefundNo: "rfd_abcdefghijkl", RefundAmountTotal: 1990, Currency: "CNY", Reason: "重复支付", Status: "pending_external_gate", ExternalEffectID: 1, ExternalEffectState: "pending_external_gate", CreatedAt: now}}
+func TestOrderABRefundFailsClosedWithoutCommerceRefundCapability(t *testing.T) {
+	stub := &legacyOrderBoardStub{}
 	router, auth := legacyOrderBoardRouter(t, stub)
 	request := legacyChannelWriteRequest(http.MethodPost, "/api/admin/refunds", `{"provider":"wechat","order_no":"M-11","refund_amount_total":1990,"reason":"重复支付","transaction_id_confirmation":"WX-11","checked":true,"operator":"spoof"}`)
 	request.Header.Set("Idempotency-Key", "dddddddddddddddd")
 	response := httptest.NewRecorder()
 	router.ServeHTTP(response, request)
-	if response.Code != http.StatusOK || stub.refundCommand.Actor != 1 || stub.refundCommand.IdempotencyKey != "dddddddddddddddd" || stub.refundCommand.Provider != "wechat" || stub.refundCommand.OrderReference != "M-11" || !stub.refundCommand.Checked {
+	if response.Code != http.StatusServiceUnavailable || stub.refundCommand.Actor != 0 {
 		t.Fatalf("status=%d command=%+v body=%s", response.Code, stub.refundCommand, response.Body.String())
 	}
 	if got := auth.capabilities(); len(got) != 1 || got[0] != authport.CapabilityOrderWrite {
 		t.Fatalf("capabilities=%v", got)
-	}
-	bad := legacyChannelWriteRequest(http.MethodPost, "/api/admin/refunds", `{"provider":"wechat","order_no":"M-11","refund_amount_total":1990,"reason":"重复支付","transaction_id_confirmation":"WX-11","checked":true,"unapproved_field":"no"}`)
-	bad.Header.Set("Idempotency-Key", "eeeeeeeeeeeeeeee")
-	badResponse := httptest.NewRecorder()
-	router.ServeHTTP(badResponse, bad)
-	if badResponse.Code != http.StatusBadRequest {
-		t.Fatalf("unknown body field status=%d body=%s", badResponse.Code, badResponse.Body.String())
 	}
 }
 

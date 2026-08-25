@@ -236,7 +236,7 @@ func (service *WeChatShopRefundService) ExecuteRefund(ctx context.Context, job o
 		AmountMinor: current.AmountMinor, Currency: current.Currency, ReasonDigest: current.ReasonDigest,
 	})
 	outcome := providerResult.Completion
-	if providerErr != nil && outcome == "" || !validWeChatShopProviderResult(providerResult, providerErr) {
+	if (providerErr != nil && outcome == "") || !validWeChatShopProviderResult(providerResult, providerErr) {
 		outcome = orderport.WeChatShopProviderOutcomeUnknown
 		providerResult.EvidenceDigest = [32]byte{}
 	}
@@ -438,7 +438,7 @@ func validWeChatShopProviderResult(result orderport.WeChatShopProviderResult, er
 	case orderport.WeChatShopProviderOutcomeUnknown:
 		return true
 	case orderport.WeChatShopProviderFinalFailed:
-		return !allZeroDigest(result.EvidenceDigest)
+		return err == nil && !allZeroDigest(result.EvidenceDigest)
 	default:
 		return false
 	}

@@ -144,6 +144,20 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	commerceRefunds, err := orderstore.NewCommerceRefundRepository(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	wechatShopRefunds, err := orderapp.NewWeChatShopRefundService(uow, commerceRefunds, orderprovider.DisabledWeChatShopRefund{}, eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	if err = orderworker.RegisterWeChatShopRefundWorker(workers, wechatShopRefunds); err != nil {
+		pool.Close()
+		return nil, err
+	}
 	if err = automationworker.RegisterOutboundMessageWorker(workers, automationOutboundMessage, automationstore.DisabledOutboundMessageAdapter{}); err != nil {
 		pool.Close()
 		return nil, err
