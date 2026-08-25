@@ -85,6 +85,7 @@ const (
 	p4InternalEventSafeExportEvidence          = "P4-EE01-INTERNAL-EVENT-SAFE-EXPORT-2026-08-25"
 	p4ReleasePlaneEvidence                     = "P4-RP01-RELEASE-PLANE-2026-08-25"
 	p4ExternalEffectsRuntimeEvidence           = "P4-EXTERNAL-EFFECTS-RUNTIME-2026-08-25"
+	p4SurveyIdentityExternalPushEvidence       = "P4-SURVEY-IDENTITY-GATED-EXTERNAL-PUSH-00082-2026-08-25"
 	p4OutboundCampaignDispatchEvidence         = "P4-C01-OUTBOUND-DISPATCH-2026-08-25"
 	p4PE01WeChatPaySettlementEvidence          = "PE01-WECHAT-PAY-SETTLEMENT-2026-08-25"
 	p4AutomationRulesRuntimeEvidence           = "P4-A01-AUTOMATION-RULES-RUNTIME-2026-08-25"
@@ -133,6 +134,10 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"setAutomationRuleRuntimeStatus":           {"/api/admin/automations/{rule_id}/{status}", "POST", p4AutomationRulesRuntimeEvidence, "config.settings.manage", "human_session", "internal", "automation.local_rule_configuration", "required", map[string]string{"admin": "global"}},
 	"listAutomationRuleRuntimeExecutions":      {"/api/admin/automations/executions", "GET", p4AutomationRulesRuntimeEvidence, "config.overview.read", "human_session", "internal", "automation.local_execution_ledger", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"reconcileAutomationRuleRuntimeExecution":  {"/api/admin/automations/executions/{action_id}/reconcile", "POST", p4AutomationRulesRuntimeEvidence, "config.settings.manage", "human_session", "internal", "automation.local_eer_reconciliation_transaction", "required", map[string]string{"admin": "global"}},
+	"startSurveyH5OAuth":                       {"/api/h5/surveys/oauth/start", "GET", p4SurveyIdentityExternalPushEvidence, "survey.h5.identity", "public", "public_non_pii", "auth.oauth_state", "none", nil},
+	"callbackSurveyH5OAuth":                    {"/api/h5/surveys/oauth/callback", "GET", p4SurveyIdentityExternalPushEvidence, "survey.h5.identity", "public", "public_non_pii", "identity.canonical_resolve", "none", nil},
+	"getSurveyExternalPushDetail":              {"/api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push", "GET", p4SurveyIdentityExternalPushEvidence, "questionnaires.read", "human_session", "internal", "questionnaire_submission_external_push_bindings.local_safe_projection", "none", map[string]string{"admin": "global"}},
+	"reconcileSurveyExternalPush":              {"/api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile", "POST", p4SurveyIdentityExternalPushEvidence, "questionnaires.write", "human_session", "internal", "questionnaire_submission_external_push_bindings.local_reconciliation_transaction", "required", map[string]string{"admin": "global"}},
 	"getServicePeriodMemberGridSchema":         {"/api/admin/service-period-products/{service_product_id}/member-grid/schema", "GET", p4ServicePeriodMemberGridCanonicalEvidence, "products.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"queryServicePeriodMemberGrid":             {"/api/admin/service-period-products/{service_product_id}/member-grid/query", "POST", p4ServicePeriodMemberGridCanonicalEvidence, "entitlements.read", "human_session", "internal_pii", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"downloadContactOwnerReassignmentTemplate": {"/api/v1/contact-owner-reassignments/template", "GET", p4ContactOwnerReassignmentEvidence, "contact.owner_reassignment", "human_session", "internal", "contact.owner_reassignment.local_template", "none", map[string]string{"admin": "global"}},
@@ -256,6 +261,11 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"deleteAIAudienceAutomationBinding":          {"/api/admin/ai-audience/packages/{package_id}/automation-binding", "DELETE", p4AIAudienceConfigurationEvidence, "segments.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getAIAudiencePackageSenders":                {"/api/admin/ai-audience/packages/{package_id}/senders", "GET", p4AIAudienceConfigurationEvidence, "segments.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"replaceAIAudiencePackageSenders":            {"/api/admin/ai-audience/packages/{package_id}/senders", "PUT", p4AIAudienceConfigurationEvidence, "segments.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+}
+
+var nativePackageExternalEffects = map[string]string{
+	"startSurveyH5OAuth":    "external_protocol",
+	"callbackSurveyH5OAuth": "external_protocol",
 }
 
 // nativePackagePathParameters freezes identifiers which must cross generated
@@ -1412,12 +1422,16 @@ func validateNativePackageOperation(path string, item *openapi3.PathItem, op *op
 	if _, linked := op.Extensions["x-legacy-mapping-ids"]; linked {
 		return fmt.Errorf("%s native package operation must not claim a legacy mapping", op.OperationID)
 	}
+	externalEffect := "none"
+	if value, ok := nativePackageExternalEffects[op.OperationID]; ok {
+		externalEffect = value
+	}
 	if op.Extensions["x-p4-decision-evidence"] != contract.evidence ||
 		op.Extensions["x-aicrm-capability"] != contract.capability ||
 		op.Extensions["x-aicrm-auth-scheme"] != contract.authScheme ||
 		op.Extensions["x-aicrm-data-classification"] != contract.classification ||
 		op.Extensions["x-aicrm-data-source"] != contract.dataSource ||
-		op.Extensions["x-aicrm-external-effect"] != "none" {
+		op.Extensions["x-aicrm-external-effect"] != externalEffect {
 		return fmt.Errorf("%s native package security or data boundary drifted", op.OperationID)
 	}
 	if contract.authScheme == "public" {

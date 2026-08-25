@@ -1801,6 +1801,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/q/{slug}", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			candidate.GetPublicSurveyPage(writer, request, api.PublicSurveySlug(chi.URLParam(request, "slug")))
 		})},
+		{http.MethodGet, "/api/h5/surveys/oauth/start", http.HandlerFunc(wrapper.StartSurveyH5OAuth)},
+		{http.MethodGet, "/api/h5/surveys/oauth/callback", http.HandlerFunc(wrapper.CallbackSurveyH5OAuth)},
 	} {
 		if err = registerPublicSurvey(route.method, route.pattern, route.endpoint); err != nil {
 			return nil, err
@@ -2043,22 +2045,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-publish", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.PublishQuestionnairePublicDefinition)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-disable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.DisableQuestionnairePublicDefinition)},
 		{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/public-analytics", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(wrapper.GetQuestionnairePublicAnalytics)},
-		{http.MethodGet, surveyhttp.ExternalPushDetailPath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			concrete, ok := candidate.(*candidateHandler)
-			if !ok {
-				writeSurveyPublicAdminUnavailable(writer, request)
-				return
-			}
-			concrete.GetSurveyExternalPushDetail(writer, request)
-		})},
-		{http.MethodPost, surveyhttp.ExternalPushReconcilePath, authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-			concrete, ok := candidate.(*candidateHandler)
-			if !ok {
-				writeSurveyPublicAdminUnavailable(writer, request)
-				return
-			}
-			concrete.ReconcileSurveyExternalPush(writer, request)
-		})},
+		{http.MethodGet, surveyhttp.ExternalPushDetailPath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(wrapper.GetSurveyExternalPushDetail)},
+		{http.MethodPost, surveyhttp.ExternalPushReconcilePath, authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.ReconcileSurveyExternalPush)},
 	}
 	for _, route := range routes {
 		if err = register(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {

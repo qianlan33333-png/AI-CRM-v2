@@ -206,6 +206,9 @@ type GroupOpsPlanID = string
 // InternalEventSafeExportID defines model for InternalEventSafeExportID.
 type InternalEventSafeExportID = string
 
+// QuestionnaireID defines model for QuestionnaireID.
+type QuestionnaireID = int64
+
 // ReleaseCandidateID defines model for ReleaseCandidateID.
 type ReleaseCandidateID = int64
 
@@ -214,6 +217,9 @@ type SegmentID = int64
 
 // StageID defines model for StageID.
 type StageID = int64
+
+// SurveySubmissionID defines model for SurveySubmissionID.
+type SurveySubmissionID = int64
 
 // TagGroupID defines model for TagGroupID.
 type TagGroupID = int64

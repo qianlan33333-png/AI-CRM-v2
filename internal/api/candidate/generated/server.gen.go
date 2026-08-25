@@ -11287,6 +11287,26 @@ type StageListResponse struct {
 	Items []Stage `json:"items"`
 }
 
+// SurveyExternalPushBindingDetail PII-free local binding projection. Provider acceptance and delivery proof are independent facts.
+type SurveyExternalPushBindingDetail struct {
+	DeliveryProven   bool                       `json:"delivery_proven"`
+	EffectId         string                     `json:"effect_id"`
+	ProviderAccepted bool                       `json:"provider_accepted"`
+	State            ExternalEffectRuntimeState `json:"state"`
+	SubmissionId     int64                      `json:"submission_id"`
+}
+
+// SurveyExternalPushReconcileRequest Lease-fenced digest-only manual reconciliation. It cannot enqueue or retry an external dispatch.
+type SurveyExternalPushReconcileRequest struct {
+	DeliveryProven   bool      `json:"delivery_proven"`
+	EffectId         string    `json:"effect_id"`
+	EvidenceDigest   string    `json:"evidence_digest"`
+	Fence            int64     `json:"fence"`
+	Generation       int64     `json:"generation"`
+	LeaseExpiresAt   time.Time `json:"lease_expires_at"`
+	ProviderAccepted bool      `json:"provider_accepted"`
+}
+
 // Tag defines model for Tag.
 type Tag struct {
 	GroupId   *int64  `json:"group_id,omitempty"`
@@ -11579,6 +11599,9 @@ type StageID = int64
 
 // StageIDFilter defines model for StageIDFilter.
 type StageIDFilter = int64
+
+// SurveySubmissionID defines model for SurveySubmissionID.
+type SurveySubmissionID = int64
 
 // TagGroupID defines model for TagGroupID.
 type TagGroupID = int64
@@ -12029,6 +12052,15 @@ type DisableQuestionnairePublicDefinitionParams struct {
 
 // PublishQuestionnairePublicDefinitionParams defines parameters for PublishQuestionnairePublicDefinition.
 type PublishQuestionnairePublicDefinitionParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ReconcileSurveyExternalPushParams defines parameters for ReconcileSurveyExternalPush.
+type ReconcileSurveyExternalPushParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 
@@ -12961,6 +12993,9 @@ type DisableQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyDisableRe
 
 // PublishQuestionnairePublicDefinitionJSONRequestBody defines body for PublishQuestionnairePublicDefinition for application/json ContentType.
 type PublishQuestionnairePublicDefinitionJSONRequestBody = PublicSurveyPublishRequest
+
+// ReconcileSurveyExternalPushJSONRequestBody defines body for ReconcileSurveyExternalPush for application/json ContentType.
+type ReconcileSurveyExternalPushJSONRequestBody = SurveyExternalPushReconcileRequest
 
 // CreateServicePeriodProductJSONRequestBody defines body for CreateServicePeriodProduct for application/json ContentType.
 type CreateServicePeriodProductJSONRequestBody = ServicePeriodProductCreateRequest
@@ -14505,6 +14540,12 @@ type ServerInterface interface {
 	// Publish an immutable local anonymous public survey snapshot
 	// (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
 	PublishQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params PublishQuestionnairePublicDefinitionParams)
+	// Read one PII-free local Survey external-push binding projection
+	// (GET /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push)
+	GetSurveyExternalPushDetail(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, submissionId SurveySubmissionID)
+	// Manually reconcile only an outcome-unknown verified Survey external-push binding
+	// (POST /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile)
+	ReconcileSurveyExternalPush(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, submissionId SurveySubmissionID, params ReconcileSurveyExternalPushParams)
 	// List local service-period products without payment, entitlement, or provider effects
 	// (GET /api/admin/service-period-products)
 	ListServicePeriodProducts(w http.ResponseWriter, r *http.Request, params ListServicePeriodProductsParams)
@@ -15366,6 +15407,18 @@ func (_ Unimplemented) DisableQuestionnairePublicDefinition(w http.ResponseWrite
 // Publish an immutable local anonymous public survey snapshot
 // (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
 func (_ Unimplemented) PublishQuestionnairePublicDefinition(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, params PublishQuestionnairePublicDefinitionParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one PII-free local Survey external-push binding projection
+// (GET /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push)
+func (_ Unimplemented) GetSurveyExternalPushDetail(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, submissionId SurveySubmissionID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Manually reconcile only an outcome-unknown verified Survey external-push binding
+// (POST /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile)
+func (_ Unimplemented) ReconcileSurveyExternalPush(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, submissionId SurveySubmissionID, params ReconcileSurveyExternalPushParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -20388,6 +20441,137 @@ func (siw *ServerInterfaceWrapper) PublishQuestionnairePublicDefinition(w http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PublishQuestionnairePublicDefinition(w, r, questionnaireId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetSurveyExternalPushDetail operation middleware
+func (siw *ServerInterfaceWrapper) GetSurveyExternalPushDetail(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "questionnaire_id" -------------
+	var questionnaireId QuestionnaireID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "questionnaire_id", chi.URLParam(r, "questionnaire_id"), &questionnaireId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "questionnaire_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "submission_id" -------------
+	var submissionId SurveySubmissionID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "submission_id", chi.URLParam(r, "submission_id"), &submissionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "submission_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSurveyExternalPushDetail(w, r, questionnaireId, submissionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReconcileSurveyExternalPush operation middleware
+func (siw *ServerInterfaceWrapper) ReconcileSurveyExternalPush(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "questionnaire_id" -------------
+	var questionnaireId QuestionnaireID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "questionnaire_id", chi.URLParam(r, "questionnaire_id"), &questionnaireId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "questionnaire_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "submission_id" -------------
+	var submissionId SurveySubmissionID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "submission_id", chi.URLParam(r, "submission_id"), &submissionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "submission_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReconcileSurveyExternalPushParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReconcileSurveyExternalPush(w, r, questionnaireId, submissionId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -28743,6 +28927,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/admin/questionnaires/{questionnaire_id}/public-publish", wrapper.PublishQuestionnairePublicDefinition)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push", wrapper.GetSurveyExternalPushDetail)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile", wrapper.ReconcileSurveyExternalPush)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/service-period-products", wrapper.ListServicePeriodProducts)
 	})
 	r.Group(func(r chi.Router) {
@@ -33823,6 +34013,143 @@ func (response PublishQuestionnairePublicDefinition409JSONResponse) VisitPublish
 type PublishQuestionnairePublicDefinition503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response PublishQuestionnairePublicDefinition503JSONResponse) VisitPublishQuestionnairePublicDefinitionResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyExternalPushDetailRequestObject struct {
+	QuestionnaireId QuestionnaireID    `json:"questionnaire_id"`
+	SubmissionId    SurveySubmissionID `json:"submission_id"`
+}
+
+type GetSurveyExternalPushDetailResponseObject interface {
+	VisitGetSurveyExternalPushDetailResponse(w http.ResponseWriter) error
+}
+
+type GetSurveyExternalPushDetail200JSONResponse SurveyExternalPushBindingDetail
+
+func (response GetSurveyExternalPushDetail200JSONResponse) VisitGetSurveyExternalPushDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyExternalPushDetail400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetSurveyExternalPushDetail400JSONResponse) VisitGetSurveyExternalPushDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyExternalPushDetail401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetSurveyExternalPushDetail401JSONResponse) VisitGetSurveyExternalPushDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyExternalPushDetail403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetSurveyExternalPushDetail403JSONResponse) VisitGetSurveyExternalPushDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyExternalPushDetail404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetSurveyExternalPushDetail404JSONResponse) VisitGetSurveyExternalPushDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSurveyExternalPushDetail503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetSurveyExternalPushDetail503JSONResponse) VisitGetSurveyExternalPushDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileSurveyExternalPushRequestObject struct {
+	QuestionnaireId QuestionnaireID    `json:"questionnaire_id"`
+	SubmissionId    SurveySubmissionID `json:"submission_id"`
+	Params          ReconcileSurveyExternalPushParams
+	Body            *ReconcileSurveyExternalPushJSONRequestBody
+}
+
+type ReconcileSurveyExternalPushResponseObject interface {
+	VisitReconcileSurveyExternalPushResponse(w http.ResponseWriter) error
+}
+
+type ReconcileSurveyExternalPush200JSONResponse SurveyExternalPushBindingDetail
+
+func (response ReconcileSurveyExternalPush200JSONResponse) VisitReconcileSurveyExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileSurveyExternalPush400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReconcileSurveyExternalPush400JSONResponse) VisitReconcileSurveyExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileSurveyExternalPush401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReconcileSurveyExternalPush401JSONResponse) VisitReconcileSurveyExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileSurveyExternalPush403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReconcileSurveyExternalPush403JSONResponse) VisitReconcileSurveyExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileSurveyExternalPush404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReconcileSurveyExternalPush404JSONResponse) VisitReconcileSurveyExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileSurveyExternalPush409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReconcileSurveyExternalPush409JSONResponse) VisitReconcileSurveyExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileSurveyExternalPush503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ReconcileSurveyExternalPush503JSONResponse) VisitReconcileSurveyExternalPushResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -42667,6 +42994,12 @@ type StrictServerInterface interface {
 	// Publish an immutable local anonymous public survey snapshot
 	// (POST /api/admin/questionnaires/{questionnaire_id}/public-publish)
 	PublishQuestionnairePublicDefinition(ctx context.Context, request PublishQuestionnairePublicDefinitionRequestObject) (PublishQuestionnairePublicDefinitionResponseObject, error)
+	// Read one PII-free local Survey external-push binding projection
+	// (GET /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push)
+	GetSurveyExternalPushDetail(ctx context.Context, request GetSurveyExternalPushDetailRequestObject) (GetSurveyExternalPushDetailResponseObject, error)
+	// Manually reconcile only an outcome-unknown verified Survey external-push binding
+	// (POST /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile)
+	ReconcileSurveyExternalPush(ctx context.Context, request ReconcileSurveyExternalPushRequestObject) (ReconcileSurveyExternalPushResponseObject, error)
 	// List local service-period products without payment, entitlement, or provider effects
 	// (GET /api/admin/service-period-products)
 	ListServicePeriodProducts(ctx context.Context, request ListServicePeriodProductsRequestObject) (ListServicePeriodProductsResponseObject, error)
@@ -45310,6 +45643,68 @@ func (sh *strictHandler) PublishQuestionnairePublicDefinition(w http.ResponseWri
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PublishQuestionnairePublicDefinitionResponseObject); ok {
 		if err := validResponse.VisitPublishQuestionnairePublicDefinitionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetSurveyExternalPushDetail operation middleware
+func (sh *strictHandler) GetSurveyExternalPushDetail(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, submissionId SurveySubmissionID) {
+	var request GetSurveyExternalPushDetailRequestObject
+
+	request.QuestionnaireId = questionnaireId
+	request.SubmissionId = submissionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSurveyExternalPushDetail(ctx, request.(GetSurveyExternalPushDetailRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSurveyExternalPushDetail")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSurveyExternalPushDetailResponseObject); ok {
+		if err := validResponse.VisitGetSurveyExternalPushDetailResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReconcileSurveyExternalPush operation middleware
+func (sh *strictHandler) ReconcileSurveyExternalPush(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, submissionId SurveySubmissionID, params ReconcileSurveyExternalPushParams) {
+	var request ReconcileSurveyExternalPushRequestObject
+
+	request.QuestionnaireId = questionnaireId
+	request.SubmissionId = submissionId
+	request.Params = params
+
+	var body ReconcileSurveyExternalPushJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReconcileSurveyExternalPush(ctx, request.(ReconcileSurveyExternalPushRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReconcileSurveyExternalPush")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReconcileSurveyExternalPushResponseObject); ok {
+		if err := validResponse.VisitReconcileSurveyExternalPushResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

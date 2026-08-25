@@ -8267,6 +8267,44 @@ export interface SurveyExternalPushOperations {
   configuration_reference?: string;
 }
 
+/**
+ * PII-free local binding projection. Provider acceptance and delivery proof are independent facts.
+ */
+export interface SurveyExternalPushBindingDetail {
+  /** @minimum 1 */
+  submission_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  effect_id: string;
+  state: ExternalEffectRuntimeState;
+  provider_accepted: boolean;
+  delivery_proven: boolean;
+}
+
+/**
+ * Lease-fenced digest-only manual reconciliation. It cannot enqueue or retry an external dispatch.
+ */
+export interface SurveyExternalPushReconcileRequest {
+  /**
+   * @minLength 1
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  effect_id: string;
+  /** @minimum 1 */
+  generation: number;
+  /** @minimum 1 */
+  fence: number;
+  lease_expires_at: string;
+  /** @pattern ^sha256:[0-9a-f]{64}$ */
+  evidence_digest: string;
+  provider_accepted: boolean;
+  delivery_proven: boolean;
+}
+
 export interface SurveyOperationsProjection {
   /** @minimum 1 */
   questionnaire_id: number;
@@ -31033,6 +31071,181 @@ export const callbackSurveyH5OAuth = async (
     status: res.status,
     headers: res.headers,
   } as callbackSurveyH5OAuthResponse;
+};
+
+/**
+ * @summary Read one PII-free local Survey external-push binding projection
+ */
+export type getSurveyExternalPushDetailResponse200 = {
+  data: SurveyExternalPushBindingDetail;
+  status: 200;
+};
+
+export type getSurveyExternalPushDetailResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getSurveyExternalPushDetailResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getSurveyExternalPushDetailResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getSurveyExternalPushDetailResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getSurveyExternalPushDetailResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getSurveyExternalPushDetailResponseSuccess =
+  getSurveyExternalPushDetailResponse200 & {
+    headers: Headers;
+  };
+export type getSurveyExternalPushDetailResponseError = (
+  | getSurveyExternalPushDetailResponse400
+  | getSurveyExternalPushDetailResponse401
+  | getSurveyExternalPushDetailResponse403
+  | getSurveyExternalPushDetailResponse404
+  | getSurveyExternalPushDetailResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSurveyExternalPushDetailResponse =
+  | getSurveyExternalPushDetailResponseSuccess
+  | getSurveyExternalPushDetailResponseError;
+
+export const getGetSurveyExternalPushDetailUrl = (
+  questionnaireId: number,
+  submissionId: number,
+) => {
+  return `/api/admin/questionnaires/${questionnaireId}/submissions/${submissionId}/external-push`;
+};
+
+export const getSurveyExternalPushDetail = async (
+  questionnaireId: number,
+  submissionId: number,
+  options?: RequestInit,
+): Promise<getSurveyExternalPushDetailResponse> => {
+  const res = await fetch(
+    getGetSurveyExternalPushDetailUrl(questionnaireId, submissionId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSurveyExternalPushDetailResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSurveyExternalPushDetailResponse;
+};
+
+/**
+ * @summary Manually reconcile only an outcome-unknown verified Survey external-push binding
+ */
+export type reconcileSurveyExternalPushResponse200 = {
+  data: SurveyExternalPushBindingDetail;
+  status: 200;
+};
+
+export type reconcileSurveyExternalPushResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type reconcileSurveyExternalPushResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reconcileSurveyExternalPushResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reconcileSurveyExternalPushResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type reconcileSurveyExternalPushResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type reconcileSurveyExternalPushResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type reconcileSurveyExternalPushResponseSuccess =
+  reconcileSurveyExternalPushResponse200 & {
+    headers: Headers;
+  };
+export type reconcileSurveyExternalPushResponseError = (
+  | reconcileSurveyExternalPushResponse400
+  | reconcileSurveyExternalPushResponse401
+  | reconcileSurveyExternalPushResponse403
+  | reconcileSurveyExternalPushResponse404
+  | reconcileSurveyExternalPushResponse409
+  | reconcileSurveyExternalPushResponse503
+) & {
+  headers: Headers;
+};
+
+export type reconcileSurveyExternalPushResponse =
+  | reconcileSurveyExternalPushResponseSuccess
+  | reconcileSurveyExternalPushResponseError;
+
+export const getReconcileSurveyExternalPushUrl = (
+  questionnaireId: number,
+  submissionId: number,
+) => {
+  return `/api/admin/questionnaires/${questionnaireId}/submissions/${submissionId}/external-push/reconcile`;
+};
+
+export const reconcileSurveyExternalPush = async (
+  questionnaireId: number,
+  submissionId: number,
+  surveyExternalPushReconcileRequest: SurveyExternalPushReconcileRequest,
+  options?: RequestInit,
+): Promise<reconcileSurveyExternalPushResponse> => {
+  const res = await fetch(
+    getReconcileSurveyExternalPushUrl(questionnaireId, submissionId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(surveyExternalPushReconcileRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reconcileSurveyExternalPushResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reconcileSurveyExternalPushResponse;
 };
 
 /**
