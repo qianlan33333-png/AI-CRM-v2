@@ -14,6 +14,7 @@ type contentDeliveryStub struct {
 	initiated bool
 	part      bool
 	completed bool
+	bound     bool
 }
 
 func (s *contentDeliveryStub) Preview(context.Context, mediaport.ContentPackageCommand) (mediaport.ContentPackage, error) {
@@ -26,7 +27,24 @@ func (s *contentDeliveryStub) Update(context.Context, mediaport.ContentPackageUp
 	return mediaport.ContentPackage{}, nil
 }
 func (s *contentDeliveryStub) Bind(context.Context, mediaport.DeliveryBindingCommand) (mediaport.DeliveryBinding, error) {
+	s.bound = true
 	return mediaport.DeliveryBinding{}, nil
+}
+func (s *contentDeliveryStub) GetBinding(context.Context, string, string) (mediaport.DeliveryBinding, error) {
+	return mediaport.DeliveryBinding{}, nil
+}
+
+func TestContentDeliveryBindingWriteUsesService(t *testing.T) {
+	stub := &contentDeliveryStub{}
+	h := &Handler{contentDelivery: stub}
+	w := httptest.NewRecorder()
+	r := contentRequest(t, http.MethodPost, "/api/admin/campaigns/c/plan/p/content-delivery-binding", `{"package_id":1,"group_invite_id":2}`)
+	r.SetPathValue("campaign_code", "c")
+	r.SetPathValue("plan_id", "p")
+	h.ContentDeliveryBindingCreate(w, r)
+	if w.Code != http.StatusOK || !stub.bound {
+		t.Fatalf("code=%d bound=%v", w.Code, stub.bound)
+	}
 }
 func (s *contentDeliveryStub) InitiatePDF(context.Context, mediaport.AttachmentUploadInitiateCommand) (int64, error) {
 	s.initiated = true

@@ -80,6 +80,14 @@ func (r *ContentDeliveryRepository) Bind(ctx context.Context, c mediaport.Delive
 	v, e := q.UpdateMediaCampaignDeliveryBinding(ctx, mediadb.UpdateMediaCampaignDeliveryBindingParams{PackageID: c.PackageID, GroupInviteID: c.GroupInviteID, ActorID: c.Actor, Now: stamp(n), CampaignCode: c.CampaignCode, PlanID: c.PlanID, ExpectedVersion: c.ExpectedVersion})
 	return binding(v), e
 }
+func (r *ContentDeliveryRepository) GetBinding(ctx context.Context, campaignCode, planID string) (mediaport.DeliveryBinding, error) {
+	q, e := contentQueries(ctx)
+	if e != nil {
+		return mediaport.DeliveryBinding{}, e
+	}
+	v, e := q.GetMediaCampaignDeliveryBinding(ctx, mediadb.GetMediaCampaignDeliveryBindingParams{CampaignCode: campaignCode, PlanID: planID})
+	return binding(v), e
+}
 func binding(v mediadb.MediaCampaignDeliveryBinding) mediaport.DeliveryBinding {
 	return mediaport.DeliveryBinding{ID: v.ID, CampaignCode: v.CampaignCode, PlanID: v.PlanID, PackageID: v.PackageID, GroupInviteID: v.GroupInviteID, Version: v.Version}
 }

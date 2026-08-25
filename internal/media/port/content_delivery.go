@@ -58,6 +58,7 @@ type ContentDeliveryService interface {
 	Create(context.Context, ContentPackageCommand) (ContentPackage, error)
 	Update(context.Context, ContentPackageUpdateCommand) (ContentPackage, error)
 	Bind(context.Context, DeliveryBindingCommand) (DeliveryBinding, error)
+	GetBinding(context.Context, string, string) (DeliveryBinding, error)
 	InitiatePDF(context.Context, AttachmentUploadInitiateCommand) (int64, error)
 	PutPDFPart(context.Context, AttachmentUploadPartCommand) error
 	CompletePDF(context.Context, AttachmentUploadCompleteCommand) (int64, error)

@@ -22,6 +22,7 @@ type ContentDeliveryStore interface {
 	Create(context.Context, mediaport.ContentPackageCommand, time.Time) (mediaport.ContentPackage, error)
 	Update(context.Context, mediaport.ContentPackageUpdateCommand, time.Time) (mediaport.ContentPackage, error)
 	Bind(context.Context, mediaport.DeliveryBindingCommand, time.Time) (mediaport.DeliveryBinding, error)
+	GetBinding(context.Context, string, string) (mediaport.DeliveryBinding, error)
 	Initiate(context.Context, mediaport.AttachmentUploadInitiateCommand, [32]byte, time.Time) (int64, error)
 	PutPart(context.Context, mediaport.AttachmentUploadPartCommand, [32]byte, time.Time) (bool, error)
 	Complete(context.Context, mediaport.AttachmentUploadCompleteCommand, time.Time) (int64, error)
@@ -77,6 +78,16 @@ func (s *ContentDelivery) Bind(ctx context.Context, c mediaport.DeliveryBindingC
 	err = s.uow.Within(ctx, func(tx context.Context) error { out, err = s.store.Bind(tx, c, s.now().UTC()); return err })
 	if err != nil {
 		return out, ErrContentDeliveryConflict
+	}
+	return out, nil
+}
+func (s *ContentDelivery) GetBinding(ctx context.Context, campaignCode, planID string) (out mediaport.DeliveryBinding, err error) {
+	if s == nil || s.store == nil || campaignCode == "" || planID == "" {
+		return out, ErrContentDeliveryInvalid
+	}
+	err = s.uow.Within(ctx, func(tx context.Context) error { out, err = s.store.GetBinding(tx, campaignCode, planID); return err })
+	if err != nil {
+		return out, ErrContentDeliveryUnavailable
 	}
 	return out, nil
 }
