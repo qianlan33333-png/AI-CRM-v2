@@ -26,7 +26,7 @@ import type {
   WecomTag,
 } from './types';
 import { SEED_DB, deepCopy } from './mockData';
-import { archiveAudiencePackage, archiveTagDto, copyAudiencePackageDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, queueTagSyncDto, readAdminPage, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveRadarLinkDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setRadarEnabled, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext } from '../../api/admin';
+import { archiveAudiencePackage, archiveTagDto, copyAudiencePackageDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveRadarLinkDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setRadarEnabled, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
 
@@ -41,6 +41,7 @@ export interface AdminApi {
   saveRadarLink(input: RadarLinkInput): Promise<RadarLink>;
   listRadarEvents(linkId: number): Promise<RadarEvent[]>;
   getRadarSharePath(linkId: number): Promise<string>;
+  getCouponSharePath(couponId: number): Promise<string>;
   /** 上传雷达图片素材（multipart），返回可引用的素材描述 */
   uploadRadarImage(file: File): Promise<RadarMedia>;
   /** 上传雷达 PDF 素材 */
@@ -184,6 +185,10 @@ export class MockApi implements AdminApi {
   getRadarSharePath(linkId: number): Promise<string> {
     const link = this.db.radarLinks.find((item) => item.id === linkId);
     return delay(link ? `/r/${link.code}` : '');
+  }
+
+  getCouponSharePath(couponId: number): Promise<string> {
+    return delay(`/c/c-${couponId}`);
   }
 
   uploadRadarImage(file: File): Promise<RadarMedia> {
@@ -545,6 +550,10 @@ export class HttpApi implements AdminApi {
 
   getRadarSharePath(linkId: number): Promise<string> {
     return readRadarSharePath(linkId);
+  }
+
+  getCouponSharePath(couponId: number): Promise<string> {
+    return readCouponSharePath(couponId);
   }
 
   uploadRadarImage(file: File): Promise<RadarMedia> {

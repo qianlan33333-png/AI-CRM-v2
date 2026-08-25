@@ -30,8 +30,12 @@ const RC_STATUS: Record<AiRecipientStatus, [string, Tone]> = {
 };
 
 export async function mountAiAssistant(root: HTMLElement, api: AdminApi, opts: AiMountOpts): Promise<void> {
-  const db = await api.loadDb();
   root.className = 'labs sec-ai';
+  if (api.mode === 'http') {
+    root.innerHTML = '<div class="card" style="margin:24px;padding:32px;text-align:center;color:#8F959E"><strong style="display:block;color:#1F2329;margin-bottom:8px">后端能力未就绪</strong>当前 AI 审阅壳的 ai-assist DTO 与 Cloud Orchestrator campaigns / touch-plans / review 契约不等价，页面未发送请求。</div>';
+    return;
+  }
+  const db = await api.loadDb({ page: opts.view === 'list' ? 'ai' : 'aiDetail', id: opts.id == null ? undefined : String(opts.id) });
   if (opts.view === 'list') renderList(root, db.aiPlans);
   else void renderDetail(root, api, db.aiPlans, opts.id);
 }

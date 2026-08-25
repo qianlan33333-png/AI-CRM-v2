@@ -206,13 +206,17 @@ export class AdminController extends PageBase {
 
   /* ================= 分享组件（商品 / 周期商品 / 优惠券 / 问卷共用） ================= */
 
-  openShare(kind: string, title: string, code: string): void {
+  openShare(kind: string, title: string, code: string, path?: string): void {
+    if (this.api.mode === 'http' && !path) {
+      toast(`后端能力未就绪：${kind}暂无可用公开分享地址`, true);
+      return;
+    }
     this.setState({
       modal: 'share',
       shareKind: kind,
       shareTitle: title,
       shareCode: code,
-      shareUrl: 'https://crm.example.com/s/' + code,
+      shareUrl: path ? new URL(path, location.origin).toString() : 'https://mock.invalid/s/' + code,
     });
     const el = document.getElementById('shareQrBox');
     if (el) renderFakeQr(el, code);
@@ -479,8 +483,7 @@ export class AdminController extends PageBase {
   /* ================= 问卷 · 运营配置 ================= */
 
   private currentQid(): number {
-    const id = this.pageId();
-    return id >= 0 && id < this.db.rows.questionnaires.length ? id : 0;
+    return this.db.rows.questionnaires[0]?.resourceId ?? this.pageId();
   }
 
   private currentOps(): QuestionnaireOps | undefined {
@@ -493,7 +496,7 @@ export class AdminController extends PageBase {
 
   private saveOps(): void {
     const ops = this.currentOps();
-    if (!ops) return;
+    if (!ops) { toast('后端未返回可编辑的问卷运营配置 DTO，未发送请求', true); return; }
     const next: QuestionnaireOps = deepCopy(ops);
     next.postEnabled = this.state.postEnabled;
     next.postType = this.state.postType;
@@ -524,7 +527,7 @@ export class AdminController extends PageBase {
       toast('运营配置已保存');
       this.paramsDraft = null;
       void this.init();
-    });
+    }).catch((error) => toast(error instanceof Error ? error.message : '运营配置保存失败', true));
   }
 
   /* ================= 企微标签 ================= */
@@ -981,12 +984,7 @@ export class AdminController extends PageBase {
       edit: () => this.goto('productForm'),
       shareIt: () => this.openShare('商品', p.name, p.code.toLowerCase()),
       toggle: () => {
-        const on = p.status !== '已上架';
-        if (!on) {
-          confirmBox('下架商品', '下架后「' + p.name + '」将立即停售，确认下架？', '确认下架', true, () => toast('已下架'));
-        } else {
-          toast('已上架');
-        }
+        toast('后端能力未就绪：商品读取 DTO 未返回 lifecycle，无法安全决定启用或停用', true);
       },
       toggleText: p.status === '已上架' ? '下架' : '上架',
     }));
@@ -997,11 +995,7 @@ export class AdminController extends PageBase {
       data: () => this.goto('spProductData', '?id=' + idx),
       shareIt: () => this.openShare('周期商品', p.name, p.code.toLowerCase()),
       toggle: () => {
-        if (p.status === '已上架') {
-          confirmBox('下架周期商品', '下架后「' + p.name + '」将停止售卖与续费开通，确认下架？', '确认下架', true, () => toast('已下架'));
-        } else {
-          toast('已上架');
-        }
+        toast('后端能力未就绪：周期商品页面尚未绑定 lifecycle/version，未发送请求', true);
       },
       toggleText: p.status === '已上架' ? '下架' : '上架',
     }));
@@ -1009,7 +1003,11 @@ export class AdminController extends PageBase {
       ...r,
       cs: mk(r.tone),
       data: () => this.goto('couponData', '?id=' + idx),
-      shareIt: () => this.openShare('优惠券', r.name, r.code),
+      shareIt: () => {
+        if (this.api.mode === 'mock') return this.openShare('优惠券', r.name, r.code, `/c/c-${r.resourceId || idx + 1}`);
+        if (!r.resourceId) return toast('优惠券缺少服务端资源 ID，无法读取分享地址', true);
+        void this.api.getCouponSharePath(r.resourceId).then((path) => this.openShare('优惠券', r.name, r.code, path)).catch((error) => toast(error instanceof Error ? error.message : '分享地址读取失败', true));
+      },
     }));
     const couponIdx = this.pageId();
     const coupon = rows.coupons[couponIdx] || rows.coupons[0];
@@ -1230,10 +1228,10 @@ export class AdminController extends PageBase {
         redirectTypeOpts,
         freqOpts,
         save: () => this.saveOps(),
-        testPush: (ev: Event) => busy(ev.currentTarget as FbEl, 800, () => toast('测试推送已发送（200）')),
-        copyPublic: () => copyText('https://crm.example.com/q/salon-' + qid, toast),
-        openPublic: () => toast('公开页预览已打开（示意）'),
-        viewLogs: (ev: Event) => busy(ev.currentTarget as FbEl, 400, () => toast('推送日志加载完成')),
+        testPush: () => toast('后端能力未就绪：当前表单没有 OpenAPI 要求的 opaque configuration reference，未发送请求', true),
+        copyPublic: () => qRow?.publicPath ? copyText(new URL(qRow.publicPath, location.origin).toString(), toast) : toast('后端未返回问卷公开地址', true),
+        openPublic: () => qRow?.publicPath ? window.open(new URL(qRow.publicPath, location.origin).toString(), '_blank', 'noopener') : toast('后端未返回问卷公开地址', true),
+        viewLogs: () => this.setState({ opsTab: 2 }),
         back: () => this.goto('questionnaires'),
       },
 
@@ -1394,7 +1392,7 @@ export class AdminController extends PageBase {
         noClaims: claimRows.length === 0,
         editConfig: () => this.goto('couponForm'),
         back: () => this.goto('coupons'),
-        shareIt: () => coupon && this.openShare('优惠券', coupon.name, coupon.code),
+        shareIt: () => couponRows[couponIdx]?.shareIt(),
       },
 
       /* 配置中心 */
@@ -1432,7 +1430,7 @@ export class AdminController extends PageBase {
           delStyle: { fontSize: '13px', cursor: r.off ? 'pointer' : 'not-allowed', color: r.off ? '#D83931' : '#BBBFC4' },
           view: () => this.goto('questionnaireDetail', '?id=' + (r.resourceId ?? idx)),
           opsGo: () => this.goto('questionnaireOps', '?id=' + (r.resourceId ?? idx)),
-          shareIt: () => this.openShare('问卷', r.name, 'q' + idx + 'salon'),
+          shareIt: () => this.openShare('问卷', r.name, 'q' + idx, r.publicPath),
         })),
         qSubs: rows.qSubs,
         qApply: rows.qApply.map((r) => ({ ...r, cs: mk(r.tone) })),

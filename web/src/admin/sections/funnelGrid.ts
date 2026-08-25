@@ -89,6 +89,11 @@ export interface FunnelGridOpts {
 }
 
 export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: FunnelGridOpts): Promise<void> {
+  if (api.mode === 'http') {
+    root.className = 'labs sec-funnel';
+    root.innerHTML = '<div class="card" style="margin:24px;padding:32px;text-align:center;color:#8F959E"><strong style="display:block;color:#1F2329;margin-bottom:8px">后端能力未就绪</strong>当前漏斗行/视图 DTO 与 Member Grid schema/query/views 契约不等价，页面未发送漏斗请求。</div>';
+    return;
+  }
   const [rows, views] = await Promise.all([api.listFunnelRows(), api.listFunnelViews()]);
   root.className = 'labs sec-funnel';
 

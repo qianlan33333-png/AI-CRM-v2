@@ -349,6 +349,7 @@ export interface Stat {
 export interface Questionnaire {
   /** OpenAPI questionnaire id; only used for real detail navigation. */
   resourceId?: number;
+  publicPath?: string;
   name: string;
   assess: boolean;
   off: boolean;
