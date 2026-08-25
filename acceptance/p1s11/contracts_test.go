@@ -225,6 +225,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"CreateCloudCampaignTouchPlan", "GetCloudCampaignTouchPlan", "ListCloudCampaignTouchPlans", "GetCloudCampaignTouchPlanRecipient", "GetCloudCampaignTouchPlanReview", "ListCloudCampaignTouchPlanRecipients", "MutateCloudCampaignTouchPlanReview",
 		"MintSidebarContext", "GetSidebarWorkbench", "UpdateSidebarProfile", "ListSidebarQuestionnaires", "ListSidebarOrders", "ListSidebarPeriodicOrders", "UpdateSidebarPeriodicRemark", "ListSidebarMaterials", "GetSidebarMaterialThumbnailStatus",
 		"CreateContactOwnerReassignmentPreview", "GetContactOwnerReassignmentPreview", "DownloadContactOwnerReassignmentErrors", "ExecuteContactOwnerReassignmentPreview", "DownloadContactOwnerReassignmentResults", "DownloadContactOwnerReassignmentTemplate",
+		"ListReleaseCandidates", "RegisterReleaseCandidate", "GetReleaseCandidate", "RecordReleasePrerequisite", "PrepareReleaseCandidate", "StartReleaseCutover", "RestartReleaseCutover", "CompleteReleaseCutoverStep", "ActivateReleaseCandidate", "RecordReleaseRollbackCheck", "RequestReleaseRollback", "CompleteReleaseRollback",
 	})
 }
 

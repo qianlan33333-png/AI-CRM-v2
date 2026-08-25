@@ -55,6 +55,7 @@ func TestFrozenCapabilitiesAreKnown(t *testing.T) {
 		CapabilityOperationsRead, CapabilityOperationsManage,
 		CapabilityAdminShellRead,
 		CapabilityContactOwnerReassignment,
+		CapabilityReleaseRead, CapabilityReleaseManage,
 	} {
 		if !capability.Known() {
 			t.Fatalf("capability %q is not known", capability)

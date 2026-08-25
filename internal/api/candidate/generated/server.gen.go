@@ -5179,6 +5179,120 @@ func (e PublicSurveyResultLocalOnly) Valid() bool {
 	}
 }
 
+// Defines values for ReleaseCandidateState.
+const (
+	ReleaseCandidateStateActivated       ReleaseCandidateState = "activated"
+	ReleaseCandidateStateCutoverActive   ReleaseCandidateState = "cutover_active"
+	ReleaseCandidateStateDraft           ReleaseCandidateState = "draft"
+	ReleaseCandidateStatePrepared        ReleaseCandidateState = "prepared"
+	ReleaseCandidateStateRollbackPending ReleaseCandidateState = "rollback_pending"
+	ReleaseCandidateStateRolledBack      ReleaseCandidateState = "rolled_back"
+)
+
+// Valid indicates whether the value is a known member of the ReleaseCandidateState enum.
+func (e ReleaseCandidateState) Valid() bool {
+	switch e {
+	case ReleaseCandidateStateActivated:
+		return true
+	case ReleaseCandidateStateCutoverActive:
+		return true
+	case ReleaseCandidateStateDraft:
+		return true
+	case ReleaseCandidateStatePrepared:
+		return true
+	case ReleaseCandidateStateRollbackPending:
+		return true
+	case ReleaseCandidateStateRolledBack:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReleaseCutoverStep.
+const (
+	Announce     ReleaseCutoverStep = "announce"
+	Quiesce      ReleaseCutoverStep = "quiesce"
+	SchemaVerify ReleaseCutoverStep = "schema_verify"
+	Switch       ReleaseCutoverStep = "switch"
+	Verify       ReleaseCutoverStep = "verify"
+)
+
+// Valid indicates whether the value is a known member of the ReleaseCutoverStep enum.
+func (e ReleaseCutoverStep) Valid() bool {
+	switch e {
+	case Announce:
+		return true
+	case Quiesce:
+		return true
+	case SchemaVerify:
+		return true
+	case Switch:
+		return true
+	case Verify:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReleasePrerequisiteKind.
+const (
+	BackupRestoreDrill ReleasePrerequisiteKind = "backup_restore_drill"
+	CampaignClosure    ReleasePrerequisiteKind = "campaign_closure"
+	CommerceClosure    ReleasePrerequisiteKind = "commerce_closure"
+	ContactClosure     ReleasePrerequisiteKind = "contact_closure"
+	Migration          ReleasePrerequisiteKind = "migration"
+	Nightly            ReleasePrerequisiteKind = "nightly"
+	OutboundClosure    ReleasePrerequisiteKind = "outbound_closure"
+)
+
+// Valid indicates whether the value is a known member of the ReleasePrerequisiteKind enum.
+func (e ReleasePrerequisiteKind) Valid() bool {
+	switch e {
+	case BackupRestoreDrill:
+		return true
+	case CampaignClosure:
+		return true
+	case CommerceClosure:
+		return true
+	case ContactClosure:
+		return true
+	case Migration:
+		return true
+	case Nightly:
+		return true
+	case OutboundClosure:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReleaseRollbackCheckKind.
+const (
+	DataReconciliation              ReleaseRollbackCheckKind = "data_reconciliation"
+	OutboundReconciliation          ReleaseRollbackCheckKind = "outbound_reconciliation"
+	RollbackExecutionReconciliation ReleaseRollbackCheckKind = "rollback_execution_reconciliation"
+	SchemaCompatibility             ReleaseRollbackCheckKind = "schema_compatibility"
+)
+
+// Valid indicates whether the value is a known member of the ReleaseRollbackCheckKind enum.
+func (e ReleaseRollbackCheckKind) Valid() bool {
+	switch e {
+	case DataReconciliation:
+		return true
+	case OutboundReconciliation:
+		return true
+	case RollbackExecutionReconciliation:
+		return true
+	case SchemaCompatibility:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ResolveIdentityConflictStatus.
 const (
 	ResolveIdentityConflictStatusConflict ResolveIdentityConflictStatus = "conflict"
@@ -6681,19 +6795,19 @@ func (e ListAutomationTriggerRunsParamsVisibility) Valid() bool {
 
 // Defines values for ListLegacyChannelsParamsStatus.
 const (
-	ListLegacyChannelsParamsStatusActive   ListLegacyChannelsParamsStatus = "active"
-	ListLegacyChannelsParamsStatusArchived ListLegacyChannelsParamsStatus = "archived"
-	ListLegacyChannelsParamsStatusInactive ListLegacyChannelsParamsStatus = "inactive"
+	Active   ListLegacyChannelsParamsStatus = "active"
+	Archived ListLegacyChannelsParamsStatus = "archived"
+	Inactive ListLegacyChannelsParamsStatus = "inactive"
 )
 
 // Valid indicates whether the value is a known member of the ListLegacyChannelsParamsStatus enum.
 func (e ListLegacyChannelsParamsStatus) Valid() bool {
 	switch e {
-	case ListLegacyChannelsParamsStatusActive:
+	case Active:
 		return true
-	case ListLegacyChannelsParamsStatusArchived:
+	case Archived:
 		return true
-	case ListLegacyChannelsParamsStatusInactive:
+	case Inactive:
 		return true
 	default:
 		return false
@@ -9641,10 +9755,159 @@ type PublicSurveySubmissionResponse struct {
 	ResultToken string `json:"result_token"`
 }
 
+// RecordReleasePrerequisiteRequest defines model for RecordReleasePrerequisiteRequest.
+type RecordReleasePrerequisiteRequest struct {
+	EvidenceSha string                  `json:"evidence_sha"`
+	Kind        ReleasePrerequisiteKind `json:"kind"`
+}
+
+// RecordReleaseRollbackCheckRequest defines model for RecordReleaseRollbackCheckRequest.
+type RecordReleaseRollbackCheckRequest struct {
+	EvidenceSha string                   `json:"evidence_sha"`
+	Kind        ReleaseRollbackCheckKind `json:"kind"`
+	Passed      bool                     `json:"passed"`
+}
+
+// RegisterReleaseCandidateRequest defines model for RegisterReleaseCandidateRequest.
+type RegisterReleaseCandidateRequest struct {
+	ArtifactDigest      string `json:"artifact_digest"`
+	CommitSha           string `json:"commit_sha"`
+	ConfigDigest        string `json:"config_digest"`
+	ManifestDigest      string `json:"manifest_digest"`
+	TargetSchemaVersion int64  `json:"target_schema_version"`
+}
+
 // RejectIdentityMergeReviewRequest defines model for RejectIdentityMergeReviewRequest.
 type RejectIdentityMergeReviewRequest struct {
 	ExpectedVersion int64  `json:"expected_version"`
 	Reason          string `json:"reason"`
+}
+
+// ReleaseCandidate defines model for ReleaseCandidate.
+type ReleaseCandidate struct {
+	ActivatedAt         *time.Time            `json:"activated_at,omitempty"`
+	ArtifactDigest      string                `json:"artifact_digest"`
+	CommitSha           string                `json:"commit_sha"`
+	ConfigDigest        string                `json:"config_digest"`
+	CreatedAt           time.Time             `json:"created_at"`
+	CreatedBy           int64                 `json:"created_by"`
+	Id                  int64                 `json:"id"`
+	ManifestDigest      string                `json:"manifest_digest"`
+	PreparedAt          *time.Time            `json:"prepared_at,omitempty"`
+	RollbackRequestedAt *time.Time            `json:"rollback_requested_at,omitempty"`
+	RolledBackAt        *time.Time            `json:"rolled_back_at,omitempty"`
+	State               ReleaseCandidateState `json:"state"`
+	TargetSchemaVersion int64                 `json:"target_schema_version"`
+}
+
+// ReleaseCandidateDetail defines model for ReleaseCandidateDetail.
+type ReleaseCandidateDetail struct {
+	ActiveWorker        *ReleaseWorkerSummary        `json:"active_worker,omitempty"`
+	Candidate           ReleaseCandidate             `json:"candidate"`
+	CutoverProgress     []ReleaseCutoverProgress     `json:"cutover_progress"`
+	Prerequisites       []ReleasePrerequisiteReceipt `json:"prerequisites"`
+	Readiness           ReleaseReadiness             `json:"readiness"`
+	RollbackChecks      []ReleaseRollbackCheck       `json:"rollback_checks"`
+	RollbackEligibility ReleaseRollbackEligibility   `json:"rollback_eligibility"`
+}
+
+// ReleaseCandidateList defines model for ReleaseCandidateList.
+type ReleaseCandidateList struct {
+	Items []ReleaseCandidate `json:"items"`
+}
+
+// ReleaseCandidateState defines model for ReleaseCandidateState.
+type ReleaseCandidateState string
+
+// ReleaseCutoverProgress defines model for ReleaseCutoverProgress.
+type ReleaseCutoverProgress struct {
+	CandidateId int64              `json:"candidate_id"`
+	CompletedAt time.Time          `json:"completed_at"`
+	CompletedBy int64              `json:"completed_by"`
+	Generation  int64              `json:"generation"`
+	Id          int64              `json:"id"`
+	Step        ReleaseCutoverStep `json:"step"`
+}
+
+// ReleaseCutoverStep defines model for ReleaseCutoverStep.
+type ReleaseCutoverStep string
+
+// ReleasePrerequisiteKind defines model for ReleasePrerequisiteKind.
+type ReleasePrerequisiteKind string
+
+// ReleasePrerequisiteReceipt defines model for ReleasePrerequisiteReceipt.
+type ReleasePrerequisiteReceipt struct {
+	EvidenceSha string                  `json:"evidence_sha"`
+	Id          int64                   `json:"id"`
+	Kind        ReleasePrerequisiteKind `json:"kind"`
+	RecordedAt  time.Time               `json:"recorded_at"`
+	RecordedBy  int64                   `json:"recorded_by"`
+	Subject     ReleaseSubject          `json:"subject"`
+}
+
+// ReleaseReadiness defines model for ReleaseReadiness.
+type ReleaseReadiness struct {
+	CandidateId int64                     `json:"candidate_id"`
+	CheckedAt   time.Time                 `json:"checked_at"`
+	Invalid     []ReleasePrerequisiteKind `json:"invalid"`
+	Missing     []ReleasePrerequisiteKind `json:"missing"`
+	Ready       bool                      `json:"ready"`
+}
+
+// ReleaseRollbackCheck defines model for ReleaseRollbackCheck.
+type ReleaseRollbackCheck struct {
+	CandidateId int64                    `json:"candidate_id"`
+	EvidenceSha string                   `json:"evidence_sha"`
+	Id          int64                    `json:"id"`
+	Kind        ReleaseRollbackCheckKind `json:"kind"`
+	Passed      bool                     `json:"passed"`
+	RecordedAt  time.Time                `json:"recorded_at"`
+	RecordedBy  int64                    `json:"recorded_by"`
+}
+
+// ReleaseRollbackCheckKind defines model for ReleaseRollbackCheckKind.
+type ReleaseRollbackCheckKind string
+
+// ReleaseRollbackEligibility defines model for ReleaseRollbackEligibility.
+type ReleaseRollbackEligibility struct {
+	Blocked     []ReleaseRollbackCheckKind `json:"blocked"`
+	CandidateId int64                      `json:"candidate_id"`
+	CheckedAt   time.Time                  `json:"checked_at"`
+	Eligible    bool                       `json:"eligible"`
+	Missing     []ReleaseRollbackCheckKind `json:"missing"`
+}
+
+// ReleaseSubject defines model for ReleaseSubject.
+type ReleaseSubject struct {
+	ArtifactDigest      string `json:"artifact_digest"`
+	CandidateId         int64  `json:"candidate_id"`
+	CommitSha           string `json:"commit_sha"`
+	ConfigDigest        string `json:"config_digest"`
+	ManifestDigest      string `json:"manifest_digest"`
+	TargetSchemaVersion int64  `json:"target_schema_version"`
+}
+
+// ReleaseWorkerCommand defines model for ReleaseWorkerCommand.
+type ReleaseWorkerCommand struct {
+	Fence      string `json:"fence"`
+	Generation int64  `json:"generation"`
+}
+
+// ReleaseWorkerLease defines model for ReleaseWorkerLease.
+type ReleaseWorkerLease struct {
+	CandidateId int64     `json:"candidate_id"`
+	Fence       string    `json:"fence"`
+	Generation  int64     `json:"generation"`
+	StartedAt   time.Time `json:"started_at"`
+	StartedBy   int64     `json:"started_by"`
+}
+
+// ReleaseWorkerSummary defines model for ReleaseWorkerSummary.
+type ReleaseWorkerSummary struct {
+	CandidateId int64     `json:"candidate_id"`
+	Generation  int64     `json:"generation"`
+	StartedAt   time.Time `json:"started_at"`
+	StartedBy   int64     `json:"started_by"`
 }
 
 // RenameStageRequest defines model for RenameStageRequest.
@@ -10765,6 +11028,9 @@ type PushCenterTraceIDFilter = string
 // QuestionnaireID defines model for QuestionnaireID.
 type QuestionnaireID = int64
 
+// ReleaseCandidateID defines model for ReleaseCandidateID.
+type ReleaseCandidateID = int64
+
 // SegmentID defines model for SegmentID.
 type SegmentID = int64
 
@@ -11483,6 +11749,101 @@ type GetSidebarWorkbenchParams struct {
 	XSidebarContextToken SidebarContextToken `json:"X-Sidebar-Context-Token"`
 }
 
+// ListReleaseCandidatesParams defines parameters for ListReleaseCandidates.
+type ListReleaseCandidatesParams struct {
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// RegisterReleaseCandidateParams defines parameters for RegisterReleaseCandidate.
+type RegisterReleaseCandidateParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ActivateReleaseCandidateParams defines parameters for ActivateReleaseCandidate.
+type ActivateReleaseCandidateParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RestartReleaseCutoverParams defines parameters for RestartReleaseCutover.
+type RestartReleaseCutoverParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// StartReleaseCutoverParams defines parameters for StartReleaseCutover.
+type StartReleaseCutoverParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CompleteReleaseCutoverStepParams defines parameters for CompleteReleaseCutoverStep.
+type CompleteReleaseCutoverStepParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// PrepareReleaseCandidateParams defines parameters for PrepareReleaseCandidate.
+type PrepareReleaseCandidateParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RecordReleasePrerequisiteParams defines parameters for RecordReleasePrerequisite.
+type RecordReleasePrerequisiteParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RecordReleaseRollbackCheckParams defines parameters for RecordReleaseRollbackCheck.
+type RecordReleaseRollbackCheckParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CompleteReleaseRollbackParams defines parameters for CompleteReleaseRollback.
+type CompleteReleaseRollbackParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RequestReleaseRollbackParams defines parameters for RequestReleaseRollback.
+type RequestReleaseRollbackParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // LogoutAdminParams defines parameters for LogoutAdmin.
 type LogoutAdminParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -12034,6 +12395,24 @@ type UpdateSidebarPeriodicRemarkJSONRequestBody UpdateSidebarPeriodicRemarkJSONB
 
 // UpdateSidebarProfileJSONRequestBody defines body for UpdateSidebarProfile for application/json ContentType.
 type UpdateSidebarProfileJSONRequestBody UpdateSidebarProfileJSONBody
+
+// RegisterReleaseCandidateJSONRequestBody defines body for RegisterReleaseCandidate for application/json ContentType.
+type RegisterReleaseCandidateJSONRequestBody = RegisterReleaseCandidateRequest
+
+// ActivateReleaseCandidateJSONRequestBody defines body for ActivateReleaseCandidate for application/json ContentType.
+type ActivateReleaseCandidateJSONRequestBody = ReleaseWorkerCommand
+
+// RestartReleaseCutoverJSONRequestBody defines body for RestartReleaseCutover for application/json ContentType.
+type RestartReleaseCutoverJSONRequestBody = ReleaseWorkerCommand
+
+// CompleteReleaseCutoverStepJSONRequestBody defines body for CompleteReleaseCutoverStep for application/json ContentType.
+type CompleteReleaseCutoverStepJSONRequestBody = ReleaseWorkerCommand
+
+// RecordReleasePrerequisiteJSONRequestBody defines body for RecordReleasePrerequisite for application/json ContentType.
+type RecordReleasePrerequisiteJSONRequestBody = RecordReleasePrerequisiteRequest
+
+// RecordReleaseRollbackCheckJSONRequestBody defines body for RecordReleaseRollbackCheck for application/json ContentType.
+type RecordReleaseRollbackCheckJSONRequestBody = RecordReleaseRollbackCheckRequest
 
 // ExecuteContactOwnerReassignmentPreviewJSONRequestBody defines body for ExecuteContactOwnerReassignmentPreview for application/json ContentType.
 type ExecuteContactOwnerReassignmentPreviewJSONRequestBody = ContactOwnerReassignmentExecuteRequest
@@ -13575,6 +13954,42 @@ type ServerInterface interface {
 	// List non-secret configuration readiness
 	// (GET /api/v1/admin/config/overview)
 	GetAdminConfigOverview(w http.ResponseWriter, r *http.Request)
+	// List local release attestation candidates
+	// (GET /api/v1/admin/release-candidates)
+	ListReleaseCandidates(w http.ResponseWriter, r *http.Request, params ListReleaseCandidatesParams)
+	// Record one local release attestation candidate; never deploys or executes backup, provider, payment, or WeCom work
+	// (POST /api/v1/admin/release-candidates)
+	RegisterReleaseCandidate(w http.ResponseWriter, r *http.Request, params RegisterReleaseCandidateParams)
+	// Read the local candidate detail including readiness and rollback eligibility
+	// (GET /api/v1/admin/release-candidates/{candidate_id})
+	GetReleaseCandidate(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID)
+	// Mark a fully journaled candidate locally activated
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/activate)
+	ActivateReleaseCandidate(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params ActivateReleaseCandidateParams)
+	// Rotate a local cutover journal generation using its current fence
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/cutover/restart)
+	RestartReleaseCutover(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params RestartReleaseCutoverParams)
+	// Start a local cutover journal generation
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/cutover/start)
+	StartReleaseCutover(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params StartReleaseCutoverParams)
+	// Append one ordered local cutover-journal step using the current fence
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/cutover/steps/{step}/complete)
+	CompleteReleaseCutoverStep(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, step ReleaseCutoverStep, params CompleteReleaseCutoverStepParams)
+	// Prepare a locally ready candidate
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/prepare)
+	PrepareReleaseCandidate(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params PrepareReleaseCandidateParams)
+	// Record an exact-subject local prerequisite receipt
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/prerequisites)
+	RecordReleasePrerequisite(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params RecordReleasePrerequisiteParams)
+	// Record a local rollback-reconciliation check
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/rollback-checks)
+	RecordReleaseRollbackCheck(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params RecordReleaseRollbackCheckParams)
+	// Close a local rollback journal after reconciliation evidence
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/rollback/complete)
+	CompleteReleaseRollback(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params CompleteReleaseRollbackParams)
+	// Record a local rollback request; it does not execute a rollback
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/rollback/request)
+	RequestReleaseRollback(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params RequestReleaseRollbackParams)
 	// Invalidate the current admin session
 	// (POST /api/v1/auth/logout)
 	LogoutAdmin(w http.ResponseWriter, r *http.Request, params LogoutAdminParams)
@@ -14463,6 +14878,78 @@ func (_ Unimplemented) GetSidebarWorkbench(w http.ResponseWriter, r *http.Reques
 // List non-secret configuration readiness
 // (GET /api/v1/admin/config/overview)
 func (_ Unimplemented) GetAdminConfigOverview(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List local release attestation candidates
+// (GET /api/v1/admin/release-candidates)
+func (_ Unimplemented) ListReleaseCandidates(w http.ResponseWriter, r *http.Request, params ListReleaseCandidatesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Record one local release attestation candidate; never deploys or executes backup, provider, payment, or WeCom work
+// (POST /api/v1/admin/release-candidates)
+func (_ Unimplemented) RegisterReleaseCandidate(w http.ResponseWriter, r *http.Request, params RegisterReleaseCandidateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the local candidate detail including readiness and rollback eligibility
+// (GET /api/v1/admin/release-candidates/{candidate_id})
+func (_ Unimplemented) GetReleaseCandidate(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Mark a fully journaled candidate locally activated
+// (POST /api/v1/admin/release-candidates/{candidate_id}/activate)
+func (_ Unimplemented) ActivateReleaseCandidate(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params ActivateReleaseCandidateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Rotate a local cutover journal generation using its current fence
+// (POST /api/v1/admin/release-candidates/{candidate_id}/cutover/restart)
+func (_ Unimplemented) RestartReleaseCutover(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params RestartReleaseCutoverParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Start a local cutover journal generation
+// (POST /api/v1/admin/release-candidates/{candidate_id}/cutover/start)
+func (_ Unimplemented) StartReleaseCutover(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params StartReleaseCutoverParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Append one ordered local cutover-journal step using the current fence
+// (POST /api/v1/admin/release-candidates/{candidate_id}/cutover/steps/{step}/complete)
+func (_ Unimplemented) CompleteReleaseCutoverStep(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, step ReleaseCutoverStep, params CompleteReleaseCutoverStepParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Prepare a locally ready candidate
+// (POST /api/v1/admin/release-candidates/{candidate_id}/prepare)
+func (_ Unimplemented) PrepareReleaseCandidate(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params PrepareReleaseCandidateParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Record an exact-subject local prerequisite receipt
+// (POST /api/v1/admin/release-candidates/{candidate_id}/prerequisites)
+func (_ Unimplemented) RecordReleasePrerequisite(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params RecordReleasePrerequisiteParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Record a local rollback-reconciliation check
+// (POST /api/v1/admin/release-candidates/{candidate_id}/rollback-checks)
+func (_ Unimplemented) RecordReleaseRollbackCheck(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params RecordReleaseRollbackCheckParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Close a local rollback journal after reconciliation evidence
+// (POST /api/v1/admin/release-candidates/{candidate_id}/rollback/complete)
+func (_ Unimplemented) CompleteReleaseRollback(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params CompleteReleaseRollbackParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Record a local rollback request; it does not execute a rollback
+// (POST /api/v1/admin/release-candidates/{candidate_id}/rollback/request)
+func (_ Unimplemented) RequestReleaseRollback(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params RequestReleaseRollbackParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -21450,6 +21937,890 @@ func (siw *ServerInterfaceWrapper) GetAdminConfigOverview(w http.ResponseWriter,
 	handler.ServeHTTP(w, r)
 }
 
+// ListReleaseCandidates operation middleware
+func (siw *ServerInterfaceWrapper) ListReleaseCandidates(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListReleaseCandidatesParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListReleaseCandidates(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RegisterReleaseCandidate operation middleware
+func (siw *ServerInterfaceWrapper) RegisterReleaseCandidate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RegisterReleaseCandidateParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RegisterReleaseCandidate(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetReleaseCandidate operation middleware
+func (siw *ServerInterfaceWrapper) GetReleaseCandidate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "candidate_id" -------------
+	var candidateId ReleaseCandidateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "candidate_id", chi.URLParam(r, "candidate_id"), &candidateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "candidate_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetReleaseCandidate(w, r, candidateId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ActivateReleaseCandidate operation middleware
+func (siw *ServerInterfaceWrapper) ActivateReleaseCandidate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "candidate_id" -------------
+	var candidateId ReleaseCandidateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "candidate_id", chi.URLParam(r, "candidate_id"), &candidateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "candidate_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ActivateReleaseCandidateParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ActivateReleaseCandidate(w, r, candidateId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RestartReleaseCutover operation middleware
+func (siw *ServerInterfaceWrapper) RestartReleaseCutover(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "candidate_id" -------------
+	var candidateId ReleaseCandidateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "candidate_id", chi.URLParam(r, "candidate_id"), &candidateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "candidate_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RestartReleaseCutoverParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RestartReleaseCutover(w, r, candidateId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartReleaseCutover operation middleware
+func (siw *ServerInterfaceWrapper) StartReleaseCutover(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "candidate_id" -------------
+	var candidateId ReleaseCandidateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "candidate_id", chi.URLParam(r, "candidate_id"), &candidateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "candidate_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params StartReleaseCutoverParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartReleaseCutover(w, r, candidateId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CompleteReleaseCutoverStep operation middleware
+func (siw *ServerInterfaceWrapper) CompleteReleaseCutoverStep(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "candidate_id" -------------
+	var candidateId ReleaseCandidateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "candidate_id", chi.URLParam(r, "candidate_id"), &candidateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "candidate_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "step" -------------
+	var step ReleaseCutoverStep
+
+	err = runtime.BindStyledParameterWithOptions("simple", "step", chi.URLParam(r, "step"), &step, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "step", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CompleteReleaseCutoverStepParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompleteReleaseCutoverStep(w, r, candidateId, step, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PrepareReleaseCandidate operation middleware
+func (siw *ServerInterfaceWrapper) PrepareReleaseCandidate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "candidate_id" -------------
+	var candidateId ReleaseCandidateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "candidate_id", chi.URLParam(r, "candidate_id"), &candidateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "candidate_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PrepareReleaseCandidateParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PrepareReleaseCandidate(w, r, candidateId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RecordReleasePrerequisite operation middleware
+func (siw *ServerInterfaceWrapper) RecordReleasePrerequisite(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "candidate_id" -------------
+	var candidateId ReleaseCandidateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "candidate_id", chi.URLParam(r, "candidate_id"), &candidateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "candidate_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RecordReleasePrerequisiteParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RecordReleasePrerequisite(w, r, candidateId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RecordReleaseRollbackCheck operation middleware
+func (siw *ServerInterfaceWrapper) RecordReleaseRollbackCheck(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "candidate_id" -------------
+	var candidateId ReleaseCandidateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "candidate_id", chi.URLParam(r, "candidate_id"), &candidateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "candidate_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RecordReleaseRollbackCheckParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RecordReleaseRollbackCheck(w, r, candidateId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CompleteReleaseRollback operation middleware
+func (siw *ServerInterfaceWrapper) CompleteReleaseRollback(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "candidate_id" -------------
+	var candidateId ReleaseCandidateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "candidate_id", chi.URLParam(r, "candidate_id"), &candidateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "candidate_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CompleteReleaseRollbackParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompleteReleaseRollback(w, r, candidateId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestReleaseRollback operation middleware
+func (siw *ServerInterfaceWrapper) RequestReleaseRollback(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "candidate_id" -------------
+	var candidateId ReleaseCandidateID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "candidate_id", chi.URLParam(r, "candidate_id"), &candidateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "candidate_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RequestReleaseRollbackParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestReleaseRollback(w, r, candidateId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // LogoutAdmin operation middleware
 func (siw *ServerInterfaceWrapper) LogoutAdmin(w http.ResponseWriter, r *http.Request) {
 
@@ -25619,6 +26990,42 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/admin/config/overview", wrapper.GetAdminConfigOverview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/release-candidates", wrapper.ListReleaseCandidates)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/release-candidates", wrapper.RegisterReleaseCandidate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/admin/release-candidates/{candidate_id}", wrapper.GetReleaseCandidate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/release-candidates/{candidate_id}/activate", wrapper.ActivateReleaseCandidate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/release-candidates/{candidate_id}/cutover/restart", wrapper.RestartReleaseCutover)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/release-candidates/{candidate_id}/cutover/start", wrapper.StartReleaseCutover)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/release-candidates/{candidate_id}/cutover/steps/{step}/complete", wrapper.CompleteReleaseCutoverStep)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/release-candidates/{candidate_id}/prepare", wrapper.PrepareReleaseCandidate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/release-candidates/{candidate_id}/prerequisites", wrapper.RecordReleasePrerequisite)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/release-candidates/{candidate_id}/rollback-checks", wrapper.RecordReleaseRollbackCheck)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/release-candidates/{candidate_id}/rollback/complete", wrapper.CompleteReleaseRollback)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/admin/release-candidates/{candidate_id}/rollback/request", wrapper.RequestReleaseRollback)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/auth/logout", wrapper.LogoutAdmin)
@@ -33102,6 +34509,838 @@ func (response GetAdminConfigOverview403JSONResponse) VisitGetAdminConfigOvervie
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListReleaseCandidatesRequestObject struct {
+	Params ListReleaseCandidatesParams
+}
+
+type ListReleaseCandidatesResponseObject interface {
+	VisitListReleaseCandidatesResponse(w http.ResponseWriter) error
+}
+
+type ListReleaseCandidates200JSONResponse ReleaseCandidateList
+
+func (response ListReleaseCandidates200JSONResponse) VisitListReleaseCandidatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListReleaseCandidates400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListReleaseCandidates400JSONResponse) VisitListReleaseCandidatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListReleaseCandidates401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListReleaseCandidates401JSONResponse) VisitListReleaseCandidatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListReleaseCandidates403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListReleaseCandidates403JSONResponse) VisitListReleaseCandidatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListReleaseCandidates503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListReleaseCandidates503JSONResponse) VisitListReleaseCandidatesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RegisterReleaseCandidateRequestObject struct {
+	Params RegisterReleaseCandidateParams
+	Body   *RegisterReleaseCandidateJSONRequestBody
+}
+
+type RegisterReleaseCandidateResponseObject interface {
+	VisitRegisterReleaseCandidateResponse(w http.ResponseWriter) error
+}
+
+type RegisterReleaseCandidate201JSONResponse ReleaseCandidate
+
+func (response RegisterReleaseCandidate201JSONResponse) VisitRegisterReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RegisterReleaseCandidate400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RegisterReleaseCandidate400JSONResponse) VisitRegisterReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RegisterReleaseCandidate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RegisterReleaseCandidate401JSONResponse) VisitRegisterReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RegisterReleaseCandidate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RegisterReleaseCandidate403JSONResponse) VisitRegisterReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RegisterReleaseCandidate409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RegisterReleaseCandidate409JSONResponse) VisitRegisterReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RegisterReleaseCandidate503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RegisterReleaseCandidate503JSONResponse) VisitRegisterReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetReleaseCandidateRequestObject struct {
+	CandidateId ReleaseCandidateID `json:"candidate_id"`
+}
+
+type GetReleaseCandidateResponseObject interface {
+	VisitGetReleaseCandidateResponse(w http.ResponseWriter) error
+}
+
+type GetReleaseCandidate200JSONResponse ReleaseCandidateDetail
+
+func (response GetReleaseCandidate200JSONResponse) VisitGetReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetReleaseCandidate400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetReleaseCandidate400JSONResponse) VisitGetReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetReleaseCandidate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetReleaseCandidate401JSONResponse) VisitGetReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetReleaseCandidate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetReleaseCandidate403JSONResponse) VisitGetReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetReleaseCandidate404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetReleaseCandidate404JSONResponse) VisitGetReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetReleaseCandidate503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetReleaseCandidate503JSONResponse) VisitGetReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ActivateReleaseCandidateRequestObject struct {
+	CandidateId ReleaseCandidateID `json:"candidate_id"`
+	Params      ActivateReleaseCandidateParams
+	Body        *ActivateReleaseCandidateJSONRequestBody
+}
+
+type ActivateReleaseCandidateResponseObject interface {
+	VisitActivateReleaseCandidateResponse(w http.ResponseWriter) error
+}
+
+type ActivateReleaseCandidate200JSONResponse ReleaseCandidate
+
+func (response ActivateReleaseCandidate200JSONResponse) VisitActivateReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ActivateReleaseCandidate400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ActivateReleaseCandidate400JSONResponse) VisitActivateReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ActivateReleaseCandidate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ActivateReleaseCandidate401JSONResponse) VisitActivateReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ActivateReleaseCandidate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ActivateReleaseCandidate403JSONResponse) VisitActivateReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ActivateReleaseCandidate404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ActivateReleaseCandidate404JSONResponse) VisitActivateReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ActivateReleaseCandidate409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ActivateReleaseCandidate409JSONResponse) VisitActivateReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ActivateReleaseCandidate503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ActivateReleaseCandidate503JSONResponse) VisitActivateReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RestartReleaseCutoverRequestObject struct {
+	CandidateId ReleaseCandidateID `json:"candidate_id"`
+	Params      RestartReleaseCutoverParams
+	Body        *RestartReleaseCutoverJSONRequestBody
+}
+
+type RestartReleaseCutoverResponseObject interface {
+	VisitRestartReleaseCutoverResponse(w http.ResponseWriter) error
+}
+
+type RestartReleaseCutover200JSONResponse ReleaseWorkerLease
+
+func (response RestartReleaseCutover200JSONResponse) VisitRestartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RestartReleaseCutover400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RestartReleaseCutover400JSONResponse) VisitRestartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RestartReleaseCutover401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RestartReleaseCutover401JSONResponse) VisitRestartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RestartReleaseCutover403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RestartReleaseCutover403JSONResponse) VisitRestartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RestartReleaseCutover404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RestartReleaseCutover404JSONResponse) VisitRestartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RestartReleaseCutover409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RestartReleaseCutover409JSONResponse) VisitRestartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RestartReleaseCutover503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RestartReleaseCutover503JSONResponse) VisitRestartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartReleaseCutoverRequestObject struct {
+	CandidateId ReleaseCandidateID `json:"candidate_id"`
+	Params      StartReleaseCutoverParams
+}
+
+type StartReleaseCutoverResponseObject interface {
+	VisitStartReleaseCutoverResponse(w http.ResponseWriter) error
+}
+
+type StartReleaseCutover200JSONResponse ReleaseWorkerLease
+
+func (response StartReleaseCutover200JSONResponse) VisitStartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartReleaseCutover400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response StartReleaseCutover400JSONResponse) VisitStartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartReleaseCutover401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response StartReleaseCutover401JSONResponse) VisitStartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartReleaseCutover403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response StartReleaseCutover403JSONResponse) VisitStartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartReleaseCutover404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response StartReleaseCutover404JSONResponse) VisitStartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartReleaseCutover409JSONResponse struct{ ConflictJSONResponse }
+
+func (response StartReleaseCutover409JSONResponse) VisitStartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartReleaseCutover503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response StartReleaseCutover503JSONResponse) VisitStartReleaseCutoverResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseCutoverStepRequestObject struct {
+	CandidateId ReleaseCandidateID `json:"candidate_id"`
+	Step        ReleaseCutoverStep `json:"step"`
+	Params      CompleteReleaseCutoverStepParams
+	Body        *CompleteReleaseCutoverStepJSONRequestBody
+}
+
+type CompleteReleaseCutoverStepResponseObject interface {
+	VisitCompleteReleaseCutoverStepResponse(w http.ResponseWriter) error
+}
+
+type CompleteReleaseCutoverStep200JSONResponse ReleaseCutoverProgress
+
+func (response CompleteReleaseCutoverStep200JSONResponse) VisitCompleteReleaseCutoverStepResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseCutoverStep400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CompleteReleaseCutoverStep400JSONResponse) VisitCompleteReleaseCutoverStepResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseCutoverStep401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CompleteReleaseCutoverStep401JSONResponse) VisitCompleteReleaseCutoverStepResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseCutoverStep403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CompleteReleaseCutoverStep403JSONResponse) VisitCompleteReleaseCutoverStepResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseCutoverStep404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CompleteReleaseCutoverStep404JSONResponse) VisitCompleteReleaseCutoverStepResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseCutoverStep409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CompleteReleaseCutoverStep409JSONResponse) VisitCompleteReleaseCutoverStepResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseCutoverStep503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CompleteReleaseCutoverStep503JSONResponse) VisitCompleteReleaseCutoverStepResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PrepareReleaseCandidateRequestObject struct {
+	CandidateId ReleaseCandidateID `json:"candidate_id"`
+	Params      PrepareReleaseCandidateParams
+}
+
+type PrepareReleaseCandidateResponseObject interface {
+	VisitPrepareReleaseCandidateResponse(w http.ResponseWriter) error
+}
+
+type PrepareReleaseCandidate200JSONResponse ReleaseCandidate
+
+func (response PrepareReleaseCandidate200JSONResponse) VisitPrepareReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PrepareReleaseCandidate400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response PrepareReleaseCandidate400JSONResponse) VisitPrepareReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PrepareReleaseCandidate401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PrepareReleaseCandidate401JSONResponse) VisitPrepareReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PrepareReleaseCandidate403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response PrepareReleaseCandidate403JSONResponse) VisitPrepareReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PrepareReleaseCandidate404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PrepareReleaseCandidate404JSONResponse) VisitPrepareReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PrepareReleaseCandidate409JSONResponse struct{ ConflictJSONResponse }
+
+func (response PrepareReleaseCandidate409JSONResponse) VisitPrepareReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PrepareReleaseCandidate503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response PrepareReleaseCandidate503JSONResponse) VisitPrepareReleaseCandidateResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleasePrerequisiteRequestObject struct {
+	CandidateId ReleaseCandidateID `json:"candidate_id"`
+	Params      RecordReleasePrerequisiteParams
+	Body        *RecordReleasePrerequisiteJSONRequestBody
+}
+
+type RecordReleasePrerequisiteResponseObject interface {
+	VisitRecordReleasePrerequisiteResponse(w http.ResponseWriter) error
+}
+
+type RecordReleasePrerequisite201JSONResponse ReleasePrerequisiteReceipt
+
+func (response RecordReleasePrerequisite201JSONResponse) VisitRecordReleasePrerequisiteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleasePrerequisite400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RecordReleasePrerequisite400JSONResponse) VisitRecordReleasePrerequisiteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleasePrerequisite401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RecordReleasePrerequisite401JSONResponse) VisitRecordReleasePrerequisiteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleasePrerequisite403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RecordReleasePrerequisite403JSONResponse) VisitRecordReleasePrerequisiteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleasePrerequisite404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RecordReleasePrerequisite404JSONResponse) VisitRecordReleasePrerequisiteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleasePrerequisite409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RecordReleasePrerequisite409JSONResponse) VisitRecordReleasePrerequisiteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleasePrerequisite503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RecordReleasePrerequisite503JSONResponse) VisitRecordReleasePrerequisiteResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleaseRollbackCheckRequestObject struct {
+	CandidateId ReleaseCandidateID `json:"candidate_id"`
+	Params      RecordReleaseRollbackCheckParams
+	Body        *RecordReleaseRollbackCheckJSONRequestBody
+}
+
+type RecordReleaseRollbackCheckResponseObject interface {
+	VisitRecordReleaseRollbackCheckResponse(w http.ResponseWriter) error
+}
+
+type RecordReleaseRollbackCheck201JSONResponse ReleaseRollbackCheck
+
+func (response RecordReleaseRollbackCheck201JSONResponse) VisitRecordReleaseRollbackCheckResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleaseRollbackCheck400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RecordReleaseRollbackCheck400JSONResponse) VisitRecordReleaseRollbackCheckResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleaseRollbackCheck401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RecordReleaseRollbackCheck401JSONResponse) VisitRecordReleaseRollbackCheckResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleaseRollbackCheck403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RecordReleaseRollbackCheck403JSONResponse) VisitRecordReleaseRollbackCheckResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleaseRollbackCheck404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RecordReleaseRollbackCheck404JSONResponse) VisitRecordReleaseRollbackCheckResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleaseRollbackCheck409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RecordReleaseRollbackCheck409JSONResponse) VisitRecordReleaseRollbackCheckResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RecordReleaseRollbackCheck503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RecordReleaseRollbackCheck503JSONResponse) VisitRecordReleaseRollbackCheckResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseRollbackRequestObject struct {
+	CandidateId ReleaseCandidateID `json:"candidate_id"`
+	Params      CompleteReleaseRollbackParams
+}
+
+type CompleteReleaseRollbackResponseObject interface {
+	VisitCompleteReleaseRollbackResponse(w http.ResponseWriter) error
+}
+
+type CompleteReleaseRollback200JSONResponse ReleaseCandidate
+
+func (response CompleteReleaseRollback200JSONResponse) VisitCompleteReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseRollback400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CompleteReleaseRollback400JSONResponse) VisitCompleteReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseRollback401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CompleteReleaseRollback401JSONResponse) VisitCompleteReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseRollback403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CompleteReleaseRollback403JSONResponse) VisitCompleteReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseRollback404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CompleteReleaseRollback404JSONResponse) VisitCompleteReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseRollback409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CompleteReleaseRollback409JSONResponse) VisitCompleteReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteReleaseRollback503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CompleteReleaseRollback503JSONResponse) VisitCompleteReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestReleaseRollbackRequestObject struct {
+	CandidateId ReleaseCandidateID `json:"candidate_id"`
+	Params      RequestReleaseRollbackParams
+}
+
+type RequestReleaseRollbackResponseObject interface {
+	VisitRequestReleaseRollbackResponse(w http.ResponseWriter) error
+}
+
+type RequestReleaseRollback200JSONResponse ReleaseCandidate
+
+func (response RequestReleaseRollback200JSONResponse) VisitRequestReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestReleaseRollback400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RequestReleaseRollback400JSONResponse) VisitRequestReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestReleaseRollback401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RequestReleaseRollback401JSONResponse) VisitRequestReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestReleaseRollback403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RequestReleaseRollback403JSONResponse) VisitRequestReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestReleaseRollback404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RequestReleaseRollback404JSONResponse) VisitRequestReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestReleaseRollback409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RequestReleaseRollback409JSONResponse) VisitRequestReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RequestReleaseRollback503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RequestReleaseRollback503JSONResponse) VisitRequestReleaseRollbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type LogoutAdminRequestObject struct {
 	Params LogoutAdminParams
 }
@@ -37676,6 +39915,42 @@ type StrictServerInterface interface {
 	// List non-secret configuration readiness
 	// (GET /api/v1/admin/config/overview)
 	GetAdminConfigOverview(ctx context.Context, request GetAdminConfigOverviewRequestObject) (GetAdminConfigOverviewResponseObject, error)
+	// List local release attestation candidates
+	// (GET /api/v1/admin/release-candidates)
+	ListReleaseCandidates(ctx context.Context, request ListReleaseCandidatesRequestObject) (ListReleaseCandidatesResponseObject, error)
+	// Record one local release attestation candidate; never deploys or executes backup, provider, payment, or WeCom work
+	// (POST /api/v1/admin/release-candidates)
+	RegisterReleaseCandidate(ctx context.Context, request RegisterReleaseCandidateRequestObject) (RegisterReleaseCandidateResponseObject, error)
+	// Read the local candidate detail including readiness and rollback eligibility
+	// (GET /api/v1/admin/release-candidates/{candidate_id})
+	GetReleaseCandidate(ctx context.Context, request GetReleaseCandidateRequestObject) (GetReleaseCandidateResponseObject, error)
+	// Mark a fully journaled candidate locally activated
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/activate)
+	ActivateReleaseCandidate(ctx context.Context, request ActivateReleaseCandidateRequestObject) (ActivateReleaseCandidateResponseObject, error)
+	// Rotate a local cutover journal generation using its current fence
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/cutover/restart)
+	RestartReleaseCutover(ctx context.Context, request RestartReleaseCutoverRequestObject) (RestartReleaseCutoverResponseObject, error)
+	// Start a local cutover journal generation
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/cutover/start)
+	StartReleaseCutover(ctx context.Context, request StartReleaseCutoverRequestObject) (StartReleaseCutoverResponseObject, error)
+	// Append one ordered local cutover-journal step using the current fence
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/cutover/steps/{step}/complete)
+	CompleteReleaseCutoverStep(ctx context.Context, request CompleteReleaseCutoverStepRequestObject) (CompleteReleaseCutoverStepResponseObject, error)
+	// Prepare a locally ready candidate
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/prepare)
+	PrepareReleaseCandidate(ctx context.Context, request PrepareReleaseCandidateRequestObject) (PrepareReleaseCandidateResponseObject, error)
+	// Record an exact-subject local prerequisite receipt
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/prerequisites)
+	RecordReleasePrerequisite(ctx context.Context, request RecordReleasePrerequisiteRequestObject) (RecordReleasePrerequisiteResponseObject, error)
+	// Record a local rollback-reconciliation check
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/rollback-checks)
+	RecordReleaseRollbackCheck(ctx context.Context, request RecordReleaseRollbackCheckRequestObject) (RecordReleaseRollbackCheckResponseObject, error)
+	// Close a local rollback journal after reconciliation evidence
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/rollback/complete)
+	CompleteReleaseRollback(ctx context.Context, request CompleteReleaseRollbackRequestObject) (CompleteReleaseRollbackResponseObject, error)
+	// Record a local rollback request; it does not execute a rollback
+	// (POST /api/v1/admin/release-candidates/{candidate_id}/rollback/request)
+	RequestReleaseRollback(ctx context.Context, request RequestReleaseRollbackRequestObject) (RequestReleaseRollbackResponseObject, error)
 	// Invalidate the current admin session
 	// (POST /api/v1/auth/logout)
 	LogoutAdmin(ctx context.Context, request LogoutAdminRequestObject) (LogoutAdminResponseObject, error)
@@ -41271,6 +43546,370 @@ func (sh *strictHandler) GetAdminConfigOverview(w http.ResponseWriter, r *http.R
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetAdminConfigOverviewResponseObject); ok {
 		if err := validResponse.VisitGetAdminConfigOverviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListReleaseCandidates operation middleware
+func (sh *strictHandler) ListReleaseCandidates(w http.ResponseWriter, r *http.Request, params ListReleaseCandidatesParams) {
+	var request ListReleaseCandidatesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListReleaseCandidates(ctx, request.(ListReleaseCandidatesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListReleaseCandidates")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListReleaseCandidatesResponseObject); ok {
+		if err := validResponse.VisitListReleaseCandidatesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RegisterReleaseCandidate operation middleware
+func (sh *strictHandler) RegisterReleaseCandidate(w http.ResponseWriter, r *http.Request, params RegisterReleaseCandidateParams) {
+	var request RegisterReleaseCandidateRequestObject
+
+	request.Params = params
+
+	var body RegisterReleaseCandidateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RegisterReleaseCandidate(ctx, request.(RegisterReleaseCandidateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RegisterReleaseCandidate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RegisterReleaseCandidateResponseObject); ok {
+		if err := validResponse.VisitRegisterReleaseCandidateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetReleaseCandidate operation middleware
+func (sh *strictHandler) GetReleaseCandidate(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID) {
+	var request GetReleaseCandidateRequestObject
+
+	request.CandidateId = candidateId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetReleaseCandidate(ctx, request.(GetReleaseCandidateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetReleaseCandidate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetReleaseCandidateResponseObject); ok {
+		if err := validResponse.VisitGetReleaseCandidateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ActivateReleaseCandidate operation middleware
+func (sh *strictHandler) ActivateReleaseCandidate(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params ActivateReleaseCandidateParams) {
+	var request ActivateReleaseCandidateRequestObject
+
+	request.CandidateId = candidateId
+	request.Params = params
+
+	var body ActivateReleaseCandidateJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ActivateReleaseCandidate(ctx, request.(ActivateReleaseCandidateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ActivateReleaseCandidate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ActivateReleaseCandidateResponseObject); ok {
+		if err := validResponse.VisitActivateReleaseCandidateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RestartReleaseCutover operation middleware
+func (sh *strictHandler) RestartReleaseCutover(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params RestartReleaseCutoverParams) {
+	var request RestartReleaseCutoverRequestObject
+
+	request.CandidateId = candidateId
+	request.Params = params
+
+	var body RestartReleaseCutoverJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RestartReleaseCutover(ctx, request.(RestartReleaseCutoverRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RestartReleaseCutover")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RestartReleaseCutoverResponseObject); ok {
+		if err := validResponse.VisitRestartReleaseCutoverResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartReleaseCutover operation middleware
+func (sh *strictHandler) StartReleaseCutover(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params StartReleaseCutoverParams) {
+	var request StartReleaseCutoverRequestObject
+
+	request.CandidateId = candidateId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartReleaseCutover(ctx, request.(StartReleaseCutoverRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartReleaseCutover")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartReleaseCutoverResponseObject); ok {
+		if err := validResponse.VisitStartReleaseCutoverResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CompleteReleaseCutoverStep operation middleware
+func (sh *strictHandler) CompleteReleaseCutoverStep(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, step ReleaseCutoverStep, params CompleteReleaseCutoverStepParams) {
+	var request CompleteReleaseCutoverStepRequestObject
+
+	request.CandidateId = candidateId
+	request.Step = step
+	request.Params = params
+
+	var body CompleteReleaseCutoverStepJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CompleteReleaseCutoverStep(ctx, request.(CompleteReleaseCutoverStepRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CompleteReleaseCutoverStep")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CompleteReleaseCutoverStepResponseObject); ok {
+		if err := validResponse.VisitCompleteReleaseCutoverStepResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PrepareReleaseCandidate operation middleware
+func (sh *strictHandler) PrepareReleaseCandidate(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params PrepareReleaseCandidateParams) {
+	var request PrepareReleaseCandidateRequestObject
+
+	request.CandidateId = candidateId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PrepareReleaseCandidate(ctx, request.(PrepareReleaseCandidateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PrepareReleaseCandidate")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PrepareReleaseCandidateResponseObject); ok {
+		if err := validResponse.VisitPrepareReleaseCandidateResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RecordReleasePrerequisite operation middleware
+func (sh *strictHandler) RecordReleasePrerequisite(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params RecordReleasePrerequisiteParams) {
+	var request RecordReleasePrerequisiteRequestObject
+
+	request.CandidateId = candidateId
+	request.Params = params
+
+	var body RecordReleasePrerequisiteJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RecordReleasePrerequisite(ctx, request.(RecordReleasePrerequisiteRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RecordReleasePrerequisite")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RecordReleasePrerequisiteResponseObject); ok {
+		if err := validResponse.VisitRecordReleasePrerequisiteResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RecordReleaseRollbackCheck operation middleware
+func (sh *strictHandler) RecordReleaseRollbackCheck(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params RecordReleaseRollbackCheckParams) {
+	var request RecordReleaseRollbackCheckRequestObject
+
+	request.CandidateId = candidateId
+	request.Params = params
+
+	var body RecordReleaseRollbackCheckJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RecordReleaseRollbackCheck(ctx, request.(RecordReleaseRollbackCheckRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RecordReleaseRollbackCheck")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RecordReleaseRollbackCheckResponseObject); ok {
+		if err := validResponse.VisitRecordReleaseRollbackCheckResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CompleteReleaseRollback operation middleware
+func (sh *strictHandler) CompleteReleaseRollback(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params CompleteReleaseRollbackParams) {
+	var request CompleteReleaseRollbackRequestObject
+
+	request.CandidateId = candidateId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CompleteReleaseRollback(ctx, request.(CompleteReleaseRollbackRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CompleteReleaseRollback")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CompleteReleaseRollbackResponseObject); ok {
+		if err := validResponse.VisitCompleteReleaseRollbackResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RequestReleaseRollback operation middleware
+func (sh *strictHandler) RequestReleaseRollback(w http.ResponseWriter, r *http.Request, candidateId ReleaseCandidateID, params RequestReleaseRollbackParams) {
+	var request RequestReleaseRollbackRequestObject
+
+	request.CandidateId = candidateId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RequestReleaseRollback(ctx, request.(RequestReleaseRollbackRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestReleaseRollback")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestReleaseRollbackResponseObject); ok {
+		if err := validResponse.VisitRequestReleaseRollbackResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
