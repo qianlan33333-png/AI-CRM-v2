@@ -309,7 +309,7 @@ console.log('admin/questionnaireOps.html?id=1（opaque 本地运营配置）');
   ok('外部推送只接受 configuration reference', !!d.querySelector('#opsConfigurationReference') && !d.querySelector('#opsWebhook'));
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.includes('测试推送')));
   await sleep(30);
-  ok('测试外推明确阻断且未伪造成功', d.querySelector('#fb-toast').textContent.includes('未发送请求'));
+  ok('测试外推明确为本地 queued 记录且未宣称派发', d.querySelector('#fb-body').textContent.includes('不执行外部派发'));
   dom.window.close();
 }
 

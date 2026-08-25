@@ -148,15 +148,30 @@ export function simulateUpload(label?: string, onDone?: () => void): void {
   }, 150);
 }
 
-/* ---------- 委托：未接管按钮的文案模式匹配 ---------- */
+const BUSINESS_ACTION_RE = /删除|下架|停用|禁用|拒绝|驳回|上传|选择文件|更换图片|更换文件|导出|下载|保存|提交|发布|上线|发送|群发|推送|创建|新建|刷新|重试|重新加载|启用|生成|复制|同步|归档|退款|审核|批准/;
+
+function classifyUnboundActions(root: ParentNode): void {
+  for (const element of root.querySelectorAll<HTMLElement>('button,a')) {
+    const bound = (element as FbElement)[BOUND_MARK] === true;
+    const navigates = element instanceof HTMLAnchorElement && element.hasAttribute('href');
+    if (bound) element.dataset.capabilityState = 'real';
+    else if (navigates || !BUSINESS_ACTION_RE.test((element.textContent || '').trim())) element.dataset.capabilityState = 'presentation_only';
+    else {
+      element.dataset.capabilityState = 'backend_blocked';
+      element.setAttribute('aria-description', '后端能力未就绪，点击不会发送请求');
+    }
+  }
+}
+
+/* ---------- 委托：未接管业务动作统一明确阻断 ---------- */
 function delegate(e: Event): void {
   const target = e.target as HTMLElement;
   if (target.closest('#fb-mask') || target.closest('#fb-prog-mask')) return;
-  const btn = target.closest('button') as FbElement | null;
-  if (!btn || btn[BOUND_MARK] || (btn as HTMLButtonElement).disabled) return;
+  const btn = target.closest('button,a') as FbElement | null;
+  if (!btn || btn[BOUND_MARK] || btn instanceof HTMLAnchorElement && btn.hasAttribute('href') || btn instanceof HTMLButtonElement && btn.disabled) return;
   const t = (btn.textContent || '').trim();
-  if (!t || t.length > 14) return;
-  if (/删除|下架|停用|禁用|拒绝|驳回|上传|选择文件|更换图片|更换文件|导出|下载|保存|提交|发布|上线|发送|群发|推送|创建|新建|刷新|重试|重新加载|启用|生成/.test(t)) {
+  if (BUSINESS_ACTION_RE.test(t)) {
+    btn.dataset.capabilityState = 'backend_blocked';
     toast('后端能力未就绪：该操作不可执行', true);
   }
 }
@@ -179,6 +194,10 @@ export function initFeedback(): void {
   if (installed) return;
   installed = true;
   ensureUI();
+  classifyUnboundActions(document);
+  new MutationObserver((records) => {
+    for (const record of records) for (const node of record.addedNodes) if (node instanceof HTMLElement) classifyUnboundActions(node);
+  }).observe(document.body, { childList: true, subtree: true });
   document.addEventListener('click', delegate, true);
   document.addEventListener('change', onFileChange, true);
 }

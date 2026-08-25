@@ -37,7 +37,7 @@ import type {
 import { SEED_DB, deepCopy } from './mockData';
 import { deleteProductDto } from '../../api/admin';
 import { archiveCouponDto, copyCouponDto, deleteCouponDto, saveCouponDto, setCouponPublishedDto, type CouponWriteInput } from '../../api/admin';
-import { deleteQuestionnaireDto, duplicateQuestionnaireDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, setQuestionnaireEnabledDto, type QuestionnaireWriteInput } from '../../api/admin';
+import { deleteQuestionnaireDto, duplicateQuestionnaireDto, queueQuestionnairePushTestDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, setQuestionnaireEnabledDto, type QuestionnaireWriteInput } from '../../api/admin';
 import { saveChannelDto, type ChannelWriteInput } from '../../api/admin';
 import { materializeAudienceConfigurationDto, previewAudienceConfigurationDto, replaceAudienceSendersDto, saveAudiencePackageDto, setAudienceBindingDto, snapshotAudienceConfigurationDto, type AudienceEvaluation, type AudiencePackageWriteInput } from '../../api/admin';
 import type { AIAudiencePackageSender } from '../../api/generated/health';
@@ -111,6 +111,7 @@ export interface AdminApi {
 
   /* ---- 问卷 · 运营配置 ---- */
   saveQuestionnaireOps(qid: number, ops: QuestionnaireOps): Promise<void>;
+  queueQuestionnairePushTest(qid: number): Promise<{ id: number; status: string; attemptCount: number }>;
   saveQuestionnaire(input: QuestionnaireWriteInput, publish: boolean): Promise<Questionnaire>;
   setQuestionnaireEnabled(questionnaireId: number, enabled: boolean): Promise<void>;
   duplicateQuestionnaire(questionnaireId: number): Promise<Questionnaire>;
@@ -501,6 +502,7 @@ export class MockApi implements AdminApi {
     this.persist();
     return delay(undefined, 500);
   }
+  queueQuestionnairePushTest(qid: number): Promise<{ id: number; status: string; attemptCount: number }> { return delay({ id: qid, status: 'queued', attemptCount: 0 }); }
 
   saveQuestionnaire(input: QuestionnaireWriteInput, publish: boolean): Promise<Questionnaire> {
     const item = input.id == null
@@ -823,6 +825,7 @@ export class HttpApi implements AdminApi {
   saveQuestionnaireOps(qid: number, ops: QuestionnaireOps): Promise<void> {
     return saveQuestionnaireOpsDto(qid, ops);
   }
+  queueQuestionnairePushTest(qid: number): Promise<{ id: number; status: string; attemptCount: number }> { return queueQuestionnairePushTestDto(qid); }
   saveQuestionnaire(input: QuestionnaireWriteInput, publish: boolean): Promise<Questionnaire> { return saveQuestionnaireDto(input, publish); }
   setQuestionnaireEnabled(questionnaireId: number, enabled: boolean): Promise<void> { return setQuestionnaireEnabledDto(questionnaireId, enabled); }
   duplicateQuestionnaire(questionnaireId: number): Promise<Questionnaire> { return duplicateQuestionnaireDto(questionnaireId); }

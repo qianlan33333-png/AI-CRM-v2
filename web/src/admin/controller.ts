@@ -1587,7 +1587,7 @@ export class AdminController extends PageBase {
         redirectTypeOpts,
         freqOpts,
         save: () => this.saveOps(),
-        testPush: () => this.blocked('测试推送会创建执行记录，本任务不触发真实外部写入'),
+        testPush: () => { const qid = this.currentQid(); confirmBox('创建本地推送测试记录', '该 operation 只创建 queued 本地测试记录，不执行外部派发。确认继续？', '确认创建', false, () => { void this.api.queueQuestionnairePushTest(qid).then((result) => toast(`本地测试记录 ${result.id} 已创建，状态 ${result.status}，attempt_count ${result.attemptCount}；未执行外部派发`)).catch((error) => toast(error instanceof Error ? error.message : '测试记录创建失败', true)); }); },
         copyPublic: () => qRow?.publicPath ? copyText(new URL(qRow.publicPath, location.origin).toString(), toast) : toast('后端未返回问卷公开地址', true),
         openPublic: () => qRow?.publicPath ? window.open(new URL(qRow.publicPath, location.origin).toString(), '_blank', 'noopener') : toast('后端未返回问卷公开地址', true),
         viewLogs: () => this.setState({ opsTab: 2 }),

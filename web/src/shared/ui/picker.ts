@@ -91,7 +91,7 @@ export async function openPicker(api: AdminApi, opts: PickerOpts): Promise<Picke
   } else if (kind === 'image') {
     items = db.rows.images
       .filter((m) => m.enabled)
-      .map((m) => ({ id: m.name, name: m.name, sub: '图片 · ' + m.size.split(' · ')[0], bg: m.bg }));
+      .map((m) => ({ id: m.resourceId || m.name, name: m.name, sub: '图片 · ' + m.size.split(' · ')[0], bg: m.bg }));
   } else if (kind === 'mp') {
     items = db.rows.mpItems
       .filter((m) => m.enabled)
@@ -99,7 +99,7 @@ export async function openPicker(api: AdminApi, opts: PickerOpts): Promise<Picke
   } else if (kind === 'attach') {
     items = db.rows.attachItems
       .filter((a) => a.enabled)
-      .map((a) => ({ id: a.name, name: a.name, sub: a.type + ' · ' + a.size, chip: a.type }));
+      .map((a) => ({ id: a.resourceId || a.name, name: a.name, sub: a.type + ' · ' + a.size, chip: a.type }));
   } else {
     items = db.groupChats.map((g) => ({ id: g.name, name: g.name, sub: '客户群邀请 · 剩余 ' + g.left + ' 人', chip: g.size + ' 人群' }));
   }
