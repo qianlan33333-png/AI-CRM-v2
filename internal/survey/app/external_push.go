@@ -39,6 +39,17 @@ type ExternalPushService struct {
 	runtime *eer.Service
 }
 
+type PublicExternalPushBinder struct{ Push *ExternalPushService }
+
+func (b PublicExternalPushBinder) BindPublicSubmission(ctx context.Context, record PublicDefinitionRecord, submissionID int64, input surveyport.PublicSubmissionCommand, _ time.Time) error {
+	if b.Push == nil || input.CanonicalCustomerID < 1 {
+		return ErrH5IdentityRequired
+	}
+	payload := sha256.Sum256([]byte(fmt.Sprintf("survey-public\x00%d\x00%d", record.ID, submissionID)))
+	_, err := b.Push.Accept(ctx, ExternalPushCommand{QuestionnaireID: record.View.ID, SubmissionID: submissionID, CustomerID: input.CanonicalCustomerID, SourceRefDigest: sha256.Sum256([]byte(fmt.Sprintf("submission\x00%d", submissionID))), TargetRefDigest: sha256.Sum256([]byte(record.View.Slug)), PayloadDigest: payload, PolicyVersionHash: sha256.Sum256([]byte("survey-webhook-v1")), IdempotencyKey: input.SubmissionKey})
+	return err
+}
+
 func NewExternalPushService(uow platformport.UnitOfWork, store ExternalPushStore, runtime *eer.Service) (*ExternalPushService, error) {
 	if uow == nil || store == nil || runtime == nil {
 		return nil, ErrExternalPushUnavailable

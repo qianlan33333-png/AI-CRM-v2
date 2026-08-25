@@ -234,6 +234,10 @@ type PublicSubmissionCommand struct {
 	// the ten-minute anonymous abuse budget; neither raw value is persisted.
 	RateDigest [32]byte                 `json:"-"`
 	Answers    []PublicSubmissionAnswer `json:"answers"`
+	// CanonicalCustomerID is set only by the signed H5 identity edge after
+	// provider verification and canonical resolution; it is never decoded from
+	// public JSON.
+	CanonicalCustomerID int64 `json:"-"`
 }
 
 type PublicSubmissionAnswer struct {

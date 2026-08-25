@@ -70,10 +70,20 @@ type PublicService struct {
 	events   eventport.Appender
 	tokenKey [32]byte
 	now      func() time.Time
+	binder   PublicSubmissionBinder
+}
+
+type PublicSubmissionBinder interface {
+	BindPublicSubmission(context.Context, PublicDefinitionRecord, int64, surveyport.PublicSubmissionCommand, time.Time) error
 }
 
 func NewPublicService(uow platformport.UnitOfWork, store PublicStore, events eventport.Appender, tokenKey [32]byte) *PublicService {
 	return &PublicService{uow: uow, store: store, events: events, tokenKey: tokenKey, now: time.Now}
+}
+func NewPublicServiceWithBinder(uow platformport.UnitOfWork, store PublicStore, events eventport.Appender, tokenKey [32]byte, binder PublicSubmissionBinder) *PublicService {
+	s := NewPublicService(uow, store, events, tokenKey)
+	s.binder = binder
+	return s
 }
 
 func (s *PublicService) Definition(ctx context.Context, slug string) (surveyport.PublicQuestionnaire, error) {
@@ -155,6 +165,14 @@ func (s *PublicService) Submit(ctx context.Context, input surveyport.PublicSubmi
 		submissionID, err := s.store.CreatePublicSubmission(tx, reserved.ID, record.ID, now, command.Answers)
 		if err != nil {
 			return err
+		}
+		if input.CanonicalCustomerID > 0 {
+			if s.binder == nil {
+				return ErrH5IdentityRequired
+			}
+			if err := s.binder.BindPublicSubmission(tx, record, submissionID, input, now); err != nil {
+				return err
+			}
 		}
 		resultToken, err = DerivePublicResultToken(s.tokenKey, keyDigest, submissionID, record.View.Version)
 		if err != nil {
