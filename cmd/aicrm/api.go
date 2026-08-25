@@ -2635,6 +2635,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/api/admin/attachment-library/uploads", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.PDFMultipartInitiate)},
 			{http.MethodPut, "/api/admin/attachment-library/uploads/{upload_id}/parts/{part_number}", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.PDFMultipartPart)},
 			{http.MethodPost, "/api/admin/attachment-library/uploads/{upload_id}/complete", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.PDFMultipartComplete)},
+			{http.MethodPost, "/api/admin/outbound-media/accept", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.AcceptOutboundMedia)},
 			{http.MethodGet, "/api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ContentDeliveryBindingGet)},
 			{http.MethodPost, "/api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ContentDeliveryBindingCreate)},
 			{http.MethodPut, "/api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ContentDeliveryBindingUpdate)},
