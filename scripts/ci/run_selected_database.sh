@@ -159,6 +159,7 @@ while [[ -n "$remaining_groups" ]]; do
     wecom)
       run_make_acceptance WECOM_SYNC_TEST_DATABASE_URL p3-w4-acceptance
       run_make_acceptance P4MESSAGEARCHIVE_TEST_DATABASE_URL p4-message-archive-ab-acceptance
+      run_make_acceptance P4B01_WECOM_INBOUND_TEST_DATABASE_URL p4-b01-wecom-inbound-acceptance
       ;;
     *)
       fail "unsupported selected database group: $group_name"

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+	"time"
 
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
 )
@@ -77,6 +78,46 @@ func TestExternalContactSyncFailsClosedBeforeCursorWrite(t *testing.T) {
 	}
 }
 
+func TestExternalContactSyncPersistsEveryFactBeforeAdvancingCursor(t *testing.T) {
+	reader := &fakePageReader{pages: map[string]wecomclient.ExternalContactPage{
+		"": {ExternalUserIDs: []string{"wo-1", "wo-2"}, NextCursor: "cursor-2"},
+	}}
+	state := &memoryState{}
+	handoff := &memorySyncHandoff{}
+	jobs := &memorySyncJobs{}
+	service, err := NewExternalContactSyncServiceWithHandoff(
+		immediateUoW{}, reader, state, handoff, jobs, "corp-a", func() time.Time { return time.Unix(1700000000, 0).UTC() },
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	page, err := service.SyncNext(context.Background(), "owner-1")
+	if err != nil || !reflect.DeepEqual(page.ExternalUserIDs, []string{"wo-1", "wo-2"}) {
+		t.Fatalf("SyncNext() = %#v, %v", page, err)
+	}
+	if len(handoff.facts) != 2 || len(jobs.args) != 2 || state.cursor != "cursor-2" {
+		t.Fatalf("facts=%#v jobs=%#v cursor=%q", handoff.facts, jobs.args, state.cursor)
+	}
+}
+
+func TestExternalContactSyncDoesNotAdvanceWhenHandoffJobFails(t *testing.T) {
+	reader := &fakePageReader{pages: map[string]wecomclient.ExternalContactPage{
+		"": {ExternalUserIDs: []string{"wo-1"}, NextCursor: "cursor-2"},
+	}}
+	state := &memoryState{}
+	handoff := &memorySyncHandoff{}
+	jobs := &memorySyncJobs{err: errors.New("queue unavailable")}
+	service, err := NewExternalContactSyncServiceWithHandoff(
+		immediateUoW{}, reader, state, handoff, jobs, "corp-a", time.Now,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = service.SyncNext(context.Background(), "owner-1"); !errors.Is(err, ErrCursorSyncFailed) || state.cursor != "" {
+		t.Fatalf("SyncNext() = %v cursor=%q", err, state.cursor)
+	}
+}
+
 type immediateUoW struct{}
 
 func (immediateUoW) Within(ctx context.Context, callback func(context.Context) error) error {
@@ -102,6 +143,33 @@ type memoryState struct {
 	cursor       string
 	completed    bool
 	conflictOnce bool
+}
+
+type memorySyncHandoff struct{ facts []SyncHandoff }
+
+func (handoff *memorySyncHandoff) ReserveSyncFact(_ context.Context, fact SyncHandoff) (InboundReservation, error) {
+	for index, existing := range handoff.facts {
+		if existing.FactID == fact.FactID {
+			return InboundReservation{ID: int64(index + 1), Inserted: false}, nil
+		}
+	}
+	handoff.facts = append(handoff.facts, fact)
+	return InboundReservation{ID: int64(len(handoff.facts)), Inserted: true}, nil
+}
+
+func (handoff *memorySyncHandoff) MarkInboundQueued(context.Context, int64, int64) error { return nil }
+
+type memorySyncJobs struct {
+	args []InboundJobArgs
+	err  error
+}
+
+func (jobs *memorySyncJobs) Insert(_ context.Context, args InboundJobArgs) (int64, error) {
+	if jobs.err != nil {
+		return 0, jobs.err
+	}
+	jobs.args = append(jobs.args, args)
+	return int64(len(jobs.args)), nil
 }
 
 func (state *memoryState) LoadCursor(context.Context, string) (CursorState, error) {
