@@ -23,16 +23,17 @@ MIGRATION_TEST_DATABASE_URL="$database_url" MIGRATION_TEST_DATABASE_NAME="$tempo
   "$go_command" run ./acceptance/fixtures/cmd/validate-database-url
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
 [[ "$(psql "$database_url" -X -q -At -c 'SHOW server_version_num')" = '160014' ]]
-[[ "$(psql "$database_url" -X -q -At -c 'SELECT max(version_id) FROM goose_db_version WHERE is_applied')" = '78' ]]
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >/dev/null
-[[ "$(psql "$database_url" -X -q -At -c 'SELECT max(version_id) FROM goose_db_version WHERE is_applied')" = '77' ]]
+[[ "$(psql "$database_url" -X -q -At -c 'SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id = 78 AND is_applied)')" = 't' ]]
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 77 >/dev/null
+[[ "$(psql "$database_url" -X -q -At -c 'SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id = 78 AND is_applied)')" = 'f' ]]
+[[ "$(psql "$database_url" -X -q -At -c 'SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id = 77 AND is_applied)')" = 't' ]]
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
 
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" test -race -count=1 -timeout=240s -run '^TestCampaignDispatchPG16' ./acceptance/outbound \
   -args -campaign-dispatch-database-url "$database_url"
 set +e
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >/tmp/aicrm-c01-dispatch-down.out 2>&1
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 77 >/tmp/aicrm-c01-dispatch-down.out 2>&1
 status=$?
 set -e
 [[ $status -ne 0 ]]

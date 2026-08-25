@@ -41,9 +41,9 @@ func (campaignDispatchUnknownAdapter) Execute(context.Context, eer.EffectEnvelop
 func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) {
 	pool := openCampaignDispatchPool(t)
 	ctx := context.Background()
-	var waterline int64
-	if err := pool.QueryRow(ctx, `SELECT max(version_id) FROM public.goose_db_version WHERE is_applied`).Scan(&waterline); err != nil || waterline != 78 {
-		t.Fatalf("migration waterline=%d err=%v, want 78", waterline, err)
+	var migrationApplied bool
+	if err := pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM public.goose_db_version WHERE version_id=78 AND is_applied)`).Scan(&migrationApplied); err != nil || !migrationApplied {
+		t.Fatalf("migration 78 applied=%t err=%v, want true", migrationApplied, err)
 	}
 	ensureOutboundRiverCatalog(t, ctx, pool)
 
