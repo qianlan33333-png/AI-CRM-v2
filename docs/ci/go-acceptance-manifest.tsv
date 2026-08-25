@@ -63,3 +63,4 @@ p4-rp01-release-plane|0061|P4RP01_TEST_DATABASE_URL|legacy-make|p4-rp01-release-
 p4-external-effects-runtime|0062|P4EER_TEST_DATABASE_URL|legacy-make|p4-external-effects-runtime-acceptance|-
 p4-data-migration-harness|0063|P4DMH_TEST_DATABASE_URL|legacy-make|p4-data-migration-harness-acceptance|-
 p4-b01-wecom-inbound|0064|P4B01_WECOM_INBOUND_TEST_DATABASE_URL|legacy-make|p4-b01-wecom-inbound-acceptance|-
+p4-outbound-campaign-dispatch|0065|P4OUTBOUNDCAMPAIGNDISPATCH_TEST_DATABASE_URL|legacy-make|p4-outbound-campaign-dispatch-acceptance|-

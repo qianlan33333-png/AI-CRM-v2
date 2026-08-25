@@ -14,10 +14,15 @@ import (
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
+	externaleffectsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
 	operationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/store"
 	outbound "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound"
+	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
+	outboundstore "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/store"
+	outboundworker "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/worker"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
@@ -77,6 +82,27 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	queues := config.Worker.Queues
 	workers := platformjobqueue.NewWorkerRegistry()
+	uow := platformstore.NewUnitOfWork(pool)
+	externalEffectsRuntimeRepository := externaleffectsstore.NewRepository(pool, uow)
+	externalEffectsRuntime, err := eer.NewService(externalEffectsRuntimeRepository)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignDispatchRepository, err := outboundstore.NewCampaignDispatchRepository(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignDispatchService, err := outboundapp.NewCampaignDispatchService(uow, campaignDispatchRepository, externalEffectsRuntime, campaignDispatchRepository)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	if err = outboundworker.RegisterCampaignDispatchWorker(workers, campaignDispatchService, outboundworker.ProviderShapedAdapter{}); err != nil {
+		pool.Close()
+		return nil, err
+	}
 	partitionMaintainer, err := contactstore.NewEventPartitionMaintainer(pool)
 	if err != nil {
 		pool.Close()

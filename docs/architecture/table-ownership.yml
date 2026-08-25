@@ -106,7 +106,7 @@ owners:
 
   outbound:
     package: internal/outbound
-    tables: [outbound_batches, outbound_batch_chunks, outbound_tasks, outbound_enqueue_receipts, outbound_send_attempts, outbound_send_attempt_history, outbound_task_job_links, outbound_control_receipts, outbound_campaign_handoffs, outbound_campaign_handoff_steps, outbound_campaign_handoff_customer_tasks, outbound_campaign_handoff_receipts]
+    tables: [outbound_batches, outbound_batch_chunks, outbound_tasks, outbound_enqueue_receipts, outbound_send_attempts, outbound_send_attempt_history, outbound_task_job_links, outbound_control_receipts, outbound_campaign_handoffs, outbound_campaign_handoff_steps, outbound_campaign_handoff_customer_tasks, outbound_campaign_handoff_receipts, outbound_campaign_dispatches, outbound_campaign_dispatch_receipts, outbound_campaign_provider_attempt_receipts]
     constraints:
       outbound_tasks: provider_result_driven_status_projection_without_retry_scheduling
       outbound_send_attempts: stable_provider_attempt_receipts_owned_by_outbound
@@ -117,6 +117,9 @@ owners:
       outbound_campaign_handoff_steps: immutable_campaign_content_snapshot_private_to_outbound
       outbound_campaign_handoff_customer_tasks: canonical_OneID_links_held_until_dispatch_eligibility_external_gate
       outbound_campaign_handoff_receipts: actor_scoped_exact_snapshot_and_event_bound_acceptance_receipts
+      outbound_campaign_dispatches: immutable_00068_handoff_to_EER_binding_with_safe_terminal_projection
+      outbound_campaign_dispatch_receipts: actor_scoped_dispatch_idempotency_snapshot
+      outbound_campaign_provider_attempt_receipts: digest_only_local_or_fake_receipt_without_delivery_proof
 
   events:
     package: internal/events

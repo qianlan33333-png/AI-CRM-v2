@@ -389,6 +389,13 @@ func (r *Repository) within(ctx context.Context, fn func(eerdb.Querier) error) e
 	if r == nil || r.uow == nil {
 		return eer.ErrUnavailable
 	}
+	// Domain integrations may need an external-effect acceptance and their
+	// immutable business binding to commit together. Reuse the caller's active
+	// UoW when one exists; starting a nested transaction would otherwise reject
+	// that safe composition (or, worse, split the two facts).
+	if tx, err := platformstore.TxFromContext(ctx); err == nil {
+		return fn(eerdb.New(tx))
+	}
 	return r.uow.Within(ctx, func(txctx context.Context) error {
 		tx, err := platformstore.TxFromContext(txctx)
 		if err != nil {

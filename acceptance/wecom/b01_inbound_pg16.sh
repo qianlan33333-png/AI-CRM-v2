@@ -14,16 +14,16 @@ cleanup
 psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c 'CREATE DATABASE aicrm_test_b01_00077' >/dev/null
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
 [[ "$(psql "$database_url" -X -q -At -c 'SHOW server_version_num')" = '160014' ]]
-[[ "$(psql "$database_url" -X -q -At -c 'SELECT max(version_id) FROM goose_db_version WHERE is_applied')" = '77' ]]
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >/dev/null
+[[ "$(psql "$database_url" -X -q -At -c 'SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id=77 AND is_applied)')" = 't' ]]
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 76 >/dev/null
 [[ "$(psql "$database_url" -X -q -At -c "SELECT to_regclass('public.wecom_contact_inbox') IS NULL")" = 't' ]]
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
 P4B01_WECOM_INBOUND_TEST_DATABASE_URL="$database_url" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" test -race -count=1 -timeout=180s -run '^TestB01WeComInboundPG16$' ./acceptance/wecom
 set +e
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >/tmp/aicrm-b01-inbound-down.out 2>&1
-status=$?
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 76 >/tmp/aicrm-b01-inbound-down.out 2>&1
+task_rc=$?
 set -e
-[[ $status -ne 0 ]]
+[[ $task_rc -ne 0 ]]
 grep -Fq 'cannot roll back populated WeCom contact inbox' /tmp/aicrm-b01-inbound-down.out
 printf 'P4 B01 WeCom inbound PG16 acceptance: PASS (77 down/up, callback inbox idempotency, critical local job, no provider effect)\n'

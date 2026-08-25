@@ -6,6 +6,8 @@ package outbounddb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -25,10 +27,14 @@ type Querier interface {
 	GetOutboundCampaignHandoffReceiptForUpdate(ctx context.Context, arg GetOutboundCampaignHandoffReceiptForUpdateParams) (GetOutboundCampaignHandoffReceiptForUpdateRow, error)
 	GetOutboundCampaignHandoffSummary(ctx context.Context, arg GetOutboundCampaignHandoffSummaryParams) (GetOutboundCampaignHandoffSummaryRow, error)
 	GetOutboundTaskReadModel(ctx context.Context, arg GetOutboundTaskReadModelParams) (GetOutboundTaskReadModelRow, error)
+	InsertOutboundCampaignDispatch(ctx context.Context, arg InsertOutboundCampaignDispatchParams) (OutboundCampaignDispatch, error)
 	InsertOutboundCampaignHandoff(ctx context.Context, arg InsertOutboundCampaignHandoffParams) (int64, error)
 	InsertOutboundCampaignHandoffCustomerLinks(ctx context.Context, arg InsertOutboundCampaignHandoffCustomerLinksParams) error
 	InsertOutboundCampaignHandoffStep(ctx context.Context, arg InsertOutboundCampaignHandoffStepParams) error
+	InsertOutboundCampaignProviderAttemptReceipt(ctx context.Context, arg InsertOutboundCampaignProviderAttemptReceiptParams) error
 	ListOutboundAttemptReadModels(ctx context.Context, taskID int64) ([]ListOutboundAttemptReadModelsRow, error)
+	ListOutboundCampaignDispatchCandidates(ctx context.Context, handoffID int64) ([]ListOutboundCampaignDispatchCandidatesRow, error)
+	ListOutboundCampaignDispatchReconciliation(ctx context.Context, handoffID int64) ([]ListOutboundCampaignDispatchReconciliationRow, error)
 	ListOutboundCampaignHandoffCustomerLinks(ctx context.Context, handoffID int64) ([]ListOutboundCampaignHandoffCustomerLinksRow, error)
 	ListOutboundCampaignHandoffSteps(ctx context.Context, handoffID int64) ([]ListOutboundCampaignHandoffStepsRow, error)
 	ListOutboundControlReceiptReadModels(ctx context.Context, taskID int64) ([]ListOutboundControlReceiptReadModelsRow, error)
@@ -36,8 +42,11 @@ type Querier interface {
 	ListOutboundTaskReadModels(ctx context.Context, arg ListOutboundTaskReadModelsParams) ([]ListOutboundTaskReadModelsRow, error)
 	LoadLatestOutboundTaskJobLink(ctx context.Context, taskID int64) (LoadLatestOutboundTaskJobLinkRow, error)
 	LoadOutboundAttemptHistory(ctx context.Context, historyID int64) (LoadOutboundAttemptHistoryRow, error)
+	LoadOutboundCampaignDispatchByEffect(ctx context.Context, externalEffectID pgtype.Int8) (OutboundCampaignDispatch, error)
+	LoadOutboundCampaignDispatchReceipt(ctx context.Context, arg LoadOutboundCampaignDispatchReceiptParams) (OutboundCampaignDispatchReceipt, error)
 	LoadOutboundSendRequest(ctx context.Context, id int64) (LoadOutboundSendRequestRow, error)
 	LoadOutboundTaskResultFact(ctx context.Context, historyID int64) (LoadOutboundTaskResultFactRow, error)
+	LockOutboundCampaignHandoffForDispatch(ctx context.Context, arg LockOutboundCampaignHandoffForDispatchParams) (LockOutboundCampaignHandoffForDispatchRow, error)
 	LockOutboundTaskForCancel(ctx context.Context, taskID int64) (LockOutboundTaskForCancelRow, error)
 	LockOutboundTaskForManualRetry(ctx context.Context, taskID int64) (LockOutboundTaskForManualRetryRow, error)
 	MarkOutboundTaskCancelled(ctx context.Context, taskID int64) (MarkOutboundTaskCancelledRow, error)
@@ -46,10 +55,12 @@ type Querier interface {
 	MarkOutboundTaskSending(ctx context.Context, arg MarkOutboundTaskSendingParams) (int64, error)
 	PrepareOutboundSendAttemptRetry(ctx context.Context, arg PrepareOutboundSendAttemptRetryParams) (PrepareOutboundSendAttemptRetryRow, error)
 	ProjectOutboundTaskResult(ctx context.Context, arg ProjectOutboundTaskResultParams) (int64, error)
+	ReadOutboundCampaignHandoffForDispatch(ctx context.Context, arg ReadOutboundCampaignHandoffForDispatchParams) (int64, error)
 	RecordOutboundTaskJobLink(ctx context.Context, arg RecordOutboundTaskJobLinkParams) (RecordOutboundTaskJobLinkRow, error)
 	ReserveOutboundAttemptHistory(ctx context.Context, arg ReserveOutboundAttemptHistoryParams) (ReserveOutboundAttemptHistoryRow, error)
 	ReserveOutboundBatch(ctx context.Context, arg ReserveOutboundBatchParams) (ReserveOutboundBatchRow, error)
 	ReserveOutboundBatchChunk(ctx context.Context, arg ReserveOutboundBatchChunkParams) (ReserveOutboundBatchChunkRow, error)
+	ReserveOutboundCampaignDispatchReceipt(ctx context.Context, arg ReserveOutboundCampaignDispatchReceiptParams) (OutboundCampaignDispatchReceipt, error)
 	ReserveOutboundCampaignHandoffReceipt(ctx context.Context, arg ReserveOutboundCampaignHandoffReceiptParams) (ReserveOutboundCampaignHandoffReceiptRow, error)
 	ReserveOutboundCancelReceipt(ctx context.Context, arg ReserveOutboundCancelReceiptParams) (ReserveOutboundCancelReceiptRow, error)
 	ReserveOutboundEnqueueReceipt(ctx context.Context, arg ReserveOutboundEnqueueReceiptParams) (ReserveOutboundEnqueueReceiptRow, error)
@@ -57,6 +68,7 @@ type Querier interface {
 	ReserveOutboundSendAttempt(ctx context.Context, arg ReserveOutboundSendAttemptParams) (ReserveOutboundSendAttemptRow, error)
 	StartOutboundAttemptHistory(ctx context.Context, arg StartOutboundAttemptHistoryParams) (StartOutboundAttemptHistoryRow, error)
 	StartOutboundSendAttempt(ctx context.Context, id int64) (StartOutboundSendAttemptRow, error)
+	UpdateOutboundCampaignDispatchState(ctx context.Context, arg UpdateOutboundCampaignDispatchStateParams) error
 }
 
 var _ Querier = (*Queries)(nil)

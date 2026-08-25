@@ -418,8 +418,7 @@ func outboundCampaignHandoffGoose(ctx context.Context, repositoryRoot, operation
 
 func resetOutboundCampaignHandoffFixture(t *testing.T, ctx context.Context, pool *pgxpool.Pool, eventIDs []int64) {
 	t.Helper()
-	if _, err := pool.Exec(ctx, `TRUNCATE
-  public.outbound_campaign_handoff_receipts,
+	truncateTables := `public.outbound_campaign_handoff_receipts,
   public.outbound_campaign_handoff_customer_tasks,
   public.outbound_campaign_handoff_steps,
   public.outbound_campaign_handoffs,
@@ -430,7 +429,18 @@ func resetOutboundCampaignHandoffFixture(t *testing.T, ctx context.Context, pool
   public.outbound_batch_chunks,
   public.outbound_enqueue_receipts,
   public.outbound_tasks,
-  public.outbound_batches`); err != nil {
+		public.outbound_batches`
+	var dispatchTablesExist bool
+	if err := pool.QueryRow(ctx, `SELECT to_regclass('public.outbound_campaign_dispatches') IS NOT NULL`).Scan(&dispatchTablesExist); err != nil {
+		t.Fatal(err)
+	}
+	if dispatchTablesExist {
+		truncateTables = `public.outbound_campaign_provider_attempt_receipts,
+  public.outbound_campaign_dispatch_receipts,
+  public.outbound_campaign_dispatches,
+  ` + truncateTables
+	}
+	if _, err := pool.Exec(ctx, `TRUNCATE `+truncateTables); err != nil {
 		t.Fatal(err)
 	}
 	if err := eventsfixture.DeleteCampaignHandoffFacts(ctx, pool, eventIDs); err != nil {

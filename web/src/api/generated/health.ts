@@ -4169,6 +4169,47 @@ export interface OutboundCampaignHandoffReconciliation {
   safety: OutboundCampaignHandoffSafety;
 }
 
+export interface OutboundCampaignDispatchRequest {
+  /** Creates local EER work only; the production Provider adapter remains disabled by default. */
+  external_gate: boolean;
+}
+
+export interface OutboundCampaignDispatchReconciliation {
+  /** @minimum 1 */
+  handoff_id: number;
+  /** @minimum 0 */
+  blocked: number;
+  /** @minimum 0 */
+  accepted: number;
+  /** @minimum 0 */
+  queued: number;
+  /** @minimum 0 */
+  attempted: number;
+  /** @minimum 0 */
+  executed: number;
+  /** @minimum 0 */
+  outcome_unknown: number;
+  /** @minimum 0 */
+  reconciled: number;
+  /** @minimum 0 */
+  retryable_failed: number;
+  /** @minimum 0 */
+  final_failed: number;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+  delivery_proven: boolean;
+}
+
+export interface OutboundCampaignDispatchReconcileRequest {
+  /** @minimum 1 */
+  generation: number;
+  /** @minimum 1 */
+  fence: number;
+  lease_expires_at: string;
+  /** @pattern ^sha256:[0-9a-f]{64}$ */
+  evidence_digest: string;
+}
+
 export type LegacyOutboundQueueJobKind =
   (typeof LegacyOutboundQueueJobKind)[keyof typeof LegacyOutboundQueueJobKind];
 
@@ -37304,6 +37345,278 @@ export const reconcileOutboundCampaignHandoff = async (
     status: res.status,
     headers: res.headers,
   } as reconcileOutboundCampaignHandoffResponse;
+};
+
+/**
+ * Provider calls remain disabled in the default runtime. A local/fake receipt never proves delivery.
+ * @summary Bind an accepted Campaign handoff to EER and queue only gated local dispatch work
+ */
+export type dispatchOutboundCampaignHandoffResponse200 = {
+  data: OutboundCampaignDispatchReconciliation;
+  status: 200;
+};
+
+export type dispatchOutboundCampaignHandoffResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type dispatchOutboundCampaignHandoffResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type dispatchOutboundCampaignHandoffResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type dispatchOutboundCampaignHandoffResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type dispatchOutboundCampaignHandoffResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type dispatchOutboundCampaignHandoffResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type dispatchOutboundCampaignHandoffResponseSuccess =
+  dispatchOutboundCampaignHandoffResponse200 & {
+    headers: Headers;
+  };
+export type dispatchOutboundCampaignHandoffResponseError = (
+  | dispatchOutboundCampaignHandoffResponse400
+  | dispatchOutboundCampaignHandoffResponse401
+  | dispatchOutboundCampaignHandoffResponse403
+  | dispatchOutboundCampaignHandoffResponse404
+  | dispatchOutboundCampaignHandoffResponse409
+  | dispatchOutboundCampaignHandoffResponse503
+) & {
+  headers: Headers;
+};
+
+export type dispatchOutboundCampaignHandoffResponse =
+  | dispatchOutboundCampaignHandoffResponseSuccess
+  | dispatchOutboundCampaignHandoffResponseError;
+
+export const getDispatchOutboundCampaignHandoffUrl = (
+  campaignCode: string,
+  planId: string,
+) => {
+  return `/api/admin/outbound/campaign-handoffs/${campaignCode}/${planId}/dispatch`;
+};
+
+export const dispatchOutboundCampaignHandoff = async (
+  campaignCode: string,
+  planId: string,
+  outboundCampaignDispatchRequest: OutboundCampaignDispatchRequest,
+  options?: RequestInit,
+): Promise<dispatchOutboundCampaignHandoffResponse> => {
+  const res = await fetch(
+    getDispatchOutboundCampaignHandoffUrl(campaignCode, planId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(outboundCampaignDispatchRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: dispatchOutboundCampaignHandoffResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as dispatchOutboundCampaignHandoffResponse;
+};
+
+/**
+ * This is a local projection. It does not disclose recipients or Provider receipts and never proves delivery.
+ * @summary Read the count-only C01 dispatch/EER reconciliation projection
+ */
+export type getOutboundCampaignDispatchReconciliationResponse200 = {
+  data: OutboundCampaignDispatchReconciliation;
+  status: 200;
+};
+
+export type getOutboundCampaignDispatchReconciliationResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getOutboundCampaignDispatchReconciliationResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getOutboundCampaignDispatchReconciliationResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getOutboundCampaignDispatchReconciliationResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getOutboundCampaignDispatchReconciliationResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getOutboundCampaignDispatchReconciliationResponseSuccess =
+  getOutboundCampaignDispatchReconciliationResponse200 & {
+    headers: Headers;
+  };
+export type getOutboundCampaignDispatchReconciliationResponseError = (
+  | getOutboundCampaignDispatchReconciliationResponse400
+  | getOutboundCampaignDispatchReconciliationResponse401
+  | getOutboundCampaignDispatchReconciliationResponse403
+  | getOutboundCampaignDispatchReconciliationResponse404
+  | getOutboundCampaignDispatchReconciliationResponse503
+) & {
+  headers: Headers;
+};
+
+export type getOutboundCampaignDispatchReconciliationResponse =
+  | getOutboundCampaignDispatchReconciliationResponseSuccess
+  | getOutboundCampaignDispatchReconciliationResponseError;
+
+export const getGetOutboundCampaignDispatchReconciliationUrl = (
+  campaignCode: string,
+  planId: string,
+) => {
+  return `/api/admin/outbound/campaign-handoffs/${campaignCode}/${planId}/dispatch-reconciliation`;
+};
+
+export const getOutboundCampaignDispatchReconciliation = async (
+  campaignCode: string,
+  planId: string,
+  options?: RequestInit,
+): Promise<getOutboundCampaignDispatchReconciliationResponse> => {
+  const res = await fetch(
+    getGetOutboundCampaignDispatchReconciliationUrl(campaignCode, planId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getOutboundCampaignDispatchReconciliationResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getOutboundCampaignDispatchReconciliationResponse;
+};
+
+/**
+ * Requires operator evidence and a current EER lease fence. This moves only the local projection and never asserts Provider delivery.
+ * @summary Manually reconcile one C01 outcome-unknown EER binding
+ */
+export type reconcileOutboundCampaignDispatchResponse200 = {
+  data: OutboundCampaignDispatchReconciliation;
+  status: 200;
+};
+
+export type reconcileOutboundCampaignDispatchResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type reconcileOutboundCampaignDispatchResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reconcileOutboundCampaignDispatchResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reconcileOutboundCampaignDispatchResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type reconcileOutboundCampaignDispatchResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type reconcileOutboundCampaignDispatchResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type reconcileOutboundCampaignDispatchResponseSuccess =
+  reconcileOutboundCampaignDispatchResponse200 & {
+    headers: Headers;
+  };
+export type reconcileOutboundCampaignDispatchResponseError = (
+  | reconcileOutboundCampaignDispatchResponse400
+  | reconcileOutboundCampaignDispatchResponse401
+  | reconcileOutboundCampaignDispatchResponse403
+  | reconcileOutboundCampaignDispatchResponse404
+  | reconcileOutboundCampaignDispatchResponse409
+  | reconcileOutboundCampaignDispatchResponse503
+) & {
+  headers: Headers;
+};
+
+export type reconcileOutboundCampaignDispatchResponse =
+  | reconcileOutboundCampaignDispatchResponseSuccess
+  | reconcileOutboundCampaignDispatchResponseError;
+
+export const getReconcileOutboundCampaignDispatchUrl = (
+  campaignCode: string,
+  planId: string,
+  effectId: string,
+) => {
+  return `/api/admin/outbound/campaign-handoffs/${campaignCode}/${planId}/dispatch-reconciliation/${effectId}`;
+};
+
+export const reconcileOutboundCampaignDispatch = async (
+  campaignCode: string,
+  planId: string,
+  effectId: string,
+  outboundCampaignDispatchReconcileRequest: OutboundCampaignDispatchReconcileRequest,
+  options?: RequestInit,
+): Promise<reconcileOutboundCampaignDispatchResponse> => {
+  const res = await fetch(
+    getReconcileOutboundCampaignDispatchUrl(campaignCode, planId, effectId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(outboundCampaignDispatchReconcileRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reconcileOutboundCampaignDispatchResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reconcileOutboundCampaignDispatchResponse;
 };
 
 /**
