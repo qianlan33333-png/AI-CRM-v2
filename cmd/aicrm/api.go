@@ -2011,7 +2011,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		if wrapErr != nil {
 			return wrapErr
 		}
-		methodGuard, wrapErr := gateway.RoutePatternMiddleware(pattern, endpoint)
+		methodGuard, wrapErr := gateway.RoutePatternMiddleware(pattern, publicProtocolExactMethod(method, endpoint))
 		if wrapErr != nil {
 			return wrapErr
 		}
@@ -3208,6 +3208,22 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		methodNotAllowed.ServeHTTP(writer, request)
 	}))
 	return gateway.RequestIDMiddleware(legacyCustomerPageNamespaceGuard(router))
+}
+
+func publicProtocolExactMethod(method string, endpoint http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method == method {
+			endpoint.ServeHTTP(writer, request)
+			return
+		}
+		writer.Header().Set("Allow", method)
+		writer.Header().Set("Cache-Control", "no-store")
+		writer.Header().Set("Content-Type", "application/json; charset=utf-8")
+		writer.Header().Set("Referrer-Policy", "no-referrer")
+		writer.Header().Set("X-Content-Type-Options", "nosniff")
+		writer.WriteHeader(http.StatusMethodNotAllowed)
+		_, _ = writer.Write([]byte("{\"code\":\"method_not_allowed\"}\n"))
+	})
 }
 
 func (component *apiComponent) Run(ctx context.Context) error {

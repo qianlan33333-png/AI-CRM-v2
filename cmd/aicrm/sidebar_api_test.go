@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	api "github.com/qianlan33333-png/AI-CRM-v2/internal/api/candidate/generated"
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
@@ -105,6 +106,58 @@ func (sidebarRouteMedia) Facets(context.Context) (mediaport.ImageFacets, error) 
 	return mediaport.ImageFacets{}, nil
 }
 func (sidebarRouteMedia) LocalImageExists(context.Context, int64) (bool, error) { return false, nil }
+
+type sidebarPublicMethodCandidate struct {
+	api.Unimplemented
+	startCalls, callbackCalls, agentConfigCalls int
+}
+
+func (candidate *sidebarPublicMethodCandidate) StartSidebarOAuth(http.ResponseWriter, *http.Request, api.StartSidebarOAuthParams) {
+	candidate.startCalls++
+}
+
+func (candidate *sidebarPublicMethodCandidate) CompleteSidebarOAuth(http.ResponseWriter, *http.Request, api.CompleteSidebarOAuthParams) {
+	candidate.callbackCalls++
+}
+
+func (candidate *sidebarPublicMethodCandidate) GetSidebarAgentConfig(http.ResponseWriter, *http.Request, api.GetSidebarAgentConfigParams) {
+	candidate.agentConfigCalls++
+}
+
+func TestSidebarPublicProtocolRoutesRejectWrongMethodsWithoutCallingEndpoint(t *testing.T) {
+	authHandler, err := authhttp.NewHandler(&sidebarRouteAuth{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	candidate := &sidebarPublicMethodCandidate{}
+	router, err := newAPIHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), authHandler, candidate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		method string
+		path   string
+	}{
+		{method: http.MethodPost, path: "/api/sidebar/v2/oauth/start"},
+		{method: http.MethodPut, path: "/api/sidebar/v2/oauth/callback"},
+		{method: http.MethodDelete, path: "/api/sidebar/v2/jssdk/agent-config"},
+	} {
+		t.Run(test.path, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, httptest.NewRequest(test.method, test.path, nil))
+
+			if response.Code != http.StatusMethodNotAllowed || response.Header().Get("Allow") != http.MethodGet {
+				t.Fatalf("status/allow=%d/%q", response.Code, response.Header().Get("Allow"))
+			}
+			if response.Header().Get("Cache-Control") != "no-store" || response.Header().Get("Referrer-Policy") != "no-referrer" || response.Header().Get("X-Content-Type-Options") != "nosniff" {
+				t.Fatalf("unsafe method guard headers=%v", response.Header())
+			}
+		})
+	}
+	if candidate.startCalls != 0 || candidate.callbackCalls != 0 || candidate.agentConfigCalls != 0 {
+		t.Fatalf("start/callback/agent-config calls=%d/%d/%d", candidate.startCalls, candidate.callbackCalls, candidate.agentConfigCalls)
+	}
+}
 
 func TestFinalSidebarContextRouteOptionalSessionRBACAndEnumerationSafety(t *testing.T) {
 	staffID := int64(7)
