@@ -6940,6 +6940,192 @@ func (e UpdateSegmentRequestRefreshMode) Valid() bool {
 	}
 }
 
+// Defines values for WechatPayCallbackAckCode.
+const (
+	WechatPayCallbackSuccess WechatPayCallbackAckCode = "SUCCESS"
+)
+
+// Valid indicates whether the value is a known member of the WechatPayCallbackAckCode enum.
+func (e WechatPayCallbackAckCode) Valid() bool {
+	switch e {
+	case WechatPayCallbackSuccess:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WechatPayCheckoutCurrency.
+const (
+	WechatPayCurrencyCNY WechatPayCheckoutCurrency = "CNY"
+)
+
+// Valid indicates whether the value is a known member of the WechatPayCheckoutCurrency enum.
+func (e WechatPayCheckoutCurrency) Valid() bool {
+	switch e {
+	case WechatPayCurrencyCNY:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WechatPayCheckoutProductKind.
+const (
+	WechatPayCheckoutProductKindOrdinary      WechatPayCheckoutProductKind = "ordinary"
+	WechatPayCheckoutProductKindServicePeriod WechatPayCheckoutProductKind = "service_period"
+)
+
+// Valid indicates whether the value is a known member of the WechatPayCheckoutProductKind enum.
+func (e WechatPayCheckoutProductKind) Valid() bool {
+	switch e {
+	case WechatPayCheckoutProductKindOrdinary:
+		return true
+	case WechatPayCheckoutProductKindServicePeriod:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WechatPayCheckoutState.
+const (
+	WechatPayStateAwaitingPayment   WechatPayCheckoutState = "awaiting_payment"
+	WechatPayStateAwaitingPrepay    WechatPayCheckoutState = "awaiting_prepay"
+	WechatPayStatePaid              WechatPayCheckoutState = "paid"
+	WechatPayStatePartiallyRefunded WechatPayCheckoutState = "partially_refunded"
+	WechatPayStateRefunded          WechatPayCheckoutState = "refunded"
+)
+
+// Valid indicates whether the value is a known member of the WechatPayCheckoutState enum.
+func (e WechatPayCheckoutState) Valid() bool {
+	switch e {
+	case WechatPayStateAwaitingPayment:
+		return true
+	case WechatPayStateAwaitingPrepay:
+		return true
+	case WechatPayStatePaid:
+		return true
+	case WechatPayStatePartiallyRefunded:
+		return true
+	case WechatPayStateRefunded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WechatPayCheckoutRequestProductKind.
+const (
+	WechatPayProductKindOrdinary      WechatPayCheckoutRequestProductKind = "ordinary"
+	WechatPayProductKindServicePeriod WechatPayCheckoutRequestProductKind = "service_period"
+)
+
+// Valid indicates whether the value is a known member of the WechatPayCheckoutRequestProductKind enum.
+func (e WechatPayCheckoutRequestProductKind) Valid() bool {
+	switch e {
+	case WechatPayProductKindOrdinary:
+		return true
+	case WechatPayProductKindServicePeriod:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WechatPayEncryptedCallbackEventType.
+const (
+	WechatPayEventRefundSuccess      WechatPayEncryptedCallbackEventType = "REFUND.SUCCESS"
+	WechatPayEventTransactionSuccess WechatPayEncryptedCallbackEventType = "TRANSACTION.SUCCESS"
+)
+
+// Valid indicates whether the value is a known member of the WechatPayEncryptedCallbackEventType enum.
+func (e WechatPayEncryptedCallbackEventType) Valid() bool {
+	switch e {
+	case WechatPayEventRefundSuccess:
+		return true
+	case WechatPayEventTransactionSuccess:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WechatPayEncryptedCallbackResourceAlgorithm.
+const (
+	WechatPayAlgorithmAEADAES256GCM WechatPayEncryptedCallbackResourceAlgorithm = "AEAD_AES_256_GCM"
+)
+
+// Valid indicates whether the value is a known member of the WechatPayEncryptedCallbackResourceAlgorithm enum.
+func (e WechatPayEncryptedCallbackResourceAlgorithm) Valid() bool {
+	switch e {
+	case WechatPayAlgorithmAEADAES256GCM:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WechatPayEncryptedCallbackResourceType.
+const (
+	WechatPayResourceEncrypted WechatPayEncryptedCallbackResourceType = "encrypt-resource"
+)
+
+// Valid indicates whether the value is a known member of the WechatPayEncryptedCallbackResourceType enum.
+func (e WechatPayEncryptedCallbackResourceType) Valid() bool {
+	switch e {
+	case WechatPayResourceEncrypted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WechatPaySettlementRefundCurrency.
+const (
+	WechatPayRefundCurrencyCNY WechatPaySettlementRefundCurrency = "CNY"
+)
+
+// Valid indicates whether the value is a known member of the WechatPaySettlementRefundCurrency enum.
+func (e WechatPaySettlementRefundCurrency) Valid() bool {
+	switch e {
+	case WechatPayRefundCurrencyCNY:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for WechatPaySettlementRefundState.
+const (
+	WechatPayRefundStateAccepted       WechatPaySettlementRefundState = "accepted"
+	WechatPayRefundStateExecuted       WechatPaySettlementRefundState = "executed"
+	WechatPayRefundStateFinalFailed    WechatPaySettlementRefundState = "final_failed"
+	WechatPayRefundStateOutcomeUnknown WechatPaySettlementRefundState = "outcome_unknown"
+	WechatPayRefundStateQueued         WechatPaySettlementRefundState = "queued"
+	WechatPayRefundStateReconciled     WechatPaySettlementRefundState = "reconciled"
+)
+
+// Valid indicates whether the value is a known member of the WechatPaySettlementRefundState enum.
+func (e WechatPaySettlementRefundState) Valid() bool {
+	switch e {
+	case WechatPayRefundStateAccepted:
+		return true
+	case WechatPayRefundStateExecuted:
+		return true
+	case WechatPayRefundStateFinalFailed:
+		return true
+	case WechatPayRefundStateOutcomeUnknown:
+		return true
+	case WechatPayRefundStateQueued:
+		return true
+	case WechatPayRefundStateReconciled:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ListAutomationTriggerRunsParamsVisibility.
 const (
 	ListAutomationTriggerRunsParamsVisibilityMasked ListAutomationTriggerRunsParamsVisibility = "masked"
@@ -11146,6 +11332,95 @@ type VersionedDeleteRequest struct {
 	ExpectedVersion int64 `json:"expected_version"`
 }
 
+// WechatPayCallbackAck defines model for WechatPayCallbackAck.
+type WechatPayCallbackAck struct {
+	Code WechatPayCallbackAckCode `json:"code"`
+}
+
+// WechatPayCallbackAckCode defines model for WechatPayCallbackAck.Code.
+type WechatPayCallbackAckCode string
+
+// WechatPayCheckout defines model for WechatPayCheckout.
+type WechatPayCheckout struct {
+	AmountMinor      int64                        `json:"amount_minor"`
+	CreatedAt        time.Time                    `json:"created_at"`
+	Currency         WechatPayCheckoutCurrency    `json:"currency"`
+	CustomerId       int64                        `json:"customer_id"`
+	MerchantOrderNo  string                       `json:"merchant_order_no"`
+	OrderId          int64                        `json:"order_id"`
+	PaymentCommandId int64                        `json:"payment_command_id"`
+	ProductId        int64                        `json:"product_id"`
+	ProductKind      WechatPayCheckoutProductKind `json:"product_kind"`
+	State            WechatPayCheckoutState       `json:"state"`
+}
+
+// WechatPayCheckoutCurrency defines model for WechatPayCheckout.Currency.
+type WechatPayCheckoutCurrency string
+
+// WechatPayCheckoutProductKind defines model for WechatPayCheckout.ProductKind.
+type WechatPayCheckoutProductKind string
+
+// WechatPayCheckoutState defines model for WechatPayCheckout.State.
+type WechatPayCheckoutState string
+
+// WechatPayCheckoutRequest defines model for WechatPayCheckoutRequest.
+type WechatPayCheckoutRequest struct {
+	CustomerId  int64                               `json:"customer_id"`
+	ProductId   int64                               `json:"product_id"`
+	ProductKind WechatPayCheckoutRequestProductKind `json:"product_kind"`
+}
+
+// WechatPayCheckoutRequestProductKind defines model for WechatPayCheckoutRequest.ProductKind.
+type WechatPayCheckoutRequestProductKind string
+
+// WechatPayEncryptedCallback defines model for WechatPayEncryptedCallback.
+type WechatPayEncryptedCallback struct {
+	EventType WechatPayEncryptedCallbackEventType `json:"event_type"`
+	Id        string                              `json:"id"`
+	Resource  struct {
+		Algorithm      WechatPayEncryptedCallbackResourceAlgorithm `json:"algorithm"`
+		AssociatedData string                                      `json:"associated_data"`
+		Ciphertext     string                                      `json:"ciphertext"`
+		Nonce          string                                      `json:"nonce"`
+	} `json:"resource"`
+	ResourceType WechatPayEncryptedCallbackResourceType `json:"resource_type"`
+}
+
+// WechatPayEncryptedCallbackEventType defines model for WechatPayEncryptedCallback.EventType.
+type WechatPayEncryptedCallbackEventType string
+
+// WechatPayEncryptedCallbackResourceAlgorithm defines model for WechatPayEncryptedCallback.Resource.Algorithm.
+type WechatPayEncryptedCallbackResourceAlgorithm string
+
+// WechatPayEncryptedCallbackResourceType defines model for WechatPayEncryptedCallback.ResourceType.
+type WechatPayEncryptedCallbackResourceType string
+
+// WechatPaySettlementRefund defines model for WechatPaySettlementRefund.
+type WechatPaySettlementRefund struct {
+	AmountMinor      int64                             `json:"amount_minor"`
+	CreatedAt        time.Time                         `json:"created_at"`
+	Currency         WechatPaySettlementRefundCurrency `json:"currency"`
+	ExternalEffectId *string                           `json:"external_effect_id,omitempty"`
+	Id               int64                             `json:"id"`
+	OrderId          int64                             `json:"order_id"`
+	OutRefundNo      string                            `json:"out_refund_no"`
+	State            WechatPaySettlementRefundState    `json:"state"`
+	UpdatedAt        time.Time                         `json:"updated_at"`
+	Version          int64                             `json:"version"`
+}
+
+// WechatPaySettlementRefundCurrency defines model for WechatPaySettlementRefund.Currency.
+type WechatPaySettlementRefundCurrency string
+
+// WechatPaySettlementRefundState defines model for WechatPaySettlementRefund.State.
+type WechatPaySettlementRefundState string
+
+// WechatPaySettlementRefundRequest defines model for WechatPaySettlementRefundRequest.
+type WechatPaySettlementRefundRequest struct {
+	AmountMinor int64  `json:"amount_minor"`
+	Reason      string `json:"reason"`
+}
+
 // AddedAfterFilter defines model for AddedAfterFilter.
 type AddedAfterFilter = time.Time
 
@@ -11313,6 +11588,18 @@ type TagID = int64
 
 // TagIDFilter defines model for TagIDFilter.
 type TagIDFilter = int64
+
+// WechatpayNonce defines model for WechatpayNonce.
+type WechatpayNonce = string
+
+// WechatpaySerial defines model for WechatpaySerial.
+type WechatpaySerial = string
+
+// WechatpaySignature defines model for WechatpaySignature.
+type WechatpaySignature = string
+
+// WechatpayTimestamp defines model for WechatpayTimestamp.
+type WechatpayTimestamp = string
 
 // AdminOpsBlockedRedline defines model for AdminOpsBlockedRedline.
 type AdminOpsBlockedRedline = AdminOpsLocalResponse
@@ -11958,6 +12245,22 @@ type EnableLegacyWechatPayProductParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// ReceiveWechatPayPaymentCallbackParams defines parameters for ReceiveWechatPayPaymentCallback.
+type ReceiveWechatPayPaymentCallbackParams struct {
+	WechatpayTimestamp WechatpayTimestamp `json:"Wechatpay-Timestamp"`
+	WechatpayNonce     WechatpayNonce     `json:"Wechatpay-Nonce"`
+	WechatpaySerial    WechatpaySerial    `json:"Wechatpay-Serial"`
+	WechatpaySignature WechatpaySignature `json:"Wechatpay-Signature"`
+}
+
+// ReceiveWechatPayRefundCallbackParams defines parameters for ReceiveWechatPayRefundCallback.
+type ReceiveWechatPayRefundCallbackParams struct {
+	WechatpayTimestamp WechatpayTimestamp `json:"Wechatpay-Timestamp"`
+	WechatpayNonce     WechatpayNonce     `json:"Wechatpay-Nonce"`
+	WechatpaySerial    WechatpaySerial    `json:"Wechatpay-Serial"`
+	WechatpaySignature WechatpaySignature `json:"Wechatpay-Signature"`
+}
+
 // MintSidebarContextJSONBody defines parameters for MintSidebarContext.
 type MintSidebarContextJSONBody struct {
 	ExternalUserid string `json:"external_userid"`
@@ -12546,6 +12849,24 @@ type UpdateTagParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// CreateWechatPayCheckoutParams defines parameters for CreateWechatPayCheckout.
+type CreateWechatPayCheckoutParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// CreateWechatPaySettlementRefundParams defines parameters for CreateWechatPaySettlementRefund.
+type CreateWechatPaySettlementRefundParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // RunAdminOpsFeishuHourlyReportPlanJSONRequestBody defines body for RunAdminOpsFeishuHourlyReportPlan for application/json ContentType.
 type RunAdminOpsFeishuHourlyReportPlanJSONRequestBody = AdminOpsActionRequest
 
@@ -12705,6 +13026,12 @@ type SubmitPublicSurveyJSONRequestBody = PublicSurveySubmissionRequest
 // QueryPublicSurveySubmissionResultJSONRequestBody defines body for QueryPublicSurveySubmissionResult for application/json ContentType.
 type QueryPublicSurveySubmissionResultJSONRequestBody = PublicSurveyResultQueryRequest
 
+// ReceiveWechatPayPaymentCallbackJSONRequestBody defines body for ReceiveWechatPayPaymentCallback for application/json ContentType.
+type ReceiveWechatPayPaymentCallbackJSONRequestBody = WechatPayEncryptedCallback
+
+// ReceiveWechatPayRefundCallbackJSONRequestBody defines body for ReceiveWechatPayRefundCallback for application/json ContentType.
+type ReceiveWechatPayRefundCallbackJSONRequestBody = WechatPayEncryptedCallback
+
 // MintSidebarContextJSONRequestBody defines body for MintSidebarContext for application/json ContentType.
 type MintSidebarContextJSONRequestBody MintSidebarContextJSONBody
 
@@ -12809,6 +13136,12 @@ type ReorderTagsJSONRequestBody = ReorderLocalCatalogRequest
 
 // UpdateTagJSONRequestBody defines body for UpdateTag for application/json ContentType.
 type UpdateTagJSONRequestBody = UpdateLocalTagNameRequest
+
+// CreateWechatPayCheckoutJSONRequestBody defines body for CreateWechatPayCheckout for application/json ContentType.
+type CreateWechatPayCheckoutJSONRequestBody = WechatPayCheckoutRequest
+
+// CreateWechatPaySettlementRefundJSONRequestBody defines body for CreateWechatPaySettlementRefund for application/json ContentType.
+type CreateWechatPaySettlementRefundJSONRequestBody = WechatPaySettlementRefundRequest
 
 // AsAdminOpsCategoryPersisted returns the union data inside the AdminOpsCategoryRead as a AdminOpsCategoryPersisted
 func (t AdminOpsCategoryRead) AsAdminOpsCategoryPersisted() (AdminOpsCategoryPersisted, error) {
@@ -14269,6 +14602,12 @@ type ServerInterface interface {
 	// Query one anonymous local-only public survey result by POST body token
 	// (POST /api/public/survey-submission-results/query)
 	QueryPublicSurveySubmissionResult(w http.ResponseWriter, r *http.Request)
+	// Verify and apply one authoritative WeChat payment callback
+	// (POST /api/public/wechat-pay/callbacks/payment)
+	ReceiveWechatPayPaymentCallback(w http.ResponseWriter, r *http.Request, params ReceiveWechatPayPaymentCallbackParams)
+	// Verify and apply one authoritative WeChat refund callback
+	// (POST /api/public/wechat-pay/callbacks/refund)
+	ReceiveWechatPayRefundCallback(w http.ResponseWriter, r *http.Request, params ReceiveWechatPayRefundCallbackParams)
 	// Resolve one local customer and mint a short-lived owner-scoped sidebar token
 	// (POST /api/sidebar/context-token)
 	MintSidebarContext(w http.ResponseWriter, r *http.Request)
@@ -14521,6 +14860,15 @@ type ServerInterface interface {
 	// Rename one local CRM tag
 	// (PATCH /api/v1/tags/{tag_id})
 	UpdateTag(w http.ResponseWriter, r *http.Request, tagId TagID, params UpdateTagParams)
+	// Create one actor-bound WeChat payment checkout from an immutable Product snapshot
+	// (POST /api/v1/wechat-pay/checkouts)
+	CreateWechatPayCheckout(w http.ResponseWriter, r *http.Request, params CreateWechatPayCheckoutParams)
+	// Read one checkout only through its actor-bound payment identity digest
+	// (GET /api/v1/wechat-pay/checkouts/{merchant_order_no})
+	GetWechatPayCheckout(w http.ResponseWriter, r *http.Request, merchantOrderNo string)
+	// Reserve a bounded WeChat refund under the Order financial aggregate
+	// (POST /api/v1/wechat-pay/orders/{order_id}/refunds)
+	CreateWechatPaySettlementRefund(w http.ResponseWriter, r *http.Request, orderId int64, params CreateWechatPaySettlementRefundParams)
 	// Read the public legacy configuration-derived runtime-mode snapshot
 	// (GET /health)
 	GetLegacyHealth(w http.ResponseWriter, r *http.Request)
@@ -15220,6 +15568,18 @@ func (_ Unimplemented) QueryPublicSurveySubmissionResult(w http.ResponseWriter, 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Verify and apply one authoritative WeChat payment callback
+// (POST /api/public/wechat-pay/callbacks/payment)
+func (_ Unimplemented) ReceiveWechatPayPaymentCallback(w http.ResponseWriter, r *http.Request, params ReceiveWechatPayPaymentCallbackParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Verify and apply one authoritative WeChat refund callback
+// (POST /api/public/wechat-pay/callbacks/refund)
+func (_ Unimplemented) ReceiveWechatPayRefundCallback(w http.ResponseWriter, r *http.Request, params ReceiveWechatPayRefundCallbackParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Resolve one local customer and mint a short-lived owner-scoped sidebar token
 // (POST /api/sidebar/context-token)
 func (_ Unimplemented) MintSidebarContext(w http.ResponseWriter, r *http.Request) {
@@ -15721,6 +16081,24 @@ func (_ Unimplemented) ArchiveTag(w http.ResponseWriter, r *http.Request, tagId 
 // Rename one local CRM tag
 // (PATCH /api/v1/tags/{tag_id})
 func (_ Unimplemented) UpdateTag(w http.ResponseWriter, r *http.Request, tagId TagID, params UpdateTagParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create one actor-bound WeChat payment checkout from an immutable Product snapshot
+// (POST /api/v1/wechat-pay/checkouts)
+func (_ Unimplemented) CreateWechatPayCheckout(w http.ResponseWriter, r *http.Request, params CreateWechatPayCheckoutParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one checkout only through its actor-bound payment identity digest
+// (GET /api/v1/wechat-pay/checkouts/{merchant_order_no})
+func (_ Unimplemented) GetWechatPayCheckout(w http.ResponseWriter, r *http.Request, merchantOrderNo string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Reserve a bounded WeChat refund under the Order financial aggregate
+// (POST /api/v1/wechat-pay/orders/{order_id}/refunds)
+func (_ Unimplemented) CreateWechatPaySettlementRefund(w http.ResponseWriter, r *http.Request, orderId int64, params CreateWechatPaySettlementRefundParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -22264,6 +22642,232 @@ func (siw *ServerInterfaceWrapper) QueryPublicSurveySubmissionResult(w http.Resp
 	handler.ServeHTTP(w, r)
 }
 
+// ReceiveWechatPayPaymentCallback operation middleware
+func (siw *ServerInterfaceWrapper) ReceiveWechatPayPaymentCallback(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReceiveWechatPayPaymentCallbackParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Wechatpay-Timestamp" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Wechatpay-Timestamp")]; found {
+		var WechatpayTimestamp WechatpayTimestamp
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Wechatpay-Timestamp", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Wechatpay-Timestamp", valueList[0], &WechatpayTimestamp, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Wechatpay-Timestamp", Err: err})
+			return
+		}
+
+		params.WechatpayTimestamp = WechatpayTimestamp
+
+	} else {
+		err := fmt.Errorf("Header parameter Wechatpay-Timestamp is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Wechatpay-Timestamp", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Wechatpay-Nonce" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Wechatpay-Nonce")]; found {
+		var WechatpayNonce WechatpayNonce
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Wechatpay-Nonce", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Wechatpay-Nonce", valueList[0], &WechatpayNonce, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Wechatpay-Nonce", Err: err})
+			return
+		}
+
+		params.WechatpayNonce = WechatpayNonce
+
+	} else {
+		err := fmt.Errorf("Header parameter Wechatpay-Nonce is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Wechatpay-Nonce", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Wechatpay-Serial" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Wechatpay-Serial")]; found {
+		var WechatpaySerial WechatpaySerial
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Wechatpay-Serial", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Wechatpay-Serial", valueList[0], &WechatpaySerial, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Wechatpay-Serial", Err: err})
+			return
+		}
+
+		params.WechatpaySerial = WechatpaySerial
+
+	} else {
+		err := fmt.Errorf("Header parameter Wechatpay-Serial is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Wechatpay-Serial", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Wechatpay-Signature" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Wechatpay-Signature")]; found {
+		var WechatpaySignature WechatpaySignature
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Wechatpay-Signature", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Wechatpay-Signature", valueList[0], &WechatpaySignature, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Wechatpay-Signature", Err: err})
+			return
+		}
+
+		params.WechatpaySignature = WechatpaySignature
+
+	} else {
+		err := fmt.Errorf("Header parameter Wechatpay-Signature is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Wechatpay-Signature", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReceiveWechatPayPaymentCallback(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReceiveWechatPayRefundCallback operation middleware
+func (siw *ServerInterfaceWrapper) ReceiveWechatPayRefundCallback(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReceiveWechatPayRefundCallbackParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "Wechatpay-Timestamp" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Wechatpay-Timestamp")]; found {
+		var WechatpayTimestamp WechatpayTimestamp
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Wechatpay-Timestamp", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Wechatpay-Timestamp", valueList[0], &WechatpayTimestamp, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Wechatpay-Timestamp", Err: err})
+			return
+		}
+
+		params.WechatpayTimestamp = WechatpayTimestamp
+
+	} else {
+		err := fmt.Errorf("Header parameter Wechatpay-Timestamp is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Wechatpay-Timestamp", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Wechatpay-Nonce" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Wechatpay-Nonce")]; found {
+		var WechatpayNonce WechatpayNonce
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Wechatpay-Nonce", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Wechatpay-Nonce", valueList[0], &WechatpayNonce, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Wechatpay-Nonce", Err: err})
+			return
+		}
+
+		params.WechatpayNonce = WechatpayNonce
+
+	} else {
+		err := fmt.Errorf("Header parameter Wechatpay-Nonce is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Wechatpay-Nonce", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Wechatpay-Serial" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Wechatpay-Serial")]; found {
+		var WechatpaySerial WechatpaySerial
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Wechatpay-Serial", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Wechatpay-Serial", valueList[0], &WechatpaySerial, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Wechatpay-Serial", Err: err})
+			return
+		}
+
+		params.WechatpaySerial = WechatpaySerial
+
+	} else {
+		err := fmt.Errorf("Header parameter Wechatpay-Serial is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Wechatpay-Serial", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Wechatpay-Signature" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Wechatpay-Signature")]; found {
+		var WechatpaySignature WechatpaySignature
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Wechatpay-Signature", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Wechatpay-Signature", valueList[0], &WechatpaySignature, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Wechatpay-Signature", Err: err})
+			return
+		}
+
+		params.WechatpaySignature = WechatpaySignature
+
+	} else {
+		err := fmt.Errorf("Header parameter Wechatpay-Signature is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Wechatpay-Signature", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReceiveWechatPayRefundCallback(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // MintSidebarContext operation middleware
 func (siw *ServerInterfaceWrapper) MintSidebarContext(w http.ResponseWriter, r *http.Request) {
 
@@ -27429,6 +28033,192 @@ func (siw *ServerInterfaceWrapper) UpdateTag(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// CreateWechatPayCheckout operation middleware
+func (siw *ServerInterfaceWrapper) CreateWechatPayCheckout(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateWechatPayCheckoutParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateWechatPayCheckout(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetWechatPayCheckout operation middleware
+func (siw *ServerInterfaceWrapper) GetWechatPayCheckout(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "merchant_order_no" -------------
+	var merchantOrderNo string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "merchant_order_no", chi.URLParam(r, "merchant_order_no"), &merchantOrderNo, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "merchant_order_no", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetWechatPayCheckout(w, r, merchantOrderNo)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateWechatPaySettlementRefund operation middleware
+func (siw *ServerInterfaceWrapper) CreateWechatPaySettlementRefund(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "order_id" -------------
+	var orderId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "order_id", chi.URLParam(r, "order_id"), &orderId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "order_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CreateWechatPaySettlementRefundParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateWechatPaySettlementRefund(w, r, orderId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetLegacyHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetLegacyHealth(w http.ResponseWriter, r *http.Request) {
 
@@ -27949,6 +28739,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/public/survey-submission-results/query", wrapper.QueryPublicSurveySubmissionResult)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/public/wechat-pay/callbacks/payment", wrapper.ReceiveWechatPayPaymentCallback)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/public/wechat-pay/callbacks/refund", wrapper.ReceiveWechatPayRefundCallback)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/sidebar/context-token", wrapper.MintSidebarContext)
 	})
 	r.Group(func(r chi.Router) {
@@ -28199,6 +28995,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Patch(options.BaseURL+"/api/v1/tags/{tag_id}", wrapper.UpdateTag)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/wechat-pay/checkouts", wrapper.CreateWechatPayCheckout)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/wechat-pay/checkouts/{merchant_order_no}", wrapper.GetWechatPayCheckout)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/wechat-pay/orders/{order_id}/refunds", wrapper.CreateWechatPaySettlementRefund)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.GetLegacyHealth)
@@ -35515,6 +36320,96 @@ func (response QueryPublicSurveySubmissionResult503JSONResponse) VisitQueryPubli
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ReceiveWechatPayPaymentCallbackRequestObject struct {
+	Params ReceiveWechatPayPaymentCallbackParams
+	Body   *ReceiveWechatPayPaymentCallbackJSONRequestBody
+}
+
+type ReceiveWechatPayPaymentCallbackResponseObject interface {
+	VisitReceiveWechatPayPaymentCallbackResponse(w http.ResponseWriter) error
+}
+
+type ReceiveWechatPayPaymentCallback200JSONResponse WechatPayCallbackAck
+
+func (response ReceiveWechatPayPaymentCallback200JSONResponse) VisitReceiveWechatPayPaymentCallbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReceiveWechatPayPaymentCallback400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReceiveWechatPayPaymentCallback400JSONResponse) VisitReceiveWechatPayPaymentCallbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReceiveWechatPayPaymentCallback409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReceiveWechatPayPaymentCallback409JSONResponse) VisitReceiveWechatPayPaymentCallbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReceiveWechatPayPaymentCallback503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ReceiveWechatPayPaymentCallback503JSONResponse) VisitReceiveWechatPayPaymentCallbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReceiveWechatPayRefundCallbackRequestObject struct {
+	Params ReceiveWechatPayRefundCallbackParams
+	Body   *ReceiveWechatPayRefundCallbackJSONRequestBody
+}
+
+type ReceiveWechatPayRefundCallbackResponseObject interface {
+	VisitReceiveWechatPayRefundCallbackResponse(w http.ResponseWriter) error
+}
+
+type ReceiveWechatPayRefundCallback200JSONResponse WechatPayCallbackAck
+
+func (response ReceiveWechatPayRefundCallback200JSONResponse) VisitReceiveWechatPayRefundCallbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReceiveWechatPayRefundCallback400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReceiveWechatPayRefundCallback400JSONResponse) VisitReceiveWechatPayRefundCallbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReceiveWechatPayRefundCallback409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReceiveWechatPayRefundCallback409JSONResponse) VisitReceiveWechatPayRefundCallbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReceiveWechatPayRefundCallback503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ReceiveWechatPayRefundCallback503JSONResponse) VisitReceiveWechatPayRefundCallbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type MintSidebarContextRequestObject struct {
 	Body *MintSidebarContextJSONRequestBody
 }
@@ -41039,6 +41934,195 @@ func (response UpdateTag503JSONResponse) VisitUpdateTagResponse(w http.ResponseW
 	return json.NewEncoder(w).Encode(response)
 }
 
+type CreateWechatPayCheckoutRequestObject struct {
+	Params CreateWechatPayCheckoutParams
+	Body   *CreateWechatPayCheckoutJSONRequestBody
+}
+
+type CreateWechatPayCheckoutResponseObject interface {
+	VisitCreateWechatPayCheckoutResponse(w http.ResponseWriter) error
+}
+
+type CreateWechatPayCheckout201JSONResponse WechatPayCheckout
+
+func (response CreateWechatPayCheckout201JSONResponse) VisitCreateWechatPayCheckoutResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateWechatPayCheckout400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateWechatPayCheckout400JSONResponse) VisitCreateWechatPayCheckoutResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateWechatPayCheckout401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateWechatPayCheckout401JSONResponse) VisitCreateWechatPayCheckoutResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateWechatPayCheckout403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateWechatPayCheckout403JSONResponse) VisitCreateWechatPayCheckoutResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateWechatPayCheckout409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateWechatPayCheckout409JSONResponse) VisitCreateWechatPayCheckoutResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateWechatPayCheckout503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateWechatPayCheckout503JSONResponse) VisitCreateWechatPayCheckoutResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWechatPayCheckoutRequestObject struct {
+	MerchantOrderNo string `json:"merchant_order_no"`
+}
+
+type GetWechatPayCheckoutResponseObject interface {
+	VisitGetWechatPayCheckoutResponse(w http.ResponseWriter) error
+}
+
+type GetWechatPayCheckout200JSONResponse WechatPayCheckout
+
+func (response GetWechatPayCheckout200JSONResponse) VisitGetWechatPayCheckoutResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWechatPayCheckout401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetWechatPayCheckout401JSONResponse) VisitGetWechatPayCheckoutResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWechatPayCheckout403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetWechatPayCheckout403JSONResponse) VisitGetWechatPayCheckoutResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWechatPayCheckout404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetWechatPayCheckout404JSONResponse) VisitGetWechatPayCheckoutResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWechatPayCheckout503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetWechatPayCheckout503JSONResponse) VisitGetWechatPayCheckoutResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateWechatPaySettlementRefundRequestObject struct {
+	OrderId int64 `json:"order_id"`
+	Params  CreateWechatPaySettlementRefundParams
+	Body    *CreateWechatPaySettlementRefundJSONRequestBody
+}
+
+type CreateWechatPaySettlementRefundResponseObject interface {
+	VisitCreateWechatPaySettlementRefundResponse(w http.ResponseWriter) error
+}
+
+type CreateWechatPaySettlementRefund202JSONResponse WechatPaySettlementRefund
+
+func (response CreateWechatPaySettlementRefund202JSONResponse) VisitCreateWechatPaySettlementRefundResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateWechatPaySettlementRefund400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateWechatPaySettlementRefund400JSONResponse) VisitCreateWechatPaySettlementRefundResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateWechatPaySettlementRefund401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateWechatPaySettlementRefund401JSONResponse) VisitCreateWechatPaySettlementRefundResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateWechatPaySettlementRefund403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateWechatPaySettlementRefund403JSONResponse) VisitCreateWechatPaySettlementRefundResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateWechatPaySettlementRefund404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateWechatPaySettlementRefund404JSONResponse) VisitCreateWechatPaySettlementRefundResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateWechatPaySettlementRefund409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateWechatPaySettlementRefund409JSONResponse) VisitCreateWechatPaySettlementRefundResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateWechatPaySettlementRefund503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateWechatPaySettlementRefund503JSONResponse) VisitCreateWechatPaySettlementRefundResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetLegacyHealthRequestObject struct {
 }
 
@@ -41496,6 +42580,12 @@ type StrictServerInterface interface {
 	// Query one anonymous local-only public survey result by POST body token
 	// (POST /api/public/survey-submission-results/query)
 	QueryPublicSurveySubmissionResult(ctx context.Context, request QueryPublicSurveySubmissionResultRequestObject) (QueryPublicSurveySubmissionResultResponseObject, error)
+	// Verify and apply one authoritative WeChat payment callback
+	// (POST /api/public/wechat-pay/callbacks/payment)
+	ReceiveWechatPayPaymentCallback(ctx context.Context, request ReceiveWechatPayPaymentCallbackRequestObject) (ReceiveWechatPayPaymentCallbackResponseObject, error)
+	// Verify and apply one authoritative WeChat refund callback
+	// (POST /api/public/wechat-pay/callbacks/refund)
+	ReceiveWechatPayRefundCallback(ctx context.Context, request ReceiveWechatPayRefundCallbackRequestObject) (ReceiveWechatPayRefundCallbackResponseObject, error)
 	// Resolve one local customer and mint a short-lived owner-scoped sidebar token
 	// (POST /api/sidebar/context-token)
 	MintSidebarContext(ctx context.Context, request MintSidebarContextRequestObject) (MintSidebarContextResponseObject, error)
@@ -41748,6 +42838,15 @@ type StrictServerInterface interface {
 	// Rename one local CRM tag
 	// (PATCH /api/v1/tags/{tag_id})
 	UpdateTag(ctx context.Context, request UpdateTagRequestObject) (UpdateTagResponseObject, error)
+	// Create one actor-bound WeChat payment checkout from an immutable Product snapshot
+	// (POST /api/v1/wechat-pay/checkouts)
+	CreateWechatPayCheckout(ctx context.Context, request CreateWechatPayCheckoutRequestObject) (CreateWechatPayCheckoutResponseObject, error)
+	// Read one checkout only through its actor-bound payment identity digest
+	// (GET /api/v1/wechat-pay/checkouts/{merchant_order_no})
+	GetWechatPayCheckout(ctx context.Context, request GetWechatPayCheckoutRequestObject) (GetWechatPayCheckoutResponseObject, error)
+	// Reserve a bounded WeChat refund under the Order financial aggregate
+	// (POST /api/v1/wechat-pay/orders/{order_id}/refunds)
+	CreateWechatPaySettlementRefund(ctx context.Context, request CreateWechatPaySettlementRefundRequestObject) (CreateWechatPaySettlementRefundResponseObject, error)
 	// Read the public legacy configuration-derived runtime-mode snapshot
 	// (GET /health)
 	GetLegacyHealth(ctx context.Context, request GetLegacyHealthRequestObject) (GetLegacyHealthResponseObject, error)
@@ -45153,6 +46252,72 @@ func (sh *strictHandler) QueryPublicSurveySubmissionResult(w http.ResponseWriter
 	}
 }
 
+// ReceiveWechatPayPaymentCallback operation middleware
+func (sh *strictHandler) ReceiveWechatPayPaymentCallback(w http.ResponseWriter, r *http.Request, params ReceiveWechatPayPaymentCallbackParams) {
+	var request ReceiveWechatPayPaymentCallbackRequestObject
+
+	request.Params = params
+
+	var body ReceiveWechatPayPaymentCallbackJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReceiveWechatPayPaymentCallback(ctx, request.(ReceiveWechatPayPaymentCallbackRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReceiveWechatPayPaymentCallback")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReceiveWechatPayPaymentCallbackResponseObject); ok {
+		if err := validResponse.VisitReceiveWechatPayPaymentCallbackResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReceiveWechatPayRefundCallback operation middleware
+func (sh *strictHandler) ReceiveWechatPayRefundCallback(w http.ResponseWriter, r *http.Request, params ReceiveWechatPayRefundCallbackParams) {
+	var request ReceiveWechatPayRefundCallbackRequestObject
+
+	request.Params = params
+
+	var body ReceiveWechatPayRefundCallbackJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReceiveWechatPayRefundCallback(ctx, request.(ReceiveWechatPayRefundCallbackRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReceiveWechatPayRefundCallback")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReceiveWechatPayRefundCallbackResponseObject); ok {
+		if err := validResponse.VisitReceiveWechatPayRefundCallbackResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // MintSidebarContext operation middleware
 func (sh *strictHandler) MintSidebarContext(w http.ResponseWriter, r *http.Request) {
 	var request MintSidebarContextRequestObject
@@ -47605,6 +48770,99 @@ func (sh *strictHandler) UpdateTag(w http.ResponseWriter, r *http.Request, tagId
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateTagResponseObject); ok {
 		if err := validResponse.VisitUpdateTagResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateWechatPayCheckout operation middleware
+func (sh *strictHandler) CreateWechatPayCheckout(w http.ResponseWriter, r *http.Request, params CreateWechatPayCheckoutParams) {
+	var request CreateWechatPayCheckoutRequestObject
+
+	request.Params = params
+
+	var body CreateWechatPayCheckoutJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateWechatPayCheckout(ctx, request.(CreateWechatPayCheckoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateWechatPayCheckout")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateWechatPayCheckoutResponseObject); ok {
+		if err := validResponse.VisitCreateWechatPayCheckoutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetWechatPayCheckout operation middleware
+func (sh *strictHandler) GetWechatPayCheckout(w http.ResponseWriter, r *http.Request, merchantOrderNo string) {
+	var request GetWechatPayCheckoutRequestObject
+
+	request.MerchantOrderNo = merchantOrderNo
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetWechatPayCheckout(ctx, request.(GetWechatPayCheckoutRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetWechatPayCheckout")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetWechatPayCheckoutResponseObject); ok {
+		if err := validResponse.VisitGetWechatPayCheckoutResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateWechatPaySettlementRefund operation middleware
+func (sh *strictHandler) CreateWechatPaySettlementRefund(w http.ResponseWriter, r *http.Request, orderId int64, params CreateWechatPaySettlementRefundParams) {
+	var request CreateWechatPaySettlementRefundRequestObject
+
+	request.OrderId = orderId
+	request.Params = params
+
+	var body CreateWechatPaySettlementRefundJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateWechatPaySettlementRefund(ctx, request.(CreateWechatPaySettlementRefundRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateWechatPaySettlementRefund")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateWechatPaySettlementRefundResponseObject); ok {
+		if err := validResponse.VisitCreateWechatPaySettlementRefundResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

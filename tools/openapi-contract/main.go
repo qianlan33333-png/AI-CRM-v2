@@ -86,11 +86,20 @@ const (
 	p4ReleasePlaneEvidence                     = "P4-RP01-RELEASE-PLANE-2026-08-25"
 	p4ExternalEffectsRuntimeEvidence           = "P4-EXTERNAL-EFFECTS-RUNTIME-2026-08-25"
 	p4OutboundCampaignDispatchEvidence         = "P4-C01-OUTBOUND-DISPATCH-2026-08-25"
+	p4PE01WeChatPaySettlementEvidence          = "PE01-WECHAT-PAY-SETTLEMENT-2026-08-25"
 	p4ServicePeriodMemberGridCanonicalEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24"
 	c01DispatchOperationID                     = "dispatchOutboundCampaignHandoff"
 	c01DispatchReadOperationID                 = "getOutboundCampaignDispatchReconciliation"
 	c01DispatchReconcileOperationID            = "reconcileOutboundCampaignDispatch"
 )
+
+var pe01Operations = map[string]nativePackageOperation{
+	"createWechatPayCheckout":         {"/api/v1/wechat-pay/checkouts", "POST", p4PE01WeChatPaySettlementEvidence, "order.write", "human_session", "financial", "order.pe01_checkout_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"getWechatPayCheckout":            {"/api/v1/wechat-pay/checkouts/{merchant_order_no}", "GET", p4PE01WeChatPaySettlementEvidence, "order.read", "human_session", "financial", "order.pe01_actor_bound_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"createWechatPaySettlementRefund": {"/api/v1/wechat-pay/orders/{order_id}/refunds", "POST", p4PE01WeChatPaySettlementEvidence, "order.write", "human_session", "financial", "order.pe01_refund_transaction", "required", map[string]string{"admin": "global"}},
+	"receiveWechatPayPaymentCallback": {"/api/public/wechat-pay/callbacks/payment", "POST", p4PE01WeChatPaySettlementEvidence, "", "wechat_pay_signature", "financial", "order.pe01_verified_callback", "none", nil},
+	"receiveWechatPayRefundCallback":  {"/api/public/wechat-pay/callbacks/refund", "POST", p4PE01WeChatPaySettlementEvidence, "", "wechat_pay_signature", "financial", "order.pe01_verified_callback", "none", nil},
+}
 
 var nativePackageOperations = map[string]nativePackageOperation{
 	"createCustomerSafeExport":                 {"/api/v1/customer-exports", "POST", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
@@ -1208,7 +1217,39 @@ func isRunnerDeclaredOperation(operationID string) bool {
 		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] || p4AdminOpsSafeOperations[operationID].path != "" || p4SetupWizardOperations[operationID] ||
 		p4DomainVerificationOperations[operationID] || p4PushCenterOperations[operationID] ||
 		p4ExecutionRuntimeOperations[operationID] || p4AdminShellOperations[operationID] ||
-		p4LegacyHealthOperations[operationID] || nativePackageOperationDeclared(operationID)
+		p4LegacyHealthOperations[operationID] || nativePackageOperationDeclared(operationID) || pe01OperationDeclared(operationID)
+}
+
+func pe01OperationDeclared(operationID string) bool { _, ok := pe01Operations[operationID]; return ok }
+
+func validatePE01Operation(path string, item *openapi3.PathItem, op *openapi3.Operation, contract nativePackageOperation) error {
+	if path != contract.path || operationForMethod(item, contract.method) != op || op.Extensions["x-p4-decision-evidence"] != contract.evidence || op.Extensions["x-aicrm-auth-scheme"] != contract.authScheme || op.Extensions["x-aicrm-data-classification"] != contract.classification || op.Extensions["x-aicrm-data-source"] != contract.dataSource || op.Extensions["x-aicrm-session-bound-csrf"] != contract.csrf {
+		return fmt.Errorf("%s PE01 route boundary drifted", op.OperationID)
+	}
+	if contract.authScheme == "wechat_pay_signature" {
+		if op.Security == nil || len(*op.Security) != 0 || op.Extensions["x-aicrm-external-effect"] != "provider_callback" {
+			return fmt.Errorf("%s PE01 callback boundary drifted", op.OperationID)
+		}
+		if _, ok := op.Extensions["x-aicrm-capability"]; ok {
+			return fmt.Errorf("%s PE01 callback must not declare human capability", op.OperationID)
+		}
+		return nil
+	}
+	if op.Extensions["x-aicrm-capability"] != contract.capability {
+		return fmt.Errorf("%s PE01 capability drifted", op.OperationID)
+	}
+	scopes, err := stringMap(op.Extensions["x-aicrm-rbac-scopes"])
+	if err != nil || !reflect.DeepEqual(scopes, contract.scopes) {
+		return fmt.Errorf("%s PE01 RBAC scopes=%v", op.OperationID, scopes)
+	}
+	wantEffect := "none"
+	if contract.method == "POST" {
+		wantEffect = "accepted_only"
+	}
+	if op.Extensions["x-aicrm-external-effect"] != wantEffect {
+		return fmt.Errorf("%s PE01 external effect drifted", op.OperationID)
+	}
+	return nil
 }
 
 func validateP4AdminOpsSafeOperation(path string, item *openapi3.PathItem, op *openapi3.Operation, contract p4AdminOpsSafeContract, known map[string]bool) error {
@@ -2151,6 +2192,10 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 					len(op.Responses.Map()) != 2 {
 					return fmt.Errorf("%s response envelope drifted", op.OperationID)
 				}
+			} else if pe01Contract, pe01 := pe01Operations[op.OperationID]; pe01 {
+				if err := validatePE01Operation(path, item, op, pe01Contract); err != nil {
+					return err
+				}
 			} else if nativeContract, native := nativePackageOperations[op.OperationID]; native {
 				if err := validateNativePackageOperation(path, item, op, nativeContract); err != nil {
 					return err
@@ -2185,7 +2230,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 					return fmt.Errorf("%s has missing or forged P3 segment evidence", op.OperationID)
 				}
 			}
-			if p4DomainVerificationOperations[op.OperationID] || p4LegacyHealthOperations[op.OperationID] || nativePackageOperationDeclared(op.OperationID) {
+			if p4DomainVerificationOperations[op.OperationID] || p4LegacyHealthOperations[op.OperationID] || nativePackageOperationDeclared(op.OperationID) || pe01OperationDeclared(op.OperationID) {
 				// The public static route and the public runtime-mode snapshot are
 				// fully constrained in their dedicated branches above. Native
 				// package operations are likewise validated against their exact

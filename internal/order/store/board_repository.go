@@ -26,7 +26,7 @@ func (repository *Repository) ListBoardOrders(ctx context.Context, filter orderp
 	}
 	result := make([]orderport.Record, len(rows))
 	for i, row := range rows {
-		result[i] = boardRecord(row)
+		result[i] = boardRecord(legacyOrderProjection(row))
 	}
 	return result, nil
 }
@@ -56,7 +56,7 @@ func (repository *Repository) GetBoardOrder(ctx context.Context, provider, refer
 	if err != nil {
 		return orderport.Record{}, boardStoreError(err)
 	}
-	return boardRecord(row), nil
+	return boardRecord(legacyOrderProjection(row)), nil
 }
 
 // GetBoardOrderByID is intentionally separate from GetBoardOrder: a local ID
@@ -73,7 +73,7 @@ func (repository *Repository) GetBoardOrderByID(ctx context.Context, id orderpor
 	if err != nil {
 		return orderport.Record{}, boardStoreError(err)
 	}
-	return boardRecord(row), nil
+	return boardRecord(legacyOrderProjection(row)), nil
 }
 
 func (repository *Repository) LockBoardOrder(ctx context.Context, provider, reference string) (orderport.Record, error) {
@@ -85,7 +85,7 @@ func (repository *Repository) LockBoardOrder(ctx context.Context, provider, refe
 	if err != nil {
 		return orderport.Record{}, boardStoreError(err)
 	}
-	return boardRecord(row), nil
+	return boardRecord(legacyOrderProjection(row)), nil
 }
 
 func (repository *Repository) CountActiveRefundAmount(ctx context.Context, orderID orderport.ID) (int64, error) {
@@ -284,7 +284,32 @@ func boardRefundParams(filter orderport.RefundFilter) orderdb.ListOrderRefundsPa
 	return orderdb.ListOrderRefundsParams{Provider: optionalText(filter.Provider, "all"), OrderNo: optionalText(filter.OrderNo, ""), TransactionID: optionalText(filter.TransactionID, ""), RefundID: optionalText(filter.RefundID, ""), OutRefundNo: optionalText(filter.OutRefundNo, ""), Status: optionalText(filter.Status, ""), CreatedFrom: optionalTime(filter.CreatedFrom), CreatedTo: optionalTime(filter.CreatedTo), RowOffset: filter.Offset, RowLimit: filter.Limit}
 }
 
-func boardRecord(row orderdb.OrderListProjection) orderport.Record {
+// legacyOrderProjection keeps pre-PE01 order-board reads compatible with
+// databases migrated only through the original order package (00036).
+type legacyOrderProjection struct {
+	ID                    int64              `json:"id"`
+	Provider              string             `json:"provider"`
+	ProviderLabel         string             `json:"provider_label"`
+	MerchantOrderNo       string             `json:"merchant_order_no"`
+	PlatformTransactionNo string             `json:"platform_transaction_no"`
+	CustomerID            pgtype.Int8        `json:"customer_id"`
+	PayerNameSnapshot     string             `json:"payer_name_snapshot"`
+	MobileSnapshot        string             `json:"mobile_snapshot"`
+	IdentityKind          string             `json:"identity_kind"`
+	IdentityValue         string             `json:"identity_value"`
+	ProductID             pgtype.Int8        `json:"product_id"`
+	ProductCode           string             `json:"product_code"`
+	ProductNameSnapshot   string             `json:"product_name_snapshot"`
+	AmountMinor           int64              `json:"amount_minor"`
+	Currency              string             `json:"currency"`
+	Status                string             `json:"status"`
+	StatusLabel           string             `json:"status_label"`
+	DetailUrl             string             `json:"detail_url"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+}
+
+func boardRecord(row legacyOrderProjection) orderport.Record {
 	return orderport.Record{ID: orderport.ID(row.ID), Provider: row.Provider, ProviderLabel: row.ProviderLabel, MerchantOrderNo: row.MerchantOrderNo, PlatformTransactionNo: row.PlatformTransactionNo, CustomerID: optionalInt64(row.CustomerID), PayerNameSnapshot: row.PayerNameSnapshot, MobileSnapshot: row.MobileSnapshot, IdentityKind: row.IdentityKind, IdentityValue: row.IdentityValue, ProductID: optionalInt64(row.ProductID), ProductCode: row.ProductCode, ProductNameSnapshot: row.ProductNameSnapshot, AmountMinor: row.AmountMinor, Currency: row.Currency, Status: row.Status, StatusLabel: row.StatusLabel, DetailURL: row.DetailUrl, CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time}
 }
 

@@ -3550,6 +3550,83 @@ paths:
               schema: { type: string, enum: [GET] }
             Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
             X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+  /api/v1/wechat-pay/checkouts:
+    post:
+      tags: [pe01-wechat-pay-settlement]
+      operationId: createWechatPayCheckout
+      summary: Create one actor-bound WeChat payment checkout from an immutable Product snapshot
+      x-p4-decision-evidence: PE01-WECHAT-PAY-SETTLEMENT-2026-08-25
+      x-aicrm-capability: order.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: order.pe01_checkout_transaction
+      x-aicrm-external-effect: accepted_only
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/WechatPayCheckoutRequest"}}}}
+      responses: {"201": {description: Durable checkout and accepted EER bridge job; not payment success, content: {application/json: {schema: {$ref: "#/components/schemas/WechatPayCheckout"}}}}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/v1/wechat-pay/checkouts/{merchant_order_no}:
+    get:
+      tags: [pe01-wechat-pay-settlement]
+      operationId: getWechatPayCheckout
+      summary: Read one checkout only through its actor-bound payment identity digest
+      x-p4-decision-evidence: PE01-WECHAT-PAY-SETTLEMENT-2026-08-25
+      x-aicrm-capability: order.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: order.pe01_actor_bound_projection
+      x-aicrm-external-effect: none
+      parameters: [{name: merchant_order_no, in: path, required: true, schema: {type: string, pattern: '^pe01_[a-f0-9]{32}$'}}]
+      responses: {"200": {description: Actor-bound checkout projection, content: {application/json: {schema: {$ref: "#/components/schemas/WechatPayCheckout"}}}}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "404": {$ref: "#/components/responses/NotFound"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/v1/wechat-pay/orders/{order_id}/refunds:
+    post:
+      tags: [pe01-wechat-pay-settlement]
+      operationId: createWechatPaySettlementRefund
+      summary: Reserve a bounded WeChat refund under the Order financial aggregate
+      x-p4-decision-evidence: PE01-WECHAT-PAY-SETTLEMENT-2026-08-25
+      x-aicrm-capability: order.write
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: order.pe01_refund_transaction
+      x-aicrm-external-effect: accepted_only
+      parameters: [{name: order_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/WechatPaySettlementRefundRequest"}}}}
+      responses: {"202": {description: Refund reservation and accepted EER bridge job; not refund success, content: {application/json: {schema: {$ref: "#/components/schemas/WechatPaySettlementRefund"}}}}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "404": {$ref: "#/components/responses/NotFound"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/public/wechat-pay/callbacks/payment:
+    post:
+      tags: [pe01-wechat-pay-settlement]
+      operationId: receiveWechatPayPaymentCallback
+      summary: Verify and apply one authoritative WeChat payment callback
+      security: []
+      x-p4-decision-evidence: PE01-WECHAT-PAY-SETTLEMENT-2026-08-25
+      x-aicrm-auth-scheme: wechat_pay_signature
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: order.pe01_verified_callback
+      x-aicrm-external-effect: provider_callback
+      parameters: [{$ref: "#/components/parameters/WechatpayTimestamp"}, {$ref: "#/components/parameters/WechatpayNonce"}, {$ref: "#/components/parameters/WechatpaySerial"}, {$ref: "#/components/parameters/WechatpaySignature"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/WechatPayEncryptedCallback"}}}}
+      responses: {"200": {description: Verified callback committed receipt-last, content: {application/json: {schema: {$ref: "#/components/schemas/WechatPayCallbackAck"}}}}, "400": {$ref: "#/components/responses/BadRequest"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/public/wechat-pay/callbacks/refund:
+    post:
+      tags: [pe01-wechat-pay-settlement]
+      operationId: receiveWechatPayRefundCallback
+      summary: Verify and apply one authoritative WeChat refund callback
+      security: []
+      x-p4-decision-evidence: PE01-WECHAT-PAY-SETTLEMENT-2026-08-25
+      x-aicrm-auth-scheme: wechat_pay_signature
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: order.pe01_verified_callback
+      x-aicrm-external-effect: provider_callback
+      parameters: [{$ref: "#/components/parameters/WechatpayTimestamp"}, {$ref: "#/components/parameters/WechatpayNonce"}, {$ref: "#/components/parameters/WechatpaySerial"}, {$ref: "#/components/parameters/WechatpaySignature"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/WechatPayEncryptedCallback"}}}}
+      responses: {"200": {description: Verified callback committed receipt-last, content: {application/json: {schema: {$ref: "#/components/schemas/WechatPayCallbackAck"}}}}, "400": {$ref: "#/components/responses/BadRequest"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
   /api/admin/orders:
     get:
       tags: [p4-order-compat]
@@ -10142,6 +10219,26 @@ components:
       required: true
       description: Stable caller key; reusing it with a different normalized command is a conflict.
       schema: { type: string, minLength: 16, maxLength: 128 }
+    WechatpayTimestamp:
+      name: Wechatpay-Timestamp
+      in: header
+      required: true
+      schema: {type: string, pattern: '^[0-9]{10}$'}
+    WechatpayNonce:
+      name: Wechatpay-Nonce
+      in: header
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 64}
+    WechatpaySerial:
+      name: Wechatpay-Serial
+      in: header
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 128}
+    WechatpaySignature:
+      name: Wechatpay-Signature
+      in: header
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 1024}
     CustomerSafeExportID:
       name: export_id
       in: path
@@ -13761,6 +13858,86 @@ components:
             version: { type: integer, format: int64, minimum: 1 }
             created_at: { type: string, format: date-time }
             updated_at: { type: string, format: date-time }
+    WechatPayCheckoutRequest:
+      type: object
+      additionalProperties: false
+      required: [customer_id, product_id, product_kind]
+      properties:
+        customer_id: {type: integer, format: int64, minimum: 1}
+        product_id: {type: integer, format: int64, minimum: 1}
+        product_kind:
+          type: string
+          enum: [ordinary, service_period]
+          x-enum-varnames: [WechatPayProductKindOrdinary, WechatPayProductKindServicePeriod]
+    WechatPayCheckout:
+      type: object
+      additionalProperties: false
+      required: [order_id, merchant_order_no, state, product_kind, customer_id, product_id, amount_minor, currency, payment_command_id, created_at]
+      properties:
+        order_id: {type: integer, format: int64, minimum: 1}
+        merchant_order_no: {type: string, pattern: '^pe01_[a-f0-9]{32}$'}
+        state:
+          type: string
+          enum: [awaiting_prepay, awaiting_payment, paid, partially_refunded, refunded]
+          x-enum-varnames: [WechatPayStateAwaitingPrepay, WechatPayStateAwaitingPayment, WechatPayStatePaid, WechatPayStatePartiallyRefunded, WechatPayStateRefunded]
+        product_kind:
+          type: string
+          enum: [ordinary, service_period]
+          x-enum-varnames: [WechatPayCheckoutProductKindOrdinary, WechatPayCheckoutProductKindServicePeriod]
+        customer_id: {type: integer, format: int64, minimum: 1}
+        product_id: {type: integer, format: int64, minimum: 1}
+        amount_minor: {type: integer, format: int64, minimum: 1, maximum: 1000000000}
+        currency: {type: string, enum: [CNY], x-enum-varnames: [WechatPayCurrencyCNY]}
+        payment_command_id: {type: integer, format: int64, minimum: 1}
+        created_at: {type: string, format: date-time}
+    WechatPaySettlementRefundRequest:
+      type: object
+      additionalProperties: false
+      required: [amount_minor, reason]
+      properties:
+        amount_minor: {type: integer, format: int64, minimum: 1, maximum: 1000000000}
+        reason: {type: string, minLength: 1, maxLength: 500}
+    WechatPaySettlementRefund:
+      type: object
+      additionalProperties: false
+      required: [id, order_id, out_refund_no, amount_minor, currency, state, version, created_at, updated_at]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        order_id: {type: integer, format: int64, minimum: 1}
+        out_refund_no: {type: string, pattern: '^pe01r_[a-f0-9]{32}$'}
+        amount_minor: {type: integer, format: int64, minimum: 1}
+        currency: {type: string, enum: [CNY], x-enum-varnames: [WechatPayRefundCurrencyCNY]}
+        external_effect_id: {type: string, pattern: '^eer_[1-9][0-9]*$'}
+        state:
+          type: string
+          enum: [accepted, queued, executed, outcome_unknown, reconciled, final_failed]
+          x-enum-varnames: [WechatPayRefundStateAccepted, WechatPayRefundStateQueued, WechatPayRefundStateExecuted, WechatPayRefundStateOutcomeUnknown, WechatPayRefundStateReconciled, WechatPayRefundStateFinalFailed]
+        version: {type: integer, format: int64, minimum: 1}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    WechatPayEncryptedCallback:
+      type: object
+      additionalProperties: false
+      required: [id, event_type, resource_type, resource]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 128}
+        event_type: {type: string, enum: [TRANSACTION.SUCCESS, REFUND.SUCCESS], x-enum-varnames: [WechatPayEventTransactionSuccess, WechatPayEventRefundSuccess]}
+        resource_type: {type: string, enum: [encrypt-resource], x-enum-varnames: [WechatPayResourceEncrypted]}
+        resource:
+          type: object
+          additionalProperties: false
+          required: [algorithm, ciphertext, nonce, associated_data]
+          properties:
+            algorithm: {type: string, enum: [AEAD_AES_256_GCM], x-enum-varnames: [WechatPayAlgorithmAEADAES256GCM]}
+            ciphertext: {type: string, minLength: 1, maxLength: 131072}
+            nonce: {type: string, minLength: 1, maxLength: 64}
+            associated_data: {type: string, maxLength: 1024}
+    WechatPayCallbackAck:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code: {type: string, enum: [SUCCESS], x-enum-varnames: [WechatPayCallbackSuccess]}
     LegacyOrderListItem:
       type: object
       additionalProperties: false

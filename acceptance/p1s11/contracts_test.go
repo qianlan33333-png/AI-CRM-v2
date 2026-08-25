@@ -228,6 +228,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"MintSidebarContext", "GetSidebarWorkbench", "UpdateSidebarProfile", "ListSidebarQuestionnaires", "ListSidebarOrders", "ListSidebarPeriodicOrders", "UpdateSidebarPeriodicRemark", "ListSidebarMaterials", "GetSidebarMaterialThumbnailStatus",
 		"CreateContactOwnerReassignmentPreview", "GetContactOwnerReassignmentPreview", "DownloadContactOwnerReassignmentErrors", "ExecuteContactOwnerReassignmentPreview", "DownloadContactOwnerReassignmentResults", "DownloadContactOwnerReassignmentTemplate",
 		"ListReleaseCandidates", "RegisterReleaseCandidate", "GetReleaseCandidate", "RecordReleasePrerequisite", "PrepareReleaseCandidate", "StartReleaseCutover", "RestartReleaseCutover", "CompleteReleaseCutoverStep", "ActivateReleaseCandidate", "RecordReleaseRollbackCheck", "RequestReleaseRollback", "CompleteReleaseRollback",
+		"CreateWechatPayCheckout", "GetWechatPayCheckout", "CreateWechatPaySettlementRefund", "ReceiveWechatPayPaymentCallback", "ReceiveWechatPayRefundCallback",
 	})
 }
 

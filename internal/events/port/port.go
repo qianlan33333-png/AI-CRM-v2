@@ -50,6 +50,9 @@ const (
 	EvOrderExportCreated        = "order.export_created"
 	EvOrderRefundRequested      = "order.refund_requested"
 	EvOrderEffectRetryRequested = "order.external_effect_retry_requested"
+	EvOrderCheckoutCreated      = "order.checkout_created"
+	EvOrderPaymentSettled       = "order.payment_settled"
+	EvOrderRefundSettled        = "order.refund_settled"
 	// EvOperationCycleFact is a local lifecycle fact. Its delivery consumer
 	// only completes the durable receipt; it never invokes a provider.
 	EvOperationCycleFact = "operation_cycle.fact_recorded"

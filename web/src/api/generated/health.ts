@@ -6798,6 +6798,191 @@ export type CouponAllOf = {
 
 export type Coupon = CouponUpsertRequest & CouponAllOf;
 
+export type WechatPayCheckoutRequestProductKind =
+  (typeof WechatPayCheckoutRequestProductKind)[keyof typeof WechatPayCheckoutRequestProductKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatPayCheckoutRequestProductKind = {
+  WechatPayProductKindOrdinary: "ordinary",
+  WechatPayProductKindServicePeriod: "service_period",
+} as const;
+
+export interface WechatPayCheckoutRequest {
+  /** @minimum 1 */
+  customer_id: number;
+  /** @minimum 1 */
+  product_id: number;
+  product_kind: WechatPayCheckoutRequestProductKind;
+}
+
+export type WechatPayCheckoutState =
+  (typeof WechatPayCheckoutState)[keyof typeof WechatPayCheckoutState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatPayCheckoutState = {
+  WechatPayStateAwaitingPrepay: "awaiting_prepay",
+  WechatPayStateAwaitingPayment: "awaiting_payment",
+  WechatPayStatePaid: "paid",
+  WechatPayStatePartiallyRefunded: "partially_refunded",
+  WechatPayStateRefunded: "refunded",
+} as const;
+
+export type WechatPayCheckoutProductKind =
+  (typeof WechatPayCheckoutProductKind)[keyof typeof WechatPayCheckoutProductKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatPayCheckoutProductKind = {
+  WechatPayCheckoutProductKindOrdinary: "ordinary",
+  WechatPayCheckoutProductKindServicePeriod: "service_period",
+} as const;
+
+export type WechatPayCheckoutCurrency =
+  (typeof WechatPayCheckoutCurrency)[keyof typeof WechatPayCheckoutCurrency];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatPayCheckoutCurrency = {
+  WechatPayCurrencyCNY: "CNY",
+} as const;
+
+export interface WechatPayCheckout {
+  /** @minimum 1 */
+  order_id: number;
+  /** @pattern ^pe01_[a-f0-9]{32}$ */
+  merchant_order_no: string;
+  state: WechatPayCheckoutState;
+  product_kind: WechatPayCheckoutProductKind;
+  /** @minimum 1 */
+  customer_id: number;
+  /** @minimum 1 */
+  product_id: number;
+  /**
+   * @minimum 1
+   * @maximum 1000000000
+   */
+  amount_minor: number;
+  currency: WechatPayCheckoutCurrency;
+  /** @minimum 1 */
+  payment_command_id: number;
+  created_at: string;
+}
+
+export interface WechatPaySettlementRefundRequest {
+  /**
+   * @minimum 1
+   * @maximum 1000000000
+   */
+  amount_minor: number;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+}
+
+export type WechatPaySettlementRefundCurrency =
+  (typeof WechatPaySettlementRefundCurrency)[keyof typeof WechatPaySettlementRefundCurrency];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatPaySettlementRefundCurrency = {
+  WechatPayRefundCurrencyCNY: "CNY",
+} as const;
+
+export type WechatPaySettlementRefundState =
+  (typeof WechatPaySettlementRefundState)[keyof typeof WechatPaySettlementRefundState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatPaySettlementRefundState = {
+  WechatPayRefundStateAccepted: "accepted",
+  WechatPayRefundStateQueued: "queued",
+  WechatPayRefundStateExecuted: "executed",
+  WechatPayRefundStateOutcomeUnknown: "outcome_unknown",
+  WechatPayRefundStateReconciled: "reconciled",
+  WechatPayRefundStateFinalFailed: "final_failed",
+} as const;
+
+export interface WechatPaySettlementRefund {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  order_id: number;
+  /** @pattern ^pe01r_[a-f0-9]{32}$ */
+  out_refund_no: string;
+  /** @minimum 1 */
+  amount_minor: number;
+  currency: WechatPaySettlementRefundCurrency;
+  /** @pattern ^eer_[1-9][0-9]*$ */
+  external_effect_id?: string;
+  state: WechatPaySettlementRefundState;
+  /** @minimum 1 */
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type WechatPayEncryptedCallbackEventType =
+  (typeof WechatPayEncryptedCallbackEventType)[keyof typeof WechatPayEncryptedCallbackEventType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatPayEncryptedCallbackEventType = {
+  WechatPayEventTransactionSuccess: "TRANSACTION.SUCCESS",
+  WechatPayEventRefundSuccess: "REFUND.SUCCESS",
+} as const;
+
+export type WechatPayEncryptedCallbackResourceType =
+  (typeof WechatPayEncryptedCallbackResourceType)[keyof typeof WechatPayEncryptedCallbackResourceType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatPayEncryptedCallbackResourceType = {
+  WechatPayResourceEncrypted: "encrypt-resource",
+} as const;
+
+export type WechatPayEncryptedCallbackResourceAlgorithm =
+  (typeof WechatPayEncryptedCallbackResourceAlgorithm)[keyof typeof WechatPayEncryptedCallbackResourceAlgorithm];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatPayEncryptedCallbackResourceAlgorithm = {
+  WechatPayAlgorithmAEADAES256GCM: "AEAD_AES_256_GCM",
+} as const;
+
+export type WechatPayEncryptedCallbackResource = {
+  algorithm: WechatPayEncryptedCallbackResourceAlgorithm;
+  /**
+   * @minLength 1
+   * @maxLength 131072
+   */
+  ciphertext: string;
+  /**
+   * @minLength 1
+   * @maxLength 64
+   */
+  nonce: string;
+  /** @maxLength 1024 */
+  associated_data: string;
+};
+
+export interface WechatPayEncryptedCallback {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  id: string;
+  event_type: WechatPayEncryptedCallbackEventType;
+  resource_type: WechatPayEncryptedCallbackResourceType;
+  resource: WechatPayEncryptedCallbackResource;
+}
+
+export type WechatPayCallbackAckCode =
+  (typeof WechatPayCallbackAckCode)[keyof typeof WechatPayCallbackAckCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatPayCallbackAckCode = {
+  WechatPayCallbackSuccess: "SUCCESS",
+} as const;
+
+export interface WechatPayCallbackAck {
+  code: WechatPayCallbackAckCode;
+}
+
 export type LegacyOrderListItemProvider =
   (typeof LegacyOrderListItemProvider)[keyof typeof LegacyOrderListItemProvider];
 
@@ -13601,6 +13786,14 @@ export type CSRFTokenParameter = string;
  * Stable caller key; reusing it with a different normalized command is a conflict.
  */
 export type IdempotencyKeyParameter = string;
+
+export type WechatpayTimestampParameter = string;
+
+export type WechatpayNonceParameter = string;
+
+export type WechatpaySerialParameter = string;
+
+export type WechatpaySignatureParameter = string;
 
 /**
  * Stable local-only setup-wizard request key; exact retries replay and mismatches conflict.
@@ -26669,6 +26862,369 @@ export const getLegacyOrderListPage = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyOrderListPageResponse;
+};
+
+/**
+ * @summary Create one actor-bound WeChat payment checkout from an immutable Product snapshot
+ */
+export type createWechatPayCheckoutResponse201 = {
+  data: WechatPayCheckout;
+  status: 201;
+};
+
+export type createWechatPayCheckoutResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createWechatPayCheckoutResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createWechatPayCheckoutResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createWechatPayCheckoutResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createWechatPayCheckoutResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createWechatPayCheckoutResponseSuccess =
+  createWechatPayCheckoutResponse201 & {
+    headers: Headers;
+  };
+export type createWechatPayCheckoutResponseError = (
+  | createWechatPayCheckoutResponse400
+  | createWechatPayCheckoutResponse401
+  | createWechatPayCheckoutResponse403
+  | createWechatPayCheckoutResponse409
+  | createWechatPayCheckoutResponse503
+) & {
+  headers: Headers;
+};
+
+export type createWechatPayCheckoutResponse =
+  createWechatPayCheckoutResponseSuccess | createWechatPayCheckoutResponseError;
+
+export const getCreateWechatPayCheckoutUrl = () => {
+  return `/api/v1/wechat-pay/checkouts`;
+};
+
+export const createWechatPayCheckout = async (
+  wechatPayCheckoutRequest: WechatPayCheckoutRequest,
+  options?: RequestInit,
+): Promise<createWechatPayCheckoutResponse> => {
+  const res = await fetch(getCreateWechatPayCheckoutUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(wechatPayCheckoutRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createWechatPayCheckoutResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createWechatPayCheckoutResponse;
+};
+
+/**
+ * @summary Read one checkout only through its actor-bound payment identity digest
+ */
+export type getWechatPayCheckoutResponse200 = {
+  data: WechatPayCheckout;
+  status: 200;
+};
+
+export type getWechatPayCheckoutResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getWechatPayCheckoutResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getWechatPayCheckoutResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getWechatPayCheckoutResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getWechatPayCheckoutResponseSuccess =
+  getWechatPayCheckoutResponse200 & {
+    headers: Headers;
+  };
+export type getWechatPayCheckoutResponseError = (
+  | getWechatPayCheckoutResponse401
+  | getWechatPayCheckoutResponse403
+  | getWechatPayCheckoutResponse404
+  | getWechatPayCheckoutResponse503
+) & {
+  headers: Headers;
+};
+
+export type getWechatPayCheckoutResponse =
+  getWechatPayCheckoutResponseSuccess | getWechatPayCheckoutResponseError;
+
+export const getGetWechatPayCheckoutUrl = (merchantOrderNo: string) => {
+  return `/api/v1/wechat-pay/checkouts/${merchantOrderNo}`;
+};
+
+export const getWechatPayCheckout = async (
+  merchantOrderNo: string,
+  options?: RequestInit,
+): Promise<getWechatPayCheckoutResponse> => {
+  const res = await fetch(getGetWechatPayCheckoutUrl(merchantOrderNo), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getWechatPayCheckoutResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getWechatPayCheckoutResponse;
+};
+
+/**
+ * @summary Reserve a bounded WeChat refund under the Order financial aggregate
+ */
+export type createWechatPaySettlementRefundResponse202 = {
+  data: WechatPaySettlementRefund;
+  status: 202;
+};
+
+export type createWechatPaySettlementRefundResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createWechatPaySettlementRefundResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createWechatPaySettlementRefundResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createWechatPaySettlementRefundResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type createWechatPaySettlementRefundResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createWechatPaySettlementRefundResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createWechatPaySettlementRefundResponseSuccess =
+  createWechatPaySettlementRefundResponse202 & {
+    headers: Headers;
+  };
+export type createWechatPaySettlementRefundResponseError = (
+  | createWechatPaySettlementRefundResponse400
+  | createWechatPaySettlementRefundResponse401
+  | createWechatPaySettlementRefundResponse403
+  | createWechatPaySettlementRefundResponse404
+  | createWechatPaySettlementRefundResponse409
+  | createWechatPaySettlementRefundResponse503
+) & {
+  headers: Headers;
+};
+
+export type createWechatPaySettlementRefundResponse =
+  | createWechatPaySettlementRefundResponseSuccess
+  | createWechatPaySettlementRefundResponseError;
+
+export const getCreateWechatPaySettlementRefundUrl = (orderId: number) => {
+  return `/api/v1/wechat-pay/orders/${orderId}/refunds`;
+};
+
+export const createWechatPaySettlementRefund = async (
+  orderId: number,
+  wechatPaySettlementRefundRequest: WechatPaySettlementRefundRequest,
+  options?: RequestInit,
+): Promise<createWechatPaySettlementRefundResponse> => {
+  const res = await fetch(getCreateWechatPaySettlementRefundUrl(orderId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(wechatPaySettlementRefundRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createWechatPaySettlementRefundResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createWechatPaySettlementRefundResponse;
+};
+
+/**
+ * @summary Verify and apply one authoritative WeChat payment callback
+ */
+export type receiveWechatPayPaymentCallbackResponse200 = {
+  data: WechatPayCallbackAck;
+  status: 200;
+};
+
+export type receiveWechatPayPaymentCallbackResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type receiveWechatPayPaymentCallbackResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type receiveWechatPayPaymentCallbackResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type receiveWechatPayPaymentCallbackResponseSuccess =
+  receiveWechatPayPaymentCallbackResponse200 & {
+    headers: Headers;
+  };
+export type receiveWechatPayPaymentCallbackResponseError = (
+  | receiveWechatPayPaymentCallbackResponse400
+  | receiveWechatPayPaymentCallbackResponse409
+  | receiveWechatPayPaymentCallbackResponse503
+) & {
+  headers: Headers;
+};
+
+export type receiveWechatPayPaymentCallbackResponse =
+  | receiveWechatPayPaymentCallbackResponseSuccess
+  | receiveWechatPayPaymentCallbackResponseError;
+
+export const getReceiveWechatPayPaymentCallbackUrl = () => {
+  return `/api/public/wechat-pay/callbacks/payment`;
+};
+
+export const receiveWechatPayPaymentCallback = async (
+  wechatPayEncryptedCallback: WechatPayEncryptedCallback,
+  options?: RequestInit,
+): Promise<receiveWechatPayPaymentCallbackResponse> => {
+  const res = await fetch(getReceiveWechatPayPaymentCallbackUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(wechatPayEncryptedCallback),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: receiveWechatPayPaymentCallbackResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as receiveWechatPayPaymentCallbackResponse;
+};
+
+/**
+ * @summary Verify and apply one authoritative WeChat refund callback
+ */
+export type receiveWechatPayRefundCallbackResponse200 = {
+  data: WechatPayCallbackAck;
+  status: 200;
+};
+
+export type receiveWechatPayRefundCallbackResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type receiveWechatPayRefundCallbackResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type receiveWechatPayRefundCallbackResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type receiveWechatPayRefundCallbackResponseSuccess =
+  receiveWechatPayRefundCallbackResponse200 & {
+    headers: Headers;
+  };
+export type receiveWechatPayRefundCallbackResponseError = (
+  | receiveWechatPayRefundCallbackResponse400
+  | receiveWechatPayRefundCallbackResponse409
+  | receiveWechatPayRefundCallbackResponse503
+) & {
+  headers: Headers;
+};
+
+export type receiveWechatPayRefundCallbackResponse =
+  | receiveWechatPayRefundCallbackResponseSuccess
+  | receiveWechatPayRefundCallbackResponseError;
+
+export const getReceiveWechatPayRefundCallbackUrl = () => {
+  return `/api/public/wechat-pay/callbacks/refund`;
+};
+
+export const receiveWechatPayRefundCallback = async (
+  wechatPayEncryptedCallback: WechatPayEncryptedCallback,
+  options?: RequestInit,
+): Promise<receiveWechatPayRefundCallbackResponse> => {
+  const res = await fetch(getReceiveWechatPayRefundCallbackUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(wechatPayEncryptedCallback),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: receiveWechatPayRefundCallbackResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as receiveWechatPayRefundCallbackResponse;
 };
 
 /**

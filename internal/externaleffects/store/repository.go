@@ -374,6 +374,21 @@ func (r *Repository) Get(ctx context.Context, effectID string) (eer.Projection, 
 	return projection(row), nil
 }
 
+func (r *Repository) GetTerminalOutcome(ctx context.Context, effectID string) (eer.TerminalOutcome, error) {
+	if r == nil || r.pool == nil {
+		return eer.TerminalOutcome{}, eer.ErrUnavailable
+	}
+	id, err := parseID(effectID)
+	if err != nil {
+		return eer.TerminalOutcome{}, err
+	}
+	row, err := eerdb.New(r.pool).GetTerminalOutcome(ctx, id)
+	if err != nil {
+		return eer.TerminalOutcome{}, translate(err)
+	}
+	return eer.TerminalOutcome{EffectID: effectID, State: eer.State(row.State), ReceiptDigest: eer.Digest(row.ReceiptDigest.String), Generation: row.Generation, Fence: row.Fence, LeaseExpiresAt: timeValue(row.LeaseExpiresAt)}, nil
+}
+
 func (r *Repository) Diagnostics(ctx context.Context) (eer.Diagnostics, error) {
 	if r == nil || r.pool == nil {
 		return eer.Diagnostics{}, eer.ErrUnavailable

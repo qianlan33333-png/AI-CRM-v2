@@ -126,6 +126,7 @@ while [[ -n "$remaining_groups" ]]; do
     order)
       run_make_acceptance P4I03_ORDER_TEST_DATABASE_URL p4-i03-order-acceptance
       run_make_acceptance P4ORDERAB_TEST_DATABASE_URL p4-order-ab-acceptance
+	  run_make_acceptance P4PE01_TEST_DATABASE_URL p4-pe01-wechat-pay-settlement-acceptance
       ;;
     outbound)
       run_make_acceptance P4OUTBOUNDCAMPAIGNHANDOFF_TEST_DATABASE_URL p4-outbound-campaign-handoff-acceptance

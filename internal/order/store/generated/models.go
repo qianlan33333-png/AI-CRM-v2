@@ -21,27 +21,63 @@ type OrderExternalEffect struct {
 	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
 }
 
-type OrderListProjection struct {
-	ID                    int64              `json:"id"`
-	Provider              string             `json:"provider"`
-	ProviderLabel         string             `json:"provider_label"`
-	MerchantOrderNo       string             `json:"merchant_order_no"`
-	PlatformTransactionNo string             `json:"platform_transaction_no"`
-	CustomerID            pgtype.Int8        `json:"customer_id"`
-	PayerNameSnapshot     string             `json:"payer_name_snapshot"`
-	MobileSnapshot        string             `json:"mobile_snapshot"`
-	IdentityKind          string             `json:"identity_kind"`
-	IdentityValue         string             `json:"identity_value"`
-	ProductID             pgtype.Int8        `json:"product_id"`
-	ProductCode           string             `json:"product_code"`
-	ProductNameSnapshot   string             `json:"product_name_snapshot"`
-	AmountMinor           int64              `json:"amount_minor"`
-	Currency              string             `json:"currency"`
-	Status                string             `json:"status"`
-	StatusLabel           string             `json:"status_label"`
-	DetailUrl             string             `json:"detail_url"`
-	CreatedAt             pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+type OrderFinancialReconciliation struct {
+	ID               int64              `json:"id"`
+	ExternalEffectID int64              `json:"external_effect_id"`
+	EvidenceDigest   []byte             `json:"evidence_digest"`
+	ResultDigest     []byte             `json:"result_digest"`
+	Outcome          string             `json:"outcome"`
+	RecordedAt       pgtype.Timestamptz `json:"recorded_at"`
+}
+
+type OrderFinancialRefund struct {
+	ID                      int64              `json:"id"`
+	OrderID                 int64              `json:"order_id"`
+	ExternalEffectID        pgtype.Int8        `json:"external_effect_id"`
+	OutRefundNo             string             `json:"out_refund_no"`
+	AmountMinor             int64              `json:"amount_minor"`
+	Currency                string             `json:"currency"`
+	Reason                  string             `json:"reason"`
+	SourceRefDigest         []byte             `json:"source_ref_digest"`
+	TargetRefDigest         []byte             `json:"target_ref_digest"`
+	PayloadDigest           []byte             `json:"payload_digest"`
+	PolicyVersionDigest     []byte             `json:"policy_version_digest"`
+	ProviderRefundDigest    []byte             `json:"provider_refund_digest"`
+	SettlementReceiptDigest []byte             `json:"settlement_receipt_digest"`
+	State                   string             `json:"state"`
+	Version                 int64              `json:"version"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+	SettledAt               pgtype.Timestamptz `json:"settled_at"`
+}
+
+type OrderPaymentCommand struct {
+	ID                   int64              `json:"id"`
+	OrderID              int64              `json:"order_id"`
+	ExternalEffectID     pgtype.Int8        `json:"external_effect_id"`
+	SourceRefDigest      []byte             `json:"source_ref_digest"`
+	TargetRefDigest      []byte             `json:"target_ref_digest"`
+	PayloadDigest        []byte             `json:"payload_digest"`
+	PolicyVersionDigest  []byte             `json:"policy_version_digest"`
+	State                string             `json:"state"`
+	ProviderPrepayDigest []byte             `json:"provider_prepay_digest"`
+	Version              int64              `json:"version"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+}
+
+type OrderProviderCallbackReceipt struct {
+	ID                  int64              `json:"id"`
+	CallbackKind        string             `json:"callback_kind"`
+	ProviderEventDigest []byte             `json:"provider_event_digest"`
+	PayloadDigest       []byte             `json:"payload_digest"`
+	OrderID             int64              `json:"order_id"`
+	RefundID            pgtype.Int8        `json:"refund_id"`
+	Outcome             pgtype.Text        `json:"outcome"`
+	ResultDigest        []byte             `json:"result_digest"`
+	State               string             `json:"state"`
+	ReceivedAt          pgtype.Timestamptz `json:"received_at"`
+	CompletedAt         pgtype.Timestamptz `json:"completed_at"`
 }
 
 type OrderRefund struct {

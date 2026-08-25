@@ -62,6 +62,8 @@ import (
 	operationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/store"
 	opsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/ops/store"
 	orderapp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/app"
+	orderhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/http"
+	orderprovider "github.com/qianlan33333-png/AI-CRM-v2/internal/order/provider"
 	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
 	outboundhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/http"
@@ -163,6 +165,7 @@ type candidateHandler struct {
 	productLocal              *producthttp.LocalMutationHandler
 	productLifecycle          *producthttp.LocalProductLifecycleHandler
 	servicePeriodMembers      *memberhttp.Handler
+	wechatPaySettlement       *orderhttp.Handler
 	sidebar                   *sidebarhttp.Handler
 	surveyPublic              *surveyhttp.PublicHandler
 	segmentRefresh            *segmenthttp.RefreshHandler
@@ -351,6 +354,26 @@ func (handler *candidateHandler) ArchiveSegment(writer http.ResponseWriter, requ
 
 func (handler *candidateHandler) ListProducts(writer http.ResponseWriter, request *http.Request, params api.ListProductsParams) {
 	handler.products.ListProducts(writer, request, params)
+}
+
+func (handler *candidateHandler) CreateWechatPayCheckout(writer http.ResponseWriter, request *http.Request, _ api.CreateWechatPayCheckoutParams) {
+	handler.wechatPaySettlement.Checkout(writer, request)
+}
+
+func (handler *candidateHandler) GetWechatPayCheckout(writer http.ResponseWriter, request *http.Request, merchantOrderNo string) {
+	handler.wechatPaySettlement.Get(writer, request, merchantOrderNo)
+}
+
+func (handler *candidateHandler) CreateWechatPaySettlementRefund(writer http.ResponseWriter, request *http.Request, orderID int64, _ api.CreateWechatPaySettlementRefundParams) {
+	handler.wechatPaySettlement.Refund(writer, request, orderID)
+}
+
+func (handler *candidateHandler) ReceiveWechatPayPaymentCallback(writer http.ResponseWriter, request *http.Request, _ api.ReceiveWechatPayPaymentCallbackParams) {
+	handler.wechatPaySettlement.PaymentCallback(writer, request)
+}
+
+func (handler *candidateHandler) ReceiveWechatPayRefundCallback(writer http.ResponseWriter, request *http.Request, _ api.ReceiveWechatPayRefundCallbackParams) {
+	handler.wechatPaySettlement.RefundCallback(writer, request)
 }
 
 func (handler *candidateHandler) CreateProduct(writer http.ResponseWriter, request *http.Request, params api.CreateProductParams) {
@@ -1268,6 +1291,26 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	financialOrders, err := orderstore.NewFinancialRepository(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	paidBenefits, err := productapp.NewPaidSettlementService(productstore.NewPaidSettlementRepository(), eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	settlementService, err := orderapp.NewSettlementService(uow, financialOrders, productstore.NewCatalogRepository(), paidBenefits, eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	wechatPaySettlementHandler, err := orderhttp.NewHandler(settlementService, orderprovider.DisabledCallbackVerifier{}, config.Identity.HMACKey.Value())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
 		customerIdentity: identityResolver, customerDetail: customerDetailHandler, customerDetailReader: customerDetailService,
@@ -1281,6 +1324,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		productLocal:         productLocalHandler,
 		productLifecycle:     productLifecycleHandler,
 		servicePeriodMembers: servicePeriodMemberHandler,
+		wechatPaySettlement:  wechatPaySettlementHandler,
 		surveyPublic:         surveyPublicHandler,
 		segmentRefresh:       segmentRefreshHandler,
 		identityReviews:      identityReviewHandler,
@@ -1774,7 +1818,29 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		router.Method(http.MethodPost, pattern, tail)
 		return nil
 	}
+	registerPublic := func(pattern string, endpoint http.Handler) error {
+		tail, wrapErr := recovery(endpoint)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		tail, wrapErr = gateway.TimeoutMiddleware(tail)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		tail, wrapErr = gateway.RoutePatternMiddleware(pattern, tail)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		router.Method(http.MethodPost, pattern, tail)
+		return nil
+	}
 	if err = registerOptionalSidebar("/api/sidebar/context-token", http.HandlerFunc(wrapper.MintSidebarContext)); err != nil {
+		return nil, err
+	}
+	if err = registerPublic(orderhttp.PaymentCallbackPath, http.HandlerFunc(wrapper.ReceiveWechatPayPaymentCallback)); err != nil {
+		return nil, err
+	}
+	if err = registerPublic(orderhttp.RefundCallbackPath, http.HandlerFunc(wrapper.ReceiveWechatPayRefundCallback)); err != nil {
 		return nil, err
 	}
 	internalEventSafeExportEndpoint := func(method func(http.ResponseWriter, *http.Request)) http.Handler {
@@ -1874,6 +1940,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/v1/products", authport.CapabilityProductsRead, false, http.HandlerFunc(wrapper.ListProducts)},
 		{http.MethodPost, "/api/v1/products", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.CreateProduct)},
 		{http.MethodGet, "/api/v1/products/{product_id}", authport.CapabilityProductsRead, false, http.HandlerFunc(wrapper.GetProduct)},
+		{http.MethodPost, orderhttp.CheckoutPath, authport.CapabilityOrderWrite, true, http.HandlerFunc(wrapper.CreateWechatPayCheckout)},
+		{http.MethodGet, orderhttp.CheckoutPath + "/{merchant_order_no}", authport.CapabilityOrderRead, false, http.HandlerFunc(wrapper.GetWechatPayCheckout)},
+		{http.MethodPost, "/api/v1/wechat-pay/orders/{order_id}/refunds", authport.CapabilityOrderWrite, true, http.HandlerFunc(wrapper.CreateWechatPaySettlementRefund)},
 		{http.MethodPut, "/api/v1/products/{product_id}", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.UpdateProduct)},
 		{http.MethodPost, "/api/admin/wechat-pay/products/{product_id}/enable", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.EnableLegacyWechatPayProduct)},
 		{http.MethodPost, "/api/admin/wechat-pay/products/{product_id}/disable", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.DisableLegacyWechatPayProduct)},
