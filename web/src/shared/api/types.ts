@@ -322,6 +322,7 @@ export interface Customer {
   id: string;
   owner: string;
   mobile: string;
+  stageId?: number | null;
 }
 
 export interface Tag {

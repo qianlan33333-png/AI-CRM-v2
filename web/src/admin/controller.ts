@@ -715,6 +715,12 @@ export class AdminController extends PageBase {
     });
 
     const rows = this.db.rows;
+    const customerItem = rows.customers[0];
+    const customerId = Number(customerItem?.id || 0);
+    const customerAction = async (action: () => Promise<unknown>, success: string): Promise<void> => {
+      try { await action(); toast(success); await this.init(); }
+      catch (error) { toast(error instanceof Error ? error.message : '客户操作失败', true); }
+    };
 
     /* ================= 自动化运营 · 人群包 ================= */
     const audGroups = this.audienceGroupsVals(accent);
@@ -1393,6 +1399,30 @@ export class AdminController extends PageBase {
         editConfig: () => this.goto('couponForm'),
         back: () => this.goto('coupons'),
         shareIt: () => couponRows[couponIdx]?.shareIt(),
+      },
+
+      customer: {
+        item: customerItem,
+        stages: rows.orderKv,
+        save: () => {
+          const name = (document.getElementById('fCustomerName') as HTMLInputElement | null)?.value.trim() || '';
+          const stageRaw = (document.getElementById('fCustomerStage') as HTMLInputElement | null)?.value.trim() || '';
+          if (!customerId || !name) return toast('客户 ID 或姓名为空，未发送请求', true);
+          const stageId = stageRaw ? Number(stageRaw) : null;
+          if (stageRaw && (!Number.isInteger(stageId) || Number(stageId) < 1)) return toast('阶段 ID 必须是正整数或留空', true);
+          void customerAction(() => this.api.updateCustomer(customerId, { name, stageId }), '客户资料与阶段已保存');
+        },
+        addTag: () => {
+          const tagId = Number((document.getElementById('fCustomerTag') as HTMLInputElement | null)?.value || 0);
+          if (!customerId || !Number.isInteger(tagId) || tagId < 1) return toast('请输入有效标签 ID', true);
+          void customerAction(() => this.api.setCustomerTag(customerId, tagId, true), '客户标签已添加');
+        },
+        removeTag: () => {
+          const tagId = Number((document.getElementById('fCustomerTag') as HTMLInputElement | null)?.value || 0);
+          if (!customerId || !Number.isInteger(tagId) || tagId < 1) return toast('请输入有效标签 ID', true);
+          void customerAction(() => this.api.setCustomerTag(customerId, tagId, false), '客户标签已移除');
+        },
+        reload: () => void this.init(),
       },
 
       /* 配置中心 */

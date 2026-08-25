@@ -1,6 +1,6 @@
-import { attachmentPageDto, audiencePackagePageDto, channelPageDto, couponPageDto, customerPageDto, imagePageDto, miniProgramPageDto, orderPageDto, productPageDto, questionnairePageDto, radarPageDto, readAdminRows, saveImageItemDto, saveRadarLinkDto, serviceProductPageDto, tagPageDto, uploadRadarPdfDto } from './admin';
+import { attachmentPageDto, audiencePackagePageDto, channelPageDto, couponPageDto, customerPageDto, imagePageDto, miniProgramPageDto, orderPageDto, productPageDto, questionnairePageDto, radarPageDto, readAdminRows, saveImageItemDto, saveRadarLinkDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
-import { getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
+import { getAddCustomerTagUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
 import { HttpApi } from '../shared/api/client';
 
@@ -30,6 +30,9 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(getGetRadarLinkShareProjectionUrl(5) === '/api/admin/radar-links/5/share', 'radar share URL');
   assert(getUpdateLegacyImageUrl('15') === '/api/admin/image-library/15', 'image update URL');
   assert(getUploadLegacyAttachmentUrl() === '/api/admin/attachment-library/upload', 'attachment upload URL');
+  assert(getUpdateCustomerUrl(7) === '/api/v1/customers/7', 'customer update URL');
+  assert(getSetCustomerStageUrl(7) === '/api/v1/customers/7/stage', 'customer stage URL');
+  assert(getAddCustomerTagUrl(7, 9) === '/api/v1/customers/7/tags/9', 'customer tag URL');
 
   const customer = customerPageDto({ id: 7, name: '陈晨', is_deleted: false, extra: {}, created_at: '2026-08-25T00:00:00Z', updated_at: '2026-08-25T00:00:00Z', owner_staff_id: 3 });
   assert(customer.id === '7' && customer.owner === '3' && customer.mobile === '—', 'customer response mapping');
@@ -62,6 +65,24 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(radar.id === 5 && calls[0].input === '/api/admin/radar-links' && calls[0].init?.method === 'POST', 'radar create generated URL/method/mapping');
     assert(JSON.parse(String(calls[0].init?.body)).destination_url === 'https://example.test', 'radar create request mapping');
   } finally { globalThis.fetch = savedFetch; }
+
+  let customerInit: RequestInit | undefined;
+  globalThis.fetch = async (_input, init) => { customerInit = init; return new Response(JSON.stringify({ id: 7, name: '新姓名', owner_staff_id: 3, stage_id: 2, is_deleted: false, extra: {}, created_at: '', updated_at: '' }), { status: 200 }); };
+  try {
+    const customerResult = await updateCustomerDto(7, { name: '新姓名' });
+    assert(customerResult.name === '新姓名' && customerInit?.method === 'PATCH', 'customer update method/mapping');
+    assert(JSON.parse(String(customerInit.body)).name === '新姓名', 'customer update request DTO');
+  } finally { globalThis.fetch = savedFetch; }
+
+  let tagMethod = '';
+  globalThis.fetch = async (_input, init) => { tagMethod = init?.method || ''; return new Response(null, { status: 204 }); };
+  try { await setCustomerTagDto(7, 9, true); assert(tagMethod === 'PUT', 'customer tag add method'); }
+  finally { globalThis.fetch = savedFetch; }
+
+  globalThis.fetch = async () => new Response(JSON.stringify({ code: 'validation', message: 'bad', request_id: 'r', details: [] }), { status: 422 });
+  try { await updateCustomerDto(7, { name: '' }); assert(false, 'customer 422 was accepted'); }
+  catch (error) { assert(error instanceof ApiError && error.status === 422, 'customer 422 must stay structured'); }
+  finally { globalThis.fetch = savedFetch; }
 
   let called = false;
   globalThis.fetch = async () => { called = true; return new Response('{}', { status: 200 }); };

@@ -13,6 +13,7 @@ import type {
   AudiencePackage,
   AttachItem,
   ConfigCategory,
+  Customer,
   FunnelGridRow,
   FunnelView,
   ImageItem,
@@ -26,7 +27,7 @@ import type {
   WecomTag,
 } from './types';
 import { SEED_DB, deepCopy } from './mockData';
-import { archiveAudiencePackage, archiveTagDto, copyAudiencePackageDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveRadarLinkDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setRadarEnabled, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext } from '../../api/admin';
+import { archiveAudiencePackage, archiveTagDto, copyAudiencePackageDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveRadarLinkDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setRadarEnabled, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
 
@@ -35,6 +36,8 @@ export interface AdminApi {
 
   /** 聚合加载后台数据仓库 */
   loadDb(context?: AdminReadContext): Promise<AdminDb>;
+  updateCustomer(id: number, input: { name?: string; stageId?: number | null }): Promise<Customer>;
+  setCustomerTag(customerId: number, tagId: number, applied: boolean): Promise<void>;
 
   /* ---- 内容雷达 ---- */
   toggleRadarLink(id: number, enabled: boolean): Promise<void>;
@@ -135,6 +138,17 @@ export class MockApi implements AdminApi {
     this.db = this.restore();
     return delay(this.db, 120);
   }
+
+  async updateCustomer(id: number, input: { name?: string; stageId?: number | null }): Promise<Customer> {
+    const customer = this.db.rows.customers.find((item) => Number(item.id) === id);
+    if (!customer) throw new Error('客户不存在');
+    if (input.name != null) customer.name = input.name;
+    if (input.stageId !== undefined) customer.stageId = input.stageId;
+    this.persist();
+    return delay(customer);
+  }
+
+  setCustomerTag(_customerId: number, _tagId: number, _applied: boolean): Promise<void> { return delay(undefined); }
 
   /* ---------- 内容雷达 ---------- */
 
@@ -533,6 +547,10 @@ export class HttpApi implements AdminApi {
     // OpenAPI failure reaches the view's loading/error state; production never merges SEED_DB.
     return readAdminPage(context);
   }
+
+  updateCustomer(id: number, input: { name?: string; stageId?: number | null }): Promise<Customer> { return updateCustomerDto(id, input); }
+
+  setCustomerTag(customerId: number, tagId: number, applied: boolean): Promise<void> { return setCustomerTagDto(customerId, tagId, applied); }
 
   /* ---------- 内容雷达 ---------- */
 

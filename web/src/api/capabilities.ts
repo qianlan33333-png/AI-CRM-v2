@@ -15,7 +15,7 @@ export type Capability = Readonly<{
 
 export const CAPABILITIES: readonly Capability[] = [
   { surface: 'admin', screen: 'customers/customerDetail', action: '客户与关联读取', state: 'real', operation: 'listCustomers/getCustomer/getCustomerContext/listCustomerChatActivity/listCustomerSurveyAnswers/getCustomerActivityAnalytics' },
-  { surface: 'admin', screen: 'customers/customerDetail', action: '客户编辑、阶段、标签', state: 'backend_blocked', operation: 'updateCustomer/setCustomerStage', reason: '当前客户档案壳只有只读字段，未提供 stage_id、tag_id 或更新表单，不能构造等价 mutation' },
+  { surface: 'admin', screen: 'customerDetail', action: '客户姓名、阶段与标签写入', state: 'real', operation: 'updateCustomer/setCustomerStage/addCustomerTag/removeCustomerTag' },
   { surface: 'admin', screen: 'questionnaires/questionnaireDetail/questionnaireOps', action: '问卷、结果、分析、运营与外推日志读取', state: 'real', operation: 'listLegacyQuestionnaires/getLegacyQuestionnaire/getLegacyQuestionnaireResults/listLegacyQuestionnaireSubmissions/getSurveySafeSubmissionAnalysis/getSurveyOperations/getSurveyOperationsPageData/listSurveyQuestionnaireExternalPushLogs' },
   { surface: 'admin', screen: 'questionnaires/questionnaireDetail', action: '问卷 CRUD 与发布', state: 'backend_blocked', operation: 'createLegacyQuestionnaire/updateLegacyQuestionnaire', reason: '当前问卷编辑壳未绑定完整 questions/options/assessment DTO，不能提交静态演示字段' },
   { surface: 'admin', screen: 'questionnaireOps', action: '问卷运营写入', state: 'backend_blocked', operation: 'saveSurveyCompletionOperations/saveSurveyExternalPushOperations', reason: '当前运营表单使用 URL，OpenAPI 只接受 opaque navigation_target_id/configuration_reference，语义不等价' },
