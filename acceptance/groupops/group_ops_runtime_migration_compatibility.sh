@@ -41,7 +41,7 @@ fresh_database
 [[ "$(waterline)" = "85" ]]
 AICRM_GROUP_OPS_TEST_DATABASE_URL="$database_url" /usr/bin/env -u BASH_ENV -u ENV \
   GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
-  "$go_command" test -race -count=1 -timeout=180s ./internal/groupops/... ./internal/externaleffects/...
+  "$go_command" test -race -count=1 -timeout=180s ./internal/groupops/... ./internal/externaleffects/... ./acceptance/groupops
 
 fresh_database
 [[ "$(waterline)" = "85" ]]
