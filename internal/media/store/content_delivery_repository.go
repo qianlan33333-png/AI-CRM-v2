@@ -16,6 +16,14 @@ import (
 
 type ContentDeliveryRepository struct{}
 
+type OutboundMediaEffectBinding struct {
+	ID, ContentPackageID, EffectID int64
+	TargetDigest, SnapshotDigest   string
+	Replay                         bool
+}
+
+var ErrOutboundMediaEffectBindingConflict = errors.New("outbound media effect binding conflict")
+
 func NewContentDeliveryRepository() *ContentDeliveryRepository { return &ContentDeliveryRepository{} }
 
 var _ mediaapp.ContentDeliveryStore = (*ContentDeliveryRepository)(nil)
@@ -87,6 +95,24 @@ func (r *ContentDeliveryRepository) GetBinding(ctx context.Context, campaignCode
 	}
 	v, e := q.GetMediaCampaignDeliveryBinding(ctx, mediadb.GetMediaCampaignDeliveryBindingParams{CampaignCode: campaignCode, PlanID: planID})
 	return binding(v), e
+}
+func (r *ContentDeliveryRepository) BindOutboundMediaEffect(ctx context.Context, contentPackageID int64, targetDigest, snapshotDigest string, effectID int64, now time.Time) (OutboundMediaEffectBinding, error) {
+	q, err := contentQueries(ctx)
+	if err != nil || contentPackageID < 1 || effectID < 1 {
+		return OutboundMediaEffectBinding{}, err
+	}
+	row, err := q.InsertOutboundMediaEffectBinding(ctx, mediadb.InsertOutboundMediaEffectBindingParams{ContentPackageID: contentPackageID, TargetDigest: targetDigest, SnapshotDigest: snapshotDigest, EffectID: effectID, CreatedAt: stamp(now)})
+	if err == nil {
+		return OutboundMediaEffectBinding{ID: row.ID, ContentPackageID: row.ContentPackageID, EffectID: row.EffectID, TargetDigest: row.TargetDigest, SnapshotDigest: row.SnapshotDigest}, nil
+	}
+	existing, readErr := q.GetOutboundMediaEffectBinding(ctx, mediadb.GetOutboundMediaEffectBindingParams{ContentPackageID: contentPackageID, TargetDigest: targetDigest})
+	if readErr != nil {
+		return OutboundMediaEffectBinding{}, err
+	}
+	if existing.SnapshotDigest != snapshotDigest || existing.EffectID != effectID {
+		return OutboundMediaEffectBinding{}, ErrOutboundMediaEffectBindingConflict
+	}
+	return OutboundMediaEffectBinding{ID: existing.ID, ContentPackageID: existing.ContentPackageID, EffectID: existing.EffectID, TargetDigest: existing.TargetDigest, SnapshotDigest: existing.SnapshotDigest, Replay: true}, nil
 }
 func binding(v mediadb.MediaCampaignDeliveryBinding) mediaport.DeliveryBinding {
 	return mediaport.DeliveryBinding{ID: v.ID, CampaignCode: v.CampaignCode, PlanID: v.PlanID, PackageID: v.PackageID, GroupInviteID: v.GroupInviteID, Version: v.Version}
