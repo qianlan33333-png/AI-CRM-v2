@@ -2,11 +2,13 @@
 
 ## Frozen sources
 
-- V2 formal baseline: origin/main@f50f5a37a4949d2ac85f612fbc99a3e7326d4dcd (PR #482 merge).
+- V2 exact baseline and route-classification authority: origin/main@d3a66948195ed7671442bf127a0ebedb5c8beb75 (PR #488 merge).
 - Legacy snapshot authority: AI-CRM-main@6cb989c071255437d75953dabb943318a74eb8f4; declared authoritative repo1
   origin/main process freeze: aa71de28140ca78851c2db3dfd824ad0a2cce224. Its enforcement is ADVISORY_ONLY and
   NOT_EXTERNALLY_ENFORCED; this worktree did not write repo1 or absorb it.
 - Input denominators: Matrix 294, API mapping/routes 781, migration mapping 316.
+- Route classifications are frozen in legacy-route-classification.csv for this exact baseline;
+  they are not a moving current-main claim.
 
 ## Layered inventory, not a release claim
 
@@ -16,27 +18,27 @@
   and is not part of this backend replacement DoD. BACKEND_REQUIRED is UNMAPPED
   unless independent V2 evidence is listed in frozen-local-assets.csv; Matrix
   evidence never upgrades a capability to domain/API/PG verification.
-- Migration disposition: 86 BACKEND_REQUIRED, 72 RETIREMENT_APPROVED, 158
-  DEFERRED_UNMAPPED. No data migration is marked executed.
-- Route actual breakdown: 175 EXTERNAL_PROTOCOL, 605 UNCLASSIFIED, and 1
-  UNCLASSIFIED_SOURCE_DRIFT (current IDs: LEGACY-API-0053). Public H5, callback, external-integration, and
-  explicit WeCom OAuth endpoints remain protocol inventory. External effects
-  are tracked in external-effects-ledger.csv and never become protocol solely
-  because of an effect declaration. In particular, LEGACY-API-0778 preserves
-  the public URL protocol but does not recreate old HTML; its backing read
-  capability remains unmapped. Current source drift is mechanically derived
-  from api-mapping versus route-triage; when no rows conflict the ID list is
-  NONE.
-- Frozen V2 local assets in frozen-local-assets.csv are 11 packages / 76 unique operationIds: the prior
-  10-package/73-operation P4 receipt inventory plus PR #482 Customer Safe
-  Export (00071, 3 operations). It is a V2 backend asset and does not revive
-  deprecated USER OPS or alter legacy Matrix rows.
+- Migration disposition: 301 BACKEND_REQUIRED and 15 RETIRED. All 158
+  EVIDENCE_RESOLUTION rows remain NOT_EXECUTED and block cutover: 42 require
+  source-presence plus retirement-basis evidence, 56 require source and target
+  evidence, and 60 require target-schema evidence. ARCHIVE_ONLY is a backend
+  archive-preservation obligation, never a retired claim.
+- Route authoritative classification: 487 BACKEND_REQUIRED, 177 EXTERNAL_PROTOCOL,
+  87 UI_ONLY, and 30 RETIRED (0 unclassified). The classification CSV
+  is a complete 781-ID reviewer-owned mapping; it is not inferred from route
+  audience, legacy disposition, Matrix verification, or OpenAPI references.
+  EXTERNAL_PROTOCOL remains protocol inventory and UI_ONLY remains outside the
+  backend completion count. The 18 retired USER OPS surfaces retain reassignment
+  evidence and do not revive that module.
+- Frozen V2 local assets in frozen-local-assets.csv are 12 packages / 79 unique operationIds: the prior
+  receipt inventory plus Customer Safe Export (00071, 3 operations) and EE01
+  Internal Event Safe Export (00073, 3 operations). These are V2 native backend
+  assets, not legacy-route or Matrix completion claims; DM01 remains migration-only.
 
 ## Gate status
 
-NOT_READY. UNCLASSIFIED routes, UNCLASSIFIED_SOURCE_DRIFT, DEFERRED_UNMAPPED
-migrations, UNMAPPED capabilities, and every NOT_EXECUTED external effect block
-cutover. FRONTEND_INTEGRATION_DEFERRED is intentionally excluded from the
+NOT_READY. EVIDENCE_RESOLUTION migrations, UNMAPPED capabilities, and every
+NOT_EXECUTED external effect block cutover. FRONTEND_INTEGRATION_DEFERRED is intentionally excluded from the
 backend replacement DoD and remains paused. This baseline verifies ledger
 structure and evidence references only. It makes no claim about main/Nightly
 success, deployment, data migration, Provider execution, payment/refund,
