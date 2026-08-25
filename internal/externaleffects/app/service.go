@@ -1,0 +1,64 @@
+// Package app owns the operator-safe external-effects application boundary.
+package app
+
+import (
+	"context"
+
+	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
+)
+
+type Reader interface {
+	List(context.Context, int32) ([]eer.Projection, error)
+	Get(context.Context, string) (eer.Projection, error)
+	Diagnostics(context.Context) (eer.Diagnostics, error)
+}
+
+type Service struct {
+	runtime *eer.Service
+	reader  Reader
+}
+
+func NewService(store eer.Store, reader Reader) (*Service, error) {
+	runtime, err := eer.NewService(store)
+	if err != nil || reader == nil {
+		return nil, eer.ErrInvalidCommand
+	}
+	return &Service{runtime: runtime, reader: reader}, nil
+}
+
+func (s *Service) List(ctx context.Context, limit int32) ([]eer.Projection, error) {
+	if s == nil || s.reader == nil || ctx == nil || limit < 1 || limit > 100 {
+		return nil, eer.ErrInvalidCommand
+	}
+	return s.reader.List(ctx, limit)
+}
+func (s *Service) Detail(ctx context.Context, id string) (eer.Projection, error) {
+	if s == nil || s.reader == nil || ctx == nil {
+		return eer.Projection{}, eer.ErrInvalidCommand
+	}
+	return s.reader.Get(ctx, id)
+}
+func (s *Service) Diagnostics(ctx context.Context) (eer.Diagnostics, error) {
+	if s == nil || s.reader == nil || ctx == nil {
+		return eer.Diagnostics{}, eer.ErrInvalidCommand
+	}
+	return s.reader.Diagnostics(ctx)
+}
+func (s *Service) Cancel(ctx context.Context, command eer.CancelCommand) (eer.Projection, eer.OperationReceipt, error) {
+	if s == nil || s.runtime == nil {
+		return eer.Projection{}, eer.OperationReceipt{}, eer.ErrUnavailable
+	}
+	return s.runtime.Cancel(ctx, command)
+}
+func (s *Service) Retry(ctx context.Context, command eer.RetryCommand) (eer.Projection, eer.OperationReceipt, error) {
+	if s == nil || s.runtime == nil {
+		return eer.Projection{}, eer.OperationReceipt{}, eer.ErrUnavailable
+	}
+	return s.runtime.Retry(ctx, command)
+}
+func (s *Service) Reconcile(ctx context.Context, command eer.ReconcileCommand) (eer.Projection, eer.OperationReceipt, error) {
+	if s == nil || s.runtime == nil {
+		return eer.Projection{}, eer.OperationReceipt{}, eer.ErrUnavailable
+	}
+	return s.runtime.Reconcile(ctx, command)
+}

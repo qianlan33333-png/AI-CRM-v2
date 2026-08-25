@@ -26,6 +26,8 @@ var (
 	ErrRecoveryForbidden    = errors.New("external effect attempted recovery forbidden")
 	ErrInvalidAdapterResult = errors.New("invalid external effect adapter result")
 	ErrAdapterFailure       = errors.New("external effect adapter failure")
+	ErrNotFound             = errors.New("external effect not found")
+	ErrUnavailable          = errors.New("external effect runtime unavailable")
 )
 
 // Owner and Kind are deliberately closed. Callers cannot supply arbitrary
@@ -265,6 +267,12 @@ type Projection struct {
 	AttemptCount int32
 	Generation   int64
 	UpdatedAt    time.Time
+}
+
+// Diagnostics is the closed aggregate exposed to operators. It carries no
+// provider body, recipient, credential, or adapter error material.
+type Diagnostics struct {
+	Accepted, Queued, Attempted, OutcomeUnknown, RetryableFailed int64
 }
 
 func (projection Projection) valid() bool {
