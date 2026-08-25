@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"time"
 
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
@@ -56,7 +58,7 @@ func schedulerPlan(workers *platformjobqueue.WorkerRegistry, directorySync appco
 	if directorySync.Enabled {
 		for _, staffUserID := range directorySync.StaffUserIDs {
 			definitions = append(definitions, platformscheduler.Definition{
-				ID:         "wecom.external_contact_directory_sync." + staffUserID,
+				ID:         directorySyncPeriodicID(staffUserID),
 				Queue:      platformjobqueue.QueueSync,
 				Schedule:   directorySyncSchedule,
 				Args:       wecomapp.ExternalContactSyncJobArgs{StaffUserID: staffUserID},
@@ -65,4 +67,9 @@ func schedulerPlan(workers *platformjobqueue.WorkerRegistry, directorySync appco
 		}
 	}
 	return platformscheduler.Build(workers, definitions)
+}
+
+func directorySyncPeriodicID(staffUserID string) string {
+	digest := sha256.Sum256([]byte(staffUserID))
+	return "wecom.external_contact_directory_sync." + hex.EncodeToString(digest[:])
 }
