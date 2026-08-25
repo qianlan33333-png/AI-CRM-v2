@@ -233,10 +233,12 @@ owners:
 
   product:
     package: internal/product
-    tables: [products, product_images, product_catalog_counters, product_operation_receipts, service_period_members, service_period_member_operation_receipts, product_local_entitlements, entitlement_operation_receipts, service_period_member_views, service_period_member_grid_collaborators]
+    tables: [products, product_images, product_catalog_counters, product_operation_receipts, service_period_members, service_period_member_operation_receipts, product_local_entitlements, entitlement_operation_receipts, service_period_member_views, service_period_member_grid_collaborators, product_external_push_configurations, product_external_push_test_bindings]
     constraints:
       products: ordinary_product_catalog_and_allowlisted_legacy_admin_projection
       product_images: product_owned_native_image_urls_only
+      product_external_push_configurations: local_opaque_external_push_configuration_without_provider_credentials_or_endpoint
+      product_external_push_test_bindings: immutable_local_eer_accepted_binding_without_provider_call_delivery_or_automatic_retry
       product_catalog_counters: exact_legacy_total_without_catalog_scan
       product_operation_receipts: transaction_scoped_create_idempotency_receipts
       service_period_members: local_OneID_membership_facts_with_opaque_member_reference_and_no_external_identifiers
