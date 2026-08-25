@@ -1,5 +1,4 @@
--- This file documents the package-local PostgreSQL contract. RP01 is kept out
--- of the shared sqlc manifest so central generation remains a Root-owned lane.
+-- Package-local PostgreSQL contract for the release plane repository.
 
 -- name: CreateReleaseCandidate :one
 INSERT INTO release_candidates (
@@ -15,6 +14,10 @@ FROM release_candidates WHERE id=$1;
 -- name: LockReleaseCandidate :one
 SELECT id,commit_sha,artifact_digest,manifest_digest,config_digest,target_schema_version,state,created_by,created_at,prepared_at,activated_at,rollback_requested_at,rolled_back_at
 FROM release_candidates WHERE id=$1 FOR UPDATE;
+
+-- name: ListReleaseCandidates :many
+SELECT id,commit_sha,artifact_digest,manifest_digest,config_digest,target_schema_version,state,created_by,created_at,prepared_at,activated_at,rollback_requested_at,rolled_back_at
+FROM release_candidates ORDER BY id DESC LIMIT $1;
 
 -- name: TransitionReleaseCandidate :execrows
 UPDATE release_candidates SET
@@ -61,18 +64,26 @@ INSERT INTO release_cutover_journal(candidate_id,generation,step,fence,completed
 VALUES($1,$2,$3,$4,$5,$6)
 RETURNING id,candidate_id,generation,step,fence,completed_by,completed_at;
 
+-- name: ListReleaseCutoverSteps :many
+SELECT id,candidate_id,generation,step,fence,completed_by,completed_at
+FROM release_cutover_journal WHERE candidate_id=$1 ORDER BY id;
+
 -- name: CreateReleaseRollbackCheck :one
 INSERT INTO release_rollback_checks(candidate_id,kind,passed,evidence_sha,recorded_by,recorded_at)
 VALUES($1,$2,$3,$4,$5,$6)
 RETURNING id,candidate_id,kind,passed,evidence_sha,recorded_by,recorded_at;
 
+-- name: ListReleaseRollbackChecks :many
+SELECT id,candidate_id,kind,passed,evidence_sha,recorded_by,recorded_at
+FROM release_rollback_checks WHERE candidate_id=$1 ORDER BY id;
+
 -- name: ReserveReleaseOperationReceipt :one
 INSERT INTO release_operation_receipts(action,actor_id,key_digest,payload_digest,created_at)
 VALUES($1,$2,$3,$4,$5) ON CONFLICT(action,actor_id,key_digest) DO NOTHING
-RETURNING id,action,actor_id,key_digest,payload_digest,state,result_snapshot;
+RETURNING id,action,actor_id,key_digest,payload_digest,state,result_snapshot,created_at,completed_at;
 
 -- name: LockReleaseOperationReceipt :one
-SELECT id,action,actor_id,key_digest,payload_digest,state,result_snapshot
+SELECT id,action,actor_id,key_digest,payload_digest,state,result_snapshot,created_at,completed_at
 FROM release_operation_receipts WHERE action=$1 AND actor_id=$2 AND key_digest=$3 FOR UPDATE;
 
 -- name: CompleteReleaseOperationReceipt :execrows

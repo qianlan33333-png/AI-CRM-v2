@@ -195,7 +195,7 @@ func (s *Service) Readiness(ctx context.Context, candidateID int64) (releaseport
 	return readiness(candidate, receipts, s.now().UTC()), nil
 }
 
-func (s *Service) Prepare(ctx context.Context, command CandidateCommand) (releaseport.Candidate, error) {
+func (s *Service) PrepareCandidate(ctx context.Context, command CandidateCommand) (releaseport.Candidate, error) {
 	if !validCandidateCommand(command) {
 		return releaseport.Candidate{}, ErrInvalidCommand
 	}

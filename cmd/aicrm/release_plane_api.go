@@ -39,7 +39,7 @@ func (handler *candidateHandler) PrepareReleaseCandidate(writer http.ResponseWri
 	if !handler.releaseAvailable(writer, request) {
 		return
 	}
-	handler.release.Prepare(writer, request, int64(candidateID))
+	handler.release.PrepareCandidate(writer, request, int64(candidateID))
 }
 func (handler *candidateHandler) StartReleaseCutover(writer http.ResponseWriter, request *http.Request, candidateID api.ReleaseCandidateID, _ api.StartReleaseCutoverParams) {
 	if !handler.releaseAvailable(writer, request) {
