@@ -1107,6 +1107,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	attachmentService := mediaapp.NewAttachmentServiceWithReferences(uow, attachmentRepository, automationRepository, channelRepository, radarRepository, eventstore.NewAppender())
+	contentDeliveryService := mediaapp.NewContentDeliveryService(uow, mediastore.NewContentDeliveryRepository())
 	radarFragment, err := radarthttp.NewRouteFragment(radarService, legacyRadarAuthorizer{}, legacyRadarCSRF{})
 	if err != nil {
 		pool.Close()
@@ -1474,6 +1475,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.attachments = attachmentService
+	legacyHandler.contentDelivery = contentDeliveryService
 	legacyHandler.legacyTagLive = legacyTagLiveService
 	legacyHandler.legacyTagStatus = legacyTagStatusService
 	legacyHandler.adminOps = adminOpsService
@@ -2627,6 +2629,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPut, legacyAttachmentDetailPath, authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.UpdateAttachment)},
 			{http.MethodDelete, legacyAttachmentDetailPath, authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.DeleteAttachment)},
 			{http.MethodGet, legacyAttachmentDownloadPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.DownloadAttachment)},
+			{http.MethodPost, "/api/admin/content-packages/preview", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ContentPackagePreview)},
+			{http.MethodPost, "/api/admin/content-packages", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ContentPackageCreate)},
+			{http.MethodPut, "/api/admin/content-packages/{package_id}", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ContentPackageUpdate)},
 			{http.MethodGet, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ListGroupInvites)},
 			{http.MethodPost, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.CreateGroupInvite)},
 			{http.MethodGet, "/api/admin/group-invite-library/{item_id}", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetGroupInvite)},
