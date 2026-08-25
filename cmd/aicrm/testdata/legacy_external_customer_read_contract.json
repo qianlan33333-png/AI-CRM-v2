@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "human_session_routes": [
+    "/api/customers",
+    "/api/customers/{external_userid}",
+    "/api/customers/{external_userid}/timeline",
+    "/api/users/{unionid}",
+    "/api/users/{unionid}/timeline",
+    "/api/users/{unionid}/messages/recent",
+    "/api/messages/{external_userid}/recent"
+  ],
+  "service_route": {
+    "path": "/api/identity/resolve",
+    "purpose": "identity"
+  },
+  "message_forbidden_fields": [
+    "content",
+    "sender",
+    "receiver",
+    "provider_message_id"
+  ]
+}
