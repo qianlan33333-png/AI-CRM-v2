@@ -176,10 +176,14 @@ func build(matrixPath, apiPath, migrationPath, classificationPath string) (outpu
 	}
 	for _, row := range migrations {
 		disposition, mode, status, evidenceGap := classifyMigration(row)
+		notes := "The mapping is a migration decision, not proof that data moved."
+		if row.MappingID == "LEGACY-T14-236" {
+			notes = "00082 questionnaire_submission_external_push_bindings and questionnaire_external_push_delivery_receipts are V2-native identity-gated local facts, not targets for importing or replaying legacy questionnaire_external_push_logs; Provider/deploy/delivery remain NOT_EXECUTED."
+		}
 		result.migrations = append(result.migrations, []string{
 			row.MappingID, unknown(row.LegacyTable), unknown(row.LegacyDomain), unknown(row.SourcePresence), unknown(row.Decision), disposition, mode, status, evidenceGap, unknown(row.TargetSchemaStatus), unknown(strings.Join(row.CandidateTargets, "|")), unknown(row.WatermarkStrategy), unknown(row.FKStrategy), unknown(row.SafetyRule),
 			fmt.Sprint(row.FieldCount), unknown(row.Implementation), unknown(row.Verification), "docs/migration-mapping.jsonl:" + row.MappingID,
-			"NOT_EXECUTED", "The mapping is a migration decision, not proof that data moved.",
+			"NOT_EXECUTED", notes,
 			legacySnapshotSHA, "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED",
 			"UNMAPPED", "NOT_EXECUTED", "NOT_EXECUTED", "NOT_EXECUTED", "NOT_EXECUTED",
 		})

@@ -30,6 +30,61 @@ func TestFrozenOpenAPI(t *testing.T) {
 	}
 }
 
+func TestSurveyIdentityGatedExternalPushContract(t *testing.T) {
+	doc, ids, err := load(specPath, mappingPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := validate(doc, ids); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, operationID := range []string{"startSurveyH5OAuth", "callbackSurveyH5OAuth"} {
+		contract := nativePackageOperations[operationID]
+		operation := operationForMethod(doc.Paths.Value(contract.path), contract.method)
+		if operation == nil || operation.Security == nil || len(*operation.Security) != 0 ||
+			operation.Extensions["x-aicrm-auth-scheme"] != "public" ||
+			operation.Extensions["x-aicrm-csrf"] != "none" ||
+			operation.Extensions["x-aicrm-external-effect"] != "external_protocol" {
+			t.Fatalf("%s public OAuth boundary drifted", operationID)
+		}
+		if _, present := operation.Extensions["x-aicrm-rbac-scopes"]; present {
+			t.Fatalf("%s must not declare operator RBAC", operationID)
+		}
+	}
+
+	detailContract := nativePackageOperations["getSurveyExternalPushDetail"]
+	detail := operationForMethod(doc.Paths.Value(detailContract.path), detailContract.method)
+	if detail == nil || detail.Extensions["x-aicrm-auth-scheme"] != "human_session" ||
+		detail.Extensions["x-aicrm-session-bound-csrf"] != "none" || detail.Responses.Value("403") == nil {
+		t.Fatal("Survey external-push detail security boundary drifted")
+	}
+	reconcileContract := nativePackageOperations["reconcileSurveyExternalPush"]
+	reconcile := operationForMethod(doc.Paths.Value(reconcileContract.path), reconcileContract.method)
+	if reconcile == nil || reconcile.Extensions["x-aicrm-auth-scheme"] != "human_session" ||
+		reconcile.Extensions["x-aicrm-session-bound-csrf"] != "required" || reconcile.Responses.Value("409") == nil ||
+		reconcile.RequestBody == nil || reconcile.RequestBody.Value == nil {
+		t.Fatal("Survey external-push reconcile security boundary drifted")
+	}
+
+	binding := doc.Components.Schemas["SurveyExternalPushBindingDetail"].Value
+	wantBinding := map[string]bool{"submission_id": true, "effect_id": true, "state": true, "provider_accepted": true, "delivery_proven": true}
+	if binding.AdditionalProperties.Has == nil || *binding.AdditionalProperties.Has || len(binding.Properties) != len(wantBinding) || !reflect.DeepEqual(binding.Required, []string{"submission_id", "effect_id", "state", "provider_accepted", "delivery_proven"}) {
+		t.Fatal("Survey external-push detail schema is no longer closed and PII-free")
+	}
+	for property := range binding.Properties {
+		if !wantBinding[property] {
+			t.Fatalf("Survey external-push detail exposes forbidden property %q", property)
+		}
+	}
+	reconcileSchema := doc.Components.Schemas["SurveyExternalPushReconcileRequest"].Value
+	for _, forbidden := range []string{"customer_id", "identity", "receipt", "payload", "external_userid"} {
+		if _, present := reconcileSchema.Properties[forbidden]; present {
+			t.Fatalf("Survey external-push reconcile schema exposes %q", forbidden)
+		}
+	}
+}
+
 func TestInternalEventRegistryContractRemainsClosed(t *testing.T) {
 	doc, inventory := fresh(t)
 	if err := validateInternalEventRegistryContract(doc); err != nil {

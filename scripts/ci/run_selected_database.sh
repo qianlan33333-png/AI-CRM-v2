@@ -160,6 +160,7 @@ while [[ -n "$remaining_groups" ]]; do
     survey)
       run_make_acceptance P4F01A_SURVEY_TEST_DATABASE_URL p4-f01a-survey-acceptance
       run_make_acceptance P4F01AB_SURVEY_TEST_DATABASE_URL p4-f01ab-survey-acceptance
+      run_make_acceptance P4SURVEY_PUSH_TEST_DATABASE_URL p4-survey-identity-external-push-acceptance
       ;;
     wecom)
       run_make_acceptance WECOM_SYNC_TEST_DATABASE_URL p3-w4-acceptance

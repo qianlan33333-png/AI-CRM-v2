@@ -4494,6 +4494,87 @@ paths:
             Location: { required: true, schema: { type: string, pattern: '^/\\?public_survey_slug=[a-z0-9][a-z0-9-]{0,119}$' } }
         "400": { $ref: "#/components/responses/PublicSurveyInvalidInput" }
         "405": { $ref: "#/components/responses/PublicSurveyGetOnly" }
+  /api/h5/surveys/oauth/start:
+    get:
+      tags: [p4-survey]
+      operationId: startSurveyH5OAuth
+      summary: Start a one-time, fail-closed Survey H5 identity gate
+      x-legacy-mapping-ids: [LEGACY-API-0676]
+      security: []
+      x-p4-decision-evidence: P4-SURVEY-IDENTITY-GATED-EXTERNAL-PUSH-00082-2026-08-25
+      x-aicrm-capability: survey.h5.identity
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: auth.oauth_state
+      x-aicrm-external-effect: external_protocol
+      parameters: [{name: next, in: query, required: true, schema: {type: string, pattern: '^/s/[a-z0-9][a-z0-9-]{0,119}$'}}]
+      responses: {"302": {description: Provider authorization redirect.}, "400": {$ref: "#/components/responses/BadRequest"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/h5/surveys/oauth/callback:
+    get:
+      tags: [p4-survey]
+      operationId: callbackSurveyH5OAuth
+      summary: Claim one Survey H5 OAuth state and issue a signed canonical identity proof
+      x-legacy-mapping-ids: [LEGACY-API-0674]
+      security: []
+      x-p4-decision-evidence: P4-SURVEY-IDENTITY-GATED-EXTERNAL-PUSH-00082-2026-08-25
+      x-aicrm-capability: survey.h5.identity
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: public_non_pii
+      x-aicrm-data-source: identity.canonical_resolve
+      x-aicrm-external-effect: external_protocol
+      parameters: [{name: state, in: query, required: true, schema: {type: string}}, {name: code, in: query, required: true, schema: {type: string}}]
+      responses: {"302": {description: Same-origin survey redirect after canonical identity resolution.}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push:
+    parameters: [{$ref: "#/components/parameters/QuestionnaireID"}, {$ref: "#/components/parameters/SurveySubmissionID"}]
+    get:
+      tags: [p4-survey]
+      operationId: getSurveyExternalPushDetail
+      summary: Read one PII-free local Survey external-push binding projection
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-SURVEY-IDENTITY-GATED-EXTERNAL-PUSH-00082-2026-08-25
+      x-aicrm-capability: questionnaires.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: questionnaire_submission_external_push_bindings.local_safe_projection
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: "Binding state and separate acceptance/delivery facts; no identity, digest, payload, or receipt evidence.", content: { application/json: { schema: { $ref: "#/components/schemas/SurveyExternalPushBindingDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile:
+    parameters: [{$ref: "#/components/parameters/QuestionnaireID"}, {$ref: "#/components/parameters/SurveySubmissionID"}]
+    post:
+      tags: [p4-survey]
+      operationId: reconcileSurveyExternalPush
+      summary: Manually reconcile only an outcome-unknown verified Survey external-push binding
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-SURVEY-IDENTITY-GATED-EXTERNAL-PUSH-00082-2026-08-25
+      x-aicrm-capability: questionnaires.write
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: questionnaire_submission_external_push_bindings.local_reconciliation_transaction
+      x-aicrm-external-effect: none
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/SurveyExternalPushReconcileRequest" } } } }
+      responses:
+        "200": { description: "Recorded local terminal receipt facts; no Provider call or automatic retry occurs.", content: { application/json: { schema: { $ref: "#/components/schemas/SurveyExternalPushBindingDetail" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /admin/questionnaires:
     get:
       tags: [p4-survey-compat]
@@ -10498,6 +10579,11 @@ components:
       in: path
       required: true
       schema: { type: integer, format: int64, minimum: 1 }
+    SurveySubmissionID:
+      name: submission_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
     GroupOpsPlanID:
       name: plan_id
       in: path
@@ -14809,6 +14895,30 @@ components:
       properties:
         enabled: { type: boolean }
         configuration_reference: { type: string, minLength: 1, maxLength: 128, pattern: '^[A-Za-z0-9._:-]{1,128}$' }
+    SurveyExternalPushBindingDetail:
+      type: object
+      additionalProperties: false
+      description: PII-free local binding projection. Provider acceptance and delivery proof are independent facts.
+      required: [submission_id, effect_id, state, provider_accepted, delivery_proven]
+      properties:
+        submission_id: { type: integer, format: int64, minimum: 1 }
+        effect_id: { type: string, minLength: 1, maxLength: 19, pattern: '^[1-9][0-9]{0,18}$' }
+        state: { $ref: "#/components/schemas/ExternalEffectRuntimeState" }
+        provider_accepted: { type: boolean }
+        delivery_proven: { type: boolean }
+    SurveyExternalPushReconcileRequest:
+      type: object
+      additionalProperties: false
+      description: Lease-fenced digest-only manual reconciliation. It cannot enqueue or retry an external dispatch.
+      required: [effect_id, generation, fence, lease_expires_at, evidence_digest, provider_accepted, delivery_proven]
+      properties:
+        effect_id: { type: string, minLength: 1, maxLength: 19, pattern: '^[1-9][0-9]{0,18}$' }
+        generation: { type: integer, format: int64, minimum: 1 }
+        fence: { type: integer, format: int64, minimum: 1 }
+        lease_expires_at: { type: string, format: date-time }
+        evidence_digest: { type: string, pattern: '^sha256:[0-9a-f]{64}$' }
+        provider_accepted: { type: boolean }
+        delivery_proven: { type: boolean }
     SurveyOperationsProjection:
       type: object
       additionalProperties: false

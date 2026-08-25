@@ -234,7 +234,9 @@ func openPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	}
 	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.F01ADatabaseName); err != nil {
 		if f01abErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.F01ABDatabaseName); f01abErr != nil {
-			t.Fatal(err)
+			if surveyPushErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*databaseURL, acceptancefixtures.SurveyPushDatabaseName); surveyPushErr != nil {
+				t.Fatal(err)
+			}
 		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)

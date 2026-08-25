@@ -70,10 +70,25 @@ type PublicService struct {
 	events   eventport.Appender
 	tokenKey [32]byte
 	now      func() time.Time
+	binder   PublicSubmissionBinder
+}
+
+type PublicSubmissionBinder interface {
+	BindPublicSubmission(context.Context, PublicDefinitionRecord, int64, surveyport.PublicSubmissionCommand, time.Time) error
 }
 
 func NewPublicService(uow platformport.UnitOfWork, store PublicStore, events eventport.Appender, tokenKey [32]byte) *PublicService {
 	return &PublicService{uow: uow, store: store, events: events, tokenKey: tokenKey, now: time.Now}
+}
+func NewPublicServiceWithBinder(uow platformport.UnitOfWork, store PublicStore, events eventport.Appender, tokenKey [32]byte, binder PublicSubmissionBinder) *PublicService {
+	s := NewPublicService(uow, store, events, tokenKey)
+	s.binder = binder
+	return s
+}
+func (s *PublicService) SetBinder(binder PublicSubmissionBinder) {
+	if s != nil {
+		s.binder = binder
+	}
 }
 
 func (s *PublicService) Definition(ctx context.Context, slug string) (surveyport.PublicQuestionnaire, error) {
@@ -156,6 +171,14 @@ func (s *PublicService) Submit(ctx context.Context, input surveyport.PublicSubmi
 		if err != nil {
 			return err
 		}
+		if input.CanonicalCustomerID > 0 {
+			if s.binder == nil {
+				return ErrH5IdentityRequired
+			}
+			if err := s.binder.BindPublicSubmission(tx, record, submissionID, input, now); err != nil {
+				return err
+			}
+		}
 		resultToken, err = DerivePublicResultToken(s.tokenKey, keyDigest, submissionID, record.View.Version)
 		if err != nil {
 			return err
@@ -167,7 +190,8 @@ func (s *PublicService) Submit(ctx context.Context, input surveyport.PublicSubmi
 		}
 		resultTokenDigest := sha256.Sum256([]byte(resultToken))
 		completed, err := s.store.CompletePublicReceipt(tx, reserved.ID, resultTokenDigest, snapshot, now)
-		if err != nil || completed.ID != reserved.ID || completed.DefinitionID != record.ID || completed.SubmissionKeyDigest != keyDigest || completed.PayloadDigest != payloadDigest || completed.ResultTokenDigest != resultTokenDigest || completed.State != "completed" || string(completed.ResultSnapshot) != string(snapshot) {
+		var completedSnapshot surveyport.PublicSubmissionReceipt
+		if err != nil || json.Unmarshal(completed.ResultSnapshot, &completedSnapshot) != nil || completed.ID != reserved.ID || completed.DefinitionID != record.ID || completed.SubmissionKeyDigest != keyDigest || completed.PayloadDigest != payloadDigest || completed.ResultTokenDigest != resultTokenDigest || completed.State != "completed" || completedSnapshot != receipt {
 			return ErrPublicUnavailable
 		}
 		payload, err = json.Marshal(struct {

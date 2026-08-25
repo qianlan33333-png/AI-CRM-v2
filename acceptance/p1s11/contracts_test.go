@@ -229,6 +229,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"CreateContactOwnerReassignmentPreview", "GetContactOwnerReassignmentPreview", "DownloadContactOwnerReassignmentErrors", "ExecuteContactOwnerReassignmentPreview", "DownloadContactOwnerReassignmentResults", "DownloadContactOwnerReassignmentTemplate",
 		"ListReleaseCandidates", "RegisterReleaseCandidate", "GetReleaseCandidate", "RecordReleasePrerequisite", "PrepareReleaseCandidate", "StartReleaseCutover", "RestartReleaseCutover", "CompleteReleaseCutoverStep", "ActivateReleaseCandidate", "RecordReleaseRollbackCheck", "RequestReleaseRollback", "CompleteReleaseRollback",
 		"CreateWechatPayCheckout", "GetWechatPayCheckout", "CreateWechatPaySettlementRefund", "ReceiveWechatPayPaymentCallback", "ReceiveWechatPayRefundCallback",
+		"StartSurveyH5OAuth", "CallbackSurveyH5OAuth", "GetSurveyExternalPushDetail", "ReconcileSurveyExternalPush",
 	})
 }
 

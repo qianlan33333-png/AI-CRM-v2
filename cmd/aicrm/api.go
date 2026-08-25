@@ -169,11 +169,15 @@ type candidateHandler struct {
 	sidebar                   *sidebarhttp.Handler
 	surveyPublic              *surveyhttp.PublicHandler
 	radarPublic               *radarthttp.PublicHandler
-	segmentRefresh            *segmenthttp.RefreshHandler
-	identityReviews           *identityhttp.ReviewHandler
-	identityConsole           *identityhttp.ConsoleHandler
-	identityIngest            *identityhttp.IngestHandler
-	automationRuns            interface {
+	surveyH5OAuth             *surveyhttp.H5OAuthHandler
+	surveyExternalPushDetail  *surveyhttp.ExternalPushDetailHandler
+	surveyPushReconcile       *surveyhttp.ExternalPushReconcileHandler
+
+	segmentRefresh  *segmenthttp.RefreshHandler
+	identityReviews *identityhttp.ReviewHandler
+	identityConsole *identityhttp.ConsoleHandler
+	identityIngest  *identityhttp.IngestHandler
+	automationRuns  interface {
 		List(context.Context, automationstore.TriggerListInput) (automationstore.TriggerListResult, error)
 	}
 	domainVerification interface {
@@ -956,8 +960,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	))
 	surveySafeAdminHandler := safeadminhttp.New(surveyapp.NewSafeAdminService(uow, surveySubmissionRepository))
 	surveyTokenKey, surveyCookieKey, surveyAbuseKey := deriveSurveyPublicKeys(config.Survey.PublicKey.Value())
+	surveyPublicService := surveyapp.NewPublicService(uow, surveystore.NewPublicRepository(), eventstore.NewAppender(), surveyTokenKey)
 	surveyPublicHandler := surveyhttp.NewPublicHandler(
-		surveyapp.NewPublicService(uow, surveystore.NewPublicRepository(), eventstore.NewAppender(), surveyTokenKey),
+		surveyPublicService,
 		surveyCookieKey,
 		surveyAbuseKey,
 	)
@@ -1218,6 +1223,13 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	identityResolver := identityapp.NewResolveService(uow, identityRepository)
+	surveyH5OAuthService, err := surveyapp.NewH5OAuthService(oauthStates, surveyapp.DisabledH5OAuthProvider{}, identityResolver)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	surveyH5OAuthHandler := surveyhttp.NewH5OAuthHandler(surveyH5OAuthService, surveyCookieKey)
+	surveyPublicHandler.IdentityReader = surveyH5OAuthHandler
 	legacyUnionIDResolver := identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
 	customerIdentityMatcher := identityapp.NewCustomerMatcherService(uow, identityRepository)
 	customerAnswerService := surveyapp.NewCustomerAnswerService(
@@ -1284,6 +1296,14 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	surveyExternalPushService, err := surveyapp.NewExternalPushService(uow, surveystore.NewExternalPushRepository(), externalEffectsRuntime)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	surveyPublicService.SetBinder(surveyapp.PublicExternalPushBinder{Push: surveyExternalPushService})
+	surveyExternalPushDetailHandler := &surveyhttp.ExternalPushDetailHandler{Application: surveyExternalPushService}
+	surveyExternalPushReconcileHandler := &surveyhttp.ExternalPushReconcileHandler{Application: surveyExternalPushService}
 	campaignDispatchRepository, err := outboundstore.NewCampaignDispatchRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -1340,6 +1360,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		wechatPaySettlement:  wechatPaySettlementHandler,
 		surveyPublic:         surveyPublicHandler,
 		radarPublic:          radarPublicHandler,
+		surveyH5OAuth:        surveyH5OAuthHandler,
 		segmentRefresh:       segmentRefreshHandler,
 		identityReviews:      identityReviewHandler,
 		identityConsole:      identityConsoleHandler,
@@ -1360,6 +1381,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		externalEffectsRuntime:   externalEffectsRuntimeHandler,
 		release:                  releaseHandler,
 	}
+	candidate.surveyExternalPushDetail = surveyExternalPushDetailHandler
+	candidate.surveyPushReconcile = surveyExternalPushReconcileHandler
 	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -1778,6 +1801,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/q/{slug}", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			candidate.GetPublicSurveyPage(writer, request, api.PublicSurveySlug(chi.URLParam(request, "slug")))
 		})},
+		{http.MethodGet, "/api/h5/surveys/oauth/start", http.HandlerFunc(wrapper.StartSurveyH5OAuth)},
+		{http.MethodGet, "/api/h5/surveys/oauth/callback", http.HandlerFunc(wrapper.CallbackSurveyH5OAuth)},
 	} {
 		if err = registerPublicSurvey(route.method, route.pattern, route.endpoint); err != nil {
 			return nil, err
@@ -2020,6 +2045,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-publish", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.PublishQuestionnairePublicDefinition)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-disable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.DisableQuestionnairePublicDefinition)},
 		{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/public-analytics", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(wrapper.GetQuestionnairePublicAnalytics)},
+		{http.MethodGet, surveyhttp.ExternalPushDetailPath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(wrapper.GetSurveyExternalPushDetail)},
+		{http.MethodPost, surveyhttp.ExternalPushReconcilePath, authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.ReconcileSurveyExternalPush)},
 	}
 	for _, route := range routes {
 		if err = register(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
