@@ -564,9 +564,8 @@ p4-pe01-wechat-pay-settlement-acceptance:
 
 p4-automation-rules-runtime-acceptance:
 	@test -n "$${P4AUTOMATIONRULES_TEST_DATABASE_URL:-}" || { echo "P4AUTOMATIONRULES_TEST_DATABASE_URL is required" >&2; exit 2; }
-	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres "$$P4AUTOMATIONRULES_TEST_DATABASE_URL" up
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/automation/a01_migration_compatibility.sh
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/automation/... ./cmd/aicrm
-	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s -run '^TestA01TagRuleOutboundMessageUsesEERAndRiverWithoutProviderClaim$$' ./acceptance/automation -args -database-url "$$P4AUTOMATIONRULES_TEST_DATABASE_URL"
 
 p4-si00b-auth-acceptance:
 	@test -n "$${P4SI00B_AUTH_TEST_DATABASE_URL:-}" || { echo "P4SI00B_AUTH_TEST_DATABASE_URL is required" >&2; exit 2; }
