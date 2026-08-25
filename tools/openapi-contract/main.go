@@ -97,6 +97,7 @@ const (
 	p4WeComTagEffectEvidence                   = "P4-B1-WC01-2026-08-25"
 	p4ChannelAcquisitionEvidence               = "P4-CH01-2026-08-26"
 	p4ChannelAcquisitionAssetEvidence          = "P4-CH02-2026-08-26"
+	p4ChannelAcquisitionEntrantEvidence        = "P4-CH03-2026-08-26"
 	p4SidebarOAuthEvidence                     = "P4-SB01-SIDEBAR-OAUTH-AGENT-CONFIG-2026-08-26"
 	p4SidebarSafeActivityEvidence              = "P4-SB02-SIDEBAR-SAFE-ACTIVITY-2026-08-26"
 	p4ServicePeriodMemberGridCanonicalEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24"
@@ -125,6 +126,9 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"publishChannelAcquisitionAsset":            {"/api/admin/channels/{channel_id}/acquisition-assets", "POST", p4ChannelAcquisitionAssetEvidence, "channels.write", "human_session", "internal", "contact.acquisition_asset_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getChannelAcquisitionAsset":                {"/api/admin/channels/{channel_id}/acquisition-assets/{effect_id}", "GET", p4ChannelAcquisitionAssetEvidence, "channels.read", "human_session", "internal", "contact.acquisition_asset_safe_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"reconcileChannelAcquisitionAsset":          {"/api/admin/channels/{channel_id}/acquisition-assets/{effect_id}/reconcile", "POST", p4ChannelAcquisitionAssetEvidence, "channels.write", "human_session", "internal", "contact.acquisition_asset_reconciliation_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"listChannelAcquisitionEntrantReceipts":     {"/api/admin/channels/{channel_id}/acquisition-entrant-receipts", "GET", p4ChannelAcquisitionEntrantEvidence, "channels.read", "human_session", "internal", "contact.acquisition_entrant_safe_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"getChannelAcquisitionEntrantReceipt":       {"/api/admin/channels/{channel_id}/acquisition-entrant-receipts/{receipt_id}", "GET", p4ChannelAcquisitionEntrantEvidence, "channels.read", "human_session", "internal", "contact.acquisition_entrant_safe_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"reconcileChannelAcquisitionEntrantReceipt": {"/api/admin/channels/{channel_id}/acquisition-entrant-receipts/{receipt_id}/reconcile", "POST", p4ChannelAcquisitionEntrantEvidence, "channels.write", "human_session", "internal", "contact.acquisition_entrant_reconciliation_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"createCustomerSafeExport":                  {"/api/v1/customer-exports", "POST", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getCustomerSafeExport":                     {"/api/v1/customer-exports/{export_id}", "GET", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"downloadCustomerSafeExport":                {"/api/v1/customer-exports/{export_id}/download", "GET", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},

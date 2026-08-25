@@ -46,6 +46,9 @@ CREATE TABLE public.channel_acquisition_entrant_receipts (
   occurred_at TIMESTAMPTZ NOT NULL,
   reconciled_at TIMESTAMPTZ,
   reconcile_reason TEXT NOT NULL DEFAULT '' CHECK (char_length(reconcile_reason) <= 200 AND btrim(reconcile_reason) = reconcile_reason),
+  reconcile_actor_id BIGINT REFERENCES public.admin_users(id) ON DELETE RESTRICT,
+  reconcile_key_digest TEXT CHECK (reconcile_key_digest IS NULL OR reconcile_key_digest ~ '^sha256:[0-9a-f]{64}$'),
+  reconcile_payload_digest TEXT CHECK (reconcile_payload_digest IS NULL OR reconcile_payload_digest ~ '^sha256:[0-9a-f]{64}$'),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   FOREIGN KEY (effect_id, channel_id, asset_kind, asset_version)
@@ -59,12 +62,17 @@ CREATE TABLE public.channel_acquisition_entrant_receipts (
       OR (customer_id IS NOT NULL AND customer_event_id IS NOT NULL AND customer_event_occurred_at IS NOT NULL))
     AND (status NOT IN ('attributed', 'reconciled') OR (effect_id IS NOT NULL AND customer_id IS NOT NULL))
     AND (status <> 'attributed' OR customer_event_id IS NOT NULL)
-    AND ((status <> 'reconciled' AND reconciled_at IS NULL AND reconcile_reason = '')
-      OR (status = 'reconciled' AND reconciled_at IS NOT NULL AND reconcile_reason <> ''))
+    AND ((status <> 'reconciled' AND reconciled_at IS NULL AND reconcile_reason = ''
+          AND reconcile_actor_id IS NULL AND reconcile_key_digest IS NULL AND reconcile_payload_digest IS NULL)
+      OR (status = 'reconciled' AND reconciled_at IS NOT NULL AND reconcile_reason <> ''
+          AND reconcile_actor_id IS NOT NULL AND reconcile_key_digest IS NOT NULL AND reconcile_payload_digest IS NOT NULL))
   )
 );
 CREATE INDEX channel_acquisition_entrant_receipts_status_idx
   ON public.channel_acquisition_entrant_receipts(status, occurred_at DESC, id DESC);
+CREATE UNIQUE INDEX channel_acquisition_entrant_receipts_reconcile_key_idx
+  ON public.channel_acquisition_entrant_receipts(reconcile_actor_id, reconcile_key_digest)
+  WHERE reconcile_actor_id IS NOT NULL;
 
 -- +goose Down
 LOCK TABLE public.channel_acquisition_entrant_receipts, public.wecom_contact_inbox IN SHARE ROW EXCLUSIVE MODE;

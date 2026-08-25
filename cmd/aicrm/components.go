@@ -278,8 +278,19 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 			inboundCorpID = config.WeCom.OAuth.CorpID
 		}
 		inboundStore := wecomstore.NewInboundRepository()
-		inboundService, inboundErr := wecomapp.NewInboundService(
-			platformstore.NewUnitOfWork(pool), inboundStore, inboundJobs, processor, inboundCorpID, time.Now,
+		inboundUOW := platformstore.NewUnitOfWork(pool)
+		entrantService, entrantErr := wecomapp.NewChannelAcquisitionEntrantService(
+			inboundUOW,
+			contactstore.NewChannelAcquisitionAssetCorrelationRepository(pool),
+			identitystore.NewRepository(),
+			contactstore.NewChannelAcquisitionEntrantRepository(),
+		)
+		if entrantErr != nil {
+			pool.Close()
+			return nil, entrantErr
+		}
+		inboundService, inboundErr := wecomapp.NewInboundServiceWithEntrants(
+			inboundUOW, inboundStore, inboundJobs, processor, entrantService, inboundCorpID, time.Now,
 		)
 		if inboundErr != nil {
 			pool.Close()

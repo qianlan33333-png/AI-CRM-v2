@@ -166,7 +166,8 @@ func entrantStatusNeedsBinding(status contactport.ChannelAcquisitionEntrantStatu
 
 func sameEntrantReplay(receipt contactport.ChannelAcquisitionEntrantReceipt, command contactport.ChannelAcquisitionEntrantCommand) bool {
 	if receipt.Status == contactport.ChannelAcquisitionEntrantAttributed || receipt.Status == contactport.ChannelAcquisitionEntrantReconciled {
-		return receipt.EffectID == command.Match.EffectID && receipt.ChannelID == command.Match.ChannelID && receipt.Kind == command.Match.Kind && receipt.AssetVersion == command.Match.AssetVersion && receipt.CustomerID == command.CustomerID && receipt.CustomerEventID > 0
+		return receipt.EffectID == command.Match.EffectID && receipt.ChannelID == command.Match.ChannelID && receipt.Kind == command.Match.Kind && receipt.AssetVersion == command.Match.AssetVersion &&
+			receipt.CustomerEventID > 0 && (command.CustomerID == 0 || receipt.CustomerID == command.CustomerID)
 	}
 	return receipt.Status == command.Status && receipt.EffectID == command.Match.EffectID && receipt.ChannelID == command.Match.ChannelID && receipt.Kind == command.Match.Kind && receipt.AssetVersion == command.Match.AssetVersion && receipt.CustomerID == 0 && receipt.CustomerEventID == 0
 }

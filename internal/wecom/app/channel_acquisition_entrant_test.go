@@ -273,15 +273,21 @@ func (resolver *entrantCorrelation) ResolveAcquisitionAssetCorrelation(_ context
 }
 
 type entrantIdentityResolver struct {
-	calls  int
-	ref    identityport.IDRef
-	result identityport.AcquisitionEntrantIdentityResolution
-	err    error
+	calls   int
+	ref     identityport.IDRef
+	result  identityport.AcquisitionEntrantIdentityResolution
+	results []identityport.AcquisitionEntrantIdentityResolution
+	err     error
 }
 
 func (resolver *entrantIdentityResolver) ResolveAcquisitionEntrantIdentity(_ context.Context, ref identityport.IDRef) (identityport.AcquisitionEntrantIdentityResolution, error) {
 	resolver.calls++
 	resolver.ref = ref
+	if len(resolver.results) > 0 {
+		result := resolver.results[0]
+		resolver.results = resolver.results[1:]
+		return result, resolver.err
+	}
 	return resolver.result, resolver.err
 }
 

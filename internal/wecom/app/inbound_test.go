@@ -172,6 +172,32 @@ func TestInboundServiceUsesPersistedTypedEntrantWithoutRawXMLReparse(t *testing.
 	}
 }
 
+func TestInboundServiceAttributesPendingEntrantAfterIdentityIngest(t *testing.T) {
+	entrants, correlation, identities, receipts := entrantServiceFixture(t)
+	correlation.result = contactport.AcquisitionAssetCorrelationResolution{Cardinality: contactport.AcquisitionAssetCorrelationOne, Match: entrantMatch(41, 7, contactport.AcquisitionAssetQRCode, 3)}
+	identities.results = []identityport.AcquisitionEntrantIdentityResolution{
+		{Status: identityport.AcquisitionEntrantIdentityNotFound},
+		{Status: identityport.AcquisitionEntrantIdentityFound, CustomerID: 22},
+	}
+	ingestor := &memoryInboundIngestor{result: identityport.IngestResult{Status: identityport.IngestAttributed, CustomerID: 22, EventID: 4}}
+	processor, err := NewIdentityContactProcessor(ingestor)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fact := entrantInput().Fact
+	store := &memoryInboundStore{records: []memoryInboundRecord{{id: 7, source: InboundSourceCallback, sourceKey: "sha256:" + repeatedHex('a'), corpID: fact.CorpID, eventType: fact.EventType(), externalUserID: fact.ExternalUserID, externalContact: &fact, occurredAt: fact.OccurredAt, state: "pending"}}}
+	service, err := NewInboundServiceWithEntrants(immediateUoW{}, store, &memoryInboundJobs{}, processor, entrants, "corp-a", time.Now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = service.Process(context.Background(), 7, "river:99"); err != nil {
+		t.Fatal(err)
+	}
+	if store.records[0].state != "processed" || identities.calls != 2 || receipts.events != 1 || receipts.byInbox[7].Status != contactport.ChannelAcquisitionEntrantAttributed {
+		t.Fatalf("state=%q identity_calls=%d events=%d receipt=%#v", store.records[0].state, identities.calls, receipts.events, receipts.byInbox[7])
+	}
+}
+
 type memoryInboundRecord struct {
 	id, fence       int64
 	source          InboundSource

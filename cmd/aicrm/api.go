@@ -1431,6 +1431,26 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			return nil, assetErr
 		}
 	}
+	entrantReceiptCursor, err := contactapp.NewChannelAcquisitionEntrantReceiptCursorCodec(config.Identity.HMACKey.Value())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	entrantReceiptService, err := contactapp.NewChannelAcquisitionEntrantReceiptService(uow, contactstore.NewChannelAcquisitionEntrantReceiptRepository(), entrantReceiptCursor)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	entrantReceiptHandler, err := contacthttp.NewChannelAcquisitionEntrantReceiptHandler(entrantReceiptService, service)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	channelAcquisitionEntrantReceiptsFragment, err := contacthttp.NewChannelAcquisitionEntrantReceiptRouteFragment(entrantReceiptHandler)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	groupOpsRepository := groupopsstore.NewRepository()
 	groupOpsRuntime, err := groupopsapp.NewRuntimeService(
 		uow,
@@ -1754,6 +1774,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.channelAcquisition = channelAcquisitionFragment
 	legacyHandler.channelAcquisitionAsset = channelAcquisitionAssetsFragment
+	legacyHandler.entrantReceipts = channelAcquisitionEntrantReceiptsFragment
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.attachments = attachmentService
 	legacyHandler.contentDelivery = contentDeliveryService
@@ -1825,8 +1846,18 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			pool.Close()
 			return nil, errInvalidAPIComponent
 		}
-		inboundService, inboundErr := wecomapp.NewInboundService(
-			uow, wecomstore.NewInboundRepository(), inboundJobs, nil,
+		entrantService, entrantErr := wecomapp.NewChannelAcquisitionEntrantService(
+			uow,
+			contactstore.NewChannelAcquisitionAssetCorrelationRepository(pool),
+			identitystore.NewRepository(),
+			contactstore.NewChannelAcquisitionEntrantRepository(),
+		)
+		if entrantErr != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		inboundService, inboundErr := wecomapp.NewInboundServiceWithEntrants(
+			uow, wecomstore.NewInboundRepository(), inboundJobs, nil, entrantService,
 			config.WeCom.Callback.CorpID, time.Now,
 		)
 		if inboundErr != nil {
@@ -2826,6 +2857,21 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				{http.MethodPost, "/api/admin/channels/{channel_id}/acquisition-assets/{effect_id}/reconcile", authport.CapabilityChannelsWrite, true},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.channelAcquisitionAsset); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if legacy.entrantReceipts != nil {
+			for _, route := range []struct {
+				method, pattern string
+				capability      authport.Capability
+				csrf            bool
+			}{
+				{http.MethodGet, "/api/admin/channels/{channel_id}/acquisition-entrant-receipts", authport.CapabilityChannelsRead, false},
+				{http.MethodGet, "/api/admin/channels/{channel_id}/acquisition-entrant-receipts/{receipt_id}", authport.CapabilityChannelsRead, false},
+				{http.MethodPost, "/api/admin/channels/{channel_id}/acquisition-entrant-receipts/{receipt_id}/reconcile", authport.CapabilityChannelsWrite, true},
+			} {
+				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.entrantReceipts); err != nil {
 					return nil, err
 				}
 			}

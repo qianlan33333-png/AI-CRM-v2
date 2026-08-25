@@ -11,6 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 )
@@ -243,6 +244,16 @@ func (service *InboundService) processChannelAcquisitionEntrant(ctx context.Cont
 				return service.store.FailInbound(txCtx, record.ID, record.LeaseFence, processErr.Error())
 			})
 			return errors.Join(ErrInboundProcess, processErr)
+		}
+		if identityResult.Status == identityport.IngestAttributed {
+			result, processErr = service.entrants.Process(ctx, ChannelAcquisitionEntrantInput{InboxID: record.ID, SourceKey: record.SourceKey, Fact: *record.ExternalContact})
+			if processErr != nil || result.Receipt.Status != contactport.ChannelAcquisitionEntrantAttributed && result.Receipt.Status != contactport.ChannelAcquisitionEntrantReconciled {
+				_ = service.uow.Within(ctx, func(txCtx context.Context) error {
+					return service.store.FailInbound(txCtx, record.ID, record.LeaseFence, ErrInboundProcess.Error())
+				})
+				return errors.Join(ErrInboundProcess, processErr)
+			}
+			return service.complete(ctx, record, "processed")
 		}
 		state := "pending_identity"
 		if identityResult.Status == identityport.IngestConflict {

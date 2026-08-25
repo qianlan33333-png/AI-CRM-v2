@@ -7751,6 +7751,81 @@ export interface ChannelAcquisitionAssetReconciliation {
   entrant_ready: boolean;
 }
 
+export type ChannelAcquisitionEntrantReceiptKind =
+  (typeof ChannelAcquisitionEntrantReceiptKind)[keyof typeof ChannelAcquisitionEntrantReceiptKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionEntrantReceiptKind = {
+  contact_way_qrcode: "contact_way_qrcode",
+  customer_acquisition_link: "customer_acquisition_link",
+} as const;
+
+export type ChannelAcquisitionEntrantReceiptStatus =
+  (typeof ChannelAcquisitionEntrantReceiptStatus)[keyof typeof ChannelAcquisitionEntrantReceiptStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionEntrantReceiptStatus = {
+  correlated: "correlated",
+  attributed: "attributed",
+  pending_identity: "pending_identity",
+  unmatched_asset: "unmatched_asset",
+  ambiguous_asset: "ambiguous_asset",
+  conflict: "conflict",
+  ignored: "ignored",
+  reconciled: "reconciled",
+} as const;
+
+export interface ChannelAcquisitionEntrantReceipt {
+  /** @minimum 1 */
+  receipt_id: number;
+  /** @minimum 1 */
+  channel_id: number;
+  /** @pattern ^eer_[1-9][0-9]*$ */
+  effect_id: string;
+  kind: ChannelAcquisitionEntrantReceiptKind;
+  /** @minimum 1 */
+  asset_version: number;
+  status: ChannelAcquisitionEntrantReceiptStatus;
+  /** @minimum 1 */
+  customer_id?: number;
+  /** @minimum 1 */
+  customer_event_id?: number;
+  occurred_at: string;
+  reconciled_at?: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  reconcile_reason?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChannelAcquisitionEntrantReceiptListResponse {
+  /** @maxItems 50 */
+  items: ChannelAcquisitionEntrantReceipt[];
+  /**
+   * @minimum 1
+   * @maximum 50
+   */
+  limit: number;
+  has_more: boolean;
+  /** @maxLength 256 */
+  next_cursor: string;
+}
+
+export interface ChannelAcquisitionEntrantReceiptReconcileRequest {
+  /** @pattern ^eer_[1-9][0-9]*$ */
+  effect_id: string;
+  /** @minimum 1 */
+  customer_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  reason: string;
+}
+
 export type LegacyChannelWriteRequestChannelType =
   (typeof LegacyChannelWriteRequestChannelType)[keyof typeof LegacyChannelWriteRequestChannelType];
 
@@ -16187,6 +16262,18 @@ export type ListLegacyChannelEntrantsParams = {
 };
 
 export type ListChannelAcquisitionAssetsParams = {
+  /**
+   * @minimum 1
+   * @maximum 50
+   */
+  limit?: number;
+  /**
+   * @maxLength 256
+   */
+  cursor?: string;
+};
+
+export type ListChannelAcquisitionEntrantReceiptsParams = {
   /**
    * @minimum 1
    * @maximum 50
@@ -30631,6 +30718,270 @@ export const reconcileChannelAcquisitionAsset = async (
     status: res.status,
     headers: res.headers,
   } as reconcileChannelAcquisitionAssetResponse;
+};
+
+/**
+ * @summary List safe local acquisition entrant receipts for one channel and administrator CorpID
+ */
+export type listChannelAcquisitionEntrantReceiptsResponse200 = {
+  data: ChannelAcquisitionEntrantReceiptListResponse;
+  status: 200;
+};
+
+export type listChannelAcquisitionEntrantReceiptsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listChannelAcquisitionEntrantReceiptsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listChannelAcquisitionEntrantReceiptsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listChannelAcquisitionEntrantReceiptsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listChannelAcquisitionEntrantReceiptsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listChannelAcquisitionEntrantReceiptsResponseSuccess =
+  listChannelAcquisitionEntrantReceiptsResponse200 & {
+    headers: Headers;
+  };
+export type listChannelAcquisitionEntrantReceiptsResponseError = (
+  | listChannelAcquisitionEntrantReceiptsResponse400
+  | listChannelAcquisitionEntrantReceiptsResponse401
+  | listChannelAcquisitionEntrantReceiptsResponse403
+  | listChannelAcquisitionEntrantReceiptsResponse404
+  | listChannelAcquisitionEntrantReceiptsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listChannelAcquisitionEntrantReceiptsResponse =
+  | listChannelAcquisitionEntrantReceiptsResponseSuccess
+  | listChannelAcquisitionEntrantReceiptsResponseError;
+
+export const getListChannelAcquisitionEntrantReceiptsUrl = (
+  channelId: number,
+  params?: ListChannelAcquisitionEntrantReceiptsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/channels/${channelId}/acquisition-entrant-receipts?${stringifiedParams}`
+    : `/api/admin/channels/${channelId}/acquisition-entrant-receipts`;
+};
+
+export const listChannelAcquisitionEntrantReceipts = async (
+  channelId: number,
+  params?: ListChannelAcquisitionEntrantReceiptsParams,
+  options?: RequestInit,
+): Promise<listChannelAcquisitionEntrantReceiptsResponse> => {
+  const res = await fetch(
+    getListChannelAcquisitionEntrantReceiptsUrl(channelId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listChannelAcquisitionEntrantReceiptsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listChannelAcquisitionEntrantReceiptsResponse;
+};
+
+/**
+ * @summary Read one channel- and CorpID-scoped safe entrant receipt
+ */
+export type getChannelAcquisitionEntrantReceiptResponse200 = {
+  data: ChannelAcquisitionEntrantReceipt;
+  status: 200;
+};
+
+export type getChannelAcquisitionEntrantReceiptResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getChannelAcquisitionEntrantReceiptResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getChannelAcquisitionEntrantReceiptResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getChannelAcquisitionEntrantReceiptResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getChannelAcquisitionEntrantReceiptResponseSuccess =
+  getChannelAcquisitionEntrantReceiptResponse200 & {
+    headers: Headers;
+  };
+export type getChannelAcquisitionEntrantReceiptResponseError = (
+  | getChannelAcquisitionEntrantReceiptResponse401
+  | getChannelAcquisitionEntrantReceiptResponse403
+  | getChannelAcquisitionEntrantReceiptResponse404
+  | getChannelAcquisitionEntrantReceiptResponse503
+) & {
+  headers: Headers;
+};
+
+export type getChannelAcquisitionEntrantReceiptResponse =
+  | getChannelAcquisitionEntrantReceiptResponseSuccess
+  | getChannelAcquisitionEntrantReceiptResponseError;
+
+export const getGetChannelAcquisitionEntrantReceiptUrl = (
+  channelId: number,
+  receiptId: number,
+) => {
+  return `/api/admin/channels/${channelId}/acquisition-entrant-receipts/${receiptId}`;
+};
+
+export const getChannelAcquisitionEntrantReceipt = async (
+  channelId: number,
+  receiptId: number,
+  options?: RequestInit,
+): Promise<getChannelAcquisitionEntrantReceiptResponse> => {
+  const res = await fetch(
+    getGetChannelAcquisitionEntrantReceiptUrl(channelId, receiptId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getChannelAcquisitionEntrantReceiptResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getChannelAcquisitionEntrantReceiptResponse;
+};
+
+/**
+ * @summary Bind one unresolved entrant receipt to an exact published asset and customer
+ */
+export type reconcileChannelAcquisitionEntrantReceiptResponse200 = {
+  data: ChannelAcquisitionEntrantReceipt;
+  status: 200;
+};
+
+export type reconcileChannelAcquisitionEntrantReceiptResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type reconcileChannelAcquisitionEntrantReceiptResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reconcileChannelAcquisitionEntrantReceiptResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reconcileChannelAcquisitionEntrantReceiptResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type reconcileChannelAcquisitionEntrantReceiptResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type reconcileChannelAcquisitionEntrantReceiptResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type reconcileChannelAcquisitionEntrantReceiptResponseSuccess =
+  reconcileChannelAcquisitionEntrantReceiptResponse200 & {
+    headers: Headers;
+  };
+export type reconcileChannelAcquisitionEntrantReceiptResponseError = (
+  | reconcileChannelAcquisitionEntrantReceiptResponse400
+  | reconcileChannelAcquisitionEntrantReceiptResponse401
+  | reconcileChannelAcquisitionEntrantReceiptResponse403
+  | reconcileChannelAcquisitionEntrantReceiptResponse404
+  | reconcileChannelAcquisitionEntrantReceiptResponse409
+  | reconcileChannelAcquisitionEntrantReceiptResponse503
+) & {
+  headers: Headers;
+};
+
+export type reconcileChannelAcquisitionEntrantReceiptResponse =
+  | reconcileChannelAcquisitionEntrantReceiptResponseSuccess
+  | reconcileChannelAcquisitionEntrantReceiptResponseError;
+
+export const getReconcileChannelAcquisitionEntrantReceiptUrl = (
+  channelId: number,
+  receiptId: number,
+) => {
+  return `/api/admin/channels/${channelId}/acquisition-entrant-receipts/${receiptId}/reconcile`;
+};
+
+export const reconcileChannelAcquisitionEntrantReceipt = async (
+  channelId: number,
+  receiptId: number,
+  channelAcquisitionEntrantReceiptReconcileRequest: ChannelAcquisitionEntrantReceiptReconcileRequest,
+  options?: RequestInit,
+): Promise<reconcileChannelAcquisitionEntrantReceiptResponse> => {
+  const res = await fetch(
+    getReconcileChannelAcquisitionEntrantReceiptUrl(channelId, receiptId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(channelAcquisitionEntrantReceiptReconcileRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reconcileChannelAcquisitionEntrantReceiptResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reconcileChannelAcquisitionEntrantReceiptResponse;
 };
 
 /**

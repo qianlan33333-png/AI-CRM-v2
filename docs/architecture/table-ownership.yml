@@ -50,6 +50,7 @@ owners:
       - channel_acquisition_asset_observed_results
       - channel_acquisition_asset_reconciliation_facts
       - channel_acquisition_legacy_archives
+      - channel_acquisition_entrant_receipts
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
@@ -84,6 +85,7 @@ owners:
       channel_acquisition_asset_observed_results: immutable_digest_only_observed_provider_outcomes_bound_to_their_attempt
       channel_acquisition_asset_reconciliation_facts: immutable_digest_only_manual_reconciliation_facts_bound_to_their_EER_fence
       channel_acquisition_legacy_archives: legacy_unverified_channel_config_digest_only_archive_without_provider_effect
+      channel_acquisition_entrant_receipts: corp_scoped_typed_callback_disposition_and_actor_idempotent_manual_attribution_receipt_without_provider_payload
 
   identity:
     package: internal/identity

@@ -192,6 +192,7 @@ type Handler struct {
 	channelEntrants         http.Handler
 	channelAcquisition      http.Handler
 	channelAcquisitionAsset http.Handler
+	entrantReceipts         http.Handler
 	media                   legacyMediaApplication
 	imageDeletes            legacyImageDeleteApplication
 	attachments             legacyAttachmentApplication
