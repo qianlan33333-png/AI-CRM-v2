@@ -77,6 +77,24 @@ River Claim/Attempt/Complete → `outcome_unknown` → 人工 reconcile → term
   up/down/up、populated down guard、fake receipt、unknown/manual reconcile、actor receipt，
   并断言 `delivery_proven=false`。这不是 Provider/WeCom 交付或送达证据。
 
+## A01 Automation Rules Runtime（V2-native；不硬映射旧 Matrix）
+
+`00080_automation_rules_runtime.sql` 交付闭合的 `customer.tag_applied` 规则、不可变版本、
+唯一 enrollment、action ledger 与 EER `outbound_message` handoff。规则 mutation、tag event
+消费、EER binding 与 River job 都是本地后端事实；默认 adapter 为 disabled。
+
+- `record` action 只完成本地收据；`outbound_message` 仅接受已验证的
+  `text.notice.v1` template reference，并在同一 UoW 固化 digest-only EER envelope。
+- `outcome_unknown` 不得自动 retry，只能经 generation/fence/evidence-digest 的人工
+  reconcile 收口；本地 `completed` 仍不构成 Provider 接受或送达证明。
+- `make p4-automation-rules-runtime-acceptance` 在隔离 PG16.14 验证精确 00080、空库
+  down/up、规则快照、幂等 enrollment、EER/River handoff、unknown/manual reconcile 与
+  populated down guard。
+- 旧 Matrix 没有与该 closed V2 rule/runtime 可靠 1:1 的条目，因此本包对
+  `docs/feature-matrix.csv` 为 0 diff；它登记为 V2 后端能力，不反填或重复声明既有
+  Automation Agents 与 Group Ops 行。历史 automation 表仍按 data-migration ledger 的
+  原有证据状态保留，未执行迁移。
+
 ## 冻结口径
 
 本收据固定的代码基线是
@@ -221,6 +239,7 @@ River Claim/Attempt/Complete → `outcome_unknown` → 人工 reconcile → term
 | `00069_sidebar_customer_profile_receipts.sql` — S05 Sidebar Local Core | 九项是 V2 后端投影/本地写入，不交付旧 UI debounce、JSSDK/OAuth 或真实 thumbnail。关联的 S05-022/023/024/026/030/031/032/033 均保持 `NOT_STARTED/NOT_RUN`。 | context mint 可选 session；其余 human session + admin/ops global 或 sales owner scope。两个 PUT 要 CSRF + idempotency；profile UoW/receipt/CAS，periodic remark 复用 member receipt。 | `internal/sidebar/app/service_test.go`；`internal/sidebar/http/handler_test.go`；`internal/contact/app/sidebar_profile_test.go`；`acceptance/sidebar/local_core_pg16.sh`。 | `none`；thumbnail 固定 local pending，不生成图片；无 Provider、发送或支付效果。 |
 | `00070_contact_owner_reassignment.sql` — Contact Owner Reassignment Local Core | 六项为 Contact-owned CSV preview/execute/result 的 V2 本地流；S07-110..115 都保持 `NOT_STARTED/NOT_RUN`，且 S07-023 被排除。local receipt/result 不等于 WeCom transfer 或旧 XLSX 行为。 | 仅 global admin `contact.owner_reassignment`；写 CSRF + Idempotency-Key，preview 和 execute 都 actor-bound。customer/staff lock、expected version、UoW、completed receipt、`customer_events` 和 event log 同事务。 | `internal/contact/app/owner_reassignment_test.go`；`internal/contact/http/owner_reassignment_handler_test.go`；`internal/contact/store/owner_reassignment_integration_test.go`；`acceptance/contact_owner_reassignment/local_core_pg16.sh`。 | `none`；不读取 WeCom userid、不调用 Provider、不做企微转属。 |
 | `00073_internal_event_safe_exports.sql` — EE01 Internal Event Safe Export (**local checkpoint; not in the frozen 10/73 denominator**) | Three Events-owned native operations freeze only local `event_log` / `event_deliveries` rows. No Radar, USER OPS, legacy Matrix, River, Outbound, Provider, or delivery claim is added. | global admin `admin.read`; create requires human session, CSRF and Idempotency-Key; actor-bound reads. Header/rows/audit/completed receipt share one UoW; versioned row/result digests are reconciled on replay/read/download and any missing or changed audit fails closed without repair. | `internal/events/app/safe_export_test.go`、`internal/events/http/safe_export_handler_test.go`; `make p4-ee01-internal-event-safe-export-acceptance` creates and cleans a PG16.14 dedicated DB and proves capacity, tamper, side-effect and down-guard negatives. | `none / NOT_EXECUTED`; no delivery enqueue, River job, outbound task or Provider call. |
+| `00080_automation_rules_runtime.sql` — A01 Automation Rules Runtime (**V2 backend capability; not in the frozen 10/73 denominator**) | Closed `customer.tag_applied` rules, immutable versions, enrollments and action snapshots; no reliable legacy Matrix 1:1 mapping is claimed. | admin/ops rule read/write; mutations use CSRF + actor-bound idempotency; tag event enrollment and EER binding share one UoW. | `internal/automation/...` focused/race tests；`make p4-automation-rules-runtime-acceptance` on PG16.14. | Provider adapter disabled；`outcome_unknown` only manual reconcile；deployment and real delivery `NOT_EXECUTED`. |
 
 所有表中命令操作都遵循其 OpenAPI `x-aicrm-session-bound-csrf` 与
 `x-aicrm-external-effect: none` 合同；“receipt”只证明本地数据库提交/重放，不证明

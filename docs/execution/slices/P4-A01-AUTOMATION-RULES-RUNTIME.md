@@ -26,5 +26,18 @@ historical migration, and any real external dispatch. This PR claims EER and
 River local acceptance only; it does not claim Provider execution, receipt,
 or delivery.
 
+Evidence classification:
+
+- `docs/feature-matrix.csv`: 0 diff. The closed V2 rule/runtime has no proven
+  legacy 1:1 row, so existing Automation Agents and Group Ops rows are not
+  reused or marked complete.
+- `docs/replacement/legacy-route-disposition-ledger.csv`: 0 diff. No legacy
+  route is reclassified by inference; the package exposes native V2 APIs.
+- `docs/replacement/data-migration-ledger.csv`: 0 diff. Historical automation
+  candidates retain their existing evidence status; no source data migration
+  has run.
+- `docs/evidence/p4/backend-capability-ledger.md`: records A01 as a V2 backend
+  capability outside the frozen legacy-local 10/73 denominator.
+
 Acceptance: `make p4-automation-rules-runtime-acceptance` with
 `P4AUTOMATIONRULES_TEST_DATABASE_URL` set to the approved dedicated PG16 DB.
