@@ -46,6 +46,13 @@ AICRM_GROUP_OPS_TEST_DATABASE_URL="$database_url" /usr/bin/env -u BASH_ENV -u EN
 fresh_database
 [[ "$(waterline)" = "85" ]]
 psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
+  "WITH plan AS (INSERT INTO group_ops_plans (name, status, revision, created_by, updated_by, created_at, updated_at) VALUES ('Material Guard', 'draft', 1, 1, 1, now(), now()) RETURNING id) INSERT INTO group_ops_plan_nodes (plan_id, position, kind, message_text, delay_minutes, material_reference) SELECT id, 1, 'message', 'guard', 0, 'material:guard' FROM plan"
+expect_facts_reject_down
+psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "DELETE FROM group_ops_plan_nodes WHERE material_reference = 'material:guard'; DELETE FROM group_ops_plans WHERE name = 'Material Guard'"
+
+fresh_database
+[[ "$(waterline)" = "85" ]]
+psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
   "INSERT INTO group_ops_directory_groups (chat_reference, owner_staff_id, display_name, member_count, source_digest, refreshed_at) VALUES ('guard-group', 1, 'Guard Group', 0, 'sha256:' || repeat('0', 64), now())"
 expect_facts_reject_down
 psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "DELETE FROM group_ops_directory_groups WHERE chat_reference = 'guard-group'"

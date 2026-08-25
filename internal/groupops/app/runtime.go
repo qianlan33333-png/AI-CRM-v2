@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -169,14 +170,37 @@ func (service *RuntimeService) acceptPlan(ctx context.Context, command groupopsp
 		if !validDetail(detail, command.PlanID) || detail.Plan.Status != groupopsport.PlanActive || !contentValidation(detail).Valid {
 			return ErrStateConflict
 		}
-		existing, err := service.runtime.ListExecutionKeys(tx, command.PlanID, detail.Plan.Revision)
-		if err != nil {
-			return err
-		}
 		dueOnly := command.Trigger == groupopsport.RunTriggerDue
 		allDrafts, _ := scheduledExecutions(detail, now, nil, dueOnly)
 		if len(allDrafts) == 0 {
 			return ErrStateConflict
+		}
+		operation := runtimeReceiptOperation(command.Trigger)
+		payload, digestErr := runtimeReceiptPayload(command, detail.Plan.Revision, allDrafts)
+		if digestErr != nil {
+			return digestErr
+		}
+		payloadDigest, digestErr := digest(payload)
+		if digestErr != nil {
+			return ErrInvalid
+		}
+		reservation := Reservation{ActorScope: command.AcceptedBy, KeyDigest: sha256.Sum256([]byte(command.IdempotencyKey)), PayloadDigest: payloadDigest, CreatedAt: now}
+		receipt, owned, reserveErr := service.plans.Reserve(tx, operation, reservation)
+		if reserveErr != nil || !receiptMatches(receipt, operation, reservation) {
+			return errors.Join(ErrUnavailable, reserveErr)
+		}
+		if subtle.ConstantTimeCompare(receipt.PayloadDigest[:], payloadDigest[:]) != 1 {
+			return ErrConflict
+		}
+		if !owned {
+			if receipt.State != "completed" || !decode(receipt.ResultSnapshot, &summary) || !validRuntimeSummary(summary, command, detail.Plan.Revision) {
+				return ErrUnavailable
+			}
+			return nil
+		}
+		existing, err := service.runtime.ListExecutionKeys(tx, command.PlanID, detail.Plan.Revision)
+		if err != nil {
+			return err
 		}
 		drafts := allDrafts
 		if dueOnly {
@@ -191,7 +215,7 @@ func (service *RuntimeService) acceptPlan(ctx context.Context, command groupopsp
 			return err
 		}
 		for _, draft := range drafts {
-			content, contentDigest, material, materialDigest, payloadDigest, err := snapshots(draft.node)
+			content, contentDigest, material, materialDigest, executionPayloadDigest, err := snapshots(draft.node)
 			if err != nil {
 				return err
 			}
@@ -199,7 +223,7 @@ func (service *RuntimeService) acceptPlan(ctx context.Context, command groupopsp
 			envelope, err := eer.NewEnvelope(eer.EnvelopeInput{
 				Owner: eer.OwnerGroupOps, Kind: eer.KindGroupOpsBroadcast,
 				SourceRefDigest: runtimeDigest("group-ops-source", string(sourceKey), strconv.FormatInt(command.PlanID, 10), strconv.FormatInt(detail.Plan.Revision, 10), strconv.FormatInt(draft.node.ID, 10)),
-				TargetRefDigest: targetDigest, PayloadDigest: payloadDigest,
+				TargetRefDigest: targetDigest, PayloadDigest: executionPayloadDigest,
 				PolicyVersionHash: runtimeDigest("group-ops-policy", "v1", "provider-disabled-default"),
 			})
 			if err != nil {
@@ -218,12 +242,69 @@ func (service *RuntimeService) acceptPlan(ctx context.Context, command groupopsp
 			}
 		}
 		summary, err = service.runtime.ReadRunSummary(tx, run.ID)
-		return err
+		if err != nil || !validRuntimeSummary(summary, command, detail.Plan.Revision) {
+			return errors.Join(ErrUnavailable, err)
+		}
+		snapshot, marshalErr := json.Marshal(summary)
+		if marshalErr != nil {
+			return marshalErr
+		}
+		completed, completeErr := service.plans.Complete(tx, receipt.ID, snapshot, now)
+		if completeErr != nil || !receiptMatches(completed, operation, reservation) || completed.State != "completed" || !jsonEqual(completed.ResultSnapshot, snapshot) {
+			return ErrUnavailable
+		}
+		return nil
 	})
 	if err != nil {
 		return groupopsport.RunSummary{}, classifyRuntime(err)
 	}
 	return summary, nil
+}
+
+type runtimeReceiptSnapshot struct {
+	NodeID          int64     `json:"node_id"`
+	NodePosition    int32     `json:"node_position"`
+	NodeKind        string    `json:"node_kind"`
+	TargetReference string    `json:"target_reference"`
+	ScheduledFor    time.Time `json:"scheduled_for"`
+	ContentDigest   string    `json:"content_digest"`
+	MaterialDigest  string    `json:"material_digest"`
+}
+
+type runtimeReceiptCommand struct {
+	PlanID       int64                    `json:"plan_id"`
+	Trigger      groupopsport.RunTrigger  `json:"trigger"`
+	AcceptedBy   string                   `json:"accepted_by"`
+	PlanRevision int64                    `json:"plan_revision"`
+	Snapshot     []runtimeReceiptSnapshot `json:"snapshot"`
+}
+
+func runtimeReceiptOperation(trigger groupopsport.RunTrigger) string {
+	return "runtime_" + string(trigger)
+}
+
+func runtimeReceiptPayload(command groupopsport.AcceptPlanCommand, revision int64, drafts []scheduledExecution) (runtimeReceiptCommand, error) {
+	result := runtimeReceiptCommand{PlanID: command.PlanID, Trigger: command.Trigger, AcceptedBy: command.AcceptedBy, PlanRevision: revision, Snapshot: make([]runtimeReceiptSnapshot, len(drafts))}
+	for index, draft := range drafts {
+		_, content, _, material, _, err := snapshots(draft.node)
+		if err != nil {
+			return runtimeReceiptCommand{}, err
+		}
+		result.Snapshot[index] = runtimeReceiptSnapshot{NodeID: draft.node.ID, NodePosition: draft.node.Position, NodeKind: string(draft.node.Kind), TargetReference: draft.target, ScheduledFor: draft.scheduledFor.UTC(), ContentDigest: string(content), MaterialDigest: string(material)}
+	}
+	return result, nil
+}
+
+func validRuntimeSummary(value groupopsport.RunSummary, command groupopsport.AcceptPlanCommand, revision int64) bool {
+	if value.Run.ID < 1 || value.Run.PlanID != command.PlanID || value.Run.Trigger != command.Trigger || value.Run.PlanRevision != revision || value.Run.AcceptedBy != command.AcceptedBy || value.Run.ScheduledFor.IsZero() || value.Run.AcceptedAt.IsZero() || value.ProviderExecutionEligible || value.RealExternalCallExecuted || value.ProviderAccepted != 0 || value.DeliveryProven != 0 || value.OutcomeUnknown != 0 || value.Reconciled != 0 || value.FinalFailed != 0 || value.Accepted != int32(len(value.Executions)) {
+		return false
+	}
+	for _, execution := range value.Executions {
+		if execution.ID < 1 || execution.RunID != value.Run.ID || execution.PlanID != command.PlanID || execution.PlanRevision != revision || execution.State != groupopsport.ExecutionAccepted || execution.ProviderAccepted || execution.DeliveryProven || execution.AttemptCount != 0 || execution.ProviderReceiptPresent || execution.ReconciliationEvidencePresent || execution.ExternalEffectID == "" {
+			return false
+		}
+	}
+	return true
 }
 
 func (service *RuntimeService) ListExecutions(ctx context.Context, planID int64, limit, offset int32) (groupopsport.ExecutionPage, error) {
@@ -274,26 +355,10 @@ func (service *RuntimeService) ManualReconcile(ctx context.Context, command grou
 	if ctx == nil || service == nil || command.ExecutionID < 1 || command.ActorID < 1 || !validKey(command.IdempotencyKey) || command.Generation < 1 || command.Fence < 1 || command.LeaseExpiresAt.IsZero() || !validRuntimeDigest(command.EvidenceDigest) {
 		return groupopsport.Execution{}, ErrInvalid
 	}
-	var result groupopsport.Execution
-	err := service.uow.Within(ctx, func(tx context.Context) error {
-		current, err := service.runtime.GetExecution(tx, command.ExecutionID)
-		if err != nil {
-			return err
-		}
-		if current.State != groupopsport.ExecutionOutcomeUnknown {
-			return ErrStateConflict
-		}
-		projection, _, err := service.effects.Reconcile(tx, eer.ReconcileCommand{Lease: eer.Lease{EffectID: current.ExternalEffectID, Generation: command.Generation, Fence: command.Fence, ExpiresAt: command.LeaseExpiresAt}, ReceiptKeyDigest: runtimeDigest("group-ops-manual-reconcile", strconv.FormatInt(command.ActorID, 10), command.IdempotencyKey), EvidenceDigest: eer.Digest(command.EvidenceDigest)})
-		if err != nil || projection.State != eer.StateReconciled {
-			return errors.Join(ErrUnavailable, err)
-		}
-		result, err = service.runtime.ReconcileExecution(tx, command.ExecutionID, command.EvidenceDigest, command.DeliveryProven, service.nowUTC())
-		return err
-	})
-	if err != nil {
-		return groupopsport.Execution{}, classifyRuntime(err)
-	}
-	return result, nil
+	// No adapter writes provider outcome evidence in this package. Reconciliation
+	// is therefore intentionally unavailable instead of claiming a local-only
+	// EER transition as a completed external outcome.
+	return groupopsport.Execution{}, ErrProviderDisabled
 }
 
 func (service *RuntimeService) ListOperationMembers(ctx context.Context, pageSize int32) (groupopsport.OperationMemberPage, error) {
@@ -425,14 +490,18 @@ func scheduledExecutions(detail groupopsport.Detail, now time.Time, existing map
 
 func snapshots(node groupopsport.Node) (json.RawMessage, eer.Digest, json.RawMessage, eer.Digest, eer.Digest, error) {
 	content, err := json.Marshal(struct {
-		MessageText string `json:"message_text"`
-	}{node.MessageText})
+		SchemaVersion int32  `json:"schema_version"`
+		NodeKind      string `json:"node_kind"`
+		MessageText   string `json:"message_text"`
+	}{SchemaVersion: 1, NodeKind: string(node.Kind), MessageText: node.MessageText})
 	if err != nil {
 		return nil, "", nil, "", "", err
 	}
 	material, err := json.Marshal(struct {
-		Reference string `json:"reference"`
-	}{node.MaterialRef})
+		SchemaVersion int32  `json:"schema_version"`
+		NodeKind      string `json:"node_kind"`
+		Reference     string `json:"reference"`
+	}{SchemaVersion: 1, NodeKind: string(node.Kind), Reference: node.MaterialRef})
 	if err != nil {
 		return nil, "", nil, "", "", err
 	}

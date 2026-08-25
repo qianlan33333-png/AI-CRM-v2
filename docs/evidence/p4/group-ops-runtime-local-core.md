@@ -9,7 +9,7 @@ This evidence is local-branch evidence only; it is not a merge, deployment, Prov
 - Existing `00063` plans, members, group assets, nodes, webhook descriptor, and content preview remain the local configuration source.
 - `00085` adds immutable runs and executions, group-directory and refresh receipts, node material references, and an External Effect Registry owner/kind for `group_ops_broadcast`.
 - Run-due, broadcast, and webhook acceptance atomically bind fixed content and material snapshots to EER. A `202` means EER acceptance only. It does not mean Provider acceptance or delivery.
-- Execution projection keeps `provider_accepted` and `delivery_proven` independent. `outcome_unknown` has no automatic retry transition and can move only through the manual, lease-fenced reconcile command.
+- Execution projection keeps `provider_accepted` and `delivery_proven` independent. No Group Ops outcome writer is wired in this package, so manual reconciliation explicitly returns `provider_disabled`; it does not claim an EER acceptance as a Provider or delivery outcome.
 - Group and operation-member refresh use an injected read-only source. The production composition root injects no source, so refresh returns `provider_disabled` and performs no Provider call.
 - Public broadcast and webhook protocols use an injected authenticator. The production composition root injects no authenticator, so both routes fail closed with `503`; this package does not invent the pending API-client JWT or webhook-HMAC credential policy.
 
@@ -21,7 +21,7 @@ The exact backend routes are registered and described in OpenAPI, including:
 - group directory and picker read/explicit refresh;
 - `GET/POST /api/admin/common/operation-members` for `scope=group_ops`, with USER OPS responsibility folded into this package and no separate board;
 - `POST /api/automation/group-ops/broadcast` and `POST /api/automation/group-ops/webhooks/{webhook_key}`;
-- execution projection and manual reconcile as native runtime operations.
+- execution projection; the reconcile route is deliberately documented as unavailable (`503 provider_disabled`) until an outcome writer is introduced in a separately authorized package.
 
 `docs/api-mapping.jsonl` and the deterministic route/protocol ledgers carry 25 exact Group Ops legacy mappings. `LEGACY-API-0165` remains `DEFERRED_POST_LAUNCH`; the native execution projection does not forge that frozen mapping. `LEGACY-S06-036` and the other cancelled USER OPS rows remain `DEPRECATED`.
 
@@ -29,9 +29,9 @@ The exact backend routes are registered and described in OpenAPI, including:
 
 - PG server: PostgreSQL `16.14` (`server_version_num=160014`).
 - Fresh migration reaches waterline `85`.
-- A populated Group Ops runtime table blocks down migration and leaves waterline `85`.
+- A populated Group Ops runtime table, runtime receipt, or `material_reference` fact blocks down migration and leaves waterline `85`.
 - Empty rollback and reapply complete `85 -> 78 -> 85`.
-- Store integration verifies immutable content/material snapshots and EER binding in one transaction.
+- Store integration verifies versioned content/material snapshots and EER binding in one transaction; HTTP acceptance verifies scoped receipt replay, changed-snapshot conflict, and rollback atomically.
 - No legacy production data import or backfill ran. The data-migration ledger is therefore unchanged.
 - This isolated lane intentionally lacks reserved migrations `00079` through `00084`; `migration-mapping-contract` must be rerun only after root serial integration restores the contiguous migration set.
 

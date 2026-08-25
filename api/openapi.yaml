@@ -5609,7 +5609,8 @@ paths:
     post:
       tags: [p4-group-ops]
       operationId: reconcileGroupOpsExecution
-      summary: Manually reconcile one outcome_unknown execution with lease-fenced evidence
+      summary: Unavailable until a Group Ops outcome writer is configured
+      description: "This fail-closed placeholder always returns provider_disabled. It does not reconcile an EER acceptance into a Provider or delivery outcome."
       security: [{ AdminSession: [] }]
       x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
       x-aicrm-capability: operations.manage
@@ -5617,20 +5618,18 @@ paths:
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: required
       x-aicrm-data-classification: internal
-      x-aicrm-data-source: group_ops.execution_reconciliation
-      x-aicrm-external-effect: manual_reconcile_only
+      x-aicrm-data-source: group_ops.execution_reconciliation_unavailable
+      x-aicrm-external-effect: none
       parameters:
         - { name: execution_id, in: path, required: true, schema: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 } }
         - { $ref: "#/components/parameters/CSRFToken" }
         - { $ref: "#/components/parameters/IdempotencyKey" }
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsReconcileRequest" } } } }
       responses:
-        "200": { description: "Reconciled projection; delivery_proven is true only when explicit evidence says so.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsExecution" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "409": { $ref: "#/components/responses/Conflict" }
-        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+        "503": { description: "No Group Ops outcome writer is configured; Provider and delivery reconciliation are disabled.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
   /api/automation/group-ops/broadcast:
     post:
       tags: [p4-group-ops]

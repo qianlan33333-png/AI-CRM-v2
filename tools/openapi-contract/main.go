@@ -226,7 +226,7 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"putGroupOpsWebhookDescriptor": {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/webhook-descriptor", "PUT", p4GroupOpsLocalEvidence, "operations.manage", "human_session", "internal", "group_ops.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"previewGroupOpsPlanContent":   {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/content/preview", "POST", p4GroupOpsLocalEvidence, "admin.read", "human_session", "internal", "group_ops.local_read_model", "required", map[string]string{"admin": "global"}},
 	"listGroupOpsExecutions":       {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/executions", "GET", p4GroupOpsRuntimeEvidence, "admin.read", "human_session", "internal", "group_ops.execution_projection", "none", map[string]string{"admin": "global"}},
-	"reconcileGroupOpsExecution":   {"/api/admin/automation-conversion/group-ops/plans/executions/{execution_id}/reconcile", "POST", p4GroupOpsRuntimeEvidence, "operations.manage", "human_session", "internal", "group_ops.execution_reconciliation", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"reconcileGroupOpsExecution":   {"/api/admin/automation-conversion/group-ops/plans/executions/{execution_id}/reconcile", "POST", p4GroupOpsRuntimeEvidence, "operations.manage", "human_session", "internal", "group_ops.execution_reconciliation_unavailable", "required", map[string]string{"admin": "global", "ops": "global"}},
 
 	"getCloudOrchestratorWorkspace":              {"/admin/cloud-orchestrator", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getCloudOrchestratorPlansWorkspace":         {"/admin/cloud-orchestrator/plans", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
@@ -286,7 +286,7 @@ var groupOpsCanonicalExternalEffects = map[string]string{
 	"acceptGroupOpsRunDue":       "eer_accepted_provider_disabled",
 	"acceptGroupOpsBroadcast":    "eer_accepted_provider_disabled",
 	"acceptGroupOpsWebhook":      "eer_accepted_provider_disabled",
-	"reconcileGroupOpsExecution": "manual_reconcile_only",
+	"reconcileGroupOpsExecution": "none",
 }
 
 var groupOpsCanonicalProtocolAuth = map[string]string{

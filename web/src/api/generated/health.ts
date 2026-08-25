@@ -35873,13 +35873,9 @@ export const listGroupOpsExecutions = async (
 };
 
 /**
- * @summary Manually reconcile one outcome_unknown execution with lease-fenced evidence
+ * This fail-closed placeholder always returns provider_disabled. It does not reconcile an EER acceptance into a Provider or delivery outcome.
+ * @summary Unavailable until a Group Ops outcome writer is configured
  */
-export type reconcileGroupOpsExecutionResponse200 = {
-  data: GroupOpsExecution;
-  status: 200;
-};
-
 export type reconcileGroupOpsExecutionResponse400 = {
   data: BadRequestResponse;
   status: 400;
@@ -35895,33 +35891,22 @@ export type reconcileGroupOpsExecutionResponse403 = {
   status: 403;
 };
 
-export type reconcileGroupOpsExecutionResponse409 = {
-  data: ConflictResponse;
-  status: 409;
-};
-
 export type reconcileGroupOpsExecutionResponse503 = {
-  data: ServiceUnavailableResponse;
+  data: GroupOpsError;
   status: 503;
 };
 
-export type reconcileGroupOpsExecutionResponseSuccess =
-  reconcileGroupOpsExecutionResponse200 & {
-    headers: Headers;
-  };
 export type reconcileGroupOpsExecutionResponseError = (
   | reconcileGroupOpsExecutionResponse400
   | reconcileGroupOpsExecutionResponse401
   | reconcileGroupOpsExecutionResponse403
-  | reconcileGroupOpsExecutionResponse409
   | reconcileGroupOpsExecutionResponse503
 ) & {
   headers: Headers;
 };
 
 export type reconcileGroupOpsExecutionResponse =
-  | reconcileGroupOpsExecutionResponseSuccess
-  | reconcileGroupOpsExecutionResponseError;
+  reconcileGroupOpsExecutionResponseError;
 
 export const getReconcileGroupOpsExecutionUrl = (executionId: string) => {
   return `/api/admin/automation-conversion/group-ops/plans/executions/${executionId}/reconcile`;

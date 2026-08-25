@@ -24,7 +24,7 @@ func TestRuntimeRunDueBindsImmutableContentAndMaterialSnapshotsToEER(t *testing.
 		t.Fatalf("summary=%+v err=%v accepts=%d", summary, err, effects.accepts)
 	}
 	for _, draft := range runtime.drafts {
-		if string(draft.ContentSnapshot) != `{"message_text":"first"}` || string(draft.MaterialSnapshot) != `{"reference":"material:first"}` || draft.ExternalEffectID == "" {
+		if string(draft.ContentSnapshot) != `{"schema_version":1,"node_kind":"message","message_text":"first"}` || string(draft.MaterialSnapshot) != `{"schema_version":1,"node_kind":"message","reference":"material:first"}` || draft.ExternalEffectID == "" {
 			t.Fatalf("draft=%+v", draft)
 		}
 	}
@@ -32,7 +32,7 @@ func TestRuntimeRunDueBindsImmutableContentAndMaterialSnapshotsToEER(t *testing.
 		t.Fatalf("unsafe summary=%+v", summary)
 	}
 
-	replayed, err := service.RunDue(context.Background(), groupopsport.RunDueCommand{PlanID: 91, ActorID: 7, IdempotencyKey: "different-safe-key"})
+	replayed, err := service.RunDue(context.Background(), groupopsport.RunDueCommand{PlanID: 91, ActorID: 7, IdempotencyKey: "group-ops-run-due-0001"})
 	if err != nil || replayed.Run.ID != summary.Run.ID || effects.accepts != 2 || len(runtime.drafts) != 2 {
 		t.Fatalf("replay=%+v err=%v accepts=%d drafts=%d", replayed, err, effects.accepts, len(runtime.drafts))
 	}
@@ -56,7 +56,25 @@ func TestRuntimeBroadcastUsesIdempotencyAndDoesNotQueueProvider(t *testing.T) {
 	}
 }
 
-func TestRuntimeUnknownRequiresManualReconcileAndCanProveDeliverySeparately(t *testing.T) {
+func TestRuntimeReceiptRejectsChangedPlanSnapshotWithoutNewRunOrEffect(t *testing.T) {
+	service, runtime, effects := newRuntimeFixture(t)
+	command := groupopsport.AcceptPlanCommand{PlanID: 91, Trigger: groupopsport.RunTriggerBroadcast, AcceptedBy: "service:group-broadcast", IdempotencyKey: "group-ops-broadcast-receipt-01"}
+	first, err := service.AcceptPlan(context.Background(), command)
+	if err != nil || first.Accepted != 4 || effects.accepts != 4 {
+		t.Fatalf("first=%+v err=%v accepts=%d", first, err, effects.accepts)
+	}
+	plans := service.plans.(*testStore)
+	detail := plans.details[91]
+	detail.Plan.Revision++
+	detail.Nodes[0].MessageText = "changed"
+	plans.details[91] = detail
+	_, err = service.AcceptPlan(context.Background(), command)
+	if !errors.Is(err, ErrConflict) || effects.accepts != 4 || len(runtime.runs) != 1 || len(runtime.drafts) != 4 {
+		t.Fatalf("err=%v accepts=%d runs=%d drafts=%d", err, effects.accepts, len(runtime.runs), len(runtime.drafts))
+	}
+}
+
+func TestRuntimeManualReconcileIsExplicitlyUnavailableWithoutAnOutcomeWriter(t *testing.T) {
 	service, _, effects := newRuntimeFixture(t)
 	summary, err := service.RunDue(context.Background(), groupopsport.RunDueCommand{PlanID: 91, ActorID: 7, IdempotencyKey: "group-ops-run-due-0002"})
 	if err != nil {
@@ -67,12 +85,12 @@ func TestRuntimeUnknownRequiresManualReconcileAndCanProveDeliverySeparately(t *t
 	if err != nil || execution.State != groupopsport.ExecutionOutcomeUnknown || execution.ProviderAccepted || execution.ProviderReceiptPresent {
 		t.Fatalf("unknown=%+v err=%v", execution, err)
 	}
-	result, err := service.ManualReconcile(context.Background(), groupopsport.ManualReconcileCommand{
+	_, err = service.ManualReconcile(context.Background(), groupopsport.ManualReconcileCommand{
 		ExecutionID: execution.ID, ActorID: 7, IdempotencyKey: "group-ops-reconcile-0001", Generation: 2, Fence: 3,
 		LeaseExpiresAt: time.Date(2026, 8, 25, 9, 0, 0, 0, time.UTC), EvidenceDigest: string(runtimeDigest("evidence", "official-provider-receipt")), DeliveryProven: true,
 	})
-	if err != nil || result.State != groupopsport.ExecutionReconciled || !result.ProviderAccepted || !result.DeliveryProven || effects.reconciles != 1 {
-		t.Fatalf("result=%+v err=%v reconciles=%d", result, err, effects.reconciles)
+	if !errors.Is(err, ErrProviderDisabled) || effects.reconciles != 0 {
+		t.Fatalf("err=%v reconciles=%d", err, effects.reconciles)
 	}
 	if _, err = service.ManualReconcile(context.Background(), groupopsport.ManualReconcileCommand{ExecutionID: execution.ID}); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("invalid reconcile err=%v", err)

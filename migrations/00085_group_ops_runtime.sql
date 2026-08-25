@@ -19,6 +19,25 @@ ALTER TABLE public.group_ops_plan_nodes
     )
   );
 
+-- Runtime intake is a local mutation. It shares the existing immutable
+-- Group Ops receipt table so receipt, run, EER intent, and execution facts
+-- commit or roll back together.
+ALTER TABLE public.group_ops_operation_receipts
+  DROP CONSTRAINT group_ops_operation_receipts_operation_check;
+ALTER TABLE public.group_ops_operation_receipts
+  ADD CONSTRAINT group_ops_operation_receipts_operation_check CHECK (operation IN (
+    'plan_create', 'plan_update', 'plan_activate', 'plan_pause', 'plan_archive',
+    'member_add', 'member_remove', 'group_asset_add', 'group_asset_remove',
+    'node_add', 'node_update', 'node_remove', 'webhook_descriptor_put',
+    'runtime_run_due', 'runtime_broadcast', 'runtime_webhook'
+  ));
+ALTER TABLE public.group_ops_operation_receipts
+  DROP CONSTRAINT group_ops_operation_receipts_actor;
+ALTER TABLE public.group_ops_operation_receipts
+  ADD CONSTRAINT group_ops_operation_receipts_actor CHECK (
+    actor_scope ~ '^(admin:[1-9][0-9]*|service:[A-Za-z0-9._:-]{1,128}|webhook:[A-Za-z0-9._:-]{1,128})$'
+  );
+
 CREATE TABLE public.group_ops_directory_groups (
   chat_reference TEXT PRIMARY KEY,
   owner_staff_id BIGINT NOT NULL CHECK (owner_staff_id > 0),
@@ -155,12 +174,15 @@ BEFORE UPDATE OR DELETE ON public.group_ops_executions
 FOR EACH ROW EXECUTE FUNCTION public.aicrm_group_ops_runtime_guard();
 
 -- +goose Down
-LOCK TABLE public.group_ops_directory_groups, public.group_ops_directory_refresh_receipts,
+LOCK TABLE public.group_ops_plan_nodes, public.group_ops_operation_receipts,
+  public.group_ops_directory_groups, public.group_ops_directory_refresh_receipts,
   public.group_ops_runs, public.group_ops_executions IN SHARE ROW EXCLUSIVE MODE;
 -- +goose StatementBegin
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM public.group_ops_directory_groups)
+  IF EXISTS (SELECT 1 FROM public.group_ops_plan_nodes WHERE material_reference <> '')
+     OR EXISTS (SELECT 1 FROM public.group_ops_operation_receipts WHERE operation IN ('runtime_run_due', 'runtime_broadcast', 'runtime_webhook'))
+     OR EXISTS (SELECT 1 FROM public.group_ops_directory_groups)
      OR EXISTS (SELECT 1 FROM public.group_ops_directory_refresh_receipts)
      OR EXISTS (SELECT 1 FROM public.group_ops_runs)
      OR EXISTS (SELECT 1 FROM public.group_ops_executions)
@@ -177,6 +199,18 @@ DROP TABLE public.group_ops_executions;
 DROP TABLE public.group_ops_runs;
 DROP TABLE public.group_ops_directory_refresh_receipts;
 DROP TABLE public.group_ops_directory_groups;
+ALTER TABLE public.group_ops_operation_receipts
+  DROP CONSTRAINT group_ops_operation_receipts_actor;
+ALTER TABLE public.group_ops_operation_receipts
+  ADD CONSTRAINT group_ops_operation_receipts_actor CHECK (actor_scope ~ '^admin:[1-9][0-9]*$');
+ALTER TABLE public.group_ops_operation_receipts
+  DROP CONSTRAINT group_ops_operation_receipts_operation_check;
+ALTER TABLE public.group_ops_operation_receipts
+  ADD CONSTRAINT group_ops_operation_receipts_operation_check CHECK (operation IN (
+    'plan_create', 'plan_update', 'plan_activate', 'plan_pause', 'plan_archive',
+    'member_add', 'member_remove', 'group_asset_add', 'group_asset_remove',
+    'node_add', 'node_update', 'node_remove', 'webhook_descriptor_put'
+  ));
 ALTER TABLE public.group_ops_plan_nodes DROP CONSTRAINT group_ops_plan_nodes_material_reference;
 ALTER TABLE public.group_ops_plan_nodes DROP COLUMN material_reference;
 ALTER TABLE public.external_effects DROP CONSTRAINT external_effects_kind_check;
