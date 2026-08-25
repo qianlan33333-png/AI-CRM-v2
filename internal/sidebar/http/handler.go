@@ -37,7 +37,8 @@ func (handler *Handler) MintContext(writer http.ResponseWriter, request *http.Re
 		return
 	}
 	principal, authenticated := authport.PrincipalFromContext(request.Context())
-	result, err := handler.service.MintContext(request.Context(), principal, authenticated, body.ExternalUserID)
+	session, _ := authport.SessionFromContext(request.Context())
+	result, err := handler.service.MintContext(request.Context(), principal, session, authenticated, body.ExternalUserID)
 	if err != nil {
 		writeError(writer, request, err)
 		return
@@ -188,7 +189,11 @@ func (handler *Handler) scope(request *http.Request, token string, capability au
 	if !ok || authorization.Capability != capability {
 		return sidebarapp.Scope{}, sidebarapp.ErrForbidden
 	}
-	scope, err := handler.service.VerifyContext(request.Context(), principal, token)
+	session, ok := authport.SessionFromContext(request.Context())
+	if !ok {
+		return sidebarapp.Scope{}, sidebarapp.ErrViewerSession
+	}
+	scope, err := handler.service.VerifyContext(request.Context(), principal, session, token)
 	if err != nil {
 		return sidebarapp.Scope{}, err
 	}

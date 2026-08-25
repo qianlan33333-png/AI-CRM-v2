@@ -83,7 +83,7 @@ func TestThumbnailStatusHTTPReturnsOnlyPendingOrNotFound(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	minted, err := service.MintContext(context.Background(), principal, true, "wm_external_41")
+	minted, err := service.MintContext(context.Background(), principal, authport.SessionRef("sidebar-test-session"), true, "wm_external_41")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestThumbnailStatusHTTPReturnsOnlyPendingOrNotFound(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := authport.WithAuthenticatedSession(context.Background(), principal, "sidebar-session")
+	ctx := authport.WithAuthenticatedSession(context.Background(), principal, "sidebar-test-session")
 	ctx, err = authport.WithAuthorization(ctx, authport.Authorization{Capability: authport.CapabilityCustomersRead, Scope: authport.ScopeGlobal})
 	if err != nil {
 		t.Fatal(err)
