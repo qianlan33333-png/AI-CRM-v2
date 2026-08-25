@@ -928,6 +928,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	mediaRepository := mediastore.NewUploadRepository()
 	attachmentRepository := mediastore.NewAttachmentRepository()
 	automationRepository := automationstore.NewAgentRepository()
+	automationRuleRepository := automationstore.NewRuleRepository()
 	channelRepository := contactstore.NewChannelRepository()
 	channelStaffDirectory := contactstore.NewStaffDirectoryRepository(pool)
 	channelTagCatalog := contactstore.NewTagCatalogRepository()
@@ -1000,6 +1001,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyTagStatusService := contactapp.NewLegacyTagExecutionStatusService(uow, legacyTagExecutionRepository)
 	couponService := couponapp.NewService(uow, couponstore.NewRepository(), productstore.NewCatalogRepository(), eventstore.NewAppender())
 	automationAgentService := automationapp.NewAgentServiceWithMediaReferences(uow, automationRepository, mediaRepository, attachmentRepository, eventstore.NewAppender())
+	automationRuleService := automationapp.NewRuleService(uow, automationRuleRepository)
 	audienceOperationMembers := channelStaffDirectory
 	legacyAIAudienceConfigurationService, err := legacyaudience.NewLocalConfigurationService(
 		uow,
@@ -1271,6 +1273,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	automationOutboundMessage, err := automationstore.NewOutboundMessageHandoff(pool, uow, externalEffectsRuntime)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	campaignDispatchRepository, err := outboundstore.NewCampaignDispatchRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -1449,6 +1456,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.orderBoard = orderapp.NewBoardService(uow, orderstore.NewRepository(), eventstore.NewAppender())
 	legacyHandler.couponBoard = couponService
 	legacyHandler.automationAgents = automationAgentService
+	legacyHandler.automationRules = automationRuleService
+	legacyHandler.automationRuleRuns = automationRuleRepository
+	legacyHandler.automationRuleReconcile = automationOutboundMessage
 	legacyHandler.messageArchive = messageArchiveService
 	legacyHandler.messageArchiveUnionID = legacyUnionIDResolver
 	legacyHandler.operationCycles = operationapp.NewService(uow, operationstore.NewRepository(), eventstore.NewAppender(), deliveryProducer)
@@ -2496,6 +2506,13 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPut, "/api/admin/automation-agents/{agent_id}/fixed-content", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAutomationAgentFixedContent)},
 			{http.MethodPost, "/api/admin/automation-agents/{agent_id}/pause", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.PauseAutomationAgent)},
 			{http.MethodPost, "/api/admin/automation-agents/{agent_id}/publish", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.PublishAutomationAgent)},
+			{http.MethodGet, "/api/admin/automations/executions", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ListAutomationRuleRuns)},
+			{http.MethodPost, "/api/admin/automations/executions/{action_id}/reconcile", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.ReconcileAutomationRuleRun)},
+			{http.MethodGet, "/api/admin/automations", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ListAutomationRules)},
+			{http.MethodPost, "/api/admin/automations", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.CreateAutomationRule)},
+			{http.MethodGet, "/api/admin/automations/{rule_id}", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.GetAutomationRule)},
+			{http.MethodPatch, "/api/admin/automations/{rule_id}", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.UpdateAutomationRule)},
+			{http.MethodPost, "/api/admin/automations/{rule_id}/{status}", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SetAutomationRuleStatus)},
 			{http.MethodGet, "/api/archive/health", authport.CapabilityMessageArchiveRead, false, http.HandlerFunc(legacy.ArchiveHealth)},
 			{http.MethodPost, "/api/archive/sync", authport.CapabilityMessageArchiveExecute, true, http.HandlerFunc(legacy.RequestArchiveSync)},
 			{http.MethodGet, "/api/external/chat-records", authport.CapabilityMessageArchiveExternalRead, false, http.HandlerFunc(legacy.ListExternalChatRecords)},

@@ -98,9 +98,14 @@ owners:
 
   automation:
     package: internal/automation
-    tables: [automations, automation_enrollments, automation_trigger_receipts, automation_agent_configurations, automation_agent_operation_receipts]
+    tables: [automations, automation_rule_versions, automation_enrollments, automation_execution_actions, automation_operation_receipts, automation_trigger_receipts, automation_agent_configurations, automation_agent_operation_receipts]
     constraints:
       automation_trigger_receipts: unique_tag_trigger_receipt_per_source_event
+      automations: closed_tag_applied_rule_configuration_with_versioned_execution_snapshot
+      automation_rule_versions: immutable_rule_snapshot_for_enrollments
+      automation_enrollments: unique_active_rule_per_source_event_local_enrollment
+      automation_execution_actions: durable_local_record_or_outbound_EER_handoff_without_provider_execution
+      automation_operation_receipts: actor_scoped_transactional_rule_mutation_idempotency_receipts
       automation_agent_configurations: single_instance_configuration_only_without_generation_execution_or_send
       automation_agent_operation_receipts: actor_scoped_transactional_configuration_idempotency_receipts
 

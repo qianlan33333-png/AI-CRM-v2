@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
+	automationworker "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/worker"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
@@ -95,6 +96,11 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	automationOutboundMessage, err := automationstore.NewOutboundMessageHandoff(pool, uow, externalEffectsRuntime)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	campaignDispatchRepository, err := outboundstore.NewCampaignDispatchRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -135,6 +141,10 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	if err = orderworker.RegisterSettlementWorkers(workers, effectExecution); err != nil {
+		pool.Close()
+		return nil, err
+	}
+	if err = automationworker.RegisterOutboundMessageWorker(workers, automationOutboundMessage, automationstore.DisabledOutboundMessageAdapter{}); err != nil {
 		pool.Close()
 		return nil, err
 	}
@@ -214,8 +224,8 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	automationConsumer, err := automationstore.NewTagTriggerConsumer(
-		platformstore.NewUnitOfWork(pool), automationstore.NewRepository(pool), eventstore.NewAppender(), deliveries,
+	automationConsumer, err := automationstore.NewTagTriggerConsumerWithRules(
+		platformstore.NewUnitOfWork(pool), automationstore.NewRepository(pool), automationstore.NewRuleRuntimeWithOutboundMessage(automationOutboundMessage), eventstore.NewAppender(), deliveries,
 	)
 	if err == nil {
 		err = router.RegisterDelivery(automationConsumer)

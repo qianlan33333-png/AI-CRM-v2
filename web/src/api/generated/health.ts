@@ -15308,6 +15308,71 @@ export type ListReleaseCandidatesParams = {
   limit?: number;
 };
 
+export type CreateAutomationRuleRuntimeBodyStatus =
+  (typeof CreateAutomationRuleRuntimeBodyStatus)[keyof typeof CreateAutomationRuleRuntimeBodyStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CreateAutomationRuleRuntimeBodyStatus = {
+  active: "active",
+  paused: "paused",
+} as const;
+
+export type CreateAutomationRuleRuntimeBodyCondition = {
+  /** @minimum 1 */
+  tag_id: number;
+};
+
+export type CreateAutomationRuleRuntimeBodyActionType =
+  (typeof CreateAutomationRuleRuntimeBodyActionType)[keyof typeof CreateAutomationRuleRuntimeBodyActionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CreateAutomationRuleRuntimeBodyActionType = {
+  record: "record",
+  outbound_message: "outbound_message",
+} as const;
+
+/**
+ * Required for outbound_message; the V2 handoff stores only this immutable template reference and opaque digests.
+ */
+export type CreateAutomationRuleRuntimeBodyActionTemplateKey =
+  (typeof CreateAutomationRuleRuntimeBodyActionTemplateKey)[keyof typeof CreateAutomationRuleRuntimeBodyActionTemplateKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CreateAutomationRuleRuntimeBodyActionTemplateKey = {
+  textnoticev1: "text.notice.v1",
+} as const;
+
+export type CreateAutomationRuleRuntimeBodyAction = {
+  type: CreateAutomationRuleRuntimeBodyActionType;
+  /** Required for outbound_message; the V2 handoff stores only this immutable template reference and opaque digests. */
+  template_key?: CreateAutomationRuleRuntimeBodyActionTemplateKey;
+};
+
+export type CreateAutomationRuleRuntimeBody = {
+  /** @pattern ^[a-z0-9_-]{1,120}$ */
+  code: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  name: string;
+  status: CreateAutomationRuleRuntimeBodyStatus;
+  condition: CreateAutomationRuleRuntimeBodyCondition;
+  action: CreateAutomationRuleRuntimeBodyAction;
+};
+
+export type UpdateAutomationRuleRuntimeBody = { [key: string]: unknown };
+
+export type ReconcileAutomationRuleRuntimeExecutionBody = {
+  /** @minimum 1 */
+  generation: number;
+  /** @minimum 1 */
+  fence: number;
+  lease_expires_at: string;
+  /** @pattern ^sha256:[0-9a-f]{64}$ */
+  evidence_digest: string;
+};
+
 /**
  * @summary Download the safe local owner-reassignment CSV template
  */
@@ -49018,4 +49083,542 @@ export const completeReleaseRollback = async (
     status: res.status,
     headers: res.headers,
   } as completeReleaseRollbackResponse;
+};
+
+/**
+ * @summary List local Automation rule configurations
+ */
+export type listAutomationRulesRuntimeResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type listAutomationRulesRuntimeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAutomationRulesRuntimeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAutomationRulesRuntimeResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAutomationRulesRuntimeResponseSuccess =
+  listAutomationRulesRuntimeResponse200 & {
+    headers: Headers;
+  };
+export type listAutomationRulesRuntimeResponseError = (
+  | listAutomationRulesRuntimeResponse401
+  | listAutomationRulesRuntimeResponse403
+  | listAutomationRulesRuntimeResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAutomationRulesRuntimeResponse =
+  | listAutomationRulesRuntimeResponseSuccess
+  | listAutomationRulesRuntimeResponseError;
+
+export const getListAutomationRulesRuntimeUrl = () => {
+  return `/api/admin/automations`;
+};
+
+export const listAutomationRulesRuntime = async (
+  options?: RequestInit,
+): Promise<listAutomationRulesRuntimeResponse> => {
+  const res = await fetch(getListAutomationRulesRuntimeUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAutomationRulesRuntimeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAutomationRulesRuntimeResponse;
+};
+
+/**
+ * @summary Create one idempotent closed tag-applied Automation rule
+ */
+export type createAutomationRuleRuntimeResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type createAutomationRuleRuntimeResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type createAutomationRuleRuntimeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createAutomationRuleRuntimeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type createAutomationRuleRuntimeResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type createAutomationRuleRuntimeResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createAutomationRuleRuntimeResponseSuccess =
+  createAutomationRuleRuntimeResponse200 & {
+    headers: Headers;
+  };
+export type createAutomationRuleRuntimeResponseError = (
+  | createAutomationRuleRuntimeResponse400
+  | createAutomationRuleRuntimeResponse401
+  | createAutomationRuleRuntimeResponse403
+  | createAutomationRuleRuntimeResponse409
+  | createAutomationRuleRuntimeResponse503
+) & {
+  headers: Headers;
+};
+
+export type createAutomationRuleRuntimeResponse =
+  | createAutomationRuleRuntimeResponseSuccess
+  | createAutomationRuleRuntimeResponseError;
+
+export const getCreateAutomationRuleRuntimeUrl = () => {
+  return `/api/admin/automations`;
+};
+
+export const createAutomationRuleRuntime = async (
+  createAutomationRuleRuntimeBody: CreateAutomationRuleRuntimeBody,
+  options?: RequestInit,
+): Promise<createAutomationRuleRuntimeResponse> => {
+  const res = await fetch(getCreateAutomationRuleRuntimeUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createAutomationRuleRuntimeBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createAutomationRuleRuntimeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createAutomationRuleRuntimeResponse;
+};
+
+/**
+ * @summary Read one local Automation rule and its current immutable version
+ */
+export type getAutomationRuleRuntimeResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type getAutomationRuleRuntimeResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getAutomationRuleRuntimeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAutomationRuleRuntimeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAutomationRuleRuntimeResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getAutomationRuleRuntimeResponseSuccess =
+  getAutomationRuleRuntimeResponse200 & {
+    headers: Headers;
+  };
+export type getAutomationRuleRuntimeResponseError = (
+  | getAutomationRuleRuntimeResponse400
+  | getAutomationRuleRuntimeResponse401
+  | getAutomationRuleRuntimeResponse403
+  | getAutomationRuleRuntimeResponse404
+) & {
+  headers: Headers;
+};
+
+export type getAutomationRuleRuntimeResponse =
+  | getAutomationRuleRuntimeResponseSuccess
+  | getAutomationRuleRuntimeResponseError;
+
+export const getGetAutomationRuleRuntimeUrl = (ruleId: number) => {
+  return `/api/admin/automations/${ruleId}`;
+};
+
+export const getAutomationRuleRuntime = async (
+  ruleId: number,
+  options?: RequestInit,
+): Promise<getAutomationRuleRuntimeResponse> => {
+  const res = await fetch(getGetAutomationRuleRuntimeUrl(ruleId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAutomationRuleRuntimeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAutomationRuleRuntimeResponse;
+};
+
+/**
+ * @summary Create the next immutable version of one local Automation rule
+ */
+export type updateAutomationRuleRuntimeResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type updateAutomationRuleRuntimeResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateAutomationRuleRuntimeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateAutomationRuleRuntimeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateAutomationRuleRuntimeResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateAutomationRuleRuntimeResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateAutomationRuleRuntimeResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateAutomationRuleRuntimeResponseSuccess =
+  updateAutomationRuleRuntimeResponse200 & {
+    headers: Headers;
+  };
+export type updateAutomationRuleRuntimeResponseError = (
+  | updateAutomationRuleRuntimeResponse400
+  | updateAutomationRuleRuntimeResponse401
+  | updateAutomationRuleRuntimeResponse403
+  | updateAutomationRuleRuntimeResponse404
+  | updateAutomationRuleRuntimeResponse409
+  | updateAutomationRuleRuntimeResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateAutomationRuleRuntimeResponse =
+  | updateAutomationRuleRuntimeResponseSuccess
+  | updateAutomationRuleRuntimeResponseError;
+
+export const getUpdateAutomationRuleRuntimeUrl = (ruleId: number) => {
+  return `/api/admin/automations/${ruleId}`;
+};
+
+export const updateAutomationRuleRuntime = async (
+  ruleId: number,
+  updateAutomationRuleRuntimeBody: UpdateAutomationRuleRuntimeBody,
+  options?: RequestInit,
+): Promise<updateAutomationRuleRuntimeResponse> => {
+  const res = await fetch(getUpdateAutomationRuleRuntimeUrl(ruleId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateAutomationRuleRuntimeBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateAutomationRuleRuntimeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateAutomationRuleRuntimeResponse;
+};
+
+/**
+ * @summary Activate, pause, or archive one local Automation rule
+ */
+export type setAutomationRuleRuntimeStatusResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type setAutomationRuleRuntimeStatusResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type setAutomationRuleRuntimeStatusResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type setAutomationRuleRuntimeStatusResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type setAutomationRuleRuntimeStatusResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type setAutomationRuleRuntimeStatusResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type setAutomationRuleRuntimeStatusResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type setAutomationRuleRuntimeStatusResponseSuccess =
+  setAutomationRuleRuntimeStatusResponse200 & {
+    headers: Headers;
+  };
+export type setAutomationRuleRuntimeStatusResponseError = (
+  | setAutomationRuleRuntimeStatusResponse400
+  | setAutomationRuleRuntimeStatusResponse401
+  | setAutomationRuleRuntimeStatusResponse403
+  | setAutomationRuleRuntimeStatusResponse404
+  | setAutomationRuleRuntimeStatusResponse409
+  | setAutomationRuleRuntimeStatusResponse503
+) & {
+  headers: Headers;
+};
+
+export type setAutomationRuleRuntimeStatusResponse =
+  | setAutomationRuleRuntimeStatusResponseSuccess
+  | setAutomationRuleRuntimeStatusResponseError;
+
+export const getSetAutomationRuleRuntimeStatusUrl = (
+  ruleId: number,
+  status: "active" | "paused" | "archived",
+) => {
+  return `/api/admin/automations/${ruleId}/${status}`;
+};
+
+export const setAutomationRuleRuntimeStatus = async (
+  ruleId: number,
+  status: "active" | "paused" | "archived",
+  options?: RequestInit,
+): Promise<setAutomationRuleRuntimeStatusResponse> => {
+  const res = await fetch(
+    getSetAutomationRuleRuntimeStatusUrl(ruleId, status),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: setAutomationRuleRuntimeStatusResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as setAutomationRuleRuntimeStatusResponse;
+};
+
+/**
+ * @summary List redacted local Automation enrollment/action state
+ */
+export type listAutomationRuleRuntimeExecutionsResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type listAutomationRuleRuntimeExecutionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAutomationRuleRuntimeExecutionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAutomationRuleRuntimeExecutionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAutomationRuleRuntimeExecutionsResponseSuccess =
+  listAutomationRuleRuntimeExecutionsResponse200 & {
+    headers: Headers;
+  };
+export type listAutomationRuleRuntimeExecutionsResponseError = (
+  | listAutomationRuleRuntimeExecutionsResponse401
+  | listAutomationRuleRuntimeExecutionsResponse403
+  | listAutomationRuleRuntimeExecutionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAutomationRuleRuntimeExecutionsResponse =
+  | listAutomationRuleRuntimeExecutionsResponseSuccess
+  | listAutomationRuleRuntimeExecutionsResponseError;
+
+export const getListAutomationRuleRuntimeExecutionsUrl = () => {
+  return `/api/admin/automations/executions`;
+};
+
+export const listAutomationRuleRuntimeExecutions = async (
+  options?: RequestInit,
+): Promise<listAutomationRuleRuntimeExecutionsResponse> => {
+  const res = await fetch(getListAutomationRuleRuntimeExecutionsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAutomationRuleRuntimeExecutionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAutomationRuleRuntimeExecutionsResponse;
+};
+
+/**
+ * @summary Manually reconcile one outcome-unknown Automation EER binding
+ */
+export type reconcileAutomationRuleRuntimeExecutionResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponseSuccess =
+  reconcileAutomationRuleRuntimeExecutionResponse200 & {
+    headers: Headers;
+  };
+export type reconcileAutomationRuleRuntimeExecutionResponseError = (
+  | reconcileAutomationRuleRuntimeExecutionResponse400
+  | reconcileAutomationRuleRuntimeExecutionResponse401
+  | reconcileAutomationRuleRuntimeExecutionResponse403
+  | reconcileAutomationRuleRuntimeExecutionResponse404
+  | reconcileAutomationRuleRuntimeExecutionResponse409
+  | reconcileAutomationRuleRuntimeExecutionResponse503
+) & {
+  headers: Headers;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse =
+  | reconcileAutomationRuleRuntimeExecutionResponseSuccess
+  | reconcileAutomationRuleRuntimeExecutionResponseError;
+
+export const getReconcileAutomationRuleRuntimeExecutionUrl = (
+  actionId: number,
+) => {
+  return `/api/admin/automations/executions/${actionId}/reconcile`;
+};
+
+export const reconcileAutomationRuleRuntimeExecution = async (
+  actionId: number,
+  reconcileAutomationRuleRuntimeExecutionBody: ReconcileAutomationRuleRuntimeExecutionBody,
+  options?: RequestInit,
+): Promise<reconcileAutomationRuleRuntimeExecutionResponse> => {
+  const res = await fetch(
+    getReconcileAutomationRuleRuntimeExecutionUrl(actionId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(reconcileAutomationRuleRuntimeExecutionBody),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reconcileAutomationRuleRuntimeExecutionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reconcileAutomationRuleRuntimeExecutionResponse;
 };

@@ -86,6 +86,7 @@ func (repository *Repository) List(ctx context.Context, input TriggerListInput) 
 type tagTriggerConsumer struct {
 	uow        platformport.UnitOfWork
 	repository *Repository
+	rules      *RuleRuntime
 	events     eventport.Appender
 	deliveries eventport.DeliveryCompleter
 }
@@ -93,10 +94,20 @@ type tagTriggerConsumer struct {
 var _ eventport.DeliverySubscriber = (*tagTriggerConsumer)(nil)
 
 func NewTagTriggerConsumer(uow platformport.UnitOfWork, repository *Repository, events eventport.Appender, deliveries eventport.DeliveryCompleter) (eventport.DeliverySubscriber, error) {
+	return newTagTriggerConsumer(uow, repository, nil, events, deliveries)
+}
+
+// NewTagTriggerConsumerWithRules keeps D01's receipt/dispatch behavior and
+// adds A01 rule enrollment/action creation in that same delivery transaction.
+func NewTagTriggerConsumerWithRules(uow platformport.UnitOfWork, repository *Repository, rules *RuleRuntime, events eventport.Appender, deliveries eventport.DeliveryCompleter) (eventport.DeliverySubscriber, error) {
+	return newTagTriggerConsumer(uow, repository, rules, events, deliveries)
+}
+
+func newTagTriggerConsumer(uow platformport.UnitOfWork, repository *Repository, rules *RuleRuntime, events eventport.Appender, deliveries eventport.DeliveryCompleter) (eventport.DeliverySubscriber, error) {
 	if uow == nil || repository == nil || repository.pool == nil || events == nil || deliveries == nil {
 		return nil, ErrInvalidTagTrigger
 	}
-	return &tagTriggerConsumer{uow: uow, repository: repository, events: events, deliveries: deliveries}, nil
+	return &tagTriggerConsumer{uow: uow, repository: repository, rules: rules, events: events, deliveries: deliveries}, nil
 }
 
 func (*tagTriggerConsumer) Consumer() string     { return eventport.ConsumerAutomationTagTrigger }
@@ -127,6 +138,11 @@ func (consumer *tagTriggerConsumer) ConsumeDelivery(ctx context.Context, claim e
 				return eventport.PoisonDelivery(ErrTagTriggerConflict)
 			}
 			return consumer.deliveries.Complete(txCtx, claim.Record.ID, claim.Consumer, claim.Owner)
+		}
+		if consumer.rules != nil {
+			if runtimeErr := consumer.rules.ExecuteTagApplied(txCtx, int64(claim.Record.ID), payload.CustomerID, payload.TagID, claim.Record.Payload, receipt.TriggeredAt.Time.UTC()); runtimeErr != nil {
+				return runtimeErr
+			}
 		}
 		triggerPayload, marshalErr := json.Marshal(struct {
 			SourceEventID int64  `json:"source_event_id"`

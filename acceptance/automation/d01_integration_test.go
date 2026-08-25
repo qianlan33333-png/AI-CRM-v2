@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
+	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
@@ -21,6 +22,8 @@ import (
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
+	externaleffectsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -60,6 +63,117 @@ func TestD01ContactProducerAndAutomationConsumerCloseOneObservableLoop(t *testin
 		t.Fatal(err)
 	}
 	assertCompletedFacts(t, ctx, pool, eventID, customerID, tagID)
+}
+
+func TestA01TagRuleOutboundMessageUsesEERAndRiverWithoutProviderClaim(t *testing.T) {
+	pool, ctx := openPool(t)
+	ensureRiver(t, ctx, pool)
+	customerID, tagID := createContactFacts(t, ctx, pool)
+	now := time.Now().UTC()
+	for index, fixture := range []struct{ code, action string }{{"a01_record", `{"type":"record"}`}, {"a01_outbound", `{"type":"outbound_message","template_key":"text.notice.v1"}`}} {
+		fixture.code = fmt.Sprintf("%s_%d_%d", fixture.code, now.UnixNano(), index)
+		var ruleID int64
+		err := pool.QueryRow(ctx, `INSERT INTO automations (automation_code,automation_name,status,current_version,trigger_type,condition_json,action_json,created_by,updated_by,created_at,updated_at)
+VALUES ($1,$1,'active',1,'customer.tag_applied',$2::jsonb,$3::jsonb,1,1,$4,$4) RETURNING id`, fixture.code, fmt.Sprintf(`{"tag_id":%d}`, tagID), fixture.action, now).Scan(&ruleID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err = pool.Exec(ctx, `INSERT INTO automation_rule_versions (automation_id,version,trigger_type,condition_json,action_json,published_at,published_by)
+VALUES ($1,1,'customer.tag_applied',$2::jsonb,$3::jsonb,$4,1)`, ruleID, fmt.Sprintf(`{"tag_id":%d}`, tagID), fixture.action, now); err != nil {
+			t.Fatal(err)
+		}
+	}
+	uow := platformstore.NewUnitOfWork(pool)
+	eerRuntime, err := eer.NewService(externaleffectsstore.NewRepository(pool, uow))
+	if err != nil {
+		t.Fatal(err)
+	}
+	handoff, err := automationstore.NewOutboundMessageHandoff(pool, uow, eerRuntime)
+	if err != nil {
+		t.Fatal(err)
+	}
+	runtime := automationstore.NewRuleRuntimeWithOutboundMessage(handoff)
+	payload := json.RawMessage(fmt.Sprintf(`{"customer_id":%d,"tag_id":%d,"actor":"a01"}`, customerID, tagID))
+	sourceEventID := now.UnixNano()
+	err = uow.Within(ctx, func(txCtx context.Context) error {
+		return runtime.ExecuteTagApplied(txCtx, sourceEventID, customerID, tagID, payload, now)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// An at-least-once source delivery cannot create a second enrollment or
+	// action. The outbound form is only queued, never sent by Automation.
+	err = uow.Within(ctx, func(txCtx context.Context) error {
+		return runtime.ExecuteTagApplied(txCtx, sourceEventID, customerID, tagID, payload, now)
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var enrollments, completed, queued, effects, jobs int
+	err = pool.QueryRow(ctx, `SELECT
+	 (SELECT count(*) FROM automation_enrollments WHERE source_event_id=$1),
+ (SELECT count(*) FROM automation_execution_actions a JOIN automation_enrollments e ON e.id=a.enrollment_id WHERE e.source_event_id=$1 AND a.state='completed'),
+ (SELECT count(*) FROM automation_execution_actions a JOIN automation_enrollments e ON e.id=a.enrollment_id WHERE e.source_event_id=$1 AND a.state='queued'),
+	 (SELECT count(*) FROM external_effects x JOIN automation_execution_actions a ON a.external_effect_id=('eer_' || x.id::text) JOIN automation_enrollments e ON e.id=a.enrollment_id WHERE e.source_event_id=$1 AND x.owner='outbound' AND x.kind='outbound_message'),
+	 (SELECT count(*) FROM river_job j JOIN external_effects x ON x.river_job_id=j.id JOIN automation_execution_actions a ON a.external_effect_id=('eer_' || x.id::text) JOIN automation_enrollments e ON e.id=a.enrollment_id WHERE e.source_event_id=$1 AND j.queue='outbound' AND j.kind='automation_outbound_message')`, sourceEventID).Scan(&enrollments, &completed, &queued, &effects, &jobs)
+	if err != nil || enrollments != 2 || completed < 1 || queued < 1 || effects != 1 || jobs != 1 {
+		t.Fatalf("enrollments/completed/queued/effects/jobs=%d/%d/%d/%d/%d err=%v", enrollments, completed, queued, effects, jobs, err)
+	}
+	var effectID string
+	if err = pool.QueryRow(ctx, `SELECT external_effect_id FROM automation_execution_actions WHERE action_type='outbound_message' AND enrollment_id IN (SELECT id FROM automation_enrollments WHERE source_event_id=$1)`, sourceEventID).Scan(&effectID); err != nil || !strings.HasPrefix(effectID, "eer_") {
+		t.Fatalf("effect=%q err=%v", effectID, err)
+	}
+	if err = handoff.RunEffect(ctx, effectID, automationAcceptanceDigest("worker"), automationstore.DisabledOutboundMessageAdapter{}); err != nil {
+		t.Fatal(err)
+	}
+	var actionState, enrollmentState string
+	var providerCalls int
+	if err = pool.QueryRow(ctx, `SELECT a.state,e.state,(SELECT count(*) FROM external_effect_attempts WHERE effect_id=substring(a.external_effect_id from 5)::bigint) FROM automation_execution_actions a JOIN automation_enrollments e ON e.id=a.enrollment_id WHERE a.external_effect_id=$1`, effectID).Scan(&actionState, &enrollmentState, &providerCalls); err != nil || actionState != "final_failed" || enrollmentState != "final_failed" || providerCalls != 1 {
+		t.Fatalf("states/attempts=%s/%s/%d err=%v", actionState, enrollmentState, providerCalls, err)
+	}
+
+	unknownSourceEventID := sourceEventID + 1
+	if err = uow.Within(ctx, func(txCtx context.Context) error {
+		return runtime.ExecuteTagApplied(txCtx, unknownSourceEventID, customerID, tagID, payload, now)
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var unknownActionID int64
+	var unknownEffectID string
+	if err = pool.QueryRow(ctx, `SELECT a.id,a.external_effect_id FROM automation_execution_actions a JOIN automation_enrollments e ON e.id=a.enrollment_id WHERE e.source_event_id=$1 AND a.action_type='outbound_message'`, unknownSourceEventID).Scan(&unknownActionID, &unknownEffectID); err != nil {
+		t.Fatal(err)
+	}
+	if err = handoff.RunEffect(ctx, unknownEffectID, automationAcceptanceDigest("unknown-worker"), automationFailingAdapter{}); err != nil {
+		t.Fatalf("unknown run error=%v", err)
+	}
+	if err = pool.QueryRow(ctx, `SELECT a.state,e.state FROM automation_execution_actions a JOIN automation_enrollments e ON e.id=a.enrollment_id WHERE a.id=$1`, unknownActionID).Scan(&actionState, &enrollmentState); err != nil || actionState != "outcome_unknown" || enrollmentState != "outcome_unknown" {
+		t.Fatalf("unknown states=%s/%s err=%v", actionState, enrollmentState, err)
+	}
+	var generation, fence int64
+	if err = pool.QueryRow(ctx, `SELECT generation,lease_fence FROM external_effects WHERE id=substring($1 from 5)::bigint`, unknownEffectID).Scan(&generation, &fence); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err = eerRuntime.Retry(ctx, eer.RetryCommand{EffectID: unknownEffectID, ReceiptKeyDigest: automationAcceptanceDigest("illegal-retry"), Job: eer.RiverJobLink{JobID: 99, Generation: 1, Queue: "outbound", ArgsDigest: automationAcceptanceDigest("illegal-retry-job"), ScheduledAt: now}}); !errors.Is(err, eer.ErrRetryForbidden) {
+		t.Fatalf("unknown retry error=%v", err)
+	}
+	reconcileCommand := automationport.ReconcileOutboundMessageCommand{ActionID: unknownActionID, Actor: 1, IdempotencyKey: "a01-unknown-manual-reconcile-key", Generation: generation, Fence: fence, LeaseExpiresAt: now.Add(time.Hour), EvidenceDigest: automationAcceptanceDigest("operator-evidence")}
+	reconciled, err := handoff.ReconcileOutboundMessage(ctx, reconcileCommand)
+	if err != nil || reconciled.State != "completed" || reconciled.ExternalEffectID == nil || *reconciled.ExternalEffectID != unknownEffectID {
+		t.Fatalf("reconciled=%+v err=%v", reconciled, err)
+	}
+	if replayed, replayErr := handoff.ReconcileOutboundMessage(ctx, reconcileCommand); replayErr != nil || replayed.ActionID != reconciled.ActionID || replayed.State != "completed" {
+		t.Fatalf("reconciled replay=%+v err=%v", replayed, replayErr)
+	}
+}
+
+func automationAcceptanceDigest(label string) eer.Digest {
+	return eer.Digest(fmt.Sprintf("sha256:%064x", len(label)))
+}
+
+type automationFailingAdapter struct{}
+
+func (automationFailingAdapter) Execute(context.Context, eer.EffectEnvelope, eer.Attempt) (eer.AdapterResult, error) {
+	return eer.AdapterResult{}, errors.New("ambiguous adapter boundary")
 }
 
 func TestD01RetryPoisonOutcomeUnknownLeaseAndBackfill(t *testing.T) {
@@ -296,7 +410,9 @@ func openPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	}
 	if err := acceptancefixtures.ValidateDatabaseURL(*d01DatabaseURL); err != nil {
 		if agentsErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*d01DatabaseURL, acceptancefixtures.AutomationAgentsABDatabaseName); agentsErr != nil {
-			t.Fatal(err)
+			if rulesErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*d01DatabaseURL, acceptancefixtures.AutomationRulesDatabaseName); rulesErr != nil {
+				t.Fatal(err)
+			}
 		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
