@@ -53,20 +53,20 @@ generated route ledger and OpenAPI contract bind `LEGACY-API-0464` to
 ## Migration and verification
 
 `00086_commerce_refund_v2.sql` is self-contained and does not alter the PE01
-EER kind constraint. The audited baseline has migrations `00079`, `00080`, then
-the owner-reserved `00086`; `00081`--`00085` are intentionally absent from this
-lane and are serial-integration dependencies, so empty rollback is
-`86 -> 80 -> 86`.
+EER kind constraint. In the serialized P4 batch it follows Group Ops `00085`,
+so empty rollback is `86 -> 85 -> 86`.
 
 The PostgreSQL 16.14 acceptance target
 `p4-commerce-refund-v2-acceptance` verifies:
 
-- exact apply to 86 and empty `86 -> 80 -> 86`;
-- PE01 compatibility through the single canonical table with zero legacy
-  refund rows;
+- exact apply to 86 and empty `86 -> 85 -> 86`;
+- production-disabled HTTP acceptance, including deterministic replay,
+  changed-payload conflict, callback/reconcile unavailability, zero River jobs,
+  and concurrent over-refund exclusion;
 - fake WeChat Shop provider acceptance, no automatic second call, verified
   callback delivery proof, and zero legacy refund/effect rows;
-- the populated `55000` down guard with
+- all four Refund86 tables populated through service paths and the populated
+  `55000` down guard with
   `cannot roll back materialized WeChat Shop refund facts`.
 
 Focused application tests cover ambiguous PE01 references, confirmation-bound
