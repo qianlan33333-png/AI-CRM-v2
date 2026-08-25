@@ -5,6 +5,7 @@ const (
 	RefundEffectBridgeJobKind  = "pe01_wechat_refund_effect"
 	PaymentReconcileJobKind    = "pe01_wechat_payment_reconcile"
 	RefundReconcileJobKind     = "pe01_wechat_refund_reconcile"
+	WeChatShopRefundJobKind    = "order_wechat_shop_refund"
 )
 
 type PaymentEffectBridgeArgs struct {
@@ -30,3 +31,9 @@ type RefundReconcileArgs struct {
 }
 
 func (RefundReconcileArgs) Kind() string { return RefundReconcileJobKind }
+
+type WeChatShopRefundArgs struct {
+	RefundID int64 `json:"refund_id"`
+}
+
+func (WeChatShopRefundArgs) Kind() string { return WeChatShopRefundJobKind }

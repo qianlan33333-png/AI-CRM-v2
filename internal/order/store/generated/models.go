@@ -93,3 +93,68 @@ type OrderRefund struct {
 	Status            string             `json:"status"`
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
+
+type OrderWechatShopRefund struct {
+	ID                       int64              `json:"id"`
+	OrderID                  int64              `json:"order_id"`
+	ActorID                  int64              `json:"actor_id"`
+	MerchantOrderNo          string             `json:"merchant_order_no"`
+	OutRefundNo              string             `json:"out_refund_no"`
+	AmountMinor              int64              `json:"amount_minor"`
+	Currency                 string             `json:"currency"`
+	ReasonDigest             []byte             `json:"reason_digest"`
+	TransactionDigest        []byte             `json:"transaction_digest"`
+	CommandKeyDigest         []byte             `json:"command_key_digest"`
+	CommandPayloadDigest     []byte             `json:"command_payload_digest"`
+	SourceRefDigest          []byte             `json:"source_ref_digest"`
+	TargetRefDigest          []byte             `json:"target_ref_digest"`
+	PayloadDigest            []byte             `json:"payload_digest"`
+	PolicyVersionDigest      []byte             `json:"policy_version_digest"`
+	ProviderAcceptanceDigest []byte             `json:"provider_acceptance_digest"`
+	ProviderRefundDigest     []byte             `json:"provider_refund_digest"`
+	SettlementReceiptDigest  []byte             `json:"settlement_receipt_digest"`
+	State                    string             `json:"state"`
+	AttemptCount             int64              `json:"attempt_count"`
+	Version                  int64              `json:"version"`
+	CreatedAt                pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
+	SettledAt                pgtype.Timestamptz `json:"settled_at"`
+}
+
+type OrderWechatShopRefundAttempt struct {
+	ID             int64              `json:"id"`
+	RefundID       int64              `json:"refund_id"`
+	AttemptNo      int64              `json:"attempt_no"`
+	RiverJobID     int64              `json:"river_job_id"`
+	RiverAttempt   int64              `json:"river_attempt"`
+	ArgsDigest     []byte             `json:"args_digest"`
+	RequestDigest  []byte             `json:"request_digest"`
+	Outcome        pgtype.Text        `json:"outcome"`
+	EvidenceDigest []byte             `json:"evidence_digest"`
+	StartedAt      pgtype.Timestamptz `json:"started_at"`
+	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
+}
+
+type OrderWechatShopRefundCallback struct {
+	ID                   int64              `json:"id"`
+	RefundID             int64              `json:"refund_id"`
+	ProviderEventDigest  []byte             `json:"provider_event_digest"`
+	PayloadDigest        []byte             `json:"payload_digest"`
+	ProviderRefundDigest []byte             `json:"provider_refund_digest"`
+	Outcome              pgtype.Text        `json:"outcome"`
+	ResultDigest         []byte             `json:"result_digest"`
+	State                string             `json:"state"`
+	ReceivedAt           pgtype.Timestamptz `json:"received_at"`
+	CompletedAt          pgtype.Timestamptz `json:"completed_at"`
+}
+
+type OrderWechatShopRefundQuery struct {
+	ID                   int64              `json:"id"`
+	RefundID             int64              `json:"refund_id"`
+	EvidenceDigest       []byte             `json:"evidence_digest"`
+	ProviderRefundDigest []byte             `json:"provider_refund_digest"`
+	AmountMinor          int64              `json:"amount_minor"`
+	Currency             string             `json:"currency"`
+	Outcome              string             `json:"outcome"`
+	RecordedAt           pgtype.Timestamptz `json:"recorded_at"`
+}

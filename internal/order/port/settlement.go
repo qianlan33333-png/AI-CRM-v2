@@ -80,11 +80,12 @@ type PaymentCallbackCommand struct {
 }
 
 type RefundCommandV2 struct {
-	OrderID        ID
-	AmountMinor    int64
-	Reason         string
-	Actor          int64
-	IdempotencyKey string
+	OrderID                   ID
+	AmountMinor               int64
+	Reason                    string
+	TransactionIDConfirmation string
+	Actor                     int64
+	IdempotencyKey            string
 }
 
 type RefundCallbackCommand struct {

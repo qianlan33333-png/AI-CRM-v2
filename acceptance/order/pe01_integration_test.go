@@ -74,7 +74,8 @@ func TestPE01FakeWeChatPayOutcomeUnknownReconcilesAndCompensates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	refund, err := settlement.RequestRefundV2(ctx, orderport.RefundCommandV2{OrderID: checkout.OrderID, AmountMinor: checkout.AmountMinor, Reason: "acceptance full refund", Actor: 1, IdempotencyKey: prefix + "/refund-key"})
+	paymentDigest := sha256.Sum256([]byte("fake-transaction"))
+	refund, err := settlement.RequestRefundV2(ctx, orderport.RefundCommandV2{OrderID: checkout.OrderID, AmountMinor: checkout.AmountMinor, Reason: "acceptance full refund", TransactionIDConfirmation: "sha256:" + hex.EncodeToString(paymentDigest[:]), Actor: 1, IdempotencyKey: prefix + "/refund-key"})
 	if err != nil {
 		t.Fatal(err)
 	}

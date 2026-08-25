@@ -75,14 +75,15 @@ func (handler *Handler) Get(writer http.ResponseWriter, request *http.Request, m
 func (handler *Handler) Refund(writer http.ResponseWriter, request *http.Request, orderID int64) {
 	principal, err := adminActor(request, authport.CapabilityOrderWrite)
 	var input struct {
-		AmountMinor int64  `json:"amount_minor"`
-		Reason      string `json:"reason"`
+		AmountMinor               int64  `json:"amount_minor"`
+		Reason                    string `json:"reason"`
+		TransactionIDConfirmation string `json:"transaction_id_confirmation"`
 	}
 	if err == nil {
 		err = decode(writer, request, &input)
 	}
 	if err == nil && len(request.Header.Values("Idempotency-Key")) == 1 {
-		result, callErr := handler.application.RequestRefundV2(request.Context(), orderport.RefundCommandV2{OrderID: orderport.ID(orderID), AmountMinor: input.AmountMinor, Reason: input.Reason, Actor: principal.AdminUserID, IdempotencyKey: request.Header.Get("Idempotency-Key")})
+		result, callErr := handler.application.RequestRefundV2(request.Context(), orderport.RefundCommandV2{OrderID: orderport.ID(orderID), AmountMinor: input.AmountMinor, Reason: input.Reason, TransactionIDConfirmation: input.TransactionIDConfirmation, Actor: principal.AdminUserID, IdempotencyKey: request.Header.Get("Idempotency-Key")})
 		if callErr == nil {
 			writeJSON(writer, http.StatusAccepted, result)
 			return
