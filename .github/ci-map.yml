@@ -148,6 +148,11 @@
       "effects": {"go": true,"go_groups": ["events"],"go_mode": "selected"}
     },
     {
+      "name": "domain-externaleffects",
+      "patterns": ["internal/externaleffects/**","acceptance/externaleffects/**"],
+      "effects": {"go": true,"go_groups": ["externaleffects"],"go_mode": "selected"}
+    },
+    {
       "name": "domain-gateway",
       "patterns": ["internal/gateway/**","acceptance/gateway/**"],
       "effects": {"go": true,"go_groups": ["gateway"],"go_mode": "selected"}
@@ -216,6 +221,7 @@
         "internal/contact/store/**","acceptance/contact/**",
         "internal/coupon/store/**","acceptance/coupon/**",
         "internal/events/store/**","acceptance/events/**",
+        "internal/externaleffects/store/**","acceptance/externaleffects/**",
         "internal/identity/store/**","acceptance/identity/**",
         "internal/operationcycle/store/**","acceptance/operationcycle/**",
         "internal/order/store/**","acceptance/order/**",
@@ -263,6 +269,11 @@
       "name": "database-events",
       "patterns": ["internal/events/store/**","acceptance/events/**"],
       "effects": {"database": true,"database_groups": ["events"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-externaleffects",
+      "patterns": ["internal/externaleffects/store/**","acceptance/externaleffects/**"],
+      "effects": {"database": true,"database_groups": ["externaleffects"],"database_mode": "selected"}
     },
     {
       "name": "database-operationcycle",

@@ -239,6 +239,35 @@ func TestReleasePlaneNativePackageRegistryRemainsClosed(t *testing.T) {
 	}
 }
 
+func TestExternalEffectsRuntimeNativePackageRegistryRemainsClosed(t *testing.T) {
+	doc, _ := fresh(t)
+	operations := map[string]struct {
+		path   string
+		method string
+	}{
+		"listExternalEffectsRuntime":     {"/api/admin/external-effects", "GET"},
+		"getExternalEffectRuntime":       {"/api/admin/external-effects/{effect_id}", "GET"},
+		"getExternalEffectsDiagnostics":  {"/api/admin/external-effects/diagnostics", "GET"},
+		"cancelExternalEffectRuntime":    {"/api/admin/external-effects/{effect_id}/cancel", "POST"},
+		"retryExternalEffectRuntime":     {"/api/admin/external-effects/{effect_id}/retry", "POST"},
+		"reconcileExternalEffectRuntime": {"/api/admin/external-effects/{effect_id}/reconcile", "POST"},
+	}
+	for operationID, want := range operations {
+		item := doc.Paths.Value(want.path)
+		op := operationForMethod(item, want.method)
+		contract, registered := nativePackageOperations[operationID]
+		if op == nil || op.OperationID != operationID || !registered {
+			t.Fatalf("%s native operation is missing", operationID)
+		}
+		if contract.evidence != p4ExternalEffectsRuntimeEvidence {
+			t.Fatalf("%s evidence = %q", operationID, contract.evidence)
+		}
+		if err := validateNativePackageOperation(want.path, item, op, contract); err != nil {
+			t.Fatalf("%s: %v", operationID, err)
+		}
+	}
+}
+
 func TestCampaignInitiationTouchPlanContractRemainsClosed(t *testing.T) {
 	doc, inventory := fresh(t)
 	operations := map[string]struct {

@@ -7089,6 +7089,123 @@ paths:
           content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } }
         "500": { description: Unexpected local observation failure, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
         "503": { description: Local source or invariant unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyInternalEventError" } } } }
+  /api/admin/external-effects:
+    get:
+      tags: [p4-external-effects-runtime]
+      operationId: listExternalEffectsRuntime
+      summary: List the safe local execution projection for the external-effects runtime
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-EXTERNAL-EFFECTS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: external_effects.local_safe_projection
+      x-aicrm-external-effect: none
+      parameters: [{ name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }]
+      responses:
+        "200": { description: "Safe runtime projections without payload, recipient, credential, or Provider body.", content: { application/json: { schema: { $ref: "#/components/schemas/ExternalEffectsRuntimeList" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/external-effects/{effect_id}:
+    parameters: [{ $ref: "#/components/parameters/ExternalEffectRuntimeID" }]
+    get:
+      tags: [p4-external-effects-runtime]
+      operationId: getExternalEffectRuntime
+      summary: Read one safe local external-effect execution projection
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-EXTERNAL-EFFECTS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: external_effects.local_safe_projection
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Safe local runtime projection., content: { application/json: { schema: { $ref: "#/components/schemas/ExternalEffectRuntimeProjection" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/external-effects/{effect_id}/cancel:
+    parameters: [{ $ref: "#/components/parameters/ExternalEffectRuntimeID" }]
+    post:
+      tags: [p4-external-effects-runtime]
+      operationId: cancelExternalEffectRuntime
+      summary: Cancel a local external effect only before an attempt starts
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-EXTERNAL-EFFECTS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: external_effects.local_control_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "200": { description: Cancelled local runtime projection., content: { application/json: { schema: { $ref: "#/components/schemas/ExternalEffectRuntimeProjection" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/external-effects/{effect_id}/retry:
+    parameters: [{ $ref: "#/components/parameters/ExternalEffectRuntimeID" }]
+    post:
+      tags: [p4-external-effects-runtime]
+      operationId: retryExternalEffectRuntime
+      summary: Requeue only a deterministically retryable failed local effect
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-EXTERNAL-EFFECTS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: external_effects.local_control_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ExternalEffectRuntimeRetryRequest" } } } }
+      responses:
+        "200": { description: Requeued local runtime projection; no Provider call occurs in this request., content: { application/json: { schema: { $ref: "#/components/schemas/ExternalEffectRuntimeProjection" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/external-effects/{effect_id}/reconcile:
+    parameters: [{ $ref: "#/components/parameters/ExternalEffectRuntimeID" }]
+    post:
+      tags: [p4-external-effects-runtime]
+      operationId: reconcileExternalEffectRuntime
+      summary: Record digest-only evidence for an outcome-unknown effect
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-EXTERNAL-EFFECTS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: external_effects.local_reconciliation_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ExternalEffectRuntimeReconcileRequest" } } } }
+      responses:
+        "200": { description: Reconciled local runtime projection; the evidence body itself is never stored., content: { application/json: { schema: { $ref: "#/components/schemas/ExternalEffectRuntimeProjection" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/external-effects/jobs:
     get:
       tags: [p4-external-effects]
@@ -7117,21 +7234,21 @@ paths:
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/external-effects/diagnostics:
     get:
-      tags: [p4-external-effects]
+      tags: [p4-external-effects-runtime]
       operationId: getExternalEffectsDiagnostics
-      summary: Read local external-effect status counts and manual-review risk without executing work
+      summary: Read digest-only local external-effects runtime diagnostics without executing work
       security:
         - AdminSession: []
-      x-p4-decision-evidence: P4-EXTERNAL-EFFECTS-READONLY-2026-08-21
+      x-p4-decision-evidence: P4-EXTERNAL-EFFECTS-RUNTIME-2026-08-25
       x-aicrm-capability: operations.read
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: none
       x-aicrm-data-classification: internal
-      x-aicrm-data-source: outbound_tasks.local_read_model
+      x-aicrm-data-source: external_effects.local_safe_projection
       x-aicrm-external-effect: none
       responses:
-        "200": { description: Closed local-only diagnostic counts with explicit non-delivery semantics., content: { application/json: { schema: { $ref: "#/components/schemas/ExternalEffectsDiagnosticsResponse" } } } }
+        "200": { description: "Closed local runtime counts without payload, recipient, credential, or Provider body.", content: { application/json: { schema: { $ref: "#/components/schemas/ExternalEffectsRuntimeDiagnostics" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -10012,6 +10129,11 @@ components:
       in: path
       required: true
       schema: { type: integer, format: int64, minimum: 1 }
+    ExternalEffectRuntimeID:
+      name: effect_id
+      in: path
+      required: true
+      schema: { type: string, minLength: 1, maxLength: 19, pattern: '^[1-9][0-9]{0,18}$' }
     StageID:
       name: stage_id
       in: path
@@ -12193,6 +12315,62 @@ components:
         delivery_proven: { type: boolean, enum: [false] }
         local_fact_only: { type: boolean, enum: [true] }
         delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
+    ExternalEffectRuntimeOwner:
+      type: string
+      enum: [campaign, contact, outbound, wecom, survey, audience, order]
+    ExternalEffectRuntimeKind:
+      type: string
+      enum: [campaign_dispatch, campaign_group_announcement, contact_touch, outbound_message, outbound_media, wecom_tag_sync, wecom_profile_sync, survey_webhook, audience_webhook, order_payment_capture, order_refund]
+    ExternalEffectRuntimeState:
+      type: string
+      enum: [accepted, queued, attempted, executed, outcome_unknown, reconciled, retryable_failed, final_failed, cancelled]
+    ExternalEffectRuntimeProjection:
+      type: object
+      additionalProperties: false
+      required: [id, owner, kind, state, attempt_count, generation, updated_at]
+      properties:
+        id: { type: string, minLength: 1, maxLength: 19, pattern: '^[1-9][0-9]{0,18}$' }
+        owner: { $ref: "#/components/schemas/ExternalEffectRuntimeOwner" }
+        kind: { $ref: "#/components/schemas/ExternalEffectRuntimeKind" }
+        state: { $ref: "#/components/schemas/ExternalEffectRuntimeState" }
+        attempt_count: { type: integer, format: int32, minimum: 0 }
+        generation: { type: integer, format: int64, minimum: 1 }
+        updated_at: { type: string, format: date-time }
+    ExternalEffectsRuntimeList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties:
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/ExternalEffectRuntimeProjection" } }
+    ExternalEffectsRuntimeDiagnostics:
+      type: object
+      additionalProperties: false
+      required: [accepted, queued, attempted, outcome_unknown, retryable_failed]
+      properties:
+        accepted: { type: integer, format: int64, minimum: 0 }
+        queued: { type: integer, format: int64, minimum: 0 }
+        attempted: { type: integer, format: int64, minimum: 0 }
+        outcome_unknown: { type: integer, format: int64, minimum: 0 }
+        retryable_failed: { type: integer, format: int64, minimum: 0 }
+    ExternalEffectRuntimeRetryRequest:
+      type: object
+      additionalProperties: false
+      required: [job_id, generation, queue, args_digest, scheduled_at]
+      properties:
+        job_id: { type: integer, format: int64, minimum: 1 }
+        generation: { type: integer, format: int64, minimum: 1 }
+        queue: { type: string, minLength: 1, maxLength: 100, pattern: '^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$' }
+        args_digest: { type: string, pattern: '^sha256:[0-9a-f]{64}$' }
+        scheduled_at: { type: string, format: date-time }
+    ExternalEffectRuntimeReconcileRequest:
+      type: object
+      additionalProperties: false
+      required: [generation, fence, lease_expires_at, evidence_digest]
+      properties:
+        generation: { type: integer, format: int64, minimum: 1 }
+        fence: { type: integer, format: int64, minimum: 1 }
+        lease_expires_at: { type: string, format: date-time }
+        evidence_digest: { type: string, pattern: '^sha256:[0-9a-f]{64}$' }
     PublicSurveyError:
       type: object
       additionalProperties: false

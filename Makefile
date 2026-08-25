@@ -20,6 +20,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p4-j01-coupon-acceptance p4-coupon-ab-acceptance p4-i03-order-acceptance p4-order-ab-acceptance p4-message-archive-ab-acceptance p4-operation-cycle-ab-acceptance p4-automation-agents-ab-acceptance p4-adminops-jobs-ab-acceptance p4-push-center-0421-0422-acceptance p4-admin-shell-ab-acceptance p4-execution-runtime-ab-acceptance
 .PHONY: p4-ee01-internal-event-safe-export-acceptance
 .PHONY: p4-rp01-release-plane-acceptance
+.PHONY: p4-external-effects-runtime-acceptance
 .PHONY: p2-s04-acceptance
 .PHONY: p3-c07c-r3b-storage-acceptance p3-c07c-r3c-behavior-acceptance p3-o1a-r3-acceptance p3-o2-enqueue-one-acceptance p3-o3-enqueue-batch-acceptance p3-o4-sender-acceptance p3-o5-status-acceptance p3-o6a-retry-acceptance p3-o6b1-cancel-acceptance p3-o6b2-manual-retry-acceptance p3-o7-legacy-api-acceptance p4-w0-d01-automation-acceptance p4-w0-l01-stats-acceptance p4-a01-auth-acceptance p4-si00b-auth-acceptance
 .PHONY: p2-s05-acceptance
@@ -539,6 +540,10 @@ p4-ee01-internal-event-safe-export-acceptance:
 p4-rp01-release-plane-acceptance:
 	@test -n "$${P4RP01_TEST_DATABASE_URL:-}" || { echo "P4RP01_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/release/release_plane_pg16.sh
+
+p4-external-effects-runtime-acceptance:
+	@test -n "$${P4EER_TEST_DATABASE_URL:-}" || { echo "P4EER_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/externaleffects/external_effects_pg16.sh
 
 p4-si00b-auth-acceptance:
 	@test -n "$${P4SI00B_AUTH_TEST_DATABASE_URL:-}" || { echo "P4SI00B_AUTH_TEST_DATABASE_URL is required" >&2; exit 2; }

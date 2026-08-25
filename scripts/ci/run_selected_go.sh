@@ -68,7 +68,7 @@ while [[ -n "$remaining_groups" ]]; do
     composition)
       add_package ./cmd/aicrm
       ;;
-    adminops|ai|auth|automation|config|contact|coupon|events|gateway|identity|media|operationcycle|ops|order|outbound|product|pushcenter|segment|stats|survey|wecom)
+    adminops|ai|auth|automation|config|contact|coupon|events|externaleffects|gateway|identity|media|operationcycle|ops|order|outbound|product|pushcenter|segment|stats|survey|wecom)
       add_domain_group "$group_name"
       ;;
     *)

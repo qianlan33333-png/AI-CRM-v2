@@ -1831,6 +1831,123 @@ func (e CustomerSurveyChoiceAnswerQuestionType) Valid() bool {
 	}
 }
 
+// Defines values for ExternalEffectRuntimeKind.
+const (
+	AudienceWebhook           ExternalEffectRuntimeKind = "audience_webhook"
+	CampaignDispatch          ExternalEffectRuntimeKind = "campaign_dispatch"
+	CampaignGroupAnnouncement ExternalEffectRuntimeKind = "campaign_group_announcement"
+	ContactTouch              ExternalEffectRuntimeKind = "contact_touch"
+	OrderPaymentCapture       ExternalEffectRuntimeKind = "order_payment_capture"
+	OrderRefund               ExternalEffectRuntimeKind = "order_refund"
+	OutboundMedia             ExternalEffectRuntimeKind = "outbound_media"
+	OutboundMessage           ExternalEffectRuntimeKind = "outbound_message"
+	SurveyWebhook             ExternalEffectRuntimeKind = "survey_webhook"
+	WecomProfileSync          ExternalEffectRuntimeKind = "wecom_profile_sync"
+	WecomTagSync              ExternalEffectRuntimeKind = "wecom_tag_sync"
+)
+
+// Valid indicates whether the value is a known member of the ExternalEffectRuntimeKind enum.
+func (e ExternalEffectRuntimeKind) Valid() bool {
+	switch e {
+	case AudienceWebhook:
+		return true
+	case CampaignDispatch:
+		return true
+	case CampaignGroupAnnouncement:
+		return true
+	case ContactTouch:
+		return true
+	case OrderPaymentCapture:
+		return true
+	case OrderRefund:
+		return true
+	case OutboundMedia:
+		return true
+	case OutboundMessage:
+		return true
+	case SurveyWebhook:
+		return true
+	case WecomProfileSync:
+		return true
+	case WecomTagSync:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExternalEffectRuntimeOwner.
+const (
+	ExternalEffectRuntimeOwnerAudience ExternalEffectRuntimeOwner = "audience"
+	ExternalEffectRuntimeOwnerCampaign ExternalEffectRuntimeOwner = "campaign"
+	ExternalEffectRuntimeOwnerContact  ExternalEffectRuntimeOwner = "contact"
+	ExternalEffectRuntimeOwnerOrder    ExternalEffectRuntimeOwner = "order"
+	ExternalEffectRuntimeOwnerOutbound ExternalEffectRuntimeOwner = "outbound"
+	ExternalEffectRuntimeOwnerSurvey   ExternalEffectRuntimeOwner = "survey"
+	ExternalEffectRuntimeOwnerWecom    ExternalEffectRuntimeOwner = "wecom"
+)
+
+// Valid indicates whether the value is a known member of the ExternalEffectRuntimeOwner enum.
+func (e ExternalEffectRuntimeOwner) Valid() bool {
+	switch e {
+	case ExternalEffectRuntimeOwnerAudience:
+		return true
+	case ExternalEffectRuntimeOwnerCampaign:
+		return true
+	case ExternalEffectRuntimeOwnerContact:
+		return true
+	case ExternalEffectRuntimeOwnerOrder:
+		return true
+	case ExternalEffectRuntimeOwnerOutbound:
+		return true
+	case ExternalEffectRuntimeOwnerSurvey:
+		return true
+	case ExternalEffectRuntimeOwnerWecom:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExternalEffectRuntimeState.
+const (
+	ExternalEffectRuntimeStateAccepted        ExternalEffectRuntimeState = "accepted"
+	ExternalEffectRuntimeStateAttempted       ExternalEffectRuntimeState = "attempted"
+	ExternalEffectRuntimeStateCancelled       ExternalEffectRuntimeState = "cancelled"
+	ExternalEffectRuntimeStateExecuted        ExternalEffectRuntimeState = "executed"
+	ExternalEffectRuntimeStateFinalFailed     ExternalEffectRuntimeState = "final_failed"
+	ExternalEffectRuntimeStateOutcomeUnknown  ExternalEffectRuntimeState = "outcome_unknown"
+	ExternalEffectRuntimeStateQueued          ExternalEffectRuntimeState = "queued"
+	ExternalEffectRuntimeStateReconciled      ExternalEffectRuntimeState = "reconciled"
+	ExternalEffectRuntimeStateRetryableFailed ExternalEffectRuntimeState = "retryable_failed"
+)
+
+// Valid indicates whether the value is a known member of the ExternalEffectRuntimeState enum.
+func (e ExternalEffectRuntimeState) Valid() bool {
+	switch e {
+	case ExternalEffectRuntimeStateAccepted:
+		return true
+	case ExternalEffectRuntimeStateAttempted:
+		return true
+	case ExternalEffectRuntimeStateCancelled:
+		return true
+	case ExternalEffectRuntimeStateExecuted:
+		return true
+	case ExternalEffectRuntimeStateFinalFailed:
+		return true
+	case ExternalEffectRuntimeStateOutcomeUnknown:
+		return true
+	case ExternalEffectRuntimeStateQueued:
+		return true
+	case ExternalEffectRuntimeStateReconciled:
+		return true
+	case ExternalEffectRuntimeStateRetryableFailed:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for IdentityMergeReviewStatus.
 const (
 	IdentityMergeReviewStatusApproved IdentityMergeReviewStatus = "approved"
@@ -3993,49 +4110,49 @@ func (e LegacyPushCenterLaneSummaryLane) Valid() bool {
 
 // Defines values for LegacyPushCenterSectionKey.
 const (
-	AiAssist         LegacyPushCenterSectionKey = "ai_assist"
-	CustomerWebhook  LegacyPushCenterSectionKey = "customer_webhook"
-	GroupBroadcast   LegacyPushCenterSectionKey = "group_broadcast"
-	GroupOps         LegacyPushCenterSectionKey = "group_ops"
-	Integrations     LegacyPushCenterSectionKey = "integrations"
-	Order            LegacyPushCenterSectionKey = "order"
-	Other            LegacyPushCenterSectionKey = "other"
-	Payment          LegacyPushCenterSectionKey = "payment"
-	PrivateBroadcast LegacyPushCenterSectionKey = "private_broadcast"
-	Questionnaire    LegacyPushCenterSectionKey = "questionnaire"
-	Tags             LegacyPushCenterSectionKey = "tags"
-	TestReceiver     LegacyPushCenterSectionKey = "test_receiver"
-	Welcome          LegacyPushCenterSectionKey = "welcome"
+	LegacyPushCenterSectionKeyAiAssist         LegacyPushCenterSectionKey = "ai_assist"
+	LegacyPushCenterSectionKeyCustomerWebhook  LegacyPushCenterSectionKey = "customer_webhook"
+	LegacyPushCenterSectionKeyGroupBroadcast   LegacyPushCenterSectionKey = "group_broadcast"
+	LegacyPushCenterSectionKeyGroupOps         LegacyPushCenterSectionKey = "group_ops"
+	LegacyPushCenterSectionKeyIntegrations     LegacyPushCenterSectionKey = "integrations"
+	LegacyPushCenterSectionKeyOrder            LegacyPushCenterSectionKey = "order"
+	LegacyPushCenterSectionKeyOther            LegacyPushCenterSectionKey = "other"
+	LegacyPushCenterSectionKeyPayment          LegacyPushCenterSectionKey = "payment"
+	LegacyPushCenterSectionKeyPrivateBroadcast LegacyPushCenterSectionKey = "private_broadcast"
+	LegacyPushCenterSectionKeyQuestionnaire    LegacyPushCenterSectionKey = "questionnaire"
+	LegacyPushCenterSectionKeyTags             LegacyPushCenterSectionKey = "tags"
+	LegacyPushCenterSectionKeyTestReceiver     LegacyPushCenterSectionKey = "test_receiver"
+	LegacyPushCenterSectionKeyWelcome          LegacyPushCenterSectionKey = "welcome"
 )
 
 // Valid indicates whether the value is a known member of the LegacyPushCenterSectionKey enum.
 func (e LegacyPushCenterSectionKey) Valid() bool {
 	switch e {
-	case AiAssist:
+	case LegacyPushCenterSectionKeyAiAssist:
 		return true
-	case CustomerWebhook:
+	case LegacyPushCenterSectionKeyCustomerWebhook:
 		return true
-	case GroupBroadcast:
+	case LegacyPushCenterSectionKeyGroupBroadcast:
 		return true
-	case GroupOps:
+	case LegacyPushCenterSectionKeyGroupOps:
 		return true
-	case Integrations:
+	case LegacyPushCenterSectionKeyIntegrations:
 		return true
-	case Order:
+	case LegacyPushCenterSectionKeyOrder:
 		return true
-	case Other:
+	case LegacyPushCenterSectionKeyOther:
 		return true
-	case Payment:
+	case LegacyPushCenterSectionKeyPayment:
 		return true
-	case PrivateBroadcast:
+	case LegacyPushCenterSectionKeyPrivateBroadcast:
 		return true
-	case Questionnaire:
+	case LegacyPushCenterSectionKeyQuestionnaire:
 		return true
-	case Tags:
+	case LegacyPushCenterSectionKeyTags:
 		return true
-	case TestReceiver:
+	case LegacyPushCenterSectionKeyTestReceiver:
 		return true
-	case Welcome:
+	case LegacyPushCenterSectionKeyWelcome:
 		return true
 	default:
 		return false
@@ -6888,19 +7005,19 @@ func (e ListCustomerChatActivityParamsChatType) Valid() bool {
 
 // Defines values for ListIdentityMergeReviewsParamsStatus.
 const (
-	ListIdentityMergeReviewsParamsStatusApproved ListIdentityMergeReviewsParamsStatus = "approved"
-	ListIdentityMergeReviewsParamsStatusPending  ListIdentityMergeReviewsParamsStatus = "pending"
-	ListIdentityMergeReviewsParamsStatusRejected ListIdentityMergeReviewsParamsStatus = "rejected"
+	Approved ListIdentityMergeReviewsParamsStatus = "approved"
+	Pending  ListIdentityMergeReviewsParamsStatus = "pending"
+	Rejected ListIdentityMergeReviewsParamsStatus = "rejected"
 )
 
 // Valid indicates whether the value is a known member of the ListIdentityMergeReviewsParamsStatus enum.
 func (e ListIdentityMergeReviewsParamsStatus) Valid() bool {
 	switch e {
-	case ListIdentityMergeReviewsParamsStatusApproved:
+	case Approved:
 		return true
-	case ListIdentityMergeReviewsParamsStatusPending:
+	case Pending:
 		return true
-	case ListIdentityMergeReviewsParamsStatusRejected:
+	case Rejected:
 		return true
 	default:
 		return false
@@ -8109,6 +8226,57 @@ type ErrorResponse struct {
 	Details   *[]FieldError `json:"details,omitempty"`
 	Message   string        `json:"message"`
 	RequestId string        `json:"request_id"`
+}
+
+// ExternalEffectRuntimeKind defines model for ExternalEffectRuntimeKind.
+type ExternalEffectRuntimeKind string
+
+// ExternalEffectRuntimeOwner defines model for ExternalEffectRuntimeOwner.
+type ExternalEffectRuntimeOwner string
+
+// ExternalEffectRuntimeProjection defines model for ExternalEffectRuntimeProjection.
+type ExternalEffectRuntimeProjection struct {
+	AttemptCount int32                      `json:"attempt_count"`
+	Generation   int64                      `json:"generation"`
+	Id           string                     `json:"id"`
+	Kind         ExternalEffectRuntimeKind  `json:"kind"`
+	Owner        ExternalEffectRuntimeOwner `json:"owner"`
+	State        ExternalEffectRuntimeState `json:"state"`
+	UpdatedAt    time.Time                  `json:"updated_at"`
+}
+
+// ExternalEffectRuntimeReconcileRequest defines model for ExternalEffectRuntimeReconcileRequest.
+type ExternalEffectRuntimeReconcileRequest struct {
+	EvidenceDigest string    `json:"evidence_digest"`
+	Fence          int64     `json:"fence"`
+	Generation     int64     `json:"generation"`
+	LeaseExpiresAt time.Time `json:"lease_expires_at"`
+}
+
+// ExternalEffectRuntimeRetryRequest defines model for ExternalEffectRuntimeRetryRequest.
+type ExternalEffectRuntimeRetryRequest struct {
+	ArgsDigest  string    `json:"args_digest"`
+	Generation  int64     `json:"generation"`
+	JobId       int64     `json:"job_id"`
+	Queue       string    `json:"queue"`
+	ScheduledAt time.Time `json:"scheduled_at"`
+}
+
+// ExternalEffectRuntimeState defines model for ExternalEffectRuntimeState.
+type ExternalEffectRuntimeState string
+
+// ExternalEffectsRuntimeDiagnostics defines model for ExternalEffectsRuntimeDiagnostics.
+type ExternalEffectsRuntimeDiagnostics struct {
+	Accepted        int64 `json:"accepted"`
+	Attempted       int64 `json:"attempted"`
+	OutcomeUnknown  int64 `json:"outcome_unknown"`
+	Queued          int64 `json:"queued"`
+	RetryableFailed int64 `json:"retryable_failed"`
+}
+
+// ExternalEffectsRuntimeList defines model for ExternalEffectsRuntimeList.
+type ExternalEffectsRuntimeList struct {
+	Items []ExternalEffectRuntimeProjection `json:"items"`
 }
 
 // FieldError defines model for FieldError.
@@ -10947,6 +11115,9 @@ type EntitlementID = int64
 // EntitlementLimit defines model for EntitlementLimit.
 type EntitlementLimit = int
 
+// ExternalEffectRuntimeID defines model for ExternalEffectRuntimeID.
+type ExternalEffectRuntimeID = string
+
 // GroupOpsPlanID defines model for GroupOpsPlanID.
 type GroupOpsPlanID = string
 
@@ -11313,6 +11484,38 @@ type ValidateAdminOpsReleaseParams struct {
 
 	// XAdminActionToken Route-bound token. Required either here or in the closed JSON body.
 	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
+}
+
+// ListExternalEffectsRuntimeParams defines parameters for ListExternalEffectsRuntime.
+type ListExternalEffectsRuntimeParams struct {
+	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// CancelExternalEffectRuntimeParams defines parameters for CancelExternalEffectRuntime.
+type CancelExternalEffectRuntimeParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ReconcileExternalEffectRuntimeParams defines parameters for ReconcileExternalEffectRuntime.
+type ReconcileExternalEffectRuntimeParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// RetryExternalEffectRuntimeParams defines parameters for RetryExternalEffectRuntime.
+type RetryExternalEffectRuntimeParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
 // CreateInternalEventSafeExportParams defines parameters for CreateInternalEventSafeExport.
@@ -12293,6 +12496,12 @@ type RollbackAdminOpsReleaseJSONRequestBody = AdminOpsConfirmedActionRequest
 
 // ValidateAdminOpsReleaseJSONRequestBody defines body for ValidateAdminOpsRelease for application/json ContentType.
 type ValidateAdminOpsReleaseJSONRequestBody = AdminOpsActionRequest
+
+// ReconcileExternalEffectRuntimeJSONRequestBody defines body for ReconcileExternalEffectRuntime for application/json ContentType.
+type ReconcileExternalEffectRuntimeJSONRequestBody = ExternalEffectRuntimeReconcileRequest
+
+// RetryExternalEffectRuntimeJSONRequestBody defines body for RetryExternalEffectRuntime for application/json ContentType.
+type RetryExternalEffectRuntimeJSONRequestBody = ExternalEffectRuntimeRetryRequest
 
 // CreateInternalEventSafeExportJSONRequestBody defines body for CreateInternalEventSafeExport for application/json ContentType.
 type CreateInternalEventSafeExportJSONRequestBody = InternalEventSafeExportRequest
@@ -13741,6 +13950,24 @@ type ServerInterface interface {
 	// Read one frozen observed execution timeline without asserting a provider receipt
 	// (GET /api/admin/executions/{execution_id})
 	GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request, executionId string)
+	// List the safe local execution projection for the external-effects runtime
+	// (GET /api/admin/external-effects)
+	ListExternalEffectsRuntime(w http.ResponseWriter, r *http.Request, params ListExternalEffectsRuntimeParams)
+	// Read digest-only local external-effects runtime diagnostics without executing work
+	// (GET /api/admin/external-effects/diagnostics)
+	GetExternalEffectsDiagnostics(w http.ResponseWriter, r *http.Request)
+	// Read one safe local external-effect execution projection
+	// (GET /api/admin/external-effects/{effect_id})
+	GetExternalEffectRuntime(w http.ResponseWriter, r *http.Request, effectId ExternalEffectRuntimeID)
+	// Cancel a local external effect only before an attempt starts
+	// (POST /api/admin/external-effects/{effect_id}/cancel)
+	CancelExternalEffectRuntime(w http.ResponseWriter, r *http.Request, effectId ExternalEffectRuntimeID, params CancelExternalEffectRuntimeParams)
+	// Record digest-only evidence for an outcome-unknown effect
+	// (POST /api/admin/external-effects/{effect_id}/reconcile)
+	ReconcileExternalEffectRuntime(w http.ResponseWriter, r *http.Request, effectId ExternalEffectRuntimeID, params ReconcileExternalEffectRuntimeParams)
+	// Requeue only a deterministically retryable failed local effect
+	// (POST /api/admin/external-effects/{effect_id}/retry)
+	RetryExternalEffectRuntime(w http.ResponseWriter, r *http.Request, effectId ExternalEffectRuntimeID, params RetryExternalEffectRuntimeParams)
 	// Freeze an admin-only local event and delivery safe CSV snapshot
 	// (POST /api/admin/internal-events/exports)
 	CreateInternalEventSafeExport(w http.ResponseWriter, r *http.Request, params CreateInternalEventSafeExportParams)
@@ -14452,6 +14679,42 @@ func (_ Unimplemented) GetLegacyExecutionRuntime(w http.ResponseWriter, r *http.
 // Read one frozen observed execution timeline without asserting a provider receipt
 // (GET /api/admin/executions/{execution_id})
 func (_ Unimplemented) GetLegacyExecutionTimeline(w http.ResponseWriter, r *http.Request, executionId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List the safe local execution projection for the external-effects runtime
+// (GET /api/admin/external-effects)
+func (_ Unimplemented) ListExternalEffectsRuntime(w http.ResponseWriter, r *http.Request, params ListExternalEffectsRuntimeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read digest-only local external-effects runtime diagnostics without executing work
+// (GET /api/admin/external-effects/diagnostics)
+func (_ Unimplemented) GetExternalEffectsDiagnostics(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one safe local external-effect execution projection
+// (GET /api/admin/external-effects/{effect_id})
+func (_ Unimplemented) GetExternalEffectRuntime(w http.ResponseWriter, r *http.Request, effectId ExternalEffectRuntimeID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Cancel a local external effect only before an attempt starts
+// (POST /api/admin/external-effects/{effect_id}/cancel)
+func (_ Unimplemented) CancelExternalEffectRuntime(w http.ResponseWriter, r *http.Request, effectId ExternalEffectRuntimeID, params CancelExternalEffectRuntimeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Record digest-only evidence for an outcome-unknown effect
+// (POST /api/admin/external-effects/{effect_id}/reconcile)
+func (_ Unimplemented) ReconcileExternalEffectRuntime(w http.ResponseWriter, r *http.Request, effectId ExternalEffectRuntimeID, params ReconcileExternalEffectRuntimeParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Requeue only a deterministically retryable failed local effect
+// (POST /api/admin/external-effects/{effect_id}/retry)
+func (_ Unimplemented) RetryExternalEffectRuntime(w http.ResponseWriter, r *http.Request, effectId ExternalEffectRuntimeID, params RetryExternalEffectRuntimeParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -17630,6 +17893,336 @@ func (siw *ServerInterfaceWrapper) GetLegacyExecutionTimeline(w http.ResponseWri
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetLegacyExecutionTimeline(w, r, executionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListExternalEffectsRuntime operation middleware
+func (siw *ServerInterfaceWrapper) ListExternalEffectsRuntime(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListExternalEffectsRuntimeParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListExternalEffectsRuntime(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetExternalEffectsDiagnostics operation middleware
+func (siw *ServerInterfaceWrapper) GetExternalEffectsDiagnostics(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetExternalEffectsDiagnostics(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetExternalEffectRuntime operation middleware
+func (siw *ServerInterfaceWrapper) GetExternalEffectRuntime(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "effect_id" -------------
+	var effectId ExternalEffectRuntimeID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "effect_id", chi.URLParam(r, "effect_id"), &effectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "effect_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetExternalEffectRuntime(w, r, effectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CancelExternalEffectRuntime operation middleware
+func (siw *ServerInterfaceWrapper) CancelExternalEffectRuntime(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "effect_id" -------------
+	var effectId ExternalEffectRuntimeID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "effect_id", chi.URLParam(r, "effect_id"), &effectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "effect_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CancelExternalEffectRuntimeParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CancelExternalEffectRuntime(w, r, effectId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReconcileExternalEffectRuntime operation middleware
+func (siw *ServerInterfaceWrapper) ReconcileExternalEffectRuntime(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "effect_id" -------------
+	var effectId ExternalEffectRuntimeID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "effect_id", chi.URLParam(r, "effect_id"), &effectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "effect_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReconcileExternalEffectRuntimeParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReconcileExternalEffectRuntime(w, r, effectId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RetryExternalEffectRuntime operation middleware
+func (siw *ServerInterfaceWrapper) RetryExternalEffectRuntime(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "effect_id" -------------
+	var effectId ExternalEffectRuntimeID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "effect_id", chi.URLParam(r, "effect_id"), &effectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "effect_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params RetryExternalEffectRuntimeParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RetryExternalEffectRuntime(w, r, effectId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -26779,6 +27372,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/executions/{execution_id}", wrapper.GetLegacyExecutionTimeline)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/external-effects", wrapper.ListExternalEffectsRuntime)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/external-effects/diagnostics", wrapper.GetExternalEffectsDiagnostics)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/external-effects/{effect_id}", wrapper.GetExternalEffectRuntime)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/external-effects/{effect_id}/cancel", wrapper.CancelExternalEffectRuntime)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/external-effects/{effect_id}/reconcile", wrapper.ReconcileExternalEffectRuntime)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/external-effects/{effect_id}/retry", wrapper.RetryExternalEffectRuntime)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/internal-events/exports", wrapper.CreateInternalEventSafeExport)
 	})
 	r.Group(func(r chi.Router) {
@@ -29864,6 +30475,391 @@ func (response GetLegacyExecutionTimeline404JSONResponse) VisitGetLegacyExecutio
 type GetLegacyExecutionTimeline503JSONResponse LegacyExecutionTimelineUnavailable
 
 func (response GetLegacyExecutionTimeline503JSONResponse) VisitGetLegacyExecutionTimelineResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListExternalEffectsRuntimeRequestObject struct {
+	Params ListExternalEffectsRuntimeParams
+}
+
+type ListExternalEffectsRuntimeResponseObject interface {
+	VisitListExternalEffectsRuntimeResponse(w http.ResponseWriter) error
+}
+
+type ListExternalEffectsRuntime200JSONResponse ExternalEffectsRuntimeList
+
+func (response ListExternalEffectsRuntime200JSONResponse) VisitListExternalEffectsRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListExternalEffectsRuntime400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListExternalEffectsRuntime400JSONResponse) VisitListExternalEffectsRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListExternalEffectsRuntime401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListExternalEffectsRuntime401JSONResponse) VisitListExternalEffectsRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListExternalEffectsRuntime403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListExternalEffectsRuntime403JSONResponse) VisitListExternalEffectsRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListExternalEffectsRuntime503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListExternalEffectsRuntime503JSONResponse) VisitListExternalEffectsRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExternalEffectsDiagnosticsRequestObject struct {
+}
+
+type GetExternalEffectsDiagnosticsResponseObject interface {
+	VisitGetExternalEffectsDiagnosticsResponse(w http.ResponseWriter) error
+}
+
+type GetExternalEffectsDiagnostics200JSONResponse ExternalEffectsRuntimeDiagnostics
+
+func (response GetExternalEffectsDiagnostics200JSONResponse) VisitGetExternalEffectsDiagnosticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExternalEffectsDiagnostics400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetExternalEffectsDiagnostics400JSONResponse) VisitGetExternalEffectsDiagnosticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExternalEffectsDiagnostics401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetExternalEffectsDiagnostics401JSONResponse) VisitGetExternalEffectsDiagnosticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExternalEffectsDiagnostics403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetExternalEffectsDiagnostics403JSONResponse) VisitGetExternalEffectsDiagnosticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExternalEffectsDiagnostics503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetExternalEffectsDiagnostics503JSONResponse) VisitGetExternalEffectsDiagnosticsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExternalEffectRuntimeRequestObject struct {
+	EffectId ExternalEffectRuntimeID `json:"effect_id"`
+}
+
+type GetExternalEffectRuntimeResponseObject interface {
+	VisitGetExternalEffectRuntimeResponse(w http.ResponseWriter) error
+}
+
+type GetExternalEffectRuntime200JSONResponse ExternalEffectRuntimeProjection
+
+func (response GetExternalEffectRuntime200JSONResponse) VisitGetExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExternalEffectRuntime400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetExternalEffectRuntime400JSONResponse) VisitGetExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExternalEffectRuntime401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetExternalEffectRuntime401JSONResponse) VisitGetExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExternalEffectRuntime403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetExternalEffectRuntime403JSONResponse) VisitGetExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExternalEffectRuntime404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetExternalEffectRuntime404JSONResponse) VisitGetExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetExternalEffectRuntime503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetExternalEffectRuntime503JSONResponse) VisitGetExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelExternalEffectRuntimeRequestObject struct {
+	EffectId ExternalEffectRuntimeID `json:"effect_id"`
+	Params   CancelExternalEffectRuntimeParams
+}
+
+type CancelExternalEffectRuntimeResponseObject interface {
+	VisitCancelExternalEffectRuntimeResponse(w http.ResponseWriter) error
+}
+
+type CancelExternalEffectRuntime200JSONResponse ExternalEffectRuntimeProjection
+
+func (response CancelExternalEffectRuntime200JSONResponse) VisitCancelExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelExternalEffectRuntime400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CancelExternalEffectRuntime400JSONResponse) VisitCancelExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelExternalEffectRuntime401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CancelExternalEffectRuntime401JSONResponse) VisitCancelExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelExternalEffectRuntime403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CancelExternalEffectRuntime403JSONResponse) VisitCancelExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelExternalEffectRuntime404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CancelExternalEffectRuntime404JSONResponse) VisitCancelExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelExternalEffectRuntime409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CancelExternalEffectRuntime409JSONResponse) VisitCancelExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CancelExternalEffectRuntime503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CancelExternalEffectRuntime503JSONResponse) VisitCancelExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileExternalEffectRuntimeRequestObject struct {
+	EffectId ExternalEffectRuntimeID `json:"effect_id"`
+	Params   ReconcileExternalEffectRuntimeParams
+	Body     *ReconcileExternalEffectRuntimeJSONRequestBody
+}
+
+type ReconcileExternalEffectRuntimeResponseObject interface {
+	VisitReconcileExternalEffectRuntimeResponse(w http.ResponseWriter) error
+}
+
+type ReconcileExternalEffectRuntime200JSONResponse ExternalEffectRuntimeProjection
+
+func (response ReconcileExternalEffectRuntime200JSONResponse) VisitReconcileExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileExternalEffectRuntime400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReconcileExternalEffectRuntime400JSONResponse) VisitReconcileExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileExternalEffectRuntime401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReconcileExternalEffectRuntime401JSONResponse) VisitReconcileExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileExternalEffectRuntime403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReconcileExternalEffectRuntime403JSONResponse) VisitReconcileExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileExternalEffectRuntime404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReconcileExternalEffectRuntime404JSONResponse) VisitReconcileExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileExternalEffectRuntime409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReconcileExternalEffectRuntime409JSONResponse) VisitReconcileExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileExternalEffectRuntime503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ReconcileExternalEffectRuntime503JSONResponse) VisitReconcileExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryExternalEffectRuntimeRequestObject struct {
+	EffectId ExternalEffectRuntimeID `json:"effect_id"`
+	Params   RetryExternalEffectRuntimeParams
+	Body     *RetryExternalEffectRuntimeJSONRequestBody
+}
+
+type RetryExternalEffectRuntimeResponseObject interface {
+	VisitRetryExternalEffectRuntimeResponse(w http.ResponseWriter) error
+}
+
+type RetryExternalEffectRuntime200JSONResponse ExternalEffectRuntimeProjection
+
+func (response RetryExternalEffectRuntime200JSONResponse) VisitRetryExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryExternalEffectRuntime400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response RetryExternalEffectRuntime400JSONResponse) VisitRetryExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryExternalEffectRuntime401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RetryExternalEffectRuntime401JSONResponse) VisitRetryExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryExternalEffectRuntime403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RetryExternalEffectRuntime403JSONResponse) VisitRetryExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryExternalEffectRuntime404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RetryExternalEffectRuntime404JSONResponse) VisitRetryExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryExternalEffectRuntime409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RetryExternalEffectRuntime409JSONResponse) VisitRetryExternalEffectRuntimeResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type RetryExternalEffectRuntime503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response RetryExternalEffectRuntime503JSONResponse) VisitRetryExternalEffectRuntimeResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -39702,6 +40698,24 @@ type StrictServerInterface interface {
 	// Read one frozen observed execution timeline without asserting a provider receipt
 	// (GET /api/admin/executions/{execution_id})
 	GetLegacyExecutionTimeline(ctx context.Context, request GetLegacyExecutionTimelineRequestObject) (GetLegacyExecutionTimelineResponseObject, error)
+	// List the safe local execution projection for the external-effects runtime
+	// (GET /api/admin/external-effects)
+	ListExternalEffectsRuntime(ctx context.Context, request ListExternalEffectsRuntimeRequestObject) (ListExternalEffectsRuntimeResponseObject, error)
+	// Read digest-only local external-effects runtime diagnostics without executing work
+	// (GET /api/admin/external-effects/diagnostics)
+	GetExternalEffectsDiagnostics(ctx context.Context, request GetExternalEffectsDiagnosticsRequestObject) (GetExternalEffectsDiagnosticsResponseObject, error)
+	// Read one safe local external-effect execution projection
+	// (GET /api/admin/external-effects/{effect_id})
+	GetExternalEffectRuntime(ctx context.Context, request GetExternalEffectRuntimeRequestObject) (GetExternalEffectRuntimeResponseObject, error)
+	// Cancel a local external effect only before an attempt starts
+	// (POST /api/admin/external-effects/{effect_id}/cancel)
+	CancelExternalEffectRuntime(ctx context.Context, request CancelExternalEffectRuntimeRequestObject) (CancelExternalEffectRuntimeResponseObject, error)
+	// Record digest-only evidence for an outcome-unknown effect
+	// (POST /api/admin/external-effects/{effect_id}/reconcile)
+	ReconcileExternalEffectRuntime(ctx context.Context, request ReconcileExternalEffectRuntimeRequestObject) (ReconcileExternalEffectRuntimeResponseObject, error)
+	// Requeue only a deterministically retryable failed local effect
+	// (POST /api/admin/external-effects/{effect_id}/retry)
+	RetryExternalEffectRuntime(ctx context.Context, request RetryExternalEffectRuntimeRequestObject) (RetryExternalEffectRuntimeResponseObject, error)
 	// Freeze an admin-only local event and delivery safe CSV snapshot
 	// (POST /api/admin/internal-events/exports)
 	CreateInternalEventSafeExport(ctx context.Context, request CreateInternalEventSafeExportRequestObject) (CreateInternalEventSafeExportResponseObject, error)
@@ -41440,6 +42454,177 @@ func (sh *strictHandler) GetLegacyExecutionTimeline(w http.ResponseWriter, r *ht
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetLegacyExecutionTimelineResponseObject); ok {
 		if err := validResponse.VisitGetLegacyExecutionTimelineResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListExternalEffectsRuntime operation middleware
+func (sh *strictHandler) ListExternalEffectsRuntime(w http.ResponseWriter, r *http.Request, params ListExternalEffectsRuntimeParams) {
+	var request ListExternalEffectsRuntimeRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListExternalEffectsRuntime(ctx, request.(ListExternalEffectsRuntimeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListExternalEffectsRuntime")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListExternalEffectsRuntimeResponseObject); ok {
+		if err := validResponse.VisitListExternalEffectsRuntimeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetExternalEffectsDiagnostics operation middleware
+func (sh *strictHandler) GetExternalEffectsDiagnostics(w http.ResponseWriter, r *http.Request) {
+	var request GetExternalEffectsDiagnosticsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetExternalEffectsDiagnostics(ctx, request.(GetExternalEffectsDiagnosticsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetExternalEffectsDiagnostics")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetExternalEffectsDiagnosticsResponseObject); ok {
+		if err := validResponse.VisitGetExternalEffectsDiagnosticsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetExternalEffectRuntime operation middleware
+func (sh *strictHandler) GetExternalEffectRuntime(w http.ResponseWriter, r *http.Request, effectId ExternalEffectRuntimeID) {
+	var request GetExternalEffectRuntimeRequestObject
+
+	request.EffectId = effectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetExternalEffectRuntime(ctx, request.(GetExternalEffectRuntimeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetExternalEffectRuntime")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetExternalEffectRuntimeResponseObject); ok {
+		if err := validResponse.VisitGetExternalEffectRuntimeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CancelExternalEffectRuntime operation middleware
+func (sh *strictHandler) CancelExternalEffectRuntime(w http.ResponseWriter, r *http.Request, effectId ExternalEffectRuntimeID, params CancelExternalEffectRuntimeParams) {
+	var request CancelExternalEffectRuntimeRequestObject
+
+	request.EffectId = effectId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CancelExternalEffectRuntime(ctx, request.(CancelExternalEffectRuntimeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CancelExternalEffectRuntime")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CancelExternalEffectRuntimeResponseObject); ok {
+		if err := validResponse.VisitCancelExternalEffectRuntimeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReconcileExternalEffectRuntime operation middleware
+func (sh *strictHandler) ReconcileExternalEffectRuntime(w http.ResponseWriter, r *http.Request, effectId ExternalEffectRuntimeID, params ReconcileExternalEffectRuntimeParams) {
+	var request ReconcileExternalEffectRuntimeRequestObject
+
+	request.EffectId = effectId
+	request.Params = params
+
+	var body ReconcileExternalEffectRuntimeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReconcileExternalEffectRuntime(ctx, request.(ReconcileExternalEffectRuntimeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReconcileExternalEffectRuntime")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReconcileExternalEffectRuntimeResponseObject); ok {
+		if err := validResponse.VisitReconcileExternalEffectRuntimeResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RetryExternalEffectRuntime operation middleware
+func (sh *strictHandler) RetryExternalEffectRuntime(w http.ResponseWriter, r *http.Request, effectId ExternalEffectRuntimeID, params RetryExternalEffectRuntimeParams) {
+	var request RetryExternalEffectRuntimeRequestObject
+
+	request.EffectId = effectId
+	request.Params = params
+
+	var body RetryExternalEffectRuntimeJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.RetryExternalEffectRuntime(ctx, request.(RetryExternalEffectRuntimeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RetryExternalEffectRuntime")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RetryExternalEffectRuntimeResponseObject); ok {
+		if err := validResponse.VisitRetryExternalEffectRuntimeResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
