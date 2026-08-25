@@ -24,7 +24,7 @@ expect_populated_guard() {
     printf 'expected populated 00083 down guard to fail\n' >&2
     exit 1
   fi
-  rg -q 'cannot roll back populated media content package and delivery facts' "$guard_output"
+  grep -Fq 'cannot roll back populated media content package and delivery facts' "$guard_output"
   rm -f "$guard_output"
   [[ "$(psql "$database_url" -X -q -At -c 'SELECT count(*) FROM goose_db_version WHERE version_id=83 AND is_applied')" = 1 ]]
 }
