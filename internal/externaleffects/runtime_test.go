@@ -22,7 +22,7 @@ func TestEnvelopeClosedOwnersAndDigestOnlyPayload(t *testing.T) {
 		{OwnerOutbound, KindOutboundMessage}, {OwnerOutbound, KindOutboundMedia},
 		{OwnerCampaign, KindCampaignDispatch}, {OwnerCampaign, KindCampaignGroupAnnouncement},
 		{OwnerSurvey, KindSurveyWebhook}, {OwnerAudience, KindAudienceWebhook},
-		{OwnerOrder, KindOrderPaymentCapture}, {OwnerOrder, KindOrderRefund},
+		{OwnerOrder, KindOrderPaymentPrepay}, {OwnerOrder, KindOrderPaymentCapture}, {OwnerOrder, KindOrderRefund},
 	} {
 		value, err := NewEnvelope(EnvelopeInput{Owner: family.owner, Kind: family.kind, SourceRefDigest: digest("source"), TargetRefDigest: digest("target"), PayloadDigest: digest("payload"), PolicyVersionHash: digest("policy")})
 		if err != nil || value.Fingerprint() == "" {

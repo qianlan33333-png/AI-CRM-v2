@@ -115,6 +115,43 @@ func (q *Queries) CreateEffect(ctx context.Context, arg CreateEffectParams) (Ext
 	return i, err
 }
 
+const createPE01AcceptanceEffect = `-- name: CreatePE01AcceptanceEffect :one
+INSERT INTO external_effects (
+  owner, kind, source_ref_digest, target_ref_digest, payload_digest,
+  policy_version_hash, envelope_fingerprint, state
+) VALUES (
+  'order', $1, $2,
+  $3, $4,
+  $5, $6, $7
+)
+RETURNING id
+`
+
+type CreatePE01AcceptanceEffectParams struct {
+	Kind                string `json:"kind"`
+	SourceRefDigest     string `json:"source_ref_digest"`
+	TargetRefDigest     string `json:"target_ref_digest"`
+	PayloadDigest       string `json:"payload_digest"`
+	PolicyVersionHash   string `json:"policy_version_hash"`
+	EnvelopeFingerprint string `json:"envelope_fingerprint"`
+	State               string `json:"state"`
+}
+
+func (q *Queries) CreatePE01AcceptanceEffect(ctx context.Context, arg CreatePE01AcceptanceEffectParams) (int64, error) {
+	row := q.db.QueryRow(ctx, createPE01AcceptanceEffect,
+		arg.Kind,
+		arg.SourceRefDigest,
+		arg.TargetRefDigest,
+		arg.PayloadDigest,
+		arg.PolicyVersionHash,
+		arg.EnvelopeFingerprint,
+		arg.State,
+	)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const getAcceptReceipt = `-- name: GetAcceptReceipt :one
 SELECT id, operation, effect_id, receipt_key_digest, command_digest, state, completed_at FROM external_effect_receipts WHERE operation='accept' AND receipt_key_digest=$1
 `
@@ -218,6 +255,41 @@ func (q *Queries) GetReceipt(ctx context.Context, arg GetReceiptParams) (Externa
 		&i.CommandDigest,
 		&i.State,
 		&i.CompletedAt,
+	)
+	return i, err
+}
+
+const getTerminalOutcome = `-- name: GetTerminalOutcome :one
+SELECT e.state, a.generation, a.fence, a.completed_at AS lease_expires_at, a.receipt_digest
+FROM external_effects e
+JOIN LATERAL (
+  SELECT generation, fence, completed_at, receipt_digest
+  FROM external_effect_attempts
+  WHERE effect_id = e.id AND completion IS NOT NULL
+  ORDER BY number DESC
+  LIMIT 1
+) a ON true
+WHERE e.id = $1
+  AND e.state IN ('executed','outcome_unknown','reconciled','retryable_failed','final_failed')
+`
+
+type GetTerminalOutcomeRow struct {
+	State          string             `json:"state"`
+	Generation     int64              `json:"generation"`
+	Fence          int64              `json:"fence"`
+	LeaseExpiresAt pgtype.Timestamptz `json:"lease_expires_at"`
+	ReceiptDigest  pgtype.Text        `json:"receipt_digest"`
+}
+
+func (q *Queries) GetTerminalOutcome(ctx context.Context, id int64) (GetTerminalOutcomeRow, error) {
+	row := q.db.QueryRow(ctx, getTerminalOutcome, id)
+	var i GetTerminalOutcomeRow
+	err := row.Scan(
+		&i.State,
+		&i.Generation,
+		&i.Fence,
+		&i.LeaseExpiresAt,
+		&i.ReceiptDigest,
 	)
 	return i, err
 }

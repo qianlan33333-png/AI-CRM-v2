@@ -252,7 +252,7 @@ owners:
 
   order:
     package: internal/order
-    tables: [order_list_projections, order_list_projection_counters, order_operation_receipts, order_export_jobs, order_external_effects, order_refunds]
+    tables: [order_list_projections, order_list_projection_counters, order_operation_receipts, order_export_jobs, order_external_effects, order_refunds, order_payment_commands, order_financial_refunds, order_provider_callback_receipts, order_financial_reconciliations]
     constraints:
       order_list_projections: read_only_unified_order_projection_without_payment_or_provider_execution
       order_list_projection_counters: exact_unfiltered_order_total_without_projection_scan
@@ -260,6 +260,10 @@ owners:
       order_export_jobs: local_completed_csv_export_content_without_external_object_storage
       order_external_effects: durable_provider_call_gate_with_outcome_unknown_never_auto_retried
       order_refunds: durable_local_refund_intent_without_provider_execution
+      order_payment_commands: immutable_wechat_prepay_command_and_external_effect_lineage_without_provider_body
+      order_financial_refunds: wechat_refund_amount_reservation_and_authoritative_settlement_lineage
+      order_provider_callback_receipts: immutable_digest_only_signed_callback_receipts_completed_in_the_financial_transaction
+      order_financial_reconciliations: immutable_provider_query_evidence_without_plaintext_provider_payload
 
   media:
     package: internal/media

@@ -358,7 +358,10 @@ const getBoardOrder = `-- name: GetBoardOrder :one
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at
+       status, status_label, detail_url, created_at, updated_at,
+       pe01_contract_version, product_version, product_kind, payment_identity_digest,
+       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
+       paid_at, fully_refunded_at, version
 FROM order_list_projections
 WHERE ($1::text = 'auto' OR provider = $1::text)
   AND (merchant_order_no = $2::text
@@ -396,6 +399,16 @@ func (q *Queries) GetBoardOrder(ctx context.Context, arg GetBoardOrderParams) (O
 		&i.DetailUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Pe01ContractVersion,
+		&i.ProductVersion,
+		&i.ProductKind,
+		&i.PaymentIdentityDigest,
+		&i.SettledAmountMinor,
+		&i.RefundedAmountMinor,
+		&i.SettlementReceiptDigest,
+		&i.PaidAt,
+		&i.FullyRefundedAt,
+		&i.Version,
 	)
 	return i, err
 }
@@ -404,7 +417,10 @@ const getBoardOrderByID = `-- name: GetBoardOrderByID :one
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at
+       status, status_label, detail_url, created_at, updated_at,
+       pe01_contract_version, product_version, product_kind, payment_identity_digest,
+       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
+       paid_at, fully_refunded_at, version
 FROM order_list_projections
 WHERE id = $1::bigint
 `
@@ -433,6 +449,16 @@ func (q *Queries) GetBoardOrderByID(ctx context.Context, id int64) (OrderListPro
 		&i.DetailUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Pe01ContractVersion,
+		&i.ProductVersion,
+		&i.ProductKind,
+		&i.PaymentIdentityDigest,
+		&i.SettledAmountMinor,
+		&i.RefundedAmountMinor,
+		&i.SettlementReceiptDigest,
+		&i.PaidAt,
+		&i.FullyRefundedAt,
+		&i.Version,
 	)
 	return i, err
 }
@@ -441,7 +467,10 @@ const getBoardOrderForUpdate = `-- name: GetBoardOrderForUpdate :one
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at
+       status, status_label, detail_url, created_at, updated_at,
+       pe01_contract_version, product_version, product_kind, payment_identity_digest,
+       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
+       paid_at, fully_refunded_at, version
 FROM order_list_projections
 WHERE ($1::text = 'auto' OR provider = $1::text)
   AND (merchant_order_no = $2::text
@@ -479,6 +508,16 @@ func (q *Queries) GetBoardOrderForUpdate(ctx context.Context, arg GetBoardOrderF
 		&i.DetailUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.Pe01ContractVersion,
+		&i.ProductVersion,
+		&i.ProductKind,
+		&i.PaymentIdentityDigest,
+		&i.SettledAmountMinor,
+		&i.RefundedAmountMinor,
+		&i.SettlementReceiptDigest,
+		&i.PaidAt,
+		&i.FullyRefundedAt,
+		&i.Version,
 	)
 	return i, err
 }
@@ -677,7 +716,10 @@ const listBoardOrders = `-- name: ListBoardOrders :many
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at
+       status, status_label, detail_url, created_at, updated_at,
+       pe01_contract_version, product_version, product_kind, payment_identity_digest,
+       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
+       paid_at, fully_refunded_at, version
 FROM order_list_projections
 WHERE ($1::text IS NULL OR provider = $1::text)
   AND ($2::text IS NULL OR status = $2::text)
@@ -748,6 +790,16 @@ func (q *Queries) ListBoardOrders(ctx context.Context, arg ListBoardOrdersParams
 			&i.DetailUrl,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Pe01ContractVersion,
+			&i.ProductVersion,
+			&i.ProductKind,
+			&i.PaymentIdentityDigest,
+			&i.SettledAmountMinor,
+			&i.RefundedAmountMinor,
+			&i.SettlementReceiptDigest,
+			&i.PaidAt,
+			&i.FullyRefundedAt,
+			&i.Version,
 		); err != nil {
 			return nil, err
 		}
@@ -802,7 +854,10 @@ const listOrderProjections = `-- name: ListOrderProjections :many
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at
+       status, status_label, detail_url, created_at, updated_at,
+       pe01_contract_version, product_version, product_kind, payment_identity_digest,
+       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
+       paid_at, fully_refunded_at, version
 FROM order_list_projections
 WHERE ($1::text IS NULL OR provider = $1::text)
   AND ($2::text IS NULL OR merchant_order_no ILIKE '%' || $2::text || '%')
@@ -870,6 +925,16 @@ func (q *Queries) ListOrderProjections(ctx context.Context, arg ListOrderProject
 			&i.DetailUrl,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.Pe01ContractVersion,
+			&i.ProductVersion,
+			&i.ProductKind,
+			&i.PaymentIdentityDigest,
+			&i.SettledAmountMinor,
+			&i.RefundedAmountMinor,
+			&i.SettlementReceiptDigest,
+			&i.PaidAt,
+			&i.FullyRefundedAt,
+			&i.Version,
 		); err != nil {
 			return nil, err
 		}

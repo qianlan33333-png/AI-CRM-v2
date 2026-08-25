@@ -24,6 +24,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p4-external-effects-runtime-acceptance
 .PHONY: p4-data-migration-harness-acceptance
 .PHONY: p4-b01-wecom-inbound-acceptance
+.PHONY: p4-pe01-wechat-pay-settlement-acceptance
 .PHONY: p2-s04-acceptance
 .PHONY: p3-c07c-r3b-storage-acceptance p3-c07c-r3c-behavior-acceptance p3-o1a-r3-acceptance p3-o2-enqueue-one-acceptance p3-o3-enqueue-batch-acceptance p3-o4-sender-acceptance p3-o5-status-acceptance p3-o6a-retry-acceptance p3-o6b1-cancel-acceptance p3-o6b2-manual-retry-acceptance p3-o7-legacy-api-acceptance p4-w0-d01-automation-acceptance p4-w0-l01-stats-acceptance p4-a01-auth-acceptance p4-si00b-auth-acceptance
 .PHONY: p2-s05-acceptance
@@ -555,6 +556,10 @@ p4-external-effects-runtime-acceptance:
 p4-data-migration-harness-acceptance:
 	@test -n "$${P4DMH_TEST_DATABASE_URL:-}" || { echo "P4DMH_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/datamigration/run_pg16.sh
+
+p4-pe01-wechat-pay-settlement-acceptance:
+	@test -n "$${P4PE01_TEST_DATABASE_URL:-}" || { echo "P4PE01_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/order/pe01_migration_compatibility.sh
 
 p4-si00b-auth-acceptance:
 	@test -n "$${P4SI00B_AUTH_TEST_DATABASE_URL:-}" || { echo "P4SI00B_AUTH_TEST_DATABASE_URL is required" >&2; exit 2; }

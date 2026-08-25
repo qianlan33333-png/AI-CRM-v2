@@ -19,6 +19,10 @@ import (
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
 	operationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/store"
+	orderapp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/app"
+	orderprovider "github.com/qianlan33333-png/AI-CRM-v2/internal/order/provider"
+	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
+	orderworker "github.com/qianlan33333-png/AI-CRM-v2/internal/order/worker"
 	outbound "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound"
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
 	outboundstore "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/store"
@@ -27,6 +31,8 @@ import (
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
+	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
+	productstore "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store"
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 	segmentworker "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/worker"
@@ -100,6 +106,35 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	if err = outboundworker.RegisterCampaignDispatchWorker(workers, campaignDispatchService, outboundworker.ProviderShapedAdapter{}); err != nil {
+		pool.Close()
+		return nil, err
+	}
+	financialOrders, err := orderstore.NewFinancialRepository(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	eerRuntime, err := newPE01ExternalEffectRuntime(externalEffectsRuntimeRepository, externalEffectsRuntimeRepository)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	paidBenefits, err := productapp.NewPaidSettlementService(productstore.NewPaidSettlementRepository(), eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	settlement, err := orderapp.NewSettlementService(uow, financialOrders, productstore.NewCatalogRepository(), paidBenefits, eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	effectExecution, err := orderapp.NewEffectExecutionService(uow, financialOrders, eerRuntime, orderprovider.DisabledWeChatPay{}, settlement)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	if err = orderworker.RegisterSettlementWorkers(workers, effectExecution); err != nil {
 		pool.Close()
 		return nil, err
 	}

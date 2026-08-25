@@ -2,7 +2,10 @@
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at
+       status, status_label, detail_url, created_at, updated_at,
+       pe01_contract_version, product_version, product_kind, payment_identity_digest,
+       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
+       paid_at, fully_refunded_at, version
 FROM order_list_projections
 WHERE (sqlc.narg(provider)::text IS NULL OR provider = sqlc.narg(provider)::text)
   AND (sqlc.narg(order_no)::text IS NULL OR merchant_order_no ILIKE '%' || sqlc.narg(order_no)::text || '%')
@@ -43,7 +46,10 @@ WHERE (sqlc.narg(provider)::text IS NULL OR provider = sqlc.narg(provider)::text
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at
+       status, status_label, detail_url, created_at, updated_at,
+       pe01_contract_version, product_version, product_kind, payment_identity_digest,
+       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
+       paid_at, fully_refunded_at, version
 FROM order_list_projections
 WHERE (sqlc.narg(provider)::text IS NULL OR provider = sqlc.narg(provider)::text)
   AND (sqlc.narg(status)::text IS NULL OR status = sqlc.narg(status)::text)
@@ -74,7 +80,10 @@ WHERE (sqlc.narg(provider)::text IS NULL OR provider = sqlc.narg(provider)::text
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at
+       status, status_label, detail_url, created_at, updated_at,
+       pe01_contract_version, product_version, product_kind, payment_identity_digest,
+       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
+       paid_at, fully_refunded_at, version
 FROM order_list_projections
 WHERE (sqlc.arg(provider)::text = 'auto' OR provider = sqlc.arg(provider)::text)
   AND (merchant_order_no = sqlc.arg(order_reference)::text
@@ -86,7 +95,10 @@ ORDER BY id DESC LIMIT 1;
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at
+       status, status_label, detail_url, created_at, updated_at,
+       pe01_contract_version, product_version, product_kind, payment_identity_digest,
+       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
+       paid_at, fully_refunded_at, version
 FROM order_list_projections
 WHERE id = sqlc.arg(id)::bigint;
 
@@ -94,7 +106,10 @@ WHERE id = sqlc.arg(id)::bigint;
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at
+       status, status_label, detail_url, created_at, updated_at,
+       pe01_contract_version, product_version, product_kind, payment_identity_digest,
+       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
+       paid_at, fully_refunded_at, version
 FROM order_list_projections
 WHERE (sqlc.arg(provider)::text = 'auto' OR provider = sqlc.arg(provider)::text)
   AND (merchant_order_no = sqlc.arg(order_reference)::text

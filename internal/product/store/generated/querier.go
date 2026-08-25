@@ -6,6 +6,8 @@ package productdb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -14,6 +16,9 @@ type Querier interface {
 	CompleteServicePeriodMemberReceipt(ctx context.Context, arg CompleteServicePeriodMemberReceiptParams) (CompleteServicePeriodMemberReceiptRow, error)
 	CountProducts(ctx context.Context) (int64, error)
 	CountServicePeriodProductRows(ctx context.Context) (int64, error)
+	CreatePE01AcceptanceProduct(ctx context.Context, arg CreatePE01AcceptanceProductParams) (int64, error)
+	CreatePaidOrderEntitlement(ctx context.Context, arg CreatePaidOrderEntitlementParams) (CreatePaidOrderEntitlementRow, error)
+	CreatePaidOrderServicePeriodMember(ctx context.Context, arg CreatePaidOrderServicePeriodMemberParams) (CreatePaidOrderServicePeriodMemberRow, error)
 	CreateProduct(ctx context.Context, arg CreateProductParams) (CreateProductRow, error)
 	CreateProductLocalEntitlement(ctx context.Context, arg CreateProductLocalEntitlementParams) (CreateProductLocalEntitlementRow, error)
 	CreateServicePeriodMember(ctx context.Context, arg CreateServicePeriodMemberParams) (CreateServicePeriodMemberRow, error)
@@ -43,11 +48,16 @@ type Querier interface {
 	// both reference tables. The FK added by migration 00059 is the final
 	// product-row integrity check after this deterministic table-lock window.
 	LockLocalProductDeleteReferences(ctx context.Context) error
+	LockPaidOrderEntitlement(ctx context.Context, orderID int64) (LockPaidOrderEntitlementRow, error)
+	LockPaidOrderServicePeriodMember(ctx context.Context, orderID pgtype.Int8) (LockPaidOrderServicePeriodMemberRow, error)
+	LockProductForPaidSettlement(ctx context.Context, arg LockProductForPaidSettlementParams) (LockProductForPaidSettlementRow, error)
 	LockServicePeriodMember(ctx context.Context, arg LockServicePeriodMemberParams) (LockServicePeriodMemberRow, error)
 	LockServiceProductForMemberAdd(ctx context.Context, productID int64) (bool, error)
+	RemovePaidOrderServicePeriodMember(ctx context.Context, arg RemovePaidOrderServicePeriodMemberParams) (RemovePaidOrderServicePeriodMemberRow, error)
 	ReserveEntitlementOperationReceipt(ctx context.Context, arg ReserveEntitlementOperationReceiptParams) (ReserveEntitlementOperationReceiptRow, error)
 	ReserveProductOperationReceipt(ctx context.Context, arg ReserveProductOperationReceiptParams) (ReserveProductOperationReceiptRow, error)
 	ReserveServicePeriodMemberReceipt(ctx context.Context, arg ReserveServicePeriodMemberReceiptParams) (ReserveServicePeriodMemberReceiptRow, error)
+	RevokePaidOrderEntitlement(ctx context.Context, arg RevokePaidOrderEntitlementParams) (RevokePaidOrderEntitlementRow, error)
 	RevokeProductLocalEntitlement(ctx context.Context, arg RevokeProductLocalEntitlementParams) (RevokeProductLocalEntitlementRow, error)
 	ServicePeriodMemberCustomerExists(ctx context.Context, customerID int64) (bool, error)
 	ServicePeriodProductExists(ctx context.Context, productID int64) (bool, error)

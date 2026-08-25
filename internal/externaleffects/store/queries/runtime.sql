@@ -15,6 +15,19 @@ SELECT * FROM external_effects ORDER BY id DESC LIMIT $1;
 -- name: GetEffect :one
 SELECT * FROM external_effects WHERE id = $1;
 
+-- name: GetTerminalOutcome :one
+SELECT e.state, a.generation, a.fence, a.completed_at AS lease_expires_at, a.receipt_digest
+FROM external_effects e
+JOIN LATERAL (
+  SELECT generation, fence, completed_at, receipt_digest
+  FROM external_effect_attempts
+  WHERE effect_id = e.id AND completion IS NOT NULL
+  ORDER BY number DESC
+  LIMIT 1
+) a ON true
+WHERE e.id = $1
+  AND e.state IN ('executed','outcome_unknown','reconciled','retryable_failed','final_failed');
+
 -- name: QueueEffect :exec
 UPDATE external_effects
 SET state='queued', generation=generation+1, lease_fence=0, lease_expires_at=NULL,
@@ -81,3 +94,14 @@ SELECT
   COUNT(*) FILTER (WHERE state='outcome_unknown') AS outcome_unknown,
   COUNT(*) FILTER (WHERE state='retryable_failed') AS retryable_failed
 FROM external_effects;
+
+-- name: CreatePE01AcceptanceEffect :one
+INSERT INTO external_effects (
+  owner, kind, source_ref_digest, target_ref_digest, payload_digest,
+  policy_version_hash, envelope_fingerprint, state
+) VALUES (
+  'order', sqlc.arg(kind), sqlc.arg(source_ref_digest),
+  sqlc.arg(target_ref_digest), sqlc.arg(payload_digest),
+  sqlc.arg(policy_version_hash), sqlc.arg(envelope_fingerprint), sqlc.arg(state)
+)
+RETURNING id;

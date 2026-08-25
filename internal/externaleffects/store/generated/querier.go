@@ -13,10 +13,12 @@ type Querier interface {
 	ClaimEffect(ctx context.Context, id int64) (ClaimEffectRow, error)
 	CompleteAttempt(ctx context.Context, arg CompleteAttemptParams) error
 	CreateEffect(ctx context.Context, arg CreateEffectParams) (ExternalEffect, error)
+	CreatePE01AcceptanceEffect(ctx context.Context, arg CreatePE01AcceptanceEffectParams) (int64, error)
 	GetAcceptReceipt(ctx context.Context, receiptKeyDigest string) (ExternalEffectReceipt, error)
 	GetDiagnostics(ctx context.Context) (GetDiagnosticsRow, error)
 	GetEffect(ctx context.Context, id int64) (ExternalEffect, error)
 	GetReceipt(ctx context.Context, arg GetReceiptParams) (ExternalEffectReceipt, error)
+	GetTerminalOutcome(ctx context.Context, id int64) (GetTerminalOutcomeRow, error)
 	InsertAttempt(ctx context.Context, arg InsertAttemptParams) error
 	InsertReceipt(ctx context.Context, arg InsertReceiptParams) (ExternalEffectReceipt, error)
 	ListEffects(ctx context.Context, limit int32) ([]ExternalEffect, error)

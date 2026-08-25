@@ -56,6 +56,7 @@ const (
 	KindWeComProfileSync          Kind = "wecom_profile_sync"
 	KindSurveyWebhook             Kind = "survey_webhook"
 	KindAudienceWebhook           Kind = "audience_webhook"
+	KindOrderPaymentPrepay        Kind = "order_payment_prepay"
 	KindOrderPaymentCapture       Kind = "order_payment_capture"
 	KindOrderRefund               Kind = "order_refund"
 )
@@ -75,7 +76,7 @@ func validOwnerKind(owner Owner, kind Kind) bool {
 	case OwnerAudience:
 		return kind == KindAudienceWebhook
 	case OwnerOrder:
-		return kind == KindOrderPaymentCapture || kind == KindOrderRefund
+		return kind == KindOrderPaymentPrepay || kind == KindOrderPaymentCapture || kind == KindOrderRefund
 	default:
 		return false
 	}
@@ -275,6 +276,17 @@ type Diagnostics struct {
 	Accepted, Queued, Attempted, OutcomeUnknown, RetryableFailed int64
 }
 
+// TerminalOutcome is the minimal owner-facing crash-recovery fact. It exposes
+// no provider body and only the digest already committed by the adapter.
+type TerminalOutcome struct {
+	EffectID       string
+	State          State
+	ReceiptDigest  Digest
+	Generation     int64
+	Fence          int64
+	LeaseExpiresAt time.Time
+}
+
 func (projection Projection) valid() bool {
 	return projection.ID != "" && validOwnerKind(projection.Owner, projection.Kind) && validState(projection.State) &&
 		projection.AttemptCount >= 0 && projection.Generation > 0 && !projection.UpdatedAt.IsZero()
@@ -453,7 +465,7 @@ func (service *Service) Accept(ctx context.Context, command AcceptCommand) (Proj
 	if err != nil {
 		return Projection{}, OperationReceipt{}, err
 	}
-	if !projection.valid() || projection.State != StateAccepted || !receipt.validFor(projection.ID, command.digest()) {
+	if !projection.valid() || !receipt.validFor(projection.ID, command.digest()) {
 		return Projection{}, OperationReceipt{}, ErrInvalidCommand
 	}
 	return projection, receipt, nil
@@ -467,7 +479,7 @@ func (service *Service) Queue(ctx context.Context, command QueueCommand) (Projec
 	if err != nil {
 		return Projection{}, OperationReceipt{}, err
 	}
-	if !projection.valid() || projection.ID != command.EffectID || projection.State != StateQueued ||
+	if !projection.valid() || projection.ID != command.EffectID ||
 		!receipt.validFor(command.EffectID, command.digest()) {
 		return Projection{}, OperationReceipt{}, ErrInvalidTransition
 	}
