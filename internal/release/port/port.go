@@ -1,19 +1,31 @@
-// Package port defines the release-plane boundary. It deliberately accepts
-// attestations only; it never invokes deployment, backup, or providers.
+// Package port defines the release-plane boundary. It accepts local
+// attestations only; it never invokes deployment, backup, payment, or provider
+// systems.
 package port
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"time"
+)
+
+var (
+	ErrConflict    = errors.New("release fact conflict")
+	ErrNotFound    = errors.New("release fact not found")
+	ErrUnavailable = errors.New("release store unavailable")
 )
 
 type CandidateState string
 
 const (
-	CandidateDraft           CandidateState = "draft"
-	CandidatePrepared        CandidateState = "prepared"
-	CandidateCutoverActive   CandidateState = "cutover_active"
-	CandidateActivated       CandidateState = "activated"
+	CandidateDraft         CandidateState = "draft"
+	CandidatePrepared      CandidateState = "prepared"
+	CandidateCutoverActive CandidateState = "cutover_active"
+	CandidateActivated     CandidateState = "activated"
+	// CandidateRollbackPending means rollback was requested and the plane is
+	// waiting for reconciliation evidence from the external execution. It does
+	// not claim that this local module executed a rollback.
 	CandidateRollbackPending CandidateState = "rollback_pending"
 	CandidateRolledBack      CandidateState = "rolled_back"
 )
@@ -40,7 +52,22 @@ const (
 	CutoverVerify       CutoverStep = "verify"
 )
 
-var FixedCutoverSteps = []CutoverStep{CutoverAnnounce, CutoverQuiesce, CutoverSchemaVerify, CutoverSwitch, CutoverVerify}
+var FixedCutoverSteps = []CutoverStep{
+	CutoverAnnounce,
+	CutoverQuiesce,
+	CutoverSchemaVerify,
+	CutoverSwitch,
+	CutoverVerify,
+}
+
+type RollbackCheckKind string
+
+const (
+	RollbackSchemaCompatibility     RollbackCheckKind = "schema_compatibility"
+	RollbackDataReconciliation      RollbackCheckKind = "data_reconciliation"
+	RollbackOutboundReconciliation  RollbackCheckKind = "outbound_reconciliation"
+	RollbackExecutionReconciliation RollbackCheckKind = "rollback_execution_reconciliation"
+)
 
 type Candidate struct {
 	ID                  int64
@@ -59,18 +86,24 @@ type Candidate struct {
 }
 
 type PrerequisiteReceipt struct {
-	ID          int64
-	CandidateID int64
-	Kind        PrerequisiteKind
-	EvidenceSHA string
-	RecordedBy  int64
-	RecordedAt  time.Time
+	ID                      int64
+	CandidateID             int64
+	CandidateCommitSHA      string
+	CandidateArtifactDigest string
+	CandidateManifestDigest string
+	CandidateConfigDigest   string
+	CandidateSchemaVersion  int64
+	Kind                    PrerequisiteKind
+	EvidenceSHA             string
+	RecordedBy              int64
+	RecordedAt              time.Time
 }
 
 type Readiness struct {
 	CandidateID int64
 	Ready       bool
 	Missing     []PrerequisiteKind
+	Invalid     []PrerequisiteKind
 	CheckedAt   time.Time
 }
 
@@ -81,15 +114,63 @@ type WorkerLease struct {
 	StartedBy   int64
 	StartedAt   time.Time
 	Active      bool
+	RetiredAt   *time.Time
 }
 
 type CutoverJournalEntry struct {
 	ID          int64
 	CandidateID int64
+	Generation  int64
 	Step        CutoverStep
 	Fence       string
 	CompletedBy int64
 	CompletedAt time.Time
+}
+
+// CutoverProgressEntry is the ordinary read projection. Fence remains only in
+// worker management commands and is deliberately absent here.
+type CutoverProgressEntry struct {
+	ID          int64
+	CandidateID int64
+	Generation  int64
+	Step        CutoverStep
+	CompletedBy int64
+	CompletedAt time.Time
+}
+
+type WorkerSummary struct {
+	CandidateID int64
+	Generation  int64
+	StartedBy   int64
+	StartedAt   time.Time
+}
+
+type RollbackCheck struct {
+	ID          int64
+	CandidateID int64
+	Kind        RollbackCheckKind
+	Passed      bool
+	EvidenceSHA string
+	RecordedBy  int64
+	RecordedAt  time.Time
+}
+
+type RollbackEligibility struct {
+	CandidateID int64
+	Eligible    bool
+	Missing     []RollbackCheckKind
+	Blocked     []RollbackCheckKind
+	CheckedAt   time.Time
+}
+
+type Detail struct {
+	Candidate           Candidate
+	Prerequisites       []PrerequisiteReceipt
+	Readiness           Readiness
+	CutoverProgress     []CutoverProgressEntry
+	RollbackChecks      []RollbackCheck
+	RollbackEligibility RollbackEligibility
+	ActiveWorker        *WorkerSummary
 }
 
 type OperationReceipt struct {
@@ -99,20 +180,31 @@ type OperationReceipt struct {
 	KeyDigest     string
 	PayloadDigest string
 	State         string
-	Result        []byte
+	Result        json.RawMessage
+	CreatedAt     time.Time
+	CompletedAt   *time.Time
 }
 
 type Repository interface {
 	CreateCandidate(context.Context, Candidate) (Candidate, error)
 	GetCandidate(context.Context, int64) (Candidate, error)
+	LockCandidate(context.Context, int64) (Candidate, error)
 	ListCandidates(context.Context, int32) ([]Candidate, error)
-	UpdateState(context.Context, int64, CandidateState, time.Time) (Candidate, error)
+	TransitionCandidate(context.Context, int64, CandidateState, CandidateState, time.Time) (Candidate, error)
+
 	CreatePrerequisite(context.Context, PrerequisiteReceipt) (PrerequisiteReceipt, error)
 	ListPrerequisites(context.Context, int64) ([]PrerequisiteReceipt, error)
+
 	StartWorker(context.Context, WorkerLease) (WorkerLease, error)
-	GetWorker(context.Context, int64) (WorkerLease, error)
+	GetActiveWorker(context.Context, int64) (WorkerLease, error)
+	FindActiveWorkerSummary(context.Context, int64) (*WorkerSummary, error)
+	RetireWorker(context.Context, int64, int64, string, time.Time) error
 	AppendCutoverStep(context.Context, CutoverJournalEntry) (CutoverJournalEntry, error)
 	ListCutoverSteps(context.Context, int64) ([]CutoverJournalEntry, error)
+
+	CreateRollbackCheck(context.Context, RollbackCheck) (RollbackCheck, error)
+	ListRollbackChecks(context.Context, int64) ([]RollbackCheck, error)
+
 	ReserveOperationReceipt(context.Context, OperationReceipt) (OperationReceipt, bool, error)
-	CompleteOperationReceipt(context.Context, int64, []byte) (OperationReceipt, error)
+	CompleteOperationReceipt(context.Context, int64, json.RawMessage, time.Time) (OperationReceipt, error)
 }
