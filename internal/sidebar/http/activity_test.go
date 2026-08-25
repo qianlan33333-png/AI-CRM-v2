@@ -18,22 +18,26 @@ import (
 type sidebarActivityTimelineFake struct {
 	read  contactport.Customer360Read
 	err   error
+	input contactport.Customer360ReadInput
 	calls int
 }
 
-func (fake *sidebarActivityTimelineFake) ReadCustomer360(context.Context, contactport.Customer360ReadInput) (contactport.Customer360Read, error) {
+func (fake *sidebarActivityTimelineFake) ReadCustomer360(_ context.Context, input contactport.Customer360ReadInput) (contactport.Customer360Read, error) {
 	fake.calls++
+	fake.input = input
 	return fake.read, fake.err
 }
 
 type sidebarActivityChatFake struct {
 	page  customer360port.CustomerChatActivityPage
 	err   error
+	query customer360port.CustomerChatActivityQuery
 	calls int
 }
 
-func (fake *sidebarActivityChatFake) ListCustomerChatActivity(context.Context, customer360port.CustomerChatActivityQuery) (customer360port.CustomerChatActivityPage, error) {
+func (fake *sidebarActivityChatFake) ListCustomerChatActivity(_ context.Context, query customer360port.CustomerChatActivityQuery) (customer360port.CustomerChatActivityPage, error) {
 	fake.calls++
+	fake.query = query
 	return fake.page, fake.err
 }
 
@@ -45,7 +49,7 @@ func TestActivityHandlerRequiresGetBrowserSessionAndContextHeader(t *testing.T) 
 			request.Header.Set("X-Sidebar-Context-Token", suppliedToken)
 		}
 		response := httptest.NewRecorder()
-		handler.Timeline(response, request)
+		handler.Timeline(response, request, "", 0)
 		return response
 	}
 
@@ -72,20 +76,31 @@ func TestActivityHandlerProjectsOnlySafeActivityFields(t *testing.T) {
 		invoke(response, request)
 		return response
 	}
-	timelineResponse := call("/api/sidebar/v2/activity/timeline", handler.Timeline)
+	timelineResponse := call("/api/sidebar/v2/activity/timeline", func(writer http.ResponseWriter, request *http.Request) {
+		handler.Timeline(writer, request, "timeline-input-cursor", 7)
+	})
 	if timelineResponse.Code != http.StatusOK || timeline.calls != 1 || chat.calls != 0 || timelineResponse.Header().Get("Cache-Control") != "private, no-store" {
 		t.Fatalf("timeline status/calls/headers=%d/%d/%d/%v", timelineResponse.Code, timeline.calls, chat.calls, timelineResponse.Header())
 	}
-	var timelineItems []map[string]any
-	if err := json.Unmarshal(timelineResponse.Body.Bytes(), &timelineItems); err != nil || len(timelineItems) != 1 || len(timelineItems[0]) != 3 || timelineItems[0]["id"] != float64(7) || timelineItems[0]["event_type"] != "radar_opened" {
+	var timelinePage struct {
+		Items      []map[string]any `json:"items"`
+		NextCursor string           `json:"next_cursor"`
+	}
+	if err := json.Unmarshal(timelineResponse.Body.Bytes(), &timelinePage); err != nil || len(timelinePage.Items) != 1 || len(timelinePage.Items[0]) != 3 || timelinePage.Items[0]["id"] != float64(7) || timelinePage.Items[0]["event_type"] != "radar_opened" || timelinePage.NextCursor != "timeline-next-cursor" || timeline.input.TimelineCursor != "timeline-input-cursor" || timeline.input.TimelineLimit != 7 {
 		t.Fatalf("timeline payload=%s err=%v", timelineResponse.Body.String(), err)
 	}
-	chatResponse := call("/api/sidebar/v2/activity/chat", handler.Chat)
+	chatResponse := call("/api/sidebar/v2/activity/chat", func(writer http.ResponseWriter, request *http.Request) {
+		handler.Chat(writer, request, "private", "chat-input-cursor", 8)
+	})
 	if chatResponse.Code != http.StatusOK || timeline.calls != 1 || chat.calls != 1 {
 		t.Fatalf("chat status/calls=%d/%d/%d", chatResponse.Code, timeline.calls, chat.calls)
 	}
-	var chatItems []map[string]any
-	if err := json.Unmarshal(chatResponse.Body.Bytes(), &chatItems); err != nil || len(chatItems) != 1 || len(chatItems[0]) != 3 || chatItems[0]["chat_type"] != "private" || chatItems[0]["message_type"] != "text" {
+	var chatPage struct {
+		Items          []map[string]any `json:"items"`
+		NextCursor     string           `json:"next_cursor"`
+		PreviousCursor string           `json:"previous_cursor"`
+	}
+	if err := json.Unmarshal(chatResponse.Body.Bytes(), &chatPage); err != nil || len(chatPage.Items) != 1 || len(chatPage.Items[0]) != 3 || chatPage.Items[0]["chat_type"] != "private" || chatPage.Items[0]["message_type"] != "text" || chatPage.NextCursor != "chat-next-cursor" || chatPage.PreviousCursor != "chat-previous-cursor" || chat.query.ChatType != "private" || chat.query.Cursor != "chat-input-cursor" || chat.query.Limit != 8 {
 		t.Fatalf("chat payload=%s err=%v", chatResponse.Body.String(), err)
 	}
 }
@@ -96,7 +111,7 @@ func TestActivityHandlerFailsClosedWhenReadUnavailable(t *testing.T) {
 	request := httptest.NewRequest(http.MethodGet, "/api/sidebar/v2/activity/timeline", nil).WithContext(authenticated)
 	request.Header.Set("X-Sidebar-Context-Token", token)
 	response := httptest.NewRecorder()
-	handler.Timeline(response, request)
+	handler.Timeline(response, request, "", 0)
 	if response.Code != http.StatusServiceUnavailable || timeline.calls != 1 || response.Body.String() == "" {
 		t.Fatalf("unavailable status/calls/body=%d/%d/%s", response.Code, timeline.calls, response.Body.String())
 	}
@@ -119,8 +134,10 @@ func sidebarActivityHandler(t *testing.T) (*ActivityHandler, *sidebarActivityTim
 		t.Fatal(err)
 	}
 	stamp := time.Date(2026, 8, 26, 10, 0, 0, 0, time.UTC)
-	timeline := &sidebarActivityTimelineFake{read: contactport.Customer360Read{Customer: contactport.Customer360Customer{ID: 41}, Timeline: []contactport.Customer360TimelineEntry{{ID: 7, EventType: "radar_opened", OccurredAt: stamp}}}}
-	chat := &sidebarActivityChatFake{page: customer360port.CustomerChatActivityPage{CustomerID: 41, Items: []customer360port.CustomerChatActivityEntry{{ChatType: "private", MessageType: "text", SentAt: stamp}}}}
+	timelineNext := "timeline-next-cursor"
+	chatNext, chatPrevious := "chat-next-cursor", "chat-previous-cursor"
+	timeline := &sidebarActivityTimelineFake{read: contactport.Customer360Read{Customer: contactport.Customer360Customer{ID: 41}, Timeline: []contactport.Customer360TimelineEntry{{ID: 7, EventType: "radar_opened", OccurredAt: stamp}}, TimelineNextCursor: &timelineNext}}
+	chat := &sidebarActivityChatFake{page: customer360port.CustomerChatActivityPage{CustomerID: 41, ChatType: "private", Items: []customer360port.CustomerChatActivityEntry{{ChatType: "private", MessageType: "text", SentAt: stamp}}, NextCursor: &chatNext, PreviousCursor: &chatPrevious}}
 	activity, err := sidebarapp.NewActivityService(timeline, chat)
 	if err != nil {
 		t.Fatal(err)

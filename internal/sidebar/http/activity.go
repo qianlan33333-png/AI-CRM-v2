@@ -21,30 +21,30 @@ func NewActivityHandler(contextHandler *Handler, activity *sidebarapp.ActivitySe
 	return &ActivityHandler{context: contextHandler, activity: activity}, nil
 }
 
-func (handler *ActivityHandler) Timeline(writer http.ResponseWriter, request *http.Request) {
+func (handler *ActivityHandler) Timeline(writer http.ResponseWriter, request *http.Request, cursor string, limit int32) {
 	scope, ok := handler.readScope(writer, request)
 	if !ok {
 		return
 	}
-	items, err := handler.activity.Timeline(request.Context(), scope)
+	page, err := handler.activity.Timeline(request.Context(), scope, cursor, limit)
 	if err != nil {
 		writeError(writer, request, err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, items)
+	writeJSON(writer, http.StatusOK, page)
 }
 
-func (handler *ActivityHandler) Chat(writer http.ResponseWriter, request *http.Request) {
+func (handler *ActivityHandler) Chat(writer http.ResponseWriter, request *http.Request, chatType, cursor string, limit int32) {
 	scope, ok := handler.readScope(writer, request)
 	if !ok {
 		return
 	}
-	items, err := handler.activity.Chat(request.Context(), scope)
+	page, err := handler.activity.Chat(request.Context(), scope, chatType, cursor, limit)
 	if err != nil {
 		writeError(writer, request, err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, items)
+	writeJSON(writer, http.StatusOK, page)
 }
 
 func (handler *ActivityHandler) readScope(writer http.ResponseWriter, request *http.Request) (sidebarapp.Scope, bool) {
