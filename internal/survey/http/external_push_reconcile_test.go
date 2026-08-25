@@ -10,7 +10,7 @@ import (
 	"time"
 
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
-	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
+	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/port"
 	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
 )
 

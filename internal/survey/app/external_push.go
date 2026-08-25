@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
+	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/port"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"

@@ -11,7 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
+	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
