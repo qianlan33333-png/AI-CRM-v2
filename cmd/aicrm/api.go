@@ -1003,6 +1003,20 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		surveyAbuseKey,
 	)
 	channelService := contactapp.NewChannelServiceWithReferences(uow, channelRepository, mediaRepository, attachmentRepository, miniProgramRepository, groupInviteRepository, channelTagCatalog, channelStaffDirectory, eventstore.NewAppender())
+	channelAcquisitionHandler, err := contacthttp.NewChannelAcquisitionHandler(
+		channelService,
+		contactapp.NewChannelAcquisitionService(channelService),
+		service,
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	channelAcquisitionFragment, err := contacthttp.NewChannelAcquisitionRouteFragment(channelAcquisitionHandler)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	channelEntrantsCursor, err := contactapp.NewChannelEntrantsCursorCodec(config.Identity.HMACKey.Value())
 	if err != nil {
 		pool.Close()
@@ -1604,6 +1618,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.aiAudienceMembers = legacyAIAudienceMembersFragment
 	legacyHandler.aiAudienceConfiguration = legacyAIAudienceConfigurationFragment
 	legacyHandler.channelEntrants = channelEntrantsFragment
+	legacyHandler.channelAcquisition = channelAcquisitionFragment
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.attachments = attachmentService
 	legacyHandler.contentDelivery = contentDeliveryService
@@ -2611,6 +2626,20 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				legacy.channelEntrants,
 			); err != nil {
 				return nil, err
+			}
+		}
+		if legacy.channelAcquisition != nil {
+			for _, route := range []struct {
+				method, pattern string
+				capability      authport.Capability
+				csrf            bool
+			}{
+				{http.MethodGet, "/api/admin/channels/{channel_id}/acquisition-preview", authport.CapabilityChannelsRead, false},
+				{http.MethodPut, "/api/admin/channels/{channel_id}/assignees", authport.CapabilityChannelsWrite, true},
+			} {
+				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.channelAcquisition); err != nil {
+					return nil, err
+				}
 			}
 		}
 		refundUnavailable := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {

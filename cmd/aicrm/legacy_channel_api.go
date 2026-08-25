@@ -56,12 +56,13 @@ func (handler *Handler) ListChannels(writer http.ResponseWriter, request *http.R
 // and write compatibility responses; exposing it here would leak unowned
 // welcome, assignment, tag, or link configuration into the read-only list.
 func legacyChannelListItem(channel contactapp.Channel) map[string]any {
+	assignees := legacyChannelPrimaryAssignees(channel.Assignees)
 	return map[string]any{
 		"id":                    channel.ID,
 		"channel_name":          channel.ChannelName,
 		"channel_code":          channel.ChannelCode,
 		"status":                channel.Status,
-		"assignee_count":        len(channel.Assignees),
+		"assignee_count":        len(assignees),
 		"channel_contact_count": 0,
 		"created_at":            channel.CreatedAt.UTC(),
 		"updated_at":            channel.UpdatedAt.UTC(),
@@ -224,8 +225,9 @@ func legacyChannel(channel contactapp.Channel) (map[string]any, error) {
 	result["status"] = channel.Status
 	result["created_at"] = channel.CreatedAt.UTC()
 	result["updated_at"] = channel.UpdatedAt.UTC()
-	assignees := make([]map[string]string, len(channel.Assignees))
-	for index, assignee := range channel.Assignees {
+	primary := legacyChannelPrimaryAssignees(channel.Assignees)
+	assignees := make([]map[string]string, len(primary))
+	for index, assignee := range primary {
 		assignees[index] = map[string]string{"wecom_userid": assignee.WeComUserID, "display_name": assignee.DisplayName}
 	}
 	result["assignees"] = assignees
@@ -239,6 +241,15 @@ func legacyChannel(channel contactapp.Channel) (map[string]any, error) {
 	result["share_url"] = ""
 	result["copy_text"] = ""
 	return result, nil
+}
+
+func legacyChannelPrimaryAssignees(assignees []contactapp.ChannelAssignee) []contactapp.ChannelAssignee {
+	for _, assignee := range assignees {
+		if assignee.Status == "active" || assignee.Status == "" {
+			return []contactapp.ChannelAssignee{assignee}
+		}
+	}
+	return nil
 }
 func writeLegacyChannelError(writer http.ResponseWriter, err error) {
 	status, code := http.StatusServiceUnavailable, platformhttp.CodeDependencyUnavailable

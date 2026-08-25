@@ -37,6 +37,45 @@ func TestC01ChannelCreateReplayUpdateListAndGet(t *testing.T) {
 	}
 }
 
+func TestCH01ChannelReplaysLegacyAssigneeReceiptWithoutSecondWriteOrEvent(t *testing.T) {
+	service, store, events := channelTestService()
+	command := CreateChannelCommand{
+		Actor: 7, IdempotencyKey: "channel-legacy-replay-key-0001", ChannelName: "公开课",
+		LegacyProjection: json.RawMessage(`{"owner_staff_id":"staff-7"}`),
+	}
+	created, err := service.CreateChannel(context.Background(), command)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var receiptKey string
+	var legacySnapshot json.RawMessage
+	for key, receipt := range store.receipts {
+		var snapshot map[string]json.RawMessage
+		if err = json.Unmarshal(receipt.ResultSnapshot, &snapshot); err != nil {
+			t.Fatal(err)
+		}
+		snapshot["assignees"] = json.RawMessage(`[{"wecom_userid":"staff-7","display_name":"成员 7"}]`)
+		legacySnapshot, err = json.Marshal(snapshot)
+		if err != nil {
+			t.Fatal(err)
+		}
+		receipt.ResultSnapshot = append(json.RawMessage(nil), legacySnapshot...)
+		store.receipts[key] = receipt
+		receiptKey = key
+	}
+	if receiptKey == "" {
+		t.Fatal("completed receipt is missing")
+	}
+
+	replay, err := service.CreateChannel(context.Background(), command)
+	if err != nil || replay.ID != created.ID || len(replay.Assignees) != 1 || replay.Assignees[0].WeComUserID != "staff-7" || replay.Assignees[0].Status != "active" || replay.Assignees[0].Priority != 1 {
+		t.Fatalf("replay=%+v err=%v", replay, err)
+	}
+	if store.creates != 1 || store.updates != 0 || store.completes != 1 || len(events.items) != 1 || string(store.receipts[receiptKey].ResultSnapshot) != string(legacySnapshot) {
+		t.Fatalf("creates/updates/completes/events/snapshot=%d/%d/%d/%d/%s", store.creates, store.updates, store.completes, len(events.items), store.receipts[receiptKey].ResultSnapshot)
+	}
+}
+
 func TestC01ChannelBoundariesAndActorScopedReceipt(t *testing.T) {
 	service, store, events := channelTestService()
 	base := CreateChannelCommand{Actor: 7, IdempotencyKey: "channel-shared-key-0001", ChannelCode: "course", ChannelName: "课程"}
@@ -171,9 +210,11 @@ func (events *channelEvents) Append(_ context.Context, event eventport.Event) (e
 }
 
 type channelStore struct {
-	items    []Channel
-	receipts map[string]ChannelReceipt
-	creates  int
+	items     []Channel
+	receipts  map[string]ChannelReceipt
+	creates   int
+	updates   int
+	completes int
 }
 
 func (store *channelStore) ListChannels(_ context.Context, limit int32, status string, includeArchived bool) ([]Channel, error) {
@@ -205,6 +246,7 @@ func (store *channelStore) CreateChannel(_ context.Context, c CreateChannelComma
 	return item, nil
 }
 func (store *channelStore) UpdateChannel(_ context.Context, current Channel, actor int64, now time.Time) (Channel, error) {
+	store.updates++
 	for i := range store.items {
 		if store.items[i].ID == current.ID {
 			current.CreatedAt = store.items[i].CreatedAt
@@ -227,6 +269,7 @@ func (store *channelStore) ReserveChannel(_ context.Context, x ChannelReservatio
 	return r, true, nil
 }
 func (store *channelStore) CompleteChannel(_ context.Context, id int64, snapshot json.RawMessage, _ time.Time) (ChannelReceipt, error) {
+	store.completes++
 	for key, r := range store.receipts {
 		if r.ID == id {
 			r.State = "completed"
@@ -298,3 +341,44 @@ func TestC01ChannelValidatesEntryTagAndProjectsEligibleOwner(t *testing.T) {
 		}
 	}
 }
+
+func TestCH01ChannelAssigneesUseVerifiedActiveStaffAndAssignmentRules(t *testing.T) {
+	store := &channelStore{receipts: map[string]ChannelReceipt{}}
+	events := &channelEvents{}
+	staff := channelStaffDirectory{entries: []contactport.StaffDirectoryEntry{
+		{WeComUserID: "staff-7", DisplayName: "成员 7", UpdatedAt: legacyChannelTestTime},
+		{WeComUserID: "staff-8", DisplayName: "成员 8", UpdatedAt: legacyChannelTestTime},
+	}}
+	service := NewChannelServiceWithLocalReferences(channelUOW{}, store, nil, nil, staff, events)
+	service.now = func() time.Time { return legacyChannelTestTime }
+	created, err := service.CreateChannel(context.Background(), CreateChannelCommand{
+		Actor: 7, IdempotencyKey: "channel-assignees-key-0001", ChannelName: "公开课",
+		LegacyProjection: json.RawMessage(`{"assignment_mode":"multi_staff","assignment_strategy":"ratio","assignees":[{"staff_id":"staff-7","ratio_percent":40},{"staff_id":"staff-8","ratio_percent":60}]}`),
+	})
+	if err != nil || len(created.Assignees) != 2 || created.Assignees[0].WeComUserID != "staff-7" || created.Assignees[1].WeComUserID != "staff-8" || created.Assignees[0].RatioPercent == nil || *created.Assignees[0].RatioPercent != 40 || created.Assignees[1].RatioPercent == nil || *created.Assignees[1].RatioPercent != 60 {
+		t.Fatalf("created=%+v err=%v", created, err)
+	}
+	var projection map[string]json.RawMessage
+	if json.Unmarshal(created.LegacyProjection, &projection) != nil {
+		t.Fatal("invalid normalized projection")
+	}
+	var owner string
+	if json.Unmarshal(projection["owner_staff_id"], &owner) != nil || owner != "staff-7" {
+		t.Fatalf("owner=%q projection=%s", owner, created.LegacyProjection)
+	}
+	for index, raw := range []string{
+		`{"assignment_mode":"multi_staff","assignment_strategy":"ratio","assignees":[{"staff_id":"staff-7","ratio_percent":99}]}`,
+		`{"assignment_mode":"single_owner","assignment_strategy":"ratio","assignees":[{"staff_id":"staff-7","ratio_percent":50},{"staff_id":"staff-8","ratio_percent":50}]}`,
+		`{"assignment_mode":"multi_staff","assignment_strategy":"cap_switch","assignees":[{"staff_id":"staff-7"}]}`,
+		`{"assignment_mode":"multi_staff","assignment_strategy":"ratio","assignees":[{"staff_id":"staff-7","ratio_percent":100},{"staff_id":"staff-7","ratio_percent":0}]}`,
+		`{"assignment_mode":"multi_staff","assignment_strategy":"ratio","assignees":[{"staff_id":"staff-9","ratio_percent":100}]}`,
+	} {
+		before := store.creates
+		_, err := service.CreateChannel(context.Background(), CreateChannelCommand{Actor: 7, IdempotencyKey: fmt.Sprintf("channel-assignees-invalid-%04d", index), ChannelName: "公开课", LegacyProjection: json.RawMessage(raw)})
+		if !errors.Is(err, ErrInvalidChannel) || store.creates != before {
+			t.Fatalf("projection=%s err=%v creates=%d", raw, err, store.creates)
+		}
+	}
+}
+
+var legacyChannelTestTime = time.Date(2026, time.August, 25, 10, 0, 0, 0, time.UTC)

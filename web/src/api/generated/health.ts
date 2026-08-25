@@ -7340,6 +7340,174 @@ export interface WeComTagEffectReconciliation {
   provider_success_claimed: boolean;
 }
 
+export type ChannelAcquisitionAssignmentMemberStatus =
+  (typeof ChannelAcquisitionAssignmentMemberStatus)[keyof typeof ChannelAcquisitionAssignmentMemberStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionAssignmentMemberStatus = {
+  active: "active",
+} as const;
+
+export interface ChannelAcquisitionAssignmentMember {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  staff_id: string;
+  status?: ChannelAcquisitionAssignmentMemberStatus;
+  /** @minimum 0 */
+  priority?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  ratio_percent?: number;
+  /** @minimum 1 */
+  max_scans_24h?: number;
+}
+
+export type ChannelAcquisitionAssigneeStatus =
+  (typeof ChannelAcquisitionAssigneeStatus)[keyof typeof ChannelAcquisitionAssigneeStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionAssigneeStatus = {
+  active: "active",
+} as const;
+
+export interface ChannelAcquisitionAssignee {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  wecom_userid: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  display_name: string;
+  status: ChannelAcquisitionAssigneeStatus;
+  /** @minimum 1 */
+  priority: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  ratio_percent?: number;
+  /** @minimum 1 */
+  max_scans_24h?: number;
+}
+
+export type ChannelAcquisitionAssignmentRequestAssignmentMode =
+  (typeof ChannelAcquisitionAssignmentRequestAssignmentMode)[keyof typeof ChannelAcquisitionAssignmentRequestAssignmentMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionAssignmentRequestAssignmentMode = {
+  single_owner: "single_owner",
+  multi_staff: "multi_staff",
+} as const;
+
+export type ChannelAcquisitionAssignmentRequestAssignmentStrategy =
+  (typeof ChannelAcquisitionAssignmentRequestAssignmentStrategy)[keyof typeof ChannelAcquisitionAssignmentRequestAssignmentStrategy];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionAssignmentRequestAssignmentStrategy = {
+  ratio: "ratio",
+  cap_switch: "cap_switch",
+} as const;
+
+export interface ChannelAcquisitionAssignmentRequest {
+  assignment_mode?: ChannelAcquisitionAssignmentRequestAssignmentMode;
+  assignment_strategy?: ChannelAcquisitionAssignmentRequestAssignmentStrategy;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  overflow_policy?: string;
+  /**
+   * @minItems 1
+   * @maxItems 5
+   */
+  assignees: ChannelAcquisitionAssignmentMember[];
+}
+
+export interface ChannelAcquisitionAssignmentResponse {
+  /** @minimum 1 */
+  channel_id: number;
+  /**
+   * @minItems 1
+   * @maxItems 5
+   */
+  assignees: ChannelAcquisitionAssignee[];
+  local_only: boolean;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type ChannelAcquisitionLifecycleState =
+  (typeof ChannelAcquisitionLifecycleState)[keyof typeof ChannelAcquisitionLifecycleState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionLifecycleState = {
+  local_prerequisites_ready: "local_prerequisites_ready",
+  draft: "draft",
+  paused: "paused",
+  archived: "archived",
+} as const;
+
+export interface ChannelAcquisitionLifecycle {
+  state: ChannelAcquisitionLifecycleState;
+  entrant_ready: boolean;
+  /** @minItems 1 */
+  readiness_blockers: string[];
+}
+
+export type ChannelQRCodePreviewStatus =
+  (typeof ChannelQRCodePreviewStatus)[keyof typeof ChannelQRCodePreviewStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelQRCodePreviewStatus = {
+  not_generated: "not_generated",
+  legacy_untracked: "legacy_untracked",
+} as const;
+
+export interface ChannelQRCodePreview {
+  status: ChannelQRCodePreviewStatus;
+  /** @maxLength 10000 */
+  scene_value: string;
+  /** @maxLength 10000 */
+  url: string;
+}
+
+export interface ChannelSharePreview {
+  /** @maxLength 10000 */
+  url: string;
+  /** @maxLength 10000 */
+  copy_text: string;
+}
+
+export interface ChannelAcquisitionPreviewResponse {
+  /** @minimum 1 */
+  channel_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  channel_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  channel_name: string;
+  /** @maxItems 5 */
+  assignees: ChannelAcquisitionAssignee[];
+  lifecycle: ChannelAcquisitionLifecycle;
+  qrcode: ChannelQRCodePreview;
+  share: ChannelSharePreview;
+  local_only: boolean;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+}
+
 export type LegacyChannelWriteRequestChannelType =
   (typeof LegacyChannelWriteRequestChannelType)[keyof typeof LegacyChannelWriteRequestChannelType];
 
@@ -29227,6 +29395,167 @@ export const listLegacyChannelEntrants = async (
     status: res.status,
     headers: res.headers,
   } as listLegacyChannelEntrantsResponse;
+};
+
+/**
+ * @summary Read local channel acquisition prerequisites without provider execution
+ */
+export type getChannelAcquisitionPreviewResponse200 = {
+  data: ChannelAcquisitionPreviewResponse;
+  status: 200;
+};
+
+export type getChannelAcquisitionPreviewResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getChannelAcquisitionPreviewResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getChannelAcquisitionPreviewResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getChannelAcquisitionPreviewResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getChannelAcquisitionPreviewResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getChannelAcquisitionPreviewResponseSuccess =
+  getChannelAcquisitionPreviewResponse200 & {
+    headers: Headers;
+  };
+export type getChannelAcquisitionPreviewResponseError = (
+  | getChannelAcquisitionPreviewResponse400
+  | getChannelAcquisitionPreviewResponse401
+  | getChannelAcquisitionPreviewResponse403
+  | getChannelAcquisitionPreviewResponse404
+  | getChannelAcquisitionPreviewResponse503
+) & {
+  headers: Headers;
+};
+
+export type getChannelAcquisitionPreviewResponse =
+  | getChannelAcquisitionPreviewResponseSuccess
+  | getChannelAcquisitionPreviewResponseError;
+
+export const getGetChannelAcquisitionPreviewUrl = (channelId: number) => {
+  return `/api/admin/channels/${channelId}/acquisition-preview`;
+};
+
+export const getChannelAcquisitionPreview = async (
+  channelId: number,
+  options?: RequestInit,
+): Promise<getChannelAcquisitionPreviewResponse> => {
+  const res = await fetch(getGetChannelAcquisitionPreviewUrl(channelId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getChannelAcquisitionPreviewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getChannelAcquisitionPreviewResponse;
+};
+
+/**
+ * @summary Replace the local channel assignment policy atomically
+ */
+export type updateChannelAcquisitionAssigneesResponse200 = {
+  data: ChannelAcquisitionAssignmentResponse;
+  status: 200;
+};
+
+export type updateChannelAcquisitionAssigneesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type updateChannelAcquisitionAssigneesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateChannelAcquisitionAssigneesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type updateChannelAcquisitionAssigneesResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type updateChannelAcquisitionAssigneesResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type updateChannelAcquisitionAssigneesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateChannelAcquisitionAssigneesResponseSuccess =
+  updateChannelAcquisitionAssigneesResponse200 & {
+    headers: Headers;
+  };
+export type updateChannelAcquisitionAssigneesResponseError = (
+  | updateChannelAcquisitionAssigneesResponse400
+  | updateChannelAcquisitionAssigneesResponse401
+  | updateChannelAcquisitionAssigneesResponse403
+  | updateChannelAcquisitionAssigneesResponse404
+  | updateChannelAcquisitionAssigneesResponse409
+  | updateChannelAcquisitionAssigneesResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateChannelAcquisitionAssigneesResponse =
+  | updateChannelAcquisitionAssigneesResponseSuccess
+  | updateChannelAcquisitionAssigneesResponseError;
+
+export const getUpdateChannelAcquisitionAssigneesUrl = (channelId: number) => {
+  return `/api/admin/channels/${channelId}/assignees`;
+};
+
+export const updateChannelAcquisitionAssignees = async (
+  channelId: number,
+  channelAcquisitionAssignmentRequest: ChannelAcquisitionAssignmentRequest,
+  options?: RequestInit,
+): Promise<updateChannelAcquisitionAssigneesResponse> => {
+  const res = await fetch(getUpdateChannelAcquisitionAssigneesUrl(channelId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(channelAcquisitionAssignmentRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateChannelAcquisitionAssigneesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateChannelAcquisitionAssigneesResponse;
 };
 
 /**

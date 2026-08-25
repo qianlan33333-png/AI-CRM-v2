@@ -3766,6 +3766,60 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/channels/{channel_id}/acquisition-preview:
+    get:
+      tags: [p4-channel]
+      operationId: getChannelAcquisitionPreview
+      summary: Read local channel acquisition prerequisites without provider execution
+      x-p4-decision-evidence: P4-CH01-2026-08-26
+      x-aicrm-capability: channels.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: contact.local_channel_projection
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: channel_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200":
+          description: Local-only readiness projection; provider asset and entrant effects remain unverified.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ChannelAcquisitionPreviewResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/channels/{channel_id}/assignees:
+    put:
+      tags: [p4-channel]
+      operationId: updateChannelAcquisitionAssignees
+      summary: Replace the local channel assignment policy atomically
+      x-p4-decision-evidence: P4-CH01-2026-08-26
+      x-aicrm-capability: channels.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: contact.local_channel_transaction
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: channel_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - $ref: "#/components/parameters/CSRFToken"
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ChannelAcquisitionAssignmentRequest" } } }
+      responses:
+        "200":
+          description: Local assignment policy persisted through the existing Channel receipt and Event UoW.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ChannelAcquisitionAssignmentResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /admin/orders:
     get:
       tags: [p4-order-compat]
@@ -15613,6 +15667,98 @@ components:
         receipt_id: {type: string, pattern: '^eerop_[1-9][0-9]*$'}
         provider_call_attempted: {type: boolean, enum: [false]}
         provider_success_claimed: {type: boolean, enum: [false]}
+    ChannelAcquisitionAssignmentMember:
+      type: object
+      additionalProperties: false
+      required: [staff_id]
+      properties:
+        staff_id: { type: string, minLength: 1, maxLength: 200 }
+        status: { type: string, enum: [active], default: active }
+        priority: { type: integer, format: int32, minimum: 0 }
+        ratio_percent: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        max_scans_24h: { type: integer, format: int32, minimum: 1 }
+    ChannelAcquisitionAssignee:
+      type: object
+      additionalProperties: false
+      required: [wecom_userid, display_name, status, priority]
+      properties:
+        wecom_userid: { type: string, minLength: 1, maxLength: 200 }
+        display_name: { type: string, minLength: 1, maxLength: 200 }
+        status: { type: string, enum: [active] }
+        priority: { type: integer, format: int32, minimum: 1 }
+        ratio_percent: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        max_scans_24h: { type: integer, format: int32, minimum: 1 }
+    ChannelAcquisitionAssignmentRequest:
+      type: object
+      additionalProperties: false
+      required: [assignees]
+      properties:
+        assignment_mode: { type: string, enum: [single_owner, multi_staff], default: multi_staff }
+        assignment_strategy: { type: string, enum: [ratio, cap_switch], default: ratio }
+        overflow_policy: { type: string, minLength: 1, maxLength: 200, default: least_loaded }
+        assignees:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items: { $ref: "#/components/schemas/ChannelAcquisitionAssignmentMember" }
+    ChannelAcquisitionAssignmentResponse:
+      type: object
+      additionalProperties: false
+      required: [channel_id, assignees, local_only, provider_execution_eligible, real_external_call_executed]
+      properties:
+        channel_id: { type: integer, format: int64, minimum: 1 }
+        assignees:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items: { $ref: "#/components/schemas/ChannelAcquisitionAssignee" }
+        local_only: { type: boolean, enum: [true] }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    ChannelAcquisitionLifecycle:
+      type: object
+      additionalProperties: false
+      required: [state, entrant_ready, readiness_blockers]
+      properties:
+        state: { type: string, enum: [local_prerequisites_ready, draft, paused, archived] }
+        entrant_ready: { type: boolean, enum: [false] }
+        readiness_blockers:
+          type: array
+          minItems: 1
+          items: { type: string, minLength: 1, maxLength: 100 }
+    ChannelQRCodePreview:
+      type: object
+      additionalProperties: false
+      required: [status, scene_value, url]
+      properties:
+        status: { type: string, enum: [not_generated, legacy_untracked] }
+        scene_value: { type: string, maxLength: 10000 }
+        url: { type: string, maxLength: 10000 }
+    ChannelSharePreview:
+      type: object
+      additionalProperties: false
+      required: [url, copy_text]
+      properties:
+        url: { type: string, maxLength: 10000 }
+        copy_text: { type: string, maxLength: 10000 }
+    ChannelAcquisitionPreviewResponse:
+      type: object
+      additionalProperties: false
+      required: [channel_id, channel_code, channel_name, assignees, lifecycle, qrcode, share, local_only, provider_execution_eligible, real_external_call_executed]
+      properties:
+        channel_id: { type: integer, format: int64, minimum: 1 }
+        channel_code: { type: string, minLength: 1, maxLength: 200 }
+        channel_name: { type: string, minLength: 1, maxLength: 200 }
+        assignees:
+          type: array
+          maxItems: 5
+          items: { $ref: "#/components/schemas/ChannelAcquisitionAssignee" }
+        lifecycle: { $ref: "#/components/schemas/ChannelAcquisitionLifecycle" }
+        qrcode: { $ref: "#/components/schemas/ChannelQRCodePreview" }
+        share: { $ref: "#/components/schemas/ChannelSharePreview" }
+        local_only: { type: boolean, enum: [true] }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
     LegacyChannelWriteRequest:
       type: object
       additionalProperties: false
