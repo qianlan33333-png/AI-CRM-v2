@@ -97,6 +97,7 @@ const (
 	p4WeComTagEffectEvidence                   = "P4-B1-WC01-2026-08-25"
 	p4ChannelAcquisitionEvidence               = "P4-CH01-2026-08-26"
 	p4SidebarOAuthEvidence                     = "P4-SB01-SIDEBAR-OAUTH-AGENT-CONFIG-2026-08-26"
+	p4SidebarSafeActivityEvidence              = "P4-SB02-SIDEBAR-SAFE-ACTIVITY-2026-08-26"
 	p4ServicePeriodMemberGridCanonicalEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24"
 	c01DispatchOperationID                     = "dispatchOutboundCampaignHandoff"
 	c01DispatchReadOperationID                 = "getOutboundCampaignDispatchReconciliation"
@@ -172,6 +173,8 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"startSidebarOAuth":                         {"/api/sidebar/v2/oauth/start", "GET", p4SidebarOAuthEvidence, "sidebar.oauth", "public", "internal_pii", "auth.oauth_state", "none", nil},
 	"completeSidebarOAuth":                      {"/api/sidebar/v2/oauth/callback", "GET", p4SidebarOAuthEvidence, "sidebar.oauth", "public", "internal_pii", "auth.oauth_state_and_identity.local_read_model", "none", nil},
 	"getSidebarAgentConfig":                     {"/api/sidebar/v2/jssdk/agent-config", "GET", p4SidebarOAuthEvidence, "sidebar.jssdk", "public", "internal", "wecom.agent_config_ticket.read", "none", nil},
+	"listSidebarTimeline":                       {"/api/sidebar/v2/timeline", "GET", p4SidebarSafeActivityEvidence, "customers.read", "human_session_and_sidebar_context", "internal", "contact.local_timeline_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listSidebarChatActivity":                   {"/api/sidebar/v2/chat-activity", "GET", p4SidebarSafeActivityEvidence, "customers.read", "human_session_and_sidebar_context", "internal", "wecom.local_message_archive_metadata", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getSidebarWorkbench":                       {"/api/sidebar/v2/workbench", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "internal_pii", "sidebar.local_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"updateSidebarProfile":                      {"/api/sidebar/v2/profile", "PUT", p4SidebarLocalCoreEvidence, "customers.write", "human_session_and_sidebar_context", "internal_pii", "contact.local_command", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"listSidebarQuestionnaires":                 {"/api/sidebar/v2/questionnaires", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "internal_deidentified", "survey.local_safe_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
