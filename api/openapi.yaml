@@ -4889,6 +4889,7 @@ paths:
       tags: [p4-group-ops]
       operationId: listGroupOpsPlans
       summary: List local-only Group Ops plans in deterministic updated-at order
+      x-legacy-mapping-ids: [LEGACY-API-0158]
       security: [{ AdminSession: [] }]
       x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
       x-aicrm-capability: admin.read
@@ -4909,6 +4910,7 @@ paths:
       tags: [p4-group-ops]
       operationId: createGroupOpsPlan
       summary: Create a local draft Group Ops plan
+      x-legacy-mapping-ids: [LEGACY-API-0159]
       security: [{ AdminSession: [] }]
       x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
       x-aicrm-capability: operations.manage
@@ -4933,6 +4935,7 @@ paths:
       tags: [p4-group-ops]
       operationId: getGroupOpsPlan
       summary: Read one local-only Group Ops plan
+      x-legacy-mapping-ids: [LEGACY-API-0161]
       security: [{ AdminSession: [] }]
       x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
       x-aicrm-capability: admin.read
@@ -4972,6 +4975,40 @@ paths:
         "404": { description: Plan or draft-only resource not found., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "409": { description: "Revision, state or idempotency conflict.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "503": { description: Local transaction unavailable or strict readback failed., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
+    put:
+      tags: [p4-group-ops]
+      operationId: putGroupOpsPlan
+      summary: Legacy-compatible CAS update of a draft Group Ops plan
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0162]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsPlanUpdateRequest" } } } }
+      responses: *group_ops_write_responses
+    delete:
+      tags: [p4-group-ops]
+      operationId: deleteGroupOpsPlan
+      summary: Legacy-compatible archive transition with CAS
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0160]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsTransitionRequest" } } } }
+      responses: *group_ops_write_responses
   /api/admin/automation-conversion/group-ops/plans/{plan_id}/activate:
     post: &group_ops_activate
       tags: [p4-group-ops]
@@ -5141,6 +5178,7 @@ paths:
       tags: [p4-group-ops]
       operationId: listGroupOpsPlanNodes
       summary: List persisted standard nodes in deterministic position order
+      x-legacy-mapping-ids: [LEGACY-API-0172]
       security: [{ AdminSession: [] }]
       x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
       x-aicrm-capability: admin.read
@@ -5162,6 +5200,7 @@ paths:
       tags: [p4-group-ops]
       operationId: addGroupOpsPlanNode
       summary: Add a persisted standard node to a draft plan
+      x-legacy-mapping-ids: [LEGACY-API-0173]
       security: [{ AdminSession: [] }]
       x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
       x-aicrm-capability: operations.manage
@@ -5191,10 +5230,28 @@ paths:
       parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { name: node_id, in: path, required: true, schema: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsNodeRequest" } } } }
       responses: *group_ops_write_responses
+    put:
+      tags: [p4-group-ops]
+      operationId: putGroupOpsPlanNode
+      summary: Legacy-compatible standard-node update with immutable material reference input
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0175]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { name: node_id, in: path, required: true, schema: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsNodeRequest" } } } }
+      responses: *group_ops_write_responses
     delete:
       tags: [p4-group-ops]
       operationId: removeGroupOpsPlanNode
       summary: Remove one persisted standard node from a draft plan
+      x-legacy-mapping-ids: [LEGACY-API-0174]
       security: [{ AdminSession: [] }]
       x-p4-decision-evidence: P4-GROUP-OPS-LOCAL-ONLY-2026-08-23
       x-aicrm-capability: operations.manage
@@ -5268,6 +5325,358 @@ paths:
         "404": { description: Plan not found., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "409": { description: Preview is limited to draft plans., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
         "503": { description: Local Group Ops storage unavailable., content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
+  /api/admin/automation-conversion/group-ops/plans/{plan_id}/enable:
+    post:
+      tags: [p4-group-ops]
+      operationId: enableGroupOpsPlan
+      summary: Legacy-compatible active transition without queue or Provider I/O
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0164]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsTransitionRequest" } } } }
+      responses: *group_ops_write_responses
+  /api/admin/automation-conversion/group-ops/plans/{plan_id}/disable:
+    post:
+      tags: [p4-group-ops]
+      operationId: disableGroupOpsPlan
+      summary: Legacy-compatible pause transition without altering execution facts
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0163]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsTransitionRequest" } } } }
+      responses: *group_ops_write_responses
+  /api/admin/automation-conversion/group-ops/plans/{plan_id}/groups:
+    parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }]
+    get:
+      tags: [p4-group-ops]
+      operationId: listGroupOpsPlanGroups
+      summary: List locally bound group references
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0166]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_read_model
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/GroupOpsLimit" }, { $ref: "#/components/parameters/GroupOpsOffset" }]
+      responses:
+        "200": { description: "Local group bindings only.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsGroupAssetPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    post:
+      tags: [p4-group-ops]
+      operationId: addGroupOpsPlanGroup
+      summary: Bind one local opaque group reference
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0167]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsGroupAssetRequest" } } } }
+      responses: *group_ops_write_responses
+  /api/admin/automation-conversion/group-ops/plans/{plan_id}/groups/{chat_id}:
+    delete:
+      tags: [p4-group-ops]
+      operationId: removeGroupOpsPlanGroup
+      summary: Remove one local opaque group reference
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0168]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { name: chat_id, in: path, required: true, schema: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRevisionRequest" } } } }
+      responses: *group_ops_write_responses
+  /api/admin/automation-conversion/group-ops/plans/{plan_id}/webhook:
+    get:
+      tags: [p4-group-ops]
+      operationId: getGroupOpsWebhook
+      summary: Read the opaque webhook descriptor without URL or secret material
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0180]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.local_read_model
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }]
+      responses:
+        "200": { description: "Opaque descriptor only.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsWebhookDescriptorResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/automation-conversion/group-ops/groups:
+    get:
+      tags: [p4-group-ops]
+      operationId: listGroupOpsDirectoryGroups
+      summary: List the local group-directory projection for one owner
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0154]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.directory_projection
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: owner_userid, in: query, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200, default: 200 } }
+        - { $ref: "#/components/parameters/GroupOpsOffset" }
+      responses:
+        "200": { description: "Local group projection; existence, membership and delivery are not asserted.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsDirectoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/automation-conversion/group-ops/groups/sync:
+    post:
+      tags: [p4-group-ops]
+      operationId: syncGroupOpsDirectoryGroups
+      summary: Explicitly invoke the injected read-only group-directory adapter
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0155]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.directory_refresh
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsDirectorySyncRequest" } } } }
+      responses:
+        "200": { description: "Refreshed local projection; no send or delivery occurred.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsDirectoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: "Provider read adapter disabled or unavailable.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
+  /api/admin/automation-conversion/group-ops/group-picker:
+    get:
+      tags: [p4-group-ops]
+      operationId: listGroupOpsGroupPicker
+      summary: List the local picker projection across owners or for one owner
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0152]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.directory_projection
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: owner_userid, in: query, required: false, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200, default: 200 } }
+        - { $ref: "#/components/parameters/GroupOpsOffset" }
+      responses:
+        "200": { description: "Local picker projection only.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsDirectoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/automation-conversion/group-ops/group-picker/sync:
+    post:
+      tags: [p4-group-ops]
+      operationId: syncGroupOpsGroupPicker
+      summary: Refresh the picker through the same explicit read-only adapter boundary
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0153]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.directory_refresh
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsDirectorySyncRequest" } } } }
+      responses:
+        "200": { description: "Refreshed local picker projection.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsDirectoryPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: "Provider read adapter disabled or unavailable.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
+  /api/admin/automation-conversion/group-ops/plans/{plan_id}/run-due/preview:
+    post:
+      tags: [p4-group-ops]
+      operationId: previewGroupOpsRunDue
+      summary: Preview due immutable execution intents without EER acceptance or Provider I/O
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0177]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.runtime_projection
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { $ref: "#/components/parameters/CSRFToken" }]
+      responses:
+        "200": { description: "Due preview with Provider disabled safety fields.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRunDuePreview" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/automation-conversion/group-ops/plans/{plan_id}/run-due:
+    post:
+      tags: [p4-group-ops]
+      operationId: acceptGroupOpsRunDue
+      summary: Accept due immutable snapshots into EER without queueing or Provider I/O
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0176]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.runtime_transaction
+      x-aicrm-external-effect: eer_accepted_provider_disabled
+      parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "202": { description: "EER accepted only; provider_accepted and delivery_proven remain separate and false.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRunSummary" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/automation-conversion/group-ops/plans/{plan_id}/executions:
+    get:
+      tags: [p4-group-ops]
+      operationId: listGroupOpsExecutions
+      summary: List EER-bound Group Ops execution projections
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.execution_projection
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { $ref: "#/components/parameters/GroupOpsLimit" }, { $ref: "#/components/parameters/GroupOpsOffset" }]
+      responses:
+        "200": { description: "Execution state projection; acceptance is not delivery.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsExecutionPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/automation-conversion/group-ops/plans/executions/{execution_id}/reconcile:
+    post:
+      tags: [p4-group-ops]
+      operationId: reconcileGroupOpsExecution
+      summary: Unavailable until a Group Ops outcome writer is configured
+      description: "This fail-closed placeholder always returns provider_disabled. It does not reconcile an EER acceptance into a Provider or delivery outcome."
+      security: [{ AdminSession: [] }]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.execution_reconciliation_unavailable
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: execution_id, in: path, required: true, schema: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 } }
+        - { $ref: "#/components/parameters/CSRFToken" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsReconcileRequest" } } } }
+      responses:
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { description: "No Group Ops outcome writer is configured; Provider and delivery reconciliation are disabled.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
+  /api/automation/group-ops/broadcast:
+    post:
+      tags: [p4-group-ops]
+      operationId: acceptGroupOpsBroadcast
+      summary: Accept a fixed active-plan snapshot through the API-client protocol boundary
+      security: [{ GroupOpsAPIClientJWT: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0601]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: groupops.broadcast.accept
+      x-aicrm-auth-scheme: api_client_jwt
+      x-aicrm-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.runtime_transaction
+      x-aicrm-external-effect: eer_accepted_provider_disabled
+      parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsBroadcastRequest" } } } }
+      responses:
+        "202": { description: "Immutable EER acceptance only; not Provider acceptance or delivery.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRunSummary" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { description: "Protocol authenticator or runtime unavailable.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
+  /api/automation/group-ops/webhooks/{webhook_key}:
+    post:
+      tags: [p4-group-ops]
+      operationId: acceptGroupOpsWebhook
+      summary: Accept a fixed plan snapshot after injected HTTP Message Signature verification
+      security: [{ GroupOpsWebhookSignature: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0602]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: groupops.webhook.accept
+      x-aicrm-auth-scheme: webhook_hmac
+      x-aicrm-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: group_ops.runtime_transaction
+      x-aicrm-external-effect: eer_accepted_provider_disabled
+      parameters:
+        - { name: webhook_key, in: path, required: true, schema: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 } }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody: { required: true, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
+      responses:
+        "202": { description: "Immutable EER acceptance only; webhook idempotency is not a Provider receipt.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRunSummary" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { description: "Signature verifier or runtime unavailable.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
   /admin/questionnaires/external-push-logs:
     get:
       tags: [p4-survey-compat]
@@ -8459,9 +8868,10 @@ paths:
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/common/operation-members:
     get:
-      tags: [p4-ai-audience]
+      tags: [p4-ai-audience, p4-group-ops]
       operationId: listAIAudienceOperationMembers
-      summary: List the active local staff projection eligible for AI Audience sender selection
+      summary: List the active local staff projection for AI Audience or Group Ops sender selection
+      x-legacy-mapping-ids: [LEGACY-API-0240]
       x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22
       x-aicrm-capability: segments.read
       x-aicrm-rbac-scopes: { admin: global, ops: global }
@@ -8471,14 +8881,37 @@ paths:
       x-aicrm-data-classification: internal
       x-aicrm-external-effect: none
       parameters:
-        - { name: scope, in: query, required: true, schema: { type: string, enum: [ai_audience] } }
+        - { name: scope, in: query, required: true, schema: { type: string, enum: [ai_audience, group_ops] } }
         - { name: page_size, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 100 } }
       responses:
-        "200": { description: Active local staff selector; it does not synchronize any external directory, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceOperationMemberListResponse" } } } }
+        "200": { description: "Active local staff selector; it does not synchronize any external directory.", content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/AIAudienceOperationMemberListResponse" }, { $ref: "#/components/schemas/GroupOpsOperationMemberPage" }] } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/common/operation-members/sync:
+    post:
+      tags: [p4-group-ops]
+      operationId: syncGroupOpsOperationMembers
+      summary: Explicitly request the injected read-only member-directory refresh boundary
+      security: [{ AdminSession: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0241]
+      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: group_ops.directory_refresh
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsOperationMemberSyncRequest" } } } }
+      responses:
+        "200": { description: "Refreshed selector projection; this is not a send or delivery fact.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsOperationMemberPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/ai-audience/package-groups:
     get:
@@ -10762,6 +11195,16 @@ components:
       type: apiKey
       in: cookie
       name: aicrm_session
+    GroupOpsAPIClientJWT:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: External API-client JWT policy is injected at composition; absent policy fails closed and never falls back to an admin session.
+    GroupOpsWebhookSignature:
+      type: apiKey
+      in: header
+      name: Signature
+      description: HTTP Message Signature verification is injected at composition; absent verifier fails closed before runtime acceptance.
     PaymentIdentitySession:
       type: apiKey
       in: cookie
@@ -11790,7 +12233,7 @@ components:
           type: object
           additionalProperties: false
           required: [code]
-          properties: { code: { type: string, enum: [authentication_required, permission_denied, invalid_plan_id, invalid_staff_id, invalid_node_id, invalid_asset_reference, invalid_page, invalid_idempotency_key, invalid_request, plan_not_found, operations_conflict, group_ops_unavailable, method_not_allowed] } }
+          properties: { code: { type: string, enum: [authentication_required, permission_denied, protocol_authentication_failed, protocol_auth_unavailable, provider_disabled, invalid_plan_id, invalid_staff_id, invalid_node_id, invalid_asset_reference, invalid_page, invalid_idempotency_key, invalid_request, plan_not_found, operations_conflict, group_ops_unavailable, method_not_allowed] } }
         provider_execution_eligible: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
     GroupOpsPlan:
@@ -11828,6 +12271,7 @@ components:
         kind: { type: string, enum: [message, delay] }
         message_text: { type: string, minLength: 1, maxLength: 1000 }
         delay_minutes: { type: integer, minimum: 1, maximum: 10080 }
+        material_reference: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 }
     GroupOpsWebhookDescriptor:
       type: object
       additionalProperties: false
@@ -11843,6 +12287,141 @@ components:
       properties:
         provider_execution_eligible: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
+    GroupOpsRuntimeSafety:
+      type: object
+      additionalProperties: false
+      required: [provider_execution_eligible, real_external_call_executed, provider_accepted, delivery_proven]
+      properties:
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        provider_accepted: { type: boolean }
+        delivery_proven: { type: boolean }
+    GroupOpsRunDuePreview:
+      type: object
+      additionalProperties: false
+      required: [plan_id, plan_status, snapshot_revision, evaluated_at, due_execution_count, blockers, provider_execution_eligible, real_external_call_executed, provider_accepted, delivery_proven]
+      properties:
+        plan_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+        plan_status: { type: string, enum: [draft, active, paused, archived] }
+        snapshot_revision: { type: integer, format: int64, minimum: 1 }
+        evaluated_at: { type: string, format: date-time }
+        due_execution_count: { type: integer, minimum: 0 }
+        next_due_at: { type: string, format: date-time }
+        blockers: { type: array, items: { type: string, enum: [plan_not_active, group_asset_required, member_required, node_required, invalid_node] } }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        provider_accepted: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+    GroupOpsRun:
+      type: object
+      additionalProperties: false
+      required: [run_id, plan_id, trigger, plan_revision, scheduled_for, accepted_at, accepted_by]
+      properties:
+        run_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+        plan_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+        trigger: { type: string, enum: [run_due, broadcast, webhook] }
+        plan_revision: { type: integer, format: int64, minimum: 1 }
+        scheduled_for: { type: string, format: date-time }
+        accepted_at: { type: string, format: date-time }
+        accepted_by: { type: string, minLength: 3, maxLength: 140 }
+    GroupOpsExecution:
+      type: object
+      additionalProperties: false
+      required: [execution_id, run_id, plan_id, plan_revision, node_id, node_position, target_reference, target_digest, content_digest, material_digest, external_effect_id, state, provider_accepted, delivery_proven, attempt_count, provider_receipt_present, reconciliation_evidence_present, created_at, updated_at]
+      properties:
+        execution_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+        run_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+        plan_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+        plan_revision: { type: integer, format: int64, minimum: 1 }
+        node_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+        node_position: { type: integer, minimum: 1 }
+        target_reference: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 }
+        target_digest: { type: string, pattern: '^sha256:[0-9a-f]{64}$' }
+        content_digest: { type: string, pattern: '^sha256:[0-9a-f]{64}$' }
+        material_digest: { type: string, pattern: '^sha256:[0-9a-f]{64}$' }
+        external_effect_id: { type: string, pattern: '^eer_[1-9][0-9]*$' }
+        state: { type: string, enum: [accepted, provider_accepted, delivery_proven, outcome_unknown, reconciled, final_failed] }
+        provider_accepted: { type: boolean }
+        delivery_proven: { type: boolean }
+        attempt_count: { type: integer, minimum: 0 }
+        provider_receipt_present: { type: boolean }
+        reconciliation_evidence_present: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    GroupOpsRunSummary:
+      type: object
+      additionalProperties: false
+      required: [run, executions, accepted, provider_accepted_count, delivery_proven_count, outcome_unknown, reconciled, final_failed, provider_execution_eligible, real_external_call_executed, provider_accepted, delivery_proven]
+      properties:
+        run: { $ref: "#/components/schemas/GroupOpsRun" }
+        executions: { type: array, items: { $ref: "#/components/schemas/GroupOpsExecution" } }
+        accepted: { type: integer, minimum: 0 }
+        provider_accepted_count: { type: integer, minimum: 0 }
+        delivery_proven_count: { type: integer, minimum: 0 }
+        outcome_unknown: { type: integer, minimum: 0 }
+        reconciled: { type: integer, minimum: 0 }
+        final_failed: { type: integer, minimum: 0 }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        provider_accepted: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+    GroupOpsExecutionPage:
+      type: object
+      additionalProperties: false
+      required: [items, total, limit, offset, has_more, provider_execution_eligible, real_external_call_executed, provider_accepted, delivery_proven]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/GroupOpsExecution" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0, maximum: 1000000 }
+        has_more: { type: boolean }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        provider_accepted: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+    GroupOpsDirectoryItem:
+      type: object
+      additionalProperties: false
+      required: [chat_reference, owner_staff_id, display_name, member_count, refreshed_at]
+      properties:
+        chat_reference: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 }
+        owner_staff_id: { type: integer, format: int64, minimum: 1 }
+        display_name: { type: string, minLength: 1, maxLength: 128 }
+        member_count: { type: integer, minimum: 0 }
+        refreshed_at: { type: string, format: date-time }
+    GroupOpsDirectoryPage:
+      type: object
+      additionalProperties: false
+      required: [items, total, limit, offset, has_more, provider_execution_eligible, real_external_call_executed, provider_accepted, delivery_proven]
+      properties:
+        items: { type: array, maxItems: 200, items: { $ref: "#/components/schemas/GroupOpsDirectoryItem" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 200 }
+        offset: { type: integer, minimum: 0, maximum: 1000000 }
+        has_more: { type: boolean }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        provider_accepted: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+    GroupOpsOperationMember:
+      type: object
+      additionalProperties: false
+      required: [sender_userid, display_name]
+      properties:
+        sender_userid: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 }
+        display_name: { type: string, minLength: 1, maxLength: 128 }
+    GroupOpsOperationMemberPage:
+      type: object
+      additionalProperties: false
+      required: [scope, items, page_size, provider_execution_eligible, real_external_call_executed, provider_accepted, delivery_proven]
+      properties:
+        scope: { type: string, enum: [group_ops] }
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/GroupOpsOperationMember" } }
+        page_size: { type: integer, minimum: 1, maximum: 100 }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        provider_accepted: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
     GroupOpsPlanDetail:
       type: object
       additionalProperties: false
@@ -11968,6 +12547,7 @@ components:
         kind: { type: string, enum: [message, delay] }
         message_text: { type: string, minLength: 1, maxLength: 1000 }
         delay_minutes: { type: integer, minimum: 1, maximum: 10080 }
+        material_reference: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 }
     GroupOpsWebhookDescriptorRequest:
       type: object
       additionalProperties: false
@@ -11975,6 +12555,35 @@ components:
       properties:
         expected_revision: { type: integer, format: int64, minimum: 1 }
         reference: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 }
+    GroupOpsDirectorySyncRequest:
+      type: object
+      additionalProperties: false
+      required: [owner_staff_id, limit]
+      properties:
+        owner_staff_id: { type: integer, format: int64, minimum: 1 }
+        limit: { type: integer, minimum: 1, maximum: 200 }
+    GroupOpsOperationMemberSyncRequest:
+      type: object
+      additionalProperties: false
+      required: [scope]
+      properties:
+        scope: { type: string, enum: [group_ops] }
+        page_size: { type: integer, minimum: 1, maximum: 100, default: 100 }
+    GroupOpsBroadcastRequest:
+      type: object
+      additionalProperties: false
+      required: [plan_id]
+      properties: { plan_id: { type: integer, format: int64, minimum: 1 } }
+    GroupOpsReconcileRequest:
+      type: object
+      additionalProperties: false
+      required: [generation, fence, lease_expires_at, evidence_digest, delivery_proven]
+      properties:
+        generation: { type: integer, format: int64, minimum: 1 }
+        fence: { type: integer, format: int64, minimum: 1 }
+        lease_expires_at: { type: string, format: date-time }
+        evidence_digest: { type: string, pattern: '^sha256:[0-9a-f]{64}$' }
+        delivery_proven: { type: boolean }
     CloudCampaignError:
       type: object
       additionalProperties: false

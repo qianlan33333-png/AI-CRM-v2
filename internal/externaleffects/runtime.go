@@ -42,6 +42,7 @@ const (
 	OwnerSurvey   Owner = "survey"
 	OwnerAudience Owner = "audience"
 	OwnerOrder    Owner = "order"
+	OwnerGroupOps Owner = "group_ops"
 )
 
 type Kind string
@@ -59,6 +60,7 @@ const (
 	KindOrderPaymentPrepay        Kind = "order_payment_prepay"
 	KindOrderPaymentCapture       Kind = "order_payment_capture"
 	KindOrderRefund               Kind = "order_refund"
+	KindGroupOpsBroadcast         Kind = "group_ops_broadcast"
 )
 
 func validOwnerKind(owner Owner, kind Kind) bool {
@@ -77,6 +79,8 @@ func validOwnerKind(owner Owner, kind Kind) bool {
 		return kind == KindAudienceWebhook
 	case OwnerOrder:
 		return kind == KindOrderPaymentPrepay || kind == KindOrderPaymentCapture || kind == KindOrderRefund
+	case OwnerGroupOps:
+		return kind == KindGroupOpsBroadcast
 	default:
 		return false
 	}

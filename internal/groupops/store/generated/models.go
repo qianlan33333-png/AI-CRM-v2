@@ -8,6 +8,52 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type GroupOpsDirectoryGroup struct {
+	ChatReference string             `json:"chat_reference"`
+	OwnerStaffID  int64              `json:"owner_staff_id"`
+	DisplayName   string             `json:"display_name"`
+	MemberCount   int32              `json:"member_count"`
+	SourceDigest  string             `json:"source_digest"`
+	RefreshedAt   pgtype.Timestamptz `json:"refreshed_at"`
+}
+
+type GroupOpsDirectoryRefreshReceipt struct {
+	ID                   int64              `json:"id"`
+	RefreshKind          string             `json:"refresh_kind"`
+	ActorID              int64              `json:"actor_id"`
+	OwnerStaffID         pgtype.Int8        `json:"owner_staff_id"`
+	KeyDigest            []byte             `json:"key_digest"`
+	SnapshotDigest       string             `json:"snapshot_digest"`
+	ItemCount            int32              `json:"item_count"`
+	ProviderReadExecuted bool               `json:"provider_read_executed"`
+	RefreshedAt          pgtype.Timestamptz `json:"refreshed_at"`
+}
+
+type GroupOpsExecution struct {
+	ID                           int64              `json:"id"`
+	RunID                        int64              `json:"run_id"`
+	PlanID                       int64              `json:"plan_id"`
+	NodeID                       int64              `json:"node_id"`
+	PlanRevision                 int64              `json:"plan_revision"`
+	NodePosition                 int32              `json:"node_position"`
+	TargetReference              string             `json:"target_reference"`
+	TargetDigest                 string             `json:"target_digest"`
+	ContentSnapshot              []byte             `json:"content_snapshot"`
+	ContentDigest                string             `json:"content_digest"`
+	MaterialSnapshot             []byte             `json:"material_snapshot"`
+	MaterialDigest               string             `json:"material_digest"`
+	ExecutionKeyDigest           []byte             `json:"execution_key_digest"`
+	ExternalEffectID             int64              `json:"external_effect_id"`
+	State                        string             `json:"state"`
+	ProviderAccepted             bool               `json:"provider_accepted"`
+	DeliveryProven               bool               `json:"delivery_proven"`
+	ProviderReceiptDigest        pgtype.Text        `json:"provider_receipt_digest"`
+	ReconciliationEvidenceDigest pgtype.Text        `json:"reconciliation_evidence_digest"`
+	AttemptCount                 int32              `json:"attempt_count"`
+	CreatedAt                    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                    pgtype.Timestamptz `json:"updated_at"`
+}
+
 type GroupOpsPlan struct {
 	ID        int64              `json:"id"`
 	Name      string             `json:"name"`
@@ -17,4 +63,15 @@ type GroupOpsPlan struct {
 	UpdatedBy int64              `json:"updated_by"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
+type GroupOpsRun struct {
+	ID              int64              `json:"id"`
+	PlanID          int64              `json:"plan_id"`
+	TriggerKind     string             `json:"trigger_kind"`
+	SourceKeyDigest []byte             `json:"source_key_digest"`
+	PlanRevision    int64              `json:"plan_revision"`
+	ScheduledFor    pgtype.Timestamptz `json:"scheduled_for"`
+	AcceptedAt      pgtype.Timestamptz `json:"accepted_at"`
+	AcceptedBy      string             `json:"accepted_by"`
 }

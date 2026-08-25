@@ -48,6 +48,10 @@ func (fragment *localConfigurationRouteFragment) ServeHTTP(writer http.ResponseW
 		fragment.handler.operationMembers(writer, request)
 		return
 	}
+	if path == OperationMembersSyncRoute {
+		fragment.handler.syncOperationMembers(writer, request)
+		return
+	}
 	segments := strings.Split(strings.TrimPrefix(path, "/"), "/")
 	if len(segments) != 3 || segments[0] != "packages" || (segments[2] != "automation-binding" && segments[2] != "senders" &&
 		segments[2] != "configuration" && segments[2] != "configuration-preview" && segments[2] != "configuration-materialize") {
@@ -78,12 +82,74 @@ func (handler *LocalConfigurationHandler) operationMembers(writer http.ResponseW
 	if !handler.authorize(writer, request, false, nil) {
 		return
 	}
-	pageSize, problem := parseOperationMembersQuery(request.URL.RawQuery)
+	scope, pageSize, problem := parseOperationMembersQuery(request.URL.RawQuery)
 	if problem != nil {
 		writeProblem(writer, request, problem)
 		return
 	}
-	response, err := handler.application.ListOperationMembers(request.Context(), pageSize)
+	var response any
+	var err error
+	if scope == OperationMemberScope {
+		response, err = handler.application.ListOperationMembers(request.Context(), pageSize)
+	} else if extension, ok := handler.application.(GroupOpsOperationMemberApplication); ok {
+		response, err = extension.ListGroupOpsOperationMembers(request.Context(), pageSize)
+	} else {
+		writeProblem(writer, request, validation("scope", "unsupported"))
+		return
+	}
+	if err != nil {
+		writeFailure(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, response)
+}
+
+func (handler *LocalConfigurationHandler) syncOperationMembers(writer http.ResponseWriter, request *http.Request) {
+	if request.Method != http.MethodPost {
+		writeMethodNotAllowed(writer, request, http.MethodPost)
+		return
+	}
+	actor, err := handler.security.Authorize(request, AccessRequirement{Capability: CapabilityOperationsManage, RequireCSRF: true})
+	if err != nil || actor.AdminUserID < 1 {
+		if err == nil {
+			err = ErrForbidden
+		}
+		writeFailure(writer, request, err)
+		return
+	}
+	key, problem := idempotencyKey(request)
+	if problem != nil {
+		writeProblem(writer, request, problem)
+		return
+	}
+	var body struct {
+		Scope    string `json:"scope"`
+		PageSize int    `json:"page_size"`
+	}
+	fields, problem := decodeObject(writer, request, map[string]bool{"scope": true, "page_size": true})
+	if problem != nil {
+		writeProblem(writer, request, problem)
+		return
+	}
+	if raw, ok := fields["scope"]; !ok || json.Unmarshal(raw, &body.Scope) != nil || body.Scope != GroupOpsOperationMemberScope {
+		writeProblem(writer, request, validation("scope", "unsupported"))
+		return
+	}
+	body.PageSize = MaximumOperationMemberPageSize
+	if raw, ok := fields["page_size"]; ok {
+		var value int64
+		if json.Unmarshal(raw, &value) != nil || value < 1 || value > MaximumOperationMemberPageSize {
+			writeProblem(writer, request, validation("page_size", "invalid"))
+			return
+		}
+		body.PageSize = int(value)
+	}
+	extension, ok := handler.application.(GroupOpsOperationMemberApplication)
+	if !ok {
+		writeFailure(writer, request, ErrUnavailable)
+		return
+	}
+	response, err := extension.RefreshGroupOpsOperationMembers(request.Context(), actor.AdminUserID, key, body.PageSize)
 	if err != nil {
 		writeFailure(writer, request, err)
 		return
@@ -341,35 +407,35 @@ func (handler *LocalConfigurationHandler) authorize(writer http.ResponseWriter, 
 	return true
 }
 
-func parseOperationMembersQuery(raw string) (int, *requestProblem) {
+func parseOperationMembersQuery(raw string) (string, int, *requestProblem) {
 	values, err := url.ParseQuery(raw)
 	if err != nil {
-		return 0, malformed("query", "invalid_encoding")
+		return "", 0, malformed("query", "invalid_encoding")
 	}
 	for key, entries := range values {
 		if key != "scope" && key != "page_size" {
-			return 0, malformed("query", "unknown_parameter")
+			return "", 0, malformed("query", "unknown_parameter")
 		}
 		if len(entries) != 1 || entries[0] == "" {
-			return 0, malformed(key, "duplicate_or_empty")
+			return "", 0, malformed(key, "duplicate_or_empty")
 		}
 	}
 	scope, exists := values["scope"]
 	if !exists {
-		return 0, validation("scope", "required")
+		return "", 0, validation("scope", "required")
 	}
-	if scope[0] != OperationMemberScope {
-		return 0, validation("scope", "unsupported")
+	if scope[0] != OperationMemberScope && scope[0] != GroupOpsOperationMemberScope {
+		return "", 0, validation("scope", "unsupported")
 	}
 	pageSize := MaximumOperationMemberPageSize
 	if pageSizeValues, pageSizeExists := values["page_size"]; pageSizeExists {
 		value, problem := parseQueryInteger(pageSizeValues[0], "page_size", 1, MaximumOperationMemberPageSize)
 		if problem != nil {
-			return 0, problem
+			return "", 0, problem
 		}
 		pageSize = int(value)
 	}
-	return pageSize, nil
+	return scope[0], pageSize, nil
 }
 
 func decodePutAutomationBinding(writer http.ResponseWriter, request *http.Request) (PutAutomationBindingInput, *requestProblem) {

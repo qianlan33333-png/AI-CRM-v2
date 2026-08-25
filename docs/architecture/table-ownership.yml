@@ -336,14 +336,18 @@ owners:
 
   groupops:
     package: internal/groupops
-    tables: [group_ops_plans, group_ops_plan_members, group_ops_plan_group_assets, group_ops_plan_nodes, group_ops_plan_webhook_descriptors, group_ops_operation_receipts]
+    tables: [group_ops_plans, group_ops_plan_members, group_ops_plan_group_assets, group_ops_plan_nodes, group_ops_plan_webhook_descriptors, group_ops_operation_receipts, group_ops_directory_groups, group_ops_directory_refresh_receipts, group_ops_runs, group_ops_executions]
     constraints:
       group_ops_plans: local_only_draft_active_paused_archived_plan_control_plane
-      group_ops_plan_members: local_operator_member_bindings_without_directory_or_provider_sync
-      group_ops_plan_group_assets: opaque_local_group_asset_references_without_group_provider_reads
-      group_ops_plan_nodes: local_standard_content_nodes_without_runtime_or_send_execution
-      group_ops_plan_webhook_descriptors: opaque_safe_descriptors_without_url_credential_payload_or_dispatch
+      group_ops_plan_members: local_operator_member_bindings_with_contact_staff_projection_only
+      group_ops_plan_group_assets: opaque_local_group_asset_references_with_explicit_provider_read_refresh_only
+      group_ops_plan_nodes: local_standard_content_and_material_references_snapshotted_before_external_effect_acceptance
+      group_ops_plan_webhook_descriptors: opaque_safe_descriptors_without_url_or_credential_storage
       group_ops_operation_receipts: transaction_scoped_actor_idempotency_receipts
+      group_ops_directory_groups: provider_read_projection_without_credentials_or_send_state
+      group_ops_directory_refresh_receipts: immutable_refresh_evidence_separate_from_provider_send_effects
+      group_ops_runs: immutable_plan_revision_and_trigger_acceptance_facts
+      group_ops_executions: immutable_content_material_target_snapshots_bound_to_external_effect_registry
 
   campaign:
     package: internal/campaign

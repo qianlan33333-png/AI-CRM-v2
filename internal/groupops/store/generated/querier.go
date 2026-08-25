@@ -10,23 +10,40 @@ import (
 
 type Querier interface {
 	CompleteGroupOpsOperationReceipt(ctx context.Context, arg CompleteGroupOpsOperationReceiptParams) (CompleteGroupOpsOperationReceiptRow, error)
+	CountGroupOpsDirectoryGroups(ctx context.Context, ownerStaffID int64) (int64, error)
+	CountGroupOpsExecutions(ctx context.Context, planID int64) (int64, error)
 	CountGroupOpsPlans(ctx context.Context) (int64, error)
 	CreateGroupOpsPlan(ctx context.Context, arg CreateGroupOpsPlanParams) (int64, error)
 	CreateGroupOpsPlanMember(ctx context.Context, arg CreateGroupOpsPlanMemberParams) error
 	CreateGroupOpsPlanNode(ctx context.Context, arg CreateGroupOpsPlanNodeParams) error
 	CreateGroupOpsPlanWebhookDescriptor(ctx context.Context, planID int64) error
+	DeleteGroupOpsDirectoryGroups(ctx context.Context, ownerStaffID int64) error
 	DeleteGroupOpsPlanMembers(ctx context.Context, planID int64) error
 	DeleteMissingGroupOpsPlanGroupAssets(ctx context.Context, arg DeleteMissingGroupOpsPlanGroupAssetsParams) error
 	DeleteMissingGroupOpsPlanNodes(ctx context.Context, arg DeleteMissingGroupOpsPlanNodesParams) error
+	FindGroupOpsPlanByWebhookReference(ctx context.Context, reference string) (int64, error)
+	GetGroupOpsDirectoryRefresh(ctx context.Context, arg GetGroupOpsDirectoryRefreshParams) (GroupOpsDirectoryRefreshReceipt, error)
+	GetGroupOpsExecution(ctx context.Context, executionID int64) (GroupOpsExecution, error)
 	GetGroupOpsOperationReceipt(ctx context.Context, arg GetGroupOpsOperationReceiptParams) (GetGroupOpsOperationReceiptRow, error)
 	GetGroupOpsPlan(ctx context.Context, planID int64) (GroupOpsPlan, error)
 	GetGroupOpsPlanWebhookDescriptor(ctx context.Context, planID int64) (string, error)
+	GetGroupOpsRun(ctx context.Context, runID int64) (GroupOpsRun, error)
+	InsertGroupOpsDirectoryGroup(ctx context.Context, arg InsertGroupOpsDirectoryGroupParams) error
+	InsertGroupOpsExecution(ctx context.Context, arg InsertGroupOpsExecutionParams) (InsertGroupOpsExecutionRow, error)
+	ListGroupOpsDirectoryGroups(ctx context.Context, arg ListGroupOpsDirectoryGroupsParams) ([]GroupOpsDirectoryGroup, error)
+	ListGroupOpsExecutionKeys(ctx context.Context, arg ListGroupOpsExecutionKeysParams) ([]ListGroupOpsExecutionKeysRow, error)
+	ListGroupOpsExecutions(ctx context.Context, arg ListGroupOpsExecutionsParams) ([]GroupOpsExecution, error)
 	ListGroupOpsPlanGroupAssets(ctx context.Context, planID int64) ([]ListGroupOpsPlanGroupAssetsRow, error)
 	ListGroupOpsPlanMembers(ctx context.Context, planID int64) ([]int64, error)
 	ListGroupOpsPlanNodes(ctx context.Context, planID int64) ([]ListGroupOpsPlanNodesRow, error)
 	ListGroupOpsPlans(ctx context.Context, arg ListGroupOpsPlansParams) ([]GroupOpsPlan, error)
+	ListGroupOpsRunExecutions(ctx context.Context, runID int64) ([]GroupOpsExecution, error)
 	LockGroupOpsPlan(ctx context.Context, planID int64) (GroupOpsPlan, error)
+	ReconcileGroupOpsExecution(ctx context.Context, arg ReconcileGroupOpsExecutionParams) (GroupOpsExecution, error)
+	RecordGroupOpsExecutionOutcome(ctx context.Context, arg RecordGroupOpsExecutionOutcomeParams) (GroupOpsExecution, error)
+	ReserveGroupOpsDirectoryRefresh(ctx context.Context, arg ReserveGroupOpsDirectoryRefreshParams) (GroupOpsDirectoryRefreshReceipt, error)
 	ReserveGroupOpsOperationReceipt(ctx context.Context, arg ReserveGroupOpsOperationReceiptParams) (ReserveGroupOpsOperationReceiptRow, error)
+	ReserveGroupOpsRun(ctx context.Context, arg ReserveGroupOpsRunParams) (ReserveGroupOpsRunRow, error)
 	SaveGroupOpsPlan(ctx context.Context, arg SaveGroupOpsPlanParams) (int64, error)
 	SaveGroupOpsPlanWebhookDescriptor(ctx context.Context, arg SaveGroupOpsPlanWebhookDescriptorParams) (int64, error)
 	UpdateGroupOpsPlanNode(ctx context.Context, arg UpdateGroupOpsPlanNodeParams) (int64, error)

@@ -952,12 +952,6 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		surveystore.NewOperationsRepository(),
 		eventstore.NewAppender(),
 	))
-	groupOpsHandler := groupopshttp.New(groupopsapp.NewService(
-		uow,
-		groupopsstore.NewRepository(),
-		contactstore.NewStaffDirectoryRepository(pool),
-		eventstore.NewAppender(),
-	))
 	surveySafeAdminHandler := safeadminhttp.New(surveyapp.NewSafeAdminService(uow, surveySubmissionRepository))
 	surveyTokenKey, surveyCookieKey, surveyAbuseKey := deriveSurveyPublicKeys(config.Survey.PublicKey.Value())
 	surveyPublicService := surveyapp.NewPublicService(uow, surveystore.NewPublicRepository(), eventstore.NewAppender(), surveyTokenKey)
@@ -1022,19 +1016,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	legacyAIAudienceConfigurationHandler, err := legacyaudience.NewLocalConfigurationHandler(
-		legacyAIAudienceConfigurationService,
-		legacyAIAudienceSecurity{},
-	)
-	if err != nil {
-		pool.Close()
-		return nil, err
-	}
-	legacyAIAudienceConfigurationFragment, err := legacyaudience.NewLocalConfigurationRouteFragment(legacyAIAudienceConfigurationHandler)
-	if err != nil {
-		pool.Close()
-		return nil, err
-	}
+	var legacyAIAudienceConfigurationFragment http.Handler
 	productHandler, err := producthttp.NewHandler(productService)
 	if err != nil {
 		pool.Close()
@@ -1290,6 +1272,37 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	externalEffectsRuntime, err := eer.NewService(externalEffectsRuntimeRepository)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	groupOpsRepository := groupopsstore.NewRepository()
+	groupOpsRuntime, err := groupopsapp.NewRuntimeService(
+		uow,
+		groupOpsRepository,
+		groupOpsRepository,
+		externalEffectsRuntime,
+		channelStaffDirectory,
+		nil,
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	groupOpsHandler := groupopshttp.NewWithRuntime(
+		groupopsapp.NewService(uow, groupOpsRepository, channelStaffDirectory, eventstore.NewAppender()),
+		groupOpsRuntime,
+		nil,
+	)
+	legacyAIAudienceConfigurationHandler, err := legacyaudience.NewLocalConfigurationHandler(
+		groupOpsOperationMemberApplication{LocalConfigurationApplication: legacyAIAudienceConfigurationService, runtime: groupOpsRuntime},
+		legacyAIAudienceSecurity{},
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	legacyAIAudienceConfigurationFragment, err = legacyaudience.NewLocalConfigurationRouteFragment(legacyAIAudienceConfigurationHandler)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -1755,13 +1768,13 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		}
 		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
 	})
-	registerPublicSurvey := func(method, pattern string, endpoint http.Handler) error {
+	registerPublicProtocol := func(method, pattern string, endpoint http.Handler) error {
 		var allowed http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			defer func() {
 				if recover() == nil {
 					return
 				}
-				logger.Error("public survey handler panic")
+				logger.Error("public protocol handler panic")
 				for key := range writer.Header() {
 					writer.Header().Del(key)
 				}
@@ -1815,7 +1828,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/h5/surveys/oauth/start", http.HandlerFunc(wrapper.StartSurveyH5OAuth)},
 		{http.MethodGet, "/api/h5/surveys/oauth/callback", http.HandlerFunc(wrapper.CallbackSurveyH5OAuth)},
 	} {
-		if err = registerPublicSurvey(route.method, route.pattern, route.endpoint); err != nil {
+		if err = registerPublicProtocol(route.method, route.pattern, route.endpoint); err != nil {
 			return nil, err
 		}
 	}
@@ -1831,7 +1844,20 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				concrete.radarPublic.RecordEvent(writer, request, chi.URLParam(request, "code"))
 			})},
 		} {
-			if err = registerPublicSurvey(route.method, route.pattern, route.endpoint); err != nil {
+			if err = registerPublicProtocol(route.method, route.pattern, route.endpoint); err != nil {
+				return nil, err
+			}
+		}
+	}
+	if legacy != nil && legacy.groupOps != nil {
+		for _, route := range []struct {
+			method, pattern string
+			endpoint        http.Handler
+		}{
+			{http.MethodPost, groupopshttp.BroadcastPath, http.HandlerFunc(legacy.groupOps.Broadcast)},
+			{http.MethodPost, groupopshttp.WebhookPath, http.HandlerFunc(legacy.groupOps.Webhook)},
+		} {
+			if err = registerPublicProtocol(route.method, route.pattern, route.endpoint); err != nil {
 				return nil, err
 			}
 		}
@@ -2280,22 +2306,39 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				{http.MethodPost, groupopshttp.PlansPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.CreatePlan)},
 				{http.MethodGet, groupopshttp.PlanPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.GetPlan)},
 				{http.MethodPatch, groupopshttp.PlanPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.UpdatePlan)},
+				{http.MethodPut, groupopshttp.PlanPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.UpdatePlan)},
+				{http.MethodDelete, groupopshttp.PlanPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.DeletePlan)},
 				{http.MethodPost, groupopshttp.PlanActivatePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.Activate)},
 				{http.MethodPost, groupopshttp.PlanPausePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.Pause)},
 				{http.MethodPost, groupopshttp.PlanArchivePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.Archive)},
+				{http.MethodPost, groupopshttp.PlanEnablePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.Enable)},
+				{http.MethodPost, groupopshttp.PlanDisablePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.Disable)},
 				{http.MethodGet, groupopshttp.MembersPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListMembers)},
 				{http.MethodPost, groupopshttp.MembersPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.AddMember)},
 				{http.MethodDelete, groupopshttp.MemberPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.RemoveMember)},
 				{http.MethodGet, groupopshttp.GroupAssetsPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListGroupAssets)},
 				{http.MethodPost, groupopshttp.GroupAssetsPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.AddGroupAsset)},
 				{http.MethodDelete, groupopshttp.GroupAssetPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.RemoveGroupAsset)},
+				{http.MethodGet, groupopshttp.PlanGroupsPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListPlanGroups)},
+				{http.MethodPost, groupopshttp.PlanGroupsPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.AddPlanGroup)},
+				{http.MethodDelete, groupopshttp.PlanGroupPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.RemovePlanGroup)},
 				{http.MethodGet, groupopshttp.NodesPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListNodes)},
 				{http.MethodPost, groupopshttp.NodesPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.AddNode)},
 				{http.MethodPatch, groupopshttp.NodePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.UpdateNode)},
+				{http.MethodPut, groupopshttp.NodePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.UpdateNode)},
 				{http.MethodDelete, groupopshttp.NodePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.RemoveNode)},
 				{http.MethodGet, groupopshttp.WebhookDescriptorPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.GetWebhookDescriptor)},
 				{http.MethodPut, groupopshttp.WebhookDescriptorPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.PutWebhookDescriptor)},
+				{http.MethodGet, groupopshttp.PlanWebhookPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.GetWebhook)},
 				{http.MethodPost, groupopshttp.ContentPreviewPath, authport.CapabilityAdminRead, true, http.HandlerFunc(legacy.groupOps.Preview)},
+				{http.MethodPost, groupopshttp.RunDuePreviewPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.PreviewRunDue)},
+				{http.MethodPost, groupopshttp.RunDuePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.RunDue)},
+				{http.MethodGet, groupopshttp.ExecutionsPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListExecutions)},
+				{http.MethodPost, groupopshttp.ExecutionReconcilePath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.ReconcileExecution)},
+				{http.MethodGet, groupopshttp.GroupsPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListGroups)},
+				{http.MethodPost, groupopshttp.GroupsSyncPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.SyncGroups)},
+				{http.MethodGet, groupopshttp.GroupPickerPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListGroupPicker)},
+				{http.MethodPost, groupopshttp.GroupPickerSyncPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.SyncGroupPicker)},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
 					return nil, err

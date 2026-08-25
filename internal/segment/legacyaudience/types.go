@@ -15,8 +15,9 @@ import (
 const (
 	RoutePrefix = "/api/admin/ai-audience"
 
-	CapabilitySegmentsRead  = "segments.read"
-	CapabilitySegmentsWrite = "segments.write"
+	CapabilitySegmentsRead     = "segments.read"
+	CapabilitySegmentsWrite    = "segments.write"
+	CapabilityOperationsManage = "operations.manage"
 
 	DefaultLimit  = 50
 	MaximumLimit  = 100

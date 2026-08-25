@@ -36,6 +36,23 @@ func (application *localConfigurationHTTPApplication) MaterializeConfiguration(_
 	return ConfigurationEvaluationResponse{PackageID: input.PackageID, ConfigurationVersion: input.ConfigurationVersion, Materialized: true, Projection: localProjection()}, nil
 }
 
+type groupOpsOperationMemberHTTPApplication struct {
+	*localConfigurationHTTPApplication
+	listedPageSize, refreshedPageSize int
+	refreshActor                      int64
+	refreshKey                        string
+}
+
+func (application *groupOpsOperationMemberHTTPApplication) ListGroupOpsOperationMembers(_ context.Context, pageSize int) (any, error) {
+	application.listedPageSize = pageSize
+	return map[string]any{"scope": GroupOpsOperationMemberScope, "items": []any{}}, nil
+}
+
+func (application *groupOpsOperationMemberHTTPApplication) RefreshGroupOpsOperationMembers(_ context.Context, actor int64, key string, pageSize int) (any, error) {
+	application.refreshActor, application.refreshKey, application.refreshedPageSize = actor, key, pageSize
+	return map[string]any{"scope": GroupOpsOperationMemberScope, "items": []any{}}, nil
+}
+
 func (application *localConfigurationHTTPApplication) ListOperationMembers(_ context.Context, pageSize int) (OperationMemberListResponse, error) {
 	application.membersPageSize = pageSize
 	return OperationMemberListResponse{Scope: OperationMemberScope, Items: []OperationMember{}, PageSize: pageSize, Projection: localProjection()}, nil
@@ -93,6 +110,37 @@ func TestLocalConfigurationHTTPRejectsUnsupportedOperationMemberScope(t *testing
 	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, OperationMembersRoute+"?scope=group_ops", nil))
 	if response.Code != http.StatusUnprocessableEntity || application.membersPageSize != 0 || len(security.requirements) != 1 || security.requirements[0].Capability != CapabilitySegmentsRead {
 		t.Fatalf("scope response=%d page=%d requirements=%+v", response.Code, application.membersPageSize, security.requirements)
+	}
+}
+
+func TestLocalConfigurationHTTPDelegatesGroupOpsOperationMemberReadAndExplicitSync(t *testing.T) {
+	application := &groupOpsOperationMemberHTTPApplication{localConfigurationHTTPApplication: &localConfigurationHTTPApplication{}}
+	security := &localConfigurationHTTPSecurity{}
+	handler, err := NewLocalConfigurationHandler(application, security)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fragment, err := NewLocalConfigurationRouteFragment(handler)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	read := httptest.NewRecorder()
+	fragment.ServeHTTP(read, httptest.NewRequest(http.MethodGet, OperationMembersRoute+"?scope=group_ops&page_size=50", nil))
+	if read.Code != http.StatusOK || application.listedPageSize != 50 {
+		t.Fatalf("read status/page=%d/%d body=%s", read.Code, application.listedPageSize, read.Body.String())
+	}
+
+	syncResponse := httptest.NewRecorder()
+	syncRequest := httptest.NewRequest(http.MethodPost, OperationMembersSyncRoute, strings.NewReader(`{"scope":"group_ops","page_size":25}`))
+	syncRequest.Header.Set("Content-Type", "application/json")
+	syncRequest.Header.Set("Idempotency-Key", "group-ops-members-sync-01")
+	fragment.ServeHTTP(syncResponse, syncRequest)
+	if syncResponse.Code != http.StatusOK || application.refreshedPageSize != 25 || application.refreshActor != 7 || application.refreshKey != "group-ops-members-sync-01" {
+		t.Fatalf("sync status/page/actor/key=%d/%d/%d/%q body=%s", syncResponse.Code, application.refreshedPageSize, application.refreshActor, application.refreshKey, syncResponse.Body.String())
+	}
+	if requirement := security.requirements[len(security.requirements)-1]; requirement.Capability != CapabilityOperationsManage || !requirement.RequireCSRF {
+		t.Fatalf("sync security=%+v", requirement)
 	}
 }
 

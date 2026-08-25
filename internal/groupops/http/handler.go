@@ -65,7 +65,11 @@ type Application interface {
 
 var _ Application = (*groupopsapp.Service)(nil)
 
-type Handler struct{ Application Application }
+type Handler struct {
+	Application Application
+	Runtime     RuntimeApplication
+	Protocols   ProtocolAuthenticator
+}
 
 func New(application Application) *Handler { return &Handler{Application: application} }
 
@@ -146,7 +150,7 @@ func (h *Handler) GetPlan(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdatePlan(w http.ResponseWriter, r *http.Request) {
 	setHeaders(w)
 	actor, ok := writeAuthorized(r)
-	if !method(w, r, http.MethodPatch) || !ok {
+	if !methodAny(w, r, http.MethodPatch, http.MethodPut) || !ok {
 		authorization(w, r)
 		return
 	}
@@ -195,10 +199,28 @@ func (h *Handler) Archive(w http.ResponseWriter, r *http.Request) {
 		return h.Application.Archive(ctx, c)
 	})
 }
+func (h *Handler) Enable(w http.ResponseWriter, r *http.Request) {
+	h.transition(w, r, PlanEnablePath, func(ctx context.Context, c groupopsport.TransitionCommand) (groupopsport.Detail, error) {
+		return h.Application.Activate(ctx, c)
+	})
+}
+func (h *Handler) Disable(w http.ResponseWriter, r *http.Request) {
+	h.transition(w, r, PlanDisablePath, func(ctx context.Context, c groupopsport.TransitionCommand) (groupopsport.Detail, error) {
+		return h.Application.Pause(ctx, c)
+	})
+}
+func (h *Handler) DeletePlan(w http.ResponseWriter, r *http.Request) {
+	h.transitionWithMethod(w, r, PlanPath, http.MethodDelete, func(ctx context.Context, c groupopsport.TransitionCommand) (groupopsport.Detail, error) {
+		return h.Application.Archive(ctx, c)
+	})
+}
 func (h *Handler) transition(w http.ResponseWriter, r *http.Request, path string, call func(context.Context, groupopsport.TransitionCommand) (groupopsport.Detail, error)) {
+	h.transitionWithMethod(w, r, path, http.MethodPost, call)
+}
+func (h *Handler) transitionWithMethod(w http.ResponseWriter, r *http.Request, path, requestMethod string, call func(context.Context, groupopsport.TransitionCommand) (groupopsport.Detail, error)) {
 	setHeaders(w)
 	actor, ok := writeAuthorized(r)
-	if !method(w, r, http.MethodPost) || !ok {
+	if !method(w, r, requestMethod) || !ok {
 		authorization(w, r)
 		return
 	}
@@ -336,12 +358,18 @@ func (h *Handler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ListGroupAssets(w http.ResponseWriter, r *http.Request) {
+	h.listGroupAssets(w, r, GroupAssetsPath)
+}
+func (h *Handler) ListPlanGroups(w http.ResponseWriter, r *http.Request) {
+	h.listGroupAssets(w, r, PlanGroupsPath)
+}
+func (h *Handler) listGroupAssets(w http.ResponseWriter, r *http.Request, path string) {
 	setHeaders(w)
 	if !method(w, r, http.MethodGet) || !authorized(r, authport.CapabilityAdminRead) {
 		authorization(w, r)
 		return
 	}
-	id, ok := planID(r, GroupAssetsPath)
+	id, ok := planID(r, path)
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_plan_id")
 		return
@@ -363,13 +391,19 @@ func (h *Handler) ListGroupAssets(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, result)
 }
 func (h *Handler) AddGroupAsset(w http.ResponseWriter, r *http.Request) {
+	h.addGroupAsset(w, r, GroupAssetsPath)
+}
+func (h *Handler) AddPlanGroup(w http.ResponseWriter, r *http.Request) {
+	h.addGroupAsset(w, r, PlanGroupsPath)
+}
+func (h *Handler) addGroupAsset(w http.ResponseWriter, r *http.Request, path string) {
 	setHeaders(w)
 	actor, ok := writeAuthorized(r)
 	if !method(w, r, http.MethodPost) || !ok {
 		authorization(w, r)
 		return
 	}
-	id, ok := planID(r, GroupAssetsPath)
+	id, ok := planID(r, path)
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_plan_id")
 		return
@@ -399,18 +433,24 @@ func (h *Handler) AddGroupAsset(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, result)
 }
 func (h *Handler) RemoveGroupAsset(w http.ResponseWriter, r *http.Request) {
+	h.removeGroupAsset(w, r, GroupAssetsPath, "/group-assets/")
+}
+func (h *Handler) RemovePlanGroup(w http.ResponseWriter, r *http.Request) {
+	h.removeGroupAsset(w, r, PlanGroupsPath, "/groups/")
+}
+func (h *Handler) removeGroupAsset(w http.ResponseWriter, r *http.Request, path, marker string) {
 	setHeaders(w)
 	actor, ok := writeAuthorized(r)
 	if !method(w, r, http.MethodDelete) || !ok {
 		authorization(w, r)
 		return
 	}
-	id, ok := planID(r, GroupAssetsPath)
+	id, ok := planID(r, path)
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_plan_id")
 		return
 	}
-	ref, ok := tailOpaque(r.URL.Path, "/group-assets/")
+	ref, ok := tailOpaque(r.URL.Path, marker)
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_asset_reference")
 		return
@@ -502,7 +542,7 @@ func (h *Handler) AddNode(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateNode(w http.ResponseWriter, r *http.Request) {
 	setHeaders(w)
 	actor, ok := writeAuthorized(r)
-	if !method(w, r, http.MethodPatch) || !ok {
+	if !methodAny(w, r, http.MethodPatch, http.MethodPut) || !ok {
 		authorization(w, r)
 		return
 	}
@@ -530,7 +570,7 @@ func (h *Handler) UpdateNode(w http.ResponseWriter, r *http.Request) {
 		unavailable(w)
 		return
 	}
-	result, err := h.Application.UpdateNode(r.Context(), groupopsport.NodeUpdateCommand{PlanID: id, NodeID: node, ExpectedRevision: created.ExpectedRevision, Position: created.Position, Kind: created.Kind, MessageText: created.MessageText, DelayMinutes: created.DelayMinutes, Actor: actor, IdempotencyKey: key})
+	result, err := h.Application.UpdateNode(r.Context(), groupopsport.NodeUpdateCommand{PlanID: id, NodeID: node, ExpectedRevision: created.ExpectedRevision, Position: created.Position, Kind: created.Kind, MessageText: created.MessageText, DelayMinutes: created.DelayMinutes, MaterialRef: created.MaterialRef, Actor: actor, IdempotencyKey: key})
 	if err != nil {
 		applicationError(w, err)
 		return
@@ -579,12 +619,18 @@ func (h *Handler) RemoveNode(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetWebhookDescriptor(w http.ResponseWriter, r *http.Request) {
+	h.getWebhookDescriptor(w, r, WebhookDescriptorPath)
+}
+func (h *Handler) GetWebhook(w http.ResponseWriter, r *http.Request) {
+	h.getWebhookDescriptor(w, r, PlanWebhookPath)
+}
+func (h *Handler) getWebhookDescriptor(w http.ResponseWriter, r *http.Request, path string) {
 	setHeaders(w)
 	if !method(w, r, http.MethodGet) || !authorized(r, authport.CapabilityAdminRead) {
 		authorization(w, r)
 		return
 	}
-	id, ok := planID(r, WebhookDescriptorPath)
+	id, ok := planID(r, path)
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_plan_id")
 		return
@@ -673,11 +719,12 @@ func nodeCreateBody(r *http.Request, id, actor int64, key string) (groupopsport.
 		Kind             groupopsport.NodeKind `json:"kind"`
 		MessageText      string                `json:"message_text"`
 		DelayMinutes     int32                 `json:"delay_minutes"`
+		MaterialRef      string                `json:"material_reference"`
 	}
 	if !decodeBody(r, &body) {
 		return groupopsport.NodeCreateCommand{}, false
 	}
-	return groupopsport.NodeCreateCommand{PlanID: id, ExpectedRevision: body.ExpectedRevision, Position: body.Position, Kind: body.Kind, MessageText: body.MessageText, DelayMinutes: body.DelayMinutes, Actor: actor, IdempotencyKey: key}, true
+	return groupopsport.NodeCreateCommand{PlanID: id, ExpectedRevision: body.ExpectedRevision, Position: body.Position, Kind: body.Kind, MessageText: body.MessageText, DelayMinutes: body.DelayMinutes, MaterialRef: body.MaterialRef, Actor: actor, IdempotencyKey: key}, true
 }
 
 func method(w http.ResponseWriter, r *http.Request, want string) bool {
@@ -688,6 +735,19 @@ func method(w http.ResponseWriter, r *http.Request, want string) bool {
 		*r = *r.WithContext(context.WithValue(r.Context(), methodRejectedKey{}, true))
 	}
 	w.Header().Set("Allow", want)
+	writeError(w, http.StatusMethodNotAllowed, "method_not_allowed")
+	return false
+}
+func methodAny(w http.ResponseWriter, r *http.Request, allowed ...string) bool {
+	if r != nil {
+		for _, candidate := range allowed {
+			if r.Method == candidate {
+				return true
+			}
+		}
+		*r = *r.WithContext(context.WithValue(r.Context(), methodRejectedKey{}, true))
+	}
+	w.Header().Set("Allow", strings.Join(allowed, ", "))
 	writeError(w, http.StatusMethodNotAllowed, "method_not_allowed")
 	return false
 }
