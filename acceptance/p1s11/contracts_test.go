@@ -223,6 +223,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"ListLegacyOutboundJobs", "GetLegacyOutboundJob", "GetLegacyOutboundJobReconciliation", "CancelLegacyOutboundJob", "RetryLegacyOutboundJob",
 		"ListExternalEffectsRuntime", "GetExternalEffectRuntime", "GetExternalEffectsDiagnostics", "CancelExternalEffectRuntime", "RetryExternalEffectRuntime", "ReconcileExternalEffectRuntime",
 		"AcceptOutboundCampaignHandoff", "GetOutboundCampaignHandoffSummary", "ReconcileOutboundCampaignHandoff",
+		"DispatchOutboundCampaignHandoff", "GetOutboundCampaignDispatchReconciliation", "ReconcileOutboundCampaignDispatch",
 		"CreateCloudCampaignTouchPlan", "GetCloudCampaignTouchPlan", "ListCloudCampaignTouchPlans", "GetCloudCampaignTouchPlanRecipient", "GetCloudCampaignTouchPlanReview", "ListCloudCampaignTouchPlanRecipients", "MutateCloudCampaignTouchPlanReview",
 		"MintSidebarContext", "GetSidebarWorkbench", "UpdateSidebarProfile", "ListSidebarQuestionnaires", "ListSidebarOrders", "ListSidebarPeriodicOrders", "UpdateSidebarPeriodicRemark", "ListSidebarMaterials", "GetSidebarMaterialThumbnailStatus",
 		"CreateContactOwnerReassignmentPreview", "GetContactOwnerReassignmentPreview", "DownloadContactOwnerReassignmentErrors", "ExecuteContactOwnerReassignmentPreview", "DownloadContactOwnerReassignmentResults", "DownloadContactOwnerReassignmentTemplate",
