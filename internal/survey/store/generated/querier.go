@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	BindSurveyExternalPush(ctx context.Context, arg BindSurveyExternalPushParams) (BindSurveyExternalPushRow, error)
 	CompleteQuestionnaireManagementReceipt(ctx context.Context, arg CompleteQuestionnaireManagementReceiptParams) (CompleteQuestionnaireManagementReceiptRow, error)
 	CompleteQuestionnaireOperationReceipt(ctx context.Context, arg CompleteQuestionnaireOperationReceiptParams) (CompleteQuestionnaireOperationReceiptRow, error)
 	CompleteQuestionnaireOperationsReceipt(ctx context.Context, arg CompleteQuestionnaireOperationsReceiptParams) (CompleteQuestionnaireOperationsReceiptRow, error)
@@ -32,6 +33,7 @@ type Querier interface {
 	GetQuestionnaireOperationsReceipt(ctx context.Context, arg GetQuestionnaireOperationsReceiptParams) (GetQuestionnaireOperationsReceiptRow, error)
 	GetQuestionnaireSubmissionExportDefinition(ctx context.Context, questionnaireID int64) (GetQuestionnaireSubmissionExportDefinitionRow, error)
 	GetQuestionnaireSubmissionResults(ctx context.Context, questionnaireID int64) (GetQuestionnaireSubmissionResultsRow, error)
+	GetSurveyExternalPush(ctx context.Context, arg GetSurveyExternalPushParams) (GetSurveyExternalPushRow, error)
 	IncrementQuestionnaireCount(ctx context.Context) (int64, error)
 	InsertQuestionnaireOption(ctx context.Context, arg InsertQuestionnaireOptionParams) (int64, error)
 	InsertQuestionnaireQuestion(ctx context.Context, arg InsertQuestionnaireQuestionParams) (int64, error)
