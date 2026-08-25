@@ -8,6 +8,31 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type MediaCampaignDeliveryBinding struct {
+	ID            int64              `json:"id"`
+	CampaignCode  string             `json:"campaign_code"`
+	PlanID        string             `json:"plan_id"`
+	PackageID     int64              `json:"package_id"`
+	GroupInviteID int64              `json:"group_invite_id"`
+	Version       int64              `json:"version"`
+	CreatedBy     int64              `json:"created_by"`
+	UpdatedBy     int64              `json:"updated_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
+type MediaContentPackage struct {
+	ID          int64              `json:"id"`
+	Name        string             `json:"name"`
+	ContentText string             `json:"content_text"`
+	Enabled     bool               `json:"enabled"`
+	Version     int64              `json:"version"`
+	CreatedBy   int64              `json:"created_by"`
+	UpdatedBy   int64              `json:"updated_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
 type MediaGroupInvite struct {
 	ID           int64              `json:"id"`
 	Name         string             `json:"name"`
