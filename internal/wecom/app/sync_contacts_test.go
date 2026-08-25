@@ -58,6 +58,7 @@ func TestExternalContactSyncRetriesOnlyTheConcurrentCursorLoser(t *testing.T) {
 func TestExternalContactSyncFailsClosedBeforeCursorWrite(t *testing.T) {
 	for name, page := range map[string]wecomclient.ExternalContactPage{
 		"duplicate identifier": {ExternalUserIDs: []string{"wo-1", "wo-1"}},
+		"control identifier":   {ExternalUserIDs: []string{"wo-\x01"}},
 		"non advancing cursor": {ExternalUserIDs: []string{"wo-1"}, NextCursor: "cursor-1"},
 	} {
 		t.Run(name, func(t *testing.T) {

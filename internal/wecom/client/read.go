@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
+	"unicode"
+	"unicode/utf8"
 )
 
 // ReaderConfig constructs the sole W3 business endpoint. It has no write or
@@ -144,7 +147,7 @@ func (reader *ExternalContactReader) ListExternalContacts(ctx context.Context, s
 	seen := make(map[string]struct{}, len(payload.ExternalUserIDs))
 	page := ExternalContactPage{NextCursor: payload.NextCursor, ExternalUserIDs: make([]string, 0, len(payload.ExternalUserIDs))}
 	for _, externalUserID := range payload.ExternalUserIDs {
-		if externalUserID == "" {
+		if !validExternalContactUserID(externalUserID) {
 			return ExternalContactPage{}, ErrUnexpectedResponse
 		}
 		if _, duplicate := seen[externalUserID]; duplicate {
@@ -154,4 +157,8 @@ func (reader *ExternalContactReader) ListExternalContacts(ctx context.Context, s
 		page.ExternalUserIDs = append(page.ExternalUserIDs, externalUserID)
 	}
 	return page, nil
+}
+
+func validExternalContactUserID(value string) bool {
+	return value != "" && len(value) <= 256 && strings.TrimSpace(value) == value && utf8.ValidString(value) && strings.IndexFunc(value, unicode.IsControl) < 0
 }

@@ -194,7 +194,7 @@ func validPage(page wecomclient.ExternalContactPage) bool {
 	}
 	seen := make(map[string]struct{}, len(page.ExternalUserIDs))
 	for _, externalUserID := range page.ExternalUserIDs {
-		if externalUserID == "" || len(externalUserID) > 256 || strings.TrimSpace(externalUserID) != externalUserID {
+		if !validIdentityContactText(externalUserID, 256, false) {
 			return false
 		}
 		if _, duplicate := seen[externalUserID]; duplicate {

@@ -175,6 +175,20 @@ func TestExternalContactReaderRejectsDuplicateExternalUserIDs(t *testing.T) {
 	}
 }
 
+func TestExternalContactReaderRejectsControlCharacterExternalUserID(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		_, _ = writer.Write([]byte(`{"errcode":0,"external_userid":["wo-\u0001"]}`))
+	}))
+	defer server.Close()
+	reader, err := NewExternalContactReader(ReaderConfig{BaseURL: server.URL, HTTPClient: server.Client(), TokenProvider: staticTokenProvider{token: AccessToken{value: "fixture-token"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = reader.ListExternalContacts(context.Background(), "owner-fixture", ""); !errors.Is(err, ErrUnexpectedResponse) {
+		t.Fatalf("ListExternalContacts() error = %v, want malformed provider response", err)
+	}
+}
+
 func TestDisabledExternalContactReaderMakesNoHTTPCall(t *testing.T) {
 	var requests atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
