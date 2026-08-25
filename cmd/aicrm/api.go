@@ -170,11 +170,13 @@ type candidateHandler struct {
 	surveyPublic              *surveyhttp.PublicHandler
 	radarPublic               *radarthttp.PublicHandler
 	surveyH5OAuth             *surveyhttp.H5OAuthHandler
-	segmentRefresh            *segmenthttp.RefreshHandler
-	identityReviews           *identityhttp.ReviewHandler
-	identityConsole           *identityhttp.ConsoleHandler
-	identityIngest            *identityhttp.IngestHandler
-	automationRuns            interface {
+	surveyExternalPushDetail  *surveyhttp.ExternalPushDetailHandler
+
+	segmentRefresh  *segmenthttp.RefreshHandler
+	identityReviews *identityhttp.ReviewHandler
+	identityConsole *identityhttp.ConsoleHandler
+	identityIngest  *identityhttp.IngestHandler
+	automationRuns  interface {
 		List(context.Context, automationstore.TriggerListInput) (automationstore.TriggerListResult, error)
 	}
 	domainVerification interface {
@@ -1299,6 +1301,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	surveyPublicService.SetBinder(surveyapp.PublicExternalPushBinder{Push: surveyExternalPushService})
+	surveyExternalPushDetailHandler := &surveyhttp.ExternalPushDetailHandler{Application: surveyExternalPushService}
 	campaignDispatchRepository, err := outboundstore.NewCampaignDispatchRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -1376,6 +1379,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		externalEffectsRuntime:   externalEffectsRuntimeHandler,
 		release:                  releaseHandler,
 	}
+	candidate.surveyExternalPushDetail = surveyExternalPushDetailHandler
 	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -2036,6 +2040,14 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-publish", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.PublishQuestionnairePublicDefinition)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-disable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.DisableQuestionnairePublicDefinition)},
 		{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/public-analytics", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(wrapper.GetQuestionnairePublicAnalytics)},
+		{http.MethodGet, surveyhttp.ExternalPushDetailPath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			concrete, ok := candidate.(*candidateHandler)
+			if !ok {
+				writeSurveyPublicAdminUnavailable(writer, request)
+				return
+			}
+			concrete.GetSurveyExternalPushDetail(writer, request)
+		})},
 	}
 	for _, route := range routes {
 		if err = register(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {

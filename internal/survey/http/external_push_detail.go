@@ -15,6 +15,9 @@ import (
 type ExternalPushDetailApplication interface {
 	Detail(context.Context, surveyport.ID, int64) (surveyapp.ExternalPushBinding, error)
 }
+
+const ExternalPushDetailPath = "/api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push"
+
 type ExternalPushDetailHandler struct{ Application ExternalPushDetailApplication }
 
 func (h *ExternalPushDetailHandler) Get(w http.ResponseWriter, r *http.Request, qid surveyport.ID, submissionID int64) {
@@ -47,7 +50,7 @@ func (h *ExternalPushDetailHandler) Get(w http.ResponseWriter, r *http.Request, 
 }
 func ParseExternalPushDetailPath(path string) (surveyport.ID, int64, bool) {
 	p := strings.Split(strings.Trim(path, "/"), "/")
-	if len(p) != 6 || p[0] != "api" || p[1] != "admin" || p[2] != "questionnaires" || p[4] != "submissions" || p[5] == "" {
+	if len(p) != 7 || p[0] != "api" || p[1] != "admin" || p[2] != "questionnaires" || p[4] != "submissions" || p[6] != "external-push" {
 		return 0, 0, false
 	}
 	q, e := strconv.ParseInt(p[3], 10, 64)
