@@ -6922,6 +6922,24 @@ func (e SidebarAgentConfigSignatureSignatureType) Valid() bool {
 	}
 }
 
+// Defines values for SidebarChatActivityItemChatType.
+const (
+	SidebarChatActivityItemChatTypeGroup   SidebarChatActivityItemChatType = "group"
+	SidebarChatActivityItemChatTypePrivate SidebarChatActivityItemChatType = "private"
+)
+
+// Valid indicates whether the value is a known member of the SidebarChatActivityItemChatType enum.
+func (e SidebarChatActivityItemChatType) Valid() bool {
+	switch e {
+	case SidebarChatActivityItemChatTypeGroup:
+		return true
+	case SidebarChatActivityItemChatTypePrivate:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SidebarContextResponseState.
 const (
 	CustomerNotBound      SidebarContextResponseState = "customer_not_bound"
@@ -7435,6 +7453,24 @@ func (e ListLegacyOutboundJobsParamsStatus) Valid() bool {
 	case ListLegacyOutboundJobsParamsStatusSending:
 		return true
 	case ListLegacyOutboundJobsParamsStatusSent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ListSidebarChatActivityParamsChatType.
+const (
+	ListSidebarChatActivityParamsChatTypeGroup   ListSidebarChatActivityParamsChatType = "group"
+	ListSidebarChatActivityParamsChatTypePrivate ListSidebarChatActivityParamsChatType = "private"
+)
+
+// Valid indicates whether the value is a known member of the ListSidebarChatActivityParamsChatType enum.
+func (e ListSidebarChatActivityParamsChatType) Valid() bool {
+	switch e {
+	case ListSidebarChatActivityParamsChatTypeGroup:
+		return true
+	case ListSidebarChatActivityParamsChatTypePrivate:
 		return true
 	default:
 		return false
@@ -11526,6 +11562,24 @@ type SidebarAgentConfigSignature struct {
 // SidebarAgentConfigSignatureSignatureType defines model for SidebarAgentConfigSignature.SignatureType.
 type SidebarAgentConfigSignatureSignatureType string
 
+// SidebarChatActivityItem defines model for SidebarChatActivityItem.
+type SidebarChatActivityItem struct {
+	ChatType    SidebarChatActivityItemChatType `json:"chat_type"`
+	MessageType string                          `json:"message_type"`
+	SentAt      time.Time                       `json:"sent_at"`
+}
+
+// SidebarChatActivityItemChatType defines model for SidebarChatActivityItem.ChatType.
+type SidebarChatActivityItemChatType string
+
+// SidebarChatActivityResponse defines model for SidebarChatActivityResponse.
+type SidebarChatActivityResponse struct {
+	Items          []SidebarChatActivityItem `json:"items"`
+	NextCursor     *string                   `json:"next_cursor,omitempty"`
+	PreviousCursor *string                   `json:"previous_cursor,omitempty"`
+	Safety         SidebarSafety             `json:"safety"`
+}
+
 // SidebarContextResponse defines model for SidebarContextResponse.
 type SidebarContextResponse struct {
 	ContextToken *string                     `json:"context_token,omitempty"`
@@ -11701,6 +11755,20 @@ type SidebarThumbnailPendingResponse struct {
 
 // SidebarThumbnailPendingResponseStatus defines model for SidebarThumbnailPendingResponse.Status.
 type SidebarThumbnailPendingResponseStatus string
+
+// SidebarTimelineItem defines model for SidebarTimelineItem.
+type SidebarTimelineItem struct {
+	EventType  string    `json:"event_type"`
+	Id         int64     `json:"id"`
+	OccurredAt time.Time `json:"occurred_at"`
+}
+
+// SidebarTimelineResponse defines model for SidebarTimelineResponse.
+type SidebarTimelineResponse struct {
+	Items      []SidebarTimelineItem `json:"items"`
+	NextCursor *string               `json:"next_cursor,omitempty"`
+	Safety     SidebarSafety         `json:"safety"`
+}
 
 // SidebarWorkbenchResponse defines model for SidebarWorkbenchResponse.
 type SidebarWorkbenchResponse struct {
@@ -12946,6 +13014,19 @@ type MintSidebarContextJSONBody struct {
 	ExternalUserid string `json:"external_userid"`
 }
 
+// ListSidebarChatActivityParams defines parameters for ListSidebarChatActivity.
+type ListSidebarChatActivityParams struct {
+	ChatType *ListSidebarChatActivityParamsChatType `form:"chat_type,omitempty" json:"chat_type,omitempty"`
+	Cursor   *string                                `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit    *int32                                 `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XSidebarContextToken Short-lived HMAC-authenticated corp, customer, owner, and viewer scoped token.
+	XSidebarContextToken SidebarContextToken `json:"X-Sidebar-Context-Token"`
+}
+
+// ListSidebarChatActivityParamsChatType defines parameters for ListSidebarChatActivity.
+type ListSidebarChatActivityParamsChatType string
+
 // GetSidebarAgentConfigParams defines parameters for GetSidebarAgentConfig.
 type GetSidebarAgentConfigParams struct {
 	Url string `form:"url" json:"url"`
@@ -13044,6 +13125,15 @@ type UpdateSidebarProfileParams struct {
 // ListSidebarQuestionnairesParams defines parameters for ListSidebarQuestionnaires.
 type ListSidebarQuestionnairesParams struct {
 	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// XSidebarContextToken Short-lived HMAC-authenticated corp, customer, owner, and viewer scoped token.
+	XSidebarContextToken SidebarContextToken `json:"X-Sidebar-Context-Token"`
+}
+
+// ListSidebarTimelineParams defines parameters for ListSidebarTimeline.
+type ListSidebarTimelineParams struct {
+	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit  *int32  `form:"limit,omitempty" json:"limit,omitempty"`
 
 	// XSidebarContextToken Short-lived HMAC-authenticated corp, customer, owner, and viewer scoped token.
 	XSidebarContextToken SidebarContextToken `json:"X-Sidebar-Context-Token"`
@@ -15422,6 +15512,9 @@ type ServerInterface interface {
 	// Resolve one local customer and mint a short-lived owner-scoped sidebar token
 	// (POST /api/sidebar/context-token)
 	MintSidebarContext(w http.ResponseWriter, r *http.Request)
+	// Read the bound customer's safe local chat-activity metadata
+	// (GET /api/sidebar/v2/chat-activity)
+	ListSidebarChatActivity(w http.ResponseWriter, r *http.Request, params ListSidebarChatActivityParams)
 	// Sign one allowed Sidebar URL with a WeCom agent_config ticket
 	// (GET /api/sidebar/v2/jssdk/agent-config)
 	GetSidebarAgentConfig(w http.ResponseWriter, r *http.Request, params GetSidebarAgentConfigParams)
@@ -15452,6 +15545,9 @@ type ServerInterface interface {
 	// List bounded safe-choice questionnaire answers for one scoped customer
 	// (GET /api/sidebar/v2/questionnaires)
 	ListSidebarQuestionnaires(w http.ResponseWriter, r *http.Request, params ListSidebarQuestionnairesParams)
+	// Read the bound customer's safe local activity timeline
+	// (GET /api/sidebar/v2/timeline)
+	ListSidebarTimeline(w http.ResponseWriter, r *http.Request, params ListSidebarTimelineParams)
 	// Read the customer sidebar local workbench aggregate
 	// (GET /api/sidebar/v2/workbench)
 	GetSidebarWorkbench(w http.ResponseWriter, r *http.Request, params GetSidebarWorkbenchParams)
@@ -16550,6 +16646,12 @@ func (_ Unimplemented) MintSidebarContext(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Read the bound customer's safe local chat-activity metadata
+// (GET /api/sidebar/v2/chat-activity)
+func (_ Unimplemented) ListSidebarChatActivity(w http.ResponseWriter, r *http.Request, params ListSidebarChatActivityParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Sign one allowed Sidebar URL with a WeCom agent_config ticket
 // (GET /api/sidebar/v2/jssdk/agent-config)
 func (_ Unimplemented) GetSidebarAgentConfig(w http.ResponseWriter, r *http.Request, params GetSidebarAgentConfigParams) {
@@ -16607,6 +16709,12 @@ func (_ Unimplemented) UpdateSidebarProfile(w http.ResponseWriter, r *http.Reque
 // List bounded safe-choice questionnaire answers for one scoped customer
 // (GET /api/sidebar/v2/questionnaires)
 func (_ Unimplemented) ListSidebarQuestionnaires(w http.ResponseWriter, r *http.Request, params ListSidebarQuestionnairesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the bound customer's safe local activity timeline
+// (GET /api/sidebar/v2/timeline)
+func (_ Unimplemented) ListSidebarTimeline(w http.ResponseWriter, r *http.Request, params ListSidebarTimelineParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -25517,6 +25625,80 @@ func (siw *ServerInterfaceWrapper) MintSidebarContext(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// ListSidebarChatActivity operation middleware
+func (siw *ServerInterfaceWrapper) ListSidebarChatActivity(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSidebarChatActivityParams
+
+	// ------------- Optional query parameter "chat_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "chat_type", r.URL.Query(), &params.ChatType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "chat_type", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Sidebar-Context-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Sidebar-Context-Token")]; found {
+		var XSidebarContextToken SidebarContextToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Sidebar-Context-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Sidebar-Context-Token", valueList[0], &XSidebarContextToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Sidebar-Context-Token", Err: err})
+			return
+		}
+
+		params.XSidebarContextToken = XSidebarContextToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Sidebar-Context-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Sidebar-Context-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSidebarChatActivity(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetSidebarAgentConfig operation middleware
 func (siw *ServerInterfaceWrapper) GetSidebarAgentConfig(w http.ResponseWriter, r *http.Request) {
 
@@ -26182,6 +26364,72 @@ func (siw *ServerInterfaceWrapper) ListSidebarQuestionnaires(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListSidebarQuestionnaires(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSidebarTimeline operation middleware
+func (siw *ServerInterfaceWrapper) ListSidebarTimeline(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSidebarTimelineParams
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: "int32"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Sidebar-Context-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Sidebar-Context-Token")]; found {
+		var XSidebarContextToken SidebarContextToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Sidebar-Context-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Sidebar-Context-Token", valueList[0], &XSidebarContextToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Sidebar-Context-Token", Err: err})
+			return
+		}
+
+		params.XSidebarContextToken = XSidebarContextToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Sidebar-Context-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Sidebar-Context-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSidebarTimeline(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -31580,6 +31828,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/sidebar/context-token", wrapper.MintSidebarContext)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/sidebar/v2/chat-activity", wrapper.ListSidebarChatActivity)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/sidebar/v2/jssdk/agent-config", wrapper.GetSidebarAgentConfig)
 	})
 	r.Group(func(r chi.Router) {
@@ -31608,6 +31859,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/sidebar/v2/questionnaires", wrapper.ListSidebarQuestionnaires)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/sidebar/v2/timeline", wrapper.ListSidebarTimeline)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/sidebar/v2/workbench", wrapper.GetSidebarWorkbench)
@@ -40818,6 +41072,68 @@ func (response MintSidebarContext503JSONResponse) VisitMintSidebarContextRespons
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListSidebarChatActivityRequestObject struct {
+	Params ListSidebarChatActivityParams
+}
+
+type ListSidebarChatActivityResponseObject interface {
+	VisitListSidebarChatActivityResponse(w http.ResponseWriter) error
+}
+
+type ListSidebarChatActivity200JSONResponse SidebarChatActivityResponse
+
+func (response ListSidebarChatActivity200JSONResponse) VisitListSidebarChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarChatActivity400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListSidebarChatActivity400JSONResponse) VisitListSidebarChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarChatActivity401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListSidebarChatActivity401JSONResponse) VisitListSidebarChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarChatActivity403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListSidebarChatActivity403JSONResponse) VisitListSidebarChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarChatActivity404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListSidebarChatActivity404JSONResponse) VisitListSidebarChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarChatActivity503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListSidebarChatActivity503JSONResponse) VisitListSidebarChatActivityResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetSidebarAgentConfigRequestObject struct {
 	Params GetSidebarAgentConfigParams
 }
@@ -41353,6 +41669,68 @@ func (response ListSidebarQuestionnaires403JSONResponse) VisitListSidebarQuestio
 type ListSidebarQuestionnaires503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListSidebarQuestionnaires503JSONResponse) VisitListSidebarQuestionnairesResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarTimelineRequestObject struct {
+	Params ListSidebarTimelineParams
+}
+
+type ListSidebarTimelineResponseObject interface {
+	VisitListSidebarTimelineResponse(w http.ResponseWriter) error
+}
+
+type ListSidebarTimeline200JSONResponse SidebarTimelineResponse
+
+func (response ListSidebarTimeline200JSONResponse) VisitListSidebarTimelineResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarTimeline400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListSidebarTimeline400JSONResponse) VisitListSidebarTimelineResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarTimeline401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListSidebarTimeline401JSONResponse) VisitListSidebarTimelineResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarTimeline403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListSidebarTimeline403JSONResponse) VisitListSidebarTimelineResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarTimeline404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListSidebarTimeline404JSONResponse) VisitListSidebarTimelineResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarTimeline503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListSidebarTimeline503JSONResponse) VisitListSidebarTimelineResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -47128,6 +47506,9 @@ type StrictServerInterface interface {
 	// Resolve one local customer and mint a short-lived owner-scoped sidebar token
 	// (POST /api/sidebar/context-token)
 	MintSidebarContext(ctx context.Context, request MintSidebarContextRequestObject) (MintSidebarContextResponseObject, error)
+	// Read the bound customer's safe local chat-activity metadata
+	// (GET /api/sidebar/v2/chat-activity)
+	ListSidebarChatActivity(ctx context.Context, request ListSidebarChatActivityRequestObject) (ListSidebarChatActivityResponseObject, error)
 	// Sign one allowed Sidebar URL with a WeCom agent_config ticket
 	// (GET /api/sidebar/v2/jssdk/agent-config)
 	GetSidebarAgentConfig(ctx context.Context, request GetSidebarAgentConfigRequestObject) (GetSidebarAgentConfigResponseObject, error)
@@ -47158,6 +47539,9 @@ type StrictServerInterface interface {
 	// List bounded safe-choice questionnaire answers for one scoped customer
 	// (GET /api/sidebar/v2/questionnaires)
 	ListSidebarQuestionnaires(ctx context.Context, request ListSidebarQuestionnairesRequestObject) (ListSidebarQuestionnairesResponseObject, error)
+	// Read the bound customer's safe local activity timeline
+	// (GET /api/sidebar/v2/timeline)
+	ListSidebarTimeline(ctx context.Context, request ListSidebarTimelineRequestObject) (ListSidebarTimelineResponseObject, error)
 	// Read the customer sidebar local workbench aggregate
 	// (GET /api/sidebar/v2/workbench)
 	GetSidebarWorkbench(ctx context.Context, request GetSidebarWorkbenchRequestObject) (GetSidebarWorkbenchResponseObject, error)
@@ -51639,6 +52023,32 @@ func (sh *strictHandler) MintSidebarContext(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// ListSidebarChatActivity operation middleware
+func (sh *strictHandler) ListSidebarChatActivity(w http.ResponseWriter, r *http.Request, params ListSidebarChatActivityParams) {
+	var request ListSidebarChatActivityRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSidebarChatActivity(ctx, request.(ListSidebarChatActivityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSidebarChatActivity")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSidebarChatActivityResponseObject); ok {
+		if err := validResponse.VisitListSidebarChatActivityResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetSidebarAgentConfig operation middleware
 func (sh *strictHandler) GetSidebarAgentConfig(w http.ResponseWriter, r *http.Request, params GetSidebarAgentConfigParams) {
 	var request GetSidebarAgentConfigRequestObject
@@ -51909,6 +52319,32 @@ func (sh *strictHandler) ListSidebarQuestionnaires(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListSidebarQuestionnairesResponseObject); ok {
 		if err := validResponse.VisitListSidebarQuestionnairesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSidebarTimeline operation middleware
+func (sh *strictHandler) ListSidebarTimeline(w http.ResponseWriter, r *http.Request, params ListSidebarTimelineParams) {
+	var request ListSidebarTimelineRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSidebarTimeline(ctx, request.(ListSidebarTimelineRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSidebarTimeline")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSidebarTimelineResponseObject); ok {
+		if err := validResponse.VisitListSidebarTimelineResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

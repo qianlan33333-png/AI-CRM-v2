@@ -187,6 +187,55 @@ paths:
         "200": {description: Agent-config-only signature; the provider ticket is never returned, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarAgentConfigSignature"}}}}
         "400": {$ref: "#/components/responses/BadRequest"}
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/timeline:
+    get:
+      tags: [p4-sidebar-local]
+      operationId: listSidebarTimeline
+      summary: Read the bound customer's safe local activity timeline
+      x-p4-decision-evidence: P4-SB02-SIDEBAR-SAFE-ACTIVITY-2026-08-26
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
+      x-aicrm-auth-scheme: human_session_and_sidebar_context
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: contact.local_timeline_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - {$ref: "#/components/parameters/SidebarContextToken"}
+        - {name: cursor, in: query, required: false, schema: {type: string, maxLength: 512}}
+        - {name: limit, in: query, required: false, schema: {type: integer, format: int32, minimum: 1, maximum: 100, default: 20}}
+      responses:
+        "200": {description: Safe local timeline projection without actors, payloads, identities, or receipts, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarTimelineResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/chat-activity:
+    get:
+      tags: [p4-sidebar-local]
+      operationId: listSidebarChatActivity
+      summary: Read the bound customer's safe local chat-activity metadata
+      x-p4-decision-evidence: P4-SB02-SIDEBAR-SAFE-ACTIVITY-2026-08-26
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
+      x-aicrm-auth-scheme: human_session_and_sidebar_context
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: wecom.local_message_archive_metadata
+      x-aicrm-external-effect: none
+      parameters:
+        - {$ref: "#/components/parameters/SidebarContextToken"}
+        - {name: chat_type, in: query, required: false, schema: {type: string, enum: [private, group]}}
+        - {name: cursor, in: query, required: false, schema: {type: string, maxLength: 512}}
+        - {name: limit, in: query, required: false, schema: {type: integer, format: int32, minimum: 1, maximum: 100, default: 50}}
+      responses:
+        "200": {description: Safe local chat metadata without body, actors, payloads, identities, or provider receipts, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarChatActivityResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/workbench:
     get:
       tags: [p4-sidebar-local]
@@ -12621,6 +12670,39 @@ components:
       required: [status, safety]
       properties:
         status: {type: string, enum: [pending]}
+        safety: {$ref: "#/components/schemas/SidebarSafety"}
+    SidebarTimelineItem:
+      type: object
+      additionalProperties: false
+      required: [id, event_type, occurred_at]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        event_type: {type: string, minLength: 1, maxLength: 128}
+        occurred_at: {type: string, format: date-time}
+    SidebarTimelineResponse:
+      type: object
+      additionalProperties: false
+      required: [items, safety]
+      properties:
+        items: {type: array, maxItems: 100, items: {$ref: "#/components/schemas/SidebarTimelineItem"}}
+        next_cursor: {type: string, minLength: 1, maxLength: 512}
+        safety: {$ref: "#/components/schemas/SidebarSafety"}
+    SidebarChatActivityItem:
+      type: object
+      additionalProperties: false
+      required: [chat_type, message_type, sent_at]
+      properties:
+        chat_type: {type: string, enum: [private, group]}
+        message_type: {type: string, minLength: 1, maxLength: 128}
+        sent_at: {type: string, format: date-time}
+    SidebarChatActivityResponse:
+      type: object
+      additionalProperties: false
+      required: [items, safety]
+      properties:
+        items: {type: array, maxItems: 100, items: {$ref: "#/components/schemas/SidebarChatActivityItem"}}
+        next_cursor: {type: string, minLength: 1, maxLength: 512}
+        previous_cursor: {type: string, minLength: 1, maxLength: 512}
         safety: {$ref: "#/components/schemas/SidebarSafety"}
     AdminOpsCategorySettings:
       type: object

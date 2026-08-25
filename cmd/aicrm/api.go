@@ -170,6 +170,7 @@ type candidateHandler struct {
 	wechatPaySettlement       *orderhttp.Handler
 	commerceRefunds           *orderhttp.CommerceRefundHandler
 	sidebar                   *sidebarhttp.Handler
+	sidebarActivity           *sidebarhttp.ActivityHandler
 	sidebarOAuth              *sidebarhttp.OAuthHandler
 	sidebarJSSDK              *sidebarhttp.JSSDKHandler
 	surveyPublic              *surveyhttp.PublicHandler
@@ -933,13 +934,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	messageArchiveService := wecomapp.NewMessageArchiveService(uow, wecomstore.NewMessageArchiveRepository(), eventstore.NewAppender())
-	customerContextService := customer360app.NewCustomerContextService(
-		contactapp.NewCustomer360ReaderService(
-			customerDetailService,
-			contactapp.NewCustomerEventService(uow, contactstore.NewCustomerEventRepository()),
-		),
-		messageArchiveService,
+	customer360Reader := contactapp.NewCustomer360ReaderService(
+		customerDetailService,
+		contactapp.NewCustomerEventService(uow, contactstore.NewCustomerEventRepository()),
 	)
+	customerContextService := customer360app.NewCustomerContextService(customer360Reader, messageArchiveService)
 	customerContextHandler, err := customer360http.NewCustomerContextHandler(customerContextService)
 	if err != nil {
 		pool.Close()
@@ -1603,6 +1602,16 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	sidebarActivityService, err := sidebarapp.NewActivityService(customer360Reader, customerContextService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	candidate.sidebarActivity, err = sidebarhttp.NewActivityHandler(candidate.sidebar, sidebarActivityService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	var sidebarOAuthService *sidebarapp.OAuthGrantService
 	if sidebarOAuthClient != nil {
 		sidebarOAuthService, err = sidebarapp.NewOAuthGrantService(oauthStates, sidebarOAuthProvider{client: sidebarOAuthClient}, service, service, sidebarService, config.Identity.HMACKey.Value(), sidebarapp.OAuthGrantOptions{})
@@ -2116,6 +2125,34 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		router.Method(method, pattern, tail)
 		return nil
 	}
+	registerSidebarActivityRead := func(pattern string, endpoint http.Handler) error {
+		tail, wrapErr := recovery(endpoint)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		tail, wrapErr = gateway.TimeoutMiddleware(tail)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		tail, wrapErr = gateway.AccountBudgetMiddleware(tail)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		tail, wrapErr = authHandler.Authorize(authport.CapabilityCustomersRead, tail)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		tail = authHandler.Authenticate(tail)
+		tail, wrapErr = gateway.RoutePatternMiddleware(pattern, tail)
+		if wrapErr != nil {
+			return wrapErr
+		}
+		methodRouter := chi.NewRouter()
+		methodRouter.MethodNotAllowed(http.HandlerFunc(writeSidebarActivityMethodNotAllowed))
+		methodRouter.Method(http.MethodGet, pattern, tail)
+		router.Handle(pattern, methodRouter)
+		return nil
+	}
 	registerOptionalSidebar := func(pattern string, endpoint http.Handler) error {
 		tail, wrapErr := recovery(endpoint)
 		if wrapErr != nil {
@@ -2163,6 +2200,12 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		return nil, err
 	}
 	if err = registerPublic(orderhttp.WeChatShopCallbackPath, http.HandlerFunc(wrapper.ReceiveWechatShopRefundCallback)); err != nil {
+		return nil, err
+	}
+	if err = registerSidebarActivityRead("/api/sidebar/v2/timeline", http.HandlerFunc(wrapper.ListSidebarTimeline)); err != nil {
+		return nil, err
+	}
+	if err = registerSidebarActivityRead("/api/sidebar/v2/chat-activity", http.HandlerFunc(wrapper.ListSidebarChatActivity)); err != nil {
 		return nil, err
 	}
 	internalEventSafeExportEndpoint := func(method func(http.ResponseWriter, *http.Request)) http.Handler {

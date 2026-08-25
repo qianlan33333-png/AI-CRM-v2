@@ -31,7 +31,11 @@ func (handler *ActivityHandler) Timeline(writer http.ResponseWriter, request *ht
 		writeError(writer, request, err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, page)
+	writeJSON(writer, http.StatusOK, struct {
+		Items      []sidebarapp.TimelineActivity `json:"items"`
+		NextCursor *string                       `json:"next_cursor,omitempty"`
+		Safety     sidebarapp.Safety             `json:"safety"`
+	}{Items: page.Items, NextCursor: page.NextCursor, Safety: sidebarapp.Safety{LocalOnly: true}})
 }
 
 func (handler *ActivityHandler) Chat(writer http.ResponseWriter, request *http.Request, chatType, cursor string, limit int32) {
@@ -44,7 +48,12 @@ func (handler *ActivityHandler) Chat(writer http.ResponseWriter, request *http.R
 		writeError(writer, request, err)
 		return
 	}
-	writeJSON(writer, http.StatusOK, page)
+	writeJSON(writer, http.StatusOK, struct {
+		Items          []sidebarapp.ChatActivity `json:"items"`
+		NextCursor     *string                   `json:"next_cursor,omitempty"`
+		PreviousCursor *string                   `json:"previous_cursor,omitempty"`
+		Safety         sidebarapp.Safety         `json:"safety"`
+	}{Items: page.Items, NextCursor: page.NextCursor, PreviousCursor: page.PreviousCursor, Safety: sidebarapp.Safety{LocalOnly: true}})
 }
 
 func (handler *ActivityHandler) readScope(writer http.ResponseWriter, request *http.Request) (sidebarapp.Scope, bool) {

@@ -5,6 +5,7 @@ import (
 
 	api "github.com/qianlan33333-png/AI-CRM-v2/internal/api/candidate/generated"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
+	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
 )
 
 func (handler *candidateHandler) MintSidebarContext(writer http.ResponseWriter, request *http.Request) {
@@ -75,4 +76,49 @@ func (handler *candidateHandler) ListSidebarMaterials(writer http.ResponseWriter
 
 func (handler *candidateHandler) GetSidebarMaterialThumbnailStatus(writer http.ResponseWriter, request *http.Request, imageID int64, params api.GetSidebarMaterialThumbnailStatusParams) {
 	handler.sidebar.ThumbnailStatus(writer, request, string(params.XSidebarContextToken), imageID)
+}
+
+func (handler *candidateHandler) ListSidebarTimeline(writer http.ResponseWriter, request *http.Request, params api.ListSidebarTimelineParams) {
+	if handler == nil || handler.sidebarActivity == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	cursor := ""
+	if params.Cursor != nil {
+		cursor = *params.Cursor
+	}
+	limit := int32(0)
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	handler.sidebarActivity.Timeline(writer, request, cursor, limit)
+}
+
+func (handler *candidateHandler) ListSidebarChatActivity(writer http.ResponseWriter, request *http.Request, params api.ListSidebarChatActivityParams) {
+	if handler == nil || handler.sidebarActivity == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	chatType, cursor := "", ""
+	if params.ChatType != nil {
+		chatType = string(*params.ChatType)
+	}
+	if params.Cursor != nil {
+		cursor = *params.Cursor
+	}
+	limit := int32(0)
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	handler.sidebarActivity.Chat(writer, request, chatType, cursor, limit)
+}
+
+func writeSidebarActivityMethodNotAllowed(writer http.ResponseWriter, _ *http.Request) {
+	writer.Header().Set("Allow", http.MethodGet)
+	writer.Header().Set("Cache-Control", "no-store")
+	writer.Header().Set("Content-Type", "application/json; charset=utf-8")
+	writer.Header().Set("Referrer-Policy", "no-referrer")
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
+	writer.WriteHeader(http.StatusMethodNotAllowed)
+	_, _ = writer.Write([]byte("{\"code\":\"method_not_allowed\"}\n"))
 }
