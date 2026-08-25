@@ -1,6 +1,6 @@
 import { attachmentPageDto, audiencePackagePageDto, channelPageDto, couponPageDto, customerPageDto, imagePageDto, miniProgramPageDto, orderPageDto, productPageDto, questionnairePageDto, radarPageDto, readAdminRows, serviceProductPageDto, tagPageDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
-import { getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetServicePeriodProductUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl } from './generated/health';
+import { getCreateLegacyWecomTagUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetServicePeriodProductUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl } from './generated/health';
 
 function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
 const response = (data: unknown, status = 200) => ({ status, data, headers: new Headers() });
@@ -22,6 +22,8 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(getGetLegacyWecomTagUrl(5) === '/api/admin/wecom/tags/5', 'tag detail URL/method');
   assert(getListRadarLinksUrl() === '/api/admin/radar-links', 'radar list URL/method');
   assert(getListAIAudiencePackagesUrl() === '/api/admin/ai-audience/packages', 'audience list URL/method');
+  assert(getCreateLegacyWecomTagUrl() === '/api/admin/wecom/tags', 'tag create URL/method');
+  assert(getQueueLegacyWecomTagSyncUrl() === '/api/admin/wecom/tags/sync', 'tag sync URL/method');
 
   const customer = customerPageDto({ id: 7, name: '陈晨', is_deleted: false, extra: {}, created_at: '2026-08-25T00:00:00Z', updated_at: '2026-08-25T00:00:00Z', owner_staff_id: 3 });
   assert(customer.id === '7' && customer.owner === '3' && customer.mobile === '—', 'customer response mapping');

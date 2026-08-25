@@ -26,7 +26,7 @@ import type {
   WecomTag,
 } from './types';
 import { SEED_DB, deepCopy } from './mockData';
-import { archiveAudiencePackage, copyAudiencePackageDto, deleteAudienceGroup as deleteAudienceGroupDto, readAdminPage, readRadarEvents, saveAudienceGroup as saveAudienceGroupDto, setAudiencePackageRunning, setRadarEnabled, type AdminReadContext } from '../../api/admin';
+import { archiveAudiencePackage, archiveTagDto, copyAudiencePackageDto, deleteAudienceGroup as deleteAudienceGroupDto, queueTagSyncDto, readAdminPage, readRadarEvents, saveAudienceGroup as saveAudienceGroupDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setRadarEnabled, type AdminReadContext } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
 
@@ -671,28 +671,19 @@ export class HttpApi implements AdminApi {
   /* ---------- 企微标签 ---------- */
 
   async saveTagGroup(input: { id?: number; name: string; firstTag?: string }): Promise<TagGroup> {
-    if (input.id !== undefined) {
-      return this.req<TagGroup>(ROUTES.wecomTagGroup(input.id), {
-        method: 'PATCH',
-        body: JSON.stringify({ name: input.name }),
-      });
-    }
-    return this.req<TagGroup>(ROUTES.wecomTagGroups, { method: 'POST', body: JSON.stringify(input) });
+    return saveTagGroupDto(input);
   }
 
   async saveTag(input: { id?: number; groupId: number; name: string }): Promise<WecomTag> {
-    if (input.id !== undefined) {
-      return this.req<WecomTag>(ROUTES.wecomTag(input.id), { method: 'PATCH', body: JSON.stringify(input) });
-    }
-    return this.req<WecomTag>(ROUTES.wecomTags, { method: 'POST', body: JSON.stringify(input) });
+    return saveTagDto(input);
   }
 
   deleteTag(id: number): Promise<void> {
-    return this.req<void>(ROUTES.wecomTag(id), { method: 'DELETE' });
+    return archiveTagDto(id);
   }
 
   syncWecomTags(): Promise<void> {
-    return this.req<void>(ROUTES.wecomTagsSync, { method: 'POST' });
+    return queueTagSyncDto().then(() => undefined);
   }
 
   /* ---------- 问卷 · 运营配置 ---------- */
