@@ -102,3 +102,134 @@ func (q *Queries) GetSurveyExternalPush(ctx context.Context, arg GetSurveyExtern
 	)
 	return i, err
 }
+
+const getSurveyExternalPushReconciliationEvidence = `-- name: GetSurveyExternalPushReconciliationEvidence :one
+SELECT evidence_digest
+FROM external_effect_reconciliations
+WHERE effect_id=$1 AND generation=$2 AND fence=$3
+FOR SHARE
+`
+
+type GetSurveyExternalPushReconciliationEvidenceParams struct {
+	EffectID   int64 `json:"effect_id"`
+	Generation int64 `json:"generation"`
+	Fence      int64 `json:"fence"`
+}
+
+func (q *Queries) GetSurveyExternalPushReconciliationEvidence(ctx context.Context, arg GetSurveyExternalPushReconciliationEvidenceParams) (string, error) {
+	row := q.db.QueryRow(ctx, getSurveyExternalPushReconciliationEvidence, arg.EffectID, arg.Generation, arg.Fence)
+	var evidence_digest string
+	err := row.Scan(&evidence_digest)
+	return evidence_digest, err
+}
+
+const insertSurveyExternalPushDeliveryReceipt = `-- name: InsertSurveyExternalPushDeliveryReceipt :exec
+INSERT INTO questionnaire_external_push_delivery_receipts(binding_id,effect_attempt_id,provider_accepted,delivery_proven,evidence_digest)
+VALUES($1,$2,$3,$4,$5)
+`
+
+type InsertSurveyExternalPushDeliveryReceiptParams struct {
+	BindingID        int64       `json:"binding_id"`
+	EffectAttemptID  int64       `json:"effect_attempt_id"`
+	ProviderAccepted bool        `json:"provider_accepted"`
+	DeliveryProven   bool        `json:"delivery_proven"`
+	EvidenceDigest   pgtype.Text `json:"evidence_digest"`
+}
+
+func (q *Queries) InsertSurveyExternalPushDeliveryReceipt(ctx context.Context, arg InsertSurveyExternalPushDeliveryReceiptParams) error {
+	_, err := q.db.Exec(ctx, insertSurveyExternalPushDeliveryReceipt,
+		arg.BindingID,
+		arg.EffectAttemptID,
+		arg.ProviderAccepted,
+		arg.DeliveryProven,
+		arg.EvidenceDigest,
+	)
+	return err
+}
+
+const lockSurveyExternalPushDeliveryReceipt = `-- name: LockSurveyExternalPushDeliveryReceipt :one
+SELECT provider_accepted,delivery_proven,COALESCE(evidence_digest,'')::text AS evidence_digest
+FROM questionnaire_external_push_delivery_receipts
+WHERE binding_id=$1 AND effect_attempt_id=$2
+FOR UPDATE
+`
+
+type LockSurveyExternalPushDeliveryReceiptParams struct {
+	BindingID       int64 `json:"binding_id"`
+	EffectAttemptID int64 `json:"effect_attempt_id"`
+}
+
+type LockSurveyExternalPushDeliveryReceiptRow struct {
+	ProviderAccepted bool   `json:"provider_accepted"`
+	DeliveryProven   bool   `json:"delivery_proven"`
+	EvidenceDigest   string `json:"evidence_digest"`
+}
+
+func (q *Queries) LockSurveyExternalPushDeliveryReceipt(ctx context.Context, arg LockSurveyExternalPushDeliveryReceiptParams) (LockSurveyExternalPushDeliveryReceiptRow, error) {
+	row := q.db.QueryRow(ctx, lockSurveyExternalPushDeliveryReceipt, arg.BindingID, arg.EffectAttemptID)
+	var i LockSurveyExternalPushDeliveryReceiptRow
+	err := row.Scan(&i.ProviderAccepted, &i.DeliveryProven, &i.EvidenceDigest)
+	return i, err
+}
+
+const lockSurveyExternalPushReconcile = `-- name: LockSurveyExternalPushReconcile :one
+SELECT b.id,b.questionnaire_id,b.public_submission_id,b.customer_id,b.external_effect_id,b.created_at,e.state,e.owner,e.kind
+FROM questionnaire_submission_external_push_bindings b
+JOIN external_effects e ON e.id=b.external_effect_id
+WHERE b.questionnaire_id=$1 AND b.public_submission_id=$2
+FOR UPDATE OF b,e
+`
+
+type LockSurveyExternalPushReconcileParams struct {
+	QuestionnaireID    int64 `json:"questionnaire_id"`
+	PublicSubmissionID int64 `json:"public_submission_id"`
+}
+
+type LockSurveyExternalPushReconcileRow struct {
+	ID                 int64              `json:"id"`
+	QuestionnaireID    int64              `json:"questionnaire_id"`
+	PublicSubmissionID int64              `json:"public_submission_id"`
+	CustomerID         int64              `json:"customer_id"`
+	ExternalEffectID   int64              `json:"external_effect_id"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	State              string             `json:"state"`
+	Owner              string             `json:"owner"`
+	Kind               string             `json:"kind"`
+}
+
+func (q *Queries) LockSurveyExternalPushReconcile(ctx context.Context, arg LockSurveyExternalPushReconcileParams) (LockSurveyExternalPushReconcileRow, error) {
+	row := q.db.QueryRow(ctx, lockSurveyExternalPushReconcile, arg.QuestionnaireID, arg.PublicSubmissionID)
+	var i LockSurveyExternalPushReconcileRow
+	err := row.Scan(
+		&i.ID,
+		&i.QuestionnaireID,
+		&i.PublicSubmissionID,
+		&i.CustomerID,
+		&i.ExternalEffectID,
+		&i.CreatedAt,
+		&i.State,
+		&i.Owner,
+		&i.Kind,
+	)
+	return i, err
+}
+
+const lockSurveyExternalPushUnknownAttempt = `-- name: LockSurveyExternalPushUnknownAttempt :one
+SELECT id
+FROM external_effect_attempts
+WHERE effect_id=$1 AND generation=$2 AND fence=$3 AND completion='outcome_unknown'
+FOR UPDATE
+`
+
+type LockSurveyExternalPushUnknownAttemptParams struct {
+	EffectID   int64 `json:"effect_id"`
+	Generation int64 `json:"generation"`
+	Fence      int64 `json:"fence"`
+}
+
+func (q *Queries) LockSurveyExternalPushUnknownAttempt(ctx context.Context, arg LockSurveyExternalPushUnknownAttemptParams) (int64, error) {
+	row := q.db.QueryRow(ctx, lockSurveyExternalPushUnknownAttempt, arg.EffectID, arg.Generation, arg.Fence)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
