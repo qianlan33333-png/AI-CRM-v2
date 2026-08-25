@@ -21,11 +21,23 @@ import (
 const maxCursorAdvanceAttempts = 3
 
 var (
-	ErrInvalidCursorSync = errors.New("invalid WeCom cursor sync")
-	ErrCursorSyncFailed  = errors.New("WeCom cursor sync failed")
-	ErrCursorSyncDone    = errors.New("WeCom cursor sync is complete")
-	ErrCursorAdvanced    = errors.New("WeCom cursor advanced concurrently")
+	ErrInvalidCursorSync  = errors.New("invalid WeCom cursor sync")
+	ErrCursorSyncFailed   = errors.New("WeCom cursor sync failed")
+	ErrCursorSyncDone     = errors.New("WeCom cursor sync is complete")
+	ErrCursorAdvanced     = errors.New("WeCom cursor advanced concurrently")
+	ErrCursorSyncDisabled = errors.New("WeCom cursor sync is disabled")
 )
+
+const ExternalContactSyncJobKind = "wecom_external_contact_directory_sync"
+
+// ExternalContactSyncJobArgs scopes one River execution to one eligible staff
+// user. It processes one committed cursor page; central periodic wiring
+// schedules later executions, which resume from that durable cursor.
+type ExternalContactSyncJobArgs struct {
+	StaffUserID string `json:"staff_userid"`
+}
+
+func (ExternalContactSyncJobArgs) Kind() string { return ExternalContactSyncJobKind }
 
 // ExternalContactPageReader has no provider write method. The concrete W3
 // client implements it with GET /cgi-bin/externalcontact/list.
@@ -115,6 +127,9 @@ func (service *ExternalContactSyncService) SyncNext(ctx context.Context, staffUs
 		}
 		page, err := service.reader.ListExternalContacts(ctx, staffUserID, state.Cursor)
 		if err != nil {
+			if errors.Is(err, wecomclient.ErrExternalContactReadDisabled) {
+				return wecomclient.ExternalContactPage{}, ErrCursorSyncDisabled
+			}
 			return wecomclient.ExternalContactPage{}, fmt.Errorf("%w: %w", ErrCursorSyncFailed, err)
 		}
 		if !validPage(page) || (page.NextCursor != "" && page.NextCursor == state.Cursor) {

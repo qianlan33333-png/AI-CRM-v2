@@ -175,6 +175,22 @@ func TestExternalContactReaderRejectsDuplicateExternalUserIDs(t *testing.T) {
 	}
 }
 
+func TestDisabledExternalContactReaderMakesNoHTTPCall(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		requests.Add(1)
+	}))
+	defer server.Close()
+
+	reader := NewDisabledExternalContactReader()
+	if _, err := reader.ListExternalContacts(context.Background(), "owner-fixture", "cursor-1"); !errors.Is(err, ErrExternalContactReadDisabled) {
+		t.Fatalf("ListExternalContacts() error = %v, want disabled", err)
+	}
+	if got := requests.Load(); got != 0 {
+		t.Fatalf("disabled reader made %d HTTP calls", got)
+	}
+}
+
 func TestReadersRejectOversizedResponses(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
 		_, _ = writer.Write([]byte(`{"errcode":0,"follow_user":[],"padding":"` + strings.Repeat("x", maxResponseBytes) + `"}`))

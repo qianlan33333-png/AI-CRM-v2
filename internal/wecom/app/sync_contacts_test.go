@@ -118,6 +118,40 @@ func TestExternalContactSyncDoesNotAdvanceWhenHandoffJobFails(t *testing.T) {
 	}
 }
 
+func TestExternalContactSyncDoesNotQueueAnAlreadyReservedHandoffAgain(t *testing.T) {
+	const staffUserID = "owner-1"
+	key := "external_contact_list:" + staffUserID
+	factID := syncFactID("corp-a", key, "", 0, "wo-1")
+	handoff := &memorySyncHandoff{facts: []SyncHandoff{{FactID: factID}}}
+	jobs := &memorySyncJobs{}
+	state := &memoryState{}
+	service, err := NewExternalContactSyncServiceWithHandoff(
+		immediateUoW{}, &fakePageReader{pages: map[string]wecomclient.ExternalContactPage{
+			"": {ExternalUserIDs: []string{"wo-1"}, NextCursor: "cursor-2"},
+		}}, state, handoff, jobs, "corp-a", time.Now,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = service.SyncNext(context.Background(), staffUserID); err != nil {
+		t.Fatalf("SyncNext() error = %v", err)
+	}
+	if len(handoff.facts) != 1 || len(jobs.args) != 0 || state.cursor != "cursor-2" {
+		t.Fatalf("facts=%#v jobs=%#v cursor=%q", handoff.facts, jobs.args, state.cursor)
+	}
+}
+
+func TestExternalContactSyncDisabledReaderDoesNotAdvanceCursor(t *testing.T) {
+	state := &memoryState{}
+	service := NewExternalContactSyncService(immediateUoW{}, wecomclient.NewDisabledExternalContactReader(), state)
+	if _, err := service.SyncNext(context.Background(), "owner-1"); !errors.Is(err, ErrCursorSyncDisabled) {
+		t.Fatalf("SyncNext() error = %v, want disabled", err)
+	}
+	if state.exists || state.cursor != "" || state.completed {
+		t.Fatalf("disabled sync changed state: %#v", state)
+	}
+}
+
 type immediateUoW struct{}
 
 func (immediateUoW) Within(ctx context.Context, callback func(context.Context) error) error {
