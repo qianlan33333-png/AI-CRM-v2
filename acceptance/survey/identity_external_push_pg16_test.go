@@ -108,6 +108,11 @@ func TestSurveyIdentityExternalPushPG16(t *testing.T) {
 	if _, err = push.Reconcile(ctx, command); err != nil {
 		t.Fatalf("manual reconcile replay=%v", err)
 	}
+	conflict := command
+	conflict.ProviderAccepted = false
+	if _, err = push.Reconcile(ctx, conflict); !errors.Is(err, surveyapp.ErrExternalPushReconcileConflict) {
+		t.Fatalf("manual reconcile conflicting receipt=%v", err)
+	}
 
 	requestContext, err := authport.WithAuthorization(ctx, authport.Authorization{Capability: authport.CapabilityQuestionnairesRead, Scope: authport.ScopeGlobal})
 	if err != nil {
