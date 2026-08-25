@@ -30,6 +30,11 @@ const (
 	weComOAuthCorpIDEnv       = "AICRM_WECOM_OAUTH_CORP_ID"
 	weComOAuthSecretEnv       = "AICRM_WECOM_OAUTH_SECRET"
 	weComOAuthCallbackEnv     = "AICRM_WECOM_OAUTH_CALLBACK_URL"
+	weComSidebarCorpIDEnv     = "AICRM_WECOM_SIDEBAR_CORP_ID"
+	weComSidebarSecretEnv     = "AICRM_WECOM_SIDEBAR_SECRET"
+	weComSidebarCallbackEnv   = "AICRM_WECOM_SIDEBAR_CALLBACK_URL"
+	weComSidebarAgentIDEnv    = "AICRM_WECOM_SIDEBAR_AGENT_ID"
+	weComSidebarHostsEnv      = "AICRM_WECOM_SIDEBAR_ALLOWED_HOSTS"
 	identityHMACKeyEnv        = "AICRM_IDENTITY_HMAC_KEY"
 	apiClientJWTSecretEnv     = "AICRM_API_CLIENT_JWT_SECRET"
 	surveyPublicKeyEnv        = "AICRM_SURVEY_PUBLIC_TOKEN_KEY"
@@ -127,9 +132,22 @@ type WeComOAuth struct {
 	CallbackURL string
 }
 
+// WeComSidebar is the independent OAuth and JSSDK configuration for the
+// embedded sidebar. It deliberately cannot reuse the administrator OAuth
+// callback, because the two browser protocols have different bindings.
+type WeComSidebar struct {
+	Enabled      bool
+	CorpID       string
+	Secret       OAuthSecret
+	CallbackURL  string
+	AgentID      int64
+	AllowedHosts []string
+}
+
 type WeCom struct {
 	Callback WeComCallback
 	OAuth    WeComOAuth
+	Sidebar  WeComSidebar
 }
 
 type IdentityHMACKey struct{ value [32]byte }
@@ -251,6 +269,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		root.API.PoolMaxConns = parsePositiveInt32(lookup, apiPoolMaxConnsEnv, "api.pool_max_conns", &problems)
 		root.WeCom.Callback = parseWeComCallback(lookup, &problems)
 		root.WeCom.OAuth = parseWeComOAuth(lookup, &problems)
+		root.WeCom.Sidebar = parseWeComSidebar(lookup, &problems)
 		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
 		root.APIClient.JWTSecret = parseOptionalAPIClientJWTSecret(lookup, &problems)
 		root.Survey.PublicKey = parseOptionalSurveyPublicKey(lookup, &problems)
@@ -380,6 +399,83 @@ func validOAuthCallbackURL(value string) bool {
 	parsed, err := url.Parse(value)
 	return err == nil && parsed.Scheme == "https" && parsed.Host != "" && parsed.User == nil && parsed.Opaque == "" &&
 		parsed.Path == "/auth/wecom/callback" && parsed.RawQuery == "" && parsed.Fragment == ""
+}
+
+func parseWeComSidebar(lookup environmentLookup, problems *[]string) WeComSidebar {
+	corpID, corpIDPresent := lookup(weComSidebarCorpIDEnv)
+	secret, secretPresent := lookup(weComSidebarSecretEnv)
+	callbackURL, callbackPresent := lookup(weComSidebarCallbackEnv)
+	agentID, agentIDPresent := lookup(weComSidebarAgentIDEnv)
+	hosts, hostsPresent := lookup(weComSidebarHostsEnv)
+	if !corpIDPresent && !secretPresent && !callbackPresent && !agentIDPresent && !hostsPresent {
+		return WeComSidebar{}
+	}
+	if !corpIDPresent || !secretPresent || !callbackPresent || !agentIDPresent || !hostsPresent || corpID == "" || secret == "" || callbackURL == "" || agentID == "" || hosts == "" {
+		*problems = append(*problems, "wecom.sidebar requires corp_id, secret, callback_url, agent_id, and allowed_hosts together")
+		return WeComSidebar{}
+	}
+	if !validWeComCorpID(corpID) {
+		*problems = append(*problems, "wecom.sidebar.corp_id is invalid")
+	}
+	if len(secret) > 256 || strings.TrimSpace(secret) != secret {
+		*problems = append(*problems, "wecom.sidebar.secret is invalid")
+	}
+	if !validSidebarCallbackURL(callbackURL) {
+		*problems = append(*problems, "wecom.sidebar.callback_url is invalid")
+	}
+	parsedAgentID, err := strconv.ParseInt(agentID, 10, 64)
+	if err != nil || parsedAgentID < 1 || strconv.FormatInt(parsedAgentID, 10) != agentID {
+		*problems = append(*problems, "wecom.sidebar.agent_id is invalid")
+	}
+	allowedHosts, validHosts := parseSidebarHosts(hosts)
+	if !validHosts {
+		*problems = append(*problems, "wecom.sidebar.allowed_hosts is invalid")
+	}
+	return WeComSidebar{Enabled: true, CorpID: corpID, Secret: OAuthSecret{value: secret}, CallbackURL: callbackURL, AgentID: parsedAgentID, AllowedHosts: allowedHosts}
+}
+
+func validSidebarCallbackURL(value string) bool {
+	parsed, err := url.Parse(value)
+	return err == nil && parsed.Scheme == "https" && parsed.Host != "" && parsed.User == nil && parsed.Opaque == "" &&
+		parsed.Path == "/api/sidebar/v2/oauth/callback" && parsed.RawQuery == "" && parsed.Fragment == ""
+}
+
+func parseSidebarHosts(value string) ([]string, bool) {
+	if strings.TrimSpace(value) != value {
+		return nil, false
+	}
+	parts := strings.Split(value, ",")
+	if len(parts) < 1 || len(parts) > 16 {
+		return nil, false
+	}
+	seen := make(map[string]struct{}, len(parts))
+	for _, part := range parts {
+		if !validSidebarHost(part) {
+			return nil, false
+		}
+		if _, duplicate := seen[part]; duplicate {
+			return nil, false
+		}
+		seen[part] = struct{}{}
+	}
+	return parts, true
+}
+
+func validSidebarHost(value string) bool {
+	if len(value) < 1 || len(value) > 253 || strings.ToLower(value) != value || strings.HasSuffix(value, ".") {
+		return false
+	}
+	for _, label := range strings.Split(value, ".") {
+		if len(label) < 1 || len(label) > 63 || label[0] == '-' || label[len(label)-1] == '-' {
+			return false
+		}
+		for _, character := range label {
+			if !(character >= 'a' && character <= 'z' || character >= '0' && character <= '9' || character == '-') {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func validWeComCorpID(value string) bool {

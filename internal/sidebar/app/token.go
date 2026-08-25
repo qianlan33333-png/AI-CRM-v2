@@ -13,26 +13,33 @@ import (
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 )
 
-const tokenVersion = 1
+const tokenVersion = 2
 
 type tokenClaims struct {
-	Version      int           `json:"v"`
-	CorpID       string        `json:"corp_id"`
-	CustomerID   int64         `json:"customer_id"`
-	OwnerStaffID int64         `json:"owner_staff_id"`
-	AdminUserID  int64         `json:"admin_user_id"`
-	Role         authport.Role `json:"role"`
-	IssuedAt     time.Time     `json:"issued_at"`
-	ExpiresAt    time.Time     `json:"expires_at"`
+	Version            int           `json:"v"`
+	CorpID             string        `json:"corp_id"`
+	CustomerID         int64         `json:"customer_id"`
+	OwnerStaffID       int64         `json:"owner_staff_id"`
+	AdminUserID        int64         `json:"admin_user_id"`
+	Role               authport.Role `json:"role"`
+	SessionFingerprint string        `json:"session_fingerprint"`
+	IssuedAt           time.Time     `json:"issued_at"`
+	ExpiresAt          time.Time     `json:"expires_at"`
 }
 
-type tokenCodec struct{ key [32]byte }
+type tokenCodec struct {
+	key        [32]byte
+	sessionKey [32]byte
+}
 
 func newTokenCodec(root []byte) (*tokenCodec, error) {
 	if len(root) < 32 {
 		return nil, ErrUnavailable
 	}
-	return &tokenCodec{key: hmacSHA256(root, []byte("aicrm.sidebar.context-token.v1"))}, nil
+	return &tokenCodec{
+		key:        hmacSHA256(root, []byte("aicrm.sidebar.context-token.v2")),
+		sessionKey: hmacSHA256(root, []byte("aicrm.sidebar.context-token.session.v1")),
+	}, nil
 }
 
 func (codec *tokenCodec) encode(claims tokenClaims) (string, error) {
@@ -77,7 +84,21 @@ func (codec *tokenCodec) decode(value string) (tokenClaims, error) {
 func validClaims(claims tokenClaims) bool {
 	return claims.Version == tokenVersion && claims.CorpID != "" && claims.CustomerID > 0 && claims.OwnerStaffID > 0 &&
 		claims.AdminUserID > 0 && (claims.Role == authport.RoleAdmin || claims.Role == authport.RoleOps || claims.Role == authport.RoleSales) &&
-		!claims.IssuedAt.IsZero() && claims.ExpiresAt.After(claims.IssuedAt)
+		validSessionFingerprint(claims.SessionFingerprint) && !claims.IssuedAt.IsZero() && claims.ExpiresAt.After(claims.IssuedAt)
+}
+
+func (codec *tokenCodec) sessionFingerprint(session authport.SessionRef) (string, error) {
+	value := string(session)
+	if codec == nil || value == "" || len(value) > 4096 || strings.TrimSpace(value) != value {
+		return "", ErrTokenInvalid
+	}
+	digest := hmacSHA256(codec.sessionKey[:], []byte(value))
+	return base64.RawURLEncoding.EncodeToString(digest[:16]), nil
+}
+
+func validSessionFingerprint(value string) bool {
+	decoded, err := base64.RawURLEncoding.Strict().DecodeString(value)
+	return err == nil && len(decoded) == 16 && base64.RawURLEncoding.EncodeToString(decoded) == value
 }
 
 func hmacSHA256(key, value []byte) [32]byte {

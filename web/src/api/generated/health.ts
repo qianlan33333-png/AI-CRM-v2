@@ -674,6 +674,40 @@ export interface SidebarSafety {
   real_external_call_executed: boolean;
 }
 
+export type SidebarAgentConfigSignatureSignatureType =
+  (typeof SidebarAgentConfigSignatureSignatureType)[keyof typeof SidebarAgentConfigSignatureSignatureType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarAgentConfigSignatureSignatureType = {
+  agent_config: "agent_config",
+} as const;
+
+export interface SidebarAgentConfigSignature {
+  signature_type: SidebarAgentConfigSignatureSignatureType;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  corp_id: string;
+  /** @minimum 1 */
+  agent_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  nonce: string;
+  /** @minimum 1 */
+  timestamp: number;
+  /** @pattern ^[a-f0-9]{40}$ */
+  signature: string;
+  /**
+   * @minLength 1
+   * @maxLength 4096
+   */
+  url: string;
+  ticket_expires_at: string;
+}
+
 export type SidebarContextResponseState =
   (typeof SidebarContextResponseState)[keyof typeof SidebarContextResponseState];
 
@@ -15347,6 +15381,41 @@ export type MintSidebarContextBody = {
   external_userid: string;
 };
 
+export type StartSidebarOAuthParams = {
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  external_userid: string;
+  /**
+   * @minLength 1
+   * @maxLength 2048
+   */
+  next?: string;
+};
+
+export type CompleteSidebarOAuthParams = {
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  code: string;
+  /**
+   * @minLength 43
+   * @maxLength 43
+   * @pattern ^[A-Za-z0-9_-]{43}$
+   */
+  state: string;
+};
+
+export type GetSidebarAgentConfigParams = {
+  /**
+   * @minLength 1
+   * @maxLength 4096
+   */
+  url: string;
+};
+
 export type UpdateSidebarProfileBodyPatch = {
   /** @maxLength 200 */
   source?: string;
@@ -17564,6 +17633,212 @@ export const mintSidebarContext = async (
     status: res.status,
     headers: res.headers,
   } as mintSidebarContextResponse;
+};
+
+/**
+ * @summary Start a state-bound Sidebar WeCom OAuth grant for one external contact
+ */
+export type startSidebarOAuthResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type startSidebarOAuthResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type startSidebarOAuthResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type startSidebarOAuthResponseError = (
+  | startSidebarOAuthResponse302
+  | startSidebarOAuthResponse400
+  | startSidebarOAuthResponse503
+) & {
+  headers: Headers;
+};
+
+export type startSidebarOAuthResponse = startSidebarOAuthResponseError;
+
+export const getStartSidebarOAuthUrl = (params: StartSidebarOAuthParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/sidebar/v2/oauth/start?${stringifiedParams}`
+    : `/api/sidebar/v2/oauth/start`;
+};
+
+export const startSidebarOAuth = async (
+  params: StartSidebarOAuthParams,
+  options?: RequestInit,
+): Promise<startSidebarOAuthResponse> => {
+  const res = await fetch(getStartSidebarOAuthUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: startSidebarOAuthResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as startSidebarOAuthResponse;
+};
+
+/**
+ * @summary Claim a Sidebar OAuth state once and establish a bound browser session
+ */
+export type completeSidebarOAuthResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type completeSidebarOAuthResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type completeSidebarOAuthResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type completeSidebarOAuthResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type completeSidebarOAuthResponseError = (
+  | completeSidebarOAuthResponse302
+  | completeSidebarOAuthResponse400
+  | completeSidebarOAuthResponse403
+  | completeSidebarOAuthResponse503
+) & {
+  headers: Headers;
+};
+
+export type completeSidebarOAuthResponse = completeSidebarOAuthResponseError;
+
+export const getCompleteSidebarOAuthUrl = (
+  params: CompleteSidebarOAuthParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/sidebar/v2/oauth/callback?${stringifiedParams}`
+    : `/api/sidebar/v2/oauth/callback`;
+};
+
+export const completeSidebarOAuth = async (
+  params: CompleteSidebarOAuthParams,
+  options?: RequestInit,
+): Promise<completeSidebarOAuthResponse> => {
+  const res = await fetch(getCompleteSidebarOAuthUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: completeSidebarOAuthResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as completeSidebarOAuthResponse;
+};
+
+/**
+ * @summary Sign one allowed Sidebar URL with a WeCom agent_config ticket
+ */
+export type getSidebarAgentConfigResponse200 = {
+  data: SidebarAgentConfigSignature;
+  status: 200;
+};
+
+export type getSidebarAgentConfigResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getSidebarAgentConfigResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getSidebarAgentConfigResponseSuccess =
+  getSidebarAgentConfigResponse200 & {
+    headers: Headers;
+  };
+export type getSidebarAgentConfigResponseError = (
+  getSidebarAgentConfigResponse400 | getSidebarAgentConfigResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSidebarAgentConfigResponse =
+  getSidebarAgentConfigResponseSuccess | getSidebarAgentConfigResponseError;
+
+export const getGetSidebarAgentConfigUrl = (
+  params: GetSidebarAgentConfigParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/sidebar/v2/jssdk/agent-config?${stringifiedParams}`
+    : `/api/sidebar/v2/jssdk/agent-config`;
+};
+
+export const getSidebarAgentConfig = async (
+  params: GetSidebarAgentConfigParams,
+  options?: RequestInit,
+): Promise<getSidebarAgentConfigResponse> => {
+  const res = await fetch(getGetSidebarAgentConfigUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSidebarAgentConfigResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSidebarAgentConfigResponse;
 };
 
 /**

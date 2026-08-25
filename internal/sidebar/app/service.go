@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"crypto/hmac"
 	"errors"
 	"sort"
 	"strings"
@@ -215,7 +216,7 @@ func NewService(corp CorpReader, identity IdentityResolver, profiles contactport
 	return &Service{corp: corp, identity: identity, profiles: profiles, surveys: surveys, orders: orders, members: members, media: media, codec: codec, now: time.Now, tokenTTL: 15 * time.Minute}, nil
 }
 
-func (service *Service) MintContext(ctx context.Context, principal authport.Principal, authenticated bool, externalUserID string) (ContextResult, error) {
+func (service *Service) MintContext(ctx context.Context, principal authport.Principal, session authport.SessionRef, authenticated bool, externalUserID string) (ContextResult, error) {
 	if !validExternalUserID(externalUserID) {
 		return ContextResult{}, ErrInvalidInput
 	}
@@ -224,6 +225,10 @@ func (service *Service) MintContext(ctx context.Context, principal authport.Prin
 	}
 	if !validPrincipal(principal) {
 		return ContextResult{}, ErrInvalidInput
+	}
+	sessionFingerprint, err := service.codec.sessionFingerprint(session)
+	if err != nil {
+		return ContextResult{}, ErrViewerSession
 	}
 	corpID, err := service.corp.CorpID(ctx)
 	if err != nil || corpID == "" {
@@ -244,7 +249,7 @@ func (service *Service) MintContext(ctx context.Context, principal authport.Prin
 		return ContextResult{State: "customer_not_bound", Safety: localSafety()}, nil
 	}
 	now := service.now().UTC().Truncate(time.Second)
-	claims := tokenClaims{Version: tokenVersion, CorpID: corpID, CustomerID: int64(profile.CustomerID), OwnerStaffID: profile.OwnerStaffID, AdminUserID: principal.AdminUserID, Role: principal.Role, IssuedAt: now, ExpiresAt: now.Add(service.tokenTTL)}
+	claims := tokenClaims{Version: tokenVersion, CorpID: corpID, CustomerID: int64(profile.CustomerID), OwnerStaffID: profile.OwnerStaffID, AdminUserID: principal.AdminUserID, Role: principal.Role, SessionFingerprint: sessionFingerprint, IssuedAt: now, ExpiresAt: now.Add(service.tokenTTL)}
 	token, err := service.codec.encode(claims)
 	if err != nil {
 		return ContextResult{}, err
@@ -252,7 +257,7 @@ func (service *Service) MintContext(ctx context.Context, principal authport.Prin
 	return ContextResult{State: "ready", Token: token, ExpiresAt: claims.ExpiresAt, CustomerID: claims.CustomerID, OwnerStaffID: claims.OwnerStaffID, Safety: localSafety()}, nil
 }
 
-func (service *Service) VerifyContext(ctx context.Context, principal authport.Principal, token string) (Scope, error) {
+func (service *Service) VerifyContext(ctx context.Context, principal authport.Principal, session authport.SessionRef, token string) (Scope, error) {
 	if service == nil || ctx == nil || !validPrincipal(principal) {
 		return Scope{}, ErrTokenInvalid
 	}
@@ -262,6 +267,10 @@ func (service *Service) VerifyContext(ctx context.Context, principal authport.Pr
 	}
 	if !service.now().UTC().Before(claims.ExpiresAt) {
 		return Scope{}, ErrTokenExpired
+	}
+	sessionFingerprint, err := service.codec.sessionFingerprint(session)
+	if err != nil || !hmac.Equal([]byte(claims.SessionFingerprint), []byte(sessionFingerprint)) {
+		return Scope{}, ErrTokenInvalid
 	}
 	if claims.AdminUserID != principal.AdminUserID || claims.Role != principal.Role || !principalAllowsOwner(principal, claims.OwnerStaffID) {
 		return Scope{}, ErrForbidden
@@ -412,7 +421,15 @@ func principalAllowsOwner(value authport.Principal, owner int64) bool {
 }
 
 func validExternalUserID(value string) bool {
-	return value != "" && strings.TrimSpace(value) == value && utf8.ValidString(value) && utf8.RuneCountInString(value) <= 1024
+	if value == "" || strings.TrimSpace(value) != value || !utf8.ValidString(value) || utf8.RuneCountInString(value) > 1024 {
+		return false
+	}
+	for _, character := range value {
+		if character < 0x20 || character == 0x7f {
+			return false
+		}
+	}
+	return true
 }
 
 func mapDependencyError(err error) error {

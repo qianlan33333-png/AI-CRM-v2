@@ -13,12 +13,23 @@ import (
 )
 
 type sidebarCorpReader struct {
-	settings configport.Service
-	fallback string
+	settings              configport.Service
+	fallback              string
+	fallbackAuthoritative bool
 }
 
 func (reader sidebarCorpReader) CorpID(ctx context.Context) (string, error) {
-	if reader.settings == nil || ctx == nil {
+	if ctx == nil {
+		return "", configport.ErrInvalidSetting
+	}
+	if reader.fallbackAuthoritative {
+		value := strings.TrimSpace(reader.fallback)
+		if value == "" || value != reader.fallback {
+			return "", configport.ErrInvalidSetting
+		}
+		return value, nil
+	}
+	if reader.settings == nil {
 		return "", configport.ErrInvalidSetting
 	}
 	setting, err := reader.settings.Get(ctx, configport.WeComCorpID)

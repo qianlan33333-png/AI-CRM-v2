@@ -15,6 +15,8 @@ import (
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
 )
 
+const sidebarTestSession authport.SessionRef = "sidebar-test-session"
+
 type corpFake struct{ value string }
 
 func (fake corpFake) CorpID(context.Context) (string, error) { return fake.value, nil }
@@ -142,38 +144,38 @@ func (fake *mediaFake) LocalImageExists(context.Context, int64) (bool, error) {
 func TestContextTokenBindsViewerOwnerCorpAndExpiry(t *testing.T) {
 	service, staff := sidebarTestService(t)
 	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &staff}
-	result, err := service.MintContext(context.Background(), principal, true, "wm_external_41")
+	result, err := service.MintContext(context.Background(), principal, sidebarTestSession, true, "wm_external_41")
 	if err != nil || result.State != "ready" || result.Token == "" || result.CustomerID != 41 || result.OwnerStaffID != staff || !result.Safety.LocalOnly || result.Safety.ProviderExecutionEligible || result.Safety.RealExternalCallExecuted {
 		t.Fatalf("MintContext() result=%+v err=%v", result, err)
 	}
-	scope, err := service.VerifyContext(context.Background(), principal, result.Token)
+	scope, err := service.VerifyContext(context.Background(), principal, sidebarTestSession, result.Token)
 	if err != nil || scope.CustomerID != 41 || scope.OwnerStaffID != staff {
 		t.Fatalf("VerifyContext() scope=%+v err=%v", scope, err)
 	}
 	other := principal
 	other.AdminUserID = 10
-	if _, err = service.VerifyContext(context.Background(), other, result.Token); !errors.Is(err, ErrForbidden) {
+	if _, err = service.VerifyContext(context.Background(), other, sidebarTestSession, result.Token); !errors.Is(err, ErrForbidden) {
 		t.Fatalf("viewer replay error=%v, want forbidden", err)
 	}
-	if _, err = service.VerifyContext(context.Background(), principal, result.Token+"x"); !errors.Is(err, ErrTokenInvalid) {
+	if _, err = service.VerifyContext(context.Background(), principal, sidebarTestSession, result.Token+"x"); !errors.Is(err, ErrTokenInvalid) {
 		t.Fatalf("tamper error=%v, want invalid token", err)
 	}
 	service.now = func() time.Time { return result.ExpiresAt }
-	if _, err = service.VerifyContext(context.Background(), principal, result.Token); !errors.Is(err, ErrTokenExpired) {
+	if _, err = service.VerifyContext(context.Background(), principal, sidebarTestSession, result.Token); !errors.Is(err, ErrTokenExpired) {
 		t.Fatalf("expiry error=%v, want expired token", err)
 	}
 }
 
 func TestMintContextReturnsExplicitViewerStateAndRejectsWrongOwner(t *testing.T) {
 	service, staff := sidebarTestService(t)
-	result, err := service.MintContext(context.Background(), authport.Principal{}, false, "wm_external_41")
+	result, err := service.MintContext(context.Background(), authport.Principal{}, "", false, "wm_external_41")
 	if err != nil || result.State != "viewer_session_required" || !result.Safety.LocalOnly {
 		t.Fatalf("viewer state=%+v err=%v", result, err)
 	}
 	other := staff + 1
-	wrongOwner, err := service.MintContext(context.Background(), authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &other}, true, "wm_external_41")
+	wrongOwner, err := service.MintContext(context.Background(), authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &other}, sidebarTestSession, true, "wm_external_41")
 	service.identity = identityFake{identityport.ResolveResult{Status: identityport.ResolveNotFound}}
-	unbound, unboundErr := service.MintContext(context.Background(), authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &other}, true, "wm_external_41")
+	unbound, unboundErr := service.MintContext(context.Background(), authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &other}, sidebarTestSession, true, "wm_external_41")
 	if err != nil || unboundErr != nil || wrongOwner != unbound || wrongOwner.State != "customer_not_bound" || !wrongOwner.Safety.LocalOnly {
 		t.Fatalf("wrong-owner/unbound=%+v/%+v errors=%v/%v", wrongOwner, unbound, err, unboundErr)
 	}
@@ -187,13 +189,13 @@ func TestVerifyContextRevalidatesLiveCustomerAndOwnerForEveryRole(t *testing.T) 
 			if role == authport.RoleSales {
 				principal.StaffID = &staff
 			}
-			minted, err := service.MintContext(context.Background(), principal, true, "wm_external_41")
+			minted, err := service.MintContext(context.Background(), principal, sidebarTestSession, true, "wm_external_41")
 			if err != nil {
 				t.Fatal(err)
 			}
 			profiles := service.profiles.(*profileFake)
 			profiles.profile.OwnerStaffID = staff + 1
-			if _, err = service.VerifyContext(context.Background(), principal, minted.Token); !errors.Is(err, ErrTokenInvalid) {
+			if _, err = service.VerifyContext(context.Background(), principal, sidebarTestSession, minted.Token); !errors.Is(err, ErrTokenInvalid) {
 				t.Fatalf("transferred owner error=%v", err)
 			}
 		})
@@ -201,17 +203,17 @@ func TestVerifyContextRevalidatesLiveCustomerAndOwnerForEveryRole(t *testing.T) 
 
 	service, staff := sidebarTestService(t)
 	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
-	minted, err := service.MintContext(context.Background(), principal, true, "wm_external_41")
+	minted, err := service.MintContext(context.Background(), principal, sidebarTestSession, true, "wm_external_41")
 	if err != nil {
 		t.Fatal(err)
 	}
 	profiles := service.profiles.(*profileFake)
 	profiles.resolveErr = contactport.ErrSidebarProfileNotFound
-	if _, err = service.VerifyContext(context.Background(), principal, minted.Token); !errors.Is(err, ErrTokenInvalid) {
+	if _, err = service.VerifyContext(context.Background(), principal, sidebarTestSession, minted.Token); !errors.Is(err, ErrTokenInvalid) {
 		t.Fatalf("deleted customer error=%v", err)
 	}
 	profiles.resolveErr = contactport.ErrSidebarProfileUnavailable
-	if _, err = service.VerifyContext(context.Background(), principal, minted.Token); !errors.Is(err, ErrUnavailable) {
+	if _, err = service.VerifyContext(context.Background(), principal, sidebarTestSession, minted.Token); !errors.Is(err, ErrUnavailable) {
 		t.Fatalf("live profile dependency error=%v staff=%d", err, staff)
 	}
 }
