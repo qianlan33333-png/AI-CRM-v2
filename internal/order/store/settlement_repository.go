@@ -339,7 +339,7 @@ func fullOrder(id int64, orderNo, providerRef string, customerID, productID, pro
 func mapPayment(row orderdb.OrderPaymentCommand) orderport.PaymentCommand {
 	effectID := ""
 	if row.ExternalEffectID.Valid {
-		effectID = strconv.FormatInt(row.ExternalEffectID.Int64, 10)
+		effectID = "eer_" + strconv.FormatInt(row.ExternalEffectID.Int64, 10)
 	}
 	return orderport.PaymentCommand{ID: row.ID, OrderID: orderport.ID(row.OrderID), SourceRefDigest: digestValue(row.SourceRefDigest), TargetRefDigest: digestValue(row.TargetRefDigest), PayloadDigest: digestValue(row.PayloadDigest), PolicyVersionDigest: digestValue(row.PolicyVersionDigest), ExternalEffectID: effectID, State: orderport.EffectState(row.State), Version: row.Version, CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC()}
 }
@@ -347,7 +347,7 @@ func mapPayment(row orderdb.OrderPaymentCommand) orderport.PaymentCommand {
 func mapRefund(row orderdb.OrderFinancialRefund) orderport.RefundV2 {
 	effectID := ""
 	if row.ExternalEffectID.Valid {
-		effectID = strconv.FormatInt(row.ExternalEffectID.Int64, 10)
+		effectID = "eer_" + strconv.FormatInt(row.ExternalEffectID.Int64, 10)
 	}
 	reasonDigest := sha256.Sum256([]byte("pe01/refund-reason/v1\x00" + row.Reason))
 	return orderport.RefundV2{ID: row.ID, OrderID: orderport.ID(row.OrderID), OutRefundNo: row.OutRefundNo, AmountMinor: row.AmountMinor, Currency: row.Currency, ReasonDigest: reasonDigest, SourceRefDigest: digestValue(row.SourceRefDigest), TargetRefDigest: digestValue(row.TargetRefDigest), PayloadDigest: digestValue(row.PayloadDigest), PolicyDigest: digestValue(row.PolicyVersionDigest), ExternalEffectID: effectID, State: orderport.EffectState(row.State), Version: row.Version, CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC()}

@@ -358,10 +358,7 @@ const getBoardOrder = `-- name: GetBoardOrder :one
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at,
-       pe01_contract_version, product_version, product_kind, payment_identity_digest,
-       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
-       paid_at, fully_refunded_at, version
+       status, status_label, detail_url, created_at, updated_at
 FROM order_list_projections
 WHERE ($1::text = 'auto' OR provider = $1::text)
   AND (merchant_order_no = $2::text
@@ -375,9 +372,32 @@ type GetBoardOrderParams struct {
 	OrderReference string `json:"order_reference"`
 }
 
-func (q *Queries) GetBoardOrder(ctx context.Context, arg GetBoardOrderParams) (OrderListProjection, error) {
+type GetBoardOrderRow struct {
+	ID                    int64              `json:"id"`
+	Provider              string             `json:"provider"`
+	ProviderLabel         string             `json:"provider_label"`
+	MerchantOrderNo       string             `json:"merchant_order_no"`
+	PlatformTransactionNo string             `json:"platform_transaction_no"`
+	CustomerID            pgtype.Int8        `json:"customer_id"`
+	PayerNameSnapshot     string             `json:"payer_name_snapshot"`
+	MobileSnapshot        string             `json:"mobile_snapshot"`
+	IdentityKind          string             `json:"identity_kind"`
+	IdentityValue         string             `json:"identity_value"`
+	ProductID             pgtype.Int8        `json:"product_id"`
+	ProductCode           string             `json:"product_code"`
+	ProductNameSnapshot   string             `json:"product_name_snapshot"`
+	AmountMinor           int64              `json:"amount_minor"`
+	Currency              string             `json:"currency"`
+	Status                string             `json:"status"`
+	StatusLabel           string             `json:"status_label"`
+	DetailUrl             string             `json:"detail_url"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetBoardOrder(ctx context.Context, arg GetBoardOrderParams) (GetBoardOrderRow, error) {
 	row := q.db.QueryRow(ctx, getBoardOrder, arg.Provider, arg.OrderReference)
-	var i OrderListProjection
+	var i GetBoardOrderRow
 	err := row.Scan(
 		&i.ID,
 		&i.Provider,
@@ -399,16 +419,6 @@ func (q *Queries) GetBoardOrder(ctx context.Context, arg GetBoardOrderParams) (O
 		&i.DetailUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Pe01ContractVersion,
-		&i.ProductVersion,
-		&i.ProductKind,
-		&i.PaymentIdentityDigest,
-		&i.SettledAmountMinor,
-		&i.RefundedAmountMinor,
-		&i.SettlementReceiptDigest,
-		&i.PaidAt,
-		&i.FullyRefundedAt,
-		&i.Version,
 	)
 	return i, err
 }
@@ -417,17 +427,37 @@ const getBoardOrderByID = `-- name: GetBoardOrderByID :one
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at,
-       pe01_contract_version, product_version, product_kind, payment_identity_digest,
-       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
-       paid_at, fully_refunded_at, version
+       status, status_label, detail_url, created_at, updated_at
 FROM order_list_projections
 WHERE id = $1::bigint
 `
 
-func (q *Queries) GetBoardOrderByID(ctx context.Context, id int64) (OrderListProjection, error) {
+type GetBoardOrderByIDRow struct {
+	ID                    int64              `json:"id"`
+	Provider              string             `json:"provider"`
+	ProviderLabel         string             `json:"provider_label"`
+	MerchantOrderNo       string             `json:"merchant_order_no"`
+	PlatformTransactionNo string             `json:"platform_transaction_no"`
+	CustomerID            pgtype.Int8        `json:"customer_id"`
+	PayerNameSnapshot     string             `json:"payer_name_snapshot"`
+	MobileSnapshot        string             `json:"mobile_snapshot"`
+	IdentityKind          string             `json:"identity_kind"`
+	IdentityValue         string             `json:"identity_value"`
+	ProductID             pgtype.Int8        `json:"product_id"`
+	ProductCode           string             `json:"product_code"`
+	ProductNameSnapshot   string             `json:"product_name_snapshot"`
+	AmountMinor           int64              `json:"amount_minor"`
+	Currency              string             `json:"currency"`
+	Status                string             `json:"status"`
+	StatusLabel           string             `json:"status_label"`
+	DetailUrl             string             `json:"detail_url"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetBoardOrderByID(ctx context.Context, id int64) (GetBoardOrderByIDRow, error) {
 	row := q.db.QueryRow(ctx, getBoardOrderByID, id)
-	var i OrderListProjection
+	var i GetBoardOrderByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Provider,
@@ -449,16 +479,6 @@ func (q *Queries) GetBoardOrderByID(ctx context.Context, id int64) (OrderListPro
 		&i.DetailUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Pe01ContractVersion,
-		&i.ProductVersion,
-		&i.ProductKind,
-		&i.PaymentIdentityDigest,
-		&i.SettledAmountMinor,
-		&i.RefundedAmountMinor,
-		&i.SettlementReceiptDigest,
-		&i.PaidAt,
-		&i.FullyRefundedAt,
-		&i.Version,
 	)
 	return i, err
 }
@@ -467,10 +487,7 @@ const getBoardOrderForUpdate = `-- name: GetBoardOrderForUpdate :one
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at,
-       pe01_contract_version, product_version, product_kind, payment_identity_digest,
-       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
-       paid_at, fully_refunded_at, version
+       status, status_label, detail_url, created_at, updated_at
 FROM order_list_projections
 WHERE ($1::text = 'auto' OR provider = $1::text)
   AND (merchant_order_no = $2::text
@@ -484,9 +501,32 @@ type GetBoardOrderForUpdateParams struct {
 	OrderReference string `json:"order_reference"`
 }
 
-func (q *Queries) GetBoardOrderForUpdate(ctx context.Context, arg GetBoardOrderForUpdateParams) (OrderListProjection, error) {
+type GetBoardOrderForUpdateRow struct {
+	ID                    int64              `json:"id"`
+	Provider              string             `json:"provider"`
+	ProviderLabel         string             `json:"provider_label"`
+	MerchantOrderNo       string             `json:"merchant_order_no"`
+	PlatformTransactionNo string             `json:"platform_transaction_no"`
+	CustomerID            pgtype.Int8        `json:"customer_id"`
+	PayerNameSnapshot     string             `json:"payer_name_snapshot"`
+	MobileSnapshot        string             `json:"mobile_snapshot"`
+	IdentityKind          string             `json:"identity_kind"`
+	IdentityValue         string             `json:"identity_value"`
+	ProductID             pgtype.Int8        `json:"product_id"`
+	ProductCode           string             `json:"product_code"`
+	ProductNameSnapshot   string             `json:"product_name_snapshot"`
+	AmountMinor           int64              `json:"amount_minor"`
+	Currency              string             `json:"currency"`
+	Status                string             `json:"status"`
+	StatusLabel           string             `json:"status_label"`
+	DetailUrl             string             `json:"detail_url"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetBoardOrderForUpdate(ctx context.Context, arg GetBoardOrderForUpdateParams) (GetBoardOrderForUpdateRow, error) {
 	row := q.db.QueryRow(ctx, getBoardOrderForUpdate, arg.Provider, arg.OrderReference)
-	var i OrderListProjection
+	var i GetBoardOrderForUpdateRow
 	err := row.Scan(
 		&i.ID,
 		&i.Provider,
@@ -508,16 +548,6 @@ func (q *Queries) GetBoardOrderForUpdate(ctx context.Context, arg GetBoardOrderF
 		&i.DetailUrl,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.Pe01ContractVersion,
-		&i.ProductVersion,
-		&i.ProductKind,
-		&i.PaymentIdentityDigest,
-		&i.SettledAmountMinor,
-		&i.RefundedAmountMinor,
-		&i.SettlementReceiptDigest,
-		&i.PaidAt,
-		&i.FullyRefundedAt,
-		&i.Version,
 	)
 	return i, err
 }
@@ -716,10 +746,7 @@ const listBoardOrders = `-- name: ListBoardOrders :many
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at,
-       pe01_contract_version, product_version, product_kind, payment_identity_digest,
-       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
-       paid_at, fully_refunded_at, version
+       status, status_label, detail_url, created_at, updated_at
 FROM order_list_projections
 WHERE ($1::text IS NULL OR provider = $1::text)
   AND ($2::text IS NULL OR status = $2::text)
@@ -748,7 +775,30 @@ type ListBoardOrdersParams struct {
 	RowLimit      int32              `json:"row_limit"`
 }
 
-func (q *Queries) ListBoardOrders(ctx context.Context, arg ListBoardOrdersParams) ([]OrderListProjection, error) {
+type ListBoardOrdersRow struct {
+	ID                    int64              `json:"id"`
+	Provider              string             `json:"provider"`
+	ProviderLabel         string             `json:"provider_label"`
+	MerchantOrderNo       string             `json:"merchant_order_no"`
+	PlatformTransactionNo string             `json:"platform_transaction_no"`
+	CustomerID            pgtype.Int8        `json:"customer_id"`
+	PayerNameSnapshot     string             `json:"payer_name_snapshot"`
+	MobileSnapshot        string             `json:"mobile_snapshot"`
+	IdentityKind          string             `json:"identity_kind"`
+	IdentityValue         string             `json:"identity_value"`
+	ProductID             pgtype.Int8        `json:"product_id"`
+	ProductCode           string             `json:"product_code"`
+	ProductNameSnapshot   string             `json:"product_name_snapshot"`
+	AmountMinor           int64              `json:"amount_minor"`
+	Currency              string             `json:"currency"`
+	Status                string             `json:"status"`
+	StatusLabel           string             `json:"status_label"`
+	DetailUrl             string             `json:"detail_url"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListBoardOrders(ctx context.Context, arg ListBoardOrdersParams) ([]ListBoardOrdersRow, error) {
 	rows, err := q.db.Query(ctx, listBoardOrders,
 		arg.Provider,
 		arg.Status,
@@ -766,9 +816,9 @@ func (q *Queries) ListBoardOrders(ctx context.Context, arg ListBoardOrdersParams
 		return nil, err
 	}
 	defer rows.Close()
-	items := []OrderListProjection{}
+	items := []ListBoardOrdersRow{}
 	for rows.Next() {
-		var i OrderListProjection
+		var i ListBoardOrdersRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Provider,
@@ -790,16 +840,6 @@ func (q *Queries) ListBoardOrders(ctx context.Context, arg ListBoardOrdersParams
 			&i.DetailUrl,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.Pe01ContractVersion,
-			&i.ProductVersion,
-			&i.ProductKind,
-			&i.PaymentIdentityDigest,
-			&i.SettledAmountMinor,
-			&i.RefundedAmountMinor,
-			&i.SettlementReceiptDigest,
-			&i.PaidAt,
-			&i.FullyRefundedAt,
-			&i.Version,
 		); err != nil {
 			return nil, err
 		}
@@ -854,10 +894,7 @@ const listOrderProjections = `-- name: ListOrderProjections :many
 SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
-       status, status_label, detail_url, created_at, updated_at,
-       pe01_contract_version, product_version, product_kind, payment_identity_digest,
-       settled_amount_minor, refunded_amount_minor, settlement_receipt_digest,
-       paid_at, fully_refunded_at, version
+       status, status_label, detail_url, created_at, updated_at
 FROM order_list_projections
 WHERE ($1::text IS NULL OR provider = $1::text)
   AND ($2::text IS NULL OR merchant_order_no ILIKE '%' || $2::text || '%')
@@ -884,7 +921,30 @@ type ListOrderProjectionsParams struct {
 	RowLimit    int32              `json:"row_limit"`
 }
 
-func (q *Queries) ListOrderProjections(ctx context.Context, arg ListOrderProjectionsParams) ([]OrderListProjection, error) {
+type ListOrderProjectionsRow struct {
+	ID                    int64              `json:"id"`
+	Provider              string             `json:"provider"`
+	ProviderLabel         string             `json:"provider_label"`
+	MerchantOrderNo       string             `json:"merchant_order_no"`
+	PlatformTransactionNo string             `json:"platform_transaction_no"`
+	CustomerID            pgtype.Int8        `json:"customer_id"`
+	PayerNameSnapshot     string             `json:"payer_name_snapshot"`
+	MobileSnapshot        string             `json:"mobile_snapshot"`
+	IdentityKind          string             `json:"identity_kind"`
+	IdentityValue         string             `json:"identity_value"`
+	ProductID             pgtype.Int8        `json:"product_id"`
+	ProductCode           string             `json:"product_code"`
+	ProductNameSnapshot   string             `json:"product_name_snapshot"`
+	AmountMinor           int64              `json:"amount_minor"`
+	Currency              string             `json:"currency"`
+	Status                string             `json:"status"`
+	StatusLabel           string             `json:"status_label"`
+	DetailUrl             string             `json:"detail_url"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt             pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListOrderProjections(ctx context.Context, arg ListOrderProjectionsParams) ([]ListOrderProjectionsRow, error) {
 	rows, err := q.db.Query(ctx, listOrderProjections,
 		arg.Provider,
 		arg.OrderNo,
@@ -901,9 +961,9 @@ func (q *Queries) ListOrderProjections(ctx context.Context, arg ListOrderProject
 		return nil, err
 	}
 	defer rows.Close()
-	items := []OrderListProjection{}
+	items := []ListOrderProjectionsRow{}
 	for rows.Next() {
-		var i OrderListProjection
+		var i ListOrderProjectionsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Provider,
@@ -925,16 +985,6 @@ func (q *Queries) ListOrderProjections(ctx context.Context, arg ListOrderProject
 			&i.DetailUrl,
 			&i.CreatedAt,
 			&i.UpdatedAt,
-			&i.Pe01ContractVersion,
-			&i.ProductVersion,
-			&i.ProductKind,
-			&i.PaymentIdentityDigest,
-			&i.SettledAmountMinor,
-			&i.RefundedAmountMinor,
-			&i.SettlementReceiptDigest,
-			&i.PaidAt,
-			&i.FullyRefundedAt,
-			&i.Version,
 		); err != nil {
 			return nil, err
 		}

@@ -141,6 +141,9 @@ func (runtime *pe01FakeRuntime) Execute(ctx context.Context, command orderport.E
 }
 
 func (*pe01FakeRuntime) Reconcile(_ context.Context, effectID string, evidence [32]byte) (orderport.ExternalEffectResult, error) {
+	if len(effectID) < 5 || effectID[:4] != "eer_" {
+		return orderport.ExternalEffectResult{}, fmt.Errorf("unexpected external effect id %q", effectID)
+	}
 	return orderport.ExternalEffectResult{EffectID: effectID, State: orderport.EffectReconciled, ReceiptDigest: evidence}, nil
 }
 

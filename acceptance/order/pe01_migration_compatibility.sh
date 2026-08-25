@@ -19,16 +19,17 @@ trap cleanup EXIT
 psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c 'CREATE DATABASE aicrm_test_pe01_00079' >/dev/null
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
 [[ "$(psql "$database_url" -X -q -At -c 'SHOW server_version_num')" = '160014' ]]
-[[ "$(psql "$database_url" -X -q -At -c 'SELECT max(version_id) FROM goose_db_version WHERE is_applied')" = '79' ]]
+[[ "$(psql "$database_url" -X -q -At -c 'SELECT count(*) FROM goose_db_version WHERE version_id = 79 AND is_applied')" = '1' ]]
 
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >/dev/null
-[[ "$(psql "$database_url" -X -q -At -c 'SELECT max(version_id) FROM goose_db_version WHERE is_applied')" = '75' ]]
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 78 >/dev/null
+[[ "$(psql "$database_url" -X -q -At -c 'SELECT count(*) FROM goose_db_version WHERE version_id = 79 AND is_applied')" = '0' ]]
+[[ "$(psql "$database_url" -X -q -At -c 'SELECT count(*) FROM goose_db_version WHERE version_id = 78 AND is_applied')" = '1' ]]
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
 
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly "$go_command" test -race -count=1 -timeout=240s -run '^TestPE01' ./acceptance/order -args -database-url "$database_url"
 
 set +e
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >"$down_output" 2>&1
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 78 >"$down_output" 2>&1
 status=$?
 set -e
 [[ $status -ne 0 ]]

@@ -51,39 +51,6 @@ type OrderFinancialRefund struct {
 	SettledAt               pgtype.Timestamptz `json:"settled_at"`
 }
 
-type OrderListProjection struct {
-	ID                      int64              `json:"id"`
-	Provider                string             `json:"provider"`
-	ProviderLabel           string             `json:"provider_label"`
-	MerchantOrderNo         string             `json:"merchant_order_no"`
-	PlatformTransactionNo   string             `json:"platform_transaction_no"`
-	CustomerID              pgtype.Int8        `json:"customer_id"`
-	PayerNameSnapshot       string             `json:"payer_name_snapshot"`
-	MobileSnapshot          string             `json:"mobile_snapshot"`
-	IdentityKind            string             `json:"identity_kind"`
-	IdentityValue           string             `json:"identity_value"`
-	ProductID               pgtype.Int8        `json:"product_id"`
-	ProductCode             string             `json:"product_code"`
-	ProductNameSnapshot     string             `json:"product_name_snapshot"`
-	AmountMinor             int64              `json:"amount_minor"`
-	Currency                string             `json:"currency"`
-	Status                  string             `json:"status"`
-	StatusLabel             string             `json:"status_label"`
-	DetailUrl               string             `json:"detail_url"`
-	CreatedAt               pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
-	Pe01ContractVersion     pgtype.Text        `json:"pe01_contract_version"`
-	ProductVersion          pgtype.Int8        `json:"product_version"`
-	ProductKind             pgtype.Text        `json:"product_kind"`
-	PaymentIdentityDigest   []byte             `json:"payment_identity_digest"`
-	SettledAmountMinor      int64              `json:"settled_amount_minor"`
-	RefundedAmountMinor     int64              `json:"refunded_amount_minor"`
-	SettlementReceiptDigest []byte             `json:"settlement_receipt_digest"`
-	PaidAt                  pgtype.Timestamptz `json:"paid_at"`
-	FullyRefundedAt         pgtype.Timestamptz `json:"fully_refunded_at"`
-	Version                 int64              `json:"version"`
-}
-
 type OrderPaymentCommand struct {
 	ID                   int64              `json:"id"`
 	OrderID              int64              `json:"order_id"`
