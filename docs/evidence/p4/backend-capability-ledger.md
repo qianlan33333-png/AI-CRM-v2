@@ -102,6 +102,25 @@ River Claim/Attempt/Complete → `outcome_unknown` → 人工 reconcile → term
   `docs/feature-matrix.csv` 为 0 diff；它登记为 V2 后端能力，不反填或重复声明既有
   Automation Agents 与 Group Ops 行。历史 automation 表仍按 data-migration ledger 的
   原有证据状态保留，未执行迁移。
+## Survey Identity-Gated External Push（V2-native；不硬映射旧 Matrix）
+
+`00082_survey_identity_gated_external_push.sql` 将已验证的 H5 canonical customer
+submission 同一 UoW 绑定到 digest-only EER `survey_webhook`。它新增的是 identity-gated
+binding、PII-free detail 和 `outcome_unknown` 的人工 reconcile；不复活旧问卷 webhook
+日志、重试或 Provider 调用。
+
+- 只有已验证的 canonical customer 才可建立 binding；H5 OAuth state 一次 claim、safe next
+  与 signed proof 均 fail-closed。默认真实 Provider adapter disabled，故真实 code exchange
+  仍是 `EXTERNAL_AUTHORIZATION_REQUIRED`。
+- binding 只保存 source/target/payload/policy digest。detail 将 `state`、`provider_accepted`
+  与 `delivery_proven` 分开投影；reconcile 仅允许 verified `outcome_unknown`，要求
+  generation/fence/evidence digest，且绝不自动 retry。
+- `make p4-survey-identity-external-push-acceptance` 在独立 PG16.14 库验证 exact 00082、
+  empty down/up、H5 fake verified identity、submission/EER binding、fake unknown、手工
+  reconcile、PII-free detail 和 populated down guard（55000）。这只证明本地链路；部署、
+  Provider acceptance 与 delivery 均 `NOT_EXECUTED`。
+- 旧 H5 OAuth 的 GET start/callback 仅登记为窄协议路径参考；旧 `questionnaire_external_push_logs`
+  与新 binding/receipt 的身份、收据和重试语义不同，Matrix 不变更状态，历史数据也不导入或重放。
 
 ## 冻结口径
 
@@ -248,6 +267,7 @@ River Claim/Attempt/Complete → `outcome_unknown` → 人工 reconcile → term
 | `00070_contact_owner_reassignment.sql` — Contact Owner Reassignment Local Core | 六项为 Contact-owned CSV preview/execute/result 的 V2 本地流；S07-110..115 都保持 `NOT_STARTED/NOT_RUN`，且 S07-023 被排除。local receipt/result 不等于 WeCom transfer 或旧 XLSX 行为。 | 仅 global admin `contact.owner_reassignment`；写 CSRF + Idempotency-Key，preview 和 execute 都 actor-bound。customer/staff lock、expected version、UoW、completed receipt、`customer_events` 和 event log 同事务。 | `internal/contact/app/owner_reassignment_test.go`；`internal/contact/http/owner_reassignment_handler_test.go`；`internal/contact/store/owner_reassignment_integration_test.go`；`acceptance/contact_owner_reassignment/local_core_pg16.sh`。 | `none`；不读取 WeCom userid、不调用 Provider、不做企微转属。 |
 | `00073_internal_event_safe_exports.sql` — EE01 Internal Event Safe Export (**local checkpoint; not in the frozen 10/73 denominator**) | Three Events-owned native operations freeze only local `event_log` / `event_deliveries` rows. No Radar, USER OPS, legacy Matrix, River, Outbound, Provider, or delivery claim is added. | global admin `admin.read`; create requires human session, CSRF and Idempotency-Key; actor-bound reads. Header/rows/audit/completed receipt share one UoW; versioned row/result digests are reconciled on replay/read/download and any missing or changed audit fails closed without repair. | `internal/events/app/safe_export_test.go`、`internal/events/http/safe_export_handler_test.go`; `make p4-ee01-internal-event-safe-export-acceptance` creates and cleans a PG16.14 dedicated DB and proves capacity, tamper, side-effect and down-guard negatives. | `none / NOT_EXECUTED`; no delivery enqueue, River job, outbound task or Provider call. |
 | `00080_automation_rules_runtime.sql` — A01 Automation Rules Runtime (**V2 backend capability; not in the frozen 10/73 denominator**) | Closed `customer.tag_applied` rules, immutable versions, enrollments and action snapshots; no reliable legacy Matrix 1:1 mapping is claimed. | admin/ops rule read/write; mutations use CSRF + actor-bound idempotency; tag event enrollment and EER binding share one UoW. | `internal/automation/...` focused/race tests；`make p4-automation-rules-runtime-acceptance` on PG16.14. | Provider adapter disabled；`outcome_unknown` only manual reconcile；deployment and real delivery `NOT_EXECUTED`. |
+| `00082_survey_identity_gated_external_push.sql` — Survey Identity-Gated External Push (**V2 backend capability; not in the frozen 10/73 denominator**) | H5 verified canonical-customer submission binding plus PII-free detail/manual reconcile; old H5 OAuth routes are only narrow protocol references and old external-push logs are not a 1:1 target. Matrix stays unchanged. | public H5 start/callback has no CSRF; admin detail requires `questionnaires.read`, reconcile requires `questionnaires.write`, session CSRF and Idempotency-Key. Submission/EER binding and reconcile receipt use one UoW; unknown has no automatic retry. | `acceptance/survey/identity_external_push_pg16_test.go`; `make p4-survey-identity-external-push-acceptance` on PG16.14. | real Provider adapter disabled; fake/local result only; deployment, Provider acceptance and delivery `NOT_EXECUTED`. |
 
 所有表中命令操作都遵循其 OpenAPI `x-aicrm-session-bound-csrf` 与
 `x-aicrm-external-effect: none` 合同；“receipt”只证明本地数据库提交/重放，不证明
