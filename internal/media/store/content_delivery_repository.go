@@ -11,6 +11,7 @@ import (
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	mediadb "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store/generated"
+	"strconv"
 	"time"
 )
 
@@ -20,6 +21,11 @@ type OutboundMediaEffectBinding struct {
 	ID, ContentPackageID, EffectID int64
 	TargetDigest, SnapshotDigest   string
 	Replay                         bool
+}
+type OutboundMediaEffectDetail struct {
+	ContentPackageID                 int64
+	EffectID, State                  string
+	ProviderAccepted, DeliveryProven bool
 }
 
 var ErrOutboundMediaEffectBindingConflict = errors.New("outbound media effect binding conflict")
@@ -113,6 +119,25 @@ func (r *ContentDeliveryRepository) BindOutboundMediaEffect(ctx context.Context,
 		return OutboundMediaEffectBinding{}, ErrOutboundMediaEffectBindingConflict
 	}
 	return OutboundMediaEffectBinding{ID: existing.ID, ContentPackageID: existing.ContentPackageID, EffectID: existing.EffectID, TargetDigest: existing.TargetDigest, SnapshotDigest: existing.SnapshotDigest, Replay: true}, nil
+}
+func (r *ContentDeliveryRepository) ReadOutboundMediaEffectDetail(ctx context.Context, contentPackageID int64, targetDigest string) (OutboundMediaEffectDetail, error) {
+	q, e := contentQueries(ctx)
+	if e != nil {
+		return OutboundMediaEffectDetail{}, e
+	}
+	v, e := q.ReadOutboundMediaEffectDetail(ctx, mediadb.ReadOutboundMediaEffectDetailParams{ContentPackageID: contentPackageID, TargetDigest: targetDigest})
+	if e != nil {
+		return OutboundMediaEffectDetail{}, e
+	}
+	return outboundMediaEffectDetail(contentPackageID, v.EffectID, v.State), nil
+}
+
+func outboundMediaEffectDetail(contentPackageID, effectID int64, state string) OutboundMediaEffectDetail {
+	return OutboundMediaEffectDetail{
+		ContentPackageID: contentPackageID,
+		EffectID:         "eer_" + strconv.FormatInt(effectID, 10),
+		State:            state,
+	}
 }
 func binding(v mediadb.MediaCampaignDeliveryBinding) mediaport.DeliveryBinding {
 	return mediaport.DeliveryBinding{ID: v.ID, CampaignCode: v.CampaignCode, PlanID: v.PlanID, PackageID: v.PackageID, GroupInviteID: v.GroupInviteID, Version: v.Version}

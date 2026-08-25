@@ -78,6 +78,12 @@ SELECT id, content_package_id, target_digest, snapshot_digest, effect_id, create
 FROM outbound_media_effect_bindings
 WHERE content_package_id = sqlc.arg(content_package_id) AND target_digest = sqlc.arg(target_digest);
 
+-- name: ReadOutboundMediaEffectDetail :one
+SELECT binding.effect_id, effect.state
+FROM outbound_media_effect_bindings AS binding
+JOIN external_effects AS effect ON effect.id = binding.effect_id
+WHERE binding.content_package_id = sqlc.arg(content_package_id) AND binding.target_digest = sqlc.arg(target_digest);
+
 -- name: ListMediaAttachmentUploadParts :many
 SELECT part_number, digest, content FROM media_attachment_upload_parts WHERE upload_id = sqlc.arg(upload_id) ORDER BY part_number;
 

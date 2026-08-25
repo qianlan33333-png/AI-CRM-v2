@@ -75,6 +75,7 @@ type Querier interface {
 	PutMediaAttachmentUploadPart(ctx context.Context, arg PutMediaAttachmentUploadPartParams) error
 	ReadMediaAttachment(ctx context.Context, attachmentID int64) (ReadMediaAttachmentRow, error)
 	ReadMediaAttachmentUploadForCompletion(ctx context.Context, uploadID int64) (ReadMediaAttachmentUploadForCompletionRow, error)
+	ReadOutboundMediaEffectDetail(ctx context.Context, arg ReadOutboundMediaEffectDetailParams) (ReadOutboundMediaEffectDetailRow, error)
 	ReserveMediaAttachmentMutation(ctx context.Context, arg ReserveMediaAttachmentMutationParams) (ReserveMediaAttachmentMutationRow, error)
 	ReserveMediaGroupInviteReceipt(ctx context.Context, arg ReserveMediaGroupInviteReceiptParams) (ReserveMediaGroupInviteReceiptRow, error)
 	ReserveMediaImageDeleteReceipt(ctx context.Context, arg ReserveMediaImageDeleteReceiptParams) (ReserveMediaImageDeleteReceiptRow, error)

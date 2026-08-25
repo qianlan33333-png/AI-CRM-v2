@@ -496,6 +496,30 @@ func (q *Queries) ReadMediaAttachmentUploadForCompletion(ctx context.Context, up
 	return i, err
 }
 
+const readOutboundMediaEffectDetail = `-- name: ReadOutboundMediaEffectDetail :one
+SELECT binding.effect_id, effect.state
+FROM outbound_media_effect_bindings AS binding
+JOIN external_effects AS effect ON effect.id = binding.effect_id
+WHERE binding.content_package_id = $1 AND binding.target_digest = $2
+`
+
+type ReadOutboundMediaEffectDetailParams struct {
+	ContentPackageID int64  `json:"content_package_id"`
+	TargetDigest     string `json:"target_digest"`
+}
+
+type ReadOutboundMediaEffectDetailRow struct {
+	EffectID int64  `json:"effect_id"`
+	State    string `json:"state"`
+}
+
+func (q *Queries) ReadOutboundMediaEffectDetail(ctx context.Context, arg ReadOutboundMediaEffectDetailParams) (ReadOutboundMediaEffectDetailRow, error) {
+	row := q.db.QueryRow(ctx, readOutboundMediaEffectDetail, arg.ContentPackageID, arg.TargetDigest)
+	var i ReadOutboundMediaEffectDetailRow
+	err := row.Scan(&i.EffectID, &i.State)
+	return i, err
+}
+
 const updateMediaCampaignDeliveryBinding = `-- name: UpdateMediaCampaignDeliveryBinding :one
 UPDATE media_campaign_delivery_bindings SET package_id = $1, group_invite_id = $2, version = version + 1,
   updated_by = $3, updated_at = $4
