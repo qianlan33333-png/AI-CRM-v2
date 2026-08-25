@@ -18,7 +18,8 @@ seed() {
     "$root/internal/radar/store/queries" "$root/internal/survey/store/queries" \
     "$root/internal/automation/store/queries" "$root/internal/stats/store/queries" \
     "$root/acceptance/fixtures" "$root/acceptance/contactfixture" \
-    "$root/acceptance/automationfixture" "$root/acceptance/mediafixture"
+    "$root/acceptance/automationfixture" "$root/acceptance/mediafixture" \
+    "$root/acceptance/datamigration"
   cp "$script_dir/../docs/architecture/table-ownership.yml" "$root/docs/architecture/"
   printf '%s\n' 'INSERT INTO customers (id) VALUES (1);' >"$root/internal/contact/store/queries/write.sql"
   printf '%s\n' 'INSERT INTO media_image_delete_receipts (id) VALUES (1);' >"$root/internal/media/store/queries/write.sql"
@@ -38,6 +39,9 @@ seed() {
   printf '%s\n' 'package mediafixture' \
     'const dml = "INSERT INTO media_images (name) VALUES ($1)"' \
     >"$root/acceptance/mediafixture/image.go"
+  printf '%s\n' 'package datamigration' \
+    'const dml = "INSERT INTO data_migration_runs (id) VALUES ($1)"' \
+    >"$root/acceptance/datamigration/harness.go"
   printf '%s\n' \
     'INSERT INTO event_log (event_type) VALUES ($1)' \
     'ON CONFLICT (idempotency_key) DO UPDATE SET idempotency_key = EXCLUDED.idempotency_key;' \

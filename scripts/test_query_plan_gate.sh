@@ -50,6 +50,15 @@ make_fixture indexed $'-- name: CustomerByID :one\nSELECT * FROM customers WHERE
 make_fixture unrelated $'-- name: Health :one\nSELECT 1;'
 [[ "$(run_gate)" = 'query-plan-gate: PASS (checked=0)' ]] || fail "unrelated query was rejected"
 
+make_fixture truncate $'-- name: ResetCustomers :exec\nTRUNCATE customers;\n\n-- name: CustomerByID :one\nSELECT * FROM customers WHERE id = $1;'
+[[ "$(run_gate)" = 'query-plan-gate: PASS (checked=1)' ]] || fail "non-plannable truncate was not skipped"
+
+make_fixture acceptance $'-- name: AcceptanceOnlyCustomerReset :exec\nUPDATE customers SET email = email;'
+git -C "$FIXTURE_ROOT" mv internal/contact/store/queries/contact.sql internal/contact/store/queries/dm01_acceptance.sql
+git -C "$FIXTURE_ROOT" commit -qm acceptance-query-file
+FIXTURE_HEAD="$(git -C "$FIXTURE_ROOT" rev-parse HEAD)"
+[[ "$(run_gate)" = 'query-plan-gate: PASS (checked=0)' ]] || fail "acceptance-only SQL was planned"
+
 make_fixture fullscan $'-- name: AllCustomers :many\nSELECT * FROM customers;'
 fullscan_log="$test_root/fullscan.log"
 set +e

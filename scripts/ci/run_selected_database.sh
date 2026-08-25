@@ -105,6 +105,9 @@ while [[ -n "$remaining_groups" ]]; do
     release)
       run_make_acceptance P4RP01_TEST_DATABASE_URL p4-rp01-release-plane-acceptance
       ;;
+    migration)
+      run_make_acceptance P4DMH_TEST_DATABASE_URL p4-data-migration-harness-acceptance
+      ;;
     identity)
       run_make_acceptance P3R4B_TEST_DATABASE_URL p3-r4b-identity-storage-acceptance
       ;;

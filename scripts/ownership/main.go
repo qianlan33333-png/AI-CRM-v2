@@ -201,6 +201,8 @@ func sourceModule(rel string) string {
 			return "automation"
 		case "mediafixture":
 			return "media"
+		case "datamigration":
+			return "migration"
 		}
 	}
 	if len(parts) >= 2 {

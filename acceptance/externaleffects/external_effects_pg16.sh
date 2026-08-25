@@ -12,12 +12,12 @@ cleanup() { psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c 'DROP DATABASE
 trap cleanup EXIT
 cleanup
 psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c 'CREATE DATABASE aicrm_test_eer_00075' >/dev/null
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 75 >/dev/null
 [[ "$(psql "$database_url" -X -q -At -c 'SHOW server_version_num')" = '160014' ]]
 [[ "$(psql "$database_url" -X -q -At -c 'SELECT max(version_id) FROM goose_db_version WHERE is_applied')" = '75' ]]
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >/dev/null
 [[ "$(psql "$database_url" -X -q -At -c 'SELECT max(version_id) FROM goose_db_version WHERE is_applied')" = '74' ]]
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 75 >/dev/null
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly "$go_command" test -race -count=1 -run '^TestExternalEffectsPG16' ./acceptance/externaleffects -args -external-effects-database-url "$database_url"
 set +e
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >/tmp/aicrm-eer-down.out 2>&1
