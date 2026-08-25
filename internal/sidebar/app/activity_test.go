@@ -149,3 +149,34 @@ func TestActivityServiceRejectsUnsafePageMetadataAndOrdering(t *testing.T) {
 		t.Fatalf("unsafe chat text err=%v", err)
 	}
 }
+
+func TestActivityServiceNormalizesOmittedLimitsAndRejectsOversizedPages(t *testing.T) {
+	stamp := time.Date(2026, 8, 26, 10, 0, 0, 0, time.UTC)
+	timeline := &activityTimelineFake{read: contactport.Customer360Read{Customer: contactport.Customer360Customer{ID: 41}}}
+	chat := &activityChatFake{page: customer360port.CustomerChatActivityPage{CustomerID: 41, ChatType: ""}}
+	service, err := NewActivityService(timeline, chat)
+	if err != nil {
+		t.Fatal(err)
+	}
+	scope := Scope{CustomerID: 41, OwnerStaffID: 7}
+	if _, err = service.Timeline(context.Background(), scope, "", 0); err != nil || timeline.input.TimelineLimit != sidebarActivityLimit {
+		t.Fatalf("timeline omitted limit err/input=%v/%+v", err, timeline.input)
+	}
+	if _, err = service.Chat(context.Background(), scope, "", "", 0); err != nil || chat.query.Limit != sidebarActivityChatDefaultLimit {
+		t.Fatalf("chat omitted limit err/query=%v/%+v", err, chat.query)
+	}
+	timeline.read.Timeline = make([]contactport.Customer360TimelineEntry, sidebarActivityLimit+1)
+	for index := range timeline.read.Timeline {
+		timeline.read.Timeline[index] = contactport.Customer360TimelineEntry{ID: int64(index + 1), EventType: "event", OccurredAt: stamp.Add(-time.Duration(index) * time.Second)}
+	}
+	if _, err = service.Timeline(context.Background(), scope, "", 0); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("oversized timeline err=%v", err)
+	}
+	chat.page.Items = make([]customer360port.CustomerChatActivityEntry, sidebarActivityChatDefaultLimit+1)
+	for index := range chat.page.Items {
+		chat.page.Items[index] = customer360port.CustomerChatActivityEntry{ChatType: "private", MessageType: "text", SentAt: stamp.Add(-time.Duration(index) * time.Second)}
+	}
+	if _, err = service.Chat(context.Background(), scope, "", "", 0); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("oversized chat err=%v", err)
+	}
+}

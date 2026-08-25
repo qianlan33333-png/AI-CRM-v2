@@ -64,6 +64,7 @@ func (service *ActivityService) Timeline(ctx context.Context, scope Scope, curso
 	if service == nil || nilActivityDependency(service.timeline) {
 		return TimelineActivityPage{}, ErrUnavailable
 	}
+	limit = normalizeTimelineActivityLimit(limit)
 	owner := scope.OwnerStaffID
 	read, err := service.timeline.ReadCustomer360(ctx, contactport.Customer360ReadInput{
 		CustomerID: contactport.CustomerID(scope.CustomerID), OwnerStaffID: &owner, TimelineCursor: cursor, TimelineLimit: limit,
@@ -71,7 +72,7 @@ func (service *ActivityService) Timeline(ctx context.Context, scope Scope, curso
 	if err != nil {
 		return TimelineActivityPage{}, mapActivityError(err)
 	}
-	if int64(read.Customer.ID) != scope.CustomerID || len(read.Timeline) > activityTimelineResultLimit(limit) {
+	if int64(read.Customer.ID) != scope.CustomerID || len(read.Timeline) > int(limit) {
 		return TimelineActivityPage{}, ErrUnavailable
 	}
 	items := make([]TimelineActivity, len(read.Timeline))
@@ -101,6 +102,7 @@ func (service *ActivityService) Chat(ctx context.Context, scope Scope, chatType,
 	if service == nil || nilActivityDependency(service.chats) {
 		return ChatActivityPage{}, ErrUnavailable
 	}
+	limit = normalizeChatActivityLimit(limit)
 	owner := scope.OwnerStaffID
 	page, err := service.chats.ListCustomerChatActivity(ctx, customer360port.CustomerChatActivityQuery{
 		CustomerID: contactport.CustomerID(scope.CustomerID), OwnerStaffID: &owner, ChatType: chatType, Cursor: cursor, Limit: limit,
@@ -108,7 +110,7 @@ func (service *ActivityService) Chat(ctx context.Context, scope Scope, chatType,
 	if err != nil {
 		return ChatActivityPage{}, mapActivityError(err)
 	}
-	if int64(page.CustomerID) != scope.CustomerID || page.ChatType != chatType || len(page.Items) > activityChatResultLimit(limit) || !validActivityCursor(page.NextCursor) || !validActivityCursor(page.PreviousCursor) {
+	if int64(page.CustomerID) != scope.CustomerID || page.ChatType != chatType || len(page.Items) > int(limit) || !validActivityCursor(page.NextCursor) || !validActivityCursor(page.PreviousCursor) {
 		return ChatActivityPage{}, ErrUnavailable
 	}
 	items := make([]ChatActivity, len(page.Items))
@@ -126,18 +128,18 @@ func validActivityPageInput(cursor string, limit int32) bool {
 	return len(cursor) <= sidebarActivityMaximumCursor && limit >= 0 && limit <= sidebarActivityMaximumLimit
 }
 
-func activityTimelineResultLimit(limit int32) int {
+func normalizeTimelineActivityLimit(limit int32) int32 {
 	if limit == 0 {
-		return int(sidebarActivityLimit)
+		return sidebarActivityLimit
 	}
-	return int(limit)
+	return limit
 }
 
-func activityChatResultLimit(limit int32) int {
+func normalizeChatActivityLimit(limit int32) int32 {
 	if limit == 0 {
-		return int(sidebarActivityChatDefaultLimit)
+		return sidebarActivityChatDefaultLimit
 	}
-	return int(limit)
+	return limit
 }
 
 func validActivityText(value string) bool {
