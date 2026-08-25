@@ -128,7 +128,7 @@ func openExternalPushPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	if *i01aDatabaseURL == "" {
 		t.Skip("database-url is not set")
 	}
-	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(*i01aDatabaseURL, acceptancefixtures.I01BDatabaseName); err != nil {
+	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(*i01aDatabaseURL, acceptancefixtures.CommerceExternalPushDatabaseName); err != nil {
 		t.Fatal(err)
 	}
 	ctx := context.Background()

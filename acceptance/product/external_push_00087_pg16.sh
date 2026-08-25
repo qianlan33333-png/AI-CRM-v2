@@ -5,7 +5,7 @@ set -euo pipefail
 go_command="${GO:-go}"
 tools_mod="${TOOLS_MOD:-tools/go.mod}"
 base_database_url="$P4EXTERNALPUSH_TEST_DATABASE_URL"
-temporary_database="aicrm_test_i01b"
+temporary_database="aicrm_test_commerce_external_push"
 database_url="${base_database_url/aicrm_test/$temporary_database}"
 
 MIGRATION_TEST_DATABASE_URL="$base_database_url" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
