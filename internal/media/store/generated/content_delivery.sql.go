@@ -36,6 +36,32 @@ func (q *Queries) CompleteMediaAttachmentUpload(ctx context.Context, arg Complet
 	return i, err
 }
 
+const completeMediaContentPackageMutation = `-- name: CompleteMediaContentPackageMutation :one
+UPDATE media_content_package_mutation_receipts SET result_snapshot = $1
+WHERE id = $2 AND result_snapshot = 'null'::jsonb
+RETURNING id, operation, actor_id, key_digest, payload_digest, result_snapshot, created_at
+`
+
+type CompleteMediaContentPackageMutationParams struct {
+	ResultSnapshot []byte `json:"result_snapshot"`
+	ID             int64  `json:"id"`
+}
+
+func (q *Queries) CompleteMediaContentPackageMutation(ctx context.Context, arg CompleteMediaContentPackageMutationParams) (MediaContentPackageMutationReceipt, error) {
+	row := q.db.QueryRow(ctx, completeMediaContentPackageMutation, arg.ResultSnapshot, arg.ID)
+	var i MediaContentPackageMutationReceipt
+	err := row.Scan(
+		&i.ID,
+		&i.Operation,
+		&i.ActorID,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.ResultSnapshot,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createMediaCampaignDeliveryBinding = `-- name: CreateMediaCampaignDeliveryBinding :one
 INSERT INTO media_campaign_delivery_bindings (campaign_code, plan_id, package_id, group_invite_id, created_by, updated_by, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $5, $6, $6)
@@ -131,6 +157,39 @@ func (q *Queries) DeleteMediaCampaignDeliveryBinding(ctx context.Context, arg De
 	return result.RowsAffected(), nil
 }
 
+const deleteMediaContentPackageRefs = `-- name: DeleteMediaContentPackageRefs :exec
+DELETE FROM media_content_package_refs WHERE package_id = $1
+`
+
+func (q *Queries) DeleteMediaContentPackageRefs(ctx context.Context, packageID int64) error {
+	_, err := q.db.Exec(ctx, deleteMediaContentPackageRefs, packageID)
+	return err
+}
+
+const getMediaAttachmentUploadPart = `-- name: GetMediaAttachmentUploadPart :one
+SELECT upload_id, part_number, digest, content, created_at
+FROM media_attachment_upload_parts
+WHERE upload_id = $1 AND part_number = $2
+`
+
+type GetMediaAttachmentUploadPartParams struct {
+	UploadID   int64 `json:"upload_id"`
+	PartNumber int32 `json:"part_number"`
+}
+
+func (q *Queries) GetMediaAttachmentUploadPart(ctx context.Context, arg GetMediaAttachmentUploadPartParams) (MediaAttachmentUploadPart, error) {
+	row := q.db.QueryRow(ctx, getMediaAttachmentUploadPart, arg.UploadID, arg.PartNumber)
+	var i MediaAttachmentUploadPart
+	err := row.Scan(
+		&i.UploadID,
+		&i.PartNumber,
+		&i.Digest,
+		&i.Content,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getMediaCampaignDeliveryBinding = `-- name: GetMediaCampaignDeliveryBinding :one
 SELECT id, campaign_code, plan_id, package_id, group_invite_id, version, created_by, updated_by, created_at, updated_at
 FROM media_campaign_delivery_bindings WHERE campaign_code = $1 AND plan_id = $2
@@ -181,6 +240,34 @@ func (q *Queries) GetMediaContentPackage(ctx context.Context, packageID int64) (
 	return i, err
 }
 
+const getMediaContentPackageMutation = `-- name: GetMediaContentPackageMutation :one
+SELECT id, operation, actor_id, key_digest, payload_digest, result_snapshot, created_at
+FROM media_content_package_mutation_receipts
+WHERE operation = $1 AND actor_id = $2 AND key_digest = $3
+FOR UPDATE
+`
+
+type GetMediaContentPackageMutationParams struct {
+	Operation string `json:"operation"`
+	ActorID   int64  `json:"actor_id"`
+	KeyDigest []byte `json:"key_digest"`
+}
+
+func (q *Queries) GetMediaContentPackageMutation(ctx context.Context, arg GetMediaContentPackageMutationParams) (MediaContentPackageMutationReceipt, error) {
+	row := q.db.QueryRow(ctx, getMediaContentPackageMutation, arg.Operation, arg.ActorID, arg.KeyDigest)
+	var i MediaContentPackageMutationReceipt
+	err := row.Scan(
+		&i.ID,
+		&i.Operation,
+		&i.ActorID,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.ResultSnapshot,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getMediaContentReferenceEligibility = `-- name: GetMediaContentReferenceEligibility :one
 SELECT CASE $1::text
   WHEN 'image' THEN EXISTS (SELECT 1 FROM media_images WHERE id = $2::bigint AND enabled)
@@ -200,6 +287,48 @@ func (q *Queries) GetMediaContentReferenceEligibility(ctx context.Context, arg G
 	var eligible bool
 	err := row.Scan(&eligible)
 	return eligible, err
+}
+
+const getOutboundMediaAcceptance = `-- name: GetOutboundMediaAcceptance :one
+SELECT id, content_package_id, target_digest, media_refs, source_digest, payload_digest, external_effect_id, state, created_at, updated_at
+FROM outbound_media_acceptances
+WHERE content_package_id = $1 AND target_digest = $2
+`
+
+type GetOutboundMediaAcceptanceParams struct {
+	ContentPackageID int64  `json:"content_package_id"`
+	TargetDigest     string `json:"target_digest"`
+}
+
+type GetOutboundMediaAcceptanceRow struct {
+	ID               int64              `json:"id"`
+	ContentPackageID int64              `json:"content_package_id"`
+	TargetDigest     string             `json:"target_digest"`
+	MediaRefs        []byte             `json:"media_refs"`
+	SourceDigest     string             `json:"source_digest"`
+	PayloadDigest    string             `json:"payload_digest"`
+	ExternalEffectID int64              `json:"external_effect_id"`
+	State            string             `json:"state"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetOutboundMediaAcceptance(ctx context.Context, arg GetOutboundMediaAcceptanceParams) (GetOutboundMediaAcceptanceRow, error) {
+	row := q.db.QueryRow(ctx, getOutboundMediaAcceptance, arg.ContentPackageID, arg.TargetDigest)
+	var i GetOutboundMediaAcceptanceRow
+	err := row.Scan(
+		&i.ID,
+		&i.ContentPackageID,
+		&i.TargetDigest,
+		&i.MediaRefs,
+		&i.SourceDigest,
+		&i.PayloadDigest,
+		&i.ExternalEffectID,
+		&i.State,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const getOutboundMediaEffectBinding = `-- name: GetOutboundMediaEffectBinding :one
@@ -228,7 +357,7 @@ func (q *Queries) GetOutboundMediaEffectBinding(ctx context.Context, arg GetOutb
 }
 
 const getOutboundMediaReconciliationReceipt = `-- name: GetOutboundMediaReconciliationReceipt :one
-SELECT effect_id, generation, fence, lease_expires_at, evidence_digest, provider_accepted, delivery_proven, eer_receipt_digest, created_at
+SELECT effect_id, generation, fence, lease_expires_at, evidence_digest, idempotency_key_digest, provider_accepted, delivery_proven, eer_receipt_digest, created_at
 FROM outbound_media_reconciliation_receipts
 WHERE effect_id = $1
 `
@@ -242,6 +371,7 @@ func (q *Queries) GetOutboundMediaReconciliationReceipt(ctx context.Context, eff
 		&i.Fence,
 		&i.LeaseExpiresAt,
 		&i.EvidenceDigest,
+		&i.IdempotencyKeyDigest,
 		&i.ProviderAccepted,
 		&i.DeliveryProven,
 		&i.EerReceiptDigest,
@@ -359,6 +489,66 @@ func (q *Queries) InsertMediaContentPackageMiniprogramRef(ctx context.Context, a
 	return err
 }
 
+const insertOutboundMediaAcceptance = `-- name: InsertOutboundMediaAcceptance :one
+INSERT INTO outbound_media_acceptances (
+  content_package_id, target_digest, media_refs, source_digest, payload_digest, external_effect_id, state, created_at, updated_at
+) VALUES (
+  $1, $2, $3, $4, $5,
+  $6, 'accepted', $7, $7
+)
+ON CONFLICT (content_package_id, target_digest) DO NOTHING
+RETURNING id, content_package_id, target_digest, media_refs, source_digest, payload_digest, external_effect_id, state, created_at, updated_at
+`
+
+type InsertOutboundMediaAcceptanceParams struct {
+	ContentPackageID int64              `json:"content_package_id"`
+	TargetDigest     string             `json:"target_digest"`
+	MediaRefs        []byte             `json:"media_refs"`
+	SourceDigest     string             `json:"source_digest"`
+	PayloadDigest    string             `json:"payload_digest"`
+	ExternalEffectID int64              `json:"external_effect_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}
+
+type InsertOutboundMediaAcceptanceRow struct {
+	ID               int64              `json:"id"`
+	ContentPackageID int64              `json:"content_package_id"`
+	TargetDigest     string             `json:"target_digest"`
+	MediaRefs        []byte             `json:"media_refs"`
+	SourceDigest     string             `json:"source_digest"`
+	PayloadDigest    string             `json:"payload_digest"`
+	ExternalEffectID int64              `json:"external_effect_id"`
+	State            string             `json:"state"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) InsertOutboundMediaAcceptance(ctx context.Context, arg InsertOutboundMediaAcceptanceParams) (InsertOutboundMediaAcceptanceRow, error) {
+	row := q.db.QueryRow(ctx, insertOutboundMediaAcceptance,
+		arg.ContentPackageID,
+		arg.TargetDigest,
+		arg.MediaRefs,
+		arg.SourceDigest,
+		arg.PayloadDigest,
+		arg.ExternalEffectID,
+		arg.CreatedAt,
+	)
+	var i InsertOutboundMediaAcceptanceRow
+	err := row.Scan(
+		&i.ID,
+		&i.ContentPackageID,
+		&i.TargetDigest,
+		&i.MediaRefs,
+		&i.SourceDigest,
+		&i.PayloadDigest,
+		&i.ExternalEffectID,
+		&i.State,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const insertOutboundMediaEffectBinding = `-- name: InsertOutboundMediaEffectBinding :one
 INSERT INTO outbound_media_effect_bindings (content_package_id, target_digest, snapshot_digest, effect_id, created_at)
 VALUES ($1, $2, $3, $4, $5)
@@ -396,23 +586,24 @@ func (q *Queries) InsertOutboundMediaEffectBinding(ctx context.Context, arg Inse
 
 const insertOutboundMediaReconciliationReceipt = `-- name: InsertOutboundMediaReconciliationReceipt :exec
 INSERT INTO outbound_media_reconciliation_receipts (
-  effect_id, generation, fence, lease_expires_at, evidence_digest, provider_accepted, delivery_proven, eer_receipt_digest, created_at
+  effect_id, generation, fence, lease_expires_at, evidence_digest, idempotency_key_digest, provider_accepted, delivery_proven, eer_receipt_digest, created_at
 ) VALUES (
   $1, $2, $3, $4, $5,
-  $6, $7, $8, $9
+  $6, $7, $8, $9, $10
 )
 `
 
 type InsertOutboundMediaReconciliationReceiptParams struct {
-	EffectID         int64              `json:"effect_id"`
-	Generation       int64              `json:"generation"`
-	Fence            int64              `json:"fence"`
-	LeaseExpiresAt   pgtype.Timestamptz `json:"lease_expires_at"`
-	EvidenceDigest   string             `json:"evidence_digest"`
-	ProviderAccepted bool               `json:"provider_accepted"`
-	DeliveryProven   bool               `json:"delivery_proven"`
-	EerReceiptDigest string             `json:"eer_receipt_digest"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	EffectID             int64              `json:"effect_id"`
+	Generation           int64              `json:"generation"`
+	Fence                int64              `json:"fence"`
+	LeaseExpiresAt       pgtype.Timestamptz `json:"lease_expires_at"`
+	EvidenceDigest       string             `json:"evidence_digest"`
+	IdempotencyKeyDigest string             `json:"idempotency_key_digest"`
+	ProviderAccepted     bool               `json:"provider_accepted"`
+	DeliveryProven       bool               `json:"delivery_proven"`
+	EerReceiptDigest     string             `json:"eer_receipt_digest"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) InsertOutboundMediaReconciliationReceipt(ctx context.Context, arg InsertOutboundMediaReconciliationReceiptParams) error {
@@ -422,6 +613,7 @@ func (q *Queries) InsertOutboundMediaReconciliationReceipt(ctx context.Context, 
 		arg.Fence,
 		arg.LeaseExpiresAt,
 		arg.EvidenceDigest,
+		arg.IdempotencyKeyDigest,
 		arg.ProviderAccepted,
 		arg.DeliveryProven,
 		arg.EerReceiptDigest,
@@ -525,7 +717,7 @@ func (q *Queries) LockOutboundMediaEffectForReconcile(ctx context.Context, arg L
 	return i, err
 }
 
-const putMediaAttachmentUploadPart = `-- name: PutMediaAttachmentUploadPart :exec
+const putMediaAttachmentUploadPart = `-- name: PutMediaAttachmentUploadPart :execrows
 INSERT INTO media_attachment_upload_parts (upload_id, part_number, digest, content, created_at)
 VALUES ($1, $2, $3, $4, $5)
 ON CONFLICT (upload_id, part_number) DO UPDATE SET digest = EXCLUDED.digest, content = EXCLUDED.content, created_at = EXCLUDED.created_at
@@ -540,15 +732,18 @@ type PutMediaAttachmentUploadPartParams struct {
 	Now        pgtype.Timestamptz `json:"now"`
 }
 
-func (q *Queries) PutMediaAttachmentUploadPart(ctx context.Context, arg PutMediaAttachmentUploadPartParams) error {
-	_, err := q.db.Exec(ctx, putMediaAttachmentUploadPart,
+func (q *Queries) PutMediaAttachmentUploadPart(ctx context.Context, arg PutMediaAttachmentUploadPartParams) (int64, error) {
+	result, err := q.db.Exec(ctx, putMediaAttachmentUploadPart,
 		arg.UploadID,
 		arg.PartNumber,
 		arg.Digest,
 		arg.Content,
 		arg.Now,
 	)
-	return err
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 const readMediaAttachmentUploadForCompletion = `-- name: ReadMediaAttachmentUploadForCompletion :one
@@ -619,6 +814,42 @@ func (q *Queries) ReadOutboundMediaEffectDetail(ctx context.Context, arg ReadOut
 		&i.State,
 		&i.ProviderAccepted,
 		&i.DeliveryProven,
+	)
+	return i, err
+}
+
+const reserveMediaContentPackageMutation = `-- name: ReserveMediaContentPackageMutation :one
+INSERT INTO media_content_package_mutation_receipts (operation, actor_id, key_digest, payload_digest, result_snapshot, created_at)
+VALUES ($1, $2, $3, $4, 'null'::jsonb, $5)
+ON CONFLICT (operation, actor_id, key_digest) DO NOTHING
+RETURNING id, operation, actor_id, key_digest, payload_digest, result_snapshot, created_at
+`
+
+type ReserveMediaContentPackageMutationParams struct {
+	Operation     string             `json:"operation"`
+	ActorID       int64              `json:"actor_id"`
+	KeyDigest     []byte             `json:"key_digest"`
+	PayloadDigest []byte             `json:"payload_digest"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) ReserveMediaContentPackageMutation(ctx context.Context, arg ReserveMediaContentPackageMutationParams) (MediaContentPackageMutationReceipt, error) {
+	row := q.db.QueryRow(ctx, reserveMediaContentPackageMutation,
+		arg.Operation,
+		arg.ActorID,
+		arg.KeyDigest,
+		arg.PayloadDigest,
+		arg.CreatedAt,
+	)
+	var i MediaContentPackageMutationReceipt
+	err := row.Scan(
+		&i.ID,
+		&i.Operation,
+		&i.ActorID,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.ResultSnapshot,
+		&i.CreatedAt,
 	)
 	return i, err
 }

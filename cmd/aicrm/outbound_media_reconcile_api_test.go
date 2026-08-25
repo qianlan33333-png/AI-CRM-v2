@@ -41,7 +41,7 @@ func TestReconcileOutboundMediaHashesEvidenceAndReturnsPIIMinimalReceipt(t *test
 	request.SetPathValue("target_ref", "external_contact_7")
 	response := httptest.NewRecorder()
 	(&Handler{outboundMediaReconcile: stub}).ReconcileOutboundMedia(response, request)
-	if response.Code != http.StatusOK || stub.calls != 1 || stub.command.ContentPackageID != 42 || stub.command.TargetRef != "external_contact_7" || stub.command.Generation != 3 || stub.command.Fence != 9 || !stub.command.LeaseExpiresAt.Equal(time.Date(2026, 8, 25, 10, 0, 0, 0, time.UTC)) || stub.command.EvidenceDigest != outboundMediaEvidenceDigest("provider_receipt_7") || stub.command.EvidenceDigest == "provider_receipt_7" {
+	if response.Code != http.StatusOK || stub.calls != 1 || stub.command.ContentPackageID != 42 || stub.command.TargetRef != "external_contact_7" || stub.command.Generation != 3 || stub.command.Fence != 9 || !stub.command.LeaseExpiresAt.Equal(time.Date(2026, 8, 25, 10, 0, 0, 0, time.UTC)) || stub.command.EvidenceDigest != outboundMediaEvidenceDigest("provider_receipt_7") || stub.command.EvidenceDigest == "provider_receipt_7" || stub.command.IdempotencyKey != "outbound-media-reconcile-key-0001" {
 		t.Fatalf("status=%d stub=%#v body=%s", response.Code, stub, response.Body.String())
 	}
 	body := decodeOutboundMediaReconcileBody(t, response.Body.Bytes())

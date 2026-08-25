@@ -51210,8 +51210,8 @@ export const completeMediaAttachmentMultipartUpload = async (
 };
 
 /**
- * Records only the local EER accepted envelope. It does not send to a provider and does not claim delivery.
- * @summary Accept one published content package into a local outbound-media EER envelope
+ * Records the immutable Media package snapshot, Media-to-EER binding, and local EER accepted envelope in one transaction. It does not send to a provider and does not claim delivery.
+ * @summary Atomically accept one published content package into local outbound-media records
  */
 export type acceptOutboundMediaContentPackageResponse200 = {
   data: OutboundMediaAcceptedResponse;

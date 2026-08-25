@@ -43,6 +43,37 @@ CREATE TABLE public.media_content_package_mutation_receipts (
   UNIQUE (operation, actor_id, key_digest)
 );
 
+-- +goose StatementBegin
+CREATE FUNCTION public.aicrm_media_content_package_receipt_complete() RETURNS trigger
+LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.media_content_package_mutation_receipts WHERE id = NEW.id AND result_snapshot = 'null'::jsonb) THEN
+    RAISE EXCEPTION 'media content package receipt must complete in its mutation transaction' USING ERRCODE = '23514';
+  END IF;
+  RETURN NULL;
+END $$;
+-- +goose StatementEnd
+CREATE CONSTRAINT TRIGGER media_content_package_receipts_complete_before_commit
+AFTER INSERT OR UPDATE ON public.media_content_package_mutation_receipts DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION public.aicrm_media_content_package_receipt_complete();
+
+-- +goose StatementBegin
+CREATE FUNCTION public.aicrm_media_content_package_receipt_transition() RETURNS trigger
+LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+BEGIN
+  IF TG_OP = 'DELETE' OR OLD.result_snapshot <> 'null'::jsonb
+     OR NEW.operation IS DISTINCT FROM OLD.operation OR NEW.actor_id IS DISTINCT FROM OLD.actor_id
+     OR NEW.key_digest IS DISTINCT FROM OLD.key_digest OR NEW.payload_digest IS DISTINCT FROM OLD.payload_digest
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at OR NEW.result_snapshot = 'null'::jsonb THEN
+    RAISE EXCEPTION 'media content package receipt is immutable after one completion transition' USING ERRCODE = '55000';
+  END IF;
+  RETURN NEW;
+END $$;
+-- +goose StatementEnd
+CREATE TRIGGER media_content_package_receipts_transition
+BEFORE UPDATE OR DELETE ON public.media_content_package_mutation_receipts
+FOR EACH ROW EXECUTE FUNCTION public.aicrm_media_content_package_receipt_transition();
+
 CREATE TABLE public.media_attachment_uploads (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   file_name TEXT NOT NULL CHECK (file_name <> '' AND file_name !~ '[\\/[:cntrl:]]'),
@@ -88,21 +119,31 @@ CREATE TABLE public.media_campaign_delivery_bindings (
 -- not enqueue or invoke a provider; state may only represent local/EER facts.
 CREATE TABLE public.outbound_media_acceptances (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  handoff_id BIGINT NOT NULL REFERENCES public.outbound_campaign_handoffs(id) ON DELETE RESTRICT,
-  binding_id BIGINT NOT NULL REFERENCES public.media_campaign_delivery_bindings(id) ON DELETE RESTRICT,
-  package_id BIGINT NOT NULL REFERENCES public.media_content_packages(id) ON DELETE RESTRICT,
+  content_package_id BIGINT NOT NULL REFERENCES public.media_content_packages(id) ON DELETE RESTRICT,
+  target_digest TEXT NOT NULL CHECK (target_digest ~ '^sha256:[0-9a-f]{64}$'),
   media_refs JSONB NOT NULL CHECK (jsonb_typeof(media_refs) = 'array'),
   source_digest TEXT NOT NULL CHECK (source_digest ~ '^sha256:[0-9a-f]{64}$'),
   payload_digest TEXT NOT NULL CHECK (payload_digest ~ '^sha256:[0-9a-f]{64}$'),
-  external_effect_id BIGINT UNIQUE REFERENCES public.external_effects(id) ON DELETE RESTRICT,
+  external_effect_id BIGINT NOT NULL UNIQUE REFERENCES public.external_effects(id) ON DELETE RESTRICT,
   state TEXT NOT NULL CHECK (state IN ('accepted','queued','attempted','outcome_unknown','reconciled')),
   provider_execution_eligible BOOLEAN NOT NULL DEFAULT FALSE CHECK (NOT provider_execution_eligible),
   real_external_call_executed BOOLEAN NOT NULL DEFAULT FALSE CHECK (NOT real_external_call_executed),
   delivery_proven BOOLEAN NOT NULL DEFAULT FALSE CHECK (NOT delivery_proven),
   created_at TIMESTAMPTZ NOT NULL,
-  updated_at TIMESTAMPTZ NOT NULL,
-  UNIQUE (handoff_id, binding_id)
+  updated_at TIMESTAMPTZ NOT NULL CHECK (updated_at = created_at),
+  UNIQUE (content_package_id, target_digest)
 );
+
+-- +goose StatementBegin
+CREATE FUNCTION public.aicrm_outbound_media_acceptance_immutable() RETURNS trigger
+LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+BEGIN
+  RAISE EXCEPTION 'outbound media acceptances are immutable' USING ERRCODE = '55000';
+END $$;
+-- +goose StatementEnd
+CREATE TRIGGER outbound_media_acceptances_immutable
+BEFORE UPDATE OR DELETE ON public.outbound_media_acceptances
+FOR EACH ROW EXECUTE FUNCTION public.aicrm_outbound_media_acceptance_immutable();
 CREATE INDEX media_content_package_refs_image_idx ON public.media_content_package_refs(image_id) WHERE image_id IS NOT NULL;
 CREATE INDEX media_content_package_refs_attachment_idx ON public.media_content_package_refs(attachment_id) WHERE attachment_id IS NOT NULL;
 CREATE INDEX media_content_package_refs_miniprogram_idx ON public.media_content_package_refs(miniprogram_id) WHERE miniprogram_id IS NOT NULL;
@@ -126,6 +167,7 @@ CREATE TABLE public.outbound_media_reconciliation_receipts (
   fence BIGINT NOT NULL CHECK (fence > 0),
   lease_expires_at TIMESTAMPTZ NOT NULL,
   evidence_digest TEXT NOT NULL CHECK (evidence_digest ~ '^sha256:[0-9a-f]{64}$'),
+  idempotency_key_digest TEXT NOT NULL CHECK (idempotency_key_digest ~ '^sha256:[0-9a-f]{64}$'),
   provider_accepted BOOLEAN NOT NULL,
   delivery_proven BOOLEAN NOT NULL,
   eer_receipt_digest TEXT NOT NULL CHECK (eer_receipt_digest ~ '^sha256:[0-9a-f]{64}$'),
@@ -145,23 +187,29 @@ BEFORE UPDATE OR DELETE ON public.outbound_media_reconciliation_receipts
 FOR EACH ROW EXECUTE FUNCTION public.aicrm_outbound_media_reconciliation_receipt_immutable();
 
 -- +goose Down
-LOCK TABLE public.outbound_media_reconciliation_receipts, public.outbound_media_effect_bindings, public.outbound_media_acceptances, public.media_campaign_delivery_bindings, public.media_attachment_uploads, public.media_content_packages IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE public.outbound_media_reconciliation_receipts, public.outbound_media_effect_bindings, public.outbound_media_acceptances, public.media_campaign_delivery_bindings, public.media_attachment_uploads, public.media_content_package_mutation_receipts, public.media_content_packages IN SHARE ROW EXCLUSIVE MODE;
 -- +goose StatementBegin
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM public.outbound_media_reconciliation_receipts) OR EXISTS (SELECT 1 FROM public.outbound_media_effect_bindings) OR EXISTS (SELECT 1 FROM public.outbound_media_acceptances) OR EXISTS (SELECT 1 FROM public.media_campaign_delivery_bindings)
-     OR EXISTS (SELECT 1 FROM public.media_attachment_uploads) OR EXISTS (SELECT 1 FROM public.media_content_packages) THEN
+     OR EXISTS (SELECT 1 FROM public.media_attachment_uploads) OR EXISTS (SELECT 1 FROM public.media_content_package_mutation_receipts) OR EXISTS (SELECT 1 FROM public.media_content_packages) THEN
     RAISE EXCEPTION 'cannot roll back populated media content package and delivery facts' USING ERRCODE = '55000';
   END IF;
 END $$;
 -- +goose StatementEnd
 DROP TRIGGER outbound_media_reconciliation_receipts_immutable ON public.outbound_media_reconciliation_receipts;
 DROP FUNCTION public.aicrm_outbound_media_reconciliation_receipt_immutable();
+DROP TRIGGER outbound_media_acceptances_immutable ON public.outbound_media_acceptances;
+DROP FUNCTION public.aicrm_outbound_media_acceptance_immutable();
 DROP TABLE public.outbound_media_reconciliation_receipts;
 DROP TABLE public.outbound_media_effect_bindings;
 DROP TABLE public.outbound_media_acceptances;
 DROP TABLE public.media_campaign_delivery_bindings;
 DROP TABLE public.media_attachment_upload_parts;
 DROP TABLE public.media_attachment_uploads;
+DROP TRIGGER media_content_package_receipts_transition ON public.media_content_package_mutation_receipts;
+DROP TRIGGER media_content_package_receipts_complete_before_commit ON public.media_content_package_mutation_receipts;
+DROP FUNCTION public.aicrm_media_content_package_receipt_transition();
+DROP FUNCTION public.aicrm_media_content_package_receipt_complete();
 DROP TABLE public.media_content_package_mutation_receipts;
 DROP TABLE public.media_content_package_refs;
 DROP TABLE public.media_content_packages;

@@ -12,6 +12,7 @@ type Querier interface {
 	ArchiveMediaGroupInvite(ctx context.Context, arg ArchiveMediaGroupInviteParams) error
 	CompleteMediaAttachmentMutation(ctx context.Context, arg CompleteMediaAttachmentMutationParams) (CompleteMediaAttachmentMutationRow, error)
 	CompleteMediaAttachmentUpload(ctx context.Context, arg CompleteMediaAttachmentUploadParams) (CompleteMediaAttachmentUploadRow, error)
+	CompleteMediaContentPackageMutation(ctx context.Context, arg CompleteMediaContentPackageMutationParams) (MediaContentPackageMutationReceipt, error)
 	CompleteMediaGroupInviteReceipt(ctx context.Context, arg CompleteMediaGroupInviteReceiptParams) (CompleteMediaGroupInviteReceiptRow, error)
 	CompleteMediaImageDeleteReceipt(ctx context.Context, arg CompleteMediaImageDeleteReceiptParams) (CompleteMediaImageDeleteReceiptRow, error)
 	CompleteMediaImageUploadReceipt(ctx context.Context, arg CompleteMediaImageUploadReceiptParams) (CompleteMediaImageUploadReceiptRow, error)
@@ -24,12 +25,15 @@ type Querier interface {
 	CreateMediaMiniProgram(ctx context.Context, arg CreateMediaMiniProgramParams) (int64, error)
 	DeleteMediaAttachment(ctx context.Context, attachmentID int64) (int64, error)
 	DeleteMediaCampaignDeliveryBinding(ctx context.Context, arg DeleteMediaCampaignDeliveryBindingParams) (int64, error)
+	DeleteMediaContentPackageRefs(ctx context.Context, packageID int64) error
 	DeleteMediaImage(ctx context.Context, imageID int64) (int64, error)
 	DeleteMediaMiniProgram(ctx context.Context, id int64) error
 	GetMediaAttachment(ctx context.Context, attachmentID int64) (GetMediaAttachmentRow, error)
 	GetMediaAttachmentMutation(ctx context.Context, arg GetMediaAttachmentMutationParams) (GetMediaAttachmentMutationRow, error)
+	GetMediaAttachmentUploadPart(ctx context.Context, arg GetMediaAttachmentUploadPartParams) (MediaAttachmentUploadPart, error)
 	GetMediaCampaignDeliveryBinding(ctx context.Context, arg GetMediaCampaignDeliveryBindingParams) (MediaCampaignDeliveryBinding, error)
 	GetMediaContentPackage(ctx context.Context, packageID int64) (MediaContentPackage, error)
+	GetMediaContentPackageMutation(ctx context.Context, arg GetMediaContentPackageMutationParams) (MediaContentPackageMutationReceipt, error)
 	GetMediaContentReferenceEligibility(ctx context.Context, arg GetMediaContentReferenceEligibilityParams) (bool, error)
 	GetMediaGroupInvite(ctx context.Context, id int64) (MediaGroupInvite, error)
 	GetMediaGroupInviteReceipt(ctx context.Context, arg GetMediaGroupInviteReceiptParams) (GetMediaGroupInviteReceiptRow, error)
@@ -40,6 +44,7 @@ type Querier interface {
 	GetMediaMiniProgram(ctx context.Context, id int64) (GetMediaMiniProgramRow, error)
 	GetMediaMiniProgramReceipt(ctx context.Context, arg GetMediaMiniProgramReceiptParams) (GetMediaMiniProgramReceiptRow, error)
 	GetMediaThumbnailCache(ctx context.Context, imageID int64) (GetMediaThumbnailCacheRow, error)
+	GetOutboundMediaAcceptance(ctx context.Context, arg GetOutboundMediaAcceptanceParams) (GetOutboundMediaAcceptanceRow, error)
 	GetOutboundMediaEffectBinding(ctx context.Context, arg GetOutboundMediaEffectBindingParams) (OutboundMediaEffectBinding, error)
 	GetOutboundMediaReconciliationReceipt(ctx context.Context, effectID int64) (OutboundMediaReconciliationReceipt, error)
 	InitiateMediaAttachmentUpload(ctx context.Context, arg InitiateMediaAttachmentUploadParams) (InitiateMediaAttachmentUploadRow, error)
@@ -55,6 +60,7 @@ type Querier interface {
 	InsertMediaImageBlob(ctx context.Context, arg InsertMediaImageBlobParams) error
 	// Only the 0357 explicit-false branch requires migration 47's enabled column.
 	InsertMediaImageWithEnabled(ctx context.Context, arg InsertMediaImageWithEnabledParams) (InsertMediaImageWithEnabledRow, error)
+	InsertOutboundMediaAcceptance(ctx context.Context, arg InsertOutboundMediaAcceptanceParams) (InsertOutboundMediaAcceptanceRow, error)
 	InsertOutboundMediaEffectBinding(ctx context.Context, arg InsertOutboundMediaEffectBindingParams) (OutboundMediaEffectBinding, error)
 	InsertOutboundMediaReconciliationReceipt(ctx context.Context, arg InsertOutboundMediaReconciliationReceiptParams) error
 	ListMediaAttachmentUploadParts(ctx context.Context, uploadID int64) ([]ListMediaAttachmentUploadPartsRow, error)
@@ -75,11 +81,12 @@ type Querier interface {
 	LockMediaImageReference(ctx context.Context, id int64) (int64, error)
 	LockMediaMiniProgram(ctx context.Context, id int64) (int64, error)
 	LockOutboundMediaEffectForReconcile(ctx context.Context, arg LockOutboundMediaEffectForReconcileParams) (LockOutboundMediaEffectForReconcileRow, error)
-	PutMediaAttachmentUploadPart(ctx context.Context, arg PutMediaAttachmentUploadPartParams) error
+	PutMediaAttachmentUploadPart(ctx context.Context, arg PutMediaAttachmentUploadPartParams) (int64, error)
 	ReadMediaAttachment(ctx context.Context, attachmentID int64) (ReadMediaAttachmentRow, error)
 	ReadMediaAttachmentUploadForCompletion(ctx context.Context, uploadID int64) (ReadMediaAttachmentUploadForCompletionRow, error)
 	ReadOutboundMediaEffectDetail(ctx context.Context, arg ReadOutboundMediaEffectDetailParams) (ReadOutboundMediaEffectDetailRow, error)
 	ReserveMediaAttachmentMutation(ctx context.Context, arg ReserveMediaAttachmentMutationParams) (ReserveMediaAttachmentMutationRow, error)
+	ReserveMediaContentPackageMutation(ctx context.Context, arg ReserveMediaContentPackageMutationParams) (MediaContentPackageMutationReceipt, error)
 	ReserveMediaGroupInviteReceipt(ctx context.Context, arg ReserveMediaGroupInviteReceiptParams) (ReserveMediaGroupInviteReceiptRow, error)
 	ReserveMediaImageDeleteReceipt(ctx context.Context, arg ReserveMediaImageDeleteReceiptParams) (ReserveMediaImageDeleteReceiptRow, error)
 	ReserveMediaImageUploadReceipt(ctx context.Context, arg ReserveMediaImageUploadReceiptParams) (ReserveMediaImageUploadReceiptRow, error)

@@ -46,8 +46,9 @@ func (f *outboundMediaReconcileFixture) Reconcile(_ context.Context, command eer
 func TestOutboundMediaReconcilePersistsVerifiedReceiptWithoutRetry(t *testing.T) {
 	command := outboundMediaReconcileTestCommand()
 	fixture := &outboundMediaReconcileFixture{control: outboundMediaReconcileTestControl(string(eer.StateOutcomeUnknown))}
+	fixture.control.LeaseExpiresAt = time.Time{} // EER clears this field when the attempt becomes outcome_unknown.
 	result, err := NewOutboundMediaReconcileService(fixture, fixture, fixture).Reconcile(context.Background(), command)
-	if err != nil || fixture.runtimeCalls != 1 || result.Replay || result.EffectID != "eer_7" || result.State != string(eer.StateReconciled) || fixture.targetDigest != mediaEERDigest("outbound-media-target", command.TargetRef) || fixture.runtime.Lease.Generation != command.Generation || fixture.runtime.Lease.Fence != command.Fence || fixture.runtime.EvidenceDigest != eer.Digest(command.EvidenceDigest) || fixture.recorded.EvidenceDigest != command.EvidenceDigest || fixture.recorded.ProviderAccepted != command.ProviderAccepted || fixture.recorded.DeliveryProven != command.DeliveryProven {
+	if err != nil || fixture.runtimeCalls != 1 || result.Replay || result.EffectID != "eer_7" || result.State != string(eer.StateReconciled) || fixture.targetDigest != mediaEERDigest("outbound-media-target", command.TargetRef) || fixture.runtime.Lease.Generation != command.Generation || fixture.runtime.Lease.Fence != command.Fence || fixture.runtime.EvidenceDigest != eer.Digest(command.EvidenceDigest) || fixture.recorded.EvidenceDigest != command.EvidenceDigest || fixture.recorded.IdempotencyKeyDigest != mediaEERDigest("outbound-media-manual-reconcile-key", command.IdempotencyKey) || fixture.recorded.ProviderAccepted != command.ProviderAccepted || fixture.recorded.DeliveryProven != command.DeliveryProven {
 		t.Fatalf("result=%#v recorded=%#v runtime=%#v target=%s calls=%d err=%v", result, fixture.recorded, fixture.runtime, fixture.targetDigest, fixture.runtimeCalls, err)
 	}
 }
@@ -55,7 +56,8 @@ func TestOutboundMediaReconcilePersistsVerifiedReceiptWithoutRetry(t *testing.T)
 func TestOutboundMediaReconcileReplaysOnlyExactImmutableReceipt(t *testing.T) {
 	command := outboundMediaReconcileTestCommand()
 	fixture := &outboundMediaReconcileFixture{control: outboundMediaReconcileTestControl(string(eer.StateReconciled)), found: true}
-	fixture.receipt = OutboundMediaReconciliationReceipt{EffectID: fixture.control.EffectID, Generation: command.Generation, Fence: command.Fence, LeaseExpiresAt: command.LeaseExpiresAt, EvidenceDigest: command.EvidenceDigest, ProviderAccepted: command.ProviderAccepted, DeliveryProven: command.DeliveryProven, EERReceiptDigest: mediaEERDigest("outbound-media-eer-receipt")}
+	fixture.control.LeaseExpiresAt = time.Time{}
+	fixture.receipt = OutboundMediaReconciliationReceipt{EffectID: fixture.control.EffectID, Generation: command.Generation, Fence: command.Fence, LeaseExpiresAt: command.LeaseExpiresAt, EvidenceDigest: command.EvidenceDigest, IdempotencyKeyDigest: mediaEERDigest("outbound-media-manual-reconcile-key", command.IdempotencyKey), ProviderAccepted: command.ProviderAccepted, DeliveryProven: command.DeliveryProven, EERReceiptDigest: mediaEERDigest("outbound-media-eer-receipt")}
 	result, err := NewOutboundMediaReconcileService(fixture, fixture, fixture).Reconcile(context.Background(), command)
 	if err != nil || !result.Replay || fixture.runtimeCalls != 0 || result.ProviderAccepted != command.ProviderAccepted || result.DeliveryProven != command.DeliveryProven {
 		t.Fatalf("result=%#v calls=%d err=%v", result, fixture.runtimeCalls, err)
@@ -65,6 +67,12 @@ func TestOutboundMediaReconcileReplaysOnlyExactImmutableReceipt(t *testing.T) {
 	_, err = NewOutboundMediaReconcileService(fixture, fixture, fixture).Reconcile(context.Background(), command)
 	if !errors.Is(err, ErrOutboundMediaReconcileConflict) || fixture.runtimeCalls != 0 {
 		t.Fatalf("conflict err=%v calls=%d", err, fixture.runtimeCalls)
+	}
+	command = outboundMediaReconcileTestCommand()
+	command.IdempotencyKey = "different-reconcile-key-0002"
+	_, err = NewOutboundMediaReconcileService(fixture, fixture, fixture).Reconcile(context.Background(), command)
+	if !errors.Is(err, ErrOutboundMediaReconcileConflict) || fixture.runtimeCalls != 0 {
+		t.Fatalf("key conflict err=%v calls=%d", err, fixture.runtimeCalls)
 	}
 }
 
@@ -83,7 +91,7 @@ func TestOutboundMediaReconcileRequiresUnknownAndConsistentVerification(t *testi
 }
 
 func outboundMediaReconcileTestCommand() OutboundMediaReconcileCommand {
-	return OutboundMediaReconcileCommand{ContentPackageID: 42, TargetRef: "external_contact_7", Generation: 3, Fence: 9, LeaseExpiresAt: time.Date(2026, 8, 25, 10, 0, 0, 0, time.UTC), EvidenceDigest: mediaEERDigest("outbound-media-verified-evidence"), ProviderAccepted: true, DeliveryProven: true}
+	return OutboundMediaReconcileCommand{ContentPackageID: 42, TargetRef: "external_contact_7", Generation: 3, Fence: 9, LeaseExpiresAt: time.Date(2026, 8, 25, 10, 0, 0, 0, time.UTC), EvidenceDigest: mediaEERDigest("outbound-media-verified-evidence"), IdempotencyKey: "outbound-media-reconcile-key-0001", ProviderAccepted: true, DeliveryProven: true}
 }
 
 func outboundMediaReconcileTestControl(state string) OutboundMediaReconcileControl {

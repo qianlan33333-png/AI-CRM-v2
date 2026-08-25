@@ -10563,8 +10563,8 @@ paths:
     post:
       tags: [p4-media-content-delivery]
       operationId: acceptOutboundMediaContentPackage
-      summary: Accept one published content package into a local outbound-media EER envelope
-      description: Records only the local EER accepted envelope. It does not send to a provider and does not claim delivery.
+      summary: Atomically accept one published content package into local outbound-media records
+      description: Records the immutable Media package snapshot, Media-to-EER binding, and local EER accepted envelope in one transaction. It does not send to a provider and does not claim delivery.
       x-p4-decision-evidence: P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25
       x-aicrm-auth-scheme: human_session
       x-aicrm-capability: media.library.write
@@ -10575,7 +10575,7 @@ paths:
       x-aicrm-external-effect: none
       parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OutboundMediaAcceptedRequest'}}}}
-      responses: {'200': {description: Local EER accepted envelope, content: {application/json: {schema: {$ref: '#/components/schemas/OutboundMediaAcceptedResponse'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+      responses: {'200': {description: Atomic local Media snapshot and EER acceptance projection, content: {application/json: {schema: {$ref: '#/components/schemas/OutboundMediaAcceptedResponse'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
   /api/admin/outbound-media/{content_package_id}/effects/{target_ref}:
     get:
       tags: [p4-media-content-delivery]

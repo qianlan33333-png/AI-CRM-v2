@@ -1306,7 +1306,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	surveyExternalPushDetailHandler := &surveyhttp.ExternalPushDetailHandler{Application: surveyExternalPushService}
 	surveyExternalPushReconcileHandler := &surveyhttp.ExternalPushReconcileHandler{Application: surveyExternalPushService}
 	publishedOutboundRepository := mediastore.NewPublishedOutboundRepository()
-	publishedOutboundService := mediaapp.NewPublishedOutboundService(publishedOutboundRepository, mediaapp.NewOutboundMediaService(externalEffectsRuntime), publishedOutboundRepository)
+	publishedOutboundService := mediaapp.NewPublishedOutboundService(uow, publishedOutboundRepository, mediaapp.NewOutboundMediaService(externalEffectsRuntime), publishedOutboundRepository)
 	outboundMediaEffectDetailService := mediaapp.NewOutboundMediaEffectDetailService(uow, mediastore.NewContentDeliveryRepository())
 	outboundMediaReconcileService := mediaapp.NewOutboundMediaReconcileService(uow, mediastore.NewContentDeliveryRepository(), externalEffectsRuntime)
 	campaignDispatchRepository, err := outboundstore.NewCampaignDispatchRepository(pool)

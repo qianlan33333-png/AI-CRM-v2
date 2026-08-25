@@ -45,7 +45,7 @@ func (h *Handler) ReconcileOutboundMedia(w http.ResponseWriter, r *http.Request)
 	var body outboundMediaReconcileRequest
 	contentPackageID, idErr := strconv.ParseInt(r.PathValue("content_package_id"), 10, 64)
 	targetRef := r.PathValue("target_ref")
-	_, keyErr := legacyAttachmentIdempotencyKey(r)
+	key, keyErr := legacyAttachmentIdempotencyKey(r)
 	if json.NewDecoder(r.Body).Decode(&body) != nil || idErr != nil || contentPackageID < 1 || !validOutboundMediaTargetRef(targetRef) || keyErr != nil || !validOutboundMediaEvidenceRef(body.EvidenceRef) {
 		platformhttp.WriteError(w, r, platformhttp.NewError(platformhttp.CodeMalformedRequest, mediaapp.ErrOutboundMediaReconcileInvalid))
 		return
@@ -57,6 +57,7 @@ func (h *Handler) ReconcileOutboundMedia(w http.ResponseWriter, r *http.Request)
 		Fence:            body.Fence,
 		LeaseExpiresAt:   body.LeaseExpiresAt,
 		EvidenceDigest:   outboundMediaEvidenceDigest(body.EvidenceRef),
+		IdempotencyKey:   key,
 		ProviderAccepted: body.ProviderAccepted,
 		DeliveryProven:   body.DeliveryProven,
 	})

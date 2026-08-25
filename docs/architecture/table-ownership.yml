@@ -290,6 +290,15 @@ owners:
       media_attachments: validated_local_PDF_attachment_metadata
       media_attachment_blobs: exact_validated_local_PDF_bytes
       media_attachment_mutation_receipts: actor_scoped_transactional_attachment_mutation_idempotency_receipts
+      media_content_packages: versioned_local_content_compositions_without_provider_payload_or_public_delivery_claim
+      media_content_package_refs: ordered_restrictive_references_to_canonical_media_materials
+      media_content_package_mutation_receipts: actor_operation_scoped_transactional_exact_replay_and_payload_conflict_receipts
+      media_attachment_uploads: actor_owned_local_private_PDF_multipart_upload_state
+      media_attachment_upload_parts: digest_bound_local_private_PDF_parts_with_conflicting_replacement_rejected
+      media_campaign_delivery_bindings: versioned_local_campaign_plan_package_and_group_invite_composition_without_send_fact
+      outbound_media_acceptances: immutable_digest_only_local_EER_acceptance_snapshot_without_provider_or_delivery_fact
+      outbound_media_effect_bindings: immutable_package_target_snapshot_to_EER_lineage
+      outbound_media_reconciliation_receipts: immutable_human_verified_digest_only_reconciliation_fact
 
   radar:
     package: internal/radar

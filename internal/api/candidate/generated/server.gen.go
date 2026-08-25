@@ -14782,7 +14782,7 @@ type ServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request)
-	// Accept one published content package into a local outbound-media EER envelope
+	// Atomically accept one published content package into local outbound-media records
 	// (POST /api/admin/outbound-media/accept)
 	AcceptOutboundMediaContentPackage(w http.ResponseWriter, r *http.Request, params AcceptOutboundMediaContentPackageParams)
 	// Read a PII-minimal local outbound-media effect projection
@@ -15667,7 +15667,7 @@ func (_ Unimplemented) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r 
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Accept one published content package into a local outbound-media EER envelope
+// Atomically accept one published content package into local outbound-media records
 // (POST /api/admin/outbound-media/accept)
 func (_ Unimplemented) AcceptOutboundMediaContentPackage(w http.ResponseWriter, r *http.Request, params AcceptOutboundMediaContentPackageParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -45025,7 +45025,7 @@ type StrictServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(ctx context.Context, request ListAdminOpsWebhookDeliveryJobsRequestObject) (ListAdminOpsWebhookDeliveryJobsResponseObject, error)
-	// Accept one published content package into a local outbound-media EER envelope
+	// Atomically accept one published content package into local outbound-media records
 	// (POST /api/admin/outbound-media/accept)
 	AcceptOutboundMediaContentPackage(ctx context.Context, request AcceptOutboundMediaContentPackageRequestObject) (AcceptOutboundMediaContentPackageResponseObject, error)
 	// Read a PII-minimal local outbound-media effect projection

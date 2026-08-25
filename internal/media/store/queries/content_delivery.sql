@@ -6,6 +6,23 @@ SELECT CASE sqlc.arg(ref_kind)::text
   WHEN 'group_invite' THEN EXISTS (SELECT 1 FROM media_group_invites WHERE id = sqlc.arg(ref_id)::bigint AND enabled AND archived_at IS NULL)
   ELSE FALSE END AS eligible;
 
+-- name: ReserveMediaContentPackageMutation :one
+INSERT INTO media_content_package_mutation_receipts (operation, actor_id, key_digest, payload_digest, result_snapshot, created_at)
+VALUES (sqlc.arg(operation), sqlc.arg(actor_id), sqlc.arg(key_digest), sqlc.arg(payload_digest), 'null'::jsonb, sqlc.arg(created_at))
+ON CONFLICT (operation, actor_id, key_digest) DO NOTHING
+RETURNING id, operation, actor_id, key_digest, payload_digest, result_snapshot, created_at;
+
+-- name: GetMediaContentPackageMutation :one
+SELECT id, operation, actor_id, key_digest, payload_digest, result_snapshot, created_at
+FROM media_content_package_mutation_receipts
+WHERE operation = sqlc.arg(operation) AND actor_id = sqlc.arg(actor_id) AND key_digest = sqlc.arg(key_digest)
+FOR UPDATE;
+
+-- name: CompleteMediaContentPackageMutation :one
+UPDATE media_content_package_mutation_receipts SET result_snapshot = sqlc.arg(result_snapshot)
+WHERE id = sqlc.arg(id) AND result_snapshot = 'null'::jsonb
+RETURNING id, operation, actor_id, key_digest, payload_digest, result_snapshot, created_at;
+
 -- name: CreateMediaContentPackage :one
 INSERT INTO media_content_packages (name, content_text, enabled, created_by, updated_by, created_at, updated_at)
 VALUES (sqlc.arg(name), sqlc.arg(content_text), sqlc.arg(enabled), sqlc.arg(actor_id), sqlc.arg(actor_id), sqlc.arg(now), sqlc.arg(now))
@@ -34,6 +51,9 @@ UPDATE media_content_packages SET name = sqlc.arg(name), content_text = sqlc.arg
 WHERE id = sqlc.arg(package_id) AND version = sqlc.arg(expected_version)
 RETURNING id, name, content_text, enabled, version, created_by, updated_by, created_at, updated_at;
 
+-- name: DeleteMediaContentPackageRefs :exec
+DELETE FROM media_content_package_refs WHERE package_id = sqlc.arg(package_id);
+
 -- name: CreateMediaCampaignDeliveryBinding :one
 INSERT INTO media_campaign_delivery_bindings (campaign_code, plan_id, package_id, group_invite_id, created_by, updated_by, created_at, updated_at)
 VALUES (sqlc.arg(campaign_code), sqlc.arg(plan_id), sqlc.arg(package_id), sqlc.arg(group_invite_id), sqlc.arg(actor_id), sqlc.arg(actor_id), sqlc.arg(now), sqlc.arg(now))
@@ -57,11 +77,16 @@ INSERT INTO media_attachment_uploads (file_name, name, description, tags, enable
 VALUES (sqlc.arg(file_name), sqlc.arg(name), sqlc.arg(description), sqlc.arg(tags), sqlc.arg(enabled), sqlc.arg(expected_size), sqlc.arg(expected_digest), sqlc.arg(actor_id), 'initiated', sqlc.arg(now))
 RETURNING id, state, expected_size, expected_digest, created_at;
 
--- name: PutMediaAttachmentUploadPart :exec
+-- name: PutMediaAttachmentUploadPart :execrows
 INSERT INTO media_attachment_upload_parts (upload_id, part_number, digest, content, created_at)
 VALUES (sqlc.arg(upload_id), sqlc.arg(part_number), sqlc.arg(digest), sqlc.arg(content), sqlc.arg(now))
 ON CONFLICT (upload_id, part_number) DO UPDATE SET digest = EXCLUDED.digest, content = EXCLUDED.content, created_at = EXCLUDED.created_at
 WHERE media_attachment_upload_parts.digest = EXCLUDED.digest AND media_attachment_upload_parts.content = EXCLUDED.content;
+
+-- name: GetMediaAttachmentUploadPart :one
+SELECT upload_id, part_number, digest, content, created_at
+FROM media_attachment_upload_parts
+WHERE upload_id = sqlc.arg(upload_id) AND part_number = sqlc.arg(part_number);
 
 -- name: ReadMediaAttachmentUploadForCompletion :one
 SELECT id, file_name, name, description, tags, enabled, expected_size, expected_digest, created_by, state, attachment_id
@@ -76,6 +101,21 @@ RETURNING id, content_package_id, target_digest, snapshot_digest, effect_id, cre
 -- name: GetOutboundMediaEffectBinding :one
 SELECT id, content_package_id, target_digest, snapshot_digest, effect_id, created_at
 FROM outbound_media_effect_bindings
+WHERE content_package_id = sqlc.arg(content_package_id) AND target_digest = sqlc.arg(target_digest);
+
+-- name: InsertOutboundMediaAcceptance :one
+INSERT INTO outbound_media_acceptances (
+  content_package_id, target_digest, media_refs, source_digest, payload_digest, external_effect_id, state, created_at, updated_at
+) VALUES (
+  sqlc.arg(content_package_id), sqlc.arg(target_digest), sqlc.arg(media_refs), sqlc.arg(source_digest), sqlc.arg(payload_digest),
+  sqlc.arg(external_effect_id), 'accepted', sqlc.arg(created_at), sqlc.arg(created_at)
+)
+ON CONFLICT (content_package_id, target_digest) DO NOTHING
+RETURNING id, content_package_id, target_digest, media_refs, source_digest, payload_digest, external_effect_id, state, created_at, updated_at;
+
+-- name: GetOutboundMediaAcceptance :one
+SELECT id, content_package_id, target_digest, media_refs, source_digest, payload_digest, external_effect_id, state, created_at, updated_at
+FROM outbound_media_acceptances
 WHERE content_package_id = sqlc.arg(content_package_id) AND target_digest = sqlc.arg(target_digest);
 
 -- name: ReadOutboundMediaEffectDetail :one
@@ -95,16 +135,16 @@ WHERE binding.content_package_id = sqlc.arg(content_package_id) AND binding.targ
 FOR UPDATE OF binding, effect;
 
 -- name: GetOutboundMediaReconciliationReceipt :one
-SELECT effect_id, generation, fence, lease_expires_at, evidence_digest, provider_accepted, delivery_proven, eer_receipt_digest, created_at
+SELECT effect_id, generation, fence, lease_expires_at, evidence_digest, idempotency_key_digest, provider_accepted, delivery_proven, eer_receipt_digest, created_at
 FROM outbound_media_reconciliation_receipts
 WHERE effect_id = sqlc.arg(effect_id);
 
 -- name: InsertOutboundMediaReconciliationReceipt :exec
 INSERT INTO outbound_media_reconciliation_receipts (
-  effect_id, generation, fence, lease_expires_at, evidence_digest, provider_accepted, delivery_proven, eer_receipt_digest, created_at
+  effect_id, generation, fence, lease_expires_at, evidence_digest, idempotency_key_digest, provider_accepted, delivery_proven, eer_receipt_digest, created_at
 ) VALUES (
   sqlc.arg(effect_id), sqlc.arg(generation), sqlc.arg(fence), sqlc.arg(lease_expires_at), sqlc.arg(evidence_digest),
-  sqlc.arg(provider_accepted), sqlc.arg(delivery_proven), sqlc.arg(eer_receipt_digest), sqlc.arg(created_at)
+  sqlc.arg(idempotency_key_digest), sqlc.arg(provider_accepted), sqlc.arg(delivery_proven), sqlc.arg(eer_receipt_digest), sqlc.arg(created_at)
 );
 
 -- name: ListMediaAttachmentUploadParts :many

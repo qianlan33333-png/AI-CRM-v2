@@ -24,6 +24,7 @@ type OutboundMediaReconcileCommand struct {
 	Fence            int64
 	LeaseExpiresAt   time.Time
 	EvidenceDigest   string
+	IdempotencyKey   string
 	ProviderAccepted bool
 	DeliveryProven   bool
 }
@@ -37,14 +38,15 @@ type OutboundMediaReconcileControl struct {
 }
 
 type OutboundMediaReconciliationReceipt struct {
-	EffectID         string
-	Generation       int64
-	Fence            int64
-	LeaseExpiresAt   time.Time
-	EvidenceDigest   string
-	ProviderAccepted bool
-	DeliveryProven   bool
-	EERReceiptDigest string
+	EffectID             string
+	Generation           int64
+	Fence                int64
+	LeaseExpiresAt       time.Time
+	EvidenceDigest       string
+	IdempotencyKeyDigest string
+	ProviderAccepted     bool
+	DeliveryProven       bool
+	EERReceiptDigest     string
 }
 
 type OutboundMediaReconcileResult struct {
@@ -99,15 +101,16 @@ func (s *OutboundMediaReconcileService) Reconcile(ctx context.Context, command O
 		if control.State != string(eer.StateOutcomeUnknown) || !sameOutboundMediaLease(command, control) {
 			return ErrOutboundMediaReconcileConflict
 		}
+		keyDigest := mediaEERDigest("outbound-media-manual-reconcile-key", command.IdempotencyKey)
 		projection, eerReceipt, err := s.runtime.Reconcile(tx, eer.ReconcileCommand{
 			Lease:            eer.Lease{EffectID: control.EffectID, Generation: command.Generation, Fence: command.Fence, ExpiresAt: command.LeaseExpiresAt},
-			ReceiptKeyDigest: eer.Digest(mediaEERDigest("outbound-media-manual-reconcile", control.EffectID, command.EvidenceDigest, boolString(command.ProviderAccepted), boolString(command.DeliveryProven))),
+			ReceiptKeyDigest: eer.Digest(keyDigest),
 			EvidenceDigest:   eer.Digest(command.EvidenceDigest),
 		})
 		if err != nil || projection.ID != control.EffectID || projection.Owner != eer.OwnerOutbound || projection.Kind != eer.KindOutboundMedia || projection.State != eer.StateReconciled {
 			return errors.Join(ErrOutboundMediaReconcileUnavailable, err)
 		}
-		stored := OutboundMediaReconciliationReceipt{EffectID: control.EffectID, Generation: command.Generation, Fence: command.Fence, LeaseExpiresAt: command.LeaseExpiresAt, EvidenceDigest: command.EvidenceDigest, ProviderAccepted: command.ProviderAccepted, DeliveryProven: command.DeliveryProven, EERReceiptDigest: string(eerReceipt.CommandDigest)}
+		stored := OutboundMediaReconciliationReceipt{EffectID: control.EffectID, Generation: command.Generation, Fence: command.Fence, LeaseExpiresAt: command.LeaseExpiresAt, EvidenceDigest: command.EvidenceDigest, IdempotencyKeyDigest: keyDigest, ProviderAccepted: command.ProviderAccepted, DeliveryProven: command.DeliveryProven, EERReceiptDigest: string(eerReceipt.CommandDigest)}
 		if err = s.store.RecordOutboundMediaReconciliationReceipt(tx, stored); err != nil {
 			return reconcileStoreError(err)
 		}
@@ -118,15 +121,15 @@ func (s *OutboundMediaReconcileService) Reconcile(ctx context.Context, command O
 }
 
 func validOutboundMediaReconcileCommand(command OutboundMediaReconcileCommand) bool {
-	return command.ContentPackageID > 0 && strings.TrimSpace(command.TargetRef) != "" && command.Generation > 0 && command.Fence > 0 && !command.LeaseExpiresAt.IsZero() && validMediaDigest(command.EvidenceDigest) && strings.ToLower(command.EvidenceDigest) == command.EvidenceDigest && (!command.DeliveryProven || command.ProviderAccepted)
+	return command.ContentPackageID > 0 && strings.TrimSpace(command.TargetRef) != "" && command.Generation > 0 && command.Fence > 0 && !command.LeaseExpiresAt.IsZero() && validMediaDigest(command.EvidenceDigest) && strings.ToLower(command.EvidenceDigest) == command.EvidenceDigest && validContentDeliveryIdempotencyKey(command.IdempotencyKey) && (!command.DeliveryProven || command.ProviderAccepted)
 }
 
 func sameOutboundMediaLease(command OutboundMediaReconcileCommand, control OutboundMediaReconcileControl) bool {
-	return control.EffectID != "" && control.Generation == command.Generation && control.Fence == command.Fence && control.LeaseExpiresAt.Equal(command.LeaseExpiresAt)
+	return control.EffectID != "" && control.Generation == command.Generation && control.Fence == command.Fence
 }
 
 func sameOutboundMediaReconciliation(command OutboundMediaReconcileCommand, control OutboundMediaReconcileControl, receipt OutboundMediaReconciliationReceipt) bool {
-	return sameOutboundMediaLease(command, control) && receipt.EffectID == control.EffectID && receipt.Generation == command.Generation && receipt.Fence == command.Fence && receipt.LeaseExpiresAt.Equal(command.LeaseExpiresAt) && receipt.EvidenceDigest == command.EvidenceDigest && receipt.ProviderAccepted == command.ProviderAccepted && receipt.DeliveryProven == command.DeliveryProven
+	return sameOutboundMediaLease(command, control) && receipt.EffectID == control.EffectID && receipt.Generation == command.Generation && receipt.Fence == command.Fence && receipt.LeaseExpiresAt.Equal(command.LeaseExpiresAt) && receipt.EvidenceDigest == command.EvidenceDigest && receipt.IdempotencyKeyDigest == mediaEERDigest("outbound-media-manual-reconcile-key", command.IdempotencyKey) && receipt.ProviderAccepted == command.ProviderAccepted && receipt.DeliveryProven == command.DeliveryProven
 }
 
 func boolString(value bool) string { return strconv.FormatBool(value) }
