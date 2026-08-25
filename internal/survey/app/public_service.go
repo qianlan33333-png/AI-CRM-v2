@@ -85,6 +85,11 @@ func NewPublicServiceWithBinder(uow platformport.UnitOfWork, store PublicStore, 
 	s.binder = binder
 	return s
 }
+func (s *PublicService) SetBinder(binder PublicSubmissionBinder) {
+	if s != nil {
+		s.binder = binder
+	}
+}
 
 func (s *PublicService) Definition(ctx context.Context, slug string) (surveyport.PublicQuestionnaire, error) {
 	if !publicReady(s) {

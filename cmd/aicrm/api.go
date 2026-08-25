@@ -957,8 +957,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	))
 	surveySafeAdminHandler := safeadminhttp.New(surveyapp.NewSafeAdminService(uow, surveySubmissionRepository))
 	surveyTokenKey, surveyCookieKey, surveyAbuseKey := deriveSurveyPublicKeys(config.Survey.PublicKey.Value())
+	surveyPublicService := surveyapp.NewPublicService(uow, surveystore.NewPublicRepository(), eventstore.NewAppender(), surveyTokenKey)
 	surveyPublicHandler := surveyhttp.NewPublicHandler(
-		surveyapp.NewPublicService(uow, surveystore.NewPublicRepository(), eventstore.NewAppender(), surveyTokenKey),
+		surveyPublicService,
 		surveyCookieKey,
 		surveyAbuseKey,
 	)
@@ -1225,6 +1226,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	surveyH5OAuthHandler := surveyhttp.NewH5OAuthHandler(surveyH5OAuthService, surveyCookieKey)
+	surveyPublicHandler.IdentityReader = surveyH5OAuthHandler
 	legacyUnionIDResolver := identityapp.NewMessageArchiveUnionIDResolver(uow, identityRepository)
 	customerIdentityMatcher := identityapp.NewCustomerMatcherService(uow, identityRepository)
 	customerAnswerService := surveyapp.NewCustomerAnswerService(
@@ -1291,6 +1293,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	surveyExternalPushService, err := surveyapp.NewExternalPushService(uow, surveystore.NewExternalPushRepository(), externalEffectsRuntime)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	surveyPublicService.SetBinder(surveyapp.PublicExternalPushBinder{Push: surveyExternalPushService})
 	campaignDispatchRepository, err := outboundstore.NewCampaignDispatchRepository(pool)
 	if err != nil {
 		pool.Close()
