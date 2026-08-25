@@ -43,6 +43,13 @@ owners:
       - legacy_contact_identity_import_quarantines
       - legacy_contact_identity_historical_archives
       - legacy_contact_identity_import_receipts
+      - channel_acquisition_asset_bindings
+      - channel_acquisition_asset_current
+      - channel_acquisition_asset_actor_receipts
+      - channel_acquisition_asset_attempt_facts
+      - channel_acquisition_asset_observed_results
+      - channel_acquisition_asset_reconciliation_facts
+      - channel_acquisition_legacy_archives
     constraints:
       customers: channel_neutral_no_external_ids
       customer_events: append_only
@@ -70,6 +77,13 @@ owners:
       legacy_contact_identity_import_quarantines: restricted_hmac_only_untrusted_or_unscoped_DM01_rows
       legacy_contact_identity_historical_archives: inactive_AES_GCM_encrypted_DM01_154_155_history_without_active_merge_or_pending_event
       legacy_contact_identity_import_receipts: immutable_DM01_completed_run_result_receipts
+      channel_acquisition_asset_bindings: typed_contact_acquisition_asset_to_EER_binding_with_versioned_snapshot_and_no_provider_payload
+      channel_acquisition_asset_current: exact_current_pointer_to_one_typed_contact_acquisition_asset_binding
+      channel_acquisition_asset_actor_receipts: actor_scoped_transactional_contact_acquisition_publish_and_reconciliation_idempotency_receipts
+      channel_acquisition_asset_attempt_facts: immutable_typed_EER_attempt_outcome_facts
+      channel_acquisition_asset_observed_results: immutable_digest_only_observed_provider_outcomes_bound_to_their_attempt
+      channel_acquisition_asset_reconciliation_facts: immutable_digest_only_manual_reconciliation_facts_bound_to_their_EER_fence
+      channel_acquisition_legacy_archives: legacy_unverified_channel_config_digest_only_archive_without_provider_effect
 
   identity:
     package: internal/identity

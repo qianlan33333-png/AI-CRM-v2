@@ -64,6 +64,7 @@ sql:
     schema: migrations
     queries:
       - internal/contact/store/queries/channels.sql
+      - internal/contact/store/queries/channel_acquisition_assets.sql
       - internal/contact/store/queries/contact_policies.sql
       - internal/contact/store/queries/customer_detail.sql
       - internal/contact/store/queries/customer_event_analytics.sql

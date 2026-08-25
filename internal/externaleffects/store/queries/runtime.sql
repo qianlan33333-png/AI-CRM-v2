@@ -16,15 +16,22 @@ SELECT * FROM external_effects ORDER BY id DESC LIMIT $1;
 SELECT * FROM external_effects WHERE id = $1;
 
 -- name: GetTerminalOutcome :one
-SELECT e.state, a.generation, a.fence, a.completed_at AS lease_expires_at, a.receipt_digest
+SELECT e.owner, e.kind, e.state, a.generation, a.fence, a.completed_at AS lease_expires_at,
+       a.receipt_digest, a.result_reference_digest, a.business_call_dispatched,
+       a.real_external_call_executed, r.id AS receipt_id
 FROM external_effects e
 JOIN LATERAL (
-  SELECT generation, fence, completed_at, receipt_digest
+  SELECT generation, fence, completed_at, receipt_digest, result_reference_digest,
+         business_call_dispatched, real_external_call_executed
   FROM external_effect_attempts
   WHERE effect_id = e.id AND completion IS NOT NULL
   ORDER BY number DESC
   LIMIT 1
 ) a ON true
+JOIN external_effect_receipts r
+  ON r.effect_id = e.id
+ AND r.receipt_key_digest = a.receipt_digest
+ AND r.operation IN ('complete_attempt', 'recover_attempted')
 WHERE e.id = $1
   AND e.state IN ('executed','outcome_unknown','reconciled','retryable_failed','final_failed');
 
@@ -52,7 +59,9 @@ INSERT INTO external_effect_attempts(effect_id,number,generation,fence,started_a
 
 -- name: CompleteAttempt :exec
 UPDATE external_effect_attempts
-SET completion=$4, receipt_digest=$5, completed_at=now()
+SET completion=$4, receipt_digest=$5, result_reference_digest=sqlc.narg(result_reference_digest)::text,
+    business_call_dispatched=sqlc.arg(business_call_dispatched)::boolean,
+    real_external_call_executed=sqlc.arg(real_external_call_executed)::boolean, completed_at=now()
 WHERE effect_id=$1 AND number=$2 AND generation=$3 AND completion IS NULL;
 
 -- name: ReconcileAttempt :exec

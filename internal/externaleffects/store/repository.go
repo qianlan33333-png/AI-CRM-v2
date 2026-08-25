@@ -328,7 +328,7 @@ func (r *Repository) complete(ctx context.Context, lease eer.Lease, attempt eer.
 		case eer.CompletionExecuted:
 			state = eer.StateExecuted
 		}
-		if err := q.CompleteAttempt(ctx, eerdb.CompleteAttemptParams{EffectID: id, Number: attempt.Number, Generation: attempt.Generation, Completion: textValue(string(result.Completion)), ReceiptDigest: textValue(string(result.ReceiptDigest))}); err != nil {
+		if err := q.CompleteAttempt(ctx, eerdb.CompleteAttemptParams{EffectID: id, Number: attempt.Number, Generation: attempt.Generation, Completion: textValue(string(result.Completion)), ReceiptDigest: textValue(string(result.ReceiptDigest)), ResultReferenceDigest: nullableText(string(result.ResultReferenceDigest)), BusinessCallDispatched: result.BusinessCallDispatched, RealExternalCallExecuted: result.RealExternalCallExecuted}); err != nil {
 			return unavailable(err)
 		}
 		if err := q.UpdateEffectState(ctx, eerdb.UpdateEffectStateParams{ID: id, State: string(state)}); err != nil {
@@ -386,7 +386,11 @@ func (r *Repository) GetTerminalOutcome(ctx context.Context, effectID string) (e
 	if err != nil {
 		return eer.TerminalOutcome{}, translate(err)
 	}
-	return eer.TerminalOutcome{EffectID: effectID, State: eer.State(row.State), ReceiptDigest: eer.Digest(row.ReceiptDigest.String), Generation: row.Generation, Fence: row.Fence, LeaseExpiresAt: timeValue(row.LeaseExpiresAt)}, nil
+	return eer.TerminalOutcome{EffectID: effectID, Owner: eer.Owner(row.Owner), Kind: eer.Kind(row.Kind), State: eer.State(row.State), ReceiptID: "eerop_" + strconv.FormatInt(row.ReceiptID, 10), ReceiptDigest: eer.Digest(row.ReceiptDigest.String), ResultReferenceDigest: eer.Digest(row.ResultReferenceDigest.String), BusinessCallDispatched: row.BusinessCallDispatched, RealExternalCallExecuted: row.RealExternalCallExecuted, Generation: row.Generation, Fence: row.Fence, LeaseExpiresAt: timeValue(row.LeaseExpiresAt)}, nil
+}
+
+func nullableText(value string) pgtype.Text {
+	return pgtype.Text{String: value, Valid: value != ""}
 }
 
 func (r *Repository) Diagnostics(ctx context.Context) (eer.Diagnostics, error) {

@@ -19,6 +19,7 @@ func TestEnvelopeClosedOwnersAndDigestOnlyPayload(t *testing.T) {
 		kind  Kind
 	}{
 		{OwnerWeCom, KindWeComTagSync}, {OwnerWeCom, KindWeComProfileSync},
+		{OwnerContact, KindContactAcquisitionAssetPublish},
 		{OwnerOutbound, KindOutboundMessage}, {OwnerOutbound, KindOutboundMedia},
 		{OwnerCampaign, KindCampaignDispatch}, {OwnerCampaign, KindCampaignGroupAnnouncement},
 		{OwnerSurvey, KindSurveyWebhook}, {OwnerAudience, KindAudienceWebhook},

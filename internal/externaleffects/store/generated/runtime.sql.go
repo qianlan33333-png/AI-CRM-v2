@@ -41,16 +41,21 @@ func (q *Queries) ClaimEffect(ctx context.Context, id int64) (ClaimEffectRow, er
 
 const completeAttempt = `-- name: CompleteAttempt :exec
 UPDATE external_effect_attempts
-SET completion=$4, receipt_digest=$5, completed_at=now()
+SET completion=$4, receipt_digest=$5, result_reference_digest=$6::text,
+    business_call_dispatched=$7::boolean,
+    real_external_call_executed=$8::boolean, completed_at=now()
 WHERE effect_id=$1 AND number=$2 AND generation=$3 AND completion IS NULL
 `
 
 type CompleteAttemptParams struct {
-	EffectID      int64       `json:"effect_id"`
-	Number        int32       `json:"number"`
-	Generation    int64       `json:"generation"`
-	Completion    pgtype.Text `json:"completion"`
-	ReceiptDigest pgtype.Text `json:"receipt_digest"`
+	EffectID                 int64       `json:"effect_id"`
+	Number                   int32       `json:"number"`
+	Generation               int64       `json:"generation"`
+	Completion               pgtype.Text `json:"completion"`
+	ReceiptDigest            pgtype.Text `json:"receipt_digest"`
+	ResultReferenceDigest    pgtype.Text `json:"result_reference_digest"`
+	BusinessCallDispatched   bool        `json:"business_call_dispatched"`
+	RealExternalCallExecuted bool        `json:"real_external_call_executed"`
 }
 
 func (q *Queries) CompleteAttempt(ctx context.Context, arg CompleteAttemptParams) error {
@@ -60,6 +65,9 @@ func (q *Queries) CompleteAttempt(ctx context.Context, arg CompleteAttemptParams
 		arg.Generation,
 		arg.Completion,
 		arg.ReceiptDigest,
+		arg.ResultReferenceDigest,
+		arg.BusinessCallDispatched,
+		arg.RealExternalCallExecuted,
 	)
 	return err
 }
@@ -260,36 +268,55 @@ func (q *Queries) GetReceipt(ctx context.Context, arg GetReceiptParams) (Externa
 }
 
 const getTerminalOutcome = `-- name: GetTerminalOutcome :one
-SELECT e.state, a.generation, a.fence, a.completed_at AS lease_expires_at, a.receipt_digest
+SELECT e.owner, e.kind, e.state, a.generation, a.fence, a.completed_at AS lease_expires_at,
+       a.receipt_digest, a.result_reference_digest, a.business_call_dispatched,
+       a.real_external_call_executed, r.id AS receipt_id
 FROM external_effects e
 JOIN LATERAL (
-  SELECT generation, fence, completed_at, receipt_digest
+  SELECT generation, fence, completed_at, receipt_digest, result_reference_digest,
+         business_call_dispatched, real_external_call_executed
   FROM external_effect_attempts
   WHERE effect_id = e.id AND completion IS NOT NULL
   ORDER BY number DESC
   LIMIT 1
 ) a ON true
+JOIN external_effect_receipts r
+  ON r.effect_id = e.id
+ AND r.receipt_key_digest = a.receipt_digest
+ AND r.operation IN ('complete_attempt', 'recover_attempted')
 WHERE e.id = $1
   AND e.state IN ('executed','outcome_unknown','reconciled','retryable_failed','final_failed')
 `
 
 type GetTerminalOutcomeRow struct {
-	State          string             `json:"state"`
-	Generation     int64              `json:"generation"`
-	Fence          int64              `json:"fence"`
-	LeaseExpiresAt pgtype.Timestamptz `json:"lease_expires_at"`
-	ReceiptDigest  pgtype.Text        `json:"receipt_digest"`
+	Owner                    string             `json:"owner"`
+	Kind                     string             `json:"kind"`
+	State                    string             `json:"state"`
+	Generation               int64              `json:"generation"`
+	Fence                    int64              `json:"fence"`
+	LeaseExpiresAt           pgtype.Timestamptz `json:"lease_expires_at"`
+	ReceiptDigest            pgtype.Text        `json:"receipt_digest"`
+	ResultReferenceDigest    pgtype.Text        `json:"result_reference_digest"`
+	BusinessCallDispatched   bool               `json:"business_call_dispatched"`
+	RealExternalCallExecuted bool               `json:"real_external_call_executed"`
+	ReceiptID                int64              `json:"receipt_id"`
 }
 
 func (q *Queries) GetTerminalOutcome(ctx context.Context, id int64) (GetTerminalOutcomeRow, error) {
 	row := q.db.QueryRow(ctx, getTerminalOutcome, id)
 	var i GetTerminalOutcomeRow
 	err := row.Scan(
+		&i.Owner,
+		&i.Kind,
 		&i.State,
 		&i.Generation,
 		&i.Fence,
 		&i.LeaseExpiresAt,
 		&i.ReceiptDigest,
+		&i.ResultReferenceDigest,
+		&i.BusinessCallDispatched,
+		&i.RealExternalCallExecuted,
+		&i.ReceiptID,
 	)
 	return i, err
 }

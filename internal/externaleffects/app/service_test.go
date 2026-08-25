@@ -17,6 +17,7 @@ func TestGenericMutationsCannotBypassTypedDomainControl(t *testing.T) {
 	}{
 		{eer.OwnerOutbound, eer.KindOutboundMessage},
 		{eer.OwnerOutbound, eer.KindOutboundMedia},
+		{eer.OwnerContact, eer.KindContactAcquisitionAssetPublish},
 		{eer.OwnerWeCom, eer.KindWeComTagSync},
 		{eer.OwnerSurvey, eer.KindSurveyWebhook},
 		{eer.OwnerOrder, eer.KindOrderPaymentPrepay},
@@ -111,6 +112,23 @@ func TestGenericMutationFailsClosedOnReaderIdentityMismatch(t *testing.T) {
 	_, _, err = service.Cancel(context.Background(), eer.CancelCommand{EffectID: "eer_1"})
 	if !errors.Is(err, eer.ErrUnavailable) || store.mutations != 0 {
 		t.Fatalf("mutations=%d err=%v", store.mutations, err)
+	}
+}
+
+func TestGenericMutationFailsClosedOnIllegalEffectFamily(t *testing.T) {
+	for _, projection := range []eer.Projection{
+		{ID: "eer_1", Owner: eer.Owner("provider"), Kind: eer.KindOutboundMessage},
+		{ID: "eer_1", Owner: eer.OwnerContact, Kind: eer.KindWeComTagSync},
+	} {
+		store := &typedControlGuardStore{projection: projection}
+		service, err := NewService(store, store)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, err = service.Cancel(context.Background(), eer.CancelCommand{EffectID: "eer_1"})
+		if !errors.Is(err, eer.ErrUnavailable) || store.mutations != 0 {
+			t.Fatalf("projection=%+v mutations=%d err=%v", projection, store.mutations, err)
+		}
 	}
 }
 

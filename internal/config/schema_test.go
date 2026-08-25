@@ -253,6 +253,60 @@ func TestLoadWeComDirectorySyncIsExplicitAndStaffScoped(t *testing.T) {
 	}
 }
 
+func TestLoadWeComCustomerAcquisitionIsIndependentExplicitAndRedacted(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv:                                 "postgres://db/aicrm",
+		workerPoolMaxConnsEnv:                          "9",
+		criticalWorkersEnv:                             "2",
+		eventWorkersEnv:                                "1",
+		outboundWorkersEnv:                             "1",
+		syncWorkersEnv:                                 "1",
+		heavyWorkersEnv:                                "1",
+		aiWorkersEnv:                                   "1",
+		weComCustomerAcquisitionEnabledEnv:             "true",
+		weComCustomerAcquisitionCorpIDEnv:              "ch02-corp",
+		weComCustomerAcquisitionSecretEnv:              "ch02-secret-must-not-leak",
+		weComCustomerAcquisitionPermissionConfirmedEnv: "true",
+	}
+	root, err := load(appruntime.RoleWorker, mapLookup(values))
+	if err != nil || !root.WeCom.CustomerAcquisition.Enabled || !root.WeCom.CustomerAcquisition.PermissionConfirmed ||
+		root.WeCom.CustomerAcquisition.CorpID != "ch02-corp" || root.WeCom.CustomerAcquisition.Secret.Value() != values[weComCustomerAcquisitionSecretEnv] {
+		t.Fatalf("customer acquisition=%#v err=%v", root.WeCom.CustomerAcquisition, err)
+	}
+	for _, formatted := range []string{fmt.Sprint(root), fmt.Sprintf("%#v", root)} {
+		if strings.Contains(formatted, values[weComCustomerAcquisitionSecretEnv]) {
+			t.Fatalf("Root formatting leaked CH02 credential: %q", formatted)
+		}
+	}
+	if root.WeCom.OAuth.Enabled || root.WeCom.Sidebar.Enabled || root.WeCom.Callback.Enabled {
+		t.Fatalf("CH02 unexpectedly enabled unrelated WeCom credentials: %#v", root.WeCom)
+	}
+
+	values[weComCustomerAcquisitionPermissionConfirmedEnv] = "false"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.customer_acquisition.permission_confirmed must be true when enabled" {
+		t.Fatalf("permission prerequisite error=%v", err)
+	}
+	delete(values, weComCustomerAcquisitionSecretEnv)
+	values[weComCustomerAcquisitionPermissionConfirmedEnv] = "true"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.customer_acquisition requires corp_id, secret, and permission_confirmed together" {
+		t.Fatalf("partial CH02 credential error=%v", err)
+	}
+
+	values = map[string]string{
+		databaseURLEnv: "postgres://db/aicrm", workerPoolMaxConnsEnv: "9", criticalWorkersEnv: "2", eventWorkersEnv: "1",
+		outboundWorkersEnv: "1", syncWorkersEnv: "1", heavyWorkersEnv: "1", aiWorkersEnv: "1",
+		weComCustomerAcquisitionEnabledEnv: "false",
+	}
+	root, err = load(appruntime.RoleWorker, mapLookup(values))
+	if err != nil || root.WeCom.CustomerAcquisition.Enabled {
+		t.Fatalf("disabled customer acquisition=%#v err=%v", root.WeCom.CustomerAcquisition, err)
+	}
+	values[weComCustomerAcquisitionCorpIDEnv] = "must-not-be-accepted"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.customer_acquisition credentials require enabled=true" {
+		t.Fatalf("disabled credential error=%v", err)
+	}
+}
+
 func TestLoadWeComSidebarIsAtomicAndUsesIndependentCallback(t *testing.T) {
 	values := map[string]string{
 		databaseURLEnv:          "postgres://db/aicrm",

@@ -1390,6 +1390,47 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	channelAcquisitionAssetsFragment := contacthttp.NewDisabledChannelAcquisitionAssetRouteFragment()
+	if config.WeCom.CustomerAcquisition.Enabled {
+		assetEffects, assetErr := contactapp.NewChannelAcquisitionAssetEERRuntime(externalEffectsRuntime, externalEffectsRuntimeRepository)
+		if assetErr != nil {
+			pool.Close()
+			return nil, assetErr
+		}
+		assetJobs, assetErr := contactstore.NewChannelAcquisitionAssetRiverJobInserter(pool)
+		if assetErr != nil {
+			pool.Close()
+			return nil, assetErr
+		}
+		assetRepository := contactstore.NewChannelAcquisitionAssetRepository()
+		assetCommands, assetErr := contactapp.NewChannelAcquisitionAssetCommandService(
+			uow, assetRepository, assetEffects, assetJobs, config.WeCom.CustomerAcquisition.CorpID,
+		)
+		if assetErr != nil {
+			pool.Close()
+			return nil, assetErr
+		}
+		assetCursor, assetErr := contactapp.NewChannelAcquisitionAssetCursorCodec(config.Identity.HMACKey.Value())
+		if assetErr != nil {
+			pool.Close()
+			return nil, assetErr
+		}
+		assetQueries, assetErr := contactapp.NewChannelAcquisitionAssetQueryService(uow, assetRepository, assetCursor)
+		if assetErr != nil {
+			pool.Close()
+			return nil, assetErr
+		}
+		assetHandler, assetErr := contacthttp.NewChannelAcquisitionAssetHandler(assetCommands, assetQueries, service)
+		if assetErr != nil {
+			pool.Close()
+			return nil, assetErr
+		}
+		channelAcquisitionAssetsFragment, assetErr = contacthttp.NewChannelAcquisitionAssetRouteFragment(assetHandler)
+		if assetErr != nil {
+			pool.Close()
+			return nil, assetErr
+		}
+	}
 	groupOpsRepository := groupopsstore.NewRepository()
 	groupOpsRuntime, err := groupopsapp.NewRuntimeService(
 		uow,
@@ -1712,6 +1753,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.aiAudienceConfiguration = legacyAIAudienceConfigurationFragment
 	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.channelAcquisition = channelAcquisitionFragment
+	legacyHandler.channelAcquisitionAsset = channelAcquisitionAssetsFragment
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.attachments = attachmentService
 	legacyHandler.contentDelivery = contentDeliveryService
@@ -2768,6 +2810,22 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				{http.MethodPut, "/api/admin/channels/{channel_id}/assignees", authport.CapabilityChannelsWrite, true},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.channelAcquisition); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if legacy.channelAcquisitionAsset != nil {
+			for _, route := range []struct {
+				method, pattern string
+				capability      authport.Capability
+				csrf            bool
+			}{
+				{http.MethodPost, "/api/admin/channels/{channel_id}/acquisition-assets", authport.CapabilityChannelsWrite, true},
+				{http.MethodGet, "/api/admin/channels/{channel_id}/acquisition-assets", authport.CapabilityChannelsRead, false},
+				{http.MethodGet, "/api/admin/channels/{channel_id}/acquisition-assets/{effect_id}", authport.CapabilityChannelsRead, false},
+				{http.MethodPost, "/api/admin/channels/{channel_id}/acquisition-assets/{effect_id}/reconcile", authport.CapabilityChannelsWrite, true},
+			} {
+				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.channelAcquisitionAsset); err != nil {
 					return nil, err
 				}
 			}

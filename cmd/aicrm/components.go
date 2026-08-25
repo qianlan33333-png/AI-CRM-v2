@@ -11,6 +11,7 @@ import (
 	automationworker "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/worker"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
+	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	contactworker "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/worker"
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
@@ -98,6 +99,45 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	if err != nil {
 		pool.Close()
 		return nil, err
+	}
+	if config.WeCom.CustomerAcquisition.Enabled {
+		acquisitionEffects, acquisitionErr := contactapp.NewChannelAcquisitionAssetEERRuntime(externalEffectsRuntime, externalEffectsRuntimeRepository)
+		if acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+		acquisitionJobs, acquisitionErr := contactstore.NewChannelAcquisitionAssetRiverJobInserter(pool)
+		if acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+		providerHTTP := &http.Client{Timeout: 5 * time.Second}
+		acquisitionProvider, acquisitionErr := newChannelAcquisitionAssetProvider(config.WeCom.CustomerAcquisition, providerHTTP, time.Now)
+		if acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+		acquisitionStore := contactstore.NewChannelAcquisitionAssetRepository()
+		acquisitionService, acquisitionErr := contactapp.NewChannelAcquisitionAssetService(
+			uow, acquisitionStore, acquisitionEffects, acquisitionJobs, acquisitionProvider, config.WeCom.CustomerAcquisition.CorpID,
+		)
+		if acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+		if acquisitionErr = contactworker.RegisterChannelAcquisitionAssetWorker(workers, acquisitionService); acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+		acquisitionRecovery, acquisitionErr := contactapp.NewChannelAcquisitionAssetRecoveryService(uow, acquisitionStore, acquisitionJobs, time.Now)
+		if acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+		if acquisitionErr = contactworker.RegisterChannelAcquisitionAssetRecoveryWorker(workers, acquisitionRecovery); acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
 	}
 	weComTagCorpID := config.WeCom.OAuth.CorpID
 	if weComTagCorpID == "" {
@@ -364,7 +404,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	periodicPlan, err := schedulerPlan(workers, config.WeCom.DirectorySync)
+	periodicPlan, err := schedulerPlan(workers, config.WeCom.DirectorySync, config.WeCom.CustomerAcquisition)
 	if err != nil {
 		pool.Close()
 		return nil, err

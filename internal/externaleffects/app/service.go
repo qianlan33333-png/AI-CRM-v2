@@ -83,6 +83,9 @@ func (s *Service) rejectTypedDomainMutation(ctx context.Context, effectID string
 	if projection.ID != effectID {
 		return eer.ErrUnavailable
 	}
+	if !eer.IsValidOwnerKind(projection.Owner, projection.Kind) {
+		return eer.ErrUnavailable
+	}
 	if typedDomainControlRequired(projection.Owner, projection.Kind) {
 		return eer.ErrReconcileRequired
 	}
@@ -96,6 +99,8 @@ func typedDomainControlRequired(owner eer.Owner, kind eer.Kind) bool {
 	switch owner {
 	case eer.OwnerOutbound:
 		return kind == eer.KindOutboundMessage || kind == eer.KindOutboundMedia
+	case eer.OwnerContact:
+		return kind == eer.KindContactAcquisitionAssetPublish
 	case eer.OwnerWeCom:
 		return kind == eer.KindWeComTagSync
 	case eer.OwnerSurvey:

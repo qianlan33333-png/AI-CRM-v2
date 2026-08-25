@@ -191,6 +191,7 @@ type Handler struct {
 	aiAudienceConfiguration http.Handler
 	channelEntrants         http.Handler
 	channelAcquisition      http.Handler
+	channelAcquisitionAsset http.Handler
 	media                   legacyMediaApplication
 	imageDeletes            legacyImageDeleteApplication
 	attachments             legacyAttachmentApplication

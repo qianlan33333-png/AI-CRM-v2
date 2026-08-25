@@ -49,6 +49,13 @@ const (
 	legacyAllowMissingWeChatShopCallbackToken = "AICRM_ALLOW_MISSING_WECHAT_SHOP_CALLBACK_TOKEN"
 )
 
+const (
+	weComCustomerAcquisitionEnabledEnv             = "AICRM_WECOM_CUSTOMER_ACQUISITION_ENABLED"
+	weComCustomerAcquisitionCorpIDEnv              = "AICRM_WECOM_CUSTOMER_ACQUISITION_CORP_ID"
+	weComCustomerAcquisitionSecretEnv              = "AICRM_WECOM_CUSTOMER_ACQUISITION_SECRET"
+	weComCustomerAcquisitionPermissionConfirmedEnv = "AICRM_WECOM_CUSTOMER_ACQUISITION_PERMISSION_CONFIRMED"
+)
+
 // legacyProductionEnvironmentEnvs are the legacy production aliases. The v2
 // AICRM_ENV name is deliberately not one of them.
 var legacyProductionEnvironmentEnvs = []string{"AICRM_NEXT_ENV", "ENVIRONMENT", "APP_ENV", "FLASK_ENV"}
@@ -142,6 +149,26 @@ type WeComDirectorySync struct {
 	StaffUserIDs []string
 }
 
+// CustomerAcquisitionSecret is the credential of the explicitly authorized
+// CH02 application. It is not the Sidebar, callback, or administrator OAuth
+// secret, and formatting can never expose its value.
+type CustomerAcquisitionSecret struct{ value string }
+
+func (secret CustomerAcquisitionSecret) Value() string { return secret.value }
+func (CustomerAcquisitionSecret) String() string       { return "[REDACTED]" }
+func (CustomerAcquisitionSecret) GoString() string     { return "[REDACTED]" }
+
+// WeComCustomerAcquisition is opt-in and requires an operator assertion that
+// this independent application has the customer-acquisition write permission.
+// Disabled configuration creates no token provider, HTTP client, worker, job,
+// or recovery schedule.
+type WeComCustomerAcquisition struct {
+	Enabled             bool
+	CorpID              string
+	Secret              CustomerAcquisitionSecret
+	PermissionConfirmed bool
+}
+
 // WeComSidebar is the independent OAuth and JSSDK configuration for the
 // embedded sidebar. It deliberately cannot reuse the administrator OAuth
 // callback, because the two browser protocols have different bindings.
@@ -155,10 +182,11 @@ type WeComSidebar struct {
 }
 
 type WeCom struct {
-	Callback      WeComCallback
-	OAuth         WeComOAuth
-	DirectorySync WeComDirectorySync
-	Sidebar       WeComSidebar
+	Callback            WeComCallback
+	OAuth               WeComOAuth
+	DirectorySync       WeComDirectorySync
+	Sidebar             WeComSidebar
+	CustomerAcquisition WeComCustomerAcquisition
 }
 
 type IdentityHMACKey struct{ value [32]byte }
@@ -310,6 +338,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		if root.Worker.PoolMaxConns > 0 && root.Worker.Queues.valid() && root.Worker.PoolMaxConns < queueTotal+2 {
 			problems = append(problems, "worker.pool_max_conns must be at least queue concurrency total + 2")
 		}
+		root.WeCom.CustomerAcquisition = parseWeComCustomerAcquisition(lookup, &problems)
 		if !needAPI {
 			root.WeCom.DirectorySync = parseWeComDirectorySync(lookup, &problems)
 			if root.WeCom.DirectorySync.Enabled {
@@ -458,6 +487,42 @@ func parseWeComDirectorySync(lookup environmentLookup, problems *[]string) WeCom
 		seen[staffUserID] = struct{}{}
 	}
 	return WeComDirectorySync{Enabled: true, StaffUserIDs: parts}
+}
+
+func parseWeComCustomerAcquisition(lookup environmentLookup, problems *[]string) WeComCustomerAcquisition {
+	enabled, enabledPresent := lookup(weComCustomerAcquisitionEnabledEnv)
+	corpID, corpIDPresent := lookup(weComCustomerAcquisitionCorpIDEnv)
+	secret, secretPresent := lookup(weComCustomerAcquisitionSecretEnv)
+	permission, permissionPresent := lookup(weComCustomerAcquisitionPermissionConfirmedEnv)
+	if !enabledPresent && !corpIDPresent && !secretPresent && !permissionPresent {
+		return WeComCustomerAcquisition{}
+	}
+	if !enabledPresent || enabled != "true" && enabled != "false" {
+		*problems = append(*problems, "wecom.customer_acquisition.enabled must be true or false")
+		return WeComCustomerAcquisition{}
+	}
+	if enabled == "false" {
+		if corpIDPresent || secretPresent || permissionPresent {
+			*problems = append(*problems, "wecom.customer_acquisition credentials require enabled=true")
+		}
+		return WeComCustomerAcquisition{}
+	}
+	if !corpIDPresent || !secretPresent || !permissionPresent || corpID == "" || secret == "" {
+		*problems = append(*problems, "wecom.customer_acquisition requires corp_id, secret, and permission_confirmed together")
+		return WeComCustomerAcquisition{}
+	}
+	if !validWeComCorpID(corpID) {
+		*problems = append(*problems, "wecom.customer_acquisition.corp_id is invalid")
+	}
+	if len(secret) > 256 || strings.TrimSpace(secret) != secret {
+		*problems = append(*problems, "wecom.customer_acquisition.secret is invalid")
+	}
+	if permission != "true" {
+		*problems = append(*problems, "wecom.customer_acquisition.permission_confirmed must be true when enabled")
+	}
+	return WeComCustomerAcquisition{
+		Enabled: true, CorpID: corpID, Secret: CustomerAcquisitionSecret{value: secret}, PermissionConfirmed: permission == "true",
+	}
 }
 
 func validWeComDirectorySyncStaffUserID(value string) bool {

@@ -8,6 +8,59 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type ChannelAcquisitionAssetActorReceipt struct {
+	ID                  int64              `json:"id"`
+	Operation           string             `json:"operation"`
+	ActorID             int64              `json:"actor_id"`
+	KeyDigest           string             `json:"key_digest"`
+	PayloadDigest       string             `json:"payload_digest"`
+	State               string             `json:"state"`
+	ResultEffectID      pgtype.Int8        `json:"result_effect_id"`
+	ReplacementEffectID pgtype.Int8        `json:"replacement_effect_id"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	CompletedAt         pgtype.Timestamptz `json:"completed_at"`
+}
+
+type ChannelAcquisitionAssetBinding struct {
+	EffectID                     int64              `json:"effect_id"`
+	ChannelID                    int64              `json:"channel_id"`
+	AssetKind                    string             `json:"asset_kind"`
+	AssetVersion                 int64              `json:"asset_version"`
+	SupersedesVersion            int64              `json:"supersedes_version"`
+	ChannelRevision              int64              `json:"channel_revision"`
+	ChannelCode                  string             `json:"channel_code"`
+	ChannelName                  string             `json:"channel_name"`
+	ChannelStatus                string             `json:"channel_status"`
+	SceneValue                   string             `json:"scene_value"`
+	AssigneeWecomUserids         []string           `json:"assignee_wecom_userids"`
+	SnapshotDigest               string             `json:"snapshot_digest"`
+	IdempotencyDigest            string             `json:"idempotency_digest"`
+	EnvelopeFingerprint          string             `json:"envelope_fingerprint"`
+	State                        string             `json:"state"`
+	AcceptReceiptID              int64              `json:"accept_receipt_id"`
+	AcceptReceiptDigest          string             `json:"accept_receipt_digest"`
+	QueueReceiptID               pgtype.Int8        `json:"queue_receipt_id"`
+	QueueReceiptDigest           pgtype.Text        `json:"queue_receipt_digest"`
+	RiverJobID                   pgtype.Int8        `json:"river_job_id"`
+	Generation                   int64              `json:"generation"`
+	Fence                        int64              `json:"fence"`
+	LeaseExpiresAt               pgtype.Timestamptz `json:"lease_expires_at"`
+	AttemptReceiptID             pgtype.Int8        `json:"attempt_receipt_id"`
+	AttemptReceiptDigest         pgtype.Text        `json:"attempt_receipt_digest"`
+	ProviderAssetReferenceDigest pgtype.Text        `json:"provider_asset_reference_digest"`
+	ProviderCallAttempted        bool               `json:"provider_call_attempted"`
+	RealExternalCallExecuted     bool               `json:"real_external_call_executed"`
+	ReconcileReceiptID           pgtype.Int8        `json:"reconcile_receipt_id"`
+	ReconcileReceiptDigest       pgtype.Text        `json:"reconcile_receipt_digest"`
+	ReconcileEvidenceDigest      pgtype.Text        `json:"reconcile_evidence_digest"`
+	ReconcileResolution          pgtype.Text        `json:"reconcile_resolution"`
+	ReconciledAt                 pgtype.Timestamptz `json:"reconciled_at"`
+	CreatedAt                    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                    pgtype.Timestamptz `json:"updated_at"`
+	CorpID                       pgtype.Text        `json:"corp_id"`
+	CorrelationKey               pgtype.Text        `json:"correlation_key"`
+}
+
 type Customer struct {
 	ID             int64              `json:"id"`
 	Name           string             `json:"name"`

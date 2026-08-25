@@ -9,44 +9,51 @@ import (
 )
 
 type (
-	Digest           = eer.Digest
-	EffectEnvelope   = eer.EffectEnvelope
-	EnvelopeInput    = eer.EnvelopeInput
-	AcceptCommand    = eer.AcceptCommand
-	QueueCommand     = eer.QueueCommand
-	ClaimCommand     = eer.ClaimCommand
-	ReconcileCommand = eer.ReconcileCommand
-	Lease            = eer.Lease
-	Projection       = eer.Projection
-	OperationReceipt = eer.OperationReceipt
-	RiverJobLink     = eer.RiverJobLink
-	Adapter          = eer.Adapter
-	AdapterResult    = eer.AdapterResult
-	Attempt          = eer.Attempt
-	State            = eer.State
-	Completion       = eer.Completion
+	Digest                  = eer.Digest
+	EffectEnvelope          = eer.EffectEnvelope
+	EnvelopeInput           = eer.EnvelopeInput
+	AcceptCommand           = eer.AcceptCommand
+	QueueCommand            = eer.QueueCommand
+	ClaimCommand            = eer.ClaimCommand
+	ReconcileCommand        = eer.ReconcileCommand
+	RecoverAttemptedCommand = eer.RecoverAttemptedCommand
+	Lease                   = eer.Lease
+	Projection              = eer.Projection
+	OperationReceipt        = eer.OperationReceipt
+	RiverJobLink            = eer.RiverJobLink
+	Adapter                 = eer.Adapter
+	AdapterResult           = eer.AdapterResult
+	Attempt                 = eer.Attempt
+	State                   = eer.State
+	Completion              = eer.Completion
+	TerminalOutcome         = eer.TerminalOutcome
 )
 
 const (
-	OwnerOutbound               = eer.OwnerOutbound
-	OwnerProduct                = eer.OwnerProduct
-	OwnerSurvey                 = eer.OwnerSurvey
-	OwnerGroupOps               = eer.OwnerGroupOps
-	OwnerWeCom                  = eer.OwnerWeCom
-	KindOutboundMessage         = eer.KindOutboundMessage
-	KindProductExternalPushTest = eer.KindProductExternalPushTest
-	KindSurveyWebhook           = eer.KindSurveyWebhook
-	KindOutboundMedia           = eer.KindOutboundMedia
-	KindGroupOpsBroadcast       = eer.KindGroupOpsBroadcast
-	KindWeComTagSync            = eer.KindWeComTagSync
-	StateAccepted               = eer.StateAccepted
-	StateQueued                 = eer.StateQueued
-	StateExecuted               = eer.StateExecuted
-	StateOutcomeUnknown         = eer.StateOutcomeUnknown
-	StateReconciled             = eer.StateReconciled
-	StateRetryableFailed        = eer.StateRetryableFailed
-	StateFinalFailed            = eer.StateFinalFailed
-	CompletionFinalFailed       = eer.CompletionFinalFailed
+	OwnerOutbound                      = eer.OwnerOutbound
+	OwnerContact                       = eer.OwnerContact
+	OwnerProduct                       = eer.OwnerProduct
+	OwnerSurvey                        = eer.OwnerSurvey
+	OwnerGroupOps                      = eer.OwnerGroupOps
+	OwnerWeCom                         = eer.OwnerWeCom
+	KindOutboundMessage                = eer.KindOutboundMessage
+	KindContactAcquisitionAssetPublish = eer.KindContactAcquisitionAssetPublish
+	KindProductExternalPushTest        = eer.KindProductExternalPushTest
+	KindSurveyWebhook                  = eer.KindSurveyWebhook
+	KindOutboundMedia                  = eer.KindOutboundMedia
+	KindGroupOpsBroadcast              = eer.KindGroupOpsBroadcast
+	KindWeComTagSync                   = eer.KindWeComTagSync
+	StateAccepted                      = eer.StateAccepted
+	StateQueued                        = eer.StateQueued
+	StateAttempted                     = eer.StateAttempted
+	StateExecuted                      = eer.StateExecuted
+	StateOutcomeUnknown                = eer.StateOutcomeUnknown
+	StateReconciled                    = eer.StateReconciled
+	StateRetryableFailed               = eer.StateRetryableFailed
+	StateFinalFailed                   = eer.StateFinalFailed
+	CompletionFinalFailed              = eer.CompletionFinalFailed
+	CompletionExecuted                 = eer.CompletionExecuted
+	CompletionOutcomeUnknown           = eer.CompletionOutcomeUnknown
 )
 
 var (
@@ -54,6 +61,7 @@ var (
 	ErrLeaseFence        = eer.ErrLeaseFence
 	ErrPayloadMismatch   = eer.ErrPayloadMismatch
 	ErrReconcileRequired = eer.ErrReconcileRequired
+	ErrNotFound          = eer.ErrNotFound
 )
 
 func NewEnvelope(input EnvelopeInput) (EffectEnvelope, error) { return eer.NewEnvelope(input) }
@@ -64,4 +72,15 @@ type Runtime interface {
 	Claim(context.Context, ClaimCommand) (Lease, Projection, error)
 	RunAttempt(context.Context, Lease, Adapter) (Projection, OperationReceipt, error)
 	Reconcile(context.Context, ReconcileCommand) (Projection, OperationReceipt, error)
+}
+
+// RecoveryRuntime is deliberately separate from Runtime so existing domains
+// cannot gain a crash-recovery mutation merely by depending on the common
+// execution surface. Owner-domain adapters opt in explicitly.
+type RecoveryRuntime interface {
+	RecoverAttemptedToUnknown(context.Context, RecoverAttemptedCommand) (Projection, OperationReceipt, error)
+}
+
+type TerminalReader interface {
+	GetTerminalOutcome(context.Context, string) (TerminalOutcome, error)
 }
