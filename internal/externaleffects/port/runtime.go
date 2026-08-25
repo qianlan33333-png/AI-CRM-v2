@@ -29,7 +29,9 @@ type (
 
 const (
 	OwnerOutbound         = eer.OwnerOutbound
+	OwnerSurvey           = eer.OwnerSurvey
 	KindOutboundMessage   = eer.KindOutboundMessage
+	KindSurveyWebhook     = eer.KindSurveyWebhook
 	StateAccepted         = eer.StateAccepted
 	StateQueued           = eer.StateQueued
 	StateExecuted         = eer.StateExecuted
@@ -40,7 +42,12 @@ const (
 	CompletionFinalFailed = eer.CompletionFinalFailed
 )
 
-var ErrAdapterFailure = eer.ErrAdapterFailure
+var (
+	ErrAdapterFailure    = eer.ErrAdapterFailure
+	ErrLeaseFence        = eer.ErrLeaseFence
+	ErrPayloadMismatch   = eer.ErrPayloadMismatch
+	ErrReconcileRequired = eer.ErrReconcileRequired
+)
 
 func NewEnvelope(input EnvelopeInput) (EffectEnvelope, error) { return eer.NewEnvelope(input) }
 

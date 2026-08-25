@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
+	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/port"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
 )
 
