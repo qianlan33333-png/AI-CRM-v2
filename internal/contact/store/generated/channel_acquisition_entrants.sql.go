@@ -11,6 +11,182 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const completeAdminChannelAcquisitionEntrantReconciliation = `-- name: CompleteAdminChannelAcquisitionEntrantReconciliation :execrows
+UPDATE channel_acquisition_entrant_receipts
+SET status='reconciled', effect_id=$1::bigint, channel_id=$2::bigint,
+    asset_kind=$3::text, asset_version=$4::bigint,
+    customer_id=$5::bigint, customer_event_id=$6::bigint,
+    customer_event_occurred_at=$7::timestamptz, reconciled_at=$7::timestamptz,
+    reconcile_reason=$8::text, reconcile_actor_id=$9::bigint,
+    reconcile_key_digest=$10::text, reconcile_payload_digest=$11::text,
+    updated_at=$7::timestamptz
+WHERE id=$12::bigint AND status=$13::text
+`
+
+type CompleteAdminChannelAcquisitionEntrantReconciliationParams struct {
+	EffectID        int64              `json:"effect_id"`
+	ChannelID       int64              `json:"channel_id"`
+	AssetKind       string             `json:"asset_kind"`
+	AssetVersion    int64              `json:"asset_version"`
+	CustomerID      int64              `json:"customer_id"`
+	CustomerEventID int64              `json:"customer_event_id"`
+	EventAt         pgtype.Timestamptz `json:"event_at"`
+	Reason          string             `json:"reason"`
+	ActorID         int64              `json:"actor_id"`
+	KeyDigest       string             `json:"key_digest"`
+	PayloadDigest   string             `json:"payload_digest"`
+	ReceiptID       int64              `json:"receipt_id"`
+	PriorStatus     string             `json:"prior_status"`
+}
+
+func (q *Queries) CompleteAdminChannelAcquisitionEntrantReconciliation(ctx context.Context, arg CompleteAdminChannelAcquisitionEntrantReconciliationParams) (int64, error) {
+	result, err := q.db.Exec(ctx, completeAdminChannelAcquisitionEntrantReconciliation,
+		arg.EffectID,
+		arg.ChannelID,
+		arg.AssetKind,
+		arg.AssetVersion,
+		arg.CustomerID,
+		arg.CustomerEventID,
+		arg.EventAt,
+		arg.Reason,
+		arg.ActorID,
+		arg.KeyDigest,
+		arg.PayloadDigest,
+		arg.ReceiptID,
+		arg.PriorStatus,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const findAdminChannelAcquisitionEntrantReconcileKey = `-- name: FindAdminChannelAcquisitionEntrantReconcileKey :one
+SELECT id
+FROM channel_acquisition_entrant_receipts
+WHERE reconcile_actor_id=$1::bigint
+  AND reconcile_key_digest=$2::text
+`
+
+type FindAdminChannelAcquisitionEntrantReconcileKeyParams struct {
+	ActorID   int64  `json:"actor_id"`
+	KeyDigest string `json:"key_digest"`
+}
+
+func (q *Queries) FindAdminChannelAcquisitionEntrantReconcileKey(ctx context.Context, arg FindAdminChannelAcquisitionEntrantReconcileKeyParams) (int64, error) {
+	row := q.db.QueryRow(ctx, findAdminChannelAcquisitionEntrantReconcileKey, arg.ActorID, arg.KeyDigest)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const getAdminChannelAcquisitionEntrantReceipt = `-- name: GetAdminChannelAcquisitionEntrantReceipt :one
+SELECT r.id, r.channel_id, r.effect_id, r.asset_kind, r.asset_version, r.status,
+       r.customer_id, r.customer_event_id, r.occurred_at, r.reconciled_at, r.reconcile_reason, r.created_at, r.updated_at
+FROM channel_acquisition_entrant_receipts r
+JOIN wecom_contact_inbox i ON i.id = r.inbox_id
+JOIN channel_acquisition_asset_bindings b ON (b.effect_id,b.channel_id,b.asset_kind,b.asset_version) = (r.effect_id,r.channel_id,r.asset_kind,r.asset_version)
+JOIN admin_users a ON a.id = $1::bigint AND a.is_active AND a.login_enabled AND a.wecom_corp_id = i.corp_id AND a.wecom_corp_id = b.corp_id
+WHERE r.channel_id = $2::bigint
+  AND r.id = $3::bigint
+`
+
+type GetAdminChannelAcquisitionEntrantReceiptParams struct {
+	ActorID   int64 `json:"actor_id"`
+	ChannelID int64 `json:"channel_id"`
+	ReceiptID int64 `json:"receipt_id"`
+}
+
+type GetAdminChannelAcquisitionEntrantReceiptRow struct {
+	ID              int64              `json:"id"`
+	ChannelID       pgtype.Int8        `json:"channel_id"`
+	EffectID        pgtype.Int8        `json:"effect_id"`
+	AssetKind       pgtype.Text        `json:"asset_kind"`
+	AssetVersion    pgtype.Int8        `json:"asset_version"`
+	Status          string             `json:"status"`
+	CustomerID      pgtype.Int8        `json:"customer_id"`
+	CustomerEventID pgtype.Int8        `json:"customer_event_id"`
+	OccurredAt      pgtype.Timestamptz `json:"occurred_at"`
+	ReconciledAt    pgtype.Timestamptz `json:"reconciled_at"`
+	ReconcileReason string             `json:"reconcile_reason"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetAdminChannelAcquisitionEntrantReceipt(ctx context.Context, arg GetAdminChannelAcquisitionEntrantReceiptParams) (GetAdminChannelAcquisitionEntrantReceiptRow, error) {
+	row := q.db.QueryRow(ctx, getAdminChannelAcquisitionEntrantReceipt, arg.ActorID, arg.ChannelID, arg.ReceiptID)
+	var i GetAdminChannelAcquisitionEntrantReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ChannelID,
+		&i.EffectID,
+		&i.AssetKind,
+		&i.AssetVersion,
+		&i.Status,
+		&i.CustomerID,
+		&i.CustomerEventID,
+		&i.OccurredAt,
+		&i.ReconciledAt,
+		&i.ReconcileReason,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getAdminUnassignedChannelAcquisitionEntrantReceipt = `-- name: GetAdminUnassignedChannelAcquisitionEntrantReceipt :one
+SELECT r.id, r.channel_id, r.effect_id, r.asset_kind, r.asset_version, r.status,
+       r.customer_id, r.customer_event_id, r.occurred_at, r.reconciled_at, r.reconcile_reason, r.created_at, r.updated_at
+FROM channel_acquisition_entrant_receipts r
+JOIN wecom_contact_inbox i ON i.id = r.inbox_id
+JOIN admin_users a ON a.id = $1::bigint AND a.is_active AND a.login_enabled AND a.wecom_corp_id = i.corp_id
+WHERE r.effect_id IS NULL AND r.channel_id IS NULL AND r.asset_kind IS NULL AND r.asset_version IS NULL
+  AND r.status IN ('unmatched_asset', 'ambiguous_asset', 'ignored')
+  AND r.id = $2::bigint
+`
+
+type GetAdminUnassignedChannelAcquisitionEntrantReceiptParams struct {
+	ActorID   int64 `json:"actor_id"`
+	ReceiptID int64 `json:"receipt_id"`
+}
+
+type GetAdminUnassignedChannelAcquisitionEntrantReceiptRow struct {
+	ID              int64              `json:"id"`
+	ChannelID       pgtype.Int8        `json:"channel_id"`
+	EffectID        pgtype.Int8        `json:"effect_id"`
+	AssetKind       pgtype.Text        `json:"asset_kind"`
+	AssetVersion    pgtype.Int8        `json:"asset_version"`
+	Status          string             `json:"status"`
+	CustomerID      pgtype.Int8        `json:"customer_id"`
+	CustomerEventID pgtype.Int8        `json:"customer_event_id"`
+	OccurredAt      pgtype.Timestamptz `json:"occurred_at"`
+	ReconciledAt    pgtype.Timestamptz `json:"reconciled_at"`
+	ReconcileReason string             `json:"reconcile_reason"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetAdminUnassignedChannelAcquisitionEntrantReceipt(ctx context.Context, arg GetAdminUnassignedChannelAcquisitionEntrantReceiptParams) (GetAdminUnassignedChannelAcquisitionEntrantReceiptRow, error) {
+	row := q.db.QueryRow(ctx, getAdminUnassignedChannelAcquisitionEntrantReceipt, arg.ActorID, arg.ReceiptID)
+	var i GetAdminUnassignedChannelAcquisitionEntrantReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ChannelID,
+		&i.EffectID,
+		&i.AssetKind,
+		&i.AssetVersion,
+		&i.Status,
+		&i.CustomerID,
+		&i.CustomerEventID,
+		&i.OccurredAt,
+		&i.ReconciledAt,
+		&i.ReconcileReason,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const insertChannelAcquisitionEntrantReceipt = `-- name: InsertChannelAcquisitionEntrantReceipt :one
 INSERT INTO channel_acquisition_entrant_receipts(
   inbox_id, input_digest, status, effect_id, channel_id, asset_kind, asset_version,
@@ -88,6 +264,356 @@ func (q *Queries) InsertChannelAcquisitionEntrantReceipt(ctx context.Context, ar
 		&i.CustomerEventID,
 		&i.CustomerEventOccurredAt,
 		&i.OccurredAt,
+	)
+	return i, err
+}
+
+const listAdminChannelAcquisitionEntrantReceipts = `-- name: ListAdminChannelAcquisitionEntrantReceipts :many
+SELECT r.id, r.channel_id, r.effect_id, r.asset_kind, r.asset_version, r.status,
+       r.customer_id, r.customer_event_id, r.occurred_at, r.reconciled_at, r.reconcile_reason, r.created_at, r.updated_at
+FROM channel_acquisition_entrant_receipts r
+JOIN wecom_contact_inbox i ON i.id = r.inbox_id
+JOIN channel_acquisition_asset_bindings b ON (b.effect_id,b.channel_id,b.asset_kind,b.asset_version) = (r.effect_id,r.channel_id,r.asset_kind,r.asset_version)
+JOIN admin_users a ON a.id = $1::bigint AND a.is_active AND a.login_enabled AND a.wecom_corp_id = i.corp_id AND a.wecom_corp_id = b.corp_id
+WHERE r.channel_id = $2::bigint
+  AND ($3::bigint <= 0 OR r.id < $3::bigint)
+ORDER BY r.id DESC
+LIMIT $4::integer
+`
+
+type ListAdminChannelAcquisitionEntrantReceiptsParams struct {
+	ActorID        int64 `json:"actor_id"`
+	ChannelID      int64 `json:"channel_id"`
+	AfterReceiptID int64 `json:"after_receipt_id"`
+	PageLimit      int32 `json:"page_limit"`
+}
+
+type ListAdminChannelAcquisitionEntrantReceiptsRow struct {
+	ID              int64              `json:"id"`
+	ChannelID       pgtype.Int8        `json:"channel_id"`
+	EffectID        pgtype.Int8        `json:"effect_id"`
+	AssetKind       pgtype.Text        `json:"asset_kind"`
+	AssetVersion    pgtype.Int8        `json:"asset_version"`
+	Status          string             `json:"status"`
+	CustomerID      pgtype.Int8        `json:"customer_id"`
+	CustomerEventID pgtype.Int8        `json:"customer_event_id"`
+	OccurredAt      pgtype.Timestamptz `json:"occurred_at"`
+	ReconciledAt    pgtype.Timestamptz `json:"reconciled_at"`
+	ReconcileReason string             `json:"reconcile_reason"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListAdminChannelAcquisitionEntrantReceipts(ctx context.Context, arg ListAdminChannelAcquisitionEntrantReceiptsParams) ([]ListAdminChannelAcquisitionEntrantReceiptsRow, error) {
+	rows, err := q.db.Query(ctx, listAdminChannelAcquisitionEntrantReceipts,
+		arg.ActorID,
+		arg.ChannelID,
+		arg.AfterReceiptID,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAdminChannelAcquisitionEntrantReceiptsRow{}
+	for rows.Next() {
+		var i ListAdminChannelAcquisitionEntrantReceiptsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChannelID,
+			&i.EffectID,
+			&i.AssetKind,
+			&i.AssetVersion,
+			&i.Status,
+			&i.CustomerID,
+			&i.CustomerEventID,
+			&i.OccurredAt,
+			&i.ReconciledAt,
+			&i.ReconcileReason,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAdminUnassignedChannelAcquisitionEntrantReceipts = `-- name: ListAdminUnassignedChannelAcquisitionEntrantReceipts :many
+SELECT r.id, r.channel_id, r.effect_id, r.asset_kind, r.asset_version, r.status,
+       r.customer_id, r.customer_event_id, r.occurred_at, r.reconciled_at, r.reconcile_reason, r.created_at, r.updated_at
+FROM channel_acquisition_entrant_receipts r
+JOIN wecom_contact_inbox i ON i.id = r.inbox_id
+JOIN admin_users a ON a.id = $1::bigint AND a.is_active AND a.login_enabled AND a.wecom_corp_id = i.corp_id
+WHERE r.effect_id IS NULL AND r.channel_id IS NULL AND r.asset_kind IS NULL AND r.asset_version IS NULL
+  AND r.status IN ('unmatched_asset', 'ambiguous_asset', 'ignored')
+  AND ($2::bigint <= 0 OR r.id < $2::bigint)
+ORDER BY r.id DESC
+LIMIT $3::integer
+`
+
+type ListAdminUnassignedChannelAcquisitionEntrantReceiptsParams struct {
+	ActorID        int64 `json:"actor_id"`
+	AfterReceiptID int64 `json:"after_receipt_id"`
+	PageLimit      int32 `json:"page_limit"`
+}
+
+type ListAdminUnassignedChannelAcquisitionEntrantReceiptsRow struct {
+	ID              int64              `json:"id"`
+	ChannelID       pgtype.Int8        `json:"channel_id"`
+	EffectID        pgtype.Int8        `json:"effect_id"`
+	AssetKind       pgtype.Text        `json:"asset_kind"`
+	AssetVersion    pgtype.Int8        `json:"asset_version"`
+	Status          string             `json:"status"`
+	CustomerID      pgtype.Int8        `json:"customer_id"`
+	CustomerEventID pgtype.Int8        `json:"customer_event_id"`
+	OccurredAt      pgtype.Timestamptz `json:"occurred_at"`
+	ReconciledAt    pgtype.Timestamptz `json:"reconciled_at"`
+	ReconcileReason string             `json:"reconcile_reason"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListAdminUnassignedChannelAcquisitionEntrantReceipts(ctx context.Context, arg ListAdminUnassignedChannelAcquisitionEntrantReceiptsParams) ([]ListAdminUnassignedChannelAcquisitionEntrantReceiptsRow, error) {
+	rows, err := q.db.Query(ctx, listAdminUnassignedChannelAcquisitionEntrantReceipts, arg.ActorID, arg.AfterReceiptID, arg.PageLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAdminUnassignedChannelAcquisitionEntrantReceiptsRow{}
+	for rows.Next() {
+		var i ListAdminUnassignedChannelAcquisitionEntrantReceiptsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.ChannelID,
+			&i.EffectID,
+			&i.AssetKind,
+			&i.AssetVersion,
+			&i.Status,
+			&i.CustomerID,
+			&i.CustomerEventID,
+			&i.OccurredAt,
+			&i.ReconciledAt,
+			&i.ReconcileReason,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockAdminChannelAcquisitionEntrantCustomer = `-- name: LockAdminChannelAcquisitionEntrantCustomer :one
+SELECT id
+FROM customers
+WHERE id=$1::bigint AND NOT is_deleted
+FOR UPDATE
+`
+
+func (q *Queries) LockAdminChannelAcquisitionEntrantCustomer(ctx context.Context, customerID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, lockAdminChannelAcquisitionEntrantCustomer, customerID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const lockAdminChannelAcquisitionEntrantIdentity = `-- name: LockAdminChannelAcquisitionEntrantIdentity :one
+SELECT customer_id
+FROM identities
+WHERE kind='wecom_external_userid'
+  AND scope='wecom-corp:' || $1::text
+  AND normalized_value=$2::text
+  AND assurance='verified'
+FOR UPDATE
+`
+
+type LockAdminChannelAcquisitionEntrantIdentityParams struct {
+	CorpID         string `json:"corp_id"`
+	ExternalUserid string `json:"external_userid"`
+}
+
+func (q *Queries) LockAdminChannelAcquisitionEntrantIdentity(ctx context.Context, arg LockAdminChannelAcquisitionEntrantIdentityParams) (pgtype.Int8, error) {
+	row := q.db.QueryRow(ctx, lockAdminChannelAcquisitionEntrantIdentity, arg.CorpID, arg.ExternalUserid)
+	var customer_id pgtype.Int8
+	err := row.Scan(&customer_id)
+	return customer_id, err
+}
+
+const lockAdminChannelAcquisitionEntrantReceipt = `-- name: LockAdminChannelAcquisitionEntrantReceipt :one
+SELECT r.id, r.status, r.effect_id, r.channel_id, r.asset_kind, r.asset_version,
+       r.customer_id, r.customer_event_id, r.occurred_at, r.reconcile_actor_id, r.reconcile_key_digest, r.reconcile_payload_digest,
+       i.external_userid, i.external_contact_wecom_userid, i.corp_id
+FROM channel_acquisition_entrant_receipts r
+JOIN wecom_contact_inbox i ON i.id=r.inbox_id
+JOIN admin_users a ON a.id=$1::bigint AND a.is_active AND a.login_enabled AND a.wecom_corp_id=i.corp_id
+WHERE r.id=$2::bigint
+  AND r.channel_id=$3::bigint
+  AND EXISTS (
+    SELECT 1 FROM channel_acquisition_asset_bindings current_binding
+    WHERE (current_binding.effect_id,current_binding.channel_id,current_binding.asset_kind,current_binding.asset_version) = (r.effect_id,r.channel_id,r.asset_kind,r.asset_version)
+      AND current_binding.corp_id=i.corp_id
+  )
+FOR UPDATE OF r
+`
+
+type LockAdminChannelAcquisitionEntrantReceiptParams struct {
+	ActorID   int64 `json:"actor_id"`
+	ReceiptID int64 `json:"receipt_id"`
+	ChannelID int64 `json:"channel_id"`
+}
+
+type LockAdminChannelAcquisitionEntrantReceiptRow struct {
+	ID                         int64              `json:"id"`
+	Status                     string             `json:"status"`
+	EffectID                   pgtype.Int8        `json:"effect_id"`
+	ChannelID                  pgtype.Int8        `json:"channel_id"`
+	AssetKind                  pgtype.Text        `json:"asset_kind"`
+	AssetVersion               pgtype.Int8        `json:"asset_version"`
+	CustomerID                 pgtype.Int8        `json:"customer_id"`
+	CustomerEventID            pgtype.Int8        `json:"customer_event_id"`
+	OccurredAt                 pgtype.Timestamptz `json:"occurred_at"`
+	ReconcileActorID           pgtype.Int8        `json:"reconcile_actor_id"`
+	ReconcileKeyDigest         pgtype.Text        `json:"reconcile_key_digest"`
+	ReconcilePayloadDigest     pgtype.Text        `json:"reconcile_payload_digest"`
+	ExternalUserid             string             `json:"external_userid"`
+	ExternalContactWecomUserid string             `json:"external_contact_wecom_userid"`
+	CorpID                     string             `json:"corp_id"`
+}
+
+func (q *Queries) LockAdminChannelAcquisitionEntrantReceipt(ctx context.Context, arg LockAdminChannelAcquisitionEntrantReceiptParams) (LockAdminChannelAcquisitionEntrantReceiptRow, error) {
+	row := q.db.QueryRow(ctx, lockAdminChannelAcquisitionEntrantReceipt, arg.ActorID, arg.ReceiptID, arg.ChannelID)
+	var i LockAdminChannelAcquisitionEntrantReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.EffectID,
+		&i.ChannelID,
+		&i.AssetKind,
+		&i.AssetVersion,
+		&i.CustomerID,
+		&i.CustomerEventID,
+		&i.OccurredAt,
+		&i.ReconcileActorID,
+		&i.ReconcileKeyDigest,
+		&i.ReconcilePayloadDigest,
+		&i.ExternalUserid,
+		&i.ExternalContactWecomUserid,
+		&i.CorpID,
+	)
+	return i, err
+}
+
+const lockAdminChannelAcquisitionEntrantTargetBinding = `-- name: LockAdminChannelAcquisitionEntrantTargetBinding :one
+SELECT b.channel_id, b.asset_kind, b.asset_version,
+       CASE WHEN b.state = 'executed' THEN (SELECT max(f.completed_at) FROM channel_acquisition_asset_attempt_facts f WHERE f.effect_id=b.effect_id AND f.state='executed')
+            WHEN b.state = 'reconciled' AND b.reconcile_resolution='provider_applied' THEN (SELECT max(f.reconciled_at) FROM channel_acquisition_asset_reconciliation_facts f WHERE f.effect_id=b.effect_id AND f.resolution='provider_applied') END::timestamptz AS published_at,
+       b.assignee_wecom_userids
+FROM channel_acquisition_asset_bindings b
+WHERE b.effect_id=$1::bigint AND b.corp_id=$2::text
+  AND ($3::bigint=0 OR b.channel_id=$3::bigint)
+FOR UPDATE OF b
+`
+
+type LockAdminChannelAcquisitionEntrantTargetBindingParams struct {
+	EffectID  int64  `json:"effect_id"`
+	CorpID    string `json:"corp_id"`
+	ChannelID int64  `json:"channel_id"`
+}
+
+type LockAdminChannelAcquisitionEntrantTargetBindingRow struct {
+	ChannelID            int64              `json:"channel_id"`
+	AssetKind            string             `json:"asset_kind"`
+	AssetVersion         int64              `json:"asset_version"`
+	PublishedAt          pgtype.Timestamptz `json:"published_at"`
+	AssigneeWecomUserids []string           `json:"assignee_wecom_userids"`
+}
+
+func (q *Queries) LockAdminChannelAcquisitionEntrantTargetBinding(ctx context.Context, arg LockAdminChannelAcquisitionEntrantTargetBindingParams) (LockAdminChannelAcquisitionEntrantTargetBindingRow, error) {
+	row := q.db.QueryRow(ctx, lockAdminChannelAcquisitionEntrantTargetBinding, arg.EffectID, arg.CorpID, arg.ChannelID)
+	var i LockAdminChannelAcquisitionEntrantTargetBindingRow
+	err := row.Scan(
+		&i.ChannelID,
+		&i.AssetKind,
+		&i.AssetVersion,
+		&i.PublishedAt,
+		&i.AssigneeWecomUserids,
+	)
+	return i, err
+}
+
+const lockAdminUnassignedChannelAcquisitionEntrantReceipt = `-- name: LockAdminUnassignedChannelAcquisitionEntrantReceipt :one
+SELECT r.id, r.status, r.effect_id, r.channel_id, r.asset_kind, r.asset_version,
+       r.customer_id, r.customer_event_id, r.occurred_at, r.reconcile_actor_id, r.reconcile_key_digest, r.reconcile_payload_digest,
+       i.external_userid, i.external_contact_wecom_userid, i.corp_id
+FROM channel_acquisition_entrant_receipts r
+JOIN wecom_contact_inbox i ON i.id=r.inbox_id
+JOIN admin_users a ON a.id=$1::bigint AND a.is_active AND a.login_enabled AND a.wecom_corp_id=i.corp_id
+WHERE r.id=$2::bigint
+  AND (
+    (r.effect_id IS NULL AND r.channel_id IS NULL AND r.asset_kind IS NULL AND r.asset_version IS NULL)
+    OR (r.status='reconciled' AND r.reconcile_actor_id=$1::bigint AND r.reconcile_key_digest=$3::text AND r.reconcile_payload_digest=$4::text)
+  )
+FOR UPDATE OF r
+`
+
+type LockAdminUnassignedChannelAcquisitionEntrantReceiptParams struct {
+	ActorID       int64  `json:"actor_id"`
+	ReceiptID     int64  `json:"receipt_id"`
+	KeyDigest     string `json:"key_digest"`
+	PayloadDigest string `json:"payload_digest"`
+}
+
+type LockAdminUnassignedChannelAcquisitionEntrantReceiptRow struct {
+	ID                         int64              `json:"id"`
+	Status                     string             `json:"status"`
+	EffectID                   pgtype.Int8        `json:"effect_id"`
+	ChannelID                  pgtype.Int8        `json:"channel_id"`
+	AssetKind                  pgtype.Text        `json:"asset_kind"`
+	AssetVersion               pgtype.Int8        `json:"asset_version"`
+	CustomerID                 pgtype.Int8        `json:"customer_id"`
+	CustomerEventID            pgtype.Int8        `json:"customer_event_id"`
+	OccurredAt                 pgtype.Timestamptz `json:"occurred_at"`
+	ReconcileActorID           pgtype.Int8        `json:"reconcile_actor_id"`
+	ReconcileKeyDigest         pgtype.Text        `json:"reconcile_key_digest"`
+	ReconcilePayloadDigest     pgtype.Text        `json:"reconcile_payload_digest"`
+	ExternalUserid             string             `json:"external_userid"`
+	ExternalContactWecomUserid string             `json:"external_contact_wecom_userid"`
+	CorpID                     string             `json:"corp_id"`
+}
+
+func (q *Queries) LockAdminUnassignedChannelAcquisitionEntrantReceipt(ctx context.Context, arg LockAdminUnassignedChannelAcquisitionEntrantReceiptParams) (LockAdminUnassignedChannelAcquisitionEntrantReceiptRow, error) {
+	row := q.db.QueryRow(ctx, lockAdminUnassignedChannelAcquisitionEntrantReceipt,
+		arg.ActorID,
+		arg.ReceiptID,
+		arg.KeyDigest,
+		arg.PayloadDigest,
+	)
+	var i LockAdminUnassignedChannelAcquisitionEntrantReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.EffectID,
+		&i.ChannelID,
+		&i.AssetKind,
+		&i.AssetVersion,
+		&i.CustomerID,
+		&i.CustomerEventID,
+		&i.OccurredAt,
+		&i.ReconcileActorID,
+		&i.ReconcileKeyDigest,
+		&i.ReconcilePayloadDigest,
+		&i.ExternalUserid,
+		&i.ExternalContactWecomUserid,
+		&i.CorpID,
 	)
 	return i, err
 }

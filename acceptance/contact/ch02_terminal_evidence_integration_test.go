@@ -1,4 +1,4 @@
-package store_test
+package contact_test
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	eerfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/externaleffects"
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
 	eerstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
@@ -96,7 +97,7 @@ func TestCH02TerminalEvidencePG16(t *testing.T) {
 	if _, _, _, err := store.PersistAttempt(ctx, recoveryLease); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pool.Exec(ctx, `UPDATE external_effects SET lease_expires_at=now()-interval '1 second' WHERE id=$1`, recoveryEffectID); err != nil {
+	if err := eerfixture.ExpireCH02Lease(ctx, pool, recoveryEffectID); err != nil {
 		t.Fatal(err)
 	}
 	recoveryLease.ExpiresAt = time.Now().Add(-time.Second)
