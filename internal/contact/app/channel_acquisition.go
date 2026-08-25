@@ -90,6 +90,12 @@ func channelAcquisitionPreview(channel Channel) (ChannelAcquisitionPreview, erro
 	if qrURL != "" && sceneValue != "" {
 		qrStatus = "legacy_untracked"
 	}
+	activeAssignees := make([]ChannelAssignee, 0, len(channel.Assignees))
+	for _, assignee := range channel.Assignees {
+		if assignee.Status == "active" {
+			activeAssignees = append(activeAssignees, assignee)
+		}
+	}
 	blockers := make([]string, 0, 4)
 	state := "draft"
 	if channel.Status == "archived" {
@@ -97,7 +103,7 @@ func channelAcquisitionPreview(channel Channel) (ChannelAcquisitionPreview, erro
 	} else if channel.Status == "inactive" {
 		state, blockers = "paused", append(blockers, "channel_inactive")
 	} else {
-		if len(channel.Assignees) == 0 {
+		if len(activeAssignees) == 0 {
 			blockers = append(blockers, "active_assignee_required")
 		}
 		if carrierType == "qrcode" {
@@ -119,7 +125,7 @@ func channelAcquisitionPreview(channel Channel) (ChannelAcquisitionPreview, erro
 	}
 	return ChannelAcquisitionPreview{
 		ChannelID: channel.ID, ChannelCode: channel.ChannelCode, ChannelName: channel.ChannelName,
-		Assignees: cloneChannel(channel).Assignees,
+		Assignees: activeAssignees,
 		Lifecycle: ChannelAcquisitionLifecycle{State: state, EntrantReady: false, ReadinessBlockers: blockers},
 		QRCode:    ChannelQRCodePreview{Status: qrStatus, SceneValue: sceneValue, URL: qrURL},
 		Share:     ChannelSharePreview{URL: shareURL, CopyText: firstChannelAcquisitionValue(shareURL, qrURL)},

@@ -41,11 +41,43 @@ type ChannelAcquisitionHandler struct {
 	csrf     channelAcquisitionCSRFValidator
 }
 
+type channelAcquisitionRouteFragment struct {
+	handler *ChannelAcquisitionHandler
+}
+
 func NewChannelAcquisitionHandler(mutation channelAcquisitionMutationApplication, preview channelAcquisitionPreviewApplication, csrf channelAcquisitionCSRFValidator) (*ChannelAcquisitionHandler, error) {
 	if channelAcquisitionNil(mutation) || channelAcquisitionNil(preview) || channelAcquisitionNil(csrf) {
 		return nil, errors.New("channel acquisition dependencies are required")
 	}
 	return &ChannelAcquisitionHandler{mutation: mutation, preview: preview, csrf: csrf}, nil
+}
+
+func NewChannelAcquisitionRouteFragment(handler *ChannelAcquisitionHandler) (http.Handler, error) {
+	if handler == nil || channelAcquisitionNil(handler.mutation) || channelAcquisitionNil(handler.preview) || channelAcquisitionNil(handler.csrf) {
+		return nil, errors.New("channel acquisition handler is required")
+	}
+	return &channelAcquisitionRouteFragment{handler: handler}, nil
+}
+
+func (fragment *channelAcquisitionRouteFragment) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	channelAcquisitionSecurityHeaders(writer)
+	if fragment == nil || fragment.handler == nil || request == nil || request.URL == nil {
+		channelAcquisitionWriteError(writer, request, contactapp.ErrChannelUnavailable)
+		return
+	}
+	segments := strings.Split(strings.Trim(request.URL.Path, "/"), "/")
+	if len(segments) != 5 || segments[0] != "api" || segments[1] != "admin" || segments[2] != "channels" {
+		channelAcquisitionWriteError(writer, request, contactapp.ErrChannelNotFound)
+		return
+	}
+	switch segments[4] {
+	case "acquisition-preview":
+		fragment.handler.Preview(writer, request, segments[3])
+	case "assignees":
+		fragment.handler.UpdateAssignees(writer, request, segments[3])
+	default:
+		channelAcquisitionWriteError(writer, request, contactapp.ErrChannelNotFound)
+	}
 }
 
 // Preview returns a local readiness projection. It never asks a provider to
@@ -113,7 +145,7 @@ func (handler *ChannelAcquisitionHandler) UpdateAssignees(writer http.ResponseWr
 		channelAcquisitionWriteError(writer, request, err)
 		return
 	}
-	if updated.ID != channelID || !channelAcquisitionValidAssignees(updated.Assignees) {
+	if updated.ID != channelID || !channelAcquisitionValidAssignees(updated.Assignees, false) {
 		channelAcquisitionWriteError(writer, request, contactapp.ErrChannelUnavailable)
 		return
 	}
@@ -235,10 +267,13 @@ func channelAcquisitionAssignmentPatch(writer http.ResponseWriter, request *http
 }
 
 func channelAcquisitionValidAssignment(command channelAcquisitionAssignment) bool {
+	if len(command.Assignees) < 1 || len(command.Assignees) > 5 {
+		return false
+	}
 	active, totalRatio := 0, int64(0)
 	seen := make(map[string]struct{}, len(command.Assignees))
 	for _, assignee := range command.Assignees {
-		if !channelAcquisitionValidText(assignee.StaffID, 200) || (assignee.Status != "" && assignee.Status != "active" && assignee.Status != "inactive" && assignee.Status != "archived") || assignee.Priority < 0 {
+		if !channelAcquisitionValidText(assignee.StaffID, 200) || (assignee.Status != "" && assignee.Status != "active") || assignee.Priority < 0 {
 			return false
 		}
 		if _, duplicate := seen[assignee.StaffID]; duplicate {
@@ -404,7 +439,7 @@ func channelAcquisitionValidPreview(preview contactapp.ChannelAcquisitionPreview
 		(preview.Lifecycle.State != "local_prerequisites_ready" && preview.Lifecycle.State != "draft" && preview.Lifecycle.State != "paused" && preview.Lifecycle.State != "archived") ||
 		preview.Lifecycle.EntrantReady ||
 		(preview.QRCode.Status != "not_generated" && preview.QRCode.Status != "legacy_untracked") ||
-		!channelAcquisitionValidAssignees(preview.Assignees) {
+		!channelAcquisitionValidAssignees(preview.Assignees, true) {
 		return false
 	}
 	if len(preview.Lifecycle.ReadinessBlockers) == 0 {
@@ -430,8 +465,8 @@ func channelAcquisitionValidPreview(preview contactapp.ChannelAcquisitionPreview
 		channelAcquisitionValidTextOrEmpty(preview.Share.URL, 10000) && channelAcquisitionValidTextOrEmpty(preview.Share.CopyText, 10000)
 }
 
-func channelAcquisitionValidAssignees(assignees []contactapp.ChannelAssignee) bool {
-	if len(assignees) < 1 || len(assignees) > 5 {
+func channelAcquisitionValidAssignees(assignees []contactapp.ChannelAssignee, allowEmpty bool) bool {
+	if len(assignees) > 5 || len(assignees) == 0 && !allowEmpty {
 		return false
 	}
 	seen := make(map[string]struct{}, len(assignees))

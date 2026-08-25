@@ -95,6 +95,7 @@ const (
 	p4CommerceRefundV2Evidence                 = "P4-COMMERCE-REFUND-V2-2026-08-25"
 	p4CommerceExternalPushEvidence             = "P4-COMMERCE-EXTERNAL-PUSH-00087-2026-08-25"
 	p4WeComTagEffectEvidence                   = "P4-B1-WC01-2026-08-25"
+	p4ChannelAcquisitionEvidence               = "P4-CH01-2026-08-26"
 	p4ServicePeriodMemberGridCanonicalEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24"
 	c01DispatchOperationID                     = "dispatchOutboundCampaignHandoff"
 	c01DispatchReadOperationID                 = "getOutboundCampaignDispatchReconciliation"
@@ -115,6 +116,8 @@ var commerceRefundOperations = map[string]nativePackageOperation{
 }
 
 var nativePackageOperations = map[string]nativePackageOperation{
+	"getChannelAcquisitionPreview":              {"/api/admin/channels/{channel_id}/acquisition-preview", "GET", p4ChannelAcquisitionEvidence, "channels.read", "human_session", "internal", "contact.local_channel_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"updateChannelAcquisitionAssignees":         {"/api/admin/channels/{channel_id}/assignees", "PUT", p4ChannelAcquisitionEvidence, "channels.write", "human_session", "internal", "contact.local_channel_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"createCustomerSafeExport":                  {"/api/v1/customer-exports", "POST", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getCustomerSafeExport":                     {"/api/v1/customer-exports/{export_id}", "GET", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"downloadCustomerSafeExport":                {"/api/v1/customer-exports/{export_id}/download", "GET", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},

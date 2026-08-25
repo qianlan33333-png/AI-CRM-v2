@@ -56,6 +56,7 @@ func TestCH01ChannelAcquisitionRejectsMalformedAssignmentBeforeMutation(t *testi
 		{"unknown member field", `{"assignees":[{"staff_id":"staff-1","ratio_percent":100,"display_name":"forbidden"}]}`},
 		{"duplicate member field", `{"assignees":[{"staff_id":"staff-1","staff_id":"staff-2","ratio_percent":100}]}`},
 		{"zero active", `{"assignees":[{"staff_id":"staff-1","status":"inactive"}]}`},
+		{"mixed inactive", `{"assignees":[{"staff_id":"staff-1","ratio_percent":100},{"staff_id":"staff-2","status":"inactive"}]}`},
 		{"six active", `{"assignees":[{"staff_id":"1","ratio_percent":20},{"staff_id":"2","ratio_percent":20},{"staff_id":"3","ratio_percent":20},{"staff_id":"4","ratio_percent":20},{"staff_id":"5","ratio_percent":10},{"staff_id":"6","ratio_percent":10}]}`},
 		{"ratio total", `{"assignees":[{"staff_id":"staff-1","ratio_percent":99}]}`},
 		{"ratio carries cap", `{"assignees":[{"staff_id":"staff-1","ratio_percent":100,"max_scans_24h":3}]}`},
@@ -104,6 +105,21 @@ func TestCH01ChannelAcquisitionPreviewRejectsEntrantReadyWithoutProviderReceipt(
 	handler.Preview(response, channelAcquisitionRequest(http.MethodGet, "", authport.CapabilityChannelsRead), "7")
 	if response.Code != http.StatusServiceUnavailable || preview.calls != 1 || strings.Contains(response.Body.String(), `"entrant_ready":true`) {
 		t.Fatalf("status/calls/body=%d/%d/%s", response.Code, preview.calls, response.Body.String())
+	}
+}
+
+func TestCH01ChannelAcquisitionPreviewReturnsMissingAssigneeBlocker(t *testing.T) {
+	preview := &channelAcquisitionPreviewStub{result: contactapp.ChannelAcquisitionPreview{
+		ChannelID: 7, ChannelCode: "course", ChannelName: "公开课",
+		Assignees: []contactapp.ChannelAssignee{},
+		Lifecycle: contactapp.ChannelAcquisitionLifecycle{State: "draft", EntrantReady: false, ReadinessBlockers: []string{"active_assignee_required", "provider_asset_unverified"}},
+		QRCode:    contactapp.ChannelQRCodePreview{Status: "not_generated"},
+	}}
+	handler := mustChannelAcquisitionHandler(t, &channelAcquisitionMutationStub{}, preview, &channelAcquisitionCSRFStub{})
+	response := httptest.NewRecorder()
+	handler.Preview(response, channelAcquisitionRequest(http.MethodGet, "", authport.CapabilityChannelsRead), "7")
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"assignees":[]`) || !strings.Contains(response.Body.String(), `"active_assignee_required"`) {
+		t.Fatalf("status/body=%d/%s", response.Code, response.Body.String())
 	}
 }
 

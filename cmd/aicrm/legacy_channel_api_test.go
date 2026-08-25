@@ -176,6 +176,25 @@ func TestC01LegacyChannelProjectsValidatedAssignee(t *testing.T) {
 	}
 }
 
+func TestC01LegacyChannelKeepsFrozenSingleAssigneeContract(t *testing.T) {
+	item := legacyChannelItem()
+	item.Assignees = []contactapp.ChannelAssignee{
+		{WeComUserID: "staff-1", DisplayName: "成员一", Status: "active", Priority: 1},
+		{WeComUserID: "staff-2", DisplayName: "成员二", Status: "active", Priority: 2},
+	}
+	projected, err := legacyChannel(item)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assignees, ok := projected["assignees"].([]map[string]string)
+	if !ok || len(assignees) != 1 || assignees[0]["wecom_userid"] != "staff-1" || projected["assignee_count"] != 1 {
+		t.Fatalf("legacy detail assignees/count = %#v/%#v", projected["assignees"], projected["assignee_count"])
+	}
+	if row := legacyChannelListItem(item); row["assignee_count"] != 1 {
+		t.Fatalf("legacy list assignee_count = %#v", row["assignee_count"])
+	}
+}
+
 func legacyChannelRouter(t *testing.T, channels legacyChannelApplication) (http.Handler, *recordingAuth) {
 	t.Helper()
 	service := &recordingAuth{}
