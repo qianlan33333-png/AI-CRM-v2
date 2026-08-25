@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"sort"
 	"strconv"
@@ -23,6 +24,9 @@ type memoryState struct {
 	links             map[radarport.LinkID]radarport.Link
 	idempotency       map[string]radarport.IdempotencyRecord
 	events            []eventport.Event
+	trackingEvents    []radarport.Event
+	trackingByKey     map[string]int
+	trackingDigests   map[string][32]byte
 	nextLinkID        int64
 	nextIdempotencyID int64
 }
@@ -40,8 +44,10 @@ type memoryAppender struct{ db *memoryDB }
 
 func newMemoryDB() *memoryDB {
 	return &memoryDB{state: memoryState{
-		links:       make(map[radarport.LinkID]radarport.Link),
-		idempotency: make(map[string]radarport.IdempotencyRecord),
+		links:           make(map[radarport.LinkID]radarport.Link),
+		idempotency:     make(map[string]radarport.IdempotencyRecord),
+		trackingByKey:   make(map[string]int),
+		trackingDigests: make(map[string][32]byte),
 	}}
 }
 
@@ -194,6 +200,128 @@ func (repository *memoryRepository) SetStatus(ctx context.Context, record radarp
 	link.UpdatedAt = now
 	state.links[link.LinkID] = cloneLink(link)
 	return link, nil
+}
+
+func (repository *memoryRepository) GetEnabledByCode(ctx context.Context, code string) (radarport.Link, error) {
+	state, err := memoryStateFromContext(ctx)
+	if err != nil {
+		return radarport.Link{}, err
+	}
+	for _, link := range state.links {
+		if link.PublicCode == code && link.Status == radarport.StatusEnabled {
+			return cloneLink(link), nil
+		}
+	}
+	return radarport.Link{}, radarport.ErrNotFound
+}
+
+func (repository *memoryRepository) InsertEvent(ctx context.Context, record radarport.InsertEventRecord) (radarport.Event, bool, error) {
+	state, err := memoryStateFromContext(ctx)
+	if err != nil {
+		return radarport.Event{}, false, err
+	}
+	key := trackingKey(record.LinkID, record.KeyDigest)
+	if len(record.KeyDigest) != 0 {
+		if index, exists := state.trackingByKey[key]; exists {
+			return state.trackingEvents[index], false, nil
+		}
+	}
+	event := radarport.Event{
+		EventID: int64(len(state.trackingEvents) + 1), ReceiptID: record.ReceiptID,
+		LinkID: record.LinkID, Stage: record.Stage, Page: clonePage(record.Page),
+		Source: record.Source, CreatedAt: record.CreatedAt,
+	}
+	state.trackingEvents = append(state.trackingEvents, event)
+	if len(record.KeyDigest) != 0 {
+		state.trackingByKey[key] = len(state.trackingEvents) - 1
+		state.trackingDigests[key] = record.PayloadDigest
+	}
+	return event, true, nil
+}
+
+func (repository *memoryRepository) GetEventByKey(ctx context.Context, linkID radarport.LinkID, keyDigest []byte) (radarport.Event, [32]byte, error) {
+	state, err := memoryStateFromContext(ctx)
+	if err != nil {
+		return radarport.Event{}, [32]byte{}, err
+	}
+	key := trackingKey(linkID, keyDigest)
+	index, exists := state.trackingByKey[key]
+	if !exists {
+		return radarport.Event{}, [32]byte{}, radarport.ErrNotFound
+	}
+	return state.trackingEvents[index], state.trackingDigests[key], nil
+}
+
+func (repository *memoryRepository) ListEvents(ctx context.Context, input radarport.EventListInput) ([]radarport.Event, int64, error) {
+	state, err := memoryStateFromContext(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	items := make([]radarport.Event, 0, len(state.trackingEvents))
+	for _, event := range state.trackingEvents {
+		if event.LinkID != input.LinkID || input.Stage != nil && event.Stage != *input.Stage {
+			continue
+		}
+		if input.Start != nil && event.CreatedAt.Before(*input.Start) || input.End != nil && event.CreatedAt.After(*input.End) {
+			continue
+		}
+		items = append(items, event)
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].EventID > items[j].EventID })
+	total := int64(len(items))
+	start := min(int(input.Offset), len(items))
+	end := min(start+int(input.Limit), len(items))
+	return append([]radarport.Event(nil), items[start:end]...), total, nil
+}
+
+func (repository *memoryRepository) EventStats(ctx context.Context, linkID radarport.LinkID) (radarport.EventStatsRecord, error) {
+	state, err := memoryStateFromContext(ctx)
+	if err != nil {
+		return radarport.EventStatsRecord{}, err
+	}
+	var result radarport.EventStatsRecord
+	for _, event := range state.trackingEvents {
+		if event.LinkID != linkID {
+			continue
+		}
+		result.TotalEvents++
+		result.LastEventAt = latestTime(result.LastEventAt, event.CreatedAt)
+		switch event.Stage {
+		case radarport.EventStageLanding:
+			result.TotalLandings++
+			result.TodayLandings++
+			result.LastClickedAt = latestTime(result.LastClickedAt, event.CreatedAt)
+		case radarport.EventStageRedirect:
+			result.Redirects++
+		case radarport.EventStageViewerOpen:
+			result.ViewerOpens++
+			result.LastViewedAt = latestTime(result.LastViewedAt, event.CreatedAt)
+		case radarport.EventStageImageLoaded:
+			result.ImageLoaded++
+		case radarport.EventStagePDFOpened:
+			result.PDFOpened++
+		}
+	}
+	return result, nil
+}
+
+func (repository *memoryRepository) ListEnabledForSidebar(ctx context.Context, limit, offset int32) ([]radarport.SidebarLink, int64, error) {
+	state, err := memoryStateFromContext(ctx)
+	if err != nil {
+		return nil, 0, err
+	}
+	items := make([]radarport.SidebarLink, 0, len(state.links))
+	for _, link := range state.links {
+		if link.Status != radarport.StatusEnabled {
+			continue
+		}
+		items = append(items, radarport.SidebarLink{LinkID: link.LinkID, Title: link.Title, TargetType: "url", TypeLabel: "Radar", URL: link.PublicCode, UpdatedAt: link.UpdatedAt})
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].LinkID > items[j].LinkID })
+	total := int64(len(items))
+	start := min(int(offset), len(items))
+	end := min(start+int(limit), len(items))
+	return items[start:end], total, nil
 }
 
 func (repository *memoryRepository) ReserveIdempotency(ctx context.Context, reservation radarport.ReserveIdempotencyRecord) (radarport.IdempotencyRecord, bool, error) {
@@ -382,11 +510,11 @@ func TestServiceLifecycleCASAndIdempotency(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if share.Available || share.SharePath != "" || share.QRPayload != "" || !share.LocalProjection || share.PublicRouteReady || share.RealExternalCallExecuted {
+	if share.Available || share.SharePath != "/r/"+share.PublicCode || share.QRPayload != share.SharePath || !share.LocalProjection || !share.PublicRouteReady || share.RealExternalCallExecuted {
 		t.Fatalf("share=%+v", share)
 	}
 	options := service.Options(ctx)
-	if !reflect.DeepEqual(options.Statuses, []radarport.Status{radarport.StatusDraft, radarport.StatusEnabled, radarport.StatusDisabled}) || options.PublicRouteReady || options.RealExternalCallExecuted || !options.LocalProjection {
+	if !reflect.DeepEqual(options.Statuses, []radarport.Status{radarport.StatusDraft, radarport.StatusEnabled, radarport.StatusDisabled}) || !options.PublicRouteReady || options.RealExternalCallExecuted || !options.LocalProjection {
 		t.Fatalf("options=%+v", options)
 	}
 
@@ -625,6 +753,72 @@ func TestServiceRetriesPublicCodeCollisionAndKeepsNoOpUpdateStable(t *testing.T)
 	}
 }
 
+func TestServiceLocalTrackingClosedLoop(t *testing.T) {
+	service, db := newServiceFixture(t)
+	ctx := context.Background()
+	created, err := service.Create(ctx, radarport.CreateCommand{
+		ExpectedVersion: 0, Name: "Tracked", Title: "Tracked title",
+		DestinationURL: "https://example.com/tracked", ActorID: 7,
+		IdempotencyKey: "radar-tracking-create-001",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	enabled, err := service.SetStatus(ctx, radarport.SetStatusCommand{
+		LinkID: created.Link.LinkID, ExpectedVersion: created.Link.Version,
+		Target: radarport.StatusEnabled, ActorID: 7, IdempotencyKey: "radar-tracking-enable-001",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	share, err := service.Share(ctx, enabled.Link.LinkID)
+	if err != nil || !share.Available || !share.PublicRouteReady || share.SharePath != "/r/"+enabled.Link.PublicCode || share.QRPayload != share.SharePath {
+		t.Fatalf("share=%+v err=%v", share, err)
+	}
+
+	redirect, err := service.ResolvePublicRedirect(ctx, enabled.Link.PublicCode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if redirect.DestinationURL != enabled.Link.DestinationURL || !redirect.Receipt.LocalReceipt || redirect.Receipt.IdentityAttributed || redirect.Receipt.RealExternalCallExecuted {
+		t.Fatalf("redirect=%+v", redirect)
+	}
+	page := int32(3)
+	command := radarport.RecordEventCommand{
+		PublicCode: enabled.Link.PublicCode, Stage: radarport.EventStagePDFPageLoaded,
+		Page: &page, Extra: map[string]any{"variant": "mobile"}, IdempotencyKey: "radar-public-event-001",
+	}
+	first, err := service.RecordPublicEvent(ctx, command)
+	if err != nil {
+		t.Fatal(err)
+	}
+	replay, err := service.RecordPublicEvent(ctx, command)
+	if err != nil || !replay.Replayed || replay.ReceiptID != first.ReceiptID {
+		t.Fatalf("replay=%+v err=%v", replay, err)
+	}
+	command.Extra["variant"] = "desktop"
+	if _, err = service.RecordPublicEvent(ctx, command); !errors.Is(err, radarport.ErrIdempotencyConflict) {
+		t.Fatalf("idempotency conflict err=%v", err)
+	}
+
+	pageResult, err := service.ListEvents(ctx, radarport.EventListInput{LinkID: enabled.Link.LinkID, Limit: 10})
+	if err != nil || pageResult.Total != 3 || len(pageResult.Items) != 3 || pageResult.IdentityAttributed || pageResult.RealExternalCallExecuted {
+		t.Fatalf("events=%+v err=%v", pageResult, err)
+	}
+	stats, err := service.EventStats(ctx, enabled.Link.LinkID)
+	if err != nil || stats.TotalEvents != 3 || stats.TotalLandings != 1 || stats.Redirects != 1 || stats.AuthorizedUsers != 0 || stats.IdentityAttributed || stats.RealExternalCallExecuted {
+		t.Fatalf("stats=%+v err=%v", stats, err)
+	}
+	sidebar, err := service.SidebarLinks(ctx, 10, 0, "https://crm.example.com/")
+	if err != nil || sidebar.Total != 1 || len(sidebar.Items) != 1 || sidebar.Items[0].URL != "https://crm.example.com/r/"+enabled.Link.PublicCode || !sidebar.LocalProjection {
+		t.Fatalf("sidebar=%+v err=%v", sidebar, err)
+	}
+	state := db.snapshot()
+	if len(state.trackingEvents) != 3 || len(state.trackingByKey) != 1 {
+		t.Fatalf("tracking state=%+v", state)
+	}
+}
+
 func newServiceFixture(t *testing.T) (*Service, *memoryDB) {
 	t.Helper()
 	db := newMemoryDB()
@@ -653,6 +847,11 @@ func newServiceFixture(t *testing.T) (*Service, *memoryDB) {
 		code := codes[codeIndex]
 		codeIndex++
 		return code, nil
+	}
+	var receiptIndex int
+	service.generateReceiptID = func() (string, error) {
+		receiptIndex++
+		return fmt.Sprintf("rre_%032x", receiptIndex), nil
 	}
 	return service, db
 }
@@ -698,6 +897,9 @@ func cloneMemoryState(source memoryState) memoryState {
 		links:             make(map[radarport.LinkID]radarport.Link, len(source.links)),
 		idempotency:       make(map[string]radarport.IdempotencyRecord, len(source.idempotency)),
 		events:            make([]eventport.Event, len(source.events)),
+		trackingEvents:    make([]radarport.Event, len(source.trackingEvents)),
+		trackingByKey:     make(map[string]int, len(source.trackingByKey)),
+		trackingDigests:   make(map[string][32]byte, len(source.trackingDigests)),
 		nextLinkID:        source.nextLinkID,
 		nextIdempotencyID: source.nextIdempotencyID,
 	}
@@ -711,7 +913,34 @@ func cloneMemoryState(source memoryState) memoryState {
 		event.Payload = append(json.RawMessage(nil), event.Payload...)
 		cloned.events[index] = event
 	}
+	copy(cloned.trackingEvents, source.trackingEvents)
+	for key, index := range source.trackingByKey {
+		cloned.trackingByKey[key] = index
+	}
+	for key, digest := range source.trackingDigests {
+		cloned.trackingDigests[key] = digest
+	}
 	return cloned
+}
+
+func trackingKey(linkID radarport.LinkID, digest []byte) string {
+	return fmt.Sprintf("%d:%x", linkID, digest)
+}
+
+func clonePage(page *int32) *int32 {
+	if page == nil {
+		return nil
+	}
+	cloned := *page
+	return &cloned
+}
+
+func latestTime(existing *time.Time, candidate time.Time) *time.Time {
+	if existing != nil && !candidate.After(*existing) {
+		return existing
+	}
+	cloned := candidate
+	return &cloned
 }
 
 func cloneIdempotency(record radarport.IdempotencyRecord) radarport.IdempotencyRecord {

@@ -1,12 +1,14 @@
 package http
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"io"
 	stdhttp "net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	radarport "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/port"
 )
@@ -36,7 +38,7 @@ func (fragment *RouteFragment) ServeHTTP(writer stdhttp.ResponseWriter, request 
 	}
 	remainder := strings.TrimPrefix(path, BasePath+"/")
 	segments := strings.Split(remainder, "/")
-	if len(segments) < 1 || len(segments) > 2 || segments[0] == "" {
+	if len(segments) < 1 || len(segments) > 3 || segments[0] == "" {
 		writeError(writer, stdhttp.StatusNotFound, "NOT_FOUND", "The resource was not found.", nil)
 		return
 	}
@@ -51,6 +53,14 @@ func (fragment *RouteFragment) ServeHTTP(writer stdhttp.ResponseWriter, request 
 	}
 	if segments[1] == "" {
 		writeError(writer, stdhttp.StatusNotFound, "NOT_FOUND", "The resource was not found.", nil)
+		return
+	}
+	if len(segments) == 3 {
+		if segments[1] != "events" || segments[2] != "export" || request.Method != stdhttp.MethodGet {
+			writeError(writer, stdhttp.StatusNotFound, "NOT_FOUND", "The resource was not found.", nil)
+			return
+		}
+		fragment.exportEvents(writer, request, radarport.LinkID(id))
 		return
 	}
 	fragment.serveAction(writer, request, radarport.LinkID(id), segments[1])
@@ -92,9 +102,107 @@ func (fragment *RouteFragment) serveAction(writer stdhttp.ResponseWriter, reques
 			return
 		}
 		fragment.setStatus(writer, request, id, action)
+	case "stats":
+		if request.Method != stdhttp.MethodGet {
+			writeMethodNotAllowed(writer, "GET")
+			return
+		}
+		fragment.stats(writer, request, id)
+	case "events":
+		if request.Method != stdhttp.MethodGet {
+			writeMethodNotAllowed(writer, "GET")
+			return
+		}
+		fragment.listEvents(writer, request, id)
 	default:
 		writeError(writer, stdhttp.StatusNotFound, "NOT_FOUND", "The resource was not found.", nil)
 	}
+}
+
+func (fragment *RouteFragment) listEvents(writer stdhttp.ResponseWriter, request *stdhttp.Request, id radarport.LinkID) {
+	if _, ok := fragment.authorize(writer, request, PermissionAdminRead, false); !ok {
+		return
+	}
+	input, err := parseEventQuery(id, request.URL.Query())
+	if err != nil {
+		writeError(writer, stdhttp.StatusBadRequest, "MALFORMED_REQUEST", "The request is malformed.", nil)
+		return
+	}
+	if nilInterface(fragment.tracking) {
+		writeApplicationError(writer, radarport.ErrUnavailable)
+		return
+	}
+	page, err := fragment.tracking.ListEvents(request.Context(), input)
+	if err != nil {
+		writeApplicationError(writer, err)
+		return
+	}
+	writeJSON(writer, stdhttp.StatusOK, page)
+}
+
+func (fragment *RouteFragment) stats(writer stdhttp.ResponseWriter, request *stdhttp.Request, id radarport.LinkID) {
+	if _, ok := fragment.authorize(writer, request, PermissionAdminRead, false); !ok {
+		return
+	}
+	if request.URL.RawQuery != "" || requireEmptyBody(request) != nil {
+		writeError(writer, stdhttp.StatusBadRequest, "MALFORMED_REQUEST", "The request is malformed.", nil)
+		return
+	}
+	if nilInterface(fragment.tracking) {
+		writeApplicationError(writer, radarport.ErrUnavailable)
+		return
+	}
+	stats, err := fragment.tracking.EventStats(request.Context(), id)
+	if err != nil {
+		writeApplicationError(writer, err)
+		return
+	}
+	writeJSON(writer, stdhttp.StatusOK, stats)
+}
+
+func (fragment *RouteFragment) exportEvents(writer stdhttp.ResponseWriter, request *stdhttp.Request, id radarport.LinkID) {
+	if _, ok := fragment.authorize(writer, request, PermissionAdminRead, false); !ok {
+		return
+	}
+	input, err := parseEventQuery(id, request.URL.Query())
+	if err != nil || input.Stage != nil || input.Offset != 0 {
+		writeError(writer, stdhttp.StatusBadRequest, "MALFORMED_REQUEST", "The request is malformed.", nil)
+		return
+	}
+	if nilInterface(fragment.tracking) {
+		writeApplicationError(writer, radarport.ErrUnavailable)
+		return
+	}
+	input.Limit = radarport.MaximumEventLimit
+	rows := make([]radarport.Event, 0)
+	for {
+		page, listErr := fragment.tracking.ListEvents(request.Context(), input)
+		if listErr != nil {
+			writeApplicationError(writer, listErr)
+			return
+		}
+		rows = append(rows, page.Items...)
+		if !page.HasMore {
+			break
+		}
+		if len(rows) >= 50_000 {
+			writeError(writer, stdhttp.StatusConflict, "CONFLICT", "The export exceeds the local safety limit.", nil)
+			return
+		}
+		input.Offset += input.Limit
+	}
+	writer.Header().Set("Cache-Control", "private, no-store")
+	writer.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	writer.Header().Set("Content-Disposition", `attachment; filename="radar_link_`+strconv.FormatInt(int64(id), 10)+`_click_events.csv"`)
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
+	writer.WriteHeader(stdhttp.StatusOK)
+	_, _ = io.WriteString(writer, "\ufeff")
+	csvWriter := csv.NewWriter(writer)
+	_ = csvWriter.Write([]string{"unionid", "external_userid", "created_at"})
+	for _, event := range rows {
+		_ = csvWriter.Write([]string{"", "", event.CreatedAt.UTC().Format(time.RFC3339Nano)})
+	}
+	csvWriter.Flush()
 }
 
 func (fragment *RouteFragment) list(writer stdhttp.ResponseWriter, request *stdhttp.Request) {

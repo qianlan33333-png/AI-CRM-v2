@@ -291,10 +291,11 @@ owners:
 
   radar:
     package: internal/radar
-    tables: [radar_links, radar_link_idempotency_records]
+    tables: [radar_links, radar_link_idempotency_records, radar_link_events]
     constraints:
       radar_links: local_only_link_facts_without_public_route_click_tracking_or_provider_effect
       radar_link_idempotency_records: actor_scoped_transactional_mutation_deduplication_without_raw_keys_or_provider_data
+      radar_link_events: immutable_local_tracking_receipts_without_identity_network_or_provider_facts
 
   operationcycle:
     package: internal/operationcycle

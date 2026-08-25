@@ -409,6 +409,7 @@ const p4ServicePeriodLifecycleEvidence = "P4-SERVICE-PERIOD-LIFECYCLE-2026-08-22
 const p4ServicePeriodMemberGridReadEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-READ-2026-08-22"
 const p4MemberGridManagementEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-MANAGEMENT-2026-08-22"
 const p4RadarEvidence = "P4-RADAR-LOCAL-LIFECYCLE-2026-08-22"
+const p4RadarTrackingEvidence = "P4-RADAR-LOCAL-TRACKING-2026-08-25"
 const p4CloudCampaignEvidence = "P4-CLOUD-CAMPAIGN-LOCAL-LIFECYCLE-2026-08-22"
 const p4AIAudienceEvidence = "P4-AI-AUDIENCE-LOCAL-LIFECYCLE-2026-08-22"
 
@@ -460,6 +461,14 @@ var p4RadarOperations = map[string]bool{
 	"listRadarLinks": true, "createRadarLink": true, "getRadarLinkOptions": true,
 	"getRadarLink": true, "updateRadarLink": true, "enableRadarLink": true,
 	"disableRadarLink": true, "getRadarLinkShareProjection": true,
+	"getRadarLinkEventStats": true, "listRadarLinkEvents": true,
+	"exportRadarLinkEvents": true, "resolveRadarPublicRedirect": true,
+	"recordRadarPublicEvent": true,
+}
+
+var p4RadarPublicOperations = map[string]bool{
+	"resolveRadarPublicRedirect": true,
+	"recordRadarPublicEvent":     true,
 }
 
 var p4RadarLegacyMappings = map[string][]string{
@@ -467,6 +476,9 @@ var p4RadarLegacyMappings = map[string][]string{
 	"getRadarLinkOptions": {"LEGACY-API-0447"}, "getRadarLink": {"LEGACY-API-0453"},
 	"updateRadarLink": {"LEGACY-API-0454"}, "disableRadarLink": {"LEGACY-API-0455"},
 	"enableRadarLink": {"LEGACY-API-0456"}, "getRadarLinkShareProjection": {"LEGACY-API-0461"},
+	"getRadarLinkEventStats": {"LEGACY-API-0462"}, "listRadarLinkEvents": {"LEGACY-API-0457"},
+	"exportRadarLinkEvents": {"LEGACY-API-0458"}, "resolveRadarPublicRedirect": {"LEGACY-API-0770"},
+	"recordRadarPublicEvent": {"LEGACY-API-0654"},
 }
 
 var p4CloudCampaignOperations = map[string]bool{
@@ -983,6 +995,9 @@ var authorizationContracts = map[string]authorizationContract{
 	"enableRadarLink":                            {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
 	"disableRadarLink":                           {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
 	"getRadarLinkShareProjection":                {"admin.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getRadarLinkEventStats":                     {"admin.read", map[string]string{"admin": "global", "ops": "global"}},
+	"listRadarLinkEvents":                        {"admin.read", map[string]string{"admin": "global", "ops": "global"}},
+	"exportRadarLinkEvents":                      {"admin.read", map[string]string{"admin": "global", "ops": "global"}},
 	"listCloudCampaigns":                         {"operations.read", map[string]string{"admin": "global", "ops": "global"}},
 	"getCloudCampaign":                           {"operations.read", map[string]string{"admin": "global", "ops": "global"}},
 	"batchStartCloudCampaigns":                   {"operations.manage", map[string]string{"admin": "global", "ops": "global"}},
@@ -1919,12 +1934,29 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				if linkErr != nil || !reflect.DeepEqual(ids, p4RadarLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
-				read := op.OperationID == "listRadarLinks" || op.OperationID == "getRadarLinkOptions" || op.OperationID == "getRadarLink" || op.OperationID == "getRadarLinkShareProjection"
+				if p4RadarPublicOperations[op.OperationID] {
+					if op.Extensions["x-p4-decision-evidence"] != p4RadarTrackingEvidence || op.Extensions["x-aicrm-capability"] != "public" ||
+						op.Extensions["x-aicrm-auth-scheme"] != "public" || op.Extensions["x-aicrm-csrf"] != "none" ||
+						op.Extensions["x-aicrm-data-classification"] != "none" || op.Extensions["x-aicrm-data-source"] != "local_command" ||
+						op.Extensions["x-aicrm-external-effect"] != "none" || op.Security == nil || len(*op.Security) != 0 ||
+						op.Responses.Value("400") == nil || op.Responses.Value("404") == nil || op.Responses.Value("503") == nil {
+						return fmt.Errorf("%s public local Radar boundary drifted", op.OperationID)
+					}
+					if _, declared := op.Extensions["x-aicrm-rbac-scopes"]; declared {
+						return fmt.Errorf("%s public local Radar operation must not declare RBAC scopes", op.OperationID)
+					}
+					continue
+				}
+				read := op.OperationID == "listRadarLinks" || op.OperationID == "getRadarLinkOptions" || op.OperationID == "getRadarLink" || op.OperationID == "getRadarLinkShareProjection" || op.OperationID == "getRadarLinkEventStats" || op.OperationID == "listRadarLinkEvents" || op.OperationID == "exportRadarLinkEvents"
 				wantCapability, wantCSRF, wantSource := "operations.manage", "required", "local_command"
 				if read {
 					wantCapability, wantCSRF, wantSource = "admin.read", "none", "local_read_model"
 				}
-				if op.Extensions["x-p4-decision-evidence"] != p4RadarEvidence || op.Extensions["x-aicrm-capability"] != wantCapability ||
+				wantEvidence := p4RadarEvidence
+				if op.OperationID == "getRadarLinkEventStats" || op.OperationID == "listRadarLinkEvents" || op.OperationID == "exportRadarLinkEvents" {
+					wantEvidence = p4RadarTrackingEvidence
+				}
+				if op.Extensions["x-p4-decision-evidence"] != wantEvidence || op.Extensions["x-aicrm-capability"] != wantCapability ||
 					op.Extensions["x-aicrm-auth-scheme"] != "human_session" || op.Extensions["x-aicrm-session-bound-csrf"] != wantCSRF ||
 					op.Extensions["x-aicrm-data-classification"] != "internal" || op.Extensions["x-aicrm-data-source"] != wantSource ||
 					op.Extensions["x-aicrm-external-effect"] != "none" || op.Responses.Value("401") == nil ||
@@ -2238,7 +2270,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 					return fmt.Errorf("%s has missing or forged P3 segment evidence", op.OperationID)
 				}
 			}
-			if p4DomainVerificationOperations[op.OperationID] || p4LegacyHealthOperations[op.OperationID] || nativePackageOperationDeclared(op.OperationID) || pe01OperationDeclared(op.OperationID) {
+			if p4DomainVerificationOperations[op.OperationID] || p4LegacyHealthOperations[op.OperationID] || p4RadarPublicOperations[op.OperationID] || nativePackageOperationDeclared(op.OperationID) || pe01OperationDeclared(op.OperationID) {
 				// The public static route and the public runtime-mode snapshot are
 				// fully constrained in their dedicated branches above. Native
 				// package operations are likewise validated against their exact
@@ -2565,18 +2597,20 @@ func validateRadarShareContract(doc *openapi3.T) error {
 	}
 	required := append([]string(nil), schema.Value.Required...)
 	sort.Strings(required)
+	available := schema.Value.Properties["available"]
+	sharePath := schema.Value.Properties["share_path"]
+	qrPayload := schema.Value.Properties["qr_payload"]
 	if !reflect.DeepEqual(required, []string{"available", "link_id", "local_projection", "public_code", "public_route_ready", "qr_payload", "real_external_call_executed", "share_path", "status"}) ||
-		!legacyTagBooleanEnum(schema.Value, "available", false) ||
-		!legacyTagBooleanEnum(schema.Value, "public_route_ready", false) ||
+		available == nil || available.Value == nil || available.Value.Type == nil || !available.Value.Type.Is("boolean") || len(available.Value.Enum) != 0 ||
+		!legacyTagBooleanEnum(schema.Value, "public_route_ready", true) ||
 		!legacyTagBooleanEnum(schema.Value, "real_external_call_executed", false) ||
-		!legacyTagStringEnum(schema.Value, "share_path", "") ||
-		!legacyTagStringEnum(schema.Value, "qr_payload", "") {
-		return errors.New("Radar share projection must not expose an unavailable public route")
+		sharePath == nil || sharePath.Value == nil || sharePath.Value.Pattern != `^/r/rd_[A-Za-z0-9_-]{22}$` ||
+		qrPayload == nil || qrPayload.Value == nil || qrPayload.Value.Pattern != `^/r/rd_[A-Za-z0-9_-]{22}$` {
+		return errors.New("Radar share projection must expose only the local public route")
 	}
-	for path := range doc.Paths.Map() {
-		if strings.HasPrefix(path, "/r/") {
-			return errors.New("Radar public route is not available")
-		}
+	public := doc.Paths.Value("/r/{code}")
+	if public == nil || public.Get == nil || public.Get.OperationID != "resolveRadarPublicRedirect" {
+		return errors.New("Radar public route is missing")
 	}
 	return nil
 }
