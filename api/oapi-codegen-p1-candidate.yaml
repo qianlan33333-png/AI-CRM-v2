@@ -36,6 +36,7 @@ output-options:
     - p4-internal-event-safe-export
     - p4-release-plane
     - p4-external-effects-runtime
+    - p4-commerce-external-push
     - pe01-wechat-pay-settlement
     - p4-media-content-delivery
     - commerce-refund-v2

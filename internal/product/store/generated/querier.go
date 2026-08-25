@@ -11,6 +11,7 @@ import (
 )
 
 type Querier interface {
+	CommerceExternalPushAcceptanceServerVersion(ctx context.Context) (string, error)
 	CompleteEntitlementOperationReceipt(ctx context.Context, arg CompleteEntitlementOperationReceiptParams) (CompleteEntitlementOperationReceiptRow, error)
 	CompleteProductOperationReceipt(ctx context.Context, arg CompleteProductOperationReceiptParams) (CompleteProductOperationReceiptRow, error)
 	CompleteServicePeriodMemberReceipt(ctx context.Context, arg CompleteServicePeriodMemberReceiptParams) (CompleteServicePeriodMemberReceiptRow, error)
@@ -20,6 +21,7 @@ type Querier interface {
 	CreatePaidOrderEntitlement(ctx context.Context, arg CreatePaidOrderEntitlementParams) (CreatePaidOrderEntitlementRow, error)
 	CreatePaidOrderServicePeriodMember(ctx context.Context, arg CreatePaidOrderServicePeriodMemberParams) (CreatePaidOrderServicePeriodMemberRow, error)
 	CreateProduct(ctx context.Context, arg CreateProductParams) (CreateProductRow, error)
+	CreateProductExternalPushTestBinding(ctx context.Context, arg CreateProductExternalPushTestBindingParams) (CreateProductExternalPushTestBindingRow, error)
 	CreateProductLocalEntitlement(ctx context.Context, arg CreateProductLocalEntitlementParams) (CreateProductLocalEntitlementRow, error)
 	CreateServicePeriodMember(ctx context.Context, arg CreateServicePeriodMemberParams) (CreateServicePeriodMemberRow, error)
 	// Only a draft with no local entitlement, order projection, or other Product
@@ -50,15 +52,20 @@ type Querier interface {
 	LockLocalProductDeleteReferences(ctx context.Context) error
 	LockPaidOrderEntitlement(ctx context.Context, orderID int64) (LockPaidOrderEntitlementRow, error)
 	LockPaidOrderServicePeriodMember(ctx context.Context, orderID pgtype.Int8) (LockPaidOrderServicePeriodMemberRow, error)
+	LockProductExternalPushConfiguration(ctx context.Context, arg LockProductExternalPushConfigurationParams) (LockProductExternalPushConfigurationRow, error)
 	LockProductForPaidSettlement(ctx context.Context, arg LockProductForPaidSettlementParams) (LockProductForPaidSettlementRow, error)
 	LockServicePeriodMember(ctx context.Context, arg LockServicePeriodMemberParams) (LockServicePeriodMemberRow, error)
 	LockServiceProductForMemberAdd(ctx context.Context, productID int64) (bool, error)
+	ProductExternalPushTestExists(ctx context.Context, arg ProductExternalPushTestExistsParams) (bool, error)
+	ReadCommerceExternalPushAcceptanceFacts(ctx context.Context, productID int64) (ReadCommerceExternalPushAcceptanceFactsRow, error)
+	ReadProductExternalPushConfiguration(ctx context.Context, arg ReadProductExternalPushConfigurationParams) (ReadProductExternalPushConfigurationRow, error)
 	RemovePaidOrderServicePeriodMember(ctx context.Context, arg RemovePaidOrderServicePeriodMemberParams) (RemovePaidOrderServicePeriodMemberRow, error)
 	ReserveEntitlementOperationReceipt(ctx context.Context, arg ReserveEntitlementOperationReceiptParams) (ReserveEntitlementOperationReceiptRow, error)
 	ReserveProductOperationReceipt(ctx context.Context, arg ReserveProductOperationReceiptParams) (ReserveProductOperationReceiptRow, error)
 	ReserveServicePeriodMemberReceipt(ctx context.Context, arg ReserveServicePeriodMemberReceiptParams) (ReserveServicePeriodMemberReceiptRow, error)
 	RevokePaidOrderEntitlement(ctx context.Context, arg RevokePaidOrderEntitlementParams) (RevokePaidOrderEntitlementRow, error)
 	RevokeProductLocalEntitlement(ctx context.Context, arg RevokeProductLocalEntitlementParams) (RevokeProductLocalEntitlementRow, error)
+	SaveProductExternalPushConfiguration(ctx context.Context, arg SaveProductExternalPushConfigurationParams) (ProductExternalPushConfiguration, error)
 	ServicePeriodMemberCustomerExists(ctx context.Context, customerID int64) (bool, error)
 	ServicePeriodProductExists(ctx context.Context, productID int64) (bool, error)
 	TransitionServicePeriodMember(ctx context.Context, arg TransitionServicePeriodMemberParams) (TransitionServicePeriodMemberRow, error)

@@ -152,6 +152,7 @@ while [[ -n "$remaining_groups" ]]; do
     product)
       run_make_acceptance P4I01A_PRODUCT_TEST_DATABASE_URL p4-i01a-product-acceptance
       run_make_acceptance P4I01B_PRODUCT_TEST_DATABASE_URL p4-i01b-product-entitlement-acceptance
+      run_make_acceptance P4EXTERNALPUSH_TEST_DATABASE_URL p4-commerce-external-push-acceptance
       ;;
     pushcenter)
       run_make_acceptance P4PUSHCENTER_TEST_DATABASE_URL p4-push-center-0421-0422-acceptance

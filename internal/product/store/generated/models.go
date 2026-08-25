@@ -3,3 +3,15 @@
 //   sqlc v1.28.0
 
 package productdb
+
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+type ProductExternalPushConfiguration struct {
+	ProductID              int64              `json:"product_id"`
+	ProductKind            string             `json:"product_kind"`
+	Enabled                bool               `json:"enabled"`
+	ConfigurationReference string             `json:"configuration_reference"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}

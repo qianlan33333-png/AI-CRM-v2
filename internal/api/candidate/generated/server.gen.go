@@ -1258,6 +1258,120 @@ func (e CloudCampaignTouchPlanSummaryRuntimeExecuted) Valid() bool {
 	}
 }
 
+// Defines values for CommerceExternalPushConfigurationProductKind.
+const (
+	CommerceExternalPushConfigurationProductKindServicePeriod CommerceExternalPushConfigurationProductKind = "service_period"
+	CommerceExternalPushConfigurationProductKindWechatPay     CommerceExternalPushConfigurationProductKind = "wechat_pay"
+)
+
+// Valid indicates whether the value is a known member of the CommerceExternalPushConfigurationProductKind enum.
+func (e CommerceExternalPushConfigurationProductKind) Valid() bool {
+	switch e {
+	case CommerceExternalPushConfigurationProductKindServicePeriod:
+		return true
+	case CommerceExternalPushConfigurationProductKindWechatPay:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CommerceExternalPushTestAutoRetryAllowed.
+const (
+	CommerceExternalPushTestAutoRetryAllowedFalse CommerceExternalPushTestAutoRetryAllowed = false
+)
+
+// Valid indicates whether the value is a known member of the CommerceExternalPushTestAutoRetryAllowed enum.
+func (e CommerceExternalPushTestAutoRetryAllowed) Valid() bool {
+	switch e {
+	case CommerceExternalPushTestAutoRetryAllowedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CommerceExternalPushTestDeliveryProven.
+const (
+	CommerceExternalPushTestDeliveryProvenFalse CommerceExternalPushTestDeliveryProven = false
+)
+
+// Valid indicates whether the value is a known member of the CommerceExternalPushTestDeliveryProven enum.
+func (e CommerceExternalPushTestDeliveryProven) Valid() bool {
+	switch e {
+	case CommerceExternalPushTestDeliveryProvenFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CommerceExternalPushTestProductKind.
+const (
+	CommerceExternalPushTestProductKindServicePeriod CommerceExternalPushTestProductKind = "service_period"
+	CommerceExternalPushTestProductKindWechatPay     CommerceExternalPushTestProductKind = "wechat_pay"
+)
+
+// Valid indicates whether the value is a known member of the CommerceExternalPushTestProductKind enum.
+func (e CommerceExternalPushTestProductKind) Valid() bool {
+	switch e {
+	case CommerceExternalPushTestProductKindServicePeriod:
+		return true
+	case CommerceExternalPushTestProductKindWechatPay:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CommerceExternalPushTestProviderAccepted.
+const (
+	CommerceExternalPushTestProviderAcceptedFalse CommerceExternalPushTestProviderAccepted = false
+)
+
+// Valid indicates whether the value is a known member of the CommerceExternalPushTestProviderAccepted enum.
+func (e CommerceExternalPushTestProviderAccepted) Valid() bool {
+	switch e {
+	case CommerceExternalPushTestProviderAcceptedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CommerceExternalPushTestRealExternalCallExecuted.
+const (
+	CommerceExternalPushTestRealExternalCallExecutedFalse CommerceExternalPushTestRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the CommerceExternalPushTestRealExternalCallExecuted enum.
+func (e CommerceExternalPushTestRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case CommerceExternalPushTestRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CommerceExternalPushTestState.
+const (
+	CommerceExternalPushTestStateAccepted CommerceExternalPushTestState = "accepted"
+	CommerceExternalPushTestStateQueued   CommerceExternalPushTestState = "queued"
+)
+
+// Valid indicates whether the value is a known member of the CommerceExternalPushTestState enum.
+func (e CommerceExternalPushTestState) Valid() bool {
+	switch e {
+	case CommerceExternalPushTestStateAccepted:
+		return true
+	case CommerceExternalPushTestStateQueued:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ContactOwnerReassignmentExecuteRequestConfirmation.
 const (
 	CONFIRMOWNERREASSIGNMENT ContactOwnerReassignmentExecuteRequestConfirmation = "CONFIRM OWNER REASSIGNMENT"
@@ -7353,19 +7467,19 @@ func (e ListCustomerChatActivityParamsChatType) Valid() bool {
 
 // Defines values for ListIdentityMergeReviewsParamsStatus.
 const (
-	Approved ListIdentityMergeReviewsParamsStatus = "approved"
-	Pending  ListIdentityMergeReviewsParamsStatus = "pending"
-	Rejected ListIdentityMergeReviewsParamsStatus = "rejected"
+	ListIdentityMergeReviewsParamsStatusApproved ListIdentityMergeReviewsParamsStatus = "approved"
+	ListIdentityMergeReviewsParamsStatusPending  ListIdentityMergeReviewsParamsStatus = "pending"
+	ListIdentityMergeReviewsParamsStatusRejected ListIdentityMergeReviewsParamsStatus = "rejected"
 )
 
 // Valid indicates whether the value is a known member of the ListIdentityMergeReviewsParamsStatus enum.
 func (e ListIdentityMergeReviewsParamsStatus) Valid() bool {
 	switch e {
-	case Approved:
+	case ListIdentityMergeReviewsParamsStatusApproved:
 		return true
-	case Pending:
+	case ListIdentityMergeReviewsParamsStatusPending:
 		return true
-	case Rejected:
+	case ListIdentityMergeReviewsParamsStatusRejected:
 		return true
 	default:
 		return false
@@ -8119,6 +8233,55 @@ type CloudCampaignTouchPlanSummaryRealExternalCallExecuted bool
 
 // CloudCampaignTouchPlanSummaryRuntimeExecuted defines model for CloudCampaignTouchPlanSummary.RuntimeExecuted.
 type CloudCampaignTouchPlanSummaryRuntimeExecuted bool
+
+// CommerceExternalPushConfiguration defines model for CommerceExternalPushConfiguration.
+type CommerceExternalPushConfiguration struct {
+	ConfigurationReference *string                                      `json:"configuration_reference,omitempty"`
+	Enabled                bool                                         `json:"enabled"`
+	ProductId              int64                                        `json:"product_id"`
+	ProductKind            CommerceExternalPushConfigurationProductKind `json:"product_kind"`
+	UpdatedAt              time.Time                                    `json:"updated_at"`
+}
+
+// CommerceExternalPushConfigurationProductKind defines model for CommerceExternalPushConfiguration.ProductKind.
+type CommerceExternalPushConfigurationProductKind string
+
+// CommerceExternalPushConfigurationRequest defines model for CommerceExternalPushConfigurationRequest.
+type CommerceExternalPushConfigurationRequest struct {
+	ConfigurationReference *string `json:"configuration_reference,omitempty"`
+	Enabled                bool    `json:"enabled"`
+}
+
+// CommerceExternalPushTest defines model for CommerceExternalPushTest.
+type CommerceExternalPushTest struct {
+	AutoRetryAllowed         CommerceExternalPushTestAutoRetryAllowed         `json:"auto_retry_allowed"`
+	CreatedAt                time.Time                                        `json:"created_at"`
+	DeliveryProven           CommerceExternalPushTestDeliveryProven           `json:"delivery_proven"`
+	EffectId                 string                                           `json:"effect_id"`
+	ProductId                int64                                            `json:"product_id"`
+	ProductKind              CommerceExternalPushTestProductKind              `json:"product_kind"`
+	ProviderAccepted         CommerceExternalPushTestProviderAccepted         `json:"provider_accepted"`
+	RealExternalCallExecuted CommerceExternalPushTestRealExternalCallExecuted `json:"real_external_call_executed"`
+	State                    CommerceExternalPushTestState                    `json:"state"`
+}
+
+// CommerceExternalPushTestAutoRetryAllowed defines model for CommerceExternalPushTest.AutoRetryAllowed.
+type CommerceExternalPushTestAutoRetryAllowed bool
+
+// CommerceExternalPushTestDeliveryProven defines model for CommerceExternalPushTest.DeliveryProven.
+type CommerceExternalPushTestDeliveryProven bool
+
+// CommerceExternalPushTestProductKind defines model for CommerceExternalPushTest.ProductKind.
+type CommerceExternalPushTestProductKind string
+
+// CommerceExternalPushTestProviderAccepted defines model for CommerceExternalPushTest.ProviderAccepted.
+type CommerceExternalPushTestProviderAccepted bool
+
+// CommerceExternalPushTestRealExternalCallExecuted defines model for CommerceExternalPushTest.RealExternalCallExecuted.
+type CommerceExternalPushTestRealExternalCallExecuted bool
+
+// CommerceExternalPushTestState defines model for CommerceExternalPushTest.State.
+type CommerceExternalPushTestState string
 
 // ContactOwnerReassignmentExecuteRequest defines model for ContactOwnerReassignmentExecuteRequest.
 type ContactOwnerReassignmentExecuteRequest struct {
@@ -12522,6 +12685,24 @@ type EnableServicePeriodProductParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// SaveServicePeriodProductExternalPushParams defines parameters for SaveServicePeriodProductExternalPush.
+type SaveServicePeriodProductExternalPushParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// QueueServicePeriodProductExternalPushTestParams defines parameters for QueueServicePeriodProductExternalPushTest.
+type QueueServicePeriodProductExternalPushTestParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // CreateServicePeriodMemberGridCollaboratorParams defines parameters for CreateServicePeriodMemberGridCollaborator.
 type CreateServicePeriodMemberGridCollaboratorParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -12664,6 +12845,24 @@ type DisableLegacyWechatPayProductParams struct {
 
 // EnableLegacyWechatPayProductParams defines parameters for EnableLegacyWechatPayProduct.
 type EnableLegacyWechatPayProductParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// SaveWechatPayProductExternalPushParams defines parameters for SaveWechatPayProductExternalPush.
+type SaveWechatPayProductExternalPushParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// QueueWechatPayProductExternalPushTestParams defines parameters for QueueWechatPayProductExternalPushTest.
+type QueueWechatPayProductExternalPushTestParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
 	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
 
@@ -13450,6 +13649,9 @@ type DisableServicePeriodProductJSONRequestBody = ServicePeriodVersionRequest
 // EnableServicePeriodProductJSONRequestBody defines body for EnableServicePeriodProduct for application/json ContentType.
 type EnableServicePeriodProductJSONRequestBody = ServicePeriodVersionRequest
 
+// SaveServicePeriodProductExternalPushJSONRequestBody defines body for SaveServicePeriodProductExternalPush for application/json ContentType.
+type SaveServicePeriodProductExternalPushJSONRequestBody = CommerceExternalPushConfigurationRequest
+
 // CreateServicePeriodMemberGridCollaboratorJSONRequestBody defines body for CreateServicePeriodMemberGridCollaborator for application/json ContentType.
 type CreateServicePeriodMemberGridCollaboratorJSONRequestBody = ServicePeriodMemberGridCollaboratorCreateRequest
 
@@ -13500,6 +13702,9 @@ type DisableLegacyWechatPayProductJSONRequestBody = LocalProductLifecycleVersion
 
 // EnableLegacyWechatPayProductJSONRequestBody defines body for EnableLegacyWechatPayProduct for application/json ContentType.
 type EnableLegacyWechatPayProductJSONRequestBody = LocalProductLifecycleVersionRequest
+
+// SaveWechatPayProductExternalPushJSONRequestBody defines body for SaveWechatPayProductExternalPush for application/json ContentType.
+type SaveWechatPayProductExternalPushJSONRequestBody = CommerceExternalPushConfigurationRequest
 
 // ReconcileWechatShopRefundJSONRequestBody defines body for ReconcileWechatShopRefund for application/json ContentType.
 type ReconcileWechatShopRefundJSONRequestBody = EmptyObject
@@ -15047,6 +15252,15 @@ type ServerInterface interface {
 	// Enable one local service-period product without public purchase capability
 	// (POST /api/admin/service-period-products/{service_product_id}/enable)
 	EnableServicePeriodProduct(w http.ResponseWriter, r *http.Request, serviceProductId int64, params EnableServicePeriodProductParams)
+	// Read one service-period Product-local external-push configuration without Provider access
+	// (GET /api/admin/service-period-products/{service_product_id}/external-push)
+	GetServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, serviceProductId int64)
+	// Save one service-period Product-local external-push configuration without Provider access
+	// (PUT /api/admin/service-period-products/{service_product_id}/external-push)
+	SaveServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, serviceProductId int64, params SaveServicePeriodProductExternalPushParams)
+	// Record a local accepted service-period external-push test without a Provider call or job
+	// (POST /api/admin/service-period-products/{service_product_id}/external-push/test)
+	QueueServicePeriodProductExternalPushTest(w http.ResponseWriter, r *http.Request, serviceProductId int64, params QueueServicePeriodProductExternalPushTestParams)
 	// Read local member-grid access; external sharing remains disabled
 	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/access)
 	GetServicePeriodMemberGridAccess(w http.ResponseWriter, r *http.Request, serviceProductId int64)
@@ -15119,6 +15333,15 @@ type ServerInterface interface {
 	// Enable one CRM-local WeChat-pay product without provider effects
 	// (POST /api/admin/wechat-pay/products/{product_id}/enable)
 	EnableLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params EnableLegacyWechatPayProductParams)
+	// Read one Product-local external-push configuration without Provider access
+	// (GET /api/admin/wechat-pay/products/{product_id}/external-push)
+	GetWechatPayProductExternalPush(w http.ResponseWriter, r *http.Request, productId ProductID)
+	// Save one Product-local external-push configuration without Provider access
+	// (PUT /api/admin/wechat-pay/products/{product_id}/external-push)
+	SaveWechatPayProductExternalPush(w http.ResponseWriter, r *http.Request, productId ProductID, params SaveWechatPayProductExternalPushParams)
+	// Record a local accepted external-push test without a Provider call or job
+	// (POST /api/admin/wechat-pay/products/{product_id}/external-push/test)
+	QueueWechatPayProductExternalPushTest(w http.ResponseWriter, r *http.Request, productId ProductID, params QueueWechatPayProductExternalPushTestParams)
 	// Read a closed local share descriptor without claiming a public purchase route
 	// (GET /api/admin/wechat-pay/products/{product_id}/share)
 	GetLegacyWechatPayProductShare(w http.ResponseWriter, r *http.Request, productId ProductID)
@@ -16025,6 +16248,24 @@ func (_ Unimplemented) EnableServicePeriodProduct(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Read one service-period Product-local external-push configuration without Provider access
+// (GET /api/admin/service-period-products/{service_product_id}/external-push)
+func (_ Unimplemented) GetServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Save one service-period Product-local external-push configuration without Provider access
+// (PUT /api/admin/service-period-products/{service_product_id}/external-push)
+func (_ Unimplemented) SaveServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, serviceProductId int64, params SaveServicePeriodProductExternalPushParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Record a local accepted service-period external-push test without a Provider call or job
+// (POST /api/admin/service-period-products/{service_product_id}/external-push/test)
+func (_ Unimplemented) QueueServicePeriodProductExternalPushTest(w http.ResponseWriter, r *http.Request, serviceProductId int64, params QueueServicePeriodProductExternalPushTestParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Read local member-grid access; external sharing remains disabled
 // (GET /api/admin/service-period-products/{service_product_id}/member-grid/access)
 func (_ Unimplemented) GetServicePeriodMemberGridAccess(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
@@ -16166,6 +16407,24 @@ func (_ Unimplemented) DisableLegacyWechatPayProduct(w http.ResponseWriter, r *h
 // Enable one CRM-local WeChat-pay product without provider effects
 // (POST /api/admin/wechat-pay/products/{product_id}/enable)
 func (_ Unimplemented) EnableLegacyWechatPayProduct(w http.ResponseWriter, r *http.Request, productId ProductID, params EnableLegacyWechatPayProductParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read one Product-local external-push configuration without Provider access
+// (GET /api/admin/wechat-pay/products/{product_id}/external-push)
+func (_ Unimplemented) GetWechatPayProductExternalPush(w http.ResponseWriter, r *http.Request, productId ProductID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Save one Product-local external-push configuration without Provider access
+// (PUT /api/admin/wechat-pay/products/{product_id}/external-push)
+func (_ Unimplemented) SaveWechatPayProductExternalPush(w http.ResponseWriter, r *http.Request, productId ProductID, params SaveWechatPayProductExternalPushParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Record a local accepted external-push test without a Provider call or job
+// (POST /api/admin/wechat-pay/products/{product_id}/external-push/test)
+func (_ Unimplemented) QueueWechatPayProductExternalPushTest(w http.ResponseWriter, r *http.Request, productId ProductID, params QueueWechatPayProductExternalPushTestParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -22580,6 +22839,201 @@ func (siw *ServerInterfaceWrapper) EnableServicePeriodProduct(w http.ResponseWri
 	handler.ServeHTTP(w, r)
 }
 
+// GetServicePeriodProductExternalPush operation middleware
+func (siw *ServerInterfaceWrapper) GetServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetServicePeriodProductExternalPush(w, r, serviceProductId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveServicePeriodProductExternalPush operation middleware
+func (siw *ServerInterfaceWrapper) SaveServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SaveServicePeriodProductExternalPushParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveServicePeriodProductExternalPush(w, r, serviceProductId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// QueueServicePeriodProductExternalPushTest operation middleware
+func (siw *ServerInterfaceWrapper) QueueServicePeriodProductExternalPushTest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params QueueServicePeriodProductExternalPushTestParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.QueueServicePeriodProductExternalPushTest(w, r, serviceProductId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetServicePeriodMemberGridAccess operation middleware
 func (siw *ServerInterfaceWrapper) GetServicePeriodMemberGridAccess(w http.ResponseWriter, r *http.Request) {
 
@@ -24195,6 +24649,201 @@ func (siw *ServerInterfaceWrapper) EnableLegacyWechatPayProduct(w http.ResponseW
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.EnableLegacyWechatPayProduct(w, r, productId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetWechatPayProductExternalPush operation middleware
+func (siw *ServerInterfaceWrapper) GetWechatPayProductExternalPush(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "product_id" -------------
+	var productId ProductID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetWechatPayProductExternalPush(w, r, productId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveWechatPayProductExternalPush operation middleware
+func (siw *ServerInterfaceWrapper) SaveWechatPayProductExternalPush(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "product_id" -------------
+	var productId ProductID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SaveWechatPayProductExternalPushParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveWechatPayProductExternalPush(w, r, productId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// QueueWechatPayProductExternalPushTest operation middleware
+func (siw *ServerInterfaceWrapper) QueueWechatPayProductExternalPushTest(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "product_id" -------------
+	var productId ProductID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "product_id", chi.URLParam(r, "product_id"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params QueueWechatPayProductExternalPushTestParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.QueueWechatPayProductExternalPushTest(w, r, productId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -30609,6 +31258,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/enable", wrapper.EnableServicePeriodProduct)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/external-push", wrapper.GetServicePeriodProductExternalPush)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/external-push", wrapper.SaveServicePeriodProductExternalPush)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/external-push/test", wrapper.QueueServicePeriodProductExternalPushTest)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-grid/access", wrapper.GetServicePeriodMemberGridAccess)
 	})
 	r.Group(func(r chi.Router) {
@@ -30679,6 +31337,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}/enable", wrapper.EnableLegacyWechatPayProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}/external-push", wrapper.GetWechatPayProductExternalPush)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}/external-push", wrapper.SaveWechatPayProductExternalPush)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}/external-push/test", wrapper.QueueWechatPayProductExternalPushTest)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/wechat-pay/products/{product_id}/share", wrapper.GetLegacyWechatPayProductShare)
@@ -37125,6 +37792,213 @@ func (response EnableServicePeriodProduct503JSONResponse) VisitEnableServicePeri
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetServicePeriodProductExternalPushRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+}
+
+type GetServicePeriodProductExternalPushResponseObject interface {
+	VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error
+}
+
+type GetServicePeriodProductExternalPush200JSONResponse CommerceExternalPushConfiguration
+
+func (response GetServicePeriodProductExternalPush200JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductExternalPush400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetServicePeriodProductExternalPush400JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductExternalPush401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetServicePeriodProductExternalPush401JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductExternalPush403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetServicePeriodProductExternalPush403JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductExternalPush404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetServicePeriodProductExternalPush404JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductExternalPush503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetServicePeriodProductExternalPush503JSONResponse) VisitGetServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPushRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	Params           SaveServicePeriodProductExternalPushParams
+	Body             *SaveServicePeriodProductExternalPushJSONRequestBody
+}
+
+type SaveServicePeriodProductExternalPushResponseObject interface {
+	VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error
+}
+
+type SaveServicePeriodProductExternalPush200JSONResponse CommerceExternalPushConfiguration
+
+func (response SaveServicePeriodProductExternalPush200JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPush400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SaveServicePeriodProductExternalPush400JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPush401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SaveServicePeriodProductExternalPush401JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPush403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SaveServicePeriodProductExternalPush403JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPush404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response SaveServicePeriodProductExternalPush404JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPush409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SaveServicePeriodProductExternalPush409JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveServicePeriodProductExternalPush503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response SaveServicePeriodProductExternalPush503JSONResponse) VisitSaveServicePeriodProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTestRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	Params           QueueServicePeriodProductExternalPushTestParams
+}
+
+type QueueServicePeriodProductExternalPushTestResponseObject interface {
+	VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error
+}
+
+type QueueServicePeriodProductExternalPushTest202JSONResponse CommerceExternalPushTest
+
+func (response QueueServicePeriodProductExternalPushTest202JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTest400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response QueueServicePeriodProductExternalPushTest400JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTest401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response QueueServicePeriodProductExternalPushTest401JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTest403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response QueueServicePeriodProductExternalPushTest403JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTest404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response QueueServicePeriodProductExternalPushTest404JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTest409JSONResponse struct{ ConflictJSONResponse }
+
+func (response QueueServicePeriodProductExternalPushTest409JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueServicePeriodProductExternalPushTest503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response QueueServicePeriodProductExternalPushTest503JSONResponse) VisitQueueServicePeriodProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetServicePeriodMemberGridAccessRequestObject struct {
 	ServiceProductId int64 `json:"service_product_id"`
 }
@@ -38914,6 +39788,213 @@ func (response EnableLegacyWechatPayProduct422JSONResponse) VisitEnableLegacyWec
 type EnableLegacyWechatPayProduct503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response EnableLegacyWechatPayProduct503JSONResponse) VisitEnableLegacyWechatPayProductResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWechatPayProductExternalPushRequestObject struct {
+	ProductId ProductID `json:"product_id"`
+}
+
+type GetWechatPayProductExternalPushResponseObject interface {
+	VisitGetWechatPayProductExternalPushResponse(w http.ResponseWriter) error
+}
+
+type GetWechatPayProductExternalPush200JSONResponse CommerceExternalPushConfiguration
+
+func (response GetWechatPayProductExternalPush200JSONResponse) VisitGetWechatPayProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWechatPayProductExternalPush400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetWechatPayProductExternalPush400JSONResponse) VisitGetWechatPayProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWechatPayProductExternalPush401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetWechatPayProductExternalPush401JSONResponse) VisitGetWechatPayProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWechatPayProductExternalPush403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetWechatPayProductExternalPush403JSONResponse) VisitGetWechatPayProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWechatPayProductExternalPush404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetWechatPayProductExternalPush404JSONResponse) VisitGetWechatPayProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetWechatPayProductExternalPush503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetWechatPayProductExternalPush503JSONResponse) VisitGetWechatPayProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveWechatPayProductExternalPushRequestObject struct {
+	ProductId ProductID `json:"product_id"`
+	Params    SaveWechatPayProductExternalPushParams
+	Body      *SaveWechatPayProductExternalPushJSONRequestBody
+}
+
+type SaveWechatPayProductExternalPushResponseObject interface {
+	VisitSaveWechatPayProductExternalPushResponse(w http.ResponseWriter) error
+}
+
+type SaveWechatPayProductExternalPush200JSONResponse CommerceExternalPushConfiguration
+
+func (response SaveWechatPayProductExternalPush200JSONResponse) VisitSaveWechatPayProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveWechatPayProductExternalPush400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SaveWechatPayProductExternalPush400JSONResponse) VisitSaveWechatPayProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveWechatPayProductExternalPush401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SaveWechatPayProductExternalPush401JSONResponse) VisitSaveWechatPayProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveWechatPayProductExternalPush403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SaveWechatPayProductExternalPush403JSONResponse) VisitSaveWechatPayProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveWechatPayProductExternalPush404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response SaveWechatPayProductExternalPush404JSONResponse) VisitSaveWechatPayProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveWechatPayProductExternalPush409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SaveWechatPayProductExternalPush409JSONResponse) VisitSaveWechatPayProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveWechatPayProductExternalPush503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response SaveWechatPayProductExternalPush503JSONResponse) VisitSaveWechatPayProductExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueWechatPayProductExternalPushTestRequestObject struct {
+	ProductId ProductID `json:"product_id"`
+	Params    QueueWechatPayProductExternalPushTestParams
+}
+
+type QueueWechatPayProductExternalPushTestResponseObject interface {
+	VisitQueueWechatPayProductExternalPushTestResponse(w http.ResponseWriter) error
+}
+
+type QueueWechatPayProductExternalPushTest202JSONResponse CommerceExternalPushTest
+
+func (response QueueWechatPayProductExternalPushTest202JSONResponse) VisitQueueWechatPayProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueWechatPayProductExternalPushTest400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response QueueWechatPayProductExternalPushTest400JSONResponse) VisitQueueWechatPayProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueWechatPayProductExternalPushTest401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response QueueWechatPayProductExternalPushTest401JSONResponse) VisitQueueWechatPayProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueWechatPayProductExternalPushTest403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response QueueWechatPayProductExternalPushTest403JSONResponse) VisitQueueWechatPayProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueWechatPayProductExternalPushTest404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response QueueWechatPayProductExternalPushTest404JSONResponse) VisitQueueWechatPayProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueWechatPayProductExternalPushTest409JSONResponse struct{ ConflictJSONResponse }
+
+func (response QueueWechatPayProductExternalPushTest409JSONResponse) VisitQueueWechatPayProductExternalPushTestResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueueWechatPayProductExternalPushTest503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response QueueWechatPayProductExternalPushTest503JSONResponse) VisitQueueWechatPayProductExternalPushTestResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -45604,6 +46685,15 @@ type StrictServerInterface interface {
 	// Enable one local service-period product without public purchase capability
 	// (POST /api/admin/service-period-products/{service_product_id}/enable)
 	EnableServicePeriodProduct(ctx context.Context, request EnableServicePeriodProductRequestObject) (EnableServicePeriodProductResponseObject, error)
+	// Read one service-period Product-local external-push configuration without Provider access
+	// (GET /api/admin/service-period-products/{service_product_id}/external-push)
+	GetServicePeriodProductExternalPush(ctx context.Context, request GetServicePeriodProductExternalPushRequestObject) (GetServicePeriodProductExternalPushResponseObject, error)
+	// Save one service-period Product-local external-push configuration without Provider access
+	// (PUT /api/admin/service-period-products/{service_product_id}/external-push)
+	SaveServicePeriodProductExternalPush(ctx context.Context, request SaveServicePeriodProductExternalPushRequestObject) (SaveServicePeriodProductExternalPushResponseObject, error)
+	// Record a local accepted service-period external-push test without a Provider call or job
+	// (POST /api/admin/service-period-products/{service_product_id}/external-push/test)
+	QueueServicePeriodProductExternalPushTest(ctx context.Context, request QueueServicePeriodProductExternalPushTestRequestObject) (QueueServicePeriodProductExternalPushTestResponseObject, error)
 	// Read local member-grid access; external sharing remains disabled
 	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/access)
 	GetServicePeriodMemberGridAccess(ctx context.Context, request GetServicePeriodMemberGridAccessRequestObject) (GetServicePeriodMemberGridAccessResponseObject, error)
@@ -45676,6 +46766,15 @@ type StrictServerInterface interface {
 	// Enable one CRM-local WeChat-pay product without provider effects
 	// (POST /api/admin/wechat-pay/products/{product_id}/enable)
 	EnableLegacyWechatPayProduct(ctx context.Context, request EnableLegacyWechatPayProductRequestObject) (EnableLegacyWechatPayProductResponseObject, error)
+	// Read one Product-local external-push configuration without Provider access
+	// (GET /api/admin/wechat-pay/products/{product_id}/external-push)
+	GetWechatPayProductExternalPush(ctx context.Context, request GetWechatPayProductExternalPushRequestObject) (GetWechatPayProductExternalPushResponseObject, error)
+	// Save one Product-local external-push configuration without Provider access
+	// (PUT /api/admin/wechat-pay/products/{product_id}/external-push)
+	SaveWechatPayProductExternalPush(ctx context.Context, request SaveWechatPayProductExternalPushRequestObject) (SaveWechatPayProductExternalPushResponseObject, error)
+	// Record a local accepted external-push test without a Provider call or job
+	// (POST /api/admin/wechat-pay/products/{product_id}/external-push/test)
+	QueueWechatPayProductExternalPushTest(ctx context.Context, request QueueWechatPayProductExternalPushTestRequestObject) (QueueWechatPayProductExternalPushTestResponseObject, error)
 	// Read a closed local share descriptor without claiming a public purchase route
 	// (GET /api/admin/wechat-pay/products/{product_id}/share)
 	GetLegacyWechatPayProductShare(ctx context.Context, request GetLegacyWechatPayProductShareRequestObject) (GetLegacyWechatPayProductShareResponseObject, error)
@@ -48940,6 +50039,93 @@ func (sh *strictHandler) EnableServicePeriodProduct(w http.ResponseWriter, r *ht
 	}
 }
 
+// GetServicePeriodProductExternalPush operation middleware
+func (sh *strictHandler) GetServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	var request GetServicePeriodProductExternalPushRequestObject
+
+	request.ServiceProductId = serviceProductId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetServicePeriodProductExternalPush(ctx, request.(GetServicePeriodProductExternalPushRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetServicePeriodProductExternalPush")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetServicePeriodProductExternalPushResponseObject); ok {
+		if err := validResponse.VisitGetServicePeriodProductExternalPushResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveServicePeriodProductExternalPush operation middleware
+func (sh *strictHandler) SaveServicePeriodProductExternalPush(w http.ResponseWriter, r *http.Request, serviceProductId int64, params SaveServicePeriodProductExternalPushParams) {
+	var request SaveServicePeriodProductExternalPushRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.Params = params
+
+	var body SaveServicePeriodProductExternalPushJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveServicePeriodProductExternalPush(ctx, request.(SaveServicePeriodProductExternalPushRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveServicePeriodProductExternalPush")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveServicePeriodProductExternalPushResponseObject); ok {
+		if err := validResponse.VisitSaveServicePeriodProductExternalPushResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// QueueServicePeriodProductExternalPushTest operation middleware
+func (sh *strictHandler) QueueServicePeriodProductExternalPushTest(w http.ResponseWriter, r *http.Request, serviceProductId int64, params QueueServicePeriodProductExternalPushTestParams) {
+	var request QueueServicePeriodProductExternalPushTestRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.QueueServicePeriodProductExternalPushTest(ctx, request.(QueueServicePeriodProductExternalPushTestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "QueueServicePeriodProductExternalPushTest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(QueueServicePeriodProductExternalPushTestResponseObject); ok {
+		if err := validResponse.VisitQueueServicePeriodProductExternalPushTestResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetServicePeriodMemberGridAccess operation middleware
 func (sh *strictHandler) GetServicePeriodMemberGridAccess(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
 	var request GetServicePeriodMemberGridAccessRequestObject
@@ -49698,6 +50884,93 @@ func (sh *strictHandler) EnableLegacyWechatPayProduct(w http.ResponseWriter, r *
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(EnableLegacyWechatPayProductResponseObject); ok {
 		if err := validResponse.VisitEnableLegacyWechatPayProductResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetWechatPayProductExternalPush operation middleware
+func (sh *strictHandler) GetWechatPayProductExternalPush(w http.ResponseWriter, r *http.Request, productId ProductID) {
+	var request GetWechatPayProductExternalPushRequestObject
+
+	request.ProductId = productId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetWechatPayProductExternalPush(ctx, request.(GetWechatPayProductExternalPushRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetWechatPayProductExternalPush")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetWechatPayProductExternalPushResponseObject); ok {
+		if err := validResponse.VisitGetWechatPayProductExternalPushResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveWechatPayProductExternalPush operation middleware
+func (sh *strictHandler) SaveWechatPayProductExternalPush(w http.ResponseWriter, r *http.Request, productId ProductID, params SaveWechatPayProductExternalPushParams) {
+	var request SaveWechatPayProductExternalPushRequestObject
+
+	request.ProductId = productId
+	request.Params = params
+
+	var body SaveWechatPayProductExternalPushJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveWechatPayProductExternalPush(ctx, request.(SaveWechatPayProductExternalPushRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveWechatPayProductExternalPush")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveWechatPayProductExternalPushResponseObject); ok {
+		if err := validResponse.VisitSaveWechatPayProductExternalPushResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// QueueWechatPayProductExternalPushTest operation middleware
+func (sh *strictHandler) QueueWechatPayProductExternalPushTest(w http.ResponseWriter, r *http.Request, productId ProductID, params QueueWechatPayProductExternalPushTestParams) {
+	var request QueueWechatPayProductExternalPushTestRequestObject
+
+	request.ProductId = productId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.QueueWechatPayProductExternalPushTest(ctx, request.(QueueWechatPayProductExternalPushTestRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "QueueWechatPayProductExternalPushTest")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(QueueWechatPayProductExternalPushTestResponseObject); ok {
+		if err := validResponse.VisitQueueWechatPayProductExternalPushTestResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

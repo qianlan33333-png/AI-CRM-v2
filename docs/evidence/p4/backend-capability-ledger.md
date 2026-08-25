@@ -122,6 +122,26 @@ binding、PII-free detail 和 `outcome_unknown` 的人工 reconcile；不复活�
 - 旧 H5 OAuth 的 GET start/callback 仅登记为窄协议路径参考；旧 `questionnaire_external_push_logs`
   与新 binding/receipt 的身份、收据和重试语义不同，Matrix 不变更状态，历史数据也不导入或重放。
 
+## Commerce External Push 00087（V2 local acceptance；受控回填 S07-151/152/172/173）
+
+`00087_product_external_push.sql` 把商品外推配置和测试收口为 Product-owned 本地事实：
+`get/save/queue test` 分别覆盖微信支付商品和服务期商品，共六个 operationId。配置只保存
+opaque reference；测试只创建 EER `accepted` receipt/binding，不创建 River job、Provider
+request、自动重试或送达声明。
+
+- 读操作为 admin/ops global `products.read`；保存和测试为 `products.write`，都经过 human
+  session、CSRF、actor-bound Idempotency-Key、同一 UoW 和 Product receipt。
+- 每个 `(product, kind, configuration digest)` 不可变配置只允许一个本地 `accepted` proof；
+  原 key 精确重放，换 key 重复测试返回 `409`，且失败事务不留下 Product/EER receipt 或 binding。
+- S07-151/152/172/173 回填的是“保存本地配置”和“返回本地测试结果”这一后端契约；`accepted`
+  明确不等于 Provider accepted、delivery proven 或真实外部调用。S07-166 的复合商品表单、
+  分享和支付语义仍不由本包宣称完成。
+- `make p4-commerce-external-push-acceptance` 使用专属 PG16.14 临时库，验证 85 的 GroupOps
+  accepted EER 可穿过 87、`87 -> 86 -> 87`、populated down guard、canonical HTTP 的
+  RBAC/CSRF/幂等/无孤儿，以及微信支付/服务期两类商品的 accepted-only EER 事实。它不触碰共享验收库。
+- `x-aicrm-external-effect: none`：无 Provider 配置、webhook、外部 I/O、job enqueue 或
+  delivery receipt；部署及真实支付/外推效果均为 `NOT_EXECUTED`。
+
 ## 冻结口径
 
 本收据固定的代码基线是
@@ -270,6 +290,7 @@ binding、PII-free detail 和 `outcome_unknown` 的人工 reconcile；不复活�
 | `00082_survey_identity_gated_external_push.sql` — Survey Identity-Gated External Push (**V2 backend capability; not in the frozen 10/73 denominator**) | H5 verified canonical-customer submission binding plus PII-free detail/manual reconcile; old H5 OAuth routes are only narrow protocol references and old external-push logs are not a 1:1 target. Matrix stays unchanged. | public H5 start/callback has no CSRF; admin detail requires `questionnaires.read`, reconcile requires `questionnaires.write`, session CSRF and Idempotency-Key. Submission/EER binding and reconcile receipt use one UoW; unknown has no automatic retry. | `acceptance/survey/identity_external_push_pg16_test.go`; `make p4-survey-identity-external-push-acceptance` on PG16.14. | real Provider adapter disabled; fake/local result only; deployment, Provider acceptance and delivery `NOT_EXECUTED`. |
 | `00083_media_content_package_delivery.sql` — Media Content Package & Delivery Binding (**V2-native local package; not in the frozen 10/73 denominator**) | Content package reuses canonical image/PDF/miniprogram/group-invite IDs; package/CAS binding and PDF multipart are local. `outbound_media` uses an EER accepted envelope, opaque effect ID and manual reconciliation. No legacy route is guessed and no Matrix row or denominator changes. | human session; package/PDF/binding/outbound accept and reconcile require `media.library.write`, CSRF and Idempotency-Key; detail is `media.library.read` without CSRF. Package/binding mutations use CAS; accepted snapshot/binding and reconciliation receipt are immutable local facts. | `internal/media/app/*content*test.go`、`*outbound*test.go`、`internal/media/store/*content*test.go`; `make p4-media-content-delivery-acceptance` runs isolated PG16.14 exact-83, empty down/up, package/PDF/effect/reconcile detail and populated-guard checks; selected media database CI invokes it. | `none / NOT_EXECUTED`; provider adapter is disabled/fail-closed. `provider_accepted` and `delivery_proven` are separate manual facts; no send/delivery claim or automatic retry. |
 | `00084_ai_audience_local_configuration_closure.sql` — AI Audience Local Configuration Closure (**V2-native typed local package; not a legacy-flow completion claim**) | Appends fixed-schema snapshots of the canonical Segment definition/package version/digest, exposes PII-free deterministic preview and receipt-backed local materialize, validates senders through the Contact-owned port, and keeps versioned Automation binding. The writerless send-record/HMAC projections are removed. `LEGACY-S06-022`/`024`/`026` remain `NOT_STARTED/NOT_RUN`: legacy catalogue/SQL semantics, directory sync and send-record detail are separate packages. | human session plus global admin/ops `segments.read` or `segments.write`; binding/senders/configuration/materialize mutations require CSRF + actor-bound Idempotency-Key and share caller UoW, completed receipt and event semantics. Preview/materialize return only count/digest lineage and never expose contact IDs or Provider facts. | focused/race tests under `internal/segment/{app,legacyaudience}`; isolated PG16 exact-84 acceptance runs HTTP → handler → service → UoW → Contact/Automation ports → Segment engine → DB/event/receipt and proves replay, changed-payload 409, no duplicate event, failure rollback, down/up and populated guards. | `none / NOT_EXECUTED`; local evaluation only. No agent start, queue/enqueue, Provider call, send, acceptance or delivery assertion. Legacy import remains unimplemented. |
+| `00087_product_external_push.sql` — Commerce External Push (**V2 local acceptance; S07-151/152/172/173 backend contract**) | Six Product-owned configuration/test operations for WeChat-pay and service-period products. The test response is only local EER `accepted`; S07-166's composite product/page/share semantics stay out of scope. | admin/ops global `products.read` / `products.write`; writes require CSRF + actor-bound idempotency, receipt and one UoW. | `internal/product/{app,http,store}/external_push*`; `acceptance/product/external_push_00087_pg16.sh`; `make p4-commerce-external-push-acceptance`. | `none / NOT_EXECUTED`; no Provider request, webhook, River job, automatic retry, delivery claim or production effect. |
 
 所有表中命令操作都遵循其 OpenAPI `x-aicrm-session-bound-csrf` 与
 `x-aicrm-external-effect: none` 合同；“receipt”只证明本地数据库提交/重放，不证明

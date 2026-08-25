@@ -164,6 +164,7 @@ type candidateHandler struct {
 	products                  *producthttp.Handler
 	productLocal              *producthttp.LocalMutationHandler
 	productLifecycle          *producthttp.LocalProductLifecycleHandler
+	productExternalPush       *producthttp.ExternalPushHandler
 	servicePeriodMembers      *memberhttp.Handler
 	wechatPaySettlement       *orderhttp.Handler
 	commerceRefunds           *orderhttp.CommerceRefundHandler
@@ -428,6 +429,30 @@ func (handler *candidateHandler) DeleteLegacyWechatPayProduct(writer http.Respon
 
 func (handler *candidateHandler) GetLegacyWechatPayProductShare(writer http.ResponseWriter, request *http.Request, productID api.ProductID) {
 	handler.productLifecycle.ShareLocalProduct(writer, request, int64(productID))
+}
+
+func (handler *candidateHandler) GetWechatPayProductExternalPush(writer http.ResponseWriter, request *http.Request, _ api.ProductID) {
+	handler.productExternalPush.ServeHTTP(writer, request)
+}
+
+func (handler *candidateHandler) SaveWechatPayProductExternalPush(writer http.ResponseWriter, request *http.Request, _ api.ProductID, _ api.SaveWechatPayProductExternalPushParams) {
+	handler.productExternalPush.ServeHTTP(writer, request)
+}
+
+func (handler *candidateHandler) QueueWechatPayProductExternalPushTest(writer http.ResponseWriter, request *http.Request, _ api.ProductID, _ api.QueueWechatPayProductExternalPushTestParams) {
+	handler.productExternalPush.ServeHTTP(writer, request)
+}
+
+func (handler *candidateHandler) GetServicePeriodProductExternalPush(writer http.ResponseWriter, request *http.Request, _ int64) {
+	handler.productExternalPush.ServeHTTP(writer, request)
+}
+
+func (handler *candidateHandler) SaveServicePeriodProductExternalPush(writer http.ResponseWriter, request *http.Request, _ int64, _ api.SaveServicePeriodProductExternalPushParams) {
+	handler.productExternalPush.ServeHTTP(writer, request)
+}
+
+func (handler *candidateHandler) QueueServicePeriodProductExternalPushTest(writer http.ResponseWriter, request *http.Request, _ int64, _ api.QueueServicePeriodProductExternalPushTestParams) {
+	handler.productExternalPush.ServeHTTP(writer, request)
 }
 
 func (handler *candidateHandler) ListProductLocalEntitlements(writer http.ResponseWriter, request *http.Request, productID api.ProductID, params api.ListProductLocalEntitlementsParams) {
@@ -1306,6 +1331,19 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	productExternalPushHandler, err := producthttp.NewExternalPushHandler(
+		productapp.NewCommerceExternalPushService(
+			uow,
+			productstore.NewCatalogRepository(),
+			productstore.NewCommerceExternalPushEERAccepter(externalEffectsRuntime),
+		),
+		productExternalPushAuthorizer{},
+		productExternalPushCSRF{},
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	groupOpsHandler := groupopshttp.NewWithRuntime(
 		groupopsapp.NewService(uow, groupOpsRepository, channelStaffDirectory, eventstore.NewAppender()),
 		groupOpsRuntime,
@@ -1413,6 +1451,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		products:             productHandler,
 		productLocal:         productLocalHandler,
 		productLifecycle:     productLifecycleHandler,
+		productExternalPush:  productExternalPushHandler,
 		servicePeriodMembers: servicePeriodMemberHandler,
 		wechatPaySettlement:  wechatPaySettlementHandler,
 		commerceRefunds:      commerceRefundHandler,
@@ -2086,6 +2125,12 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/admin/wechat-pay/products/{product_id}/copy", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.CopyLegacyWechatPayProduct)},
 		{http.MethodDelete, "/api/admin/wechat-pay/products/{product_id}", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.DeleteLegacyWechatPayProduct)},
 		{http.MethodGet, "/api/admin/wechat-pay/products/{product_id}/share", authport.CapabilityProductsRead, false, http.HandlerFunc(wrapper.GetLegacyWechatPayProductShare)},
+		{http.MethodGet, producthttp.WeChatPayExternalPushPathPattern, authport.CapabilityProductsRead, false, http.HandlerFunc(wrapper.GetWechatPayProductExternalPush)},
+		{http.MethodPut, producthttp.WeChatPayExternalPushPathPattern, authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.SaveWechatPayProductExternalPush)},
+		{http.MethodPost, producthttp.WeChatPayExternalPushPathPattern + "/test", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.QueueWechatPayProductExternalPushTest)},
+		{http.MethodGet, producthttp.ServicePeriodExternalPushPathPattern, authport.CapabilityProductsRead, false, http.HandlerFunc(wrapper.GetServicePeriodProductExternalPush)},
+		{http.MethodPut, producthttp.ServicePeriodExternalPushPathPattern, authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.SaveServicePeriodProductExternalPush)},
+		{http.MethodPost, producthttp.ServicePeriodExternalPushPathPattern + "/test", authport.CapabilityProductsWrite, true, http.HandlerFunc(wrapper.QueueServicePeriodProductExternalPushTest)},
 		{http.MethodGet, "/api/v1/products/{product_id}/local-entitlements", authport.CapabilityEntitlementsRead, false, http.HandlerFunc(wrapper.ListProductLocalEntitlements)},
 		{http.MethodPost, "/api/v1/products/{product_id}/local-entitlements", authport.CapabilityEntitlementsWrite, true, http.HandlerFunc(wrapper.GrantProductLocalEntitlement)},
 		{http.MethodGet, "/api/v1/product-entitlements/{entitlement_id}", authport.CapabilityEntitlementsRead, false, http.HandlerFunc(wrapper.GetProductLocalEntitlement)},

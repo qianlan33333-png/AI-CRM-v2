@@ -232,6 +232,7 @@ func TestCandidateServerIsNotTheRuntimeServer(t *testing.T) {
 		"CreateWechatPayCheckout", "GetWechatPayCheckout", "CreateWechatPaySettlementRefund", "ReceiveWechatPayPaymentCallback", "ReceiveWechatPayRefundCallback",
 		"StartSurveyH5OAuth", "CallbackSurveyH5OAuth", "GetSurveyExternalPushDetail", "ReconcileSurveyExternalPush",
 		"ReconcileWechatShopRefund", "ReceiveWechatShopRefundCallback",
+		"GetWechatPayProductExternalPush", "SaveWechatPayProductExternalPush", "QueueWechatPayProductExternalPushTest", "GetServicePeriodProductExternalPush", "SaveServicePeriodProductExternalPush", "QueueServicePeriodProductExternalPushTest",
 	})
 }
 

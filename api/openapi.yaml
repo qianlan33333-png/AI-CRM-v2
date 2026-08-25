@@ -669,6 +669,71 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wechat-pay/products/{product_id}/external-push:
+    get:
+      tags: [p4-commerce-external-push]
+      operationId: getWechatPayProductExternalPush
+      summary: Read one Product-local external-push configuration without Provider access
+      x-p4-decision-evidence: P4-COMMERCE-EXTERNAL-PUSH-00087-2026-08-25
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: product.external_push.local_configuration
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/ProductID" }]
+      responses:
+        "200": { description: Local opaque configuration, content: { application/json: { schema: { $ref: "#/components/schemas/CommerceExternalPushConfiguration" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-commerce-external-push]
+      operationId: saveWechatPayProductExternalPush
+      summary: Save one Product-local external-push configuration without Provider access
+      x-p4-decision-evidence: P4-COMMERCE-EXTERNAL-PUSH-00087-2026-08-25
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: product.external_push.local_configuration
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/ProductID" }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CommerceExternalPushConfigurationRequest" } } } }
+      responses:
+        "200": { description: Saved local opaque configuration, content: { application/json: { schema: { $ref: "#/components/schemas/CommerceExternalPushConfiguration" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wechat-pay/products/{product_id}/external-push/test:
+    post:
+      tags: [p4-commerce-external-push]
+      operationId: queueWechatPayProductExternalPushTest
+      summary: Record a local accepted external-push test without a Provider call or job
+      x-p4-decision-evidence: P4-COMMERCE-EXTERNAL-PUSH-00087-2026-08-25
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: product.external_push.local_accepted_effect
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/ProductID" }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "202": { description: Local EER accepted fact only; this is not Provider acceptance or delivery, content: { application/json: { schema: { $ref: "#/components/schemas/CommerceExternalPushTest" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /healthz:
     get:
       tags: [health]
@@ -8123,6 +8188,71 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodVersionRequest" } } } }
       responses:
         "201": { description: Copied local service-period product, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodProductResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/external-push:
+    get:
+      tags: [p4-commerce-external-push]
+      operationId: getServicePeriodProductExternalPush
+      summary: Read one service-period Product-local external-push configuration without Provider access
+      x-p4-decision-evidence: P4-COMMERCE-EXTERNAL-PUSH-00087-2026-08-25
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: product.external_push.local_configuration
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Local opaque configuration, content: { application/json: { schema: { $ref: "#/components/schemas/CommerceExternalPushConfiguration" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-commerce-external-push]
+      operationId: saveServicePeriodProductExternalPush
+      summary: Save one service-period Product-local external-push configuration without Provider access
+      x-p4-decision-evidence: P4-COMMERCE-EXTERNAL-PUSH-00087-2026-08-25
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: product.external_push.local_configuration
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CommerceExternalPushConfigurationRequest" } } } }
+      responses:
+        "200": { description: Saved local opaque configuration, content: { application/json: { schema: { $ref: "#/components/schemas/CommerceExternalPushConfiguration" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/external-push/test:
+    post:
+      tags: [p4-commerce-external-push]
+      operationId: queueServicePeriodProductExternalPushTest
+      summary: Record a local accepted service-period external-push test without a Provider call or job
+      x-p4-decision-evidence: P4-COMMERCE-EXTERNAL-PUSH-00087-2026-08-25
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: product.external_push.local_accepted_effect
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      responses:
+        "202": { description: Local EER accepted fact only; this is not Provider acceptance or delivery, content: { application/json: { schema: { $ref: "#/components/schemas/CommerceExternalPushTest" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -17133,6 +17263,37 @@ components:
         reason: {type: string, minLength: 1, enum: [no_authoritative_public_purchase_route]}
         purchase_url: {type: string}
         qr_code_url: {type: string}
+    CommerceExternalPushConfigurationRequest:
+      type: object
+      additionalProperties: false
+      required: [enabled]
+      properties:
+        enabled: { type: boolean }
+        configuration_reference: { type: string, minLength: 1, maxLength: 128 }
+    CommerceExternalPushConfiguration:
+      type: object
+      additionalProperties: false
+      required: [product_id, product_kind, enabled, updated_at]
+      properties:
+        product_id: { type: integer, format: int64, minimum: 1 }
+        product_kind: { type: string, enum: [wechat_pay, service_period] }
+        enabled: { type: boolean }
+        configuration_reference: { type: string, maxLength: 128 }
+        updated_at: { type: string, format: date-time }
+    CommerceExternalPushTest:
+      type: object
+      additionalProperties: false
+      required: [product_id, product_kind, effect_id, state, provider_accepted, delivery_proven, real_external_call_executed, auto_retry_allowed, created_at]
+      properties:
+        product_id: { type: integer, format: int64, minimum: 1 }
+        product_kind: { type: string, enum: [wechat_pay, service_period] }
+        effect_id: { type: string, pattern: '^eer_[1-9][0-9]*$' }
+        state: { type: string, enum: [accepted, queued] }
+        provider_accepted: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        auto_retry_allowed: { type: boolean, enum: [false] }
+        created_at: { type: string, format: date-time }
     CreateProductRequest:
       type: object
       additionalProperties: false

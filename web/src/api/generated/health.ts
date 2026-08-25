@@ -11490,6 +11490,66 @@ export interface LocalProductLifecycleShare {
   qr_code_url?: string;
 }
 
+export interface CommerceExternalPushConfigurationRequest {
+  enabled: boolean;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  configuration_reference?: string;
+}
+
+export type CommerceExternalPushConfigurationProductKind =
+  (typeof CommerceExternalPushConfigurationProductKind)[keyof typeof CommerceExternalPushConfigurationProductKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CommerceExternalPushConfigurationProductKind = {
+  wechat_pay: "wechat_pay",
+  service_period: "service_period",
+} as const;
+
+export interface CommerceExternalPushConfiguration {
+  /** @minimum 1 */
+  product_id: number;
+  product_kind: CommerceExternalPushConfigurationProductKind;
+  enabled: boolean;
+  /** @maxLength 128 */
+  configuration_reference?: string;
+  updated_at: string;
+}
+
+export type CommerceExternalPushTestProductKind =
+  (typeof CommerceExternalPushTestProductKind)[keyof typeof CommerceExternalPushTestProductKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CommerceExternalPushTestProductKind = {
+  wechat_pay: "wechat_pay",
+  service_period: "service_period",
+} as const;
+
+export type CommerceExternalPushTestState =
+  (typeof CommerceExternalPushTestState)[keyof typeof CommerceExternalPushTestState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CommerceExternalPushTestState = {
+  accepted: "accepted",
+  queued: "queued",
+} as const;
+
+export interface CommerceExternalPushTest {
+  /** @minimum 1 */
+  product_id: number;
+  product_kind: CommerceExternalPushTestProductKind;
+  /** @pattern ^eer_[1-9][0-9]*$ */
+  effect_id: string;
+  state: CommerceExternalPushTestState;
+  provider_accepted: boolean;
+  delivery_proven: boolean;
+  real_external_call_executed: boolean;
+  auto_retry_allowed: boolean;
+  created_at: string;
+}
+
 export interface CreateProductRequest {
   /**
    * @minLength 1
@@ -18753,6 +18813,254 @@ export const getLegacyWechatPayProductShare = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyWechatPayProductShareResponse;
+};
+
+/**
+ * @summary Read one Product-local external-push configuration without Provider access
+ */
+export type getWechatPayProductExternalPushResponse200 = {
+  data: CommerceExternalPushConfiguration;
+  status: 200;
+};
+
+export type getWechatPayProductExternalPushResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getWechatPayProductExternalPushResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getWechatPayProductExternalPushResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getWechatPayProductExternalPushResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getWechatPayProductExternalPushResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getWechatPayProductExternalPushResponseSuccess =
+  getWechatPayProductExternalPushResponse200 & {
+    headers: Headers;
+  };
+export type getWechatPayProductExternalPushResponseError = (
+  | getWechatPayProductExternalPushResponse400
+  | getWechatPayProductExternalPushResponse401
+  | getWechatPayProductExternalPushResponse403
+  | getWechatPayProductExternalPushResponse404
+  | getWechatPayProductExternalPushResponse503
+) & {
+  headers: Headers;
+};
+
+export type getWechatPayProductExternalPushResponse =
+  | getWechatPayProductExternalPushResponseSuccess
+  | getWechatPayProductExternalPushResponseError;
+
+export const getGetWechatPayProductExternalPushUrl = (productId: number) => {
+  return `/api/admin/wechat-pay/products/${productId}/external-push`;
+};
+
+export const getWechatPayProductExternalPush = async (
+  productId: number,
+  options?: RequestInit,
+): Promise<getWechatPayProductExternalPushResponse> => {
+  const res = await fetch(getGetWechatPayProductExternalPushUrl(productId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getWechatPayProductExternalPushResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getWechatPayProductExternalPushResponse;
+};
+
+/**
+ * @summary Save one Product-local external-push configuration without Provider access
+ */
+export type saveWechatPayProductExternalPushResponse200 = {
+  data: CommerceExternalPushConfiguration;
+  status: 200;
+};
+
+export type saveWechatPayProductExternalPushResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type saveWechatPayProductExternalPushResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type saveWechatPayProductExternalPushResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type saveWechatPayProductExternalPushResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type saveWechatPayProductExternalPushResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type saveWechatPayProductExternalPushResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type saveWechatPayProductExternalPushResponseSuccess =
+  saveWechatPayProductExternalPushResponse200 & {
+    headers: Headers;
+  };
+export type saveWechatPayProductExternalPushResponseError = (
+  | saveWechatPayProductExternalPushResponse400
+  | saveWechatPayProductExternalPushResponse401
+  | saveWechatPayProductExternalPushResponse403
+  | saveWechatPayProductExternalPushResponse404
+  | saveWechatPayProductExternalPushResponse409
+  | saveWechatPayProductExternalPushResponse503
+) & {
+  headers: Headers;
+};
+
+export type saveWechatPayProductExternalPushResponse =
+  | saveWechatPayProductExternalPushResponseSuccess
+  | saveWechatPayProductExternalPushResponseError;
+
+export const getSaveWechatPayProductExternalPushUrl = (productId: number) => {
+  return `/api/admin/wechat-pay/products/${productId}/external-push`;
+};
+
+export const saveWechatPayProductExternalPush = async (
+  productId: number,
+  commerceExternalPushConfigurationRequest: CommerceExternalPushConfigurationRequest,
+  options?: RequestInit,
+): Promise<saveWechatPayProductExternalPushResponse> => {
+  const res = await fetch(getSaveWechatPayProductExternalPushUrl(productId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(commerceExternalPushConfigurationRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: saveWechatPayProductExternalPushResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as saveWechatPayProductExternalPushResponse;
+};
+
+/**
+ * @summary Record a local accepted external-push test without a Provider call or job
+ */
+export type queueWechatPayProductExternalPushTestResponse202 = {
+  data: CommerceExternalPushTest;
+  status: 202;
+};
+
+export type queueWechatPayProductExternalPushTestResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type queueWechatPayProductExternalPushTestResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type queueWechatPayProductExternalPushTestResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type queueWechatPayProductExternalPushTestResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type queueWechatPayProductExternalPushTestResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type queueWechatPayProductExternalPushTestResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type queueWechatPayProductExternalPushTestResponseSuccess =
+  queueWechatPayProductExternalPushTestResponse202 & {
+    headers: Headers;
+  };
+export type queueWechatPayProductExternalPushTestResponseError = (
+  | queueWechatPayProductExternalPushTestResponse400
+  | queueWechatPayProductExternalPushTestResponse401
+  | queueWechatPayProductExternalPushTestResponse403
+  | queueWechatPayProductExternalPushTestResponse404
+  | queueWechatPayProductExternalPushTestResponse409
+  | queueWechatPayProductExternalPushTestResponse503
+) & {
+  headers: Headers;
+};
+
+export type queueWechatPayProductExternalPushTestResponse =
+  | queueWechatPayProductExternalPushTestResponseSuccess
+  | queueWechatPayProductExternalPushTestResponseError;
+
+export const getQueueWechatPayProductExternalPushTestUrl = (
+  productId: number,
+) => {
+  return `/api/admin/wechat-pay/products/${productId}/external-push/test`;
+};
+
+export const queueWechatPayProductExternalPushTest = async (
+  productId: number,
+  options?: RequestInit,
+): Promise<queueWechatPayProductExternalPushTestResponse> => {
+  const res = await fetch(
+    getQueueWechatPayProductExternalPushTestUrl(productId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: queueWechatPayProductExternalPushTestResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as queueWechatPayProductExternalPushTestResponse;
 };
 
 /**
@@ -43053,6 +43361,264 @@ export const copyServicePeriodProduct = async (
     status: res.status,
     headers: res.headers,
   } as copyServicePeriodProductResponse;
+};
+
+/**
+ * @summary Read one service-period Product-local external-push configuration without Provider access
+ */
+export type getServicePeriodProductExternalPushResponse200 = {
+  data: CommerceExternalPushConfiguration;
+  status: 200;
+};
+
+export type getServicePeriodProductExternalPushResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getServicePeriodProductExternalPushResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getServicePeriodProductExternalPushResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getServicePeriodProductExternalPushResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getServicePeriodProductExternalPushResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getServicePeriodProductExternalPushResponseSuccess =
+  getServicePeriodProductExternalPushResponse200 & {
+    headers: Headers;
+  };
+export type getServicePeriodProductExternalPushResponseError = (
+  | getServicePeriodProductExternalPushResponse400
+  | getServicePeriodProductExternalPushResponse401
+  | getServicePeriodProductExternalPushResponse403
+  | getServicePeriodProductExternalPushResponse404
+  | getServicePeriodProductExternalPushResponse503
+) & {
+  headers: Headers;
+};
+
+export type getServicePeriodProductExternalPushResponse =
+  | getServicePeriodProductExternalPushResponseSuccess
+  | getServicePeriodProductExternalPushResponseError;
+
+export const getGetServicePeriodProductExternalPushUrl = (
+  serviceProductId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/external-push`;
+};
+
+export const getServicePeriodProductExternalPush = async (
+  serviceProductId: number,
+  options?: RequestInit,
+): Promise<getServicePeriodProductExternalPushResponse> => {
+  const res = await fetch(
+    getGetServicePeriodProductExternalPushUrl(serviceProductId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getServicePeriodProductExternalPushResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getServicePeriodProductExternalPushResponse;
+};
+
+/**
+ * @summary Save one service-period Product-local external-push configuration without Provider access
+ */
+export type saveServicePeriodProductExternalPushResponse200 = {
+  data: CommerceExternalPushConfiguration;
+  status: 200;
+};
+
+export type saveServicePeriodProductExternalPushResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type saveServicePeriodProductExternalPushResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type saveServicePeriodProductExternalPushResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type saveServicePeriodProductExternalPushResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type saveServicePeriodProductExternalPushResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type saveServicePeriodProductExternalPushResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type saveServicePeriodProductExternalPushResponseSuccess =
+  saveServicePeriodProductExternalPushResponse200 & {
+    headers: Headers;
+  };
+export type saveServicePeriodProductExternalPushResponseError = (
+  | saveServicePeriodProductExternalPushResponse400
+  | saveServicePeriodProductExternalPushResponse401
+  | saveServicePeriodProductExternalPushResponse403
+  | saveServicePeriodProductExternalPushResponse404
+  | saveServicePeriodProductExternalPushResponse409
+  | saveServicePeriodProductExternalPushResponse503
+) & {
+  headers: Headers;
+};
+
+export type saveServicePeriodProductExternalPushResponse =
+  | saveServicePeriodProductExternalPushResponseSuccess
+  | saveServicePeriodProductExternalPushResponseError;
+
+export const getSaveServicePeriodProductExternalPushUrl = (
+  serviceProductId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/external-push`;
+};
+
+export const saveServicePeriodProductExternalPush = async (
+  serviceProductId: number,
+  commerceExternalPushConfigurationRequest: CommerceExternalPushConfigurationRequest,
+  options?: RequestInit,
+): Promise<saveServicePeriodProductExternalPushResponse> => {
+  const res = await fetch(
+    getSaveServicePeriodProductExternalPushUrl(serviceProductId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(commerceExternalPushConfigurationRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: saveServicePeriodProductExternalPushResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as saveServicePeriodProductExternalPushResponse;
+};
+
+/**
+ * @summary Record a local accepted service-period external-push test without a Provider call or job
+ */
+export type queueServicePeriodProductExternalPushTestResponse202 = {
+  data: CommerceExternalPushTest;
+  status: 202;
+};
+
+export type queueServicePeriodProductExternalPushTestResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type queueServicePeriodProductExternalPushTestResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type queueServicePeriodProductExternalPushTestResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type queueServicePeriodProductExternalPushTestResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type queueServicePeriodProductExternalPushTestResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type queueServicePeriodProductExternalPushTestResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type queueServicePeriodProductExternalPushTestResponseSuccess =
+  queueServicePeriodProductExternalPushTestResponse202 & {
+    headers: Headers;
+  };
+export type queueServicePeriodProductExternalPushTestResponseError = (
+  | queueServicePeriodProductExternalPushTestResponse400
+  | queueServicePeriodProductExternalPushTestResponse401
+  | queueServicePeriodProductExternalPushTestResponse403
+  | queueServicePeriodProductExternalPushTestResponse404
+  | queueServicePeriodProductExternalPushTestResponse409
+  | queueServicePeriodProductExternalPushTestResponse503
+) & {
+  headers: Headers;
+};
+
+export type queueServicePeriodProductExternalPushTestResponse =
+  | queueServicePeriodProductExternalPushTestResponseSuccess
+  | queueServicePeriodProductExternalPushTestResponseError;
+
+export const getQueueServicePeriodProductExternalPushTestUrl = (
+  serviceProductId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/external-push/test`;
+};
+
+export const queueServicePeriodProductExternalPushTest = async (
+  serviceProductId: number,
+  options?: RequestInit,
+): Promise<queueServicePeriodProductExternalPushTestResponse> => {
+  const res = await fetch(
+    getQueueServicePeriodProductExternalPushTestUrl(serviceProductId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: queueServicePeriodProductExternalPushTestResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as queueServicePeriodProductExternalPushTestResponse;
 };
 
 /**

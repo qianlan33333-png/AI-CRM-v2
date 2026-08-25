@@ -28,21 +28,23 @@ type (
 )
 
 const (
-	OwnerOutbound         = eer.OwnerOutbound
-	OwnerSurvey           = eer.OwnerSurvey
-	OwnerGroupOps         = eer.OwnerGroupOps
-	KindOutboundMessage   = eer.KindOutboundMessage
-	KindSurveyWebhook     = eer.KindSurveyWebhook
-	KindOutboundMedia     = eer.KindOutboundMedia
-	KindGroupOpsBroadcast = eer.KindGroupOpsBroadcast
-	StateAccepted         = eer.StateAccepted
-	StateQueued           = eer.StateQueued
-	StateExecuted         = eer.StateExecuted
-	StateOutcomeUnknown   = eer.StateOutcomeUnknown
-	StateReconciled       = eer.StateReconciled
-	StateRetryableFailed  = eer.StateRetryableFailed
-	StateFinalFailed      = eer.StateFinalFailed
-	CompletionFinalFailed = eer.CompletionFinalFailed
+	OwnerOutbound               = eer.OwnerOutbound
+	OwnerProduct                = eer.OwnerProduct
+	OwnerSurvey                 = eer.OwnerSurvey
+	OwnerGroupOps               = eer.OwnerGroupOps
+	KindOutboundMessage         = eer.KindOutboundMessage
+	KindProductExternalPushTest = eer.KindProductExternalPushTest
+	KindSurveyWebhook           = eer.KindSurveyWebhook
+	KindOutboundMedia           = eer.KindOutboundMedia
+	KindGroupOpsBroadcast       = eer.KindGroupOpsBroadcast
+	StateAccepted               = eer.StateAccepted
+	StateQueued                 = eer.StateQueued
+	StateExecuted               = eer.StateExecuted
+	StateOutcomeUnknown         = eer.StateOutcomeUnknown
+	StateReconciled             = eer.StateReconciled
+	StateRetryableFailed        = eer.StateRetryableFailed
+	StateFinalFailed            = eer.StateFinalFailed
+	CompletionFinalFailed       = eer.CompletionFinalFailed
 )
 
 var (
