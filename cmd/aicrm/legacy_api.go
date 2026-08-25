@@ -226,6 +226,7 @@ type Handler struct {
 	systemHealth            http.Handler
 	hxcSender               *hxcSenderHandler
 	deliveryLineage         legacyDeliveryLineageReaders
+	externalCustomerRead    *legacyExternalCustomerReadHandler
 }
 
 // legacyOperationCycleApplication is the frozen A+B operation surface. Its

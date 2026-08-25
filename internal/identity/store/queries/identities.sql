@@ -90,6 +90,7 @@ SELECT DISTINCT i.customer_id
 FROM identities AS i
 JOIN customers AS c ON c.id = i.customer_id
 WHERE i.kind = 'unionid'
+  AND i.assurance = 'verified'
   AND i.normalized_value = sqlc.arg(normalized_value)::text
   AND i.customer_id IS NOT NULL
   AND c.is_deleted = FALSE

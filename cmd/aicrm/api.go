@@ -866,9 +866,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	customerEventHandler, err := contacthttp.NewCustomerEventHandler(contactapp.NewCustomerEventService(
-		uow, contactstore.NewCustomerEventRepository(),
-	))
+	customerEventService := contactapp.NewCustomerEventService(uow, contactstore.NewCustomerEventRepository())
+	customerEventHandler, err := contacthttp.NewCustomerEventHandler(customerEventService)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -1543,8 +1542,26 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	settingsService := configapp.NewSettingsCompatibilityService(uow, configRepository, configManager, configapp.SecretConfiguredSnapshot{
 		DatabaseURL: true, WeComSecret: config.WeCom.OAuth.Enabled,
 		WeComCallbackToken: config.WeCom.Callback.Enabled, WeComCallbackAESKey: config.WeCom.Callback.Enabled,
+		AuthJWTSecret: config.APIClient.JWTSecret.Configured(),
 	})
 	adminOpsService := adminopsapp.NewService(uow, adminopsstore.NewRepository())
+	var externalCustomerRead *legacyExternalCustomerReadHandler
+	weComIdentityCorpID := config.WeCom.OAuth.CorpID
+	if weComIdentityCorpID == "" {
+		weComIdentityCorpID = config.WeCom.Callback.CorpID
+	}
+	var serviceAuthenticator operationServiceAuthenticator
+	if config.APIClient.JWTSecret.Configured() {
+		serviceAuthenticator = newAPIClientJWTAuthenticator(adminOpsService, config.APIClient.JWTSecret.Value())
+	}
+	externalCustomerRead, err = newLegacyExternalCustomerReadHandler(
+		customerService, customerDetailService, customerEventService, customerContextService,
+		identityResolver, legacyUnionIDResolver, weComIdentityCorpID, serviceAuthenticator,
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	legacyHandler, err := NewHandlerWithAll(
 		service, customerService,
 		customerDetailService,
@@ -1578,6 +1595,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.legacyTagLive = legacyTagLiveService
 	legacyHandler.legacyTagStatus = legacyTagStatusService
 	legacyHandler.adminOps = adminOpsService
+	legacyHandler.externalCustomerRead = externalCustomerRead
 	candidate.adminOps = http.HandlerFunc(legacyHandler.AdminOps)
 	candidate.outboundLegacy = legacyHandler
 	legacyHandler.runtimeConfig = runtimeConfigDeclarationFromConfig(config)
@@ -1906,6 +1924,11 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/h5/surveys/oauth/callback", http.HandlerFunc(wrapper.CallbackSurveyH5OAuth)},
 	} {
 		if err = registerPublicProtocol(route.method, route.pattern, route.endpoint); err != nil {
+			return nil, err
+		}
+	}
+	if legacy != nil {
+		if err = registerPublicProtocol(http.MethodGet, "/api/identity/resolve", http.HandlerFunc(legacy.ResolveExternalIdentity)); err != nil {
 			return nil, err
 		}
 	}
@@ -2732,8 +2755,13 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/messages/{external_userid}/archive", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.DeprecatedExternalMessageArchive)},
 			{http.MethodGet, "/api/messages/{external_userid}/history", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.DeprecatedExternalMessageHistory)},
 			{http.MethodGet, "/api/messages/{external_userid}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.ListArchivedMessages)},
-			{http.MethodGet, "/api/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.ListCustomers)},
-			{http.MethodGet, "/api/customers/{external_userid}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetCustomer)},
+			{http.MethodGet, "/api/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.ListExternalCustomers)},
+			{http.MethodGet, "/api/customers/{external_userid}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetExternalCustomer)},
+			{http.MethodGet, "/api/customers/{external_userid}/timeline", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetExternalCustomerTimeline)},
+			{http.MethodGet, "/api/users/{unionid}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetExternalUser)},
+			{http.MethodGet, "/api/users/{unionid}/messages/recent", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetExternalUserRecentMessages)},
+			{http.MethodGet, "/api/users/{unionid}/timeline", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetExternalUserTimeline)},
+			{http.MethodGet, "/api/messages/{external_userid}/recent", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetExternalRecentMessages)},
 			{http.MethodGet, "/api/admin/push-center/jobs", authport.CapabilityOutboundRead, false, http.HandlerFunc(legacy.ListOutboundJobs)},
 			{http.MethodGet, "/api/admin/push-center/jobs/{job_id}", authport.CapabilityOutboundRead, false, http.HandlerFunc(legacy.GetOutboundJob)},
 			{http.MethodGet, "/api/admin/push-center/jobs/{job_id}/reconciliation", authport.CapabilityOutboundRead, false, http.HandlerFunc(legacy.ReconcileOutboundJob)},

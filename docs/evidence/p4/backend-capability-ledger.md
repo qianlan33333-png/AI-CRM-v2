@@ -1,5 +1,15 @@
 # P4 后端冻结收据总账
 
+## CI01 External Customer Read Protocol（无 migration）
+
+CI01 将 8 条 legacy 外部客户/身份读取协议接到 canonical Contact、Identity、Contact
+Events 与安全消息摘要；只信任 verified external identity/unionid，并保留 global/owner
+scope。独立 API-client JWT 仅用于 `/api/identity/resolve`，与 human session 隔离且在
+未配置启动 secret 时 fail closed。消息不输出正文、参与人或 Provider ID，全部调用均为
+本地读取且 `real_external_call_executed=false`。精确 API、鉴权、PII 与 PG16 验收见
+`docs/evidence/p4/ci01-external-customer-read-protocol.md`；不声明前端、批次 Nightly、部署
+或真实外部效果完成。
+
 ## Radar Local Tracking Core（本地 checkpoint；不追溯改写旧冻结分母）
 
 `00081_radar_local_tracking.sql` 恢复 enabled link 公共 302、identity-free H5 event、

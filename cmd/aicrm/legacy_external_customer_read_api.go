@@ -12,6 +12,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/go-chi/chi/v5"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
@@ -72,14 +73,85 @@ func newLegacyExternalCustomerReadHandler(
 	service operationServiceAuthenticator,
 ) (*legacyExternalCustomerReadHandler, error) {
 	if nilLegacyDependency(customers) || nilLegacyDependency(detail) || nilLegacyDependency(events) ||
-		nilLegacyDependency(chats) || nilLegacyDependency(identity) || nilLegacyDependency(unionIDs) ||
-		strings.TrimSpace(corpID) == "" {
+		nilLegacyDependency(chats) || nilLegacyDependency(identity) || nilLegacyDependency(unionIDs) {
 		return nil, errLegacyExternalCustomerReadUnavailable
 	}
 	return &legacyExternalCustomerReadHandler{
 		customers: customers, detail: detail, events: events, chats: chats, identity: identity,
 		unionIDs: unionIDs, corpID: strings.TrimSpace(corpID), service: service,
 	}, nil
+}
+
+func (handler *Handler) ListExternalCustomers(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil {
+		writeLegacyExternalCustomerReadError(writer, request, errLegacyExternalCustomerReadUnavailable)
+		return
+	}
+	if handler.externalCustomerRead == nil {
+		handler.ListCustomers(writer, request)
+		return
+	}
+	handler.externalCustomerRead.ListCustomers(writer, request)
+}
+
+func (handler *Handler) GetExternalCustomer(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil {
+		writeLegacyExternalCustomerReadError(writer, request, errLegacyExternalCustomerReadUnavailable)
+		return
+	}
+	if handler.externalCustomerRead == nil {
+		handler.GetCustomer(writer, request)
+		return
+	}
+	handler.externalCustomerRead.GetCustomer(writer, request, chi.URLParam(request, "external_userid"))
+}
+
+func (handler *Handler) GetExternalCustomerTimeline(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || handler.externalCustomerRead == nil {
+		writeLegacyExternalCustomerReadError(writer, request, errLegacyExternalCustomerReadUnavailable)
+		return
+	}
+	handler.externalCustomerRead.GetCustomerTimeline(writer, request, chi.URLParam(request, "external_userid"))
+}
+
+func (handler *Handler) GetExternalUser(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || handler.externalCustomerRead == nil {
+		writeLegacyExternalCustomerReadError(writer, request, errLegacyExternalCustomerReadUnavailable)
+		return
+	}
+	handler.externalCustomerRead.GetUser(writer, request, chi.URLParam(request, "unionid"))
+}
+
+func (handler *Handler) GetExternalUserTimeline(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || handler.externalCustomerRead == nil {
+		writeLegacyExternalCustomerReadError(writer, request, errLegacyExternalCustomerReadUnavailable)
+		return
+	}
+	handler.externalCustomerRead.GetUserTimeline(writer, request, chi.URLParam(request, "unionid"))
+}
+
+func (handler *Handler) GetExternalRecentMessages(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || handler.externalCustomerRead == nil {
+		writeLegacyExternalCustomerReadError(writer, request, errLegacyExternalCustomerReadUnavailable)
+		return
+	}
+	handler.externalCustomerRead.GetRecentMessages(writer, request, chi.URLParam(request, "external_userid"))
+}
+
+func (handler *Handler) GetExternalUserRecentMessages(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || handler.externalCustomerRead == nil {
+		writeLegacyExternalCustomerReadError(writer, request, errLegacyExternalCustomerReadUnavailable)
+		return
+	}
+	handler.externalCustomerRead.GetUserRecentMessages(writer, request, chi.URLParam(request, "unionid"))
+}
+
+func (handler *Handler) ResolveExternalIdentity(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || handler.externalCustomerRead == nil {
+		writeLegacyExternalCustomerReadError(writer, request, errLegacyExternalCustomerReadUnavailable)
+		return
+	}
+	handler.externalCustomerRead.ResolveIdentity(writer, request)
 }
 
 func (handler *legacyExternalCustomerReadHandler) ListCustomers(writer http.ResponseWriter, request *http.Request) {
@@ -108,6 +180,7 @@ func (handler *legacyExternalCustomerReadHandler) ListCustomers(writer http.Resp
 		"ok": true, "customers": items, "items": items, "count": len(items), "total": result.Total,
 		"limit": resultLimit(query.limit, contactapp.CustomerListDefaultLimit), "offset": 0,
 		"next_cursor": cloneLegacyExternalString(result.NextCursor), "source_status": "canonical_contact", "route_owner": "ai_crm_next",
+		"fallback_used": false, "real_external_call_executed": false,
 	})
 }
 
@@ -119,6 +192,7 @@ func (handler *legacyExternalCustomerReadHandler) GetCustomer(writer http.Respon
 	}
 	writeLegacyExternalCustomerReadJSON(writer, http.StatusOK, map[string]any{
 		"ok": true, "customer": customer, "source_status": "canonical_contact", "route_owner": "ai_crm_next",
+		"fallback_used": false, "real_external_call_executed": false,
 	})
 }
 
@@ -130,6 +204,7 @@ func (handler *legacyExternalCustomerReadHandler) GetUser(writer http.ResponseWr
 	}
 	writeLegacyExternalCustomerReadJSON(writer, http.StatusOK, map[string]any{
 		"ok": true, "customer": customer, "source_status": "canonical_contact", "route_owner": "ai_crm_next",
+		"fallback_used": false, "real_external_call_executed": false,
 	})
 }
 
@@ -203,6 +278,7 @@ func (handler *legacyExternalCustomerReadHandler) ResolveIdentity(writer http.Re
 	writeLegacyExternalCustomerReadJSON(writer, http.StatusOK, map[string]any{
 		"ok": true, "identity": map[string]any{"customer_id": int64(result)},
 		"source_status": "canonical_identity", "route_owner": "ai_crm_next",
+		"fallback_used": false, "real_external_call_executed": false,
 	})
 }
 
@@ -226,6 +302,7 @@ func (handler *legacyExternalCustomerReadHandler) timeline(writer http.ResponseW
 		"ok": true, "timeline": map[string]any{"customer_id": int64(customerID), "items": items, "count": len(items),
 			"limit": resultLimit(limit, contactapp.CustomerListDefaultLimit), "offset": 0, "next_cursor": cloneLegacyExternalString(result.NextCursor)},
 		"source_status": "canonical_contact_events", "route_owner": "ai_crm_next",
+		"fallback_used": false, "real_external_call_executed": false,
 	})
 }
 
@@ -250,12 +327,13 @@ func (handler *legacyExternalCustomerReadHandler) messages(writer http.ResponseW
 	writeLegacyExternalCustomerReadJSON(writer, http.StatusOK, map[string]any{
 		"ok": true, "messages": messages, "items": messages, "count": len(messages),
 		"limit": resultLimit(limit, customer360app.CustomerChatActivityDefaultLimit), "source_status": "local_archive_summary", "route_owner": "ai_crm_next",
-		"message_content_included": false, "participant_identity_included": false, "provider_message_id_included": false, "real_external_call_executed": false,
+		"message_content_included": false, "participant_identity_included": false, "provider_message_id_included": false,
+		"fallback_used": false, "real_external_call_executed": false,
 	})
 }
 
 func (handler *legacyExternalCustomerReadHandler) customerByExternalUserID(request *http.Request, externalUserID string) (legacyExternalCustomer, contactport.CustomerID, error) {
-	if handler == nil || request == nil || !validLegacyExternalIdentityValue(externalUserID) {
+	if handler == nil || request == nil || handler.corpID == "" || !validLegacyExternalIdentityValue(externalUserID) {
 		return legacyExternalCustomer{}, 0, errLegacyExternalCustomerReadInvalid
 	}
 	result, err := handler.resolveRef(request.Context(), identityport.IDRef{Kind: identityport.KindWeComExternalUserID,
