@@ -58,10 +58,12 @@ CREATE INDEX wecom_contact_inbox_external_user_idx
   WHERE external_userid <> '';
 
 -- +goose Down
+-- +goose StatementBegin
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM wecom_contact_inbox LIMIT 1) THEN
     RAISE EXCEPTION 'cannot roll back populated WeCom contact inbox' USING ERRCODE = '55000';
   END IF;
 END $$;
+-- +goose StatementEnd
 DROP TABLE wecom_contact_inbox;

@@ -19,7 +19,7 @@ func TestB01WeComInboundPG16(t *testing.T) {
 	if dsn == "" {
 		t.Skip("P4B01_WECOM_INBOUND_TEST_DATABASE_URL is not configured")
 	}
-	if err := acceptancefixtures.ValidateDatabaseURL(dsn); err != nil {
+	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(dsn, acceptancefixtures.B01WeComInboundDatabaseName); err != nil {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
