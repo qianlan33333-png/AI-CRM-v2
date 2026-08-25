@@ -341,7 +341,9 @@ func openPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 		t.Skip("database-url is not set")
 	}
 	if err := acceptancefixtures.ValidateDatabaseURL(*l01DatabaseURL); err != nil {
-		t.Fatal(err)
+		if dedicatedErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*l01DatabaseURL, acceptancefixtures.StatsL01DatabaseName); dedicatedErr != nil {
+			t.Fatal(err)
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	t.Cleanup(cancel)
