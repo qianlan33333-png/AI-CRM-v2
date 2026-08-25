@@ -27,12 +27,10 @@ Verification is local only:
 make generate-openapi generate-sqlc generate-orval
 make generate-check openapi-p1-contract feature-matrix-contract migration-validate replacement-baseline-contract legacy-route-export-test
 go test -race -count=1 ./internal/segment/legacyaudience/... ./cmd/aicrm
-CI_TEST_DATABASE_URL=... go test -race -count=1 -run '^TestLocalConfigurationSQLRepositoryPG16' ./internal/segment/legacyaudience
+P4AIAUDIENCE_TEST_DATABASE_URL=... make p4-ai-audience-local-configuration-acceptance
 ```
 
-This isolated branch contains migration `00084` but not the parallel `00081`-
-`00083` migrations. Therefore its standalone `migration-mapping-contract`
-correctly reports a numbered gap, and an empty `goose down` from 84 reaches 78.
-After the serial integration queue supplies 81--83, rerun that contract and the
-exact-PG acceptance against the integrated migration sequence. No placeholder
-migrations are introduced by this package.
+The acceptance creates only the dedicated `aicrm_test_ai_audience_00084`
+database, proves empty `84 → 83 → 84`, runs the PG16 repository concurrency
+test, and verifies that a populated configuration receipt prevents rollback.
+No placeholder migrations are introduced by this package.
