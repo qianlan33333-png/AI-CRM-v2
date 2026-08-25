@@ -92,7 +92,7 @@ SELECT p.id AS product_id,
 FROM public.products AS p
 LEFT JOIN public.product_external_push_configurations AS c ON c.product_id = p.id
 WHERE p.id = $2::bigint
-FOR UPDATE OF p, c
+FOR UPDATE OF p
 `
 
 type LockProductExternalPushConfigurationParams struct {

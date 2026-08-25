@@ -129,11 +129,11 @@ func TestCommerceExternalPushTestCreatesOnlyAcceptedLocalEERFactAndReplays(t *te
 		configs:  map[productport.ID]productport.ExternalPushConfiguration{52: {ProductID: 52, ProductKind: productport.ExternalPushServicePeriod, Enabled: true, ConfigurationReference: "service-period-payment-52", UpdatedAt: updated}},
 		receipts: map[string]Receipt{},
 	}
-	effects := &commerceExternalPushTestEffects{result: productport.ExternalPushTest{ProductID: 52, ProductKind: productport.ExternalPushServicePeriod, EffectID: "eer_73", State: "accepted", CreatedAt: updated}}
+	effects := &commerceExternalPushTestEffects{result: productport.ExternalPushTest{ProductID: 52, ProductKind: productport.ExternalPushServicePeriod, EffectID: "eer_1", State: "accepted", CreatedAt: updated}}
 	service, _ := newCommerceExternalPushTestService(store, effects)
 	command := productport.QueueExternalPushTestCommand{ProductID: 52, ProductKind: productport.ExternalPushServicePeriod, Actor: 9, IdempotencyKey: "commerce-push-test-0001"}
 	first, err := service.QueueExternalPushTest(context.Background(), command)
-	if err != nil || first.EffectID != "eer_73" || first.State != "accepted" || first.ProviderAccepted || first.DeliveryProven || first.RealExternalCallExecuted || first.AutoRetryAllowed || len(store.tests) != 1 || effects.calls != 1 {
+	if err != nil || first.EffectID != "eer_1" || first.State != "accepted" || first.ProviderAccepted || first.DeliveryProven || first.RealExternalCallExecuted || first.AutoRetryAllowed || len(store.tests) != 1 || effects.calls != 1 {
 		t.Fatalf("first=%#v tests=%#v effects=%d err=%v", first, store.tests, effects.calls, err)
 	}
 	if effects.inputs[0].ProductID != 52 || effects.inputs[0].ProductKind != productport.ExternalPushServicePeriod || effects.inputs[0].ConfigurationDigest == ([32]byte{}) || effects.inputs[0].ReceiptKeyDigest == ([32]byte{}) {

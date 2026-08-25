@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"strconv"
 
 	eerport "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/port"
@@ -33,13 +34,16 @@ func (a *CommerceExternalPushEERAccepter) AcceptProductExternalPushTest(ctx cont
 		PolicyVersionHash: productExternalPushDigest("policy", "commerce-external-push/v1"),
 	})
 	if err != nil {
-		return productport.ExternalPushTest{}, productapp.ErrUnavailable
+		return productport.ExternalPushTest{}, errors.Join(productapp.ErrUnavailable, err)
 	}
 	projection, _, err := a.runtime.Accept(ctx, eerport.AcceptCommand{
 		ReceiptKeyDigest: productExternalPushDigest("receipt", hex.EncodeToString(command.ReceiptKeyDigest[:])),
 		Envelope:         envelope,
 	})
-	if err != nil || projection.ID == "" || projection.State != eerport.StateAccepted || projection.Owner != eerport.OwnerProduct ||
+	if err != nil {
+		return productport.ExternalPushTest{}, errors.Join(productapp.ErrUnavailable, err)
+	}
+	if projection.ID == "" || projection.State != eerport.StateAccepted || projection.Owner != eerport.OwnerProduct ||
 		projection.Kind != eerport.KindProductExternalPushTest || projection.UpdatedAt.IsZero() {
 		return productport.ExternalPushTest{}, productapp.ErrUnavailable
 	}

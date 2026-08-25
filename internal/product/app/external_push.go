@@ -293,7 +293,7 @@ func validExternalPushTest(value productport.ExternalPushTest, productID product
 }
 
 func validCommerceExternalPushEffectID(value string) bool {
-	if !strings.HasPrefix(value, "eer_") || len(value) < 6 {
+	if !strings.HasPrefix(value, "eer_") || len(value) < 5 {
 		return false
 	}
 	for index, character := range value[4:] {
