@@ -2,8 +2,11 @@ package app
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"strings"
+	"time"
 	"unicode"
 	"unicode/utf8"
 
@@ -70,10 +73,14 @@ func (service *ChannelAcquisitionEntrantService) Process(ctx context.Context, in
 	var result ChannelAcquisitionEntrantResult
 	err := service.uow.Within(ctx, func(txCtx context.Context) error {
 		if !input.Fact.IsEntrant() {
-			return service.record(txCtx, input, contactport.ChannelAcquisitionEntrantIgnored, contactport.AcquisitionAssetCorrelationMatch{}, 0, &result)
+			receipt, err := service.record(txCtx, input, contactport.ChannelAcquisitionEntrantIgnored, contactport.AcquisitionAssetCorrelationMatch{}, 0)
+			result.Receipt = receipt
+			return err
 		}
 		if input.Fact.State == "" {
-			return service.record(txCtx, input, contactport.ChannelAcquisitionEntrantUnmatchedAsset, contactport.AcquisitionAssetCorrelationMatch{}, 0, &result)
+			receipt, err := service.record(txCtx, input, contactport.ChannelAcquisitionEntrantUnmatchedAsset, contactport.AcquisitionAssetCorrelationMatch{}, 0)
+			result.Receipt = receipt
+			return err
 		}
 		correlation, err := service.correlation.ResolveAcquisitionAssetCorrelation(txCtx, input.Fact.CorpID, input.Fact.State, input.Fact.OccurredAt)
 		if err != nil {
@@ -81,9 +88,13 @@ func (service *ChannelAcquisitionEntrantService) Process(ctx context.Context, in
 		}
 		switch correlation.Cardinality {
 		case contactport.AcquisitionAssetCorrelationZero:
-			return service.record(txCtx, input, contactport.ChannelAcquisitionEntrantUnmatchedAsset, contactport.AcquisitionAssetCorrelationMatch{}, 0, &result)
+			receipt, err := service.record(txCtx, input, contactport.ChannelAcquisitionEntrantUnmatchedAsset, contactport.AcquisitionAssetCorrelationMatch{}, 0)
+			result.Receipt = receipt
+			return err
 		case contactport.AcquisitionAssetCorrelationMultiple:
-			return service.record(txCtx, input, contactport.ChannelAcquisitionEntrantAmbiguousAsset, contactport.AcquisitionAssetCorrelationMatch{}, 0, &result)
+			receipt, err := service.record(txCtx, input, contactport.ChannelAcquisitionEntrantAmbiguousAsset, contactport.AcquisitionAssetCorrelationMatch{}, 0)
+			result.Receipt = receipt
+			return err
 		case contactport.AcquisitionAssetCorrelationOne:
 			if !validCorrelationMatch(correlation.Match) {
 				return ErrChannelAcquisitionEntrantFailed
@@ -104,20 +115,26 @@ func (service *ChannelAcquisitionEntrantService) Process(ctx context.Context, in
 			if identity.CustomerID < 1 {
 				return ErrChannelAcquisitionEntrantFailed
 			}
-			return service.record(txCtx, input, contactport.ChannelAcquisitionEntrantAttributed, correlation.Match, identity.CustomerID, &result)
+			receipt, err := service.record(txCtx, input, contactport.ChannelAcquisitionEntrantAttributed, correlation.Match, identity.CustomerID)
+			result.Receipt = receipt
+			return err
 		case identityport.AcquisitionEntrantIdentityNotFound:
 			if identity.CustomerID != 0 {
 				return ErrChannelAcquisitionEntrantFailed
 			}
-			if err = service.record(txCtx, input, contactport.ChannelAcquisitionEntrantPendingIdentity, correlation.Match, 0, &result); err == nil {
+			receipt, recordErr := service.record(txCtx, input, contactport.ChannelAcquisitionEntrantPendingIdentity, correlation.Match, 0)
+			result.Receipt = receipt
+			if recordErr == nil && receipt.Status == contactport.ChannelAcquisitionEntrantPendingIdentity {
 				result.IdentityPendingRequired = true
 			}
-			return err
+			return recordErr
 		case identityport.AcquisitionEntrantIdentityConflict:
 			if identity.CustomerID != 0 {
 				return ErrChannelAcquisitionEntrantFailed
 			}
-			return service.record(txCtx, input, contactport.ChannelAcquisitionEntrantConflict, correlation.Match, 0, &result)
+			receipt, err := service.record(txCtx, input, contactport.ChannelAcquisitionEntrantConflict, correlation.Match, 0)
+			result.Receipt = receipt
+			return err
 		default:
 			return ErrChannelAcquisitionEntrantFailed
 		}
@@ -134,20 +151,29 @@ func (service *ChannelAcquisitionEntrantService) record(
 	status contactport.ChannelAcquisitionEntrantStatus,
 	match contactport.AcquisitionAssetCorrelationMatch,
 	customerID contactport.CustomerID,
-	result *ChannelAcquisitionEntrantResult,
-) error {
+) (contactport.ChannelAcquisitionEntrantReceipt, error) {
+	inputDigest := channelAcquisitionEntrantInputDigest(input)
 	receipt, err := service.receipts.RecordChannelAcquisitionEntrant(ctx, contactport.ChannelAcquisitionEntrantCommand{
-		InboxID: input.InboxID, SourceKey: input.SourceKey, CorpID: input.Fact.CorpID, CallbackState: input.Fact.State,
+		InboxID: input.InboxID, SourceKey: input.SourceKey, InputDigest: inputDigest, CorpID: input.Fact.CorpID, CallbackState: input.Fact.State,
 		WeComUserID: input.Fact.UserID, OccurredAt: input.Fact.OccurredAt, Status: status, Match: match, CustomerID: customerID,
 	})
 	if err != nil {
-		return errors.Join(ErrChannelAcquisitionEntrantFailed, err)
+		return contactport.ChannelAcquisitionEntrantReceipt{}, errors.Join(ErrChannelAcquisitionEntrantFailed, err)
 	}
-	if !validChannelAcquisitionEntrantReceipt(receipt, input.InboxID, status, match, customerID) {
-		return ErrChannelAcquisitionEntrantFailed
+	if !validChannelAcquisitionEntrantReceipt(receipt, input.InboxID, inputDigest, status, match, customerID) {
+		return contactport.ChannelAcquisitionEntrantReceipt{}, ErrChannelAcquisitionEntrantFailed
 	}
-	result.Receipt = receipt
-	return nil
+	return receipt, nil
+}
+
+func channelAcquisitionEntrantInputDigest(input ChannelAcquisitionEntrantInput) string {
+	external := sha256.Sum256([]byte("wecom.ch03.entrant.external-user.v1\x00" + input.Fact.ExternalUserID))
+	canonical := strings.Join([]string{
+		input.SourceKey, input.Fact.CorpID, input.Fact.ChangeType, input.Fact.State, input.Fact.UserID,
+		hex.EncodeToString(external[:]), input.Fact.OccurredAt.UTC().Format(time.RFC3339Nano),
+	}, "\x00")
+	digest := sha256.Sum256([]byte("wecom.ch03.entrant.receipt-input.v1\x00" + canonical))
+	return "sha256:" + hex.EncodeToString(digest[:])
 }
 
 func validChannelAcquisitionEntrantInput(input ChannelAcquisitionEntrantInput) bool {
@@ -173,15 +199,18 @@ func validCorrelationMatch(match contactport.AcquisitionAssetCorrelationMatch) b
 func validChannelAcquisitionEntrantReceipt(
 	receipt contactport.ChannelAcquisitionEntrantReceipt,
 	inboxID int64,
+	inputDigest string,
 	wanted contactport.ChannelAcquisitionEntrantStatus,
 	match contactport.AcquisitionAssetCorrelationMatch,
 	customerID contactport.CustomerID,
 ) bool {
-	if receipt.ID < 1 || receipt.InboxID != inboxID || !receipt.Status.Valid() || receipt.OccurredAt.IsZero() {
+	if receipt.ID < 1 || receipt.InboxID != inboxID || receipt.InputDigest != inputDigest || !receipt.Status.Valid() || receipt.OccurredAt.IsZero() {
 		return false
 	}
-	// A manual reconciliation can be the durable outcome returned by a replay.
-	if receipt.Status != wanted && receipt.Status != contactport.ChannelAcquisitionEntrantReconciled {
+	// A terminal receipt may be returned on replay. The exact input digest,
+	// historical asset tuple, and (when known) customer remain mandatory.
+	if receipt.Status != wanted && receipt.Status != contactport.ChannelAcquisitionEntrantReconciled &&
+		receipt.Status != contactport.ChannelAcquisitionEntrantAttributed {
 		return false
 	}
 	if !validCorrelationMatch(match) {
@@ -191,7 +220,11 @@ func validChannelAcquisitionEntrantReceipt(
 		return false
 	}
 	if wanted == contactport.ChannelAcquisitionEntrantAttributed {
-		return customerID > 0 && receipt.CustomerID == customerID && receipt.CustomerEventID > 0
+		return customerID > 0 && receipt.CustomerID == customerID && receipt.CustomerEventID > 0 &&
+			(receipt.Status == contactport.ChannelAcquisitionEntrantAttributed || receipt.Status == contactport.ChannelAcquisitionEntrantReconciled)
+	}
+	if receipt.Status == contactport.ChannelAcquisitionEntrantAttributed || receipt.Status == contactport.ChannelAcquisitionEntrantReconciled {
+		return receipt.CustomerID > 0 && receipt.CustomerEventID > 0
 	}
 	return customerID == 0 && receipt.CustomerID == 0 && receipt.CustomerEventID == 0
 }
