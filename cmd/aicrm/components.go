@@ -41,6 +41,7 @@ import (
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 	wecomstore "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/store"
+	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 	wecomworker "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/worker"
 )
 
@@ -95,6 +96,28 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	if err != nil {
 		pool.Close()
 		return nil, err
+	}
+	weComTagCorpID := config.WeCom.OAuth.CorpID
+	if weComTagCorpID == "" {
+		weComTagCorpID = config.WeCom.Callback.CorpID
+	}
+	if weComTagCorpID != "" {
+		weComTagJobs, tagErr := wecomtag.NewRiverJobInserter(pool)
+		if tagErr != nil {
+			pool.Close()
+			return nil, tagErr
+		}
+		weComTagEffects, tagErr := wecomtag.NewService(
+			uow, wecomstore.NewTagEffectRepository(pool), externalEffectsRuntime, weComTagJobs, weComTagCorpID,
+		)
+		if tagErr != nil {
+			pool.Close()
+			return nil, tagErr
+		}
+		if tagErr = wecomtag.RegisterDisabledWorker(workers, weComTagEffects); tagErr != nil {
+			pool.Close()
+			return nil, tagErr
+		}
 	}
 	automationOutboundMessage, err := automationstore.NewOutboundMessageHandoff(pool, uow, externalEffectsRuntime)
 	if err != nil {

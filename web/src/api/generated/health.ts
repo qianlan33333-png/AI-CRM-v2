@@ -7198,34 +7198,74 @@ export interface LegacyTagExecutionGate {
 
 export interface LegacyTagSyncRequest {
   /**
-   * @minLength 1
-   * @maxLength 200
+   * @minLength 16
+   * @maxLength 128
    */
   idempotency_key?: string;
   /** @maxLength 200 */
   trace_id?: string;
-  [key: string]: unknown;
 }
 
+export type LegacyTagOpaqueLiveMutationRequestTagId = string | number;
+
 /**
- * Opaque legacy body retained for a later public WeCom port; this endpoint only queues it locally.
+ * Typed WeCom contact-tag mutation accepted into EER; Provider execution remains disabled until deployment authorization.
  */
-export interface LegacyTagOpaqueLiveMutationRequest {
-  /**
-   * @minLength 1
-   * @maxLength 200
-   */
-  idempotency_key?: string;
-  /** @maxLength 200 */
-  trace_id?: string;
-  [key: string]: unknown;
-}
+export type LegacyTagOpaqueLiveMutationRequest =
+  | (unknown & {
+      /**
+       * @minLength 16
+       * @maxLength 128
+       */
+      idempotency_key?: string;
+      /** @maxLength 200 */
+      trace_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 1024
+       */
+      external_userid: string;
+      tag_id?: LegacyTagOpaqueLiveMutationRequestTagId;
+      /**
+       * @minItems 1
+       * @maxItems 100
+       */
+      tag_ids?: string[];
+    })
+  | (unknown & {
+      /**
+       * @minLength 16
+       * @maxLength 128
+       */
+      idempotency_key?: string;
+      /** @maxLength 200 */
+      trace_id?: string;
+      /**
+       * @minLength 1
+       * @maxLength 1024
+       */
+      external_userid: string;
+      tag_id?: LegacyTagOpaqueLiveMutationRequestTagId;
+      /**
+       * @minItems 1
+       * @maxItems 100
+       */
+      tag_ids?: string[];
+    });
 
 export type LegacyTagQueuedAcceptanceState =
   (typeof LegacyTagQueuedAcceptanceState)[keyof typeof LegacyTagQueuedAcceptanceState];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const LegacyTagQueuedAcceptanceState = {
+  queued: "queued",
+} as const;
+
+export type LegacyTagQueuedAcceptanceEffectState =
+  (typeof LegacyTagQueuedAcceptanceEffectState)[keyof typeof LegacyTagQueuedAcceptanceEffectState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyTagQueuedAcceptanceEffectState = {
   queued: "queued",
 } as const;
 
@@ -7239,8 +7279,65 @@ export interface LegacyTagQueuedAcceptance {
   /** @minimum 1 */
   river_job_id: number;
   state: LegacyTagQueuedAcceptanceState;
+  /** @pattern ^eer_[1-9][0-9]*$ */
+  effect_id: string;
+  effect_state: LegacyTagQueuedAcceptanceEffectState;
+  /** @minimum 1 */
+  effect_river_job_id: number;
+  /** @pattern ^eerop_[1-9][0-9]*$ */
+  accept_receipt_id: string;
+  /** @pattern ^eerop_[1-9][0-9]*$ */
+  queue_receipt_id: string;
   real_external_call_executed: boolean;
   sync_executed: boolean;
+}
+
+export type WeComTagEffectReconcileRequestResolution =
+  (typeof WeComTagEffectReconcileRequestResolution)[keyof typeof WeComTagEffectReconcileRequestResolution];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeComTagEffectReconcileRequestResolution = {
+  provider_applied: "provider_applied",
+  provider_not_applied: "provider_not_applied",
+} as const;
+
+export interface WeComTagEffectReconcileRequest {
+  /** @minimum 1 */
+  generation: number;
+  /** @minimum 1 */
+  fence: number;
+  lease_expires_at: string;
+  /** @pattern ^sha256:[a-f0-9]{64}$ */
+  evidence_digest: string;
+  resolution: WeComTagEffectReconcileRequestResolution;
+}
+
+export type WeComTagEffectReconciliationState =
+  (typeof WeComTagEffectReconciliationState)[keyof typeof WeComTagEffectReconciliationState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeComTagEffectReconciliationState = {
+  reconciled: "reconciled",
+} as const;
+
+export type WeComTagEffectReconciliationResolution =
+  (typeof WeComTagEffectReconciliationResolution)[keyof typeof WeComTagEffectReconciliationResolution];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WeComTagEffectReconciliationResolution = {
+  provider_applied: "provider_applied",
+  provider_not_applied: "provider_not_applied",
+} as const;
+
+export interface WeComTagEffectReconciliation {
+  /** @pattern ^eer_[1-9][0-9]*$ */
+  effect_id: string;
+  state: WeComTagEffectReconciliationState;
+  resolution: WeComTagEffectReconciliationResolution;
+  /** @pattern ^eerop_[1-9][0-9]*$ */
+  receipt_id: string;
+  provider_call_attempted: boolean;
+  provider_success_claimed: boolean;
 }
 
 export type LegacyChannelWriteRequestChannelType =
@@ -28595,6 +28692,84 @@ export const queueLegacyWecomTagSyncDue = async (
     status: res.status,
     headers: res.headers,
   } as queueLegacyWecomTagSyncDueResponse;
+};
+
+/**
+ * @summary Reconcile an ambiguous typed WeCom tag effect without replaying Provider
+ */
+export type reconcileWecomTagEffectResponse200 = {
+  data: WeComTagEffectReconciliation;
+  status: 200;
+};
+
+export type reconcileWecomTagEffectResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type reconcileWecomTagEffectResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reconcileWecomTagEffectResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reconcileWecomTagEffectResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type reconcileWecomTagEffectResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type reconcileWecomTagEffectResponseSuccess =
+  reconcileWecomTagEffectResponse200 & {
+    headers: Headers;
+  };
+export type reconcileWecomTagEffectResponseError = (
+  | reconcileWecomTagEffectResponse400
+  | reconcileWecomTagEffectResponse401
+  | reconcileWecomTagEffectResponse403
+  | reconcileWecomTagEffectResponse409
+  | reconcileWecomTagEffectResponse503
+) & {
+  headers: Headers;
+};
+
+export type reconcileWecomTagEffectResponse =
+  reconcileWecomTagEffectResponseSuccess | reconcileWecomTagEffectResponseError;
+
+export const getReconcileWecomTagEffectUrl = (effectId: string) => {
+  return `/api/admin/wecom/tag-effects/${effectId}/reconcile`;
+};
+
+export const reconcileWecomTagEffect = async (
+  effectId: string,
+  weComTagEffectReconcileRequest: WeComTagEffectReconcileRequest,
+  options?: RequestInit,
+): Promise<reconcileWecomTagEffectResponse> => {
+  const res = await fetch(getReconcileWecomTagEffectUrl(effectId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(weComTagEffectReconcileRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reconcileWecomTagEffectResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reconcileWecomTagEffectResponse;
 };
 
 /**

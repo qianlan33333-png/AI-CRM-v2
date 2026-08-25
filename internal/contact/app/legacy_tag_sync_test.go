@@ -101,6 +101,22 @@ func TestP4CustomerTagsSyncReplayReturnsQueuedFactsWithoutASecondJob(t *testing.
 	}
 }
 
+func TestP4CustomerTagsSyncCommitHookRunsInsideUOWAndPropagatesFailure(t *testing.T) {
+	command := p4CustomerTagSyncCommand(LegacyTagSyncManual)
+	u := &legacyTagUOW{}
+	receipts := &legacyTagSyncReceipts{u: u, reserved: LegacyTagSyncReceipt{ID: 41, Command: command, State: LegacyTagSyncReceiptReserved}, accepted: LegacyTagSyncReceipt{ID: 41, Command: command, State: LegacyTagSyncReceiptQueued, EventID: 1, RiverJobID: 43}}
+	hookErr := errors.New("typed queue failed")
+	_, err := NewLegacyTagSyncService(u, receipts, &legacyTagEvents{u: u}, &legacyTagSyncJobs{u: u, id: 43}).RequestWithCommitHook(context.Background(), command, func(_ context.Context, acceptance LegacyTagSyncAcceptance, replay bool) error {
+		if !u.in || replay || acceptance.ReceiptID != 41 || acceptance.State != LegacyTagSyncQueued {
+			t.Fatalf("hook acceptance/uow = %#v/%v", acceptance, u.in)
+		}
+		return hookErr
+	})
+	if !errors.Is(err, hookErr) {
+		t.Fatalf("RequestWithCommitHook() error = %v, want hook failure", err)
+	}
+}
+
 func TestP4CustomerTagsSyncRejectsIdempotencyConflictAndInvalidInputBeforeQueueing(t *testing.T) {
 	command := p4CustomerTagSyncCommand(LegacyTagSyncManual)
 	stored := command

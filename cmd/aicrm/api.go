@@ -106,6 +106,7 @@ import (
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
 	wecomstore "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/store"
+	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 )
 
 var errInvalidAPIComponent = errors.New("invalid API component")
@@ -1550,6 +1551,21 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	if weComIdentityCorpID == "" {
 		weComIdentityCorpID = config.WeCom.Callback.CorpID
 	}
+	var weComTagEffects *wecomtag.Service
+	if weComIdentityCorpID != "" {
+		weComTagJobs, tagErr := wecomtag.NewRiverJobInserter(pool)
+		if tagErr != nil {
+			pool.Close()
+			return nil, tagErr
+		}
+		weComTagEffects, tagErr = wecomtag.NewService(
+			uow, wecomstore.NewTagEffectRepository(pool), externalEffectsRuntime, weComTagJobs, weComIdentityCorpID,
+		)
+		if tagErr != nil {
+			pool.Close()
+			return nil, tagErr
+		}
+	}
 	var serviceAuthenticator operationServiceAuthenticator
 	if config.APIClient.JWTSecret.Configured() {
 		serviceAuthenticator = newAPIClientJWTAuthenticator(adminOpsService, config.APIClient.JWTSecret.Value())
@@ -1576,7 +1592,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	legacyHandler.setupWizard = setupWizardHandler
-	legacyHandler.legacyTagSync = legacyTagSyncService
+	if weComTagEffects != nil {
+		legacyHandler.legacyTagSync = &legacyTagSyncEffectBridge{legacy: legacyTagSyncService, effects: weComTagEffects}
+	}
 	legacyHandler.servicePeriod = servicePeriodHandler
 	legacyHandler.memberGrid = memberGridFragment
 	legacyHandler.memberGridManagement = memberGridManagementFragment
@@ -1592,8 +1610,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.outboundMediaAccepted = publishedOutboundService
 	legacyHandler.outboundMediaDetail = outboundMediaEffectDetailService
 	legacyHandler.outboundMediaReconcile = outboundMediaReconcileService
-	legacyHandler.legacyTagLive = legacyTagLiveService
+	if weComTagEffects != nil {
+		legacyHandler.legacyTagLive = &legacyTagLiveEffectBridge{legacy: legacyTagLiveService, effects: weComTagEffects}
+	}
 	legacyHandler.legacyTagStatus = legacyTagStatusService
+	legacyHandler.wecomTagEffects = weComTagEffects
 	legacyHandler.adminOps = adminOpsService
 	legacyHandler.externalCustomerRead = externalCustomerRead
 	candidate.adminOps = http.HandlerFunc(legacyHandler.AdminOps)
@@ -2882,6 +2903,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/api/admin/wecom/tags/live/unmark", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.UnmarkLegacyTagLive)},
 			{http.MethodPost, "/api/admin/wecom/tags/sync", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.SyncLegacyTags)},
 			{http.MethodPost, "/api/admin/wecom/tags/sync-due", authport.CapabilityCustomersWrite, true, http.HandlerFunc(legacy.SyncLegacyTagsDue)},
+			{http.MethodPost, "/api/admin/wecom/tag-effects/{effect_id}/reconcile", authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.ReconcileWeComTagEffect)},
 			{http.MethodGet, "/api/admin/wecom/tags/{tag_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetLegacyTag)},
 			{http.MethodGet, "/api/admin/coupons", authport.CapabilityCouponsRead, false, http.HandlerFunc(legacy.ListCoupons)},
 			{http.MethodPost, "/api/admin/coupons", authport.CapabilityCouponsWrite, true, http.HandlerFunc(legacy.CreateCoupon)},

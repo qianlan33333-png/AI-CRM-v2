@@ -399,11 +399,15 @@ owners:
 
   wecom:
     package: internal/wecom
-    tables: [wecom_sync_state, wecom_message_archive_records, wecom_message_archive_sync_receipts, wecom_contact_inbox]
+    tables: [wecom_sync_state, wecom_message_archive_records, wecom_message_archive_sync_receipts, wecom_contact_inbox, wecom_tag_effects, wecom_tag_catalog_snapshots, wecom_tag_catalog_groups, wecom_tag_catalog_tags]
     constraints:
       wecom_message_archive_records: local_redacted_message_projection_with_logical_OneID_customer_attribution_and_no_cross_domain_foreign_key
       wecom_message_archive_sync_receipts: actor_scoped_accepted_only_sync_command_idempotency_without_provider_or_worker_execution
       wecom_contact_inbox: verified_local_inbound_fact_lease_and_handoff_state_without_provider_effect
+      wecom_tag_effects: typed_provider_effect_projection_with_eer_receipts_and_manual_reconciliation
+      wecom_tag_catalog_snapshots: observed_provider_catalog_snapshot_only
+      wecom_tag_catalog_groups: provider_group_projection_scoped_to_observed_snapshot
+      wecom_tag_catalog_tags: provider_tag_projection_scoped_to_observed_snapshot
 
   gateway:
     package: internal/gateway

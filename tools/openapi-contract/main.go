@@ -94,6 +94,7 @@ const (
 	p4MediaContentDeliveryEvidence             = "P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25"
 	p4CommerceRefundV2Evidence                 = "P4-COMMERCE-REFUND-V2-2026-08-25"
 	p4CommerceExternalPushEvidence             = "P4-COMMERCE-EXTERNAL-PUSH-00087-2026-08-25"
+	p4WeComTagEffectEvidence                   = "P4-B1-WC01-2026-08-25"
 	p4ServicePeriodMemberGridCanonicalEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24"
 	c01DispatchOperationID                     = "dispatchOutboundCampaignHandoff"
 	c01DispatchReadOperationID                 = "getOutboundCampaignDispatchReconciliation"
@@ -137,6 +138,7 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"cancelExternalEffectRuntime":               {"/api/admin/external-effects/{effect_id}/cancel", "POST", p4ExternalEffectsRuntimeEvidence, "operations.manage", "human_session", "internal", "external_effects.local_control_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"retryExternalEffectRuntime":                {"/api/admin/external-effects/{effect_id}/retry", "POST", p4ExternalEffectsRuntimeEvidence, "operations.manage", "human_session", "internal", "external_effects.local_control_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"reconcileExternalEffectRuntime":            {"/api/admin/external-effects/{effect_id}/reconcile", "POST", p4ExternalEffectsRuntimeEvidence, "operations.manage", "human_session", "internal", "external_effects.local_reconciliation_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"reconcileWecomTagEffect":                   {"/api/admin/wecom/tag-effects/{effect_id}/reconcile", "POST", p4WeComTagEffectEvidence, "operations.manage", "human_session", "restricted", "wecom.tag_effect_runtime", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"listAutomationRulesRuntime":                {"/api/admin/automations", "GET", p4AutomationRulesRuntimeEvidence, "config.overview.read", "human_session", "internal", "automation.local_rule_configuration", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"createAutomationRuleRuntime":               {"/api/admin/automations", "POST", p4AutomationRulesRuntimeEvidence, "config.settings.manage", "human_session", "internal", "automation.local_rule_configuration", "required", map[string]string{"admin": "global"}},
 	"getAutomationRuleRuntime":                  {"/api/admin/automations/{rule_id}", "GET", p4AutomationRulesRuntimeEvidence, "config.overview.read", "human_session", "internal", "automation.local_rule_configuration", "none", map[string]string{"admin": "global", "ops": "global"}},
@@ -291,8 +293,9 @@ var nativePackageOperations = map[string]nativePackageOperation{
 }
 
 var nativePackageExternalEffects = map[string]string{
-	"startSurveyH5OAuth":    "external_protocol",
-	"callbackSurveyH5OAuth": "external_protocol",
+	"startSurveyH5OAuth":      "external_protocol",
+	"callbackSurveyH5OAuth":   "external_protocol",
+	"reconcileWecomTagEffect": "reconciliation_only",
 }
 
 var groupOpsCanonicalExternalEffects = map[string]string{

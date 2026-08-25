@@ -23,7 +23,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p4-rp01-release-plane-acceptance
 .PHONY: p4-external-effects-runtime-acceptance
 .PHONY: p4-data-migration-harness-acceptance
-.PHONY: p4-b01-wecom-inbound-acceptance
+.PHONY: p4-b01-wecom-inbound-acceptance p4-b1-wc01-wecom-tag-effect-acceptance
 .PHONY: p4-pe01-wechat-pay-settlement-acceptance
 .PHONY: p4-commerce-refund-v2-acceptance
 .PHONY: p4-automation-rules-runtime-acceptance
@@ -720,6 +720,11 @@ p4-b01-wecom-inbound-acceptance:
 	@test -n "$${P4B01_WECOM_INBOUND_TEST_DATABASE_URL:-}" || { echo "P4B01_WECOM_INBOUND_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" /usr/bin/env bash acceptance/wecom/b01_inbound_pg16.sh
 	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/wecom/app ./internal/wecom/store ./internal/wecom/worker ./internal/identity/http
+
+p4-b1-wc01-wecom-tag-effect-acceptance:
+	@test -n "$${P4B1WC01_WECOM_TAG_EFFECT_TEST_DATABASE_URL:-}" || { echo "P4B1WC01_WECOM_TAG_EFFECT_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" /usr/bin/env bash acceptance/wecom/b1_wc01_tag_effect_pg16.sh
+	@/usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly $(GO) test -race -count=1 -timeout=180s ./internal/wecom/tag ./internal/wecom/store
 
 p4-operation-cycle-ab-acceptance:
 	@test -n "$${P4OPERATIONCYCLE_TEST_DATABASE_URL:-}" || { echo "P4OPERATIONCYCLE_TEST_DATABASE_URL is required" >&2; exit 2; }
