@@ -136,7 +136,10 @@ func appendCustomerChannel(value, correlationKey string) (string, error) {
 	if err != nil {
 		return "", ErrWriteOutcomeUnknown
 	}
-	query := parsed.Query()
+	query, err := url.ParseQuery(parsed.RawQuery)
+	if err != nil {
+		return "", ErrWriteOutcomeUnknown
+	}
 	if query.Has("customer_channel") {
 		return "", ErrWriteOutcomeUnknown
 	}
