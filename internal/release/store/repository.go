@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	releaseport "github.com/qianlan33333-png/AI-CRM-v2/internal/release/port"
+	releasedb "github.com/qianlan33333-png/AI-CRM-v2/internal/release/store/generated"
 )
 
 type Repository struct{ pool *pgxpool.Pool }
@@ -22,334 +23,359 @@ var _ releaseport.Repository = (*Repository)(nil)
 func NewRepository(pool *pgxpool.Pool) *Repository { return &Repository{pool: pool} }
 
 func (repository *Repository) CreateCandidate(ctx context.Context, value releaseport.Candidate) (releaseport.Candidate, error) {
-	tx, err := repository.transaction(ctx)
+	queries, err := repository.queries(ctx, true)
 	if err != nil {
 		return releaseport.Candidate{}, err
 	}
-	return scanCandidate(tx.QueryRow(ctx, `INSERT INTO release_candidates (
-commit_sha,artifact_digest,manifest_digest,config_digest,target_schema_version,state,created_by,created_at
-) VALUES($1,$2,$3,$4,$5,'draft',$6,$7)
-RETURNING id,commit_sha,artifact_digest,manifest_digest,config_digest,target_schema_version,state,created_by,created_at,prepared_at,activated_at,rollback_requested_at,rolled_back_at`,
-		value.CommitSHA, value.ArtifactDigest, value.ManifestDigest, value.ConfigDigest,
-		value.TargetSchemaVersion, value.CreatedBy, value.CreatedAt))
+	row, err := queries.CreateReleaseCandidate(ctx, releasedb.CreateReleaseCandidateParams{
+		CommitSha:           value.CommitSHA,
+		ArtifactDigest:      value.ArtifactDigest,
+		ManifestDigest:      value.ManifestDigest,
+		ConfigDigest:        value.ConfigDigest,
+		TargetSchemaVersion: value.TargetSchemaVersion,
+		CreatedBy:           value.CreatedBy,
+		CreatedAt:           timestamp(value.CreatedAt),
+	})
+	return candidate(row), translate(err)
 }
 
 func (repository *Repository) GetCandidate(ctx context.Context, candidateID int64) (releaseport.Candidate, error) {
-	db, err := repository.queryer(ctx)
+	queries, err := repository.queries(ctx, false)
 	if err != nil {
 		return releaseport.Candidate{}, err
 	}
-	return scanCandidate(db.QueryRow(ctx, `SELECT id,commit_sha,artifact_digest,manifest_digest,config_digest,target_schema_version,state,created_by,created_at,prepared_at,activated_at,rollback_requested_at,rolled_back_at FROM release_candidates WHERE id=$1`, candidateID))
+	row, err := queries.GetReleaseCandidate(ctx, candidateID)
+	return candidate(row), translate(err)
 }
 
 func (repository *Repository) LockCandidate(ctx context.Context, candidateID int64) (releaseport.Candidate, error) {
-	tx, err := repository.transaction(ctx)
+	queries, err := repository.queries(ctx, true)
 	if err != nil {
 		return releaseport.Candidate{}, err
 	}
-	return scanCandidate(tx.QueryRow(ctx, `SELECT id,commit_sha,artifact_digest,manifest_digest,config_digest,target_schema_version,state,created_by,created_at,prepared_at,activated_at,rollback_requested_at,rolled_back_at FROM release_candidates WHERE id=$1 FOR UPDATE`, candidateID))
+	row, err := queries.LockReleaseCandidate(ctx, candidateID)
+	return candidate(row), translate(err)
 }
 
 func (repository *Repository) ListCandidates(ctx context.Context, limit int32) ([]releaseport.Candidate, error) {
-	db, err := repository.queryer(ctx)
+	queries, err := repository.queries(ctx, false)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := db.Query(ctx, `SELECT id,commit_sha,artifact_digest,manifest_digest,config_digest,target_schema_version,state,created_by,created_at,prepared_at,activated_at,rollback_requested_at,rolled_back_at FROM release_candidates ORDER BY id DESC LIMIT $1`, limit)
+	rows, err := queries.ListReleaseCandidates(ctx, limit)
 	if err != nil {
-		return nil, unavailable(err)
+		return nil, translate(err)
 	}
-	defer rows.Close()
-	values := make([]releaseport.Candidate, 0)
-	for rows.Next() {
-		value, scanErr := scanCandidate(rows)
-		if scanErr != nil {
-			return nil, scanErr
-		}
-		values = append(values, value)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, unavailable(err)
+	values := make([]releaseport.Candidate, 0, len(rows))
+	for _, row := range rows {
+		values = append(values, candidate(row))
 	}
 	return values, nil
 }
 
 func (repository *Repository) TransitionCandidate(ctx context.Context, candidateID int64, from, to releaseport.CandidateState, now time.Time) (releaseport.Candidate, error) {
-	tx, err := repository.transaction(ctx)
+	queries, err := repository.queries(ctx, true)
 	if err != nil {
 		return releaseport.Candidate{}, err
 	}
-	tag, err := tx.Exec(ctx, `UPDATE release_candidates SET
-state=$3,
-prepared_at=CASE WHEN $3='prepared' THEN $4 ELSE prepared_at END,
-activated_at=CASE WHEN $3='activated' THEN $4 ELSE activated_at END,
-rollback_requested_at=CASE WHEN $3='rollback_pending' THEN $4 ELSE rollback_requested_at END,
-rolled_back_at=CASE WHEN $3='rolled_back' THEN $4 ELSE rolled_back_at END
-WHERE id=$1 AND state=$2`, candidateID, string(from), string(to), now)
+	count, err := queries.TransitionReleaseCandidate(ctx, releasedb.TransitionReleaseCandidateParams{
+		ID: candidateID, State: string(from), State_2: string(to), PreparedAt: timestamp(now),
+	})
 	if err != nil {
 		return releaseport.Candidate{}, translate(err)
 	}
-	if tag.RowsAffected() != 1 {
+	if count != 1 {
 		return releaseport.Candidate{}, releaseport.ErrConflict
 	}
-	return scanCandidate(tx.QueryRow(ctx, `SELECT id,commit_sha,artifact_digest,manifest_digest,config_digest,target_schema_version,state,created_by,created_at,prepared_at,activated_at,rollback_requested_at,rolled_back_at FROM release_candidates WHERE id=$1`, candidateID))
+	row, err := queries.GetReleaseCandidate(ctx, candidateID)
+	return candidate(row), translate(err)
 }
 
 func (repository *Repository) CreatePrerequisite(ctx context.Context, value releaseport.PrerequisiteReceipt) (releaseport.PrerequisiteReceipt, error) {
-	tx, err := repository.transaction(ctx)
+	queries, err := repository.queries(ctx, true)
 	if err != nil {
 		return releaseport.PrerequisiteReceipt{}, err
 	}
-	err = tx.QueryRow(ctx, `INSERT INTO release_prerequisite_receipts(
-candidate_id,candidate_commit_sha,candidate_artifact_digest,candidate_manifest_digest,candidate_config_digest,candidate_schema_version,kind,evidence_sha,recorded_by,recorded_at
-) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-RETURNING id,candidate_id,candidate_commit_sha,candidate_artifact_digest,candidate_manifest_digest,candidate_config_digest,candidate_schema_version,kind,evidence_sha,recorded_by,recorded_at`,
-		value.CandidateID, value.CandidateCommitSHA, value.CandidateArtifactDigest, value.CandidateManifestDigest,
-		value.CandidateConfigDigest, value.CandidateSchemaVersion, string(value.Kind), value.EvidenceSHA,
-		value.RecordedBy, value.RecordedAt).Scan(
-		&value.ID, &value.CandidateID, &value.CandidateCommitSHA, &value.CandidateArtifactDigest,
-		&value.CandidateManifestDigest, &value.CandidateConfigDigest, &value.CandidateSchemaVersion,
-		&value.Kind, &value.EvidenceSHA, &value.RecordedBy, &value.RecordedAt)
-	return value, translate(err)
+	row, err := queries.CreateReleasePrerequisite(ctx, releasedb.CreateReleasePrerequisiteParams{
+		CandidateID:             value.CandidateID,
+		CandidateCommitSha:      value.CandidateCommitSHA,
+		CandidateArtifactDigest: value.CandidateArtifactDigest,
+		CandidateManifestDigest: value.CandidateManifestDigest,
+		CandidateConfigDigest:   value.CandidateConfigDigest,
+		CandidateSchemaVersion:  value.CandidateSchemaVersion,
+		Kind:                    string(value.Kind),
+		EvidenceSha:             value.EvidenceSHA,
+		RecordedBy:              value.RecordedBy,
+		RecordedAt:              timestamp(value.RecordedAt),
+	})
+	return prerequisite(row), translate(err)
 }
 
 func (repository *Repository) ListPrerequisites(ctx context.Context, candidateID int64) ([]releaseport.PrerequisiteReceipt, error) {
-	db, err := repository.queryer(ctx)
+	queries, err := repository.queries(ctx, false)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := db.Query(ctx, `SELECT id,candidate_id,candidate_commit_sha,candidate_artifact_digest,candidate_manifest_digest,candidate_config_digest,candidate_schema_version,kind,evidence_sha,recorded_by,recorded_at FROM release_prerequisite_receipts WHERE candidate_id=$1 ORDER BY kind`, candidateID)
+	rows, err := queries.ListReleasePrerequisites(ctx, candidateID)
 	if err != nil {
-		return nil, unavailable(err)
+		return nil, translate(err)
 	}
-	defer rows.Close()
-	values := make([]releaseport.PrerequisiteReceipt, 0)
-	for rows.Next() {
-		var value releaseport.PrerequisiteReceipt
-		if err = rows.Scan(&value.ID, &value.CandidateID, &value.CandidateCommitSHA, &value.CandidateArtifactDigest,
-			&value.CandidateManifestDigest, &value.CandidateConfigDigest, &value.CandidateSchemaVersion,
-			&value.Kind, &value.EvidenceSHA, &value.RecordedBy, &value.RecordedAt); err != nil {
-			return nil, unavailable(err)
-		}
-		values = append(values, value)
+	values := make([]releaseport.PrerequisiteReceipt, 0, len(rows))
+	for _, row := range rows {
+		values = append(values, prerequisite(row))
 	}
-	return values, unavailable(rows.Err())
+	return values, nil
 }
 
 func (repository *Repository) StartWorker(ctx context.Context, value releaseport.WorkerLease) (releaseport.WorkerLease, error) {
-	tx, err := repository.transaction(ctx)
+	queries, err := repository.queries(ctx, true)
 	if err != nil {
 		return releaseport.WorkerLease{}, err
 	}
-	return scanWorker(tx.QueryRow(ctx, `INSERT INTO release_worker_leases(candidate_id,generation,fence,started_by,started_at,active)
-VALUES($1,(SELECT COALESCE(max(generation),0)+1 FROM release_worker_leases WHERE candidate_id=$1),$2,$3,$4,TRUE)
-RETURNING candidate_id,generation,fence,started_by,started_at,active,retired_at`, value.CandidateID, value.Fence, value.StartedBy, value.StartedAt))
+	row, err := queries.StartReleaseWorker(ctx, releasedb.StartReleaseWorkerParams{
+		CandidateID: value.CandidateID,
+		Fence:       value.Fence,
+		StartedBy:   value.StartedBy,
+		StartedAt:   timestamp(value.StartedAt),
+	})
+	return worker(row), translate(err)
 }
 
 func (repository *Repository) GetActiveWorker(ctx context.Context, candidateID int64) (releaseport.WorkerLease, error) {
-	tx, err := repository.transaction(ctx)
+	queries, err := repository.queries(ctx, true)
 	if err != nil {
 		return releaseport.WorkerLease{}, err
 	}
-	return scanWorker(tx.QueryRow(ctx, `SELECT candidate_id,generation,fence,started_by,started_at,active,retired_at FROM release_worker_leases WHERE candidate_id=$1 AND active FOR UPDATE`, candidateID))
+	row, err := queries.GetActiveReleaseWorker(ctx, candidateID)
+	return worker(row), translate(err)
 }
 
 func (repository *Repository) FindActiveWorkerSummary(ctx context.Context, candidateID int64) (*releaseport.WorkerSummary, error) {
-	db, err := repository.queryer(ctx)
+	queries, err := repository.queries(ctx, false)
 	if err != nil {
 		return nil, err
 	}
-	value := releaseport.WorkerSummary{}
-	err = db.QueryRow(ctx, `SELECT candidate_id,generation,started_by,started_at FROM release_worker_leases WHERE candidate_id=$1 AND active`, candidateID).Scan(
-		&value.CandidateID, &value.Generation, &value.StartedBy, &value.StartedAt)
+	row, err := queries.FindActiveReleaseWorkerSummary(ctx, candidateID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, translate(err)
 	}
+	value := releaseport.WorkerSummary{
+		CandidateID: row.CandidateID,
+		Generation:  row.Generation,
+		StartedBy:   row.StartedBy,
+		StartedAt:   row.StartedAt.Time,
+	}
 	return &value, nil
 }
 
 func (repository *Repository) RetireWorker(ctx context.Context, candidateID, generation int64, fence string, now time.Time) error {
-	tx, err := repository.transaction(ctx)
+	queries, err := repository.queries(ctx, true)
 	if err != nil {
 		return err
 	}
-	tag, err := tx.Exec(ctx, `UPDATE release_worker_leases SET active=FALSE,retired_at=$4 WHERE candidate_id=$1 AND generation=$2 AND fence=$3 AND active`, candidateID, generation, fence, now)
+	count, err := queries.RetireReleaseWorker(ctx, releasedb.RetireReleaseWorkerParams{
+		CandidateID: candidateID, Generation: generation, Fence: fence, RetiredAt: timestamp(now),
+	})
 	if err != nil {
 		return translate(err)
 	}
-	if tag.RowsAffected() != 1 {
+	if count != 1 {
 		return releaseport.ErrConflict
 	}
 	return nil
 }
 
 func (repository *Repository) AppendCutoverStep(ctx context.Context, value releaseport.CutoverJournalEntry) (releaseport.CutoverJournalEntry, error) {
-	tx, err := repository.transaction(ctx)
+	queries, err := repository.queries(ctx, true)
 	if err != nil {
 		return releaseport.CutoverJournalEntry{}, err
 	}
-	err = tx.QueryRow(ctx, `INSERT INTO release_cutover_journal(candidate_id,generation,step,fence,completed_by,completed_at) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,candidate_id,generation,step,fence,completed_by,completed_at`,
-		value.CandidateID, value.Generation, string(value.Step), value.Fence, value.CompletedBy, value.CompletedAt).Scan(
-		&value.ID, &value.CandidateID, &value.Generation, &value.Step, &value.Fence, &value.CompletedBy, &value.CompletedAt)
-	return value, translate(err)
+	row, err := queries.AppendReleaseCutoverStep(ctx, releasedb.AppendReleaseCutoverStepParams{
+		CandidateID: value.CandidateID,
+		Generation:  value.Generation,
+		Step:        string(value.Step),
+		Fence:       value.Fence,
+		CompletedBy: value.CompletedBy,
+		CompletedAt: timestamp(value.CompletedAt),
+	})
+	return cutoverStep(row), translate(err)
 }
 
 func (repository *Repository) ListCutoverSteps(ctx context.Context, candidateID int64) ([]releaseport.CutoverJournalEntry, error) {
-	db, err := repository.queryer(ctx)
+	queries, err := repository.queries(ctx, false)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := db.Query(ctx, `SELECT id,candidate_id,generation,step,fence,completed_by,completed_at FROM release_cutover_journal WHERE candidate_id=$1 ORDER BY id`, candidateID)
+	rows, err := queries.ListReleaseCutoverSteps(ctx, candidateID)
 	if err != nil {
-		return nil, unavailable(err)
+		return nil, translate(err)
 	}
-	defer rows.Close()
-	values := make([]releaseport.CutoverJournalEntry, 0)
-	for rows.Next() {
-		var value releaseport.CutoverJournalEntry
-		if err = rows.Scan(&value.ID, &value.CandidateID, &value.Generation, &value.Step, &value.Fence, &value.CompletedBy, &value.CompletedAt); err != nil {
-			return nil, unavailable(err)
-		}
-		values = append(values, value)
+	values := make([]releaseport.CutoverJournalEntry, 0, len(rows))
+	for _, row := range rows {
+		values = append(values, cutoverStep(row))
 	}
-	return values, unavailable(rows.Err())
+	return values, nil
 }
 
 func (repository *Repository) CreateRollbackCheck(ctx context.Context, value releaseport.RollbackCheck) (releaseport.RollbackCheck, error) {
-	tx, err := repository.transaction(ctx)
+	queries, err := repository.queries(ctx, true)
 	if err != nil {
 		return releaseport.RollbackCheck{}, err
 	}
-	err = tx.QueryRow(ctx, `INSERT INTO release_rollback_checks(candidate_id,kind,passed,evidence_sha,recorded_by,recorded_at) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,candidate_id,kind,passed,evidence_sha,recorded_by,recorded_at`,
-		value.CandidateID, string(value.Kind), value.Passed, value.EvidenceSHA, value.RecordedBy, value.RecordedAt).Scan(
-		&value.ID, &value.CandidateID, &value.Kind, &value.Passed, &value.EvidenceSHA, &value.RecordedBy, &value.RecordedAt)
-	return value, translate(err)
+	row, err := queries.CreateReleaseRollbackCheck(ctx, releasedb.CreateReleaseRollbackCheckParams{
+		CandidateID: value.CandidateID,
+		Kind:        string(value.Kind),
+		Passed:      value.Passed,
+		EvidenceSha: value.EvidenceSHA,
+		RecordedBy:  value.RecordedBy,
+		RecordedAt:  timestamp(value.RecordedAt),
+	})
+	return rollbackCheck(row), translate(err)
 }
 
 func (repository *Repository) ListRollbackChecks(ctx context.Context, candidateID int64) ([]releaseport.RollbackCheck, error) {
-	db, err := repository.queryer(ctx)
+	queries, err := repository.queries(ctx, false)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := db.Query(ctx, `SELECT id,candidate_id,kind,passed,evidence_sha,recorded_by,recorded_at FROM release_rollback_checks WHERE candidate_id=$1 ORDER BY id`, candidateID)
+	rows, err := queries.ListReleaseRollbackChecks(ctx, candidateID)
 	if err != nil {
-		return nil, unavailable(err)
+		return nil, translate(err)
 	}
-	defer rows.Close()
-	values := make([]releaseport.RollbackCheck, 0)
-	for rows.Next() {
-		var value releaseport.RollbackCheck
-		if err = rows.Scan(&value.ID, &value.CandidateID, &value.Kind, &value.Passed, &value.EvidenceSHA, &value.RecordedBy, &value.RecordedAt); err != nil {
-			return nil, unavailable(err)
-		}
-		values = append(values, value)
+	values := make([]releaseport.RollbackCheck, 0, len(rows))
+	for _, row := range rows {
+		values = append(values, rollbackCheck(row))
 	}
-	return values, unavailable(rows.Err())
+	return values, nil
 }
 
 func (repository *Repository) ReserveOperationReceipt(ctx context.Context, value releaseport.OperationReceipt) (releaseport.OperationReceipt, bool, error) {
-	tx, err := repository.transaction(ctx)
+	queries, err := repository.queries(ctx, true)
 	if err != nil {
 		return releaseport.OperationReceipt{}, false, err
 	}
-	created := value
-	err = tx.QueryRow(ctx, `INSERT INTO release_operation_receipts(action,actor_id,key_digest,payload_digest,created_at) VALUES($1,$2,$3,$4,$5) ON CONFLICT(action,actor_id,key_digest) DO NOTHING RETURNING id,action,actor_id,key_digest,payload_digest,state,result_snapshot,created_at,completed_at`,
-		value.Action, value.ActorID, value.KeyDigest, value.PayloadDigest, value.CreatedAt).Scan(
-		&created.ID, &created.Action, &created.ActorID, &created.KeyDigest, &created.PayloadDigest,
-		&created.State, &created.Result, &created.CreatedAt, &created.CompletedAt)
+	row, err := queries.ReserveReleaseOperationReceipt(ctx, releasedb.ReserveReleaseOperationReceiptParams{
+		Action: value.Action, ActorID: value.ActorID, KeyDigest: value.KeyDigest,
+		PayloadDigest: value.PayloadDigest, CreatedAt: timestamp(value.CreatedAt),
+	})
 	if err == nil {
-		return created, true, nil
+		return operationReceipt(row), true, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return releaseport.OperationReceipt{}, false, translate(err)
 	}
-	stored := releaseport.OperationReceipt{}
-	err = tx.QueryRow(ctx, `SELECT id,action,actor_id,key_digest,payload_digest,state,result_snapshot,created_at,completed_at FROM release_operation_receipts WHERE action=$1 AND actor_id=$2 AND key_digest=$3 FOR UPDATE`,
-		value.Action, value.ActorID, value.KeyDigest).Scan(
-		&stored.ID, &stored.Action, &stored.ActorID, &stored.KeyDigest, &stored.PayloadDigest,
-		&stored.State, &stored.Result, &stored.CreatedAt, &stored.CompletedAt)
-	return stored, false, translate(err)
+	row, err = queries.LockReleaseOperationReceipt(ctx, releasedb.LockReleaseOperationReceiptParams{
+		Action: value.Action, ActorID: value.ActorID, KeyDigest: value.KeyDigest,
+	})
+	return operationReceipt(row), false, translate(err)
 }
 
 func (repository *Repository) CompleteOperationReceipt(ctx context.Context, receiptID int64, result json.RawMessage, now time.Time) (releaseport.OperationReceipt, error) {
-	tx, err := repository.transaction(ctx)
+	queries, err := repository.queries(ctx, true)
 	if err != nil {
 		return releaseport.OperationReceipt{}, err
 	}
-	tag, err := tx.Exec(ctx, `UPDATE release_operation_receipts SET state='completed',result_snapshot=$2,completed_at=$3 WHERE id=$1 AND state='in_progress'`, receiptID, result, now)
+	count, err := queries.CompleteReleaseOperationReceipt(ctx, releasedb.CompleteReleaseOperationReceiptParams{
+		ID: receiptID, ResultSnapshot: result, CompletedAt: timestamp(now),
+	})
 	if err != nil {
 		return releaseport.OperationReceipt{}, translate(err)
 	}
-	if tag.RowsAffected() != 1 {
+	if count != 1 {
 		return releaseport.OperationReceipt{}, releaseport.ErrConflict
 	}
-	value := releaseport.OperationReceipt{}
-	err = tx.QueryRow(ctx, `SELECT id,action,actor_id,key_digest,payload_digest,state,result_snapshot,created_at,completed_at FROM release_operation_receipts WHERE id=$1`, receiptID).Scan(
-		&value.ID, &value.Action, &value.ActorID, &value.KeyDigest, &value.PayloadDigest,
-		&value.State, &value.Result, &value.CreatedAt, &value.CompletedAt)
-	return value, translate(err)
+	row, err := queries.GetReleaseOperationReceiptByID(ctx, receiptID)
+	return operationReceipt(row), translate(err)
 }
 
-type queryer interface {
-	Query(context.Context, string, ...any) (pgx.Rows, error)
-	QueryRow(context.Context, string, ...any) pgx.Row
-}
-
-type scanner interface{ Scan(...any) error }
-
-func (repository *Repository) queryer(ctx context.Context) (queryer, error) {
+func (repository *Repository) queries(ctx context.Context, transactionRequired bool) (*releasedb.Queries, error) {
 	if repository == nil || repository.pool == nil {
 		return nil, releaseport.ErrUnavailable
 	}
 	if tx, err := platformstore.TxFromContext(ctx); err == nil {
-		return tx, nil
+		return releasedb.New(tx), nil
 	}
-	return repository.pool, nil
+	if transactionRequired {
+		return nil, fmt.Errorf("%w: transaction required", releaseport.ErrUnavailable)
+	}
+	return releasedb.New(repository.pool), nil
 }
 
-func (repository *Repository) transaction(ctx context.Context) (pgx.Tx, error) {
-	if repository == nil {
-		return nil, releaseport.ErrUnavailable
+func candidate(row releasedb.ReleaseCandidate) releaseport.Candidate {
+	return releaseport.Candidate{
+		ID:                  row.ID,
+		CommitSHA:           row.CommitSha,
+		ArtifactDigest:      row.ArtifactDigest,
+		ManifestDigest:      row.ManifestDigest,
+		ConfigDigest:        row.ConfigDigest,
+		TargetSchemaVersion: row.TargetSchemaVersion,
+		State:               releaseport.CandidateState(row.State),
+		CreatedBy:           row.CreatedBy,
+		CreatedAt:           row.CreatedAt.Time,
+		PreparedAt:          optionalTime(row.PreparedAt),
+		ActivatedAt:         optionalTime(row.ActivatedAt),
+		RollbackRequestedAt: optionalTime(row.RollbackRequestedAt),
+		RolledBackAt:        optionalTime(row.RolledBackAt),
 	}
-	tx, err := platformstore.TxFromContext(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %v", releaseport.ErrUnavailable, err)
-	}
-	return tx, nil
 }
 
-func scanCandidate(row scanner) (releaseport.Candidate, error) {
-	var value releaseport.Candidate
-	var state string
-	var preparedAt, activatedAt, rollbackRequestedAt, rolledBackAt pgtype.Timestamptz
-	err := row.Scan(
-		&value.ID, &value.CommitSHA, &value.ArtifactDigest, &value.ManifestDigest, &value.ConfigDigest,
-		&value.TargetSchemaVersion, &state, &value.CreatedBy, &value.CreatedAt,
-		&preparedAt, &activatedAt, &rollbackRequestedAt, &rolledBackAt,
-	)
-	if err != nil {
-		return releaseport.Candidate{}, translate(err)
+func prerequisite(row releasedb.ReleasePrerequisiteReceipt) releaseport.PrerequisiteReceipt {
+	return releaseport.PrerequisiteReceipt{
+		ID:                      row.ID,
+		CandidateID:             row.CandidateID,
+		CandidateCommitSHA:      row.CandidateCommitSha,
+		CandidateArtifactDigest: row.CandidateArtifactDigest,
+		CandidateManifestDigest: row.CandidateManifestDigest,
+		CandidateConfigDigest:   row.CandidateConfigDigest,
+		CandidateSchemaVersion:  row.CandidateSchemaVersion,
+		Kind:                    releaseport.PrerequisiteKind(row.Kind),
+		EvidenceSHA:             row.EvidenceSha,
+		RecordedBy:              row.RecordedBy,
+		RecordedAt:              row.RecordedAt.Time,
 	}
-	value.State = releaseport.CandidateState(state)
-	value.PreparedAt = optionalTime(preparedAt)
-	value.ActivatedAt = optionalTime(activatedAt)
-	value.RollbackRequestedAt = optionalTime(rollbackRequestedAt)
-	value.RolledBackAt = optionalTime(rolledBackAt)
-	return value, nil
 }
 
-func scanWorker(row scanner) (releaseport.WorkerLease, error) {
-	var value releaseport.WorkerLease
-	var retiredAt pgtype.Timestamptz
-	err := row.Scan(&value.CandidateID, &value.Generation, &value.Fence, &value.StartedBy, &value.StartedAt, &value.Active, &retiredAt)
-	if err != nil {
-		return releaseport.WorkerLease{}, translate(err)
+func worker(row releasedb.ReleaseWorkerLease) releaseport.WorkerLease {
+	return releaseport.WorkerLease{
+		CandidateID: row.CandidateID,
+		Generation:  row.Generation,
+		Fence:       row.Fence,
+		StartedBy:   row.StartedBy,
+		StartedAt:   row.StartedAt.Time,
+		Active:      row.Active,
+		RetiredAt:   optionalTime(row.RetiredAt),
 	}
-	value.RetiredAt = optionalTime(retiredAt)
-	return value, nil
+}
+
+func cutoverStep(row releasedb.ReleaseCutoverJournal) releaseport.CutoverJournalEntry {
+	return releaseport.CutoverJournalEntry{
+		ID: row.ID, CandidateID: row.CandidateID, Generation: row.Generation,
+		Step: releaseport.CutoverStep(row.Step), Fence: row.Fence,
+		CompletedBy: row.CompletedBy, CompletedAt: row.CompletedAt.Time,
+	}
+}
+
+func rollbackCheck(row releasedb.ReleaseRollbackCheck) releaseport.RollbackCheck {
+	return releaseport.RollbackCheck{
+		ID: row.ID, CandidateID: row.CandidateID, Kind: releaseport.RollbackCheckKind(row.Kind),
+		Passed: row.Passed, EvidenceSHA: row.EvidenceSha, RecordedBy: row.RecordedBy,
+		RecordedAt: row.RecordedAt.Time,
+	}
+}
+
+func operationReceipt(row releasedb.ReleaseOperationReceipt) releaseport.OperationReceipt {
+	return releaseport.OperationReceipt{
+		ID: row.ID, Action: row.Action, ActorID: row.ActorID, KeyDigest: row.KeyDigest,
+		PayloadDigest: row.PayloadDigest, State: row.State, Result: json.RawMessage(row.ResultSnapshot),
+		CreatedAt: row.CreatedAt.Time, CompletedAt: optionalTime(row.CompletedAt),
+	}
+}
+
+func timestamp(value time.Time) pgtype.Timestamptz {
+	return pgtype.Timestamptz{Time: value, Valid: true}
 }
 
 func optionalTime(value pgtype.Timestamptz) *time.Time {
@@ -370,13 +396,6 @@ func translate(err error) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) && (pgErr.Code == "23505" || pgErr.Code == "23514" || pgErr.Code == "55000") {
 		return fmt.Errorf("%w: %s", releaseport.ErrConflict, pgErr.Message)
-	}
-	return unavailable(err)
-}
-
-func unavailable(err error) error {
-	if err == nil {
-		return nil
 	}
 	return fmt.Errorf("%w: %v", releaseport.ErrUnavailable, err)
 }

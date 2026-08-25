@@ -303,7 +303,7 @@ func registerReadyCandidate(t *testing.T, service *Service, suffix string) relea
 	if err != nil || !ready.Ready || len(ready.Missing) != 0 {
 		t.Fatalf("readiness=%#v err=%v", ready, err)
 	}
-	prepared, err := service.Prepare(context.Background(), CandidateCommand{CandidateID: candidate.ID, ActorID: 7, IdempotencyKey: "candidate-prepare-key-" + suffix})
+	prepared, err := service.PrepareCandidate(context.Background(), CandidateCommand{CandidateID: candidate.ID, ActorID: 7, IdempotencyKey: "candidate-prepare-key-" + suffix})
 	if err != nil || prepared.State != releaseport.CandidatePrepared {
 		t.Fatalf("prepared=%#v err=%v", prepared, err)
 	}

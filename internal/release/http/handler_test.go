@@ -68,7 +68,7 @@ func (s applicationStub) Detail(ctx context.Context, candidateID int64) (release
 func (s applicationStub) RecordPrerequisite(context.Context, releaseapp.ReceiptCommand) (releaseport.PrerequisiteReceipt, error) {
 	return releaseport.PrerequisiteReceipt{}, nil
 }
-func (s applicationStub) Prepare(ctx context.Context, command releaseapp.CandidateCommand) (releaseport.Candidate, error) {
+func (s applicationStub) PrepareCandidate(ctx context.Context, command releaseapp.CandidateCommand) (releaseport.Candidate, error) {
 	if s.prepare != nil {
 		return s.prepare(ctx, command)
 	}
@@ -135,7 +135,7 @@ func TestReadAllowsOpsAndManageRejectsOps(t *testing.T) {
 	manage := httptest.NewRecorder()
 	request := releaseRequest(http.MethodPost, "/api/v1/admin/release-candidates/1/prepare", "", authport.RoleOps, authport.CapabilityReleaseManage)
 	request.Header.Set("Idempotency-Key", "release-key-00001")
-	handler.Prepare(manage, request, 1)
+	handler.PrepareCandidate(manage, request, 1)
 	if manage.Code != http.StatusForbidden || prepared {
 		t.Fatalf("ops manage = %d prepared=%t", manage.Code, prepared)
 	}
@@ -183,7 +183,7 @@ func TestMutationRequiresExactlyOneIdempotencyKey(t *testing.T) {
 		for _, value := range keys {
 			request.Header.Add("Idempotency-Key", value)
 		}
-		handler.Prepare(response, request, 1)
+		handler.PrepareCandidate(response, request, 1)
 		if response.Code != http.StatusBadRequest {
 			t.Fatalf("keys %v = %d", keys, response.Code)
 		}
@@ -216,7 +216,7 @@ func TestHandlerMapsReleaseErrorsAndFencesOnlyWorkerResponses(t *testing.T) {
 	}{
 		{"unavailable", func(w http.ResponseWriter, r *http.Request) { handler.List(w, r, 50) }, http.StatusServiceUnavailable},
 		{"not found", func(w http.ResponseWriter, r *http.Request) { handler.Detail(w, r, 1) }, http.StatusNotFound},
-		{"conflict", func(w http.ResponseWriter, r *http.Request) { handler.Prepare(w, r, 1) }, http.StatusConflict},
+		{"conflict", func(w http.ResponseWriter, r *http.Request) { handler.PrepareCandidate(w, r, 1) }, http.StatusConflict},
 	}
 	for _, test := range cases {
 		response := httptest.NewRecorder()

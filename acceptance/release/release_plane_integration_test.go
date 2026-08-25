@@ -224,7 +224,7 @@ func registerReady(t *testing.T, ctx context.Context, service *releaseapp.Servic
 			}
 		}
 	}
-	prepared, err := service.Prepare(ctx, releaseapp.CandidateCommand{
+	prepared, err := service.PrepareCandidate(ctx, releaseapp.CandidateCommand{
 		CandidateID: candidate.ID, ActorID: actorID, IdempotencyKey: "rp01-prepare-candidate-" + suffix,
 	})
 	if err != nil || prepared.State != releaseport.CandidatePrepared {

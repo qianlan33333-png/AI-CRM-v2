@@ -22,7 +22,7 @@ type Application interface {
 	Register(context.Context, releaseapp.RegisterCommand) (releaseport.Candidate, error)
 	Detail(context.Context, int64) (releaseport.Detail, error)
 	RecordPrerequisite(context.Context, releaseapp.ReceiptCommand) (releaseport.PrerequisiteReceipt, error)
-	Prepare(context.Context, releaseapp.CandidateCommand) (releaseport.Candidate, error)
+	PrepareCandidate(context.Context, releaseapp.CandidateCommand) (releaseport.Candidate, error)
 	StartCutover(context.Context, releaseapp.CandidateCommand) (releaseport.WorkerLease, error)
 	RestartCutover(context.Context, releaseapp.WorkerCommand) (releaseport.WorkerLease, error)
 	CompleteStep(context.Context, releaseapp.StepCommand) (releaseport.CutoverJournalEntry, error)
@@ -108,8 +108,8 @@ func (h *Handler) RecordPrerequisite(w http.ResponseWriter, r *http.Request, can
 	h.write(w, http.StatusCreated, prerequisiteOf(value))
 }
 
-func (h *Handler) Prepare(w http.ResponseWriter, r *http.Request, candidateID int64) {
-	h.candidateMutation(w, r, candidateID, h.application.Prepare)
+func (h *Handler) PrepareCandidate(w http.ResponseWriter, r *http.Request, candidateID int64) {
+	h.candidateMutation(w, r, candidateID, h.application.PrepareCandidate)
 }
 func (h *Handler) RequestRollback(w http.ResponseWriter, r *http.Request, candidateID int64) {
 	h.candidateMutation(w, r, candidateID, h.application.RequestRollback)
