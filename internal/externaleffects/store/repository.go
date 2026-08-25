@@ -286,7 +286,14 @@ func (r *Repository) RecoverAttemptedToUnknown(ctx context.Context, command eer.
 			return translate(err)
 		}
 		unknown := eer.Digest(command.CommandDigest())
-		if err := q.MarkAttemptOutcomeUnknown(ctx, eerdb.MarkAttemptOutcomeUnknownParams{EffectID: id, ReceiptDigest: textValue(string(unknown)), Number: attemptNumber}); err != nil {
+		if channelAcquisitionAssetTerminalEvidence(effect) {
+			if err := q.CompleteChannelAcquisitionAssetAttempt(ctx, eerdb.CompleteChannelAcquisitionAssetAttemptParams{
+				EffectID: id, Number: attemptNumber, Generation: command.Lease.Generation,
+				Completion: textValue(string(eer.CompletionOutcomeUnknown)), ReceiptDigest: textValue(string(unknown)),
+			}); err != nil {
+				return unavailable(err)
+			}
+		} else if err := q.MarkAttemptOutcomeUnknown(ctx, eerdb.MarkAttemptOutcomeUnknownParams{EffectID: id, ReceiptDigest: textValue(string(unknown)), Number: attemptNumber}); err != nil {
 			return unavailable(err)
 		}
 		if err := q.UpdateEffectState(ctx, eerdb.UpdateEffectStateParams{ID: id, State: string(eer.StateOutcomeUnknown)}); err != nil {
@@ -328,7 +335,15 @@ func (r *Repository) complete(ctx context.Context, lease eer.Lease, attempt eer.
 		case eer.CompletionExecuted:
 			state = eer.StateExecuted
 		}
-		if err := q.CompleteAttempt(ctx, eerdb.CompleteAttemptParams{EffectID: id, Number: attempt.Number, Generation: attempt.Generation, Completion: textValue(string(result.Completion)), ReceiptDigest: textValue(string(result.ReceiptDigest)), ResultReferenceDigest: nullableText(string(result.ResultReferenceDigest)), BusinessCallDispatched: result.BusinessCallDispatched, RealExternalCallExecuted: result.RealExternalCallExecuted}); err != nil {
+		if channelAcquisitionAssetTerminalEvidence(effect) {
+			if err := q.CompleteChannelAcquisitionAssetAttempt(ctx, eerdb.CompleteChannelAcquisitionAssetAttemptParams{
+				EffectID: id, Number: attempt.Number, Generation: attempt.Generation, Completion: textValue(string(result.Completion)), ReceiptDigest: textValue(string(result.ReceiptDigest)),
+				ResultReferenceDigest: nullableText(string(result.ResultReferenceDigest)), BusinessCallDispatched: result.BusinessCallDispatched,
+				RealExternalCallExecuted: result.RealExternalCallExecuted,
+			}); err != nil {
+				return unavailable(err)
+			}
+		} else if err := q.CompleteAttempt(ctx, eerdb.CompleteAttemptParams{EffectID: id, Number: attempt.Number, Generation: attempt.Generation, Completion: textValue(string(result.Completion)), ReceiptDigest: textValue(string(result.ReceiptDigest))}); err != nil {
 			return unavailable(err)
 		}
 		if err := q.UpdateEffectState(ctx, eerdb.UpdateEffectStateParams{ID: id, State: string(state)}); err != nil {
@@ -386,7 +401,21 @@ func (r *Repository) GetTerminalOutcome(ctx context.Context, effectID string) (e
 	if err != nil {
 		return eer.TerminalOutcome{}, translate(err)
 	}
-	return eer.TerminalOutcome{EffectID: effectID, Owner: eer.Owner(row.Owner), Kind: eer.Kind(row.Kind), State: eer.State(row.State), ReceiptID: "eerop_" + strconv.FormatInt(row.ReceiptID, 10), ReceiptDigest: eer.Digest(row.ReceiptDigest.String), ResultReferenceDigest: eer.Digest(row.ResultReferenceDigest.String), BusinessCallDispatched: row.BusinessCallDispatched, RealExternalCallExecuted: row.RealExternalCallExecuted, Generation: row.Generation, Fence: row.Fence, LeaseExpiresAt: timeValue(row.LeaseExpiresAt)}, nil
+	result := eer.TerminalOutcome{EffectID: effectID, Owner: eer.Owner(row.Owner), Kind: eer.Kind(row.Kind), State: eer.State(row.State), ReceiptID: "eerop_" + strconv.FormatInt(row.ReceiptID, 10), ReceiptDigest: eer.Digest(row.ReceiptDigest.String), Generation: row.Generation, Fence: row.Fence, LeaseExpiresAt: timeValue(row.LeaseExpiresAt)}
+	if channelAcquisitionAssetTerminalEvidence(eerdb.ExternalEffect{Owner: row.Owner, Kind: row.Kind}) {
+		evidence, err := eerdb.New(r.pool).GetChannelAcquisitionAssetTerminalEvidence(ctx, eerdb.GetChannelAcquisitionAssetTerminalEvidenceParams{EffectID: id, AttemptNumber: row.AttemptNumber, Generation: row.Generation, Fence: row.Fence})
+		if err != nil {
+			return eer.TerminalOutcome{}, unavailable(err)
+		}
+		result.ResultReferenceDigest = eer.Digest(evidence.ResultReferenceDigest.String)
+		result.BusinessCallDispatched = evidence.BusinessCallDispatched
+		result.RealExternalCallExecuted = evidence.RealExternalCallExecuted
+	}
+	return result, nil
+}
+
+func channelAcquisitionAssetTerminalEvidence(effect eerdb.ExternalEffect) bool {
+	return effect.Owner == string(eer.OwnerContact) && effect.Kind == string(eer.KindContactAcquisitionAssetPublish)
 }
 
 func nullableText(value string) pgtype.Text {
