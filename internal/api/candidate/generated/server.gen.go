@@ -10113,6 +10113,68 @@ type OutboundCampaignHandoffSummary struct {
 // OutboundCampaignHandoffSummaryStatus defines model for OutboundCampaignHandoffSummary.Status.
 type OutboundCampaignHandoffSummaryStatus string
 
+// OutboundMediaAcceptedRequest defines model for OutboundMediaAcceptedRequest.
+type OutboundMediaAcceptedRequest struct {
+	ContentPackageId int64 `json:"content_package_id"`
+
+	// TargetRef Opaque local target reference; the server derives all target and payload digests.
+	TargetRef string `json:"target_ref"`
+}
+
+// OutboundMediaAcceptedResponse defines model for OutboundMediaAcceptedResponse.
+type OutboundMediaAcceptedResponse struct {
+	// EffectId Opaque local EER identifier.
+	EffectId string `json:"effect_id"`
+	Replay   bool   `json:"replay"`
+
+	// State Local EER state only; acceptance is not provider delivery.
+	State string `json:"state"`
+}
+
+// OutboundMediaEffectDetail defines model for OutboundMediaEffectDetail.
+type OutboundMediaEffectDetail struct {
+	ContentPackageId int64 `json:"content_package_id"`
+
+	// DeliveryProven Independently verified delivery proof; it is never inferred from local acceptance.
+	DeliveryProven bool `json:"delivery_proven"`
+
+	// EffectId Opaque local EER identifier.
+	EffectId string `json:"effect_id"`
+
+	// ProviderAccepted Independently verified provider acceptance fact; false does not imply delivery failure.
+	ProviderAccepted bool   `json:"provider_accepted"`
+	State            string `json:"state"`
+}
+
+// OutboundMediaReconcileRequest defines model for OutboundMediaReconcileRequest.
+type OutboundMediaReconcileRequest struct {
+	// DeliveryProven Independently verified delivery proof; requires provider_accepted.
+	DeliveryProven bool `json:"delivery_proven"`
+
+	// EvidenceRef Verified opaque evidence reference; server hashes it and never returns or persists the raw value.
+	EvidenceRef    string    `json:"evidence_ref"`
+	Fence          int64     `json:"fence"`
+	Generation     int64     `json:"generation"`
+	LeaseExpiresAt time.Time `json:"lease_expires_at"`
+
+	// ProviderAccepted Independently verified provider acceptance fact.
+	ProviderAccepted bool `json:"provider_accepted"`
+}
+
+// OutboundMediaReconcileResponse defines model for OutboundMediaReconcileResponse.
+type OutboundMediaReconcileResponse struct {
+	// DeliveryProven Independently verified delivery proof.
+	DeliveryProven bool `json:"delivery_proven"`
+
+	// EffectId Opaque local EER identifier.
+	EffectId string `json:"effect_id"`
+
+	// ProviderAccepted Independently verified provider acceptance fact.
+	ProviderAccepted bool   `json:"provider_accepted"`
+	Replay           bool   `json:"replay"`
+	State            string `json:"state"`
+}
+
 // Product defines model for Product.
 type Product struct {
 	CreatedAt     time.Time `json:"created_at"`
@@ -12096,6 +12158,24 @@ type AcknowledgeAdminOpsMessageBatchParams struct {
 	XAdminActionToken *AdminOpsActionToken `json:"X-Admin-Action-Token,omitempty"`
 }
 
+// AcceptOutboundMediaContentPackageParams defines parameters for AcceptOutboundMediaContentPackage.
+type AcceptOutboundMediaContentPackageParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ReconcileOutboundMediaEffectParams defines parameters for ReconcileOutboundMediaEffect.
+type ReconcileOutboundMediaEffectParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // AcceptOutboundCampaignHandoffParams defines parameters for AcceptOutboundCampaignHandoff.
 type AcceptOutboundCampaignHandoffParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -13155,6 +13235,12 @@ type RunAdminOpsArchiveSyncPlanJSONRequestBody = AdminOpsConfirmedActionRequest
 
 // AcknowledgeAdminOpsMessageBatchJSONRequestBody defines body for AcknowledgeAdminOpsMessageBatch for application/json ContentType.
 type AcknowledgeAdminOpsMessageBatchJSONRequestBody = AdminOpsBatchAckRequest
+
+// AcceptOutboundMediaContentPackageJSONRequestBody defines body for AcceptOutboundMediaContentPackage for application/json ContentType.
+type AcceptOutboundMediaContentPackageJSONRequestBody = OutboundMediaAcceptedRequest
+
+// ReconcileOutboundMediaEffectJSONRequestBody defines body for ReconcileOutboundMediaEffect for application/json ContentType.
+type ReconcileOutboundMediaEffectJSONRequestBody = OutboundMediaReconcileRequest
 
 // AcceptOutboundCampaignHandoffJSONRequestBody defines body for AcceptOutboundCampaignHandoff for application/json ContentType.
 type AcceptOutboundCampaignHandoffJSONRequestBody = OutboundCampaignHandoffAcceptRequest
@@ -14501,13 +14587,13 @@ type ServerInterface interface {
 	// Carry the safe local execution-runtime observation into the existing admin shell
 	// (GET /admin/execution-runtime)
 	GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request)
-
+	// Initiate a local private PDF multipart upload
 	// (POST /api/admin/attachment-library/uploads)
 	InitiateMediaAttachmentMultipartUpload(w http.ResponseWriter, r *http.Request, params InitiateMediaAttachmentMultipartUploadParams)
-
+	// Complete a local private upload as a canonical attachment
 	// (POST /api/admin/attachment-library/uploads/{upload_id}/complete)
 	CompleteMediaAttachmentMultipartUpload(w http.ResponseWriter, r *http.Request, uploadId int64, params CompleteMediaAttachmentMultipartUploadParams)
-
+	// Persist one digest-checked local PDF multipart part
 	// (PUT /api/admin/attachment-library/uploads/{upload_id}/parts/{part_number})
 	PutMediaAttachmentMultipartPart(w http.ResponseWriter, r *http.Request, uploadId int64, partNumber int, params PutMediaAttachmentMultipartPartParams)
 	// List real D01 Automation trigger receipts through the frozen legacy path
@@ -14537,13 +14623,13 @@ type ServerInterface interface {
 	// Fail closed because no authoritative local broadcast fact exists
 	// (POST /api/admin/broadcast-jobs/{job_id}/cancel)
 	CancelAdminOpsBroadcastJob(w http.ResponseWriter, r *http.Request, jobId AdminOpsJobID, params CancelAdminOpsBroadcastJobParams)
-
+	// Read one local group-invite binding
 	// (GET /api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding)
 	GetMediaContentDeliveryBinding(w http.ResponseWriter, r *http.Request, campaignCode string, planId string)
-
+	// Create one local group-invite binding
 	// (POST /api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding)
 	CreateMediaContentDeliveryBinding(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, params CreateMediaContentDeliveryBindingParams)
-
+	// CAS-update one local group-invite binding
 	// (PUT /api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding)
 	UpdateMediaContentDeliveryBinding(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, params UpdateMediaContentDeliveryBindingParams)
 	// List persisted local channel resources without querying WeCom
@@ -14627,13 +14713,13 @@ type ServerInterface interface {
 	// Validate one local release without executing external effects
 	// (POST /api/admin/config/releases/{release_id}/validate)
 	ValidateAdminOpsRelease(w http.ResponseWriter, r *http.Request, releaseId AdminOpsReleaseID, params ValidateAdminOpsReleaseParams)
-
+	// Persist one local content package
 	// (POST /api/admin/content-packages)
 	CreateMediaContentPackage(w http.ResponseWriter, r *http.Request, params CreateMediaContentPackageParams)
-
+	// Validate one local content package without provider delivery
 	// (POST /api/admin/content-packages/preview)
 	PreviewMediaContentPackage(w http.ResponseWriter, r *http.Request, params PreviewMediaContentPackageParams)
-
+	// CAS-update one local content package
 	// (PUT /api/admin/content-packages/{package_id})
 	UpdateMediaContentPackage(w http.ResponseWriter, r *http.Request, packageId int64, params UpdateMediaContentPackageParams)
 	// Read the frozen observed execution runtime without invoking a worker or provider
@@ -14696,6 +14782,15 @@ type ServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request)
+	// Accept one published content package into a local outbound-media EER envelope
+	// (POST /api/admin/outbound-media/accept)
+	AcceptOutboundMediaContentPackage(w http.ResponseWriter, r *http.Request, params AcceptOutboundMediaContentPackageParams)
+	// Read a PII-minimal local outbound-media effect projection
+	// (GET /api/admin/outbound-media/{content_package_id}/effects/{target_ref})
+	GetOutboundMediaEffectDetail(w http.ResponseWriter, r *http.Request, contentPackageId int64, targetRef string)
+	// Manually reconcile one outcome-unknown local outbound-media effect
+	// (POST /api/admin/outbound-media/{content_package_id}/effects/{target_ref}/reconcile)
+	ReconcileOutboundMediaEffect(w http.ResponseWriter, r *http.Request, contentPackageId int64, targetRef string, params ReconcileOutboundMediaEffectParams)
 	// Read a recipient-safe local accepted Campaign handoff summary
 	// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id})
 	GetOutboundCampaignHandoffSummary(w http.ResponseWriter, r *http.Request, campaignCode string, planId string)
@@ -15182,16 +15277,19 @@ func (_ Unimplemented) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *h
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Initiate a local private PDF multipart upload
 // (POST /api/admin/attachment-library/uploads)
 func (_ Unimplemented) InitiateMediaAttachmentMultipartUpload(w http.ResponseWriter, r *http.Request, params InitiateMediaAttachmentMultipartUploadParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Complete a local private upload as a canonical attachment
 // (POST /api/admin/attachment-library/uploads/{upload_id}/complete)
 func (_ Unimplemented) CompleteMediaAttachmentMultipartUpload(w http.ResponseWriter, r *http.Request, uploadId int64, params CompleteMediaAttachmentMultipartUploadParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Persist one digest-checked local PDF multipart part
 // (PUT /api/admin/attachment-library/uploads/{upload_id}/parts/{part_number})
 func (_ Unimplemented) PutMediaAttachmentMultipartPart(w http.ResponseWriter, r *http.Request, uploadId int64, partNumber int, params PutMediaAttachmentMultipartPartParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -15251,16 +15349,19 @@ func (_ Unimplemented) CancelAdminOpsBroadcastJob(w http.ResponseWriter, r *http
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Read one local group-invite binding
 // (GET /api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding)
 func (_ Unimplemented) GetMediaContentDeliveryBinding(w http.ResponseWriter, r *http.Request, campaignCode string, planId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Create one local group-invite binding
 // (POST /api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding)
 func (_ Unimplemented) CreateMediaContentDeliveryBinding(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, params CreateMediaContentDeliveryBindingParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// CAS-update one local group-invite binding
 // (PUT /api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding)
 func (_ Unimplemented) UpdateMediaContentDeliveryBinding(w http.ResponseWriter, r *http.Request, campaignCode string, planId string, params UpdateMediaContentDeliveryBindingParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -15428,16 +15529,19 @@ func (_ Unimplemented) ValidateAdminOpsRelease(w http.ResponseWriter, r *http.Re
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Persist one local content package
 // (POST /api/admin/content-packages)
 func (_ Unimplemented) CreateMediaContentPackage(w http.ResponseWriter, r *http.Request, params CreateMediaContentPackageParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Validate one local content package without provider delivery
 // (POST /api/admin/content-packages/preview)
 func (_ Unimplemented) PreviewMediaContentPackage(w http.ResponseWriter, r *http.Request, params PreviewMediaContentPackageParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// CAS-update one local content package
 // (PUT /api/admin/content-packages/{package_id})
 func (_ Unimplemented) UpdateMediaContentPackage(w http.ResponseWriter, r *http.Request, packageId int64, params UpdateMediaContentPackageParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -15560,6 +15664,24 @@ func (_ Unimplemented) GetAdminOpsJobsSummary(w http.ResponseWriter, r *http.Req
 // List local webhook-plan records without any webhook locator
 // (GET /api/admin/jobs/webhook-deliveries)
 func (_ Unimplemented) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Accept one published content package into a local outbound-media EER envelope
+// (POST /api/admin/outbound-media/accept)
+func (_ Unimplemented) AcceptOutboundMediaContentPackage(w http.ResponseWriter, r *http.Request, params AcceptOutboundMediaContentPackageParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read a PII-minimal local outbound-media effect projection
+// (GET /api/admin/outbound-media/{content_package_id}/effects/{target_ref})
+func (_ Unimplemented) GetOutboundMediaEffectDetail(w http.ResponseWriter, r *http.Request, contentPackageId int64, targetRef string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Manually reconcile one outcome-unknown local outbound-media effect
+// (POST /api/admin/outbound-media/{content_package_id}/effects/{target_ref}/reconcile)
+func (_ Unimplemented) ReconcileOutboundMediaEffect(w http.ResponseWriter, r *http.Request, contentPackageId int64, targetRef string, params ReconcileOutboundMediaEffectParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -20174,6 +20296,210 @@ func (siw *ServerInterfaceWrapper) ListAdminOpsWebhookDeliveryJobs(w http.Respon
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListAdminOpsWebhookDeliveryJobs(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AcceptOutboundMediaContentPackage operation middleware
+func (siw *ServerInterfaceWrapper) AcceptOutboundMediaContentPackage(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AcceptOutboundMediaContentPackageParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AcceptOutboundMediaContentPackage(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetOutboundMediaEffectDetail operation middleware
+func (siw *ServerInterfaceWrapper) GetOutboundMediaEffectDetail(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "content_package_id" -------------
+	var contentPackageId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "content_package_id", chi.URLParam(r, "content_package_id"), &contentPackageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "content_package_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "target_ref" -------------
+	var targetRef string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "target_ref", chi.URLParam(r, "target_ref"), &targetRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_ref", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetOutboundMediaEffectDetail(w, r, contentPackageId, targetRef)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReconcileOutboundMediaEffect operation middleware
+func (siw *ServerInterfaceWrapper) ReconcileOutboundMediaEffect(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "content_package_id" -------------
+	var contentPackageId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "content_package_id", chi.URLParam(r, "content_package_id"), &contentPackageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "content_package_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "target_ref" -------------
+	var targetRef string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "target_ref", chi.URLParam(r, "target_ref"), &targetRef, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_ref", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ReconcileOutboundMediaEffectParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReconcileOutboundMediaEffect(w, r, contentPackageId, targetRef, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -29828,6 +30154,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/jobs/webhook-deliveries", wrapper.ListAdminOpsWebhookDeliveryJobs)
 	})
 	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/outbound-media/accept", wrapper.AcceptOutboundMediaContentPackage)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/outbound-media/{content_package_id}/effects/{target_ref}", wrapper.GetOutboundMediaEffectDetail)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/admin/outbound-media/{content_package_id}/effects/{target_ref}/reconcile", wrapper.ReconcileOutboundMediaEffect)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}", wrapper.GetOutboundCampaignHandoffSummary)
 	})
 	r.Group(func(r chi.Router) {
@@ -30679,6 +31014,51 @@ func (response InitiateMediaAttachmentMultipartUpload201JSONResponse) VisitIniti
 	return json.NewEncoder(w).Encode(response)
 }
 
+type InitiateMediaAttachmentMultipartUpload400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response InitiateMediaAttachmentMultipartUpload400JSONResponse) VisitInitiateMediaAttachmentMultipartUploadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type InitiateMediaAttachmentMultipartUpload401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response InitiateMediaAttachmentMultipartUpload401JSONResponse) VisitInitiateMediaAttachmentMultipartUploadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type InitiateMediaAttachmentMultipartUpload403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response InitiateMediaAttachmentMultipartUpload403JSONResponse) VisitInitiateMediaAttachmentMultipartUploadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type InitiateMediaAttachmentMultipartUpload409JSONResponse struct{ ConflictJSONResponse }
+
+func (response InitiateMediaAttachmentMultipartUpload409JSONResponse) VisitInitiateMediaAttachmentMultipartUploadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type InitiateMediaAttachmentMultipartUpload503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response InitiateMediaAttachmentMultipartUpload503JSONResponse) VisitInitiateMediaAttachmentMultipartUploadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type CompleteMediaAttachmentMultipartUploadRequestObject struct {
 	UploadId int64 `json:"upload_id"`
 	Params   CompleteMediaAttachmentMultipartUploadParams
@@ -30695,6 +31075,51 @@ type CompleteMediaAttachmentMultipartUpload200JSONResponse struct {
 func (response CompleteMediaAttachmentMultipartUpload200JSONResponse) VisitCompleteMediaAttachmentMultipartUploadResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteMediaAttachmentMultipartUpload400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CompleteMediaAttachmentMultipartUpload400JSONResponse) VisitCompleteMediaAttachmentMultipartUploadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteMediaAttachmentMultipartUpload401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CompleteMediaAttachmentMultipartUpload401JSONResponse) VisitCompleteMediaAttachmentMultipartUploadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteMediaAttachmentMultipartUpload403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CompleteMediaAttachmentMultipartUpload403JSONResponse) VisitCompleteMediaAttachmentMultipartUploadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteMediaAttachmentMultipartUpload409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CompleteMediaAttachmentMultipartUpload409JSONResponse) VisitCompleteMediaAttachmentMultipartUploadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteMediaAttachmentMultipartUpload503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CompleteMediaAttachmentMultipartUpload503JSONResponse) VisitCompleteMediaAttachmentMultipartUploadResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -30716,6 +31141,51 @@ type PutMediaAttachmentMultipartPart204Response struct {
 func (response PutMediaAttachmentMultipartPart204Response) VisitPutMediaAttachmentMultipartPartResponse(w http.ResponseWriter) error {
 	w.WriteHeader(204)
 	return nil
+}
+
+type PutMediaAttachmentMultipartPart400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response PutMediaAttachmentMultipartPart400JSONResponse) VisitPutMediaAttachmentMultipartPartResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutMediaAttachmentMultipartPart401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PutMediaAttachmentMultipartPart401JSONResponse) VisitPutMediaAttachmentMultipartPartResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutMediaAttachmentMultipartPart403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response PutMediaAttachmentMultipartPart403JSONResponse) VisitPutMediaAttachmentMultipartPartResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutMediaAttachmentMultipartPart409JSONResponse struct{ ConflictJSONResponse }
+
+func (response PutMediaAttachmentMultipartPart409JSONResponse) VisitPutMediaAttachmentMultipartPartResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PutMediaAttachmentMultipartPart503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response PutMediaAttachmentMultipartPart503JSONResponse) VisitPutMediaAttachmentMultipartPartResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type ListAutomationTriggerRunsRequestObject struct {
@@ -31248,6 +31718,51 @@ func (response GetMediaContentDeliveryBinding200JSONResponse) VisitGetMediaConte
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetMediaContentDeliveryBinding400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetMediaContentDeliveryBinding400JSONResponse) VisitGetMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMediaContentDeliveryBinding401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetMediaContentDeliveryBinding401JSONResponse) VisitGetMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMediaContentDeliveryBinding403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetMediaContentDeliveryBinding403JSONResponse) VisitGetMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMediaContentDeliveryBinding404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetMediaContentDeliveryBinding404JSONResponse) VisitGetMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetMediaContentDeliveryBinding503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetMediaContentDeliveryBinding503JSONResponse) VisitGetMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type CreateMediaContentDeliveryBindingRequestObject struct {
 	CampaignCode string `json:"campaign_code"`
 	PlanId       string `json:"plan_id"`
@@ -31264,6 +31779,51 @@ type CreateMediaContentDeliveryBinding200JSONResponse MediaContentDeliveryBindin
 func (response CreateMediaContentDeliveryBinding200JSONResponse) VisitCreateMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateMediaContentDeliveryBinding400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateMediaContentDeliveryBinding400JSONResponse) VisitCreateMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateMediaContentDeliveryBinding401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateMediaContentDeliveryBinding401JSONResponse) VisitCreateMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateMediaContentDeliveryBinding403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateMediaContentDeliveryBinding403JSONResponse) VisitCreateMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateMediaContentDeliveryBinding409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CreateMediaContentDeliveryBinding409JSONResponse) VisitCreateMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateMediaContentDeliveryBinding503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateMediaContentDeliveryBinding503JSONResponse) VisitCreateMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -31288,11 +31848,47 @@ func (response UpdateMediaContentDeliveryBinding200JSONResponse) VisitUpdateMedi
 	return json.NewEncoder(w).Encode(response)
 }
 
+type UpdateMediaContentDeliveryBinding400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateMediaContentDeliveryBinding400JSONResponse) VisitUpdateMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateMediaContentDeliveryBinding401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateMediaContentDeliveryBinding401JSONResponse) VisitUpdateMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateMediaContentDeliveryBinding403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateMediaContentDeliveryBinding403JSONResponse) VisitUpdateMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type UpdateMediaContentDeliveryBinding409JSONResponse struct{ ConflictJSONResponse }
 
 func (response UpdateMediaContentDeliveryBinding409JSONResponse) VisitUpdateMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateMediaContentDeliveryBinding503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response UpdateMediaContentDeliveryBinding503JSONResponse) VisitUpdateMediaContentDeliveryBindingResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -32967,11 +33563,47 @@ func (response CreateMediaContentPackage200JSONResponse) VisitCreateMediaContent
 	return json.NewEncoder(w).Encode(response)
 }
 
+type CreateMediaContentPackage400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateMediaContentPackage400JSONResponse) VisitCreateMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateMediaContentPackage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateMediaContentPackage401JSONResponse) VisitCreateMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateMediaContentPackage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateMediaContentPackage403JSONResponse) VisitCreateMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type CreateMediaContentPackage409JSONResponse struct{ ConflictJSONResponse }
 
 func (response CreateMediaContentPackage409JSONResponse) VisitCreateMediaContentPackageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CreateMediaContentPackage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CreateMediaContentPackage503JSONResponse) VisitCreateMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -33003,6 +33635,33 @@ func (response PreviewMediaContentPackage400JSONResponse) VisitPreviewMediaConte
 	return json.NewEncoder(w).Encode(response)
 }
 
+type PreviewMediaContentPackage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PreviewMediaContentPackage401JSONResponse) VisitPreviewMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PreviewMediaContentPackage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response PreviewMediaContentPackage403JSONResponse) VisitPreviewMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type PreviewMediaContentPackage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response PreviewMediaContentPackage503JSONResponse) VisitPreviewMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type UpdateMediaContentPackageRequestObject struct {
 	PackageId int64 `json:"package_id"`
 	Params    UpdateMediaContentPackageParams
@@ -33022,11 +33681,47 @@ func (response UpdateMediaContentPackage200JSONResponse) VisitUpdateMediaContent
 	return json.NewEncoder(w).Encode(response)
 }
 
+type UpdateMediaContentPackage400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateMediaContentPackage400JSONResponse) VisitUpdateMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateMediaContentPackage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateMediaContentPackage401JSONResponse) VisitUpdateMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateMediaContentPackage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateMediaContentPackage403JSONResponse) VisitUpdateMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type UpdateMediaContentPackage409JSONResponse struct{ ConflictJSONResponse }
 
 func (response UpdateMediaContentPackage409JSONResponse) VisitUpdateMediaContentPackageResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type UpdateMediaContentPackage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response UpdateMediaContentPackage503JSONResponse) VisitUpdateMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -34154,6 +34849,206 @@ func (response ListAdminOpsWebhookDeliveryJobs409JSONResponse) VisitListAdminOps
 type ListAdminOpsWebhookDeliveryJobs503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListAdminOpsWebhookDeliveryJobs503JSONResponse) VisitListAdminOpsWebhookDeliveryJobsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcceptOutboundMediaContentPackageRequestObject struct {
+	Params AcceptOutboundMediaContentPackageParams
+	Body   *AcceptOutboundMediaContentPackageJSONRequestBody
+}
+
+type AcceptOutboundMediaContentPackageResponseObject interface {
+	VisitAcceptOutboundMediaContentPackageResponse(w http.ResponseWriter) error
+}
+
+type AcceptOutboundMediaContentPackage200JSONResponse OutboundMediaAcceptedResponse
+
+func (response AcceptOutboundMediaContentPackage200JSONResponse) VisitAcceptOutboundMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcceptOutboundMediaContentPackage400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AcceptOutboundMediaContentPackage400JSONResponse) VisitAcceptOutboundMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcceptOutboundMediaContentPackage401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AcceptOutboundMediaContentPackage401JSONResponse) VisitAcceptOutboundMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcceptOutboundMediaContentPackage403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AcceptOutboundMediaContentPackage403JSONResponse) VisitAcceptOutboundMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcceptOutboundMediaContentPackage409JSONResponse struct{ ConflictJSONResponse }
+
+func (response AcceptOutboundMediaContentPackage409JSONResponse) VisitAcceptOutboundMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type AcceptOutboundMediaContentPackage503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response AcceptOutboundMediaContentPackage503JSONResponse) VisitAcceptOutboundMediaContentPackageResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundMediaEffectDetailRequestObject struct {
+	ContentPackageId int64  `json:"content_package_id"`
+	TargetRef        string `json:"target_ref"`
+}
+
+type GetOutboundMediaEffectDetailResponseObject interface {
+	VisitGetOutboundMediaEffectDetailResponse(w http.ResponseWriter) error
+}
+
+type GetOutboundMediaEffectDetail200JSONResponse OutboundMediaEffectDetail
+
+func (response GetOutboundMediaEffectDetail200JSONResponse) VisitGetOutboundMediaEffectDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundMediaEffectDetail400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetOutboundMediaEffectDetail400JSONResponse) VisitGetOutboundMediaEffectDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundMediaEffectDetail401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetOutboundMediaEffectDetail401JSONResponse) VisitGetOutboundMediaEffectDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundMediaEffectDetail403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetOutboundMediaEffectDetail403JSONResponse) VisitGetOutboundMediaEffectDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundMediaEffectDetail404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetOutboundMediaEffectDetail404JSONResponse) VisitGetOutboundMediaEffectDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetOutboundMediaEffectDetail503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetOutboundMediaEffectDetail503JSONResponse) VisitGetOutboundMediaEffectDetailResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileOutboundMediaEffectRequestObject struct {
+	ContentPackageId int64  `json:"content_package_id"`
+	TargetRef        string `json:"target_ref"`
+	Params           ReconcileOutboundMediaEffectParams
+	Body             *ReconcileOutboundMediaEffectJSONRequestBody
+}
+
+type ReconcileOutboundMediaEffectResponseObject interface {
+	VisitReconcileOutboundMediaEffectResponse(w http.ResponseWriter) error
+}
+
+type ReconcileOutboundMediaEffect200JSONResponse OutboundMediaReconcileResponse
+
+func (response ReconcileOutboundMediaEffect200JSONResponse) VisitReconcileOutboundMediaEffectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileOutboundMediaEffect400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ReconcileOutboundMediaEffect400JSONResponse) VisitReconcileOutboundMediaEffectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileOutboundMediaEffect401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ReconcileOutboundMediaEffect401JSONResponse) VisitReconcileOutboundMediaEffectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileOutboundMediaEffect403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ReconcileOutboundMediaEffect403JSONResponse) VisitReconcileOutboundMediaEffectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileOutboundMediaEffect404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ReconcileOutboundMediaEffect404JSONResponse) VisitReconcileOutboundMediaEffectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileOutboundMediaEffect409JSONResponse struct{ ConflictJSONResponse }
+
+func (response ReconcileOutboundMediaEffect409JSONResponse) VisitReconcileOutboundMediaEffectResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ReconcileOutboundMediaEffect503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ReconcileOutboundMediaEffect503JSONResponse) VisitReconcileOutboundMediaEffectResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -43935,13 +44830,13 @@ type StrictServerInterface interface {
 	// Carry the safe local execution-runtime observation into the existing admin shell
 	// (GET /admin/execution-runtime)
 	GetLegacyExecutionRuntimePage(ctx context.Context, request GetLegacyExecutionRuntimePageRequestObject) (GetLegacyExecutionRuntimePageResponseObject, error)
-
+	// Initiate a local private PDF multipart upload
 	// (POST /api/admin/attachment-library/uploads)
 	InitiateMediaAttachmentMultipartUpload(ctx context.Context, request InitiateMediaAttachmentMultipartUploadRequestObject) (InitiateMediaAttachmentMultipartUploadResponseObject, error)
-
+	// Complete a local private upload as a canonical attachment
 	// (POST /api/admin/attachment-library/uploads/{upload_id}/complete)
 	CompleteMediaAttachmentMultipartUpload(ctx context.Context, request CompleteMediaAttachmentMultipartUploadRequestObject) (CompleteMediaAttachmentMultipartUploadResponseObject, error)
-
+	// Persist one digest-checked local PDF multipart part
 	// (PUT /api/admin/attachment-library/uploads/{upload_id}/parts/{part_number})
 	PutMediaAttachmentMultipartPart(ctx context.Context, request PutMediaAttachmentMultipartPartRequestObject) (PutMediaAttachmentMultipartPartResponseObject, error)
 	// List real D01 Automation trigger receipts through the frozen legacy path
@@ -43971,13 +44866,13 @@ type StrictServerInterface interface {
 	// Fail closed because no authoritative local broadcast fact exists
 	// (POST /api/admin/broadcast-jobs/{job_id}/cancel)
 	CancelAdminOpsBroadcastJob(ctx context.Context, request CancelAdminOpsBroadcastJobRequestObject) (CancelAdminOpsBroadcastJobResponseObject, error)
-
+	// Read one local group-invite binding
 	// (GET /api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding)
 	GetMediaContentDeliveryBinding(ctx context.Context, request GetMediaContentDeliveryBindingRequestObject) (GetMediaContentDeliveryBindingResponseObject, error)
-
+	// Create one local group-invite binding
 	// (POST /api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding)
 	CreateMediaContentDeliveryBinding(ctx context.Context, request CreateMediaContentDeliveryBindingRequestObject) (CreateMediaContentDeliveryBindingResponseObject, error)
-
+	// CAS-update one local group-invite binding
 	// (PUT /api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding)
 	UpdateMediaContentDeliveryBinding(ctx context.Context, request UpdateMediaContentDeliveryBindingRequestObject) (UpdateMediaContentDeliveryBindingResponseObject, error)
 	// List persisted local channel resources without querying WeCom
@@ -44061,13 +44956,13 @@ type StrictServerInterface interface {
 	// Validate one local release without executing external effects
 	// (POST /api/admin/config/releases/{release_id}/validate)
 	ValidateAdminOpsRelease(ctx context.Context, request ValidateAdminOpsReleaseRequestObject) (ValidateAdminOpsReleaseResponseObject, error)
-
+	// Persist one local content package
 	// (POST /api/admin/content-packages)
 	CreateMediaContentPackage(ctx context.Context, request CreateMediaContentPackageRequestObject) (CreateMediaContentPackageResponseObject, error)
-
+	// Validate one local content package without provider delivery
 	// (POST /api/admin/content-packages/preview)
 	PreviewMediaContentPackage(ctx context.Context, request PreviewMediaContentPackageRequestObject) (PreviewMediaContentPackageResponseObject, error)
-
+	// CAS-update one local content package
 	// (PUT /api/admin/content-packages/{package_id})
 	UpdateMediaContentPackage(ctx context.Context, request UpdateMediaContentPackageRequestObject) (UpdateMediaContentPackageResponseObject, error)
 	// Read the frozen observed execution runtime without invoking a worker or provider
@@ -44130,6 +45025,15 @@ type StrictServerInterface interface {
 	// List local webhook-plan records without any webhook locator
 	// (GET /api/admin/jobs/webhook-deliveries)
 	ListAdminOpsWebhookDeliveryJobs(ctx context.Context, request ListAdminOpsWebhookDeliveryJobsRequestObject) (ListAdminOpsWebhookDeliveryJobsResponseObject, error)
+	// Accept one published content package into a local outbound-media EER envelope
+	// (POST /api/admin/outbound-media/accept)
+	AcceptOutboundMediaContentPackage(ctx context.Context, request AcceptOutboundMediaContentPackageRequestObject) (AcceptOutboundMediaContentPackageResponseObject, error)
+	// Read a PII-minimal local outbound-media effect projection
+	// (GET /api/admin/outbound-media/{content_package_id}/effects/{target_ref})
+	GetOutboundMediaEffectDetail(ctx context.Context, request GetOutboundMediaEffectDetailRequestObject) (GetOutboundMediaEffectDetailResponseObject, error)
+	// Manually reconcile one outcome-unknown local outbound-media effect
+	// (POST /api/admin/outbound-media/{content_package_id}/effects/{target_ref}/reconcile)
+	ReconcileOutboundMediaEffect(ctx context.Context, request ReconcileOutboundMediaEffectRequestObject) (ReconcileOutboundMediaEffectResponseObject, error)
 	// Read a recipient-safe local accepted Campaign handoff summary
 	// (GET /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id})
 	GetOutboundCampaignHandoffSummary(ctx context.Context, request GetOutboundCampaignHandoffSummaryRequestObject) (GetOutboundCampaignHandoffSummaryResponseObject, error)
@@ -46653,6 +47557,101 @@ func (sh *strictHandler) ListAdminOpsWebhookDeliveryJobs(w http.ResponseWriter, 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListAdminOpsWebhookDeliveryJobsResponseObject); ok {
 		if err := validResponse.VisitListAdminOpsWebhookDeliveryJobsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AcceptOutboundMediaContentPackage operation middleware
+func (sh *strictHandler) AcceptOutboundMediaContentPackage(w http.ResponseWriter, r *http.Request, params AcceptOutboundMediaContentPackageParams) {
+	var request AcceptOutboundMediaContentPackageRequestObject
+
+	request.Params = params
+
+	var body AcceptOutboundMediaContentPackageJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.AcceptOutboundMediaContentPackage(ctx, request.(AcceptOutboundMediaContentPackageRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AcceptOutboundMediaContentPackage")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AcceptOutboundMediaContentPackageResponseObject); ok {
+		if err := validResponse.VisitAcceptOutboundMediaContentPackageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetOutboundMediaEffectDetail operation middleware
+func (sh *strictHandler) GetOutboundMediaEffectDetail(w http.ResponseWriter, r *http.Request, contentPackageId int64, targetRef string) {
+	var request GetOutboundMediaEffectDetailRequestObject
+
+	request.ContentPackageId = contentPackageId
+	request.TargetRef = targetRef
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetOutboundMediaEffectDetail(ctx, request.(GetOutboundMediaEffectDetailRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetOutboundMediaEffectDetail")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetOutboundMediaEffectDetailResponseObject); ok {
+		if err := validResponse.VisitGetOutboundMediaEffectDetailResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ReconcileOutboundMediaEffect operation middleware
+func (sh *strictHandler) ReconcileOutboundMediaEffect(w http.ResponseWriter, r *http.Request, contentPackageId int64, targetRef string, params ReconcileOutboundMediaEffectParams) {
+	var request ReconcileOutboundMediaEffectRequestObject
+
+	request.ContentPackageId = contentPackageId
+	request.TargetRef = targetRef
+	request.Params = params
+
+	var body ReconcileOutboundMediaEffectJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ReconcileOutboundMediaEffect(ctx, request.(ReconcileOutboundMediaEffectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ReconcileOutboundMediaEffect")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ReconcileOutboundMediaEffectResponseObject); ok {
+		if err := validResponse.VisitReconcileOutboundMediaEffectResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
