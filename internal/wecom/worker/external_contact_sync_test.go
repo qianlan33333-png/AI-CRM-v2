@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
 	"github.com/riverqueue/river"
@@ -50,6 +51,20 @@ func TestExternalContactSyncWorkerRejectsInvalidJobsAndPropagatesFailures(t *tes
 	}
 	if err = worker.Work(context.Background(), job); !errors.Is(err, wecomapp.ErrCursorSyncDisabled) {
 		t.Fatalf("disabled Work() error = %v", err)
+	}
+}
+
+func TestRegisterExternalContactSyncWorkerUsesSyncQueue(t *testing.T) {
+	registry := platformjobqueue.NewWorkerRegistry()
+	service := &externalContactSyncWorkerStub{}
+	if err := RegisterExternalContactSyncWorker(registry, service); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := registry.ExplicitOptions(platformjobqueue.QueueSync, wecomapp.ExternalContactSyncJobArgs{}, nil); err != nil {
+		t.Fatalf("sync queue registration error = %v", err)
+	}
+	if _, err := registry.ExplicitOptions(platformjobqueue.QueueCritical, wecomapp.ExternalContactSyncJobArgs{}, nil); err == nil {
+		t.Fatal("critical queue unexpectedly accepted directory sync worker")
 	}
 }
 

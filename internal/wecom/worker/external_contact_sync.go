@@ -34,6 +34,14 @@ func NewExternalContactSyncWorker(service externalContactSyncApplication) (*Exte
 	return &ExternalContactSyncWorker{service: service}, nil
 }
 
+func RegisterExternalContactSyncWorker(registry *platformjobqueue.WorkerRegistry, service externalContactSyncApplication) error {
+	worker, err := NewExternalContactSyncWorker(service)
+	if err != nil {
+		return err
+	}
+	return platformjobqueue.AddWorker(registry, platformjobqueue.QueueSync, worker)
+}
+
 func (worker *ExternalContactSyncWorker) Work(ctx context.Context, job *river.Job[wecomapp.ExternalContactSyncJobArgs]) error {
 	if worker == nil || worker.service == nil || ctx == nil || job == nil || job.JobRow == nil || job.ID < 1 || !validExternalContactSyncStaff(job.Args.StaffUserID) {
 		return ErrInvalidExternalContactSyncWorker

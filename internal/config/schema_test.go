@@ -208,6 +208,51 @@ func TestLoadWeComOAuthIsAtomicAndRedacted(t *testing.T) {
 	}
 }
 
+func TestLoadWeComDirectorySyncIsExplicitAndStaffScoped(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv:                    "postgres://db/aicrm",
+		workerPoolMaxConnsEnv:             "9",
+		criticalWorkersEnv:                "2",
+		eventWorkersEnv:                   "1",
+		outboundWorkersEnv:                "1",
+		syncWorkersEnv:                    "1",
+		heavyWorkersEnv:                   "1",
+		aiWorkersEnv:                      "1",
+		identityHMACKeyEnv:                strings.Repeat("A", 43),
+		weComOAuthCorpIDEnv:               "corp-fixture",
+		weComOAuthSecretEnv:               "oauth-secret-sentinel",
+		weComOAuthCallbackEnv:             "https://crm.example.test/auth/wecom/callback",
+		weComDirectorySyncEnabledEnv:      "true",
+		weComDirectorySyncStaffUserIDsEnv: "staff-1,staff-2",
+	}
+	root, err := load(appruntime.RoleWorker, mapLookup(values))
+	if err != nil {
+		t.Fatalf("load() error = %v", err)
+	}
+	if !root.WeCom.DirectorySync.Enabled || !root.WeCom.OAuth.Enabled || !reflect.DeepEqual(root.WeCom.DirectorySync.StaffUserIDs, []string{"staff-1", "staff-2"}) {
+		t.Fatalf("directory sync = %#v, oauth = %#v", root.WeCom.DirectorySync, root.WeCom.OAuth)
+	}
+
+	values[weComDirectorySyncEnabledEnv] = "false"
+	delete(values, weComDirectorySyncStaffUserIDsEnv)
+	root, err = load(appruntime.RoleWorker, mapLookup(values))
+	if err != nil || root.WeCom.DirectorySync.Enabled {
+		t.Fatalf("disabled directory sync = %#v, %v", root.WeCom.DirectorySync, err)
+	}
+
+	values[weComDirectorySyncEnabledEnv] = "true"
+	values[weComDirectorySyncStaffUserIDsEnv] = "staff-1,staff-1"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.directory_sync.staff_user_ids is invalid" {
+		t.Fatalf("duplicate directory sync staff error = %v", err)
+	}
+
+	delete(values, weComOAuthSecretEnv)
+	values[weComDirectorySyncStaffUserIDsEnv] = "staff-1"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.oauth requires corp_id, secret, and callback_url together; wecom.directory_sync requires configured oauth credentials" {
+		t.Fatalf("directory sync oauth error = %v", err)
+	}
+}
+
 func TestLoadWeComSidebarIsAtomicAndUsesIndependentCallback(t *testing.T) {
 	values := map[string]string{
 		databaseURLEnv:          "postgres://db/aicrm",
