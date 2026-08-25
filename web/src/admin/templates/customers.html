@@ -1,0 +1,58 @@
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px;padding:0 20px;background:#fff;border-bottom:1px solid #DEE0E3;flex:none">
+            <div style="min-width:0">
+              <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8F959E;line-height:14px"><span>客户管理后台</span><span>/</span><span>运营</span></div>
+              <div style="font-size:16px;font-weight:600;line-height:22px">客户激活 / 客户列表</div>
+            </div>
+          </div>
+          <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
+            <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:14px 16px;display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap">
+              <label style="flex:1 1 190px;min-width:0"><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">关键词</span><input placeholder="姓名、客户编号" style="height:32px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff;width:100%"></label>
+              <label style="flex:1 1 160px;min-width:0"><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">负责人</span><input placeholder="账号或姓名" style="height:32px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff;width:100%"></label>
+              <label style="flex:1 1 160px;min-width:0"><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">手机号</span><input placeholder="客户手机号" style="height:32px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff;width:100%"></label>
+              <label style="flex:1 1 160px;min-width:0"><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">标签</span><input placeholder="标签 ID 或标签名" style="height:32px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff;width:100%"></label>
+              <div style="display:flex;gap:8px;flex:none"><button style="height:32px;padding:0 14px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">查询</button><button style="height:32px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#646A73;font-size:13px;cursor:pointer">清空</button></div>
+            </div>
+
+            <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #EFF0F1">
+                <div>
+                  <h2 style="margin:0;font-size:14px;font-weight:600">客户列表</h2>
+                  <p style="margin:2px 0 0;font-size:12px;color:#8F959E">每页 50 条，按当前筛选逐页加载</p>
+                </div>
+                <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:4px;background:#F2F3F5;color:#646A73;font-size:12px">共 1,284 位客户</span>
+              </div>
+              <table style="width:100%;border-collapse:collapse">
+                <thead><tr>
+                  <th style="padding:9px 16px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3;white-space:nowrap">客户</th>
+                  <th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3;white-space:nowrap">负责人</th>
+                  <th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3;white-space:nowrap">手机号</th>
+                  <th style="padding:9px 16px;font-size:12px;font-weight:500;color:#8F959E;text-align:right;background:#FAFAFB;border-bottom:1px solid #DEE0E3;white-space:nowrap">查看档案</th>
+                </tr></thead>
+                <tbody>
+                  <sc-for list="{{ rows.customers }}" as="r" hint-placeholder-count="6">
+                    <tr>
+                      <td style="padding:var(--rp,10px) 16px;border-bottom:1px solid #F2F3F5">
+                        <div style="font-size:13px;font-weight:500;color:#1F2329">{{ r.name }}</div>
+                        <div style="font-size:12px;color:#A6AAB0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">{{ r.id }}</div>
+                      </td>
+                      <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5;font-size:13px;color:#1F2329">{{ r.owner }}</td>
+                      <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5;font-size:13px;color:#646A73;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">{{ r.mobile }}</td>
+                      <td style="padding:var(--rp,10px) 16px;border-bottom:1px solid #F2F3F5;text-align:right"><a onClick="{{ r.view }}" style="font-size:13px;color:var(--accent,#3370ff);cursor:pointer">查看档案</a></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid #EFF0F1">
+                <span style="font-size:12px;color:#8F959E">第 1 – 50 条，共 1,284 条</span>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <button style="height:28px;min-width:28px;padding:0 8px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#BBBFC4;font-size:12px">上一页</button>
+                  <button style="height:28px;min-width:28px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:12px">1</button>
+                  <button style="height:28px;min-width:28px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#1F2329;font-size:12px">2</button>
+                  <button style="height:28px;min-width:28px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#1F2329;font-size:12px">3</button>
+                  <span style="font-size:12px;color:#8F959E">…</span>
+                  <button style="height:28px;min-width:28px;padding:0 8px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#1F2329;font-size:12px">下一页</button>
+                </div>
+              </div>
+            </div>
+          </div>

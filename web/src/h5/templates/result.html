@@ -1,0 +1,53 @@
+<div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <span style="font-size:16px;font-weight:600">测评结果</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;background:#F5F6F7;padding:14px 14px 24px">
+          <div style="border-radius:16px;padding:22px 20px;background:linear-gradient(150deg,#16233A 0%,#25406E 62%,#2C55A8 100%);color:#fff;margin-bottom:12px">
+            <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;background:rgba(255,255,255,.16);font-size:12px;font-weight:600">测评结果</span>
+            <h1 style="margin:14px 0 0;font-size:24px;line-height:32px;font-weight:600">你的增长基本盘不错，卡在承接</h1>
+            <div style="display:flex;align-items:baseline;gap:8px;margin-top:18px"><span style="font-size:44px;line-height:46px;font-weight:700;font-variant-numeric:tabular-nums">82</span><span style="font-size:14px;color:rgba(255,255,255,.7)">总分 / 100</span></div>
+            <p style="margin:10px 0 0;font-size:14px;line-height:22px;color:rgba(255,255,255,.78)">流量端已经跑通，问题集中在线索承接与首触转化，建议先补齐 24 小时内的跟进动作。</p>
+            <button onClick="{{ act.viewCourses }}" style="width:100%;height:44px;margin-top:18px;border:0;border-radius:10px;background:#fff;color:#1F2329;font-size:15px;font-weight:600;cursor:pointer">查看推荐课程</button>
+          </div>
+
+          <div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px">
+            <div style="font-size:16px;font-weight:600;margin-bottom:12px">优势与短板</div>
+            <div style="font-size:13px;color:#8F959E;margin-bottom:8px">优势项</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+              <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:6px;background:#EBF9EC;color:#2EA121;font-size:13px">流量获取</span>
+              <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:6px;background:#EBF9EC;color:#2EA121;font-size:13px">内容产出</span>
+            </div>
+            <div style="font-size:13px;color:#8F959E;margin-bottom:8px">劣势项</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:6px;background:#FFF7E8;color:#D97917;font-size:13px">线索承接</span>
+              <span style="display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:6px;background:#FFF7E8;color:#D97917;font-size:13px">复购运营</span>
+            </div>
+          </div>
+
+          <div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px">
+            <div style="font-size:16px;font-weight:600;margin-bottom:6px">维度详情</div>
+            <sc-for list="{{ dims }}" as="d" hint-placeholder-count="3">
+              <div style="padding:14px 0;border-top:1px solid #F2F3F5">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                  <span style="font-size:15px;font-weight:600">{{ d.name }}</span>
+                  <span style="{{ d.scoreStyle }}">{{ d.score }} 分</span>
+                </div>
+                <div style="height:6px;border-radius:999px;background:#F2F3F5;margin-top:10px;overflow:hidden"><div style="{{ d.bar }}"></div></div>
+                <p style="margin:10px 0 0;font-size:14px;line-height:22px;color:#8F959E">{{ d.desc }}</p>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#fff;border-radius:14px;padding:16px">
+            <div style="font-size:16px;font-weight:600;margin-bottom:4px">推荐动作</div>
+            <div style="padding:14px 0 0">
+              <div style="font-size:15px;font-weight:600">把首触响应压到 30 分钟内</div>
+              <p style="margin:6px 0 0;font-size:14px;line-height:22px;color:#8F959E">给新客渠道配置自动化首触话术，先发资料再约沟通。</p>
+              <button onClick="{{ act.viewDetail }}" style="height:38px;margin-top:12px;padding:0 16px;border:0;border-radius:8px;background:var(--accent,#3370ff);color:#fff;font-size:14px;font-weight:600;cursor:pointer">查看详情</button>
+            </div>
+            <div style="padding:14px 0 0;margin-top:14px;border-top:1px solid #F2F3F5">
+              <div style="font-size:15px;font-weight:600">建立到期前 7 天的续费提醒</div>
+              <p style="margin:6px 0 0;font-size:14px;line-height:22px;color:#8F959E">周期商品到期前主动触达，复购率平均提升 18%。</p>
+            </div>
+          </div>

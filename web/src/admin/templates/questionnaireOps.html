@@ -1,0 +1,27 @@
+<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px;padding:0 20px;background:#fff;border-bottom:1px solid #DEE0E3;flex:none">
+  <div style="display:flex;align-items:center;gap:10px;min-width:0">
+    <a onClick="{{ qops.back }}" style="width:28px;height:28px;border:1px solid #DEE0E3;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none">‹</a>
+    <div><div style="font-size:12px;color:#8F959E">问卷 / 运营配置</div><div style="font-size:16px;font-weight:600">{{ qops.q.name }}</div></div>
+  </div>
+  <button onClick="{{ qops.save }}" style="height:30px;padding:0 14px;border:0;border-radius:6px;background:#3370ff;color:#fff;font-size:13px;cursor:pointer">保存本地配置</button>
+</div>
+<div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
+  <div style="background:#FFF7E8;border:1px solid #FFE0B2;border-radius:8px;padding:12px 14px;color:#8A4B08;font-size:13px;line-height:20px">
+    此页只保存 OpenAPI 定义的本地 opaque reference，不接收 URL、token 或 Provider 参数；保存不代表已执行外部推送。
+  </div>
+  <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:16px;display:grid;gap:14px">
+    <div><h3 style="margin:0;font-size:15px">提交后动作</h3><p style="margin:4px 0 0;font-size:12px;color:#8F959E">navigation_target_id 与 channel_id 均为服务端资源引用。</p></div>
+    <label><span style="display:block;font-size:12px;color:#646A73;margin-bottom:6px">Navigation target ID（opaque）</span><input id="opsNavigationTarget" value="{{ qops.ops.completionNavigationTargetId }}" placeholder="completion.thank-you" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font:13px ui-monospace,Menlo,monospace;box-sizing:border-box"></label>
+    <label><span style="display:block;font-size:12px;color:#646A73;margin-bottom:6px">渠道资源 ID（正整数，可留空）</span><input id="opsChannelResourceId" value="{{ qops.ops.completionChannelId }}" inputmode="numeric" placeholder="123" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font:13px ui-monospace,Menlo,monospace;box-sizing:border-box"></label>
+  </div>
+  <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:16px;display:grid;gap:14px">
+    <div><h3 style="margin:0;font-size:15px">外部推送绑定</h3><p style="margin:4px 0 0;font-size:12px;color:#8F959E">configuration_reference 只引用后端已有配置；此处不创建 webhook，也不触发发送。</p></div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px"><sc-if value="{{ qops.ops.pushEnabled }}"><input id="opsPushEnabled" type="checkbox" checked="checked"></sc-if><sc-if value="{{ qops.pushOff }}"><input id="opsPushEnabled" type="checkbox"></sc-if>启用本地外部推送绑定</label>
+    <label><span style="display:block;font-size:12px;color:#646A73;margin-bottom:6px">Configuration reference（opaque）</span><input id="opsConfigurationReference" value="{{ qops.ops.externalPushConfigurationReference }}" placeholder="survey-push.crm-default" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font:13px ui-monospace,Menlo,monospace;box-sizing:border-box"></label>
+    <div style="display:flex;justify-content:space-between;gap:8px;border-top:1px solid #F2F3F5;padding-top:14px"><button onClick="{{ qops.testPush }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">测试推送（不可执行）</button><button onClick="{{ qops.save }}" style="height:30px;padding:0 14px;border:0;border-radius:6px;background:#3370ff;color:#fff;font-size:13px;cursor:pointer">保存两项本地绑定</button></div>
+  </div>
+  <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:16px">
+    <div style="display:flex;justify-content:space-between;gap:8px"><h3 style="margin:0;font-size:15px">读取到的外推日志</h3><span style="font-size:12px;color:#8F959E">{{ qops.q.status }}</span></div>
+    <table style="width:100%;border-collapse:collapse;margin-top:10px"><thead><tr><th style="text-align:left;padding:8px;border-bottom:1px solid #DEE0E3">时间</th><th style="text-align:left;padding:8px;border-bottom:1px solid #DEE0E3">提交 ID</th><th style="text-align:left;padding:8px;border-bottom:1px solid #DEE0E3">状态</th><th style="text-align:left;padding:8px;border-bottom:1px solid #DEE0E3">错误</th></tr></thead><tbody><sc-for list="{{ rows.qApply }}" as="r"><tr><td style="padding:8px;border-bottom:1px solid #F2F3F5">{{ r.time }}</td><td style="padding:8px;border-bottom:1px solid #F2F3F5">{{ r.sid }}</td><td style="padding:8px;border-bottom:1px solid #F2F3F5"><span style="{{ r.cs }}">{{ r.status }}</span></td><td style="padding:8px;border-bottom:1px solid #F2F3F5">{{ r.err }}</td></tr></sc-for></tbody></table>
+  </div>
+</div>

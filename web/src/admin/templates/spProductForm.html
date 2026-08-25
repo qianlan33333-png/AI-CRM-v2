@@ -1,0 +1,19 @@
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px;padding:0 20px;background:#fff;border-bottom:1px solid #DEE0E3;flex:none">
+            <div><div style="font-size:12px;color:#8F959E">交易 / 周期商品</div><div style="font-size:16px;font-weight:600">{{ spProductFormPage.title }}</div></div>
+            <div style="display:flex;gap:8px"><button onClick="{{ go.spProducts }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">返回列表</button><button onClick="{{ spProductFormPage.save }}" style="height:30px;padding:0 14px;border:0;border-radius:6px;background:#3370ff;color:#fff;font-size:13px;cursor:pointer">保存周期商品</button></div>
+          </div>
+          <div style="flex:1;overflow:auto;padding:20px;display:grid;gap:12px;align-content:start">
+            <div style="max-width:900px;background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
+              <div style="padding:12px 16px;border-bottom:1px solid #EFF0F1;font-size:14px;font-weight:600">OpenAPI 周期商品字段</div>
+              <div style="padding:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px">
+                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">商品编码<input id="spfCode" value="{{ spProductFormPage.item.code }}" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px"></label>
+                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">商品名称<input id="spfName" value="{{ spProductFormPage.item.name }}" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px"></label>
+                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">价格（元）<input id="spfPrice" value="{{ spProductFormPage.item.price }}" inputmode="decimal" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px"></label>
+                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">币种<input id="spfCurrency" value="{{ spProductFormPage.item.currency }}" maxlength="3" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px"></label>
+                <label style="display:grid;gap:6px;font-size:12px;color:#646A73">库存<input id="spfStock" type="number" min="0" value="{{ spProductFormPage.item.stockQuantity }}" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px"></label>
+                <div style="font-size:12px;color:#8F959E;align-self:end;padding-bottom:10px">服务端版本：{{ spProductFormPage.item.version }} · 生命周期：{{ spProductFormPage.item.lifecycle }}</div>
+                <label style="grid-column:1/-1;display:grid;gap:6px;font-size:12px;color:#646A73">描述<textarea id="spfDescription" rows="4" style="border:1px solid #DEE0E3;border-radius:6px;padding:8px 10px;font-size:13px">{{ spProductFormPage.item.description }}</textarea></label>
+              </div>
+            </div>
+            <div style="max-width:900px;padding:16px;border:1px solid #F5D6A7;border-radius:8px;background:#FFF9F0;font-size:13px;color:#8F5A16;line-height:20px">启停、复制和归档已由列表接入真实本地契约；公开购买、页面素材和 URL 外推字段没有等价核心 DTO。<button onClick="{{ spProductFormPage.blocked }}" style="margin-left:8px;height:28px;padding:0 10px;border:1px solid #F5D6A7;border-radius:5px;background:#fff;color:#8F5A16;cursor:pointer">查看原因</button></div>
+          </div>
