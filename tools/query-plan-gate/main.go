@@ -28,9 +28,11 @@ import (
 var (
 	hexSHA        = regexp.MustCompile(`^[0-9a-f]{40}$`)
 	queryPath     = regexp.MustCompile(`^internal/[^/]+/store/queries/[^/]+[.]sql$`)
+	acceptanceSQL = regexp.MustCompile(`_acceptance[.]sql$`)
 	migrationPath = regexp.MustCompile(`^migrations/[^/]+[.]sql$`)
 	queryHeader   = regexp.MustCompile(`(?i)^--[[:space:]]+name:[[:space:]]+([A-Za-z_][A-Za-z0-9_]*)[[:space:]]+:[A-Za-z_]+[[:space:]]*$`)
 	targetTable   = regexp.MustCompile(`(?i)(^|[^A-Za-z0-9_])(customers|customer_events)([^A-Za-z0-9_]|$)`)
+	truncateQuery = regexp.MustCompile(`(?i)^TRUNCATE(?:[[:space:]]|$)`)
 	positional    = regexp.MustCompile(`[$]([1-9][0-9]*)`)
 	namedArg      = regexp.MustCompile(`(?i)sqlc[.](?:n?arg)[(][[:space:]]*'?([A-Za-z_][A-Za-z0-9_]*)'?[[:space:]]*[)]`)
 	atArg         = regexp.MustCompile(`@([A-Za-z_][A-Za-z0-9_]*)`)
@@ -171,6 +173,9 @@ func changedQueryPaths(root, base, head string) ([]string, bool, error) {
 func loadRelevantQueries(root string, paths []string) ([]query, error) {
 	var result []query
 	for _, path := range paths {
+		if acceptanceSQL.MatchString(path) {
+			continue
+		}
 		full := filepath.Join(root, path)
 		info, err := os.Lstat(full)
 		if err != nil || !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
@@ -198,7 +203,7 @@ func parseQueryFile(path, full string) ([]query, error) {
 	var body []string
 	flush := func() {
 		sqlText := strings.TrimSpace(strings.Join(body, "\n"))
-		if name != "" && targetTable.MatchString(sqlText) {
+		if name != "" && targetTable.MatchString(sqlText) && !truncateQuery.MatchString(sqlText) {
 			result = append(result, query{File: path, Name: name, SQL: sqlText})
 		}
 	}
