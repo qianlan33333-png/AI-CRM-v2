@@ -4499,7 +4499,6 @@ paths:
       tags: [p4-survey]
       operationId: startSurveyH5OAuth
       summary: Start a one-time, fail-closed Survey H5 identity gate
-      x-legacy-mapping-ids: [LEGACY-API-0676]
       security: []
       x-p4-decision-evidence: P4-SURVEY-IDENTITY-GATED-EXTERNAL-PUSH-00082-2026-08-25
       x-aicrm-capability: survey.h5.identity
