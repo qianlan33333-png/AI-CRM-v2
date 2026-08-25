@@ -8759,6 +8759,7 @@ paths:
       x-aicrm-data-classification: internal
       x-aicrm-external-effect: none
       parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceAutomationBindingDeleteRequest" } } } }
       responses:
         "200": { description: Local binding removal result, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceAutomationBindingDeleteResponse" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -8807,6 +8808,107 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudiencePackageSendersReplaceRequest" } } } }
       responses:
         "200": { description: Fully replaced local allowlist, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudiencePackageSendersResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}/configuration:
+    parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    get:
+      tags: [p4-ai-audience]
+      operationId: getAIAudienceConfigurationVersion
+      summary: Read the current immutable CRM-local AI Audience configuration snapshot
+      description: This is a V2-native typed snapshot of the canonical Segment definition, not the legacy template catalogue.
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-CONFIGURATION-00084-2026-08-25
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: ai_audience.configuration_versions.local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Current immutable local snapshot or null, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceConfigurationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-ai-audience]
+      operationId: putAIAudienceConfigurationVersion
+      summary: Append one CRM-local AI Audience configuration snapshot with CAS
+      description: Freezes the current canonical Segment definition and package version. It does not enqueue, send, or call a provider.
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-CONFIGURATION-00084-2026-08-25
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: ai_audience.configuration_versions.local_transaction
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceConfigurationPutRequest" } } } }
+      responses:
+        "200": { description: Appended immutable local configuration snapshot, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceConfigurationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}/configuration-preview:
+    parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    get:
+      tags: [p4-ai-audience]
+      operationId: previewAIAudienceConfiguration
+      summary: Preview a frozen local AI Audience definition without storing members
+      description: Returns only count and deterministic lineage digests. No contact identifiers, provider call, enqueue, or delivery assertion.
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-CONFIGURATION-00084-2026-08-25
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: ai_audience.configuration_versions.local_evaluation
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: configuration_version, in: query, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: evaluated_at, in: query, required: false, schema: { type: string, format: date-time } }
+      responses:
+        "200": { description: PII-free local preview with deterministic lineage, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceConfigurationEvaluationResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}/configuration-materialize:
+    parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+    post:
+      tags: [p4-ai-audience]
+      operationId: materializeAIAudienceConfiguration
+      summary: Materialize one frozen configuration into the local Segment member snapshot
+      description: Evaluates the frozen definition in the caller transaction and stores local members with a completed receipt and lineage event. It makes no Provider call.
+      x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-CONFIGURATION-00084-2026-08-25
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: ai_audience.configuration_versions.local_transaction
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceConfigurationMaterializeRequest" } } } }
+      responses:
+        "200": { description: Completed local materialization with deterministic lineage, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceConfigurationEvaluationResponse" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -12277,10 +12379,11 @@ components:
     AIAudienceAutomationBinding:
       type: object
       additionalProperties: false
-      required: [package_id, automation_agent_id, created_by, updated_by, created_at, updated_at]
+      required: [package_id, automation_agent_id, version, created_by, updated_by, created_at, updated_at]
       properties:
         package_id: { type: integer, format: int64, minimum: 1 }
         automation_agent_id: { type: integer, format: int64, minimum: 1 }
+        version: { type: integer, format: int64, minimum: 1 }
         created_by: { type: integer, format: int64, minimum: 1 }
         updated_by: { type: integer, format: int64, minimum: 1 }
         created_at: { type: string, format: date-time }
@@ -12288,9 +12391,10 @@ components:
     AIAudienceAutomationBindingPutRequest:
       type: object
       additionalProperties: false
-      required: [automation_agent_id]
+      required: [automation_agent_id, expected_version]
       properties:
         automation_agent_id: { type: integer, format: int64, minimum: 1 }
+        expected_version: { type: integer, format: int64, minimum: 0 }
     AIAudienceAutomationBindingResponse:
       type: object
       additionalProperties: false
@@ -12299,6 +12403,12 @@ components:
         binding: { allOf: [{ $ref: "#/components/schemas/AIAudienceAutomationBinding" }], nullable: true }
         local_projection: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceAutomationBindingDeleteRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version]
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 0 }
     AIAudienceAutomationBindingDeleteResponse:
       type: object
       additionalProperties: false
@@ -12306,6 +12416,58 @@ components:
       properties:
         package_id: { type: integer, format: int64, minimum: 1 }
         deleted: { type: boolean }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceConfigurationVersion:
+      type: object
+      additionalProperties: false
+      required: [package_id, version, schema_version, package_version, definition, definition_digest, refresh_mode, refresh_cron, created_by, created_at]
+      properties:
+        package_id: { type: integer, format: int64, minimum: 1 }
+        version: { type: integer, format: int64, minimum: 1 }
+        schema_version: { type: string, enum: [ai_audience_local_configuration.v1] }
+        package_version: { type: integer, format: int64, minimum: 1 }
+        definition: { $ref: "#/components/schemas/SegmentDefinition" }
+        definition_digest: { type: string, pattern: '^[0-9a-f]{64}$' }
+        refresh_mode: { type: string, enum: [manual, scheduled] }
+        refresh_cron: { type: string, nullable: true }
+        created_by: { type: integer, format: int64, minimum: 1 }
+        created_at: { type: string, format: date-time }
+    AIAudienceConfigurationPutRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_version, expected_package_version]
+      properties:
+        expected_version: { type: integer, format: int64, minimum: 0 }
+        expected_package_version: { type: integer, format: int64, minimum: 1 }
+    AIAudienceConfigurationResponse:
+      type: object
+      additionalProperties: false
+      required: [configuration, local_projection, real_external_call_executed]
+      properties:
+        configuration: { allOf: [{ $ref: "#/components/schemas/AIAudienceConfigurationVersion" }], nullable: true }
+        local_projection: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceConfigurationMaterializeRequest:
+      type: object
+      additionalProperties: false
+      required: [configuration_version, expected_package_version]
+      properties:
+        configuration_version: { type: integer, format: int64, minimum: 1 }
+        expected_package_version: { type: integer, format: int64, minimum: 1 }
+    AIAudienceConfigurationEvaluationResponse:
+      type: object
+      additionalProperties: false
+      required: [package_id, configuration_version, package_version, definition_digest, member_count, member_digest, evaluated_at, materialized, local_projection, real_external_call_executed]
+      properties:
+        package_id: { type: integer, format: int64, minimum: 1 }
+        configuration_version: { type: integer, format: int64, minimum: 1 }
+        package_version: { type: integer, format: int64, minimum: 1 }
+        definition_digest: { type: string, pattern: '^[0-9a-f]{64}$' }
+        member_count: { type: integer, format: int64, minimum: 0 }
+        member_digest: { type: string, pattern: '^[0-9a-f]{64}$' }
+        evaluated_at: { type: string, format: date-time }
+        materialized: { type: boolean }
         local_projection: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
     AIAudiencePackageSender:

@@ -4,13 +4,16 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
 
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
 )
 
 var _ LocalConfigurationApplication = (*LocalConfigurationService)(nil)
@@ -20,6 +23,8 @@ type LocalConfigurationService struct {
 	repo    LocalConfigurationRepository
 	agents  AutomationAgentReader
 	members contactport.StaffDirectoryReader
+	staff   contactport.EligibleStaffReferenceReader
+	engine  segmentport.AudienceDefinitionEngine
 	events  EventAppender
 	now     func() time.Time
 }
@@ -29,12 +34,14 @@ func NewLocalConfigurationService(
 	repository LocalConfigurationRepository,
 	agents AutomationAgentReader,
 	members contactport.StaffDirectoryReader,
+	staff contactport.EligibleStaffReferenceReader,
+	engine segmentport.AudienceDefinitionEngine,
 	events EventAppender,
 ) (*LocalConfigurationService, error) {
-	if nilInterface(uow) || nilInterface(repository) || nilInterface(agents) || nilInterface(members) || nilInterface(events) {
+	if nilInterface(uow) || nilInterface(repository) || nilInterface(agents) || nilInterface(members) || nilInterface(staff) || nilInterface(engine) || nilInterface(events) {
 		return nil, ErrUnavailable
 	}
-	return &LocalConfigurationService{uow: uow, repo: repository, agents: agents, members: members, events: events, now: time.Now}, nil
+	return &LocalConfigurationService{uow: uow, repo: repository, agents: agents, members: members, staff: staff, engine: engine, events: events, now: time.Now}, nil
 }
 
 func (service *LocalConfigurationService) ListOperationMembers(ctx context.Context, pageSize int) (OperationMemberListResponse, error) {
@@ -85,13 +92,14 @@ func (service *LocalConfigurationService) GetAutomationBinding(ctx context.Conte
 }
 
 func (service *LocalConfigurationService) PutAutomationBinding(ctx context.Context, input PutAutomationBindingInput) (AutomationBindingResponse, error) {
-	if !service.ready(ctx) || input.PackageID < 1 || input.AutomationAgentID < 1 || !validLocalConfigurationWrite(input.Actor, input.IdempotencyKey) {
+	if !service.ready(ctx) || input.PackageID < 1 || input.AutomationAgentID < 1 || input.ExpectedVersion < 0 || !validLocalConfigurationWrite(input.Actor, input.IdempotencyKey) {
 		return AutomationBindingResponse{}, ErrInvalidInput
 	}
 	payload, err := digestJSON(struct {
 		PackageID         int64 `json:"package_id"`
 		AutomationAgentID int64 `json:"automation_agent_id"`
-	}{PackageID: input.PackageID, AutomationAgentID: input.AutomationAgentID})
+		ExpectedVersion   int64 `json:"expected_version"`
+	}{PackageID: input.PackageID, AutomationAgentID: input.AutomationAgentID, ExpectedVersion: input.ExpectedVersion})
 	if err != nil {
 		return AutomationBindingResponse{}, ErrUnavailable
 	}
@@ -104,6 +112,13 @@ func (service *LocalConfigurationService) PutAutomationBinding(ctx context.Conte
 			if validateErr := validateWriteModel(packageModel); validateErr != nil {
 				return nil, nil, validateErr
 			}
+			current, readErr := service.repo.GetAutomationBinding(tx, input.PackageID)
+			if readErr != nil {
+				return nil, nil, readErr
+			}
+			if current == nil && input.ExpectedVersion != 0 || current != nil && current.Version != input.ExpectedVersion {
+				return nil, nil, ErrVersionConflict
+			}
 			agent, agentErr := service.agents.GetAutomationAgent(tx, input.AutomationAgentID)
 			if agentErr != nil {
 				return nil, nil, agentErr
@@ -111,16 +126,12 @@ func (service *LocalConfigurationService) PutAutomationBinding(ctx context.Conte
 			if agent.ID != input.AutomationAgentID || !selectableAutomationAgentStatus(agent.Status) {
 				return nil, nil, ErrConflict
 			}
-			current, readErr := service.repo.GetAutomationBinding(tx, input.PackageID)
-			if readErr != nil {
-				return nil, nil, readErr
-			}
 			if current != nil && current.AutomationAgentID == input.AutomationAgentID {
 				return AutomationBindingResponse{Binding: cloneAutomationBinding(current), Projection: localProjection()}, nil, nil
 			}
 			binding, saveErr := service.repo.SaveAutomationBinding(tx, AutomationBinding{
 				PackageID: input.PackageID, AutomationAgentID: input.AutomationAgentID,
-			}, input.Actor.AdminUserID, now)
+			}, input.Actor.AdminUserID, input.ExpectedVersion, now)
 			if saveErr != nil {
 				return nil, nil, saveErr
 			}
@@ -138,12 +149,13 @@ func (service *LocalConfigurationService) PutAutomationBinding(ctx context.Conte
 }
 
 func (service *LocalConfigurationService) DeleteAutomationBinding(ctx context.Context, input DeleteAutomationBindingInput) (AutomationBindingDeleteResponse, error) {
-	if !service.ready(ctx) || input.PackageID < 1 || !validLocalConfigurationWrite(input.Actor, input.IdempotencyKey) {
+	if !service.ready(ctx) || input.PackageID < 1 || input.ExpectedVersion < 0 || !validLocalConfigurationWrite(input.Actor, input.IdempotencyKey) {
 		return AutomationBindingDeleteResponse{}, ErrInvalidInput
 	}
 	payload, err := digestJSON(struct {
-		PackageID int64 `json:"package_id"`
-	}{PackageID: input.PackageID})
+		PackageID       int64 `json:"package_id"`
+		ExpectedVersion int64 `json:"expected_version"`
+	}{PackageID: input.PackageID, ExpectedVersion: input.ExpectedVersion})
 	if err != nil {
 		return AutomationBindingDeleteResponse{}, ErrUnavailable
 	}
@@ -156,7 +168,14 @@ func (service *LocalConfigurationService) DeleteAutomationBinding(ctx context.Co
 			if validateErr := validateWriteModel(packageModel); validateErr != nil {
 				return nil, nil, validateErr
 			}
-			deleted, deleteErr := service.repo.DeleteAutomationBinding(tx, input.PackageID)
+			current, readErr := service.repo.GetAutomationBinding(tx, input.PackageID)
+			if readErr != nil {
+				return nil, nil, readErr
+			}
+			if current == nil && input.ExpectedVersion != 0 || current != nil && current.Version != input.ExpectedVersion {
+				return nil, nil, ErrVersionConflict
+			}
+			deleted, deleteErr := service.repo.DeleteAutomationBinding(tx, input.PackageID, input.ExpectedVersion)
 			if deleteErr != nil {
 				return nil, nil, deleteErr
 			}
@@ -240,26 +259,232 @@ func (service *LocalConfigurationService) ReplaceSenders(ctx context.Context, in
 	return decodeMutation[PackageSendersResponse](raw)
 }
 
+func (service *LocalConfigurationService) GetConfiguration(ctx context.Context, packageID int64) (ConfigurationResponse, error) {
+	if !service.ready(ctx) || packageID < 1 {
+		return ConfigurationResponse{}, service.invalidOrUnavailable(ctx)
+	}
+	if _, err := service.repo.GetPackageMetadata(ctx, packageID); err != nil {
+		return ConfigurationResponse{}, classifyServiceError(err)
+	}
+	configuration, err := service.repo.GetCurrentConfiguration(ctx, packageID)
+	if err != nil {
+		return ConfigurationResponse{}, classifyServiceError(err)
+	}
+	if configuration != nil && !validConfigurationVersion(*configuration) {
+		return ConfigurationResponse{}, ErrUnavailable
+	}
+	return ConfigurationResponse{Configuration: cloneConfigurationVersion(configuration), Projection: localProjection()}, nil
+}
+
+func (service *LocalConfigurationService) PutConfiguration(ctx context.Context, input PutConfigurationInput) (ConfigurationResponse, error) {
+	if !service.ready(ctx) || input.PackageID < 1 || input.ExpectedVersion < 0 || input.ExpectedPackageVersion < 1 || !validLocalConfigurationWrite(input.Actor, input.IdempotencyKey) {
+		return ConfigurationResponse{}, ErrInvalidInput
+	}
+	payload, err := digestJSON(struct {
+		PackageID              int64 `json:"package_id"`
+		ExpectedVersion        int64 `json:"expected_version"`
+		ExpectedPackageVersion int64 `json:"expected_package_version"`
+	}{input.PackageID, input.ExpectedVersion, input.ExpectedPackageVersion})
+	if err != nil {
+		return ConfigurationResponse{}, ErrUnavailable
+	}
+	raw, err := service.execute(ctx, ReceiptOperation("configuration_version_put"), input.Actor, input.IdempotencyKey, payload,
+		func(tx context.Context, now time.Time) (any, *LocalEvent, error) {
+			packageModel, lockErr := service.repo.LockPackage(tx, input.PackageID)
+			if lockErr != nil {
+				return nil, nil, lockErr
+			}
+			if validateErr := validateWriteModel(packageModel); validateErr != nil {
+				return nil, nil, validateErr
+			}
+			if packageModel.Metadata.Version != input.ExpectedPackageVersion {
+				return nil, nil, ErrVersionConflict
+			}
+			current, currentErr := service.repo.GetCurrentConfiguration(tx, input.PackageID)
+			if currentErr != nil {
+				return nil, nil, currentErr
+			}
+			currentVersion := int64(0)
+			if current != nil {
+				if !validConfigurationVersion(*current) {
+					return nil, nil, ErrUnavailable
+				}
+				currentVersion = current.Version
+			}
+			if currentVersion != input.ExpectedVersion {
+				return nil, nil, ErrVersionConflict
+			}
+			definition, canonicalErr := canonicalDefinition(packageModel.Definition)
+			if canonicalErr != nil {
+				return nil, nil, canonicalErr
+			}
+			cron, cronErr := canonicalRefreshCron(packageModel.RefreshMode, packageModel.RefreshCron)
+			if cronErr != nil {
+				return nil, nil, cronErr
+			}
+			digest := sha256.Sum256(definition)
+			stored, insertErr := service.repo.InsertConfigurationVersion(tx, ConfigurationVersion{
+				PackageID: input.PackageID, Version: currentVersion + 1, SchemaVersion: ConfigurationSchemaVersion,
+				PackageVersion: input.ExpectedPackageVersion, Definition: definition, DefinitionDigest: hex.EncodeToString(digest[:]),
+				RefreshMode: packageModel.RefreshMode, RefreshCron: cron, CreatedBy: input.Actor.AdminUserID, CreatedAt: now,
+			})
+			if insertErr != nil || !validConfigurationVersion(stored) || stored.Version != currentVersion+1 {
+				if insertErr != nil {
+					return nil, nil, insertErr
+				}
+				return nil, nil, ErrUnavailable
+			}
+			response := ConfigurationResponse{Configuration: cloneConfigurationVersion(&stored), Projection: localProjection()}
+			event, eventErr := mutationEvent("ai_audience.package.configuration.versioned", input.PackageID, input.Actor, input.IdempotencyKey, now)
+			return response, event, eventErr
+		})
+	if err != nil {
+		return ConfigurationResponse{}, err
+	}
+	return decodeMutation[ConfigurationResponse](raw)
+}
+
+func (service *LocalConfigurationService) PreviewConfiguration(ctx context.Context, input PreviewConfigurationInput) (ConfigurationEvaluationResponse, error) {
+	if !service.ready(ctx) || input.PackageID < 1 || input.ConfigurationVersion < 1 {
+		return ConfigurationEvaluationResponse{}, service.invalidOrUnavailable(ctx)
+	}
+	reference := input.EvaluatedAt.UTC()
+	if input.EvaluatedAt.IsZero() {
+		reference = service.now().UTC()
+	}
+	if reference.IsZero() {
+		return ConfigurationEvaluationResponse{}, ErrUnavailable
+	}
+	var response ConfigurationEvaluationResponse
+	err := service.uow.Within(ctx, func(tx context.Context) error {
+		configuration, err := service.repo.GetConfigurationVersion(tx, input.PackageID, input.ConfigurationVersion)
+		if err != nil {
+			return err
+		}
+		if configuration == nil {
+			return ErrNotFound
+		}
+		if !validConfigurationVersion(*configuration) {
+			return ErrUnavailable
+		}
+		evaluation, err := service.engine.Preview(tx, configuration.Definition, reference)
+		if err != nil {
+			return err
+		}
+		response = configurationEvaluation(*configuration, evaluation, false)
+		return nil
+	})
+	if err != nil {
+		return ConfigurationEvaluationResponse{}, classifyServiceError(err)
+	}
+	return response, nil
+}
+
+func (service *LocalConfigurationService) MaterializeConfiguration(ctx context.Context, input MaterializeConfigurationInput) (ConfigurationEvaluationResponse, error) {
+	if !service.ready(ctx) || input.PackageID < 1 || input.ConfigurationVersion < 1 || input.ExpectedPackageVersion < 1 ||
+		!validLocalConfigurationWrite(input.Actor, input.IdempotencyKey) {
+		return ConfigurationEvaluationResponse{}, ErrInvalidInput
+	}
+	payload, err := digestJSON(struct {
+		PackageID              int64 `json:"package_id"`
+		ConfigurationVersion   int64 `json:"configuration_version"`
+		ExpectedPackageVersion int64 `json:"expected_package_version"`
+	}{input.PackageID, input.ConfigurationVersion, input.ExpectedPackageVersion})
+	if err != nil {
+		return ConfigurationEvaluationResponse{}, ErrUnavailable
+	}
+	raw, err := service.execute(ctx, ReceiptOperation("configuration_materialize"), input.Actor, input.IdempotencyKey, payload,
+		func(tx context.Context, now time.Time) (any, *LocalEvent, error) {
+			packageModel, lockErr := service.repo.LockPackage(tx, input.PackageID)
+			if lockErr != nil {
+				return nil, nil, lockErr
+			}
+			if validateErr := validateWriteModel(packageModel); validateErr != nil {
+				return nil, nil, validateErr
+			}
+			if packageModel.Metadata.Version != input.ExpectedPackageVersion {
+				return nil, nil, ErrVersionConflict
+			}
+			configuration, readErr := service.repo.GetConfigurationVersion(tx, input.PackageID, input.ConfigurationVersion)
+			if readErr != nil {
+				return nil, nil, readErr
+			}
+			if configuration == nil {
+				return nil, nil, ErrNotFound
+			}
+			if !validConfigurationVersion(*configuration) || configuration.PackageVersion != input.ExpectedPackageVersion {
+				return nil, nil, ErrVersionConflict
+			}
+			currentDefinition, canonicalErr := canonicalDefinition(packageModel.Definition)
+			if canonicalErr != nil || !equalJSON(currentDefinition, configuration.Definition) {
+				return nil, nil, ErrVersionConflict
+			}
+			evaluation, evaluateErr := service.engine.Materialize(tx, segmentport.SegmentID(input.PackageID), configuration.Definition, now)
+			if evaluateErr != nil {
+				return nil, nil, evaluateErr
+			}
+			response := configurationEvaluation(*configuration, evaluation, true)
+			event, eventErr := configurationMaterializedEvent(response, input.Actor, input.IdempotencyKey, now)
+			return response, event, eventErr
+		})
+	if err != nil {
+		return ConfigurationEvaluationResponse{}, err
+	}
+	return decodeMutation[ConfigurationEvaluationResponse](raw)
+}
+
+func configurationEvaluation(configuration ConfigurationVersion, evaluation segmentport.DefinitionEvaluation, materialized bool) ConfigurationEvaluationResponse {
+	return ConfigurationEvaluationResponse{
+		PackageID: configuration.PackageID, ConfigurationVersion: configuration.Version, PackageVersion: configuration.PackageVersion,
+		DefinitionDigest: configuration.DefinitionDigest, MemberCount: evaluation.MemberCount,
+		MemberDigest: hex.EncodeToString(evaluation.MemberDigest[:]), EvaluatedAt: evaluation.EvaluatedAt.UTC(),
+		Materialized: materialized, Projection: localProjection(),
+	}
+}
+
+func configurationMaterializedEvent(response ConfigurationEvaluationResponse, actor Actor, key string, now time.Time) (*LocalEvent, error) {
+	payload, err := json.Marshal(struct {
+		PackageID            int64     `json:"package_id"`
+		ConfigurationVersion int64     `json:"configuration_version"`
+		PackageVersion       int64     `json:"package_version"`
+		DefinitionDigest     string    `json:"definition_digest"`
+		MemberCount          int64     `json:"member_count"`
+		MemberDigest         string    `json:"member_digest"`
+		EvaluatedAt          time.Time `json:"evaluated_at"`
+		ActorID              int64     `json:"actor_id"`
+	}{response.PackageID, response.ConfigurationVersion, response.PackageVersion, response.DefinitionDigest, response.MemberCount,
+		response.MemberDigest, response.EvaluatedAt, actor.AdminUserID})
+	if err != nil {
+		return nil, err
+	}
+	digest := sha256.Sum256([]byte(fmt.Sprintf("ai_audience.package.configuration.materialized\x00%d\x00%s", actor.AdminUserID, key)))
+	return &LocalEvent{Type: "ai_audience.package.configuration.materialized", Payload: payload, OccurredAt: now,
+		IdempotencyKey: "ai-audience:" + hex.EncodeToString(digest[:])}, nil
+}
+
 func (service *LocalConfigurationService) validateCurrentSenders(ctx context.Context, items []PackageSender, lock bool) error {
-	userIDs := make([]string, 0, len(items))
-	for _, item := range items {
-		userIDs = append(userIDs, item.SenderUserID)
-	}
-	var (
-		entries []string
-		err     error
-	)
 	if lock {
-		entries, err = service.repo.LockEligibleSenderUserIDs(ctx, userIDs)
-	} else {
-		entries, err = service.repo.ListEligibleSenderUserIDs(ctx, userIDs)
+		for _, item := range items {
+			entry, err := service.staff.LockEligibleStaffByWeComUserID(ctx, item.SenderUserID)
+			if errors.Is(err, contactport.ErrStaffReferenceNotFound) {
+				return ErrConflict
+			}
+			if err != nil {
+				return errors.Join(ErrUnavailable, err)
+			}
+			if entry.WeComUserID != item.SenderUserID {
+				return ErrUnavailable
+			}
+		}
+		return nil
 	}
+	entries, err := service.members.ListEligibleStaff(ctx)
 	if err != nil {
 		return errors.Join(ErrUnavailable, err)
 	}
 	allowed := make(map[string]struct{}, len(entries))
-	for _, userid := range entries {
-		userid = strings.TrimSpace(userid)
+	for _, entry := range entries {
+		userid := strings.TrimSpace(entry.WeComUserID)
 		if userid == "" {
 			return ErrUnavailable
 		}
@@ -349,7 +574,8 @@ func (service *LocalConfigurationService) execute(
 
 func (service *LocalConfigurationService) ready(ctx context.Context) bool {
 	return ctx != nil && service != nil && !nilInterface(service.uow) && !nilInterface(service.repo) &&
-		!nilInterface(service.agents) && !nilInterface(service.members) && !nilInterface(service.events) && service.now != nil
+		!nilInterface(service.agents) && !nilInterface(service.members) && !nilInterface(service.staff) && !nilInterface(service.engine) &&
+		!nilInterface(service.events) && service.now != nil
 }
 
 func (service *LocalConfigurationService) invalidOrUnavailable(ctx context.Context) error {
@@ -364,7 +590,7 @@ func validLocalConfigurationWrite(actor Actor, key string) bool {
 }
 
 func validAutomationBinding(binding AutomationBinding) bool {
-	return binding.PackageID > 0 && binding.AutomationAgentID > 0 && binding.CreatedBy > 0 && binding.UpdatedBy > 0 &&
+	return binding.PackageID > 0 && binding.AutomationAgentID > 0 && binding.Version > 0 && binding.CreatedBy > 0 && binding.UpdatedBy > 0 &&
 		!binding.CreatedAt.IsZero() && !binding.UpdatedAt.IsZero() && !binding.UpdatedAt.Before(binding.CreatedAt)
 }
 
@@ -419,4 +645,30 @@ func samePackageSenders(left, right []PackageSender) bool {
 		}
 	}
 	return true
+}
+
+func validConfigurationVersion(value ConfigurationVersion) bool {
+	definition, err := canonicalDefinition(value.Definition)
+	if err != nil || !equalJSON(definition, value.Definition) {
+		return false
+	}
+	digest := sha256.Sum256(definition)
+	cron, err := canonicalRefreshCron(value.RefreshMode, value.RefreshCron)
+	return value.PackageID > 0 && value.Version > 0 && value.SchemaVersion == ConfigurationSchemaVersion && value.PackageVersion > 0 &&
+		value.DefinitionDigest == hex.EncodeToString(digest[:]) && err == nil && sameString(cron, value.RefreshCron) &&
+		value.CreatedBy > 0 && !value.CreatedAt.IsZero()
+}
+
+func cloneConfigurationVersion(value *ConfigurationVersion) *ConfigurationVersion {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	copy.Definition = append(segmentport.Definition(nil), value.Definition...)
+	copy.RefreshCron = cloneString(value.RefreshCron)
+	return &copy
+}
+
+func sameString(left, right *string) bool {
+	return left == nil && right == nil || left != nil && right != nil && *left == *right
 }

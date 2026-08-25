@@ -440,7 +440,7 @@ func (repository *SQLRepository) GetAutomationBinding(ctx context.Context, packa
 		return nil, err
 	}
 	binding, err := scanAutomationBinding(database.QueryRow(ctx, `
-SELECT package_id, automation_agent_id, created_by, updated_by, created_at, updated_at
+SELECT package_id, automation_agent_id, version, created_by, updated_by, created_at, updated_at
 FROM public.ai_audience_package_automation_bindings
 WHERE package_id = $1`, packageID))
 	if err != nil {
@@ -452,35 +452,41 @@ WHERE package_id = $1`, packageID))
 	return &binding, nil
 }
 
-func (repository *SQLRepository) SaveAutomationBinding(ctx context.Context, value AutomationBinding, actorID int64, now time.Time) (AutomationBinding, error) {
+func (repository *SQLRepository) SaveAutomationBinding(ctx context.Context, value AutomationBinding, actorID, expectedVersion int64, now time.Time) (AutomationBinding, error) {
 	database, err := repository.transaction(ctx)
 	if err != nil {
 		return AutomationBinding{}, err
 	}
 	binding, err := scanAutomationBinding(database.QueryRow(ctx, `
 INSERT INTO public.ai_audience_package_automation_bindings
-  (package_id, automation_agent_id, created_by, updated_by, created_at, updated_at)
-VALUES ($1, $2, $3, $3, $4, $4)
+  (package_id, automation_agent_id, version, created_by, updated_by, created_at, updated_at)
+SELECT $1, $2, 1, $3, $3, $5, $5
+WHERE $4 = 0
 ON CONFLICT (package_id) DO UPDATE
 SET automation_agent_id = EXCLUDED.automation_agent_id,
+    version = public.ai_audience_package_automation_bindings.version + 1,
     updated_by = EXCLUDED.updated_by,
     updated_at = EXCLUDED.updated_at
-RETURNING package_id, automation_agent_id, created_by, updated_by, created_at, updated_at`,
-		value.PackageID, value.AutomationAgentID, actorID, now))
+WHERE public.ai_audience_package_automation_bindings.version = $4
+RETURNING package_id, automation_agent_id, version, created_by, updated_by, created_at, updated_at`,
+		value.PackageID, value.AutomationAgentID, actorID, expectedVersion, now))
 	if err != nil {
+		if repository.provider.IsNoRows(err) {
+			return AutomationBinding{}, ErrVersionConflict
+		}
 		return AutomationBinding{}, classifySQLError(err)
 	}
 	return binding, nil
 }
 
-func (repository *SQLRepository) DeleteAutomationBinding(ctx context.Context, packageID int64) (bool, error) {
+func (repository *SQLRepository) DeleteAutomationBinding(ctx context.Context, packageID, expectedVersion int64) (bool, error) {
 	database, err := repository.transaction(ctx)
 	if err != nil {
 		return false, err
 	}
 	rows, err := database.Exec(ctx, `
 DELETE FROM public.ai_audience_package_automation_bindings
-WHERE package_id = $1`, packageID)
+WHERE package_id = $1 AND version = $2`, packageID, expectedVersion)
 	if err != nil {
 		return false, classifySQLError(err)
 	}
@@ -542,22 +548,6 @@ VALUES ($1, $2, $3, $4, $5, $5, $6, $6)`,
 	return stored, true, nil
 }
 
-func (repository *SQLRepository) ListEligibleSenderUserIDs(ctx context.Context, userIDs []string) ([]string, error) {
-	database, err := repository.reader(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return listEligibleSenderUserIDs(ctx, database, userIDs, false)
-}
-
-func (repository *SQLRepository) LockEligibleSenderUserIDs(ctx context.Context, userIDs []string) ([]string, error) {
-	database, err := repository.transaction(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return listEligibleSenderUserIDs(ctx, database, userIDs, true)
-}
-
 func (repository *SQLRepository) ReserveConfigurationReceipt(ctx context.Context, wanted ReceiptReservation) (Receipt, bool, error) {
 	database, err := repository.transaction(ctx)
 	if err != nil {
@@ -606,6 +596,62 @@ RETURNING id, operation, actor_id, key_digest, payload_digest, state, result_jso
 	return receipt, nil
 }
 
+func (repository *SQLRepository) GetCurrentConfiguration(ctx context.Context, packageID int64) (*ConfigurationVersion, error) {
+	database, err := repository.reader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	configuration, err := scanConfigurationVersion(database.QueryRow(ctx, `
+SELECT package_id, version, schema_version, package_version, definition, encode(definition_digest, 'hex'), refresh_mode, refresh_cron, created_by, created_at
+FROM public.ai_audience_package_configuration_versions
+WHERE package_id = $1
+ORDER BY version DESC
+LIMIT 1`, packageID))
+	if err != nil {
+		if repository.provider.IsNoRows(err) {
+			return nil, nil
+		}
+		return nil, classifySQLError(err)
+	}
+	return &configuration, nil
+}
+
+func (repository *SQLRepository) GetConfigurationVersion(ctx context.Context, packageID, version int64) (*ConfigurationVersion, error) {
+	database, err := repository.reader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	configuration, err := scanConfigurationVersion(database.QueryRow(ctx, `
+SELECT package_id, version, schema_version, package_version, definition, definition_digest, refresh_mode, refresh_cron, created_by, created_at
+FROM public.ai_audience_package_configuration_versions
+WHERE package_id = $1 AND version = $2`, packageID, version))
+	if err != nil {
+		if repository.provider.IsNoRows(err) {
+			return nil, nil
+		}
+		return nil, classifySQLError(err)
+	}
+	return &configuration, nil
+}
+
+func (repository *SQLRepository) InsertConfigurationVersion(ctx context.Context, value ConfigurationVersion) (ConfigurationVersion, error) {
+	database, err := repository.transaction(ctx)
+	if err != nil {
+		return ConfigurationVersion{}, err
+	}
+	stored, err := scanConfigurationVersion(database.QueryRow(ctx, `
+INSERT INTO public.ai_audience_package_configuration_versions
+  (package_id, version, schema_version, package_version, definition, definition_digest, refresh_mode, refresh_cron, created_by, created_at)
+VALUES ($1, $2, $3, $4, $5, decode($6, 'hex'), $7, $8, $9, $10)
+RETURNING package_id, version, schema_version, package_version, definition, encode(definition_digest, 'hex'), refresh_mode, refresh_cron, created_by, created_at`,
+		value.PackageID, value.Version, value.SchemaVersion, value.PackageVersion, []byte(value.Definition), value.DefinitionDigest,
+		string(value.RefreshMode), value.RefreshCron, value.CreatedBy, value.CreatedAt))
+	if err != nil {
+		return ConfigurationVersion{}, classifySQLError(err)
+	}
+	return stored, nil
+}
+
 func listPackageSenders(ctx context.Context, database SQLExecutor, packageID int64, lock bool) ([]PackageSender, error) {
 	query := `
 SELECT sender_userid, sort_order, is_enabled
@@ -637,53 +683,31 @@ ORDER BY sort_order ASC, sender_userid ASC`
 	return items, nil
 }
 
-func listEligibleSenderUserIDs(ctx context.Context, database SQLExecutor, userIDs []string, lock bool) ([]string, error) {
-	if len(userIDs) == 0 {
-		return []string{}, nil
-	}
-	query := `
-SELECT wecom_userid
-FROM public.staff
-WHERE is_active
-  AND btrim(wecom_userid) <> ''
-  AND wecom_userid = ANY($1::text[])
-ORDER BY wecom_userid ASC`
-	if lock {
-		// FOR SHARE conflicts with the row lock taken by UPDATE/DELETE, so an
-		// in-flight staff deactivation or identifier change cannot pass between
-		// validation and the sender replacement in this same transaction.
-		query += ` FOR SHARE`
-	}
-	rows, err := database.Query(ctx, query, userIDs)
-	if err != nil {
-		return nil, classifySQLError(err)
-	}
-	defer rows.Close()
-	items := make([]string, 0, len(userIDs))
-	for rows.Next() {
-		var userID string
-		if err = rows.Scan(&userID); err != nil {
-			return nil, classifySQLError(err)
-		}
-		items = append(items, userID)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, classifySQLError(err)
-	}
-	return items, nil
-}
-
 func scanAutomationBinding(row interface{ Scan(...any) error }) (AutomationBinding, error) {
 	var binding AutomationBinding
 	err := row.Scan(
 		&binding.PackageID,
 		&binding.AutomationAgentID,
+		&binding.Version,
 		&binding.CreatedBy,
 		&binding.UpdatedBy,
 		&binding.CreatedAt,
 		&binding.UpdatedAt,
 	)
 	return binding, err
+}
+
+func scanConfigurationVersion(row interface{ Scan(...any) error }) (ConfigurationVersion, error) {
+	var value ConfigurationVersion
+	var definition []byte
+	var refreshMode string
+	var refreshCron sql.NullString
+	err := row.Scan(&value.PackageID, &value.Version, &value.SchemaVersion, &value.PackageVersion, &definition, &value.DefinitionDigest,
+		&refreshMode, &refreshCron, &value.CreatedBy, &value.CreatedAt)
+	value.Definition = append(segmentport.Definition(nil), definition...)
+	value.RefreshMode = segmentport.RefreshMode(refreshMode)
+	value.RefreshCron = nullableString(refreshCron)
+	return value, err
 }
 
 func scanGroup(row interface{ Scan(...any) error }) (Group, error) {

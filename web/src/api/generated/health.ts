@@ -2140,6 +2140,8 @@ export interface AIAudienceAutomationBinding {
   /** @minimum 1 */
   automation_agent_id: number;
   /** @minimum 1 */
+  version: number;
+  /** @minimum 1 */
   created_by: number;
   /** @minimum 1 */
   updated_by: number;
@@ -2150,6 +2152,8 @@ export interface AIAudienceAutomationBinding {
 export interface AIAudienceAutomationBindingPutRequest {
   /** @minimum 1 */
   automation_agent_id: number;
+  /** @minimum 0 */
+  expected_version: number;
 }
 
 /**
@@ -2165,10 +2169,97 @@ export interface AIAudienceAutomationBindingResponse {
   real_external_call_executed: boolean;
 }
 
+export interface AIAudienceAutomationBindingDeleteRequest {
+  /** @minimum 0 */
+  expected_version: number;
+}
+
 export interface AIAudienceAutomationBindingDeleteResponse {
   /** @minimum 1 */
   package_id: number;
   deleted: boolean;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type AIAudienceConfigurationVersionSchemaVersion =
+  (typeof AIAudienceConfigurationVersionSchemaVersion)[keyof typeof AIAudienceConfigurationVersionSchemaVersion];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceConfigurationVersionSchemaVersion = {
+  ai_audience_local_configurationv1: "ai_audience_local_configuration.v1",
+} as const;
+
+export type AIAudienceConfigurationVersionRefreshMode =
+  (typeof AIAudienceConfigurationVersionRefreshMode)[keyof typeof AIAudienceConfigurationVersionRefreshMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceConfigurationVersionRefreshMode = {
+  manual: "manual",
+  scheduled: "scheduled",
+} as const;
+
+export interface AIAudienceConfigurationVersion {
+  /** @minimum 1 */
+  package_id: number;
+  /** @minimum 1 */
+  version: number;
+  schema_version: AIAudienceConfigurationVersionSchemaVersion;
+  /** @minimum 1 */
+  package_version: number;
+  definition: SegmentDefinition;
+  /** @pattern ^[0-9a-f]{64}$ */
+  definition_digest: string;
+  refresh_mode: AIAudienceConfigurationVersionRefreshMode;
+  /** @nullable */
+  refresh_cron: string | null;
+  /** @minimum 1 */
+  created_by: number;
+  created_at: string;
+}
+
+export interface AIAudienceConfigurationPutRequest {
+  /** @minimum 0 */
+  expected_version: number;
+  /** @minimum 1 */
+  expected_package_version: number;
+}
+
+/**
+ * @nullable
+ */
+export type AIAudienceConfigurationResponseConfiguration =
+  AIAudienceConfigurationVersion | null;
+
+export interface AIAudienceConfigurationResponse {
+  /** @nullable */
+  configuration: AIAudienceConfigurationResponseConfiguration;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface AIAudienceConfigurationMaterializeRequest {
+  /** @minimum 1 */
+  configuration_version: number;
+  /** @minimum 1 */
+  expected_package_version: number;
+}
+
+export interface AIAudienceConfigurationEvaluationResponse {
+  /** @minimum 1 */
+  package_id: number;
+  /** @minimum 1 */
+  configuration_version: number;
+  /** @minimum 1 */
+  package_version: number;
+  /** @pattern ^[0-9a-f]{64}$ */
+  definition_digest: string;
+  /** @minimum 0 */
+  member_count: number;
+  /** @pattern ^[0-9a-f]{64}$ */
+  member_digest: string;
+  evaluated_at: string;
+  materialized: boolean;
   local_projection: boolean;
   real_external_call_executed: boolean;
 }
@@ -15620,6 +15711,14 @@ export type ListAIAudiencePackagesParams = {
    * @maximum 100000
    */
   offset?: number;
+};
+
+export type PreviewAIAudienceConfigurationParams = {
+  /**
+   * @minimum 1
+   */
+  configuration_version: number;
+  evaluated_at?: string;
 };
 
 export type ListAIAudiencePackageMembersParams = {
@@ -44626,11 +44725,14 @@ export const getDeleteAIAudienceAutomationBindingUrl = (packageId: number) => {
 
 export const deleteAIAudienceAutomationBinding = async (
   packageId: number,
+  aIAudienceAutomationBindingDeleteRequest: AIAudienceAutomationBindingDeleteRequest,
   options?: RequestInit,
 ): Promise<deleteAIAudienceAutomationBindingResponse> => {
   const res = await fetch(getDeleteAIAudienceAutomationBindingUrl(packageId), {
     ...options,
     method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceAutomationBindingDeleteRequest),
   });
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
@@ -44822,6 +44924,387 @@ export const replaceAIAudiencePackageSenders = async (
     status: res.status,
     headers: res.headers,
   } as replaceAIAudiencePackageSendersResponse;
+};
+
+/**
+ * This is a V2-native typed snapshot of the canonical Segment definition, not the legacy template catalogue.
+ * @summary Read the current immutable CRM-local AI Audience configuration snapshot
+ */
+export type getAIAudienceConfigurationVersionResponse200 = {
+  data: AIAudienceConfigurationResponse;
+  status: 200;
+};
+
+export type getAIAudienceConfigurationVersionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getAIAudienceConfigurationVersionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAIAudienceConfigurationVersionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAIAudienceConfigurationVersionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getAIAudienceConfigurationVersionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getAIAudienceConfigurationVersionResponseSuccess =
+  getAIAudienceConfigurationVersionResponse200 & {
+    headers: Headers;
+  };
+export type getAIAudienceConfigurationVersionResponseError = (
+  | getAIAudienceConfigurationVersionResponse400
+  | getAIAudienceConfigurationVersionResponse401
+  | getAIAudienceConfigurationVersionResponse403
+  | getAIAudienceConfigurationVersionResponse404
+  | getAIAudienceConfigurationVersionResponse503
+) & {
+  headers: Headers;
+};
+
+export type getAIAudienceConfigurationVersionResponse =
+  | getAIAudienceConfigurationVersionResponseSuccess
+  | getAIAudienceConfigurationVersionResponseError;
+
+export const getGetAIAudienceConfigurationVersionUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/configuration`;
+};
+
+export const getAIAudienceConfigurationVersion = async (
+  packageId: number,
+  options?: RequestInit,
+): Promise<getAIAudienceConfigurationVersionResponse> => {
+  const res = await fetch(getGetAIAudienceConfigurationVersionUrl(packageId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAIAudienceConfigurationVersionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAIAudienceConfigurationVersionResponse;
+};
+
+/**
+ * Freezes the current canonical Segment definition and package version. It does not enqueue, send, or call a provider.
+ * @summary Append one CRM-local AI Audience configuration snapshot with CAS
+ */
+export type putAIAudienceConfigurationVersionResponse200 = {
+  data: AIAudienceConfigurationResponse;
+  status: 200;
+};
+
+export type putAIAudienceConfigurationVersionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type putAIAudienceConfigurationVersionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type putAIAudienceConfigurationVersionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type putAIAudienceConfigurationVersionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type putAIAudienceConfigurationVersionResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type putAIAudienceConfigurationVersionResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type putAIAudienceConfigurationVersionResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type putAIAudienceConfigurationVersionResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type putAIAudienceConfigurationVersionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type putAIAudienceConfigurationVersionResponseSuccess =
+  putAIAudienceConfigurationVersionResponse200 & {
+    headers: Headers;
+  };
+export type putAIAudienceConfigurationVersionResponseError = (
+  | putAIAudienceConfigurationVersionResponse400
+  | putAIAudienceConfigurationVersionResponse401
+  | putAIAudienceConfigurationVersionResponse403
+  | putAIAudienceConfigurationVersionResponse404
+  | putAIAudienceConfigurationVersionResponse409
+  | putAIAudienceConfigurationVersionResponse413
+  | putAIAudienceConfigurationVersionResponse415
+  | putAIAudienceConfigurationVersionResponse422
+  | putAIAudienceConfigurationVersionResponse503
+) & {
+  headers: Headers;
+};
+
+export type putAIAudienceConfigurationVersionResponse =
+  | putAIAudienceConfigurationVersionResponseSuccess
+  | putAIAudienceConfigurationVersionResponseError;
+
+export const getPutAIAudienceConfigurationVersionUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/configuration`;
+};
+
+export const putAIAudienceConfigurationVersion = async (
+  packageId: number,
+  aIAudienceConfigurationPutRequest: AIAudienceConfigurationPutRequest,
+  options?: RequestInit,
+): Promise<putAIAudienceConfigurationVersionResponse> => {
+  const res = await fetch(getPutAIAudienceConfigurationVersionUrl(packageId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceConfigurationPutRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: putAIAudienceConfigurationVersionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as putAIAudienceConfigurationVersionResponse;
+};
+
+/**
+ * Returns only count and deterministic lineage digests. No contact identifiers, provider call, enqueue, or delivery assertion.
+ * @summary Preview a frozen local AI Audience definition without storing members
+ */
+export type previewAIAudienceConfigurationResponse200 = {
+  data: AIAudienceConfigurationEvaluationResponse;
+  status: 200;
+};
+
+export type previewAIAudienceConfigurationResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type previewAIAudienceConfigurationResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type previewAIAudienceConfigurationResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type previewAIAudienceConfigurationResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type previewAIAudienceConfigurationResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type previewAIAudienceConfigurationResponseSuccess =
+  previewAIAudienceConfigurationResponse200 & {
+    headers: Headers;
+  };
+export type previewAIAudienceConfigurationResponseError = (
+  | previewAIAudienceConfigurationResponse400
+  | previewAIAudienceConfigurationResponse401
+  | previewAIAudienceConfigurationResponse403
+  | previewAIAudienceConfigurationResponse404
+  | previewAIAudienceConfigurationResponse503
+) & {
+  headers: Headers;
+};
+
+export type previewAIAudienceConfigurationResponse =
+  | previewAIAudienceConfigurationResponseSuccess
+  | previewAIAudienceConfigurationResponseError;
+
+export const getPreviewAIAudienceConfigurationUrl = (
+  packageId: number,
+  params: PreviewAIAudienceConfigurationParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/ai-audience/packages/${packageId}/configuration-preview?${stringifiedParams}`
+    : `/api/admin/ai-audience/packages/${packageId}/configuration-preview`;
+};
+
+export const previewAIAudienceConfiguration = async (
+  packageId: number,
+  params: PreviewAIAudienceConfigurationParams,
+  options?: RequestInit,
+): Promise<previewAIAudienceConfigurationResponse> => {
+  const res = await fetch(
+    getPreviewAIAudienceConfigurationUrl(packageId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: previewAIAudienceConfigurationResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as previewAIAudienceConfigurationResponse;
+};
+
+/**
+ * Evaluates the frozen definition in the caller transaction and stores local members with a completed receipt and lineage event. It makes no Provider call.
+ * @summary Materialize one frozen configuration into the local Segment member snapshot
+ */
+export type materializeAIAudienceConfigurationResponse200 = {
+  data: AIAudienceConfigurationEvaluationResponse;
+  status: 200;
+};
+
+export type materializeAIAudienceConfigurationResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type materializeAIAudienceConfigurationResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type materializeAIAudienceConfigurationResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type materializeAIAudienceConfigurationResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type materializeAIAudienceConfigurationResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type materializeAIAudienceConfigurationResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type materializeAIAudienceConfigurationResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type materializeAIAudienceConfigurationResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type materializeAIAudienceConfigurationResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type materializeAIAudienceConfigurationResponseSuccess =
+  materializeAIAudienceConfigurationResponse200 & {
+    headers: Headers;
+  };
+export type materializeAIAudienceConfigurationResponseError = (
+  | materializeAIAudienceConfigurationResponse400
+  | materializeAIAudienceConfigurationResponse401
+  | materializeAIAudienceConfigurationResponse403
+  | materializeAIAudienceConfigurationResponse404
+  | materializeAIAudienceConfigurationResponse409
+  | materializeAIAudienceConfigurationResponse413
+  | materializeAIAudienceConfigurationResponse415
+  | materializeAIAudienceConfigurationResponse422
+  | materializeAIAudienceConfigurationResponse503
+) & {
+  headers: Headers;
+};
+
+export type materializeAIAudienceConfigurationResponse =
+  | materializeAIAudienceConfigurationResponseSuccess
+  | materializeAIAudienceConfigurationResponseError;
+
+export const getMaterializeAIAudienceConfigurationUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/configuration-materialize`;
+};
+
+export const materializeAIAudienceConfiguration = async (
+  packageId: number,
+  aIAudienceConfigurationMaterializeRequest: AIAudienceConfigurationMaterializeRequest,
+  options?: RequestInit,
+): Promise<materializeAIAudienceConfigurationResponse> => {
+  const res = await fetch(getMaterializeAIAudienceConfigurationUrl(packageId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceConfigurationMaterializeRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: materializeAIAudienceConfigurationResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as materializeAIAudienceConfigurationResponse;
 };
 
 /**

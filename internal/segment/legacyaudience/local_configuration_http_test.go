@@ -7,13 +7,33 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 type localConfigurationHTTPApplication struct {
-	membersPageSize int
-	bindingInput    PutAutomationBindingInput
-	sendersInput    ReplaceSendersInput
-	deleteInput     DeleteAutomationBindingInput
+	membersPageSize    int
+	bindingInput       PutAutomationBindingInput
+	sendersInput       ReplaceSendersInput
+	deleteInput        DeleteAutomationBindingInput
+	configurationInput PutConfigurationInput
+	previewInput       PreviewConfigurationInput
+	materializeInput   MaterializeConfigurationInput
+}
+
+func (*localConfigurationHTTPApplication) GetConfiguration(context.Context, int64) (ConfigurationResponse, error) {
+	return ConfigurationResponse{Configuration: &ConfigurationVersion{PackageID: 42, Version: 1, CreatedBy: 7, CreatedAt: time.Unix(1, 0).UTC()}, Projection: localProjection()}, nil
+}
+func (application *localConfigurationHTTPApplication) PutConfiguration(_ context.Context, input PutConfigurationInput) (ConfigurationResponse, error) {
+	application.configurationInput = input
+	return ConfigurationResponse{Projection: localProjection()}, nil
+}
+func (application *localConfigurationHTTPApplication) PreviewConfiguration(_ context.Context, input PreviewConfigurationInput) (ConfigurationEvaluationResponse, error) {
+	application.previewInput = input
+	return ConfigurationEvaluationResponse{PackageID: input.PackageID, ConfigurationVersion: input.ConfigurationVersion, Projection: localProjection()}, nil
+}
+func (application *localConfigurationHTTPApplication) MaterializeConfiguration(_ context.Context, input MaterializeConfigurationInput) (ConfigurationEvaluationResponse, error) {
+	application.materializeInput = input
+	return ConfigurationEvaluationResponse{PackageID: input.PackageID, ConfigurationVersion: input.ConfigurationVersion, Materialized: true, Projection: localProjection()}, nil
 }
 
 func (application *localConfigurationHTTPApplication) ListOperationMembers(_ context.Context, pageSize int) (OperationMemberListResponse, error) {
@@ -91,7 +111,7 @@ func TestLocalConfigurationHTTPEnforcesClosedMutationDTOAndSecurity(t *testing.T
 	}
 
 	good := httptest.NewRecorder()
-	goodRequest := httptest.NewRequest(http.MethodPut, RoutePrefix+"/packages/42/automation-binding", strings.NewReader(`{"automation_agent_id":7}`))
+	goodRequest := httptest.NewRequest(http.MethodPut, RoutePrefix+"/packages/42/automation-binding", strings.NewReader(`{"automation_agent_id":7,"expected_version":0}`))
 	goodRequest.Header.Set("Content-Type", "application/json")
 	goodRequest.Header.Set("Idempotency-Key", "binding-http-key-0002")
 	handler.ServeHTTP(good, goodRequest)
@@ -130,7 +150,8 @@ func TestLocalConfigurationHTTPRequiresOrderedLocalSenderPayloadAndIdempotency(t
 	}
 
 	deleteResponse := httptest.NewRecorder()
-	deleteRequest := httptest.NewRequest(http.MethodDelete, RoutePrefix+"/packages/42/automation-binding", nil)
+	deleteRequest := httptest.NewRequest(http.MethodDelete, RoutePrefix+"/packages/42/automation-binding", strings.NewReader(`{"expected_version":0}`))
+	deleteRequest.Header.Set("Content-Type", "application/json")
 	deleteRequest.Header.Set("Idempotency-Key", "delete-http-key-00001")
 	handler.ServeHTTP(deleteResponse, deleteRequest)
 	if deleteResponse.Code != http.StatusOK || application.deleteInput.PackageID != 42 || application.deleteInput.IdempotencyKey == "" {
@@ -142,5 +163,40 @@ func TestLocalConfigurationHTTPRequiresOrderedLocalSenderPayloadAndIdempotency(t
 	handler.ServeHTTP(denied, httptest.NewRequest(http.MethodGet, RoutePrefix+"/packages/42/senders", nil))
 	if denied.Code != http.StatusServiceUnavailable {
 		t.Fatalf("security unavailable response=%d", denied.Code)
+	}
+}
+
+func TestLocalConfigurationHTTPVersionsPreviewsAndMaterializesTypedConfiguration(t *testing.T) {
+	application := &localConfigurationHTTPApplication{}
+	security := &localConfigurationHTTPSecurity{}
+	handler := newLocalConfigurationHTTPHandler(t, application, security)
+
+	put := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPut, RoutePrefix+"/packages/42/configuration", strings.NewReader(`{"expected_version":0,"expected_package_version":3}`))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Idempotency-Key", "configuration-http-key-01")
+	handler.ServeHTTP(put, request)
+	if put.Code != http.StatusOK || application.configurationInput.ExpectedVersion != 0 || application.configurationInput.ExpectedPackageVersion != 3 ||
+		application.configurationInput.PackageID != 42 || application.configurationInput.Actor.AdminUserID != 7 {
+		t.Fatalf("configuration response=%d input=%+v", put.Code, application.configurationInput)
+	}
+
+	preview := httptest.NewRecorder()
+	handler.ServeHTTP(preview, httptest.NewRequest(http.MethodGet,
+		RoutePrefix+"/packages/42/configuration-preview?configuration_version=1&evaluated_at=2026-08-25T01%3A02%3A03Z", nil))
+	if preview.Code != http.StatusOK || application.previewInput.PackageID != 42 || application.previewInput.ConfigurationVersion != 1 ||
+		application.previewInput.EvaluatedAt != time.Date(2026, 8, 25, 1, 2, 3, 0, time.UTC) {
+		t.Fatalf("preview response=%d input=%+v", preview.Code, application.previewInput)
+	}
+
+	materialized := httptest.NewRecorder()
+	materializeRequest := httptest.NewRequest(http.MethodPost, RoutePrefix+"/packages/42/configuration-materialize",
+		strings.NewReader(`{"configuration_version":1,"expected_package_version":3}`))
+	materializeRequest.Header.Set("Content-Type", "application/json")
+	materializeRequest.Header.Set("Idempotency-Key", "configuration-materialize-http-key")
+	handler.ServeHTTP(materialized, materializeRequest)
+	if materialized.Code != http.StatusOK || application.materializeInput.PackageID != 42 || application.materializeInput.ConfigurationVersion != 1 ||
+		application.materializeInput.ExpectedPackageVersion != 3 || application.materializeInput.Actor.AdminUserID != 7 {
+		t.Fatalf("materialize response=%d input=%+v", materialized.Code, application.materializeInput)
 	}
 }

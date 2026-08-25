@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 type LocalConfigurationHandler struct {
@@ -48,7 +49,8 @@ func (fragment *localConfigurationRouteFragment) ServeHTTP(writer http.ResponseW
 		return
 	}
 	segments := strings.Split(strings.TrimPrefix(path, "/"), "/")
-	if len(segments) != 3 || segments[0] != "packages" || (segments[2] != "automation-binding" && segments[2] != "senders") {
+	if len(segments) != 3 || segments[0] != "packages" || (segments[2] != "automation-binding" && segments[2] != "senders" &&
+		segments[2] != "configuration" && segments[2] != "configuration-preview" && segments[2] != "configuration-materialize") {
 		writeHTTPError(writer, request, http.StatusNotFound, "NOT_FOUND", "The resource was not found.", nil)
 		return
 	}
@@ -56,7 +58,16 @@ func (fragment *localConfigurationRouteFragment) ServeHTTP(writer http.ResponseW
 		fragment.handler.automationBinding(writer, request, segments[1])
 		return
 	}
-	fragment.handler.senders(writer, request, segments[1])
+	switch segments[2] {
+	case "senders":
+		fragment.handler.senders(writer, request, segments[1])
+	case "configuration":
+		fragment.handler.configuration(writer, request, segments[1])
+	case "configuration-preview":
+		fragment.handler.previewConfiguration(writer, request, segments[1])
+	case "configuration-materialize":
+		fragment.handler.materializeConfiguration(writer, request, segments[1])
+	}
 }
 
 func (handler *LocalConfigurationHandler) operationMembers(writer http.ResponseWriter, request *http.Request) {
@@ -135,12 +146,13 @@ func (handler *LocalConfigurationHandler) automationBinding(writer http.Response
 			writeProblem(writer, request, keyProblem)
 			return
 		}
-		if emptyProblem := requireEmptyBody(request); emptyProblem != nil {
-			writeProblem(writer, request, emptyProblem)
+		input, decodeProblem := decodeDeleteAutomationBinding(writer, request)
+		if decodeProblem != nil {
+			writeProblem(writer, request, decodeProblem)
 			return
 		}
 		response, err := handler.application.DeleteAutomationBinding(request.Context(), DeleteAutomationBindingInput{
-			PackageID: packageID, Actor: actor, IdempotencyKey: key,
+			PackageID: packageID, ExpectedVersion: input.ExpectedVersion, Actor: actor, IdempotencyKey: key,
 		})
 		if err != nil {
 			writeFailure(writer, request, err)
@@ -150,6 +162,116 @@ func (handler *LocalConfigurationHandler) automationBinding(writer http.Response
 	default:
 		writeMethodNotAllowed(writer, request, http.MethodGet+", "+http.MethodPut+", "+http.MethodDelete)
 	}
+}
+
+func (handler *LocalConfigurationHandler) configuration(writer http.ResponseWriter, request *http.Request, rawID string) {
+	packageID, problem := parseID(rawID, "package_id")
+	if problem != nil {
+		writeProblem(writer, request, problem)
+		return
+	}
+	switch request.Method {
+	case http.MethodGet:
+		if !requireNoQuery(writer, request) || !handler.authorize(writer, request, false, nil) {
+			return
+		}
+		response, err := handler.application.GetConfiguration(request.Context(), packageID)
+		if err != nil {
+			writeFailure(writer, request, err)
+			return
+		}
+		writeJSON(writer, http.StatusOK, response)
+	case http.MethodPut:
+		if !requireNoQuery(writer, request) {
+			return
+		}
+		var actor Actor
+		if !handler.authorize(writer, request, true, &actor) {
+			return
+		}
+		key, keyProblem := idempotencyKey(request)
+		if keyProblem != nil {
+			writeProblem(writer, request, keyProblem)
+			return
+		}
+		input, decodeProblem := decodePutConfiguration(writer, request)
+		if decodeProblem != nil {
+			writeProblem(writer, request, decodeProblem)
+			return
+		}
+		input.PackageID, input.Actor, input.IdempotencyKey = packageID, actor, key
+		response, err := handler.application.PutConfiguration(request.Context(), input)
+		if err != nil {
+			writeFailure(writer, request, err)
+			return
+		}
+		writeJSON(writer, http.StatusOK, response)
+	default:
+		writeMethodNotAllowed(writer, request, http.MethodGet+", "+http.MethodPut)
+	}
+}
+
+func (handler *LocalConfigurationHandler) previewConfiguration(writer http.ResponseWriter, request *http.Request, rawID string) {
+	if request.Method != http.MethodGet {
+		writeMethodNotAllowed(writer, request, http.MethodGet)
+		return
+	}
+	if !handler.authorize(writer, request, false, nil) {
+		return
+	}
+	packageID, problem := parseID(rawID, "package_id")
+	if problem != nil {
+		writeProblem(writer, request, problem)
+		return
+	}
+	input, queryProblem := parsePreviewConfigurationQuery(request.URL.RawQuery)
+	if queryProblem != nil {
+		writeProblem(writer, request, queryProblem)
+		return
+	}
+	input.PackageID = packageID
+	response, err := handler.application.PreviewConfiguration(request.Context(), input)
+	if err != nil {
+		writeFailure(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, response)
+}
+
+func (handler *LocalConfigurationHandler) materializeConfiguration(writer http.ResponseWriter, request *http.Request, rawID string) {
+	if request.Method != http.MethodPost {
+		writeMethodNotAllowed(writer, request, http.MethodPost)
+		return
+	}
+	if !requireNoQuery(writer, request) {
+		return
+	}
+	packageID, problem := parseID(rawID, "package_id")
+	if problem != nil {
+		writeProblem(writer, request, problem)
+		return
+	}
+	var actor Actor
+	if !handler.authorize(writer, request, true, &actor) {
+		return
+	}
+	key, keyProblem := idempotencyKey(request)
+	if keyProblem != nil {
+		writeProblem(writer, request, keyProblem)
+		return
+	}
+	input, decodeProblem := decodeMaterializeConfiguration(writer, request)
+	if decodeProblem != nil {
+		writeProblem(writer, request, decodeProblem)
+		return
+	}
+	input.PackageID, input.Actor, input.IdempotencyKey = packageID, actor, key
+	response, err := handler.application.MaterializeConfiguration(request.Context(), input)
+	if err != nil {
+		writeFailure(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, response)
 }
 
 func (handler *LocalConfigurationHandler) senders(writer http.ResponseWriter, request *http.Request, rawID string) {
@@ -251,7 +373,7 @@ func parseOperationMembersQuery(raw string) (int, *requestProblem) {
 }
 
 func decodePutAutomationBinding(writer http.ResponseWriter, request *http.Request) (PutAutomationBindingInput, *requestProblem) {
-	fields, problem := decodeObject(writer, request, map[string]bool{"automation_agent_id": true})
+	fields, problem := decodeObject(writer, request, map[string]bool{"automation_agent_id": true, "expected_version": true})
 	if problem != nil {
 		return PutAutomationBindingInput{}, problem
 	}
@@ -259,7 +381,87 @@ func decodePutAutomationBinding(writer http.ResponseWriter, request *http.Reques
 	if problem != nil {
 		return PutAutomationBindingInput{}, problem
 	}
-	return PutAutomationBindingInput{AutomationAgentID: agentID}, nil
+	expected, problem := requiredInteger(fields, "expected_version", 0, 1<<62)
+	if problem != nil {
+		return PutAutomationBindingInput{}, problem
+	}
+	return PutAutomationBindingInput{AutomationAgentID: agentID, ExpectedVersion: expected}, nil
+}
+
+func decodeDeleteAutomationBinding(writer http.ResponseWriter, request *http.Request) (DeleteAutomationBindingInput, *requestProblem) {
+	fields, problem := decodeObject(writer, request, map[string]bool{"expected_version": true})
+	if problem != nil {
+		return DeleteAutomationBindingInput{}, problem
+	}
+	expected, problem := requiredInteger(fields, "expected_version", 0, 1<<62)
+	if problem != nil {
+		return DeleteAutomationBindingInput{}, problem
+	}
+	return DeleteAutomationBindingInput{ExpectedVersion: expected}, nil
+}
+
+func decodePutConfiguration(writer http.ResponseWriter, request *http.Request) (PutConfigurationInput, *requestProblem) {
+	fields, problem := decodeObject(writer, request, map[string]bool{"expected_version": true, "expected_package_version": true})
+	if problem != nil {
+		return PutConfigurationInput{}, problem
+	}
+	expected, problem := requiredInteger(fields, "expected_version", 0, 1<<62)
+	if problem != nil {
+		return PutConfigurationInput{}, problem
+	}
+	packageVersion, problem := requiredInteger(fields, "expected_package_version", 1, 1<<62)
+	if problem != nil {
+		return PutConfigurationInput{}, problem
+	}
+	return PutConfigurationInput{ExpectedVersion: expected, ExpectedPackageVersion: packageVersion}, nil
+}
+
+func decodeMaterializeConfiguration(writer http.ResponseWriter, request *http.Request) (MaterializeConfigurationInput, *requestProblem) {
+	fields, problem := decodeObject(writer, request, map[string]bool{"configuration_version": true, "expected_package_version": true})
+	if problem != nil {
+		return MaterializeConfigurationInput{}, problem
+	}
+	version, problem := requiredInteger(fields, "configuration_version", 1, 1<<62)
+	if problem != nil {
+		return MaterializeConfigurationInput{}, problem
+	}
+	packageVersion, problem := requiredInteger(fields, "expected_package_version", 1, 1<<62)
+	if problem != nil {
+		return MaterializeConfigurationInput{}, problem
+	}
+	return MaterializeConfigurationInput{ConfigurationVersion: version, ExpectedPackageVersion: packageVersion}, nil
+}
+
+func parsePreviewConfigurationQuery(raw string) (PreviewConfigurationInput, *requestProblem) {
+	values, err := url.ParseQuery(raw)
+	if err != nil {
+		return PreviewConfigurationInput{}, malformed("query", "invalid_encoding")
+	}
+	for key, entries := range values {
+		if key != "configuration_version" && key != "evaluated_at" {
+			return PreviewConfigurationInput{}, malformed("query", "unknown_parameter")
+		}
+		if len(entries) != 1 || entries[0] == "" {
+			return PreviewConfigurationInput{}, malformed(key, "duplicate_or_empty")
+		}
+	}
+	rawVersion, exists := values["configuration_version"]
+	if !exists {
+		return PreviewConfigurationInput{}, validation("configuration_version", "required")
+	}
+	version, problem := parseQueryInteger(rawVersion[0], "configuration_version", 1, 1<<62)
+	if problem != nil {
+		return PreviewConfigurationInput{}, problem
+	}
+	input := PreviewConfigurationInput{ConfigurationVersion: version}
+	if rawTime, exists := values["evaluated_at"]; exists {
+		parsed, parseErr := time.Parse(time.RFC3339, rawTime[0])
+		if parseErr != nil || parsed.Location() != time.UTC {
+			return PreviewConfigurationInput{}, validation("evaluated_at", "utc_rfc3339_required")
+		}
+		input.EvaluatedAt = parsed
+	}
+	return input, nil
 }
 
 func decodeReplaceSenders(writer http.ResponseWriter, request *http.Request) (ReplaceSendersInput, *requestProblem) {
@@ -348,22 +550,4 @@ func decodeSenderItem(raw json.RawMessage, index int) (PackageSender, *requestPr
 		return PackageSender{}, validation("sort_order", "sequence_required")
 	}
 	return PackageSender{SenderUserID: sender, SortOrder: int32(order), IsEnabled: enabled}, nil
-}
-
-func requireEmptyBody(request *http.Request) *requestProblem {
-	if request == nil || request.Body == nil {
-		return nil
-	}
-	if request.ContentLength > 0 {
-		return malformed("body", "not_allowed")
-	}
-	buffer := make([]byte, 1)
-	count, err := request.Body.Read(buffer)
-	if count != 0 {
-		return malformed("body", "not_allowed")
-	}
-	if err != nil && err != io.EOF {
-		return malformed("body", "invalid")
-	}
-	return nil
 }
