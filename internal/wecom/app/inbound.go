@@ -11,21 +11,24 @@ import (
 	"time"
 	"unicode/utf8"
 
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 )
 
 const (
-	InboundContactJobKind = "wecom_contact_inbound"
-	InboundLease          = 2 * time.Minute
+	InboundContactJobKind      = "wecom_contact_inbound"
+	InboundLease               = 2 * time.Minute
+	InboundIdentityRetryPeriod = 5 * time.Minute
 )
 
 var (
-	ErrInvalidInboundService = errors.New("invalid WeCom inbound service")
-	ErrInvalidInboundMessage = errors.New("invalid WeCom inbound message")
-	ErrUnsupportedInbound    = errors.New("unsupported WeCom inbound event")
-	ErrInboundAlreadyDone    = errors.New("WeCom inbound fact is already complete or leased")
-	ErrInboundProcess        = errors.New("WeCom inbound processing failed")
+	ErrInvalidInboundService  = errors.New("invalid WeCom inbound service")
+	ErrInvalidInboundMessage  = errors.New("invalid WeCom inbound message")
+	ErrUnsupportedInbound     = errors.New("unsupported WeCom inbound event")
+	ErrInboundAlreadyDone     = errors.New("WeCom inbound fact is already complete or leased")
+	ErrInboundIdentityPending = errors.New("WeCom inbound identity is pending")
+	ErrInboundProcess         = errors.New("WeCom inbound processing failed")
 )
 
 // InboundJobArgs is the only River payload emitted by this package. The job
@@ -50,9 +53,13 @@ type InboundEnvelope struct {
 	CorpID         string
 	EventType      string
 	ExternalUserID string
-	RawPayload     []byte
-	OccurredAt     time.Time
-	InitialState   string
+	// ExternalContact is present only for change_external_contact callbacks.
+	// Its sensitive fields are digest-only; persistence of the typed fields is
+	// deliberately owned by the CH03 integration migration.
+	ExternalContact *ExternalContactCallbackFact
+	RawPayload      []byte
+	OccurredAt      time.Time
+	InitialState    string
 }
 
 type InboundReservation struct {
@@ -68,13 +75,16 @@ type InboundRecord struct {
 	CorpID         string
 	EventType      string
 	ExternalUserID string
-	RawPayload     []byte
-	OccurredAt     time.Time
-	State          string
-	AttemptCount   int32
-	LeaseFence     int64
-	LeaseOwner     string
-	RiverJobID     int64
+	// ExternalContact is reconstructed exclusively from the persisted typed
+	// fields. Process must never reparse the raw callback XML.
+	ExternalContact *ExternalContactCallbackFact
+	RawPayload      []byte
+	OccurredAt      time.Time
+	State           string
+	AttemptCount    int32
+	LeaseFence      int64
+	LeaseOwner      string
+	RiverJobID      int64
 }
 
 type InboundStore interface {
@@ -100,6 +110,7 @@ type InboundService struct {
 	store     InboundStore
 	jobs      JobInserter
 	processor *IdentityContactProcessor
+	entrants  *ChannelAcquisitionEntrantService
 	corpID    string
 	clock     func() time.Time
 }
@@ -112,11 +123,26 @@ func NewInboundService(
 	corpID string,
 	clock func() time.Time,
 ) (*InboundService, error) {
+	return NewInboundServiceWithEntrants(uow, store, jobs, processor, nil, corpID, clock)
+}
+
+// NewInboundServiceWithEntrants keeps the historical composition constructor
+// stable while allowing CH03's transaction-bound domain service to be wired
+// by the central composition root.
+func NewInboundServiceWithEntrants(
+	uow inboundUnitOfWork,
+	store InboundStore,
+	jobs JobInserter,
+	processor *IdentityContactProcessor,
+	entrants *ChannelAcquisitionEntrantService,
+	corpID string,
+	clock func() time.Time,
+) (*InboundService, error) {
 	if isNilDependency(uow) || isNilDependency(store) || isNilDependency(jobs) ||
 		!validCorpID(corpID) || clock == nil {
 		return nil, ErrInvalidInboundService
 	}
-	return &InboundService{uow: uow, store: store, jobs: jobs, processor: processor, corpID: corpID, clock: clock}, nil
+	return &InboundService{uow: uow, store: store, jobs: jobs, processor: processor, entrants: entrants, corpID: corpID, clock: clock}, nil
 }
 
 // Dispatch is the callback.MessageDispatcher implementation. It only
@@ -149,11 +175,11 @@ func (service *InboundService) accept(ctx context.Context, envelope InboundEnvel
 }
 
 // Process claims one local inbox fact and invokes only the existing Identity
-// port. Attributed, pending, and conflict are all terminal local outcomes;
-// transaction failures are returned to River for retry.
+// port. Pending identity is persisted and returned as a controlled snooze
+// signal; transaction failures are returned to River for retry.
 func (service *InboundService) Process(ctx context.Context, inboxID int64, owner string) error {
 	if service == nil || ctx == nil || inboxID <= 0 || strings.TrimSpace(owner) != owner || owner == "" ||
-		isNilDependency(service.uow) || isNilDependency(service.store) || service.processor == nil || service.clock == nil {
+		isNilDependency(service.uow) || isNilDependency(service.store) || (service.processor == nil && service.entrants == nil) || service.clock == nil {
 		return ErrInvalidInboundService
 	}
 	var record InboundRecord
@@ -170,6 +196,12 @@ func (service *InboundService) Process(ctx context.Context, inboxID int64, owner
 	}
 	if err != nil {
 		return err
+	}
+	if record.ExternalContact != nil {
+		if service.entrants == nil {
+			return service.complete(ctx, record, "skipped")
+		}
+		return service.processChannelAcquisitionEntrant(ctx, record)
 	}
 	if record.State == "skipped" || record.ExternalUserID == "" {
 		return service.complete(ctx, record, "skipped")
@@ -196,12 +228,60 @@ func (service *InboundService) Process(ctx context.Context, inboxID int64, owner
 	return service.complete(ctx, record, state)
 }
 
+func (service *InboundService) processChannelAcquisitionEntrant(ctx context.Context, record InboundRecord) error {
+	result, err := service.entrants.Process(ctx, ChannelAcquisitionEntrantInput{InboxID: record.ID, SourceKey: record.SourceKey, Fact: *record.ExternalContact})
+	if err != nil {
+		_ = service.uow.Within(ctx, func(txCtx context.Context) error {
+			return service.store.FailInbound(txCtx, record.ID, record.LeaseFence, err.Error())
+		})
+		return errors.Join(ErrInboundProcess, err)
+	}
+	if result.IdentityPendingRequired {
+		if service.processor == nil {
+			return ErrInvalidInboundService
+		}
+		identityResult, processErr := service.processor.Process(ctx, IdentityContactFact{Source: identityContactSource(record.Source), FactID: record.SourceKey, CorpID: record.CorpID, ExternalUserID: record.ExternalUserID, OccurredAt: record.OccurredAt})
+		if processErr != nil {
+			_ = service.uow.Within(ctx, func(txCtx context.Context) error {
+				return service.store.FailInbound(txCtx, record.ID, record.LeaseFence, processErr.Error())
+			})
+			return errors.Join(ErrInboundProcess, processErr)
+		}
+		if identityResult.Status == identityport.IngestAttributed {
+			result, processErr = service.entrants.Process(ctx, ChannelAcquisitionEntrantInput{InboxID: record.ID, SourceKey: record.SourceKey, Fact: *record.ExternalContact})
+			if processErr != nil || result.Receipt.Status != contactport.ChannelAcquisitionEntrantAttributed && result.Receipt.Status != contactport.ChannelAcquisitionEntrantReconciled {
+				_ = service.uow.Within(ctx, func(txCtx context.Context) error {
+					return service.store.FailInbound(txCtx, record.ID, record.LeaseFence, ErrInboundProcess.Error())
+				})
+				return errors.Join(ErrInboundProcess, processErr)
+			}
+			return service.complete(ctx, record, "processed")
+		}
+		state := "pending_identity"
+		if identityResult.Status == identityport.IngestConflict {
+			state = "conflict"
+		}
+		return service.complete(ctx, record, state)
+	}
+	switch result.Receipt.Status {
+	case "ignored":
+		return service.complete(ctx, record, "skipped")
+	case "conflict":
+		return service.complete(ctx, record, "conflict")
+	default:
+		return service.complete(ctx, record, "processed")
+	}
+}
+
 func (service *InboundService) complete(ctx context.Context, record InboundRecord, state string) error {
 	err := service.uow.Within(ctx, func(txCtx context.Context) error {
 		return service.store.CompleteInbound(txCtx, record.ID, record.LeaseFence, state)
 	})
 	if err != nil {
 		return errors.Join(ErrInboundProcess, err)
+	}
+	if state == "pending_identity" {
+		return ErrInboundIdentityPending
 	}
 	return nil
 }
@@ -248,8 +328,20 @@ func ParseCallbackEnvelope(message []byte, corpID string) (InboundEnvelope, erro
 	if payload.Event != "enter_agent" && payload.Event != "change_external_contact" {
 		return InboundEnvelope{}, errors.Join(ErrUnsupportedInbound, wecomcallback.ErrUnknownCallbackEvent)
 	}
-	if payload.Event == "change_external_contact" && (externalUserID == "" || !validText(externalUserID, 1024)) {
-		return InboundEnvelope{}, errors.Join(ErrInvalidInboundMessage, wecomcallback.ErrUnknownCallbackEvent)
+	if payload.Event == externalContactEvent {
+		fact, err := ParseExternalContactCallbackFact(message, corpID)
+		if err != nil {
+			return InboundEnvelope{}, err
+		}
+		digest := sha256.Sum256(message)
+		// Lifecycle callbacks are queued too: CH03 records an ignored receipt
+		// instead of routing a non-entrant through legacy identity ingest.
+		initialState := "pending"
+		return InboundEnvelope{
+			Source: InboundSourceCallback, SourceKey: "sha256:" + hex.EncodeToString(digest[:]), CorpID: corpID,
+			EventType: fact.EventType(), ExternalUserID: fact.ExternalUserID, ExternalContact: &fact,
+			RawPayload: redactCallbackSecrets(message), OccurredAt: fact.OccurredAt, InitialState: initialState,
+		}, nil
 	}
 	eventType := payload.Event
 	if payload.ChangeType != "" {
@@ -265,6 +357,60 @@ func ParseCallbackEnvelope(message []byte, corpID string) (InboundEnvelope, erro
 		EventType: eventType, ExternalUserID: externalUserID, RawPayload: append([]byte(nil), message...),
 		OccurredAt: time.Unix(payload.CreateTime, 0).UTC(), InitialState: initialState,
 	}, nil
+}
+
+// redactCallbackSecrets preserves the callback's non-secret audit payload
+// while ensuring secret lifecycle values cannot reach durable storage through
+// the legacy RawPayload column. Typed parsing above has already retained only
+// their digests. The encoder also rejects malformed XML before this function
+// runs.
+func redactCallbackSecrets(message []byte) []byte {
+	decoder := xml.NewDecoder(strings.NewReader(string(message)))
+	var builder strings.Builder
+	encoder := xml.NewEncoder(&builder)
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil
+		}
+		start, isStart := token.(xml.StartElement)
+		if !isStart || !callbackSecretElement(start.Name.Local) {
+			if encoder.EncodeToken(token) != nil {
+				return nil
+			}
+			continue
+		}
+		if encoder.EncodeToken(start) != nil || encoder.EncodeToken(xml.CharData("[redacted]")) != nil {
+			return nil
+		}
+		depth := 1
+		for depth > 0 {
+			next, nextErr := decoder.Token()
+			if nextErr != nil {
+				return nil
+			}
+			switch next.(type) {
+			case xml.StartElement:
+				depth++
+			case xml.EndElement:
+				depth--
+			}
+		}
+		if encoder.EncodeToken(xml.EndElement{Name: start.Name}) != nil {
+			return nil
+		}
+	}
+	if encoder.Flush() != nil {
+		return nil
+	}
+	return []byte(builder.String())
+}
+
+func callbackSecretElement(name string) bool {
+	return name == "WelcomeCode" || name == "Source" || name == "FailReason"
 }
 
 func validCorpID(value string) bool {

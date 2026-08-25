@@ -29,8 +29,51 @@ var _ identityapp.MergeReviewStore = (*Repository)(nil)
 var _ identityapp.MessageArchiveUnionIDStore = (*Repository)(nil)
 var _ identityapp.CustomerMergeHistoryStore = (*Repository)(nil)
 var _ identityport.HistoricalScopedIdentityBinder = (*Repository)(nil)
+var _ identityport.AcquisitionEntrantIdentityResolver = (*Repository)(nil)
 
 func NewRepository() *Repository { return &Repository{} }
+
+// ResolveAcquisitionEntrantIdentity is deliberately narrower than the normal
+// ingest resolver: it can only return an already verified, scoped WeCom
+// identity.  It neither upserts an identity nor creates a Customer.
+func (repository *Repository) ResolveAcquisitionEntrantIdentity(ctx context.Context, reference identityport.IDRef) (identityport.AcquisitionEntrantIdentityResolution, error) {
+	if repository == nil || ctx == nil || reference.Kind != identityport.KindWeComExternalUserID ||
+		reference.Assurance != identityport.AssuranceVerified || !strings.HasPrefix(reference.Scope, "wecom-corp:") {
+		return identityport.AcquisitionEntrantIdentityResolution{}, identityapp.ErrInvalidIdentity
+	}
+	normalized, err := identityapp.Normalize(reference)
+	if err != nil {
+		return identityport.AcquisitionEntrantIdentityResolution{}, identityapp.ErrInvalidIdentity
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return identityport.AcquisitionEntrantIdentityResolution{}, err
+	}
+	queries := identitydb.New(tx)
+	identity, err := queries.LockVerifiedAcquisitionEntrantIdentity(ctx, identitydb.LockVerifiedAcquisitionEntrantIdentityParams{
+		Scope: normalized.Scope, NormalizedValue: normalized.NormalizedValue,
+	})
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && !identity.Valid) {
+		return identityport.AcquisitionEntrantIdentityResolution{Status: identityport.AcquisitionEntrantIdentityNotFound}, nil
+	}
+	if err != nil {
+		return identityport.AcquisitionEntrantIdentityResolution{}, err
+	}
+	if identity.Int64 < 1 {
+		return identityport.AcquisitionEntrantIdentityResolution{Status: identityport.AcquisitionEntrantIdentityConflict}, nil
+	}
+	customerID, err := queries.LockActiveAcquisitionEntrantCustomer(ctx, identity.Int64)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return identityport.AcquisitionEntrantIdentityResolution{Status: identityport.AcquisitionEntrantIdentityConflict}, nil
+	}
+	if err != nil || customerID < 1 || customerID != identity.Int64 {
+		if err != nil {
+			return identityport.AcquisitionEntrantIdentityResolution{}, err
+		}
+		return identityport.AcquisitionEntrantIdentityResolution{Status: identityport.AcquisitionEntrantIdentityConflict}, nil
+	}
+	return identityport.AcquisitionEntrantIdentityResolution{Status: identityport.AcquisitionEntrantIdentityFound, CustomerID: contactport.CustomerID(customerID)}, nil
+}
 
 func (repository *Repository) BindHistoricalScopedWeComIdentity(ctx context.Context, command identityport.HistoricalScopedIdentity) (identityport.HistoricalScopedIdentityResult, error) {
 	if repository == nil || command.CustomerID < 1 || len(command.SourceKeyHMAC) != 32 || command.HMACKeyVersion < 1 {

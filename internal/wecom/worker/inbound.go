@@ -39,7 +39,15 @@ func (worker *InboundWorker) Work(ctx context.Context, job *river.Job[wecomapp.I
 	if worker == nil || worker.service == nil || ctx == nil || job == nil || job.ID <= 0 || job.Args.InboxID <= 0 {
 		return ErrInvalidInboundWorker
 	}
-	return worker.service.Process(ctx, job.Args.InboxID, fmt.Sprintf("river:%d", job.ID))
+	err := worker.service.Process(ctx, job.Args.InboxID, fmt.Sprintf("river:%d", job.ID))
+	return inboundWorkResult(err)
+}
+
+func inboundWorkResult(err error) error {
+	if errors.Is(err, wecomapp.ErrInboundIdentityPending) {
+		return river.JobSnooze(wecomapp.InboundIdentityRetryPeriod)
+	}
+	return err
 }
 
 func (*InboundWorker) Timeout(*river.Job[wecomapp.InboundJobArgs]) time.Duration {

@@ -900,6 +900,21 @@ func (q *Queries) LoadPendingIngest(ctx context.Context, pendingEventID int64) (
 	return kind, err
 }
 
+const lockActiveAcquisitionEntrantCustomer = `-- name: LockActiveAcquisitionEntrantCustomer :one
+SELECT id
+FROM customers
+WHERE id = $1::bigint
+  AND is_deleted = FALSE
+FOR UPDATE
+`
+
+func (q *Queries) LockActiveAcquisitionEntrantCustomer(ctx context.Context, customerID int64) (int64, error) {
+	row := q.db.QueryRow(ctx, lockActiveAcquisitionEntrantCustomer, customerID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const lockActiveBindCustomer = `-- name: LockActiveBindCustomer :one
 SELECT id
 FROM customers
@@ -1132,6 +1147,28 @@ func (q *Queries) LockPendingReplayIdentities(ctx context.Context, identityIds [
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockVerifiedAcquisitionEntrantIdentity = `-- name: LockVerifiedAcquisitionEntrantIdentity :one
+SELECT customer_id
+FROM identities
+WHERE kind = 'wecom_external_userid'
+  AND scope = $1::text
+  AND normalized_value = $2::text
+  AND assurance = 'verified'
+FOR UPDATE
+`
+
+type LockVerifiedAcquisitionEntrantIdentityParams struct {
+	Scope           string `json:"scope"`
+	NormalizedValue string `json:"normalized_value"`
+}
+
+func (q *Queries) LockVerifiedAcquisitionEntrantIdentity(ctx context.Context, arg LockVerifiedAcquisitionEntrantIdentityParams) (pgtype.Int8, error) {
+	row := q.db.QueryRow(ctx, lockVerifiedAcquisitionEntrantIdentity, arg.Scope, arg.NormalizedValue)
+	var customer_id pgtype.Int8
+	err := row.Scan(&customer_id)
+	return customer_id, err
 }
 
 const lookupMessageArchiveUnionIDCustomers = `-- name: LookupMessageArchiveUnionIDCustomers :many

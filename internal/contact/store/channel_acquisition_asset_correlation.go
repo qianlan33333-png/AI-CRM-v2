@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
+	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
 // ChannelAcquisitionAssetCorrelationRepository resolves only the exact
@@ -29,7 +30,11 @@ func (repository *ChannelAcquisitionAssetCorrelationRepository) ResolveAcquisiti
 	if repository == nil || repository.pool == nil || ctx == nil || ctx.Err() != nil || !validCorrelationScope(corpID) || !validStoredCorrelationKey(state) || occurredAt.IsZero() {
 		return contactport.AcquisitionAssetCorrelationResolution{}, contactport.ErrAcquisitionAssetCorrelationUnavailable
 	}
-	rows, err := contactdb.New(repository.pool).ResolveChannelAcquisitionAssetCorrelation(ctx, contactdb.ResolveChannelAcquisitionAssetCorrelationParams{CorpID: corpID, CorrelationKey: state, OccurredAt: pgtype.Timestamptz{Time: occurredAt.UTC(), Valid: true}})
+	queries := contactdb.New(repository.pool)
+	if tx, txErr := platformstore.TxFromContext(ctx); txErr == nil {
+		queries = contactdb.New(tx)
+	}
+	rows, err := queries.ResolveChannelAcquisitionAssetCorrelation(ctx, contactdb.ResolveChannelAcquisitionAssetCorrelationParams{CorpID: corpID, CorrelationKey: state, OccurredAt: pgtype.Timestamptz{Time: occurredAt.UTC(), Valid: true}})
 	if err != nil {
 		return contactport.AcquisitionAssetCorrelationResolution{}, contactport.ErrAcquisitionAssetCorrelationUnavailable
 	}
