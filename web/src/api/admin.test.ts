@@ -1,6 +1,6 @@
-import { attachmentPageDto, audiencePackagePageDto, channelPageDto, couponPageDto, customerPageDto, imagePageDto, miniProgramPageDto, orderPageDto, productPageDto, questionnairePageDto, radarPageDto, readAdminRows, saveImageItemDto, saveRadarLinkDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
+import { attachmentPageDto, audiencePackagePageDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, customerPageDto, executeOwnerReassignmentPreviewDto, imagePageDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, questionnairePageDto, radarPageDto, readAdminRows, saveImageItemDto, saveRadarLinkDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
-import { getAddCustomerTagUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
+import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
 import { HttpApi } from '../shared/api/client';
 
@@ -33,6 +33,13 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(getUpdateCustomerUrl(7) === '/api/v1/customers/7', 'customer update URL');
   assert(getSetCustomerStageUrl(7) === '/api/v1/customers/7/stage', 'customer stage URL');
   assert(getAddCustomerTagUrl(7, 9) === '/api/v1/customers/7/tags/9', 'customer tag URL');
+  assert(getListAdminOpsCategoriesUrl() === '/api/admin/config/categories', 'config categories URL');
+  assert(getGetAdminOpsCategoryUrl('wechat_pay') === '/api/admin/config/categories/wechat_pay', 'config category detail URL');
+  assert(getDownloadContactOwnerReassignmentTemplateUrl() === '/api/v1/contact-owner-reassignments/template', 'owner reassignment template URL');
+  assert(getCreateContactOwnerReassignmentPreviewUrl() === '/api/v1/contact-owner-reassignments/previews', 'owner reassignment preview URL');
+  assert(getGetContactOwnerReassignmentPreviewUrl('cor_0123456789012345678901') === '/api/v1/contact-owner-reassignments/previews/cor_0123456789012345678901', 'owner reassignment read URL');
+  assert(getExecuteContactOwnerReassignmentPreviewUrl('cor_0123456789012345678901').endsWith('/execute'), 'owner reassignment execute URL');
+  assert(getDownloadContactOwnerReassignmentResultsUrl('cor_0123456789012345678901').endsWith('/results.csv'), 'owner reassignment result URL');
 
   const customer = customerPageDto({ id: 7, name: '陈晨', is_deleted: false, extra: {}, created_at: '2026-08-25T00:00:00Z', updated_at: '2026-08-25T00:00:00Z', owner_staff_id: 3 });
   assert(customer.id === '7' && customer.owner === '3' && customer.mobile === '—', 'customer response mapping');
@@ -49,11 +56,34 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(tagPageDto({ id: 1, group_id: 2, name: '新客', user_count: 6 }).users === 6, 'tag response mapping');
   assert(radarPageDto({ link_id: 5, public_code: 'rd_1234567890123456789012', name: '雷达', title: '内容', destination_url: 'https://example.test/r', cover_image_id: null, attachment_id: null, status: 'enabled', version: 2, created_by: 9, updated_by: 9, created_at: '', updated_at: '' }).enabled, 'radar response mapping');
   assert(audiencePackagePageDto({ package_id: 3, name: '沉默用户', group_id: null, lifecycle: 'active', version: 4, refresh_mode: 'manual', member_count: 12, refreshed_at: null }).count === 12, 'audience response mapping');
+  assert(configCategoryPageDto({ key: 'wechat_pay', enabled: true }).on, 'config category safe response mapping');
+  const ownerPreviewApi = { id: 'cor_0123456789012345678901', hash: 'a'.repeat(64), rows: [{ customer_id: 7, expected_owner_staff_id: 3, expected_updated_at: '2026-08-25T00:00:00Z', target_owner_staff_id: 9 }], issues: [{ line: 3, code: 'invalid_row' as const }], expires_at: '2026-08-25T01:00:00Z', executed: false, result: [] };
+  const ownerPreview = ownerReassignmentPreviewDto(ownerPreviewApi);
+  assert(ownerPreview.rows[0].customerId === 7 && ownerPreview.rows[0].targetOwnerStaffId === 9 && ownerPreview.issues[0].line === 3, 'owner reassignment response mapping');
 
   const savedFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(JSON.stringify({ code: 'bad' }), { status: 503 });
   try { await readAdminRows(); assert(false, 'failed production read must not return seed'); } catch { /* expected: no SEED_DB fallback */ }
   finally { globalThis.fetch = savedFetch; }
+
+  let ownerCreate: { input: string; init?: RequestInit } | undefined;
+  globalThis.fetch = async (input, init) => { ownerCreate = { input: String(input), init }; return new Response(JSON.stringify(ownerPreviewApi), { status: 201 }); };
+  try {
+    const preview = await createOwnerReassignmentPreviewDto('customer_id,expected_owner_staff_id,expected_updated_at,target_owner_staff_id\n7,3,2026-08-25T00:00:00Z,9\n');
+    assert(preview.id === ownerPreviewApi.id && ownerCreate?.input === '/api/v1/contact-owner-reassignments/previews', 'owner reassignment preview mapping/URL');
+    assert(ownerCreate.init?.method === 'POST' && new Headers(ownerCreate.init.headers).get('Content-Type') === 'text/csv', 'owner reassignment preview method/content type');
+    assert(String(ownerCreate.init?.body).startsWith('customer_id,'), 'owner reassignment CSV body must not be JSON quoted');
+  } finally { globalThis.fetch = savedFetch; }
+
+  let ownerExecute: RequestInit | undefined;
+  globalThis.fetch = async (_input, init) => { ownerExecute = init; return new Response(JSON.stringify({ ...ownerPreviewApi, executed: true, result: [{ customer_id: 7, previous_owner_staff_id: 3, target_owner_staff_id: 9, updated_at: '2026-08-25T00:01:00Z' }] }), { status: 200 }); };
+  try {
+    const executed = await executeOwnerReassignmentPreviewDto(ownerPreview);
+    const body = JSON.parse(String(ownerExecute?.body));
+    assert(executed.executed && executed.result.length === 1 && ownerExecute?.method === 'POST', 'owner reassignment execute method/mapping');
+    assert(body.preview_hash === 'a'.repeat(64) && body.confirmation === 'CONFIRM OWNER REASSIGNMENT', 'owner reassignment confirmation DTO');
+    assert(Boolean(new Headers(ownerExecute?.headers).get('Idempotency-Key')), 'owner reassignment idempotency header');
+  } finally { globalThis.fetch = savedFetch; }
 
   const calls: Array<{ input: string; init?: RequestInit }> = [];
   globalThis.fetch = async (input, init) => {

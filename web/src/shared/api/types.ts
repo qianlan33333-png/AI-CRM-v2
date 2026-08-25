@@ -655,6 +655,37 @@ export interface AdminDb {
   rows: RowsData;
 }
 
+/* ================= 负责人迁移（本地安全事务） ================= */
+
+export interface OwnerReassignmentRow {
+  customerId: number;
+  expectedOwnerStaffId: number;
+  expectedUpdatedAt: string;
+  targetOwnerStaffId: number;
+}
+
+export interface OwnerReassignmentIssue {
+  line: number;
+  code: string;
+}
+
+export interface OwnerReassignmentResultRow {
+  customerId: number;
+  previousOwnerStaffId: number;
+  targetOwnerStaffId: number;
+  updatedAt: string;
+}
+
+export interface OwnerReassignmentPreview {
+  id: string;
+  hash: string;
+  rows: OwnerReassignmentRow[];
+  issues: OwnerReassignmentIssue[];
+  expiresAt: string;
+  executed: boolean;
+  result: OwnerReassignmentResultRow[];
+}
+
 /* ================= 用户端 H5 ================= */
 
 export interface H5Option {

@@ -11,7 +11,7 @@
  */
 import { PageBase, type StyleObj, type Vals } from '../shared/ui/runtime';
 import type { AdminApi } from '../shared/api/client';
-import type { AdminDb, AudienceSender, QuestionnaireOps, Tone } from '../shared/api/types';
+import type { AdminDb, AudienceSender, OwnerReassignmentPreview, QuestionnaireOps, Tone } from '../shared/api/types';
 import { deepCopy } from '../shared/api/mockData';
 import { emptyAdminDb } from '../api/admin';
 import { toast, confirmBox, busy, simulateUpload } from '../shared/ui/feedback';
@@ -58,9 +58,10 @@ type AdminState = {
   cfTags: PickerItem[] | null;
   /** Agent 编辑 · 固定素材（null = 默认示例两条） */
   agMats: PickerItem[] | null;
-  /** 负责人迁移 · 原/目标负责人 uid */
-  migFromUid: string;
-  migToUid: string;
+  /** 负责人迁移 · 当前持久预览 */
+  migFileName: string;
+  migPreview: OwnerReassignmentPreview | null;
+  migConfirmed: boolean;
   /** 问卷运营配置 · 绑定渠道码 code（'' = 未改） */
   opsChannelId: string;
   /** 商品/周期商品表单 · 引流渠道码 code */
@@ -109,8 +110,9 @@ export class AdminController extends PageBase {
     cfMats: [],
     cfTags: null,
     agMats: null,
-    migFromUid: 'LiYou',
-    migToUid: 'LinKaiYan',
+    migFileName: '',
+    migPreview: null,
+    migConfirmed: false,
     opsChannelId: '',
     pfChannelId: 'shalongyaoyue',
     spfChannelId: 'shalongyaoyue',
@@ -132,7 +134,10 @@ export class AdminController extends PageBase {
 
   /** 页面入口调用：加载数据仓库 → 重渲染 */
   async init(): Promise<void> {
-    this.db = await this.api.loadDb({ page: this.page, id: this.qs().get('id') || undefined });
+    const resourceId = this.qs().get(this.page === 'configDetail' ? 'cat' : 'id') || undefined;
+    this.db = await this.api.loadDb({ page: this.page, id: resourceId });
+    const previewId = this.page === 'ownerMig' ? this.qs().get('id') : null;
+    if (previewId) this.state.migPreview = await this.api.getOwnerReassignmentPreview(previewId);
     // 问卷运营配置：首次进入把本地开关态同步为已保存值
     const ops = this.currentOps();
     if (ops && this.page === 'questionnaireOps') {
@@ -375,10 +380,6 @@ export class AdminController extends PageBase {
     return this.db.rows.channels.find((c) => c.code === code)?.name || '不配置引流渠道码';
   }
 
-  private staffName(uid: string): string {
-    return this.db.staff.find((s) => s.uid === uid)?.name || uid;
-  }
-
   /** 合并素材已选：同类型整体替换，跨类型累加，上限 9 */
   private mergeMats(cur: PickerItem[], kind: string, picked: PickerItem[]): PickerItem[] | null {
     const kept = cur.filter((m) => m.kind !== kind);
@@ -460,11 +461,69 @@ export class AdminController extends PageBase {
     ];
   }
 
-  /* ---- 负责人迁移 ---- */
-  private migPick(which: 'from' | 'to'): void {
-    void this.pick({ kind: 'members', multi: false, max: 1, title: which === 'from' ? '选择原负责人' : '选择目标负责人' }).then((r) => {
-      if (!r || !r.length) return;
-      this.setState(which === 'from' ? { migFromUid: r[0].id } : { migToUid: r[0].id });
+  /* ---- 负责人迁移：仅调用 OpenAPI 声明的本地安全 CSV 事务 ---- */
+  private saveBlob(blob: Blob, filename: string): void {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  private migDownloadTemplate(): void {
+    void this.api.downloadOwnerReassignmentTemplate()
+      .then((blob) => this.saveBlob(blob, '负责人迁移模板.csv'))
+      .catch((error) => toast(error instanceof Error ? error.message : '模板下载失败', true));
+  }
+
+  private migParseCsv(): void {
+    const input = document.getElementById('ownerMigCsv') as HTMLInputElement | null;
+    const file = input?.files?.[0];
+    if (!file) { toast('请先选择 CSV 文件', true); return; }
+    if (!file.name.toLowerCase().endsWith('.csv')) { toast('当前安全契约只接受 CSV 文件', true); return; }
+    if (file.size > 1024 * 1024) { toast('CSV 文件不能超过 1 MiB', true); return; }
+    this.setState({ saving: true, migFileName: file.name });
+    void file.text()
+      .then((csv) => this.api.createOwnerReassignmentPreview(csv))
+      .then((preview) => {
+        this.setState({ saving: false, migPreview: preview, migConfirmed: false });
+        toast(`预览已生成：${preview.rows.length} 条可执行，${preview.issues.length} 条问题`);
+      })
+      .catch((error) => {
+        this.setState({ saving: false });
+        toast(error instanceof Error ? error.message : 'CSV 预览失败', true);
+      });
+  }
+
+  private migDownloadReport(kind: 'errors' | 'results'): void {
+    const preview = this.state.migPreview;
+    if (!preview) { toast('请先生成预览', true); return; }
+    void this.api.downloadOwnerReassignmentReport(preview.id, kind)
+      .then((blob) => this.saveBlob(blob, `负责人迁移-${kind === 'errors' ? '错误' : '结果'}-${preview.id}.csv`))
+      .catch((error) => toast(error instanceof Error ? error.message : '报告下载失败', true));
+  }
+
+  private migSetConfirmed(event: Event): void {
+    this.state.migConfirmed = (event.currentTarget as HTMLInputElement).checked;
+  }
+
+  private migExecute(): void {
+    const preview = this.state.migPreview;
+    if (!preview) { toast('请先生成预览', true); return; }
+    if (preview.executed) { toast('该预览已经执行，不能重复提交', true); return; }
+    if (!preview.rows.length) { toast('预览中没有可执行记录', true); return; }
+    if (!this.state.migConfirmed) { toast('请先勾选二次确认', true); return; }
+    confirmBox('执行负责人迁移', `将提交 ${preview.rows.length} 条本地负责人变更。此操作不调用企微 Provider，且不能自动回滚。`, '确认执行', true, () => {
+      this.setState({ saving: true });
+      void this.api.executeOwnerReassignmentPreview(preview)
+        .then((result) => {
+          this.setState({ saving: false, migPreview: result, migConfirmed: false });
+          toast(`本地迁移已提交：后端确认 ${result.result.length} 条结果；未调用企微 Provider`);
+        })
+        .catch((error) => {
+          this.setState({ saving: false });
+          toast(error instanceof Error ? error.message : '负责人迁移提交失败', true);
+        });
     });
   }
 
@@ -647,13 +706,13 @@ export class AdminController extends PageBase {
     void this.api.saveConfigCategory(cat.key, values, switches).then(() => {
       toast('「' + cat.label + '」配置已保存');
       void this.init();
-    });
+    }).catch((error) => toast(error instanceof Error ? error.message : '配置保存失败', true));
   }
 
   private checkConfig(): void {
     const cat = this.currentConfigCat();
     if (!cat) return;
-    void this.api.checkConfigCategory(cat.key).then((msg) => toast(msg, msg.startsWith('检查发现')));
+    void this.api.checkConfigCategory(cat.key).then((msg) => toast(msg, msg.startsWith('检查发现'))).catch((error) => toast(error instanceof Error ? error.message : '配置检查失败', true));
   }
 
   /* ================= 模板绑定值 ================= */
@@ -1038,7 +1097,7 @@ export class AdminController extends PageBase {
         void this.api.toggleConfigCategory(c.key, !c.on).then(() => {
           toast('「' + c.label + '」已' + (!c.on ? '启用' : '停用'));
           void this.init();
-        });
+        }).catch((error) => toast(error instanceof Error ? error.message : '配置启停失败', true));
       },
       open: () => this.goto('configDetail', '?cat=' + c.key),
     }));
@@ -1053,7 +1112,7 @@ export class AdminController extends PageBase {
             void this.api.toggleConfigCategory(cfgCat.key, !cfgCat.on).then(() => {
               toast('「' + cfgCat.label + '」已' + (!cfgCat.on ? '启用' : '停用'));
               void this.init();
-            });
+            }).catch((error) => toast(error instanceof Error ? error.message : '配置启停失败', true));
           },
           blocks: cfgCat.blocks.map((b) => ({
             title: b.title,
@@ -1146,12 +1205,34 @@ export class AdminController extends PageBase {
           addGroup: () => this.agAddMaterial('group'),
         };
       })(),
-      mig: {
-        fromName: this.staffName(s.migFromUid),
-        toName: this.staffName(s.migToUid),
-        pickFrom: () => this.migPick('from'),
-        pickTo: () => this.migPick('to'),
-      },
+      mig: (() => {
+        const preview = s.migPreview;
+        return {
+          fileName: s.migFileName || '尚未选择 CSV',
+          downloadTemplate: () => this.migDownloadTemplate(),
+          parseCsv: () => this.migParseCsv(),
+          setConfirmed: (event: Event) => this.migSetConfirmed(event),
+          execute: () => this.migExecute(),
+          downloadErrors: () => this.migDownloadReport('errors'),
+          downloadResults: () => this.migDownloadReport('results'),
+          hasPreview: Boolean(preview),
+          noPreview: !preview,
+          id: preview?.id || '—',
+          hash: preview?.hash || '—',
+          expiresAt: preview?.expiresAt || '—',
+          status: preview?.executed ? '已执行（本地事务）' : '待执行',
+          rows: (preview?.rows || []).map((row) => ({ customerId: row.customerId, fromId: row.expectedOwnerStaffId, toId: row.targetOwnerStaffId, expectedUpdatedAt: row.expectedUpdatedAt })),
+          issues: (preview?.issues || []).map((issue) => ({ line: issue.line, code: issue.code })),
+          results: (preview?.result || []).map((row) => ({ customerId: row.customerId, fromId: row.previousOwnerStaffId, toId: row.targetOwnerStaffId, updatedAt: row.updatedAt })),
+          validCount: preview?.rows.length || 0,
+          issueCount: preview?.issues.length || 0,
+          resultCount: preview?.result.length || 0,
+          hasIssues: Boolean(preview?.issues.length),
+          hasResults: Boolean(preview?.result.length),
+          canExecute: Boolean(preview && !preview.executed && preview.rows.length && !s.saving),
+          savingText: s.saving ? '处理中…' : '上传并生成预览',
+        };
+      })(),
       pf: { channelText: this.channelName(s.pfChannelId), pickChannel: () => this.pickChannelFor('pf') },
       spf: { channelText: this.channelName(s.spfChannelId), pickChannel: () => this.pickChannelFor('spf') },
 

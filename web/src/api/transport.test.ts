@@ -8,6 +8,7 @@ export async function runTransportContractTests(): Promise<void> {
   const options = apiRequestOptions({ method: 'POST', headers: { 'X-Request-ID': 'test' } }, 'csrf_token=token%201; session=x');
   const headers = new Headers(options.headers);
   assert(options.credentials === 'include', 'same-origin cookie credentials must be included');
+  assert(!(options.headers instanceof Headers), 'generated client options must use enumerable header records');
   assert(headers.get('X-CSRF-Token') === 'token 1', 'CSRF cookie must become X-CSRF-Token');
   assert(headers.get('X-Request-ID') === 'test', 'caller headers must survive transport');
   assert(unwrapGenerated({ status: 200, data: { cursor: 'opaque' } }).cursor === 'opaque', '2xx generated response must unwrap');

@@ -33,7 +33,9 @@ export function apiRequestOptions(init: RequestInit = {}, cookie = typeof docume
   const headers = new Headers(init.headers);
   const token = csrfToken(cookie);
   if (token && !headers.has('X-CSRF-Token')) headers.set('X-CSRF-Token', token);
-  return { ...init, headers, credentials: 'include' };
+  // Orval 的 fetch 模板通过 `{ ...options?.headers }` 合并 headers；Headers
+  // 实例没有可枚举字段，会导致 CSRF/幂等键静默丢失，因此必须返回普通记录。
+  return { ...init, headers: Object.fromEntries(headers.entries()), credentials: 'include' };
 }
 
 /**

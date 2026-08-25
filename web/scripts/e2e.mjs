@@ -369,20 +369,13 @@ console.log('admin/channelForm.html（欢迎语素材走通用选择器）');
   dom.window.close();
 }
 
-console.log('admin/ownerMig.html（选择客服走通用选择器）');
+console.log('admin/ownerMig.html（本地安全 CSV 迁移边界）');
 {
   const dom = await loadPage('admin/ownerMig.html');
   const d = dom.window.document;
-  const fromBtn = [...d.querySelectorAll('label')].find((l) => l.textContent.includes('原负责人'))?.querySelector('span:last-child');
-  click(dom, fromBtn);
-  await sleep(450);
-  ok('选择客服组件打开', !!d.querySelector('.pk-mask'));
-  const row = [...d.querySelectorAll('.pk-mask [data-pk-id]')].find((el) => el.textContent.includes('王恺'));
-  click(dom, row);
-  await sleep(30);
-  click(dom, d.querySelector('.pk-mask [data-pk="ok"]'));
-  await sleep(30);
-  ok('原负责人写回为王恺', [...d.querySelectorAll('label')].some((l) => l.textContent.includes('原负责人') && l.textContent.includes('王恺')));
+  const csv = d.querySelector('#ownerMigCsv');
+  ok('仅接受 CSV 且不再显示企微转接/欢迎语控件', csv?.getAttribute('accept')?.includes('.csv') && !d.body.textContent.includes('同时发起企微转接') && !d.body.textContent.includes('转接欢迎语'));
+  ok('初始明确为空且真实动作均已绑定', d.body.textContent.includes('尚未生成迁移预览，不会发送执行请求') && [...d.querySelectorAll('button')].filter((b) => b.__dcBound).length >= 2);
   dom.window.close();
 }
 

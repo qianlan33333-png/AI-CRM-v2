@@ -3,17 +3,17 @@ import {
   addCustomerTag, getCustomer, getCustomerActivityAnalytics, getCustomerContext, listCustomerChatActivity, listCustomerEvents, listCustomerSurveyAnswers, listStages, removeCustomerTag, setCustomerStage, updateCustomer,
   getLegacyAttachment, getLegacyChannel, getLegacyCoupon, getLegacyCouponShare, getLegacyImage, getLegacyImageFacets,
   getLegacyMiniProgram, getLegacyOrder, getLegacyOrderItems, getLegacyQuestionnaire, getLegacyQuestionnaireResults,
-  getLegacyWecomTag, getLegacyWecomTagExecutionGate, getLegacyWecomTagGroup, getProduct,
+  getAdminOpsCategory, getContactOwnerReassignmentPreview, getLegacyWecomTag, getLegacyWecomTagExecutionGate, getLegacyWecomTagGroup, getProduct,
   getServicePeriodMemberGridAccess, getServicePeriodMemberGridSchema, getServicePeriodMemberGridShareSettings,
   getServicePeriodProduct, getSurveyOperations, getSurveyOperationsPageData, getSurveySafeSubmissionAnalysis,
-  listCustomers, listLegacyAttachments, listLegacyChannelEntrants, listLegacyChannels, listLegacyCouponClaims,
+  listAdminOpsCategories, listCustomers, listLegacyAttachments, listLegacyChannelEntrants, listLegacyChannels, listLegacyCouponClaims,
   listLegacyCouponProductOptions, listLegacyCoupons, getLegacyImageList, listLegacyMiniPrograms, listLegacyOrders, listLegacyRefunds, listLegacyWechatOrderExternalEffects,
   listLegacyQuestionnaireSubmissions, listLegacyQuestionnaires, listLegacyWecomTagGroups, listLegacyWecomTags,
   listProductLocalEntitlements, listProducts, listServicePeriodMemberViews, listServicePeriodMembers,
   listServicePeriodProducts, listSurveyQuestionnaireExternalPushLogs,
-  activateAIAudiencePackage, archiveLegacyWecomTag, archiveLegacyWecomTagGroup, archiveAIAudiencePackage, copyAIAudiencePackage, createAIAudiencePackageGroup, createLegacyMiniProgram, createLegacyWecomTag, createLegacyWecomTagGroup, createRadarLink, deleteAIAudiencePackageGroup, deleteLegacyAttachment, deleteLegacyImage, deleteLegacyMiniProgram, disableRadarLink, enableRadarLink, getAIAudiencePackage, getDownloadLegacyAttachmentUrl, getRadarLink, getRadarLinkShareProjection, listAIAudiencePackageGroups, listAIAudiencePackages, listRadarLinkEvents, listRadarLinks, pauseAIAudiencePackage, queueLegacyWecomTagSync, updateAIAudiencePackageGroup, updateLegacyAttachment, updateLegacyImage, updateLegacyMiniProgram, updateLegacyWecomTagGroupPatch, updateLegacyWecomTagPatch, updateRadarLink, uploadLegacyAttachment, uploadLegacyImage, type Customer as ApiCustomer, type LegacyChannelListItem, type LegacyQuestionnaire, type RadarLink as ApiRadarLink,
+  activateAIAudiencePackage, archiveLegacyWecomTag, archiveLegacyWecomTagGroup, archiveAIAudiencePackage, copyAIAudiencePackage, createAIAudiencePackageGroup, createLegacyMiniProgram, createLegacyWecomTag, createLegacyWecomTagGroup, createRadarLink, deleteAIAudiencePackageGroup, deleteLegacyAttachment, deleteLegacyImage, deleteLegacyMiniProgram, disableRadarLink, enableRadarLink, executeContactOwnerReassignmentPreview, getAIAudiencePackage, getCreateContactOwnerReassignmentPreviewUrl, getDownloadContactOwnerReassignmentErrorsUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getDownloadLegacyAttachmentUrl, getRadarLink, getRadarLinkShareProjection, listAIAudiencePackageGroups, listAIAudiencePackages, listRadarLinkEvents, listRadarLinks, pauseAIAudiencePackage, queueLegacyWecomTagSync, updateAIAudiencePackageGroup, updateLegacyAttachment, updateLegacyImage, updateLegacyMiniProgram, updateLegacyWecomTagGroupPatch, updateLegacyWecomTagPatch, updateRadarLink, uploadLegacyAttachment, uploadLegacyImage, type ContactOwnerReassignmentPreview as ApiOwnerReassignmentPreview, type Customer as ApiCustomer, type LegacyChannelListItem, type LegacyQuestionnaire, type RadarLink as ApiRadarLink,
 } from './generated/health';
-import type { AdminDb, AttachItem, Channel, Coupon, Customer, ImageItem, MpItem, Order, Product, Questionnaire, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
+import type { AdminDb, AttachItem, Channel, ConfigCategory, Coupon, Customer, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
 import { apiRequestOptions, request, unwrapGenerated } from './transport';
 
 type Obj = Record<string, unknown>;
@@ -38,6 +38,42 @@ export const tagPageDto = (value: unknown): WecomTag => { const x = obj(value); 
 export const radarPageDto = (link: ApiRadarLink): AdminDb['radarLinks'][number] => ({ id: link.link_id, title: link.title, target_type: link.attachment_id ? 'pdf' : link.cover_image_id ? 'image' : 'link', original_url: link.destination_url, file_name_snapshot: '', media_item_id: String(link.attachment_id || link.cover_image_id || ''), enabled: link.status === 'enabled', auth_required: true, staff_id: String(link.created_by), code: link.public_code, total_landings: 0, authorized_users: 0, view_count: 0, last_viewed_at: link.updated_at });
 export const audienceGroupPageDto = (value: unknown): AdminDb['audienceGroups'][number] => ({ id: Number(obj(value).group_id), name: text(obj(value).name) });
 export const audiencePackagePageDto = (value: unknown): AdminDb['audiencePackages'][number] => { const x = obj(value); return { id: Number(x.package_id), name: text(x.name), groupId: Number(x.group_id || 0), count: Number(x.member_count || 0), lastRefresh: text(x.refreshed_at), refreshMode: text(x.refresh_mode), running: x.lifecycle === 'active', version: 'v' + text(x.version), definition: '', incremental: 'off', daily: 'off', boundAutomation: '' }; };
+export const configCategoryPageDto = (value: unknown): ConfigCategory => { const x = obj(value); return { key: text(x.key), label: text(x.key), group: '本地安全配置', on: x.enabled === true, toggleable: true, checkSupported: true, blocks: [] }; };
+export const ownerReassignmentPreviewDto = (preview: ApiOwnerReassignmentPreview): OwnerReassignmentPreview => ({
+  id: preview.id,
+  hash: preview.hash,
+  rows: preview.rows.map((row) => ({ customerId: row.customer_id, expectedOwnerStaffId: row.expected_owner_staff_id, expectedUpdatedAt: row.expected_updated_at, targetOwnerStaffId: row.target_owner_staff_id })),
+  issues: preview.issues.map((issue) => ({ line: issue.line, code: issue.code })),
+  expiresAt: preview.expires_at,
+  executed: preview.executed,
+  result: (preview.result || []).map((row) => ({ customerId: row.customer_id, previousOwnerStaffId: row.previous_owner_staff_id, targetOwnerStaffId: row.target_owner_staff_id, updatedAt: row.updated_at })),
+});
+
+export async function downloadOwnerReassignmentTemplateDto(): Promise<Blob> {
+  return (await request(getDownloadContactOwnerReassignmentTemplateUrl())).blob();
+}
+
+export async function createOwnerReassignmentPreviewDto(csv: string): Promise<OwnerReassignmentPreview> {
+  if (!csv.trim()) throw new Error('请选择非空 CSV 文件');
+  if (new Blob([csv]).size > 1024 * 1024) throw new Error('CSV 文件不能超过 1 MiB');
+  const response = await request(getCreateContactOwnerReassignmentPreviewUrl(), { method: 'POST', headers: { 'Content-Type': 'text/csv' }, body: csv });
+  return ownerReassignmentPreviewDto(await response.json() as ApiOwnerReassignmentPreview);
+}
+
+export async function getOwnerReassignmentPreviewDto(previewId: string): Promise<OwnerReassignmentPreview> {
+  return ownerReassignmentPreviewDto(await call(getContactOwnerReassignmentPreview(previewId, apiRequestOptions())) as ApiOwnerReassignmentPreview);
+}
+
+export async function executeOwnerReassignmentPreviewDto(preview: OwnerReassignmentPreview): Promise<OwnerReassignmentPreview> {
+  const options = apiRequestOptions({ headers: { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() || `web-${Date.now()}` } });
+  const result = await call(executeContactOwnerReassignmentPreview(preview.id, { preview_hash: preview.hash, confirmation: 'CONFIRM OWNER REASSIGNMENT' }, options));
+  return ownerReassignmentPreviewDto(result as ApiOwnerReassignmentPreview);
+}
+
+export async function downloadOwnerReassignmentReportDto(previewId: string, kind: 'errors' | 'results'): Promise<Blob> {
+  const url = kind === 'errors' ? getDownloadContactOwnerReassignmentErrorsUrl(previewId) : getDownloadContactOwnerReassignmentResultsUrl(previewId);
+  return (await request(url)).blob();
+}
 export async function setRadarEnabled(linkId: number, enabled: boolean): Promise<void> { const current = obj(await call(getRadarLink(linkId, apiRequestOptions()))).link as ApiRadarLink; const request = { expected_version: current.version }; await call(enabled ? enableRadarLink(linkId, request, apiRequestOptions()) : disableRadarLink(linkId, request, apiRequestOptions())); }
 export async function readRadarEvents(linkId: number): Promise<AdminDb['radarEvents']> { const page = await call(listRadarLinkEvents(linkId, undefined, apiRequestOptions())); return list(page, 'items').map((item) => ({ unionid_masked: text(obj(item).unionid_masked), external_userid: text(obj(item).external_userid), created_at: text(obj(item).occurred_at, text(obj(item).created_at)) })); }
 export async function readRadarSharePath(linkId: number): Promise<string> { const projection = obj(await call(getRadarLinkShareProjection(linkId, apiRequestOptions()))); if (projection.available !== true || typeof projection.share_path !== 'string') throw new Error('后端尚未提供可用的 Radar 公开分享路径'); return projection.share_path; }
@@ -140,9 +176,10 @@ export async function readAdminRows(page?: string): Promise<AdminDb> {
     needs('radar', 'radarDetail', 'radarForm') ? call(listRadarLinks(undefined, opt)) : skip,
     needs('automation', 'audienceEdit') ? call(listAIAudiencePackageGroups(opt)) : skip,
     needs('automation', 'audienceEdit') ? call(listAIAudiencePackages(undefined, opt)) : skip,
+    needs('config', 'configDetail') ? call(listAdminOpsCategories(opt)) : skip,
   ]);
-  const [customers, questionnaires, channels, orders, products, spProducts, coupons, images, attachments, minis, tagGroups, tags, radar, audienceGroups, audiencePackages] = responses; const db = emptyAdminDb();
-  db.rows.customers = list(customers, 'items').map((x) => customerPageDto(x as ApiCustomer)); db.rows.questionnaires = list(questionnaires, 'items', 'questionnaires').map((x) => questionnairePageDto(x as LegacyQuestionnaire)); db.rows.channels = list(channels, 'channels', 'items').map((x) => channelPageDto(x as LegacyChannelListItem)); db.rows.orders = list(orders, 'items', 'orders').map(orderPageDto); db.rows.products = list(products, 'items').map(productPageDto); db.rows.spProducts = list(spProducts, 'items').map(serviceProductPageDto); db.rows.coupons = list(coupons, 'items', 'coupons').map(couponPageDto); db.rows.images = list(images, 'items', 'images').map(imagePageDto); db.rows.attachItems = list(attachments, 'items', 'attachments').map(attachmentPageDto); db.rows.mpItems = list(minis, 'items', 'mini_programs').map(miniProgramPageDto); db.tagGroups = list(tagGroups, 'items', 'groups').map(tagGroupPageDto); db.wecomTags = list(tags, 'items', 'tags').map(tagPageDto); db.radarLinks = list(radar, 'items').map((x) => radarPageDto(x as ApiRadarLink)); db.audienceGroups = list(audienceGroups, 'items', 'groups').map(audienceGroupPageDto); db.audiencePackages = list(audiencePackages, 'items').map(audiencePackagePageDto); return db;
+  const [customers, questionnaires, channels, orders, products, spProducts, coupons, images, attachments, minis, tagGroups, tags, radar, audienceGroups, audiencePackages, config] = responses; const db = emptyAdminDb();
+  db.rows.customers = list(customers, 'items').map((x) => customerPageDto(x as ApiCustomer)); db.rows.questionnaires = list(questionnaires, 'items', 'questionnaires').map((x) => questionnairePageDto(x as LegacyQuestionnaire)); db.rows.channels = list(channels, 'channels', 'items').map((x) => channelPageDto(x as LegacyChannelListItem)); db.rows.orders = list(orders, 'items', 'orders').map(orderPageDto); db.rows.products = list(products, 'items').map(productPageDto); db.rows.spProducts = list(spProducts, 'items').map(serviceProductPageDto); db.rows.coupons = list(coupons, 'items', 'coupons').map(couponPageDto); db.rows.images = list(images, 'items', 'images').map(imagePageDto); db.rows.attachItems = list(attachments, 'items', 'attachments').map(attachmentPageDto); db.rows.mpItems = list(minis, 'items', 'mini_programs').map(miniProgramPageDto); db.tagGroups = list(tagGroups, 'items', 'groups').map(tagGroupPageDto); db.wecomTags = list(tags, 'items', 'tags').map(tagPageDto); db.radarLinks = list(radar, 'items').map((x) => radarPageDto(x as ApiRadarLink)); db.audienceGroups = list(audienceGroups, 'items', 'groups').map(audienceGroupPageDto); db.audiencePackages = list(audiencePackages, 'items').map(audiencePackagePageDto); db.configCategories = list(config, 'categories', 'items').map(configCategoryPageDto); return db;
 }
 
 /** Detail page reads are deliberately page-scoped and never synthesize demo records. */
@@ -159,5 +196,6 @@ export async function readAdminPage(context: AdminReadContext = {}): Promise<Adm
   if (context.page === 'attach') { const detail = await call(getLegacyAttachment(id, opt)); db.rows.attachItems = [attachmentPageDto(obj(detail).item || detail)]; }
   if (context.page === 'mpLib') { const detail = await call(getLegacyMiniProgram(numeric, opt)); db.rows.mpItems = [miniProgramPageDto(obj(detail).item || detail)]; }
   if (context.page === 'tags') { const [group, tag, gate] = await Promise.all([call(getLegacyWecomTagGroup(numeric, opt)), call(getLegacyWecomTag(numeric, opt)), call(getLegacyWecomTagExecutionGate(opt))]); db.tagGroups = [tagGroupPageDto(obj(group).group || group)]; db.wecomTags = [tagPageDto(obj(tag).tag || tag)]; db.rows.orderKv = [{ k: 'live-gate', v: text(obj(gate).status), mono: false }]; }
+  if (context.page === 'configDetail') { const detail = obj(await call(getAdminOpsCategory(id, opt))); const category = detail.category; if (category) db.configCategories = [configCategoryPageDto(category)]; }
   return db;
 }

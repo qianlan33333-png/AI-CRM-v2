@@ -18,6 +18,7 @@ import type {
   FunnelView,
   ImageItem,
   MpItem,
+  OwnerReassignmentPreview,
   QuestionnaireOps,
   RadarEvent,
   RadarLink,
@@ -27,7 +28,7 @@ import type {
   WecomTag,
 } from './types';
 import { SEED_DB, deepCopy } from './mockData';
-import { archiveAudiencePackage, archiveTagDto, copyAudiencePackageDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveRadarLinkDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setRadarEnabled, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext } from '../../api/admin';
+import { archiveAudiencePackage, archiveTagDto, copyAudiencePackageDto, createOwnerReassignmentPreviewDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveRadarLinkDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setRadarEnabled, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
 
@@ -90,6 +91,13 @@ export interface AdminApi {
   saveAttachItem(originalName: string | null, patch: Partial<AttachItem> & { name: string }): Promise<void>;
   deleteAttachItem(item: AttachItem): Promise<void>;
   downloadAttachItem(item: AttachItem): Promise<Blob>;
+
+  /* ---- 负责人迁移 · 本地安全事务 ---- */
+  downloadOwnerReassignmentTemplate(): Promise<Blob>;
+  createOwnerReassignmentPreview(csv: string): Promise<OwnerReassignmentPreview>;
+  getOwnerReassignmentPreview(previewId: string): Promise<OwnerReassignmentPreview>;
+  executeOwnerReassignmentPreview(preview: OwnerReassignmentPreview): Promise<OwnerReassignmentPreview>;
+  downloadOwnerReassignmentReport(previewId: string, kind: 'errors' | 'results'): Promise<Blob>;
 
   /* ---- 配置中心 ---- */
   toggleConfigCategory(key: string, on: boolean): Promise<void>;
@@ -478,6 +486,26 @@ export class MockApi implements AdminApi {
     return delay(new Blob(['mock pdf'], { type: 'application/pdf' }));
   }
 
+  downloadOwnerReassignmentTemplate(): Promise<Blob> {
+    return delay(new Blob(['customer_id,expected_owner_staff_id,expected_updated_at,target_owner_staff_id\n'], { type: 'text/csv' }));
+  }
+
+  createOwnerReassignmentPreview(_csv: string): Promise<OwnerReassignmentPreview> {
+    return delay({ id: 'cor_0123456789012345678901', hash: 'a'.repeat(64), rows: [], issues: [], expiresAt: new Date(Date.now() + 3600000).toISOString(), executed: false, result: [] });
+  }
+
+  getOwnerReassignmentPreview(_previewId: string): Promise<OwnerReassignmentPreview> {
+    return this.createOwnerReassignmentPreview('mock');
+  }
+
+  executeOwnerReassignmentPreview(preview: OwnerReassignmentPreview): Promise<OwnerReassignmentPreview> {
+    return delay({ ...preview, executed: true, result: preview.rows.map((row) => ({ customerId: row.customerId, previousOwnerStaffId: row.expectedOwnerStaffId, targetOwnerStaffId: row.targetOwnerStaffId, updatedAt: new Date().toISOString() })) });
+  }
+
+  downloadOwnerReassignmentReport(_previewId: string, _kind: 'errors' | 'results'): Promise<Blob> {
+    return delay(new Blob(['mock'], { type: 'text/csv' }));
+  }
+
   /* ---------- 配置中心 ---------- */
 
   private findConfigCat(key: string): ConfigCategory | undefined {
@@ -710,6 +738,12 @@ export class HttpApi implements AdminApi {
   downloadAttachItem(item: AttachItem): Promise<Blob> {
     return downloadAttachmentItemDto(item);
   }
+
+  downloadOwnerReassignmentTemplate(): Promise<Blob> { return downloadOwnerReassignmentTemplateDto(); }
+  createOwnerReassignmentPreview(csv: string): Promise<OwnerReassignmentPreview> { return createOwnerReassignmentPreviewDto(csv); }
+  getOwnerReassignmentPreview(previewId: string): Promise<OwnerReassignmentPreview> { return getOwnerReassignmentPreviewDto(previewId); }
+  executeOwnerReassignmentPreview(preview: OwnerReassignmentPreview): Promise<OwnerReassignmentPreview> { return executeOwnerReassignmentPreviewDto(preview); }
+  downloadOwnerReassignmentReport(previewId: string, kind: 'errors' | 'results'): Promise<Blob> { return downloadOwnerReassignmentReportDto(previewId, kind); }
 
   /* ---------- 配置中心 ---------- */
 
