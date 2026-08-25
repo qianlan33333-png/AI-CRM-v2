@@ -106,6 +106,18 @@ func TestSidebarActivityCandidateAdapterUsesBoundContextAndReturnsSafeFlags(t *t
 	}
 	assertSidebarActivitySafeResponse(t, chatResponse, []string{"chat_type", "message_type", "sent_at"})
 
+	zeroLimit := int32(0)
+	zeroTimelineResponse := httptest.NewRecorder()
+	candidate.ListSidebarTimeline(zeroTimelineResponse, httptest.NewRequest(http.MethodGet, "/api/sidebar/v2/timeline?limit=0", nil), api.ListSidebarTimelineParams{Limit: &zeroLimit})
+	if zeroTimelineResponse.Code != http.StatusBadRequest || timeline.calls != 1 || chat.calls != 1 {
+		t.Fatalf("zero timeline limit status/calls=%d/%d/%d", zeroTimelineResponse.Code, timeline.calls, chat.calls)
+	}
+	zeroChatResponse := httptest.NewRecorder()
+	candidate.ListSidebarChatActivity(zeroChatResponse, httptest.NewRequest(http.MethodGet, "/api/sidebar/v2/chat-activity?limit=0", nil), api.ListSidebarChatActivityParams{Limit: &zeroLimit})
+	if zeroChatResponse.Code != http.StatusBadRequest || timeline.calls != 1 || chat.calls != 1 {
+		t.Fatalf("zero chat limit status/calls=%d/%d/%d", zeroChatResponse.Code, timeline.calls, chat.calls)
+	}
+
 	wrongMethod := httptest.NewRecorder()
 	router.ServeHTTP(wrongMethod, httptest.NewRequest(http.MethodPost, "/api/sidebar/v2/timeline", nil))
 	if wrongMethod.Code != http.StatusMethodNotAllowed || timeline.calls != 1 || chat.calls != 1 {

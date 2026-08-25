@@ -89,6 +89,10 @@ func (handler *candidateHandler) ListSidebarTimeline(writer http.ResponseWriter,
 	}
 	limit := int32(0)
 	if params.Limit != nil {
+		if *params.Limit == 0 {
+			platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, nil))
+			return
+		}
 		limit = *params.Limit
 	}
 	handler.sidebarActivity.Timeline(writer, request, cursor, limit)
@@ -108,6 +112,10 @@ func (handler *candidateHandler) ListSidebarChatActivity(writer http.ResponseWri
 	}
 	limit := int32(0)
 	if params.Limit != nil {
+		if *params.Limit == 0 {
+			platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeMalformedRequest, nil))
+			return
+		}
 		limit = *params.Limit
 	}
 	handler.sidebarActivity.Chat(writer, request, chatType, cursor, limit)
