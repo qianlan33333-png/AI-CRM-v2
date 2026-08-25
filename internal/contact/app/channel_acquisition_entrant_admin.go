@@ -48,6 +48,12 @@ type ChannelAcquisitionEntrantReceiptListInput struct {
 	Cursor    string
 }
 
+type UnassignedChannelAcquisitionEntrantReceiptListInput struct {
+	ActorID int64
+	Limit   int
+	Cursor  string
+}
+
 type ChannelAcquisitionEntrantReceiptPage struct {
 	Items      []ChannelAcquisitionEntrantReceiptItem `json:"items"`
 	Limit      int                                    `json:"limit"`
@@ -63,11 +69,14 @@ type ReconcileChannelAcquisitionEntrantReceiptCommand struct {
 	CustomerID     int64
 	Reason         string
 	IdempotencyKey string
+	Unassigned     bool
 }
 
 type ChannelAcquisitionEntrantReceiptStore interface {
 	ListChannelAcquisitionEntrantReceipts(context.Context, int64, int64, int, int64) ([]ChannelAcquisitionEntrantReceiptItem, error)
 	GetChannelAcquisitionEntrantReceipt(context.Context, int64, int64, int64) (ChannelAcquisitionEntrantReceiptItem, error)
+	ListUnassignedChannelAcquisitionEntrantReceipts(context.Context, int64, int, int64) ([]ChannelAcquisitionEntrantReceiptItem, error)
+	GetUnassignedChannelAcquisitionEntrantReceipt(context.Context, int64, int64) (ChannelAcquisitionEntrantReceiptItem, error)
 	ReconcileChannelAcquisitionEntrantReceipt(context.Context, ReconcileChannelAcquisitionEntrantReceiptCommand, string, string) (ChannelAcquisitionEntrantReceiptItem, error)
 }
 
@@ -145,14 +154,96 @@ func (service *ChannelAcquisitionEntrantReceiptService) Get(ctx context.Context,
 	return item, nil
 }
 
+func (service *ChannelAcquisitionEntrantReceiptService) ListUnassigned(ctx context.Context, input UnassignedChannelAcquisitionEntrantReceiptListInput) (ChannelAcquisitionEntrantReceiptPage, error) {
+	if service == nil || ctx == nil || ctx.Err() != nil || channelAcquisitionAssetNil(service.uow) || channelAcquisitionAssetNil(service.store) || !channelAcquisitionEntrantReceiptCursorReady(service.codec) {
+		return ChannelAcquisitionEntrantReceiptPage{}, ErrChannelAcquisitionEntrantReceiptUnavailable
+	}
+	limit := input.Limit
+	if limit == 0 {
+		limit = ChannelAcquisitionEntrantReceiptDefaultLimit
+	}
+	if input.ActorID < 1 || limit < 1 || limit > ChannelAcquisitionEntrantReceiptMaximumLimit || len(input.Cursor) > channelAcquisitionEntrantReceiptMaximumCursorLength {
+		return ChannelAcquisitionEntrantReceiptPage{}, ErrInvalidChannelAcquisitionEntrantReceipt
+	}
+	after := int64(0)
+	var err error
+	if input.Cursor != "" {
+		after, err = service.codec.DecodeUnassigned(input.Cursor, input.ActorID)
+		if err != nil {
+			return ChannelAcquisitionEntrantReceiptPage{}, err
+		}
+	}
+	var records []ChannelAcquisitionEntrantReceiptItem
+	err = service.uow.Within(ctx, func(txCtx context.Context) error {
+		var storeErr error
+		records, storeErr = service.store.ListUnassignedChannelAcquisitionEntrantReceipts(txCtx, input.ActorID, limit+1, after)
+		return storeErr
+	})
+	if err != nil {
+		return ChannelAcquisitionEntrantReceiptPage{}, entrantReceiptServiceError(err)
+	}
+	hasMore := len(records) > limit
+	if len(records) > limit+1 {
+		return ChannelAcquisitionEntrantReceiptPage{}, ErrChannelAcquisitionEntrantReceiptUnavailable
+	}
+	if hasMore {
+		records = records[:limit]
+	}
+	page := ChannelAcquisitionEntrantReceiptPage{Items: records, Limit: limit, HasMore: hasMore}
+	if hasMore {
+		page.NextCursor, err = service.codec.EncodeUnassigned(input.ActorID, records[len(records)-1].ReceiptID)
+		if err != nil {
+			return ChannelAcquisitionEntrantReceiptPage{}, ErrChannelAcquisitionEntrantReceiptUnavailable
+		}
+	}
+	return page, nil
+}
+
+func (service *ChannelAcquisitionEntrantReceiptService) GetUnassigned(ctx context.Context, actorID, receiptID int64) (ChannelAcquisitionEntrantReceiptItem, error) {
+	if service == nil || ctx == nil || actorID < 1 || receiptID < 1 {
+		return ChannelAcquisitionEntrantReceiptItem{}, ErrInvalidChannelAcquisitionEntrantReceipt
+	}
+	var item ChannelAcquisitionEntrantReceiptItem
+	err := service.uow.Within(ctx, func(txCtx context.Context) error {
+		var storeErr error
+		item, storeErr = service.store.GetUnassignedChannelAcquisitionEntrantReceipt(txCtx, actorID, receiptID)
+		return storeErr
+	})
+	if err != nil {
+		return ChannelAcquisitionEntrantReceiptItem{}, entrantReceiptServiceError(err)
+	}
+	return item, nil
+}
+
 func (service *ChannelAcquisitionEntrantReceiptService) Reconcile(ctx context.Context, command ReconcileChannelAcquisitionEntrantReceiptCommand) (ChannelAcquisitionEntrantReceiptItem, error) {
 	trimmedReason := strings.TrimSpace(command.Reason)
-	if service == nil || ctx == nil || command.ActorID < 1 || command.ChannelID < 1 || command.ReceiptID < 1 || command.CustomerID < 1 ||
+	if service == nil || ctx == nil || command.Unassigned || command.ActorID < 1 || command.ChannelID < 1 || command.ReceiptID < 1 || command.CustomerID < 1 ||
 		channelAcquisitionAssetNumericEffectIDMust(command.EffectID) < 1 || command.Reason == "" || command.Reason != trimmedReason || len(command.Reason) > 200 || len(command.IdempotencyKey) < 8 || len(command.IdempotencyKey) > 200 || strings.TrimSpace(command.IdempotencyKey) != command.IdempotencyKey {
 		return ChannelAcquisitionEntrantReceiptItem{}, ErrInvalidChannelAcquisitionEntrantReceipt
 	}
 	keyDigest := channelAcquisitionEntrantReceiptDigest("key", strconv.FormatInt(command.ActorID, 10), command.IdempotencyKey)
 	payloadDigest := channelAcquisitionEntrantReceiptDigest("payload", strconv.FormatInt(command.ChannelID, 10), strconv.FormatInt(command.ReceiptID, 10), command.EffectID, strconv.FormatInt(command.CustomerID, 10), command.Reason)
+	var item ChannelAcquisitionEntrantReceiptItem
+	err := service.uow.Within(ctx, func(txCtx context.Context) error {
+		var storeErr error
+		item, storeErr = service.store.ReconcileChannelAcquisitionEntrantReceipt(txCtx, command, keyDigest, payloadDigest)
+		return storeErr
+	})
+	if err != nil {
+		return ChannelAcquisitionEntrantReceiptItem{}, entrantReceiptServiceError(err)
+	}
+	return item, nil
+}
+
+func (service *ChannelAcquisitionEntrantReceiptService) ReconcileUnassigned(ctx context.Context, command ReconcileChannelAcquisitionEntrantReceiptCommand) (ChannelAcquisitionEntrantReceiptItem, error) {
+	trimmedReason := strings.TrimSpace(command.Reason)
+	if service == nil || ctx == nil || command.ChannelID != 0 || command.ActorID < 1 || command.ReceiptID < 1 || command.CustomerID < 1 ||
+		channelAcquisitionAssetNumericEffectIDMust(command.EffectID) < 1 || command.Reason == "" || command.Reason != trimmedReason || len(command.Reason) > 200 || len(command.IdempotencyKey) < 8 || len(command.IdempotencyKey) > 200 || strings.TrimSpace(command.IdempotencyKey) != command.IdempotencyKey {
+		return ChannelAcquisitionEntrantReceiptItem{}, ErrInvalidChannelAcquisitionEntrantReceipt
+	}
+	command.Unassigned = true
+	keyDigest := channelAcquisitionEntrantReceiptDigest("key", strconv.FormatInt(command.ActorID, 10), command.IdempotencyKey)
+	payloadDigest := channelAcquisitionEntrantReceiptDigest("payload", "unassigned", strconv.FormatInt(command.ReceiptID, 10), command.EffectID, strconv.FormatInt(command.CustomerID, 10), command.Reason)
 	var item ChannelAcquisitionEntrantReceiptItem
 	err := service.uow.Within(ctx, func(txCtx context.Context) error {
 		var storeErr error

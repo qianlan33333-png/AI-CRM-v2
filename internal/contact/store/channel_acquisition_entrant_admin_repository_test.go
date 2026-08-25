@@ -9,10 +9,31 @@ import (
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 )
 
-func TestEntrantReceiptProjectionKeepsCorpScopedUnboundReceipts(t *testing.T) {
-	for _, fragment := range []string{"LEFT JOIN channel_acquisition_asset_bindings", "r.channel_id IS NULL", "scope.channel_id = $2", "scope.corp_id = i.corp_id"} {
+func TestEntrantReceiptProjectionsNeverInferChannelOwnershipFromCorp(t *testing.T) {
+	for _, fragment := range []string{"JOIN channel_acquisition_asset_bindings", "a.wecom_corp_id = b.corp_id", "WHERE r.channel_id = $2"} {
 		if !strings.Contains(entrantReceiptProjection, fragment) {
-			t.Fatalf("projection is missing %q", fragment)
+			t.Fatalf("channel projection is missing %q", fragment)
+		}
+	}
+	if strings.Contains(entrantReceiptProjection, "r.channel_id IS NULL") {
+		t.Fatal("channel projection must not expose unassigned receipts")
+	}
+	for _, fragment := range []string{"a.wecom_corp_id = i.corp_id", "r.effect_id IS NULL", "r.channel_id IS NULL", "r.status IN ('unmatched_asset', 'ambiguous_asset', 'ignored')"} {
+		if !strings.Contains(unassignedEntrantReceiptProjection, fragment) {
+			t.Fatalf("unassigned projection is missing %q", fragment)
+		}
+	}
+}
+
+func TestEntrantReceiptReconcileLocksExactTargetBinding(t *testing.T) {
+	for _, fragment := range []string{
+		"b.effect_id=$1",
+		"b.corp_id=$2",
+		"($3::bigint=0 OR b.channel_id=$3)",
+		"FOR UPDATE OF b",
+	} {
+		if !strings.Contains(entrantReceiptTargetBindingSQL, fragment) {
+			t.Fatalf("target binding lock is missing %q", fragment)
 		}
 	}
 }

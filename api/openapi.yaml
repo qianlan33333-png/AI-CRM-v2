@@ -4109,6 +4109,77 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/channel-acquisition-entrant-receipts/unassigned:
+    get:
+      tags: [p4-channel]
+      operationId: listUnassignedChannelAcquisitionEntrantReceipts
+      summary: List safe unassigned entrant receipts within the authenticated administrator CorpID
+      x-p4-decision-evidence: P4-CH03-2026-08-26
+      x-aicrm-capability: channels.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: contact.acquisition_entrant_unassigned_safe_projection
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 20 } }
+        - { name: cursor, in: query, schema: { type: string, maxLength: 256 } }
+      responses:
+        "200": { description: Safe CorpID-scoped unassigned entrant receipt page, content: { application/json: { schema: { $ref: "#/components/schemas/ChannelAcquisitionEntrantReceiptListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/channel-acquisition-entrant-receipts/unassigned/{receipt_id}:
+    get:
+      tags: [p4-channel]
+      operationId: getUnassignedChannelAcquisitionEntrantReceipt
+      summary: Read one safe unassigned entrant receipt within the authenticated administrator CorpID
+      x-p4-decision-evidence: P4-CH03-2026-08-26
+      x-aicrm-capability: channels.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: contact.acquisition_entrant_unassigned_safe_projection
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: receipt_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200": { description: Safe unassigned local receipt without channel or asset claims, content: { application/json: { schema: { $ref: "#/components/schemas/ChannelAcquisitionEntrantReceipt" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/channel-acquisition-entrant-receipts/unassigned/{receipt_id}/reconcile:
+    post:
+      tags: [p4-channel]
+      operationId: reconcileUnassignedChannelAcquisitionEntrantReceipt
+      summary: Bind one unmatched or ambiguous receipt to a same-CorpID published asset and customer
+      x-p4-decision-evidence: P4-CH03-2026-08-26
+      x-aicrm-capability: channels.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: contact.acquisition_entrant_reconciliation_transaction
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: receipt_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - $ref: "#/components/parameters/CSRFToken"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ChannelAcquisitionEntrantReceiptReconcileRequest" } } }
+      responses:
+        "200": { description: Reconciled receipt with the server-locked channel and asset tuple, content: { application/json: { schema: { $ref: "#/components/schemas/ChannelAcquisitionEntrantReceipt" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /admin/orders:
     get:
       tags: [p4-order-compat]

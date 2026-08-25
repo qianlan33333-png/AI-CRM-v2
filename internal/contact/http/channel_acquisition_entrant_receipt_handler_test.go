@@ -14,11 +14,12 @@ import (
 )
 
 type entrantReceiptServiceStub struct {
-	command contactapp.ReconcileChannelAcquisitionEntrantReceiptCommand
-	item    contactapp.ChannelAcquisitionEntrantReceiptItem
-	page    contactapp.ChannelAcquisitionEntrantReceiptPage
-	err     error
-	calls   int
+	command    contactapp.ReconcileChannelAcquisitionEntrantReceiptCommand
+	item       contactapp.ChannelAcquisitionEntrantReceiptItem
+	page       contactapp.ChannelAcquisitionEntrantReceiptPage
+	err        error
+	calls      int
+	unassigned bool
 }
 
 func (stub *entrantReceiptServiceStub) List(context.Context, contactapp.ChannelAcquisitionEntrantReceiptListInput) (contactapp.ChannelAcquisitionEntrantReceiptPage, error) {
@@ -31,6 +32,23 @@ func (stub *entrantReceiptServiceStub) Get(context.Context, int64, int64, int64)
 }
 func (stub *entrantReceiptServiceStub) Reconcile(_ context.Context, command contactapp.ReconcileChannelAcquisitionEntrantReceiptCommand) (contactapp.ChannelAcquisitionEntrantReceiptItem, error) {
 	stub.calls++
+	stub.command = command
+	return stub.item, stub.err
+}
+func (stub *entrantReceiptServiceStub) ListUnassigned(context.Context, contactapp.UnassignedChannelAcquisitionEntrantReceiptListInput) (contactapp.ChannelAcquisitionEntrantReceiptPage, error) {
+	stub.calls++
+	stub.unassigned = true
+	return stub.page, stub.err
+}
+func (stub *entrantReceiptServiceStub) GetUnassigned(context.Context, int64, int64) (contactapp.ChannelAcquisitionEntrantReceiptItem, error) {
+	stub.calls++
+	stub.unassigned = true
+	return stub.item, stub.err
+}
+func (stub *entrantReceiptServiceStub) ReconcileUnassigned(_ context.Context, command contactapp.ReconcileChannelAcquisitionEntrantReceiptCommand) (contactapp.ChannelAcquisitionEntrantReceiptItem, error) {
+	stub.calls++
+	stub.unassigned = true
+	command.Unassigned = true
 	stub.command = command
 	return stub.item, stub.err
 }
@@ -57,14 +75,28 @@ func TestCH03EntrantReceiptReadIsSafeAndChannelScoped(t *testing.T) {
 	}
 }
 
-func TestCH03EntrantReceiptReadExposesUnboundDispositionWithoutAssetFields(t *testing.T) {
+func TestCH03ChannelScopedReadMasksUnboundReceipt(t *testing.T) {
+	now := time.Date(2026, 8, 26, 12, 0, 0, 0, time.UTC)
+	stub := &entrantReceiptServiceStub{item: contactapp.ChannelAcquisitionEntrantReceiptItem{ReceiptID: 92, Status: contactport.ChannelAcquisitionEntrantIgnored, OccurredAt: now, CreatedAt: now, UpdatedAt: now}, err: contactapp.ErrChannelAcquisitionEntrantReceiptNotFound}
+	handler := mustEntrantReceiptFragment(t, stub)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, acquisitionAssetRequest(http.MethodGet, "/api/admin/channels/41/acquisition-entrant-receipts/92", "", authport.CapabilityChannelsRead))
+	if response.Code != http.StatusNotFound || stub.calls != 1 {
+		t.Fatalf("status/calls/body=%d/%d/%s", response.Code, stub.calls, response.Body.String())
+	}
+	if stub.unassigned {
+		t.Fatal("channel path entered unassigned service")
+	}
+}
+
+func TestCH03UnassignedReadIsCorpScopedSafeProjection(t *testing.T) {
 	now := time.Date(2026, 8, 26, 12, 0, 0, 0, time.UTC)
 	stub := &entrantReceiptServiceStub{item: contactapp.ChannelAcquisitionEntrantReceiptItem{ReceiptID: 92, Status: contactport.ChannelAcquisitionEntrantIgnored, OccurredAt: now, CreatedAt: now, UpdatedAt: now}}
 	handler := mustEntrantReceiptFragment(t, stub)
 	response := httptest.NewRecorder()
-	handler.ServeHTTP(response, acquisitionAssetRequest(http.MethodGet, "/api/admin/channels/41/acquisition-entrant-receipts/92", "", authport.CapabilityChannelsRead))
-	if response.Code != http.StatusOK || stub.calls != 1 {
-		t.Fatalf("status/calls/body=%d/%d/%s", response.Code, stub.calls, response.Body.String())
+	handler.ServeHTTP(response, acquisitionAssetRequest(http.MethodGet, "/api/admin/channel-acquisition-entrant-receipts/unassigned/92", "", authport.CapabilityChannelsRead))
+	if response.Code != http.StatusOK || stub.calls != 1 || !stub.unassigned {
+		t.Fatalf("status/calls/unassigned/body=%d/%d/%v/%s", response.Code, stub.calls, stub.unassigned, response.Body.String())
 	}
 	for _, absent := range []string{"channel_id", "effect_id", "kind", "asset_version"} {
 		if strings.Contains(response.Body.String(), `"`+absent+`"`) {
@@ -96,9 +128,14 @@ func TestCH03EntrantReceiptReconcileRequiresWriteCSRFFixedBodyAndIdempotency(t *
 func TestCH03EntrantReceiptNonReconcileableStateReturnsConflict(t *testing.T) {
 	stub := &entrantReceiptServiceStub{err: contactapp.ErrChannelAcquisitionEntrantReceiptConflict}
 	handler := mustEntrantReceiptFragment(t, stub)
+	invalid := httptest.NewRecorder()
+	handler.ServeHTTP(invalid, acquisitionAssetRequest(http.MethodPost, "/api/admin/channel-acquisition-entrant-receipts/unassigned/92/reconcile", `{"effect_id":"eer_7","customer_id":22,"reason":"verified","corp_id":"corp-a"}`, authport.CapabilityChannelsWrite))
+	if invalid.Code != http.StatusUnprocessableEntity || stub.calls != 0 {
+		t.Fatalf("request-controlled CorpID status/calls/body=%d/%d/%s", invalid.Code, stub.calls, invalid.Body.String())
+	}
 	response := httptest.NewRecorder()
-	handler.ServeHTTP(response, acquisitionAssetRequest(http.MethodPost, "/api/admin/channels/41/acquisition-entrant-receipts/92/reconcile", `{"effect_id":"eer_7","customer_id":22,"reason":"verified"}`, authport.CapabilityChannelsWrite))
-	if response.Code != http.StatusConflict || stub.calls != 1 {
+	handler.ServeHTTP(response, acquisitionAssetRequest(http.MethodPost, "/api/admin/channel-acquisition-entrant-receipts/unassigned/92/reconcile", `{"effect_id":"eer_7","customer_id":22,"reason":"verified"}`, authport.CapabilityChannelsWrite))
+	if response.Code != http.StatusConflict || stub.calls != 1 || !stub.unassigned {
 		t.Fatalf("status/calls/body=%d/%d/%s", response.Code, stub.calls, response.Body.String())
 	}
 }

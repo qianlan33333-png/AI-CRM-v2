@@ -2870,6 +2870,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				{http.MethodGet, "/api/admin/channels/{channel_id}/acquisition-entrant-receipts", authport.CapabilityChannelsRead, false},
 				{http.MethodGet, "/api/admin/channels/{channel_id}/acquisition-entrant-receipts/{receipt_id}", authport.CapabilityChannelsRead, false},
 				{http.MethodPost, "/api/admin/channels/{channel_id}/acquisition-entrant-receipts/{receipt_id}/reconcile", authport.CapabilityChannelsWrite, true},
+				{http.MethodGet, "/api/admin/channel-acquisition-entrant-receipts/unassigned", authport.CapabilityChannelsRead, false},
+				{http.MethodGet, "/api/admin/channel-acquisition-entrant-receipts/unassigned/{receipt_id}", authport.CapabilityChannelsRead, false},
+				{http.MethodPost, "/api/admin/channel-acquisition-entrant-receipts/unassigned/{receipt_id}/reconcile", authport.CapabilityChannelsWrite, true},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.entrantReceipts); err != nil {
 					return nil, err

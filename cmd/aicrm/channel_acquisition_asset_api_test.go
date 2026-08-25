@@ -94,6 +94,9 @@ func TestCH03EntrantReceiptRoutesUseExactRootRBACAndCSRF(t *testing.T) {
 		{http.MethodGet, "/api/admin/channels/41/acquisition-entrant-receipts"},
 		{http.MethodGet, "/api/admin/channels/41/acquisition-entrant-receipts/91"},
 		{http.MethodPost, "/api/admin/channels/41/acquisition-entrant-receipts/91/reconcile"},
+		{http.MethodGet, "/api/admin/channel-acquisition-entrant-receipts/unassigned"},
+		{http.MethodGet, "/api/admin/channel-acquisition-entrant-receipts/unassigned/91"},
+		{http.MethodPost, "/api/admin/channel-acquisition-entrant-receipts/unassigned/91/reconcile"},
 	} {
 		request := legacyRequest(test.method, test.path, legacyToken(0x41))
 		if test.method == http.MethodPost {

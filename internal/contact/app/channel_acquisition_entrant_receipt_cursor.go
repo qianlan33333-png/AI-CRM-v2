@@ -14,6 +14,7 @@ import (
 
 const (
 	channelAcquisitionEntrantReceiptCursorPrefix        = "care1."
+	channelAcquisitionEntrantReceiptUnassignedPrefix    = "careu1."
 	channelAcquisitionEntrantReceiptMaximumCursorLength = 256
 	channelAcquisitionEntrantReceiptCursorPayloadSize   = 33
 )
@@ -43,8 +44,19 @@ func (codec *ChannelAcquisitionEntrantReceiptCursorCodec) Encode(actorID, channe
 	if !channelAcquisitionEntrantReceiptCursorReady(codec) || actorID < 1 || channelID < 1 || receiptID < 1 {
 		return "", ErrInvalidChannelAcquisitionEntrantReceipt
 	}
+	return codec.encode(actorID, channelID, receiptID, channelAcquisitionEntrantReceiptCursorPrefix, 1)
+}
+
+func (codec *ChannelAcquisitionEntrantReceiptCursorCodec) EncodeUnassigned(actorID, receiptID int64) (string, error) {
+	if !channelAcquisitionEntrantReceiptCursorReady(codec) || actorID < 1 || receiptID < 1 {
+		return "", ErrInvalidChannelAcquisitionEntrantReceipt
+	}
+	return codec.encode(actorID, 0, receiptID, channelAcquisitionEntrantReceiptUnassignedPrefix, 2)
+}
+
+func (codec *ChannelAcquisitionEntrantReceiptCursorCodec) encode(actorID, channelID, receiptID int64, prefix string, version byte) (string, error) {
 	payload := make([]byte, channelAcquisitionEntrantReceiptCursorPayloadSize)
-	payload[0] = 1
+	payload[0] = version
 	binary.BigEndian.PutUint64(payload[1:9], uint64(actorID))
 	binary.BigEndian.PutUint64(payload[9:17], uint64(channelID))
 	binary.BigEndian.PutUint64(payload[17:25], uint64(receiptID))
@@ -53,20 +65,31 @@ func (codec *ChannelAcquisitionEntrantReceiptCursorCodec) Encode(actorID, channe
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return "", ErrChannelAcquisitionEntrantReceiptUnavailable
 	}
-	raw := append(nonce, codec.aead.Seal(nil, nonce, payload, []byte(channelAcquisitionEntrantReceiptCursorPrefix))...)
-	return channelAcquisitionEntrantReceiptCursorPrefix + base64.RawURLEncoding.EncodeToString(raw), nil
+	raw := append(nonce, codec.aead.Seal(nil, nonce, payload, []byte(prefix))...)
+	return prefix + base64.RawURLEncoding.EncodeToString(raw), nil
 }
 
 func (codec *ChannelAcquisitionEntrantReceiptCursorCodec) Decode(token string, actorID, channelID int64) (int64, error) {
 	if !channelAcquisitionEntrantReceiptCursorReady(codec) || actorID < 1 || channelID < 1 || len(token) > channelAcquisitionEntrantReceiptMaximumCursorLength || !strings.HasPrefix(token, channelAcquisitionEntrantReceiptCursorPrefix) {
 		return 0, ErrInvalidChannelAcquisitionEntrantReceipt
 	}
-	raw, err := base64.RawURLEncoding.Strict().DecodeString(strings.TrimPrefix(token, channelAcquisitionEntrantReceiptCursorPrefix))
+	return codec.decode(token, actorID, channelID, channelAcquisitionEntrantReceiptCursorPrefix, 1)
+}
+
+func (codec *ChannelAcquisitionEntrantReceiptCursorCodec) DecodeUnassigned(token string, actorID int64) (int64, error) {
+	if !channelAcquisitionEntrantReceiptCursorReady(codec) || actorID < 1 || len(token) > channelAcquisitionEntrantReceiptMaximumCursorLength || !strings.HasPrefix(token, channelAcquisitionEntrantReceiptUnassignedPrefix) {
+		return 0, ErrInvalidChannelAcquisitionEntrantReceipt
+	}
+	return codec.decode(token, actorID, 0, channelAcquisitionEntrantReceiptUnassignedPrefix, 2)
+}
+
+func (codec *ChannelAcquisitionEntrantReceiptCursorCodec) decode(token string, actorID, channelID int64, prefix string, version byte) (int64, error) {
+	raw, err := base64.RawURLEncoding.Strict().DecodeString(strings.TrimPrefix(token, prefix))
 	if err != nil || len(raw) != codec.aead.NonceSize()+channelAcquisitionEntrantReceiptCursorPayloadSize+codec.aead.Overhead() {
 		return 0, ErrInvalidChannelAcquisitionEntrantReceipt
 	}
-	payload, err := codec.aead.Open(nil, raw[:codec.aead.NonceSize()], raw[codec.aead.NonceSize():], []byte(channelAcquisitionEntrantReceiptCursorPrefix))
-	if err != nil || len(payload) != channelAcquisitionEntrantReceiptCursorPayloadSize || payload[0] != 1 {
+	payload, err := codec.aead.Open(nil, raw[:codec.aead.NonceSize()], raw[codec.aead.NonceSize():], []byte(prefix))
+	if err != nil || len(payload) != channelAcquisitionEntrantReceiptCursorPayloadSize || payload[0] != version {
 		return 0, ErrInvalidChannelAcquisitionEntrantReceipt
 	}
 	decodedActor := int64(binary.BigEndian.Uint64(payload[1:9]))

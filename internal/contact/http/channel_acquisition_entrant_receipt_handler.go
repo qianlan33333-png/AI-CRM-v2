@@ -18,6 +18,9 @@ type channelAcquisitionEntrantReceiptService interface {
 	List(context.Context, contactapp.ChannelAcquisitionEntrantReceiptListInput) (contactapp.ChannelAcquisitionEntrantReceiptPage, error)
 	Get(context.Context, int64, int64, int64) (contactapp.ChannelAcquisitionEntrantReceiptItem, error)
 	Reconcile(context.Context, contactapp.ReconcileChannelAcquisitionEntrantReceiptCommand) (contactapp.ChannelAcquisitionEntrantReceiptItem, error)
+	ListUnassigned(context.Context, contactapp.UnassignedChannelAcquisitionEntrantReceiptListInput) (contactapp.ChannelAcquisitionEntrantReceiptPage, error)
+	GetUnassigned(context.Context, int64, int64) (contactapp.ChannelAcquisitionEntrantReceiptItem, error)
+	ReconcileUnassigned(context.Context, contactapp.ReconcileChannelAcquisitionEntrantReceiptCommand) (contactapp.ChannelAcquisitionEntrantReceiptItem, error)
 }
 
 type ChannelAcquisitionEntrantReceiptHandler struct {
@@ -46,6 +49,19 @@ func (handler *ChannelAcquisitionEntrantReceiptHandler) route(writer http.Respon
 		return
 	}
 	parts := strings.Split(strings.Trim(request.URL.Path, "/"), "/")
+	if len(parts) >= 4 && parts[0] == "api" && parts[1] == "admin" && parts[2] == "channel-acquisition-entrant-receipts" && parts[3] == "unassigned" {
+		switch {
+		case len(parts) == 4 && request.Method == http.MethodGet:
+			handler.listUnassigned(writer, request)
+		case len(parts) == 5 && request.Method == http.MethodGet:
+			handler.getUnassigned(writer, request, parts[4])
+		case len(parts) == 6 && parts[5] == "reconcile" && request.Method == http.MethodPost:
+			handler.reconcileUnassigned(writer, request, parts[4])
+		default:
+			handler.writeError(writer, request, contactapp.ErrChannelAcquisitionEntrantReceiptNotFound)
+		}
+		return
+	}
 	if len(parts) < 5 || parts[0] != "api" || parts[1] != "admin" || parts[2] != "channels" || parts[4] != "acquisition-entrant-receipts" {
 		handler.writeError(writer, request, contactapp.ErrChannelAcquisitionEntrantReceiptNotFound)
 		return
@@ -60,6 +76,44 @@ func (handler *ChannelAcquisitionEntrantReceiptHandler) route(writer http.Respon
 	default:
 		handler.writeError(writer, request, contactapp.ErrChannelAcquisitionEntrantReceiptNotFound)
 	}
+}
+
+func (handler *ChannelAcquisitionEntrantReceiptHandler) listUnassigned(writer http.ResponseWriter, request *http.Request) {
+	actor, err := handler.authorize(request, authport.CapabilityChannelsRead, false)
+	if err != nil {
+		handler.writeError(writer, request, err)
+		return
+	}
+	limit, cursor, err := entrantReceiptListQuery(request.URL)
+	if err != nil {
+		channelAcquisitionWriteValidation(writer, request, "query", err)
+		return
+	}
+	page, err := handler.service.ListUnassigned(request.Context(), contactapp.UnassignedChannelAcquisitionEntrantReceiptListInput{ActorID: actor, Limit: limit, Cursor: cursor})
+	if err != nil {
+		handler.writeError(writer, request, err)
+		return
+	}
+	channelAcquisitionWriteJSON(writer, http.StatusOK, page)
+}
+
+func (handler *ChannelAcquisitionEntrantReceiptHandler) getUnassigned(writer http.ResponseWriter, request *http.Request, rawReceiptID string) {
+	actor, err := handler.authorize(request, authport.CapabilityChannelsRead, false)
+	if err != nil {
+		handler.writeError(writer, request, err)
+		return
+	}
+	receiptID, err := channelAcquisitionID(rawReceiptID)
+	if err != nil {
+		handler.writeError(writer, request, contactapp.ErrChannelAcquisitionEntrantReceiptNotFound)
+		return
+	}
+	item, err := handler.service.GetUnassigned(request.Context(), actor, receiptID)
+	if err != nil {
+		handler.writeError(writer, request, err)
+		return
+	}
+	channelAcquisitionWriteJSON(writer, http.StatusOK, item)
 }
 
 func (handler *ChannelAcquisitionEntrantReceiptHandler) list(writer http.ResponseWriter, request *http.Request, rawChannelID string) {
@@ -123,14 +177,8 @@ func (handler *ChannelAcquisitionEntrantReceiptHandler) reconcile(writer http.Re
 		channelAcquisitionWriteValidation(writer, request, "Idempotency-Key", err)
 		return
 	}
-	object, err := channelAcquisitionDecodeObject(writer, request)
-	if err != nil || len(object) != 3 || object["effect_id"] == nil || object["customer_id"] == nil || object["reason"] == nil {
-		channelAcquisitionWriteValidation(writer, request, "body", contactapp.ErrInvalidChannelAcquisitionEntrantReceipt)
-		return
-	}
-	var effectID, reason string
-	var customerID int64
-	if json.Unmarshal(object["effect_id"], &effectID) != nil || json.Unmarshal(object["customer_id"], &customerID) != nil || json.Unmarshal(object["reason"], &reason) != nil {
+	effectID, customerID, reason, err := entrantReceiptReconcileBody(writer, request)
+	if err != nil {
 		channelAcquisitionWriteValidation(writer, request, "body", contactapp.ErrInvalidChannelAcquisitionEntrantReceipt)
 		return
 	}
@@ -140,6 +188,48 @@ func (handler *ChannelAcquisitionEntrantReceiptHandler) reconcile(writer http.Re
 		return
 	}
 	channelAcquisitionWriteJSON(writer, http.StatusOK, item)
+}
+
+func (handler *ChannelAcquisitionEntrantReceiptHandler) reconcileUnassigned(writer http.ResponseWriter, request *http.Request, rawReceiptID string) {
+	actor, err := handler.authorize(request, authport.CapabilityChannelsWrite, true)
+	if err != nil {
+		handler.writeError(writer, request, err)
+		return
+	}
+	receiptID, err := channelAcquisitionID(rawReceiptID)
+	if err != nil {
+		handler.writeError(writer, request, contactapp.ErrChannelAcquisitionEntrantReceiptNotFound)
+		return
+	}
+	key, err := channelAcquisitionIdempotencyKey(request)
+	if err != nil {
+		channelAcquisitionWriteValidation(writer, request, "Idempotency-Key", err)
+		return
+	}
+	effectID, customerID, reason, err := entrantReceiptReconcileBody(writer, request)
+	if err != nil {
+		channelAcquisitionWriteValidation(writer, request, "body", contactapp.ErrInvalidChannelAcquisitionEntrantReceipt)
+		return
+	}
+	item, err := handler.service.ReconcileUnassigned(request.Context(), contactapp.ReconcileChannelAcquisitionEntrantReceiptCommand{ActorID: actor, ReceiptID: receiptID, EffectID: effectID, CustomerID: customerID, Reason: reason, IdempotencyKey: key})
+	if err != nil {
+		handler.writeError(writer, request, err)
+		return
+	}
+	channelAcquisitionWriteJSON(writer, http.StatusOK, item)
+}
+
+func entrantReceiptReconcileBody(writer http.ResponseWriter, request *http.Request) (string, int64, string, error) {
+	object, err := channelAcquisitionDecodeObject(writer, request)
+	if err != nil || len(object) != 3 || object["effect_id"] == nil || object["customer_id"] == nil || object["reason"] == nil {
+		return "", 0, "", contactapp.ErrInvalidChannelAcquisitionEntrantReceipt
+	}
+	var effectID, reason string
+	var customerID int64
+	if json.Unmarshal(object["effect_id"], &effectID) != nil || json.Unmarshal(object["customer_id"], &customerID) != nil || json.Unmarshal(object["reason"], &reason) != nil {
+		return "", 0, "", contactapp.ErrInvalidChannelAcquisitionEntrantReceipt
+	}
+	return effectID, customerID, reason, nil
 }
 
 func (handler *ChannelAcquisitionEntrantReceiptHandler) authorize(request *http.Request, capability authport.Capability, csrf bool) (int64, error) {
