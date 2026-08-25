@@ -153,6 +153,85 @@ func TestExternalContactSyncDisabledReaderDoesNotAdvanceCursor(t *testing.T) {
 	}
 }
 
+func TestExternalContactSyncStartsNextRoundAfterCompletedPeriod(t *testing.T) {
+	now := time.Unix(1700000000, 0).UTC()
+	state := &memoryState{now: func() time.Time { return now }}
+	handoff := &memorySyncHandoff{}
+	jobs := &memorySyncJobs{}
+	reader := &fakePageReader{pages: map[string]wecomclient.ExternalContactPage{
+		"": {ExternalUserIDs: []string{"wo-1"}},
+	}}
+	service, err := NewExternalContactSyncServiceWithHandoff(
+		immediateUoW{}, reader, state, handoff, jobs, "corp-a", func() time.Time { return now },
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = service.SyncNext(context.Background(), "owner-1"); err != nil {
+		t.Fatalf("first round SyncNext() error = %v", err)
+	}
+	if _, err = service.SyncNext(context.Background(), "owner-1"); !errors.Is(err, ErrCursorSyncDone) {
+		t.Fatalf("same period SyncNext() error = %v", err)
+	}
+	now = now.Add(ExternalContactSyncPeriod)
+	reader.pages[""] = wecomclient.ExternalContactPage{ExternalUserIDs: []string{"wo-2"}}
+	if page, err := service.SyncNext(context.Background(), "owner-1"); err != nil || !reflect.DeepEqual(page.ExternalUserIDs, []string{"wo-2"}) {
+		t.Fatalf("next round SyncNext() = %#v, %v", page, err)
+	}
+	if state.restarts != 1 || !reflect.DeepEqual(reader.cursors, []string{"", ""}) || len(handoff.facts) != 2 {
+		t.Fatalf("restarts=%d cursors=%#v facts=%#v", state.restarts, reader.cursors, handoff.facts)
+	}
+}
+
+func TestExternalContactSyncConcurrentRoundRestartCannotResetActiveCursor(t *testing.T) {
+	now := time.Unix(1700000000, 0).UTC()
+	state := &memoryState{exists: true, completed: true, completedAt: now.Add(-ExternalContactSyncPeriod), now: func() time.Time { return now }}
+	reader := &fakePageReader{pages: map[string]wecomclient.ExternalContactPage{
+		"":         {ExternalUserIDs: []string{"wo-1"}, NextCursor: "cursor-2"},
+		"cursor-2": {ExternalUserIDs: []string{"wo-2"}},
+	}}
+	first, err := NewExternalContactSyncServiceWithHandoff(immediateUoW{}, reader, state, &memorySyncHandoff{}, &memorySyncJobs{}, "corp-a", func() time.Time { return now })
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := NewExternalContactSyncServiceWithHandoff(immediateUoW{}, reader, state, &memorySyncHandoff{}, &memorySyncJobs{}, "corp-a", func() time.Time { return now })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = first.SyncNext(context.Background(), "owner-1"); err != nil || state.cursor != "cursor-2" || state.completed {
+		t.Fatalf("first SyncNext() = %v state=%#v", err, state)
+	}
+	if page, err := second.SyncNext(context.Background(), "owner-1"); err != nil || !reflect.DeepEqual(page.ExternalUserIDs, []string{"wo-2"}) {
+		t.Fatalf("replayed SyncNext() = %#v, %v", page, err)
+	}
+	if state.restarts != 1 || !state.completed || !reflect.DeepEqual(reader.cursors, []string{"", "cursor-2"}) {
+		t.Fatalf("restarts=%d state=%#v cursors=%#v", state.restarts, state, reader.cursors)
+	}
+}
+
+func TestExternalContactSyncConcurrentRestartLoserResumesActiveCursor(t *testing.T) {
+	now := time.Unix(1700000000, 0).UTC()
+	state := &memoryState{
+		exists: true, completed: true, completedAt: now.Add(-ExternalContactSyncPeriod),
+		restartConflictCursor: "cursor-2",
+	}
+	reader := &fakePageReader{pages: map[string]wecomclient.ExternalContactPage{
+		"cursor-2": {ExternalUserIDs: []string{"wo-2"}},
+	}}
+	service, err := NewExternalContactSyncServiceWithHandoff(
+		immediateUoW{}, reader, state, &memorySyncHandoff{}, &memorySyncJobs{}, "corp-a", func() time.Time { return now },
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if page, err := service.SyncNext(context.Background(), "owner-1"); err != nil || !reflect.DeepEqual(page.ExternalUserIDs, []string{"wo-2"}) {
+		t.Fatalf("concurrent restart loser SyncNext() = %#v, %v", page, err)
+	}
+	if state.restarts != 0 || !reflect.DeepEqual(reader.cursors, []string{"cursor-2"}) {
+		t.Fatalf("restarts=%d cursors=%#v", state.restarts, reader.cursors)
+	}
+}
+
 type immediateUoW struct{}
 
 func (immediateUoW) Within(ctx context.Context, callback func(context.Context) error) error {
@@ -174,10 +253,14 @@ func (reader *fakePageReader) ListExternalContacts(_ context.Context, _ string, 
 }
 
 type memoryState struct {
-	exists       bool
-	cursor       string
-	completed    bool
-	conflictOnce bool
+	exists                bool
+	cursor                string
+	completed             bool
+	completedAt           time.Time
+	restarts              int
+	now                   func() time.Time
+	conflictOnce          bool
+	restartConflictCursor string
 }
 
 type memorySyncHandoff struct{ facts []SyncHandoff }
@@ -211,7 +294,21 @@ func (state *memoryState) LoadCursor(context.Context, string) (CursorState, erro
 	if !state.exists {
 		return CursorState{}, nil
 	}
-	return CursorState{Cursor: state.cursor, Completed: state.completed}, nil
+	return CursorState{Cursor: state.cursor, Completed: state.completed, CompletedAt: state.completedAt}, nil
+}
+
+func (state *memoryState) RestartCompleted(_ context.Context, _ string) error {
+	if state.restartConflictCursor != "" {
+		state.cursor, state.completed, state.completedAt = state.restartConflictCursor, false, time.Time{}
+		state.restartConflictCursor = ""
+		return ErrCursorAdvanced
+	}
+	if !state.exists || !state.completed || state.cursor != "" {
+		return ErrCursorAdvanced
+	}
+	state.cursor, state.completed, state.completedAt = "", false, time.Time{}
+	state.restarts++
+	return nil
 }
 
 func (state *memoryState) AdvanceCursor(_ context.Context, _ string, expected, next string, completed bool) error {
@@ -224,5 +321,9 @@ func (state *memoryState) AdvanceCursor(_ context.Context, _ string, expected, n
 		return ErrCursorAdvanced
 	}
 	state.exists, state.cursor, state.completed = true, next, completed
+	state.completedAt = time.Time{}
+	if completed && state.now != nil {
+		state.completedAt = state.now().UTC()
+	}
 	return nil
 }

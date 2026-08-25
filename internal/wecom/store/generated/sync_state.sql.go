@@ -7,6 +7,8 @@ package wecomdb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const advanceWeComSyncState = `-- name: AdvanceWeComSyncState :one
@@ -50,19 +52,36 @@ func (q *Queries) AdvanceWeComSyncState(ctx context.Context, arg AdvanceWeComSyn
 }
 
 const loadWeComSyncState = `-- name: LoadWeComSyncState :one
-SELECT cursor, (completed_at IS NOT NULL)::boolean AS completed
+SELECT cursor, (completed_at IS NOT NULL)::boolean AS completed, completed_at
 FROM wecom_sync_state
 WHERE sync_key = $1::text
 `
 
 type LoadWeComSyncStateRow struct {
-	Cursor    string `json:"cursor"`
-	Completed bool   `json:"completed"`
+	Cursor      string             `json:"cursor"`
+	Completed   bool               `json:"completed"`
+	CompletedAt pgtype.Timestamptz `json:"completed_at"`
 }
 
 func (q *Queries) LoadWeComSyncState(ctx context.Context, syncKey string) (LoadWeComSyncStateRow, error) {
 	row := q.db.QueryRow(ctx, loadWeComSyncState, syncKey)
 	var i LoadWeComSyncStateRow
-	err := row.Scan(&i.Cursor, &i.Completed)
+	err := row.Scan(&i.Cursor, &i.Completed, &i.CompletedAt)
 	return i, err
+}
+
+const restartCompletedWeComSyncState = `-- name: RestartCompletedWeComSyncState :one
+UPDATE wecom_sync_state
+SET cursor = '', completed_at = NULL, updated_at = now()
+WHERE sync_key = $1::text
+  AND cursor = ''
+  AND completed_at IS NOT NULL
+RETURNING cursor
+`
+
+func (q *Queries) RestartCompletedWeComSyncState(ctx context.Context, syncKey string) (string, error) {
+	row := q.db.QueryRow(ctx, restartCompletedWeComSyncState, syncKey)
+	var cursor string
+	err := row.Scan(&cursor)
+	return cursor, err
 }

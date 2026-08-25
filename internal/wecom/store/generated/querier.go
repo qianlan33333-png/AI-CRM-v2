@@ -38,6 +38,7 @@ type Querier interface {
 	MessageArchiveHealth(ctx context.Context) (MessageArchiveHealthRow, error)
 	RecordWeComTagEffectClaim(ctx context.Context, arg RecordWeComTagEffectClaimParams) (WecomTagEffect, error)
 	ReserveMessageArchiveSyncReceipt(ctx context.Context, arg ReserveMessageArchiveSyncReceiptParams) (ReserveMessageArchiveSyncReceiptRow, error)
+	RestartCompletedWeComSyncState(ctx context.Context, syncKey string) (string, error)
 }
 
 var _ Querier = (*Queries)(nil)

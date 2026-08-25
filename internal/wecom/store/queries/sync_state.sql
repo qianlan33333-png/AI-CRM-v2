@@ -1,7 +1,15 @@
 -- name: LoadWeComSyncState :one
-SELECT cursor, (completed_at IS NOT NULL)::boolean AS completed
+SELECT cursor, (completed_at IS NOT NULL)::boolean AS completed, completed_at
 FROM wecom_sync_state
 WHERE sync_key = sqlc.arg(sync_key)::text;
+
+-- name: RestartCompletedWeComSyncState :one
+UPDATE wecom_sync_state
+SET cursor = '', completed_at = NULL, updated_at = now()
+WHERE sync_key = sqlc.arg(sync_key)::text
+  AND cursor = ''
+  AND completed_at IS NOT NULL
+RETURNING cursor;
 
 -- name: AdvanceWeComSyncState :one
 INSERT INTO wecom_sync_state (sync_key, cursor, completed_at)

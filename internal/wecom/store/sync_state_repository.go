@@ -32,10 +32,32 @@ func (repository *SyncStateRepository) LoadCursor(ctx context.Context, key strin
 	if err != nil {
 		return wecomapp.CursorState{}, err
 	}
-	if !validCursor(row.Cursor) || (row.Completed && row.Cursor != "") {
+	if !validCursor(row.Cursor) || (row.Completed && (row.Cursor != "" || !row.CompletedAt.Valid)) {
 		return wecomapp.CursorState{}, wecomapp.ErrCursorSyncFailed
 	}
-	return wecomapp.CursorState{Cursor: row.Cursor, Completed: row.Completed}, nil
+	state := wecomapp.CursorState{Cursor: row.Cursor, Completed: row.Completed}
+	if row.Completed {
+		state.CompletedAt = row.CompletedAt.Time.UTC()
+	}
+	return state, nil
+}
+
+func (repository *SyncStateRepository) RestartCompleted(ctx context.Context, key string) error {
+	if repository == nil || !validSyncKey(key) {
+		return wecomapp.ErrInvalidCursorSync
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	row, err := wecomdb.New(tx).RestartCompletedWeComSyncState(ctx, key)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return wecomapp.ErrCursorAdvanced
+	}
+	if err != nil || row != "" {
+		return errors.Join(wecomapp.ErrCursorSyncFailed, err)
+	}
+	return nil
 }
 
 func (repository *SyncStateRepository) AdvanceCursor(

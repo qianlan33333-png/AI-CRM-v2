@@ -29,7 +29,7 @@ func schedulerPlan(workers *platformjobqueue.WorkerRegistry, directorySync appco
 	if err != nil {
 		return nil, err
 	}
-	directorySyncSchedule, err := platformscheduler.Every(15 * time.Minute)
+	directorySyncSchedule, err := platformscheduler.Every(wecomapp.ExternalContactSyncPeriod)
 	if err != nil {
 		return nil, err
 	}
