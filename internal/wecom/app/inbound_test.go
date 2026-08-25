@@ -81,7 +81,6 @@ func TestParseCallbackEnvelopeExternalContactLifecycleDoesNotBecomeEntrant(t *te
 func TestParseExternalContactCallbackFactRejectsMalformedOrUnsafeEntrants(t *testing.T) {
 	valid := `<xml><ToUserName>corp-a</ToUserName><CreateTime>1700000000</CreateTime><MsgType>event</MsgType><Event>change_external_contact</Event><ChangeType>add_external_contact</ChangeType><UserID>staff-1</UserID><ExternalUserID>external-1</ExternalUserID></xml>`
 	for _, message := range []string{
-		`<xml><ToUserName>corp-a</ToUserName><CreateTime>1700000000</CreateTime><MsgType>event</MsgType><Event>change_external_contact</Event><ChangeType>add_external_contact</ChangeType><ExternalUserID>external-1</ExternalUserID></xml>`,
 		strings.Replace(valid, "corp-a", "corp-b", 1),
 		strings.Replace(valid, "</xml>", "</xml>trailing", 1),
 		strings.Replace(valid, "</ExternalUserID>", "</ExternalUserID><ExternalUserId>external-2</ExternalUserId>", 1),
@@ -90,6 +89,14 @@ func TestParseExternalContactCallbackFactRejectsMalformedOrUnsafeEntrants(t *tes
 		if _, err := ParseExternalContactCallbackFact([]byte(message), "corp-a"); !errors.Is(err, ErrInvalidInboundMessage) {
 			t.Fatalf("ParseExternalContactCallbackFact(%q) error = %v", message, err)
 		}
+	}
+}
+
+func TestParseCallbackEnvelopeLegacyAddContactWithoutAssigneeStaysNonEntrant(t *testing.T) {
+	message := []byte(`<xml><ToUserName>corp-a</ToUserName><CreateTime>1700000000</CreateTime><MsgType>event</MsgType><Event>change_external_contact</Event><ChangeType>add_external_contact</ChangeType><ExternalUserID>external-1</ExternalUserID></xml>`)
+	envelope, err := ParseCallbackEnvelope(message, "corp-a")
+	if err != nil || envelope.ExternalContact == nil || envelope.ExternalContact.UserID != "" || envelope.ExternalContact.IsEntrant() || envelope.InitialState != "pending" {
+		t.Fatalf("legacy B01 envelope=%#v err=%v", envelope, err)
 	}
 }
 
