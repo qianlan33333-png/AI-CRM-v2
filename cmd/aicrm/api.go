@@ -171,6 +171,7 @@ type candidateHandler struct {
 	radarPublic               *radarthttp.PublicHandler
 	surveyH5OAuth             *surveyhttp.H5OAuthHandler
 	surveyExternalPushDetail  *surveyhttp.ExternalPushDetailHandler
+	surveyPushReconcile       *surveyhttp.ExternalPushReconcileHandler
 
 	segmentRefresh  *segmenthttp.RefreshHandler
 	identityReviews *identityhttp.ReviewHandler
@@ -1302,6 +1303,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	surveyPublicService.SetBinder(surveyapp.PublicExternalPushBinder{Push: surveyExternalPushService})
 	surveyExternalPushDetailHandler := &surveyhttp.ExternalPushDetailHandler{Application: surveyExternalPushService}
+	surveyExternalPushReconcileHandler := &surveyhttp.ExternalPushReconcileHandler{Application: surveyExternalPushService}
 	campaignDispatchRepository, err := outboundstore.NewCampaignDispatchRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -1380,6 +1382,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		release:                  releaseHandler,
 	}
 	candidate.surveyExternalPushDetail = surveyExternalPushDetailHandler
+	candidate.surveyPushReconcile = surveyExternalPushReconcileHandler
 	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -2047,6 +2050,14 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				return
 			}
 			concrete.GetSurveyExternalPushDetail(writer, request)
+		})},
+		{http.MethodPost, surveyhttp.ExternalPushReconcilePath, authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			concrete, ok := candidate.(*candidateHandler)
+			if !ok {
+				writeSurveyPublicAdminUnavailable(writer, request)
+				return
+			}
+			concrete.ReconcileSurveyExternalPush(writer, request)
 		})},
 	}
 	for _, route := range routes {

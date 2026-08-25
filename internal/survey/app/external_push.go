@@ -13,7 +13,12 @@ import (
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
 )
 
-var ErrExternalPushUnavailable = errors.New("survey external push unavailable")
+var (
+	ErrExternalPushUnavailable       = errors.New("survey external push unavailable")
+	ErrExternalPushNotFound          = errors.New("survey external push binding not found")
+	ErrExternalPushReconcileRequired = errors.New("survey external push reconciliation required")
+	ErrExternalPushReconcileConflict = errors.New("survey external push reconciliation conflict")
+)
 
 type ExternalPushBinding struct {
 	ID, SubmissionID, CustomerID                                                 int64
@@ -29,14 +34,28 @@ type ExternalPushCommand struct {
 	SourceRefDigest, TargetRefDigest, PayloadDigest, PolicyVersionHash [32]byte
 	IdempotencyKey                                                     string
 }
+type ExternalPushReconcileCommand struct {
+	QuestionnaireID                  surveyport.ID
+	SubmissionID                     int64
+	Lease                            eer.Lease
+	EvidenceDigest                   [32]byte
+	ProviderAccepted, DeliveryProven bool
+	IdempotencyKey                   string
+}
 type ExternalPushStore interface {
 	BindExternalPush(context.Context, ExternalPushBinding) (ExternalPushBinding, error)
 	GetExternalPush(context.Context, surveyport.ID, int64) (ExternalPushBinding, error)
+	VerifyExternalPushReconcile(context.Context, ExternalPushReconcileCommand) (ExternalPushBinding, error)
+	RecordExternalPushReconcile(context.Context, ExternalPushReconcileCommand) (ExternalPushBinding, error)
+}
+type externalPushRuntime interface {
+	Accept(context.Context, eer.AcceptCommand) (eer.Projection, eer.OperationReceipt, error)
+	Reconcile(context.Context, eer.ReconcileCommand) (eer.Projection, eer.OperationReceipt, error)
 }
 type ExternalPushService struct {
 	uow     platformport.UnitOfWork
 	store   ExternalPushStore
-	runtime *eer.Service
+	runtime externalPushRuntime
 }
 
 type PublicExternalPushBinder struct{ Push *ExternalPushService }
@@ -50,7 +69,7 @@ func (b PublicExternalPushBinder) BindPublicSubmission(ctx context.Context, reco
 	return err
 }
 
-func NewExternalPushService(uow platformport.UnitOfWork, store ExternalPushStore, runtime *eer.Service) (*ExternalPushService, error) {
+func NewExternalPushService(uow platformport.UnitOfWork, store ExternalPushStore, runtime externalPushRuntime) (*ExternalPushService, error) {
 	if uow == nil || store == nil || runtime == nil {
 		return nil, ErrExternalPushUnavailable
 	}
@@ -90,6 +109,43 @@ func (s *ExternalPushService) Detail(ctx context.Context, q surveyport.ID, submi
 		return ExternalPushBinding{}, ErrExternalPushUnavailable
 	}
 	return v, nil
+}
+func (s *ExternalPushService) Reconcile(ctx context.Context, c ExternalPushReconcileCommand) (ExternalPushBinding, error) {
+	if s == nil || c.QuestionnaireID < 1 || c.SubmissionID < 1 || !c.LeaseFieldsValid() || c.EvidenceDigest == [32]byte{} || len(c.IdempotencyKey) < 16 {
+		return ExternalPushBinding{}, ErrExternalPushReconcileRequired
+	}
+	var out ExternalPushBinding
+	err := s.uow.Within(ctx, func(tx context.Context) error {
+		binding, err := s.store.VerifyExternalPushReconcile(tx, c)
+		if err != nil {
+			return err
+		}
+		if binding.EffectID != c.Lease.EffectID {
+			return ErrExternalPushReconcileRequired
+		}
+		projection, _, err := s.runtime.Reconcile(tx, eer.ReconcileCommand{
+			Lease: c.Lease, ReceiptKeyDigest: pushTextDigest("survey/push/reconcile", c.IdempotencyKey), EvidenceDigest: pushDigest(c.EvidenceDigest),
+		})
+		if err != nil {
+			return err
+		}
+		if projection.ID != binding.EffectID || projection.State != eer.StateReconciled {
+			return ErrExternalPushReconcileRequired
+		}
+		out, err = s.store.RecordExternalPushReconcile(tx, c)
+		return err
+	})
+	if err != nil {
+		return ExternalPushBinding{}, err
+	}
+	if out.EffectID != c.Lease.EffectID || out.State != eer.StateReconciled {
+		return ExternalPushBinding{}, ErrExternalPushReconcileRequired
+	}
+	return out, nil
+}
+
+func (c ExternalPushReconcileCommand) LeaseFieldsValid() bool {
+	return c.Lease.EffectID != "" && c.Lease.Generation > 0 && c.Lease.Fence > 0 && !c.Lease.ExpiresAt.IsZero()
 }
 func pushDigest(v [32]byte) eer.Digest { return eer.Digest("sha256:" + hex.EncodeToString(v[:])) }
 func pushTextDigest(label, value string) eer.Digest {
