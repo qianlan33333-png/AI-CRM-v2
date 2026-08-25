@@ -274,7 +274,7 @@ owners:
 
   media:
     package: internal/media
-    tables: [media_images, media_image_blobs, media_image_upload_receipts, media_image_delete_receipts, media_group_invites, media_group_invite_operation_receipts, media_thumbnail_cache_entries, media_miniprograms, media_miniprogram_import_preflights, media_miniprogram_import_ledger, media_miniprogram_operation_receipts, media_attachments, media_attachment_blobs, media_attachment_mutation_receipts]
+    tables: [media_images, media_image_blobs, media_image_upload_receipts, media_image_delete_receipts, media_group_invites, media_group_invite_operation_receipts, media_thumbnail_cache_entries, media_miniprograms, media_miniprogram_import_preflights, media_miniprogram_import_ledger, media_miniprogram_operation_receipts, media_attachments, media_attachment_blobs, media_attachment_mutation_receipts, media_content_packages, media_content_package_refs, media_content_package_mutation_receipts, media_attachment_uploads, media_attachment_upload_parts, media_campaign_delivery_bindings, outbound_media_acceptances, outbound_media_effect_bindings, outbound_media_reconciliation_receipts]
     constraints:
       media_images: validated_single_instance_image_metadata
       media_image_blobs: exact_validated_image_bytes_owned_by_media
@@ -290,6 +290,15 @@ owners:
       media_attachments: validated_local_PDF_attachment_metadata
       media_attachment_blobs: exact_validated_local_PDF_bytes
       media_attachment_mutation_receipts: actor_scoped_transactional_attachment_mutation_idempotency_receipts
+      media_content_packages: versioned_local_content_compositions_without_provider_payload_or_public_delivery_claim
+      media_content_package_refs: ordered_restrictive_references_to_canonical_media_materials
+      media_content_package_mutation_receipts: actor_operation_scoped_transactional_exact_replay_and_payload_conflict_receipts
+      media_attachment_uploads: actor_owned_local_private_PDF_multipart_upload_state
+      media_attachment_upload_parts: digest_bound_local_private_PDF_parts_with_conflicting_replacement_rejected
+      media_campaign_delivery_bindings: versioned_local_campaign_plan_package_and_group_invite_composition_without_send_fact
+      outbound_media_acceptances: immutable_digest_only_local_EER_acceptance_snapshot_without_provider_or_delivery_fact
+      outbound_media_effect_bindings: immutable_package_target_snapshot_to_EER_lineage
+      outbound_media_reconciliation_receipts: immutable_human_verified_digest_only_reconciliation_fact
 
   radar:
     package: internal/radar

@@ -356,13 +356,19 @@ func clearCampaignFacts(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 		t.Fatal(err)
 	}
 	if touchPlans != nil {
-		var reviewReceipts *string
+		var reviewReceipts, mediaDeliveryBindings *string
 		if err := pool.QueryRow(ctx, `SELECT to_regclass('public.cloud_campaign_touch_plan_review_receipts')::text`).Scan(&reviewReceipts); err != nil {
+			t.Fatal(err)
+		}
+		if err := pool.QueryRow(ctx, `SELECT to_regclass('public.media_campaign_delivery_bindings')::text`).Scan(&mediaDeliveryBindings); err != nil {
 			t.Fatal(err)
 		}
 		truncate := `TRUNCATE TABLE public.cloud_campaign_touch_plan_receipts, public.cloud_campaign_touch_plan_targets, public.cloud_campaign_touch_plan_steps, public.cloud_campaign_touch_plans`
 		if reviewReceipts != nil {
 			truncate = `TRUNCATE TABLE public.cloud_campaign_touch_plan_review_receipts, public.cloud_campaign_touch_plan_handoffs, public.cloud_campaign_touch_plan_reviews, public.cloud_campaign_touch_plan_receipts, public.cloud_campaign_touch_plan_targets, public.cloud_campaign_touch_plan_steps, public.cloud_campaign_touch_plans`
+		}
+		if mediaDeliveryBindings != nil {
+			truncate += ` CASCADE`
 		}
 		if _, err := pool.Exec(ctx, truncate); err != nil {
 			t.Fatal(err)

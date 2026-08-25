@@ -8,6 +8,49 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type MediaAttachmentUploadPart struct {
+	UploadID   int64              `json:"upload_id"`
+	PartNumber int32              `json:"part_number"`
+	Digest     []byte             `json:"digest"`
+	Content    []byte             `json:"content"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
+type MediaCampaignDeliveryBinding struct {
+	ID            int64              `json:"id"`
+	CampaignCode  string             `json:"campaign_code"`
+	PlanID        string             `json:"plan_id"`
+	PackageID     int64              `json:"package_id"`
+	GroupInviteID int64              `json:"group_invite_id"`
+	Version       int64              `json:"version"`
+	CreatedBy     int64              `json:"created_by"`
+	UpdatedBy     int64              `json:"updated_by"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+}
+
+type MediaContentPackage struct {
+	ID          int64              `json:"id"`
+	Name        string             `json:"name"`
+	ContentText string             `json:"content_text"`
+	Enabled     bool               `json:"enabled"`
+	Version     int64              `json:"version"`
+	CreatedBy   int64              `json:"created_by"`
+	UpdatedBy   int64              `json:"updated_by"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
+type MediaContentPackageMutationReceipt struct {
+	ID             int64              `json:"id"`
+	Operation      string             `json:"operation"`
+	ActorID        int64              `json:"actor_id"`
+	KeyDigest      []byte             `json:"key_digest"`
+	PayloadDigest  []byte             `json:"payload_digest"`
+	ResultSnapshot []byte             `json:"result_snapshot"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+}
+
 type MediaGroupInvite struct {
 	ID           int64              `json:"id"`
 	Name         string             `json:"name"`
@@ -22,4 +65,26 @@ type MediaGroupInvite struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 	ArchivedAt   pgtype.Timestamptz `json:"archived_at"`
+}
+
+type OutboundMediaEffectBinding struct {
+	ID               int64              `json:"id"`
+	ContentPackageID int64              `json:"content_package_id"`
+	TargetDigest     string             `json:"target_digest"`
+	SnapshotDigest   string             `json:"snapshot_digest"`
+	EffectID         int64              `json:"effect_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}
+
+type OutboundMediaReconciliationReceipt struct {
+	EffectID             int64              `json:"effect_id"`
+	Generation           int64              `json:"generation"`
+	Fence                int64              `json:"fence"`
+	LeaseExpiresAt       pgtype.Timestamptz `json:"lease_expires_at"`
+	EvidenceDigest       string             `json:"evidence_digest"`
+	IdempotencyKeyDigest string             `json:"idempotency_key_digest"`
+	ProviderAccepted     bool               `json:"provider_accepted"`
+	DeliveryProven       bool               `json:"delivery_proven"`
+	EerReceiptDigest     string             `json:"eer_receipt_digest"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 }

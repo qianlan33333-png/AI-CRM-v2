@@ -7,7 +7,7 @@ TOOLS_MOD := tools/go.mod
 ORVAL ?= ./node_modules/.bin/orval
 
 .PHONY: bootstrap-tools version-check generate generate-openapi generate-sqlc generate-orval orval-tool-check orval-check generate-check gitless-generate-test p4-dm01-migration-acceptance p4-dm01-two-pg-acceptance
-.PHONY: mod-check migration-validate migration-guard-negative migration-integration
+.PHONY: mod-check migration-validate migration-guard-negative migration-integration p4-media-content-delivery-acceptance
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
 .PHONY: p4-h01a1-media-acceptance p4-h03-media-acceptance p4-miniprogram-library-ab-acceptance p4-hxc-sender-read-acceptance p4-delivery-lineage-0308-acceptance p4-customer-profile-tags-0301-acceptance p4-i01b-product-entitlement-acceptance
@@ -159,6 +159,10 @@ migration-integration:
 		"$$MIGRATION_TEST_DATABASE_URL" down
 	@$(GO) tool -modfile=$(TOOLS_MOD) goose -dir migrations postgres \
 		"$$MIGRATION_TEST_DATABASE_URL" up
+
+p4-media-content-delivery-acceptance:
+	@P4MEDIADELIVERY_TEST_DATABASE_URL="$(P4MEDIADELIVERY_TEST_DATABASE_URL)" GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" \
+		acceptance/media/content_delivery_migration_compatibility.sh
 
 p4-dm01-migration-acceptance:
 	@test -n "$${P4_DM01_TEST_DATABASE_URL:-}" || { echo "P4_DM01_TEST_DATABASE_URL is required" >&2; exit 2; }

@@ -188,6 +188,10 @@ type Handler struct {
 	media                   legacyMediaApplication
 	imageDeletes            legacyImageDeleteApplication
 	attachments             legacyAttachmentApplication
+	contentDelivery         mediaport.ContentDeliveryService
+	outboundMediaAccepted   outboundMediaAcceptedApplication
+	outboundMediaDetail     outboundMediaEffectDetailApplication
+	outboundMediaReconcile  outboundMediaReconcileApplication
 	groupInvites            groupInviteApplication
 	miniPrograms            miniProgramApplication
 	surveys                 legacySurveyApplication

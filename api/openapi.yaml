@@ -10464,6 +10464,196 @@ paths:
       parameters: [{name: action_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
       requestBody: {required: true, content: {application/json: {schema: {type: object, additionalProperties: false, required: [generation, fence, lease_expires_at, evidence_digest], properties: {generation: {type: integer, format: int64, minimum: 1}, fence: {type: integer, format: int64, minimum: 1}, lease_expires_at: {type: string, format: date-time}, evidence_digest: {type: string, pattern: '^sha256:[0-9a-f]{64}$'}}}}}}
       responses: {"200": {description: Reconciled local action projection; never delivery proof.}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "404": {$ref: "#/components/responses/NotFound"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/admin/content-packages/preview:
+    post:
+      tags: [p4-media-content-delivery]
+      operationId: previewMediaContentPackage
+      summary: Validate one local content package without provider delivery
+      x-p4-decision-evidence: P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.content_delivery.local_validation
+      x-aicrm-external-effect: none
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentPackageRequest'}}}}
+      responses: {'200': {description: Local validation preview, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentPackage'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/admin/content-packages:
+    post:
+      tags: [p4-media-content-delivery]
+      operationId: createMediaContentPackage
+      summary: Persist one local content package
+      x-p4-decision-evidence: P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.content_delivery.local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentPackageRequest'}}}}
+      responses: {'200': {description: Local package, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentPackage'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/admin/content-packages/{package_id}:
+    put:
+      tags: [p4-media-content-delivery]
+      operationId: updateMediaContentPackage
+      summary: CAS-update one local content package
+      x-p4-decision-evidence: P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.content_delivery.local_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: package_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentPackageRequest'}}}}
+      responses: {'200': {description: CAS-updated local package, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentPackage'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/admin/attachment-library/uploads:
+    post:
+      tags: [p4-media-content-delivery]
+      operationId: initiateMediaAttachmentMultipartUpload
+      summary: Initiate a local private PDF multipart upload
+      x-p4-decision-evidence: P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.attachment_upload.local_private_storage
+      x-aicrm-external-effect: none
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaAttachmentUploadInitiateRequest'}}}}
+      responses: {'201': {description: Local private upload, content: {application/json: {schema: {type: object, required: [upload_id], properties: {upload_id: {type: integer, format: int64}}}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/admin/attachment-library/uploads/{upload_id}/parts/{part_number}:
+    put:
+      tags: [p4-media-content-delivery]
+      operationId: putMediaAttachmentMultipartPart
+      summary: Persist one digest-checked local PDF multipart part
+      x-p4-decision-evidence: P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.attachment_upload.local_private_storage
+      x-aicrm-external-effect: none
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: upload_id, in: path, required: true, schema: {type: integer, format: int64}}, {name: part_number, in: path, required: true, schema: {type: integer, minimum: 1}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaAttachmentUploadPartRequest'}}}}
+      responses: {'204': {description: Idempotent local part persisted}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/admin/attachment-library/uploads/{upload_id}/complete:
+    post:
+      tags: [p4-media-content-delivery]
+      operationId: completeMediaAttachmentMultipartUpload
+      summary: Complete a local private upload as a canonical attachment
+      x-p4-decision-evidence: P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.attachment_upload.local_private_storage
+      x-aicrm-external-effect: none
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: upload_id, in: path, required: true, schema: {type: integer, format: int64}}]
+      responses: {'200': {description: Canonical private attachment created, content: {application/json: {schema: {type: object, required: [attachment_id], properties: {attachment_id: {type: integer, format: int64}}}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/admin/outbound-media/accept:
+    post:
+      tags: [p4-media-content-delivery]
+      operationId: acceptOutboundMediaContentPackage
+      summary: Atomically accept one published content package into local outbound-media records
+      description: Records the immutable Media package snapshot, Media-to-EER binding, and local EER accepted envelope in one transaction. It does not send to a provider and does not claim delivery.
+      x-p4-decision-evidence: P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.outbound_eer.accepted_envelope
+      x-aicrm-external-effect: none
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OutboundMediaAcceptedRequest'}}}}
+      responses: {'200': {description: Atomic local Media snapshot and EER acceptance projection, content: {application/json: {schema: {$ref: '#/components/schemas/OutboundMediaAcceptedResponse'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/admin/outbound-media/{content_package_id}/effects/{target_ref}:
+    get:
+      tags: [p4-media-content-delivery]
+      operationId: getOutboundMediaEffectDetail
+      summary: Read a PII-minimal local outbound-media effect projection
+      description: Returns no target reference, payload, receipt, evidence, digest, or customer identity.
+      x-p4-decision-evidence: P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.outbound_eer.pii_minimal_projection
+      x-aicrm-external-effect: none
+      parameters: [{name: content_package_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}, {name: target_ref, in: path, required: true, description: Opaque URL-safe local target reference; never returned, schema: {type: string, minLength: 1, maxLength: 512, pattern: '^[A-Za-z0-9_-]{1,512}$'}}]
+      responses: {'200': {description: PII-minimal local effect detail, content: {application/json: {schema: {$ref: '#/components/schemas/OutboundMediaEffectDetail'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/admin/outbound-media/{content_package_id}/effects/{target_ref}/reconcile:
+    post:
+      tags: [p4-media-content-delivery]
+      operationId: reconcileOutboundMediaEffect
+      summary: Manually reconcile one outcome-unknown local outbound-media effect
+      description: Uses verified manual evidence only; provider acceptance and delivery proof are independent facts. This is not provider retry or delivery dispatch.
+      x-p4-decision-evidence: P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.outbound_eer.manual_reconciliation
+      x-aicrm-external-effect: none
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: content_package_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}, {name: target_ref, in: path, required: true, description: Opaque URL-safe local target reference; never returned, schema: {type: string, minLength: 1, maxLength: 512, pattern: '^[A-Za-z0-9_-]{1,512}$'}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/OutboundMediaReconcileRequest'}}}}
+      responses: {'200': {description: Immutable local reconciliation receipt result, content: {application/json: {schema: {$ref: '#/components/schemas/OutboundMediaReconcileResponse'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding:
+    get:
+      tags: [p4-media-content-delivery]
+      operationId: getMediaContentDeliveryBinding
+      summary: Read one local group-invite binding
+      x-p4-decision-evidence: P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.content_delivery.local_binding_projection
+      x-aicrm-external-effect: none
+      parameters: [{name: campaign_code, in: path, required: true, schema: {type: string}}, {name: plan_id, in: path, required: true, schema: {type: string}}]
+      responses: {'200': {description: Local binding, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBinding'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '404': {$ref: '#/components/responses/NotFound'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+    post:
+      tags: [p4-media-content-delivery]
+      operationId: createMediaContentDeliveryBinding
+      summary: Create one local group-invite binding
+      x-p4-decision-evidence: P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.content_delivery.local_binding_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: campaign_code, in: path, required: true, schema: {type: string}}, {name: plan_id, in: path, required: true, schema: {type: string}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBindingRequest'}}}}
+      responses: {'200': {description: Local binding, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBinding'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
+    put:
+      tags: [p4-media-content-delivery]
+      operationId: updateMediaContentDeliveryBinding
+      summary: CAS-update one local group-invite binding
+      x-p4-decision-evidence: P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-capability: media.library.write
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.content_delivery.local_binding_command
+      x-aicrm-external-effect: none
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}, {name: campaign_code, in: path, required: true, schema: {type: string}}, {name: plan_id, in: path, required: true, schema: {type: string}}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBindingRequest'}}}}
+      responses: {'200': {description: CAS-updated local binding, content: {application/json: {schema: {$ref: '#/components/schemas/MediaContentDeliveryBinding'}}}}, '400': {$ref: '#/components/responses/BadRequest'}, '401': {$ref: '#/components/responses/Unauthorized'}, '403': {$ref: '#/components/responses/Forbidden'}, '409': {$ref: '#/components/responses/Conflict'}, '503': {$ref: '#/components/responses/ServiceUnavailable'}}
 components:
   securitySchemes:
     AdminSession:
@@ -10812,6 +11002,76 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    MediaContentRef:
+      type: object
+      required: [kind, id]
+      properties: {kind: {type: string, enum: [image, attachment, miniprogram, group_invite]}, id: {type: integer, format: int64, minimum: 1}}
+    MediaContentPackageRequest:
+      type: object
+      required: [name, content_text, enabled, refs]
+      properties: {name: {type: string, minLength: 1, maxLength: 200}, content_text: {type: string, maxLength: 10000}, enabled: {type: boolean}, refs: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/MediaContentRef'}}, expected_version: {type: integer, format: int64, minimum: 1}}
+    MediaContentPackage:
+      allOf: [{$ref: '#/components/schemas/MediaContentPackageRequest'}, {type: object, required: [id, version], properties: {id: {type: integer, format: int64}, version: {type: integer, format: int64}}}]
+    MediaAttachmentUploadInitiateRequest:
+      type: object
+      required: [file_name, name, size, sha256]
+      properties: {file_name: {type: string, maxLength: 255}, name: {type: string, maxLength: 200}, description: {type: string, maxLength: 10000}, size: {type: integer, minimum: 1, maximum: 10485760}, sha256: {type: string, pattern: '^sha256:[0-9a-f]{64}$'}, enabled: {type: boolean}}
+    MediaAttachmentUploadPartRequest:
+      type: object
+      required: [sha256, content]
+      properties: {sha256: {type: string, pattern: '^sha256:[0-9a-f]{64}$'}, content: {type: string, format: byte}}
+    MediaContentDeliveryBindingRequest:
+      type: object
+      required: [package_id, group_invite_id]
+      properties: {package_id: {type: integer, format: int64, minimum: 1}, group_invite_id: {type: integer, format: int64, minimum: 1}, expected_version: {type: integer, format: int64, minimum: 1}}
+    MediaContentDeliveryBinding:
+      allOf: [{$ref: '#/components/schemas/MediaContentDeliveryBindingRequest'}, {type: object, required: [id, campaign_code, plan_id, version], properties: {id: {type: integer, format: int64}, campaign_code: {type: string}, plan_id: {type: string}, version: {type: integer, format: int64}}}]
+    OutboundMediaAcceptedRequest:
+      type: object
+      additionalProperties: false
+      required: [content_package_id, target_ref]
+      properties:
+        content_package_id: {type: integer, format: int64, minimum: 1}
+        target_ref: {type: string, minLength: 1, maxLength: 512, description: Opaque local target reference; the server derives all target and payload digests.}
+    OutboundMediaAcceptedResponse:
+      type: object
+      additionalProperties: false
+      required: [effect_id, state, replay]
+      properties:
+        effect_id: {type: string, pattern: '^eer_[1-9][0-9]*$', description: Opaque local EER identifier.}
+        state: {type: string, description: Local EER state only; acceptance is not provider delivery.}
+        replay: {type: boolean}
+    OutboundMediaEffectDetail:
+      type: object
+      additionalProperties: false
+      required: [content_package_id, effect_id, state, provider_accepted, delivery_proven]
+      properties:
+        content_package_id: {type: integer, format: int64, minimum: 1}
+        effect_id: {type: string, pattern: '^eer_[1-9][0-9]*$', description: Opaque local EER identifier.}
+        state: {type: string}
+        provider_accepted: {type: boolean, description: Independently verified provider acceptance fact; false does not imply delivery failure.}
+        delivery_proven: {type: boolean, description: Independently verified delivery proof; it is never inferred from local acceptance.}
+    OutboundMediaReconcileRequest:
+      type: object
+      additionalProperties: false
+      required: [generation, fence, lease_expires_at, evidence_ref, provider_accepted, delivery_proven]
+      properties:
+        generation: {type: integer, format: int64, minimum: 1}
+        fence: {type: integer, format: int64, minimum: 1}
+        lease_expires_at: {type: string, format: date-time}
+        evidence_ref: {type: string, minLength: 1, maxLength: 512, description: Verified opaque evidence reference; server hashes it and never returns or persists the raw value.}
+        provider_accepted: {type: boolean, description: Independently verified provider acceptance fact.}
+        delivery_proven: {type: boolean, description: Independently verified delivery proof; requires provider_accepted.}
+    OutboundMediaReconcileResponse:
+      type: object
+      additionalProperties: false
+      required: [effect_id, state, provider_accepted, delivery_proven, replay]
+      properties:
+        effect_id: {type: string, pattern: '^eer_[1-9][0-9]*$', description: Opaque local EER identifier.}
+        state: {type: string}
+        provider_accepted: {type: boolean, description: Independently verified provider acceptance fact.}
+        delivery_proven: {type: boolean, description: Independently verified delivery proof.}
+        replay: {type: boolean}
     ReleaseCandidateState:
       type: string
       enum: [draft, prepared, cutover_active, activated, rollback_pending, rolled_back]

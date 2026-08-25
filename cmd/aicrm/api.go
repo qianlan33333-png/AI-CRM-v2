@@ -1107,6 +1107,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	attachmentService := mediaapp.NewAttachmentServiceWithReferences(uow, attachmentRepository, automationRepository, channelRepository, radarRepository, eventstore.NewAppender())
+	contentDeliveryService := mediaapp.NewContentDeliveryService(uow, mediastore.NewContentDeliveryRepository())
 	radarFragment, err := radarthttp.NewRouteFragment(radarService, legacyRadarAuthorizer{}, legacyRadarCSRF{})
 	if err != nil {
 		pool.Close()
@@ -1304,6 +1305,10 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	surveyPublicService.SetBinder(surveyapp.PublicExternalPushBinder{Push: surveyExternalPushService})
 	surveyExternalPushDetailHandler := &surveyhttp.ExternalPushDetailHandler{Application: surveyExternalPushService}
 	surveyExternalPushReconcileHandler := &surveyhttp.ExternalPushReconcileHandler{Application: surveyExternalPushService}
+	publishedOutboundRepository := mediastore.NewPublishedOutboundRepository()
+	publishedOutboundService := mediaapp.NewPublishedOutboundService(uow, publishedOutboundRepository, mediaapp.NewOutboundMediaService(externalEffectsRuntime), publishedOutboundRepository)
+	outboundMediaEffectDetailService := mediaapp.NewOutboundMediaEffectDetailService(uow, mediastore.NewContentDeliveryRepository())
+	outboundMediaReconcileService := mediaapp.NewOutboundMediaReconcileService(uow, mediastore.NewContentDeliveryRepository(), externalEffectsRuntime)
 	campaignDispatchRepository, err := outboundstore.NewCampaignDispatchRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -1474,6 +1479,10 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.attachments = attachmentService
+	legacyHandler.contentDelivery = contentDeliveryService
+	legacyHandler.outboundMediaAccepted = publishedOutboundService
+	legacyHandler.outboundMediaDetail = outboundMediaEffectDetailService
+	legacyHandler.outboundMediaReconcile = outboundMediaReconcileService
 	legacyHandler.legacyTagLive = legacyTagLiveService
 	legacyHandler.legacyTagStatus = legacyTagStatusService
 	legacyHandler.adminOps = adminOpsService
@@ -2627,6 +2636,18 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPut, legacyAttachmentDetailPath, authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.UpdateAttachment)},
 			{http.MethodDelete, legacyAttachmentDetailPath, authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.DeleteAttachment)},
 			{http.MethodGet, legacyAttachmentDownloadPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.DownloadAttachment)},
+			{http.MethodPost, "/api/admin/content-packages/preview", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ContentPackagePreview)},
+			{http.MethodPost, "/api/admin/content-packages", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ContentPackageCreate)},
+			{http.MethodPut, "/api/admin/content-packages/{package_id}", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ContentPackageUpdate)},
+			{http.MethodPost, "/api/admin/attachment-library/uploads", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.PDFMultipartInitiate)},
+			{http.MethodPut, "/api/admin/attachment-library/uploads/{upload_id}/parts/{part_number}", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.PDFMultipartPart)},
+			{http.MethodPost, "/api/admin/attachment-library/uploads/{upload_id}/complete", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.PDFMultipartComplete)},
+			{http.MethodPost, "/api/admin/outbound-media/accept", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.AcceptOutboundMedia)},
+			{http.MethodGet, "/api/admin/outbound-media/{content_package_id}/effects/{target_ref}", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetOutboundMediaEffectDetail)},
+			{http.MethodPost, "/api/admin/outbound-media/{content_package_id}/effects/{target_ref}/reconcile", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ReconcileOutboundMedia)},
+			{http.MethodGet, "/api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ContentDeliveryBindingGet)},
+			{http.MethodPost, "/api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ContentDeliveryBindingCreate)},
+			{http.MethodPut, "/api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ContentDeliveryBindingUpdate)},
 			{http.MethodGet, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ListGroupInvites)},
 			{http.MethodPost, "/api/admin/group-invite-library", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.CreateGroupInvite)},
 			{http.MethodGet, "/api/admin/group-invite-library/{item_id}", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetGroupInvite)},

@@ -32,6 +32,7 @@ const (
 	OwnerSurvey           = eer.OwnerSurvey
 	KindOutboundMessage   = eer.KindOutboundMessage
 	KindSurveyWebhook     = eer.KindSurveyWebhook
+	KindOutboundMedia     = eer.KindOutboundMedia
 	StateAccepted         = eer.StateAccepted
 	StateQueued           = eer.StateQueued
 	StateExecuted         = eer.StateExecuted

@@ -37,3 +37,4 @@ output-options:
     - p4-release-plane
     - p4-external-effects-runtime
     - pe01-wechat-pay-settlement
+    - p4-media-content-delivery
