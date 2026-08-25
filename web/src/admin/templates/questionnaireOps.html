@@ -1,0 +1,119 @@
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px;padding:0 20px;background:#fff;border-bottom:1px solid #DEE0E3;flex:none">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0">
+              <a onClick="{{ qops.back }}" style="width:28px;height:28px;border:1px solid #DEE0E3;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#646A73" stroke-width="1.6"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg></a>
+              <div style="min-width:0">
+                <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8F959E;line-height:14px"><a onClick="{{ qops.back }}" style="cursor:pointer;color:#8F959E">问卷</a><span>/</span><span>运营配置</span></div>
+                <div style="font-size:16px;font-weight:600;line-height:22px">{{ qops.q.name }}</div>
+              </div>
+            </div>
+            <button onClick="{{ qops.save }}" style="height:30px;padding:0 14px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer;flex:none">保存当前维度</button>
+          </div>
+          <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
+
+            <!-- 摘要卡 -->
+            <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:14px 16px">
+              <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+                <div style="background:#FAFBFC;border:1px solid #EFF0F1;border-radius:8px;padding:10px 12px"><div style="font-size:12px;color:#8F959E">问卷状态</div><div style="font-size:14px;font-weight:600;margin-top:6px">{{ qops.q.status }}</div></div>
+                <div style="background:#FAFBFC;border:1px solid #EFF0F1;border-radius:8px;padding:10px 12px"><div style="font-size:12px;color:#8F959E">提交量</div><div style="font-size:20px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums">{{ qops.q.count }}</div></div>
+                <div style="background:#FAFBFC;border:1px solid #EFF0F1;border-radius:8px;padding:10px 12px"><div style="font-size:12px;color:#8F959E">提交后动作</div><div style="font-size:14px;font-weight:600;margin-top:6px">{{ qops.q.action }}</div></div>
+                <div style="background:#FAFBFC;border:1px solid #EFF0F1;border-radius:8px;padding:10px 12px"><div style="font-size:12px;color:#8F959E">外部推送</div><div style="font-size:14px;font-weight:600;margin-top:6px"><sc-if value="{{ qops.ops.pushEnabled }}">已启用</sc-if><sc-if value="{{ qops.pushOff }}">未启用</sc-if></div></div>
+              </div>
+              <div style="display:flex;gap:8px;margin-top:12px;border-top:1px solid #F2F3F5;padding-top:12px">
+                <button onClick="{{ qops.copyPublic }}" style="height:28px;padding:0 10px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer">复制公开地址</button>
+                <button onClick="{{ qops.openPublic }}" style="height:28px;padding:0 10px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer">打开公开页</button>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px;align-items:start">
+              <!-- 维度导航 -->
+              <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:8px">
+                <button onClick="{{ qops.goTab.1 }}" style="{{ qops.nav.1 }}"><span style="{{ qops.nav.dot1 }}">1</span><span>提交后动作</span></button>
+                <button onClick="{{ qops.goTab.2 }}" style="{{ qops.nav.2 }}"><span style="{{ qops.nav.dot2 }}">2</span><span>外部推送</span></button>
+              </div>
+
+              <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:16px">
+
+                <!-- 1 提交后动作 -->
+                <div style="{{ qops.panel.1 }}">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                    <h3 style="margin:0;font-size:15px;font-weight:600">提交后动作</h3>
+                    <span onClick="{{ qops.flipPost }}" style="{{ qops.postSw.track }}"><span style="{{ qops.postSw.knob }}"></span></span>
+                  </div>
+                  <sc-if value="{{ qops.postOn }}">
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+                    <div onClick="{{ qops.pickQr }}" style="{{ qops.cardQr }}">
+                      <div style="font-size:14px;font-weight:600">展示渠道二维码</div>
+                      <p style="margin:6px 0 0;font-size:12px;color:#8F959E;line-height:1.6">提交完成后向用户展示渠道活码，引导添加企微</p>
+                    </div>
+                    <div onClick="{{ qops.pickRedirect }}" style="{{ qops.cardRedirect }}">
+                      <div style="font-size:14px;font-weight:600">直接跳转</div>
+                      <p style="margin:6px 0 0;font-size:12px;color:#8F959E;line-height:1.6">提交完成后跳转到 H5 页面或小程序 URL Link</p>
+                    </div>
+                  </div>
+
+                  <sc-if value="{{ qops.isQr }}">
+                  <div style="display:grid;gap:14px">
+                    <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">绑定渠道码</label>
+                      <div onClick="{{ qops.pickChannel }}" style="display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;padding:0 10px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer"><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ qops.channelText }}</span><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#8F959E" stroke-width="1.6" style="flex:none"><path d="M3.6 6l4.4 4.4L12.4 6"/></svg></div></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                      <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">二维码主标题</label><input id="opsQrTitle" value="{{ qops.ops.qrTitle }}" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;box-sizing:border-box"></div>
+                      <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">二维码副标题</label><input id="opsQrSub" value="{{ qops.ops.qrSubtitle }}" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;box-sizing:border-box"></div>
+                    </div>
+                    <div style="border:1px dashed #DEE0E3;border-radius:8px;padding:16px;display:grid;justify-items:center;gap:8px;background:#FAFBFC">
+                      <div style="width:96px;height:96px;border-radius:8px;background:linear-gradient(135deg,#EFF4FF,#D6E4FF);display:flex;align-items:center;justify-content:center;font-size:11px;color:#245BDB">渠道码预览</div>
+                      <div style="font-size:12px;color:#8F959E">以渠道码中心当前素材为准</div>
+                    </div>
+                  </div>
+                  </sc-if>
+
+                  <sc-if value="{{ qops.isRedirect }}">
+                  <div style="display:grid;gap:14px">
+                    <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">跳转类型</label>
+                      <select id="opsRedirectType" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 8px;font-size:13px;background:#fff">
+                        <sc-for list="{{ qops.redirectTypeOpts }}" as="o"><sc-if value="{{ o.sel }}"><option value="{{ o.v }}" selected="selected">{{ o.t }}</option></sc-if><sc-if value="{{ o.not }}"><option value="{{ o.v }}">{{ o.t }}</option></sc-if></sc-for>
+                      </select></div>
+                    <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">跳转地址</label><input id="opsRedirectUrl" value="{{ qops.ops.redirectUrl }}" placeholder="https:// 或 URL Link 接口地址" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;font-family:ui-monospace,Menlo,monospace;box-sizing:border-box"></div>
+                  </div>
+                  </sc-if>
+
+                  <div style="display:flex;justify-content:flex-end;margin-top:16px"><button onClick="{{ qops.save }}" style="height:32px;padding:0 16px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">保存提交后动作</button></div>
+                  </sc-if>
+                </div>
+
+                <!-- 2 外部推送 -->
+                <div style="{{ qops.panel.2 }}">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                    <h3 style="margin:0;font-size:15px;font-weight:600">外部推送</h3>
+                    <span onClick="{{ qops.flipPush }}" style="{{ qops.pushSw.track }}"><span style="{{ qops.pushSw.knob }}"></span></span>
+                  </div>
+                  <sc-if value="{{ qops.pushOn }}">
+                  <div style="display:grid;gap:14px">
+                    <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">Webhook 地址</label><input id="opsWebhook" value="{{ qops.ops.webhookUrl }}" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;font-family:ui-monospace,Menlo,monospace;box-sizing:border-box"></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                      <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">订阅类型</label><input id="opsSubType" value="{{ qops.ops.subscribeType }}" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;box-sizing:border-box"></div>
+                      <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">到期时间</label><input id="opsExpire" value="{{ qops.ops.expiresAt }}" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;box-sizing:border-box"></div>
+                      <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">服务周期</label><input id="opsCycle" value="{{ qops.ops.serviceCycle }}" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;box-sizing:border-box"></div>
+                      <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">频率</label>
+                        <select id="opsFreq" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 8px;font-size:13px;background:#fff">
+                          <sc-for list="{{ qops.freqOpts }}" as="o"><sc-if value="{{ o.sel }}"><option value="{{ o.v }}" selected="selected">{{ o.t }}</option></sc-if><sc-if value="{{ o.not }}"><option value="{{ o.v }}">{{ o.t }}</option></sc-if></sc-for>
+                        </select></div>
+                    </div>
+                    <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">备注</label><input id="opsRemark" value="{{ qops.ops.remark }}" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;box-sizing:border-box"></div>
+                    <div id="opsParams" style="display:grid;gap:8px">
+                      <div style="display:flex;align-items:center;justify-content:space-between"><label style="font-size:12px;color:#646A73;font-weight:500">自定义参数</label><button onClick="{{ qops.addParam }}" style="height:26px;padding:0 10px;border:1px solid #D6E4FF;border-radius:6px;background:#F5F8FF;color:#1849A9;font-size:12px;cursor:pointer">添加参数</button></div>
+                      <sc-for list="{{ qops.params }}" as="pp">
+                        <div class="ops-param-row" style="display:grid;grid-template-columns:180px 1fr;gap:8px"><input value="{{ pp.key }}" placeholder="参数名" style="height:32px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:12px;font-family:ui-monospace,Menlo,monospace"><input value="{{ pp.value }}" placeholder="参数值" style="height:32px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:12px;font-family:ui-monospace,Menlo,monospace"></div>
+                      </sc-for>
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #F2F3F5;padding-top:14px">
+                      <button onClick="{{ qops.viewLogs }}" style="height:28px;padding:0 10px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer">查看推送日志</button>
+                      <div style="display:flex;gap:8px"><button onClick="{{ qops.testPush }}" style="height:32px;padding:0 14px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#1F2329;font-size:13px;cursor:pointer">测试推送</button><button onClick="{{ qops.save }}" style="height:32px;padding:0 16px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">保存外部推送</button></div>
+                    </div>
+                  </div>
+                  </sc-if>
+                </div>
+
+              </div>
+            </div>
+          </div>

@@ -1,0 +1,25 @@
+<div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <span style="font-size:16px;font-weight:600">增长陪跑 · 90 天</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:hidden;background:#fff;position:relative">
+          <div style="padding:24px 20px 26px;background:linear-gradient(150deg,#16233A 0%,#25406E 62%,#2C55A8 100%);color:#fff">
+            <span style="display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;background:rgba(52,199,36,.22);font-size:12px;font-weight:600"><span style="width:6px;height:6px;border-radius:50%;background:#57D45A"></span>服务中</span>
+            <h1 style="margin:14px 0 0;font-size:25px;line-height:33px;font-weight:600">增长陪跑 · 90 天</h1>
+          </div>
+          <div style="margin:-16px 14px 0;position:relative;background:#fff;border:1px solid #EDEEF0;border-radius:14px;padding:18px 16px">
+            <div style="font-size:13px;color:#8F959E">剩余有效期</div>
+            <div style="display:flex;align-items:baseline;gap:6px;margin-top:4px"><span style="font-size:40px;line-height:44px;font-weight:700;font-variant-numeric:tabular-nums">62</span><span style="font-size:16px;font-weight:600">天</span></div>
+          </div>
+          <div style="position:absolute;inset:0;background:rgba(20,24,31,.55);display:flex;align-items:center;justify-content:center;padding:24px">
+            <div style="width:100%;background:#fff;border-radius:16px;padding:24px 20px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.24)">
+              <div style="font-size:17px;font-weight:600">添加你的专属顾问</div>
+              <p style="margin:8px 0 0;font-size:13px;line-height:20px;color:#8F959E">长按识别二维码，进入服务群</p>
+              <div style="width:206px;height:206px;margin:16px auto 0;border-radius:14px;border:1px solid #EDEEF0;padding:10px"><div style="width:100%;height:100%;background:repeating-conic-gradient(#1F2329 0% 25%,#fff 0% 50%) 50%/13px 13px;border-radius:4px"></div></div>
+              <button onClick="{{ act.closeQr }}" style="width:100%;height:44px;margin-top:18px;border:1px solid #DEE0E3;border-radius:10px;background:#fff;font-size:15px;font-weight:600;color:#646A73;cursor:pointer">关闭</button>
+            </div>
+          </div>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:minmax(0,1fr) 132px;gap:12px;align-items:center;padding:10px 14px 22px;background:#fff;border-top:1px solid #EDEEF0">
+          <div style="min-width:0"><div style="font-size:14px;font-weight:600">增长陪跑 · 90 天</div><div style="font-size:12px;color:#8F959E;margin-top:3px">剩余 62 天</div></div>
+          <button onClick="{{ act.renew }}" style="height:50px;border:0;border-radius:12px;background:var(--accent,#3370ff);color:#fff;font-size:16px;font-weight:600;cursor:pointer">续费</button>

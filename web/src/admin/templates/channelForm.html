@@ -1,0 +1,143 @@
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px;padding:0 20px;background:#fff;border-bottom:1px solid #DEE0E3;flex:none">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0">
+              <a onClick="{{ go.channels }}" style="width:28px;height:28px;border:1px solid #DEE0E3;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#646A73" stroke-width="1.6"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg></a>
+              <div style="min-width:0">
+                <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8F959E;line-height:14px"><span>客户管理后台</span><span>/</span><a onClick="{{ go.channels }}" style="cursor:pointer;color:#8F959E">渠道码中心</a><span>/</span><span>编辑渠道</span></div>
+                <div style="font-size:16px;font-weight:600;line-height:22px">渠道码中心</div>
+              </div>
+            </div>
+          </div>
+          <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
+
+            <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+                <h2 style="margin:0;font-size:16px;font-weight:600">扫码添加，邀请你进群共学</h2>
+                <div style="display:flex;gap:8px;flex:none">
+                  <button onClick="{{ go.channels }}" style="height:32px;padding:0 14px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">返回渠道码中心</button>
+                  <button style="height:32px;padding:0 14px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">保存当前维度</button>
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px">
+                <div style="border:1px solid #EFF0F1;border-radius:8px;padding:12px 14px"><div style="font-size:12px;color:#8F959E">渠道类型</div><div style="font-size:16px;font-weight:600;margin-top:5px">普通二维码</div></div>
+                <div style="border:1px solid #EFF0F1;border-radius:8px;padding:12px 14px"><div style="font-size:12px;color:#8F959E">状态</div><div style="font-size:16px;font-weight:600;margin-top:5px">启用</div></div>
+                <div style="border:1px solid #EFF0F1;border-radius:8px;padding:12px 14px"><div style="font-size:12px;color:#8F959E">渠道用户</div><div style="font-size:16px;font-weight:600;margin-top:5px;font-variant-numeric:tabular-nums">0</div></div>
+                <div style="border:1px solid #EFF0F1;border-radius:8px;padding:12px 14px"><div style="font-size:12px;color:#8F959E">客服分配</div><div style="font-size:16px;font-weight:600;margin-top:5px">1 人</div></div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:226px minmax(0,1fr);gap:12px;align-items:start">
+              <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:8px">
+                <a onClick="{{ cgo.1 }}" style="{{ cn.1 }}"><span style="{{ cn.dot1 }}">1</span><span>基础配置</span></a>
+                <a onClick="{{ cgo.2 }}" style="{{ cn.2 }}"><span style="{{ cn.dot2 }}">2</span><span>渠道载体</span></a>
+                <a onClick="{{ cgo.3 }}" style="{{ cn.3 }}"><span style="{{ cn.dot3 }}">3</span><span>客服分配</span></a>
+                <a onClick="{{ cgo.4 }}" style="{{ cn.4 }}"><span style="{{ cn.dot4 }}">4</span><span>欢迎语素材</span></a>
+                <a onClick="{{ cgo.5 }}" style="{{ cn.5 }}"><span style="{{ cn.dot5 }}">5</span><span>入渠标签</span></a>
+              </div>
+
+              <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;min-height:380px">
+                <div style="padding:14px 18px;border-bottom:1px solid #EFF0F1"><h3 style="margin:0;font-size:15px;font-weight:600">{{ stepTitle }}</h3></div>
+
+                <div style="{{ cp.1 }}">
+                  <div style="padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                    <label><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">渠道名称</span><input value="扫码添加，邀请你进群共学" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 12px;font-size:13px;background:#fff;width:100%"></label>
+                    <label><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">渠道编码</span><input value="shalongyaoyuegongxueying" placeholder="留空将自动生成唯一编码" style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 12px;font-size:13px;background:#fff;width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,monospace"></label>
+                    <label><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">状态</span><select style="height:36px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff;width:100%"><option>启用</option><option>停用</option><option>归档</option></select></label>
+                  </div>
+                </div>
+
+                <div style="{{ cp.2 }}">
+                  <div style="padding:18px;display:flex;flex-direction:column;gap:14px">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                      <label style="display:flex;align-items:center;gap:10px;padding:14px 16px;border:1px solid var(--accent,#3370ff);border-radius:8px;background:#F5F9FF;cursor:pointer"><span style="width:16px;height:16px;border-radius:50%;border:5px solid var(--accent,#3370ff);flex:none"></span><span style="font-size:14px;font-weight:600;color:var(--accent,#3370ff)">普通二维码</span></label>
+                      <label style="display:flex;align-items:center;gap:10px;padding:14px 16px;border:1px solid #DEE0E3;border-radius:8px;background:#fff;cursor:pointer"><span style="width:16px;height:16px;border-radius:50%;border:1px solid #C4C7CC;flex:none"></span><span style="font-size:14px;font-weight:600">渠道获客链接</span></label>
+                    </div>
+                    <label style="display:flex;align-items:center;gap:10px;padding:13px 16px;border:1px solid #DEE0E3;border-radius:8px;background:#fff;cursor:pointer"><input type="checkbox" checked style="width:15px;height:15px;accent-color:#3370ff">扫码添加成员时自动通过好友申请</label>
+                    <p style="margin:0;font-size:13px;color:#8F959E">保存后重新生成二维码时会透传为企微 skip_verify。</p>
+                    <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:6px">
+                      <button style="height:34px;padding:0 14px;border:1px solid #C7DAFF;border-radius:6px;background:#EFF4FF;color:#245BDB;font-size:13px;cursor:pointer">下载二维码</button>
+                      <button style="height:34px;padding:0 14px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">生成二维码</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="{{ cp.3 }}">
+                  <div style="padding:18px;display:flex;flex-direction:column;gap:14px">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                      <label style="display:flex;gap:10px;padding:14px 16px;border:1px solid var(--accent,#3370ff);border-radius:8px;background:#F5F9FF;cursor:pointer"><span style="width:16px;height:16px;border-radius:50%;border:5px solid var(--accent,#3370ff);flex:none;margin-top:2px"></span><span><span style="display:block;font-size:14px;font-weight:600">按比例分配</span><span style="display:block;font-size:12px;color:#646A73;margin-top:5px;line-height:19px">按每个客服设置的百分比分配；50% / 50% 就是均分。比例合计必须等于 100%。</span></span></label>
+                      <label style="display:flex;gap:10px;padding:14px 16px;border:1px solid #DEE0E3;border-radius:8px;background:#fff;cursor:pointer"><span style="width:16px;height:16px;border-radius:50%;border:1px solid #C4C7CC;flex:none;margin-top:2px"></span><span><span style="display:block;font-size:14px;font-weight:600">满额切换</span><span style="display:block;font-size:12px;color:#646A73;margin-top:5px;line-height:19px">按列表顺序承接；当前客服 24 小时达到上限后，自动切换到下一个客服。</span></span></label>
+                    </div>
+                    <div style="border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
+                      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #EFF0F1">
+                        <span style="font-size:14px;font-weight:600">客服比例</span>
+                        <div style="display:flex;align-items:center;gap:8px">
+                          <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:4px;background:#EFF4FF;color:#245BDB;font-size:12px">{{ cf.staffCount }}</span>
+                          <button onClick="{{ cf.addStaff }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">添加客服</button>
+                        </div>
+                      </div>
+                      <sc-for list="{{ cf.staffRows }}" as="a" hint-placeholder-count="1">
+                        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:14px 16px;border-bottom:1px solid #EFF0F1">
+                          <div><div style="font-size:14px;font-weight:600">{{ a.name }}</div><div style="font-size:12px;color:#8F959E;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:3px">{{ a.uid }}</div></div>
+                          <div style="display:flex;align-items:flex-end;gap:10px;flex:none">
+                            <label><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">分配比例</span><input value="{{ a.ratio }}" style="height:34px;width:120px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff;font-variant-numeric:tabular-nums"></label>
+                            <button style="height:34px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#BBBFC4;font-size:13px">上移</button>
+                            <button style="height:34px;padding:0 12px;border:1px solid #FBC4C2;border-radius:6px;background:#FFF5F5;color:#D83931;font-size:13px;cursor:pointer">删除</button>
+                          </div>
+                        </div>
+                      </sc-for>
+                      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#FAFBFC">
+                        <span style="font-size:13px;color:#646A73">比例合计 100%，可以保存。</span>
+                        <span style="display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:4px;background:#EBF9EC;color:#2EA121;font-size:12px">100%</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="{{ cp.4 }}">
+                  <div style="padding:18px">
+                    <div style="border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
+                      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #EFF0F1;background:#FAFBFC">
+                        <div><div style="font-size:14px;font-weight:600">欢迎语素材</div><div style="font-size:12px;color:#8F959E;margin-top:3px">编辑内容将在页面保存时统一提交</div></div>
+                        <div style="font-size:12px;color:#8F959E;flex:none">{{ cf.matCountText }}</div>
+                      </div>
+                      <div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;padding:16px">
+                        <div>
+                          <div style="font-size:12px;color:#646A73;margin-bottom:6px">话术</div>
+                          <textarea rows="7" value="{{ welcomeText }}" style="border:1px solid #DEE0E3;border-radius:6px;padding:10px 12px;font-size:13px;line-height:21px;background:#fff;width:100%;resize:vertical"></textarea>
+                          <button style="height:30px;margin-top:10px;padding:0 12px;border:0;border-radius:6px;background:#EFF4FF;color:#245BDB;font-size:13px;cursor:pointer">插入客户名</button>
+                          <div style="font-size:12px;color:#646A73;margin:14px 0 6px">素材与进群</div>
+                          <div style="display:flex;gap:8px;flex-wrap:wrap">
+                            <button onClick="{{ cf.addImage }}" style="height:32px;padding:0 12px;border:0;border-radius:6px;background:#EFF4FF;color:#245BDB;font-size:13px;cursor:pointer">+图片</button>
+                            <button onClick="{{ cf.addMp }}" style="height:32px;padding:0 12px;border:0;border-radius:6px;background:#EFF4FF;color:#245BDB;font-size:13px;cursor:pointer">+小程序</button>
+                            <button onClick="{{ cf.addAttach }}" style="height:32px;padding:0 12px;border:0;border-radius:6px;background:#EFF4FF;color:#245BDB;font-size:13px;cursor:pointer">+附件</button>
+                            <button onClick="{{ cf.addGroup }}" style="height:32px;padding:0 12px;border:0;border-radius:6px;background:#EFF4FF;color:#245BDB;font-size:13px;cursor:pointer">+选择群聊</button>
+                          </div>
+                          <div style="font-size:12px;color:#646A73;margin:14px 0 6px">已选内容</div>
+                          <sc-if value="{{ cf.noMats }}"><div style="border:1px dashed #DEE0E3;border-radius:8px;padding:16px;font-size:13px;color:#A6AAB0">还没有选择内容</div></sc-if>
+                          <sc-if value="{{ cf.hasMats }}"><div style="display:grid;gap:8px">
+                            <sc-for list="{{ cf.mats }}" as="m">
+                              <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #DEE0E3;border-radius:8px"><span style="{{ m.thumb }}">{{ m.thumbText }}</span><span style="flex:1;min-width:0"><span style="display:block;font-size:13px">{{ m.name }}</span><span style="display:block;font-size:12px;color:#A6AAB0">{{ m.sub }}</span></span><button onClick="{{ m.rm }}" style="height:26px;padding:0 9px;border:1px solid #FBC4C2;border-radius:5px;background:#FFF5F5;color:#D83931;font-size:12px;cursor:pointer;white-space:nowrap">移除</button></div>
+                            </sc-for>
+                          </div></sc-if>
+                        </div>
+                        <div style="border:1px solid #DEE0E3;border-radius:8px;padding:14px">
+                          <div style="font-size:13px;font-weight:600;margin-bottom:10px">实时预览</div>
+                          <div style="background:#EFF4FF;border-radius:10px;padding:12px 14px;font-size:13px;line-height:21px;color:#1F2329;white-space:pre-wrap">{{ welcomePreview }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="{{ cp.5 }}">
+                  <div style="padding:18px;display:flex;flex-direction:column;gap:14px">
+                    <div style="display:flex;justify-content:flex-end"><button onClick="{{ cf.pickTags }}" style="height:34px;padding:0 14px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">选择标签</button></div>
+                    <div style="border:1px solid #DEE0E3;border-radius:8px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:16px">
+                      <strong style="font-size:13px;font-weight:600">当前标签</strong>
+                      <span style="font-size:13px;color:#8F959E">{{ cf.tagsText }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>

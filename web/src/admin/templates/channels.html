@@ -1,0 +1,64 @@
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px;padding:9px 20px;background:#fff;border-bottom:1px solid #DEE0E3;flex:none">
+            <div style="min-width:0">
+              <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8F959E;line-height:14px"><span>客户管理后台</span><span>/</span><span>运营</span></div>
+              <div style="font-size:16px;font-weight:600;line-height:22px">渠道码中心</div>
+              <div style="font-size:12px;color:#8F959E;line-height:16px;margin-top:1px">独立管理普通二维码和企微获客助手链接；渠道进入事实会进入 AI 人群包查询层。</div>
+            </div>
+          </div>
+          <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
+            <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+              <sc-for list="{{ rows.chStats }}" as="s" hint-placeholder-count="4">
+                <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:14px 16px">
+                  <div style="font-size:12px;color:#8F959E">{{ s.label }}</div>
+                  <div style="display:flex;align-items:baseline;gap:6px;margin-top:6px"><span style="font-size:24px;font-weight:600;line-height:28px">{{ s.value }}</span><span style="font-size:12px;color:#8F959E">{{ s.unit }}</span></div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
+              <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #EFF0F1">
+                <div>
+                  <h2 style="margin:0;font-size:14px;font-weight:600">渠道码列表</h2>
+                  <p style="margin:3px 0 0;font-size:12px;color:#8F959E">渠道码中心只管理渠道资产、渠道用户、欢迎语、标签和客服分配。</p>
+                </div>
+                <div style="display:flex;gap:8px;flex:none">
+                  <input placeholder="搜索渠道名称" style="height:32px;width:200px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff">
+                  <button onClick="{{ go.channelForm }}" style="height:32px;padding:0 14px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">新建渠道</button>
+                </div>
+              </div>
+              <table style="width:100%;border-collapse:collapse">
+                <thead><tr>
+                  <th style="padding:9px 16px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3;white-space:nowrap">渠道</th>
+                  <th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3;white-space:nowrap">类型</th>
+                  <th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3;white-space:nowrap">状态</th>
+                  <th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3;white-space:nowrap">欢迎/素材/标签</th>
+                  <th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:right;background:#FAFAFB;border-bottom:1px solid #DEE0E3;white-space:nowrap">渠道用户</th>
+                  <th style="padding:9px 16px;font-size:12px;font-weight:500;color:#8F959E;text-align:right;background:#FAFAFB;border-bottom:1px solid #DEE0E3;white-space:nowrap">操作</th>
+                </tr></thead>
+                <tbody>
+                  <sc-for list="{{ rows.channels }}" as="r" hint-placeholder-count="8">
+                    <tr>
+                      <td style="padding:var(--rp,10px) 16px;border-bottom:1px solid #F2F3F5;font-size:13px;font-weight:500">{{ r.name }}</td>
+                      <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5"><span style="{{ r.typeCs }}">{{ r.type }}</span></td>
+                      <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5"><span style="{{ r.cs }}">{{ r.status }}</span></td>
+                      <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5">
+                        <div style="display:flex;gap:6px;flex-wrap:wrap">
+                          <span style="{{ r.welCs }}">欢迎语</span><span style="{{ r.matCs }}">{{ r.mat }}</span><span style="{{ r.tcs }}">{{ r.tag }}</span>
+                        </div>
+                      </td>
+                      <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5;font-size:13px;text-align:right;font-variant-numeric:tabular-nums">{{ r.users }}</td>
+                      <td style="padding:var(--rp,10px) 16px;border-bottom:1px solid #F2F3F5;text-align:right">
+                        <div style="display:inline-flex;flex-wrap:wrap;justify-content:flex-end;gap:8px">
+                          <a style="height:28px;padding:0 10px;display:inline-flex;align-items:center;border:1px solid #C7DAFF;border-radius:6px;background:#EFF4FF;font-size:13px;color:#245BDB;cursor:pointer">{{ r.qr }}</a>
+                          <a style="height:28px;padding:0 10px;display:inline-flex;align-items:center;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;color:#1F2329;cursor:pointer">查看</a>
+                          <a onClick="{{ go.channelForm }}" style="height:28px;padding:0 10px;display:inline-flex;align-items:center;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;color:#1F2329;cursor:pointer">编辑</a>
+                          <a style="height:28px;padding:0 10px;display:inline-flex;align-items:center;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;color:#646A73;cursor:pointer">下架</a>
+                          <a style="height:28px;padding:0 10px;display:inline-flex;align-items:center;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;color:#646A73;cursor:pointer">删除</a>
+                        </div>
+                      </td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </div>

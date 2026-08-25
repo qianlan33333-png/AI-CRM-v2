@@ -1,0 +1,37 @@
+<div style="position:relative;display:flex;align-items:center;justify-content:center;height:44px;background:#fff;border-bottom:1px solid #EDEEF0;flex:none">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="#1F2329" stroke-width="1.6" style="position:absolute;left:14px"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg>
+          <span style="font-size:16px;font-weight:600">确认订单</span>
+          <span style="position:absolute;right:16px;letter-spacing:1px;color:#1F2329">···</span>
+        </div>
+        <div style="flex:1;min-height:0;overflow:auto;background:#F5F6F7;padding:14px">
+          <div style="background:#fff;border-radius:14px;padding:16px;margin-bottom:12px;display:flex;gap:12px">
+            <div style="width:64px;height:64px;border-radius:10px;background:linear-gradient(135deg,#DCE7FF,#B9CDFF);flex:none"></div>
+            <div style="min-width:0;flex:1">
+              <div style="font-size:15px;font-weight:600">增长陪跑 · 90 天</div>
+              <div style="font-size:13px;color:#8F959E;margin-top:4px">服务周期 90 天 · 付款后立即生效</div>
+              <div style="font-size:16px;font-weight:600;margin-top:8px;font-variant-numeric:tabular-nums">¥2,980.00</div>
+            </div>
+          </div>
+          <div style="background:#fff;border-radius:14px;padding:4px 16px;margin-bottom:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F2F3F5"><span style="font-size:14px;color:#646A73">商品金额</span><span style="font-size:14px;font-variant-numeric:tabular-nums">¥2,980.00</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #F2F3F5"><span style="font-size:14px;color:#646A73">优惠券</span><span style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;background:#FDECEE;color:#D83931;font-size:12px">新客立减 100</span><span style="font-size:14px;color:#D83931;font-variant-numeric:tabular-nums">-¥100.00</span></span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0"><span style="font-size:14px;color:#646A73">实付金额</span><span style="font-size:18px;font-weight:700;color:#D83931;font-variant-numeric:tabular-nums">¥2,880.00</span></div>
+          </div>
+          <div style="background:#fff;border-radius:14px;padding:4px 16px">
+            <div style="font-size:13px;color:#8F959E;padding:14px 0 6px">支付方式</div>
+            <label style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #F2F3F5;cursor:pointer">
+              <span style="width:30px;height:30px;border-radius:8px;background:#07C160;display:flex;align-items:center;justify-content:center;flex:none"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M9.2 4C5.2 4 2 6.8 2 10.2c0 1.9 1 3.6 2.7 4.8L4 17.4l2.6-1.3c.8.2 1.7.4 2.6.4h.6a5.6 5.6 0 0 1-.2-1.5c0-3.3 3.1-5.9 7-5.9h.6C16.6 6 13.3 4 9.2 4z"/><path d="M22 15c0-2.7-2.6-4.9-5.9-4.9S10.2 12.3 10.2 15s2.6 4.9 5.9 4.9c.7 0 1.4-.1 2-.3l1.9 1-.5-1.7c1.5-.9 2.5-2.3 2.5-3.9z"/></svg></span>
+              <span style="flex:1;font-size:15px">微信支付</span>
+              <span style="width:18px;height:18px;border-radius:50%;border:5px solid var(--accent,#3370ff);background:#fff;flex:none"></span>
+            </label>
+            <label style="display:flex;align-items:center;gap:12px;padding:12px 0 16px;cursor:pointer">
+              <span style="width:30px;height:30px;border-radius:8px;background:#1677FF;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;flex:none">支</span>
+              <span style="flex:1;font-size:15px;color:#646A73">支付宝</span>
+              <span style="width:18px;height:18px;border-radius:50%;border:1px solid #C4C7CC;background:#fff;flex:none"></span>
+            </label>
+          </div>
+          <p style="margin:14px 4px 0;font-size:12px;line-height:19px;color:#A6AAB0">提交即视为同意《周期服务协议》。服务期内如需退款，请联系你的专属顾问。</p>
+        </div>
+        <div style="flex:none;display:grid;grid-template-columns:minmax(0,1fr) 140px;gap:12px;align-items:center;padding:10px 14px 22px;background:#fff;border-top:1px solid #EDEEF0">
+          <div style="min-width:0"><div style="font-size:12px;color:#8F959E">实付</div><div style="font-size:19px;font-weight:700;color:#D83931;font-variant-numeric:tabular-nums;line-height:24px">¥2,880.00</div></div>
+          <button onClick="{{ act.pay }}" style="height:50px;border:0;border-radius:12px;background:var(--accent,#3370ff);color:#fff;font-size:16px;font-weight:600;cursor:pointer">立即支付</button>

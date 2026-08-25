@@ -2,6 +2,7 @@
   "name": "ai-crm-v2-web",
   "private": true,
   "version": "0.0.0",
+  "description": "AI-CRM v2 TypeScript frontend — admin console, WeCom sidebar and H5",
   "type": "module",
   "engines": {
     "node": "24.18.0",
@@ -13,29 +14,24 @@
     "orval:generate": "make generate-orval",
     "orval:check": "make orval-check",
     "orval:contract": "scripts/test_orval_generated_check.sh",
-    "lint": "node --input-type=module -e \"import { ESLint } from 'eslint'; import parser from '@typescript-eslint/parser'; const eslint = new ESLint({ overrideConfigFile: true, overrideConfig: [{ ignores: ['web/src/api/generated/**'] }, { files: ['**/*.ts', '**/*.tsx'], languageOptions: { parser, parserOptions: { ecmaVersion: 'latest', sourceType: 'module', ecmaFeatures: { jsx: true } } }, rules: { 'no-console': 'error', 'no-debugger': 'error', 'no-unused-vars': ['error', { varsIgnorePattern: '^React$' }] } }] }); const results = await eslint.lintFiles(['web/src']); const output = (await eslint.loadFormatter('stylish')).format(results); if (output) console.log(output); if (results.some((result) => result.errorCount > 0)) process.exit(1);\"",
-    "typecheck": "tsc --noEmit --strict --skipLibCheck --jsx react --module ESNext --moduleResolution Bundler --target ES2022 --lib ES2022,DOM --types vitest/globals,node web/src/*.ts web/src/*.tsx",
-    "test": "vitest run --environment node web/src/*.test.ts web/src/*.test.tsx",
-    "build": "vite build web",
+    "lint": "tsc -p web/tsconfig.json --noEmit",
+    "typecheck": "tsc -p web/tsconfig.json --noEmit",
+    "transport:contract": "node web/scripts/transport-contract.mjs",
+    "smoke": "node web/scripts/smoke.mjs",
+    "e2e": "npm run build --silent && node web/scripts/e2e.mjs",
+    "test": "npm run transport:contract && npm run smoke && npm run e2e",
+    "build": "node web/scripts/build.mjs",
+    "dev": "node web/scripts/dev.mjs",
     "audit": "npm audit --audit-level=high",
     "ci": "npm run version:check && npm run orval:check && npm run orval:contract && npm run lint && npm run typecheck && npm test && npm run build && npm run audit"
   },
-  "dependencies": {
-    "antd": "5.27.6",
-    "react": "18.3.1",
-    "react-dom": "18.3.1"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@types/node": "24.13.3",
-    "@types/react": "18.3.31",
-    "@types/react-dom": "18.3.7",
-    "@typescript-eslint/parser": "8.66.0",
-    "eslint": "10.8.1",
+    "esbuild": "0.24.0",
+    "jsdom": "30.0.1",
     "orval": "7.21.0",
     "prettier": "3.9.6",
-    "typescript": "6.0.3",
-    "vite": "7.3.6",
-    "vitest": "4.1.10"
+    "typescript": "6.0.3"
   },
   "overrides": {
     "js-yaml": "4.3.1",

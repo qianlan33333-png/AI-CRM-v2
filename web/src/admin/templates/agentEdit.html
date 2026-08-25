@@ -1,0 +1,91 @@
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px;padding:0 20px;background:#fff;border-bottom:1px solid #DEE0E3;flex:none">
+            <div style="display:flex;align-items:center;gap:10px;min-width:0">
+              <a onClick="{{ go.agents }}" style="width:28px;height:28px;border:1px solid #DEE0E3;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#646A73" stroke-width="1.6"><path d="M10 3.2L5.4 8l4.6 4.8"/></svg></a>
+              <div style="min-width:0">
+                <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8F959E;line-height:14px"><span>客户管理后台</span><span>/</span><span>配置及后台</span></div>
+                <div style="font-size:16px;font-weight:600;line-height:22px">编辑 Agent</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex:none"><button onClick="{{ go.agents }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:13px;cursor:pointer;white-space:nowrap;flex:none">返回自动化列表</button></div>
+          </div>
+          <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
+            <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:16px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0">
+                  <h2 style="margin:0;font-size:16px;font-weight:600">编辑 Agent</h2><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;background:#EBF9EC;color:#2EA121;font-size:12px;white-space:nowrap">启用中</span>
+                </div>
+                <div style="display:flex;gap:8px;flex:none;flex-wrap:wrap"><button onClick="{{ go.agents }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:13px;cursor:pointer;white-space:nowrap;flex:none">返回自动化列表</button><button style="height:30px;padding:0 12px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer;white-space:nowrap;flex:none">保存</button></div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px"><div style="border:1px solid #EFF0F1;border-radius:8px;padding:12px 14px"><span style="display:block;color:#8F959E;font-size:12px">自动化类型</span><strong style="display:block;margin-top:5px;font-size:16px;font-weight:600">Agent 机器人</strong></div><div style="border:1px solid #EFF0F1;border-radius:8px;padding:12px 14px"><span style="display:block;color:#8F959E;font-size:12px">状态</span><strong style="display:block;margin-top:5px;font-size:16px;font-weight:600">启用中</strong></div><div style="border:1px solid #EFF0F1;border-radius:8px;padding:12px 14px"><span style="display:block;color:#8F959E;font-size:12px">绑定人群包</span><strong style="display:block;margin-top:5px;font-size:16px;font-weight:600">8 月沙龙唤回包</strong></div><div style="border:1px solid #EFF0F1;border-radius:8px;padding:12px 14px"><span style="display:block;color:#8F959E;font-size:12px">Prompt 版本</span><strong style="display:block;margin-top:5px;font-size:16px;font-weight:600">草稿 v6 / 已发布 v5</strong></div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:226px minmax(0,1fr);gap:12px;align-items:start">
+              <nav style="display:grid;gap:2px;padding:8px;border:1px solid #DEE0E3;border-radius:8px;background:#fff;align-self:start">
+                <button style="width:100%;min-height:44px;display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:center;border:0;border-radius:6px;padding:0 10px;text-align:left;font-size:13px;font-weight:500;cursor:pointer;background:#EFF4FF;color:var(--accent,#3370ff)"><span style="width:22px;height:22px;display:grid;place-items:center;border-radius:999px;font-size:12px;background:var(--accent,#3370ff);color:#fff">1</span><span>基本信息</span></button>
+                <button style="width:100%;min-height:44px;display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:center;border:0;border-radius:6px;padding:0 10px;text-align:left;font-size:13px;font-weight:500;cursor:pointer;background:#fff;color:#4E5969"><span style="width:22px;height:22px;display:grid;place-items:center;border-radius:999px;font-size:12px;background:#EEF2F7;color:#667085">2</span><span>绑定人群包</span></button>
+                <button style="width:100%;min-height:44px;display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:center;border:0;border-radius:6px;padding:0 10px;text-align:left;font-size:13px;font-weight:500;cursor:pointer;background:#fff;color:#4E5969"><span style="width:22px;height:22px;display:grid;place-items:center;border-radius:999px;font-size:12px;background:#EEF2F7;color:#667085">3</span><span>Prompt 配置</span></button>
+                <button style="width:100%;min-height:44px;display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:center;border:0;border-radius:6px;padding:0 10px;text-align:left;font-size:13px;font-weight:500;cursor:pointer;background:#fff;color:#4E5969"><span style="width:22px;height:22px;display:grid;place-items:center;border-radius:999px;font-size:12px;background:#EEF2F7;color:#667085">4</span><span>固定素材</span></button>
+              </nav>
+              <div style="display:grid;gap:12px">
+                <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:18px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid #EFF0F1"><h3 style="margin:0;font-size:15px;font-weight:600">基本信息</h3><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;background:#EBF9EC;color:#2EA121;font-size:12px;white-space:nowrap">启用中</span></div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                    <div style="display:grid;gap:6px"><label style="color:#646A73;font-size:12px">Agent 名称</label><input value="沙龙邀约唤回助手" style="width:100%;min-height:36px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;padding:8px 10px;font-size:13px"></div>
+                    <div style="display:grid;gap:6px"><label style="color:#646A73;font-size:12px">自动化类类型</label><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;padding:0 10px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px"><span>Agent 机器人</span><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#8F959E" stroke-width="1.6"><path d="M3.6 6l4.4 4.4L12.4 6"/></svg></div></div>
+                    <div style="display:grid;gap:6px"><label style="color:#646A73;font-size:12px">状态</label><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:36px;padding:0 10px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px"><span>启用中</span><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#8F959E" stroke-width="1.6"><path d="M3.6 6l4.4 4.4L12.4 6"/></svg></div></div>
+                  </div>
+                </div>
+                <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:18px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid #EFF0F1"><h3 style="margin:0;font-size:15px;font-weight:600">绑定人群包</h3></div>
+                  <div style="display:grid;gap:8px">
+                    <label style="color:#646A73;font-size:12px">当前绑定人群包</label>
+                    <div style="min-height:36px;display:flex;align-items:center;padding:8px 10px;border:1px solid #DEE0E3;border-radius:6px;background:#FAFBFC;font-size:13px">8 月沙龙唤回包</div>
+                    <p style="margin:2px 0 0;font-size:12px;color:#8F959E;line-height:19px">绑定关系请在人群包详情的"自动化话术能力"中管理。</p>
+                  </div>
+                </div>
+                <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:18px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid #EFF0F1"><h3 style="margin:0;font-size:15px;font-weight:600">Prompt 配置</h3></div>
+                  <div style="display:grid;gap:8px">
+                    <label style="color:#646A73;font-size:12px">角色提示词 role_prompt</label><textarea rows="4" style="width:100%;border:1px solid #DEE0E3;border-radius:6px;background:#fff;padding:8px 10px;font-size:13px;line-height:20px;resize:vertical">你是新流商业的增长顾问，说话简洁、口语化，不用书面语。</textarea><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"><sc-for list="{{ promptTokens }}" as="tk" hint-placeholder-count="4"><button style="height:28px;padding:0 10px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer;white-space:nowrap">{{ tk.t }}</button></sc-for></div>
+                  </div>
+                  <div style="display:grid;gap:8px;margin-top:16px">
+                    <label style="color:#646A73;font-size:12px">任务提示词 task_prompt</label><textarea rows="4" value="{{ taskPrompt }}" style="width:100%;border:1px solid #DEE0E3;border-radius:6px;background:#fff;padding:8px 10px;font-size:13px;line-height:20px;resize:vertical"></textarea><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"><sc-for list="{{ promptTokens }}" as="tk" hint-placeholder-count="4"><button style="height:28px;padding:0 10px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer;white-space:nowrap">{{ tk.t }}</button></sc-for></div>
+                  </div>
+                  <div style="display:grid;gap:8px;margin-top:16px">
+                    <label style="color:#646A73;font-size:12px">当前字段依赖自动识别</label>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px"><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:6px;background:#F4EDFF;color:#7F3BF5;font-size:12px;font-family:ui-monospace,Menlo,monospace">问卷信息</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:6px;background:#F4EDFF;color:#7F3BF5;font-size:12px;font-family:ui-monospace,Menlo,monospace">用户标签</span><span style="display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:6px;background:#F4EDFF;color:#7F3BF5;font-size:12px;font-family:ui-monospace,Menlo,monospace">激活信息</span></div>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:18px;padding-top:16px;border-top:1px solid #EFF0F1">
+                    <span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;background:#F2F3F5;color:#646A73;font-size:12px;white-space:nowrap">草稿版本：v6</span><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;background:#F2F3F5;color:#646A73;font-size:12px;white-space:nowrap">已发布版本：v5</span><span style="flex:1"></span><button style="height:28px;padding:0 11px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:12px;cursor:pointer;white-space:nowrap;flex:none">保存草稿</button><button style="height:28px;padding:0 11px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer;white-space:nowrap;flex:none">发布</button><button style="height:28px;padding:0 11px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer;white-space:nowrap;flex:none">载入已发布版本</button>
+                  </div>
+                </div>
+                <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:18px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid #EFF0F1"><h3 style="margin:0;font-size:15px;font-weight:600">固定素材</h3><button style="height:30px;padding:0 12px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer;white-space:nowrap;flex:none">配置固定素材</button></div><div style="min-height:88px;display:grid;place-items:center;padding:22px;border:1px dashed #D7DBE0;border-radius:10px;background:#FAFBFC;color:#8F959E;font-size:13px">暂无配置固定素材</div>
+                </div>
+              </div>
+            </div>
+            <div style="background:#fff;border:1px solid #DEE0E3;border-radius:10px;overflow:hidden;box-shadow:0 12px 36px rgba(31,35,41,.12);max-width:860px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-bottom:1px solid #EFF0F1">
+                <h3 style="margin:0;font-size:15px;font-weight:600">配置固定素材（弹层）</h3><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;background:#F2F3F5;color:#646A73;font-size:12px;white-space:nowrap">{{ ag.matCountText }}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:16px;padding:16px">
+                <div style="display:grid;gap:10px;align-content:start">
+                  <label style="color:#646A73;font-size:12px">素材</label>
+                  <div style="display:flex;flex-wrap:wrap;gap:8px"><button onClick="{{ ag.addImage }}" style="height:28px;padding:0 11px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer;white-space:nowrap;flex:none">+图片</button><button onClick="{{ ag.addMp }}" style="height:28px;padding:0 11px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer;white-space:nowrap;flex:none">+小程序</button><button onClick="{{ ag.addAttach }}" style="height:28px;padding:0 11px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer;white-space:nowrap;flex:none">+附件</button><button onClick="{{ ag.addGroup }}" style="height:28px;padding:0 11px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer;white-space:nowrap;flex:none">+选择群聊</button></div>
+                  <label style="color:#646A73;font-size:12px;margin-top:4px">已选素材列表</label>
+                  <sc-if value="{{ ag.noMats }}"><div style="border:1px dashed #DEE0E3;border-radius:8px;padding:16px;font-size:13px;color:#A6AAB0">还没有选择素材</div></sc-if>
+                  <sc-if value="{{ ag.hasMats }}"><div style="display:grid;gap:8px">
+                    <sc-for list="{{ ag.mats }}" as="m">
+                      <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid #DEE0E3;border-radius:8px"><span style="{{ m.thumb }}">{{ m.thumbText }}</span><span style="flex:1;min-width:0"><span style="display:block;font-size:13px">{{ m.name }}</span><span style="display:block;font-size:12px;color:#A6AAB0">{{ m.sub }}</span></span><button onClick="{{ m.rm }}" style="height:26px;padding:0 9px;border:1px solid #FBC4C2;border-radius:5px;background:#FFF5F5;color:#D83931;font-size:12px;cursor:pointer;white-space:nowrap">移除</button></div>
+                    </sc-for>
+                  </div></sc-if>
+                </div>
+                <div style="border:1px solid #DEE0E3;border-radius:10px;padding:14px">
+                  <h4 style="margin:0 0 12px;font-size:14px;font-weight:600">发送任务预览</h4>
+                  <div style="height:150px;display:grid;place-items:center;border:1px dashed #D7DBE0;border-radius:8px;background:#FAFBFC;color:#8F959E;font-size:12px;text-align:center;padding:12px">AI 文本由 Agent 动态生成</div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;border-top:1px solid #EFF0F1;background:#FAFBFC"><button style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:13px;cursor:pointer;white-space:nowrap;flex:none">取消</button><button style="height:30px;padding:0 12px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer;white-space:nowrap;flex:none">保存素材</button></div>
+            </div>
+          </div>
