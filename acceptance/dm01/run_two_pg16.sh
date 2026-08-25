@@ -16,11 +16,11 @@ MIGRATION_TEST_DATABASE_URL="$target_url" MIGRATION_TEST_DATABASE_NAME=aicrm_tes
   GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly go run ./acceptance/fixtures/cmd/validate-database-url
 
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
-  go tool -modfile=tools/go.mod goose -dir migrations postgres "$target_url" up
+  go tool -modfile=tools/go.mod goose -dir migrations postgres "$target_url" up-to 72
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   go tool -modfile=tools/go.mod goose -dir migrations postgres "$target_url" down
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
-  go tool -modfile=tools/go.mod goose -dir migrations postgres "$target_url" up
+  go tool -modfile=tools/go.mod goose -dir migrations postgres "$target_url" up-to 72
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   go test -race -count=1 -timeout=300s ./acceptance/dm01 -args \
     -source-database-url "$source_url" -target-database-url "$target_url"
