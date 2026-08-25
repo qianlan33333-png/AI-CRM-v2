@@ -168,6 +168,7 @@ type candidateHandler struct {
 	wechatPaySettlement       *orderhttp.Handler
 	sidebar                   *sidebarhttp.Handler
 	surveyPublic              *surveyhttp.PublicHandler
+	radarPublic               *radarthttp.PublicHandler
 	segmentRefresh            *segmenthttp.RefreshHandler
 	identityReviews           *identityhttp.ReviewHandler
 	identityConsole           *identityhttp.ConsoleHandler
@@ -1106,6 +1107,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	radarPublicHandler, err := radarthttp.NewPublicHandler(radarService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	campaignAudit, err := campaign.NewEventLogAdapter(eventstore.NewAppender())
 	if err != nil {
 		pool.Close()
@@ -1333,6 +1339,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		servicePeriodMembers: servicePeriodMemberHandler,
 		wechatPaySettlement:  wechatPaySettlementHandler,
 		surveyPublic:         surveyPublicHandler,
+		radarPublic:          radarPublicHandler,
 		segmentRefresh:       segmentRefreshHandler,
 		identityReviews:      identityReviewHandler,
 		identityConsole:      identityConsoleHandler,
@@ -1774,6 +1781,23 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 	} {
 		if err = registerPublicSurvey(route.method, route.pattern, route.endpoint); err != nil {
 			return nil, err
+		}
+	}
+	if concrete, ok := candidate.(*candidateHandler); ok && concrete.radarPublic != nil {
+		for _, route := range []struct {
+			method, pattern string
+			endpoint        http.Handler
+		}{
+			{http.MethodGet, radarthttp.PublicRedirectPattern, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				concrete.radarPublic.Redirect(writer, request, chi.URLParam(request, "code"))
+			})},
+			{http.MethodPost, radarthttp.PublicEventPattern, http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				concrete.radarPublic.RecordEvent(writer, request, chi.URLParam(request, "code"))
+			})},
+		} {
+			if err = registerPublicSurvey(route.method, route.pattern, route.endpoint); err != nil {
+				return nil, err
+			}
 		}
 	}
 	register := func(method, pattern string, capability authport.Capability, csrf bool, endpoint http.Handler) error {
@@ -2308,6 +2332,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				{http.MethodPost, radarthttp.BasePath + "/{link_id}/enable", authport.CapabilityOperationsManage, true},
 				{http.MethodPost, radarthttp.BasePath + "/{link_id}/disable", authport.CapabilityOperationsManage, true},
 				{http.MethodGet, radarthttp.BasePath + "/{link_id}/share", authport.CapabilityAdminRead, false},
+				{http.MethodGet, radarthttp.BasePath + "/{link_id}/stats", authport.CapabilityAdminRead, false},
+				{http.MethodGet, radarthttp.BasePath + "/{link_id}/events", authport.CapabilityAdminRead, false},
+				{http.MethodGet, radarthttp.BasePath + "/{link_id}/events/export", authport.CapabilityAdminRead, false},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.radar); err != nil {
 					return nil, err

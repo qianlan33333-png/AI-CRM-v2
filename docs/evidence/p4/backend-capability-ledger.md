@@ -1,5 +1,13 @@
 # P4 后端冻结收据总账
 
+## Radar Local Tracking Core（本地 checkpoint；不追溯改写旧冻结分母）
+
+`00081_radar_local_tracking.sql` 恢复 enabled link 公共 302、identity-free H5 event、
+管理端 events/stats/CSV 与 sidebar 安全投影。精确协议、PII 边界、PG16.14 和 CI 证据见
+`docs/evidence/p4/radar-local-tracking-core.md`。该本地 receipt 不等于前端接入、main 合并、
+Nightly、部署、OAuth/Provider 或真实身份归因；旧 Matrix 中含前端结果的 Radar 行不由此
+伪装成整体完成。
+
 ## EER External Effects Runtime（V2-native foundation；不变更旧 Matrix 分母）
 
 `00075_external_effects_runtime.sql` 交付 digest-only 的外部效果执行内核：领域内部

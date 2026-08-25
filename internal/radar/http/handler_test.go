@@ -31,6 +31,42 @@ type applicationSpy struct {
 	mutationErr   error
 }
 
+type trackingApplicationSpy struct {
+	applicationSpy
+	redirectCode  string
+	recordCommand radarport.RecordEventCommand
+	eventInput    radarport.EventListInput
+	statsID       radarport.LinkID
+	eventCalls    int
+}
+
+func (spy *trackingApplicationSpy) ResolvePublicRedirect(_ context.Context, code string) (radarport.PublicRedirect, error) {
+	spy.redirectCode = code
+	return radarport.PublicRedirect{DestinationURL: "https://example.com/guide", Receipt: radarport.EventReceipt{EventID: 1, ReceiptID: "rre_00000000000000000000000000000001", LocalReceipt: true}}, nil
+}
+
+func (spy *trackingApplicationSpy) RecordPublicEvent(_ context.Context, command radarport.RecordEventCommand) (radarport.EventReceipt, error) {
+	spy.recordCommand = command
+	return radarport.EventReceipt{EventID: 2, ReceiptID: "rre_00000000000000000000000000000002", LocalReceipt: true}, nil
+}
+
+func (spy *trackingApplicationSpy) ListEvents(_ context.Context, input radarport.EventListInput) (radarport.EventPage, error) {
+	spy.eventCalls++
+	spy.eventInput = input
+	created := time.Date(2026, 8, 25, 2, 3, 4, 0, time.UTC)
+	item := radarport.Event{EventID: 2, ReceiptID: "rre_00000000000000000000000000000002", LinkID: input.LinkID, Stage: radarport.EventStageViewerOpen, Source: radarport.EventSourcePublicEvent, CreatedAt: created}
+	return radarport.EventPage{Items: []radarport.Event{item}, Events: []radarport.Event{item}, Total: 1, Limit: input.Limit, Offset: input.Offset}, nil
+}
+
+func (spy *trackingApplicationSpy) EventStats(_ context.Context, id radarport.LinkID) (radarport.EventStats, error) {
+	spy.statsID = id
+	return radarport.EventStats{LinkID: id, TotalEvents: 3, TotalLandings: 1, Redirects: 1}, nil
+}
+
+func (spy *trackingApplicationSpy) SidebarLinks(context.Context, int32, int32, string) (radarport.SidebarPage, error) {
+	return radarport.SidebarPage{}, nil
+}
+
 func (spy *applicationSpy) List(_ context.Context, input radarport.ListInput) (radarport.Page, error) {
 	spy.listCalls++
 	spy.listInput = input
@@ -130,6 +166,9 @@ func TestRouteFragmentMetadataIsClosed(t *testing.T) {
 		{Method: "POST", Pattern: BasePath + "/{link_id}/enable", Permission: PermissionAdminWrite, RequiresCSRF: true},
 		{Method: "POST", Pattern: BasePath + "/{link_id}/disable", Permission: PermissionAdminWrite, RequiresCSRF: true},
 		{Method: "GET", Pattern: BasePath + "/{link_id}/share", Permission: PermissionAdminRead},
+		{Method: "GET", Pattern: BasePath + "/{link_id}/stats", Permission: PermissionAdminRead},
+		{Method: "GET", Pattern: BasePath + "/{link_id}/events", Permission: PermissionAdminRead},
+		{Method: "GET", Pattern: BasePath + "/{link_id}/events/export", Permission: PermissionAdminRead},
 		{Method: "GET", Pattern: BasePath + "/new/options", Permission: PermissionAdminRead},
 	}
 	if !reflect.DeepEqual(got, want) {
@@ -228,6 +267,72 @@ func TestListGetShareAndOptionsUseReadPermission(t *testing.T) {
 	var options radarport.Options
 	if json.Unmarshal(optionsRecorder.Body.Bytes(), &options) != nil || !options.LocalProjection || options.PublicRouteReady || options.RealExternalCallExecuted || !reflect.DeepEqual(options.DestinationSchemes, []string{"https"}) {
 		t.Fatalf("options body=%s", optionsRecorder.Body.String())
+	}
+}
+
+func TestTrackingAdminListStatsAndCSVExport(t *testing.T) {
+	application := &trackingApplicationSpy{}
+	authorizer := &authorizerSpy{actor: Actor{ID: 8}}
+	fragment := newHTTPFixture(t, application, authorizer, &csrfSpy{})
+
+	list := httptest.NewRecorder()
+	fragment.ServeHTTP(list, httptest.NewRequest(stdhttp.MethodGet, BasePath+"/42/events?limit=25&offset=5&stage=viewer_open&start_at=2026-08-24T00:00:00Z&end_at=2026-08-26T00:00:00Z", nil))
+	if list.Code != stdhttp.StatusOK || application.eventInput.LinkID != 42 || application.eventInput.Limit != 25 || application.eventInput.Offset != 5 || application.eventInput.Stage == nil || *application.eventInput.Stage != radarport.EventStageViewerOpen {
+		t.Fatalf("list status/input=%d/%+v body=%s", list.Code, application.eventInput, list.Body.String())
+	}
+
+	stats := httptest.NewRecorder()
+	fragment.ServeHTTP(stats, httptest.NewRequest(stdhttp.MethodGet, BasePath+"/42/stats", nil))
+	if stats.Code != stdhttp.StatusOK || application.statsID != 42 {
+		t.Fatalf("stats status/id=%d/%d body=%s", stats.Code, application.statsID, stats.Body.String())
+	}
+
+	export := httptest.NewRecorder()
+	fragment.ServeHTTP(export, httptest.NewRequest(stdhttp.MethodGet, BasePath+"/42/events/export?start_at=2026-08-24T00:00:00Z&end_at=2026-08-26T00:00:00Z", nil))
+	if export.Code != stdhttp.StatusOK || export.Header().Get("Content-Type") != "text/csv; charset=utf-8" || export.Header().Get("Cache-Control") != "private, no-store" {
+		t.Fatalf("export status/headers=%d/%v body=%s", export.Code, export.Header(), export.Body.String())
+	}
+	if got := strings.TrimPrefix(export.Body.String(), "\ufeff"); got != "unionid,external_userid,created_at\n,,2026-08-25T02:03:04Z\n" {
+		t.Fatalf("csv=%q", got)
+	}
+	if !reflect.DeepEqual(authorizer.permissions, []Permission{PermissionAdminRead, PermissionAdminRead, PermissionAdminRead}) {
+		t.Fatalf("permissions=%v", authorizer.permissions)
+	}
+}
+
+func TestPublicTrackingRoutesAreStrictAndPIIMinimal(t *testing.T) {
+	application := &trackingApplicationSpy{}
+	handler, err := NewPublicHandler(application)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	redirectRequest := httptest.NewRequest(stdhttp.MethodGet, "/r/rd_AAAAAAAAAAAAAAAAAAAAAA", nil)
+	redirect := httptest.NewRecorder()
+	handler.Redirect(redirect, redirectRequest, "rd_AAAAAAAAAAAAAAAAAAAAAA")
+	if redirect.Code != stdhttp.StatusFound || redirect.Header().Get("Location") != "https://example.com/guide" || redirect.Header().Get("X-Radar-Receipt-ID") == "" || application.redirectCode == "" {
+		t.Fatalf("redirect status/headers/code=%d/%v/%q", redirect.Code, redirect.Header(), application.redirectCode)
+	}
+
+	eventRequest := httptest.NewRequest(stdhttp.MethodPost, "/api/h5/radar-contents/rd_AAAAAAAAAAAAAAAAAAAAAA/events", strings.NewReader(`{"stage":"pdf_page_loaded","page":2,"extra":{"variant":"mobile"}}`))
+	eventRequest.Header.Set("Content-Type", "application/json")
+	eventRequest.Header.Set("Idempotency-Key", "radar-public-http-event-001")
+	event := httptest.NewRecorder()
+	handler.RecordEvent(event, eventRequest, "rd_AAAAAAAAAAAAAAAAAAAAAA")
+	if event.Code != stdhttp.StatusOK || application.recordCommand.Stage != radarport.EventStagePDFPageLoaded || application.recordCommand.Page == nil || *application.recordCommand.Page != 2 || application.recordCommand.IdempotencyKey != "radar-public-http-event-001" {
+		t.Fatalf("event status/command=%d/%+v body=%s", event.Code, application.recordCommand, event.Body.String())
+	}
+	if strings.Contains(event.Body.String(), "external_userid") || strings.Contains(event.Body.String(), "unionid") || strings.Contains(event.Body.String(), "openid") {
+		t.Fatalf("event leaked identity fields: %s", event.Body.String())
+	}
+
+	unknown := httptest.NewRequest(stdhttp.MethodPost, "/api/h5/radar-contents/code/events", strings.NewReader(`{"stage":"viewer_open","external_userid":"forbidden"}`))
+	unknown.Header.Set("Content-Type", "application/json")
+	unknown.Header.Set("Idempotency-Key", "radar-public-http-event-002")
+	unknownRecorder := httptest.NewRecorder()
+	handler.RecordEvent(unknownRecorder, unknown, "code")
+	if unknownRecorder.Code != stdhttp.StatusBadRequest {
+		t.Fatalf("unknown field status=%d body=%s", unknownRecorder.Code, unknownRecorder.Body.String())
 	}
 }
 

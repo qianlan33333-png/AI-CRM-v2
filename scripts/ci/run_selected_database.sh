@@ -108,6 +108,9 @@ while [[ -n "$remaining_groups" ]]; do
     migration)
       run_make_acceptance P4DMH_TEST_DATABASE_URL p4-data-migration-harness-acceptance
       ;;
+    radar)
+      run_make_acceptance P4_RADAR_TRACKING_TEST_DATABASE_URL p4-radar-local-tracking-acceptance
+      ;;
     identity)
       run_make_acceptance P3R4B_TEST_DATABASE_URL p3-r4b-identity-storage-acceptance
       ;;

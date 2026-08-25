@@ -8234,7 +8234,7 @@ paths:
     get:
       tags: [p4-radar]
       operationId: getRadarLinkShareProjection
-      summary: Read a local share descriptor; no public route or external effect is implied
+      summary: Read a local descriptor for the enabled-state-aware public Radar route
       x-legacy-mapping-ids: [LEGACY-API-0461]
       x-p4-decision-evidence: P4-RADAR-LOCAL-LIFECYCLE-2026-08-22
       x-aicrm-capability: admin.read
@@ -8246,11 +8246,137 @@ paths:
       x-aicrm-external-effect: none
       parameters: [{ name: link_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
       responses:
-        "200": { description: Unavailable local descriptor; no public route or external effect is implied, content: { application/json: { schema: { $ref: "#/components/schemas/RadarShareProjection" } } } }
+        "200": { description: Local relative share path and QR payload; no Provider or identity effect is implied, content: { application/json: { schema: { $ref: "#/components/schemas/RadarShareProjection" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/radar-links/{link_id}/stats:
+    get:
+      tags: [p4-radar]
+      operationId: getRadarLinkEventStats
+      summary: Read local, identity-free Radar event statistics
+      x-legacy-mapping-ids: [LEGACY-API-0462]
+      x-p4-decision-evidence: P4-RADAR-LOCAL-TRACKING-2026-08-25
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ name: link_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: Local event statistics without identity attribution or Provider effect, content: { application/json: { schema: { $ref: "#/components/schemas/RadarEventStats" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/radar-links/{link_id}/events:
+    get:
+      tags: [p4-radar]
+      operationId: listRadarLinkEvents
+      summary: List immutable local Radar receipts with stage and time filters
+      x-legacy-mapping-ids: [LEGACY-API-0457]
+      x-p4-decision-evidence: P4-RADAR-LOCAL-TRACKING-2026-08-25
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: link_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, format: int32, minimum: 1, maximum: 500, default: 100 } }
+        - { name: offset, in: query, schema: { type: integer, format: int32, minimum: 0, maximum: 1000000, default: 0 } }
+        - { name: stage, in: query, schema: { $ref: "#/components/schemas/RadarEventStage" } }
+        - { name: start_at, in: query, schema: { type: string, format: date-time } }
+        - { name: end_at, in: query, schema: { type: string, format: date-time } }
+      responses:
+        "200": { description: Identity-free local Radar receipt page, content: { application/json: { schema: { $ref: "#/components/schemas/RadarEventPage" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/radar-links/{link_id}/events/export:
+    get:
+      tags: [p4-radar]
+      operationId: exportRadarLinkEvents
+      summary: Export legacy-compatible Radar CSV headers without identity attribution
+      x-legacy-mapping-ids: [LEGACY-API-0458]
+      x-p4-decision-evidence: P4-RADAR-LOCAL-TRACKING-2026-08-25
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: local_read_model
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: link_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: start_at, in: query, schema: { type: string, format: date-time } }
+        - { name: end_at, in: query, schema: { type: string, format: date-time } }
+      responses:
+        "200": { description: "UTF-8 CSV with exact legacy headers unionid, external_userid, created_at; identity columns are empty because this package performs no OAuth attribution", content: { text/csv: { schema: { type: string } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /r/{code}:
+    get:
+      tags: [p4-radar]
+      operationId: resolveRadarPublicRedirect
+      summary: Resolve an enabled local Radar code and record landing plus redirect receipts
+      x-legacy-mapping-ids: [LEGACY-API-0770]
+      x-p4-decision-evidence: P4-RADAR-LOCAL-TRACKING-2026-08-25
+      x-aicrm-capability: public
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: none
+      x-aicrm-external-effect: none
+      security: []
+      parameters: [{ name: code, in: path, required: true, schema: { type: string, pattern: '^rd_[A-Za-z0-9_-]{22}$' } }]
+      responses:
+        "302":
+          description: Local destination redirect with a durable receipt; no Provider or OAuth execution is implied.
+          headers:
+            Location: { required: true, schema: { type: string, format: uri, pattern: '^https://' } }
+            X-Radar-Receipt-ID: { required: true, schema: { type: string, pattern: '^rre_[0-9a-f]{32}$' } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/h5/radar-contents/{code}/events:
+    post:
+      tags: [p4-radar]
+      operationId: recordRadarPublicEvent
+      summary: Record one idempotent, identity-free local Radar viewer event
+      x-legacy-mapping-ids: [LEGACY-API-0654]
+      x-p4-decision-evidence: P4-RADAR-LOCAL-TRACKING-2026-08-25
+      x-aicrm-capability: public
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: none
+      x-aicrm-external-effect: none
+      security: []
+      parameters:
+        - { name: code, in: path, required: true, schema: { type: string, pattern: '^rd_[A-Za-z0-9_-]{22}$' } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 128 } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/RadarPublicEventRequest" } } } }
+      responses:
+        "200": { description: Durable local receipt; identity_attributed and real_external_call_executed remain false, content: { application/json: { schema: { $ref: "#/components/schemas/RadarPublicEventResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/common/operation-members:
     get:
@@ -12124,11 +12250,11 @@ components:
         link_id: { type: integer, format: int64, minimum: 1 }
         public_code: { type: string, pattern: '^rd_[A-Za-z0-9_-]{22}$' }
         status: { $ref: "#/components/schemas/RadarStatus" }
-        available: { type: boolean, enum: [false] }
-        share_path: { type: string, enum: [""] }
-        qr_payload: { type: string, enum: [""] }
+        available: { type: boolean }
+        share_path: { type: string, pattern: '^/r/rd_[A-Za-z0-9_-]{22}$' }
+        qr_payload: { type: string, pattern: '^/r/rd_[A-Za-z0-9_-]{22}$' }
         local_projection: { type: boolean, enum: [true] }
-        public_route_ready: { type: boolean, enum: [false] }
+        public_route_ready: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
     RadarOptionDefaults:
       type: object
@@ -12165,7 +12291,95 @@ components:
         limits: { $ref: "#/components/schemas/RadarOptionLimits" }
         destination_schemes: { type: array, minItems: 1, maxItems: 1, items: { type: string, enum: [https] } }
         local_projection: { type: boolean, enum: [true] }
-        public_route_ready: { type: boolean, enum: [false] }
+        public_route_ready: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    RadarEventStage:
+      type: string
+      enum: [landing, redirect, viewer_open, image_loaded, pdf_opened, pdf_manifest_loaded, pdf_page_loaded, pdf_page_error, image_manifest_loaded, image_variant_loaded]
+    RadarPublicEventStage:
+      type: string
+      enum: [viewer_open, image_loaded, pdf_opened, pdf_manifest_loaded, pdf_page_loaded, pdf_page_error, image_manifest_loaded, image_variant_loaded]
+    RadarEvent:
+      type: object
+      additionalProperties: false
+      required: [event_id, receipt_id, link_id, stage, source, created_at]
+      properties:
+        event_id: { type: integer, format: int64, minimum: 1 }
+        receipt_id: { type: string, pattern: '^rre_[0-9a-f]{32}$' }
+        link_id: { type: integer, format: int64, minimum: 1 }
+        stage: { $ref: "#/components/schemas/RadarEventStage" }
+        page: { type: integer, format: int32, minimum: 1, maximum: 100000, nullable: true }
+        source: { type: string, enum: [public_redirect, public_event] }
+        created_at: { type: string, format: date-time }
+    RadarEventReceipt:
+      type: object
+      additionalProperties: false
+      required: [event_id, receipt_id, created_at, replayed, local_receipt, identity_attributed, real_external_call_executed]
+      properties:
+        event_id: { type: integer, format: int64, minimum: 1 }
+        receipt_id: { type: string, pattern: '^rre_[0-9a-f]{32}$' }
+        created_at: { type: string, format: date-time }
+        replayed: { type: boolean }
+        local_receipt: { type: boolean, enum: [true] }
+        identity_attributed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    RadarPublicEventRequest:
+      type: object
+      additionalProperties: false
+      required: [stage]
+      properties:
+        stage: { $ref: "#/components/schemas/RadarPublicEventStage" }
+        page: { type: integer, format: int32, minimum: 1, maximum: 100000 }
+        extra: { type: object, maxProperties: 100, additionalProperties: true }
+    RadarPublicEventResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, event_id, receipt_id, created_at, replayed, local_receipt, identity_attributed, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        event_id: { type: integer, format: int64, minimum: 1 }
+        receipt_id: { type: string, pattern: '^rre_[0-9a-f]{32}$' }
+        created_at: { type: string, format: date-time }
+        replayed: { type: boolean }
+        local_receipt: { type: boolean, enum: [true] }
+        identity_attributed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    RadarEventPage:
+      type: object
+      additionalProperties: false
+      required: [items, events, total, limit, offset, has_more, identity_attributed, real_external_call_executed]
+      properties:
+        items: { type: array, maxItems: 500, items: { $ref: "#/components/schemas/RadarEvent" } }
+        events: { type: array, maxItems: 500, items: { $ref: "#/components/schemas/RadarEvent" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 500 }
+        offset: { type: integer, format: int32, minimum: 0, maximum: 1000000 }
+        has_more: { type: boolean }
+        identity_attributed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    RadarEventStats:
+      type: object
+      additionalProperties: false
+      required: [link_id, total_events, total_clicks, total_landings, authorized_clicks, unique_users, authorized_users, redirects, viewer_opens, view_opens, image_loaded, pdf_opened, today_clicks, today_landings, identity_attributed, real_external_call_executed]
+      properties:
+        link_id: { type: integer, format: int64, minimum: 1 }
+        total_events: { type: integer, format: int64, minimum: 0 }
+        total_clicks: { type: integer, format: int64, minimum: 0 }
+        total_landings: { type: integer, format: int64, minimum: 0 }
+        authorized_clicks: { type: integer, format: int64, enum: [0] }
+        unique_users: { type: integer, format: int64, enum: [0] }
+        authorized_users: { type: integer, format: int64, enum: [0] }
+        redirects: { type: integer, format: int64, minimum: 0 }
+        viewer_opens: { type: integer, format: int64, minimum: 0 }
+        view_opens: { type: integer, format: int64, minimum: 0 }
+        image_loaded: { type: integer, format: int64, minimum: 0 }
+        pdf_opened: { type: integer, format: int64, minimum: 0 }
+        today_clicks: { type: integer, format: int64, minimum: 0 }
+        today_landings: { type: integer, format: int64, minimum: 0 }
+        last_clicked_at: { type: string, format: date-time, nullable: true }
+        last_event_at: { type: string, format: date-time, nullable: true }
+        last_viewed_at: { type: string, format: date-time, nullable: true }
+        identity_attributed: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
     ServicePeriodProduct:
       type: object

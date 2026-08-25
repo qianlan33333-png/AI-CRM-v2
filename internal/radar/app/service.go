@@ -31,11 +31,13 @@ const (
 type Service struct {
 	uow                platformport.UnitOfWork
 	repository         radarport.Repository
+	tracking           radarport.TrackingRepository
 	images             mediaport.ImageMetadataReader
 	attachments        mediaport.AttachmentMetadataReader
 	events             eventport.Appender
 	now                func() time.Time
 	generatePublicCode func() (string, error)
+	generateReceiptID  func() (string, error)
 }
 
 var _ radarport.Application = (*Service)(nil)
@@ -62,14 +64,17 @@ func newService(uow platformport.UnitOfWork, repository radarport.Repository, im
 	if nilDependency(uow) || nilDependency(repository) || nilDependency(events) {
 		return nil, radarport.ErrUnavailable
 	}
+	tracking, _ := repository.(radarport.TrackingRepository)
 	return &Service{
 		uow:                uow,
 		repository:         repository,
+		tracking:           tracking,
 		images:             images,
 		attachments:        attachments,
 		events:             events,
 		now:                time.Now,
 		generatePublicCode: randomPublicCode,
+		generateReceiptID:  randomReceiptID,
 	}, nil
 }
 
@@ -422,15 +427,17 @@ func (service *Service) Share(ctx context.Context, id radarport.LinkID) (radarpo
 	if err != nil {
 		return radarport.ShareProjection{}, err
 	}
+	sharePath := "/r/" + result.Link.PublicCode
+	available := result.Link.Status == radarport.StatusEnabled
 	return radarport.ShareProjection{
 		LinkID:                   result.Link.LinkID,
 		PublicCode:               result.Link.PublicCode,
 		Status:                   result.Link.Status,
-		Available:                false,
-		SharePath:                "",
-		QRPayload:                "",
+		Available:                available,
+		SharePath:                sharePath,
+		QRPayload:                sharePath,
 		LocalProjection:          true,
-		PublicRouteReady:         false,
+		PublicRouteReady:         true,
 		RealExternalCallExecuted: false,
 	}, nil
 }
@@ -459,7 +466,7 @@ func (service *Service) Options(context.Context) radarport.Options {
 		},
 		DestinationSchemes:       []string{"https"},
 		LocalProjection:          true,
-		PublicRouteReady:         false,
+		PublicRouteReady:         true,
 		RealExternalCallExecuted: false,
 	}
 }

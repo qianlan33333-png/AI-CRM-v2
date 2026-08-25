@@ -193,6 +193,16 @@
       "effects": {"go": true,"go_groups": ["product"],"go_mode": "selected"}
     },
     {
+      "name": "domain-radar",
+      "patterns": ["internal/radar/**","acceptance/radar/**"],
+      "effects": {"go": true,"go_groups": ["radar"],"go_mode": "selected"}
+    },
+    {
+      "name": "radar-database",
+      "patterns": ["internal/radar/store/**","acceptance/radar/**"],
+      "effects": {"database": true,"database_groups": ["radar"],"database_mode": "selected","sqlc": true}
+    },
+    {
       "name": "domain-pushcenter",
       "patterns": ["internal/pushcenter/**","acceptance/pushcenter/**"],
       "effects": {"go": true,"go_groups": ["pushcenter"],"go_mode": "selected"}

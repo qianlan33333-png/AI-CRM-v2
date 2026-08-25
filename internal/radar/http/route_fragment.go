@@ -17,6 +17,7 @@ type Route struct {
 
 type RouteFragment struct {
 	application radarport.Application
+	tracking    radarport.TrackingApplication
 	authorizer  Authorizer
 	csrf        CSRFVerifier
 }
@@ -25,7 +26,8 @@ func NewRouteFragment(application radarport.Application, authorizer Authorizer, 
 	if nilInterface(application) || nilInterface(authorizer) || nilInterface(csrf) {
 		return nil, radarport.ErrUnavailable
 	}
-	return &RouteFragment{application: application, authorizer: authorizer, csrf: csrf}, nil
+	tracking, _ := application.(radarport.TrackingApplication)
+	return &RouteFragment{application: application, tracking: tracking, authorizer: authorizer, csrf: csrf}, nil
 }
 
 func (fragment *RouteFragment) Routes() []Route {
@@ -37,6 +39,9 @@ func (fragment *RouteFragment) Routes() []Route {
 		{Method: "POST", Pattern: BasePath + "/{link_id}/enable", Permission: PermissionAdminWrite, RequiresCSRF: true},
 		{Method: "POST", Pattern: BasePath + "/{link_id}/disable", Permission: PermissionAdminWrite, RequiresCSRF: true},
 		{Method: "GET", Pattern: BasePath + "/{link_id}/share", Permission: PermissionAdminRead},
+		{Method: "GET", Pattern: BasePath + "/{link_id}/stats", Permission: PermissionAdminRead},
+		{Method: "GET", Pattern: BasePath + "/{link_id}/events", Permission: PermissionAdminRead},
+		{Method: "GET", Pattern: BasePath + "/{link_id}/events/export", Permission: PermissionAdminRead},
 		{Method: "GET", Pattern: BasePath + "/new/options", Permission: PermissionAdminRead},
 	}
 }

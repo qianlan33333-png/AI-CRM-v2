@@ -2526,22 +2526,6 @@ export interface RadarVersionRequest {
   expected_version: number;
 }
 
-export type RadarShareProjectionSharePath =
-  (typeof RadarShareProjectionSharePath)[keyof typeof RadarShareProjectionSharePath];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const RadarShareProjectionSharePath = {
-  "": "",
-} as const;
-
-export type RadarShareProjectionQrPayload =
-  (typeof RadarShareProjectionQrPayload)[keyof typeof RadarShareProjectionQrPayload];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const RadarShareProjectionQrPayload = {
-  "": "",
-} as const;
-
 export interface RadarShareProjection {
   /** @minimum 1 */
   link_id: number;
@@ -2549,8 +2533,10 @@ export interface RadarShareProjection {
   public_code: string;
   status: RadarStatus;
   available: boolean;
-  share_path: RadarShareProjectionSharePath;
-  qr_payload: RadarShareProjectionQrPayload;
+  /** @pattern ^/r/rd_[A-Za-z0-9_-]{22}$ */
+  share_path: string;
+  /** @pattern ^/r/rd_[A-Za-z0-9_-]{22}$ */
+  qr_payload: string;
   local_projection: boolean;
   public_route_ready: boolean;
   real_external_call_executed: boolean;
@@ -2696,6 +2682,184 @@ export interface RadarOptions {
   destination_schemes: RadarOptionsDestinationSchemesItem[];
   local_projection: boolean;
   public_route_ready: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type RadarEventStage =
+  (typeof RadarEventStage)[keyof typeof RadarEventStage];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarEventStage = {
+  landing: "landing",
+  redirect: "redirect",
+  viewer_open: "viewer_open",
+  image_loaded: "image_loaded",
+  pdf_opened: "pdf_opened",
+  pdf_manifest_loaded: "pdf_manifest_loaded",
+  pdf_page_loaded: "pdf_page_loaded",
+  pdf_page_error: "pdf_page_error",
+  image_manifest_loaded: "image_manifest_loaded",
+  image_variant_loaded: "image_variant_loaded",
+} as const;
+
+export type RadarPublicEventStage =
+  (typeof RadarPublicEventStage)[keyof typeof RadarPublicEventStage];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarPublicEventStage = {
+  viewer_open: "viewer_open",
+  image_loaded: "image_loaded",
+  pdf_opened: "pdf_opened",
+  pdf_manifest_loaded: "pdf_manifest_loaded",
+  pdf_page_loaded: "pdf_page_loaded",
+  pdf_page_error: "pdf_page_error",
+  image_manifest_loaded: "image_manifest_loaded",
+  image_variant_loaded: "image_variant_loaded",
+} as const;
+
+export type RadarEventSource =
+  (typeof RadarEventSource)[keyof typeof RadarEventSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarEventSource = {
+  public_redirect: "public_redirect",
+  public_event: "public_event",
+} as const;
+
+export interface RadarEvent {
+  /** @minimum 1 */
+  event_id: number;
+  /** @pattern ^rre_[0-9a-f]{32}$ */
+  receipt_id: string;
+  /** @minimum 1 */
+  link_id: number;
+  stage: RadarEventStage;
+  /**
+   * @minimum 1
+   * @maximum 100000
+   * @nullable
+   */
+  page?: number | null;
+  source: RadarEventSource;
+  created_at: string;
+}
+
+export interface RadarEventReceipt {
+  /** @minimum 1 */
+  event_id: number;
+  /** @pattern ^rre_[0-9a-f]{32}$ */
+  receipt_id: string;
+  created_at: string;
+  replayed: boolean;
+  local_receipt: boolean;
+  identity_attributed: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type RadarPublicEventRequestExtra = { [key: string]: unknown };
+
+export interface RadarPublicEventRequest {
+  stage: RadarPublicEventStage;
+  /**
+   * @minimum 1
+   * @maximum 100000
+   */
+  page?: number;
+  extra?: RadarPublicEventRequestExtra;
+}
+
+export interface RadarPublicEventResponse {
+  ok: boolean;
+  /** @minimum 1 */
+  event_id: number;
+  /** @pattern ^rre_[0-9a-f]{32}$ */
+  receipt_id: string;
+  created_at: string;
+  replayed: boolean;
+  local_receipt: boolean;
+  identity_attributed: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface RadarEventPage {
+  /** @maxItems 500 */
+  items: RadarEvent[];
+  /** @maxItems 500 */
+  events: RadarEvent[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 500
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset: number;
+  has_more: boolean;
+  identity_attributed: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type RadarEventStatsAuthorizedClicks =
+  (typeof RadarEventStatsAuthorizedClicks)[keyof typeof RadarEventStatsAuthorizedClicks];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarEventStatsAuthorizedClicks = {
+  NUMBER_0: 0,
+} as const;
+
+export type RadarEventStatsUniqueUsers =
+  (typeof RadarEventStatsUniqueUsers)[keyof typeof RadarEventStatsUniqueUsers];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarEventStatsUniqueUsers = {
+  NUMBER_0: 0,
+} as const;
+
+export type RadarEventStatsAuthorizedUsers =
+  (typeof RadarEventStatsAuthorizedUsers)[keyof typeof RadarEventStatsAuthorizedUsers];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RadarEventStatsAuthorizedUsers = {
+  NUMBER_0: 0,
+} as const;
+
+export interface RadarEventStats {
+  /** @minimum 1 */
+  link_id: number;
+  /** @minimum 0 */
+  total_events: number;
+  /** @minimum 0 */
+  total_clicks: number;
+  /** @minimum 0 */
+  total_landings: number;
+  authorized_clicks: RadarEventStatsAuthorizedClicks;
+  unique_users: RadarEventStatsUniqueUsers;
+  authorized_users: RadarEventStatsAuthorizedUsers;
+  /** @minimum 0 */
+  redirects: number;
+  /** @minimum 0 */
+  viewer_opens: number;
+  /** @minimum 0 */
+  view_opens: number;
+  /** @minimum 0 */
+  image_loaded: number;
+  /** @minimum 0 */
+  pdf_opened: number;
+  /** @minimum 0 */
+  today_clicks: number;
+  /** @minimum 0 */
+  today_landings: number;
+  /** @nullable */
+  last_clicked_at?: string | null;
+  /** @nullable */
+  last_event_at?: string | null;
+  /** @nullable */
+  last_viewed_at?: string | null;
+  identity_attributed: boolean;
   real_external_call_executed: boolean;
 }
 
@@ -15200,6 +15364,27 @@ export type ListRadarLinksParams = {
    * @maximum 1000000
    */
   offset?: number;
+};
+
+export type ListRadarLinkEventsParams = {
+  /**
+   * @minimum 1
+   * @maximum 500
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 1000000
+   */
+  offset?: number;
+  stage?: RadarEventStage;
+  start_at?: string;
+  end_at?: string;
+};
+
+export type ExportRadarLinkEventsParams = {
+  start_at?: string;
+  end_at?: string;
 };
 
 export type ListAIAudienceOperationMembersParams = {
@@ -42277,7 +42462,7 @@ export const disableRadarLink = async (
 };
 
 /**
- * @summary Read a local share descriptor; no public route or external effect is implied
+ * @summary Read a local descriptor for the enabled-state-aware public Radar route
  */
 export type getRadarLinkShareProjectionResponse200 = {
   data: RadarShareProjection;
@@ -42350,6 +42535,413 @@ export const getRadarLinkShareProjection = async (
     status: res.status,
     headers: res.headers,
   } as getRadarLinkShareProjectionResponse;
+};
+
+/**
+ * @summary Read local, identity-free Radar event statistics
+ */
+export type getRadarLinkEventStatsResponse200 = {
+  data: RadarEventStats;
+  status: 200;
+};
+
+export type getRadarLinkEventStatsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getRadarLinkEventStatsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getRadarLinkEventStatsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getRadarLinkEventStatsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getRadarLinkEventStatsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getRadarLinkEventStatsResponseSuccess =
+  getRadarLinkEventStatsResponse200 & {
+    headers: Headers;
+  };
+export type getRadarLinkEventStatsResponseError = (
+  | getRadarLinkEventStatsResponse400
+  | getRadarLinkEventStatsResponse401
+  | getRadarLinkEventStatsResponse403
+  | getRadarLinkEventStatsResponse404
+  | getRadarLinkEventStatsResponse503
+) & {
+  headers: Headers;
+};
+
+export type getRadarLinkEventStatsResponse =
+  getRadarLinkEventStatsResponseSuccess | getRadarLinkEventStatsResponseError;
+
+export const getGetRadarLinkEventStatsUrl = (linkId: number) => {
+  return `/api/admin/radar-links/${linkId}/stats`;
+};
+
+export const getRadarLinkEventStats = async (
+  linkId: number,
+  options?: RequestInit,
+): Promise<getRadarLinkEventStatsResponse> => {
+  const res = await fetch(getGetRadarLinkEventStatsUrl(linkId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getRadarLinkEventStatsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getRadarLinkEventStatsResponse;
+};
+
+/**
+ * @summary List immutable local Radar receipts with stage and time filters
+ */
+export type listRadarLinkEventsResponse200 = {
+  data: RadarEventPage;
+  status: 200;
+};
+
+export type listRadarLinkEventsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listRadarLinkEventsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listRadarLinkEventsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listRadarLinkEventsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listRadarLinkEventsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listRadarLinkEventsResponseSuccess =
+  listRadarLinkEventsResponse200 & {
+    headers: Headers;
+  };
+export type listRadarLinkEventsResponseError = (
+  | listRadarLinkEventsResponse400
+  | listRadarLinkEventsResponse401
+  | listRadarLinkEventsResponse403
+  | listRadarLinkEventsResponse404
+  | listRadarLinkEventsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listRadarLinkEventsResponse =
+  listRadarLinkEventsResponseSuccess | listRadarLinkEventsResponseError;
+
+export const getListRadarLinkEventsUrl = (
+  linkId: number,
+  params?: ListRadarLinkEventsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/radar-links/${linkId}/events?${stringifiedParams}`
+    : `/api/admin/radar-links/${linkId}/events`;
+};
+
+export const listRadarLinkEvents = async (
+  linkId: number,
+  params?: ListRadarLinkEventsParams,
+  options?: RequestInit,
+): Promise<listRadarLinkEventsResponse> => {
+  const res = await fetch(getListRadarLinkEventsUrl(linkId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listRadarLinkEventsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listRadarLinkEventsResponse;
+};
+
+/**
+ * @summary Export legacy-compatible Radar CSV headers without identity attribution
+ */
+export type exportRadarLinkEventsResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type exportRadarLinkEventsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type exportRadarLinkEventsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type exportRadarLinkEventsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type exportRadarLinkEventsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type exportRadarLinkEventsResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type exportRadarLinkEventsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type exportRadarLinkEventsResponseSuccess =
+  exportRadarLinkEventsResponse200 & {
+    headers: Headers;
+  };
+export type exportRadarLinkEventsResponseError = (
+  | exportRadarLinkEventsResponse400
+  | exportRadarLinkEventsResponse401
+  | exportRadarLinkEventsResponse403
+  | exportRadarLinkEventsResponse404
+  | exportRadarLinkEventsResponse409
+  | exportRadarLinkEventsResponse503
+) & {
+  headers: Headers;
+};
+
+export type exportRadarLinkEventsResponse =
+  exportRadarLinkEventsResponseSuccess | exportRadarLinkEventsResponseError;
+
+export const getExportRadarLinkEventsUrl = (
+  linkId: number,
+  params?: ExportRadarLinkEventsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/radar-links/${linkId}/events/export?${stringifiedParams}`
+    : `/api/admin/radar-links/${linkId}/events/export`;
+};
+
+export const exportRadarLinkEvents = async (
+  linkId: number,
+  params?: ExportRadarLinkEventsParams,
+  options?: RequestInit,
+): Promise<exportRadarLinkEventsResponse> => {
+  const res = await fetch(getExportRadarLinkEventsUrl(linkId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: exportRadarLinkEventsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as exportRadarLinkEventsResponse;
+};
+
+/**
+ * @summary Resolve an enabled local Radar code and record landing plus redirect receipts
+ */
+export type resolveRadarPublicRedirectResponse302 = {
+  data: void;
+  status: 302;
+};
+
+export type resolveRadarPublicRedirectResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type resolveRadarPublicRedirectResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type resolveRadarPublicRedirectResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type resolveRadarPublicRedirectResponseError = (
+  | resolveRadarPublicRedirectResponse302
+  | resolveRadarPublicRedirectResponse400
+  | resolveRadarPublicRedirectResponse404
+  | resolveRadarPublicRedirectResponse503
+) & {
+  headers: Headers;
+};
+
+export type resolveRadarPublicRedirectResponse =
+  resolveRadarPublicRedirectResponseError;
+
+export const getResolveRadarPublicRedirectUrl = (code: string) => {
+  return `/r/${code}`;
+};
+
+export const resolveRadarPublicRedirect = async (
+  code: string,
+  options?: RequestInit,
+): Promise<resolveRadarPublicRedirectResponse> => {
+  const res = await fetch(getResolveRadarPublicRedirectUrl(code), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: resolveRadarPublicRedirectResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as resolveRadarPublicRedirectResponse;
+};
+
+/**
+ * @summary Record one idempotent, identity-free local Radar viewer event
+ */
+export type recordRadarPublicEventResponse200 = {
+  data: RadarPublicEventResponse;
+  status: 200;
+};
+
+export type recordRadarPublicEventResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type recordRadarPublicEventResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type recordRadarPublicEventResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type recordRadarPublicEventResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type recordRadarPublicEventResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type recordRadarPublicEventResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type recordRadarPublicEventResponseSuccess =
+  recordRadarPublicEventResponse200 & {
+    headers: Headers;
+  };
+export type recordRadarPublicEventResponseError = (
+  | recordRadarPublicEventResponse400
+  | recordRadarPublicEventResponse404
+  | recordRadarPublicEventResponse409
+  | recordRadarPublicEventResponse413
+  | recordRadarPublicEventResponse415
+  | recordRadarPublicEventResponse503
+) & {
+  headers: Headers;
+};
+
+export type recordRadarPublicEventResponse =
+  recordRadarPublicEventResponseSuccess | recordRadarPublicEventResponseError;
+
+export const getRecordRadarPublicEventUrl = (code: string) => {
+  return `/api/h5/radar-contents/${code}/events`;
+};
+
+export const recordRadarPublicEvent = async (
+  code: string,
+  radarPublicEventRequest: RadarPublicEventRequest,
+  options?: RequestInit,
+): Promise<recordRadarPublicEventResponse> => {
+  const res = await fetch(getRecordRadarPublicEventUrl(code), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(radarPublicEventRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: recordRadarPublicEventResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as recordRadarPublicEventResponse;
 };
 
 /**

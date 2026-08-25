@@ -418,6 +418,21 @@ class CliTests(unittest.TestCase):
 
 
 class WorkflowWiringTests(unittest.TestCase):
+    def test_radar_tracking_runner_is_selected_and_nightly_gated(self) -> None:
+        runner = (REPO_ROOT / "scripts/ci/run_selected_database.sh").read_text(encoding="utf-8")
+        self.assertIn("    radar)\n", runner)
+        self.assertIn(
+            "run_make_acceptance P4_RADAR_TRACKING_TEST_DATABASE_URL p4-radar-local-tracking-acceptance",
+            runner,
+        )
+        go_runner = (REPO_ROOT / "scripts/ci/run_selected_go.sh").read_text(encoding="utf-8")
+        self.assertIn("|radar|", go_runner)
+        makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+        self.assertIn("p4-radar-local-tracking-acceptance:", makefile)
+        self.assertIn("acceptance/radar/tracking_pg16.sh", makefile)
+        manifest = (REPO_ROOT / "docs/ci/go-acceptance-manifest.tsv").read_text(encoding="utf-8")
+        self.assertIn("p4-radar-local-tracking|0068|P4_RADAR_TRACKING_TEST_DATABASE_URL", manifest)
+
     def test_data_migration_harness_runner_is_migration_gated(self) -> None:
         source = (REPO_ROOT / "scripts/ci/run_selected_database.sh").read_text(encoding="utf-8")
         selected_migrations = source.index("run_migration_checks\n\n# A migration-only")
