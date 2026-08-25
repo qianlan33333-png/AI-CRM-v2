@@ -25,7 +25,7 @@ seed() {
   printf '%s\n' 'INSERT INTO media_image_delete_receipts (id) VALUES (1);' >"$root/internal/media/store/queries/write.sql"
   printf '%s\n' "SELECT 'UPDATE identities'; -- DELETE FROM tags" 'SELECT * FROM customers;' >"$root/internal/segment/store/queries/read.sql"
   printf '%s\n' 'package worker' 'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/message/send"' >"$root/internal/outbound/worker/client.go"
-  printf '%s\n' 'package store' 'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/externalcontact/get"' >"$root/internal/wecom/store/client.go"
+  printf '%s\n' 'package store' 'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/externalcontact/get"' 'const agentConfigTicket = "/cgi-bin/ticket/get"' >"$root/internal/wecom/store/client.go"
   printf '%s\n' 'package fixtures' \
     'const ddl = "CREATE TABLE acceptance_fixtures.fixture_probe (id bigint PRIMARY KEY)"' \
     'const dml = "INSERT INTO acceptance_fixtures.fixture_probe (id) VALUES (1)"' \
@@ -125,6 +125,7 @@ mutate() {
     public-fixture) printf '%s\n' 'package fixtures' 'const ddl = "CREATE TABLE public.mystery_table (id bigint PRIMARY KEY)"' >"$root/acceptance/fixtures/probe.go" ;;
     acceptance-unowned-customer-write) mkdir -p "$root/acceptance/identity"; printf '%s\n' 'package identity' 'const dml = "INSERT INTO customers (name) VALUES ($1)"' >"$root/acceptance/identity/customer.go" ;;
     outbound-read) echo 'package worker; const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/externalcontact/get"' >"$root/internal/outbound/worker/client.go" ;;
+    outbound-ticket-read) echo 'package worker; const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/ticket/get"' >"$root/internal/outbound/worker/client.go" ;;
     wecom-write) echo 'package store; const endpoint = "/cgi-bin/message/send"' >"$root/internal/wecom/store/client.go" ;;
     contact-endpoint) mkdir -p "$root/internal/contact/app"; echo 'package app; const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/message/send"' >"$root/internal/contact/app/client.go" ;;
     contact-sdk) mkdir -p "$root/internal/contact/app"; echo 'package app; import _ "example.com/wecomsdk"' >"$root/internal/contact/app/client.go" ;;
@@ -146,6 +147,7 @@ reject update-unknown-table 'write to unknown table'
 reject public-fixture 'write to unknown table'
 reject acceptance-unowned-customer-write 'table write ownership violation'
 reject outbound-read 'WeCom operation ownership violation'; reject wecom-write 'WeCom operation ownership violation'
+reject outbound-ticket-read 'WeCom operation ownership violation'
 reject contact-endpoint 'WeCom operation ownership violation'; reject contact-sdk 'external WeCom client import forbidden'
 reject unknown-operation 'unknown WeCom operation'
 reject fifo 'symlink or special path forbidden'
