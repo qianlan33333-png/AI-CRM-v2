@@ -80,6 +80,9 @@ import (
 	radarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/app"
 	radarthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/http"
 	radarstore "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/store"
+	releaseapp "github.com/qianlan33333-png/AI-CRM-v2/internal/release/app"
+	releasehttp "github.com/qianlan33333-png/AI-CRM-v2/internal/release/http"
+	releasestore "github.com/qianlan33333-png/AI-CRM-v2/internal/release/store"
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 	segmenthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/http"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/segment/legacyaudience"
@@ -171,6 +174,7 @@ type candidateHandler struct {
 	campaignInitiation      http.Handler
 	campaignReview          http.Handler
 	outboundCampaignHandoff *outboundhttp.CampaignHandoffHandler
+	release                 *releasehttp.Handler
 	adminOps                http.Handler
 	outboundLegacy          *Handler
 }
@@ -1182,6 +1186,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, errInvalidAPIComponent
 	}
+	releaseHandler, err := releasehttp.NewHandler(releaseapp.NewService(uow, releasestore.NewRepository(pool)))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
 		customerIdentity: identityResolver, customerDetail: customerDetailHandler, customerDetailReader: customerDetailService,
@@ -1211,6 +1220,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		campaignInitiation:      campaignInitiationFragment,
 		campaignReview:          campaignReviewFragment,
 		outboundCampaignHandoff: outboundCampaignHandler,
+		release:                 releaseHandler,
 	}
 	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
 	if err != nil {
@@ -1698,6 +1708,18 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/sidebar/v2/materials", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarMaterials)},
 		{http.MethodGet, "/api/sidebar/v2/materials/image/{image_id}/thumbnail", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarMaterialThumbnailStatus)},
 		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListCustomers)},
+		{http.MethodGet, "/api/v1/admin/release-candidates", authport.CapabilityReleaseRead, false, http.HandlerFunc(wrapper.ListReleaseCandidates)},
+		{http.MethodPost, "/api/v1/admin/release-candidates", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.RegisterReleaseCandidate)},
+		{http.MethodGet, "/api/v1/admin/release-candidates/{candidate_id}", authport.CapabilityReleaseRead, false, http.HandlerFunc(wrapper.GetReleaseCandidate)},
+		{http.MethodPost, "/api/v1/admin/release-candidates/{candidate_id}/prerequisites", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.RecordReleasePrerequisite)},
+		{http.MethodPost, "/api/v1/admin/release-candidates/{candidate_id}/prepare", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.PrepareReleaseCandidate)},
+		{http.MethodPost, "/api/v1/admin/release-candidates/{candidate_id}/cutover/start", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.StartReleaseCutover)},
+		{http.MethodPost, "/api/v1/admin/release-candidates/{candidate_id}/cutover/restart", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.RestartReleaseCutover)},
+		{http.MethodPost, "/api/v1/admin/release-candidates/{candidate_id}/cutover/steps/{step}/complete", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.CompleteReleaseCutoverStep)},
+		{http.MethodPost, "/api/v1/admin/release-candidates/{candidate_id}/activate", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.ActivateReleaseCandidate)},
+		{http.MethodPost, "/api/v1/admin/release-candidates/{candidate_id}/rollback-checks", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.RecordReleaseRollbackCheck)},
+		{http.MethodPost, "/api/v1/admin/release-candidates/{candidate_id}/rollback/request", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.RequestReleaseRollback)},
+		{http.MethodPost, "/api/v1/admin/release-candidates/{candidate_id}/rollback/complete", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.CompleteReleaseRollback)},
 		{http.MethodPost, "/api/v1/customer-exports", authport.CapabilityCustomersRead, true, http.HandlerFunc(wrapper.CreateCustomerSafeExport)},
 		{http.MethodGet, "/api/v1/customer-exports/{export_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetCustomerSafeExport)},
 		{http.MethodGet, "/api/v1/customer-exports/{export_id}/download", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.DownloadCustomerSafeExport)},

@@ -30,6 +30,33 @@ func (e HealthResponseStatus) Valid() bool {
 	}
 }
 
+// Defines values for ReleaseCutoverStep.
+const (
+	Announce     ReleaseCutoverStep = "announce"
+	Quiesce      ReleaseCutoverStep = "quiesce"
+	SchemaVerify ReleaseCutoverStep = "schema_verify"
+	Switch       ReleaseCutoverStep = "switch"
+	Verify       ReleaseCutoverStep = "verify"
+)
+
+// Valid indicates whether the value is a known member of the ReleaseCutoverStep enum.
+func (e ReleaseCutoverStep) Valid() bool {
+	switch e {
+	case Announce:
+		return true
+	case Quiesce:
+		return true
+	case SchemaVerify:
+		return true
+	case Switch:
+		return true
+	case Verify:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SegmentDefinitionPredicateField.
 const (
 	AddedAt        SegmentDefinitionPredicateField = "added_at"
@@ -115,6 +142,9 @@ type LegacyExecutionGraphNode struct {
 	Status string `json:"status"`
 }
 
+// ReleaseCutoverStep defines model for ReleaseCutoverStep.
+type ReleaseCutoverStep string
+
 // SegmentDefinition defines model for SegmentDefinition.
 type SegmentDefinition struct {
 	union json.RawMessage
@@ -172,6 +202,9 @@ type GroupOpsPlanID = string
 
 // InternalEventSafeExportID defines model for InternalEventSafeExportID.
 type InternalEventSafeExportID = string
+
+// ReleaseCandidateID defines model for ReleaseCandidateID.
+type ReleaseCandidateID = int64
 
 // SegmentID defines model for SegmentID.
 type SegmentID = int64

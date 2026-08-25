@@ -5,6 +5,225 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export type ReleaseCandidateState =
+  (typeof ReleaseCandidateState)[keyof typeof ReleaseCandidateState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ReleaseCandidateState = {
+  draft: "draft",
+  prepared: "prepared",
+  cutover_active: "cutover_active",
+  activated: "activated",
+  rollback_pending: "rollback_pending",
+  rolled_back: "rolled_back",
+} as const;
+
+export type ReleasePrerequisiteKind =
+  (typeof ReleasePrerequisiteKind)[keyof typeof ReleasePrerequisiteKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ReleasePrerequisiteKind = {
+  nightly: "nightly",
+  backup_restore_drill: "backup_restore_drill",
+  migration: "migration",
+  contact_closure: "contact_closure",
+  campaign_closure: "campaign_closure",
+  outbound_closure: "outbound_closure",
+  commerce_closure: "commerce_closure",
+} as const;
+
+export type ReleaseCutoverStep =
+  (typeof ReleaseCutoverStep)[keyof typeof ReleaseCutoverStep];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ReleaseCutoverStep = {
+  announce: "announce",
+  quiesce: "quiesce",
+  schema_verify: "schema_verify",
+  switch: "switch",
+  verify: "verify",
+} as const;
+
+export type ReleaseRollbackCheckKind =
+  (typeof ReleaseRollbackCheckKind)[keyof typeof ReleaseRollbackCheckKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ReleaseRollbackCheckKind = {
+  schema_compatibility: "schema_compatibility",
+  data_reconciliation: "data_reconciliation",
+  outbound_reconciliation: "outbound_reconciliation",
+  rollback_execution_reconciliation: "rollback_execution_reconciliation",
+} as const;
+
+export interface ReleaseSubject {
+  /** @minimum 1 */
+  candidate_id: number;
+  /** @pattern ^[a-f0-9]{40}$ */
+  commit_sha: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  artifact_digest: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  manifest_digest: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  config_digest: string;
+  /** @minimum 1 */
+  target_schema_version: number;
+}
+
+export interface ReleaseCandidate {
+  /** @minimum 1 */
+  id: number;
+  /** @pattern ^[a-f0-9]{40}$ */
+  commit_sha: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  artifact_digest: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  manifest_digest: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  config_digest: string;
+  /** @minimum 1 */
+  target_schema_version: number;
+  state: ReleaseCandidateState;
+  /** @minimum 1 */
+  created_by: number;
+  created_at: string;
+  /** @nullable */
+  prepared_at?: string | null;
+  /** @nullable */
+  activated_at?: string | null;
+  /** @nullable */
+  rollback_requested_at?: string | null;
+  /** @nullable */
+  rolled_back_at?: string | null;
+}
+
+export interface ReleaseCandidateList {
+  /** @maxItems 100 */
+  items: ReleaseCandidate[];
+}
+
+export interface ReleasePrerequisiteReceipt {
+  /** @minimum 1 */
+  id: number;
+  subject: ReleaseSubject;
+  kind: ReleasePrerequisiteKind;
+  /** @pattern ^[a-f0-9]{64}$ */
+  evidence_sha: string;
+  /** @minimum 1 */
+  recorded_by: number;
+  recorded_at: string;
+}
+
+export interface ReleaseReadiness {
+  /** @minimum 1 */
+  candidate_id: number;
+  ready: boolean;
+  missing: ReleasePrerequisiteKind[];
+  invalid: ReleasePrerequisiteKind[];
+  checked_at: string;
+}
+
+export interface ReleaseCutoverProgress {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  candidate_id: number;
+  /** @minimum 1 */
+  generation: number;
+  step: ReleaseCutoverStep;
+  /** @minimum 1 */
+  completed_by: number;
+  completed_at: string;
+}
+
+export interface ReleaseWorkerSummary {
+  /** @minimum 1 */
+  candidate_id: number;
+  /** @minimum 1 */
+  generation: number;
+  /** @minimum 1 */
+  started_by: number;
+  started_at: string;
+}
+
+export interface ReleaseWorkerLease {
+  /** @minimum 1 */
+  candidate_id: number;
+  /** @minimum 1 */
+  generation: number;
+  /** @pattern ^[a-f0-9]{64}$ */
+  fence: string;
+  /** @minimum 1 */
+  started_by: number;
+  started_at: string;
+}
+
+export interface ReleaseRollbackCheck {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  candidate_id: number;
+  kind: ReleaseRollbackCheckKind;
+  passed: boolean;
+  /** @pattern ^[a-f0-9]{64}$ */
+  evidence_sha: string;
+  /** @minimum 1 */
+  recorded_by: number;
+  recorded_at: string;
+}
+
+export interface ReleaseRollbackEligibility {
+  /** @minimum 1 */
+  candidate_id: number;
+  eligible: boolean;
+  missing: ReleaseRollbackCheckKind[];
+  blocked: ReleaseRollbackCheckKind[];
+  checked_at: string;
+}
+
+export interface ReleaseCandidateDetail {
+  candidate: ReleaseCandidate;
+  prerequisites: ReleasePrerequisiteReceipt[];
+  readiness: ReleaseReadiness;
+  cutover_progress: ReleaseCutoverProgress[];
+  rollback_checks: ReleaseRollbackCheck[];
+  rollback_eligibility: ReleaseRollbackEligibility;
+  active_worker?: ReleaseWorkerSummary;
+}
+
+export interface RegisterReleaseCandidateRequest {
+  /** @pattern ^[a-f0-9]{40}$ */
+  commit_sha: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  artifact_digest: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  manifest_digest: string;
+  /** @pattern ^[a-f0-9]{64}$ */
+  config_digest: string;
+  /** @minimum 1 */
+  target_schema_version: number;
+}
+
+export interface RecordReleasePrerequisiteRequest {
+  kind: ReleasePrerequisiteKind;
+  /** @pattern ^[a-f0-9]{64}$ */
+  evidence_sha: string;
+}
+
+export interface ReleaseWorkerCommand {
+  /** @minimum 1 */
+  generation: number;
+  /** @pattern ^[a-f0-9]{64}$ */
+  fence: string;
+}
+
+export interface RecordReleaseRollbackCheckRequest {
+  kind: ReleaseRollbackCheckKind;
+  passed: boolean;
+  /** @pattern ^[a-f0-9]{64}$ */
+  evidence_sha: string;
+}
+
 export interface ContactOwnerReassignmentRow {
   /** @minimum 1 */
   customer_id: number;
@@ -14723,6 +14942,14 @@ export type ListCloudCampaignTouchPlanRecipientsParams = {
    * @pattern ^[1-9][0-9]*$
    */
   cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type ListReleaseCandidatesParams = {
   /**
    * @minimum 1
    * @maximum 100
@@ -46405,4 +46632,992 @@ export const checkAdminOpsCategory = async (
     status: res.status,
     headers: res.headers,
   } as checkAdminOpsCategoryResponse;
+};
+
+/**
+ * @summary List local release attestation candidates
+ */
+export type listReleaseCandidatesResponse200 = {
+  data: ReleaseCandidateList;
+  status: 200;
+};
+
+export type listReleaseCandidatesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listReleaseCandidatesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listReleaseCandidatesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listReleaseCandidatesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listReleaseCandidatesResponseSuccess =
+  listReleaseCandidatesResponse200 & {
+    headers: Headers;
+  };
+export type listReleaseCandidatesResponseError = (
+  | listReleaseCandidatesResponse400
+  | listReleaseCandidatesResponse401
+  | listReleaseCandidatesResponse403
+  | listReleaseCandidatesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listReleaseCandidatesResponse =
+  listReleaseCandidatesResponseSuccess | listReleaseCandidatesResponseError;
+
+export const getListReleaseCandidatesUrl = (
+  params?: ListReleaseCandidatesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/v1/admin/release-candidates?${stringifiedParams}`
+    : `/api/v1/admin/release-candidates`;
+};
+
+export const listReleaseCandidates = async (
+  params?: ListReleaseCandidatesParams,
+  options?: RequestInit,
+): Promise<listReleaseCandidatesResponse> => {
+  const res = await fetch(getListReleaseCandidatesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listReleaseCandidatesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listReleaseCandidatesResponse;
+};
+
+/**
+ * @summary Record one local release attestation candidate; never deploys or executes backup, provider, payment, or WeCom work
+ */
+export type registerReleaseCandidateResponse201 = {
+  data: ReleaseCandidate;
+  status: 201;
+};
+
+export type registerReleaseCandidateResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type registerReleaseCandidateResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type registerReleaseCandidateResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type registerReleaseCandidateResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type registerReleaseCandidateResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type registerReleaseCandidateResponseSuccess =
+  registerReleaseCandidateResponse201 & {
+    headers: Headers;
+  };
+export type registerReleaseCandidateResponseError = (
+  | registerReleaseCandidateResponse400
+  | registerReleaseCandidateResponse401
+  | registerReleaseCandidateResponse403
+  | registerReleaseCandidateResponse409
+  | registerReleaseCandidateResponse503
+) & {
+  headers: Headers;
+};
+
+export type registerReleaseCandidateResponse =
+  | registerReleaseCandidateResponseSuccess
+  | registerReleaseCandidateResponseError;
+
+export const getRegisterReleaseCandidateUrl = () => {
+  return `/api/v1/admin/release-candidates`;
+};
+
+export const registerReleaseCandidate = async (
+  registerReleaseCandidateRequest: RegisterReleaseCandidateRequest,
+  options?: RequestInit,
+): Promise<registerReleaseCandidateResponse> => {
+  const res = await fetch(getRegisterReleaseCandidateUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(registerReleaseCandidateRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: registerReleaseCandidateResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as registerReleaseCandidateResponse;
+};
+
+/**
+ * @summary Read the local candidate detail including readiness and rollback eligibility
+ */
+export type getReleaseCandidateResponse200 = {
+  data: ReleaseCandidateDetail;
+  status: 200;
+};
+
+export type getReleaseCandidateResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getReleaseCandidateResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getReleaseCandidateResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getReleaseCandidateResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getReleaseCandidateResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getReleaseCandidateResponseSuccess =
+  getReleaseCandidateResponse200 & {
+    headers: Headers;
+  };
+export type getReleaseCandidateResponseError = (
+  | getReleaseCandidateResponse400
+  | getReleaseCandidateResponse401
+  | getReleaseCandidateResponse403
+  | getReleaseCandidateResponse404
+  | getReleaseCandidateResponse503
+) & {
+  headers: Headers;
+};
+
+export type getReleaseCandidateResponse =
+  getReleaseCandidateResponseSuccess | getReleaseCandidateResponseError;
+
+export const getGetReleaseCandidateUrl = (candidateId: number) => {
+  return `/api/v1/admin/release-candidates/${candidateId}`;
+};
+
+export const getReleaseCandidate = async (
+  candidateId: number,
+  options?: RequestInit,
+): Promise<getReleaseCandidateResponse> => {
+  const res = await fetch(getGetReleaseCandidateUrl(candidateId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getReleaseCandidateResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getReleaseCandidateResponse;
+};
+
+/**
+ * @summary Record an exact-subject local prerequisite receipt
+ */
+export type recordReleasePrerequisiteResponse201 = {
+  data: ReleasePrerequisiteReceipt;
+  status: 201;
+};
+
+export type recordReleasePrerequisiteResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type recordReleasePrerequisiteResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type recordReleasePrerequisiteResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type recordReleasePrerequisiteResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type recordReleasePrerequisiteResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type recordReleasePrerequisiteResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type recordReleasePrerequisiteResponseSuccess =
+  recordReleasePrerequisiteResponse201 & {
+    headers: Headers;
+  };
+export type recordReleasePrerequisiteResponseError = (
+  | recordReleasePrerequisiteResponse400
+  | recordReleasePrerequisiteResponse401
+  | recordReleasePrerequisiteResponse403
+  | recordReleasePrerequisiteResponse404
+  | recordReleasePrerequisiteResponse409
+  | recordReleasePrerequisiteResponse503
+) & {
+  headers: Headers;
+};
+
+export type recordReleasePrerequisiteResponse =
+  | recordReleasePrerequisiteResponseSuccess
+  | recordReleasePrerequisiteResponseError;
+
+export const getRecordReleasePrerequisiteUrl = (candidateId: number) => {
+  return `/api/v1/admin/release-candidates/${candidateId}/prerequisites`;
+};
+
+export const recordReleasePrerequisite = async (
+  candidateId: number,
+  recordReleasePrerequisiteRequest: RecordReleasePrerequisiteRequest,
+  options?: RequestInit,
+): Promise<recordReleasePrerequisiteResponse> => {
+  const res = await fetch(getRecordReleasePrerequisiteUrl(candidateId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(recordReleasePrerequisiteRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: recordReleasePrerequisiteResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as recordReleasePrerequisiteResponse;
+};
+
+/**
+ * @summary Prepare a locally ready candidate
+ */
+export type prepareReleaseCandidateResponse200 = {
+  data: ReleaseCandidate;
+  status: 200;
+};
+
+export type prepareReleaseCandidateResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type prepareReleaseCandidateResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type prepareReleaseCandidateResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type prepareReleaseCandidateResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type prepareReleaseCandidateResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type prepareReleaseCandidateResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type prepareReleaseCandidateResponseSuccess =
+  prepareReleaseCandidateResponse200 & {
+    headers: Headers;
+  };
+export type prepareReleaseCandidateResponseError = (
+  | prepareReleaseCandidateResponse400
+  | prepareReleaseCandidateResponse401
+  | prepareReleaseCandidateResponse403
+  | prepareReleaseCandidateResponse404
+  | prepareReleaseCandidateResponse409
+  | prepareReleaseCandidateResponse503
+) & {
+  headers: Headers;
+};
+
+export type prepareReleaseCandidateResponse =
+  prepareReleaseCandidateResponseSuccess | prepareReleaseCandidateResponseError;
+
+export const getPrepareReleaseCandidateUrl = (candidateId: number) => {
+  return `/api/v1/admin/release-candidates/${candidateId}/prepare`;
+};
+
+export const prepareReleaseCandidate = async (
+  candidateId: number,
+  options?: RequestInit,
+): Promise<prepareReleaseCandidateResponse> => {
+  const res = await fetch(getPrepareReleaseCandidateUrl(candidateId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: prepareReleaseCandidateResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as prepareReleaseCandidateResponse;
+};
+
+/**
+ * @summary Start a local cutover journal generation
+ */
+export type startReleaseCutoverResponse200 = {
+  data: ReleaseWorkerLease;
+  status: 200;
+};
+
+export type startReleaseCutoverResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type startReleaseCutoverResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type startReleaseCutoverResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type startReleaseCutoverResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type startReleaseCutoverResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type startReleaseCutoverResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type startReleaseCutoverResponseSuccess =
+  startReleaseCutoverResponse200 & {
+    headers: Headers;
+  };
+export type startReleaseCutoverResponseError = (
+  | startReleaseCutoverResponse400
+  | startReleaseCutoverResponse401
+  | startReleaseCutoverResponse403
+  | startReleaseCutoverResponse404
+  | startReleaseCutoverResponse409
+  | startReleaseCutoverResponse503
+) & {
+  headers: Headers;
+};
+
+export type startReleaseCutoverResponse =
+  startReleaseCutoverResponseSuccess | startReleaseCutoverResponseError;
+
+export const getStartReleaseCutoverUrl = (candidateId: number) => {
+  return `/api/v1/admin/release-candidates/${candidateId}/cutover/start`;
+};
+
+export const startReleaseCutover = async (
+  candidateId: number,
+  options?: RequestInit,
+): Promise<startReleaseCutoverResponse> => {
+  const res = await fetch(getStartReleaseCutoverUrl(candidateId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: startReleaseCutoverResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as startReleaseCutoverResponse;
+};
+
+/**
+ * @summary Rotate a local cutover journal generation using its current fence
+ */
+export type restartReleaseCutoverResponse200 = {
+  data: ReleaseWorkerLease;
+  status: 200;
+};
+
+export type restartReleaseCutoverResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type restartReleaseCutoverResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type restartReleaseCutoverResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type restartReleaseCutoverResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type restartReleaseCutoverResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type restartReleaseCutoverResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type restartReleaseCutoverResponseSuccess =
+  restartReleaseCutoverResponse200 & {
+    headers: Headers;
+  };
+export type restartReleaseCutoverResponseError = (
+  | restartReleaseCutoverResponse400
+  | restartReleaseCutoverResponse401
+  | restartReleaseCutoverResponse403
+  | restartReleaseCutoverResponse404
+  | restartReleaseCutoverResponse409
+  | restartReleaseCutoverResponse503
+) & {
+  headers: Headers;
+};
+
+export type restartReleaseCutoverResponse =
+  restartReleaseCutoverResponseSuccess | restartReleaseCutoverResponseError;
+
+export const getRestartReleaseCutoverUrl = (candidateId: number) => {
+  return `/api/v1/admin/release-candidates/${candidateId}/cutover/restart`;
+};
+
+export const restartReleaseCutover = async (
+  candidateId: number,
+  releaseWorkerCommand: ReleaseWorkerCommand,
+  options?: RequestInit,
+): Promise<restartReleaseCutoverResponse> => {
+  const res = await fetch(getRestartReleaseCutoverUrl(candidateId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(releaseWorkerCommand),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: restartReleaseCutoverResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as restartReleaseCutoverResponse;
+};
+
+/**
+ * @summary Append one ordered local cutover-journal step using the current fence
+ */
+export type completeReleaseCutoverStepResponse200 = {
+  data: ReleaseCutoverProgress;
+  status: 200;
+};
+
+export type completeReleaseCutoverStepResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type completeReleaseCutoverStepResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type completeReleaseCutoverStepResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type completeReleaseCutoverStepResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type completeReleaseCutoverStepResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type completeReleaseCutoverStepResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type completeReleaseCutoverStepResponseSuccess =
+  completeReleaseCutoverStepResponse200 & {
+    headers: Headers;
+  };
+export type completeReleaseCutoverStepResponseError = (
+  | completeReleaseCutoverStepResponse400
+  | completeReleaseCutoverStepResponse401
+  | completeReleaseCutoverStepResponse403
+  | completeReleaseCutoverStepResponse404
+  | completeReleaseCutoverStepResponse409
+  | completeReleaseCutoverStepResponse503
+) & {
+  headers: Headers;
+};
+
+export type completeReleaseCutoverStepResponse =
+  | completeReleaseCutoverStepResponseSuccess
+  | completeReleaseCutoverStepResponseError;
+
+export const getCompleteReleaseCutoverStepUrl = (
+  candidateId: number,
+  step: ReleaseCutoverStep,
+) => {
+  return `/api/v1/admin/release-candidates/${candidateId}/cutover/steps/${step}/complete`;
+};
+
+export const completeReleaseCutoverStep = async (
+  candidateId: number,
+  step: ReleaseCutoverStep,
+  releaseWorkerCommand: ReleaseWorkerCommand,
+  options?: RequestInit,
+): Promise<completeReleaseCutoverStepResponse> => {
+  const res = await fetch(getCompleteReleaseCutoverStepUrl(candidateId, step), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(releaseWorkerCommand),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: completeReleaseCutoverStepResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as completeReleaseCutoverStepResponse;
+};
+
+/**
+ * @summary Mark a fully journaled candidate locally activated
+ */
+export type activateReleaseCandidateResponse200 = {
+  data: ReleaseCandidate;
+  status: 200;
+};
+
+export type activateReleaseCandidateResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type activateReleaseCandidateResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type activateReleaseCandidateResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type activateReleaseCandidateResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type activateReleaseCandidateResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type activateReleaseCandidateResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type activateReleaseCandidateResponseSuccess =
+  activateReleaseCandidateResponse200 & {
+    headers: Headers;
+  };
+export type activateReleaseCandidateResponseError = (
+  | activateReleaseCandidateResponse400
+  | activateReleaseCandidateResponse401
+  | activateReleaseCandidateResponse403
+  | activateReleaseCandidateResponse404
+  | activateReleaseCandidateResponse409
+  | activateReleaseCandidateResponse503
+) & {
+  headers: Headers;
+};
+
+export type activateReleaseCandidateResponse =
+  | activateReleaseCandidateResponseSuccess
+  | activateReleaseCandidateResponseError;
+
+export const getActivateReleaseCandidateUrl = (candidateId: number) => {
+  return `/api/v1/admin/release-candidates/${candidateId}/activate`;
+};
+
+export const activateReleaseCandidate = async (
+  candidateId: number,
+  releaseWorkerCommand: ReleaseWorkerCommand,
+  options?: RequestInit,
+): Promise<activateReleaseCandidateResponse> => {
+  const res = await fetch(getActivateReleaseCandidateUrl(candidateId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(releaseWorkerCommand),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: activateReleaseCandidateResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as activateReleaseCandidateResponse;
+};
+
+/**
+ * @summary Record a local rollback-reconciliation check
+ */
+export type recordReleaseRollbackCheckResponse201 = {
+  data: ReleaseRollbackCheck;
+  status: 201;
+};
+
+export type recordReleaseRollbackCheckResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type recordReleaseRollbackCheckResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type recordReleaseRollbackCheckResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type recordReleaseRollbackCheckResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type recordReleaseRollbackCheckResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type recordReleaseRollbackCheckResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type recordReleaseRollbackCheckResponseSuccess =
+  recordReleaseRollbackCheckResponse201 & {
+    headers: Headers;
+  };
+export type recordReleaseRollbackCheckResponseError = (
+  | recordReleaseRollbackCheckResponse400
+  | recordReleaseRollbackCheckResponse401
+  | recordReleaseRollbackCheckResponse403
+  | recordReleaseRollbackCheckResponse404
+  | recordReleaseRollbackCheckResponse409
+  | recordReleaseRollbackCheckResponse503
+) & {
+  headers: Headers;
+};
+
+export type recordReleaseRollbackCheckResponse =
+  | recordReleaseRollbackCheckResponseSuccess
+  | recordReleaseRollbackCheckResponseError;
+
+export const getRecordReleaseRollbackCheckUrl = (candidateId: number) => {
+  return `/api/v1/admin/release-candidates/${candidateId}/rollback-checks`;
+};
+
+export const recordReleaseRollbackCheck = async (
+  candidateId: number,
+  recordReleaseRollbackCheckRequest: RecordReleaseRollbackCheckRequest,
+  options?: RequestInit,
+): Promise<recordReleaseRollbackCheckResponse> => {
+  const res = await fetch(getRecordReleaseRollbackCheckUrl(candidateId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(recordReleaseRollbackCheckRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: recordReleaseRollbackCheckResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as recordReleaseRollbackCheckResponse;
+};
+
+/**
+ * @summary Record a local rollback request; it does not execute a rollback
+ */
+export type requestReleaseRollbackResponse200 = {
+  data: ReleaseCandidate;
+  status: 200;
+};
+
+export type requestReleaseRollbackResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type requestReleaseRollbackResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type requestReleaseRollbackResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type requestReleaseRollbackResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type requestReleaseRollbackResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type requestReleaseRollbackResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type requestReleaseRollbackResponseSuccess =
+  requestReleaseRollbackResponse200 & {
+    headers: Headers;
+  };
+export type requestReleaseRollbackResponseError = (
+  | requestReleaseRollbackResponse400
+  | requestReleaseRollbackResponse401
+  | requestReleaseRollbackResponse403
+  | requestReleaseRollbackResponse404
+  | requestReleaseRollbackResponse409
+  | requestReleaseRollbackResponse503
+) & {
+  headers: Headers;
+};
+
+export type requestReleaseRollbackResponse =
+  requestReleaseRollbackResponseSuccess | requestReleaseRollbackResponseError;
+
+export const getRequestReleaseRollbackUrl = (candidateId: number) => {
+  return `/api/v1/admin/release-candidates/${candidateId}/rollback/request`;
+};
+
+export const requestReleaseRollback = async (
+  candidateId: number,
+  options?: RequestInit,
+): Promise<requestReleaseRollbackResponse> => {
+  const res = await fetch(getRequestReleaseRollbackUrl(candidateId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: requestReleaseRollbackResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as requestReleaseRollbackResponse;
+};
+
+/**
+ * @summary Close a local rollback journal after reconciliation evidence
+ */
+export type completeReleaseRollbackResponse200 = {
+  data: ReleaseCandidate;
+  status: 200;
+};
+
+export type completeReleaseRollbackResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type completeReleaseRollbackResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type completeReleaseRollbackResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type completeReleaseRollbackResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type completeReleaseRollbackResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type completeReleaseRollbackResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type completeReleaseRollbackResponseSuccess =
+  completeReleaseRollbackResponse200 & {
+    headers: Headers;
+  };
+export type completeReleaseRollbackResponseError = (
+  | completeReleaseRollbackResponse400
+  | completeReleaseRollbackResponse401
+  | completeReleaseRollbackResponse403
+  | completeReleaseRollbackResponse404
+  | completeReleaseRollbackResponse409
+  | completeReleaseRollbackResponse503
+) & {
+  headers: Headers;
+};
+
+export type completeReleaseRollbackResponse =
+  completeReleaseRollbackResponseSuccess | completeReleaseRollbackResponseError;
+
+export const getCompleteReleaseRollbackUrl = (candidateId: number) => {
+  return `/api/v1/admin/release-candidates/${candidateId}/rollback/complete`;
+};
+
+export const completeReleaseRollback = async (
+  candidateId: number,
+  options?: RequestInit,
+): Promise<completeReleaseRollbackResponse> => {
+  const res = await fetch(getCompleteReleaseRollbackUrl(candidateId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: completeReleaseRollbackResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as completeReleaseRollbackResponse;
 };

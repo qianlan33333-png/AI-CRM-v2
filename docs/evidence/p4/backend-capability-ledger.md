@@ -1,5 +1,25 @@
 # P4 后端冻结收据总账
 
+## RP01 Release Plane（V2-native local package；不变更旧 Matrix 分母）
+
+`00074_release_plane.sql` 交付一个 V2-native、本地 release attestation / journal
+plane；它不对应旧 Matrix route 或 migration mapping，也不修改本总账已有的 Matrix
+完成数。12 个 operationId 为：`listReleaseCandidates`、`registerReleaseCandidate`、
+`getReleaseCandidate`、`recordReleasePrerequisite`、`prepareReleaseCandidate`、
+`startReleaseCutover`、`restartReleaseCutover`、`completeReleaseCutoverStep`、
+`activateReleaseCandidate`、`recordReleaseRollbackCheck`、`requestReleaseRollback`、
+`completeReleaseRollback`。
+
+- `getReleaseCandidate` 是唯一 detail 投影，包含 readiness、rollback eligibility、
+  prerequisite exact subject tuple、无 fence 的 journal / worker projection。
+- `release.read` 仅 admin/ops global，`release.manage` 仅 admin global；所有 POST
+  需要 session CSRF 与 Idempotency-Key，actor 只来自 authenticated AdminUserID。
+- API adapter、auth policy、final router binding、`internal/release/...` 测试与
+  `acceptance/release/release_plane_pg16.sh` 覆盖本地闭环；Nightly/full regression
+  由 `p4-rp01-release-plane` manifest 项登记。
+- `x-aicrm-external-effect: none`：它只记录本地事实，绝不执行 deploy、backup、
+  Provider、payment 或 WeCom 操作。当前记录不宣称已部署或产生任何外部效果。
+
 ## 冻结口径
 
 本收据固定的代码基线是

@@ -42,6 +42,18 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodGet, "/api/sidebar/v2/materials", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/sidebar/v2/materials/image/1/thumbnail", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead},
+		{http.MethodGet, "/api/v1/admin/release-candidates", authport.CapabilityReleaseRead},
+		{http.MethodGet, "/api/v1/admin/release-candidates/1", authport.CapabilityReleaseRead},
+		{http.MethodPost, "/api/v1/admin/release-candidates", authport.CapabilityReleaseManage},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/prerequisites", authport.CapabilityReleaseManage},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/prepare", authport.CapabilityReleaseManage},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/cutover/start", authport.CapabilityReleaseManage},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/cutover/restart", authport.CapabilityReleaseManage},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/cutover/steps/announce/complete", authport.CapabilityReleaseManage},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/activate", authport.CapabilityReleaseManage},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/rollback-checks", authport.CapabilityReleaseManage},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/rollback/request", authport.CapabilityReleaseManage},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/rollback/complete", authport.CapabilityReleaseManage},
 		{http.MethodPost, "/api/v1/customer-exports", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/v1/customer-exports/cse_0123456789abcdef0123456789abcdef", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/v1/customer-exports/cse_0123456789abcdef0123456789abcdef/download", authport.CapabilityCustomersRead},
@@ -138,6 +150,10 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
 				request.Header.Set("Idempotency-Key", "router-touch-plan-key")
 			}
+			if test.capability == authport.CapabilityReleaseManage {
+				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
+				request.Header.Set("Idempotency-Key", "router-release-plane-key")
+			}
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, request)
 			if got := service.capabilities(); len(got) != 1 || got[0] != test.capability {
@@ -170,6 +186,16 @@ func TestFinalRouterRejectsProtectedWriteWithoutValidCSRF(t *testing.T) {
 		{http.MethodPost, "/api/v1/identity/bind", `{}`},
 		{http.MethodPost, "/api/v1/customer-exports", `{}`},
 		{http.MethodPost, "/api/v1/identity/ingest", `{}`},
+		{http.MethodPost, "/api/v1/admin/release-candidates", `{}`},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/prerequisites", `{}`},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/prepare", ``},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/cutover/start", ``},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/cutover/restart", `{}`},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/cutover/steps/announce/complete", `{}`},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/activate", `{}`},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/rollback-checks", `{}`},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/rollback/request", ``},
+		{http.MethodPost, "/api/v1/admin/release-candidates/1/rollback/complete", ``},
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/approve", `{"expected_version":1,"primary_customer_id":1,"reason":"confirm"}`},
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/reject", `{"expected_version":1,"reason":"reject"}`},
 		{http.MethodPost, "/api/v1/products", `{"product_code":"sku","name":"商品","description":"","price_minor":1,"currency":"CNY","stock_quantity":0,"images":[]}`},

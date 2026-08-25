@@ -9685,6 +9685,200 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/v1/admin/release-candidates:
+    get:
+      tags: [p4-release-plane]
+      operationId: listReleaseCandidates
+      summary: List local release attestation candidates
+      x-p4-decision-evidence: P4-RP01-RELEASE-PLANE-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_release_attestation
+      x-aicrm-external-effect: none
+      x-aicrm-capability: release.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: none
+      parameters: [{name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 100, default: 50}}]
+      responses: {"200": {description: Local candidate page, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseCandidateList'}}}}, "400": {$ref: '#/components/responses/BadRequest'}, "401": {$ref: '#/components/responses/Unauthorized'}, "403": {$ref: '#/components/responses/Forbidden'}, "503": {$ref: '#/components/responses/ServiceUnavailable'}}
+    post:
+      tags: [p4-release-plane]
+      operationId: registerReleaseCandidate
+      summary: Record one local release attestation candidate; never deploys or executes backup, provider, payment, or WeCom work
+      x-p4-decision-evidence: P4-RP01-RELEASE-PLANE-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_release_attestation
+      x-aicrm-external-effect: none
+      x-aicrm-capability: release.manage
+      x-aicrm-rbac-scopes: {admin: global}
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RegisterReleaseCandidateRequest'}}}}
+      responses: {"201": {description: Local candidate attestation, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseCandidate'}}}}, "400": {$ref: '#/components/responses/BadRequest'}, "401": {$ref: '#/components/responses/Unauthorized'}, "403": {$ref: '#/components/responses/Forbidden'}, "409": {$ref: '#/components/responses/Conflict'}, "503": {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/v1/admin/release-candidates/{candidate_id}:
+    parameters: [{$ref: '#/components/parameters/ReleaseCandidateID'}]
+    get:
+      tags: [p4-release-plane]
+      operationId: getReleaseCandidate
+      summary: Read the local candidate detail including readiness and rollback eligibility
+      x-p4-decision-evidence: P4-RP01-RELEASE-PLANE-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_release_attestation
+      x-aicrm-external-effect: none
+      x-aicrm-capability: release.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      x-aicrm-session-bound-csrf: none
+      responses: {"200": {description: Local candidate detail, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseCandidateDetail'}}}}, "400": {$ref: '#/components/responses/BadRequest'}, "401": {$ref: '#/components/responses/Unauthorized'}, "403": {$ref: '#/components/responses/Forbidden'}, "404": {$ref: '#/components/responses/NotFound'}, "503": {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/v1/admin/release-candidates/{candidate_id}/prerequisites:
+    parameters: [{$ref: '#/components/parameters/ReleaseCandidateID'}]
+    post:
+      tags: [p4-release-plane]
+      operationId: recordReleasePrerequisite
+      summary: Record an exact-subject local prerequisite receipt
+      x-p4-decision-evidence: P4-RP01-RELEASE-PLANE-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_release_attestation
+      x-aicrm-external-effect: none
+      x-aicrm-capability: release.manage
+      x-aicrm-rbac-scopes: {admin: global}
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RecordReleasePrerequisiteRequest'}}}}
+      responses: {"201": {description: Exact-subject local prerequisite receipt, content: {application/json: {schema: {$ref: '#/components/schemas/ReleasePrerequisiteReceipt'}}}}, "400": {$ref: '#/components/responses/BadRequest'}, "401": {$ref: '#/components/responses/Unauthorized'}, "403": {$ref: '#/components/responses/Forbidden'}, "404": {$ref: '#/components/responses/NotFound'}, "409": {$ref: '#/components/responses/Conflict'}, "503": {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/v1/admin/release-candidates/{candidate_id}/prepare:
+    parameters: [{$ref: '#/components/parameters/ReleaseCandidateID'}]
+    post:
+      tags: [p4-release-plane]
+      operationId: prepareReleaseCandidate
+      summary: Prepare a locally ready candidate
+      x-p4-decision-evidence: P4-RP01-RELEASE-PLANE-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_release_attestation
+      x-aicrm-external-effect: none
+      x-aicrm-capability: release.manage
+      x-aicrm-rbac-scopes: {admin: global}
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      responses: {"200": {description: Prepared local candidate, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseCandidate'}}}}, "400": {$ref: '#/components/responses/BadRequest'}, "401": {$ref: '#/components/responses/Unauthorized'}, "403": {$ref: '#/components/responses/Forbidden'}, "404": {$ref: '#/components/responses/NotFound'}, "409": {$ref: '#/components/responses/Conflict'}, "503": {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/v1/admin/release-candidates/{candidate_id}/cutover/start:
+    parameters: [{$ref: '#/components/parameters/ReleaseCandidateID'}]
+    post:
+      tags: [p4-release-plane]
+      operationId: startReleaseCutover
+      summary: Start a local cutover journal generation
+      x-p4-decision-evidence: P4-RP01-RELEASE-PLANE-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_release_attestation
+      x-aicrm-external-effect: none
+      x-aicrm-capability: release.manage
+      x-aicrm-rbac-scopes: {admin: global}
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      responses: {"200": {description: Local worker-management fence, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseWorkerLease'}}}}, "400": {$ref: '#/components/responses/BadRequest'}, "401": {$ref: '#/components/responses/Unauthorized'}, "403": {$ref: '#/components/responses/Forbidden'}, "404": {$ref: '#/components/responses/NotFound'}, "409": {$ref: '#/components/responses/Conflict'}, "503": {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/v1/admin/release-candidates/{candidate_id}/cutover/restart:
+    parameters: [{$ref: '#/components/parameters/ReleaseCandidateID'}]
+    post:
+      tags: [p4-release-plane]
+      operationId: restartReleaseCutover
+      summary: Rotate a local cutover journal generation using its current fence
+      x-p4-decision-evidence: P4-RP01-RELEASE-PLANE-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_release_attestation
+      x-aicrm-external-effect: none
+      x-aicrm-capability: release.manage
+      x-aicrm-rbac-scopes: {admin: global}
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseWorkerCommand'}}}}
+      responses: {"200": {description: Rotated local worker-management fence, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseWorkerLease'}}}}, "400": {$ref: '#/components/responses/BadRequest'}, "401": {$ref: '#/components/responses/Unauthorized'}, "403": {$ref: '#/components/responses/Forbidden'}, "404": {$ref: '#/components/responses/NotFound'}, "409": {$ref: '#/components/responses/Conflict'}, "503": {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/v1/admin/release-candidates/{candidate_id}/cutover/steps/{step}/complete:
+    parameters: [{$ref: '#/components/parameters/ReleaseCandidateID'}, {name: step, in: path, required: true, schema: {$ref: '#/components/schemas/ReleaseCutoverStep'}}]
+    post:
+      tags: [p4-release-plane]
+      operationId: completeReleaseCutoverStep
+      summary: Append one ordered local cutover-journal step using the current fence
+      x-p4-decision-evidence: P4-RP01-RELEASE-PLANE-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_release_attestation
+      x-aicrm-external-effect: none
+      x-aicrm-capability: release.manage
+      x-aicrm-rbac-scopes: {admin: global}
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseWorkerCommand'}}}}
+      responses: {"200": {description: Local journal step without fence, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseCutoverProgress'}}}}, "400": {$ref: '#/components/responses/BadRequest'}, "401": {$ref: '#/components/responses/Unauthorized'}, "403": {$ref: '#/components/responses/Forbidden'}, "404": {$ref: '#/components/responses/NotFound'}, "409": {$ref: '#/components/responses/Conflict'}, "503": {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/v1/admin/release-candidates/{candidate_id}/activate:
+    parameters: [{$ref: '#/components/parameters/ReleaseCandidateID'}]
+    post:
+      tags: [p4-release-plane]
+      operationId: activateReleaseCandidate
+      summary: Mark a fully journaled candidate locally activated
+      x-p4-decision-evidence: P4-RP01-RELEASE-PLANE-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_release_attestation
+      x-aicrm-external-effect: none
+      x-aicrm-capability: release.manage
+      x-aicrm-rbac-scopes: {admin: global}
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseWorkerCommand'}}}}
+      responses: {"200": {description: Locally activated candidate, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseCandidate'}}}}, "400": {$ref: '#/components/responses/BadRequest'}, "401": {$ref: '#/components/responses/Unauthorized'}, "403": {$ref: '#/components/responses/Forbidden'}, "404": {$ref: '#/components/responses/NotFound'}, "409": {$ref: '#/components/responses/Conflict'}, "503": {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/v1/admin/release-candidates/{candidate_id}/rollback-checks:
+    parameters: [{$ref: '#/components/parameters/ReleaseCandidateID'}]
+    post:
+      tags: [p4-release-plane]
+      operationId: recordReleaseRollbackCheck
+      summary: Record a local rollback-reconciliation check
+      x-p4-decision-evidence: P4-RP01-RELEASE-PLANE-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_release_attestation
+      x-aicrm-external-effect: none
+      x-aicrm-capability: release.manage
+      x-aicrm-rbac-scopes: {admin: global}
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RecordReleaseRollbackCheckRequest'}}}}
+      responses: {"201": {description: Local rollback check, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseRollbackCheck'}}}}, "400": {$ref: '#/components/responses/BadRequest'}, "401": {$ref: '#/components/responses/Unauthorized'}, "403": {$ref: '#/components/responses/Forbidden'}, "404": {$ref: '#/components/responses/NotFound'}, "409": {$ref: '#/components/responses/Conflict'}, "503": {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/v1/admin/release-candidates/{candidate_id}/rollback/request:
+    parameters: [{$ref: '#/components/parameters/ReleaseCandidateID'}]
+    post:
+      tags: [p4-release-plane]
+      operationId: requestReleaseRollback
+      summary: Record a local rollback request; it does not execute a rollback
+      x-p4-decision-evidence: P4-RP01-RELEASE-PLANE-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_release_attestation
+      x-aicrm-external-effect: none
+      x-aicrm-capability: release.manage
+      x-aicrm-rbac-scopes: {admin: global}
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      responses: {"200": {description: Local rollback-pending candidate, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseCandidate'}}}}, "400": {$ref: '#/components/responses/BadRequest'}, "401": {$ref: '#/components/responses/Unauthorized'}, "403": {$ref: '#/components/responses/Forbidden'}, "404": {$ref: '#/components/responses/NotFound'}, "409": {$ref: '#/components/responses/Conflict'}, "503": {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/v1/admin/release-candidates/{candidate_id}/rollback/complete:
+    parameters: [{$ref: '#/components/parameters/ReleaseCandidateID'}]
+    post:
+      tags: [p4-release-plane]
+      operationId: completeReleaseRollback
+      summary: Close a local rollback journal after reconciliation evidence
+      x-p4-decision-evidence: P4-RP01-RELEASE-PLANE-2026-08-25
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: local_release_attestation
+      x-aicrm-external-effect: none
+      x-aicrm-capability: release.manage
+      x-aicrm-rbac-scopes: {admin: global}
+      x-aicrm-session-bound-csrf: required
+      parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
+      responses: {"200": {description: Locally rolled-back candidate, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseCandidate'}}}}, "400": {$ref: '#/components/responses/BadRequest'}, "401": {$ref: '#/components/responses/Unauthorized'}, "403": {$ref: '#/components/responses/Forbidden'}, "404": {$ref: '#/components/responses/NotFound'}, "409": {$ref: '#/components/responses/Conflict'}, "503": {$ref: '#/components/responses/ServiceUnavailable'}}
 components:
   securitySchemes:
     AdminSession:
@@ -9810,6 +10004,11 @@ components:
       schema: { type: integer, format: int64, minimum: 1 }
     CustomerID:
       name: customer_id
+      in: path
+      required: true
+      schema: { type: integer, format: int64, minimum: 1 }
+    ReleaseCandidateID:
+      name: candidate_id
       in: path
       required: true
       schema: { type: integer, format: int64, minimum: 1 }
@@ -9998,6 +10197,169 @@ components:
       headers: { Allow: { required: true, schema: { type: string, enum: [POST] } } }
       content: { application/json: { schema: { $ref: "#/components/schemas/PublicSurveyError" } } }
   schemas:
+    ReleaseCandidateState:
+      type: string
+      enum: [draft, prepared, cutover_active, activated, rollback_pending, rolled_back]
+    ReleasePrerequisiteKind:
+      type: string
+      enum: [nightly, backup_restore_drill, migration, contact_closure, campaign_closure, outbound_closure, commerce_closure]
+    ReleaseCutoverStep:
+      type: string
+      enum: [announce, quiesce, schema_verify, switch, verify]
+    ReleaseRollbackCheckKind:
+      type: string
+      enum: [schema_compatibility, data_reconciliation, outbound_reconciliation, rollback_execution_reconciliation]
+    ReleaseSubject:
+      type: object
+      additionalProperties: false
+      required: [candidate_id, commit_sha, artifact_digest, manifest_digest, config_digest, target_schema_version]
+      properties:
+        candidate_id: {type: integer, format: int64, minimum: 1}
+        commit_sha: {type: string, pattern: '^[a-f0-9]{40}$'}
+        artifact_digest: {type: string, pattern: '^[a-f0-9]{64}$'}
+        manifest_digest: {type: string, pattern: '^[a-f0-9]{64}$'}
+        config_digest: {type: string, pattern: '^[a-f0-9]{64}$'}
+        target_schema_version: {type: integer, format: int64, minimum: 1}
+    ReleaseCandidate:
+      type: object
+      additionalProperties: false
+      required: [id, commit_sha, artifact_digest, manifest_digest, config_digest, target_schema_version, state, created_by, created_at]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        commit_sha: {type: string, pattern: '^[a-f0-9]{40}$'}
+        artifact_digest: {type: string, pattern: '^[a-f0-9]{64}$'}
+        manifest_digest: {type: string, pattern: '^[a-f0-9]{64}$'}
+        config_digest: {type: string, pattern: '^[a-f0-9]{64}$'}
+        target_schema_version: {type: integer, format: int64, minimum: 1}
+        state: {$ref: '#/components/schemas/ReleaseCandidateState'}
+        created_by: {type: integer, format: int64, minimum: 1}
+        created_at: {type: string, format: date-time}
+        prepared_at: {type: string, format: date-time, nullable: true}
+        activated_at: {type: string, format: date-time, nullable: true}
+        rollback_requested_at: {type: string, format: date-time, nullable: true}
+        rolled_back_at: {type: string, format: date-time, nullable: true}
+    ReleaseCandidateList:
+      type: object
+      additionalProperties: false
+      required: [items]
+      properties: {items: {type: array, maxItems: 100, items: {$ref: '#/components/schemas/ReleaseCandidate'}}}
+    ReleasePrerequisiteReceipt:
+      type: object
+      additionalProperties: false
+      required: [id, subject, kind, evidence_sha, recorded_by, recorded_at]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        subject: {$ref: '#/components/schemas/ReleaseSubject'}
+        kind: {$ref: '#/components/schemas/ReleasePrerequisiteKind'}
+        evidence_sha: {type: string, pattern: '^[a-f0-9]{64}$'}
+        recorded_by: {type: integer, format: int64, minimum: 1}
+        recorded_at: {type: string, format: date-time}
+    ReleaseReadiness:
+      type: object
+      additionalProperties: false
+      required: [candidate_id, ready, missing, invalid, checked_at]
+      properties:
+        candidate_id: {type: integer, format: int64, minimum: 1}
+        ready: {type: boolean}
+        missing: {type: array, items: {$ref: '#/components/schemas/ReleasePrerequisiteKind'}}
+        invalid: {type: array, items: {$ref: '#/components/schemas/ReleasePrerequisiteKind'}}
+        checked_at: {type: string, format: date-time}
+    ReleaseCutoverProgress:
+      type: object
+      additionalProperties: false
+      required: [id, candidate_id, generation, step, completed_by, completed_at]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        candidate_id: {type: integer, format: int64, minimum: 1}
+        generation: {type: integer, format: int64, minimum: 1}
+        step: {$ref: '#/components/schemas/ReleaseCutoverStep'}
+        completed_by: {type: integer, format: int64, minimum: 1}
+        completed_at: {type: string, format: date-time}
+    ReleaseWorkerSummary:
+      type: object
+      additionalProperties: false
+      required: [candidate_id, generation, started_by, started_at]
+      properties:
+        candidate_id: {type: integer, format: int64, minimum: 1}
+        generation: {type: integer, format: int64, minimum: 1}
+        started_by: {type: integer, format: int64, minimum: 1}
+        started_at: {type: string, format: date-time}
+    ReleaseWorkerLease:
+      type: object
+      additionalProperties: false
+      required: [candidate_id, generation, fence, started_by, started_at]
+      properties:
+        candidate_id: {type: integer, format: int64, minimum: 1}
+        generation: {type: integer, format: int64, minimum: 1}
+        fence: {type: string, pattern: '^[a-f0-9]{64}$'}
+        started_by: {type: integer, format: int64, minimum: 1}
+        started_at: {type: string, format: date-time}
+    ReleaseRollbackCheck:
+      type: object
+      additionalProperties: false
+      required: [id, candidate_id, kind, passed, evidence_sha, recorded_by, recorded_at]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        candidate_id: {type: integer, format: int64, minimum: 1}
+        kind: {$ref: '#/components/schemas/ReleaseRollbackCheckKind'}
+        passed: {type: boolean}
+        evidence_sha: {type: string, pattern: '^[a-f0-9]{64}$'}
+        recorded_by: {type: integer, format: int64, minimum: 1}
+        recorded_at: {type: string, format: date-time}
+    ReleaseRollbackEligibility:
+      type: object
+      additionalProperties: false
+      required: [candidate_id, eligible, missing, blocked, checked_at]
+      properties:
+        candidate_id: {type: integer, format: int64, minimum: 1}
+        eligible: {type: boolean}
+        missing: {type: array, items: {$ref: '#/components/schemas/ReleaseRollbackCheckKind'}}
+        blocked: {type: array, items: {$ref: '#/components/schemas/ReleaseRollbackCheckKind'}}
+        checked_at: {type: string, format: date-time}
+    ReleaseCandidateDetail:
+      type: object
+      additionalProperties: false
+      required: [candidate, prerequisites, readiness, cutover_progress, rollback_checks, rollback_eligibility]
+      properties:
+        candidate: {$ref: '#/components/schemas/ReleaseCandidate'}
+        prerequisites: {type: array, items: {$ref: '#/components/schemas/ReleasePrerequisiteReceipt'}}
+        readiness: {$ref: '#/components/schemas/ReleaseReadiness'}
+        cutover_progress: {type: array, items: {$ref: '#/components/schemas/ReleaseCutoverProgress'}}
+        rollback_checks: {type: array, items: {$ref: '#/components/schemas/ReleaseRollbackCheck'}}
+        rollback_eligibility: {$ref: '#/components/schemas/ReleaseRollbackEligibility'}
+        active_worker: {$ref: '#/components/schemas/ReleaseWorkerSummary'}
+    RegisterReleaseCandidateRequest:
+      type: object
+      additionalProperties: false
+      required: [commit_sha, artifact_digest, manifest_digest, config_digest, target_schema_version]
+      properties:
+        commit_sha: {type: string, pattern: '^[a-f0-9]{40}$'}
+        artifact_digest: {type: string, pattern: '^[a-f0-9]{64}$'}
+        manifest_digest: {type: string, pattern: '^[a-f0-9]{64}$'}
+        config_digest: {type: string, pattern: '^[a-f0-9]{64}$'}
+        target_schema_version: {type: integer, format: int64, minimum: 1}
+    RecordReleasePrerequisiteRequest:
+      type: object
+      additionalProperties: false
+      required: [kind, evidence_sha]
+      properties:
+        kind: {$ref: '#/components/schemas/ReleasePrerequisiteKind'}
+        evidence_sha: {type: string, pattern: '^[a-f0-9]{64}$'}
+    ReleaseWorkerCommand:
+      type: object
+      additionalProperties: false
+      required: [generation, fence]
+      properties:
+        generation: {type: integer, format: int64, minimum: 1}
+        fence: {type: string, pattern: '^[a-f0-9]{64}$'}
+    RecordReleaseRollbackCheckRequest:
+      type: object
+      additionalProperties: false
+      required: [kind, passed, evidence_sha]
+      properties:
+        kind: {$ref: '#/components/schemas/ReleaseRollbackCheckKind'}
+        passed: {type: boolean}
+        evidence_sha: {type: string, pattern: '^[a-f0-9]{64}$'}
     ContactOwnerReassignmentRow:
       type: object
       additionalProperties: false

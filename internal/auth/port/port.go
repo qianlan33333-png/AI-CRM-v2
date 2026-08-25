@@ -76,6 +76,8 @@ const (
 	CapabilityAdminRead                  Capability = "admin.read"
 	CapabilityAdminShellRead             Capability = "admin.shell.read"
 	CapabilityContactOwnerReassignment   Capability = "contact.owner_reassignment"
+	CapabilityReleaseRead                Capability = "release.read"
+	CapabilityReleaseManage              Capability = "release.manage"
 )
 
 func (capability Capability) Known() bool {
@@ -95,7 +97,7 @@ func (capability Capability) Known() bool {
 		CapabilityMessageArchiveRead, CapabilityMessageArchiveExecute, CapabilityMessageArchiveExternalRead,
 		CapabilityOperationsRead, CapabilityOperationsManage,
 		CapabilityAdminRead, CapabilityAdminShellRead,
-		CapabilityContactOwnerReassignment:
+		CapabilityContactOwnerReassignment, CapabilityReleaseRead, CapabilityReleaseManage:
 		return true
 	default:
 		return false
@@ -233,7 +235,8 @@ func validAuthorization(authorization Authorization) bool {
 		return authorization.Scope == ScopeGlobal && authorization.OwnerStaffID == 0
 	case CapabilityOperationsRead, CapabilityOperationsManage:
 		return authorization.Scope == ScopeGlobal && authorization.OwnerStaffID == 0
-	case CapabilityAdminRead, CapabilityAdminShellRead, CapabilityContactOwnerReassignment:
+	case CapabilityAdminRead, CapabilityAdminShellRead, CapabilityContactOwnerReassignment,
+		CapabilityReleaseRead, CapabilityReleaseManage:
 		return authorization.Scope == ScopeGlobal && authorization.OwnerStaffID == 0
 	default:
 		return false

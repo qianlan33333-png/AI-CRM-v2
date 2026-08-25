@@ -18,11 +18,11 @@ cleanup() {
 trap cleanup EXIT
 cleanup
 psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c 'CREATE DATABASE aicrm_test_ee01_00073' >/dev/null
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 73 >/dev/null
 [[ "$(psql "$database_url" -X -q -At -c 'SHOW server_version_num')" = "160014" ]]
 [[ "$(psql "$database_url" -X -q -At -c 'SELECT max(version_id) FROM goose_db_version WHERE is_applied')" = "73" ]]
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >/dev/null
-"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 73 >/dev/null
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly "$go_command" test -race -count=1 -run '^TestInternalEventSafeExportPG16$' ./acceptance/events -args -ee01-database-url "$database_url"
 set +e
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >"$guard_output" 2>&1

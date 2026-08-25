@@ -34,3 +34,4 @@ output-options:
     - p4-contact-owner-reassignment
     - p4-customer-safe-export
     - p4-internal-event-safe-export
+    - p4-release-plane

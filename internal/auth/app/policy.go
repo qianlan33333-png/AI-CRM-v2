@@ -134,6 +134,12 @@ var capabilityPolicies = map[authport.Capability]capabilityPolicy{
 	authport.CapabilityContactOwnerReassignment: {
 		admin: authport.ScopeGlobal,
 	},
+	authport.CapabilityReleaseRead: {
+		admin: authport.ScopeGlobal, ops: authport.ScopeGlobal,
+	},
+	authport.CapabilityReleaseManage: {
+		admin: authport.ScopeGlobal,
+	},
 }
 
 func authorize(principal authport.Principal, capability authport.Capability) (authport.Authorization, error) {

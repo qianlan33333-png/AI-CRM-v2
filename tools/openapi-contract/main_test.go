@@ -204,6 +204,41 @@ func TestOwnerApprovedNativePackageRegistry(t *testing.T) {
 	})
 }
 
+func TestReleasePlaneNativePackageRegistryRemainsClosed(t *testing.T) {
+	doc, _ := fresh(t)
+	operations := map[string]struct {
+		path   string
+		method string
+	}{
+		"listReleaseCandidates":      {"/api/v1/admin/release-candidates", "GET"},
+		"registerReleaseCandidate":   {"/api/v1/admin/release-candidates", "POST"},
+		"getReleaseCandidate":        {"/api/v1/admin/release-candidates/{candidate_id}", "GET"},
+		"recordReleasePrerequisite":  {"/api/v1/admin/release-candidates/{candidate_id}/prerequisites", "POST"},
+		"prepareReleaseCandidate":    {"/api/v1/admin/release-candidates/{candidate_id}/prepare", "POST"},
+		"startReleaseCutover":        {"/api/v1/admin/release-candidates/{candidate_id}/cutover/start", "POST"},
+		"restartReleaseCutover":      {"/api/v1/admin/release-candidates/{candidate_id}/cutover/restart", "POST"},
+		"completeReleaseCutoverStep": {"/api/v1/admin/release-candidates/{candidate_id}/cutover/steps/{step}/complete", "POST"},
+		"activateReleaseCandidate":   {"/api/v1/admin/release-candidates/{candidate_id}/activate", "POST"},
+		"recordReleaseRollbackCheck": {"/api/v1/admin/release-candidates/{candidate_id}/rollback-checks", "POST"},
+		"requestReleaseRollback":     {"/api/v1/admin/release-candidates/{candidate_id}/rollback/request", "POST"},
+		"completeReleaseRollback":    {"/api/v1/admin/release-candidates/{candidate_id}/rollback/complete", "POST"},
+	}
+	for operationID, want := range operations {
+		item := doc.Paths.Value(want.path)
+		op := operationForMethod(item, want.method)
+		contract, registered := nativePackageOperations[operationID]
+		if op == nil || op.OperationID != operationID || !registered {
+			t.Fatalf("%s native operation is missing", operationID)
+		}
+		if contract.evidence != p4ReleasePlaneEvidence {
+			t.Fatalf("%s evidence = %q", operationID, contract.evidence)
+		}
+		if err := validateNativePackageOperation(want.path, item, op, contract); err != nil {
+			t.Fatalf("%s: %v", operationID, err)
+		}
+	}
+}
+
 func TestCampaignInitiationTouchPlanContractRemainsClosed(t *testing.T) {
 	doc, inventory := fresh(t)
 	operations := map[string]struct {
