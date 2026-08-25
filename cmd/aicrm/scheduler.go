@@ -6,6 +6,7 @@ import (
 	"time"
 
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
+	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactworker "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/worker"
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
@@ -16,7 +17,7 @@ import (
 
 // schedulerPlan is the sole production catalog for periodic jobs. Functional
 // slices add definitions here only after their worker and queue are frozen.
-func schedulerPlan(workers *platformjobqueue.WorkerRegistry, directorySync appconfig.WeComDirectorySync) (*platformscheduler.Plan, error) {
+func schedulerPlan(workers *platformjobqueue.WorkerRegistry, directorySync appconfig.WeComDirectorySync, customerAcquisition appconfig.WeComCustomerAcquisition) (*platformscheduler.Plan, error) {
 	dispatchSchedule, err := platformscheduler.Every(time.Second)
 	if err != nil {
 		return nil, err
@@ -65,6 +66,16 @@ func schedulerPlan(workers *platformjobqueue.WorkerRegistry, directorySync appco
 				RunOnStart: true,
 			})
 		}
+	}
+	if customerAcquisition.Enabled {
+		recoverySchedule, err := platformscheduler.Every(contactapp.ChannelAcquisitionAssetRecoveryPeriod)
+		if err != nil {
+			return nil, err
+		}
+		definitions = append(definitions, platformscheduler.Definition{
+			ID: "contact.acquisition_asset.attempted_recovery", Queue: platformjobqueue.QueueCritical,
+			Schedule: recoverySchedule, Args: contactapp.ChannelAcquisitionAssetRecoveryJobArgs{}, RunOnStart: true,
+		})
 	}
 	return platformscheduler.Build(workers, definitions)
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
+	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
 	contactworker "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/worker"
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
@@ -29,6 +30,10 @@ type schedulerExternalContactSyncWorker struct {
 	river.WorkerDefaults[wecomapp.ExternalContactSyncJobArgs]
 }
 
+type schedulerAcquisitionRecoveryWorker struct {
+	river.WorkerDefaults[contactapp.ChannelAcquisitionAssetRecoveryJobArgs]
+}
+
 func (*schedulerSegmentRefreshWorker) Work(context.Context, *river.Job[segmentworker.ScheduledRefreshArgs]) error {
 	return nil
 }
@@ -48,6 +53,10 @@ func (*schedulerExternalContactSyncWorker) Work(context.Context, *river.Job[weco
 	return nil
 }
 
+func (*schedulerAcquisitionRecoveryWorker) Work(context.Context, *river.Job[contactapp.ChannelAcquisitionAssetRecoveryJobArgs]) error {
+	return nil
+}
+
 func TestSchedulerPlanRegistersEventDispatcher(t *testing.T) {
 	workers := platformjobqueue.NewWorkerRegistry()
 	if err := platformjobqueue.AddWorker(workers, platformjobqueue.QueueEvent, &schedulerDispatchWorker{}); err != nil {
@@ -59,7 +68,7 @@ func TestSchedulerPlanRegistersEventDispatcher(t *testing.T) {
 	if err := platformjobqueue.AddWorker(workers, platformjobqueue.QueueHeavy, &schedulerSegmentRefreshWorker{}); err != nil {
 		t.Fatal(err)
 	}
-	plan, err := schedulerPlan(workers, appconfig.WeComDirectorySync{})
+	plan, err := schedulerPlan(workers, appconfig.WeComDirectorySync{}, appconfig.WeComCustomerAcquisition{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,11 +91,34 @@ func TestSchedulerPlanAddsOnlyExplicitDirectorySyncStaff(t *testing.T) {
 	if err := platformjobqueue.AddWorker(workers, platformjobqueue.QueueSync, &schedulerExternalContactSyncWorker{}); err != nil {
 		t.Fatal(err)
 	}
-	plan, err := schedulerPlan(workers, appconfig.WeComDirectorySync{Enabled: true, StaffUserIDs: []string{"staff-1", "staff-2"}})
+	plan, err := schedulerPlan(workers, appconfig.WeComDirectorySync{Enabled: true, StaffUserIDs: []string{"staff-1", "staff-2"}}, appconfig.WeComCustomerAcquisition{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if jobs := plan.Jobs(); len(jobs) != 5 {
 		t.Fatalf("schedulerPlan() jobs = %d, want 5", len(jobs))
+	}
+}
+
+func TestSchedulerPlanAddsCH02RecoveryOnlyWhenProviderEnabled(t *testing.T) {
+	workers := platformjobqueue.NewWorkerRegistry()
+	if err := platformjobqueue.AddWorker(workers, platformjobqueue.QueueEvent, &schedulerDispatchWorker{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := platformjobqueue.AddWorker(workers, platformjobqueue.QueueHeavy, &schedulerPartitionWorker{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := platformjobqueue.AddWorker(workers, platformjobqueue.QueueHeavy, &schedulerSegmentRefreshWorker{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := platformjobqueue.AddWorker(workers, platformjobqueue.QueueCritical, &schedulerAcquisitionRecoveryWorker{}); err != nil {
+		t.Fatal(err)
+	}
+	plan, err := schedulerPlan(workers, appconfig.WeComDirectorySync{}, appconfig.WeComCustomerAcquisition{Enabled: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if jobs := plan.Jobs(); len(jobs) != 4 {
+		t.Fatalf("enabled scheduler jobs=%d, want 4", len(jobs))
 	}
 }

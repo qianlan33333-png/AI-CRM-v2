@@ -81,9 +81,12 @@ type CachingTokenProvider struct {
 	httpClient  *http.Client
 	now         func() time.Time
 
-	mu        sync.Mutex
-	cached    AccessToken
-	refreshAt time.Time
+	mu          sync.Mutex
+	cached      AccessToken
+	refreshAt   time.Time
+	refreshing  bool
+	refreshDone chan struct{}
+	refreshErr  error
 }
 
 func NewTokenProvider(config TokenProviderConfig) (*CachingTokenProvider, error) {
@@ -97,18 +100,73 @@ func NewTokenProvider(config TokenProviderConfig) (*CachingTokenProvider, error)
 }
 
 func (provider *CachingTokenProvider) Token(ctx context.Context) (AccessToken, error) {
+	return provider.token(ctx, false)
+}
+
+// RefreshToken explicitly replaces the cached credential after a provider
+// read receives 42001. Concurrent refreshes join the same grant so one token
+// expiry cannot fan out into a credential-request storm.
+func (provider *CachingTokenProvider) RefreshToken(ctx context.Context) (AccessToken, error) {
+	return provider.token(ctx, true)
+}
+
+func (provider *CachingTokenProvider) token(ctx context.Context, force bool) (AccessToken, error) {
 	if provider == nil {
 		return AccessToken{}, ErrInvalidConfig
 	}
 	now := provider.now()
 	provider.mu.Lock()
-	if provider.cached.Value() != "" && now.Before(provider.refreshAt) {
+	if !force && provider.cached.Value() != "" && now.Before(provider.refreshAt) && !provider.refreshing {
 		token := provider.cached
 		provider.mu.Unlock()
 		return token, nil
 	}
+	if provider.refreshing {
+		done := provider.refreshDone
+		provider.mu.Unlock()
+		select {
+		case <-done:
+			provider.mu.Lock()
+			token, err := provider.cached, provider.refreshErr
+			provider.mu.Unlock()
+			if err != nil {
+				return AccessToken{}, err
+			}
+			if token.Value() == "" {
+				return AccessToken{}, ErrUnexpectedResponse
+			}
+			return token, nil
+		case <-ctx.Done():
+			return AccessToken{}, safeTokenRequestError(ctx, ctx.Err())
+		}
+	}
+	provider.refreshing = true
+	provider.refreshDone = make(chan struct{})
+	provider.refreshErr = nil
+	if force {
+		provider.cached = AccessToken{}
+		provider.refreshAt = time.Time{}
+	}
+	done := provider.refreshDone
 	provider.mu.Unlock()
 
+	token, refreshAt, err := provider.fetchToken(ctx, now)
+	provider.mu.Lock()
+	if err == nil {
+		provider.cached = token
+		provider.refreshAt = refreshAt
+	}
+	provider.refreshErr = err
+	provider.refreshing = false
+	close(done)
+	provider.mu.Unlock()
+	if err != nil {
+		return AccessToken{}, err
+	}
+	return token, nil
+}
+
+func (provider *CachingTokenProvider) fetchToken(ctx context.Context, now time.Time) (AccessToken, time.Time, error) {
 	endpoint := provider.baseURL.ResolveReference(&url.URL{Path: "/cgi-bin/gettoken"})
 	query := url.Values{}
 	query.Set("corpid", string(provider.credentials.CorpID))
@@ -116,15 +174,15 @@ func (provider *CachingTokenProvider) Token(ctx context.Context) (AccessToken, e
 	endpoint.RawQuery = query.Encode()
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint.String(), nil)
 	if err != nil {
-		return AccessToken{}, ErrInvalidConfig
+		return AccessToken{}, time.Time{}, ErrInvalidConfig
 	}
 	response, err := provider.httpClient.Do(request)
 	if err != nil {
-		return AccessToken{}, mapRequestError(ctx, err)
+		return AccessToken{}, time.Time{}, safeTokenRequestError(ctx, err)
 	}
 	defer response.Body.Close()
 	if response.StatusCode != http.StatusOK {
-		return AccessToken{}, fmt.Errorf("%w: status %d", ErrUnexpectedResponse, response.StatusCode)
+		return AccessToken{}, time.Time{}, fmt.Errorf("%w: status %d", ErrUnexpectedResponse, response.StatusCode)
 	}
 	var payload struct {
 		ErrCode     int    `json:"errcode"`
@@ -133,23 +191,19 @@ func (provider *CachingTokenProvider) Token(ctx context.Context) (AccessToken, e
 		ExpiresIn   int64  `json:"expires_in"`
 	}
 	if err = decodeResponse(response.Body, &payload); err != nil {
-		return AccessToken{}, err
+		return AccessToken{}, time.Time{}, err
 	}
 	if payload.ErrCode != 0 {
-		return AccessToken{}, apiError(payload.ErrCode, payload.ErrMsg)
+		return AccessToken{}, time.Time{}, apiError(payload.ErrCode, "WeCom rejected token grant")
 	}
 	if payload.AccessToken == "" || payload.ExpiresIn <= 0 {
-		return AccessToken{}, ErrUnexpectedResponse
+		return AccessToken{}, time.Time{}, ErrUnexpectedResponse
 	}
 
 	refreshAt := now.Add(time.Duration(payload.ExpiresIn) * time.Second)
 	margin := minDuration(time.Minute, time.Duration(payload.ExpiresIn)*time.Second/10)
 	refreshAt = refreshAt.Add(-margin)
-	provider.mu.Lock()
-	provider.cached = AccessToken{value: payload.AccessToken}
-	provider.refreshAt = refreshAt
-	provider.mu.Unlock()
-	return AccessToken{value: payload.AccessToken}, nil
+	return AccessToken{value: payload.AccessToken}, refreshAt, nil
 }
 
 func parseBaseURL(value string) (*url.URL, error) {
@@ -182,8 +236,10 @@ func mapRequestError(ctx context.Context, err error) error {
 	if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(err, context.DeadlineExceeded) {
 		return fmt.Errorf("%w: %w", ErrRequestTimeout, context.DeadlineExceeded)
 	}
-	return fmt.Errorf("%w: %w", ErrTransport, err)
+	return ErrTransport
 }
+
+func safeTokenRequestError(ctx context.Context, err error) error { return mapRequestError(ctx, err) }
 
 // APIError exposes WeCom's numeric code without exposing request credentials.
 type APIError struct {

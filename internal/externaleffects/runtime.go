@@ -49,20 +49,21 @@ const (
 type Kind string
 
 const (
-	KindCampaignDispatch          Kind = "campaign_dispatch"
-	KindCampaignGroupAnnouncement Kind = "campaign_group_announcement"
-	KindContactTouch              Kind = "contact_touch"
-	KindOutboundMessage           Kind = "outbound_message"
-	KindOutboundMedia             Kind = "outbound_media"
-	KindWeComTagSync              Kind = "wecom_tag_sync"
-	KindWeComProfileSync          Kind = "wecom_profile_sync"
-	KindSurveyWebhook             Kind = "survey_webhook"
-	KindAudienceWebhook           Kind = "audience_webhook"
-	KindOrderPaymentPrepay        Kind = "order_payment_prepay"
-	KindOrderPaymentCapture       Kind = "order_payment_capture"
-	KindOrderRefund               Kind = "order_refund"
-	KindGroupOpsBroadcast         Kind = "group_ops_broadcast"
-	KindProductExternalPushTest   Kind = "product_external_push_test"
+	KindCampaignDispatch               Kind = "campaign_dispatch"
+	KindCampaignGroupAnnouncement      Kind = "campaign_group_announcement"
+	KindContactTouch                   Kind = "contact_touch"
+	KindContactAcquisitionAssetPublish Kind = "contact_acquisition_asset_publish"
+	KindOutboundMessage                Kind = "outbound_message"
+	KindOutboundMedia                  Kind = "outbound_media"
+	KindWeComTagSync                   Kind = "wecom_tag_sync"
+	KindWeComProfileSync               Kind = "wecom_profile_sync"
+	KindSurveyWebhook                  Kind = "survey_webhook"
+	KindAudienceWebhook                Kind = "audience_webhook"
+	KindOrderPaymentPrepay             Kind = "order_payment_prepay"
+	KindOrderPaymentCapture            Kind = "order_payment_capture"
+	KindOrderRefund                    Kind = "order_refund"
+	KindGroupOpsBroadcast              Kind = "group_ops_broadcast"
+	KindProductExternalPushTest        Kind = "product_external_push_test"
 )
 
 func validOwnerKind(owner Owner, kind Kind) bool {
@@ -70,7 +71,7 @@ func validOwnerKind(owner Owner, kind Kind) bool {
 	case OwnerCampaign:
 		return kind == KindCampaignDispatch || kind == KindCampaignGroupAnnouncement
 	case OwnerContact:
-		return kind == KindContactTouch
+		return kind == KindContactTouch || kind == KindContactAcquisitionAssetPublish
 	case OwnerOutbound:
 		return kind == KindOutboundMessage || kind == KindOutboundMedia
 	case OwnerWeCom:
@@ -89,6 +90,10 @@ func validOwnerKind(owner Owner, kind Kind) bool {
 		return false
 	}
 }
+
+// IsValidOwnerKind reports membership in the closed runtime family registry.
+// It does not accept or register new values.
+func IsValidOwnerKind(owner Owner, kind Kind) bool { return validOwnerKind(owner, kind) }
 
 type State string
 
@@ -287,12 +292,18 @@ type Diagnostics struct {
 // TerminalOutcome is the minimal owner-facing crash-recovery fact. It exposes
 // no provider body and only the digest already committed by the adapter.
 type TerminalOutcome struct {
-	EffectID       string
-	State          State
-	ReceiptDigest  Digest
-	Generation     int64
-	Fence          int64
-	LeaseExpiresAt time.Time
+	EffectID                 string
+	Owner                    Owner
+	Kind                     Kind
+	State                    State
+	ReceiptID                string
+	ReceiptDigest            Digest
+	ResultReferenceDigest    Digest
+	BusinessCallDispatched   bool
+	RealExternalCallExecuted bool
+	Generation               int64
+	Fence                    int64
+	LeaseExpiresAt           time.Time
 }
 
 func (projection Projection) valid() bool {
@@ -421,13 +432,18 @@ func (completion Completion) state() (State, bool) {
 }
 
 type AdapterResult struct {
-	Completion    Completion
-	ReceiptDigest Digest
+	Completion               Completion
+	ReceiptDigest            Digest
+	ResultReferenceDigest    Digest
+	BusinessCallDispatched   bool
+	RealExternalCallExecuted bool
 }
 
 func (result AdapterResult) valid() bool {
 	_, ok := result.Completion.state()
-	return ok && validDigest(result.ReceiptDigest)
+	return ok && validDigest(result.ReceiptDigest) &&
+		(result.ResultReferenceDigest == "" || validDigest(result.ResultReferenceDigest)) &&
+		(!result.RealExternalCallExecuted || result.BusinessCallDispatched)
 }
 
 // Adapter is a domain-owned boundary. Its Execute call is deliberately made
@@ -562,7 +578,9 @@ func (service *Service) RunAttempt(ctx context.Context, lease Lease, adapter Ada
 	result, adapterErr := adapter.Execute(ctx, envelope, attempt)
 	invalidResult := !result.valid()
 	if adapterErr != nil || invalidResult {
-		result = AdapterResult{Completion: CompletionOutcomeUnknown, ReceiptDigest: unknownReceiptDigest(lease, attempt)}
+		result = AdapterResult{Completion: CompletionOutcomeUnknown, ReceiptDigest: unknownReceiptDigest(lease, attempt),
+			BusinessCallDispatched:   result.BusinessCallDispatched,
+			RealExternalCallExecuted: result.RealExternalCallExecuted && result.BusinessCallDispatched}
 	}
 	projection, receipt, completionErr := service.store.CompleteAttempt(ctx, lease, attempt, result)
 	if completionErr != nil {

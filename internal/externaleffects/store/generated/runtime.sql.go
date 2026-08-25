@@ -64,6 +64,39 @@ func (q *Queries) CompleteAttempt(ctx context.Context, arg CompleteAttemptParams
 	return err
 }
 
+const completeChannelAcquisitionAssetAttempt = `-- name: CompleteChannelAcquisitionAssetAttempt :exec
+UPDATE external_effect_attempts
+SET completion=$4, receipt_digest=$5, result_reference_digest=$6::text,
+    business_call_dispatched=$7::boolean,
+    real_external_call_executed=$8::boolean, completed_at=now()
+WHERE effect_id=$1 AND number=$2 AND generation=$3 AND completion IS NULL
+`
+
+type CompleteChannelAcquisitionAssetAttemptParams struct {
+	EffectID                 int64       `json:"effect_id"`
+	Number                   int32       `json:"number"`
+	Generation               int64       `json:"generation"`
+	Completion               pgtype.Text `json:"completion"`
+	ReceiptDigest            pgtype.Text `json:"receipt_digest"`
+	ResultReferenceDigest    pgtype.Text `json:"result_reference_digest"`
+	BusinessCallDispatched   bool        `json:"business_call_dispatched"`
+	RealExternalCallExecuted bool        `json:"real_external_call_executed"`
+}
+
+func (q *Queries) CompleteChannelAcquisitionAssetAttempt(ctx context.Context, arg CompleteChannelAcquisitionAssetAttemptParams) error {
+	_, err := q.db.Exec(ctx, completeChannelAcquisitionAssetAttempt,
+		arg.EffectID,
+		arg.Number,
+		arg.Generation,
+		arg.Completion,
+		arg.ReceiptDigest,
+		arg.ResultReferenceDigest,
+		arg.BusinessCallDispatched,
+		arg.RealExternalCallExecuted,
+	)
+	return err
+}
+
 const createEffect = `-- name: CreateEffect :one
 INSERT INTO external_effects(owner,kind,source_ref_digest,target_ref_digest,payload_digest,policy_version_hash,envelope_fingerprint,state)
 VALUES($1,$2,$3,$4,$5,$6,$7,'accepted')
@@ -171,6 +204,41 @@ func (q *Queries) GetAcceptReceipt(ctx context.Context, receiptKeyDigest string)
 	return i, err
 }
 
+const getChannelAcquisitionAssetTerminalEvidence = `-- name: GetChannelAcquisitionAssetTerminalEvidence :one
+SELECT result_reference_digest, business_call_dispatched, real_external_call_executed
+FROM external_effect_attempts
+WHERE effect_id = $1::bigint
+  AND number = $2::integer
+  AND generation = $3::bigint
+  AND fence = $4::bigint
+  AND completion IS NOT NULL
+`
+
+type GetChannelAcquisitionAssetTerminalEvidenceParams struct {
+	EffectID      int64 `json:"effect_id"`
+	AttemptNumber int32 `json:"attempt_number"`
+	Generation    int64 `json:"generation"`
+	Fence         int64 `json:"fence"`
+}
+
+type GetChannelAcquisitionAssetTerminalEvidenceRow struct {
+	ResultReferenceDigest    pgtype.Text `json:"result_reference_digest"`
+	BusinessCallDispatched   bool        `json:"business_call_dispatched"`
+	RealExternalCallExecuted bool        `json:"real_external_call_executed"`
+}
+
+func (q *Queries) GetChannelAcquisitionAssetTerminalEvidence(ctx context.Context, arg GetChannelAcquisitionAssetTerminalEvidenceParams) (GetChannelAcquisitionAssetTerminalEvidenceRow, error) {
+	row := q.db.QueryRow(ctx, getChannelAcquisitionAssetTerminalEvidence,
+		arg.EffectID,
+		arg.AttemptNumber,
+		arg.Generation,
+		arg.Fence,
+	)
+	var i GetChannelAcquisitionAssetTerminalEvidenceRow
+	err := row.Scan(&i.ResultReferenceDigest, &i.BusinessCallDispatched, &i.RealExternalCallExecuted)
+	return i, err
+}
+
 const getDiagnostics = `-- name: GetDiagnostics :one
 SELECT
   COUNT(*) FILTER (WHERE state='accepted') AS accepted,
@@ -260,36 +328,49 @@ func (q *Queries) GetReceipt(ctx context.Context, arg GetReceiptParams) (Externa
 }
 
 const getTerminalOutcome = `-- name: GetTerminalOutcome :one
-SELECT e.state, a.generation, a.fence, a.completed_at AS lease_expires_at, a.receipt_digest
+SELECT e.owner, e.kind, e.state, a.number AS attempt_number, a.generation, a.fence,
+       a.completed_at AS lease_expires_at, a.receipt_digest, r.id AS receipt_id
 FROM external_effects e
 JOIN LATERAL (
-  SELECT generation, fence, completed_at, receipt_digest
+  SELECT number, generation, fence, completed_at, receipt_digest
   FROM external_effect_attempts
   WHERE effect_id = e.id AND completion IS NOT NULL
   ORDER BY number DESC
   LIMIT 1
 ) a ON true
+JOIN external_effect_receipts r
+  ON r.effect_id = e.id
+ AND r.receipt_key_digest = a.receipt_digest
+ AND r.operation IN ('complete_attempt', 'recover_attempted')
 WHERE e.id = $1
   AND e.state IN ('executed','outcome_unknown','reconciled','retryable_failed','final_failed')
 `
 
 type GetTerminalOutcomeRow struct {
+	Owner          string             `json:"owner"`
+	Kind           string             `json:"kind"`
 	State          string             `json:"state"`
+	AttemptNumber  int32              `json:"attempt_number"`
 	Generation     int64              `json:"generation"`
 	Fence          int64              `json:"fence"`
 	LeaseExpiresAt pgtype.Timestamptz `json:"lease_expires_at"`
 	ReceiptDigest  pgtype.Text        `json:"receipt_digest"`
+	ReceiptID      int64              `json:"receipt_id"`
 }
 
 func (q *Queries) GetTerminalOutcome(ctx context.Context, id int64) (GetTerminalOutcomeRow, error) {
 	row := q.db.QueryRow(ctx, getTerminalOutcome, id)
 	var i GetTerminalOutcomeRow
 	err := row.Scan(
+		&i.Owner,
+		&i.Kind,
 		&i.State,
+		&i.AttemptNumber,
 		&i.Generation,
 		&i.Fence,
 		&i.LeaseExpiresAt,
 		&i.ReceiptDigest,
+		&i.ReceiptID,
 	)
 	return i, err
 }

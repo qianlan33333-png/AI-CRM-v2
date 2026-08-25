@@ -7599,6 +7599,158 @@ export interface ChannelAcquisitionPreviewResponse {
   real_external_call_executed: boolean;
 }
 
+export type ChannelAcquisitionAssetPublishRequestKind =
+  (typeof ChannelAcquisitionAssetPublishRequestKind)[keyof typeof ChannelAcquisitionAssetPublishRequestKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionAssetPublishRequestKind = {
+  contact_way_qrcode: "contact_way_qrcode",
+  customer_acquisition_link: "customer_acquisition_link",
+} as const;
+
+export interface ChannelAcquisitionAssetPublishRequest {
+  kind: ChannelAcquisitionAssetPublishRequestKind;
+}
+
+export type ChannelAcquisitionAssetReconcileRequestResolution =
+  (typeof ChannelAcquisitionAssetReconcileRequestResolution)[keyof typeof ChannelAcquisitionAssetReconcileRequestResolution];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionAssetReconcileRequestResolution = {
+  provider_applied: "provider_applied",
+  provider_not_applied: "provider_not_applied",
+} as const;
+
+export interface ChannelAcquisitionAssetReconcileRequest {
+  resolution: ChannelAcquisitionAssetReconcileRequestResolution;
+  /** @pattern ^sha256:[a-f0-9]{64}$ */
+  evidence_digest: string;
+}
+
+export type ChannelAcquisitionAssetAcceptanceKind =
+  (typeof ChannelAcquisitionAssetAcceptanceKind)[keyof typeof ChannelAcquisitionAssetAcceptanceKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionAssetAcceptanceKind = {
+  contact_way_qrcode: "contact_way_qrcode",
+  customer_acquisition_link: "customer_acquisition_link",
+} as const;
+
+export type ChannelAcquisitionAssetAcceptanceState =
+  (typeof ChannelAcquisitionAssetAcceptanceState)[keyof typeof ChannelAcquisitionAssetAcceptanceState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionAssetAcceptanceState = {
+  queued: "queued",
+} as const;
+
+export interface ChannelAcquisitionAssetAcceptance {
+  /** @pattern ^eer_[1-9][0-9]*$ */
+  effect_id: string;
+  /** @minimum 1 */
+  channel_id: number;
+  kind: ChannelAcquisitionAssetAcceptanceKind;
+  /** @minimum 1 */
+  asset_version: number;
+  /** @minimum 0 */
+  supersedes_version: number;
+  state: ChannelAcquisitionAssetAcceptanceState;
+  /** @pattern ^eerop_[1-9][0-9]*$ */
+  accept_receipt_id: string;
+  /** @pattern ^eerop_[1-9][0-9]*$ */
+  queue_receipt_id: string;
+  entrant_ready: boolean;
+}
+
+export type ChannelAcquisitionAssetKind =
+  (typeof ChannelAcquisitionAssetKind)[keyof typeof ChannelAcquisitionAssetKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionAssetKind = {
+  contact_way_qrcode: "contact_way_qrcode",
+  customer_acquisition_link: "customer_acquisition_link",
+} as const;
+
+export type ChannelAcquisitionAssetState =
+  (typeof ChannelAcquisitionAssetState)[keyof typeof ChannelAcquisitionAssetState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionAssetState = {
+  accepted: "accepted",
+  queued: "queued",
+  attempted: "attempted",
+  executed: "executed",
+  final_failed: "final_failed",
+  outcome_unknown: "outcome_unknown",
+  reconciled: "reconciled",
+} as const;
+
+export interface ChannelAcquisitionAsset {
+  /** @pattern ^eer_[1-9][0-9]*$ */
+  effect_id: string;
+  /** @minimum 1 */
+  channel_id: number;
+  kind: ChannelAcquisitionAssetKind;
+  /** @minimum 1 */
+  asset_version: number;
+  /** @minimum 0 */
+  supersedes_version: number;
+  state: ChannelAcquisitionAssetState;
+  /** @pattern ^eerop_[1-9][0-9]*$ */
+  accept_receipt_id: string;
+  /** @pattern ^eerop_[1-9][0-9]*$ */
+  queue_receipt_id?: string;
+  /** @pattern ^sha256:[a-f0-9]{64}$ */
+  attempt_receipt_digest?: string;
+  /** @pattern ^eerop_[1-9][0-9]*$ */
+  reconcile_receipt_id?: string;
+  entrant_ready: boolean;
+  created_at: string;
+  updated_at: string;
+  reconciled_at?: string;
+}
+
+export interface ChannelAcquisitionAssetListResponse {
+  /** @maxItems 50 */
+  items: ChannelAcquisitionAsset[];
+  /**
+   * @minimum 1
+   * @maximum 50
+   */
+  limit: number;
+  has_more: boolean;
+  /** @maxLength 256 */
+  next_cursor: string;
+}
+
+export type ChannelAcquisitionAssetReconciliationState =
+  (typeof ChannelAcquisitionAssetReconciliationState)[keyof typeof ChannelAcquisitionAssetReconciliationState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionAssetReconciliationState = {
+  reconciled: "reconciled",
+} as const;
+
+export type ChannelAcquisitionAssetReconciliationResolution =
+  (typeof ChannelAcquisitionAssetReconciliationResolution)[keyof typeof ChannelAcquisitionAssetReconciliationResolution];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionAssetReconciliationResolution = {
+  provider_applied: "provider_applied",
+  provider_not_applied: "provider_not_applied",
+} as const;
+
+export interface ChannelAcquisitionAssetReconciliation {
+  /** @pattern ^eer_[1-9][0-9]*$ */
+  effect_id: string;
+  state: ChannelAcquisitionAssetReconciliationState;
+  resolution: ChannelAcquisitionAssetReconciliationResolution;
+  /** @pattern ^eerop_[1-9][0-9]*$ */
+  receipt_id: string;
+  replacement?: ChannelAcquisitionAssetAcceptance;
+  entrant_ready: boolean;
+}
+
 export type LegacyChannelWriteRequestChannelType =
   (typeof LegacyChannelWriteRequestChannelType)[keyof typeof LegacyChannelWriteRequestChannelType];
 
@@ -16030,6 +16182,18 @@ export type ListLegacyChannelEntrantsParams = {
    * @minLength 1
    * @maxLength 256
    * @pattern ^ce1\.[A-Za-z0-9_-]+$
+   */
+  cursor?: string;
+};
+
+export type ListChannelAcquisitionAssetsParams = {
+  /**
+   * @minimum 1
+   * @maximum 50
+   */
+  limit?: number;
+  /**
+   * @maxLength 256
    */
   cursor?: string;
 };
@@ -30100,6 +30264,373 @@ export const updateChannelAcquisitionAssignees = async (
     status: res.status,
     headers: res.headers,
   } as updateChannelAcquisitionAssigneesResponse;
+};
+
+/**
+ * @summary List safe local acquisition-asset receipts for one channel
+ */
+export type listChannelAcquisitionAssetsResponse200 = {
+  data: ChannelAcquisitionAssetListResponse;
+  status: 200;
+};
+
+export type listChannelAcquisitionAssetsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listChannelAcquisitionAssetsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listChannelAcquisitionAssetsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listChannelAcquisitionAssetsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listChannelAcquisitionAssetsResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type listChannelAcquisitionAssetsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listChannelAcquisitionAssetsResponseSuccess =
+  listChannelAcquisitionAssetsResponse200 & {
+    headers: Headers;
+  };
+export type listChannelAcquisitionAssetsResponseError = (
+  | listChannelAcquisitionAssetsResponse400
+  | listChannelAcquisitionAssetsResponse401
+  | listChannelAcquisitionAssetsResponse403
+  | listChannelAcquisitionAssetsResponse404
+  | listChannelAcquisitionAssetsResponse422
+  | listChannelAcquisitionAssetsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listChannelAcquisitionAssetsResponse =
+  | listChannelAcquisitionAssetsResponseSuccess
+  | listChannelAcquisitionAssetsResponseError;
+
+export const getListChannelAcquisitionAssetsUrl = (
+  channelId: number,
+  params?: ListChannelAcquisitionAssetsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/channels/${channelId}/acquisition-assets?${stringifiedParams}`
+    : `/api/admin/channels/${channelId}/acquisition-assets`;
+};
+
+export const listChannelAcquisitionAssets = async (
+  channelId: number,
+  params?: ListChannelAcquisitionAssetsParams,
+  options?: RequestInit,
+): Promise<listChannelAcquisitionAssetsResponse> => {
+  const res = await fetch(
+    getListChannelAcquisitionAssetsUrl(channelId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listChannelAcquisitionAssetsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listChannelAcquisitionAssetsResponse;
+};
+
+/**
+ * @summary Accept and queue one versioned acquisition asset without Provider I/O
+ */
+export type publishChannelAcquisitionAssetResponse202 = {
+  data: ChannelAcquisitionAssetAcceptance;
+  status: 202;
+};
+
+export type publishChannelAcquisitionAssetResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type publishChannelAcquisitionAssetResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type publishChannelAcquisitionAssetResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type publishChannelAcquisitionAssetResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type publishChannelAcquisitionAssetResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type publishChannelAcquisitionAssetResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type publishChannelAcquisitionAssetResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type publishChannelAcquisitionAssetResponseSuccess =
+  publishChannelAcquisitionAssetResponse202 & {
+    headers: Headers;
+  };
+export type publishChannelAcquisitionAssetResponseError = (
+  | publishChannelAcquisitionAssetResponse400
+  | publishChannelAcquisitionAssetResponse401
+  | publishChannelAcquisitionAssetResponse403
+  | publishChannelAcquisitionAssetResponse404
+  | publishChannelAcquisitionAssetResponse409
+  | publishChannelAcquisitionAssetResponse422
+  | publishChannelAcquisitionAssetResponse503
+) & {
+  headers: Headers;
+};
+
+export type publishChannelAcquisitionAssetResponse =
+  | publishChannelAcquisitionAssetResponseSuccess
+  | publishChannelAcquisitionAssetResponseError;
+
+export const getPublishChannelAcquisitionAssetUrl = (channelId: number) => {
+  return `/api/admin/channels/${channelId}/acquisition-assets`;
+};
+
+export const publishChannelAcquisitionAsset = async (
+  channelId: number,
+  channelAcquisitionAssetPublishRequest: ChannelAcquisitionAssetPublishRequest,
+  options?: RequestInit,
+): Promise<publishChannelAcquisitionAssetResponse> => {
+  const res = await fetch(getPublishChannelAcquisitionAssetUrl(channelId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(channelAcquisitionAssetPublishRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: publishChannelAcquisitionAssetResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as publishChannelAcquisitionAssetResponse;
+};
+
+/**
+ * @summary Read one safe channel-bound acquisition-asset receipt
+ */
+export type getChannelAcquisitionAssetResponse200 = {
+  data: ChannelAcquisitionAsset;
+  status: 200;
+};
+
+export type getChannelAcquisitionAssetResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getChannelAcquisitionAssetResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getChannelAcquisitionAssetResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getChannelAcquisitionAssetResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getChannelAcquisitionAssetResponseSuccess =
+  getChannelAcquisitionAssetResponse200 & {
+    headers: Headers;
+  };
+export type getChannelAcquisitionAssetResponseError = (
+  | getChannelAcquisitionAssetResponse401
+  | getChannelAcquisitionAssetResponse403
+  | getChannelAcquisitionAssetResponse404
+  | getChannelAcquisitionAssetResponse503
+) & {
+  headers: Headers;
+};
+
+export type getChannelAcquisitionAssetResponse =
+  | getChannelAcquisitionAssetResponseSuccess
+  | getChannelAcquisitionAssetResponseError;
+
+export const getGetChannelAcquisitionAssetUrl = (
+  channelId: number,
+  effectId: string,
+) => {
+  return `/api/admin/channels/${channelId}/acquisition-assets/${effectId}`;
+};
+
+export const getChannelAcquisitionAsset = async (
+  channelId: number,
+  effectId: string,
+  options?: RequestInit,
+): Promise<getChannelAcquisitionAssetResponse> => {
+  const res = await fetch(
+    getGetChannelAcquisitionAssetUrl(channelId, effectId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getChannelAcquisitionAssetResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getChannelAcquisitionAssetResponse;
+};
+
+/**
+ * @summary Reconcile an unknown outcome using the server-locked current lease
+ */
+export type reconcileChannelAcquisitionAssetResponse200 = {
+  data: ChannelAcquisitionAssetReconciliation;
+  status: 200;
+};
+
+export type reconcileChannelAcquisitionAssetResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type reconcileChannelAcquisitionAssetResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reconcileChannelAcquisitionAssetResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reconcileChannelAcquisitionAssetResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type reconcileChannelAcquisitionAssetResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type reconcileChannelAcquisitionAssetResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type reconcileChannelAcquisitionAssetResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type reconcileChannelAcquisitionAssetResponseSuccess =
+  reconcileChannelAcquisitionAssetResponse200 & {
+    headers: Headers;
+  };
+export type reconcileChannelAcquisitionAssetResponseError = (
+  | reconcileChannelAcquisitionAssetResponse400
+  | reconcileChannelAcquisitionAssetResponse401
+  | reconcileChannelAcquisitionAssetResponse403
+  | reconcileChannelAcquisitionAssetResponse404
+  | reconcileChannelAcquisitionAssetResponse409
+  | reconcileChannelAcquisitionAssetResponse422
+  | reconcileChannelAcquisitionAssetResponse503
+) & {
+  headers: Headers;
+};
+
+export type reconcileChannelAcquisitionAssetResponse =
+  | reconcileChannelAcquisitionAssetResponseSuccess
+  | reconcileChannelAcquisitionAssetResponseError;
+
+export const getReconcileChannelAcquisitionAssetUrl = (
+  channelId: number,
+  effectId: string,
+) => {
+  return `/api/admin/channels/${channelId}/acquisition-assets/${effectId}/reconcile`;
+};
+
+export const reconcileChannelAcquisitionAsset = async (
+  channelId: number,
+  effectId: string,
+  channelAcquisitionAssetReconcileRequest: ChannelAcquisitionAssetReconcileRequest,
+  options?: RequestInit,
+): Promise<reconcileChannelAcquisitionAssetResponse> => {
+  const res = await fetch(
+    getReconcileChannelAcquisitionAssetUrl(channelId, effectId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(channelAcquisitionAssetReconcileRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reconcileChannelAcquisitionAssetResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reconcileChannelAcquisitionAssetResponse;
 };
 
 /**

@@ -96,6 +96,7 @@ const (
 	p4CommerceExternalPushEvidence             = "P4-COMMERCE-EXTERNAL-PUSH-00087-2026-08-25"
 	p4WeComTagEffectEvidence                   = "P4-B1-WC01-2026-08-25"
 	p4ChannelAcquisitionEvidence               = "P4-CH01-2026-08-26"
+	p4ChannelAcquisitionAssetEvidence          = "P4-CH02-2026-08-26"
 	p4SidebarOAuthEvidence                     = "P4-SB01-SIDEBAR-OAUTH-AGENT-CONFIG-2026-08-26"
 	p4SidebarSafeActivityEvidence              = "P4-SB02-SIDEBAR-SAFE-ACTIVITY-2026-08-26"
 	p4ServicePeriodMemberGridCanonicalEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24"
@@ -120,6 +121,10 @@ var commerceRefundOperations = map[string]nativePackageOperation{
 var nativePackageOperations = map[string]nativePackageOperation{
 	"getChannelAcquisitionPreview":              {"/api/admin/channels/{channel_id}/acquisition-preview", "GET", p4ChannelAcquisitionEvidence, "channels.read", "human_session", "internal", "contact.local_channel_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"updateChannelAcquisitionAssignees":         {"/api/admin/channels/{channel_id}/assignees", "PUT", p4ChannelAcquisitionEvidence, "channels.write", "human_session", "internal", "contact.local_channel_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"listChannelAcquisitionAssets":              {"/api/admin/channels/{channel_id}/acquisition-assets", "GET", p4ChannelAcquisitionAssetEvidence, "channels.read", "human_session", "internal", "contact.acquisition_asset_safe_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"publishChannelAcquisitionAsset":            {"/api/admin/channels/{channel_id}/acquisition-assets", "POST", p4ChannelAcquisitionAssetEvidence, "channels.write", "human_session", "internal", "contact.acquisition_asset_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"getChannelAcquisitionAsset":                {"/api/admin/channels/{channel_id}/acquisition-assets/{effect_id}", "GET", p4ChannelAcquisitionAssetEvidence, "channels.read", "human_session", "internal", "contact.acquisition_asset_safe_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"reconcileChannelAcquisitionAsset":          {"/api/admin/channels/{channel_id}/acquisition-assets/{effect_id}/reconcile", "POST", p4ChannelAcquisitionAssetEvidence, "channels.write", "human_session", "internal", "contact.acquisition_asset_reconciliation_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"createCustomerSafeExport":                  {"/api/v1/customer-exports", "POST", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getCustomerSafeExport":                     {"/api/v1/customer-exports/{export_id}", "GET", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"downloadCustomerSafeExport":                {"/api/v1/customer-exports/{export_id}/download", "GET", p4CustomerSafeExportEvidence, "customers.read", "human_session", "internal_pii", "contact.local_frozen_snapshot", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
@@ -303,9 +308,11 @@ var nativePackageOperations = map[string]nativePackageOperation{
 }
 
 var nativePackageExternalEffects = map[string]string{
-	"startSurveyH5OAuth":      "external_protocol",
-	"callbackSurveyH5OAuth":   "external_protocol",
-	"reconcileWecomTagEffect": "reconciliation_only",
+	"startSurveyH5OAuth":               "external_protocol",
+	"callbackSurveyH5OAuth":            "external_protocol",
+	"reconcileWecomTagEffect":          "reconciliation_only",
+	"publishChannelAcquisitionAsset":   "accepted_only",
+	"reconcileChannelAcquisitionAsset": "reconciliation_only",
 }
 
 var groupOpsCanonicalExternalEffects = map[string]string{
