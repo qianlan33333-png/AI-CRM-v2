@@ -31,7 +31,7 @@ func (r *ExternalPushRepository) VerifyExternalPushReconcile(ctx context.Context
 		if err != nil {
 			return surveyapp.ExternalPushBinding{}, err
 		}
-		if !found || evidenceDigest != string(surveyPushDigest(command.EvidenceDigest)) || providerAccepted != command.ProviderAccepted || deliveryProven != command.DeliveryProven {
+		if !found || deliveryProven && evidenceDigest != string(surveyPushDigest(command.EvidenceDigest)) || providerAccepted != command.ProviderAccepted || deliveryProven != command.DeliveryProven {
 			return surveyapp.ExternalPushBinding{}, surveyapp.ErrExternalPushReconcileConflict
 		}
 		return withExternalPushReceipt(verified.binding, providerAccepted, deliveryProven), nil
@@ -77,13 +77,17 @@ WHERE effect_id=$1 AND generation=$2 AND fence=$3 FOR SHARE`, effectID(verified.
 		return surveyapp.ExternalPushBinding{}, err
 	}
 	if found {
-		if evidenceDigest != digest || providerAccepted != command.ProviderAccepted || deliveryProven != command.DeliveryProven {
+		if deliveryProven && evidenceDigest != digest || providerAccepted != command.ProviderAccepted || deliveryProven != command.DeliveryProven {
 			return surveyapp.ExternalPushBinding{}, surveyapp.ErrExternalPushReconcileConflict
 		}
 		return withExternalPushReceipt(verified.binding, providerAccepted, deliveryProven), nil
 	}
+	var receiptEvidence any
+	if command.DeliveryProven {
+		receiptEvidence = digest
+	}
 	if _, err = db.Exec(ctx, `INSERT INTO questionnaire_external_push_delivery_receipts(binding_id,effect_attempt_id,provider_accepted,delivery_proven,evidence_digest)
-VALUES($1,$2,$3,$4,$5)`, verified.binding.ID, verified.attemptID, command.ProviderAccepted, command.DeliveryProven, digest); err != nil {
+VALUES($1,$2,$3,$4,$5)`, verified.binding.ID, verified.attemptID, command.ProviderAccepted, command.DeliveryProven, receiptEvidence); err != nil {
 		return surveyapp.ExternalPushBinding{}, surveyapp.ErrExternalPushUnavailable
 	}
 	return withExternalPushReceipt(verified.binding, command.ProviderAccepted, command.DeliveryProven), nil
@@ -136,7 +140,7 @@ func existingExternalPushReceipt(ctx context.Context, bindingID, attemptID int64
 	}
 	var providerAccepted, deliveryProven bool
 	var evidenceDigest string
-	err = db.QueryRow(ctx, `SELECT provider_accepted,delivery_proven,evidence_digest
+	err = db.QueryRow(ctx, `SELECT provider_accepted,delivery_proven,COALESCE(evidence_digest,'')
 FROM questionnaire_external_push_delivery_receipts
 WHERE binding_id=$1 AND effect_attempt_id=$2 FOR UPDATE`, bindingID, attemptID).Scan(&providerAccepted, &deliveryProven, &evidenceDigest)
 	if errors.Is(err, pgx.ErrNoRows) {

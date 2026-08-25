@@ -18,6 +18,7 @@ CREATE TABLE public.questionnaire_submission_external_push_bindings (
 CREATE INDEX questionnaire_submission_external_push_bindings_questionnaire_idx
   ON public.questionnaire_submission_external_push_bindings(questionnaire_id, id DESC);
 
+-- +goose StatementBegin
 CREATE FUNCTION public.aicrm_survey_external_push_binding_effect_kind()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
 BEGIN
@@ -30,6 +31,7 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+-- +goose StatementEnd
 CREATE TRIGGER questionnaire_submission_external_push_bindings_effect_kind
 BEFORE INSERT OR UPDATE ON public.questionnaire_submission_external_push_bindings
 FOR EACH ROW EXECUTE FUNCTION public.aicrm_survey_external_push_binding_effect_kind();
@@ -52,6 +54,7 @@ CREATE INDEX questionnaire_external_push_delivery_receipts_binding_idx
   ON public.questionnaire_external_push_delivery_receipts(binding_id, id DESC);
 
 -- Binding identity and digest facts cannot be retargeted after acceptance.
+-- +goose StatementBegin
 CREATE FUNCTION public.aicrm_survey_external_push_binding_immutable()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
 BEGIN
@@ -69,6 +72,7 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+-- +goose StatementEnd
 CREATE TRIGGER questionnaire_submission_external_push_bindings_immutable
 BEFORE UPDATE OR DELETE ON public.questionnaire_submission_external_push_bindings
 FOR EACH ROW EXECUTE FUNCTION public.aicrm_survey_external_push_binding_immutable();
@@ -78,6 +82,7 @@ FOR EACH ROW EXECUTE FUNCTION public.aicrm_external_effects_reject_delete();
 
 -- +goose Down
 LOCK TABLE public.questionnaire_external_push_delivery_receipts, public.questionnaire_submission_external_push_bindings IN SHARE ROW EXCLUSIVE MODE;
+-- +goose StatementBegin
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM public.questionnaire_external_push_delivery_receipts)
@@ -86,6 +91,7 @@ BEGIN
   END IF;
 END;
 $$;
+-- +goose StatementEnd
 DROP TRIGGER questionnaire_external_push_delivery_receipts_no_delete ON public.questionnaire_external_push_delivery_receipts;
 DROP TRIGGER questionnaire_submission_external_push_bindings_immutable ON public.questionnaire_submission_external_push_bindings;
 DROP FUNCTION public.aicrm_survey_external_push_binding_immutable();

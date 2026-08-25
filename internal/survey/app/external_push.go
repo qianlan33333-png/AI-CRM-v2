@@ -10,6 +10,7 @@ import (
 
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
+	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
 )
 
@@ -80,7 +81,7 @@ func (s *ExternalPushService) Accept(ctx context.Context, c ExternalPushCommand)
 		return ExternalPushBinding{}, ErrExternalPushUnavailable
 	}
 	var out ExternalPushBinding
-	err := s.uow.Within(ctx, func(tx context.Context) error {
+	err := s.within(ctx, func(tx context.Context) error {
 		env, err := eer.NewEnvelope(eer.EnvelopeInput{Owner: eer.OwnerSurvey, Kind: eer.KindSurveyWebhook, SourceRefDigest: pushDigest(c.SourceRefDigest), TargetRefDigest: pushDigest(c.TargetRefDigest), PayloadDigest: pushDigest(c.PayloadDigest), PolicyVersionHash: pushDigest(c.PolicyVersionHash)})
 		if err != nil {
 			return err
@@ -104,8 +105,13 @@ func (s *ExternalPushService) Detail(ctx context.Context, q surveyport.ID, submi
 	if s == nil || q < 1 || submissionID < 1 {
 		return ExternalPushBinding{}, ErrExternalPushUnavailable
 	}
-	v, e := s.store.GetExternalPush(ctx, q, submissionID)
-	if e != nil || v.QuestionnaireID != q || v.SubmissionID != submissionID || v.EffectID == "" {
+	var v ExternalPushBinding
+	err := s.within(ctx, func(tx context.Context) error {
+		var err error
+		v, err = s.store.GetExternalPush(tx, q, submissionID)
+		return err
+	})
+	if err != nil || v.QuestionnaireID != q || v.SubmissionID != submissionID || v.EffectID == "" {
 		return ExternalPushBinding{}, ErrExternalPushUnavailable
 	}
 	return v, nil
@@ -115,7 +121,7 @@ func (s *ExternalPushService) Reconcile(ctx context.Context, c ExternalPushRecon
 		return ExternalPushBinding{}, ErrExternalPushReconcileRequired
 	}
 	var out ExternalPushBinding
-	err := s.uow.Within(ctx, func(tx context.Context) error {
+	err := s.within(ctx, func(tx context.Context) error {
 		binding, err := s.store.VerifyExternalPushReconcile(tx, c)
 		if err != nil {
 			return err
@@ -146,6 +152,13 @@ func (s *ExternalPushService) Reconcile(ctx context.Context, c ExternalPushRecon
 
 func (c ExternalPushReconcileCommand) LeaseFieldsValid() bool {
 	return c.Lease.EffectID != "" && c.Lease.Generation > 0 && c.Lease.Fence > 0 && !c.Lease.ExpiresAt.IsZero()
+}
+
+func (s *ExternalPushService) within(ctx context.Context, fn func(context.Context) error) error {
+	if _, err := platformstore.TxFromContext(ctx); err == nil {
+		return fn(ctx)
+	}
+	return s.uow.Within(ctx, fn)
 }
 func pushDigest(v [32]byte) eer.Digest { return eer.Digest("sha256:" + hex.EncodeToString(v[:])) }
 func pushTextDigest(label, value string) eer.Digest {

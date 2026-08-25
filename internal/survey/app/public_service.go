@@ -190,7 +190,8 @@ func (s *PublicService) Submit(ctx context.Context, input surveyport.PublicSubmi
 		}
 		resultTokenDigest := sha256.Sum256([]byte(resultToken))
 		completed, err := s.store.CompletePublicReceipt(tx, reserved.ID, resultTokenDigest, snapshot, now)
-		if err != nil || completed.ID != reserved.ID || completed.DefinitionID != record.ID || completed.SubmissionKeyDigest != keyDigest || completed.PayloadDigest != payloadDigest || completed.ResultTokenDigest != resultTokenDigest || completed.State != "completed" || string(completed.ResultSnapshot) != string(snapshot) {
+		var completedSnapshot surveyport.PublicSubmissionReceipt
+		if err != nil || json.Unmarshal(completed.ResultSnapshot, &completedSnapshot) != nil || completed.ID != reserved.ID || completed.DefinitionID != record.ID || completed.SubmissionKeyDigest != keyDigest || completed.PayloadDigest != payloadDigest || completed.ResultTokenDigest != resultTokenDigest || completed.State != "completed" || completedSnapshot != receipt {
 			return ErrPublicUnavailable
 		}
 		payload, err = json.Marshal(struct {
