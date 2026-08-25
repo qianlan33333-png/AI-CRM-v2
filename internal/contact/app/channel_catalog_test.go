@@ -298,3 +298,44 @@ func TestC01ChannelValidatesEntryTagAndProjectsEligibleOwner(t *testing.T) {
 		}
 	}
 }
+
+func TestCH01ChannelAssigneesUseVerifiedActiveStaffAndAssignmentRules(t *testing.T) {
+	store := &channelStore{receipts: map[string]ChannelReceipt{}}
+	events := &channelEvents{}
+	staff := channelStaffDirectory{entries: []contactport.StaffDirectoryEntry{
+		{WeComUserID: "staff-7", DisplayName: "成员 7", UpdatedAt: legacyChannelTestTime},
+		{WeComUserID: "staff-8", DisplayName: "成员 8", UpdatedAt: legacyChannelTestTime},
+	}}
+	service := NewChannelServiceWithLocalReferences(channelUOW{}, store, nil, nil, staff, events)
+	service.now = func() time.Time { return legacyChannelTestTime }
+	created, err := service.CreateChannel(context.Background(), CreateChannelCommand{
+		Actor: 7, IdempotencyKey: "channel-assignees-key-0001", ChannelName: "公开课",
+		LegacyProjection: json.RawMessage(`{"assignment_mode":"multi_staff","assignment_strategy":"ratio","assignees":[{"staff_id":"staff-7","ratio_percent":40},{"staff_id":"staff-8","ratio_percent":60}]}`),
+	})
+	if err != nil || len(created.Assignees) != 2 || created.Assignees[0].WeComUserID != "staff-7" || created.Assignees[1].WeComUserID != "staff-8" || created.Assignees[0].RatioPercent == nil || *created.Assignees[0].RatioPercent != 40 || created.Assignees[1].RatioPercent == nil || *created.Assignees[1].RatioPercent != 60 {
+		t.Fatalf("created=%+v err=%v", created, err)
+	}
+	var projection map[string]json.RawMessage
+	if json.Unmarshal(created.LegacyProjection, &projection) != nil {
+		t.Fatal("invalid normalized projection")
+	}
+	var owner string
+	if json.Unmarshal(projection["owner_staff_id"], &owner) != nil || owner != "staff-7" {
+		t.Fatalf("owner=%q projection=%s", owner, created.LegacyProjection)
+	}
+	for index, raw := range []string{
+		`{"assignment_mode":"multi_staff","assignment_strategy":"ratio","assignees":[{"staff_id":"staff-7","ratio_percent":99}]}`,
+		`{"assignment_mode":"single_owner","assignment_strategy":"ratio","assignees":[{"staff_id":"staff-7","ratio_percent":50},{"staff_id":"staff-8","ratio_percent":50}]}`,
+		`{"assignment_mode":"multi_staff","assignment_strategy":"cap_switch","assignees":[{"staff_id":"staff-7"}]}`,
+		`{"assignment_mode":"multi_staff","assignment_strategy":"ratio","assignees":[{"staff_id":"staff-7","ratio_percent":100},{"staff_id":"staff-7","ratio_percent":0}]}`,
+		`{"assignment_mode":"multi_staff","assignment_strategy":"ratio","assignees":[{"staff_id":"staff-9","ratio_percent":100}]}`,
+	} {
+		before := store.creates
+		_, err := service.CreateChannel(context.Background(), CreateChannelCommand{Actor: 7, IdempotencyKey: fmt.Sprintf("channel-assignees-invalid-%04d", index), ChannelName: "公开课", LegacyProjection: json.RawMessage(raw)})
+		if !errors.Is(err, ErrInvalidChannel) || store.creates != before {
+			t.Fatalf("projection=%s err=%v creates=%d", raw, err, store.creates)
+		}
+	}
+}
+
+var legacyChannelTestTime = time.Date(2026, time.August, 25, 10, 0, 0, 0, time.UTC)

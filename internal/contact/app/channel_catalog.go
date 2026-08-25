@@ -45,8 +45,12 @@ type Channel struct {
 }
 
 type ChannelAssignee struct {
-	WeComUserID string `json:"wecom_userid"`
-	DisplayName string `json:"display_name"`
+	WeComUserID  string `json:"wecom_userid"`
+	DisplayName  string `json:"display_name"`
+	Status       string `json:"status"`
+	Priority     int32  `json:"priority"`
+	RatioPercent *int32 `json:"ratio_percent,omitempty"`
+	MaxScans24h  *int32 `json:"max_scans_24h,omitempty"`
 }
 
 type CreateChannelCommand struct {
@@ -356,7 +360,7 @@ var channelProjectionKeys = map[string]bool{
 	"link_url": true, "final_url": true, "welcome_message": true, "welcome_image_library_ids": true,
 	"welcome_miniprogram_library_ids": true, "welcome_attachment_library_ids": true, "welcome_group_invite_library_ids": true,
 	"auto_accept_friend": true, "entry_tag_id": true, "entry_tag_name": true, "entry_tag_group_name": true,
-	"assignment_mode": true, "assignment_strategy": true, "overflow_policy": true, "assignment_config_json": true,
+	"assignment_mode": true, "assignment_strategy": true, "overflow_policy": true, "assignment_config_json": true, "assignees": true,
 }
 
 func normalizeProjection(raw json.RawMessage, code, name, status string) (json.RawMessage, error) {
@@ -416,6 +420,22 @@ func normalizeProjection(raw json.RawMessage, code, name, status string) (json.R
 	var assignment map[string]any
 	if json.Unmarshal(values["assignment_config_json"], &assignment) != nil {
 		return nil, ErrInvalidChannel
+	}
+	assignees, ownerStaffID, explicitAssignees, err := normalizeChannelAssigneeProjection(values["assignees"], values["assignment_mode"], values["assignment_strategy"])
+	if err != nil {
+		return nil, err
+	}
+	if explicitAssignees {
+		encoded, marshalErr := json.Marshal(assignees)
+		if marshalErr != nil {
+			return nil, ErrInvalidChannel
+		}
+		values["assignees"] = encoded
+		owner, marshalErr := json.Marshal(ownerStaffID)
+		if marshalErr != nil {
+			return nil, ErrInvalidChannel
+		}
+		values["owner_staff_id"] = owner
 	}
 	encoded, err := json.Marshal(values)
 	if err != nil {
@@ -572,6 +592,85 @@ func (service *ChannelService) hydrateChannelAssignees(ctx context.Context, chan
 	return nil
 }
 
+type channelAssigneeProjection struct {
+	StaffID      string `json:"staff_id"`
+	Status       string `json:"status"`
+	Priority     int32  `json:"priority"`
+	RatioPercent *int32 `json:"ratio_percent,omitempty"`
+	MaxScans24h  *int32 `json:"max_scans_24h,omitempty"`
+}
+
+func normalizeChannelAssigneeProjection(raw json.RawMessage, modeRaw, strategyRaw json.RawMessage) ([]channelAssigneeProjection, string, bool, error) {
+	if len(raw) == 0 {
+		return nil, "", false, nil
+	}
+	var mode, strategy string
+	if json.Unmarshal(modeRaw, &mode) != nil || json.Unmarshal(strategyRaw, &strategy) != nil ||
+		(mode != "single_owner" && mode != "multi_staff") || (strategy != "ratio" && strategy != "cap_switch") {
+		return nil, "", false, ErrInvalidChannel
+	}
+	var values []json.RawMessage
+	if json.Unmarshal(raw, &values) != nil {
+		return nil, "", false, ErrInvalidChannel
+	}
+	result := make([]channelAssigneeProjection, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	activeCount, ratioTotal := 0, int64(0)
+	owner := ""
+	for index, rawValue := range values {
+		fields, err := object(rawValue)
+		if err != nil {
+			return nil, "", false, ErrInvalidChannel
+		}
+		for key := range fields {
+			if key != "staff_id" && key != "status" && key != "priority" && key != "ratio_percent" && key != "max_scans_24h" && key != "display_name" && key != "display_name_snapshot" {
+				return nil, "", false, ErrInvalidChannel
+			}
+		}
+		var item channelAssigneeProjection
+		if json.Unmarshal(fields["staff_id"], &item.StaffID) != nil || !validText(item.StaffID, 200) {
+			return nil, "", false, ErrInvalidChannel
+		}
+		if _, duplicate := seen[item.StaffID]; duplicate {
+			return nil, "", false, ErrInvalidChannel
+		}
+		seen[item.StaffID] = struct{}{}
+		item.Status = "active"
+		if candidate, ok := fields["status"]; ok && json.Unmarshal(candidate, &item.Status) != nil || item.Status != "active" && item.Status != "inactive" && item.Status != "archived" {
+			return nil, "", false, ErrInvalidChannel
+		}
+		item.Priority = int32(index + 1)
+		if candidate, ok := fields["priority"]; ok && (json.Unmarshal(candidate, &item.Priority) != nil || item.Priority < 1) {
+			return nil, "", false, ErrInvalidChannel
+		}
+		if item.Status == "active" {
+			activeCount++
+			if owner == "" {
+				owner = item.StaffID
+			}
+			if strategy == "ratio" {
+				var ratio int32
+				if candidate, ok := fields["ratio_percent"]; !ok || json.Unmarshal(candidate, &ratio) != nil || ratio < 1 {
+					return nil, "", false, ErrInvalidChannel
+				}
+				item.RatioPercent = &ratio
+				ratioTotal += int64(ratio)
+			} else {
+				var cap int32
+				if candidate, ok := fields["max_scans_24h"]; !ok || json.Unmarshal(candidate, &cap) != nil || cap < 1 {
+					return nil, "", false, ErrInvalidChannel
+				}
+				item.MaxScans24h = &cap
+			}
+		}
+		result = append(result, item)
+	}
+	if activeCount < 1 || activeCount > 5 || mode == "single_owner" && activeCount != 1 || strategy == "ratio" && ratioTotal != 100 {
+		return nil, "", false, ErrInvalidChannel
+	}
+	return result, owner, true, nil
+}
+
 func (service *ChannelService) assigneesForProjection(ctx context.Context, projection json.RawMessage) ([]ChannelAssignee, error) {
 	values, err := object(projection)
 	if err != nil {
@@ -581,23 +680,46 @@ func (service *ChannelService) assigneesForProjection(ctx context.Context, proje
 	if json.Unmarshal(values["owner_staff_id"], &owner) != nil {
 		return nil, ErrChannelUnavailable
 	}
-	if owner == "" {
-		return []ChannelAssignee{}, nil
+	configured, primary, explicit, err := normalizeChannelAssigneeProjection(values["assignees"], values["assignment_mode"], values["assignment_strategy"])
+	if err != nil {
+		return nil, err
 	}
-	if !validText(owner, 200) {
+	if !explicit {
+		if owner == "" {
+			return []ChannelAssignee{}, nil
+		}
+		configured, primary = []channelAssigneeProjection{{StaffID: owner, Status: "active", Priority: 1, RatioPercent: channelInt32(100)}}, owner
+	} else if owner != primary {
 		return nil, ErrInvalidChannel
 	}
 	if service == nil || service.staff == nil {
 		return nil, ErrChannelUnavailable
 	}
-	entry, err := service.staff.LockEligibleStaffByWeComUserID(ctx, owner)
-	if errors.Is(err, contactport.ErrStaffReferenceNotFound) {
-		return nil, ErrInvalidChannel
+	result := make([]ChannelAssignee, 0, len(configured))
+	for _, configuredAssignee := range configured {
+		if configuredAssignee.Status != "active" {
+			continue
+		}
+		entry, lookupErr := service.staff.LockEligibleStaffByWeComUserID(ctx, configuredAssignee.StaffID)
+		if errors.Is(lookupErr, contactport.ErrStaffReferenceNotFound) {
+			return nil, ErrInvalidChannel
+		}
+		if lookupErr != nil || entry.WeComUserID != configuredAssignee.StaffID || !validText(entry.DisplayName, 200) || entry.UpdatedAt.IsZero() {
+			return nil, ErrChannelUnavailable
+		}
+		result = append(result, ChannelAssignee{WeComUserID: entry.WeComUserID, DisplayName: entry.DisplayName, Status: configuredAssignee.Status, Priority: configuredAssignee.Priority, RatioPercent: cloneChannelInt32(configuredAssignee.RatioPercent), MaxScans24h: cloneChannelInt32(configuredAssignee.MaxScans24h)})
 	}
-	if err != nil || entry.WeComUserID != owner || !validText(entry.DisplayName, 200) || entry.UpdatedAt.IsZero() {
-		return nil, ErrChannelUnavailable
+	return result, nil
+}
+
+func channelInt32(value int32) *int32 { return &value }
+
+func cloneChannelInt32(value *int32) *int32 {
+	if value == nil {
+		return nil
 	}
-	return []ChannelAssignee{{WeComUserID: entry.WeComUserID, DisplayName: entry.DisplayName}}, nil
+	cloned := *value
+	return &cloned
 }
 
 func canonicalPositiveID(value string) bool {
@@ -647,7 +769,11 @@ func validChannel(v Channel) bool {
 	}
 	seen := map[string]struct{}{}
 	for _, assignee := range v.Assignees {
-		if !validText(assignee.WeComUserID, 200) || !validText(assignee.DisplayName, 200) {
+		if !validText(assignee.WeComUserID, 200) || !validText(assignee.DisplayName, 200) ||
+			(assignee.Status != "active" && assignee.Status != "inactive" && assignee.Status != "archived") || assignee.Priority < 1 {
+			return false
+		}
+		if assignee.RatioPercent != nil && *assignee.RatioPercent < 1 || assignee.MaxScans24h != nil && *assignee.MaxScans24h < 1 {
 			return false
 		}
 		if _, duplicate := seen[assignee.WeComUserID]; duplicate {
@@ -674,6 +800,10 @@ func channelReady(s *ChannelService) bool {
 func cloneChannel(v Channel) Channel {
 	v.LegacyProjection = append([]byte(nil), v.LegacyProjection...)
 	v.Assignees = append([]ChannelAssignee(nil), v.Assignees...)
+	for index := range v.Assignees {
+		v.Assignees[index].RatioPercent = cloneChannelInt32(v.Assignees[index].RatioPercent)
+		v.Assignees[index].MaxScans24h = cloneChannelInt32(v.Assignees[index].MaxScans24h)
+	}
 	return v
 }
 func cloneChannels(v []Channel) []Channel {
