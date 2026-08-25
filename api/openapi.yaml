@@ -6874,6 +6874,88 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch:
+    parameters:
+      - { name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }
+      - { name: plan_id, in: path, required: true, schema: { type: string, minLength: 68, maxLength: 68, pattern: '^ctp_[0-9a-f]{64}$' } }
+    post:
+      tags: [p4-outbound-operations]
+      operationId: dispatchOutboundCampaignHandoff
+      summary: Bind an accepted Campaign handoff to EER and queue only gated local dispatch work
+      description: Provider calls remain disabled in the default runtime. A local/fake receipt never proves delivery.
+      x-p4-decision-evidence: P4-C01-OUTBOUND-DISPATCH-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: outbound_campaign_dispatches.local_control_transaction
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignDispatchRequest" } } } }
+      responses:
+        "200": { description: EER-bound local dispatch projection; no delivery claim., content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignDispatchReconciliation" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation:
+    parameters:
+      - { name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }
+      - { name: plan_id, in: path, required: true, schema: { type: string, minLength: 68, maxLength: 68, pattern: '^ctp_[0-9a-f]{64}$' } }
+    get:
+      tags: [p4-outbound-operations]
+      operationId: getOutboundCampaignDispatchReconciliation
+      summary: Read the count-only C01 dispatch/EER reconciliation projection
+      description: This is a local projection. It does not disclose recipients or Provider receipts and never proves delivery.
+      x-p4-decision-evidence: P4-C01-OUTBOUND-DISPATCH-2026-08-25
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: outbound_campaign_dispatches.local_projection
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      responses:
+        "200": { description: Count-only local dispatch reconciliation; no delivery claim., content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignDispatchReconciliation" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation/{effect_id}:
+    parameters:
+      - { name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }
+      - { name: plan_id, in: path, required: true, schema: { type: string, minLength: 68, maxLength: 68, pattern: '^ctp_[0-9a-f]{64}$' } }
+      - { name: effect_id, in: path, required: true, schema: { type: string, pattern: '^[1-9][0-9]*$' } }
+    post:
+      tags: [p4-outbound-operations]
+      operationId: reconcileOutboundCampaignDispatch
+      summary: Manually reconcile one C01 outcome-unknown EER binding
+      description: Requires operator evidence and a current EER lease fence. This moves only the local projection and never asserts Provider delivery.
+      x-p4-decision-evidence: P4-C01-OUTBOUND-DISPATCH-2026-08-25
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: outbound_campaign_dispatches.manual_reconcile_transaction
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignDispatchReconcileRequest" } } } }
+      responses:
+        "200": { description: Reconciled local C01 projection; never a delivery fact., content: { application/json: { schema: { $ref: "#/components/schemas/OutboundCampaignDispatchReconciliation" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/push-center/jobs/{job_id}:
     get:
       tags: [p4-outbound-operations]
@@ -11467,9 +11549,9 @@ components:
         review: { $ref: "#/components/schemas/CloudCampaignTouchPlanReview" }
         handoff: { $ref: "#/components/schemas/CloudCampaignTouchPlanHandoff", nullable: true }
         local_only: { type: boolean, enum: [true] }
-        provider_execution_eligible: { type: boolean, enum: [false] }
-        real_external_call_executed: { type: boolean, enum: [false] }
-        delivery_proven: { type: boolean, enum: [false] }
+        provider_execution_eligible: { type: boolean, enum: [false], x-enum-varnames: [C01OutboundCampaignDispatchReconciliationProviderExecutionEligibleFalse] }
+        real_external_call_executed: { type: boolean, enum: [false], x-enum-varnames: [C01OutboundCampaignDispatchReconciliationRealExternalCallExecutedFalse] }
+        delivery_proven: { type: boolean, enum: [false], x-enum-varnames: [C01OutboundCampaignDispatchReconciliationDeliveryProvenFalse] }
     CloudCampaignTouchPlanRecipient:
       type: object
       additionalProperties: false
@@ -12579,6 +12661,39 @@ components:
         contact_policy_count: { type: integer, format: int32, minimum: 0, maximum: 1000 }
         accepted_at: { type: string, format: date-time }
         safety: { $ref: "#/components/schemas/OutboundCampaignHandoffSafety" }
+    OutboundCampaignDispatchRequest:
+      type: object
+      additionalProperties: false
+      required: [external_gate]
+      properties:
+        external_gate: { type: boolean, description: Creates local EER work only; the production Provider adapter remains disabled by default. }
+    OutboundCampaignDispatchReconciliation:
+      type: object
+      additionalProperties: false
+      required: [handoff_id, blocked, accepted, queued, attempted, executed, outcome_unknown, reconciled, retryable_failed, final_failed, provider_execution_eligible, real_external_call_executed, delivery_proven]
+      properties:
+        handoff_id: { type: integer, format: int64, minimum: 1 }
+        blocked: { type: integer, format: int64, minimum: 0 }
+        accepted: { type: integer, format: int64, minimum: 0 }
+        queued: { type: integer, format: int64, minimum: 0 }
+        attempted: { type: integer, format: int64, minimum: 0 }
+        executed: { type: integer, format: int64, minimum: 0 }
+        outcome_unknown: { type: integer, format: int64, minimum: 0 }
+        reconciled: { type: integer, format: int64, minimum: 0 }
+        retryable_failed: { type: integer, format: int64, minimum: 0 }
+        final_failed: { type: integer, format: int64, minimum: 0 }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+    OutboundCampaignDispatchReconcileRequest:
+      type: object
+      additionalProperties: false
+      required: [generation, fence, lease_expires_at, evidence_digest]
+      properties:
+        generation: { type: integer, format: int64, minimum: 1 }
+        fence: { type: integer, format: int64, minimum: 1 }
+        lease_expires_at: { type: string, format: date-time }
+        evidence_digest: { type: string, pattern: '^sha256:[0-9a-f]{64}$' }
     LegacyOutboundQueueJob:
       type: object
       additionalProperties: false

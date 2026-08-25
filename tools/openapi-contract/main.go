@@ -85,7 +85,11 @@ const (
 	p4InternalEventSafeExportEvidence          = "P4-EE01-INTERNAL-EVENT-SAFE-EXPORT-2026-08-25"
 	p4ReleasePlaneEvidence                     = "P4-RP01-RELEASE-PLANE-2026-08-25"
 	p4ExternalEffectsRuntimeEvidence           = "P4-EXTERNAL-EFFECTS-RUNTIME-2026-08-25"
+	p4OutboundCampaignDispatchEvidence         = "P4-C01-OUTBOUND-DISPATCH-2026-08-25"
 	p4ServicePeriodMemberGridCanonicalEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24"
+	c01DispatchOperationID                     = "dispatchOutboundCampaignHandoff"
+	c01DispatchReadOperationID                 = "getOutboundCampaignDispatchReconciliation"
+	c01DispatchReconcileOperationID            = "reconcileOutboundCampaignDispatch"
 )
 
 var nativePackageOperations = map[string]nativePackageOperation{
@@ -143,6 +147,9 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getOutboundCampaignHandoffSummary":        {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}", "GET", p4OutboundCampaignHandoffEvidence, "operations.read", "human_session", "internal", "outbound_campaign_handoffs.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"acceptOutboundCampaignHandoff":            {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept", "POST", p4OutboundCampaignHandoffEvidence, "operations.manage", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"reconcileOutboundCampaignHandoff":         {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation", "GET", p4OutboundCampaignHandoffEvidence, "operations.read", "human_session", "internal", "outbound_campaign_handoffs.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	c01DispatchOperationID:                     {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch", "POST", p4OutboundCampaignDispatchEvidence, "operations.manage", "human_session", "internal", "outbound_campaign_dispatches.local_control_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	c01DispatchReadOperationID:                 {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation", "GET", p4OutboundCampaignDispatchEvidence, "operations.read", "human_session", "internal", "outbound_campaign_dispatches.local_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
+	c01DispatchReconcileOperationID:            {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation/{effect_id}", "POST", p4OutboundCampaignDispatchEvidence, "operations.manage", "human_session", "internal", "outbound_campaign_dispatches.manual_reconcile_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"reorderStages":                            {"/api/v1/stages/reorder", "PUT", p4ClassificationPackageEvidence, "stages.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"archiveStage":                             {"/api/v1/stages/{stage_id}", "DELETE", p4ClassificationPackageEvidence, "stages.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"listTagGroups":                            {"/api/v1/tag-groups", "GET", p4ClassificationPackageEvidence, "customers.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
@@ -1502,6 +1509,11 @@ func validateOutboundCampaignHandoffContract(doc *openapi3.T) error {
 		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}":                {"GET", "OutboundCampaignHandoffSummary", "200"},
 		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept":         {"POST", "OutboundCampaignHandoffReconciliation", "200"},
 		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation": {"GET", "OutboundCampaignHandoffReconciliation", "200"},
+		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch":       {"POST", "OutboundCampaignDispatchReconciliation", "200"},
+		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation": {
+			"GET", "OutboundCampaignDispatchReconciliation", "200"},
+		"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation/{effect_id}": {
+			"POST", "OutboundCampaignDispatchReconciliation", "200"},
 	}
 	for path := range doc.Paths.Map() {
 		if strings.HasPrefix(path, "/api/admin/outbound/campaign-handoffs/") {
@@ -1520,7 +1532,7 @@ func validateOutboundCampaignHandoffContract(doc *openapi3.T) error {
 			!operationResponseUsesStatusLocalSchema(operation, contract.status, contract.schema) {
 			return fmt.Errorf("%s %s Outbound Campaign handoff contract drifted", contract.method, path)
 		}
-		if contract.method == "POST" {
+		if path == "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept" {
 			if !strings.Contains(operation.Description, "internal Events delivery River job") ||
 				!strings.Contains(operation.Description, "no Outbound send job") || !strings.Contains(operation.Description, "no Provider") {
 				return errors.New("Outbound Campaign accept must disclose its exact local Events job boundary")

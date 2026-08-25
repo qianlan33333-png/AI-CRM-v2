@@ -43,6 +43,7 @@ import (
 	eventhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/events/http"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
 	externaleffectsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/app"
 	externaleffectshttp "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/http"
 	externaleffectsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
@@ -174,14 +175,15 @@ type candidateHandler struct {
 	domainVerification interface {
 		Read(string) (string, error)
 	}
-	legacyHealth            *legacyhealth.Handler
-	campaignInitiation      http.Handler
-	campaignReview          http.Handler
-	outboundCampaignHandoff *outboundhttp.CampaignHandoffHandler
-	externalEffectsRuntime  *externaleffectshttp.Handler
-	release                 *releasehttp.Handler
-	adminOps                http.Handler
-	outboundLegacy          *Handler
+	legacyHealth             *legacyhealth.Handler
+	campaignInitiation       http.Handler
+	campaignReview           http.Handler
+	outboundCampaignHandoff  *outboundhttp.CampaignHandoffHandler
+	outboundCampaignDispatch *outboundhttp.CampaignDispatchHandler
+	externalEffectsRuntime   *externaleffectshttp.Handler
+	release                  *releasehttp.Handler
+	adminOps                 http.Handler
+	outboundLegacy           *Handler
 }
 
 type identityConsoleApplication struct {
@@ -652,6 +654,30 @@ func (handler *candidateHandler) ReconcileOutboundCampaignHandoff(writer http.Re
 		return
 	}
 	handler.outboundCampaignHandoff.Reconciliation(writer, request, campaignCode, planID)
+}
+
+func (handler *candidateHandler) DispatchOutboundCampaignHandoff(writer http.ResponseWriter, request *http.Request, campaignCode string, planID string, _ api.DispatchOutboundCampaignHandoffParams) {
+	if handler == nil || handler.outboundCampaignDispatch == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.outboundCampaignDispatch.Dispatch(writer, request, campaignCode, planID)
+}
+
+func (handler *candidateHandler) GetOutboundCampaignDispatchReconciliation(writer http.ResponseWriter, request *http.Request, campaignCode string, planID string) {
+	if handler == nil || handler.outboundCampaignDispatch == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.outboundCampaignDispatch.Reconciliation(writer, request, campaignCode, planID)
+}
+
+func (handler *candidateHandler) ReconcileOutboundCampaignDispatch(writer http.ResponseWriter, request *http.Request, campaignCode string, planID string, effectID string, _ api.ReconcileOutboundCampaignDispatchParams) {
+	if handler == nil || handler.outboundCampaignDispatch == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.outboundCampaignDispatch.ManualReconcile(writer, request, campaignCode, planID, effectID)
 }
 
 func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
@@ -1217,6 +1243,26 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	externalEffectsRuntime, err := eer.NewService(externalEffectsRuntimeRepository)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignDispatchRepository, err := outboundstore.NewCampaignDispatchRepository(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignDispatchService, err := outboundapp.NewCampaignDispatchService(uow, campaignDispatchRepository, externalEffectsRuntime, campaignDispatchRepository)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignDispatchHandler, err := outboundhttp.NewCampaignDispatchHandler(campaignDispatchService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	externalEffectsRuntimeHandler, err := externaleffectshttp.NewHandler(externalEffectsRuntimeService)
 	if err != nil {
 		pool.Close()
@@ -1249,11 +1295,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			WeChatShopCallbackTokenPresent:      config.LegacyHealth.WeChatShopCallbackTokenPresent,
 			AllowMissingWeChatShopCallbackToken: config.LegacyHealth.AllowMissingWeChatShopCallbackToken,
 		})),
-		campaignInitiation:      campaignInitiationFragment,
-		campaignReview:          campaignReviewFragment,
-		outboundCampaignHandoff: outboundCampaignHandler,
-		externalEffectsRuntime:  externalEffectsRuntimeHandler,
-		release:                 releaseHandler,
+		campaignInitiation:       campaignInitiationFragment,
+		campaignReview:           campaignReviewFragment,
+		outboundCampaignHandoff:  outboundCampaignHandler,
+		outboundCampaignDispatch: campaignDispatchHandler,
+		externalEffectsRuntime:   externalEffectsRuntimeHandler,
+		release:                  releaseHandler,
 	}
 	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
 	if err != nil {
@@ -1864,6 +1911,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetOutboundCampaignHandoffSummary)},
 		{http.MethodPost, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/accept", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.AcceptOutboundCampaignHandoff)},
 		{http.MethodGet, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/reconciliation", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ReconcileOutboundCampaignHandoff)},
+		{http.MethodPost, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.DispatchOutboundCampaignHandoff)},
+		{http.MethodGet, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetOutboundCampaignDispatchReconciliation)},
+		{http.MethodPost, "/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}/dispatch-reconciliation/{effect_id}", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.ReconcileOutboundCampaignDispatch)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-publish", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.PublishQuestionnairePublicDefinition)},
 		{http.MethodPost, "/api/admin/questionnaires/{questionnaire_id}/public-disable", authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.DisableQuestionnairePublicDefinition)},
 		{http.MethodGet, "/api/admin/questionnaires/{questionnaire_id}/public-analytics", authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(wrapper.GetQuestionnairePublicAnalytics)},

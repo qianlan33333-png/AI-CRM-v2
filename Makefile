@@ -17,6 +17,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p4-c01-channel-acceptance p4-b02ab-tag-acceptance
 .PHONY: p4-channel-entrants-acceptance
 .PHONY: p4-outbound-campaign-handoff-acceptance
+.PHONY: p4-outbound-campaign-dispatch-acceptance
 .PHONY: p4-j01-coupon-acceptance p4-coupon-ab-acceptance p4-i03-order-acceptance p4-order-ab-acceptance p4-message-archive-ab-acceptance p4-operation-cycle-ab-acceptance p4-automation-agents-ab-acceptance p4-adminops-jobs-ab-acceptance p4-push-center-0421-0422-acceptance p4-admin-shell-ab-acceptance p4-execution-runtime-ab-acceptance
 .PHONY: p4-ee01-internal-event-safe-export-acceptance
 .PHONY: p4-rp01-release-plane-acceptance
@@ -504,6 +505,10 @@ p3-o7-legacy-api-acceptance:
 p4-outbound-campaign-handoff-acceptance:
 	@test -n "$${P4OUTBOUNDCAMPAIGNHANDOFF_TEST_DATABASE_URL:-}" || { echo "P4OUTBOUNDCAMPAIGNHANDOFF_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/outbound/campaign_handoff_migration_compatibility.sh
+
+p4-outbound-campaign-dispatch-acceptance:
+	@test -n "$${P4OUTBOUNDCAMPAIGNDISPATCH_TEST_DATABASE_URL:-}" || { echo "P4OUTBOUNDCAMPAIGNDISPATCH_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/outbound/campaign_dispatch_pg16.sh
 
 p4-w0-d01-automation-acceptance:
 	@test -n "$${P4W0D01_AUTOMATION_TEST_DATABASE_URL:-}" || { echo "P4W0D01_AUTOMATION_TEST_DATABASE_URL is required" >&2; exit 2; }

@@ -58,6 +58,25 @@ plane；它不对应旧 Matrix route 或 migration mapping，也不修改本总�
 - `x-aicrm-external-effect: none`：它只记录本地事实，绝不执行 deploy、backup、
   Provider、payment 或 WeCom 操作。当前记录不宣称已部署或产生任何外部效果。
 
+## C01 Campaign Outbound Dispatch（V2-native；不变更旧 Matrix 分母）
+
+`00078_outbound_campaign_external_dispatch.sql` 把已接受的 00068 Campaign handoff
+绑定到 digest-only EER，并形成一条受控本地链路：dispatch → EER Accept/Queue →
+River Claim/Attempt/Complete → `outcome_unknown` → 人工 reconcile → terminal projection。
+
+- binding 是 `(handoff_id, customer_id, step_index)` 的 immutable 事实；00068 handoff、
+  customer task link、step snapshot 均不修改。表只保存 recipient/payload digest，不保存
+  `external_contact_id`、内容正文、Provider body 或凭据。
+- `POST .../dispatch` 仅 admin/ops global `operations.manage`，要求 human-session CSRF 和
+  actor-bound `Idempotency-Key`。`external_gate=false` 只写 blocked 本地 binding；true 仅
+  创建 EER/River 本地工作，composition 的 Provider adapter 默认 disabled 且不会发起网络调用。
+- `GET .../dispatch-reconciliation` 是 count-only projection；`outcome_unknown` 没有自动
+  retry，只能经 EER 的人工 reconcile。fake/local receipt 和 `executed` 状态都不构成
+  `delivery_proven` 或真实外部调用。
+- `make p4-outbound-campaign-dispatch-acceptance` 在隔离 PostgreSQL 16.14 验收 00078
+  up/down/up、populated down guard、fake receipt、unknown/manual reconcile、actor receipt，
+  并断言 `delivery_proven=false`。这不是 Provider/WeCom 交付或送达证据。
+
 ## 冻结口径
 
 本收据固定的代码基线是
