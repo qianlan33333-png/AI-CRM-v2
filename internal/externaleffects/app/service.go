@@ -48,7 +48,7 @@ func (s *Service) Cancel(ctx context.Context, command eer.CancelCommand) (eer.Pr
 	if s == nil || s.runtime == nil {
 		return eer.Projection{}, eer.OperationReceipt{}, eer.ErrUnavailable
 	}
-	if err := s.rejectTypedWeComTagMutation(ctx, command.EffectID); err != nil {
+	if err := s.rejectTypedDomainMutation(ctx, command.EffectID); err != nil {
 		return eer.Projection{}, eer.OperationReceipt{}, err
 	}
 	return s.runtime.Cancel(ctx, command)
@@ -57,7 +57,7 @@ func (s *Service) Retry(ctx context.Context, command eer.RetryCommand) (eer.Proj
 	if s == nil || s.runtime == nil {
 		return eer.Projection{}, eer.OperationReceipt{}, eer.ErrUnavailable
 	}
-	if err := s.rejectTypedWeComTagMutation(ctx, command.EffectID); err != nil {
+	if err := s.rejectTypedDomainMutation(ctx, command.EffectID); err != nil {
 		return eer.Projection{}, eer.OperationReceipt{}, err
 	}
 	return s.runtime.Retry(ctx, command)
@@ -66,13 +66,13 @@ func (s *Service) Reconcile(ctx context.Context, command eer.ReconcileCommand) (
 	if s == nil || s.runtime == nil {
 		return eer.Projection{}, eer.OperationReceipt{}, eer.ErrUnavailable
 	}
-	if err := s.rejectTypedWeComTagMutation(ctx, command.Lease.EffectID); err != nil {
+	if err := s.rejectTypedDomainMutation(ctx, command.Lease.EffectID); err != nil {
 		return eer.Projection{}, eer.OperationReceipt{}, err
 	}
 	return s.runtime.Reconcile(ctx, command)
 }
 
-func (s *Service) rejectTypedWeComTagMutation(ctx context.Context, effectID string) error {
+func (s *Service) rejectTypedDomainMutation(ctx context.Context, effectID string) error {
 	if s == nil || s.reader == nil || ctx == nil || effectID == "" {
 		return eer.ErrInvalidCommand
 	}
@@ -80,8 +80,33 @@ func (s *Service) rejectTypedWeComTagMutation(ctx context.Context, effectID stri
 	if err != nil {
 		return err
 	}
-	if projection.Owner == eer.OwnerWeCom && projection.Kind == eer.KindWeComTagSync {
+	if projection.ID != effectID {
+		return eer.ErrUnavailable
+	}
+	if typedDomainControlRequired(projection.Owner, projection.Kind) {
 		return eer.ErrReconcileRequired
 	}
 	return nil
+}
+
+// typedDomainControlRequired freezes the effect families that keep a second,
+// owner-domain state fact. Their controls must update EER, the typed fact, and
+// any River job in the owning domain's UoW.
+func typedDomainControlRequired(owner eer.Owner, kind eer.Kind) bool {
+	switch owner {
+	case eer.OwnerOutbound:
+		return kind == eer.KindOutboundMessage || kind == eer.KindOutboundMedia
+	case eer.OwnerWeCom:
+		return kind == eer.KindWeComTagSync
+	case eer.OwnerSurvey:
+		return kind == eer.KindSurveyWebhook
+	case eer.OwnerOrder:
+		return kind == eer.KindOrderPaymentPrepay || kind == eer.KindOrderRefund
+	case eer.OwnerGroupOps:
+		return kind == eer.KindGroupOpsBroadcast
+	case eer.OwnerProduct:
+		return kind == eer.KindProductExternalPushTest
+	default:
+		return false
+	}
 }
