@@ -10155,6 +10155,94 @@ paths:
       x-aicrm-session-bound-csrf: required
       parameters: [{$ref: '#/components/parameters/CSRFToken'}, {$ref: '#/components/parameters/IdempotencyKey'}]
       responses: {"200": {description: Locally rolled-back candidate, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseCandidate'}}}}, "400": {$ref: '#/components/responses/BadRequest'}, "401": {$ref: '#/components/responses/Unauthorized'}, "403": {$ref: '#/components/responses/Forbidden'}, "404": {$ref: '#/components/responses/NotFound'}, "409": {$ref: '#/components/responses/Conflict'}, "503": {$ref: '#/components/responses/ServiceUnavailable'}}
+  /api/admin/automations:
+    get:
+      tags: [p4-automation-runtime]
+      operationId: listAutomationRulesRuntime
+      summary: List local Automation rule configurations
+      x-p4-decision-evidence: P4-A01-AUTOMATION-RULES-RUNTIME-2026-08-25
+      x-aicrm-capability: config.overview.read
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: automation.local_rule_configuration
+      x-aicrm-external-effect: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      responses: {"200": {description: Local rules}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+    post:
+      tags: [p4-automation-runtime]
+      operationId: createAutomationRuleRuntime
+      summary: Create one idempotent closed tag-applied Automation rule
+      x-p4-decision-evidence: P4-A01-AUTOMATION-RULES-RUNTIME-2026-08-25
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: automation.local_rule_configuration
+      x-aicrm-external-effect: none
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-rbac-scopes: {admin: global}
+      parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {application/json: {schema: {type: object, additionalProperties: false, required: [code, name, status, condition, action], properties: {code: {type: string, pattern: '^[a-z0-9_-]{1,120}$'}, name: {type: string, minLength: 1, maxLength: 120}, status: {type: string, enum: [active, paused]}, condition: {type: object, additionalProperties: false, required: [tag_id], properties: {tag_id: {type: integer, format: int64, minimum: 1}}}, action: {type: object, additionalProperties: false, required: [type], properties: {type: {type: string, enum: [record, outbound_message]}}}}}}}}
+      responses: {"200": {description: Durable local rule snapshot}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/admin/automations/{rule_id}:
+    get:
+      tags: [p4-automation-runtime]
+      operationId: getAutomationRuleRuntime
+      summary: Read one local Automation rule and its current immutable version
+      x-p4-decision-evidence: P4-A01-AUTOMATION-RULES-RUNTIME-2026-08-25
+      x-aicrm-capability: config.overview.read
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: automation.local_rule_configuration
+      x-aicrm-external-effect: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      parameters: [{name: rule_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}]
+      responses: {"200": {description: Local rule}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "404": {$ref: "#/components/responses/NotFound"}}
+    patch:
+      tags: [p4-automation-runtime]
+      operationId: updateAutomationRuleRuntime
+      summary: Create the next immutable version of one local Automation rule
+      x-p4-decision-evidence: P4-A01-AUTOMATION-RULES-RUNTIME-2026-08-25
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: automation.local_rule_configuration
+      x-aicrm-external-effect: none
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-rbac-scopes: {admin: global}
+      parameters: [{name: rule_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {application/json: {schema: {type: object}}}}
+      responses: {"200": {description: New immutable version}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "404": {$ref: "#/components/responses/NotFound"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/admin/automations/{rule_id}/{status}:
+    post:
+      tags: [p4-automation-runtime]
+      operationId: setAutomationRuleRuntimeStatus
+      summary: Activate, pause, or archive one local Automation rule
+      x-p4-decision-evidence: P4-A01-AUTOMATION-RULES-RUNTIME-2026-08-25
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: automation.local_rule_configuration
+      x-aicrm-external-effect: none
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-rbac-scopes: {admin: global}
+      parameters: [{name: rule_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}, {name: status, in: path, required: true, schema: {type: string, enum: [active, paused, archived]}}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      responses: {"200": {description: Local rule status changed}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "404": {$ref: "#/components/responses/NotFound"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/admin/automations/executions:
+    get:
+      tags: [p4-automation-runtime]
+      operationId: listAutomationRuleRuntimeExecutions
+      summary: List redacted local Automation enrollment/action state
+      x-p4-decision-evidence: P4-A01-AUTOMATION-RULES-RUNTIME-2026-08-25
+      x-aicrm-capability: config.overview.read
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: automation.local_execution_ledger
+      x-aicrm-external-effect: none
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-rbac-scopes: {admin: global, ops: global}
+      responses: {"200": {description: Redacted execution states}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
 components:
   securitySchemes:
     AdminSession:

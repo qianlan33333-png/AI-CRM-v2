@@ -8,6 +8,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Automation struct {
+	ID             int64              `json:"id"`
+	AutomationCode string             `json:"automation_code"`
+	AutomationName string             `json:"automation_name"`
+	Status         string             `json:"status"`
+	CurrentVersion int64              `json:"current_version"`
+	TriggerType    string             `json:"trigger_type"`
+	ConditionJson  []byte             `json:"condition_json"`
+	ActionJson     []byte             `json:"action_json"`
+	CreatedBy      int64              `json:"created_by"`
+	UpdatedBy      int64              `json:"updated_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
 type AutomationAgentConfiguration struct {
 	ID                      int64              `json:"id"`
 	AgentName               string             `json:"agent_name"`
@@ -36,6 +51,40 @@ type AutomationAgentOperationReceipt struct {
 	State          string             `json:"state"`
 	ResultSnapshot []byte             `json:"result_snapshot"`
 	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
+}
+
+type AutomationEnrollment struct {
+	ID                int64              `json:"id"`
+	AutomationID      int64              `json:"automation_id"`
+	AutomationVersion int64              `json:"automation_version"`
+	SourceEventID     int64              `json:"source_event_id"`
+	CustomerID        int64              `json:"customer_id"`
+	TriggerPayload    []byte             `json:"trigger_payload"`
+	State             string             `json:"state"`
+	EnrolledAt        pgtype.Timestamptz `json:"enrolled_at"`
+	CompletedAt       pgtype.Timestamptz `json:"completed_at"`
+}
+
+type AutomationExecutionAction struct {
+	ID               int64              `json:"id"`
+	EnrollmentID     int64              `json:"enrollment_id"`
+	ActionType       string             `json:"action_type"`
+	ActionSnapshot   []byte             `json:"action_snapshot"`
+	State            string             `json:"state"`
+	ExternalEffectID pgtype.Text        `json:"external_effect_id"`
+	ReceiptDigest    pgtype.Text        `json:"receipt_digest"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	CompletedAt      pgtype.Timestamptz `json:"completed_at"`
+}
+
+type AutomationOperationReceipt struct {
+	ID             int64              `json:"id"`
+	Operation      string             `json:"operation"`
+	ActorScope     string             `json:"actor_scope"`
+	KeyDigest      []byte             `json:"key_digest"`
+	PayloadDigest  []byte             `json:"payload_digest"`
+	ResultSnapshot []byte             `json:"result_snapshot"`
 	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
 }
 

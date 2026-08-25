@@ -198,6 +198,8 @@ type Handler struct {
 	channels                legacyChannelApplication
 	legacyTags              legacyTagApplication
 	automationAgents        automationport.AgentService
+	automationRules         automationport.RuleService
+	automationRuleRuns      automationport.RuntimeReader
 	legacyTagSync           legacyTagSyncApplication
 	legacyTagLive           legacyTagLiveMutationApplication
 	legacyTagStatus         legacyTagExecutionStatusApplication

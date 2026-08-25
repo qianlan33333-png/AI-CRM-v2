@@ -214,8 +214,8 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	automationConsumer, err := automationstore.NewTagTriggerConsumer(
-		platformstore.NewUnitOfWork(pool), automationstore.NewRepository(pool), eventstore.NewAppender(), deliveries,
+	automationConsumer, err := automationstore.NewTagTriggerConsumerWithRules(
+		platformstore.NewUnitOfWork(pool), automationstore.NewRepository(pool), automationstore.NewRuleRuntime(), eventstore.NewAppender(), deliveries,
 	)
 	if err == nil {
 		err = router.RegisterDelivery(automationConsumer)

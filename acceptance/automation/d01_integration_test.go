@@ -62,6 +62,37 @@ func TestD01ContactProducerAndAutomationConsumerCloseOneObservableLoop(t *testin
 	assertCompletedFacts(t, ctx, pool, eventID, customerID, tagID)
 }
 
+func TestA01TagRuleEnrollmentSnapshotsActionsAndNeverCallsAProvider(t *testing.T) {
+	pool, ctx := openPool(t)
+	customerID, tagID := createContactFacts(t, ctx, pool)
+	now := time.Now().UTC()
+	for index, fixture := range []struct{ code, action string }{{"a01_record", `{"type":"record"}`}, {"a01_outbound", `{"type":"outbound_message"}`}} {
+		fixture.code = fmt.Sprintf("%s_%d_%d", fixture.code, now.UnixNano(), index)
+		var ruleID int64
+		err := pool.QueryRow(ctx, `INSERT INTO automations (automation_code,automation_name,status,current_version,trigger_type,condition_json,action_json,created_by,updated_by,created_at,updated_at)
+VALUES ($1,$1,'active',1,'customer.tag_applied',$2::jsonb,$3::jsonb,1,1,$4,$4) RETURNING id`, fixture.code, fmt.Sprintf(`{"tag_id":%d}`, tagID), fixture.action, now).Scan(&ruleID)
+		if err != nil { t.Fatal(err) }
+		if _, err = pool.Exec(ctx, `INSERT INTO automation_rule_versions (automation_id,version,trigger_type,condition_json,action_json,published_at,published_by)
+VALUES ($1,1,'customer.tag_applied',$2::jsonb,$3::jsonb,$4,1)`, ruleID, fmt.Sprintf(`{"tag_id":%d}`, tagID), fixture.action, now); err != nil { t.Fatal(err) }
+	}
+	runtime := automationstore.NewRuleRuntime()
+	payload := json.RawMessage(fmt.Sprintf(`{"customer_id":%d,"tag_id":%d,"actor":"a01"}`, customerID, tagID))
+	sourceEventID := now.UnixNano()
+	err := platformstore.NewUnitOfWork(pool).Within(ctx, func(txCtx context.Context) error { return runtime.ExecuteTagApplied(txCtx, sourceEventID, customerID, tagID, payload, now) })
+	if err != nil { t.Fatal(err) }
+	// An at-least-once source delivery cannot create a second enrollment or
+	// action. The outbound form is only queued, never sent by Automation.
+	err = platformstore.NewUnitOfWork(pool).Within(ctx, func(txCtx context.Context) error { return runtime.ExecuteTagApplied(txCtx, sourceEventID, customerID, tagID, payload, now) })
+	if err != nil { t.Fatal(err) }
+	var enrollments, completed, queued, providerEffects int
+	err = pool.QueryRow(ctx, `SELECT
+	 (SELECT count(*) FROM automation_enrollments WHERE source_event_id=$1),
+ (SELECT count(*) FROM automation_execution_actions WHERE state='completed'),
+ (SELECT count(*) FROM automation_execution_actions WHERE state='queued'),
+	 (SELECT count(*) FROM external_effects)`, sourceEventID).Scan(&enrollments,&completed,&queued,&providerEffects)
+	if err != nil || enrollments != 2 || completed < 1 || queued < 1 || providerEffects != 0 { t.Fatalf("enrollments/completed/queued/effects=%d/%d/%d/%d err=%v",enrollments,completed,queued,providerEffects,err) }
+}
+
 func TestD01RetryPoisonOutcomeUnknownLeaseAndBackfill(t *testing.T) {
 	pool, ctx := openPool(t)
 	ensureRiver(t, ctx, pool)
@@ -296,7 +327,9 @@ func openPool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	}
 	if err := acceptancefixtures.ValidateDatabaseURL(*d01DatabaseURL); err != nil {
 		if agentsErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*d01DatabaseURL, acceptancefixtures.AutomationAgentsABDatabaseName); agentsErr != nil {
+			if rulesErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*d01DatabaseURL, acceptancefixtures.AutomationRulesDatabaseName); rulesErr != nil {
 			t.Fatal(err)
+			}
 		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
