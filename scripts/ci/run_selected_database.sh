@@ -102,6 +102,9 @@ while [[ -n "$remaining_groups" ]]; do
     externaleffects)
       run_make_acceptance P4EER_TEST_DATABASE_URL p4-external-effects-runtime-acceptance
       ;;
+    groupops)
+      run_make_acceptance P4GROUP_OPS_TEST_DATABASE_URL p4-group-ops-runtime-acceptance
+      ;;
     release)
       run_make_acceptance P4RP01_TEST_DATABASE_URL p4-rp01-release-plane-acceptance
       ;;

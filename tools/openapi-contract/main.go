@@ -74,6 +74,7 @@ const (
 	p4AIAudienceConfigurationEvidence          = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22"
 	p4AIAudienceConfigurationClosureEvidence   = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-00084-2026-08-25"
 	p4GroupOpsLocalEvidence                    = "P4-GROUP-OPS-LOCAL-ONLY-2026-08-23"
+	p4GroupOpsRuntimeEvidence                  = "P4-GROUP-OPS-RUNTIME-2026-08-25"
 	p4ServicePeriodMembersEvidence             = "P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23"
 	p4OrderSafeExportEvidence                  = "P4-ORDER-SAFE-EXPORT-2026-08-23"
 	p4ContactPolicyEvidence                    = "P4-CONTACT-POLICY-2026-08-23"
@@ -210,9 +211,6 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getSurveySafeSubmissionAnalysis":      {"/api/admin/questionnaires/{questionnaire_id}/analysis", "GET", p4SurveySafeAdminEvidence, "questionnaires.read", "human_session", "internal_deidentified", "survey_submission_snapshots.local_read", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"previewSurveySafeSubmissionExport":    {"/api/admin/questionnaires/{questionnaire_id}/export/preview", "POST", p4SurveySafeAdminEvidence, "questionnaires.read", "human_session", "internal_deidentified", "survey_submission_snapshots.local_read", "required", map[string]string{"admin": "global", "ops": "global"}},
 
-	"listGroupOpsPlans":            {"/api/admin/automation-conversion/group-ops/plans", "GET", p4GroupOpsLocalEvidence, "admin.read", "human_session", "internal", "group_ops.local_read_model", "none", map[string]string{"admin": "global"}},
-	"createGroupOpsPlan":           {"/api/admin/automation-conversion/group-ops/plans", "POST", p4GroupOpsLocalEvidence, "operations.manage", "human_session", "internal", "group_ops.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"getGroupOpsPlan":              {"/api/admin/automation-conversion/group-ops/plans/{plan_id}", "GET", p4GroupOpsLocalEvidence, "admin.read", "human_session", "internal", "group_ops.local_read_model", "none", map[string]string{"admin": "global"}},
 	"updateGroupOpsPlan":           {"/api/admin/automation-conversion/group-ops/plans/{plan_id}", "PATCH", p4GroupOpsLocalEvidence, "operations.manage", "human_session", "internal", "group_ops.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"activateGroupOpsPlan":         {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/activate", "POST", p4GroupOpsLocalEvidence, "operations.manage", "human_session", "internal", "group_ops.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"pauseGroupOpsPlan":            {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/pause", "POST", p4GroupOpsLocalEvidence, "operations.manage", "human_session", "internal", "group_ops.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
@@ -223,13 +221,12 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"listGroupOpsPlanGroupAssets":  {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/group-assets", "GET", p4GroupOpsLocalEvidence, "admin.read", "human_session", "internal", "group_ops.local_read_model", "none", map[string]string{"admin": "global"}},
 	"addGroupOpsPlanGroupAsset":    {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/group-assets", "POST", p4GroupOpsLocalEvidence, "operations.manage", "human_session", "internal", "group_ops.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"removeGroupOpsPlanGroupAsset": {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/group-assets/{asset_reference}", "DELETE", p4GroupOpsLocalEvidence, "operations.manage", "human_session", "internal", "group_ops.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"listGroupOpsPlanNodes":        {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/nodes", "GET", p4GroupOpsLocalEvidence, "admin.read", "human_session", "internal", "group_ops.local_read_model", "none", map[string]string{"admin": "global"}},
-	"addGroupOpsPlanNode":          {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/nodes", "POST", p4GroupOpsLocalEvidence, "operations.manage", "human_session", "internal", "group_ops.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"updateGroupOpsPlanNode":       {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/nodes/{node_id}", "PATCH", p4GroupOpsLocalEvidence, "operations.manage", "human_session", "internal", "group_ops.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
-	"removeGroupOpsPlanNode":       {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/nodes/{node_id}", "DELETE", p4GroupOpsLocalEvidence, "operations.manage", "human_session", "internal", "group_ops.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getGroupOpsWebhookDescriptor": {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/webhook-descriptor", "GET", p4GroupOpsLocalEvidence, "admin.read", "human_session", "internal", "group_ops.local_read_model", "none", map[string]string{"admin": "global"}},
 	"putGroupOpsWebhookDescriptor": {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/webhook-descriptor", "PUT", p4GroupOpsLocalEvidence, "operations.manage", "human_session", "internal", "group_ops.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"previewGroupOpsPlanContent":   {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/content/preview", "POST", p4GroupOpsLocalEvidence, "admin.read", "human_session", "internal", "group_ops.local_read_model", "required", map[string]string{"admin": "global"}},
+	"listGroupOpsExecutions":       {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/executions", "GET", p4GroupOpsRuntimeEvidence, "admin.read", "human_session", "internal", "group_ops.execution_projection", "none", map[string]string{"admin": "global"}},
+	"reconcileGroupOpsExecution":   {"/api/admin/automation-conversion/group-ops/plans/executions/{execution_id}/reconcile", "POST", p4GroupOpsRuntimeEvidence, "operations.manage", "human_session", "internal", "group_ops.execution_reconciliation", "required", map[string]string{"admin": "global", "ops": "global"}},
 
 	"getCloudOrchestratorWorkspace":              {"/admin/cloud-orchestrator", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getCloudOrchestratorPlansWorkspace":         {"/admin/cloud-orchestrator/plans", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
@@ -257,7 +254,6 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"reorderLegacyHXCSendConfigs":                {"/api/admin/hxc-dashboard/send-config/reorder", "PUT", p4HXCSenderManagementEvidence, "operations.manage", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global"}},
 	"listExternalEffectJobs":                     {"/api/admin/external-effects/jobs", "GET", p4ExternalEffectsReadonlyEvidence, "operations.read", "human_session", "internal", "outbound_tasks.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"getExternalEffectsDiagnostics":              {"/api/admin/external-effects/diagnostics", "GET", p4ExternalEffectsRuntimeEvidence, "operations.read", "human_session", "internal", "external_effects.local_safe_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
-	"listAIAudienceOperationMembers":             {"/api/admin/common/operation-members", "GET", p4AIAudienceConfigurationEvidence, "segments.read", "human_session", "internal", "staff.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"getAIAudienceAutomationBinding":             {"/api/admin/ai-audience/packages/{package_id}/automation-binding", "GET", p4AIAudienceConfigurationEvidence, "segments.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"putAIAudienceAutomationBinding":             {"/api/admin/ai-audience/packages/{package_id}/automation-binding", "PUT", p4AIAudienceConfigurationEvidence, "segments.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteAIAudienceAutomationBinding":          {"/api/admin/ai-audience/packages/{package_id}/automation-binding", "DELETE", p4AIAudienceConfigurationEvidence, "segments.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
@@ -284,6 +280,18 @@ var nativePackageOperations = map[string]nativePackageOperation{
 var nativePackageExternalEffects = map[string]string{
 	"startSurveyH5OAuth":    "external_protocol",
 	"callbackSurveyH5OAuth": "external_protocol",
+}
+
+var groupOpsCanonicalExternalEffects = map[string]string{
+	"acceptGroupOpsRunDue":       "eer_accepted_provider_disabled",
+	"acceptGroupOpsBroadcast":    "eer_accepted_provider_disabled",
+	"acceptGroupOpsWebhook":      "eer_accepted_provider_disabled",
+	"reconcileGroupOpsExecution": "manual_reconcile_only",
+}
+
+var groupOpsCanonicalProtocolAuth = map[string]string{
+	"acceptGroupOpsBroadcast": "api_client_jwt",
+	"acceptGroupOpsWebhook":   "webhook_hmac",
 }
 
 // nativePackagePathParameters freezes identifiers which must cross generated
@@ -1402,6 +1410,17 @@ func validateGenericCanonicalAuthorization(op *openapi3.Operation, method string
 	classification, classificationOK := op.Extensions["x-aicrm-data-classification"].(string)
 	_, scopesDeclared := op.Extensions["x-aicrm-rbac-scopes"]
 	scopes, scopeErr := stringMap(op.Extensions["x-aicrm-rbac-scopes"])
+	if protocolScheme, protocol := groupOpsCanonicalProtocolAuth[op.OperationID]; protocol {
+		csrf, csrfOK := op.Extensions["x-aicrm-csrf"].(string)
+		if decisionEvidence == "" || !capabilityOK || !regexp.MustCompile(`^[a-z][a-z0-9.]*$`).MatchString(capability) ||
+			!authSchemeOK || authScheme != protocolScheme || !classificationOK || classification != "internal" ||
+			scopesDeclared || scopeErr == nil || len(scopes) != 0 || op.Security == nil || len(*op.Security) != 1 ||
+			!csrfOK || csrf != "none" || method != "POST" ||
+			op.Extensions["x-aicrm-external-effect"] != groupOpsCanonicalExternalEffects[op.OperationID] {
+			return fmt.Errorf("%s Group Ops protocol declaration is incomplete", op.OperationID)
+		}
+		return nil
+	}
 	if authSchemeOK && authScheme == "public" {
 		csrf, csrfOK := op.Extensions["x-aicrm-csrf"].(string)
 		if decisionEvidence == "" || !capabilityOK || !regexp.MustCompile(`^[a-z][a-z0-9.]*$`).MatchString(capability) ||
@@ -1412,9 +1431,13 @@ func validateGenericCanonicalAuthorization(op *openapi3.Operation, method string
 		}
 		return nil
 	}
+	externalEffect := "none"
+	if declared, ok := groupOpsCanonicalExternalEffects[op.OperationID]; ok {
+		externalEffect = declared
+	}
 	if decisionEvidence == "" || !capabilityOK || !regexp.MustCompile(`^[a-z][a-z0-9.]*$`).MatchString(capability) ||
 		!authSchemeOK || authScheme == "" || !classificationOK || classification == "" ||
-		scopeErr != nil || len(scopes) == 0 || op.Extensions["x-aicrm-external-effect"] != "none" {
+		scopeErr != nil || len(scopes) == 0 || op.Extensions["x-aicrm-external-effect"] != externalEffect {
 		return fmt.Errorf("%s canonical authorization declaration is incomplete", op.OperationID)
 	}
 	for role, scope := range scopes {
@@ -1447,6 +1470,9 @@ func validateNativePackageOperationWithCanonicalMapping(path string, item *opena
 	externalEffect := "none"
 	if value, ok := nativePackageExternalEffects[op.OperationID]; ok {
 		externalEffect = value
+	}
+	if declared, ok := groupOpsCanonicalExternalEffects[op.OperationID]; ok {
+		externalEffect = declared
 	}
 	if op.Extensions["x-p4-decision-evidence"] != contract.evidence ||
 		op.Extensions["x-aicrm-capability"] != contract.capability ||

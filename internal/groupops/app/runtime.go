@@ -243,6 +243,33 @@ func (service *RuntimeService) ListExecutions(ctx context.Context, planID int64,
 	return result, nil
 }
 
+// ProjectExecutionOutcome records an adapter-observed outcome only. It never
+// invokes a Provider and outcome_unknown has no automatic retry transition.
+func (service *RuntimeService) ProjectExecutionOutcome(ctx context.Context, command groupopsport.ExecutionOutcomeCommand) (groupopsport.Execution, error) {
+	if ctx == nil || service == nil || service.now == nil || command.ExecutionID < 1 || command.AttemptCount < 1 ||
+		!validProjectedOutcome(command.State, command.ProviderAccepted, command.DeliveryProven) ||
+		(command.ProviderReceiptDigest != "" && !validRuntimeDigest(command.ProviderReceiptDigest)) ||
+		(command.ProviderAccepted && command.ProviderReceiptDigest == "") {
+		return groupopsport.Execution{}, ErrInvalid
+	}
+	var result groupopsport.Execution
+	err := service.uow.Within(ctx, func(tx context.Context) error {
+		current, err := service.runtime.GetExecution(tx, command.ExecutionID)
+		if err != nil {
+			return err
+		}
+		if current.State == groupopsport.ExecutionOutcomeUnknown || current.State == groupopsport.ExecutionDeliveryProven || current.State == groupopsport.ExecutionReconciled || current.State == groupopsport.ExecutionFinalFailed || command.AttemptCount < current.AttemptCount || (current.ProviderAccepted && !command.ProviderAccepted) {
+			return ErrStateConflict
+		}
+		result, err = service.runtime.RecordExecutionOutcome(tx, command.ExecutionID, command.State, command.ProviderAccepted, command.DeliveryProven, command.ProviderReceiptDigest, command.AttemptCount, service.nowUTC())
+		return err
+	})
+	if err != nil {
+		return groupopsport.Execution{}, classifyRuntime(err)
+	}
+	return result, nil
+}
+
 func (service *RuntimeService) ManualReconcile(ctx context.Context, command groupopsport.ManualReconcileCommand) (groupopsport.Execution, error) {
 	if ctx == nil || service == nil || command.ExecutionID < 1 || command.ActorID < 1 || !validKey(command.IdempotencyKey) || command.Generation < 1 || command.Fence < 1 || command.LeaseExpiresAt.IsZero() || !validRuntimeDigest(command.EvidenceDigest) {
 		return groupopsport.Execution{}, ErrInvalid
@@ -295,8 +322,31 @@ func (service *RuntimeService) ListOperationMembers(ctx context.Context, pageSiz
 	return groupopsport.OperationMemberPage{Scope: "group_ops", Items: items, PageSize: pageSize, RuntimeSafety: groupopsport.DisabledRuntimeSafety()}, nil
 }
 
+func (service *RuntimeService) RefreshOperationMembers(ctx context.Context, command groupopsport.OperationMemberRefreshCommand) (groupopsport.OperationMemberPage, error) {
+	if ctx == nil || service == nil || command.ActorID < 1 || command.PageSize < 1 || command.PageSize > 100 || !validKey(command.IdempotencyKey) {
+		return groupopsport.OperationMemberPage{}, ErrInvalid
+	}
+	if nilRuntimeDependency(service.groups) {
+		return groupopsport.OperationMemberPage{}, ErrProviderDisabled
+	}
+	items, err := service.groups.RefreshOperationMembers(ctx, command.PageSize)
+	if err != nil || !validOperationMembers(items, command.PageSize) {
+		return groupopsport.OperationMemberPage{}, ErrUnavailable
+	}
+	raw, _ := json.Marshal(items)
+	key := sha256.Sum256([]byte(command.IdempotencyKey))
+	now := service.nowUTC()
+	err = service.uow.Within(ctx, func(tx context.Context) error {
+		return service.runtime.RecordDirectoryRefresh(tx, "members", command.ActorID, 0, key, string(runtimeDigest("group-ops-operation-members", string(raw))), int32(len(items)), true, now)
+	})
+	if err != nil {
+		return groupopsport.OperationMemberPage{}, classify(err)
+	}
+	return groupopsport.OperationMemberPage{Scope: "group_ops", Items: items, PageSize: command.PageSize, RuntimeSafety: groupopsport.DisabledRuntimeSafety()}, nil
+}
+
 func (service *RuntimeService) ListGroups(ctx context.Context, ownerStaffID int64, limit, offset int32) (groupopsport.GroupDirectoryPage, error) {
-	if ctx == nil || service == nil || ownerStaffID < 1 || !validPage(limit, offset) {
+	if ctx == nil || service == nil || ownerStaffID < 0 || !validPage(limit, offset) {
 		return groupopsport.GroupDirectoryPage{}, ErrInvalid
 	}
 	result := groupopsport.GroupDirectoryPage{Items: []groupopsport.GroupDirectoryItem{}, Limit: limit, Offset: offset, RuntimeSafety: groupopsport.DisabledRuntimeSafety()}
@@ -432,6 +482,19 @@ func validRunTrigger(value groupopsport.RunTrigger) bool {
 	return value == groupopsport.RunTriggerDue || value == groupopsport.RunTriggerBroadcast || value == groupopsport.RunTriggerWebhook
 }
 
+func validProjectedOutcome(state groupopsport.ExecutionState, providerAccepted, deliveryProven bool) bool {
+	switch state {
+	case groupopsport.ExecutionProviderAccepted:
+		return providerAccepted && !deliveryProven
+	case groupopsport.ExecutionDeliveryProven:
+		return providerAccepted && deliveryProven
+	case groupopsport.ExecutionOutcomeUnknown, groupopsport.ExecutionFinalFailed:
+		return !deliveryProven
+	default:
+		return false
+	}
+}
+
 func validAcceptedBy(value string) bool {
 	parts := strings.SplitN(value, ":", 2)
 	if len(parts) != 2 || parts[1] == "" || !opaque(parts[1]) {
@@ -457,6 +520,23 @@ func validDirectoryGroups(items []groupopsport.GroupDirectoryItem, owner int64, 
 			return false
 		}
 		seen[item.ChatReference] = struct{}{}
+	}
+	return true
+}
+
+func validOperationMembers(items []groupopsport.OperationMember, limit int32) bool {
+	if items == nil || len(items) > int(limit) {
+		return false
+	}
+	seen := map[string]struct{}{}
+	for _, item := range items {
+		if !opaque(item.SenderUserID) || strings.TrimSpace(item.DisplayName) != item.DisplayName || item.DisplayName == "" || len([]rune(item.DisplayName)) > 128 {
+			return false
+		}
+		if _, exists := seen[item.SenderUserID]; exists {
+			return false
+		}
+		seen[item.SenderUserID] = struct{}{}
 	}
 	return true
 }

@@ -150,6 +150,15 @@ type ManualReconcileCommand struct {
 	DeliveryProven bool
 }
 
+type ExecutionOutcomeCommand struct {
+	ExecutionID           int64
+	State                 ExecutionState
+	ProviderAccepted      bool
+	DeliveryProven        bool
+	ProviderReceiptDigest string
+	AttemptCount          int32
+}
+
 type GroupRefreshCommand struct {
 	OwnerStaffID   int64
 	ActorID        int64
@@ -157,6 +166,13 @@ type GroupRefreshCommand struct {
 	IdempotencyKey string
 }
 
+type OperationMemberRefreshCommand struct {
+	ActorID        int64
+	PageSize       int32
+	IdempotencyKey string
+}
+
 type GroupDirectorySource interface {
 	ListOwnedGroups(context.Context, int64, int32) ([]GroupDirectoryItem, error)
+	RefreshOperationMembers(context.Context, int32) ([]OperationMember, error)
 }

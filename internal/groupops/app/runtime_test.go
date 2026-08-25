@@ -57,16 +57,16 @@ func TestRuntimeBroadcastUsesIdempotencyAndDoesNotQueueProvider(t *testing.T) {
 }
 
 func TestRuntimeUnknownRequiresManualReconcileAndCanProveDeliverySeparately(t *testing.T) {
-	service, runtime, effects := newRuntimeFixture(t)
+	service, _, effects := newRuntimeFixture(t)
 	summary, err := service.RunDue(context.Background(), groupopsport.RunDueCommand{PlanID: 91, ActorID: 7, IdempotencyKey: "group-ops-run-due-0002"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	execution := summary.Executions[0]
-	execution.State = groupopsport.ExecutionOutcomeUnknown
-	execution.AttemptCount = 1
-	execution.ProviderReceiptPresent = true
-	runtime.executions[execution.ID] = execution
+	execution, err = service.ProjectExecutionOutcome(context.Background(), groupopsport.ExecutionOutcomeCommand{ExecutionID: execution.ID, State: groupopsport.ExecutionOutcomeUnknown, AttemptCount: 1})
+	if err != nil || execution.State != groupopsport.ExecutionOutcomeUnknown || execution.ProviderAccepted || execution.ProviderReceiptPresent {
+		t.Fatalf("unknown=%+v err=%v", execution, err)
+	}
 	result, err := service.ManualReconcile(context.Background(), groupopsport.ManualReconcileCommand{
 		ExecutionID: execution.ID, ActorID: 7, IdempotencyKey: "group-ops-reconcile-0001", Generation: 2, Fence: 3,
 		LeaseExpiresAt: time.Date(2026, 8, 25, 9, 0, 0, 0, time.UTC), EvidenceDigest: string(runtimeDigest("evidence", "official-provider-receipt")), DeliveryProven: true,
@@ -76,6 +76,23 @@ func TestRuntimeUnknownRequiresManualReconcileAndCanProveDeliverySeparately(t *t
 	}
 	if _, err = service.ManualReconcile(context.Background(), groupopsport.ManualReconcileCommand{ExecutionID: execution.ID}); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("invalid reconcile err=%v", err)
+	}
+}
+
+func TestRuntimeProjectsProviderAcceptanceAndDeliveryAsSeparateFacts(t *testing.T) {
+	service, _, _ := newRuntimeFixture(t)
+	summary, err := service.RunDue(context.Background(), groupopsport.RunDueCommand{PlanID: 91, ActorID: 7, IdempotencyKey: "group-ops-run-due-0003"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	receipt := string(runtimeDigest("provider-receipt", "accepted"))
+	accepted, err := service.ProjectExecutionOutcome(context.Background(), groupopsport.ExecutionOutcomeCommand{ExecutionID: summary.Executions[0].ID, State: groupopsport.ExecutionProviderAccepted, ProviderAccepted: true, ProviderReceiptDigest: receipt, AttemptCount: 1})
+	if err != nil || !accepted.ProviderAccepted || accepted.DeliveryProven {
+		t.Fatalf("accepted=%+v err=%v", accepted, err)
+	}
+	delivered, err := service.ProjectExecutionOutcome(context.Background(), groupopsport.ExecutionOutcomeCommand{ExecutionID: accepted.ID, State: groupopsport.ExecutionDeliveryProven, ProviderAccepted: true, DeliveryProven: true, ProviderReceiptDigest: receipt, AttemptCount: 1})
+	if err != nil || !delivered.ProviderAccepted || !delivered.DeliveryProven {
+		t.Fatalf("delivered=%+v err=%v", delivered, err)
 	}
 }
 
@@ -238,8 +255,15 @@ func (fixture *runtimeStoreFixture) ReconcileExecution(_ context.Context, id int
 	return value, nil
 }
 
-func (*runtimeStoreFixture) RecordExecutionOutcome(context.Context, int64, groupopsport.ExecutionState, bool, bool, string, int32, time.Time) (groupopsport.Execution, error) {
-	return groupopsport.Execution{}, errors.New("not used")
+func (fixture *runtimeStoreFixture) RecordExecutionOutcome(_ context.Context, id int64, state groupopsport.ExecutionState, providerAccepted, deliveryProven bool, receipt string, attempts int32, now time.Time) (groupopsport.Execution, error) {
+	value, ok := fixture.executions[id]
+	if !ok {
+		return groupopsport.Execution{}, ErrNotFound
+	}
+	value.State, value.ProviderAccepted, value.DeliveryProven = state, providerAccepted, deliveryProven
+	value.ProviderReceiptPresent, value.AttemptCount, value.UpdatedAt = receipt != "", attempts, now
+	fixture.executions[id] = value
+	return value, nil
 }
 func (fixture *runtimeStoreFixture) FindPlanByWebhookReference(context.Context, string) (int64, error) {
 	return fixture.webhookPlan, nil

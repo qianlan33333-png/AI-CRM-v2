@@ -10,7 +10,9 @@ import (
 
 const (
 	OperationMembersRoute          = "/api/admin/common/operation-members"
+	OperationMembersSyncRoute      = OperationMembersRoute + "/sync"
 	OperationMemberScope           = "ai_audience"
+	GroupOpsOperationMemberScope   = "group_ops"
 	ConfigurationSchemaVersion     = "ai_audience_local_configuration.v1"
 	MaximumSenderCount             = 5
 	MaximumOperationMemberPageSize = 100
@@ -181,6 +183,11 @@ type LocalConfigurationApplication interface {
 	MaterializeConfiguration(context.Context, MaterializeConfigurationInput) (ConfigurationEvaluationResponse, error)
 }
 
+type GroupOpsOperationMemberApplication interface {
+	ListGroupOpsOperationMembers(context.Context, int) (any, error)
+	RefreshGroupOpsOperationMembers(context.Context, int64, string, int) (any, error)
+}
+
 type LocalConfigurationRouteSpec struct {
 	Method       string
 	Pattern      string
@@ -191,6 +198,7 @@ type LocalConfigurationRouteSpec struct {
 func LocalConfigurationRouteSpecs() []LocalConfigurationRouteSpec {
 	return []LocalConfigurationRouteSpec{
 		{Method: "GET", Pattern: OperationMembersRoute, Capability: CapabilitySegmentsRead},
+		{Method: "POST", Pattern: OperationMembersSyncRoute, Capability: CapabilityOperationsManage, RequiresCSRF: true},
 		{Method: "GET", Pattern: RoutePrefix + "/packages/{package_id}/automation-binding", Capability: CapabilitySegmentsRead},
 		{Method: "PUT", Pattern: RoutePrefix + "/packages/{package_id}/automation-binding", Capability: CapabilitySegmentsWrite, RequiresCSRF: true},
 		{Method: "DELETE", Pattern: RoutePrefix + "/packages/{package_id}/automation-binding", Capability: CapabilitySegmentsWrite, RequiresCSRF: true},

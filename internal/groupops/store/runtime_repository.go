@@ -182,7 +182,7 @@ func (repository *Repository) FindPlanByWebhookReference(ctx context.Context, re
 
 func (repository *Repository) ListDirectoryGroups(ctx context.Context, owner int64, limit, offset int32) ([]groupopsport.GroupDirectoryItem, int64, error) {
 	q, err := queries(ctx)
-	if repository == nil || err != nil || owner < 1 {
+	if repository == nil || err != nil || owner < 0 {
 		return nil, 0, unavailable(err)
 	}
 	rows, err := q.ListGroupOpsDirectoryGroups(ctx, groupopsdb.ListGroupOpsDirectoryGroupsParams{OwnerStaffID: owner, RowLimit: limit, RowOffset: offset})

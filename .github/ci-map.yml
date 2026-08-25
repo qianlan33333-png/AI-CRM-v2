@@ -158,6 +158,11 @@
       "effects": {"go": true,"go_groups": ["gateway"],"go_mode": "selected"}
     },
     {
+      "name": "domain-groupops",
+      "patterns": ["internal/groupops/**","acceptance/groupops/**"],
+      "effects": {"go": true,"go_groups": ["groupops"],"go_mode": "selected"}
+    },
+    {
       "name": "domain-identity",
       "patterns": ["internal/identity/**","acceptance/identity/**"],
       "effects": {"go": true,"go_groups": ["identity"],"go_mode": "selected"}
@@ -237,6 +242,7 @@
         "internal/coupon/store/**","acceptance/coupon/**",
         "internal/events/store/**","acceptance/events/**",
         "internal/externaleffects/store/**","acceptance/externaleffects/**",
+        "internal/groupops/store/**","acceptance/groupops/**",
         "internal/identity/store/**","acceptance/identity/**",
         "internal/migration/store/**","acceptance/datamigration/**",
         "internal/operationcycle/store/**","acceptance/operationcycle/**",
@@ -295,6 +301,11 @@
       "name": "database-externaleffects",
       "patterns": ["internal/externaleffects/store/**","acceptance/externaleffects/**"],
       "effects": {"database": true,"database_groups": ["externaleffects"],"database_mode": "selected"}
+    },
+    {
+      "name": "database-groupops",
+      "patterns": ["internal/groupops/store/**","acceptance/groupops/**"],
+      "effects": {"database": true,"database_groups": ["groupops"],"database_mode": "selected"}
     },
     {
       "name": "database-operationcycle",

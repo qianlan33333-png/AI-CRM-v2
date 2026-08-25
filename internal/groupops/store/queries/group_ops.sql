@@ -191,12 +191,13 @@ WHERE d.reference = sqlc.arg(reference) AND p.status = 'active';
 -- name: ListGroupOpsDirectoryGroups :many
 SELECT chat_reference, owner_staff_id, display_name, member_count, source_digest, refreshed_at
 FROM group_ops_directory_groups
-WHERE owner_staff_id = sqlc.arg(owner_staff_id)
+WHERE sqlc.arg(owner_staff_id)::bigint = 0 OR owner_staff_id = sqlc.arg(owner_staff_id)
 ORDER BY display_name, chat_reference
 LIMIT sqlc.arg(row_limit) OFFSET sqlc.arg(row_offset);
 
 -- name: CountGroupOpsDirectoryGroups :one
-SELECT count(*) FROM group_ops_directory_groups WHERE owner_staff_id = sqlc.arg(owner_staff_id);
+SELECT count(*) FROM group_ops_directory_groups
+WHERE sqlc.arg(owner_staff_id)::bigint = 0 OR owner_staff_id = sqlc.arg(owner_staff_id);
 
 -- name: DeleteGroupOpsDirectoryGroups :exec
 DELETE FROM group_ops_directory_groups WHERE owner_staff_id = sqlc.arg(owner_staff_id);

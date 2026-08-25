@@ -50,7 +50,8 @@ func (q *Queries) CompleteGroupOpsOperationReceipt(ctx context.Context, arg Comp
 }
 
 const countGroupOpsDirectoryGroups = `-- name: CountGroupOpsDirectoryGroups :one
-SELECT count(*) FROM group_ops_directory_groups WHERE owner_staff_id = $1
+SELECT count(*) FROM group_ops_directory_groups
+WHERE $1::bigint = 0 OR owner_staff_id = $1
 `
 
 func (q *Queries) CountGroupOpsDirectoryGroups(ctx context.Context, ownerStaffID int64) (int64, error) {
@@ -519,7 +520,7 @@ func (q *Queries) InsertGroupOpsExecution(ctx context.Context, arg InsertGroupOp
 const listGroupOpsDirectoryGroups = `-- name: ListGroupOpsDirectoryGroups :many
 SELECT chat_reference, owner_staff_id, display_name, member_count, source_digest, refreshed_at
 FROM group_ops_directory_groups
-WHERE owner_staff_id = $1
+WHERE $1::bigint = 0 OR owner_staff_id = $1
 ORDER BY display_name, chat_reference
 LIMIT $3 OFFSET $2
 `

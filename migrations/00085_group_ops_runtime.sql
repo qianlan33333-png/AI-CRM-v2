@@ -97,9 +97,9 @@ CREATE TABLE public.group_ops_executions (
     (state = 'accepted' AND NOT provider_accepted AND NOT delivery_proven AND provider_receipt_digest IS NULL AND reconciliation_evidence_digest IS NULL AND attempt_count = 0)
     OR (state = 'provider_accepted' AND provider_accepted AND NOT delivery_proven AND provider_receipt_digest IS NOT NULL AND reconciliation_evidence_digest IS NULL AND attempt_count > 0)
     OR (state = 'delivery_proven' AND provider_accepted AND delivery_proven AND provider_receipt_digest IS NOT NULL AND reconciliation_evidence_digest IS NULL AND attempt_count > 0)
-    OR (state = 'outcome_unknown' AND NOT delivery_proven AND provider_receipt_digest IS NOT NULL AND reconciliation_evidence_digest IS NULL AND attempt_count > 0)
-    OR (state = 'reconciled' AND (NOT delivery_proven OR provider_accepted) AND provider_receipt_digest IS NOT NULL AND reconciliation_evidence_digest IS NOT NULL AND attempt_count > 0)
-    OR (state = 'final_failed' AND NOT delivery_proven AND provider_receipt_digest IS NOT NULL AND reconciliation_evidence_digest IS NULL AND attempt_count > 0)
+    OR (state = 'outcome_unknown' AND NOT delivery_proven AND (NOT provider_accepted OR provider_receipt_digest IS NOT NULL) AND reconciliation_evidence_digest IS NULL AND attempt_count > 0)
+    OR (state = 'reconciled' AND (NOT delivery_proven OR provider_accepted) AND (NOT provider_accepted OR provider_receipt_digest IS NOT NULL) AND reconciliation_evidence_digest IS NOT NULL AND attempt_count > 0)
+    OR (state = 'final_failed' AND NOT delivery_proven AND (NOT provider_accepted OR provider_receipt_digest IS NOT NULL) AND reconciliation_evidence_digest IS NULL AND attempt_count > 0)
   ),
   CONSTRAINT group_ops_executions_timestamps CHECK (updated_at >= created_at),
   UNIQUE(run_id, node_id, target_reference)
@@ -135,6 +135,8 @@ BEGIN
     RAISE EXCEPTION 'group ops execution snapshots are immutable' USING ERRCODE = '55000';
   END IF;
   IF OLD.state IN ('delivery_proven','reconciled','final_failed')
+     OR (OLD.provider_accepted AND NOT NEW.provider_accepted)
+     OR NEW.attempt_count < OLD.attempt_count
      OR (OLD.state = 'accepted' AND NEW.state NOT IN ('provider_accepted','delivery_proven','outcome_unknown','final_failed'))
      OR (OLD.state = 'provider_accepted' AND NEW.state NOT IN ('delivery_proven','outcome_unknown','final_failed'))
      OR (OLD.state = 'outcome_unknown' AND NEW.state <> 'reconciled') THEN
