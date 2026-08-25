@@ -1305,6 +1305,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	surveyPublicService.SetBinder(surveyapp.PublicExternalPushBinder{Push: surveyExternalPushService})
 	surveyExternalPushDetailHandler := &surveyhttp.ExternalPushDetailHandler{Application: surveyExternalPushService}
 	surveyExternalPushReconcileHandler := &surveyhttp.ExternalPushReconcileHandler{Application: surveyExternalPushService}
+	publishedOutboundRepository := mediastore.NewPublishedOutboundRepository()
+	publishedOutboundService := mediaapp.NewPublishedOutboundService(publishedOutboundRepository, mediaapp.NewOutboundMediaService(externalEffectsRuntime), publishedOutboundRepository)
 	campaignDispatchRepository, err := outboundstore.NewCampaignDispatchRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -1476,6 +1478,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.imageDeletes = imageDeleteService
 	legacyHandler.attachments = attachmentService
 	legacyHandler.contentDelivery = contentDeliveryService
+	legacyHandler.outboundMediaAccepted = publishedOutboundService
 	legacyHandler.legacyTagLive = legacyTagLiveService
 	legacyHandler.legacyTagStatus = legacyTagStatusService
 	legacyHandler.adminOps = adminOpsService
