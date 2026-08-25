@@ -14,6 +14,8 @@ import (
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
+	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/port"
+	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 )
 
 type legacyTagStub struct {
@@ -46,29 +48,55 @@ func (*legacyTagReadAuthStub) Invalidate(context.Context, authport.SessionRef, a
 }
 
 type legacyTagSyncStub struct {
-	command contactapp.LegacyTagSyncCommand
-	err     error
+	command       contactapp.LegacyTagSyncCommand
+	effectCommand wecomtag.QueueCommand
+	err           error
 }
 
-func (stub *legacyTagSyncStub) Request(_ context.Context, command contactapp.LegacyTagSyncCommand) (contactapp.LegacyTagSyncAcceptance, error) {
+func (stub *legacyTagSyncStub) Request(_ context.Context, command contactapp.LegacyTagSyncCommand) (contactapp.LegacyTagSyncAcceptance, wecomtag.Acceptance, error) {
 	stub.command = command
-	return contactapp.LegacyTagSyncAcceptance{ReceiptID: 41, EventID: 42, RiverJobID: 43, State: contactapp.LegacyTagSyncQueued}, stub.err
+	stub.effectCommand = wecomtag.QueueCommand{LegacyReceiptID: 41, Actor: command.Actor, IdempotencyKey: command.IdempotencyKey, Operation: wecomtag.OperationCatalogSync}
+	return contactapp.LegacyTagSyncAcceptance{ReceiptID: 41, EventID: 42, RiverJobID: 43, State: contactapp.LegacyTagSyncQueued}, wecomTagAcceptanceFixture(wecomtag.OperationCatalogSync), stub.err
 }
 
 type legacyTagLiveStub struct {
-	command contactapp.LegacyTagLiveMutationCommand
-	err     error
+	command       contactapp.LegacyTagLiveMutationCommand
+	effectCommand wecomtag.QueueCommand
+	err           error
 }
 
-func (stub *legacyTagLiveStub) Request(_ context.Context, command contactapp.LegacyTagLiveMutationCommand) (contactapp.LegacyTagLiveMutationAcceptance, error) {
+func (stub *legacyTagLiveStub) Request(_ context.Context, command contactapp.LegacyTagLiveMutationCommand, externalUserID string, providerTagIDs []string) (contactapp.LegacyTagLiveMutationAcceptance, wecomtag.Acceptance, error) {
 	stub.command = command
-	return contactapp.LegacyTagLiveMutationAcceptance{ReceiptID: 51, EventID: 52, RiverJobID: 53, State: contactapp.LegacyTagLiveMutationQueued}, stub.err
+	operation := wecomtag.OperationMark
+	if command.Operation == contactapp.LegacyTagLiveMutationUnmark {
+		operation = wecomtag.OperationUnmark
+	}
+	stub.effectCommand = wecomtag.QueueCommand{LegacyReceiptID: 51, Actor: command.Actor, IdempotencyKey: command.IdempotencyKey, Operation: operation, ExternalUserID: externalUserID, ProviderTagIDs: providerTagIDs}
+	return contactapp.LegacyTagLiveMutationAcceptance{ReceiptID: 51, EventID: 52, RiverJobID: 53, State: contactapp.LegacyTagLiveMutationQueued}, wecomTagAcceptanceFixture(operation), stub.err
 }
 
 type legacyTagStatusStub struct {
 	status contactapp.LegacyTagExecutionGate
 	err    error
 	calls  int
+}
+
+type wecomTagEffectStub struct {
+	reconcile wecomtag.ReconcileCommand
+}
+
+func wecomTagAcceptanceFixture(operation wecomtag.Operation) wecomtag.Acceptance {
+	return wecomtag.Acceptance{
+		EffectID: "eer_61", Operation: operation, State: eer.StateQueued, RiverJobID: 62,
+		AcceptReceiptID: "eerop_63", QueueReceiptID: "eerop_64",
+	}
+}
+
+func (stub *wecomTagEffectStub) Reconcile(_ context.Context, command wecomtag.ReconcileCommand) (wecomtag.Reconciliation, error) {
+	stub.reconcile = command
+	return wecomtag.Reconciliation{
+		EffectID: command.EffectID, State: eer.StateReconciled, Resolution: command.Resolution, ReceiptID: "eerop_65",
+	}, nil
 }
 
 func (stub *legacyTagStatusStub) Get(context.Context) (contactapp.LegacyTagExecutionGate, error) {
@@ -414,7 +442,8 @@ func TestB02ABLegacyTagSharedRoutesPreserveSessionCSRFAndQueuedBoundary(t *testi
 	sync := &legacyTagSyncStub{}
 	live := &legacyTagLiveStub{}
 	status := &legacyTagStatusStub{status: legacyTagExecutionGateFixture()}
-	router, auth := legacyTagRouterWithExecution(t, tags, sync, live, status)
+	typed := &wecomTagEffectStub{}
+	router, auth := legacyTagRouterWithExecutionAndTyped(t, tags, sync, live, status, typed)
 
 	for _, target := range []string{"/api/admin/wecom/tag-groups", "/api/admin/wecom/tag-groups/1", "/api/admin/wecom/tags/2", "/api/admin/wecom/tags/live/gate"} {
 		response := httptest.NewRecorder()
@@ -434,21 +463,27 @@ func TestB02ABLegacyTagSharedRoutesPreserveSessionCSRFAndQueuedBoundary(t *testi
 
 	manual := httptest.NewRecorder()
 	request := legacyChannelWriteRequest(http.MethodPost, "/api/admin/wecom/tags/sync", `{"trace_id":"tag-sync","idempotency_key":"body-key"}`)
-	request.Header.Set("Idempotency-Key", "header-key")
+	request.Header.Set("Idempotency-Key", "header-key-000001")
 	router.ServeHTTP(manual, request)
-	if manual.Code != http.StatusAccepted || sync.command.Actor != 1 || sync.command.Kind != contactapp.LegacyTagSyncManual || sync.command.IdempotencyKey != "header-key" || !strings.Contains(manual.Body.String(), `"state":"queued"`) || strings.Contains(manual.Body.String(), `"executed":true`) {
+	if manual.Code != http.StatusAccepted || sync.command.Actor != 1 || sync.command.Kind != contactapp.LegacyTagSyncManual || sync.command.IdempotencyKey != "header-key-000001" || sync.effectCommand.Operation != wecomtag.OperationCatalogSync || sync.effectCommand.LegacyReceiptID != 41 || !strings.Contains(manual.Body.String(), `"effect_id":"eer_61"`) || strings.Contains(manual.Body.String(), `"executed":true`) {
 		t.Fatalf("sync=%d command=%#v body=%s", manual.Code, sync.command, manual.Body.String())
 	}
 	due := httptest.NewRecorder()
-	router.ServeHTTP(due, legacyChannelWriteRequest(http.MethodPost, "/api/admin/wecom/tags/sync-due", `{}`))
+	router.ServeHTTP(due, legacyTagWriteRequest(http.MethodPost, "/api/admin/wecom/tags/sync-due", `{}`))
 	if due.Code != http.StatusAccepted || sync.command.Kind != contactapp.LegacyTagSyncDue {
 		t.Fatalf("sync-due=%d command=%#v", due.Code, sync.command)
 	}
 
 	mark := httptest.NewRecorder()
-	router.ServeHTTP(mark, legacyChannelWriteRequest(http.MethodPost, "/api/admin/wecom/tags/live/mark", `{"tag_id":2,"external_userid":"u-1","trace_id":"tag-live"}`))
-	if mark.Code != http.StatusAccepted || live.command.Actor != 1 || live.command.Operation != contactapp.LegacyTagLiveMutationMark || !strings.Contains(string(live.command.Payload), `"tag_id":2`) || !strings.Contains(mark.Body.String(), `"real_external_call_executed":false`) {
+	router.ServeHTTP(mark, legacyTagWriteRequest(http.MethodPost, "/api/admin/wecom/tags/live/mark", `{"tag_id":2,"external_userid":"u-1","trace_id":"tag-live"}`))
+	if mark.Code != http.StatusAccepted || live.command.Actor != 1 || live.command.Operation != contactapp.LegacyTagLiveMutationMark || live.effectCommand.Operation != wecomtag.OperationMark || live.effectCommand.ExternalUserID != "u-1" || len(live.effectCommand.ProviderTagIDs) != 1 || live.effectCommand.ProviderTagIDs[0] != "2" || !strings.Contains(mark.Body.String(), `"real_external_call_executed":false`) {
 		t.Fatalf("mark=%d command=%#v body=%s", mark.Code, live.command, mark.Body.String())
+	}
+	reconcile := httptest.NewRecorder()
+	reconcileRequest := legacyTagWriteRequest(http.MethodPost, "/api/admin/wecom/tag-effects/eer_61/reconcile", `{"generation":2,"fence":3,"lease_expires_at":"2026-08-25T12:00:00Z","evidence_digest":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","resolution":"provider_not_applied"}`)
+	router.ServeHTTP(reconcile, reconcileRequest)
+	if reconcile.Code != http.StatusOK || typed.reconcile.EffectID != "eer_61" || typed.reconcile.Actor != 1 || typed.reconcile.Resolution != wecomtag.ResolutionProviderNotApplied || !strings.Contains(reconcile.Body.String(), `"receipt_id":"eerop_65"`) {
+		t.Fatalf("reconcile=%d command=%#v body=%s", reconcile.Code, typed.reconcile, reconcile.Body.String())
 	}
 	missingCSRF := httptest.NewRecorder()
 	bad := legacyRequest(http.MethodPost, "/api/admin/wecom/tags/live/unmark", legacyToken(147))
@@ -458,8 +493,28 @@ func TestB02ABLegacyTagSharedRoutesPreserveSessionCSRFAndQueuedBoundary(t *testi
 	if missingCSRF.Code != http.StatusForbidden {
 		t.Fatalf("missing csrf=%d %s", missingCSRF.Code, missingCSRF.Body.String())
 	}
-	if seen := auth.capabilities(); len(seen) != 8 || seen[0] != authport.CapabilityCustomersRead || seen[4] != authport.CapabilityCustomersRead || seen[5] != authport.CapabilityCustomersWrite {
+	if seen := auth.capabilities(); len(seen) != 9 || seen[0] != authport.CapabilityCustomersRead || seen[4] != authport.CapabilityCustomersRead || seen[5] != authport.CapabilityCustomersWrite || seen[8] != authport.CapabilityOperationsManage {
 		t.Fatalf("capabilities=%v", seen)
+	}
+}
+
+func TestWC01LegacyTagEffectPayloadIsTypedAndClosed(t *testing.T) {
+	for _, raw := range []string{
+		`{"external_userid":"u-1"}`,
+		`{"external_userid":"u-1","tag_id":"t-1","tag_ids":["t-1"]}`,
+		`{"external_userid":"u-1","tag_ids":[]}`,
+		`{"external_userid":"u-1","tag_id":"t-1","unexpected":true}`,
+	} {
+		if _, _, ok := legacyTagLivePayload(json.RawMessage(raw)); ok {
+			t.Fatalf("accepted invalid payload %s", raw)
+		}
+	}
+	externalUserID, tagIDs, ok := legacyTagLivePayload(json.RawMessage(`{"external_userid":"u-1","tag_ids":["t-2","t-1"]}`))
+	if !ok || externalUserID != "u-1" || len(tagIDs) != 2 || tagIDs[0] != "t-2" || tagIDs[1] != "t-1" {
+		t.Fatalf("external_userid=%q tag_ids=%v ok=%t", externalUserID, tagIDs, ok)
+	}
+	if legacyTagSyncPayload(json.RawMessage(`{"unexpected":true}`)) || !legacyTagSyncPayload(json.RawMessage(`{"trace_id":"trace"}`)) {
+		t.Fatal("sync payload allowlist drifted")
 	}
 }
 
@@ -502,6 +557,10 @@ func mustJSONMap(t *testing.T, body []byte) map[string]any {
 	return value
 }
 func legacyTagRouterWithExecution(t *testing.T, tags legacyTagApplication, sync legacyTagSyncApplication, live legacyTagLiveMutationApplication, status legacyTagExecutionStatusApplication) (http.Handler, *recordingAuth) {
+	return legacyTagRouterWithExecutionAndTyped(t, tags, sync, live, status, &wecomTagEffectStub{})
+}
+
+func legacyTagRouterWithExecutionAndTyped(t *testing.T, tags legacyTagApplication, sync legacyTagSyncApplication, live legacyTagLiveMutationApplication, status legacyTagExecutionStatusApplication, typed wecomTagEffectApplication) (http.Handler, *recordingAuth) {
 	t.Helper()
 	service := &recordingAuth{}
 	legacy, e := NewHandlerWithOutboundProductsMediaAndSurvey(service, &legacyCustomerStub{result: legacyCustomerResult()}, &legacyOutboundQueryStub{}, &legacyCancelStub{}, &legacyRetryStub{}, &legacyProductStub{}, &legacyMediaStub{}, &legacySurveyStub{})
@@ -512,6 +571,7 @@ func legacyTagRouterWithExecution(t *testing.T, tags legacyTagApplication, sync 
 	legacy.legacyTagSync = sync
 	legacy.legacyTagLive = live
 	legacy.legacyTagStatus = status
+	legacy.wecomTagEffects = typed
 	authHandler, e := authhttp.NewHandler(service)
 	if e != nil {
 		t.Fatal(e)

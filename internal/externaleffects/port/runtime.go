@@ -32,11 +32,13 @@ const (
 	OwnerProduct                = eer.OwnerProduct
 	OwnerSurvey                 = eer.OwnerSurvey
 	OwnerGroupOps               = eer.OwnerGroupOps
+	OwnerWeCom                  = eer.OwnerWeCom
 	KindOutboundMessage         = eer.KindOutboundMessage
 	KindProductExternalPushTest = eer.KindProductExternalPushTest
 	KindSurveyWebhook           = eer.KindSurveyWebhook
 	KindOutboundMedia           = eer.KindOutboundMedia
 	KindGroupOpsBroadcast       = eer.KindGroupOpsBroadcast
+	KindWeComTagSync            = eer.KindWeComTagSync
 	StateAccepted               = eer.StateAccepted
 	StateQueued                 = eer.StateQueued
 	StateExecuted               = eer.StateExecuted

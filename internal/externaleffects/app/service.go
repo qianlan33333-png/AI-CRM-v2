@@ -48,11 +48,17 @@ func (s *Service) Cancel(ctx context.Context, command eer.CancelCommand) (eer.Pr
 	if s == nil || s.runtime == nil {
 		return eer.Projection{}, eer.OperationReceipt{}, eer.ErrUnavailable
 	}
+	if err := s.rejectTypedWeComTagMutation(ctx, command.EffectID); err != nil {
+		return eer.Projection{}, eer.OperationReceipt{}, err
+	}
 	return s.runtime.Cancel(ctx, command)
 }
 func (s *Service) Retry(ctx context.Context, command eer.RetryCommand) (eer.Projection, eer.OperationReceipt, error) {
 	if s == nil || s.runtime == nil {
 		return eer.Projection{}, eer.OperationReceipt{}, eer.ErrUnavailable
+	}
+	if err := s.rejectTypedWeComTagMutation(ctx, command.EffectID); err != nil {
+		return eer.Projection{}, eer.OperationReceipt{}, err
 	}
 	return s.runtime.Retry(ctx, command)
 }
@@ -60,5 +66,22 @@ func (s *Service) Reconcile(ctx context.Context, command eer.ReconcileCommand) (
 	if s == nil || s.runtime == nil {
 		return eer.Projection{}, eer.OperationReceipt{}, eer.ErrUnavailable
 	}
+	if err := s.rejectTypedWeComTagMutation(ctx, command.Lease.EffectID); err != nil {
+		return eer.Projection{}, eer.OperationReceipt{}, err
+	}
 	return s.runtime.Reconcile(ctx, command)
+}
+
+func (s *Service) rejectTypedWeComTagMutation(ctx context.Context, effectID string) error {
+	if s == nil || s.reader == nil || ctx == nil || effectID == "" {
+		return eer.ErrInvalidCommand
+	}
+	projection, err := s.reader.Get(ctx, effectID)
+	if err != nil {
+		return err
+	}
+	if projection.Owner == eer.OwnerWeCom && projection.Kind == eer.KindWeComTagSync {
+		return eer.ErrReconcileRequired
+	}
+	return nil
 }

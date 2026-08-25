@@ -131,6 +131,12 @@ func NewLegacyTagSyncService(
 // Queued, never Attempted or Executed, so an HTTP success cannot be mistaken
 // for a provider result.
 func (service *LegacyTagSyncService) Request(ctx context.Context, command LegacyTagSyncCommand) (LegacyTagSyncAcceptance, error) {
+	return service.RequestWithCommitHook(ctx, command, nil)
+}
+
+// RequestWithCommitHook lets the composition root join a typed owner effect
+// to the same UoW without making Contact depend on that owner package.
+func (service *LegacyTagSyncService) RequestWithCommitHook(ctx context.Context, command LegacyTagSyncCommand, hook func(context.Context, LegacyTagSyncAcceptance, bool) error) (LegacyTagSyncAcceptance, error) {
 	if ctx == nil || !validLegacyTagSyncCommand(command) || !legacyTagSyncReady(service) {
 		return LegacyTagSyncAcceptance{}, ErrInvalidLegacyTagSync
 	}
@@ -151,6 +157,9 @@ func (service *LegacyTagSyncService) Request(ctx context.Context, command Legacy
 				return err
 			}
 			result = acceptance
+			if hook != nil {
+				return hook(txCtx, acceptance, true)
+			}
 			return nil
 		case LegacyTagSyncReceiptReserved:
 			if receipt.ID <= 0 {
@@ -195,6 +204,9 @@ func (service *LegacyTagSyncService) Request(ctx context.Context, command Legacy
 			return err
 		}
 		result = acceptance
+		if hook != nil {
+			return hook(txCtx, acceptance, false)
+		}
 		return nil
 	})
 	if err != nil {

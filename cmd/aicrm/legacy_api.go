@@ -37,6 +37,7 @@ import (
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
+	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 )
 
 const (
@@ -134,15 +135,19 @@ type legacyTagApplication interface {
 }
 
 type legacyTagSyncApplication interface {
-	Request(context.Context, contactapp.LegacyTagSyncCommand) (contactapp.LegacyTagSyncAcceptance, error)
+	Request(context.Context, contactapp.LegacyTagSyncCommand) (contactapp.LegacyTagSyncAcceptance, wecomtag.Acceptance, error)
 }
 
 type legacyTagLiveMutationApplication interface {
-	Request(context.Context, contactapp.LegacyTagLiveMutationCommand) (contactapp.LegacyTagLiveMutationAcceptance, error)
+	Request(context.Context, contactapp.LegacyTagLiveMutationCommand, string, []string) (contactapp.LegacyTagLiveMutationAcceptance, wecomtag.Acceptance, error)
 }
 
 type legacyTagExecutionStatusApplication interface {
 	Get(context.Context) (contactapp.LegacyTagExecutionGate, error)
+}
+
+type wecomTagEffectApplication interface {
+	Reconcile(context.Context, wecomtag.ReconcileCommand) (wecomtag.Reconciliation, error)
 }
 
 type legacyOrderApplication interface {
@@ -208,6 +213,7 @@ type Handler struct {
 	legacyTagSync           legacyTagSyncApplication
 	legacyTagLive           legacyTagLiveMutationApplication
 	legacyTagStatus         legacyTagExecutionStatusApplication
+	wecomTagEffects         wecomTagEffectApplication
 	coupons                 legacyCouponApplication
 	couponBoard             couponBoardApplication
 	settings                legacySettingsApplication

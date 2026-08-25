@@ -217,6 +217,12 @@ func NewLegacyTagLiveMutationService(
 // durable worker job. Success proves only Queued; it is never a WeCom write
 // receipt and cannot be exposed as an executed live mutation.
 func (service *LegacyTagLiveMutationService) Request(ctx context.Context, command LegacyTagLiveMutationCommand) (LegacyTagLiveMutationAcceptance, error) {
+	return service.RequestWithCommitHook(ctx, command, nil)
+}
+
+// RequestWithCommitHook lets the composition root join a typed owner effect
+// to the same UoW without making Contact depend on that owner package.
+func (service *LegacyTagLiveMutationService) RequestWithCommitHook(ctx context.Context, command LegacyTagLiveMutationCommand, hook func(context.Context, LegacyTagLiveMutationAcceptance, bool) error) (LegacyTagLiveMutationAcceptance, error) {
 	if ctx == nil || !validLegacyTagLiveMutationCommand(command) || !legacyTagLiveMutationReady(service) {
 		return LegacyTagLiveMutationAcceptance{}, ErrInvalidLegacyTagLiveMutation
 	}
@@ -237,6 +243,9 @@ func (service *LegacyTagLiveMutationService) Request(ctx context.Context, comman
 				return err
 			}
 			result = acceptance
+			if hook != nil {
+				return hook(txCtx, acceptance, true)
+			}
 			return nil
 		case LegacyTagLiveMutationReceiptReserved:
 			if receipt.ID <= 0 {
@@ -284,6 +293,9 @@ func (service *LegacyTagLiveMutationService) Request(ctx context.Context, comman
 			return err
 		}
 		result = acceptance
+		if hook != nil {
+			return hook(txCtx, acceptance, false)
+		}
 		return nil
 	})
 	if err != nil {

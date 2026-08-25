@@ -137,6 +137,22 @@ func TestP4CustomerTagsLiveMutationReplayUsesSemanticJSONAndRejectsConflict(t *t
 	}
 }
 
+func TestP4CustomerTagsLiveMutationCommitHookRunsInsideUOWAndPropagatesFailure(t *testing.T) {
+	command := p4CustomerTagLiveMutationCommand(LegacyTagLiveMutationMark, []byte(`{"tag_ids":[1]}`))
+	u := &legacyTagUOW{}
+	receipts := &legacyTagLiveMutationReceipts{u: u, reserved: LegacyTagLiveMutationReceipt{ID: 51, Command: command, State: LegacyTagLiveMutationReceiptReserved}, accepted: LegacyTagLiveMutationReceipt{ID: 51, Command: command, State: LegacyTagLiveMutationReceiptQueued, EventID: 1, RiverJobID: 53}}
+	hookErr := errors.New("typed queue failed")
+	_, err := NewLegacyTagLiveMutationService(u, receipts, &legacyTagEvents{u: u}, &legacyTagLiveMutationJobs{u: u, id: 53}).RequestWithCommitHook(context.Background(), command, func(_ context.Context, acceptance LegacyTagLiveMutationAcceptance, replay bool) error {
+		if !u.in || replay || acceptance.ReceiptID != 51 || acceptance.State != LegacyTagLiveMutationQueued {
+			t.Fatalf("hook acceptance/uow = %#v/%v", acceptance, u.in)
+		}
+		return hookErr
+	})
+	if !errors.Is(err, hookErr) {
+		t.Fatalf("RequestWithCommitHook() error = %v, want hook failure", err)
+	}
+}
+
 func TestP4CustomerTagsLiveMutationRejectsInvalidPayloadAndNeverRetriesUnknown(t *testing.T) {
 	u := &legacyTagUOW{}
 	events := &legacyTagEvents{u: u}

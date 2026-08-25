@@ -3,3 +3,37 @@
 //   sqlc v1.28.0
 
 package wecomdb
+
+import (
+	"github.com/jackc/pgx/v5/pgtype"
+)
+
+type WecomTagEffect struct {
+	EffectID                int64              `json:"effect_id"`
+	LegacyReceiptID         int64              `json:"legacy_receipt_id"`
+	ActorID                 int64              `json:"actor_id"`
+	CorpID                  string             `json:"corp_id"`
+	Operation               string             `json:"operation"`
+	SyncTrigger             string             `json:"sync_trigger"`
+	ExternalUserid          string             `json:"external_userid"`
+	ProviderTagIds          []string           `json:"provider_tag_ids"`
+	IdempotencyDigest       string             `json:"idempotency_digest"`
+	EnvelopeFingerprint     string             `json:"envelope_fingerprint"`
+	State                   string             `json:"state"`
+	AcceptReceiptID         int64              `json:"accept_receipt_id"`
+	QueueReceiptID          pgtype.Int8        `json:"queue_receipt_id"`
+	AttemptReceiptID        pgtype.Int8        `json:"attempt_receipt_id"`
+	ReconcileReceiptID      pgtype.Int8        `json:"reconcile_receipt_id"`
+	RiverJobID              pgtype.Int8        `json:"river_job_id"`
+	Generation              int64              `json:"generation"`
+	Fence                   int64              `json:"fence"`
+	LeaseExpiresAt          pgtype.Timestamptz `json:"lease_expires_at"`
+	AttemptReceiptDigest    pgtype.Text        `json:"attempt_receipt_digest"`
+	AttemptCompletedAt      pgtype.Timestamptz `json:"attempt_completed_at"`
+	ReconcileReceiptDigest  pgtype.Text        `json:"reconcile_receipt_digest"`
+	ReconcileEvidenceDigest pgtype.Text        `json:"reconcile_evidence_digest"`
+	ReconcileResolution     pgtype.Text        `json:"reconcile_resolution"`
+	ReconciledAt            pgtype.Timestamptz `json:"reconciled_at"`
+	UpdatedAt               pgtype.Timestamptz `json:"updated_at"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+}
