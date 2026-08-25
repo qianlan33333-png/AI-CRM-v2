@@ -33,7 +33,7 @@ goose=("$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "
 [[ "$(psql "$database_url" -X -q -At -c 'SELECT count(*) FROM goose_db_version WHERE version_id = 84 AND is_applied')" = '1' ]]
 
 CI_TEST_DATABASE_URL="$database_url" /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
-  "$go_command" test -race -count=1 -timeout=240s -run '^TestLocalConfigurationSQLRepositoryPG16' ./internal/segment/legacyaudience
+  "$go_command" test -race -count=1 -timeout=240s -run '^TestLocalConfigurationSQLRepositoryPG16' ./acceptance/segment
 
 "${goose[@]}" down-to 83 >/dev/null
 [[ "$(psql "$database_url" -X -q -At -c 'SELECT count(*) FROM goose_db_version WHERE version_id = 84 AND is_applied')" = '0' ]]
