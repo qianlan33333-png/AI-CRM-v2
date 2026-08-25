@@ -19,6 +19,7 @@ type HumanOAuthConfig struct {
 	BaseURL       string
 	AuthorizeURL  string
 	CallbackURL   string
+	CallbackPath  string
 	CorpID        CorpID
 	HTTPClient    *http.Client
 	TokenProvider TokenProvider
@@ -50,14 +51,22 @@ func NewHumanOAuthClient(config HumanOAuthConfig) (*HumanOAuthClient, error) {
 	if err != nil || authorizeURL.Scheme == "" || authorizeURL.Host == "" || authorizeURL.User != nil || authorizeURL.RawQuery != "" || authorizeURL.Fragment != "" {
 		return nil, ErrInvalidConfig
 	}
+	callbackPath := config.CallbackPath
+	if callbackPath == "" {
+		callbackPath = "/auth/wecom/callback"
+	}
 	callbackURL, err := url.Parse(config.CallbackURL)
-	if err != nil || callbackURL.Scheme != "https" || callbackURL.Host == "" || callbackURL.User != nil || callbackURL.RawQuery != "" || callbackURL.Fragment != "" || callbackURL.Path != "/auth/wecom/callback" {
+	if err != nil || callbackURL.Scheme != "https" || callbackURL.Host == "" || callbackURL.User != nil || callbackURL.RawQuery != "" || callbackURL.Fragment != "" || callbackURL.Path != callbackPath || !validCallbackPath(callbackPath) {
 		return nil, ErrInvalidConfig
 	}
 	return &HumanOAuthClient{
 		baseURL: baseURL, authorizeURL: authorizeURL, callbackURL: callbackURL.String(), corpID: config.CorpID,
 		httpClient: config.HTTPClient, tokenProvider: config.TokenProvider,
 	}, nil
+}
+
+func validCallbackPath(value string) bool {
+	return value == "/auth/wecom/callback" || value == "/api/sidebar/v2/oauth/callback"
 }
 
 func (client *HumanOAuthClient) CorpID() string {

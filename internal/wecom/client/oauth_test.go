@@ -91,6 +91,37 @@ func TestHumanOAuthProviderAdapterRejectsExternalOrMalformedIdentity(t *testing.
 	}
 }
 
+func TestHumanOAuthProviderAdapterAcceptsOnlyExplicitSidebarCallbackPath(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	defer server.Close()
+	credentials, err := NewCredentials("corp-fixture", "secret-fixture")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokens, err := NewTokenProvider(TokenProviderConfig{BaseURL: server.URL, Credentials: credentials, HTTPClient: server.Client(), Now: time.Now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	client, err := NewHumanOAuthClient(HumanOAuthConfig{
+		BaseURL: server.URL, AuthorizeURL: server.URL + "/connect/oauth2/authorize", CallbackURL: "https://crm.example.test/api/sidebar/v2/oauth/callback", CallbackPath: "/api/sidebar/v2/oauth/callback",
+		CorpID: "corp-fixture", HTTPClient: server.Client(), TokenProvider: tokens,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	state := base64.RawURLEncoding.EncodeToString(make([]byte, 32))
+	redirect, err := client.AuthorizationURL(state)
+	if err != nil || !strings.Contains(redirect, "redirect_uri=https%3A%2F%2Fcrm.example.test%2Fapi%2Fsidebar%2Fv2%2Foauth%2Fcallback") {
+		t.Fatalf("sidebar redirect/error = %q/%v", redirect, err)
+	}
+	if _, err = NewHumanOAuthClient(HumanOAuthConfig{
+		BaseURL: server.URL, AuthorizeURL: server.URL + "/connect/oauth2/authorize", CallbackURL: "https://crm.example.test/api/sidebar/v2/oauth/callback", CallbackPath: "/auth/wecom/callback",
+		CorpID: "corp-fixture", HTTPClient: server.Client(), TokenProvider: tokens,
+	}); !errors.Is(err, ErrInvalidConfig) {
+		t.Fatalf("wrong callback-path error = %v", err)
+	}
+}
+
 func newHumanOAuthFixture(t *testing.T, server *httptest.Server) *HumanOAuthClient {
 	t.Helper()
 	credentials, err := NewCredentials("corp-fixture", "secret-fixture")

@@ -181,6 +181,19 @@ func (service *OAuthGrantService) rejectIssuedSession(ctx context.Context, sessi
 	return OAuthCompletion{}, cause
 }
 
+// RevokeCompletedSession closes the only remaining failure window after a
+// successful provider exchange: the browser session could not be committed to
+// its secure cookies by the HTTP adapter.
+func (service *OAuthGrantService) RevokeCompletedSession(ctx context.Context, session authport.BrowserSession) error {
+	if service == nil || ctx == nil {
+		return ErrOAuthUnavailable
+	}
+	if err := service.auth.Invalidate(ctx, session.Session, session.CSRF); err != nil {
+		return errors.Join(ErrOAuthUnavailable, err)
+	}
+	return nil
+}
+
 func (service *OAuthGrantService) currentCorp(ctx context.Context) (string, error) {
 	corpID, err := service.contexts.corp.CorpID(ctx)
 	if err != nil || !validOAuthSubject(corpID) || service.provider.CorpID() != corpID {

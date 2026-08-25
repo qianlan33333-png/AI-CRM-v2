@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
@@ -19,7 +20,100 @@ import (
 
 const bodyLimit = 32 << 10
 
+const (
+	sidebarOAuthBindingCookie = "aicrm_sidebar_oauth_binding"
+	sidebarOAuthCookiePath    = "/api/sidebar/v2/oauth/"
+	defaultSidebarOAuthNext   = "/sidebar/bind-mobile"
+)
+
 type Handler struct{ service *sidebarapp.Service }
+
+// OAuthHandler exposes the sidebar-only browser OAuth boundary. A nil service
+// is an intentional disabled configuration and fails closed without a provider
+// call.
+type OAuthHandler struct{ service *sidebarapp.OAuthGrantService }
+
+func NewOAuthHandler(service *sidebarapp.OAuthGrantService) *OAuthHandler {
+	return &OAuthHandler{service: service}
+}
+
+func (handler *OAuthHandler) Start(writer http.ResponseWriter, request *http.Request) {
+	oauthResponseHeaders(writer)
+	externalUserID, nextPath, err := sidebarOAuthStartInput(request)
+	if err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	if handler == nil || nilValue(handler.service) {
+		writeError(writer, request, sidebarapp.ErrOAuthUnavailable)
+		return
+	}
+	start, err := handler.service.Begin(request.Context(), externalUserID, nextPath)
+	if err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	http.SetCookie(writer, &http.Cookie{Name: sidebarOAuthBindingCookie, Value: start.Binding, Path: sidebarOAuthCookiePath, Expires: start.ExpiresAt, Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+	http.Redirect(writer, request, start.AuthorizationURL, http.StatusFound)
+}
+
+func (handler *OAuthHandler) Callback(writer http.ResponseWriter, request *http.Request) {
+	oauthResponseHeaders(writer)
+	code, state, err := sidebarOAuthCallbackInput(request)
+	if err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	cookie, err := request.Cookie(sidebarOAuthBindingCookie)
+	if err != nil || cookie.Value == "" {
+		writeError(writer, request, sidebarapp.ErrOAuthAttemptInvalid)
+		return
+	}
+	clearSidebarOAuthBinding(writer)
+	if handler == nil || nilValue(handler.service) {
+		writeError(writer, request, sidebarapp.ErrOAuthUnavailable)
+		return
+	}
+	completed, err := handler.service.Complete(request.Context(), code, authport.OAuthState(state), cookie.Value)
+	if err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	if err = authhttp.WriteBrowserSession(writer, completed.Session); err != nil {
+		if revokeErr := handler.service.RevokeCompletedSession(request.Context(), completed.Session); revokeErr != nil {
+			writeError(writer, request, revokeErr)
+			return
+		}
+		writeError(writer, request, sidebarapp.ErrOAuthUnavailable)
+		return
+	}
+	http.Redirect(writer, request, completed.NextPath, http.StatusFound)
+}
+
+// JSSDKHandler signs only agent_config payloads. A nil or disabled service is
+// deliberately observable as unavailable, without any provider request.
+type JSSDKHandler struct{ service *sidebarapp.JSSDKService }
+
+func NewJSSDKHandler(service *sidebarapp.JSSDKService) *JSSDKHandler {
+	return &JSSDKHandler{service: service}
+}
+
+func (handler *JSSDKHandler) AgentConfig(writer http.ResponseWriter, request *http.Request) {
+	if request == nil || request.URL == nil || len(request.URL.Query()) != 1 || len(request.URL.Query()["url"]) != 1 {
+		writeError(writer, request, sidebarapp.ErrJSSDKInvalid)
+		return
+	}
+	if handler == nil || nilValue(handler.service) {
+		writeError(writer, request, sidebarapp.ErrJSSDKDisabled)
+		return
+	}
+	result, err := handler.service.AgentConfig(request.Context(), request.URL.Query().Get("url"))
+	if err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, result)
+}
 
 func NewHandler(service *sidebarapp.Service) (*Handler, error) {
 	if nilValue(service) {
@@ -236,6 +330,8 @@ func writeError(writer http.ResponseWriter, request *http.Request, err error) {
 	switch {
 	case errors.Is(err, sidebarapp.ErrInvalidInput):
 		code = platformhttp.CodeMalformedRequest
+	case errors.Is(err, sidebarapp.ErrOAuthAttemptInvalid), errors.Is(err, sidebarapp.ErrJSSDKInvalid):
+		code = platformhttp.CodeMalformedRequest
 	case errors.Is(err, sidebarapp.ErrViewerSession), errors.Is(err, sidebarapp.ErrTokenInvalid), errors.Is(err, sidebarapp.ErrTokenExpired):
 		code = platformhttp.CodeUnauthenticated
 	case errors.Is(err, sidebarapp.ErrForbidden):
@@ -246,6 +342,40 @@ func writeError(writer http.ResponseWriter, request *http.Request, err error) {
 		code = platformhttp.CodeConflict
 	}
 	platformhttp.WriteError(writer, request, platformhttp.NewError(code, err))
+}
+
+func sidebarOAuthStartInput(request *http.Request) (externalUserID, nextPath string, err error) {
+	if request == nil || request.URL == nil || len(request.URL.Query()["external_userid"]) != 1 || len(request.URL.Query()) > 2 {
+		return "", "", sidebarapp.ErrOAuthAttemptInvalid
+	}
+	externalUserID = request.URL.Query().Get("external_userid")
+	nextPath = request.URL.Query().Get("next")
+	if nextPath == "" {
+		nextPath = defaultSidebarOAuthNext
+	}
+	if len(request.URL.Query()) == 2 && len(request.URL.Query()["next"]) != 1 {
+		return "", "", sidebarapp.ErrOAuthAttemptInvalid
+	}
+	return externalUserID, nextPath, nil
+}
+
+func sidebarOAuthCallbackInput(request *http.Request) (code, state string, err error) {
+	if request == nil || request.URL == nil || len(request.URL.Query()) != 2 || len(request.URL.Query()["code"]) != 1 || len(request.URL.Query()["state"]) != 1 {
+		return "", "", sidebarapp.ErrOAuthAttemptInvalid
+	}
+	return request.URL.Query().Get("code"), request.URL.Query().Get("state"), nil
+}
+
+func clearSidebarOAuthBinding(writer http.ResponseWriter) {
+	http.SetCookie(writer, &http.Cookie{Name: sidebarOAuthBindingCookie, Value: "", Path: sidebarOAuthCookiePath, MaxAge: -1, Expires: time.Unix(1, 0).UTC(), Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode})
+}
+
+func oauthResponseHeaders(writer http.ResponseWriter) {
+	if writer == nil {
+		return
+	}
+	writer.Header().Set("Cache-Control", "no-store")
+	writer.Header().Set("Referrer-Policy", "no-referrer")
 }
 
 func nilValue(value any) bool {

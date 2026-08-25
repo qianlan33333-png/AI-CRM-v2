@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	defaultJSSDKRefreshBefore = 5 * time.Minute
-	jssdkNonceBytes           = 16
+	defaultAgentConfigRefreshBefore = 5 * time.Minute
+	agentConfigNonceBytes           = 16
 )
 
 var (
@@ -29,13 +29,13 @@ var (
 	ErrJSSDKUnavailable = errors.New("sidebar jssdk unavailable")
 )
 
-// JSSDKTicketProvider is a sidebar-domain boundary. A production adapter may
-// fetch the ticket only through the WeCom read domain; tests use local fakes.
-type JSSDKTicketProvider interface {
-	FetchJSSDKTicket(context.Context) (JSSDKTicket, error)
+// AgentConfigTicketProvider can fetch only a WeCom agent_config ticket. Corp
+// config tickets are deliberately out of this sidebar package.
+type AgentConfigTicketProvider interface {
+	FetchAgentConfigTicket(context.Context) (AgentConfigTicket, error)
 }
 
-type JSSDKTicket struct {
+type AgentConfigTicket struct {
 	Value     string
 	ExpiresAt time.Time
 }
@@ -53,14 +53,15 @@ type JSSDKOptions struct {
 	RefreshBefore time.Duration
 }
 
-type JSSDKConfigResult struct {
-	CorpID          string
-	AgentID         int64
-	Nonce           string
-	Timestamp       int64
-	Signature       string
-	URL             string
-	TicketExpiresAt time.Time
+type AgentConfigSignature struct {
+	SignatureType   string    `json:"signature_type"`
+	CorpID          string    `json:"corp_id"`
+	AgentID         int64     `json:"agent_id"`
+	Nonce           string    `json:"nonce"`
+	Timestamp       int64     `json:"timestamp"`
+	Signature       string    `json:"signature"`
+	URL             string    `json:"url"`
+	TicketExpiresAt time.Time `json:"ticket_expires_at"`
 }
 
 type JSSDKService struct {
@@ -68,12 +69,12 @@ type JSSDKService struct {
 	corpID       string
 	agentID      int64
 	allowedHosts map[string]struct{}
-	cache        *jssdkTicketCache
+	cache        *agentConfigTicketCache
 	now          func() time.Time
 	random       io.Reader
 }
 
-func NewJSSDKService(config JSSDKServiceConfig, provider JSSDKTicketProvider, options JSSDKOptions) (*JSSDKService, error) {
+func NewJSSDKService(config JSSDKServiceConfig, provider AgentConfigTicketProvider, options JSSDKOptions) (*JSSDKService, error) {
 	if !config.Enabled {
 		return &JSSDKService{}, nil
 	}
@@ -94,44 +95,44 @@ func NewJSSDKService(config JSSDKServiceConfig, provider JSSDKTicketProvider, op
 		return nil, ErrJSSDKUnavailable
 	}
 	if options.RefreshBefore == 0 {
-		options.RefreshBefore = defaultJSSDKRefreshBefore
+		options.RefreshBefore = defaultAgentConfigRefreshBefore
 	}
 	if options.RefreshBefore < time.Minute || options.RefreshBefore > 15*time.Minute {
 		return nil, ErrJSSDKUnavailable
 	}
 	return &JSSDKService{
 		enabled: true, corpID: config.CorpID, agentID: config.AgentID, allowedHosts: allowedHosts,
-		cache: newJSSDKTicketCache(provider, options.Clock, options.RefreshBefore), now: options.Clock, random: options.Random,
+		cache: newAgentConfigTicketCache(provider, options.Clock, options.RefreshBefore), now: options.Clock, random: options.Random,
 	}, nil
 }
 
-func (service *JSSDKService) Config(ctx context.Context, rawURL string) (JSSDKConfigResult, error) {
+func (service *JSSDKService) AgentConfig(ctx context.Context, rawURL string) (AgentConfigSignature, error) {
 	if service == nil || !service.enabled {
-		return JSSDKConfigResult{}, ErrJSSDKDisabled
+		return AgentConfigSignature{}, ErrJSSDKDisabled
 	}
 	signedURL, err := service.validateURL(rawURL)
 	if err != nil {
-		return JSSDKConfigResult{}, err
+		return AgentConfigSignature{}, err
 	}
 	ticket, err := service.cache.get(ctx)
 	if err != nil {
-		return JSSDKConfigResult{}, err
+		return AgentConfigSignature{}, err
 	}
 	now := service.now().UTC()
 	if now.IsZero() || now.Unix() <= 0 || !ticket.ExpiresAt.After(now) {
-		return JSSDKConfigResult{}, ErrJSSDKUnavailable
+		return AgentConfigSignature{}, ErrJSSDKUnavailable
 	}
-	nonceBytes := make([]byte, jssdkNonceBytes)
+	nonceBytes := make([]byte, agentConfigNonceBytes)
 	if _, err = io.ReadFull(service.random, nonceBytes); err != nil {
-		return JSSDKConfigResult{}, ErrJSSDKUnavailable
+		return AgentConfigSignature{}, ErrJSSDKUnavailable
 	}
 	nonce := base64.RawURLEncoding.EncodeToString(nonceBytes)
 	timestamp := now.Unix()
 	canonical := canonicalJSSDKString(ticket.Value, nonce, timestamp, signedURL)
 	// WeCom requires SHA-1 for this canonical JSSDK protocol string.
 	digest := sha1.Sum([]byte(canonical)) // #nosec G401 -- provider-mandated protocol digest, not a password hash.
-	return JSSDKConfigResult{
-		CorpID: service.corpID, AgentID: service.agentID, Nonce: nonce, Timestamp: timestamp,
+	return AgentConfigSignature{
+		SignatureType: "agent_config", CorpID: service.corpID, AgentID: service.agentID, Nonce: nonce, Timestamp: timestamp,
 		Signature: hex.EncodeToString(digest[:]), URL: signedURL, TicketExpiresAt: ticket.ExpiresAt.UTC(),
 	}, nil
 }
@@ -166,33 +167,33 @@ func canonicalJSSDKString(ticket, nonce string, timestamp int64, signedURL strin
 	return "jsapi_ticket=" + ticket + "&noncestr=" + nonce + "&timestamp=" + strconv.FormatInt(timestamp, 10) + "&url=" + signedURL
 }
 
-type jssdkTicketCache struct {
-	provider      JSSDKTicketProvider
+type agentConfigTicketCache struct {
+	provider      AgentConfigTicketProvider
 	now           func() time.Time
 	refreshBefore time.Duration
 
 	mu       sync.Mutex
-	ticket   JSSDKTicket
-	inFlight *jssdkTicketFlight
+	ticket   AgentConfigTicket
+	inFlight *agentConfigTicketFlight
 }
 
-type jssdkTicketFlight struct {
+type agentConfigTicketFlight struct {
 	done   chan struct{}
-	ticket JSSDKTicket
+	ticket AgentConfigTicket
 	err    error
 }
 
-func newJSSDKTicketCache(provider JSSDKTicketProvider, now func() time.Time, refreshBefore time.Duration) *jssdkTicketCache {
-	return &jssdkTicketCache{provider: provider, now: now, refreshBefore: refreshBefore}
+func newAgentConfigTicketCache(provider AgentConfigTicketProvider, now func() time.Time, refreshBefore time.Duration) *agentConfigTicketCache {
+	return &agentConfigTicketCache{provider: provider, now: now, refreshBefore: refreshBefore}
 }
 
-func (cache *jssdkTicketCache) get(ctx context.Context) (JSSDKTicket, error) {
+func (cache *agentConfigTicketCache) get(ctx context.Context) (AgentConfigTicket, error) {
 	if cache == nil || ctx == nil {
-		return JSSDKTicket{}, ErrJSSDKUnavailable
+		return AgentConfigTicket{}, ErrJSSDKUnavailable
 	}
 	now := cache.now().UTC()
 	cache.mu.Lock()
-	if validCachedJSSDKTicket(cache.ticket, now, cache.refreshBefore) {
+	if validCachedAgentConfigTicket(cache.ticket, now, cache.refreshBefore) {
 		ticket := cache.ticket
 		cache.mu.Unlock()
 		return ticket, nil
@@ -203,22 +204,22 @@ func (cache *jssdkTicketCache) get(ctx context.Context) (JSSDKTicket, error) {
 		select {
 		case <-flight.done:
 			if flight.err == nil && !flight.ticket.ExpiresAt.After(cache.now().UTC()) {
-				return JSSDKTicket{}, ErrJSSDKUnavailable
+				return AgentConfigTicket{}, ErrJSSDKUnavailable
 			}
 			return flight.ticket, flight.err
 		case <-ctx.Done():
-			return JSSDKTicket{}, errors.Join(ErrJSSDKUnavailable, ctx.Err())
+			return AgentConfigTicket{}, errors.Join(ErrJSSDKUnavailable, ctx.Err())
 		}
 	}
-	flight := &jssdkTicketFlight{done: make(chan struct{})}
+	flight := &agentConfigTicketFlight{done: make(chan struct{})}
 	cache.inFlight = flight
 	cache.mu.Unlock()
 
-	ticket, err := cache.provider.FetchJSSDKTicket(ctx)
-	if err != nil || !validFetchedJSSDKTicket(ticket, cache.now().UTC()) {
+	ticket, err := cache.provider.FetchAgentConfigTicket(ctx)
+	if err != nil || !validFetchedAgentConfigTicket(ticket, cache.now().UTC()) {
 		flight.err = ErrJSSDKUnavailable
 	} else {
-		flight.ticket = JSSDKTicket{Value: ticket.Value, ExpiresAt: ticket.ExpiresAt.UTC()}
+		flight.ticket = AgentConfigTicket{Value: ticket.Value, ExpiresAt: ticket.ExpiresAt.UTC()}
 	}
 	cache.mu.Lock()
 	if flight.err == nil {
@@ -230,15 +231,15 @@ func (cache *jssdkTicketCache) get(ctx context.Context) (JSSDKTicket, error) {
 	return flight.ticket, flight.err
 }
 
-func validCachedJSSDKTicket(ticket JSSDKTicket, now time.Time, refreshBefore time.Duration) bool {
-	return validJSSDKTicketValue(ticket.Value) && ticket.ExpiresAt.After(now.Add(refreshBefore))
+func validCachedAgentConfigTicket(ticket AgentConfigTicket, now time.Time, refreshBefore time.Duration) bool {
+	return validAgentConfigTicketValue(ticket.Value) && ticket.ExpiresAt.After(now.Add(refreshBefore))
 }
 
-func validFetchedJSSDKTicket(ticket JSSDKTicket, now time.Time) bool {
-	return validJSSDKTicketValue(ticket.Value) && ticket.ExpiresAt.After(now.Add(time.Minute)) && !ticket.ExpiresAt.After(now.Add(24*time.Hour))
+func validFetchedAgentConfigTicket(ticket AgentConfigTicket, now time.Time) bool {
+	return validAgentConfigTicketValue(ticket.Value) && ticket.ExpiresAt.After(now.Add(time.Minute)) && !ticket.ExpiresAt.After(now.Add(24*time.Hour))
 }
 
-func validJSSDKTicketValue(value string) bool {
+func validAgentConfigTicketValue(value string) bool {
 	if len(value) < 1 || len(value) > 2048 || strings.TrimSpace(value) != value {
 		return false
 	}

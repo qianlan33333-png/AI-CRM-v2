@@ -6907,6 +6907,21 @@ func (e SetupWizardUnavailableMaskedSettingMasked) Valid() bool {
 	}
 }
 
+// Defines values for SidebarAgentConfigSignatureSignatureType.
+const (
+	AgentConfig SidebarAgentConfigSignatureSignatureType = "agent_config"
+)
+
+// Valid indicates whether the value is a known member of the SidebarAgentConfigSignatureSignatureType enum.
+func (e SidebarAgentConfigSignatureSignatureType) Valid() bool {
+	switch e {
+	case AgentConfig:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SidebarContextResponseState.
 const (
 	CustomerNotBound      SidebarContextResponseState = "customer_not_bound"
@@ -11496,6 +11511,21 @@ type SetupWizardUnavailableMaskedSettingConfigured bool
 // SetupWizardUnavailableMaskedSettingMasked defines model for SetupWizardUnavailableMaskedSetting.Masked.
 type SetupWizardUnavailableMaskedSettingMasked bool
 
+// SidebarAgentConfigSignature defines model for SidebarAgentConfigSignature.
+type SidebarAgentConfigSignature struct {
+	AgentId         int64                                    `json:"agent_id"`
+	CorpId          string                                   `json:"corp_id"`
+	Nonce           string                                   `json:"nonce"`
+	Signature       string                                   `json:"signature"`
+	SignatureType   SidebarAgentConfigSignatureSignatureType `json:"signature_type"`
+	TicketExpiresAt time.Time                                `json:"ticket_expires_at"`
+	Timestamp       int64                                    `json:"timestamp"`
+	Url             string                                   `json:"url"`
+}
+
+// SidebarAgentConfigSignatureSignatureType defines model for SidebarAgentConfigSignature.SignatureType.
+type SidebarAgentConfigSignatureSignatureType string
+
 // SidebarContextResponse defines model for SidebarContextResponse.
 type SidebarContextResponse struct {
 	ContextToken *string                     `json:"context_token,omitempty"`
@@ -12916,6 +12946,11 @@ type MintSidebarContextJSONBody struct {
 	ExternalUserid string `json:"external_userid"`
 }
 
+// GetSidebarAgentConfigParams defines parameters for GetSidebarAgentConfig.
+type GetSidebarAgentConfigParams struct {
+	Url string `form:"url" json:"url"`
+}
+
 // ListSidebarMaterialsParams defines parameters for ListSidebarMaterials.
 type ListSidebarMaterialsParams struct {
 	Q        *string `form:"q,omitempty" json:"q,omitempty"`
@@ -12932,6 +12967,18 @@ type ListSidebarMaterialsParams struct {
 type GetSidebarMaterialThumbnailStatusParams struct {
 	// XSidebarContextToken Short-lived HMAC-authenticated corp, customer, owner, and viewer scoped token.
 	XSidebarContextToken SidebarContextToken `json:"X-Sidebar-Context-Token"`
+}
+
+// CompleteSidebarOAuthParams defines parameters for CompleteSidebarOAuth.
+type CompleteSidebarOAuthParams struct {
+	Code  string `form:"code" json:"code"`
+	State string `form:"state" json:"state"`
+}
+
+// StartSidebarOAuthParams defines parameters for StartSidebarOAuth.
+type StartSidebarOAuthParams struct {
+	ExternalUserid string  `form:"external_userid" json:"external_userid"`
+	Next           *string `form:"next,omitempty" json:"next,omitempty"`
 }
 
 // ListSidebarOrdersParams defines parameters for ListSidebarOrders.
@@ -15375,12 +15422,21 @@ type ServerInterface interface {
 	// Resolve one local customer and mint a short-lived owner-scoped sidebar token
 	// (POST /api/sidebar/context-token)
 	MintSidebarContext(w http.ResponseWriter, r *http.Request)
+	// Sign one allowed Sidebar URL with a WeCom agent_config ticket
+	// (GET /api/sidebar/v2/jssdk/agent-config)
+	GetSidebarAgentConfig(w http.ResponseWriter, r *http.Request, params GetSidebarAgentConfigParams)
 	// List local enabled image metadata and quick keywords without creating variants
 	// (GET /api/sidebar/v2/materials)
 	ListSidebarMaterials(w http.ResponseWriter, r *http.Request, params ListSidebarMaterialsParams)
 	// Return pending for a local image without generating a thumbnail
 	// (GET /api/sidebar/v2/materials/image/{image_id}/thumbnail)
 	GetSidebarMaterialThumbnailStatus(w http.ResponseWriter, r *http.Request, imageId int64, params GetSidebarMaterialThumbnailStatusParams)
+	// Claim a Sidebar OAuth state once and establish a bound browser session
+	// (GET /api/sidebar/v2/oauth/callback)
+	CompleteSidebarOAuth(w http.ResponseWriter, r *http.Request, params CompleteSidebarOAuthParams)
+	// Start a state-bound Sidebar WeCom OAuth grant for one external contact
+	// (GET /api/sidebar/v2/oauth/start)
+	StartSidebarOAuth(w http.ResponseWriter, r *http.Request, params StartSidebarOAuthParams)
 	// List customer-scoped local orders without payer or identity fields
 	// (GET /api/sidebar/v2/orders)
 	ListSidebarOrders(w http.ResponseWriter, r *http.Request, params ListSidebarOrdersParams)
@@ -16494,6 +16550,12 @@ func (_ Unimplemented) MintSidebarContext(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Sign one allowed Sidebar URL with a WeCom agent_config ticket
+// (GET /api/sidebar/v2/jssdk/agent-config)
+func (_ Unimplemented) GetSidebarAgentConfig(w http.ResponseWriter, r *http.Request, params GetSidebarAgentConfigParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // List local enabled image metadata and quick keywords without creating variants
 // (GET /api/sidebar/v2/materials)
 func (_ Unimplemented) ListSidebarMaterials(w http.ResponseWriter, r *http.Request, params ListSidebarMaterialsParams) {
@@ -16503,6 +16565,18 @@ func (_ Unimplemented) ListSidebarMaterials(w http.ResponseWriter, r *http.Reque
 // Return pending for a local image without generating a thumbnail
 // (GET /api/sidebar/v2/materials/image/{image_id}/thumbnail)
 func (_ Unimplemented) GetSidebarMaterialThumbnailStatus(w http.ResponseWriter, r *http.Request, imageId int64, params GetSidebarMaterialThumbnailStatusParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Claim a Sidebar OAuth state once and establish a bound browser session
+// (GET /api/sidebar/v2/oauth/callback)
+func (_ Unimplemented) CompleteSidebarOAuth(w http.ResponseWriter, r *http.Request, params CompleteSidebarOAuthParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Start a state-bound Sidebar WeCom OAuth grant for one external contact
+// (GET /api/sidebar/v2/oauth/start)
+func (_ Unimplemented) StartSidebarOAuth(w http.ResponseWriter, r *http.Request, params StartSidebarOAuthParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -25443,6 +25517,40 @@ func (siw *ServerInterfaceWrapper) MintSidebarContext(w http.ResponseWriter, r *
 	handler.ServeHTTP(w, r)
 }
 
+// GetSidebarAgentConfig operation middleware
+func (siw *ServerInterfaceWrapper) GetSidebarAgentConfig(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetSidebarAgentConfigParams
+
+	// ------------- Required query parameter "url" -------------
+
+	if paramValue := r.URL.Query().Get("url"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "url"})
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "url", r.URL.Query(), &params.Url, runtime.BindQueryParameterOptions{Type: "string", Format: "uri"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "url", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSidebarAgentConfig(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListSidebarMaterials operation middleware
 func (siw *ServerInterfaceWrapper) ListSidebarMaterials(w http.ResponseWriter, r *http.Request) {
 
@@ -25583,6 +25691,97 @@ func (siw *ServerInterfaceWrapper) GetSidebarMaterialThumbnailStatus(w http.Resp
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetSidebarMaterialThumbnailStatus(w, r, imageId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CompleteSidebarOAuth operation middleware
+func (siw *ServerInterfaceWrapper) CompleteSidebarOAuth(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CompleteSidebarOAuthParams
+
+	// ------------- Required query parameter "code" -------------
+
+	if paramValue := r.URL.Query().Get("code"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "code"})
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "code", r.URL.Query(), &params.Code, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "code", Err: err})
+		return
+	}
+
+	// ------------- Required query parameter "state" -------------
+
+	if paramValue := r.URL.Query().Get("state"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompleteSidebarOAuth(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// StartSidebarOAuth operation middleware
+func (siw *ServerInterfaceWrapper) StartSidebarOAuth(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params StartSidebarOAuthParams
+
+	// ------------- Required query parameter "external_userid" -------------
+
+	if paramValue := r.URL.Query().Get("external_userid"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "external_userid"})
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "external_userid", r.URL.Query(), &params.ExternalUserid, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "external_userid", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "next" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "next", r.URL.Query(), &params.Next, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "next", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.StartSidebarOAuth(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -31381,10 +31580,19 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/sidebar/context-token", wrapper.MintSidebarContext)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/sidebar/v2/jssdk/agent-config", wrapper.GetSidebarAgentConfig)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/sidebar/v2/materials", wrapper.ListSidebarMaterials)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/sidebar/v2/materials/image/{image_id}/thumbnail", wrapper.GetSidebarMaterialThumbnailStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/sidebar/v2/oauth/callback", wrapper.CompleteSidebarOAuth)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/sidebar/v2/oauth/start", wrapper.StartSidebarOAuth)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/sidebar/v2/orders", wrapper.ListSidebarOrders)
@@ -40610,6 +40818,41 @@ func (response MintSidebarContext503JSONResponse) VisitMintSidebarContextRespons
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetSidebarAgentConfigRequestObject struct {
+	Params GetSidebarAgentConfigParams
+}
+
+type GetSidebarAgentConfigResponseObject interface {
+	VisitGetSidebarAgentConfigResponse(w http.ResponseWriter) error
+}
+
+type GetSidebarAgentConfig200JSONResponse SidebarAgentConfigSignature
+
+func (response GetSidebarAgentConfig200JSONResponse) VisitGetSidebarAgentConfigResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSidebarAgentConfig400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetSidebarAgentConfig400JSONResponse) VisitGetSidebarAgentConfigResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSidebarAgentConfig503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetSidebarAgentConfig503JSONResponse) VisitGetSidebarAgentConfigResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListSidebarMaterialsRequestObject struct {
 	Params ListSidebarMaterialsParams
 }
@@ -40728,6 +40971,83 @@ func (response GetSidebarMaterialThumbnailStatus404JSONResponse) VisitGetSidebar
 type GetSidebarMaterialThumbnailStatus503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response GetSidebarMaterialThumbnailStatus503JSONResponse) VisitGetSidebarMaterialThumbnailStatusResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteSidebarOAuthRequestObject struct {
+	Params CompleteSidebarOAuthParams
+}
+
+type CompleteSidebarOAuthResponseObject interface {
+	VisitCompleteSidebarOAuthResponse(w http.ResponseWriter) error
+}
+
+type CompleteSidebarOAuth302Response struct {
+}
+
+func (response CompleteSidebarOAuth302Response) VisitCompleteSidebarOAuthResponse(w http.ResponseWriter) error {
+	w.WriteHeader(302)
+	return nil
+}
+
+type CompleteSidebarOAuth400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CompleteSidebarOAuth400JSONResponse) VisitCompleteSidebarOAuthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteSidebarOAuth403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CompleteSidebarOAuth403JSONResponse) VisitCompleteSidebarOAuthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type CompleteSidebarOAuth503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response CompleteSidebarOAuth503JSONResponse) VisitCompleteSidebarOAuthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartSidebarOAuthRequestObject struct {
+	Params StartSidebarOAuthParams
+}
+
+type StartSidebarOAuthResponseObject interface {
+	VisitStartSidebarOAuthResponse(w http.ResponseWriter) error
+}
+
+type StartSidebarOAuth302Response struct {
+}
+
+func (response StartSidebarOAuth302Response) VisitStartSidebarOAuthResponse(w http.ResponseWriter) error {
+	w.WriteHeader(302)
+	return nil
+}
+
+type StartSidebarOAuth400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response StartSidebarOAuth400JSONResponse) VisitStartSidebarOAuthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type StartSidebarOAuth503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response StartSidebarOAuth503JSONResponse) VisitStartSidebarOAuthResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -46808,12 +47128,21 @@ type StrictServerInterface interface {
 	// Resolve one local customer and mint a short-lived owner-scoped sidebar token
 	// (POST /api/sidebar/context-token)
 	MintSidebarContext(ctx context.Context, request MintSidebarContextRequestObject) (MintSidebarContextResponseObject, error)
+	// Sign one allowed Sidebar URL with a WeCom agent_config ticket
+	// (GET /api/sidebar/v2/jssdk/agent-config)
+	GetSidebarAgentConfig(ctx context.Context, request GetSidebarAgentConfigRequestObject) (GetSidebarAgentConfigResponseObject, error)
 	// List local enabled image metadata and quick keywords without creating variants
 	// (GET /api/sidebar/v2/materials)
 	ListSidebarMaterials(ctx context.Context, request ListSidebarMaterialsRequestObject) (ListSidebarMaterialsResponseObject, error)
 	// Return pending for a local image without generating a thumbnail
 	// (GET /api/sidebar/v2/materials/image/{image_id}/thumbnail)
 	GetSidebarMaterialThumbnailStatus(ctx context.Context, request GetSidebarMaterialThumbnailStatusRequestObject) (GetSidebarMaterialThumbnailStatusResponseObject, error)
+	// Claim a Sidebar OAuth state once and establish a bound browser session
+	// (GET /api/sidebar/v2/oauth/callback)
+	CompleteSidebarOAuth(ctx context.Context, request CompleteSidebarOAuthRequestObject) (CompleteSidebarOAuthResponseObject, error)
+	// Start a state-bound Sidebar WeCom OAuth grant for one external contact
+	// (GET /api/sidebar/v2/oauth/start)
+	StartSidebarOAuth(ctx context.Context, request StartSidebarOAuthRequestObject) (StartSidebarOAuthResponseObject, error)
 	// List customer-scoped local orders without payer or identity fields
 	// (GET /api/sidebar/v2/orders)
 	ListSidebarOrders(ctx context.Context, request ListSidebarOrdersRequestObject) (ListSidebarOrdersResponseObject, error)
@@ -51310,6 +51639,32 @@ func (sh *strictHandler) MintSidebarContext(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// GetSidebarAgentConfig operation middleware
+func (sh *strictHandler) GetSidebarAgentConfig(w http.ResponseWriter, r *http.Request, params GetSidebarAgentConfigParams) {
+	var request GetSidebarAgentConfigRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSidebarAgentConfig(ctx, request.(GetSidebarAgentConfigRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSidebarAgentConfig")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSidebarAgentConfigResponseObject); ok {
+		if err := validResponse.VisitGetSidebarAgentConfigResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListSidebarMaterials operation middleware
 func (sh *strictHandler) ListSidebarMaterials(w http.ResponseWriter, r *http.Request, params ListSidebarMaterialsParams) {
 	var request ListSidebarMaterialsRequestObject
@@ -51356,6 +51711,58 @@ func (sh *strictHandler) GetSidebarMaterialThumbnailStatus(w http.ResponseWriter
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetSidebarMaterialThumbnailStatusResponseObject); ok {
 		if err := validResponse.VisitGetSidebarMaterialThumbnailStatusResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CompleteSidebarOAuth operation middleware
+func (sh *strictHandler) CompleteSidebarOAuth(w http.ResponseWriter, r *http.Request, params CompleteSidebarOAuthParams) {
+	var request CompleteSidebarOAuthRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.CompleteSidebarOAuth(ctx, request.(CompleteSidebarOAuthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CompleteSidebarOAuth")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CompleteSidebarOAuthResponseObject); ok {
+		if err := validResponse.VisitCompleteSidebarOAuthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// StartSidebarOAuth operation middleware
+func (sh *strictHandler) StartSidebarOAuth(w http.ResponseWriter, r *http.Request, params StartSidebarOAuthParams) {
+	var request StartSidebarOAuthRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.StartSidebarOAuth(ctx, request.(StartSidebarOAuthRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "StartSidebarOAuth")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(StartSidebarOAuthResponseObject); ok {
+		if err := validResponse.VisitStartSidebarOAuthResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

@@ -1,0 +1,55 @@
+package main
+
+import (
+	"context"
+	"errors"
+
+	sidebarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/sidebar/app"
+	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
+)
+
+// sidebarOAuthProvider translates only trusted WeCom enterprise identities;
+// the sidebar app owns all state, session, customer, and owner binding.
+type sidebarOAuthProvider struct{ client *wecomclient.HumanOAuthClient }
+
+func (provider sidebarOAuthProvider) CorpID() string {
+	if provider.client == nil {
+		return ""
+	}
+	return provider.client.CorpID()
+}
+
+func (provider sidebarOAuthProvider) AuthorizationURL(state string) (string, error) {
+	if provider.client == nil {
+		return "", errors.New("sidebar oauth provider unavailable")
+	}
+	return provider.client.AuthorizationURL(state)
+}
+
+func (provider sidebarOAuthProvider) Exchange(ctx context.Context, code string) (sidebarapp.OAuthIdentity, error) {
+	if provider.client == nil {
+		return sidebarapp.OAuthIdentity{}, errors.New("sidebar oauth provider unavailable")
+	}
+	identity, err := provider.client.Exchange(ctx, code)
+	if err != nil {
+		return sidebarapp.OAuthIdentity{}, err
+	}
+	return sidebarapp.OAuthIdentity{CorpID: string(identity.CorpID), UserID: identity.UserID}, nil
+}
+
+// sidebarAgentConfigTicketProvider exposes only agent_config tickets to the
+// sidebar signature service. It has no corp-config or write capability.
+type sidebarAgentConfigTicketProvider struct {
+	client *wecomclient.AgentConfigTicketClient
+}
+
+func (provider sidebarAgentConfigTicketProvider) FetchAgentConfigTicket(ctx context.Context) (sidebarapp.AgentConfigTicket, error) {
+	if provider.client == nil {
+		return sidebarapp.AgentConfigTicket{}, errors.New("sidebar agent config provider unavailable")
+	}
+	ticket, err := provider.client.FetchAgentConfigTicket(ctx)
+	if err != nil {
+		return sidebarapp.AgentConfigTicket{}, err
+	}
+	return sidebarapp.AgentConfigTicket{Value: ticket.Value, ExpiresAt: ticket.ExpiresAt}, nil
+}

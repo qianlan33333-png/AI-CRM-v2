@@ -208,6 +208,39 @@ func TestLoadWeComOAuthIsAtomicAndRedacted(t *testing.T) {
 	}
 }
 
+func TestLoadWeComSidebarIsAtomicAndUsesIndependentCallback(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv:          "postgres://db/aicrm",
+		apiListenAddressEnv:     "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:      "1",
+		identityHMACKeyEnv:      strings.Repeat("A", 43),
+		weComSidebarCorpIDEnv:   "sidebar-corp",
+		weComSidebarSecretEnv:   "sidebar-secret-sentinel",
+		weComSidebarCallbackEnv: "https://crm.example.test/api/sidebar/v2/oauth/callback",
+		weComSidebarAgentIDEnv:  "73",
+		weComSidebarHostsEnv:    "crm.example.test,sidebar.example.test",
+	}
+	root, err := load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil || !root.WeCom.Sidebar.Enabled || root.WeCom.Sidebar.CorpID != "sidebar-corp" || root.WeCom.Sidebar.AgentID != 73 ||
+		!reflect.DeepEqual(root.WeCom.Sidebar.AllowedHosts, []string{"crm.example.test", "sidebar.example.test"}) || root.WeCom.Sidebar.Secret.Value() != values[weComSidebarSecretEnv] {
+		t.Fatalf("sidebar load = %#v, %v", root.WeCom.Sidebar, err)
+	}
+	for _, formatted := range []string{fmt.Sprint(root), fmt.Sprintf("%#v", root)} {
+		if strings.Contains(formatted, values[weComSidebarSecretEnv]) {
+			t.Fatalf("Root formatting leaked Sidebar credential: %q", formatted)
+		}
+	}
+	delete(values, weComSidebarAgentIDEnv)
+	if _, err = load(appruntime.RoleAPI, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.sidebar requires corp_id, secret, callback_url, agent_id, and allowed_hosts together" {
+		t.Fatalf("partial Sidebar error = %v", err)
+	}
+	values[weComSidebarAgentIDEnv] = "73"
+	values[weComSidebarCallbackEnv] = "https://crm.example.test/auth/wecom/callback"
+	if _, err = load(appruntime.RoleAPI, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.sidebar.callback_url is invalid" {
+		t.Fatalf("shared Callback error = %v", err)
+	}
+}
+
 func TestDatabaseURLFormattingIsRedacted(t *testing.T) {
 	value := DatabaseURL{value: "postgres://user:secret@db/aicrm"}
 	root := Root{Database: Database{URL: value}}

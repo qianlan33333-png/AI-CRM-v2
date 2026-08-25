@@ -127,6 +127,66 @@ paths:
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/oauth/start:
+    get:
+      tags: [p4-sidebar-local]
+      operationId: startSidebarOAuth
+      summary: Start a state-bound Sidebar WeCom OAuth grant for one external contact
+      security: []
+      x-p4-decision-evidence: P4-SB01-SIDEBAR-OAUTH-AGENT-CONFIG-2026-08-26
+      x-aicrm-capability: sidebar.oauth
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: auth.oauth_state
+      x-aicrm-external-effect: none
+      parameters:
+        - {name: external_userid, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 1024}}
+        - {name: next, in: query, required: false, schema: {type: string, minLength: 1, maxLength: 2048}}
+      responses:
+        "302": {description: Redirect to the configured WeCom OAuth authorization endpoint}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/oauth/callback:
+    get:
+      tags: [p4-sidebar-local]
+      operationId: completeSidebarOAuth
+      summary: Claim a Sidebar OAuth state once and establish a bound browser session
+      security: []
+      x-p4-decision-evidence: P4-SB01-SIDEBAR-OAUTH-AGENT-CONFIG-2026-08-26
+      x-aicrm-capability: sidebar.oauth
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: auth.oauth_state_and_identity.local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - {name: code, in: query, required: true, schema: {type: string, minLength: 1, maxLength: 512}}
+        - {name: state, in: query, required: true, schema: {type: string, minLength: 43, maxLength: 43, pattern: '^[A-Za-z0-9_-]{43}$'}}
+      responses:
+        "302": {description: Bound browser session established and redirected to the stored relative path}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/jssdk/agent-config:
+    get:
+      tags: [p4-sidebar-local]
+      operationId: getSidebarAgentConfig
+      summary: Sign one allowed Sidebar URL with a WeCom agent_config ticket
+      security: []
+      x-p4-decision-evidence: P4-SB01-SIDEBAR-OAUTH-AGENT-CONFIG-2026-08-26
+      x-aicrm-capability: sidebar.jssdk
+      x-aicrm-auth-scheme: public
+      x-aicrm-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: wecom.agent_config_ticket.read
+      x-aicrm-external-effect: none
+      parameters:
+        - {name: url, in: query, required: true, schema: {type: string, format: uri, minLength: 1, maxLength: 4096}}
+      responses:
+        "200": {description: Agent-config-only signature; the provider ticket is never returned, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarAgentConfigSignature"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/workbench:
     get:
       tags: [p4-sidebar-local]
@@ -12378,6 +12438,19 @@ components:
         local_only: {type: boolean, enum: [true]}
         provider_execution_eligible: {type: boolean, enum: [false]}
         real_external_call_executed: {type: boolean, enum: [false]}
+    SidebarAgentConfigSignature:
+      type: object
+      additionalProperties: false
+      required: [signature_type, corp_id, agent_id, nonce, timestamp, signature, url, ticket_expires_at]
+      properties:
+        signature_type: {type: string, enum: [agent_config]}
+        corp_id: {type: string, minLength: 1, maxLength: 128}
+        agent_id: {type: integer, format: int64, minimum: 1}
+        nonce: {type: string, minLength: 1, maxLength: 128}
+        timestamp: {type: integer, format: int64, minimum: 1}
+        signature: {type: string, pattern: '^[a-f0-9]{40}$'}
+        url: {type: string, format: uri, minLength: 1, maxLength: 4096}
+        ticket_expires_at: {type: string, format: date-time}
     SidebarContextResponse:
       type: object
       additionalProperties: false

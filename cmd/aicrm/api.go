@@ -170,6 +170,8 @@ type candidateHandler struct {
 	wechatPaySettlement       *orderhttp.Handler
 	commerceRefunds           *orderhttp.CommerceRefundHandler
 	sidebar                   *sidebarhttp.Handler
+	sidebarOAuth              *sidebarhttp.OAuthHandler
+	sidebarJSSDK              *sidebarhttp.JSSDKHandler
 	surveyPublic              *surveyhttp.PublicHandler
 	radarPublic               *radarthttp.PublicHandler
 	surveyH5OAuth             *surveyhttp.H5OAuthHandler
@@ -211,6 +213,30 @@ func (application identityConsoleApplication) Bind(ctx context.Context, command 
 }
 
 var _ api.ServerInterface = (*candidateHandler)(nil)
+
+func (handler *candidateHandler) StartSidebarOAuth(writer http.ResponseWriter, request *http.Request, _ api.StartSidebarOAuthParams) {
+	if handler == nil || handler.sidebarOAuth == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.sidebarOAuth.Start(writer, request)
+}
+
+func (handler *candidateHandler) CompleteSidebarOAuth(writer http.ResponseWriter, request *http.Request, _ api.CompleteSidebarOAuthParams) {
+	if handler == nil || handler.sidebarOAuth == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.sidebarOAuth.Callback(writer, request)
+}
+
+func (handler *candidateHandler) GetSidebarAgentConfig(writer http.ResponseWriter, request *http.Request, _ api.GetSidebarAgentConfigParams) {
+	if handler == nil || handler.sidebarJSSDK == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.sidebarJSSDK.AgentConfig(writer, request)
+}
 
 func (handler *candidateHandler) ListCustomers(writer http.ResponseWriter, request *http.Request, params api.ListCustomersParams) {
 	if params.Mobile == nil {
@@ -797,6 +823,39 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			BaseURL: wecomclient.ProductionBaseURL, AuthorizeURL: wecomclient.ProductionAuthorizeURL,
 			CallbackURL: config.WeCom.OAuth.CallbackURL, CorpID: wecomclient.CorpID(config.WeCom.OAuth.CorpID),
 			HTTPClient: providerHTTP, TokenProvider: tokenProvider,
+		})
+		if err != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+	}
+	var sidebarOAuthClient *wecomclient.HumanOAuthClient
+	var sidebarAgentConfigClient *wecomclient.AgentConfigTicketClient
+	if config.WeCom.Sidebar.Enabled {
+		credentials, credentialErr := wecomclient.NewCredentials(config.WeCom.Sidebar.CorpID, config.WeCom.Sidebar.Secret.Value())
+		if credentialErr != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		providerHTTP := &http.Client{Timeout: 5 * time.Second}
+		tokenProvider, tokenErr := wecomclient.NewTokenProvider(wecomclient.TokenProviderConfig{
+			BaseURL: wecomclient.ProductionBaseURL, Credentials: credentials, HTTPClient: providerHTTP, Now: time.Now,
+		})
+		if tokenErr != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		sidebarOAuthClient, err = wecomclient.NewHumanOAuthClient(wecomclient.HumanOAuthConfig{
+			BaseURL: wecomclient.ProductionBaseURL, AuthorizeURL: wecomclient.ProductionAuthorizeURL,
+			CallbackURL: config.WeCom.Sidebar.CallbackURL, CallbackPath: "/api/sidebar/v2/oauth/callback", CorpID: wecomclient.CorpID(config.WeCom.Sidebar.CorpID),
+			HTTPClient: providerHTTP, TokenProvider: tokenProvider,
+		})
+		if err != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		sidebarAgentConfigClient, err = wecomclient.NewAgentConfigTicketClient(wecomclient.AgentConfigTicketClientConfig{
+			BaseURL: wecomclient.ProductionBaseURL, HTTPClient: providerHTTP, TokenProvider: tokenProvider, Now: time.Now,
 		})
 		if err != nil {
 			pool.Close()
@@ -1521,8 +1580,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	configRepository := configstore.NewRepository()
 	configManager := configapp.NewManager(uow, configRepository, eventstore.NewAppender())
+	sidebarCorpID := config.WeCom.OAuth.CorpID
+	if config.WeCom.Sidebar.Enabled {
+		sidebarCorpID = config.WeCom.Sidebar.CorpID
+	}
 	sidebarService, err := sidebarapp.NewService(
-		sidebarCorpReader{settings: configManager, fallback: config.WeCom.OAuth.CorpID},
+		sidebarCorpReader{settings: configManager, fallback: sidebarCorpID},
 		identityResolver,
 		contactapp.NewSidebarProfileService(uow, contactstore.NewSidebarProfileRepository(), eventstore.NewAppender()),
 		customerAnswerService,
@@ -1540,6 +1603,27 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	var sidebarOAuthService *sidebarapp.OAuthGrantService
+	if sidebarOAuthClient != nil {
+		sidebarOAuthService, err = sidebarapp.NewOAuthGrantService(oauthStates, sidebarOAuthProvider{client: sidebarOAuthClient}, service, service, sidebarService, config.Identity.HMACKey.Value(), sidebarapp.OAuthGrantOptions{})
+		if err != nil {
+			pool.Close()
+			return nil, err
+		}
+	}
+	candidate.sidebarOAuth = sidebarhttp.NewOAuthHandler(sidebarOAuthService)
+	var sidebarTicketProvider sidebarapp.AgentConfigTicketProvider
+	if sidebarAgentConfigClient != nil {
+		sidebarTicketProvider = sidebarAgentConfigTicketProvider{client: sidebarAgentConfigClient}
+	}
+	sidebarJSSDKService, err := sidebarapp.NewJSSDKService(sidebarapp.JSSDKServiceConfig{
+		Enabled: config.WeCom.Sidebar.Enabled, CorpID: config.WeCom.Sidebar.CorpID, AgentID: config.WeCom.Sidebar.AgentID, AllowedHosts: config.WeCom.Sidebar.AllowedHosts,
+	}, sidebarTicketProvider, sidebarapp.JSSDKOptions{})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	candidate.sidebarJSSDK = sidebarhttp.NewJSSDKHandler(sidebarJSSDKService)
 	setupWizardService, err := configapp.NewSetupWizardService(configManager, configapp.SetupWizardSecretConfigured{
 		WeComSecret:         config.WeCom.OAuth.Enabled,
 		WeComCallbackToken:  config.WeCom.Callback.Enabled,
@@ -1958,6 +2042,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		})},
 		{http.MethodGet, "/api/h5/surveys/oauth/start", http.HandlerFunc(wrapper.StartSurveyH5OAuth)},
 		{http.MethodGet, "/api/h5/surveys/oauth/callback", http.HandlerFunc(wrapper.CallbackSurveyH5OAuth)},
+		{http.MethodGet, "/api/sidebar/v2/oauth/start", http.HandlerFunc(wrapper.StartSidebarOAuth)},
+		{http.MethodGet, "/api/sidebar/v2/oauth/callback", http.HandlerFunc(wrapper.CompleteSidebarOAuth)},
+		{http.MethodGet, "/api/sidebar/v2/jssdk/agent-config", http.HandlerFunc(wrapper.GetSidebarAgentConfig)},
 	} {
 		if err = registerPublicProtocol(route.method, route.pattern, route.endpoint); err != nil {
 			return nil, err
