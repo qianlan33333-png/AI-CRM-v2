@@ -47,6 +47,7 @@ CREATE TABLE public.outbound_campaign_provider_attempt_receipts (
 
 -- A dispatch binding is append-only. Runtime terminal state remains owned by
 -- external_effects; the local state is a safe operator projection only.
+-- +goose StatementBegin
 CREATE FUNCTION public.aicrm_outbound_campaign_dispatches_no_delete()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
 BEGIN
@@ -62,12 +63,14 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+-- +goose StatementEnd
 CREATE TRIGGER outbound_campaign_dispatches_guard
 BEFORE UPDATE OR DELETE ON public.outbound_campaign_dispatches
 FOR EACH ROW EXECUTE FUNCTION public.aicrm_outbound_campaign_dispatches_no_delete();
 
 -- +goose Down
 LOCK TABLE public.outbound_campaign_provider_attempt_receipts, public.outbound_campaign_dispatch_receipts, public.outbound_campaign_dispatches IN SHARE ROW EXCLUSIVE MODE;
+-- +goose StatementBegin
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM public.outbound_campaign_provider_attempt_receipts)
@@ -77,6 +80,7 @@ BEGIN
   END IF;
 END;
 $$;
+-- +goose StatementEnd
 DROP TRIGGER outbound_campaign_dispatches_guard ON public.outbound_campaign_dispatches;
 DROP FUNCTION public.aicrm_outbound_campaign_dispatches_no_delete();
 DROP TABLE public.outbound_campaign_provider_attempt_receipts;

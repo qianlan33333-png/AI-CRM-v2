@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -112,7 +113,7 @@ func (repository *CampaignDispatchRepository) InsertCampaignDispatchBinding(ctx 
 	}
 	params := outbounddb.InsertOutboundCampaignDispatchParams{HandoffID: binding.HandoffID, CustomerID: binding.CustomerID, StepIndex: binding.StepIndex, RecipientDigest: binding.RecipientDigest, PayloadDigest: binding.PayloadDigest, State: string(binding.State)}
 	if binding.ExternalEffectID != "" {
-		id, parseErr := strconv.ParseInt(binding.ExternalEffectID, 10, 64)
+		id, parseErr := parseCampaignExternalEffectID(binding.ExternalEffectID)
 		if parseErr != nil || id < 1 {
 			return outboundport.CampaignDispatchBinding{}, outbound.ErrCampaignDispatchInvalid
 		}
@@ -136,7 +137,7 @@ func (repository *CampaignDispatchRepository) InsertCampaignDispatchBinding(ctx 
 }
 
 func (repository *CampaignDispatchRepository) LoadCampaignDispatchByEffect(ctx context.Context, effectID string) (outboundport.CampaignDispatchBinding, error) {
-	id, err := strconv.ParseInt(effectID, 10, 64)
+	id, err := parseCampaignExternalEffectID(effectID)
 	if repository == nil || err != nil || id < 1 {
 		return outboundport.CampaignDispatchBinding{}, outbound.ErrCampaignDispatchInvalid
 	}
@@ -185,7 +186,7 @@ func (repository *CampaignDispatchRepository) ReserveCampaignDispatchReceipt(ctx
 }
 
 func (repository *CampaignDispatchRepository) UpdateCampaignDispatchState(ctx context.Context, effectID string, state outbound.CampaignDispatchState) error {
-	id, err := strconv.ParseInt(effectID, 10, 64)
+	id, err := parseCampaignExternalEffectID(effectID)
 	if repository == nil || err != nil || id < 1 {
 		return outbound.ErrCampaignDispatchInvalid
 	}
@@ -237,7 +238,7 @@ func (repository *CampaignDispatchRepository) ReadCampaignDispatchSummary(ctx co
 }
 
 func (repository *CampaignDispatchRepository) RecordCampaignProviderAttemptReceipt(ctx context.Context, effectID string, attempt int32, completion string, receipt eer.Digest) error {
-	id, err := strconv.ParseInt(effectID, 10, 64)
+	id, err := parseCampaignExternalEffectID(effectID)
 	if repository == nil || err != nil || id < 1 || attempt < 1 || !validCampaignDispatchCompletion(completion) || !outbound.ValidCampaignDispatchDigest(string(receipt)) {
 		return outbound.ErrCampaignDispatchInvalid
 	}
@@ -289,10 +290,28 @@ func dispatchBindingFromRow(row outbounddb.OutboundCampaignDispatch) (outboundpo
 	}
 	result := outboundport.CampaignDispatchBinding{ID: row.ID, HandoffID: row.HandoffID, CustomerID: row.CustomerID, StepIndex: row.StepIndex, RecipientDigest: row.RecipientDigest, PayloadDigest: row.PayloadDigest, State: outbound.CampaignDispatchState(row.State), CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC()}
 	if row.ExternalEffectID.Valid {
-		result.ExternalEffectID = strconv.FormatInt(row.ExternalEffectID.Int64, 10)
+		result.ExternalEffectID = formatCampaignExternalEffectID(row.ExternalEffectID.Int64)
 	}
 	if row.BlockReason.Valid {
 		result.BlockReason = row.BlockReason.String
 	}
 	return result, true
+}
+
+func parseCampaignExternalEffectID(value string) (int64, error) {
+	if !strings.HasPrefix(value, "eer_") {
+		return 0, outbound.ErrCampaignDispatchInvalid
+	}
+	id, err := strconv.ParseInt(strings.TrimPrefix(value, "eer_"), 10, 64)
+	if err != nil || id < 1 {
+		return 0, outbound.ErrCampaignDispatchInvalid
+	}
+	return id, nil
+}
+
+func formatCampaignExternalEffectID(id int64) string {
+	if id < 1 {
+		return ""
+	}
+	return "eer_" + strconv.FormatInt(id, 10)
 }

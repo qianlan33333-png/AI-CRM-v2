@@ -47,15 +47,15 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 	}
 	ensureOutboundRiverCatalog(t, ctx, pool)
 
-	planID := outboundCampaignHandoffPlanID('z')
+	planID := outboundCampaignHandoffPlanID('d')
 	source := &approvedCampaignHandoffSource{snapshot: outboundport.ApprovedCampaignHandoffSnapshot{
-		CampaignCode: "c01-dispatch", PlanID: planID, ReviewVersion: 1,
+		CampaignCode: "c01-dispatch", PlanID: planID, ReviewVersion: 3,
 		SourceDigest: strings.Repeat("11", 32), TargetDigest: strings.Repeat("22", 32), ContentDigest: strings.Repeat("33", 32),
 		CustomerIDs: []int64{101, 202}, Steps: []outbound.CampaignHandoffStep{{Index: 1, Content: "approved immutable content"}},
 		ApprovedAt: time.Now().UTC().Truncate(time.Microsecond),
 	}}
 	if _, err := newCampaignHandoffService(t, pool, source).Accept(ctx, outboundapp.AcceptCampaignHandoffCommand{
-		CampaignCode: source.snapshot.CampaignCode, PlanID: planID, ExpectedReviewVersion: 1, ActorID: 71, IdempotencyKey: "c01-dispatch-handoff-accept",
+		CampaignCode: source.snapshot.CampaignCode, PlanID: planID, ExpectedReviewVersion: 3, ActorID: 71, IdempotencyKey: "c01-dispatch-handoff-accept",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 	}
 
 	var effectIDs []string
-	if rows, queryErr := pool.Query(ctx, `SELECT external_effect_id::text FROM public.outbound_campaign_dispatches ORDER BY customer_id`); queryErr != nil {
+	if rows, queryErr := pool.Query(ctx, `SELECT 'eer_' || external_effect_id::text FROM public.outbound_campaign_dispatches ORDER BY customer_id`); queryErr != nil {
 		t.Fatal(queryErr)
 	} else {
 		defer rows.Close()
@@ -141,7 +141,7 @@ func openCampaignDispatchPool(t *testing.T) *pgxpool.Pool {
 	if *outboundCampaignDispatchDatabaseURL == "" {
 		t.Skip("-campaign-dispatch-database-url is not set")
 	}
-	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(*outboundCampaignDispatchDatabaseURL, "aicrm_test_p4_outbound_00078"); err != nil {
+	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(*outboundCampaignDispatchDatabaseURL, acceptancefixtures.C01CampaignDispatchDatabaseName); err != nil {
 		t.Fatalf("unsafe campaign dispatch database URL: %v", err)
 	}
 	pool, err := pgxpool.New(context.Background(), *outboundCampaignDispatchDatabaseURL)
