@@ -1,6 +1,6 @@
 // replacement-baseline creates the stage-0 replacement ledgers.  It is a
-// deliberately conservative inventory: absence of a frozen, cross-layer
-// target is recorded as UNCLASSIFIED rather than inferred from an old route.
+// deliberately conservative inventory: route disposition is accepted only
+// from the frozen reviewer-owned classification, never inferred from old routes.
 package main
 
 import (
@@ -13,13 +13,14 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 )
 
 const (
 	legacySnapshotSHA = "6cb989c071255437d75953dabb943318a74eb8f4"
 	legacyMainSHA     = "aa71de28140ca78851c2db3dfd824ad0a2cce224"
-	currentMainSHA    = "f50f5a37a4949d2ac85f612fbc99a3e7326d4dcd"
+	currentMainSHA    = "d3a66948195ed7671442bf127a0ebedb5c8beb75"
 )
 
 type matrixRecord struct {
@@ -61,8 +62,11 @@ type migrationRecord struct {
 	FieldCount                                                                                                                                                  int
 }
 
-type triageRecord struct {
-	MappingID, RecommendedTier string
+// routeClassificationRecord is the reviewer-owned denominator for legacy route
+// disposition. It intentionally records a route's migration need, not V2
+// implementation, verification, deployment, or Provider effect.
+type routeClassificationRecord struct {
+	MappingID, LedgerLine, Classification, Reason, DomainOwner, CandidateSemantics, DirectReferenceCount, FeatureMatrixIDs, SourceEvidence, EvidenceRefs, Notes string
 }
 
 type output struct {
@@ -80,14 +84,14 @@ func main() {
 	check := flag.Bool("check", false, "validate committed replacement ledgers")
 	matrix := flag.String("matrix", "../docs/feature-matrix.csv", "feature Matrix CSV")
 	api := flag.String("api", "../docs/api-mapping.jsonl", "API mapping JSONL")
-	triage := flag.String("triage", "../docs/evidence/p1/route-triage.csv", "route triage CSV")
+	classifications := flag.String("classifications", "../docs/replacement/legacy-route-classification.csv", "reviewer-owned route classification CSV")
 	migration := flag.String("migration", "../docs/migration-mapping.jsonl", "migration mapping JSONL")
 	outDir := flag.String("out", "../docs/replacement", "replacement ledger directory")
 	flag.Parse()
 	if *write == *check {
 		fatal(errors.New("choose exactly one of -write or -check"))
 	}
-	generated, err := build(*matrix, *api, *migration, *triage)
+	generated, err := build(*matrix, *api, *migration, *classifications)
 	if err != nil {
 		fatal(err)
 	}
@@ -104,7 +108,7 @@ func main() {
 
 func fatal(err error) { fmt.Fprintln(os.Stderr, "replacement-baseline:", err); os.Exit(1) }
 
-func build(matrixPath, apiPath, migrationPath, triagePath string) (output, error) {
+func build(matrixPath, apiPath, migrationPath, classificationPath string) (output, error) {
 	matrix, err := loadMatrix(matrixPath)
 	if err != nil {
 		return output{}, err
@@ -117,7 +121,7 @@ func build(matrixPath, apiPath, migrationPath, triagePath string) (output, error
 	if err != nil {
 		return output{}, err
 	}
-	triage, err := loadTriage(triagePath, apis)
+	classifications, err := loadRouteClassifications(classificationPath, apis)
 	if err != nil {
 		return output{}, err
 	}
@@ -140,7 +144,8 @@ func build(matrixPath, apiPath, migrationPath, triagePath string) (output, error
 		})
 	}
 	for _, row := range apis {
-		disposition, certainty := classifyRoute(row, triage[row.MappingID])
+		classification := classifications[row.MappingID]
+		disposition, certainty := routeClassificationState(classification.Classification)
 		evidence := strings.Join(row.SourceEvidence, ";")
 		if evidence == "" {
 			evidence = "docs/api-mapping.jsonl:" + row.MappingID
@@ -149,6 +154,7 @@ func build(matrixPath, apiPath, migrationPath, triagePath string) (output, error
 			row.MappingID, unknown(row.Partition), unknown(row.LegacyPath), unknown(row.LegacyRouteName), unknown(strings.Join(row.ManifestMethods, "|")), unknown(strings.Join(row.MethodBundle, "|")), unknown(row.Manifest.Path),
 			unknown(row.Manifest.Audience), unknown(row.Manifest.Layer), unknown(row.Manifest.AuthScheme), fmt.Sprint(row.Manifest.RequiresAuth), fmt.Sprint(row.Manifest.CSRF), unknown(row.Manifest.AccessScope), unknown(row.Manifest.CapabilityOwner),
 			unknown(row.Manifest.ExternalEffects), unknown(row.CandidateMethod), unknown(row.CandidatePath), unknown(row.CandidateOp), unknown(row.TargetMappingID), unknown(row.Disposition), unknown(row.Signoff), noneOr(strings.Join(row.Discrepancies, "|")), disposition, certainty, evidence,
+			classification.Classification, classification.Reason, classification.DomainOwner, classification.CandidateSemantics, classification.DirectReferenceCount, classification.FeatureMatrixIDs, classification.SourceEvidence, classification.EvidenceRefs, classification.Notes,
 		})
 		if disposition == "EXTERNAL_PROTOCOL" {
 			result.protocols = append(result.protocols, []string{
@@ -169,9 +175,9 @@ func build(matrixPath, apiPath, migrationPath, triagePath string) (output, error
 		}
 	}
 	for _, row := range migrations {
-		layer := classifyMigration(row.Decision)
+		disposition, mode, status, evidenceGap := classifyMigration(row)
 		result.migrations = append(result.migrations, []string{
-			row.MappingID, unknown(row.LegacyTable), unknown(row.LegacyDomain), unknown(row.SourcePresence), unknown(row.Decision), layer, unknown(row.TargetSchemaStatus), unknown(strings.Join(row.CandidateTargets, "|")), unknown(row.WatermarkStrategy), unknown(row.FKStrategy), unknown(row.SafetyRule),
+			row.MappingID, unknown(row.LegacyTable), unknown(row.LegacyDomain), unknown(row.SourcePresence), unknown(row.Decision), disposition, mode, status, evidenceGap, unknown(row.TargetSchemaStatus), unknown(strings.Join(row.CandidateTargets, "|")), unknown(row.WatermarkStrategy), unknown(row.FKStrategy), unknown(row.SafetyRule),
 			fmt.Sprint(row.FieldCount), unknown(row.Implementation), unknown(row.Verification), "docs/migration-mapping.jsonl:" + row.MappingID,
 			"NOT_EXECUTED", "The mapping is a migration decision, not proof that data moved.",
 			legacySnapshotSHA, "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED", "UNMAPPED",
@@ -209,12 +215,12 @@ func applyDM01Overlay(result *output) {
 		if !ids[row[0]] {
 			continue
 		}
-		row[15] = "NOT_EXECUTED"
-		row[16] = "DM01 local dual-PG, migration and domain evidence only; deployment, external effects and cutover remain NOT_EXECUTED."
-		row[17] = "2b7a80126d7becb6f95cf1ec5945dcb78a42f531"
-		row[24], row[25], row[26] = "DM01_LOCAL_PG16", "DM01_LOCAL_PG16", "DM01_LOCAL_PG16"
-		row[29] = "docs/evidence/p4/dm01-legacy-contact-identity-import-local-core.md"
-		row[30], row[31], row[32], row[33] = "LOCAL_VERIFIED", "NOT_EXECUTED", "NOT_EXECUTED", "LOCAL_VERIFIED"
+		row[18] = "NOT_EXECUTED"
+		row[19] = "DM01 local dual-PG, migration and domain evidence only; deployment, external effects and cutover remain NOT_EXECUTED."
+		row[20] = "2b7a80126d7becb6f95cf1ec5945dcb78a42f531"
+		row[27], row[28], row[29] = "DM01_LOCAL_PG16", "DM01_LOCAL_PG16", "DM01_LOCAL_PG16"
+		row[32] = "docs/evidence/p4/dm01-legacy-contact-identity-import-local-core.md"
+		row[33], row[34], row[35], row[36] = "LOCAL_VERIFIED", "NOT_EXECUTED", "NOT_EXECUTED", "LOCAL_VERIFIED"
 	}
 	result.deltas = append(result.deltas,
 		[]string{"REPO1-DM01-40-41", legacyMainSHA, "96272daa;2b7a80126d7becb6f95cf1ec5945dcb78a42f531", "DM01_SOURCE_SCHEMA_CATCHUP", "LEGACY-T14-313", "UNMAPPED", "UNMAPPED", "dual_pg_migration_local_domain_verified", "OPEN", "#40 failure classification and #41 PG CAST behavior are represented in the frozen DM01 source snapshot; no deployment/external/cutover claim.", "#40;#41", "UNMAPPED", "NOT_EXECUTED", "identity_contact", "UNMAPPED", "wecom_external_contact_follow_users", "UNMAPPED", "UNMAPPED", "docs/replacement/data-migration-ledger.csv", "contact"},
@@ -273,6 +279,9 @@ func frozenAssets() ([][]string, error) {
 		[]string{"00071", "00071_customer_safe_exports.sql", "createCustomerSafeExport", "docs/evidence/p4/customer-safe-export-local-core-v2-backend.md", "V2_LOCAL_BACKEND", "NONE_LOCAL_CAPABILITY"},
 		[]string{"00071", "00071_customer_safe_exports.sql", "getCustomerSafeExport", "docs/evidence/p4/customer-safe-export-local-core-v2-backend.md", "V2_LOCAL_BACKEND", "NONE_LOCAL_CAPABILITY"},
 		[]string{"00071", "00071_customer_safe_exports.sql", "downloadCustomerSafeExport", "docs/evidence/p4/customer-safe-export-local-core-v2-backend.md", "V2_LOCAL_BACKEND", "NONE_LOCAL_CAPABILITY"},
+		[]string{"00073", "00073_internal_event_safe_exports.sql", "createInternalEventSafeExport", "docs/evidence/p4/ee01-internal-event-safe-export-local-core.md", "V2_LOCAL_BACKEND", "NONE_LOCAL_CAPABILITY"},
+		[]string{"00073", "00073_internal_event_safe_exports.sql", "getInternalEventSafeExport", "docs/evidence/p4/ee01-internal-event-safe-export-local-core.md", "V2_LOCAL_BACKEND", "NONE_LOCAL_CAPABILITY"},
+		[]string{"00073", "00073_internal_event_safe_exports.sql", "downloadInternalEventSafeExport", "docs/evidence/p4/ee01-internal-event-safe-export-local-core.md", "V2_LOCAL_BACKEND", "NONE_LOCAL_CAPABILITY"},
 	)
 	sort.Slice(rows, func(i, j int) bool {
 		if rows[i][0] == rows[j][0] {
@@ -343,7 +352,7 @@ func loadAPIs(path string) ([]apiRecord, error) {
 	return rows, nil
 }
 
-func loadTriage(path string, apis []apiRecord) (map[string]triageRecord, error) {
+func loadRouteClassifications(path string, apis []apiRecord) (map[string]routeClassificationRecord, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -354,34 +363,70 @@ func loadTriage(path string, apis []apiRecord) (map[string]triageRecord, error) 
 		return nil, err
 	}
 	if len(rows) < 2 {
-		return nil, errors.New("route triage is empty")
+		return nil, errors.New("route classification is empty")
 	}
 	index := columnIndex(rows[0])
-	for _, name := range []string{"mapping_id", "recommended_tier"} {
+	for _, name := range []string{
+		"mapping_id", "ledger_line", "classification", "classification_reason",
+		"domain_owner_or_reassignment", "candidate_v2_api_or_semantics",
+		"direct_v2_reference_count", "feature_matrix_ids", "source_evidence",
+		"evidence_refs", "notes",
+	} {
 		if _, ok := index[name]; !ok {
-			return nil, fmt.Errorf("route triage missing %s", name)
+			return nil, fmt.Errorf("route classification missing %s", name)
 		}
 	}
-	result := make(map[string]triageRecord, len(rows)-1)
-	for _, row := range rows[1:] {
+	result := make(map[string]routeClassificationRecord, len(rows)-1)
+	for offset, row := range rows[1:] {
 		if len(row) != len(rows[0]) {
-			return nil, errors.New("route triage has malformed CSV row")
+			return nil, errors.New("route classification has malformed CSV row")
 		}
-		record := triageRecord{MappingID: row[index["mapping_id"]], RecommendedTier: row[index["recommended_tier"]]}
+		record := routeClassificationRecord{
+			MappingID:            row[index["mapping_id"]],
+			LedgerLine:           row[index["ledger_line"]],
+			Classification:       row[index["classification"]],
+			Reason:               row[index["classification_reason"]],
+			DomainOwner:          row[index["domain_owner_or_reassignment"]],
+			CandidateSemantics:   row[index["candidate_v2_api_or_semantics"]],
+			DirectReferenceCount: row[index["direct_v2_reference_count"]],
+			FeatureMatrixIDs:     row[index["feature_matrix_ids"]],
+			SourceEvidence:       row[index["source_evidence"]],
+			EvidenceRefs:         row[index["evidence_refs"]],
+			Notes:                row[index["notes"]],
+		}
 		if record.MappingID == "" || result[record.MappingID].MappingID != "" {
-			return nil, fmt.Errorf("route triage has missing or duplicate mapping_id %q", record.MappingID)
+			return nil, fmt.Errorf("route classification has missing or duplicate mapping_id %q", record.MappingID)
 		}
-		if !oneOf(record.RecommendedTier, "A", "B", "C") {
-			return nil, fmt.Errorf("route triage %s has invalid recommended_tier %q", record.MappingID, record.RecommendedTier)
+		if !oneOf(record.Classification, "BACKEND_REQUIRED", "EXTERNAL_PROTOCOL", "UI_ONLY", "RETIRED") {
+			return nil, fmt.Errorf("route classification %s has invalid classification %q", record.MappingID, record.Classification)
+		}
+		if record.Reason == "" || record.DomainOwner == "" || record.CandidateSemantics == "" || record.SourceEvidence == "" || record.EvidenceRefs == "" || record.Notes == "" {
+			return nil, fmt.Errorf("route classification %s has incomplete evidence", record.MappingID)
+		}
+		ledgerLine, err := strconv.Atoi(record.LedgerLine)
+		if err != nil || ledgerLine != offset+2 {
+			return nil, fmt.Errorf("route classification %s has invalid ledger_line %q", record.MappingID, record.LedgerLine)
+		}
+		directReferences, err := strconv.Atoi(record.DirectReferenceCount)
+		if err != nil || directReferences < 0 {
+			return nil, fmt.Errorf("route classification %s has invalid direct_v2_reference_count %q", record.MappingID, record.DirectReferenceCount)
+		}
+		api := apis[offset]
+		expectedSourceEvidence := strings.Join(api.SourceEvidence, ";")
+		if expectedSourceEvidence == "" {
+			expectedSourceEvidence = "docs/api-mapping.jsonl:" + api.MappingID
+		}
+		if record.MappingID != api.MappingID || record.SourceEvidence != expectedSourceEvidence {
+			return nil, fmt.Errorf("route classification %s does not match authoritative API mapping order or source evidence", record.MappingID)
 		}
 		result[record.MappingID] = record
 	}
 	if len(result) != len(apis) {
-		return nil, fmt.Errorf("route triage count = %d, api mapping count = %d", len(result), len(apis))
+		return nil, fmt.Errorf("route classification count = %d, api mapping count = %d", len(result), len(apis))
 	}
 	for _, api := range apis {
 		if result[api.MappingID].MappingID == "" {
-			return nil, fmt.Errorf("route triage missing API mapping %s", api.MappingID)
+			return nil, fmt.Errorf("route classification missing API mapping %s", api.MappingID)
 		}
 	}
 	return result, nil
@@ -436,40 +481,42 @@ func classifyMatrix(row matrixRecord) (string, string) {
 	return "BACKEND_REQUIRED", "UNMAPPED"
 }
 
-func classifyRoute(row apiRecord, triage triageRecord) (string, string) {
-	if !triageMatchesDisposition(triage.RecommendedTier, row.Disposition) {
-		return "UNCLASSIFIED_SOURCE_DRIFT", "UNCLASSIFIED"
-	}
-	// These audiences are delivered outside an authenticated admin page.  They
-	// must remain protocol inventory even if a legacy client happened to render
-	// them as H5, callback, or integration UI.
-	if row.Manifest.Audience == "public_h5" || row.Manifest.Audience == "callback" || row.Manifest.Audience == "external_integration" {
+func routeClassificationState(classification string) (string, string) {
+	switch classification {
+	case "BACKEND_REQUIRED":
+		return "BACKEND_REQUIRED", "CLASSIFIED"
+	case "EXTERNAL_PROTOCOL":
 		return "EXTERNAL_PROTOCOL", "INVENTORIED"
-	}
-	if row.Manifest.AccessScope == "public" && row.Manifest.AuthScheme == "provider_oauth_state" && row.Manifest.CapabilityOwner == "auth_wecom" {
-		return "EXTERNAL_PROTOCOL", "INVENTORIED"
-	}
-	return "UNCLASSIFIED", "UNCLASSIFIED"
-}
-
-func triageMatchesDisposition(tier, disposition string) bool {
-	return map[string]string{
-		"A": "MIGRATE",
-		"B": "DEFERRED_POST_LAUNCH",
-		"C": "NOT_MIGRATED",
-	}[tier] == disposition
-}
-
-func classifyMigration(decision string) string {
-	switch decision {
-	case "MIGRATE", "REBUILD", "RESET_RUNTIME", "MANUAL_REENTRY":
-		return "BACKEND_REQUIRED"
-	case "ARCHIVE_ONLY", "DROP", "NOT_APPLICABLE":
-		return "RETIREMENT_APPROVED"
-	case "DEFER":
-		return "DEFERRED_UNMAPPED"
+	case "UI_ONLY":
+		return "UI_ONLY", "FRONTEND_INTEGRATION_DEFERRED"
+	case "RETIRED":
+		return "RETIRED", "RETIRED"
 	default:
-		return "UNCLASSIFIED"
+		return "", ""
+	}
+}
+
+func classifyMigration(row migrationRecord) (disposition, mode, status, evidenceGap string) {
+	switch row.Decision {
+	case "MIGRATE", "REBUILD", "RESET_RUNTIME", "MANUAL_REENTRY":
+		return "BACKEND_REQUIRED", row.Decision, "CLASSIFIED", "NONE"
+	case "ARCHIVE_ONLY":
+		return "BACKEND_REQUIRED", "ARCHIVE_ONLY", "CLASSIFIED", "NONE"
+	case "DROP", "NOT_APPLICABLE":
+		return "RETIRED", row.Decision, "CLASSIFIED", "NONE"
+	case "DEFER":
+		switch {
+		case row.SourcePresence == "ABSENT_AT_HEAD" && row.TargetSchemaStatus == "NO_TARGET":
+			return "BACKEND_REQUIRED", "EVIDENCE_RESOLUTION", "NEEDS_SOURCE_OR_TARGET_EVIDENCE", "SOURCE_PRESENCE_AND_RETIREMENT_BASIS"
+		case row.SourcePresence == "ABSENT_AT_HEAD" && row.TargetSchemaStatus == "PENDING_TARGET_SCHEMA":
+			return "BACKEND_REQUIRED", "EVIDENCE_RESOLUTION", "NEEDS_SOURCE_OR_TARGET_EVIDENCE", "SOURCE_AND_TARGET"
+		case row.SourcePresence == "HEAD_PHYSICAL" && row.TargetSchemaStatus == "PENDING_TARGET_SCHEMA":
+			return "BACKEND_REQUIRED", "EVIDENCE_RESOLUTION", "NEEDS_SOURCE_OR_TARGET_EVIDENCE", "TARGET_SCHEMA"
+		default:
+			return "", "", "", ""
+		}
+	default:
+		return "", "", "", ""
 	}
 }
 
@@ -514,10 +561,10 @@ func writeAll(dir string, data output) error {
 func ledgerFiles(data output) map[string][][]string {
 	return map[string][][]string{
 		"backend-capability-ledger.csv":       append([][]string{{"capability_id", "source_kind", "page", "section", "action", "triggered_api", "expected_result", "target_feature_id", "disposition", "capability_status", "legacy_implementation", "legacy_verification", "implementation_evidence", "verification_evidence", "domain_owner", "canonical_method", "canonical_path", "canonical_operation_id", "actor_scope", "security_refs", "protocol_refs", "external_effect_status", "migration_refs", "source_evidence", "notes", "contract_status", "domain_status", "api_status", "pg_status", "migration_status", "effect_status", "shadow_status", "deployment_status", "resource_ref", "action_ref", "canonical_actor_scope", "main_sha", "contract_evidence_ref", "domain_evidence_ref", "api_evidence_ref", "pg_evidence_ref", "migration_evidence_ref", "effect_evidence_ref", "shadow_evidence_ref", "deployment_evidence_ref"}}, data.capabilities...),
-		"legacy-route-disposition-ledger.csv": append([][]string{{"mapping_id", "partition", "legacy_path", "legacy_route_name", "manifest_methods", "manifest_method_bundle", "manifest_path", "audience", "layer", "auth_scheme", "requires_auth", "csrf", "access_scope", "capability_owner", "legacy_external_effects", "candidate_v2_method", "candidate_v2_path", "candidate_v2_operation_id", "target_mapping_id", "legacy_disposition", "signoff", "discrepancy_flags", "route_disposition", "classification_status", "source_evidence"}}, data.routes...),
+		"legacy-route-disposition-ledger.csv": append([][]string{{"mapping_id", "partition", "legacy_path", "legacy_route_name", "manifest_methods", "manifest_method_bundle", "manifest_path", "audience", "layer", "auth_scheme", "requires_auth", "csrf", "access_scope", "capability_owner", "legacy_external_effects", "candidate_v2_method", "candidate_v2_path", "candidate_v2_operation_id", "target_mapping_id", "legacy_disposition", "signoff", "discrepancy_flags", "route_disposition", "classification_status", "source_evidence", "classification", "classification_reason", "domain_owner_or_reassignment", "candidate_v2_api_or_semantics", "direct_v2_reference_count", "feature_matrix_ids", "classification_source_evidence", "classification_evidence_refs", "classification_notes"}}, data.routes...),
 		"external-protocol-ledger.csv":        append([][]string{{"mapping_id", "legacy_path", "manifest_methods", "manifest_path", "audience", "auth_scheme", "requires_auth", "csrf", "access_scope", "capability_owner", "candidate_v2_method", "candidate_v2_path", "candidate_v2_operation_id", "target_mapping_id", "legacy_disposition", "signoff", "discrepancy_flags", "legacy_external_effects", "protocol_status", "source_evidence", "external_effect_status", "notes", "caller", "provider", "direction", "signature", "encryption", "oauth", "request_contract", "response_contract", "error_contract", "ack_contract", "sla_contract", "replay_contract", "capability_ref", "effect_ref", "contract_status", "adapter_status", "fixture_status", "sandbox_status", "production_route_status"}}, data.protocols...),
 		"external-effects-ledger.csv":         append([][]string{{"mapping_id", "legacy_path", "capability_owner", "auth_scheme", "access_scope", "legacy_external_effects", "authorization_gate", "effect_status", "source_evidence", "notes", "effect_id", "command_ref", "provider_adapter", "job_ref", "attempt_ref", "receipt_ref", "idempotency_scope", "idempotency_digest", "uow_ref", "retry_ref", "lease_ref", "cancel_ref", "reconcile_ref", "outcome_unknown_ref", "pii_ref", "contract_status", "instance_status", "authorization_status", "rehearsal_status", "production_status"}}, data.effects...),
-		"data-migration-ledger.csv":           append([][]string{{"mapping_id", "legacy_table", "legacy_domain", "source_presence", "legacy_decision", "replacement_disposition", "target_schema_status", "candidate_targets", "watermark_strategy", "fk_strategy", "safety_rule", "field_mapping_count", "legacy_implementation", "legacy_verification", "source_evidence", "migration_execution_status", "notes", "source_sha", "source_key", "import_key", "transform_version", "pii_ref", "reject_ref", "quarantine_ref", "full_run_ref", "incremental_run_ref", "reconcile_ref", "rollback_ref", "run_receipt_ref", "contract_status", "execution_status", "reconcile_status", "rollback_status", "receipt_status"}}, data.migrations...),
+		"data-migration-ledger.csv":           append([][]string{{"mapping_id", "legacy_table", "legacy_domain", "source_presence", "legacy_decision", "replacement_disposition", "replacement_mode", "classification_status", "evidence_gap", "target_schema_status", "candidate_targets", "watermark_strategy", "fk_strategy", "safety_rule", "field_mapping_count", "legacy_implementation", "legacy_verification", "source_evidence", "migration_execution_status", "notes", "source_sha", "source_key", "import_key", "transform_version", "pii_ref", "reject_ref", "quarantine_ref", "full_run_ref", "incremental_run_ref", "reconcile_ref", "rollback_ref", "run_receipt_ref", "contract_status", "execution_status", "reconcile_status", "rollback_status", "receipt_status"}}, data.migrations...),
 		"post-freeze-delta-ledger.csv":        append([][]string{{"delta_id", "formal_freeze_sha", "legacy_commit_or_range", "change_class", "impact_items", "absorption_pr", "absorption_sha", "verification", "status", "notes", "legacy_pr", "legacy_time", "production_effect", "affected_domain", "affected_routes", "affected_tables", "affected_protocols", "affected_effects", "ledger_refs", "v2_owner"}}, data.deltas...),
 		"frozen-local-assets.csv":             append([][]string{{"package_id", "migration_ref", "operation_id", "source_evidence", "capability_layer", "external_effect_status"}}, data.assets...),
 	}
@@ -541,20 +588,17 @@ func writeReadiness(path string, data output) error {
 }
 
 func renderReadiness(data output) string {
-	driftIDs := routeIDs(data.routes, "UNCLASSIFIED_SOURCE_DRIFT")
-	driftSummary := "NONE"
-	if len(driftIDs) > 0 {
-		driftSummary = strings.Join(driftIDs, ",")
-	}
-	return fmt.Sprintf(`# P4 Backend Replacement Cutover Readiness
+	return strings.TrimSpace(fmt.Sprintf(`# P4 Backend Replacement Cutover Readiness
 
 ## Frozen sources
 
-- V2 formal baseline: origin/main@%s (PR #482 merge).
+- V2 exact baseline and route-classification authority: origin/main@%s (PR #488 merge).
 - Legacy snapshot authority: AI-CRM-main@%s; declared authoritative repo1
   origin/main process freeze: %s. Its enforcement is ADVISORY_ONLY and
   NOT_EXTERNALLY_ENFORCED; this worktree did not write repo1 or absorb it.
 - Input denominators: Matrix %d, API mapping/routes %d, migration mapping %d.
+- Route classifications are frozen in legacy-route-classification.csv for this exact baseline;
+  they are not a moving current-main claim.
 
 ## Layered inventory, not a release claim
 
@@ -564,27 +608,27 @@ func renderReadiness(data output) string {
   and is not part of this backend replacement DoD. BACKEND_REQUIRED is UNMAPPED
   unless independent V2 evidence is listed in frozen-local-assets.csv; Matrix
   evidence never upgrades a capability to domain/API/PG verification.
-- Migration disposition: 86 BACKEND_REQUIRED, 72 RETIREMENT_APPROVED, 158
-  DEFERRED_UNMAPPED. No data migration is marked executed.
-- Route actual breakdown: %d EXTERNAL_PROTOCOL, %d UNCLASSIFIED, and %d
-  UNCLASSIFIED_SOURCE_DRIFT (current IDs: %s). Public H5, callback, external-integration, and
-  explicit WeCom OAuth endpoints remain protocol inventory. External effects
-  are tracked in external-effects-ledger.csv and never become protocol solely
-  because of an effect declaration. In particular, LEGACY-API-0778 preserves
-  the public URL protocol but does not recreate old HTML; its backing read
-  capability remains unmapped. Current source drift is mechanically derived
-  from api-mapping versus route-triage; when no rows conflict the ID list is
-  NONE.
-- Frozen V2 local assets in frozen-local-assets.csv are 11 packages / 76 unique operationIds: the prior
-  10-package/73-operation P4 receipt inventory plus PR #482 Customer Safe
-  Export (00071, 3 operations). It is a V2 backend asset and does not revive
-  deprecated USER OPS or alter legacy Matrix rows.
+- Migration disposition: %d BACKEND_REQUIRED and %d RETIRED. All %d
+  EVIDENCE_RESOLUTION rows remain NOT_EXECUTED and block cutover: 42 require
+  source-presence plus retirement-basis evidence, 56 require source and target
+  evidence, and 60 require target-schema evidence. ARCHIVE_ONLY is a backend
+  archive-preservation obligation, never a retired claim.
+- Route authoritative classification: %d BACKEND_REQUIRED, %d EXTERNAL_PROTOCOL,
+  %d UI_ONLY, and %d RETIRED (0 unclassified). The classification CSV
+  is a complete 781-ID reviewer-owned mapping; it is not inferred from route
+  audience, legacy disposition, Matrix verification, or OpenAPI references.
+  EXTERNAL_PROTOCOL remains protocol inventory and UI_ONLY remains outside the
+  backend completion count. The 18 retired USER OPS surfaces retain reassignment
+  evidence and do not revive that module.
+- Frozen V2 local assets in frozen-local-assets.csv are 12 packages / 79 unique operationIds: the prior
+  receipt inventory plus Customer Safe Export (00071, 3 operations) and EE01
+  Internal Event Safe Export (00073, 3 operations). These are V2 native backend
+  assets, not legacy-route or Matrix completion claims; DM01 remains migration-only.
 
 ## Gate status
 
-NOT_READY. UNCLASSIFIED routes, UNCLASSIFIED_SOURCE_DRIFT, DEFERRED_UNMAPPED
-migrations, UNMAPPED capabilities, and every NOT_EXECUTED external effect block
-cutover. FRONTEND_INTEGRATION_DEFERRED is intentionally excluded from the
+NOT_READY. EVIDENCE_RESOLUTION migrations, UNMAPPED capabilities, and every
+NOT_EXECUTED external effect block cutover. FRONTEND_INTEGRATION_DEFERRED is intentionally excluded from the
 backend replacement DoD and remains paused. This baseline verifies ledger
 structure and evidence references only. It makes no claim about main/Nightly
 success, deployment, data migration, Provider execution, payment/refund,
@@ -603,7 +647,7 @@ gates recorded in their own ledgers.
 | rehearsal 1 | NOT_EXECUTED | UNMAPPED |
 | rehearsal 2 | NOT_EXECUTED | UNMAPPED |
 | rollback | NOT_EXECUTED | UNMAPPED |
-`, currentMainSHA, legacySnapshotSHA, legacyMainSHA, len(data.capabilities), len(data.routes), len(data.migrations), countAt(data.routes, 22, "EXTERNAL_PROTOCOL"), countAt(data.routes, 22, "UNCLASSIFIED"), countAt(data.routes, 22, "UNCLASSIFIED_SOURCE_DRIFT"), driftSummary)
+`, currentMainSHA, legacySnapshotSHA, legacyMainSHA, len(data.capabilities), len(data.routes), len(data.migrations), countAt(data.migrations, 5, "BACKEND_REQUIRED"), countAt(data.migrations, 5, "RETIRED"), countAt(data.migrations, 6, "EVIDENCE_RESOLUTION"), countAt(data.routes, 22, "BACKEND_REQUIRED"), countAt(data.routes, 22, "EXTERNAL_PROTOCOL"), countAt(data.routes, 22, "UI_ONLY"), countAt(data.routes, 22, "RETIRED"))) + "\n"
 }
 
 func countAt(rows [][]string, index int, value string) int {
@@ -700,26 +744,50 @@ func validateBreakdowns(data output) error {
 	migrations := map[string]int{}
 	for _, row := range data.migrations {
 		migrations[row[5]]++
-		if !oneOf(row[5], "BACKEND_REQUIRED", "RETIREMENT_APPROVED", "DEFERRED_UNMAPPED", "UNCLASSIFIED") || row[15] != "NOT_EXECUTED" {
+		if !oneOf(row[5], "BACKEND_REQUIRED", "RETIRED") ||
+			!oneOf(row[6], "MIGRATE", "MANUAL_REENTRY", "REBUILD", "RESET_RUNTIME", "ARCHIVE_ONLY", "EVIDENCE_RESOLUTION", "DROP", "NOT_APPLICABLE") ||
+			!oneOf(row[7], "CLASSIFIED", "NEEDS_SOURCE_OR_TARGET_EVIDENCE") ||
+			!oneOf(row[8], "NONE", "SOURCE_PRESENCE_AND_RETIREMENT_BASIS", "SOURCE_AND_TARGET", "TARGET_SCHEMA") || row[18] != "NOT_EXECUTED" {
 			return fmt.Errorf("invalid migration ledger state for %s", row[0])
 		}
+		if row[6] == "ARCHIVE_ONLY" && row[5] != "BACKEND_REQUIRED" {
+			return fmt.Errorf("archive preservation was incorrectly retired for %s", row[0])
+		}
+		if row[6] == "EVIDENCE_RESOLUTION" && (row[5] != "BACKEND_REQUIRED" || row[7] != "NEEDS_SOURCE_OR_TARGET_EVIDENCE" || row[8] == "NONE") {
+			return fmt.Errorf("evidence-resolution migration is not a blocker for %s", row[0])
+		}
 	}
-	if migrations["BACKEND_REQUIRED"] != 86 || migrations["RETIREMENT_APPROVED"] != 72 || migrations["DEFERRED_UNMAPPED"] != 158 {
+	if migrations["BACKEND_REQUIRED"] != 301 || migrations["RETIRED"] != 15 ||
+		countAt(data.migrations, 6, "ARCHIVE_ONLY") != 57 || countAt(data.migrations, 6, "EVIDENCE_RESOLUTION") != 158 ||
+		countAt(data.migrations, 8, "SOURCE_PRESENCE_AND_RETIREMENT_BASIS") != 42 || countAt(data.migrations, 8, "SOURCE_AND_TARGET") != 56 || countAt(data.migrations, 8, "TARGET_SCHEMA") != 60 {
 		return fmt.Errorf("unexpected migration breakdown: %#v", migrations)
 	}
 	if len(data.routes) != 781 {
 		return fmt.Errorf("unexpected route count: %d", len(data.routes))
 	}
+	routes := map[string]int{}
+	userOpsRetired := 0
 	for _, row := range data.routes {
-		if !oneOf(row[22], "EXTERNAL_PROTOCOL", "UNCLASSIFIED", "UNCLASSIFIED_SOURCE_DRIFT") || !oneOf(row[23], "INVENTORIED", "UNCLASSIFIED") {
+		routes[row[22]]++
+		if !oneOf(row[22], "BACKEND_REQUIRED", "EXTERNAL_PROTOCOL", "UI_ONLY", "RETIRED") || row[22] != row[25] {
 			return fmt.Errorf("invalid route state for %s", row[0])
 		}
-		if row[7] == "public_h5" && row[22] == "FRONTEND_PAGE_ONLY" {
-			return fmt.Errorf("public H5 route %s was incorrectly treated as UI-only", row[0])
+		_, expectedStatus := routeClassificationState(row[22])
+		if row[23] != expectedStatus {
+			return fmt.Errorf("route %s has invalid classification status %s", row[0], row[23])
 		}
 		if externalFirstRoute(row) && row[22] != "EXTERNAL_PROTOCOL" {
 			return fmt.Errorf("external-first route %s was not retained as protocol inventory", row[0])
 		}
+		if row[26] == "USER_OPS_MODULE_RETIRED_REASSIGN_VALUE" {
+			userOpsRetired++
+			if row[22] != "RETIRED" || row[27] != "REASSIGN_REQUIRED(no_user_ops_module)" {
+				return fmt.Errorf("USER OPS route %s was revived instead of reassigned", row[0])
+			}
+		}
+	}
+	if routes["BACKEND_REQUIRED"] != 487 || routes["EXTERNAL_PROTOCOL"] != 177 || routes["UI_ONLY"] != 87 || routes["RETIRED"] != 30 || userOpsRetired != 18 {
+		return fmt.Errorf("unexpected route breakdown: %#v, USER OPS retired=%d", routes, userOpsRetired)
 	}
 	for _, row := range data.protocols {
 		if row[18] != "INVENTORIED" || row[20] != "NOT_EXECUTED" {
@@ -731,8 +799,8 @@ func validateBreakdowns(data output) error {
 			return fmt.Errorf("external effect %s was promoted", row[0])
 		}
 	}
-	if len(data.assets) != 76 || countAt(data.assets, 0, "00071") != 3 {
-		return fmt.Errorf("frozen local asset inventory is not 11 packages / 76 operations")
+	if len(data.assets) != 79 || countAt(data.assets, 0, "00071") != 3 || countAt(data.assets, 0, "00073") != 3 {
+		return fmt.Errorf("frozen local asset inventory is not 12 packages / 79 operations")
 	}
 	packages := map[string]bool{}
 	operations := map[string]bool{}
@@ -746,8 +814,8 @@ func validateBreakdowns(data output) error {
 			return fmt.Errorf("invalid frozen local asset state for %s", row[2])
 		}
 	}
-	if len(packages) != 11 {
-		return fmt.Errorf("frozen local asset package count = %d, want 11", len(packages))
+	if len(packages) != 12 {
+		return fmt.Errorf("frozen local asset package count = %d, want 12", len(packages))
 	}
 	for _, row := range data.deltas {
 		if row[8] == "CLOSED" && (row[6] == "" || row[7] == "" || row[7] == "NOT_EXECUTED") {
@@ -804,7 +872,10 @@ func validateFrozenAssets() error {
 	if len(ids) != 73 {
 		return fmt.Errorf("frozen P4 receipt operation count = %d, want 73", len(ids))
 	}
-	ids = append(ids, "createCustomerSafeExport", "getCustomerSafeExport", "downloadCustomerSafeExport")
+	ids = append(ids,
+		"createCustomerSafeExport", "getCustomerSafeExport", "downloadCustomerSafeExport",
+		"createInternalEventSafeExport", "getInternalEventSafeExport", "downloadInternalEventSafeExport",
+	)
 	openAPI, err := os.ReadFile(repoFile("api/openapi.yaml"))
 	if err != nil {
 		return err
@@ -825,8 +896,8 @@ func validateFrozenAssets() error {
 			return fmt.Errorf("frozen asset operation %s is absent from OpenAPI", id)
 		}
 	}
-	if len(ids) != 76 {
-		return fmt.Errorf("frozen P4 replacement operation count = %d, want 76", len(ids))
+	if len(ids) != 79 {
+		return fmt.Errorf("frozen P4 replacement operation count = %d, want 79", len(ids))
 	}
 	return nil
 }

@@ -19,103 +19,68 @@ func TestClassifyMatrixMatchesFrozenLunaBoundary(t *testing.T) {
 	}
 }
 
-func TestClassifyRouteProtectsPublicProtocolsAndDrift(t *testing.T) {
-	for _, tc := range []struct{ id, audience, effect, disposition, tier, want string }{
-		{"LEGACY-API-0053", "admin", "none", "MIGRATE", "B", "UNCLASSIFIED_SOURCE_DRIFT"},
-		{"LEGACY-API-0001", "public_h5", "none", "MIGRATE", "A", "EXTERNAL_PROTOCOL"},
-		{"LEGACY-API-0002", "callback", "none", "MIGRATE", "A", "EXTERNAL_PROTOCOL"},
-		{"LEGACY-API-0003", "external_integration", "none", "MIGRATE", "A", "EXTERNAL_PROTOCOL"},
-		{"LEGACY-API-0753", "admin", "staging_disabled", "MIGRATE", "A", "EXTERNAL_PROTOCOL"},
-		{"LEGACY-API-0758", "admin", "none", "MIGRATE", "A", "UNCLASSIFIED"},
-		{"LEGACY-API-0004", "admin", "staging_disabled", "MIGRATE", "A", "UNCLASSIFIED"},
-	} {
-		record := apiRecord{MappingID: tc.id}
-		record.Manifest.Audience = tc.audience
-		record.Manifest.ExternalEffects = tc.effect
-		record.Disposition = tc.disposition
-		if tc.id == "LEGACY-API-0753" {
-			record.Manifest.AccessScope = "public"
-			record.Manifest.AuthScheme = "provider_oauth_state"
-			record.Manifest.CapabilityOwner = "auth_wecom"
+func TestRouteClassificationUsesOnlyTheFrozenFourClasses(t *testing.T) {
+	for _, classification := range []string{"BACKEND_REQUIRED", "EXTERNAL_PROTOCOL", "UI_ONLY", "RETIRED"} {
+		if disposition, status := routeClassificationState(classification); disposition != classification || status == "" {
+			t.Fatalf("classification %s = %s/%s", classification, disposition, status)
 		}
-		got, status := classifyRoute(record, triageRecord{RecommendedTier: tc.tier})
-		if got != tc.want {
-			t.Fatalf("%s: got %s want %s", tc.id, got, tc.want)
-		}
-		if tc.want == "EXTERNAL_PROTOCOL" && status != "INVENTORIED" {
-			t.Fatalf("%s: protocol status = %s", tc.id, status)
-		}
+	}
+	if disposition, status := routeClassificationState("NEEDS_HUMAN_EVIDENCE"); disposition != "" || status != "" {
+		t.Fatalf("unfrozen classification was accepted: %s/%s", disposition, status)
 	}
 }
 
-func TestTriageDispositionMapping(t *testing.T) {
-	for _, tc := range []struct {
-		tier, disposition string
-		want              bool
-	}{
-		{"A", "MIGRATE", true}, {"B", "DEFERRED_POST_LAUNCH", true}, {"C", "NOT_MIGRATED", true}, {"B", "MIGRATE", false},
-	} {
-		if got := triageMatchesDisposition(tc.tier, tc.disposition); got != tc.want {
-			t.Fatalf("%s/%s = %t, want %t", tc.tier, tc.disposition, got, tc.want)
-		}
-	}
-}
-
-func TestRouteDriftClearsWhenTriageMatches(t *testing.T) {
-	record := apiRecord{MappingID: "LEGACY-API-0053", Disposition: "MIGRATE"}
-	got, status := classifyRoute(record, triageRecord{MappingID: record.MappingID, RecommendedTier: "A"})
-	if got != "UNCLASSIFIED" || status != "UNCLASSIFIED" {
-		t.Fatalf("matched route remained drift: %s/%s", got, status)
-	}
-}
-
-func TestValidateBreakdownsAndReadinessAllowDriftToClear(t *testing.T) {
+func TestValidateBreakdownsAndReadinessUseAuthoritativeClassification(t *testing.T) {
 	data, err := build(
 		repoFile("docs/feature-matrix.csv"),
 		repoFile("docs/api-mapping.jsonl"),
 		repoFile("docs/migration-mapping.jsonl"),
-		repoFile("docs/evidence/p1/route-triage.csv"),
+		repoFile("docs/replacement/legacy-route-classification.csv"),
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := routeIDs(data.routes, "UNCLASSIFIED_SOURCE_DRIFT"); len(got) != 1 || got[0] != "LEGACY-API-0053" {
-		t.Fatalf("current drift IDs = %v", got)
+	if got := countAt(data.routes, 22, "BACKEND_REQUIRED"); got != 487 {
+		t.Fatalf("backend route count = %d", got)
 	}
 	if err := validateBreakdowns(data); err != nil {
 		t.Fatalf("current breakdown rejected: %v", err)
 	}
+	if rendered := renderReadiness(data); !strings.Contains(rendered, "487 BACKEND_REQUIRED, 177 EXTERNAL_PROTOCOL") || !strings.Contains(rendered, "0 unclassified") {
+		t.Fatalf("authoritative route breakdown was not rendered: %s", rendered)
+	}
+	logoutRows := map[string]bool{"LEGACY-API-0760": false, "LEGACY-API-0761": false}
 	for _, row := range data.routes {
-		if row[0] == "LEGACY-API-0053" {
-			row[22], row[23] = "UNCLASSIFIED", "UNCLASSIFIED"
+		if (row[0] == "LEGACY-API-0760" || row[0] == "LEGACY-API-0761") && row[22] != "BACKEND_REQUIRED" {
+			t.Fatalf("logout backend surface %s was excluded as %s", row[0], row[22])
+		}
+		if _, ok := logoutRows[row[0]]; ok {
+			logoutRows[row[0]] = true
 		}
 	}
-	if err := validateBreakdowns(data); err != nil {
-		t.Fatalf("cleared drift rejected: %v", err)
-	}
-	if rendered := renderReadiness(data); !strings.Contains(rendered, "0\n  UNCLASSIFIED_SOURCE_DRIFT (current IDs: NONE)") {
-		t.Fatalf("cleared drift readiness was not rendered as NONE: %s", rendered)
+	for id, seen := range logoutRows {
+		if !seen {
+			t.Fatalf("logout backend surface %s is missing", id)
+		}
 	}
 }
 
-func TestLoadTriageFailsClosedForMissingOrDuplicateIDs(t *testing.T) {
+func TestLoadRouteClassificationsFailsClosedForInvalidRows(t *testing.T) {
 	apis := []apiRecord{{MappingID: "LEGACY-API-0001"}, {MappingID: "LEGACY-API-0002"}}
 	for _, tc := range []struct {
 		name, csv string
 		wantErr   bool
 	}{
-		{"valid", "mapping_id,recommended_tier\nLEGACY-API-0001,A\nLEGACY-API-0002,B\n", false},
-		{"missing", "mapping_id,recommended_tier\nLEGACY-API-0001,A\n", true},
-		{"duplicate", "mapping_id,recommended_tier\nLEGACY-API-0001,A\nLEGACY-API-0001,A\n", true},
-		{"stale", "mapping_id,recommended_tier\nLEGACY-API-0001,A\nLEGACY-API-9999,B\n", true},
-		{"invalid-tier", "mapping_id,recommended_tier\nLEGACY-API-0001,D\nLEGACY-API-0002,B\n", true},
+		{"missing", "mapping_id,ledger_line,classification,classification_reason,domain_owner_or_reassignment,candidate_v2_api_or_semantics,direct_v2_reference_count,feature_matrix_ids,source_evidence,evidence_refs,notes\nLEGACY-API-0001,2,BACKEND_REQUIRED,r,d,c,0,NONE,docs/api-mapping.jsonl:LEGACY-API-0001,e,n\n", true},
+		{"invalid-classification", "mapping_id,ledger_line,classification,classification_reason,domain_owner_or_reassignment,candidate_v2_api_or_semantics,direct_v2_reference_count,feature_matrix_ids,source_evidence,evidence_refs,notes\nLEGACY-API-0001,2,NEEDS_HUMAN_EVIDENCE,r,d,c,0,NONE,docs/api-mapping.jsonl:LEGACY-API-0001,e,n\nLEGACY-API-0002,3,BACKEND_REQUIRED,r,d,c,0,NONE,docs/api-mapping.jsonl:LEGACY-API-0002,e,n\n", true},
+		{"wrong-order", "mapping_id,ledger_line,classification,classification_reason,domain_owner_or_reassignment,candidate_v2_api_or_semantics,direct_v2_reference_count,feature_matrix_ids,source_evidence,evidence_refs,notes\nLEGACY-API-0002,2,BACKEND_REQUIRED,r,d,c,0,NONE,docs/api-mapping.jsonl:LEGACY-API-0002,e,n\nLEGACY-API-0001,3,BACKEND_REQUIRED,r,d,c,0,NONE,docs/api-mapping.jsonl:LEGACY-API-0001,e,n\n", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "route-triage.csv")
+			path := filepath.Join(t.TempDir(), "route-classification.csv")
 			if err := os.WriteFile(path, []byte(tc.csv), 0600); err != nil {
 				t.Fatal(err)
 			}
-			_, err := loadTriage(path, apis)
+			_, err := loadRouteClassifications(path, apis)
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("loadTriage error = %v, wantErr %t", err, tc.wantErr)
 			}
@@ -128,8 +93,8 @@ func TestFrozenAssetsAreMachineReadableAndOpenAPIPresent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(assets) != 76 {
-		t.Fatalf("assets = %d, want 76", len(assets))
+	if len(assets) != 79 {
+		t.Fatalf("assets = %d, want 79", len(assets))
 	}
 	packages := map[string]bool{}
 	operations := map[string]bool{}
@@ -140,14 +105,17 @@ func TestFrozenAssetsAreMachineReadableAndOpenAPIPresent(t *testing.T) {
 		}
 		operations[asset[2]] = true
 	}
-	if len(packages) != 11 {
-		t.Fatalf("packages = %d, want 11", len(packages))
+	if len(packages) != 12 {
+		t.Fatalf("packages = %d, want 12", len(packages))
 	}
 	for _, asset := range assets {
 		if asset[2] == "getServicePeriodMemberGridSchema" || asset[2] == "queryServicePeriodMemberGrid" {
 			if asset[1] != "NONE_NEW;REUSES_00064_service_period_members" {
 				t.Fatalf("%s migration ref = %s", asset[2], asset[1])
 			}
+		}
+		if asset[0] == "00073" && asset[3] != "docs/evidence/p4/ee01-internal-event-safe-export-local-core.md" {
+			t.Fatalf("EE01 source evidence = %s", asset[3])
 		}
 	}
 }
@@ -157,7 +125,7 @@ func TestDM01OverlayIsClosedAndDoesNotClaimCutover(t *testing.T) {
 		repoFile("docs/feature-matrix.csv"),
 		repoFile("docs/api-mapping.jsonl"),
 		repoFile("docs/migration-mapping.jsonl"),
-		repoFile("docs/evidence/p1/route-triage.csv"),
+		repoFile("docs/replacement/legacy-route-classification.csv"),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -177,10 +145,10 @@ func TestDM01OverlayIsClosedAndDoesNotClaimCutover(t *testing.T) {
 			t.Fatalf("duplicate DM01 overlay row %s", row[0])
 		}
 		seen[row[0]] = true
-		if row[15] != "NOT_EXECUTED" || row[30] != "LOCAL_VERIFIED" || row[31] != "NOT_EXECUTED" || row[32] != "NOT_EXECUTED" || row[33] != "LOCAL_VERIFIED" {
-			t.Fatalf("%s overclaims DM01 state: %v", row[0], row[15:34])
+		if row[18] != "NOT_EXECUTED" || row[33] != "LOCAL_VERIFIED" || row[34] != "NOT_EXECUTED" || row[35] != "NOT_EXECUTED" || row[36] != "LOCAL_VERIFIED" {
+			t.Fatalf("%s overclaims DM01 state: %v", row[0], row[18:37])
 		}
-		if _, err := os.Stat(repoFile(row[29])); err != nil {
+		if _, err := os.Stat(repoFile(row[32])); err != nil {
 			t.Fatalf("%s evidence ref is not readable: %v", row[0], err)
 		}
 	}
