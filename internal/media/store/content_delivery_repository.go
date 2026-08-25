@@ -1,11 +1,14 @@
 package store
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
+	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	mediadb "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store/generated"
 	"time"
@@ -96,8 +99,54 @@ func (r *ContentDeliveryRepository) PutPart(ctx context.Context, c mediaport.Att
 	e = q.PutMediaAttachmentUploadPart(ctx, mediadb.PutMediaAttachmentUploadPartParams{UploadID: c.UploadID, PartNumber: c.PartNumber, Digest: d[:], Content: c.Content, Now: stamp(n)})
 	return e == nil, e
 }
-func (r *ContentDeliveryRepository) Complete(context.Context, mediaport.AttachmentUploadCompleteCommand, time.Time) (int64, error) {
-	return 0, mediaapp.ErrContentDeliveryUnavailable
+func (r *ContentDeliveryRepository) Complete(ctx context.Context, command mediaport.AttachmentUploadCompleteCommand, now time.Time) (int64, error) {
+	q, err := contentQueries(ctx)
+	if err != nil {
+		return 0, err
+	}
+	upload, err := q.ReadMediaAttachmentUploadForCompletion(ctx, command.UploadID)
+	if err != nil {
+		return 0, err
+	}
+	if upload.CreatedBy != command.Actor {
+		return 0, mediaapp.ErrContentDeliveryConflict
+	}
+	if upload.State == "completed" && upload.AttachmentID.Valid && upload.AttachmentID.Int64 > 0 {
+		return upload.AttachmentID.Int64, nil
+	}
+	parts, err := q.ListMediaAttachmentUploadParts(ctx, command.UploadID)
+	if err != nil || len(parts) == 0 {
+		return 0, mediaapp.ErrContentDeliveryUnavailable
+	}
+	content := make([]byte, 0, upload.ExpectedSize)
+	for index, part := range parts {
+		if part.PartNumber != int32(index+1) || len(part.Digest) != sha256.Size {
+			return 0, mediaapp.ErrContentDeliveryInvalid
+		}
+		digest := sha256.Sum256(part.Content)
+		if !bytes.Equal(digest[:], part.Digest) {
+			return 0, mediaapp.ErrContentDeliveryInvalid
+		}
+		content = append(content, part.Content...)
+	}
+	checksum := sha256.Sum256(content)
+	if len(content) != int(upload.ExpectedSize) || !bytes.Equal(checksum[:], upload.ExpectedDigest) {
+		return 0, mediaapp.ErrContentDeliveryInvalid
+	}
+	if _, err = domain.InspectAttachment(upload.FileName, "application/pdf", content); err != nil {
+		return 0, mediaapp.ErrContentDeliveryInvalid
+	}
+	attachment, err := q.InsertMediaAttachment(ctx, mediadb.InsertMediaAttachmentParams{Name: upload.Name, FileName: upload.FileName, MimeType: "application/pdf", FileSize: int32(len(content)), Checksum: checksum[:], Description: upload.Description, Tags: upload.Tags, Enabled: upload.Enabled, CreatedBy: command.Actor, UpdatedBy: command.Actor, CreatedAt: stamp(now), UpdatedAt: stamp(now)})
+	if err != nil {
+		return 0, err
+	}
+	if err = q.InsertMediaAttachmentBlob(ctx, mediadb.InsertMediaAttachmentBlobParams{AttachmentID: attachment.ID, Content: content, Checksum: checksum[:], CreatedAt: stamp(now)}); err != nil {
+		return 0, err
+	}
+	if _, err = q.CompleteMediaAttachmentUpload(ctx, mediadb.CompleteMediaAttachmentUploadParams{AttachmentID: pgtype.Int8{Int64: attachment.ID, Valid: true}, Now: stamp(now), UploadID: command.UploadID}); err != nil {
+		return 0, err
+	}
+	return attachment.ID, nil
 }
 
 var _ = pgtype.Int8{}

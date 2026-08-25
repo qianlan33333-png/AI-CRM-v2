@@ -64,7 +64,7 @@ ON CONFLICT (upload_id, part_number) DO UPDATE SET digest = EXCLUDED.digest, con
 WHERE media_attachment_upload_parts.digest = EXCLUDED.digest AND media_attachment_upload_parts.content = EXCLUDED.content;
 
 -- name: ReadMediaAttachmentUploadForCompletion :one
-SELECT id, file_name, name, description, tags, enabled, expected_size, expected_digest, created_by, state
+SELECT id, file_name, name, description, tags, enabled, expected_size, expected_digest, created_by, state, attachment_id
 FROM media_attachment_uploads WHERE id = sqlc.arg(upload_id) FOR UPDATE;
 
 -- name: ListMediaAttachmentUploadParts :many

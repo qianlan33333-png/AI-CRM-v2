@@ -399,21 +399,22 @@ func (q *Queries) PutMediaAttachmentUploadPart(ctx context.Context, arg PutMedia
 }
 
 const readMediaAttachmentUploadForCompletion = `-- name: ReadMediaAttachmentUploadForCompletion :one
-SELECT id, file_name, name, description, tags, enabled, expected_size, expected_digest, created_by, state
+SELECT id, file_name, name, description, tags, enabled, expected_size, expected_digest, created_by, state, attachment_id
 FROM media_attachment_uploads WHERE id = $1 FOR UPDATE
 `
 
 type ReadMediaAttachmentUploadForCompletionRow struct {
-	ID             int64  `json:"id"`
-	FileName       string `json:"file_name"`
-	Name           string `json:"name"`
-	Description    string `json:"description"`
-	Tags           []byte `json:"tags"`
-	Enabled        bool   `json:"enabled"`
-	ExpectedSize   int32  `json:"expected_size"`
-	ExpectedDigest []byte `json:"expected_digest"`
-	CreatedBy      int64  `json:"created_by"`
-	State          string `json:"state"`
+	ID             int64       `json:"id"`
+	FileName       string      `json:"file_name"`
+	Name           string      `json:"name"`
+	Description    string      `json:"description"`
+	Tags           []byte      `json:"tags"`
+	Enabled        bool        `json:"enabled"`
+	ExpectedSize   int32       `json:"expected_size"`
+	ExpectedDigest []byte      `json:"expected_digest"`
+	CreatedBy      int64       `json:"created_by"`
+	State          string      `json:"state"`
+	AttachmentID   pgtype.Int8 `json:"attachment_id"`
 }
 
 func (q *Queries) ReadMediaAttachmentUploadForCompletion(ctx context.Context, uploadID int64) (ReadMediaAttachmentUploadForCompletionRow, error) {
@@ -430,6 +431,7 @@ func (q *Queries) ReadMediaAttachmentUploadForCompletion(ctx context.Context, up
 		&i.ExpectedDigest,
 		&i.CreatedBy,
 		&i.State,
+		&i.AttachmentID,
 	)
 	return i, err
 }
