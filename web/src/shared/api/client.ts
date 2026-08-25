@@ -26,6 +26,7 @@ import type {
   WecomTag,
 } from './types';
 import { SEED_DB, deepCopy } from './mockData';
+import { readAdminPage, type AdminReadContext } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
 
@@ -33,7 +34,7 @@ export interface AdminApi {
   readonly mode: 'mock' | 'http';
 
   /** 聚合加载后台数据仓库 */
-  loadDb(): Promise<AdminDb>;
+  loadDb(context?: AdminReadContext): Promise<AdminDb>;
 
   /* ---- 内容雷达 ---- */
   toggleRadarLink(id: number, enabled: boolean): Promise<void>;
@@ -159,7 +160,7 @@ export class MockApi implements AdminApi {
     }
   }
 
-  loadDb(): Promise<AdminDb> {
+  loadDb(_context?: AdminReadContext): Promise<AdminDb> {
     this.db = this.restore();
     return delay(this.db, 120);
   }
@@ -557,17 +558,9 @@ export class HttpApi implements AdminApi {
     return (await resp.json()) as T;
   }
 
-  async loadDb(): Promise<AdminDb> {
-    // 聚合加载：雷达 / AI 计划并行拉取；列表页静态数据走各自接口。
-    const [radarLinks, aiPlans] = await Promise.all([
-      this.req<RadarLink[]>(ROUTES.radarLinks),
-      this.req<AdminDb['aiPlans']>(ROUTES.aiReviewPlans),
-    ]);
-    return {
-      ...deepCopy(SEED_DB),
-      radarLinks,
-      aiPlans,
-    };
+  async loadDb(context?: AdminReadContext): Promise<AdminDb> {
+    // OpenAPI failure reaches the view's loading/error state; production never merges SEED_DB.
+    return readAdminPage(context);
   }
 
   /* ---------- 内容雷达 ---------- */

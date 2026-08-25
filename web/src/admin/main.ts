@@ -12,6 +12,10 @@ import { mountRadar } from './sections/radar';
 import { mountAiAssistant } from './sections/aiAssistant';
 import { mountFunnelGrid } from './sections/funnelGrid';
 
+function showLoadError(stage: HTMLElement, error: unknown): void {
+  stage.innerHTML = `<div style="margin:32px;padding:24px;border:1px solid #F2B8B5;border-radius:8px;color:#D83931;background:#FFF1F0">${error instanceof Error ? error.message : '页面数据读取失败'}</div>`;
+}
+
 function boot(): void {
   const page = document.body.getAttribute('data-page') || 'customers';
   const stage = document.getElementById('stage');
@@ -23,22 +27,22 @@ function boot(): void {
   /* ---- 富交互页：模块自管理反馈（toast/confirmBox 均引自 feedback.ts） ---- */
   switch (page) {
     case 'radar':
-      void mountRadar(stage, api, { view: 'list' });
+      void mountRadar(stage, api, { view: 'list' }).catch((error) => showLoadError(stage, error));
       return;
     case 'radarDetail':
-      void mountRadar(stage, api, { view: 'detail', id });
+      void mountRadar(stage, api, { view: 'detail', id }).catch((error) => showLoadError(stage, error));
       return;
     case 'radarForm':
-      void mountRadar(stage, api, { view: 'form', id });
+      void mountRadar(stage, api, { view: 'form', id }).catch((error) => showLoadError(stage, error));
       return;
     case 'ai':
-      void mountAiAssistant(stage, api, { view: 'list' });
+      void mountAiAssistant(stage, api, { view: 'list' }).catch((error) => showLoadError(stage, error));
       return;
     case 'aiDetail':
-      void mountAiAssistant(stage, api, { view: 'detail', id });
+      void mountAiAssistant(stage, api, { view: 'detail', id }).catch((error) => showLoadError(stage, error));
       return;
     case 'funnel':
-      void mountFunnelGrid(stage, api);
+      void mountFunnelGrid(stage, api).catch((error) => showLoadError(stage, error));
       return;
     case 'spProductData': {
       void (async () => {
@@ -48,7 +52,7 @@ function boot(): void {
         await mountFunnelGrid(stage, api, {
           product: p ? { code: p.code, name: p.name, price: p.price, status: p.status } : undefined,
         });
-      })();
+      })().catch((error) => showLoadError(stage, error));
       return;
     }
   }
@@ -57,9 +61,11 @@ function boot(): void {
   const tpl = document.getElementById('tpl') as HTMLTemplateElement | null;
   if (!tpl) return;
   const controller = new AdminController(api, page);
-  mount(stage, tpl.innerHTML, controller);
   initFeedback();
-  void controller.init();
+  stage.textContent = '正在读取页面数据…';
+  void controller.init()
+    .then(() => mount(stage, tpl.innerHTML, controller))
+    .catch((error) => showLoadError(stage, error));
 }
 
 if (document.readyState === 'loading') {

@@ -39,7 +39,7 @@
                       <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5;font-size:13px;text-align:right;font-weight:500;font-variant-numeric:tabular-nums">{{ r.amount }}</td>
                       <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5"><span style="{{ r.cs }}">{{ r.status }}</span></td>
                       <td style="padding:var(--rp,10px) 12px;border-bottom:1px solid #F2F3F5;font-size:13px;color:#646A73">{{ r.pay }}</td>
-                      <td style="padding:var(--rp,10px) 16px;border-bottom:1px solid #F2F3F5;text-align:right"><a onClick="{{ go.orderDetail }}" style="font-size:13px;color:var(--accent,#3370ff);cursor:pointer">查看详情</a></td>
+                      <td style="padding:var(--rp,10px) 16px;border-bottom:1px solid #F2F3F5;text-align:right"><a onClick="{{ r.view }}" style="font-size:13px;color:var(--accent,#3370ff);cursor:pointer">查看详情</a></td>
                     </tr>
                   </sc-for>
                 </tbody>

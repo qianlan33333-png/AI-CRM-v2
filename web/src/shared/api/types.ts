@@ -346,6 +346,8 @@ export interface Stat {
 }
 
 export interface Questionnaire {
+  /** OpenAPI questionnaire id; only used for real detail navigation. */
+  resourceId?: number;
   name: string;
   assess: boolean;
   off: boolean;
@@ -392,6 +394,8 @@ export interface EdAssignee {
 }
 
 export interface Channel {
+  /** OpenAPI channel id; only used for real detail navigation. */
+  resourceId?: number;
   name: string;
   /** 渠道编码（选渠道码组件行内展示） */
   code: string;
@@ -467,6 +471,8 @@ export interface SpProduct {
 }
 
 export interface Coupon {
+  /** OpenAPI coupon id; only used for real detail navigation. */
+  resourceId?: number;
   name: string;
   /** 分享短码（生成分享链接 / 二维码） */
   code: string;

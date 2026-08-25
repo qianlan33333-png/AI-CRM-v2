@@ -12,7 +12,8 @@
 import { PageBase, type StyleObj, type Vals } from '../shared/ui/runtime';
 import type { AdminApi } from '../shared/api/client';
 import type { AdminDb, AudienceSender, QuestionnaireOps, Tone } from '../shared/api/types';
-import { SEED_DB, deepCopy } from '../shared/api/mockData';
+import { deepCopy } from '../shared/api/mockData';
+import { emptyAdminDb } from '../api/admin';
 import { toast, confirmBox, busy, simulateUpload } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
 import { copyText, renderFakeQr } from './sections/util';
@@ -115,7 +116,7 @@ export class AdminController extends PageBase {
     spfChannelId: 'shalongyaoyue',
   };
 
-  db: AdminDb = deepCopy(SEED_DB);
+  db: AdminDb = emptyAdminDb();
 
   /** 发送人白名单草稿（添加发送人未保存前的本地行） */
   private sendersDraft: AudienceSender[] | null = null;
@@ -131,7 +132,7 @@ export class AdminController extends PageBase {
 
   /** 页面入口调用：加载数据仓库 → 重渲染 */
   async init(): Promise<void> {
-    this.db = await this.api.loadDb();
+    this.db = await this.api.loadDb({ page: this.page, id: this.qs().get('id') || undefined });
     // 问卷运营配置：首次进入把本地开关态同步为已保存值
     const ops = this.currentOps();
     if (ops && this.page === 'questionnaireOps') {
@@ -1006,7 +1007,7 @@ export class AdminController extends PageBase {
     const claimRows = claims.map((c) => ({ ...c, cs: mk(c.tone) }));
     const cntOf = (st: string): number => claims.filter((c) => c.status === st).length;
     const couponStats = [
-      { label: '累计领取', value: String(claims.length || 486), sub: '发行 ' + (coupon?.issue.split('/')[0].trim() || '-') },
+      { label: '累计领取', value: String(claims.length), sub: '发行 ' + (coupon?.issue.split('/')[0].trim() || '-') },
       { label: '当前可用', value: String(cntOf('可用') || 0), sub: '未使用且在有效期内' },
       { label: '支付预占', value: String(cntOf('已预占') || 0), sub: '下单未支付锁定' },
       { label: '已使用', value: String(cntOf('已使用') || 0), sub: '已核销抵扣' },
@@ -1397,7 +1398,7 @@ export class AdminController extends PageBase {
 
       /* ================= 列表页数据 ================= */
       rows: {
-        customers: rows.customers,
+        customers: rows.customers.map((r) => ({ ...r, view: () => this.goto('customerDetail', '?id=' + encodeURIComponent(r.id)) })),
         tags: rows.tags,
         qa: rows.qa,
         msgs: rows.msgs.map((m) => ({
@@ -1419,7 +1420,8 @@ export class AdminController extends PageBase {
           rowStyle: r.off ? { background: '#FAFAFB' } : {},
           nameStyle: { fontSize: '13px', fontWeight: 600, color: r.off ? '#A6AAB0' : '#1F2329' },
           delStyle: { fontSize: '13px', cursor: r.off ? 'pointer' : 'not-allowed', color: r.off ? '#D83931' : '#BBBFC4' },
-          opsGo: () => this.goto('questionnaireOps', '?id=' + idx),
+          view: () => this.goto('questionnaireDetail', '?id=' + (r.resourceId ?? idx)),
+          opsGo: () => this.goto('questionnaireOps', '?id=' + (r.resourceId ?? idx)),
           shareIt: () => this.openShare('问卷', r.name, 'q' + idx + 'salon'),
         })),
         qSubs: rows.qSubs,
@@ -1430,9 +1432,10 @@ export class AdminController extends PageBase {
         chStats: rows.chStats,
         channels: rows.channels.map((r) => ({
           ...r,
+          edit: () => this.goto('channelForm', r.resourceId == null ? '' : '?id=' + r.resourceId),
           cs: mk(r.tone), tcs: mk(r.tagTone), typeCs: mk('blue'), matCs: mk('gray'), welCs: mk('ok'),
         })),
-        orders: rows.orders.map((r) => ({ ...r, cs: mk(r.tone) })),
+        orders: rows.orders.map((r) => ({ ...r, cs: mk(r.tone), view: () => this.goto('orderDetail', '?id=' + encodeURIComponent(r.no)) })),
         orderKv: rows.orderKv.map((r) => ({
           ...r,
           vs: {
