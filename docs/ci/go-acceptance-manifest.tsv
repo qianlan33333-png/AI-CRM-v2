@@ -68,3 +68,7 @@ p4-pe01-wechat-pay-settlement|0066|P4PE01_TEST_DATABASE_URL|legacy-make|p4-pe01-
 p4-automation-rules-runtime|0067|P4AUTOMATIONRULES_TEST_DATABASE_URL|legacy-make|p4-automation-rules-runtime-acceptance|-
 p4-radar-local-tracking|0068|P4_RADAR_TRACKING_TEST_DATABASE_URL|legacy-make|p4-radar-local-tracking-acceptance|-
 p4-commerce-refund-v2|0069|P4COMMERCE_REFUND_V2_TEST_DATABASE_URL|legacy-make|p4-commerce-refund-v2-acceptance|-
+p4-media-content-delivery|0070|P4MEDIADELIVERY_TEST_DATABASE_URL|legacy-make|p4-media-content-delivery-acceptance|-
+p4-ai-audience-local-configuration|0071|P4AIAUDIENCE_TEST_DATABASE_URL|legacy-make|p4-ai-audience-local-configuration-acceptance|-
+p4-group-ops-runtime|0072|P4GROUP_OPS_TEST_DATABASE_URL|legacy-make|p4-group-ops-runtime-acceptance|-
+p4-commerce-external-push|0073|P4EXTERNALPUSH_TEST_DATABASE_URL|legacy-make|p4-commerce-external-push-acceptance|-

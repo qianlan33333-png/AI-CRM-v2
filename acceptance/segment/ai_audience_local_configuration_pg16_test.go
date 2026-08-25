@@ -21,6 +21,7 @@ import (
 	authacceptance "github.com/qianlan33333-png/AI-CRM-v2/acceptance/auth"
 	automationfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/automationfixture"
 	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
+	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
 	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
@@ -41,6 +42,7 @@ func TestLocalConfigurationSQLRepositoryPG16(t *testing.T) {
 	if dsn == "" {
 		t.Skip("CI_TEST_DATABASE_URL is required for the isolated migrated PG16 test")
 	}
+	requireAudience84Database(t, dsn)
 	connection, err := pgx.Connect(ctx, dsn)
 	if err != nil {
 		t.Fatal(err)
@@ -159,6 +161,7 @@ func TestLocalConfigurationHTTPServicePG16ReceiptsAndRollback(t *testing.T) {
 	if dsn == "" {
 		t.Skip("CI_TEST_DATABASE_URL is required for the isolated migrated PG16 test")
 	}
+	requireAudience84Database(t, dsn)
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		t.Fatal(err)
@@ -323,6 +326,16 @@ func insertLocalConfigurationAgent(t *testing.T, ctx context.Context, transactio
 		t.Fatal(err)
 	}
 	return agentID
+}
+
+func requireAudience84Database(t *testing.T, dsn string) {
+	t.Helper()
+	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(dsn, acceptancefixtures.Audience84DatabaseName); err != nil {
+		if errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
+			t.Skip("Audience 84 PG16 tests require the isolated Audience 84 database")
+		}
+		t.Fatal(err)
+	}
 }
 
 type localConfigurationPGProvider struct{ transaction pgx.Tx }
