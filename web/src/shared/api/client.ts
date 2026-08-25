@@ -11,16 +11,20 @@ import type {
   AiRecipient,
   AudienceGroup,
   AudiencePackage,
+  AudienceSender,
   AttachItem,
+  Channel,
   ConfigCategory,
   Coupon,
   Customer,
   FunnelGridRow,
   FunnelView,
+  GroupOpsPlanDetailItem,
   ImageItem,
   MpItem,
   OwnerReassignmentPreview,
   Product,
+  Questionnaire,
   QuestionnaireOps,
   RadarEvent,
   RadarLink,
@@ -33,7 +37,14 @@ import type {
 import { SEED_DB, deepCopy } from './mockData';
 import { deleteProductDto } from '../../api/admin';
 import { archiveCouponDto, copyCouponDto, deleteCouponDto, saveCouponDto, setCouponPublishedDto, type CouponWriteInput } from '../../api/admin';
-import { archiveAudiencePackage, archiveServiceProductDto, archiveTagDto, copyAudiencePackageDto, copyProductDto, copyServiceProductDto, createOwnerReassignmentPreviewDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setProductEnabledDto, setRadarEnabled, setServiceProductEnabledDto, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext, type ProductWriteInput } from '../../api/admin';
+import { deleteQuestionnaireDto, duplicateQuestionnaireDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, setQuestionnaireEnabledDto, type QuestionnaireWriteInput } from '../../api/admin';
+import { saveChannelDto, type ChannelWriteInput } from '../../api/admin';
+import { materializeAudienceConfigurationDto, previewAudienceConfigurationDto, replaceAudienceSendersDto, saveAudiencePackageDto, setAudienceBindingDto, snapshotAudienceConfigurationDto, type AudienceEvaluation, type AudiencePackageWriteInput } from '../../api/admin';
+import type { AIAudiencePackageSender } from '../../api/generated/health';
+import { deleteGroupOpsPlanDto, saveGroupOpsPlanDto, transitionGroupOpsPlanDto, type GroupOpsWriteInput } from '../../api/admin';
+import { archiveHxcSenderDto, reorderHxcSendersDto, saveHxcSenderDto, type HxcSenderWriteInput } from '../../api/admin';
+import { saveAppSettingsDto } from '../../api/admin';
+import { archiveAudiencePackage, archiveServiceProductDto, archiveTagDto, copyAudiencePackageDto, copyProductDto, copyServiceProductDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, getImageThumbnailDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setProductEnabledDto, setRadarEnabled, setServiceProductEnabledDto, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext, type ProductWriteInput, type RefundIntentInput, type RefundIntentResult } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
 
@@ -44,6 +55,11 @@ export interface AdminApi {
   loadDb(context?: AdminReadContext): Promise<AdminDb>;
   updateCustomer(id: number, input: { name?: string; stageId?: number | null }): Promise<Customer>;
   setCustomerTag(customerId: number, tagId: number, applied: boolean): Promise<void>;
+  saveChannel(input: ChannelWriteInput): Promise<Channel>;
+  createRefundIntent(input: RefundIntentInput): Promise<RefundIntentResult>;
+  saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]>;
+  reorderHxcSenders(ids: string[]): Promise<void>;
+  archiveHxcSender(senderUserid: string): Promise<void>;
 
   /* ---- 内容雷达 ---- */
   toggleRadarLink(id: number, enabled: boolean): Promise<void>;
@@ -74,7 +90,15 @@ export interface AdminApi {
   /* ---- 自动化运营 · 人群包 ---- */
   saveAudienceGroup(input: { id?: number; name: string }): Promise<AudienceGroup>;
   deleteAudienceGroup(id: number): Promise<void>;
-  saveAudiencePackage(input: Partial<AudiencePackage> & { id: number }): Promise<void>;
+  saveAudiencePackage(input: AudiencePackageWriteInput): Promise<AudiencePackage>;
+  replaceAudienceSenders(packageId: number, senders: AIAudiencePackageSender[]): Promise<AudienceSender[]>;
+  setAudienceBinding(packageId: number, automationAgentId: number | null): Promise<void>;
+  snapshotAudienceConfiguration(packageId: number): Promise<number>;
+  previewAudienceConfiguration(packageId: number): Promise<AudienceEvaluation>;
+  materializeAudienceConfiguration(packageId: number): Promise<AudienceEvaluation>;
+  saveGroupOpsPlan(input: GroupOpsWriteInput): Promise<GroupOpsPlanDetailItem>;
+  transitionGroupOpsPlan(planId: string, action: 'activate' | 'pause' | 'archive'): Promise<void>;
+  deleteGroupOpsPlan(planId: string): Promise<void>;
   toggleAudiencePackage(id: number, running: boolean): Promise<void>;
   copyAudiencePackage(id: number): Promise<AudiencePackage>;
   deleteAudiencePackage(id: number): Promise<void>;
@@ -87,10 +111,15 @@ export interface AdminApi {
 
   /* ---- 问卷 · 运营配置 ---- */
   saveQuestionnaireOps(qid: number, ops: QuestionnaireOps): Promise<void>;
+  saveQuestionnaire(input: QuestionnaireWriteInput, publish: boolean): Promise<Questionnaire>;
+  setQuestionnaireEnabled(questionnaireId: number, enabled: boolean): Promise<void>;
+  duplicateQuestionnaire(questionnaireId: number): Promise<Questionnaire>;
+  deleteQuestionnaire(questionnaireId: number): Promise<void>;
 
   /* ---- 素材库（按名称定位，null = 新建） ---- */
   saveImageItem(originalName: string | null, patch: Partial<ImageItem> & { name: string }): Promise<void>;
   deleteImageItem(item: ImageItem): Promise<void>;
+  getImageThumbnail(item: ImageItem): Promise<Blob>;
   saveMpItem(originalName: string | null, patch: Partial<MpItem> & { name: string }): Promise<void>;
   deleteMpItem(item: MpItem): Promise<void>;
   saveAttachItem(originalName: string | null, patch: Partial<AttachItem> & { name: string }): Promise<void>;
@@ -179,6 +208,11 @@ export class MockApi implements AdminApi {
   }
 
   setCustomerTag(_customerId: number, _tagId: number, _applied: boolean): Promise<void> { return delay(undefined); }
+  saveChannel(input: ChannelWriteInput): Promise<Channel> { const item = input.id == null ? { resourceId: Date.now(), name: input.channel_name || '', code: input.channel_code || '', type: input.channel_type || 'qrcode', status: input.status || 'inactive', tone: 'warn' as const, mat: '—', tag: input.entry_tag_name || '—', tagTone: 'gray' as const, users: '0', qr: '' } : this.db.rows.channels.find((row) => row.resourceId === input.id)!; Object.assign(item, { name: input.channel_name, code: input.channel_code, channelType: input.channel_type, carrierType: input.carrier_type, status: input.status, sceneValue: input.scene_value, qrUrl: input.qr_url, ownerStaffId: input.owner_staff_id, customerChannel: input.customer_channel, linkUrl: input.link_url, finalUrl: input.final_url, welcomeMessage: input.welcome_message, welcomeImageLibraryIds: input.welcome_image_library_ids, welcomeMiniprogramLibraryIds: input.welcome_miniprogram_library_ids, welcomeAttachmentLibraryIds: input.welcome_attachment_library_ids, welcomeGroupInviteLibraryIds: input.welcome_group_invite_library_ids, autoAcceptFriend: input.auto_accept_friend, entryTagId: input.entry_tag_id, entryTagName: input.entry_tag_name, entryTagGroupName: input.entry_tag_group_name, assignmentMode: input.assignment_mode, assignmentStrategy: input.assignment_strategy, overflowPolicy: input.overflow_policy, assignmentConfig: input.assignment_config_json }); if (input.id == null) this.db.rows.channels.push(item); this.persist(); return delay(item); }
+  createRefundIntent(input: RefundIntentInput): Promise<RefundIntentResult> { if (!input.checked || input.transactionIdConfirmation !== input.orderNo) return Promise.reject(new Error('必须勾选确认并完整输入当前订单号')); return delay({ id: `mock-refund-${input.orderNo}`, state: 'reserved', provider: input.provider, realExternalCallExecuted: false, deliveryProven: false }); }
+  saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]> { const item = this.db.rows.agents.find((row) => row.code === input.senderUserid) || { name: input.displayName, code: input.senderUserid, type: 'HXC 本地发送人', material: '', status: '', tone: 'gray' as const }; Object.assign(item, { senderId: input.id, priority: input.priority, isActive: input.active, name: input.displayName || input.senderUserid, material: `优先级 ${input.priority}`, status: input.active ? '启用中' : '已停用', tone: input.active ? 'ok' : 'gray' }); if (!this.db.rows.agents.includes(item)) this.db.rows.agents.push(item); this.persist(); return delay(item); }
+  reorderHxcSenders(ids: string[]): Promise<void> { this.db.rows.agents.sort((a, b) => ids.indexOf(a.senderId || a.code) - ids.indexOf(b.senderId || b.code)); this.persist(); return delay(undefined); }
+  archiveHxcSender(senderUserid: string): Promise<void> { const item = this.db.rows.agents.find((row) => row.code === senderUserid); if (item) { item.isActive = false; item.status = '已归档'; item.tone = 'gray'; this.persist(); } return delay(undefined); }
 
   /* ---------- 内容雷达 ---------- */
 
@@ -355,14 +389,22 @@ export class MockApi implements AdminApi {
     return delay(undefined);
   }
 
-  async saveAudiencePackage(input: Partial<AudiencePackage> & { id: number }): Promise<void> {
+  async saveAudiencePackage(input: AudiencePackageWriteInput): Promise<AudiencePackage> {
     const p = this.db.audiencePackages.find((x) => x.id === input.id);
     if (p) {
-      Object.assign(p, input);
+      Object.assign(p, input, { groupId: input.groupId || 0, definition: JSON.stringify(input.definition, null, 2), refreshMode: input.refreshMode, refreshCron: input.refreshCron, packageVersion: (p.packageVersion || 0) + 1, version: `v${(p.packageVersion || 0) + 1}` });
       this.persist();
     }
-    return delay(undefined, 400);
+    return delay(p!, 400);
   }
+  replaceAudienceSenders(packageId: number, senders: AIAudiencePackageSender[]): Promise<AudienceSender[]> { const mapped = senders.map((sender) => ({ priority: sender.sort_order, userid: sender.sender_userid, rule: '服务端顺序', status: sender.is_enabled ? '启用' : '停用' })); this.db.audienceSenders[packageId] = mapped; this.persist(); return delay(mapped); }
+  setAudienceBinding(packageId: number, automationAgentId: number | null): Promise<void> { const p = this.db.audiencePackages.find((x) => x.id === packageId); if (p) { p.bindingAgentId = automationAgentId || undefined; p.boundAutomation = automationAgentId == null ? '' : String(automationAgentId); this.persist(); } return delay(undefined); }
+  snapshotAudienceConfiguration(packageId: number): Promise<number> { const p = this.db.audiencePackages.find((x) => x.id === packageId)!; p.configurationVersion = (p.configurationVersion || 0) + 1; this.persist(); return delay(p.configurationVersion); }
+  previewAudienceConfiguration(packageId: number): Promise<AudienceEvaluation> { const p = this.db.audiencePackages.find((x) => x.id === packageId)!; return delay({ configurationVersion: p.configurationVersion || 1, packageVersion: p.packageVersion || 1, memberCount: p.count, memberDigest: 'mock', evaluatedAt: '', materialized: false }); }
+  materializeAudienceConfiguration(packageId: number): Promise<AudienceEvaluation> { return this.previewAudienceConfiguration(packageId).then((result) => ({ ...result, materialized: true })); }
+  saveGroupOpsPlan(input: GroupOpsWriteInput): Promise<GroupOpsPlanDetailItem> { const id = input.id || String(Date.now()); const plan = input.id ? this.db.groupOpsPlans.find((item) => item.id === input.id)! : { id, name: input.name, status: 'draft' as const, revision: 1, updatedAt: '' }; Object.assign(plan, { name: input.name, revision: plan.revision + 1 }); if (!input.id) this.db.groupOpsPlans.push(plan); const previous = this.db.groupOpsDetail; this.db.groupOpsDetail = { plan, staffIds: input.staffIds, assets: input.assetReferences.map((reference, index) => ({ id: previous?.assets.find((item) => item.reference === reference)?.id || String(index + 1), reference })), nodes: input.nodes, webhookReference: input.webhookReference || '', previewLines: input.nodes.map((node) => node.kind === 'message' ? node.messageText || '' : `等待 ${node.delayMinutes} 分钟`), previewIssues: [] }; this.persist(); return delay(this.db.groupOpsDetail); }
+  transitionGroupOpsPlan(planId: string, action: 'activate' | 'pause' | 'archive'): Promise<void> { const plan = this.db.groupOpsPlans.find((item) => item.id === planId); if (plan) { plan.status = action === 'activate' ? 'active' : action === 'pause' ? 'paused' : 'archived'; plan.revision += 1; this.persist(); } return delay(undefined); }
+  deleteGroupOpsPlan(planId: string): Promise<void> { this.db.groupOpsPlans = this.db.groupOpsPlans.filter((item) => item.id !== planId); this.persist(); return delay(undefined); }
 
   async toggleAudiencePackage(id: number, running: boolean): Promise<void> {
     const p = this.db.audiencePackages.find((x) => x.id === id);
@@ -460,6 +502,19 @@ export class MockApi implements AdminApi {
     return delay(undefined, 500);
   }
 
+  saveQuestionnaire(input: QuestionnaireWriteInput, publish: boolean): Promise<Questionnaire> {
+    const item = input.id == null
+      ? { resourceId: Date.now(), publicPath: `/q/${input.slug}`, name: input.title, assess: input.assessment_enabled, off: input.is_disabled, action: publish ? 'active' : 'draft', created: '', count: '0' }
+      : this.db.rows.questionnaires.find((row) => row.resourceId === input.id)!;
+    Object.assign(item, { internalName: input.name, title: input.title, name: input.title, description: input.description, answerDisplayMode: input.answer_display_mode, assessmentEnabled: input.assessment_enabled, assess: input.assessment_enabled, assessmentConfig: input.assessment_config, slug: input.slug, questions: input.questions, scoreRules: input.score_rules, off: input.is_disabled, version: (item.version || 0) + 1, action: publish ? 'active' : item.action });
+    if (input.id == null) this.db.rows.questionnaires.push(item);
+    this.persist();
+    return delay(item);
+  }
+  setQuestionnaireEnabled(questionnaireId: number, enabled: boolean): Promise<void> { const item = this.db.rows.questionnaires.find((row) => row.resourceId === questionnaireId); if (item) { item.off = !enabled; item.action = enabled ? 'active' : 'disabled'; this.persist(); } return delay(undefined); }
+  duplicateQuestionnaire(questionnaireId: number): Promise<Questionnaire> { const source = this.db.rows.questionnaires.find((row) => row.resourceId === questionnaireId)!; return this.saveQuestionnaire({ name: (source.internalName || source.name) + ' copy', title: source.name + '（副本）', description: source.description || '', answer_display_mode: source.answerDisplayMode || 'all_in_one', assessment_enabled: source.assessmentEnabled || false, assessment_config: source.assessmentConfig || {}, slug: (source.slug || 'survey') + '-copy', is_disabled: true, questions: source.questions as QuestionnaireWriteInput['questions'], score_rules: [] }, false); }
+  deleteQuestionnaire(questionnaireId: number): Promise<void> { this.db.rows.questionnaires = this.db.rows.questionnaires.filter((row) => row.resourceId !== questionnaireId); this.persist(); return delay(undefined); }
+
   /* ---------- 素材库 ---------- */
 
   private upsertByName<T extends { name: string }>(list: T[], originalName: string | null, patch: Partial<T> & { name: string }): void {
@@ -479,6 +534,7 @@ export class MockApi implements AdminApi {
     this.persist();
     return delay(undefined);
   }
+  getImageThumbnail(_item: ImageItem): Promise<Blob> { return delay(new Blob(['mock-image'], { type: 'image/png' })); }
 
   async saveMpItem(originalName: string | null, patch: Partial<MpItem> & { name: string }): Promise<void> {
     this.upsertByName(this.db.rows.mpItems, originalName, patch);
@@ -629,6 +685,11 @@ export class HttpApi implements AdminApi {
   updateCustomer(id: number, input: { name?: string; stageId?: number | null }): Promise<Customer> { return updateCustomerDto(id, input); }
 
   setCustomerTag(customerId: number, tagId: number, applied: boolean): Promise<void> { return setCustomerTagDto(customerId, tagId, applied); }
+  saveChannel(input: ChannelWriteInput): Promise<Channel> { return saveChannelDto(input); }
+  createRefundIntent(input: RefundIntentInput): Promise<RefundIntentResult> { return createRefundIntentDto(input); }
+  saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]> { return saveHxcSenderDto(input); }
+  reorderHxcSenders(ids: string[]): Promise<void> { return reorderHxcSendersDto(ids); }
+  archiveHxcSender(senderUserid: string): Promise<void> { return archiveHxcSenderDto(senderUserid); }
 
   /* ---------- 内容雷达 ---------- */
 
@@ -717,10 +778,15 @@ export class HttpApi implements AdminApi {
     return deleteAudienceGroupDto(id);
   }
 
-  saveAudiencePackage(input: Partial<AudiencePackage> & { id: number }): Promise<void> {
-    void input;
-    return Promise.reject(new Error('后端能力未就绪：当前人群包表单缺少 SegmentDefinition 与版本字段，不能安全调用更新契约'));
-  }
+  saveAudiencePackage(input: AudiencePackageWriteInput): Promise<AudiencePackage> { return saveAudiencePackageDto(input); }
+  replaceAudienceSenders(packageId: number, senders: AIAudiencePackageSender[]): Promise<AudienceSender[]> { return replaceAudienceSendersDto(packageId, senders); }
+  setAudienceBinding(packageId: number, automationAgentId: number | null): Promise<void> { return setAudienceBindingDto(packageId, automationAgentId); }
+  snapshotAudienceConfiguration(packageId: number): Promise<number> { return snapshotAudienceConfigurationDto(packageId); }
+  previewAudienceConfiguration(packageId: number): Promise<AudienceEvaluation> { return previewAudienceConfigurationDto(packageId); }
+  materializeAudienceConfiguration(packageId: number): Promise<AudienceEvaluation> { return materializeAudienceConfigurationDto(packageId); }
+  saveGroupOpsPlan(input: GroupOpsWriteInput): Promise<GroupOpsPlanDetailItem> { return saveGroupOpsPlanDto(input); }
+  transitionGroupOpsPlan(planId: string, action: 'activate' | 'pause' | 'archive'): Promise<void> { return transitionGroupOpsPlanDto(planId, action); }
+  deleteGroupOpsPlan(planId: string): Promise<void> { return deleteGroupOpsPlanDto(planId); }
 
   toggleAudiencePackage(id: number, running: boolean): Promise<void> {
     return setAudiencePackageRunning(id, running);
@@ -755,9 +821,12 @@ export class HttpApi implements AdminApi {
   /* ---------- 问卷 · 运营配置 ---------- */
 
   saveQuestionnaireOps(qid: number, ops: QuestionnaireOps): Promise<void> {
-    void qid; void ops;
-    return Promise.reject(new Error('后端能力未就绪：当前运营表单使用 URL，OpenAPI 仅接受 opaque navigation/configuration reference，DTO 不等价'));
+    return saveQuestionnaireOpsDto(qid, ops);
   }
+  saveQuestionnaire(input: QuestionnaireWriteInput, publish: boolean): Promise<Questionnaire> { return saveQuestionnaireDto(input, publish); }
+  setQuestionnaireEnabled(questionnaireId: number, enabled: boolean): Promise<void> { return setQuestionnaireEnabledDto(questionnaireId, enabled); }
+  duplicateQuestionnaire(questionnaireId: number): Promise<Questionnaire> { return duplicateQuestionnaireDto(questionnaireId); }
+  deleteQuestionnaire(questionnaireId: number): Promise<void> { return deleteQuestionnaireDto(questionnaireId); }
 
   /* ---------- 素材库 ---------- */
 
@@ -768,6 +837,7 @@ export class HttpApi implements AdminApi {
   deleteImageItem(item: ImageItem): Promise<void> {
     return deleteImageItemDto(item);
   }
+  getImageThumbnail(item: ImageItem): Promise<Blob> { return getImageThumbnailDto(item); }
 
   saveMpItem(originalName: string | null, patch: Partial<MpItem> & { name: string }): Promise<void> {
     return saveMiniProgramItemDto(originalName, patch);
@@ -817,8 +887,8 @@ export class HttpApi implements AdminApi {
   }
 
   saveConfigCategory(key: string, values: Record<string, string>, switches: Record<string, boolean>): Promise<void> {
-    void key; void values; void switches;
-    return Promise.reject(new Error('后端能力未就绪：配置 settings 是 closed allowlist 且要求 Admin Action Token，当前表单 DTO 不等价'));
+    void switches;
+    return this.loadDb({ page: 'config' }).then((db) => { const category = db.configCategories.find((item) => item.key === key); if (key === 'app-settings' && category) return saveAppSettingsDto(category, values); throw new Error('后端能力未就绪：该配置写入要求 route-bound Admin Action Token，当前类目读取未返回 token'); });
   }
 
   checkConfigCategory(key: string): Promise<string> {

@@ -4,7 +4,7 @@
               <a onClick="{{ go.orders }}" style="width:28px;height:28px;border:1px solid #DEE0E3;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#646A73" stroke-width="1.6"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg></a>
               <div style="min-width:0">
                 <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8F959E;line-height:14px"><span>客户管理后台</span><span>/</span><a onClick="{{ go.orders }}" style="cursor:pointer;color:#8F959E">交易管理</a><span>/</span><span>订单详情</span></div>
-                <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;font-weight:600;line-height:22px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">4200002419202608</span><span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:4px;background:#EBF9EC;color:#2EA121;font-size:12px">已支付</span></div>
+                <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px;font-weight:600;line-height:22px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">{{ orderDetailPage.item.no }}</span><span style="{{ orderDetailPage.statusStyle }}">{{ orderDetailPage.item.status }}</span></div>
               </div>
             </div>
           </div>
@@ -13,15 +13,14 @@
               <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px">
                 <div style="padding:12px 16px;border-bottom:1px solid #EFF0F1">
                   <h2 style="margin:0;font-size:14px;font-weight:600">订单详情</h2>
-                  <p style="margin:2px 0 0;font-size:12px;color:#8F959E">展示微信支付订单号、客户、金额、状态和回调摘要。</p>
+                  <p style="margin:2px 0 0;font-size:12px;color:#8F959E">展示 {{ orderDetailPage.item.plat }} 来源的服务端订单、items、退款与外推回执。</p>
                 </div>
                 <div style="padding:16px;display:grid;grid-template-columns:96px minmax(0,1fr) 96px minmax(0,1fr);gap:12px 16px;align-items:baseline">
                   <sc-for list="{{ rows.orderKv }}" as="kv" hint-placeholder-count="13">
                     <span style="font-size:12px;color:#8F959E">{{ kv.k }}</span>
                     <span style="{{ kv.vs }}">{{ kv.v }}</span>
                   </sc-for>
-                  <span style="font-size:12px;color:#8F959E">状态</span>
-                  <span><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;background:#EBF9EC;color:#2EA121;font-size:12px">已支付</span></span>
+                  <span style="font-size:12px;color:#8F959E">支付来源</span><span style="font-size:13px">{{ orderDetailPage.item.plat }}</span>
                 </div>
               </div>
               <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
@@ -43,14 +42,14 @@
             <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px">
               <div style="padding:12px 16px;border-bottom:1px solid #EFF0F1">
                 <h2 style="margin:0;font-size:14px;font-weight:600">申请退款</h2>
-                <p style="margin:2px 0 0;font-size:12px;color:#8F959E">仅已支付或部分退款且仍有可退金额的订单可提交。</p>
+                <p style="margin:2px 0 0;font-size:12px;color:#8F959E">创建退款 intent 并展示后端 receipt；不把 intent 接受当作退款成功。</p>
               </div>
               <div style="padding:16px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-content:start">
-                <label><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">退款金额</span><input value="2980.00" style="height:34px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff;width:100%;font-variant-numeric:tabular-nums"></label>
-                <label><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">退款原因</span><select style="height:34px;border:1px solid #DEE0E3;border-radius:6px;padding:0 8px;font-size:13px;background:#fff;width:100%"><option>客户主动申请退款</option></select></label>
-                <label><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">再次完整输入微信单号</span><input placeholder="4200002419202608" style="height:34px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff;width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,monospace"></label>
-                <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:20px;cursor:pointer"><input type="checkbox" style="width:15px;height:15px;accent-color:#3370ff;margin-top:2px">已核对付款人、商品、金额和微信单号</label>
-                <div style="display:flex;justify-content:flex-end"><button style="height:32px;padding:0 16px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">提交退款申请</button></div>
+                <label><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">退款金额</span><input id="refundAmount" value="{{ orderDetailPage.item.amount }}" style="height:34px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff;width:100%;font-variant-numeric:tabular-nums"></label>
+                <label><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">退款原因</span><select id="refundReason" style="height:34px;border:1px solid #DEE0E3;border-radius:6px;padding:0 8px;font-size:13px;background:#fff;width:100%"><option value="客户主动申请退款">客户主动申请退款</option><option value="商品或服务异常">商品或服务异常</option></select></label>
+                <label><span style="display:block;font-size:12px;color:#646A73;margin:0 0 6px">再次完整输入当前订单号</span><input id="refundOrderConfirmation" placeholder="{{ orderDetailPage.item.no }}" style="height:34px;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;background:#fff;width:100%;font-family:ui-monospace,SFMono-Regular,Menlo,monospace"></label>
+                <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:20px;cursor:pointer"><input id="refundChecked" type="checkbox" style="width:15px;height:15px;accent-color:#3370ff;margin-top:2px">已核对付款人、商品、金额、支付来源和订单号</label>
+                <div style="display:flex;justify-content:flex-end"><button onClick="{{ orderDetailPage.submitRefund }}" style="height:32px;padding:0 16px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">创建退款 intent</button></div>
               </div>
             </div>
           </div>

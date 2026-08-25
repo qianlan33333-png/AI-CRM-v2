@@ -14,8 +14,8 @@ import type { AdminApi } from '../shared/api/client';
 import type { AdminDb, AudienceSender, OwnerReassignmentPreview, QuestionnaireOps, Tone } from '../shared/api/types';
 import { deepCopy } from '../shared/api/mockData';
 import { emptyAdminDb } from '../api/admin';
-import type { CouponWriteInput } from '../api/admin';
-import { toast, confirmBox, busy, simulateUpload } from '../shared/ui/feedback';
+import type { ChannelWriteInput, CouponWriteInput, GroupOpsWriteInput, QuestionnaireWriteInput } from '../api/admin';
+import { toast, confirmBox, busy } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
 import { copyText, renderFakeQr } from './sections/util';
 
@@ -125,6 +125,7 @@ export class AdminController extends PageBase {
   private sendersDraft: AudienceSender[] | null = null;
   /** 问卷运营配置 · 自定义参数草稿 */
   private paramsDraft: { key: string; value: string }[] | null = null;
+  private imageObjectUrls: string[] = [];
 
   constructor(
     private api: AdminApi,
@@ -137,6 +138,19 @@ export class AdminController extends PageBase {
   async init(): Promise<void> {
     const resourceId = this.qs().get(this.page === 'configDetail' ? 'cat' : 'id') || undefined;
     this.db = await this.api.loadDb({ page: this.page, id: resourceId });
+    if (this.page === 'images' && this.api.mode === 'http') {
+      for (const url of this.imageObjectUrls) URL.revokeObjectURL(url);
+      this.imageObjectUrls = [];
+      await Promise.all(this.db.rows.images.map(async (item) => {
+        try {
+          const url = URL.createObjectURL(await this.api.getImageThumbnail(item));
+          this.imageObjectUrls.push(url);
+          item.thumbnailUrl = url;
+        } catch (error) {
+          item.thumbnailError = error instanceof Error ? error.message : '缩略图读取失败';
+        }
+      }));
+    }
     const previewId = this.page === 'ownerMig' ? this.qs().get('id') : null;
     if (previewId) this.state.migPreview = await this.api.getOwnerReassignmentPreview(previewId);
     // 问卷运营配置：首次进入把本地开关态同步为已保存值
@@ -310,38 +324,39 @@ export class AdminController extends PageBase {
     const pkg = this.audiencePkg();
     if (!pkg) return;
     const val = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null)?.value || '';
+    let definition: import('../api/admin').AudiencePackageWriteInput['definition'];
+    try { definition = JSON.parse(val('aeDef')) as import('../api/admin').AudiencePackageWriteInput['definition']; }
+    catch { toast('SegmentDefinition 不是有效 JSON', true); return; }
+    const refreshMode = val('aeRefreshMode') === 'scheduled' ? 'scheduled' : 'manual';
+    const refreshCron = val('aeRefreshCron').trim() || null;
+    if (refreshMode === 'scheduled' && !refreshCron) { toast('定时刷新必须填写 cron', true); return; }
     void this.api
-      .saveAudiencePackage({
-        id: pkg.id,
-        name: val('aeName') || pkg.name,
-        definition: val('aeDef'),
-        groupId: Number(val('aeGroup') || String(pkg.groupId)),
-        incremental: val('aeInc') || pkg.incremental,
-        daily: val('aeDaily') || pkg.daily,
-      })
+      .saveAudiencePackage({ id: pkg.id, name: val('aeName') || pkg.name, definition, groupId: Number(val('aeGroup')) || null, refreshMode, refreshCron })
       .then(() => {
         toast('基础配置已保存');
         void this.init();
-      });
+      }).catch((error) => toast(error instanceof Error ? error.message : '人群包保存失败', true));
   }
 
   private bindAutomation(name: string): void {
     const pkg = this.audiencePkg();
     if (!pkg) return;
-    void this.api.saveAudiencePackage({ id: pkg.id, boundAutomation: name }).then(() => {
-      toast('已绑定自动化话术「' + name + '」');
+    const id = Number(name);
+    if (!Number.isInteger(id) || id < 1) { toast('请输入有效 automation_agent_id', true); return; }
+    void this.api.setAudienceBinding(pkg.id, id).then(() => {
+      toast('已绑定自动化 Agent #' + id);
       void this.init();
-    });
+    }).catch((error) => toast(error instanceof Error ? error.message : '自动化绑定失败', true));
   }
 
   private unbindAutomation(): void {
     const pkg = this.audiencePkg();
     if (!pkg || !pkg.boundAutomation) return;
     confirmBox('解除绑定', '解除后该人群包将停止自动化触达，确认继续？', '解除绑定', true, () => {
-      void this.api.saveAudiencePackage({ id: pkg.id, boundAutomation: '' }).then(() => {
-        toast('已解除绑定');
-        void this.init();
-      });
+    void this.api.setAudienceBinding(pkg.id, null).then(() => {
+      toast('已解除绑定');
+      void this.init();
+    }).catch((error) => toast(error instanceof Error ? error.message : '解除绑定失败', true));
     });
   }
 
@@ -366,10 +381,18 @@ export class AdminController extends PageBase {
   }
 
   private saveSenders(): void {
-    this.sendersDraft = null;
-    toast('发送人白名单已保存');
-    this.setState({});
+    const pkg = this.audiencePkg();
+    if (!pkg) return;
+    const raw = (document.getElementById('aeSenders') as HTMLTextAreaElement | null)?.value || '';
+    const ids = raw.split(/[\s,，]+/).map((value) => value.trim()).filter(Boolean);
+    if (ids.length > 5 || new Set(ids).size !== ids.length) { toast('发送人最多 5 位且不能重复', true); return; }
+    void this.api.replaceAudienceSenders(pkg.id, ids.map((sender_userid, index) => ({ sender_userid, sort_order: index + 1, is_enabled: true }))).then(() => { this.sendersDraft = null; toast('发送人白名单已保存'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '发送人保存失败', true));
   }
+
+  private saveAudienceBinding(): void { this.bindAutomation((document.getElementById('aeAutomationId') as HTMLInputElement | null)?.value || ''); }
+  private snapshotAudience(): void { const pkg = this.audiencePkg(); if (!pkg) return; void this.api.snapshotAudienceConfiguration(pkg.id).then((version) => { toast(`配置版本 v${version} 已保存`); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '配置版本保存失败', true)); }
+  private previewAudience(): void { const pkg = this.audiencePkg(); if (!pkg) return; void this.api.previewAudienceConfiguration(pkg.id).then((result) => toast(`预览完成：${result.memberCount} 人 · 配置 v${result.configurationVersion}`)).catch((error) => toast(error instanceof Error ? error.message : '人群预览失败', true)); }
+  private materializeAudience(): void { const pkg = this.audiencePkg(); if (!pkg) return; confirmBox('物化人群成员', '该操作只写入本地 Segment 成员事实，不会触发企微群发。确认继续？', '确认物化', false, () => { void this.api.materializeAudienceConfiguration(pkg.id).then((result) => { toast(`物化完成：${result.memberCount} 人 · 未触发外部群发`); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '人群物化失败', true)); }); }
 
   /* ================= 通用选择器接入 ================= */
 
@@ -558,33 +581,12 @@ export class AdminController extends PageBase {
     const ops = this.currentOps();
     if (!ops) { toast('后端未返回可编辑的问卷运营配置 DTO，未发送请求', true); return; }
     const next: QuestionnaireOps = deepCopy(ops);
-    next.postEnabled = this.state.postEnabled;
-    next.postType = this.state.postType;
-    next.pushEnabled = this.state.pushEnabled;
-    if (this.state.opsTab === 1) {
-      next.channelId = this.state.opsChannelId ? this.channelName(this.state.opsChannelId) : next.channelId;
-      next.qrTitle = this.opsInputVal('opsQrTitle');
-      next.qrSubtitle = this.opsInputVal('opsQrSub');
-      next.redirectType = (this.opsInputVal('opsRedirectType') as 'h5' | 'urllink') || next.redirectType;
-      next.redirectUrl = this.opsInputVal('opsRedirectUrl');
-    } else {
-      next.webhookUrl = this.opsInputVal('opsWebhook');
-      next.subscribeType = this.opsInputVal('opsSubType') || next.subscribeType;
-      next.expiresAt = this.opsInputVal('opsExpire');
-      next.serviceCycle = this.opsInputVal('opsCycle');
-      next.frequency = this.opsInputVal('opsFreq') || next.frequency;
-      next.remark = this.opsInputVal('opsRemark');
-      // 自定义参数：按 DOM 行收集
-      const rows = Array.from(document.querySelectorAll('#opsParams .ops-param-row'));
-      if (rows.length) {
-        next.customParams = rows.map((r) => {
-          const inputs = r.querySelectorAll('input');
-          return { key: (inputs[0]?.value || '').trim(), value: (inputs[1]?.value || '').trim() };
-        }).filter((p) => p.key);
-      }
-    }
+    next.completionNavigationTargetId = this.opsInputVal('opsNavigationTarget');
+    next.completionChannelId = this.opsInputVal('opsChannelResourceId');
+    next.pushEnabled = (document.getElementById('opsPushEnabled') as HTMLInputElement | null)?.checked === true;
+    next.externalPushConfigurationReference = this.opsInputVal('opsConfigurationReference');
     void this.api.saveQuestionnaireOps(this.currentQid(), next).then(() => {
-      toast('运营配置已保存');
+      toast('本地 opaque 运营配置已保存；未触发外部推送');
       this.paramsDraft = null;
       void this.init();
     }).catch((error) => toast(error instanceof Error ? error.message : '运营配置保存失败', true));
@@ -736,6 +738,38 @@ export class AdminController extends PageBase {
     toast('后端能力未就绪：' + message + '，未发送请求', true);
   }
 
+  private submitRefundIntent(): void {
+    const order = this.db.rows.orders[0];
+    if (!order) { toast('后端未返回订单详情，未发送请求', true); return; }
+    const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value.trim() || '';
+    const checked = (document.getElementById('refundChecked') as HTMLInputElement | null)?.checked === true;
+    const input = { provider: order.plat, orderNo: order.no, amount: value('refundAmount'), reason: value('refundReason'), transactionIdConfirmation: value('refundOrderConfirmation'), checked };
+    if (!checked || input.transactionIdConfirmation !== order.no) { toast('请勾选确认并完整输入当前订单号', true); return; }
+    confirmBox('创建退款 intent', '仅提交后端退款意图并展示真实 receipt 状态；这不代表退款已成功或外部渠道已确认。', '确认创建 intent', true, () => {
+      this.setState({ saving: true });
+      void this.api.createRefundIntent(input).then((result) => {
+        this.setState({ saving: false });
+        toast(`退款 intent ${result.id || '—'} 已返回，状态 ${result.state || '—'}；外部调用 ${result.realExternalCallExecuted ? '已执行' : '未执行'}，交付证据 ${result.deliveryProven ? '已确认' : '未确认'}`);
+        void this.init();
+      }).catch((error) => { this.setState({ saving: false }); toast(error instanceof Error ? error.message : '退款 intent 创建失败', true); });
+    });
+  }
+
+  private saveHxcSender(): void {
+    const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | null)?.value.trim() || '';
+    const input = { id: value('hxcId'), senderUserid: value('hxcUserid'), displayName: value('hxcName'), priority: Number(value('hxcPriority')), active: (document.getElementById('hxcActive') as HTMLInputElement | null)?.checked === true };
+    void this.api.saveHxcSender(input).then((item) => { toast(`发送人 ${item.code} 已保存为本地配置；未调用企微 Provider`); this.goto('agents'); }).catch((error) => toast(error instanceof Error ? error.message : '发送人保存失败', true));
+  }
+
+  private reorderHxcSenders(): void {
+    const ids = ((document.getElementById('hxcOrder') as HTMLTextAreaElement | null)?.value || '').split(/[,，\n]/).map((id) => id.trim()).filter(Boolean);
+    void this.api.reorderHxcSenders(ids).then(() => { toast('本地发送人顺序已保存；未调用企微 Provider'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '发送人排序失败', true));
+  }
+
+  private archiveHxcSender(senderUserid: string): void {
+    confirmBox('归档发送人配置', `仅归档 ${senderUserid} 的本地配置，不删除企微成员。确认继续？`, '确认归档', true, () => { void this.api.archiveHxcSender(senderUserid).then(() => { toast('本地发送人配置已归档；未调用企微 Provider'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '发送人归档失败', true)); });
+  }
+
   private saveCouponForm(publish: boolean): void {
     const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value.trim() || '';
     const validityMode = value('couponValidityMode') === 'fixed_range' ? 'fixed_range' : 'relative_days';
@@ -764,6 +798,67 @@ export class AdminController extends PageBase {
       toast(publish ? '优惠券已保存并发布' : `优惠券草稿已保存，服务端版本 ${saved.version || '—'}`);
       this.goto('coupons');
     }).catch((error) => toast(error instanceof Error ? error.message : '优惠券保存失败', true));
+  }
+
+  private saveQuestionnaireForm(publish: boolean): void {
+    const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value.trim() || '';
+    const checked = (id: string): boolean => (document.getElementById(id) as HTMLInputElement | null)?.checked === true;
+    let questions: QuestionnaireWriteInput['questions'];
+    let assessmentConfig: QuestionnaireWriteInput['assessment_config'];
+    try {
+      questions = JSON.parse(value('questionnaireQuestions')) as QuestionnaireWriteInput['questions'];
+      assessmentConfig = JSON.parse(value('questionnaireAssessmentConfig') || '{}') as QuestionnaireWriteInput['assessment_config'];
+    } catch { return toast('题目或测评配置不是有效 JSON', true); }
+    if (!Array.isArray(questions) || questions.length < 1 || questions.some((q) => !q || typeof q.title !== 'string' || !q.title.trim() || !['single_choice', 'multi_choice', 'textarea', 'mobile'].includes(q.type) || !Array.isArray(q.options))) return toast('题目 JSON 不符合当前 OpenAPI：至少一题，且需包含合法 type/title/options', true);
+    const input: QuestionnaireWriteInput = {
+      id: Number(this.qs().get('id') || '') || undefined,
+      name: value('questionnaireName'), title: value('questionnaireTitle'), description: value('questionnaireDescription'),
+      answer_display_mode: value('questionnaireDisplay') === 'one_by_one' ? 'one_by_one' : 'all_in_one',
+      assessment_enabled: checked('questionnaireAssessmentEnabled'), assessment_config: assessmentConfig,
+      slug: value('questionnaireSlug'), is_disabled: checked('questionnaireDisabled'), questions, score_rules: [],
+    };
+    if (!input.name || !input.title || !/^[a-z0-9][a-z0-9-]{0,119}$/.test(input.slug)) return toast('请填写问卷名称、标题和合法 slug', true);
+    void this.api.saveQuestionnaire(input, publish).then((saved) => {
+      toast(publish ? `公开定义已发布（服务端版本 ${saved.version || '—'}）` : `问卷已保存（服务端版本 ${saved.version || '—'}）`);
+      this.goto('questionnaires');
+    }).catch((error) => toast(error instanceof Error ? error.message : '问卷保存失败', true));
+  }
+
+  private saveChannelForm(): void {
+    const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value.trim() || '';
+    const checked = (id: string): boolean => (document.getElementById(id) as HTMLInputElement | null)?.checked === true;
+    const ids = (id: string): number[] => value(id).split(/[\s,，]+/).filter(Boolean).map(Number);
+    let assignmentConfig: Record<string, unknown>;
+    try { assignmentConfig = JSON.parse(value('channelAssignmentConfig') || '{}') as Record<string, unknown>; }
+    catch { return toast('客服分配配置不是有效 JSON', true); }
+    const input: ChannelWriteInput = {
+      id: Number(this.qs().get('id') || '') || undefined,
+      channel_type: value('channelType') === 'wecom_customer_acquisition' ? 'wecom_customer_acquisition' : 'qrcode',
+      carrier_type: value('channelCarrier') === 'link' ? 'link' : 'qrcode',
+      channel_name: value('channelName'), channel_code: value('channelCode'), scene_value: value('channelScene'), qr_url: value('channelQrUrl'),
+      status: ['active', 'archived'].includes(value('channelStatus')) ? value('channelStatus') as 'active' | 'archived' : 'inactive',
+      owner_staff_id: value('channelOwner'), customer_channel: value('channelCustomerChannel'), link_url: value('channelLinkUrl'), final_url: value('channelFinalUrl'),
+      welcome_message: value('channelWelcome'), welcome_image_library_ids: ids('channelImageIds'), welcome_miniprogram_library_ids: ids('channelMiniIds'), welcome_attachment_library_ids: ids('channelAttachmentIds'), welcome_group_invite_library_ids: ids('channelGroupInviteIds'),
+      auto_accept_friend: checked('channelAutoAccept'), entry_tag_id: value('channelTagId'), entry_tag_name: value('channelTagName'), entry_tag_group_name: value('channelTagGroup'),
+      assignment_mode: value('channelAssignmentMode') === 'multi_staff' ? 'multi_staff' : 'single_owner', assignment_strategy: value('channelAssignmentStrategy') === 'cap_switch' ? 'cap_switch' : 'ratio', overflow_policy: value('channelOverflow'), assignment_config_json: assignmentConfig,
+    };
+    if (!input.channel_name || !input.channel_code) return toast('渠道名称和编码不能为空', true);
+    if ([...(input.welcome_image_library_ids || []), ...(input.welcome_miniprogram_library_ids || []), ...(input.welcome_attachment_library_ids || []), ...(input.welcome_group_invite_library_ids || [])].some((id) => !Number.isInteger(id) || id < 1)) return toast('素材引用必须是正整数 ID', true);
+    void this.api.saveChannel(input).then(() => { toast('渠道配置已保存（本地事实，不代表企微执行）'); this.goto('channels'); }).catch((error) => toast(error instanceof Error ? error.message : '渠道保存失败', true));
+  }
+
+  private saveGroupOpsForm(): void {
+    const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | null)?.value.trim() || '';
+    let nodes: GroupOpsWriteInput['nodes'];
+    try { nodes = JSON.parse(value('groupOpsNodes') || '[]') as GroupOpsWriteInput['nodes']; }
+    catch { return toast('节点配置不是有效 JSON', true); }
+    const staffIds = value('groupOpsStaff').split(/[\s,，]+/).filter(Boolean).map(Number);
+    const assetReferences = value('groupOpsAssets').split(/[\s,，]+/).filter(Boolean);
+    if (!value('groupOpsName')) return toast('计划名称不能为空', true);
+    if (staffIds.some((id) => !Number.isInteger(id) || id < 1)) return toast('成员 staff_id 必须是正整数', true);
+    if (!Array.isArray(nodes) || nodes.some((node) => !Number.isInteger(node.position) || node.position < 1 || !['message', 'delay'].includes(node.kind) || (node.kind === 'message' && !node.messageText) || (node.kind === 'delay' && (!node.delayMinutes || node.delayMinutes < 1)))) return toast('节点 JSON 不符合 GroupOpsNodeRequest', true);
+    const input: GroupOpsWriteInput = { id: this.qs().get('id') || undefined, name: value('groupOpsName'), staffIds, assetReferences, nodes, webhookReference: value('groupOpsWebhook') || undefined };
+    void this.api.saveGroupOpsPlan(input).then((detail) => { toast(`群运营计划已保存，revision ${detail.plan.revision}；未触发 Provider`); this.goto('groupopsDetail', '?id=' + detail.plan.id); }).catch((error) => toast(error instanceof Error ? error.message : '群运营计划保存失败', true));
   }
 
   /* ================= 模板绑定值 ================= */
@@ -870,11 +965,7 @@ export class AdminController extends PageBase {
           });
         });
       },
-      broadcast: (ev: Event) => {
-        confirmBox('确认群发', '将向「' + p.name + '」内 ' + p.count.toLocaleString() + ' 人发送已绑定的话术，确认继续？', '确认群发', false, () => {
-          busy(ev.currentTarget as FbEl, 700, () => toast('群发任务已创建'));
-        });
-      },
+      broadcast: () => this.blocked('AI 人群包 API 不等于群发任务创建契约'),
       verStyle: { display: 'inline-flex', alignItems: 'center', height: '20px', padding: '0 8px', border: '1px solid #DEE0E3', borderRadius: '999px', background: '#F8FAFC', color: '#667085', fontSize: '11px', whiteSpace: 'nowrap' } as StyleObj,
       refreshStyle: { display: 'inline-flex', alignItems: 'center', height: '22px', padding: '0 9px', border: '1px solid #DBEAFE', borderRadius: '999px', background: '#EFF6FF', color: '#1D4ED8', fontSize: '12px', whiteSpace: 'nowrap' } as StyleObj,
     }));
@@ -890,6 +981,10 @@ export class AdminController extends PageBase {
           incrementalText: pkg.incremental === 'incremental_3m' ? '每 3 分钟' : '关闭',
           dailyText: pkg.daily === 'daily_0200' ? '每日 2:00' : '关闭',
           boundText: pkg.boundAutomation || '未绑定',
+          definitionText: pkg.definition || '{}',
+          refreshCronText: pkg.refreshCron || '',
+          bindingAgentIdText: pkg.bindingAgentId ? String(pkg.bindingAgentId) : '',
+          configurationText: pkg.configurationVersion ? `v${pkg.configurationVersion}` : '尚未保存配置版本',
         }
       : null;
     const aeNav: Record<string, StyleObj> = {};
@@ -938,9 +1033,20 @@ export class AdminController extends PageBase {
       ...t,
       steps: t.steps.map((st) => ({ ...st, tc: st.dim ? '#A6AAB0' : '#1F2329' })),
       viewDetail: () => this.goto('cyclesDetail', '?id=' + t.runId),
-      act: (ev: Event) => busy(ev.currentTarget as FbEl, 600, () => toast('复盘会话已创建，请在复盘面板中填写结论')),
+      act: () => this.blocked('当前复盘会话壳与 execution-runtime DTO 不等价'),
     }));
     const run = this.db.cycleRuns[this.pageId()] || this.db.cycleRuns[1];
+    const groupOpsRows = this.db.groupOpsPlans.map((plan) => ({
+      ...plan, cs: mk(plan.status === 'active' ? 'ok' : plan.status === 'draft' ? 'warn' : 'gray'),
+      edit: () => this.goto('groupopsDetail', '?id=' + plan.id),
+      toggleText: plan.status === 'active' ? '暂停' : '启用',
+      toggle: () => { const action = plan.status === 'active' ? 'pause' : 'activate'; const runAction = () => void this.api.transitionGroupOpsPlan(plan.id, action).then(() => { toast(action === 'activate' ? '计划已启用' : '计划已暂停'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '计划状态变更失败', true)); if (action === 'pause') confirmBox('暂停计划', '暂停后不再接受新的 run-due。确认暂停？', '确认暂停', true, runAction); else runAction(); },
+      archive: () => confirmBox('归档计划', '归档保留执行证据且不可直接恢复。确认归档？', '确认归档', true, () => { void this.api.transitionGroupOpsPlan(plan.id, 'archive').then(() => { toast('计划已归档'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '计划归档失败', true)); }),
+      del: () => { if (plan.status !== 'draft') return toast('仅草稿计划可删除；其他状态请归档', true); confirmBox('删除草稿', '确认删除该草稿计划？', '确认删除', true, () => { void this.api.deleteGroupOpsPlan(plan.id).then(() => { toast('草稿计划已删除'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '计划删除失败', true)); }); },
+    }));
+    const groupOpsDetail = this.db.groupOpsDetail;
+    const hxcEditId = this.qs().get('id') || '';
+    const hxcEdit = rows.agents.find((item) => item.code === hxcEditId || item.senderId === hxcEditId);
     const runVals = run
       ? {
           ...run,
@@ -1041,7 +1147,7 @@ export class AdminController extends PageBase {
       title: s.shareTitle,
       url: s.shareUrl,
       copyLink: () => this.copyShareLink(),
-      saveQr: () => toast('二维码已保存到下载目录'),
+      saveQr: () => this.blocked('当前分享投影只返回链接，没有可下载二维码文件 operation'),
       close: () => this.closeModal(),
     };
 
@@ -1049,7 +1155,7 @@ export class AdminController extends PageBase {
     const imageCards = rows.images.map((m) => ({
       ...m,
       cs: mk(m.tone),
-      thumb: { height: '104px', background: m.bg, borderBottom: '1px solid #EFF0F1', cursor: 'pointer' } as StyleObj,
+      thumb: { height: '104px', background: m.thumbnailUrl ? `url(${m.thumbnailUrl}) center / cover no-repeat` : m.bg, borderBottom: '1px solid #EFF0F1', cursor: 'pointer' } as StyleObj,
       off: m.enabled ? {} : { opacity: '0.55' } as StyleObj,
       open: () => this.setState({ modal: 'imgEdit', editingName: m.name }),
     }));
@@ -1160,6 +1266,8 @@ export class AdminController extends PageBase {
     const productFormValue = this.qs().get('id') ? rows.products[0] : undefined;
     const serviceFormValue = this.qs().get('id') ? rows.spProducts[0] : undefined;
     const couponFormValue = this.qs().get('id') ? rows.coupons[0] : undefined;
+    const questionnaireFormValue = this.page === 'questionnaireDetail' ? rows.questionnaires[0] : undefined;
+    const channelFormValue = this.page === 'channelForm' ? rows.channels[0] : undefined;
     const dateInput = (value?: string | null): string => value ? value.slice(0, 16) : '';
 
     /* ================= 配置中心 ================= */
@@ -1254,6 +1362,57 @@ export class AdminController extends PageBase {
         },
         saveDraft: () => this.saveCouponForm(false),
         savePublish: () => this.saveCouponForm(true),
+      },
+      questionnaireFormPage: {
+        title: questionnaireFormValue ? '编辑问卷' : '创建问卷',
+        item: questionnaireFormValue ? {
+          ...questionnaireFormValue,
+          questionsJson: JSON.stringify(questionnaireFormValue.questions || [], null, 2),
+          assessmentConfigJson: JSON.stringify(questionnaireFormValue.assessmentConfig || {}, null, 2),
+          allSelected: questionnaireFormValue.answerDisplayMode !== 'one_by_one',
+          oneSelected: questionnaireFormValue.answerDisplayMode === 'one_by_one',
+          assessmentDisabled: !questionnaireFormValue.assessmentEnabled,
+          enabledState: !questionnaireFormValue.off,
+        } : {
+          internalName: '', title: '', description: '', slug: '', assessmentEnabled: false, off: true,
+          questionsJson: JSON.stringify([{ type: 'textarea', title: '请填写问题', assessment_dimension_key: '', sidebar_profile_field: '', required: true, sort_order: 0, placeholder_text: '', validation: {}, options: [] }], null, 2),
+          assessmentConfigJson: '{}', allSelected: true, oneSelected: false, assessmentDisabled: true, enabledState: false,
+        },
+        save: () => this.saveQuestionnaireForm(false),
+        publish: () => this.saveQuestionnaireForm(true),
+      },
+      questionnairePage: {
+        create: () => this.goto('questionnaireDetail'),
+        blockedTemplate: () => this.blocked('当前 OpenAPI 没有独立的测评问卷模板资源；可在问卷 JSON 中配置 assessment 字段'),
+      },
+      channelFormPage: {
+        title: channelFormValue ? '编辑渠道' : '创建渠道',
+        item: channelFormValue ? {
+          ...channelFormValue,
+          imageIds: (channelFormValue.welcomeImageLibraryIds || []).join(', '), miniIds: (channelFormValue.welcomeMiniprogramLibraryIds || []).join(', '), attachmentIds: (channelFormValue.welcomeAttachmentLibraryIds || []).join(', '), groupInviteIds: (channelFormValue.welcomeGroupInviteLibraryIds || []).join(', '), assignmentConfigJson: JSON.stringify(channelFormValue.assignmentConfig || {}, null, 2),
+          qrcodeType: channelFormValue.channelType !== 'wecom_customer_acquisition', acquisitionType: channelFormValue.channelType === 'wecom_customer_acquisition', qrcodeCarrier: channelFormValue.carrierType !== 'link', linkCarrier: channelFormValue.carrierType === 'link',
+          statusActive: channelFormValue.status === 'active', statusInactive: channelFormValue.status === 'inactive', statusArchived: channelFormValue.status === 'archived', singleOwner: channelFormValue.assignmentMode !== 'multi_staff', multiStaff: channelFormValue.assignmentMode === 'multi_staff', ratio: channelFormValue.assignmentStrategy !== 'cap_switch', capSwitch: channelFormValue.assignmentStrategy === 'cap_switch', autoAcceptOff: !channelFormValue.autoAcceptFriend,
+        } : { name: '', code: '', channelType: 'qrcode', carrierType: 'qrcode', status: 'inactive', sceneValue: '', qrUrl: '', ownerStaffId: '', customerChannel: '', linkUrl: '', finalUrl: '', welcomeMessage: '', imageIds: '', miniIds: '', attachmentIds: '', groupInviteIds: '', autoAcceptFriend: false, autoAcceptOff: true, entryTagId: '', entryTagName: '', entryTagGroupName: '', assignmentMode: 'single_owner', assignmentStrategy: 'ratio', overflowPolicy: '', assignmentConfigJson: '{}', qrcodeType: true, acquisitionType: false, qrcodeCarrier: true, linkCarrier: false, statusActive: false, statusInactive: true, statusArchived: false, singleOwner: true, multiStaff: false, ratio: true, capSwitch: false },
+        save: () => this.saveChannelForm(),
+      },
+      orderDetailPage: {
+        item: rows.orders[0] || { no: '—', plat: '未知', status: '暂无订单', amount: '0.00', tone: 'gray' },
+        statusStyle: mk(rows.orders[0]?.tone || 'gray'),
+        submitRefund: () => this.submitRefundIntent(),
+      },
+      groupOpsPage: { rows: groupOpsRows, total: groupOpsRows.length, create: () => this.goto('groupopsDetail'), directoryBlocked: () => this.blocked('当前页面未提供 owner_staff_id，不能安全触发目录同步；计划内使用 asset_reference 精确绑定群') },
+      groupOpsDetailPage: {
+        item: groupOpsDetail ? { ...groupOpsDetail, staffText: groupOpsDetail.staffIds.join(', '), assetText: groupOpsDetail.assets.map((asset) => asset.reference).join('\n'), nodesJson: JSON.stringify(groupOpsDetail.nodes, null, 2), previewText: groupOpsDetail.previewLines.join('\n') || '暂无可预览内容', issuesText: groupOpsDetail.previewIssues.join('、') || '无' } : { plan: { name: '', revision: 0, status: 'draft', id: '' }, staffText: '', assetText: '', nodesJson: JSON.stringify([{ position: 1, kind: 'message', messageText: '请输入群消息', materialReference: '' }], null, 2), webhookReference: '', previewText: '保存后由 previewGroupOpsPlanContent 返回', issuesText: '尚未校验' },
+        save: () => this.saveGroupOpsForm(), back: () => this.goto('groupops'),
+      },
+      hxcPage: {
+        rows: rows.agents.map((item) => ({ ...item, cs: mk(item.tone), edit: () => this.goto('agentEdit', '?id=' + encodeURIComponent(item.code)), archive: () => this.archiveHxcSender(item.code) })),
+        orderText: rows.agents.map((item) => item.senderId || item.code).join('\n'),
+        create: () => this.goto('agentEdit'),
+        reorder: () => this.reorderHxcSenders(),
+        item: hxcEdit ? { ...hxcEdit, activeOff: hxcEdit.isActive === false } : { senderId: '', code: '', name: '', priority: rows.agents.length, isActive: true, activeOff: false },
+        save: () => this.saveHxcSender(),
+        back: () => this.goto('agents'),
       },
 
       /* ---- 渠道表单 ---- */
@@ -1373,18 +1532,23 @@ export class AdminController extends PageBase {
         groupOpts: aeGroupOpts,
         incOpts: aeIncOpts,
         dailyOpts: aeDailyOpts,
+        refreshModeOpts: this.aeSelectOpts(pkg?.refreshMode || 'manual', [['manual', '手动'], ['scheduled', '定时']]),
         senders: aeSenders,
+        sendersText: aeSenders.map((sender) => sender.userid).join('\n'),
         members: aeMembers,
         memberTotal: aeMembers.length + ' 人（共 ' + (aePkg?.countText || '0') + ' 人，显示前 200）',
         records: aeRecordRows,
         recordTotal: aeRecords.length ? '共 ' + aeRecords.length + ' 条' : '暂无发送记录',
         agents: aeAgents,
         saveBasic: () => this.saveAudienceBasic(),
+        saveBinding: () => this.saveAudienceBinding(),
         unbind: () => this.unbindAutomation(),
         addSender: () => this.addSender(),
         saveSenders: () => this.saveSenders(),
         back: () => this.goto('automation'),
-        refresh: (ev: Event) => busy(ev.currentTarget as FbEl, 600, () => toast('已刷新')),
+        snapshot: () => this.snapshotAudience(),
+        refresh: () => this.previewAudience(),
+        materialize: () => this.materializeAudience(),
       },
 
       /* 运营闭环 */
@@ -1423,7 +1587,7 @@ export class AdminController extends PageBase {
         redirectTypeOpts,
         freqOpts,
         save: () => this.saveOps(),
-        testPush: () => toast('后端能力未就绪：当前表单没有 OpenAPI 要求的 opaque configuration reference，未发送请求', true),
+        testPush: () => this.blocked('测试推送会创建执行记录，本任务不触发真实外部写入'),
         copyPublic: () => qRow?.publicPath ? copyText(new URL(qRow.publicPath, location.origin).toString(), toast) : toast('后端未返回问卷公开地址', true),
         openPublic: () => qRow?.publicPath ? window.open(new URL(qRow.publicPath, location.origin).toString(), '_blank', 'noopener') : toast('后端未返回问卷公开地址', true),
         viewLogs: () => this.setState({ opsTab: 2 }),
@@ -1487,7 +1651,7 @@ export class AdminController extends PageBase {
             });
           });
         },
-        replaceImage: () => simulateUpload('替换图片'),
+        replaceImage: () => this.blocked('请在上传表单选择真实文件后提交；不提供模拟替换'),
         submitUpload: () => {
           const v = this.readModalInputs(['fImgUpName', 'fImgUpTags']);
           const fileInput = document.getElementById('fImgUpFile') as HTMLInputElement | null;
@@ -1531,8 +1695,8 @@ export class AdminController extends PageBase {
             });
           });
         },
-        resolve: (ev: Event) => busy(ev.currentTarget as FbEl, 800, () => toast('缩略图缓存已刷新')),
-        pickThumb: () => simulateUpload('缩略图'),
+        resolve: () => this.blocked('当前小程序素材契约没有缩略图缓存刷新 operation'),
+        pickThumb: () => this.blocked('当前小程序素材契约没有独立缩略图上传 operation'),
       },
       attachPage: {
         rows: attachRows,
@@ -1649,7 +1813,19 @@ export class AdminController extends PageBase {
           delStyle: { fontSize: '13px', cursor: r.off ? 'pointer' : 'not-allowed', color: r.off ? '#D83931' : '#BBBFC4' },
           view: () => this.goto('questionnaireDetail', '?id=' + (r.resourceId ?? idx)),
           opsGo: () => this.goto('questionnaireOps', '?id=' + (r.resourceId ?? idx)),
-          shareIt: () => this.openShare('问卷', r.name, 'q' + idx, r.publicPath),
+          copyIt: () => r.resourceId && void this.api.duplicateQuestionnaire(r.resourceId).then(() => { toast('问卷副本已创建'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '问卷复制失败', true)),
+          toggleIt: () => {
+            if (!r.resourceId) return toast('问卷缺少服务端 ID', true);
+            const enabled = r.off;
+            const run = () => void this.api.setQuestionnaireEnabled(r.resourceId!, enabled).then(() => { toast(enabled ? '问卷已启用' : '问卷已停用'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '问卷状态变更失败', true));
+            if (enabled) run(); else confirmBox('停用问卷', '停用后公开定义不能继续提交。确认停用？', '确认停用', true, run);
+          },
+          shareIt: () => r.publicPath ? this.openShare('问卷', r.name, 'q' + idx, r.publicPath) : this.blocked('问卷尚未发布公开定义，后端未返回 public_path'),
+          download: () => this.blocked('当前 OpenAPI 提供提交列表读取，但没有问卷结果文件导出 operation'),
+          del: () => {
+            if (!r.resourceId || !r.off) return toast('仅已停用问卷可删除', true);
+            confirmBox('删除问卷', '删除会保留后端按契约允许保留的历史数据。确认删除？', '确认删除', true, () => { void this.api.deleteQuestionnaire(r.resourceId!).then(() => { toast('问卷已删除'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '问卷删除失败', true)); });
+          },
         })),
         qSubs: rows.qSubs,
         qApply: rows.qApply.map((r) => ({ ...r, cs: mk(r.tone) })),

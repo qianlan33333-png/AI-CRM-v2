@@ -217,6 +217,10 @@ const CYCLE_RUNS: Record<number, CycleRun> = {
 /* ================= 问卷运营配置种子 ================= */
 function makeQOps(): Record<number, QuestionnaireOps> {
   const base: QuestionnaireOps = {
+    completionNavigationTargetId: 'completion.default',
+    completionChannelId: '1',
+    externalPushConfigurationReference: 'external-push.default',
+    localOnly: true,
     postEnabled: true,
     postType: 'channel_qr',
     channelId: '加我企业微信，兑换课程',
@@ -486,6 +490,8 @@ export const SEED_DB: AdminDb = {
     ],
     2: [], 3: [], 4: [],
   },
+  groupOpsPlans: [{ id: '1', name: '新客入群欢迎', status: 'paused', revision: 1, updatedAt: '2026-08-25 10:00' }],
+  groupOpsDetail: { plan: { id: '1', name: '新客入群欢迎', status: 'paused', revision: 1, updatedAt: '2026-08-25 10:00' }, staffIds: [1], assets: [{ id: '1', reference: 'group:new-customers' }], nodes: [{ id: '1', position: 1, kind: 'message', messageText: '欢迎加入', materialReference: 'image:welcome' }], webhookReference: '', previewLines: ['1. 欢迎加入'], previewIssues: [] },
   cycleTasks: CYCLE_TASKS,
   cycleRuns: CYCLE_RUNS,
   qOps: makeQOps(),
@@ -615,7 +621,7 @@ export const SEED_DB: AdminDb = {
       { name: '内测答谢券', code: 'nx150e', off: '¥150', scope: '体验期 7 天', window: '05-01 00:00 – 05-31 23:59', issue: '100 / 12', status: '已停用', tone: 'red' },
     ],
     images: [
-      { name: '直播预告主视觉.png', size: '1080×1920 · 482 KB', tag: '直播', tone: 'blue', bg: 'linear-gradient(135deg,#DCE7FF,#B9CDFF)', desc: '每周三直播预告封面，含二维码区', tags: '直播,预告', enabled: true, uploadedAt: '2026-08-01 10:24' },
+      { resourceId: '1', name: '直播预告主视觉.png', size: '1080×1920 · 482 KB', tag: '直播', tone: 'blue', bg: 'linear-gradient(135deg,#DCE7FF,#B9CDFF)', desc: '每周三直播预告封面，含二维码区', tags: '直播,预告', enabled: true, uploadedAt: '2026-08-01 10:24' },
       { name: '课程卡片-增长.jpg', size: '750×1000 · 213 KB', tag: '课程', tone: 'purple', bg: 'linear-gradient(135deg,#EADCFF,#CFB6FF)', desc: '增长陪跑课程卡片竖版', tags: '课程,卡片', enabled: true, uploadedAt: '2026-07-30 16:02' },
       { name: '欢迎语配图.png', size: '900×600 · 156 KB', tag: '欢迎语', tone: 'ok', bg: 'linear-gradient(135deg,#D8F5DE,#AEE7BD)', desc: '新好友欢迎语横版配图', tags: '欢迎语', enabled: true, uploadedAt: '2026-07-28 09:41' },
       { name: '优惠券横幅.png', size: '1200×400 · 98 KB', tag: '活动', tone: 'warn', bg: 'linear-gradient(135deg,#FFE9CC,#FFD09B)', desc: '领券活动横幅', tags: '活动,优惠券', enabled: true, uploadedAt: '2026-07-26 20:15' },
@@ -631,7 +637,7 @@ export const SEED_DB: AdminDb = {
       { name: '试听课预约', appid: 'wx8f2c1d0a9b7e4c12', pagepath: 'pages/trial/booking', cardTitle: '点这里预约 1v1 试听课', thumbStatus: '企微缓存已就绪', thumbOk: true, enabled: false, bg: 'linear-gradient(135deg,#F0E2FF,#D6BBFF)' },
     ],
     attachItems: [
-      { name: 'AI 增长陪跑服务说明.pdf', type: 'PDF', size: '2.4 MB', tags: '服务说明,陪跑', uploadedAt: '08-01 10:24', enabled: true },
+      { resourceId: '1', name: 'AI 增长陪跑服务说明.pdf', type: 'PDF', size: '2.4 MB', tags: '服务说明,陪跑', uploadedAt: '08-01 10:24', enabled: true },
       { name: '共学营课程表.xlsx', type: 'XLSX', size: '86 KB', tags: '课程表', uploadedAt: '07-30 16:02', enabled: true },
       { name: '开营致辞逐字稿.docx', type: 'DOCX', size: '132 KB', tags: '话术,开营', uploadedAt: '07-28 09:41', enabled: true },
       { name: '5天沙龙课程大纲.pdf', type: 'PDF', size: '1.1 MB', tags: '沙龙,大纲', uploadedAt: '07-22 15:37', enabled: true },

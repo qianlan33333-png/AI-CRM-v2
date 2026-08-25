@@ -106,7 +106,7 @@ console.log('admin/radarForm.html（新建校验）');
   // 切换到图片类型 → 素材区出现
   click(dom, d.querySelector('.type-card[data-t="image"]'));
   await sleep(30);
-  ok('切换图片类型后素材配置区显示', !d.querySelector('#cfgMedia').hidden && d.querySelector('#cfgUrl').hidden);
+  ok('切换图片类型后素材与独立目标地址同时显示', !d.querySelector('#cfgMedia').hidden && !d.querySelector('#cfgUrl').hidden);
   // 选素材（通用选择器）→ 填名称 → 保存成功跳列表前 toast
   click(dom, d.querySelector('#btnPick'));
   await sleep(450);
@@ -117,6 +117,7 @@ console.log('admin/radarForm.html（新建校验）');
   await sleep(30);
   ok('选择素材后写回表单', d.body.textContent.includes('来自素材库'));
   input(dom, d.querySelector('#fName'), 'e2e 测试图片雷达');
+  input(dom, d.querySelector('#fUrl'), 'https://example.test/poster');
   click(dom, save);
   await sleep(600);
   ok('保存成功 toast', d.querySelector('#fb-toast').textContent === '已保存内容雷达');
@@ -252,7 +253,7 @@ console.log('admin/automation.html（新增分组弹窗 → 测试 Mock 创建�
   dom.window.close();
 }
 
-console.log('admin/audienceEdit.html?id=1（面板切换 + 添加发送人走选客服组件）');
+console.log('admin/audienceEdit.html?id=1（真实配置与发送人 DTO）');
 {
   const dom = await loadPage('admin/audienceEdit.html', { id: 1 });
   const d = dom.window.document;
@@ -263,19 +264,14 @@ console.log('admin/audienceEdit.html?id=1（面板切换 + 添加发送人走选
   let panel = h3 && h3.parentElement;
   while (panel && panel.style.display !== 'block' && panel.style.display !== 'none') panel = panel.parentElement;
   ok('切到成员列表面板', !!panel && panel.style.display === 'block');
-  // 添加发送人 → members picker → 选 1 人 → 白名单出现待生效行
   const nav3 = [...d.querySelectorAll('button')].find((b) => b.textContent.includes('发送人白名单'));
   click(dom, nav3);
   await sleep(30);
-  const beforeRows = d.querySelectorAll('tbody tr').length;
-  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '添加发送人'));
-  await sleep(450);
-  ok('添加发送人弹出选客服组件', !!d.querySelector('.pk-mask'));
-  click(dom, d.querySelector('.pk-mask [data-pk-id]'));
+  ok('发送人使用 sender_userid 明文 DTO', !!d.querySelector('#aeSenders') && d.body.textContent.includes('最多 5 位'));
+  d.querySelector('#aeSenders').value = 'a\nb\nc\nd\ne\nf';
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '保存发送人白名单'));
   await sleep(30);
-  click(dom, d.querySelector('.pk-mask [data-pk="ok"]'));
-  await sleep(30);
-  ok('白名单出现待生效新行', d.querySelectorAll('tbody tr').length === beforeRows + 1 && d.body.textContent.includes('待生效'));
+  ok('超过 5 位在发请求前被阻止', d.body.textContent.includes('发送人最多 5 位且不能重复'));
   dom.window.close();
 }
 
@@ -305,24 +301,15 @@ console.log('admin/tags.html（新建标签测试 Mock 建行）');
   dom.window.close();
 }
 
-console.log('admin/questionnaireOps.html?id=1（Tab 切换 + 绑定渠道码走选渠道码组件）');
+console.log('admin/questionnaireOps.html?id=1（opaque 本地运营配置）');
 {
   const dom = await loadPage('admin/questionnaireOps.html', { id: 1 });
   const d = dom.window.document;
-  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.includes('外部推送')));
+  ok('只展示 opaque navigation target 与正整数渠道 ID', !!d.querySelector('#opsNavigationTarget') && !!d.querySelector('#opsChannelResourceId') && !d.querySelector('#opsRedirectUrl'));
+  ok('外部推送只接受 configuration reference', !!d.querySelector('#opsConfigurationReference') && !d.querySelector('#opsWebhook'));
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.includes('测试推送')));
   await sleep(30);
-  ok('切到外部推送面板（webhook 字段出现）', !!d.querySelector('#opsWebhook'));
-  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.includes('提交后动作')));
-  await sleep(30);
-  // 绑定渠道码触发框 → channel picker
-  const trig = [...d.querySelectorAll('span')].find((s) => s.textContent === '加我企业微信，兑换课程');
-  click(dom, trig);
-  await sleep(450);
-  ok('绑定渠道码弹出选渠道码组件', !!d.querySelector('.pk-mask'));
-  const row = [...d.querySelectorAll('.pk-mask [data-pk-id]')].find((el) => el.textContent.includes('城市会员 3980'));
-  click(dom, row);
-  await sleep(30);
-  ok('选择后写回触发框文案', d.body.textContent.includes('城市会员 3980'));
+  ok('测试外推明确阻断且未伪造成功', d.querySelector('#fb-toast').textContent.includes('未发送请求'));
   dom.window.close();
 }
 
@@ -350,22 +337,18 @@ console.log('admin/configDetail.html?cat=wechat_pay（类目配置点渲染）')
   dom.window.close();
 }
 
-console.log('admin/channelForm.html（欢迎语素材走通用选择器）');
+console.log('admin/channelForm.html（完整 OpenAPI 渠道 DTO）');
 {
   const dom = await loadPage('admin/channelForm.html');
   const d = dom.window.document;
-  const step = [...d.querySelectorAll('a')].find((b) => b.textContent.includes('欢迎语素材'));
-  ok('步骤导航存在「欢迎语素材」', !!step);
-  click(dom, step);
+  ok('载体、客服、素材与标签字段齐全', !!d.querySelector('#channelType') && !!d.querySelector('#channelOwner') && !!d.querySelector('#channelImageIds') && !!d.querySelector('#channelTagId'));
+  ok('分配策略使用服务端 JSON DTO', !!d.querySelector('#channelAssignmentMode') && !!d.querySelector('#channelAssignmentStrategy') && !!d.querySelector('#channelAssignmentConfig'));
+  d.querySelector('#channelName').value = '新客渠道';
+  d.querySelector('#channelCode').value = 'new-customer';
+  d.querySelector('#channelImageIds').value = 'not-an-id';
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '保存渠道'));
   await sleep(30);
-  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '+图片'));
-  await sleep(450);
-  ok('图片素材选择器打开', !!d.querySelector('.pk-mask'));
-  click(dom, d.querySelector('.pk-mask [data-pk-id]'));
-  await sleep(30);
-  click(dom, d.querySelector('.pk-mask [data-pk="ok"]'));
-  await sleep(30);
-  ok('已选计数变为 1 / 9', d.body.textContent.includes('已选 1 / 9 个素材'));
+  ok('无效素材引用在发请求前被阻止', d.body.textContent.includes('素材引用必须是正整数 ID'));
   dom.window.close();
 }
 

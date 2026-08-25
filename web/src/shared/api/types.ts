@@ -161,6 +161,12 @@ export interface AudiencePackage {
   daily: string;
   /** 绑定的自动化话术名称（'' = 未绑定） */
   boundAutomation: string;
+  packageVersion?: number;
+  refreshCron?: string | null;
+  configurationVersion?: number;
+  bindingAgentId?: number;
+  bindingVersion?: number;
+  lastEvaluation?: string;
 }
 
 export interface AudienceMember {
@@ -184,6 +190,33 @@ export interface AudienceSendRecord {
   tone: Tone;
   sentAt: string;
   failReason: string;
+}
+
+export interface GroupOpsPlanItem {
+  id: string;
+  name: string;
+  status: 'draft' | 'active' | 'paused' | 'archived';
+  revision: number;
+  updatedAt: string;
+}
+
+export interface GroupOpsNodeItem {
+  id?: string;
+  position: number;
+  kind: 'message' | 'delay';
+  messageText?: string;
+  delayMinutes?: number;
+  materialReference?: string;
+}
+
+export interface GroupOpsPlanDetailItem {
+  plan: GroupOpsPlanItem;
+  staffIds: number[];
+  assets: Array<{ id: string; reference: string }>;
+  nodes: GroupOpsNodeItem[];
+  webhookReference: string;
+  previewLines: string[];
+  previewIssues: string[];
 }
 
 /* ================= 运营闭环 · 单次运行档案（与生产 operation_cycles_run 对齐） ================= */
@@ -281,6 +314,12 @@ export interface CycleTask {
 /* ================= 问卷 · 运营配置（/admin/questionnaires/{id}/operations） ================= */
 
 export interface QuestionnaireOps {
+  /** OpenAPI opaque completion target; never a URL. */
+  completionNavigationTargetId: string;
+  /** Decimal server channel resource ID; empty clears the binding. */
+  completionChannelId: string;
+  externalPushConfigurationReference: string;
+  localOnly: boolean;
   postEnabled: boolean;
   /** channel_qr 展示渠道二维码 / redirect 直接跳转 */
   postType: 'channel_qr' | 'redirect';
@@ -357,6 +396,16 @@ export interface Questionnaire {
   action: string;
   created: string;
   count: string;
+  internalName?: string;
+  title?: string;
+  description?: string;
+  answerDisplayMode?: 'all_in_one' | 'one_by_one';
+  assessmentEnabled?: boolean;
+  assessmentConfig?: Record<string, unknown>;
+  slug?: string;
+  questions?: unknown[];
+  scoreRules?: unknown[];
+  version?: number;
 }
 
 export interface QSub {
@@ -410,6 +459,27 @@ export interface Channel {
   tagTone: Tone;
   users: string;
   qr: string;
+  channelType?: 'qrcode' | 'wecom_customer_acquisition';
+  carrierType?: 'qrcode' | 'link';
+  sceneValue?: string;
+  qrUrl?: string;
+  ownerStaffId?: string;
+  customerChannel?: string;
+  linkUrl?: string;
+  finalUrl?: string;
+  welcomeMessage?: string;
+  welcomeImageLibraryIds?: number[];
+  welcomeMiniprogramLibraryIds?: number[];
+  welcomeAttachmentLibraryIds?: number[];
+  welcomeGroupInviteLibraryIds?: number[];
+  autoAcceptFriend?: boolean;
+  entryTagId?: string;
+  entryTagName?: string;
+  entryTagGroupName?: string;
+  assignmentMode?: 'single_owner' | 'multi_staff';
+  assignmentStrategy?: 'ratio' | 'cap_switch';
+  overflowPolicy?: string;
+  assignmentConfig?: Record<string, unknown>;
 }
 
 /** 企微员工目录条目（通用选择器 · 选客服人员） */
@@ -537,6 +607,8 @@ export interface ImageItem {
   tags: string;
   enabled: boolean;
   uploadedAt: string;
+  thumbnailUrl?: string;
+  thumbnailError?: string;
 }
 
 /** 小程序素材库条目 */
@@ -566,6 +638,9 @@ export interface AttachItem {
 }
 
 export interface Agent {
+  senderId?: string;
+  priority?: number;
+  isActive?: boolean;
   name: string;
   code: string;
   type: string;
@@ -603,6 +678,7 @@ export interface ConfigBlock {
 
 /** 配置类目（生产 platform/admin_config/category_registry.py 的 10 个类目） */
 export interface ConfigCategory {
+  actionToken?: string;
   key: string;
   label: string;
   group: string;
@@ -660,6 +736,8 @@ export interface AdminDb {
   audienceSenders: Record<number, AudienceSender[]>;
   /** 人群包 id → 发送记录 */
   audienceRecords: Record<number, AudienceSendRecord[]>;
+  groupOpsPlans: GroupOpsPlanItem[];
+  groupOpsDetail: GroupOpsPlanDetailItem | null;
   /* ---- 运营闭环 ---- */
   cycleTasks: CycleTask[];
   /** 运行 id → 单次运行档案 */

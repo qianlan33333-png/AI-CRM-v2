@@ -5,8 +5,8 @@
               <div style="font-size:16px;font-weight:600;line-height:22px">问卷</div>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex:none">
-              <button style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">创建测评问卷模板</button>
-              <button style="height:30px;padding:0 12px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">创建新问卷</button>
+              <button onClick="{{ questionnairePage.blockedTemplate }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;cursor:pointer">创建测评问卷模板</button>
+              <button onClick="{{ questionnairePage.create }}" style="height:30px;padding:0 12px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">创建新问卷</button>
             </div>
           </div>
           <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
@@ -40,11 +40,11 @@
                         <div style="display:inline-flex;flex-wrap:wrap;justify-content:flex-end;gap:8px">
                           <a onClick="{{ r.view }}" style="height:28px;padding:0 10px;display:inline-flex;align-items:center;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;color:#1F2329;cursor:pointer">编辑</a>
                           <a onClick="{{ r.opsGo }}" style="height:28px;padding:0 10px;display:inline-flex;align-items:center;border:1px solid #DEE0E3;border-radius:6px;background:#fff;font-size:13px;color:#1F2329;cursor:pointer">运营配置</a>
-                          <a style="font-size:13px;color:#646A73;cursor:pointer;display:inline-flex;align-items:center;height:28px">复制</a>
-                          <a style="font-size:13px;color:#646A73;cursor:pointer;display:inline-flex;align-items:center;height:28px">{{ r.toggle }}</a>
+                          <a onClick="{{ r.copyIt }}" style="font-size:13px;color:#646A73;cursor:pointer;display:inline-flex;align-items:center;height:28px">复制</a>
+                          <a onClick="{{ r.toggleIt }}" style="font-size:13px;color:#646A73;cursor:pointer;display:inline-flex;align-items:center;height:28px">{{ r.toggle }}</a>
                           <a onClick="{{ r.shareIt }}" style="font-size:13px;color:#646A73;cursor:pointer;display:inline-flex;align-items:center;height:28px">分享</a>
-                          <a style="font-size:13px;color:#646A73;cursor:pointer;display:inline-flex;align-items:center;height:28px">下载数据</a>
-                          <a style="{{ r.delStyle }}">删除</a>
+                          <a onClick="{{ r.download }}" style="font-size:13px;color:#646A73;cursor:pointer;display:inline-flex;align-items:center;height:28px">下载数据</a>
+                          <a onClick="{{ r.del }}" style="{{ r.delStyle }}">删除</a>
                         </div>
                       </td>
                     </tr>

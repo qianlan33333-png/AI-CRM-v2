@@ -17,6 +17,7 @@
                 <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
                  <div style="{{ m.off }}">
                   <div onClick="{{ m.open }}" style="{{ m.thumb }}"></div>
+                  <sc-if value="{{ m.thumbnailError }}"><div style="padding:6px 12px;background:#FFF5F5;color:#D83931;font-size:11px">{{ m.thumbnailError }}</div></sc-if>
                   <div style="padding:10px 12px">
                     <div onClick="{{ m.open }}" style="font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer">{{ m.name }}</div>
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px">

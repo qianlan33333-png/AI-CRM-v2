@@ -64,10 +64,6 @@ function boot(): void {
   }
 
   /* ---- 模板页：mini-runtime + 全局反馈委托 ---- */
-  if (api.mode === 'http' && (page === 'groupops' || page === 'groupopsDetail')) {
-    stage.innerHTML = '<div style="margin:32px;padding:24px;border:1px solid #DEE0E3;border-radius:8px;color:#8F959E;background:#fff"><strong style="display:block;color:#1F2329;margin-bottom:8px">后端能力未就绪</strong>当前群运营壳未持有 OpenAPI 所需的 plan version、nodes、members 与 group assets DTO；页面未发送写请求。</div>';
-    return;
-  }
   const tpl = document.getElementById('tpl') as HTMLTemplateElement | null;
   if (!tpl) return;
   const controller = new AdminController(api, page);

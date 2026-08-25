@@ -1,135 +1,14 @@
-
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px;padding:0 20px;background:#fff;border-bottom:1px solid #DEE0E3;flex:none">
-            <div style="display:flex;align-items:center;gap:10px;min-width:0">
-              <a onClick="{{ ae.back }}" style="width:28px;height:28px;border:1px solid #DEE0E3;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#646A73" stroke-width="1.6"><path d="M9.6 3.6L5.2 8l4.4 4.4"/></svg></a>
-              <div style="min-width:0">
-                <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:#8F959E;line-height:14px"><a onClick="{{ ae.back }}" style="cursor:pointer;color:#8F959E">AI 自动化运营</a><span>/</span><span>人群包编辑器</span></div>
-                <div style="font-size:16px;font-weight:600;line-height:22px">{{ ae.pkg.name }}</div>
-              </div>
-            </div>
-            <div style="display:flex;gap:8px;flex:none">
-              <button onClick="{{ ae.refresh }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:13px;cursor:pointer">手动刷新</button>
-              <button onClick="{{ ae.saveBasic }}" style="height:30px;padding:0 14px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">保存当前维度</button>
-            </div>
-          </div>
-          <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
-
-            <!-- 摘要卡 -->
-            <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:14px 16px">
-              <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
-                <div style="background:#FAFBFC;border:1px solid #EFF0F1;border-radius:8px;padding:10px 12px"><div style="font-size:12px;color:#8F959E">当前人数</div><div style="font-size:20px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums">{{ ae.pkg.countText }}</div></div>
-                <div style="background:#FAFBFC;border:1px solid #EFF0F1;border-radius:8px;padding:10px 12px"><div style="font-size:12px;color:#8F959E">最后一次刷新</div><div style="font-size:14px;font-weight:600;margin-top:6px">{{ ae.pkg.lastRefresh }}</div></div>
-                <div style="background:#FAFBFC;border:1px solid #EFF0F1;border-radius:8px;padding:10px 12px"><div style="font-size:12px;color:#8F959E">刷新方式</div><div style="font-size:14px;font-weight:600;margin-top:6px">{{ ae.pkg.refreshMode }}</div></div>
-                <div style="background:#FAFBFC;border:1px solid #EFF0F1;border-radius:8px;padding:10px 12px"><div style="font-size:12px;color:#8F959E">状态</div><div style="font-size:14px;font-weight:600;margin-top:6px">{{ ae.pkg.statusText }}</div></div>
-              </div>
-            </div>
-
-            <div style="display:grid;grid-template-columns:220px minmax(0,1fr);gap:16px;align-items:start">
-              <!-- 维度导航 -->
-              <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:8px">
-                <button onClick="{{ ae.goPanel.1 }}" style="{{ ae.nav.1 }}"><span style="{{ ae.nav.dot1 }}">1</span><span>基础配置</span></button>
-                <button onClick="{{ ae.goPanel.2 }}" style="{{ ae.nav.2 }}"><span style="{{ ae.nav.dot2 }}">2</span><span>自动化话术能力</span></button>
-                <button onClick="{{ ae.goPanel.3 }}" style="{{ ae.nav.3 }}"><span style="{{ ae.nav.dot3 }}">3</span><span>发送人白名单</span></button>
-                <button onClick="{{ ae.goPanel.4 }}" style="{{ ae.nav.4 }}"><span style="{{ ae.nav.dot4 }}">4</span><span>成员列表</span></button>
-                <button onClick="{{ ae.goPanel.5 }}" style="{{ ae.nav.5 }}"><span style="{{ ae.nav.dot5 }}">5</span><span>发送记录</span></button>
-              </div>
-
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;height:52px;padding:0 20px;background:#fff;border-bottom:1px solid #DEE0E3;flex:none"><div><div style="font-size:12px;color:#8F959E">运营 / AI 人群包</div><div style="font-size:16px;font-weight:600">{{ ae.pkg.name }}</div></div><button onClick="{{ ae.back }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;cursor:pointer">返回列表</button></div>
+          <div style="flex:1;overflow:auto;padding:16px 20px;display:grid;gap:12px;align-content:start">
+            <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;max-width:1100px"><div style="padding:12px;background:#fff;border:1px solid #DEE0E3;border-radius:8px"><small>成员</small><strong style="display:block;margin-top:5px">{{ ae.pkg.countText }}</strong></div><div style="padding:12px;background:#fff;border:1px solid #DEE0E3;border-radius:8px"><small>包版本</small><strong style="display:block;margin-top:5px">{{ ae.pkg.version }}</strong></div><div style="padding:12px;background:#fff;border:1px solid #DEE0E3;border-radius:8px"><small>配置版本</small><strong style="display:block;margin-top:5px">{{ ae.pkg.configurationText }}</strong></div><div style="padding:12px;background:#fff;border:1px solid #DEE0E3;border-radius:8px"><small>刷新方式</small><strong style="display:block;margin-top:5px">{{ ae.pkg.refreshMode }}</strong></div><div style="padding:12px;background:#fff;border:1px solid #DEE0E3;border-radius:8px"><small>状态</small><strong style="display:block;margin-top:5px">{{ ae.pkg.statusText }}</strong></div></div>
+            <div style="display:grid;grid-template-columns:220px minmax(0,880px);gap:14px;align-items:start">
+              <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:8px"><button onClick="{{ ae.goPanel.1 }}" style="{{ ae.nav.1 }}"><span style="{{ ae.nav.dot1 }}">1</span>基础与 SegmentDefinition</button><button onClick="{{ ae.goPanel.2 }}" style="{{ ae.nav.2 }}"><span style="{{ ae.nav.dot2 }}">2</span>自动化绑定</button><button onClick="{{ ae.goPanel.3 }}" style="{{ ae.nav.3 }}"><span style="{{ ae.nav.dot3 }}">3</span>发送人白名单</button><button onClick="{{ ae.goPanel.4 }}" style="{{ ae.nav.4 }}"><span style="{{ ae.nav.dot4 }}">4</span>成员列表</button><button onClick="{{ ae.goPanel.5 }}" style="{{ ae.nav.5 }}"><span style="{{ ae.nav.dot5 }}">5</span>发送边界</button></div>
               <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:16px">
-
-                <!-- 1 基础配置 -->
-                <div style="{{ ae.panel.1 }}">
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><h3 style="margin:0;font-size:15px;font-weight:600">基础配置</h3><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;background:#EFF4FF;color:#245BDB;font-size:12px">可保存</span></div>
-                  <div style="display:grid;gap:14px">
-                    <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">人群包名称</label><input id="aeName" value="{{ ae.pkg.name }}" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;box-sizing:border-box"></div>
-                    <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">筛选逻辑简述</label><textarea id="aeDef" style="width:100%;min-height:72px;border:1px solid #DEE0E3;border-radius:6px;padding:8px 10px;font-size:13px;box-sizing:border-box;resize:vertical">{{ ae.pkg.definition }}</textarea></div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-                      <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">所属分组</label>
-                        <select id="aeGroup" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 8px;font-size:13px;background:#fff">
-                          <sc-for list="{{ ae.groupOpts }}" as="o"><sc-if value="{{ o.sel }}"><option value="{{ o.v }}" selected="selected">{{ o.t }}</option></sc-if><sc-if value="{{ o.not }}"><option value="{{ o.v }}">{{ o.t }}</option></sc-if></sc-for>
-                        </select></div>
-                      <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">增量刷新</label>
-                        <select id="aeInc" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 8px;font-size:13px;background:#fff">
-                          <sc-for list="{{ ae.incOpts }}" as="o"><sc-if value="{{ o.sel }}"><option value="{{ o.v }}" selected="selected">{{ o.t }}</option></sc-if><sc-if value="{{ o.not }}"><option value="{{ o.v }}">{{ o.t }}</option></sc-if></sc-for>
-                        </select></div>
-                      <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">每日快照</label>
-                        <select id="aeDaily" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 8px;font-size:13px;background:#fff">
-                          <sc-for list="{{ ae.dailyOpts }}" as="o"><sc-if value="{{ o.sel }}"><option value="{{ o.v }}" selected="selected">{{ o.t }}</option></sc-if><sc-if value="{{ o.not }}"><option value="{{ o.v }}">{{ o.t }}</option></sc-if></sc-for>
-                        </select></div>
-                    </div>
-                    <!-- 模板与筛选条件 -->
-                    <div style="border:1px solid #EFF0F1;border-radius:8px;padding:14px;background:#FAFBFC">
-                      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><h4 style="margin:0;font-size:13px;font-weight:600">模板与筛选条件</h4><span style="display:inline-flex;align-items:center;height:20px;padding:0 8px;border:1px solid #DEE0E3;border-radius:999px;background:#fff;color:#667085;font-size:11px">{{ ae.pkg.version }}</span></div>
-                      <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">人群模板</label>
-                        <select style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 8px;font-size:13px;background:#fff"><option>已注册未激活会员</option><option>支付未激活</option><option>沉默 N 天会员</option></select></div>
-                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px">
-                        <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">沉默天数 ≥</label><input value="30" style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 10px;font-size:13px;box-sizing:border-box"></div>
-                        <div><label style="display:block;font-size:12px;color:#646A73;margin-bottom:6px;font-weight:500">会员状态</label><select style="height:34px;width:100%;border:1px solid #DEE0E3;border-radius:6px;padding:0 8px;font-size:13px;background:#fff"><option>有效期内</option><option>已过期</option><option>全部</option></select></div>
-                      </div>
-                      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#646A73;margin-top:12px;cursor:pointer"><input type="checkbox" style="width:14px;height:14px;accent-color:#3370ff"> 允许创建 0 人结果（仅在确认业务需要时勾选）</label>
-                      <div style="display:flex;gap:8px;margin-top:12px"><button onClick="{{ ae.refresh }}" style="height:30px;padding:0 12px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer">重新预览</button><button onClick="{{ ae.saveBasic }}" style="height:30px;padding:0 12px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:12px;cursor:pointer">保存新版本</button></div>
-                    </div>
-                    <div style="display:flex;justify-content:flex-end"><button onClick="{{ ae.saveBasic }}" style="height:32px;padding:0 16px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">保存基础配置</button></div>
-                  </div>
-                </div>
-
-                <!-- 2 自动化话术能力 -->
-                <div style="{{ ae.panel.2 }}">
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><h3 style="margin:0;font-size:15px;font-weight:600">自动化话术能力</h3><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;background:#EFF4FF;color:#245BDB;font-size:12px">一对一绑定</span></div>
-                  <p style="margin:0 0 14px;font-size:12px;color:#8F959E">从已有自动化列表中选择一个能力。已停止或被其他人群包占用的能力不可选。当前绑定：<b style="color:#1F2329">{{ ae.pkg.boundText }}</b></p>
-                  <sc-for list="{{ ae.agents }}" as="a" hint-placeholder-count="3">
-                    <div style="{{ a.card }}">
-                      <div style="min-width:0"><div style="font-size:13px;font-weight:600">{{ a.name }}</div><div style="font-size:12px;color:#8F959E;margin-top:2px">{{ a.code }} · {{ a.type }}</div></div>
-                      <div style="display:flex;align-items:center;gap:8px;flex:none">
-                        <span style="{{ a.cs }}">{{ a.status }}</span>
-                        <sc-if value="{{ a.isBound }}"><span style="font-size:12px;color:#1849A9;font-weight:600">✓ 已绑定</span></sc-if>
-                        <button onClick="{{ a.bind }}" style="height:28px;padding:0 10px;border:1px solid #D6E4FF;border-radius:6px;background:#F5F8FF;color:#1849A9;font-size:12px;cursor:pointer;white-space:nowrap">绑定</button>
-                      </div>
-                    </div>
-                  </sc-for>
-                  <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button onClick="{{ ae.unbind }}" style="height:32px;padding:0 14px;border:1px solid #FBC4C2;border-radius:6px;background:#FFF5F5;color:#D83931;font-size:13px;cursor:pointer">解除绑定</button><button onClick="{{ ae.saveBasic }}" style="height:32px;padding:0 16px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">保存绑定</button></div>
-                </div>
-
-                <!-- 3 发送人白名单 -->
-                <div style="{{ ae.panel.3 }}">
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><h3 style="margin:0;font-size:15px;font-weight:600">发送人白名单</h3><button onClick="{{ ae.addSender }}" style="height:28px;padding:0 10px;border:1px solid #D6E4FF;border-radius:6px;background:#F5F8FF;color:#1849A9;font-size:12px;cursor:pointer">添加发送人</button></div>
-                  <table style="width:100%;border-collapse:collapse">
-                    <thead><tr><th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3;width:70px">优先级</th><th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3">发送人</th><th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3">规则</th><th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3;width:110px">状态</th></tr></thead>
-                    <tbody>
-                      <sc-for list="{{ ae.senders }}" as="sd" hint-placeholder-count="2">
-                        <tr><td style="padding:10px 12px;border-bottom:1px solid #F2F3F5;font-size:13px;font-variant-numeric:tabular-nums">{{ sd.priority }}</td><td style="padding:10px 12px;border-bottom:1px solid #F2F3F5;font-size:13px;font-weight:500">{{ sd.userid }}</td><td style="padding:10px 12px;border-bottom:1px solid #F2F3F5;font-size:13px;color:#646A73">{{ sd.rule }}</td><td style="padding:10px 12px;border-bottom:1px solid #F2F3F5;font-size:13px;color:#2EA121">{{ sd.status }}</td></tr>
-                      </sc-for>
-                    </tbody>
-                  </table>
-                  <div style="display:flex;justify-content:flex-end;margin-top:14px"><button onClick="{{ ae.saveSenders }}" style="height:32px;padding:0 16px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">保存发送人白名单</button></div>
-                </div>
-
-                <!-- 4 成员列表 -->
-                <div style="{{ ae.panel.4 }}">
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><h3 style="margin:0;font-size:15px;font-weight:600">成员列表</h3><div style="display:flex;align-items:center;gap:8px"><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;background:#F2F3F5;color:#646A73;font-size:12px">{{ ae.memberTotal }}</span><button onClick="{{ ae.refresh }}" style="height:28px;padding:0 10px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer">刷新列表</button></div></div>
-                  <table style="width:100%;border-collapse:collapse">
-                    <thead><tr><th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3">昵称</th><th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3">外部联系人 ID</th><th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3;width:160px">进入时间</th></tr></thead>
-                    <tbody>
-                      <sc-for list="{{ ae.members }}" as="mm" hint-placeholder-count="5">
-                        <tr><td style="padding:10px 12px;border-bottom:1px solid #F2F3F5;font-size:13px;font-weight:500">{{ mm.name }}</td><td style="padding:10px 12px;border-bottom:1px solid #F2F3F5;font-size:12px;color:#646A73;font-family:ui-monospace,Menlo,monospace">{{ mm.external_userid }}</td><td style="padding:10px 12px;border-bottom:1px solid #F2F3F5;font-size:12px;color:#646A73">{{ mm.joinedAt }}</td></tr>
-                      </sc-for>
-                    </tbody>
-                  </table>
-                </div>
-
-                <!-- 5 发送记录 -->
-                <div style="{{ ae.panel.5 }}">
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px"><h3 style="margin:0;font-size:15px;font-weight:600">发送记录</h3><span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;background:#F2F3F5;color:#646A73;font-size:12px">{{ ae.recordTotal }}</span></div>
-                  <div style="overflow-x:auto"><table style="width:100%;min-width:860px;border-collapse:collapse">
-                    <thead><tr><th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3">昵称</th><th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3">外部联系人 ID</th><th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3">发送来源</th><th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3;width:90px">发送状态</th><th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3;width:150px">发送时间</th><th style="padding:9px 12px;font-size:12px;font-weight:500;color:#8F959E;text-align:left;background:#FAFAFB;border-bottom:1px solid #DEE0E3">失败原因</th></tr></thead>
-                    <tbody>
-                      <sc-for list="{{ ae.records }}" as="rd" hint-placeholder-count="3">
-                        <tr><td style="padding:10px 12px;border-bottom:1px solid #F2F3F5;font-size:13px;font-weight:500">{{ rd.name }}</td><td style="padding:10px 12px;border-bottom:1px solid #F2F3F5;font-size:12px;color:#646A73;font-family:ui-monospace,Menlo,monospace">{{ rd.external_userid }}</td><td style="padding:10px 12px;border-bottom:1px solid #F2F3F5;font-size:12px;color:#646A73">{{ rd.source }}</td><td style="padding:10px 12px;border-bottom:1px solid #F2F3F5"><span style="{{ rd.cs }}">{{ rd.status }}</span></td><td style="padding:10px 12px;border-bottom:1px solid #F2F3F5;font-size:12px;color:#646A73;font-family:ui-monospace,Menlo,monospace">{{ rd.sentAt }}</td><td style="padding:10px 12px;border-bottom:1px solid #F2F3F5;font-size:12px;color:#D83931">{{ rd.failReason }}</td></tr>
-                      </sc-for>
-                    </tbody>
-                  </table></div>
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px"><span style="font-size:12px;color:#8F959E">第 1 / 1 页</span><div style="display:flex;gap:8px"><button style="height:28px;padding:0 10px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer">上一页</button><button style="height:28px;padding:0 10px;border:1px solid #DEE0E3;border-radius:6px;background:#fff;color:#344054;font-size:12px;cursor:pointer">下一页</button></div></div>
-                </div>
-
+                <div style="{{ ae.panel.1 }}"><h3 style="margin:0 0 14px">基础与 SegmentDefinition</h3><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px"><label style="display:grid;gap:6px;font-size:12px;color:#646A73">名称<input id="aeName" value="{{ ae.pkg.name }}"></label><label style="display:grid;gap:6px;font-size:12px;color:#646A73">分组<select id="aeGroup"><sc-for list="{{ ae.groupOpts }}" as="o"><sc-if value="{{ o.sel }}"><option value="{{ o.v }}" selected="selected">{{ o.t }}</option></sc-if><sc-if value="{{ o.not }}"><option value="{{ o.v }}">{{ o.t }}</option></sc-if></sc-for></select></label><label style="display:grid;gap:6px;font-size:12px;color:#646A73">刷新方式<select id="aeRefreshMode"><sc-for list="{{ ae.refreshModeOpts }}" as="o"><sc-if value="{{ o.sel }}"><option value="{{ o.v }}" selected="selected">{{ o.t }}</option></sc-if><sc-if value="{{ o.not }}"><option value="{{ o.v }}">{{ o.t }}</option></sc-if></sc-for></select></label><label style="display:grid;gap:6px;font-size:12px;color:#646A73">cron（定时模式必填）<input id="aeRefreshCron" value="{{ ae.pkg.refreshCronText }}"></label><label style="grid-column:1/-1;display:grid;gap:6px;font-size:12px;color:#646A73">SegmentDefinition JSON<textarea id="aeDef" rows="16" spellcheck="false" style="font-family:ui-monospace,Menlo,monospace">{{ ae.pkg.definitionText }}</textarea></label></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button onClick="{{ ae.saveBasic }}">保存人群包</button><button onClick="{{ ae.snapshot }}">保存配置版本</button><button onClick="{{ ae.refresh }}">预览成员</button><button onClick="{{ ae.materialize }}" style="background:#3370ff;color:#fff;border:0">物化成员</button></div><p style="font-size:12px;color:#8F959E">物化只写入本地 Segment 成员事实，不会创建群发或调用企微。</p></div>
+                <div style="{{ ae.panel.2 }}"><h3 style="margin:0 0 14px">自动化 Agent 绑定</h3><p style="font-size:13px;color:#646A73">当前绑定：{{ ae.pkg.boundText }}。请输入 OpenAPI automation_agent_id，不按名称猜测。</p><input id="aeAutomationId" type="number" min="1" value="{{ ae.pkg.bindingAgentIdText }}" placeholder="automation_agent_id"><div style="display:flex;gap:8px;margin-top:12px"><button onClick="{{ ae.saveBinding }}">保存绑定</button><button onClick="{{ ae.unbind }}">解除绑定</button></div></div>
+                <div style="{{ ae.panel.3 }}"><h3 style="margin:0 0 14px">发送人白名单</h3><p style="font-size:13px;color:#646A73">每行一个 sender_userid，最多 5 位；保存只替换本地白名单。</p><textarea id="aeSenders" rows="10" style="width:100%;font-family:ui-monospace,Menlo,monospace">{{ ae.sendersText }}</textarea><div style="display:flex;justify-content:flex-end;margin-top:12px"><button onClick="{{ ae.saveSenders }}">保存发送人白名单</button></div></div>
+                <div style="{{ ae.panel.4 }}"><h3 style="margin:0 0 14px">成员列表</h3><p style="font-size:12px;color:#8F959E">{{ ae.memberTotal }}</p><table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left">昵称</th><th style="text-align:left">外部联系人 ID</th><th style="text-align:left">进入时间</th></tr></thead><tbody><sc-for list="{{ ae.members }}" as="mm" hint-placeholder-count="5"><tr><td style="padding:8px 0;border-bottom:1px solid #EFF0F1">{{ mm.name }}</td><td style="padding:8px 0;border-bottom:1px solid #EFF0F1;font-family:ui-monospace,Menlo,monospace">{{ mm.external_userid }}</td><td style="padding:8px 0;border-bottom:1px solid #EFF0F1">{{ mm.joinedAt }}</td></tr></sc-for></tbody></table></div>
+                <div style="{{ ae.panel.5 }}"><h3 style="margin:0 0 14px">发送边界</h3><div style="padding:14px;border:1px solid #F5D6A7;background:#FFF9F0;color:#8F5A16;border-radius:8px">本页不创建群发任务。当前 OpenAPI 能安全维护人群包、配置版本、成员物化、发送人和自动化绑定；真实外部发送需独立回执契约与确认流程。</div></div>
               </div>
             </div>
           </div>

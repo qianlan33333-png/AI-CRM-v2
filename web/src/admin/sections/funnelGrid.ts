@@ -597,14 +597,7 @@ export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: F
     renderGrid();
   });
   $('#btnRefresh').addEventListener('click', () => {
-    const b = $('#btnRefresh') as HTMLButtonElement;
-    b.disabled = true;
-    b.textContent = '刷新中…';
-    setTimeout(() => {
-      b.disabled = false;
-      b.textContent = '立即刷新';
-      toast('刷新成功');
-    }, 700);
+    toast('后端能力未就绪：当前漏斗壳与 Member Grid 查询 DTO 不等价，未发送请求', true);
   });
 
   /* ---------- 导出 ---------- */
@@ -655,7 +648,7 @@ export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: F
       }),
     );
   };
-  $('#btnSenders').addEventListener('click', () => toast('跳转到 /admin/hxc-send-config（演示）'));
+  $('#btnSenders').addEventListener('click', () => toast('后端能力未就绪：当前漏斗壳没有等价发送人配置 DTO，未发送请求', true));
   $('#btnBroadcast').addEventListener('click', () => {
     if (!selected.size) return toast('请先在表格中勾选要群发的行', true);
     const list = pipeline().filter((r) => selected.has(String(r.mobile_masked)));
@@ -679,8 +672,7 @@ export async function mountFunnelGrid(root: HTMLElement, api: AdminApi, opts?: F
   );
   $('#bcOk').addEventListener('click', () => {
     $('#bcMask').classList.remove('open');
-    const usable = pipeline().filter((r) => selected.has(String(r.mobile_masked)) && r.external_userid);
-    toast(`群发任务已创建 · 可发送 ${usable.length} 人 · 素材 ${bcMats.length} 个 · 派发状态: queued`);
+    toast('后端能力未就绪：当前漏斗壳没有等价群发创建与 receipt operation，未发送请求', true);
   });
 
   /* ---------- 通用浮窗 ---------- */

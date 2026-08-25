@@ -1,10 +1,19 @@
-import { attachmentPageDto, audiencePackagePageDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, customerPageDto, executeOwnerReassignmentPreviewDto, imagePageDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, questionnairePageDto, radarPageDto, readAdminRows, saveCouponDto, saveImageItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
+import { appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerPageDto, executeOwnerReassignmentPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, questionnaireOpsPageDto, questionnairePageDto, radarPageDto, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
 import { HttpApi } from '../shared/api/client';
 import { getCreateProductUrl, getCreateServicePeriodProductUrl, getUpdateServicePeriodProductUrl } from './generated/health';
-import { getArchiveLegacyCouponUrl, getCopyLegacyCouponUrl, getCreateLegacyCouponUrl, getDeleteLegacyCouponUrl, getPublishLegacyCouponUrl, getStopLegacyCouponUrl, getUpdateLegacyCouponUrl } from './generated/health';
+import { getArchiveLegacyCouponUrl, getCopyLegacyCouponUrl, getCreateLegacyCouponUrl, getDeleteLegacyCouponUrl, getGetLegacyImageVariantUrl, getPublishLegacyCouponUrl, getStopLegacyCouponUrl, getUpdateLegacyCouponUrl } from './generated/health';
+import { getCreateLegacyQuestionnaireUrl, getDeleteLegacyQuestionnaireUrl, getDisableLegacyQuestionnaireUrl, getDuplicateLegacyQuestionnaireUrl, getEnableLegacyQuestionnaireUrl, getPublishQuestionnairePublicDefinitionUrl, getUpdateLegacyQuestionnaireUrl } from './generated/health';
+import { getCreateLegacyChannelUrl, getUpdateLegacyChannelUrl } from './generated/health';
+import { getDeleteAIAudienceAutomationBindingUrl, getGetAIAudienceAutomationBindingUrl, getGetAIAudienceConfigurationVersionUrl, getGetAIAudiencePackageSendersUrl, getListAIAudiencePackageMembersUrl, getMaterializeAIAudienceConfigurationUrl, getPreviewAIAudienceConfigurationUrl, getPutAIAudienceAutomationBindingUrl, getPutAIAudienceConfigurationVersionUrl, getReplaceAIAudiencePackageSendersUrl, getUpdateAIAudiencePackageUrl } from './generated/health';
+import { getActivateGroupOpsPlanUrl, getAddGroupOpsPlanGroupAssetUrl, getAddGroupOpsPlanMemberUrl, getAddGroupOpsPlanNodeUrl, getArchiveGroupOpsPlanUrl, getCreateGroupOpsPlanUrl, getDeleteGroupOpsPlanUrl, getGetGroupOpsPlanUrl, getListGroupOpsExecutionsUrl, getListGroupOpsPlansUrl, getPauseGroupOpsPlanUrl, getPreviewGroupOpsPlanContentUrl, getUpdateGroupOpsPlanNodeUrl, getUpdateGroupOpsPlanUrl } from './generated/health';
+import { getCreateLegacyRefundIntentUrl, getCreateLegacyWechatRefundIntentUrl } from './generated/health';
+import { getSaveSurveyCompletionOperationsUrl, getSaveSurveyExternalPushOperationsUrl } from './generated/health';
+import { getArchiveLegacyHXCSendConfigUrl, getGetLegacyHXCSendConfigUrl, getReorderLegacyHXCSendConfigsUrl, getUpsertLegacyHXCSendConfigUrl } from './generated/health';
+import { getGetLegacyAppSettingsResourceUrl, getSaveLegacyAppSettingsResourceUrl } from './generated/health';
+import { getGetAdminOpsPushCapabilitiesUrl, getListAdminOpsReleasesUrl } from './generated/health';
 
 function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
 const response = (data: unknown, status = 200) => ({ status, data, headers: new Headers() });
@@ -13,8 +22,15 @@ export async function runAdminAdapterTests(): Promise<void> {
   // URL factories are generated from api/openapi.yaml; generated callers use GET for every read below.
   assert(getListCustomersUrl({ limit: 50 }) === '/api/v1/customers?limit=50', 'customer list URL/method');
   assert(getGetLegacyQuestionnaireUrl(4) === '/api/admin/questionnaires/4', 'questionnaire detail URL/method');
+  assert(getCreateLegacyQuestionnaireUrl() === '/api/admin/questionnaires' && getUpdateLegacyQuestionnaireUrl(4) === '/api/admin/questionnaires/4', 'questionnaire create/update URLs');
+  assert(getEnableLegacyQuestionnaireUrl(4).endsWith('/4/enable') && getDisableLegacyQuestionnaireUrl(4).endsWith('/4/disable'), 'questionnaire lifecycle URLs');
+  assert(getDuplicateLegacyQuestionnaireUrl(4).endsWith('/4/duplicate') && getDeleteLegacyQuestionnaireUrl(4) === '/api/admin/questionnaires/4', 'questionnaire duplicate/delete URLs');
+  assert(getPublishQuestionnairePublicDefinitionUrl(4).endsWith('/4/public-publish'), 'questionnaire public publish URL');
+  assert(getSaveSurveyCompletionOperationsUrl(4).endsWith('/4/operations/completion') && getSaveSurveyExternalPushOperationsUrl(4).endsWith('/4/operations/external-push'), 'questionnaire operations write URLs');
   assert(getListLegacyChannelsUrl({ limit: 50, include_archived: true }) === '/api/admin/channels?limit=50&include_archived=true', 'channel list URL/method');
+  assert(getCreateLegacyChannelUrl() === '/api/admin/channels' && getUpdateLegacyChannelUrl(3) === '/api/admin/channels/3', 'channel create/update URLs');
   assert(getGetLegacyOrderUrl('WX-9') === '/api/admin/orders/WX-9', 'order detail URL/method');
+  assert(getCreateLegacyRefundIntentUrl() === '/api/admin/refunds' && getCreateLegacyWechatRefundIntentUrl('WX-9') === '/api/admin/wechat-pay/orders/WX-9/refunds', 'refund intent provider URLs');
   assert(getListProductsUrl() === '/api/v1/products', 'product list URL/method');
   assert(getGetProductUrl(7) === '/api/v1/products/7', 'product detail URL/method');
   assert(getCreateProductUrl() === '/api/v1/products', 'product create URL');
@@ -29,10 +45,27 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(getPublishLegacyCouponUrl(3).endsWith('/3/publish') && getStopLegacyCouponUrl(3).endsWith('/3/stop'), 'coupon lifecycle URLs');
   assert(getCopyLegacyCouponUrl(3).endsWith('/3/copy') && getArchiveLegacyCouponUrl(3).endsWith('/3/archive') && getDeleteLegacyCouponUrl(3) === '/api/admin/coupons/3', 'coupon copy/archive/delete URLs');
   assert(getGetLegacyImageUrl('img-1') === '/api/admin/image-library/img-1', 'image detail URL/method');
+  assert(getGetLegacyImageVariantUrl('img-1', 'thumb_320') === '/api/admin/image-library/img-1/variants/thumb_320', 'image thumbnail URL/method');
   assert(getGetLegacyAttachmentUrl('att-1') === '/api/admin/attachment-library/att-1', 'attachment detail URL/method');
   assert(getGetLegacyWecomTagUrl(5) === '/api/admin/wecom/tags/5', 'tag detail URL/method');
   assert(getListRadarLinksUrl() === '/api/admin/radar-links', 'radar list URL/method');
   assert(getListAIAudiencePackagesUrl() === '/api/admin/ai-audience/packages', 'audience list URL/method');
+  assert(getUpdateAIAudiencePackageUrl(6) === '/api/admin/ai-audience/packages/6', 'audience update URL');
+  assert(getGetAIAudienceAutomationBindingUrl(6).endsWith('/6/automation-binding') && getPutAIAudienceAutomationBindingUrl(6).endsWith('/6/automation-binding') && getDeleteAIAudienceAutomationBindingUrl(6).endsWith('/6/automation-binding'), 'audience binding URLs');
+  assert(getGetAIAudiencePackageSendersUrl(6).endsWith('/6/senders') && getReplaceAIAudiencePackageSendersUrl(6).endsWith('/6/senders'), 'audience sender URLs');
+  assert(getGetAIAudienceConfigurationVersionUrl(6).endsWith('/6/configuration') && getPutAIAudienceConfigurationVersionUrl(6).endsWith('/6/configuration'), 'audience configuration URLs');
+  assert(getPreviewAIAudienceConfigurationUrl(6, { configuration_version: 2 }).endsWith('/6/configuration-preview?configuration_version=2') && getMaterializeAIAudienceConfigurationUrl(6).endsWith('/6/configuration-materialize'), 'audience preview/materialize URLs');
+  assert(getListAIAudiencePackageMembersUrl(6, { limit: 200, offset: 0 }).endsWith('/6/members?limit=200&offset=0'), 'audience members URL');
+  assert(getListGroupOpsPlansUrl({ limit: 100, offset: 0 }).endsWith('/group-ops/plans?limit=100&offset=0') && getCreateGroupOpsPlanUrl().endsWith('/group-ops/plans'), 'group ops list/create URLs');
+  assert(getGetGroupOpsPlanUrl('9').endsWith('/plans/9') && getUpdateGroupOpsPlanUrl('9').endsWith('/plans/9') && getDeleteGroupOpsPlanUrl('9').endsWith('/plans/9'), 'group ops detail CRUD URLs');
+  assert(getAddGroupOpsPlanMemberUrl('9').endsWith('/plans/9/members') && getAddGroupOpsPlanGroupAssetUrl('9').endsWith('/plans/9/group-assets') && getAddGroupOpsPlanNodeUrl('9').endsWith('/plans/9/nodes'), 'group ops member/asset/node URLs');
+  assert(getUpdateGroupOpsPlanNodeUrl('9', '3').endsWith('/plans/9/nodes/3') && getPreviewGroupOpsPlanContentUrl('9').endsWith('/plans/9/content/preview'), 'group ops node/preview URLs');
+  assert(getActivateGroupOpsPlanUrl('9').endsWith('/plans/9/activate') && getPauseGroupOpsPlanUrl('9').endsWith('/plans/9/pause') && getArchiveGroupOpsPlanUrl('9').endsWith('/plans/9/archive'), 'group ops lifecycle URLs');
+  assert(getListGroupOpsExecutionsUrl('9', { limit: 100, offset: 0 }).endsWith('/plans/9/executions?limit=100&offset=0'), 'group ops executions URL');
+  assert(getGetLegacyHXCSendConfigUrl() === '/api/admin/hxc-dashboard/send-config' && getUpsertLegacyHXCSendConfigUrl() === '/api/admin/hxc-dashboard/send-config', 'HXC sender read/write URLs');
+  assert(getReorderLegacyHXCSendConfigsUrl().endsWith('/send-config/reorder') && getArchiveLegacyHXCSendConfigUrl('alice').endsWith('/send-config/alice'), 'HXC sender reorder/archive URLs');
+  assert(getGetLegacyAppSettingsResourceUrl() === '/api/admin/config/app-settings' && getSaveLegacyAppSettingsResourceUrl() === '/api/admin/config/app-settings', 'app settings read/write URLs');
+  assert(getGetAdminOpsPushCapabilitiesUrl() === '/api/admin/config/push-capabilities' && getListAdminOpsReleasesUrl() === '/api/admin/config/releases', 'push capabilities/releases read URLs');
   assert(getCreateLegacyWecomTagUrl() === '/api/admin/wecom/tags', 'tag create URL/method');
   assert(getQueueLegacyWecomTagSyncUrl() === '/api/admin/wecom/tags/sync', 'tag sync URL/method');
   assert(getCreateRadarLinkUrl() === '/api/admin/radar-links', 'radar create URL');
@@ -74,6 +107,49 @@ export async function runAdminAdapterTests(): Promise<void> {
   globalThis.fetch = async () => new Response(JSON.stringify({ code: 'bad' }), { status: 503 });
   try { await readAdminRows(); assert(false, 'failed production read must not return seed'); } catch { /* expected: no SEED_DB fallback */ }
   finally { globalThis.fetch = savedFetch; }
+
+  const questionnaireCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const questionnaireApi = { id: 41, name: 'growth', title: '增长诊断', description: '说明', answer_display_mode: 'all_in_one', assessment_enabled: false, assessment_config: {}, slug: 'growth', is_disabled: false, questions: [{ type: 'textarea', title: '目标', assessment_dimension_key: '', sidebar_profile_field: '', required: true, sort_order: 0, placeholder_text: '', validation: {}, options: [] }], score_rules: [], enabled: true, status: 'active', version: 2, question_count: 1, submission_count: 0, created_at: '', updated_at: '', public_path: '/q/growth', submitted_path: '/q/growth/submitted' };
+  globalThis.fetch = async (input, init) => { questionnaireCalls.push({ input: String(input), init }); return new Response(JSON.stringify(String(input).includes('/public-publish') ? { questionnaire_id: 41, slug: 'growth', definition_version: 2, state: 'public' } : String(input).endsWith('/enable') ? { questionnaire: questionnaireApi } : { questionnaire_id: 41, questionnaire: questionnaireApi, data: { questionnaire: questionnaireApi } }), { status: 200 }); };
+  try {
+    const saved = await saveQuestionnaireDto({ name: 'growth', title: '增长诊断', description: '说明', answer_display_mode: 'all_in_one', assessment_enabled: false, assessment_config: {}, slug: 'growth', is_disabled: false, questions: questionnaireApi.questions as LegacyQuestionnaire['questions'], score_rules: [] }, true);
+    assert(saved.resourceId === 41 && saved.questions?.length === 1 && saved.version === 2, 'questionnaire response mapping keeps full definition');
+    assert(questionnaireCalls[0].input === '/api/admin/questionnaires' && questionnaireCalls[0].init?.method === 'POST', 'questionnaire create URL/method');
+    assert(JSON.parse(String(questionnaireCalls[0].init?.body)).questions[0].type === 'textarea', 'questionnaire request DTO mapping');
+    assert(questionnaireCalls[1].input.endsWith('/41/enable') && questionnaireCalls[2].input.endsWith('/41/public-publish'), 'questionnaire enable/public publish sequence');
+    assert(JSON.parse(String(questionnaireCalls[2].init?.body)).expected_questionnaire_version === 2, 'questionnaire publish CAS version');
+  } finally { globalThis.fetch = savedFetch; }
+
+  let channelRequest: { input: string; init?: RequestInit } | undefined;
+  globalThis.fetch = async (input, init) => { channelRequest = { input: String(input), init }; return new Response(JSON.stringify({ ok: true, channel: { id: 51, channel_type: 'wecom_customer_acquisition', carrier_type: 'link', channel_name: '新客', channel_code: 'new', status: 'inactive', welcome_message: '欢迎', welcome_image_library_ids: [7], auto_accept_friend: false, assignment_mode: 'single_owner', assignment_strategy: 'ratio', assignment_config_json: { staff_ids: ['A'] }, assignees: [], assignee_count: 0, channel_contact_count: 0 }, reason: 'channel_created', source: 'ai_crm_next', fallback_used: false, provider_execution_eligible: false, real_external_call_executed: false }), { status: 201 }); };
+  try {
+    const saved = await saveChannelDto({ channel_type: 'wecom_customer_acquisition', carrier_type: 'link', channel_name: '新客', channel_code: 'new', status: 'inactive', welcome_message: '欢迎', welcome_image_library_ids: [7], auto_accept_friend: false, assignment_mode: 'single_owner', assignment_strategy: 'ratio', assignment_config_json: { staff_ids: ['A'] } });
+    assert(saved.resourceId === 51 && saved.channelType === 'wecom_customer_acquisition' && saved.welcomeImageLibraryIds?.[0] === 7, 'channel full response mapping');
+    assert(channelRequest?.input === '/api/admin/channels' && channelRequest.init?.method === 'POST', 'channel create URL/method');
+    assert(JSON.parse(String(channelRequest.init?.body)).assignment_config_json.staff_ids[0] === 'A', 'channel request DTO mapping');
+  } finally { globalThis.fetch = savedFetch; }
+
+  const audienceCalls: Array<{ input: string; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => { audienceCalls.push({ input: String(input), init }); const base = { package_id: 6, name: '沉默客户', group_id: 2, lifecycle: 'paused', version: init?.method === 'PATCH' ? 4 : 3, refresh_mode: 'scheduled', refresh_cron: '0 2 * * *', member_count: 8, refreshed_at: null, refresh_status: 'idle', created_at: '', updated_at: '', definition: { field: 'stage_id', op: 'eq', value: 3 } }; return new Response(JSON.stringify(init?.method === 'PATCH' ? { package: base, local_projection: true, real_external_call_executed: false } : { package: base, local_projection: true, real_external_call_executed: false }), { status: 200 }); };
+  try {
+    const saved = await saveAudiencePackageDto({ id: 6, name: '沉默客户', groupId: 2, definition: { field: 'stage_id', op: 'eq', value: 3 }, refreshMode: 'scheduled', refreshCron: '0 2 * * *' });
+    assert(saved.packageVersion === 4 && saved.definition.includes('stage_id'), 'audience package response mapping');
+    assert(audienceCalls[0].init?.method === 'GET' && audienceCalls[1].input.endsWith('/packages/6') && audienceCalls[1].init?.method === 'PATCH', 'audience CAS read/update methods');
+    const audienceBody = JSON.parse(String(audienceCalls[1].init?.body));
+    assert(audienceBody.expected_version === 3 && audienceBody.definition.field === 'stage_id' && audienceBody.refresh_cron === '0 2 * * *', 'audience request DTO/CAS mapping');
+  } finally { globalThis.fetch = savedFetch; }
+
+  const groupOpsCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const groupOpsDetail = { plan: { plan_id: '9', name: '欢迎计划', status: 'draft', revision: 1, created_by: 1, updated_by: 1, created_at: '', updated_at: '' }, members: [], group_assets: [], nodes: [], webhook_descriptor: { configured: false, description: 'not configured' }, provider_execution_eligible: false, real_external_call_executed: false };
+  globalThis.fetch = async (input, init) => { groupOpsCalls.push({ input: String(input), init }); const body = String(input).endsWith('/content/preview') ? { valid: false, issue_codes: ['member_required'], preview_lines: [], node_count: 0, group_asset_count: 0, provider_execution_eligible: false, real_external_call_executed: false } : groupOpsDetail; return new Response(JSON.stringify(body), { status: init?.method === 'POST' && String(input).endsWith('/plans') ? 201 : 200 }); };
+  try {
+    const saved = await saveGroupOpsPlanDto({ name: '欢迎计划', staffIds: [], assetReferences: [], nodes: [] });
+    assert(saved.plan.id === '9' && saved.previewIssues[0] === 'member_required', 'group ops full detail/preview mapping');
+    assert(groupOpsCalls[0].input.endsWith('/group-ops/plans') && groupOpsCalls[0].init?.method === 'POST', 'group ops create URL/method');
+    assert(JSON.parse(String(groupOpsCalls[0].init?.body)).name === '欢迎计划', 'group ops create DTO mapping');
+    assert(groupOpsCalls[1].input.endsWith('/plans/9/content/preview') && groupOpsCalls[1].init?.method === 'POST' && groupOpsCalls[2].init?.method === 'GET', 'group ops preview/detail methods');
+    assert(groupOpsDetailDto(groupOpsDetail).plan.revision === 1, 'group ops direct response mapping');
+  } finally { globalThis.fetch = savedFetch; }
 
   let productWrite: RequestInit | undefined;
   globalThis.fetch = async (_input, init) => { productWrite = init; return new Response(JSON.stringify({ id: 21, product_code: 'P-21', name: '课程', description: '说明', price_minor: 19900, currency: 'CNY', stock_quantity: 9, images: [], created_by: 1, created_at: '', updated_at: '', version: 1 }), { status: 201 }); };
@@ -141,6 +217,13 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(JSON.parse(String(calls[0].init?.body)).destination_url === 'https://example.test', 'radar create request mapping');
   } finally { globalThis.fetch = savedFetch; }
 
+  let imageRadarBody: Record<string, unknown> | undefined;
+  globalThis.fetch = async (_input, init) => { imageRadarBody = JSON.parse(String(init?.body)); return new Response(JSON.stringify({ link: { link_id: 6, public_code: 'rd_2234567890123456789012', name: '海报', title: '海报', destination_url: 'https://example.test/poster', cover_image_id: 15, attachment_id: null, status: 'disabled', version: 1, created_by: 9, updated_by: 9, created_at: '', updated_at: '' }, local_projection: true, real_external_call_executed: false }), { status: 201 }); };
+  try {
+    const radar = await saveRadarLinkDto({ title: '海报', target_type: 'image', original_url: 'https://example.test/poster', file_name_snapshot: 'poster.png', media_item_id: '15', enabled: false, auth_required: true });
+    assert(radar.target_type === 'image' && imageRadarBody?.cover_image_id === 15 && imageRadarBody?.attachment_id === null, 'image radar media/destination mapping');
+  } finally { globalThis.fetch = savedFetch; }
+
   let customerInit: RequestInit | undefined;
   globalThis.fetch = async (_input, init) => { customerInit = init; return new Response(JSON.stringify({ id: 7, name: '新姓名', owner_staff_id: 3, stage_id: 2, is_deleted: false, extra: {}, created_at: '', updated_at: '' }), { status: 200 }); };
   try {
@@ -152,6 +235,72 @@ export async function runAdminAdapterTests(): Promise<void> {
   let tagMethod = '';
   globalThis.fetch = async (_input, init) => { tagMethod = init?.method || ''; return new Response(null, { status: 204 }); };
   try { await setCustomerTagDto(7, 9, true); assert(tagMethod === 'PUT', 'customer tag add method'); }
+  finally { globalThis.fetch = savedFetch; }
+
+  const opsMapped = questionnaireOpsPageDto({ questionnaire_id: 4, completion: { navigation_target_id: 'completion.done', channel_id: 19 }, external_push: { enabled: true, configuration_reference: 'push.crm' }, local_only: true });
+  assert(opsMapped.completionNavigationTargetId === 'completion.done' && opsMapped.completionChannelId === '19' && opsMapped.externalPushConfigurationReference === 'push.crm' && opsMapped.localOnly, 'questionnaire operations response mapping');
+  const opsCalls: Array<{ input: string; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => { opsCalls.push({ input: String(input), init }); return new Response(JSON.stringify({ questionnaire_id: 4, completion: { navigation_target_id: 'completion.done', channel_id: 19 }, external_push: { enabled: true, configuration_reference: 'push.crm' }, local_only: true }), { status: 200 }); };
+  try {
+    await saveQuestionnaireOpsDto(4, opsMapped);
+    assert(opsCalls.length === 2 && opsCalls.every((item) => item.init?.method === 'PUT'), 'questionnaire operations write methods');
+    assert(JSON.parse(String(opsCalls[0].init?.body)).navigation_target_id === 'completion.done' && JSON.parse(String(opsCalls[0].init?.body)).channel_id === 19, 'completion operations request mapping');
+    assert(JSON.parse(String(opsCalls[1].init?.body)).configuration_reference === 'push.crm', 'external push reference request mapping');
+  } finally { globalThis.fetch = savedFetch; }
+  let invalidOpsCalled = false;
+  globalThis.fetch = async () => { invalidOpsCalled = true; return new Response('{}', { status: 200 }); };
+  try { await saveQuestionnaireOpsDto(4, { ...opsMapped, completionNavigationTargetId: 'https://invalid.example' }); assert(false, 'URL was accepted as opaque reference'); }
+  catch (error) { assert(error instanceof Error && !invalidOpsCalled, 'invalid questionnaire operations must not request'); }
+  finally { globalThis.fetch = savedFetch; }
+
+  const hxcMapped = hxcSenderPageDto({ id: 'cfg-1', sender_userid: 'alice', display_name: 'Alice', priority: 2, is_active: true, created_at: '', updated_at: '' });
+  assert(hxcMapped.senderId === 'cfg-1' && hxcMapped.code === 'alice' && hxcMapped.priority === 2 && hxcMapped.status === '启用中', 'HXC sender response mapping');
+  let hxcWrite: { input: string; init?: RequestInit } | undefined;
+  globalThis.fetch = async (input, init) => { hxcWrite = { input: String(input), init }; return new Response(JSON.stringify({ ok: true, operation: 'saved', item: { id: 'cfg-1', sender_userid: 'alice', display_name: 'Alice', priority: 2, is_active: true, created_at: '', updated_at: '' }, items: [], local_only: true, provider_call_executed: false, real_external_call_executed: false, readback_confirmed: true }), { status: 200 }); };
+  try {
+    const sender = await saveHxcSenderDto({ id: 'cfg-1', senderUserid: 'alice', displayName: 'Alice', priority: 2, active: true });
+    assert(sender.code === 'alice' && hxcWrite?.init?.method === 'POST', 'HXC sender save method/mapping');
+    assert(JSON.parse(String(hxcWrite.init?.body)).sender_userid === 'alice', 'HXC sender request DTO');
+  } finally { globalThis.fetch = savedFetch; }
+  let hxcReorderMethod = '';
+  globalThis.fetch = async (_input, init) => { hxcReorderMethod = init?.method || ''; return new Response(JSON.stringify({ ok: true, operation: 'reordered', items: [], local_only: true, provider_call_executed: false, real_external_call_executed: false, readback_confirmed: true }), { status: 200 }); };
+  try { await reorderHxcSendersDto(['cfg-1', 'cfg-2']); assert(hxcReorderMethod === 'PUT', 'HXC sender reorder method'); }
+  finally { globalThis.fetch = savedFetch; }
+
+  const actionToken = 'a'.repeat(43);
+  const appSettings = appSettingsPageDto({ admin_action_token: actionToken, config: { rows: [{ key: 'wecom.corp_id', label: 'wecom.corp_id', mode: 'editable', input_type: 'text', value: 'corp', configured: true }, { key: 'wecom.secret', label: 'wecom.secret', mode: 'masked', input_type: 'password', configured: true, masked: true }] } });
+  assert(appSettings.actionToken === actionToken && appSettings.blocks[0].fields[0].value === 'corp' && appSettings.blocks[0].fields[1].kind === 'secret', 'app settings safe projection mapping');
+  let appSettingsInit: RequestInit | undefined;
+  globalThis.fetch = async (_input, init) => { appSettingsInit = init; return new Response(JSON.stringify({ ok: true, changed: [], changed_count: 0, config: { rows: [], metadata_map: {}, summary_cards: [], audit_entries: [] }, source_status: 'next_command', fallback_used: false, real_external_call_executed: false }), { status: 200 }); };
+  try {
+    await saveAppSettingsDto(appSettings, { 'wecom.corp_id': 'corp-2', 'wecom.secret': 'must-not-send' });
+    const body = JSON.parse(String(appSettingsInit?.body));
+    assert(appSettingsInit?.method === 'PUT' && body.admin_action_token === actionToken && body.confirm === true, 'app settings token/method mapping');
+    assert(body.settings['wecom.corp_id'] === 'corp-2' && body.settings['wecom.secret'] === undefined, 'app settings allowlisted non-secret mapping');
+  } finally { globalThis.fetch = savedFetch; }
+  const pushProjection = readOnlyConfigPageDto('push-capabilities', { capabilities: { archive_sync: { enabled: true } } });
+  const releaseProjection = readOnlyConfigPageDto('releases', { releases: [{ id: 7, state: 'published', checksum: 'b'.repeat(64) }] });
+  assert(pushProjection.blocks[0].fields[0].kind === 'readonly' && releaseProjection.blocks[0].fields[0].label.includes('Release 7'), 'push/release safe projection mapping');
+
+  let refundRequest: { input: string; init?: RequestInit } | undefined;
+  globalThis.fetch = async (input, init) => { refundRequest = { input: String(input), init }; return new Response(JSON.stringify({ id: 73, order_id: 9, out_refund_no: 'pe01r_' + 'a'.repeat(32), amount_minor: 1200, currency: 'CNY', state: 'reserved', version: 1, created_at: '', updated_at: '' }), { status: 202 }); };
+  try {
+    const refund = await createRefundIntentDto({ provider: 'wechat_pay', orderNo: 'WX-9', amount: '12.00', reason: '客户申请', transactionIdConfirmation: 'WX-9', checked: true });
+    assert(refund.id === '73' && refund.state === 'reserved' && refund.provider === 'wechat_pay', 'refund intent response mapping');
+    assert(refundRequest?.input === '/api/admin/wechat-pay/orders/WX-9/refunds' && refundRequest.init?.method === 'POST', 'wechat pay refund URL/method');
+    const refundBody = JSON.parse(String(refundRequest.init?.body));
+    assert(refundBody.refund_amount_total === 1200 && refundBody.transaction_id_confirmation === 'WX-9' && refundBody.checked === true, 'refund intent request mapping');
+  } finally { globalThis.fetch = savedFetch; }
+
+  let unsupportedCalled = false;
+  globalThis.fetch = async () => { unsupportedCalled = true; return new Response('{}', { status: 202 }); };
+  try { await createRefundIntentDto({ provider: 'alipay', orderNo: 'ALI-1', amount: '1.00', reason: '客户申请', transactionIdConfirmation: 'ALI-1', checked: true }); assert(false, 'unsupported refund provider was accepted'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('后端能力未就绪') && !unsupportedCalled, 'unsupported refund provider must not request'); }
+  finally { globalThis.fetch = savedFetch; }
+
+  globalThis.fetch = async () => new Response(JSON.stringify({ code: 'conflict', message: 'duplicate' }), { status: 409 });
+  try { await createRefundIntentDto({ provider: 'wechat_shop', orderNo: 'SHOP-1', amount: '1.00', reason: '客户申请', transactionIdConfirmation: 'SHOP-1', checked: true }); assert(false, 'refund 409 was accepted'); }
+  catch (error) { assert(error instanceof ApiError && error.status === 409, 'refund 409 must stay structured'); }
   finally { globalThis.fetch = savedFetch; }
 
   globalThis.fetch = async () => new Response(JSON.stringify({ code: 'validation', message: 'bad', request_id: 'r', details: [] }), { status: 422 });
@@ -179,6 +328,14 @@ export async function runAdminAdapterTests(): Promise<void> {
     await saveImageItemDto('旧名', { resourceId: '15', name: '新名', desc: '说明', tags: '一, 二', enabled: true });
     assert(imageRequest?.input === '/api/admin/image-library/15' && imageRequest.init?.method === 'PUT', 'image update generated URL/method');
     assert(JSON.parse(String(imageRequest.init?.body)).tags.length === 2, 'image metadata mapping');
+  } finally { globalThis.fetch = savedFetch; }
+
+  let imageVariantRequest: { input: string; init?: RequestInit } | undefined;
+  globalThis.fetch = async (input, init) => { imageVariantRequest = { input: String(input), init }; return new Response(new Blob(['png'], { type: 'image/png' }), { status: 200, headers: { 'Content-Type': 'image/png' } }); };
+  try {
+    const thumbnail = await getImageThumbnailDto({ resourceId: '15', name: '图', size: '3', tag: '', tone: 'ok', bg: '', desc: '', tags: '', enabled: true, uploadedAt: '' });
+    assert(imageVariantRequest?.input.endsWith('/15/variants/thumb_320') && (imageVariantRequest.init?.method || 'GET') === 'GET', 'image thumbnail generated URL/method');
+    assert(thumbnail.type === 'image/png', 'image thumbnail blob content handling');
   } finally { globalThis.fetch = savedFetch; }
 
   let uploadInit: RequestInit | undefined;

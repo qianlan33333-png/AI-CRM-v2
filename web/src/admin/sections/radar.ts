@@ -8,7 +8,7 @@
  */
 import type { AdminApi } from '../../shared/api/client';
 import type { RadarLink, RadarLinkInput, RadarMedia, RadarType } from '../../shared/api/types';
-import { toast, simulateUpload } from '../../shared/ui/feedback';
+import { toast } from '../../shared/ui/feedback';
 import { openPicker } from '../../shared/ui/picker';
 import { downloadCsv } from '../../shared/ui/download';
 import { esc, copyText, renderFakeQr } from './util';
@@ -286,6 +286,7 @@ function renderForm(root: HTMLElement, api: AdminApi, links: RadarLink[], id?: n
     media:
       editing && editing.media_item_id
         ? {
+            id: Number(editing.media_item_id),
             name: editing.file_name_snapshot || editing.media_item_id,
             meta: (editing.target_type === 'pdf' ? 'application/pdf' : 'image/png') + ' · 已存在素材',
           }
@@ -318,7 +319,7 @@ function renderForm(root: HTMLElement, api: AdminApi, links: RadarLink[], id?: n
       <div class="card">
         <div class="panel-head"><h2>内容配置</h2></div>
         <div class="panel-body">
-          <div class="field" id="cfgUrl"><label>外部链接 *</label><input class="input" id="fUrl" placeholder="https://example.com/page" value="${esc(editing?.original_url || '')}"><div class="help">仅允许合法 http/https 外部链接，禁止 localhost、内网 IP 和脚本协议。</div></div>
+          <div class="field" id="cfgUrl"><label id="fUrlLabel">HTTPS 目标地址 *</label><input class="input" id="fUrl" placeholder="https://example.com/page" value="${esc(editing?.original_url || '')}"><div class="help" id="fUrlHelp">OpenAPI 对所有 Radar 类型都要求独立 HTTPS destination_url。</div></div>
           <div class="field" id="cfgMedia" hidden><label id="fMediaLabel">素材 *</label>
             <div class="media-box">
               <div class="media-picked" id="mediaPicked" hidden>
@@ -350,7 +351,9 @@ function renderForm(root: HTMLElement, api: AdminApi, links: RadarLink[], id?: n
     });
     $('#swEnabled').classList.toggle('on', form.enabled);
     $('#swAuth').classList.toggle('on', form.auth);
-    ($('#cfgUrl') as HTMLElement).hidden = form.type !== 'link';
+    ($('#cfgUrl') as HTMLElement).hidden = false;
+    $('#fUrlLabel').textContent = form.type === 'link' ? '外部链接 *' : '授权后的 HTTPS 目标地址 *';
+    $('#fUrlHelp').textContent = form.type === 'link' ? '仅允许 HTTPS 外部链接。' : '素材 ID 与目标地址是两个独立契约字段，均须提供。';
     ($('#cfgMedia') as HTMLElement).hidden = form.type === 'link';
     $('#fMediaLabel').textContent = form.type === 'image' ? '图片素材 *' : 'PDF 素材 *';
     $('#mediaHelp').textContent =
@@ -386,7 +389,7 @@ function renderForm(root: HTMLElement, api: AdminApi, links: RadarLink[], id?: n
     void openPicker(api, { kind: isImg ? 'image' : 'attach', multi: false, max: 1, title: isImg ? '选择图片素材' : '选择 PDF 附件' }).then((r) => {
       if (!r || !r.length) return;
       const m = r[0];
-      form.media = { name: m.name, meta: (m.sub || '素材库') + ' · 来自素材库' };
+      form.media = { id: Number(m.id), name: m.name, meta: (m.sub || '素材库') + ' · 来自素材库' };
       sync();
       toast('已选择素材');
     });
@@ -398,7 +401,6 @@ function renderForm(root: HTMLElement, api: AdminApi, links: RadarLink[], id?: n
     const input = e.target as HTMLInputElement;
     const file = input.files && input.files[0];
     if (!file) return;
-    simulateUpload(file.name);
     const up = form.type === 'image' ? api.uploadRadarImage(file) : api.uploadRadarPdf(file);
     void up.then((m) => {
       form.media = m;
@@ -420,15 +422,15 @@ function renderForm(root: HTMLElement, api: AdminApi, links: RadarLink[], id?: n
     const name = ($('#fName') as HTMLInputElement).value.trim();
     if (!name) return toast('请输入内容名称', true);
     const urlVal = ($('#fUrl') as HTMLInputElement).value.trim();
-    if (form.type === 'link' && !/^https:\/\//i.test(urlVal)) return toast('请输入合法 HTTPS 外部链接', true);
+    if (!/^https:\/\//i.test(urlVal)) return toast('请输入合法 HTTPS 目标地址', true);
     if (form.type !== 'link' && !form.media) return toast('请选择或上传素材', true);
-    if (form.type !== 'link' && api.mode === 'http') return toast('后端能力未就绪：图片/PDF Radar 还需要独立的 HTTPS 目标地址，当前表单无法安全保存', true);
+    if (form.type !== 'link' && (!Number.isInteger(form.media?.id) || Number(form.media?.id) < 1)) return toast('所选素材缺少服务端 ID，请重新选择或上传', true);
 
     const input: RadarLinkInput = {
       id: editing?.id,
       title: name,
       target_type: form.type,
-      original_url: form.type === 'link' ? urlVal : '',
+      original_url: urlVal,
       file_name_snapshot: form.media?.name || editing?.file_name_snapshot || '',
       media_item_id: form.media?.id == null ? editing?.media_item_id || '' : String(form.media.id),
       enabled: form.enabled,
