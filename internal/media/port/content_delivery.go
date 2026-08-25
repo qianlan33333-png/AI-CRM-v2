@@ -26,9 +26,12 @@ type ContentPackageUpdateCommand struct {
 	ContentPackageCommand
 }
 type DeliveryBinding struct {
-	ID                                int64  `json:"id"`
-	CampaignCode, PlanID              string `json:"campaign_code"`
-	PackageID, GroupInviteID, Version int64
+	ID            int64  `json:"id"`
+	CampaignCode  string `json:"campaign_code"`
+	PlanID        string `json:"plan_id"`
+	PackageID     int64  `json:"package_id"`
+	GroupInviteID int64  `json:"group_invite_id"`
+	Version       int64  `json:"version"`
 }
 type DeliveryBindingCommand struct {
 	CampaignCode, PlanID                             string

@@ -115,6 +115,7 @@ while [[ -n "$remaining_groups" ]]; do
       run_make_acceptance P3R4B_TEST_DATABASE_URL p3-r4b-identity-storage-acceptance
       ;;
     media)
+      run_make_acceptance P4MEDIADELIVERY_TEST_DATABASE_URL p4-media-content-delivery-acceptance
       run_make_acceptance P4IMAGEDELETE_TEST_DATABASE_URL p4-image-delete-0362-acceptance
       P4H01A1_MEDIA_TEST_DATABASE_URL="$database_url" make --no-print-directory p4-h01a1-media-acceptance
       P4H03_MEDIA_TEST_DATABASE_URL="$database_url" make --no-print-directory p4-h03-media-acceptance

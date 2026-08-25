@@ -13,6 +13,22 @@ states. Its provider eligibility, real-call and delivery-proof flags are
 constrained false; it therefore cannot claim sent or delivered and contains
 no retry mechanism.
 
-The migration compatibility target applies only `00083`, rolls it back to
-`00082`, then reapplies it. It asserts `version_id=83` directly rather than
-using the maximum migration version.
+`make p4-media-content-delivery-acceptance` creates an isolated PostgreSQL
+16.14 database, migrates through `00083`, directly asserts that `00083` itself
+is applied (without asserting that it is the maximum migration), proves empty
+`83 -> 82 -> 83`, then
+seeds a private canonical PDF/upload, content package, accepted `outbound_media`
+effect, `outcome_unknown` transition and manual reconciliation. Its PII-minimal
+detail assertion is exactly package ID, opaque `eer_N`, state,
+`provider_accepted` and `delivery_proven`; target, payload, evidence and receipt
+digests never leave the database query. The populated `00083 -> 82` migration
+must fail.
+
+The 12 V2-native operations are registered under
+`P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25` in the OpenAPI candidate registry:
+package preview/create/update; PDF initiate/part/complete; delivery-binding
+get/create/update; and outbound-media accept/detail/manual-reconcile. These
+have no guessed 1:1 legacy route mapping, so the frozen Feature Matrix and its
+denominator remain unchanged. `scripts/ci/run_selected_database.sh selected media`
+now executes the dedicated PG acceptance; `scripts/ci/run_selected_go.sh selected
+media,outbound false` covers the two selected Go domains.
