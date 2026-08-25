@@ -49,7 +49,17 @@ func (source *fakeSource) Stream(_ context.Context, request StreamRequest, each 
 
 type fakeMapper struct{}
 
+func (fakeMapper) MappingDigest(TableID) Digest { return Sum([]byte("fixture mapper v1")) }
+
 func (fakeMapper) Map(_ context.Context, table TableSpec, row SourceRow) (MappedRow, error) {
+	return MappedRow{Operation: "apply_" + string(table.ID), Payload: append([]byte(nil), row.Payload...), Digest: Sum(append([]byte(table.ID), row.Payload...))}, nil
+}
+
+type versionedMapper struct{ digest Digest }
+
+func (mapper versionedMapper) MappingDigest(TableID) Digest { return mapper.digest }
+
+func (versionedMapper) Map(_ context.Context, table TableSpec, row SourceRow) (MappedRow, error) {
 	return MappedRow{Operation: "apply_" + string(table.ID), Payload: append([]byte(nil), row.Payload...), Digest: Sum(append([]byte(table.ID), row.Payload...))}, nil
 }
 
@@ -121,14 +131,14 @@ func (target *fakeTarget) Within(ctx context.Context, fn func(context.Context) e
 
 func (target *fakeTarget) Open(_ context.Context, start StartRun) (RunState, error) {
 	if state, found := target.runs[start.ID]; found {
-		if state.Adapter != start.Adapter || state.ManifestDigest != start.ManifestDigest {
+		if state.Adapter != start.Adapter || state.SourceIdentity != start.SourceIdentity || state.SourceSchemaDigest != start.SourceSchemaDigest || state.ManifestDigest != start.ManifestDigest {
 			return RunState{}, ErrSourceDrift
 		}
 		return cloneRun(state), nil
 	}
-	state := RunState{ID: start.ID, Adapter: start.Adapter, ManifestDigest: start.ManifestDigest, Phase: PhaseRunning, Tables: make(map[TableID]TableCheckpoint, len(start.Bounds))}
+	state := RunState{ID: start.ID, Adapter: start.Adapter, SourceIdentity: start.SourceIdentity, SourceSchemaDigest: start.SourceSchemaDigest, ManifestDigest: start.ManifestDigest, Phase: PhaseRunning, Tables: make(map[TableID]TableCheckpoint, len(start.Bounds))}
 	for _, bound := range start.Bounds {
-		state.Tables[bound.Table] = TableCheckpoint{UpperBound: UpperBound{Value: append([]byte(nil), bound.Value...), Empty: bound.Empty}}
+		state.Tables[bound.Table] = TableCheckpoint{SourceIdentity: bound.SourceIdentity, SchemaDigest: bound.SchemaDigest, UpperBound: UpperBound{Value: append([]byte(nil), bound.Value...), Empty: bound.Empty}}
 	}
 	target.runs[start.ID] = state
 	return cloneRun(state), nil
@@ -160,6 +170,18 @@ func (target *fakeTarget) AcquireLease(_ context.Context, runID RunID, now time.
 	return fence, nil
 }
 
+func (target *fakeTarget) RenewLease(_ context.Context, fence LeaseFence, now time.Time, ttl time.Duration) (LeaseFence, error) {
+	if err := target.check(fence); err != nil {
+		return LeaseFence{}, err
+	}
+	if now.IsZero() || ttl <= 0 {
+		return LeaseFence{}, ErrInvalidRun
+	}
+	fence.ExpiresAt = now.Add(ttl)
+	target.leases[fence.RunID] = fence
+	return fence, nil
+}
+
 func (target *fakeTarget) check(fence LeaseFence) error {
 	if !fence.valid() || target.leases[fence.RunID] != fence || !target.clock.Now().Before(fence.ExpiresAt) {
 		return ErrLeaseFenced
@@ -175,7 +197,7 @@ func (target *fakeTarget) Advance(_ context.Context, fence LeaseFence, table Tab
 	if _, found := state.Tables[table]; !found {
 		return ErrInvalidRun
 	}
-	state.Tables[table] = TableCheckpoint{UpperBound: UpperBound{Value: append([]byte(nil), checkpoint.UpperBound.Value...), Empty: checkpoint.UpperBound.Empty}, Cursor: checkpoint.Cursor, Processed: checkpoint.Processed, Complete: checkpoint.Complete}
+	state.Tables[table] = TableCheckpoint{SourceIdentity: checkpoint.SourceIdentity, SchemaDigest: checkpoint.SchemaDigest, UpperBound: UpperBound{Value: append([]byte(nil), checkpoint.UpperBound.Value...), Empty: checkpoint.UpperBound.Empty}, Cursor: checkpoint.Cursor, Processed: checkpoint.Processed, Complete: checkpoint.Complete}
 	target.runs[fence.RunID] = state
 	return nil
 }
@@ -288,6 +310,16 @@ func (target *fakeTarget) ListResultReceipts(_ context.Context, runID RunID) ([]
 	return result, nil
 }
 
+func (target *fakeTarget) AppendReconciliationReceipt(_ context.Context, fence LeaseFence, receipt ReconciliationReceipt) error {
+	if err := target.check(fence); err != nil {
+		return err
+	}
+	if receipt.RunID != fence.RunID || receipt.SourceRowCount != receipt.ResultRowCount || receipt.ResultRowCount != receipt.TargetVerifiedCount || receipt.ComparisonDigest == (Digest{}) {
+		return ErrTargetTampered
+	}
+	return nil
+}
+
 func (target *fakeTarget) VerifyResultReceipt(_ context.Context, _ ResultReceipt) error {
 	if target.tampered {
 		return ErrTargetTampered
@@ -343,13 +375,19 @@ func fixture(disposition Disposition, rows ...SourceRow) (*Service, *fakeSource,
 	adapter := AdapterID("fixture")
 	table := TableID("records")
 	schema := Sum([]byte("records schema"))
-	manifest := AdapterManifest{ID: adapter, Family: FamilyContact, SourceIdentity: "source-ref-01", SourceSchemaDigest: Sum([]byte("source schema")), Tables: []TableSpec{{ID: table, SourceIdentity: "legacy.records", SchemaDigest: schema, PrimaryKey: "id", Watermark: "updated_at", Mode: ModeSnapshot, Policy: "policy"}}}
-	source := &fakeSource{preflight: SourcePreflight{Identity: manifest.SourceIdentity, SchemaDigest: manifest.SourceSchemaDigest, Bounds: []TableBound{{Table: table, SchemaDigest: schema, UpperBound: UpperBound{Value: []byte("2026-08-25T00:00:00Z")}}}}, rows: map[TableID][]SourceRow{table: rows}}
+	policy := Policy{ID: "policy", Disposition: disposition}
+	policyDigest, _ := policy.Digest()
+	manifest := AdapterManifest{ID: adapter, Family: FamilyContact, SourceIdentity: "source-ref-01", SourceSchemaDigest: Sum([]byte("source schema")), Tables: []TableSpec{{ID: table, SourceIdentity: "legacy.records", SchemaDigest: schema, MappingDigest: Sum([]byte("fixture mapper v1")), PolicyDigest: policyDigest, PrimaryKey: "id", Watermark: "updated_at", Mode: ModeSnapshot, Policy: policy.ID}}}
+	source := &fakeSource{preflight: SourcePreflight{Identity: manifest.SourceIdentity, SchemaDigest: manifest.SourceSchemaDigest, Bounds: []TableBound{{Table: table, SourceIdentity: "legacy.records", SchemaDigest: schema, UpperBound: UpperBound{Value: []byte("2026-08-25T00:00:00Z")}}}}, rows: map[TableID][]SourceRow{table: rows}}
 	clock := &fakeClock{now: time.Date(2026, 8, 25, 0, 0, 0, 0, time.UTC)}
 	target := newFakeTarget(clock)
-	service := NewServiceWithClock(clock, target, target, target, target, target, target, target, fakeRegistry{adapter: {Manifest: manifest, Source: source, Mapper: fakeMapper{}, Cursors: lexicalCursors{}}}, fakePolicies{"policy": {ID: "policy", Disposition: disposition}})
+	service := NewServiceWithClock(clock, target, target, target, target, target, target, target, fakeRegistry{adapter: {Manifest: manifest, Source: source, Mapper: fakeMapper{}, Cursors: lexicalCursors{}}}, fakePolicies{"policy": policy})
 	service.limit = 1
 	return service, source, target, adapter
+}
+
+func fixtureReconciler(service *Service, target *fakeTarget) *ReconcileService {
+	return NewFullReconcileServiceWithClock(target.clock, target, target, target, target, target, target, service.mappings, service.policies)
 }
 
 func row(cursor, key, payload string) SourceRow {
@@ -402,6 +440,24 @@ func TestServiceExactReplayAndPayloadConflictFailClosed(t *testing.T) {
 	}
 }
 
+func TestServiceRejectsSemanticRemapOfPreviouslyReceiptedRow(t *testing.T) {
+	service, _, target, adapter := fixture(DispositionImport, row("1", "a", "one"))
+	if _, err := service.Run(context.Background(), RunRequest{ID: "mapping-v1", Adapter: adapter}); err != nil {
+		t.Fatal(err)
+	}
+	definition, _ := service.mappings.Lookup(adapter)
+	v2 := Sum([]byte("fixture mapper v2"))
+	definition.Manifest.Tables[0].MappingDigest = v2
+	definition.Mapper = versionedMapper{digest: v2}
+	service.mappings = fakeRegistry{adapter: definition}
+	if _, err := service.Run(context.Background(), RunRequest{ID: "mapping-v2", Adapter: adapter}); !errors.Is(err, ErrSourcePayloadConflict) {
+		t.Fatalf("semantic remap err=%v", err)
+	}
+	if target.imports != 1 || len(target.receipts) != 1 {
+		t.Fatalf("semantic remap changed target: imports=%d receipts=%d", target.imports, len(target.receipts))
+	}
+}
+
 func TestServiceRepairsCurrentRunReplayReceiptWithoutTargetRewrite(t *testing.T) {
 	service, _, target, adapter := fixture(DispositionImport, row("1", "a", "one"))
 	if _, err := service.Run(context.Background(), RunRequest{ID: "current-replay", Adapter: adapter}); err != nil {
@@ -412,7 +468,7 @@ func TestServiceRepairsCurrentRunReplayReceiptWithoutTargetRewrite(t *testing.T)
 	target.results = nil
 	state := target.runs["current-replay"]
 	state.Phase = PhaseRunning
-	state.Tables["records"] = TableCheckpoint{UpperBound: state.Tables["records"].UpperBound}
+	state.Tables["records"] = TableCheckpoint{SourceIdentity: state.Tables["records"].SourceIdentity, SchemaDigest: state.Tables["records"].SchemaDigest, UpperBound: state.Tables["records"].UpperBound}
 	target.runs["current-replay"] = state
 	got, err := service.Run(context.Background(), RunRequest{ID: "current-replay", Adapter: adapter})
 	if err != nil || got.Replayed != 1 || target.imports != 1 || len(target.results) != 1 || target.runs["current-replay"].Tables["records"].Processed != 1 {
@@ -503,7 +559,7 @@ func TestReconcileDetectsTargetTamper(t *testing.T) {
 	if _, err := service.Run(context.Background(), RunRequest{ID: "reconcile", Adapter: adapter}); err != nil {
 		t.Fatal(err)
 	}
-	reconciler := NewReconcileServiceWithClock(target.clock, target, target, target, target)
+	reconciler := fixtureReconciler(service, target)
 	if err := reconciler.Reconcile(context.Background(), "reconcile"); err != nil {
 		t.Fatalf("clean reconcile = %v", err)
 	}
@@ -512,7 +568,7 @@ func TestReconcileDetectsTargetTamper(t *testing.T) {
 		t.Fatal(err)
 	}
 	tamperedTarget.tampered = true
-	tamperedReconciler := NewReconcileServiceWithClock(tamperedTarget.clock, tamperedTarget, tamperedTarget, tamperedTarget, tamperedTarget)
+	tamperedReconciler := fixtureReconciler(tamperedService, tamperedTarget)
 	if err := tamperedReconciler.Reconcile(context.Background(), "tampered"); !errors.Is(err, ErrTargetTampered) {
 		t.Fatalf("tampered reconcile = %v", err)
 	}
@@ -524,7 +580,7 @@ func TestReconcileRejectsMissingOrDuplicateRunReceipts(t *testing.T) {
 		t.Fatal(err)
 	}
 	target.results = target.results[:1]
-	reconciler := NewReconcileServiceWithClock(target.clock, target, target, target, target)
+	reconciler := fixtureReconciler(service, target)
 	if err := reconciler.Reconcile(context.Background(), "missing"); !errors.Is(err, ErrTargetTampered) {
 		t.Fatalf("missing receipt reconcile = %v", err)
 	}
@@ -540,6 +596,33 @@ func TestServiceRejectsSourcePreflightAndUnboundedStream(t *testing.T) {
 	source.overLimit = true
 	if _, err := service.Run(context.Background(), RunRequest{ID: "bounded", Adapter: adapter}); !errors.Is(err, ErrUnboundedStream) {
 		t.Fatalf("unbounded stream = %v", err)
+	}
+	service, source, _, adapter = fixture(DispositionImport, row("1", "a", "one"))
+	source.preflight.Bounds[0].SourceIdentity = "legacy.other_records"
+	if _, err := service.Run(context.Background(), RunRequest{ID: "table-identity-drift", Adapter: adapter}); !errors.Is(err, ErrSourceDrift) {
+		t.Fatalf("table source identity drift = %v", err)
+	}
+}
+
+func TestServiceRejectsMapperAndPolicySemanticDrift(t *testing.T) {
+	service, _, target, adapter := fixture(DispositionImport, row("1", "a", "one"))
+	definition, _ := service.mappings.Lookup(adapter)
+	definition.Manifest.Tables[0].MappingDigest = Sum([]byte("different mapper"))
+	service.mappings = fakeRegistry{adapter: definition}
+	if _, err := service.Run(context.Background(), RunRequest{ID: "mapper-drift", Adapter: adapter}); !errors.Is(err, ErrSourceDrift) {
+		t.Fatalf("mapper drift = %v", err)
+	}
+	if target.imports != 0 {
+		t.Fatalf("mapper drift wrote target: %d", target.imports)
+	}
+
+	service, _, target, adapter = fixture(DispositionImport, row("1", "a", "one"))
+	service.policies = fakePolicies{"policy": {ID: "policy", Disposition: DispositionArchive}}
+	if _, err := service.Run(context.Background(), RunRequest{ID: "policy-drift", Adapter: adapter}); !errors.Is(err, ErrSourceDrift) {
+		t.Fatalf("policy drift = %v", err)
+	}
+	if target.imports != 0 || target.archives != 0 {
+		t.Fatalf("policy drift wrote target: imports=%d archives=%d", target.imports, target.archives)
 	}
 }
 
@@ -609,6 +692,12 @@ func TestStaticRegistriesSealDefinitions(t *testing.T) {
 	}
 	if _, err := NewStaticMappingRegistry(definition, definition); !errors.Is(err, ErrInvalidManifest) {
 		t.Fatalf("duplicate adapter = %v", err)
+	}
+	first, _ := registry.Lookup(adapter)
+	first.Manifest.Tables[0].SourceIdentity = "mutated"
+	second, _ := registry.Lookup(adapter)
+	if second.Manifest.Tables[0].SourceIdentity == "mutated" {
+		t.Fatal("mapping registry exposed mutable manifest tables")
 	}
 	policies, err := NewStaticPolicyRegistry(Policy{ID: "import", Disposition: DispositionImport})
 	if err != nil || policies == nil {

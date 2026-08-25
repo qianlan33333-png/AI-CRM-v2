@@ -17,10 +17,12 @@ func (fence LeaseFence) valid() bool {
 }
 
 type TableCheckpoint struct {
-	UpperBound UpperBound
-	Cursor     Cursor
-	Processed  uint64
-	Complete   bool
+	SourceIdentity string
+	SchemaDigest   Digest
+	UpperBound     UpperBound
+	Cursor         Cursor
+	Processed      uint64
+	Complete       bool
 }
 
 type RunPhase string
@@ -32,18 +34,22 @@ const (
 )
 
 type RunState struct {
-	ID             RunID
-	Adapter        AdapterID
-	ManifestDigest Digest
-	Phase          RunPhase
-	Tables         map[TableID]TableCheckpoint
+	ID                 RunID
+	Adapter            AdapterID
+	SourceIdentity     string
+	SourceSchemaDigest Digest
+	ManifestDigest     Digest
+	Phase              RunPhase
+	Tables             map[TableID]TableCheckpoint
 }
 
 type StartRun struct {
-	ID             RunID
-	Adapter        AdapterID
-	ManifestDigest Digest
-	Bounds         []TableBound
+	ID                 RunID
+	Adapter            AdapterID
+	SourceIdentity     string
+	SourceSchemaDigest Digest
+	ManifestDigest     Digest
+	Bounds             []TableBound
 }
 
 type TargetUnitOfWork interface {
@@ -56,6 +62,7 @@ type RunStore interface {
 	// AcquireLease must atomically reject a non-expired or malformed existing
 	// lease. A successful takeover creates a new generation/token and expiry.
 	AcquireLease(context.Context, RunID, time.Time, time.Duration) (LeaseFence, error)
+	RenewLease(context.Context, LeaseFence, time.Time, time.Duration) (LeaseFence, error)
 	Advance(context.Context, LeaseFence, TableID, TableCheckpoint) error
 	Finish(context.Context, LeaseFence) error
 	MarkReconciled(context.Context, LeaseFence) error
@@ -68,6 +75,9 @@ type RowReceipt struct {
 	Payload     Digest
 	Field       Digest
 	Disposition Disposition
+	Mapping     Digest
+	Policy      Digest
+	Operation   string
 	Mutation    Digest
 }
 
@@ -116,6 +126,33 @@ type ResultReceiptStore interface {
 	FindResultReceipt(context.Context, RunID, AdapterID, TableID, Digest) (ResultReceipt, bool, error)
 	AppendResultReceipt(context.Context, LeaseFence, ResultReceipt) error
 	ListResultReceipts(context.Context, RunID) ([]ResultReceipt, error)
+}
+
+type ReconciliationReceipt struct {
+	RunID               RunID
+	SourceRowCount      uint64
+	ResultRowCount      uint64
+	TargetVerifiedCount uint64
+	ComparisonDigest    Digest
+}
+
+type ReconciliationReceiptStore interface {
+	AppendReconciliationReceipt(context.Context, LeaseFence, ReconciliationReceipt) error
+}
+
+type Readiness struct {
+	RunID           RunID
+	Phase           RunPhase
+	Ready           bool
+	PendingTables   uint64
+	ProcessedRows   uint64
+	ResultRows      uint64
+	QuarantinedRows uint64
+	Reconciled      bool
+}
+
+type ReadinessStore interface {
+	Readiness(context.Context, RunID) (Readiness, error)
 }
 
 type TargetVerifier interface {

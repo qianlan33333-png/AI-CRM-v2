@@ -16,7 +16,7 @@ func NewStaticMappingRegistry(definitions ...AdapterDefinition) (*StaticMappingR
 		if _, exists := registry.definitions[definition.Manifest.ID]; exists {
 			return nil, ErrInvalidManifest
 		}
-		registry.definitions[definition.Manifest.ID] = definition
+		registry.definitions[definition.Manifest.ID] = cloneDefinition(definition)
 	}
 	return registry, nil
 }
@@ -26,7 +26,12 @@ func (registry *StaticMappingRegistry) Lookup(id AdapterID) (AdapterDefinition, 
 		return AdapterDefinition{}, false
 	}
 	definition, found := registry.definitions[id]
-	return definition, found
+	return cloneDefinition(definition), found
+}
+
+func cloneDefinition(definition AdapterDefinition) AdapterDefinition {
+	definition.Manifest.Tables = append([]TableSpec(nil), definition.Manifest.Tables...)
+	return definition
 }
 
 // StaticPolicyRegistry seals the six closed dispositions at startup.

@@ -98,6 +98,8 @@ type TableSpec struct {
 	ID             TableID
 	SourceIdentity string // registry-owned source table/view identity; never caller supplied.
 	SchemaDigest   Digest
+	MappingDigest  Digest
+	PolicyDigest   Digest
 	PrimaryKey     string
 	Watermark      string
 	Mode           StreamMode
@@ -105,7 +107,7 @@ type TableSpec struct {
 }
 
 func (spec TableSpec) valid() bool {
-	return spec.ID != "" && spec.SourceIdentity != "" && spec.SchemaDigest != (Digest{}) && spec.PrimaryKey != "" && spec.Watermark != "" && spec.Mode.Valid() && spec.Policy != ""
+	return spec.ID != "" && spec.SourceIdentity != "" && spec.SchemaDigest != (Digest{}) && spec.MappingDigest != (Digest{}) && spec.PolicyDigest != (Digest{}) && spec.PrimaryKey != "" && spec.Watermark != "" && spec.Mode.Valid() && spec.Policy != ""
 }
 
 type AdapterManifest struct {
@@ -151,6 +153,13 @@ type Policy struct {
 
 func (policy Policy) valid() bool { return policy.ID != "" && policy.Disposition.Valid() }
 
+func (policy Policy) Digest() (Digest, error) {
+	if !policy.valid() {
+		return Digest{}, ErrUnknownPolicy
+	}
+	return Sum([]byte(string(policy.ID) + "\x00" + string(policy.Disposition))), nil
+}
+
 type UpperBound struct {
 	Value []byte
 	Empty bool
@@ -161,8 +170,9 @@ func (bound UpperBound) valid() bool {
 }
 
 type TableBound struct {
-	Table        TableID
-	SchemaDigest Digest
+	Table          TableID
+	SourceIdentity string
+	SchemaDigest   Digest
 	UpperBound
 }
 
@@ -204,6 +214,7 @@ type SourceAdapter interface {
 }
 
 type Mapper interface {
+	MappingDigest(TableID) Digest
 	Map(context.Context, TableSpec, SourceRow) (MappedRow, error)
 }
 
