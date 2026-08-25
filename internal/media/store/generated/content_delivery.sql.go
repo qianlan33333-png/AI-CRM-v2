@@ -227,6 +227,29 @@ func (q *Queries) GetOutboundMediaEffectBinding(ctx context.Context, arg GetOutb
 	return i, err
 }
 
+const getOutboundMediaReconciliationReceipt = `-- name: GetOutboundMediaReconciliationReceipt :one
+SELECT effect_id, generation, fence, lease_expires_at, evidence_digest, provider_accepted, delivery_proven, eer_receipt_digest, created_at
+FROM outbound_media_reconciliation_receipts
+WHERE effect_id = $1
+`
+
+func (q *Queries) GetOutboundMediaReconciliationReceipt(ctx context.Context, effectID int64) (OutboundMediaReconciliationReceipt, error) {
+	row := q.db.QueryRow(ctx, getOutboundMediaReconciliationReceipt, effectID)
+	var i OutboundMediaReconciliationReceipt
+	err := row.Scan(
+		&i.EffectID,
+		&i.Generation,
+		&i.Fence,
+		&i.LeaseExpiresAt,
+		&i.EvidenceDigest,
+		&i.ProviderAccepted,
+		&i.DeliveryProven,
+		&i.EerReceiptDigest,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const initiateMediaAttachmentUpload = `-- name: InitiateMediaAttachmentUpload :one
 INSERT INTO media_attachment_uploads (file_name, name, description, tags, enabled, expected_size, expected_digest, created_by, state, created_at)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'initiated', $9)
@@ -371,6 +394,42 @@ func (q *Queries) InsertOutboundMediaEffectBinding(ctx context.Context, arg Inse
 	return i, err
 }
 
+const insertOutboundMediaReconciliationReceipt = `-- name: InsertOutboundMediaReconciliationReceipt :exec
+INSERT INTO outbound_media_reconciliation_receipts (
+  effect_id, generation, fence, lease_expires_at, evidence_digest, provider_accepted, delivery_proven, eer_receipt_digest, created_at
+) VALUES (
+  $1, $2, $3, $4, $5,
+  $6, $7, $8, $9
+)
+`
+
+type InsertOutboundMediaReconciliationReceiptParams struct {
+	EffectID         int64              `json:"effect_id"`
+	Generation       int64              `json:"generation"`
+	Fence            int64              `json:"fence"`
+	LeaseExpiresAt   pgtype.Timestamptz `json:"lease_expires_at"`
+	EvidenceDigest   string             `json:"evidence_digest"`
+	ProviderAccepted bool               `json:"provider_accepted"`
+	DeliveryProven   bool               `json:"delivery_proven"`
+	EerReceiptDigest string             `json:"eer_receipt_digest"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) InsertOutboundMediaReconciliationReceipt(ctx context.Context, arg InsertOutboundMediaReconciliationReceiptParams) error {
+	_, err := q.db.Exec(ctx, insertOutboundMediaReconciliationReceipt,
+		arg.EffectID,
+		arg.Generation,
+		arg.Fence,
+		arg.LeaseExpiresAt,
+		arg.EvidenceDigest,
+		arg.ProviderAccepted,
+		arg.DeliveryProven,
+		arg.EerReceiptDigest,
+		arg.CreatedAt,
+	)
+	return err
+}
+
 const listMediaAttachmentUploadParts = `-- name: ListMediaAttachmentUploadParts :many
 SELECT part_number, digest, content FROM media_attachment_upload_parts WHERE upload_id = $1 ORDER BY part_number
 `
@@ -430,6 +489,40 @@ func (q *Queries) ListMediaContentPackageRefs(ctx context.Context, packageID int
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockOutboundMediaEffectForReconcile = `-- name: LockOutboundMediaEffectForReconcile :one
+SELECT binding.effect_id, effect.state, effect.generation, effect.lease_fence, effect.lease_expires_at
+FROM outbound_media_effect_bindings AS binding
+JOIN external_effects AS effect ON effect.id = binding.effect_id
+WHERE binding.content_package_id = $1 AND binding.target_digest = $2
+FOR UPDATE OF binding, effect
+`
+
+type LockOutboundMediaEffectForReconcileParams struct {
+	ContentPackageID int64  `json:"content_package_id"`
+	TargetDigest     string `json:"target_digest"`
+}
+
+type LockOutboundMediaEffectForReconcileRow struct {
+	EffectID       int64              `json:"effect_id"`
+	State          string             `json:"state"`
+	Generation     int64              `json:"generation"`
+	LeaseFence     int64              `json:"lease_fence"`
+	LeaseExpiresAt pgtype.Timestamptz `json:"lease_expires_at"`
+}
+
+func (q *Queries) LockOutboundMediaEffectForReconcile(ctx context.Context, arg LockOutboundMediaEffectForReconcileParams) (LockOutboundMediaEffectForReconcileRow, error) {
+	row := q.db.QueryRow(ctx, lockOutboundMediaEffectForReconcile, arg.ContentPackageID, arg.TargetDigest)
+	var i LockOutboundMediaEffectForReconcileRow
+	err := row.Scan(
+		&i.EffectID,
+		&i.State,
+		&i.Generation,
+		&i.LeaseFence,
+		&i.LeaseExpiresAt,
+	)
+	return i, err
 }
 
 const putMediaAttachmentUploadPart = `-- name: PutMediaAttachmentUploadPart :exec
@@ -497,9 +590,12 @@ func (q *Queries) ReadMediaAttachmentUploadForCompletion(ctx context.Context, up
 }
 
 const readOutboundMediaEffectDetail = `-- name: ReadOutboundMediaEffectDetail :one
-SELECT binding.effect_id, effect.state
+SELECT binding.effect_id, effect.state,
+  COALESCE(receipt.provider_accepted, FALSE) AS provider_accepted,
+  COALESCE(receipt.delivery_proven, FALSE) AS delivery_proven
 FROM outbound_media_effect_bindings AS binding
 JOIN external_effects AS effect ON effect.id = binding.effect_id
+LEFT JOIN outbound_media_reconciliation_receipts AS receipt ON receipt.effect_id = effect.id
 WHERE binding.content_package_id = $1 AND binding.target_digest = $2
 `
 
@@ -509,14 +605,21 @@ type ReadOutboundMediaEffectDetailParams struct {
 }
 
 type ReadOutboundMediaEffectDetailRow struct {
-	EffectID int64  `json:"effect_id"`
-	State    string `json:"state"`
+	EffectID         int64  `json:"effect_id"`
+	State            string `json:"state"`
+	ProviderAccepted bool   `json:"provider_accepted"`
+	DeliveryProven   bool   `json:"delivery_proven"`
 }
 
 func (q *Queries) ReadOutboundMediaEffectDetail(ctx context.Context, arg ReadOutboundMediaEffectDetailParams) (ReadOutboundMediaEffectDetailRow, error) {
 	row := q.db.QueryRow(ctx, readOutboundMediaEffectDetail, arg.ContentPackageID, arg.TargetDigest)
 	var i ReadOutboundMediaEffectDetailRow
-	err := row.Scan(&i.EffectID, &i.State)
+	err := row.Scan(
+		&i.EffectID,
+		&i.State,
+		&i.ProviderAccepted,
+		&i.DeliveryProven,
+	)
 	return i, err
 }
 

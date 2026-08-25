@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -12,6 +13,7 @@ import (
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	mediadb "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store/generated"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -28,6 +30,7 @@ var ErrOutboundMediaEffectBindingConflict = errors.New("outbound media effect bi
 func NewContentDeliveryRepository() *ContentDeliveryRepository { return &ContentDeliveryRepository{} }
 
 var _ mediaapp.ContentDeliveryStore = (*ContentDeliveryRepository)(nil)
+var _ mediaapp.OutboundMediaReconcileStore = (*ContentDeliveryRepository)(nil)
 
 func contentQueries(ctx context.Context) (*mediadb.Queries, error) { return queries(ctx) }
 func (r *ContentDeliveryRepository) Eligible(ctx context.Context, k string, id int64) (bool, error) {
@@ -124,15 +127,97 @@ func (r *ContentDeliveryRepository) ReadOutboundMediaEffectDetail(ctx context.Co
 	if e != nil {
 		return mediaapp.OutboundMediaEffectDetail{}, e
 	}
-	return outboundMediaEffectDetail(contentPackageID, v.EffectID, v.State), nil
+	return outboundMediaEffectDetail(contentPackageID, v.EffectID, v.State, v.ProviderAccepted, v.DeliveryProven), nil
 }
 
-func outboundMediaEffectDetail(contentPackageID, effectID int64, state string) mediaapp.OutboundMediaEffectDetail {
+func outboundMediaEffectDetail(contentPackageID, effectID int64, state string, providerAccepted, deliveryProven bool) mediaapp.OutboundMediaEffectDetail {
 	return mediaapp.OutboundMediaEffectDetail{
 		ContentPackageID: contentPackageID,
 		EffectID:         "eer_" + strconv.FormatInt(effectID, 10),
 		State:            state,
+		ProviderAccepted: providerAccepted,
+		DeliveryProven:   deliveryProven,
 	}
+}
+
+func (r *ContentDeliveryRepository) LockOutboundMediaEffectForReconcile(ctx context.Context, contentPackageID int64, targetDigest string) (mediaapp.OutboundMediaReconcileControl, error) {
+	q, err := contentQueries(ctx)
+	if err != nil {
+		return mediaapp.OutboundMediaReconcileControl{}, err
+	}
+	row, err := q.LockOutboundMediaEffectForReconcile(ctx, mediadb.LockOutboundMediaEffectForReconcileParams{ContentPackageID: contentPackageID, TargetDigest: targetDigest})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return mediaapp.OutboundMediaReconcileControl{}, mediaapp.ErrOutboundMediaReconcileConflict
+	}
+	if err != nil {
+		return mediaapp.OutboundMediaReconcileControl{}, err
+	}
+	if row.EffectID < 1 || !row.LeaseExpiresAt.Valid {
+		return mediaapp.OutboundMediaReconcileControl{}, mediaapp.ErrOutboundMediaReconcileConflict
+	}
+	return mediaapp.OutboundMediaReconcileControl{EffectID: "eer_" + strconv.FormatInt(row.EffectID, 10), State: row.State, Generation: row.Generation, Fence: row.LeaseFence, LeaseExpiresAt: row.LeaseExpiresAt.Time}, nil
+}
+
+func (r *ContentDeliveryRepository) ReadOutboundMediaReconciliationReceipt(ctx context.Context, effectID string) (mediaapp.OutboundMediaReconciliationReceipt, bool, error) {
+	id, err := parseOutboundMediaEffectID(effectID)
+	if err != nil {
+		return mediaapp.OutboundMediaReconciliationReceipt{}, false, mediaapp.ErrOutboundMediaReconcileConflict
+	}
+	q, err := contentQueries(ctx)
+	if err != nil {
+		return mediaapp.OutboundMediaReconciliationReceipt{}, false, err
+	}
+	row, err := q.GetOutboundMediaReconciliationReceipt(ctx, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return mediaapp.OutboundMediaReconciliationReceipt{}, false, nil
+	}
+	if err != nil {
+		return mediaapp.OutboundMediaReconciliationReceipt{}, false, err
+	}
+	if !row.LeaseExpiresAt.Valid {
+		return mediaapp.OutboundMediaReconciliationReceipt{}, false, mediaapp.ErrOutboundMediaReconcileConflict
+	}
+	return mediaapp.OutboundMediaReconciliationReceipt{EffectID: effectID, Generation: row.Generation, Fence: row.Fence, LeaseExpiresAt: row.LeaseExpiresAt.Time, EvidenceDigest: row.EvidenceDigest, ProviderAccepted: row.ProviderAccepted, DeliveryProven: row.DeliveryProven, EERReceiptDigest: row.EerReceiptDigest}, true, nil
+}
+
+func (r *ContentDeliveryRepository) RecordOutboundMediaReconciliationReceipt(ctx context.Context, receipt mediaapp.OutboundMediaReconciliationReceipt) error {
+	id, err := parseOutboundMediaEffectID(receipt.EffectID)
+	if err != nil || receipt.Generation < 1 || receipt.Fence < 1 || receipt.LeaseExpiresAt.IsZero() || !validOutboundMediaDigest(receipt.EvidenceDigest) || !validOutboundMediaDigest(receipt.EERReceiptDigest) || (receipt.DeliveryProven && !receipt.ProviderAccepted) {
+		return mediaapp.ErrOutboundMediaReconcileConflict
+	}
+	q, err := contentQueries(ctx)
+	if err != nil {
+		return err
+	}
+	err = q.InsertOutboundMediaReconciliationReceipt(ctx, mediadb.InsertOutboundMediaReconciliationReceiptParams{EffectID: id, Generation: receipt.Generation, Fence: receipt.Fence, LeaseExpiresAt: stamp(receipt.LeaseExpiresAt), EvidenceDigest: receipt.EvidenceDigest, ProviderAccepted: receipt.ProviderAccepted, DeliveryProven: receipt.DeliveryProven, EerReceiptDigest: receipt.EERReceiptDigest, CreatedAt: stamp(time.Now().UTC())})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func parseOutboundMediaEffectID(value string) (int64, error) {
+	if !strings.HasPrefix(value, "eer_") {
+		return 0, errors.New("effect id")
+	}
+	digits := strings.TrimPrefix(value, "eer_")
+	if digits == "" || digits[0] == '0' {
+		return 0, errors.New("effect id")
+	}
+	for _, digit := range digits {
+		if digit < '0' || digit > '9' {
+			return 0, errors.New("effect id")
+		}
+	}
+	return strconv.ParseInt(digits, 10, 64)
+}
+
+func validOutboundMediaDigest(value string) bool {
+	if !strings.HasPrefix(value, "sha256:") || len(value) != 71 || strings.ToLower(value) != value {
+		return false
+	}
+	_, err := hex.DecodeString(value[7:])
+	return err == nil
 }
 func binding(v mediadb.MediaCampaignDeliveryBinding) mediaport.DeliveryBinding {
 	return mediaport.DeliveryBinding{ID: v.ID, CampaignCode: v.CampaignCode, PlanID: v.PlanID, PackageID: v.PackageID, GroupInviteID: v.GroupInviteID, Version: v.Version}

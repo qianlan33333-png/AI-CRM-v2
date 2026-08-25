@@ -79,10 +79,33 @@ FROM outbound_media_effect_bindings
 WHERE content_package_id = sqlc.arg(content_package_id) AND target_digest = sqlc.arg(target_digest);
 
 -- name: ReadOutboundMediaEffectDetail :one
-SELECT binding.effect_id, effect.state
+SELECT binding.effect_id, effect.state,
+  COALESCE(receipt.provider_accepted, FALSE) AS provider_accepted,
+  COALESCE(receipt.delivery_proven, FALSE) AS delivery_proven
 FROM outbound_media_effect_bindings AS binding
 JOIN external_effects AS effect ON effect.id = binding.effect_id
+LEFT JOIN outbound_media_reconciliation_receipts AS receipt ON receipt.effect_id = effect.id
 WHERE binding.content_package_id = sqlc.arg(content_package_id) AND binding.target_digest = sqlc.arg(target_digest);
+
+-- name: LockOutboundMediaEffectForReconcile :one
+SELECT binding.effect_id, effect.state, effect.generation, effect.lease_fence, effect.lease_expires_at
+FROM outbound_media_effect_bindings AS binding
+JOIN external_effects AS effect ON effect.id = binding.effect_id
+WHERE binding.content_package_id = sqlc.arg(content_package_id) AND binding.target_digest = sqlc.arg(target_digest)
+FOR UPDATE OF binding, effect;
+
+-- name: GetOutboundMediaReconciliationReceipt :one
+SELECT effect_id, generation, fence, lease_expires_at, evidence_digest, provider_accepted, delivery_proven, eer_receipt_digest, created_at
+FROM outbound_media_reconciliation_receipts
+WHERE effect_id = sqlc.arg(effect_id);
+
+-- name: InsertOutboundMediaReconciliationReceipt :exec
+INSERT INTO outbound_media_reconciliation_receipts (
+  effect_id, generation, fence, lease_expires_at, evidence_digest, provider_accepted, delivery_proven, eer_receipt_digest, created_at
+) VALUES (
+  sqlc.arg(effect_id), sqlc.arg(generation), sqlc.arg(fence), sqlc.arg(lease_expires_at), sqlc.arg(evidence_digest),
+  sqlc.arg(provider_accepted), sqlc.arg(delivery_proven), sqlc.arg(eer_receipt_digest), sqlc.arg(created_at)
+);
 
 -- name: ListMediaAttachmentUploadParts :many
 SELECT part_number, digest, content FROM media_attachment_upload_parts WHERE upload_id = sqlc.arg(upload_id) ORDER BY part_number;

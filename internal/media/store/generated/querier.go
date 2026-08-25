@@ -41,6 +41,7 @@ type Querier interface {
 	GetMediaMiniProgramReceipt(ctx context.Context, arg GetMediaMiniProgramReceiptParams) (GetMediaMiniProgramReceiptRow, error)
 	GetMediaThumbnailCache(ctx context.Context, imageID int64) (GetMediaThumbnailCacheRow, error)
 	GetOutboundMediaEffectBinding(ctx context.Context, arg GetOutboundMediaEffectBindingParams) (OutboundMediaEffectBinding, error)
+	GetOutboundMediaReconciliationReceipt(ctx context.Context, effectID int64) (OutboundMediaReconciliationReceipt, error)
 	InitiateMediaAttachmentUpload(ctx context.Context, arg InitiateMediaAttachmentUploadParams) (InitiateMediaAttachmentUploadRow, error)
 	InsertMediaAttachment(ctx context.Context, arg InsertMediaAttachmentParams) (InsertMediaAttachmentRow, error)
 	InsertMediaAttachmentBlob(ctx context.Context, arg InsertMediaAttachmentBlobParams) error
@@ -55,6 +56,7 @@ type Querier interface {
 	// Only the 0357 explicit-false branch requires migration 47's enabled column.
 	InsertMediaImageWithEnabled(ctx context.Context, arg InsertMediaImageWithEnabledParams) (InsertMediaImageWithEnabledRow, error)
 	InsertOutboundMediaEffectBinding(ctx context.Context, arg InsertOutboundMediaEffectBindingParams) (OutboundMediaEffectBinding, error)
+	InsertOutboundMediaReconciliationReceipt(ctx context.Context, arg InsertOutboundMediaReconciliationReceiptParams) error
 	ListMediaAttachmentUploadParts(ctx context.Context, uploadID int64) ([]ListMediaAttachmentUploadPartsRow, error)
 	ListMediaAttachments(ctx context.Context, arg ListMediaAttachmentsParams) ([]ListMediaAttachmentsRow, error)
 	ListMediaContentPackageRefs(ctx context.Context, packageID int64) ([]ListMediaContentPackageRefsRow, error)
@@ -72,6 +74,7 @@ type Querier interface {
 	LockMediaImageMetadata(ctx context.Context, imageID int64) (LockMediaImageMetadataRow, error)
 	LockMediaImageReference(ctx context.Context, id int64) (int64, error)
 	LockMediaMiniProgram(ctx context.Context, id int64) (int64, error)
+	LockOutboundMediaEffectForReconcile(ctx context.Context, arg LockOutboundMediaEffectForReconcileParams) (LockOutboundMediaEffectForReconcileRow, error)
 	PutMediaAttachmentUploadPart(ctx context.Context, arg PutMediaAttachmentUploadPartParams) error
 	ReadMediaAttachment(ctx context.Context, attachmentID int64) (ReadMediaAttachmentRow, error)
 	ReadMediaAttachmentUploadForCompletion(ctx context.Context, uploadID int64) (ReadMediaAttachmentUploadForCompletionRow, error)

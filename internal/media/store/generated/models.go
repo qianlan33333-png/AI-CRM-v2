@@ -57,3 +57,15 @@ type OutboundMediaEffectBinding struct {
 	EffectID         int64              `json:"effect_id"`
 	CreatedAt        pgtype.Timestamptz `json:"created_at"`
 }
+
+type OutboundMediaReconciliationReceipt struct {
+	EffectID         int64              `json:"effect_id"`
+	Generation       int64              `json:"generation"`
+	Fence            int64              `json:"fence"`
+	LeaseExpiresAt   pgtype.Timestamptz `json:"lease_expires_at"`
+	EvidenceDigest   string             `json:"evidence_digest"`
+	ProviderAccepted bool               `json:"provider_accepted"`
+	DeliveryProven   bool               `json:"delivery_proven"`
+	EerReceiptDigest string             `json:"eer_receipt_digest"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}

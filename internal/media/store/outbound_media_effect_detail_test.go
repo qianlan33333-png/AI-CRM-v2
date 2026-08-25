@@ -7,12 +7,12 @@ import (
 )
 
 func TestOutboundMediaEffectDetailIsOpaqueAndPIIMinimal(t *testing.T) {
-	detail := outboundMediaEffectDetail(42, 7, "accepted")
-	if detail.ContentPackageID != 42 || detail.EffectID != "eer_7" || detail.State != "accepted" {
+	detail := outboundMediaEffectDetail(42, 7, "reconciled", true, true)
+	if detail.ContentPackageID != 42 || detail.EffectID != "eer_7" || detail.State != "reconciled" {
 		t.Fatalf("detail = %#v", detail)
 	}
-	if detail.ProviderAccepted || detail.DeliveryProven {
-		t.Fatalf("unproven delivery detail = %#v", detail)
+	if !detail.ProviderAccepted || !detail.DeliveryProven {
+		t.Fatalf("verified delivery detail = %#v", detail)
 	}
 	for index := 0; index < reflect.TypeOf(detail).NumField(); index++ {
 		field := reflect.TypeOf(detail).Field(index)

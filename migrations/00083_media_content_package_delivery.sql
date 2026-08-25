@@ -118,16 +118,45 @@ CREATE TABLE public.outbound_media_effect_bindings (
   UNIQUE (content_package_id, target_digest)
 );
 
+-- Reconciliation is a human-verified local fact only. The evidence is a
+-- digest, never a provider response, recipient, payload, or receipt body.
+CREATE TABLE public.outbound_media_reconciliation_receipts (
+  effect_id BIGINT PRIMARY KEY REFERENCES public.external_effects(id) ON DELETE RESTRICT,
+  generation BIGINT NOT NULL CHECK (generation > 0),
+  fence BIGINT NOT NULL CHECK (fence > 0),
+  lease_expires_at TIMESTAMPTZ NOT NULL,
+  evidence_digest TEXT NOT NULL CHECK (evidence_digest ~ '^sha256:[0-9a-f]{64}$'),
+  provider_accepted BOOLEAN NOT NULL,
+  delivery_proven BOOLEAN NOT NULL,
+  eer_receipt_digest TEXT NOT NULL CHECK (eer_receipt_digest ~ '^sha256:[0-9a-f]{64}$'),
+  created_at TIMESTAMPTZ NOT NULL,
+  CHECK (NOT delivery_proven OR provider_accepted)
+);
+
+-- +goose StatementBegin
+CREATE FUNCTION public.aicrm_outbound_media_reconciliation_receipt_immutable() RETURNS trigger
+LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+BEGIN
+  RAISE EXCEPTION 'outbound media reconciliation receipts are immutable' USING ERRCODE = '55000';
+END $$;
+-- +goose StatementEnd
+CREATE TRIGGER outbound_media_reconciliation_receipts_immutable
+BEFORE UPDATE OR DELETE ON public.outbound_media_reconciliation_receipts
+FOR EACH ROW EXECUTE FUNCTION public.aicrm_outbound_media_reconciliation_receipt_immutable();
+
 -- +goose Down
-LOCK TABLE public.outbound_media_effect_bindings, public.outbound_media_acceptances, public.media_campaign_delivery_bindings, public.media_attachment_uploads, public.media_content_packages IN SHARE ROW EXCLUSIVE MODE;
+LOCK TABLE public.outbound_media_reconciliation_receipts, public.outbound_media_effect_bindings, public.outbound_media_acceptances, public.media_campaign_delivery_bindings, public.media_attachment_uploads, public.media_content_packages IN SHARE ROW EXCLUSIVE MODE;
 -- +goose StatementBegin
 DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM public.outbound_media_effect_bindings) OR EXISTS (SELECT 1 FROM public.outbound_media_acceptances) OR EXISTS (SELECT 1 FROM public.media_campaign_delivery_bindings)
+  IF EXISTS (SELECT 1 FROM public.outbound_media_reconciliation_receipts) OR EXISTS (SELECT 1 FROM public.outbound_media_effect_bindings) OR EXISTS (SELECT 1 FROM public.outbound_media_acceptances) OR EXISTS (SELECT 1 FROM public.media_campaign_delivery_bindings)
      OR EXISTS (SELECT 1 FROM public.media_attachment_uploads) OR EXISTS (SELECT 1 FROM public.media_content_packages) THEN
     RAISE EXCEPTION 'cannot roll back populated media content package and delivery facts' USING ERRCODE = '55000';
   END IF;
 END $$;
 -- +goose StatementEnd
+DROP TRIGGER outbound_media_reconciliation_receipts_immutable ON public.outbound_media_reconciliation_receipts;
+DROP FUNCTION public.aicrm_outbound_media_reconciliation_receipt_immutable();
+DROP TABLE public.outbound_media_reconciliation_receipts;
 DROP TABLE public.outbound_media_effect_bindings;
 DROP TABLE public.outbound_media_acceptances;
 DROP TABLE public.media_campaign_delivery_bindings;
