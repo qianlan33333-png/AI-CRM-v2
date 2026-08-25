@@ -205,7 +205,7 @@ paths:
         - {name: cursor, in: query, required: false, schema: {type: string, maxLength: 512}}
         - {name: limit, in: query, required: false, schema: {type: integer, format: int32, minimum: 1, maximum: 100, default: 20}}
       responses:
-        "200": {description: Safe local timeline projection without actors, payloads, identities, or receipts, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarTimelineResponse"}}}}
+        "200": {description: "Safe local timeline projection without actors, payloads, identities, or receipts", content: {application/json: {schema: {$ref: "#/components/schemas/SidebarTimelineResponse"}}}}
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
@@ -230,7 +230,7 @@ paths:
         - {name: cursor, in: query, required: false, schema: {type: string, maxLength: 512}}
         - {name: limit, in: query, required: false, schema: {type: integer, format: int32, minimum: 1, maximum: 100, default: 50}}
       responses:
-        "200": {description: Safe local chat metadata without body, actors, payloads, identities, or provider receipts, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarChatActivityResponse"}}}}
+        "200": {description: "Safe local chat metadata without body, actors, payloads, identities, or provider receipts", content: {application/json: {schema: {$ref: "#/components/schemas/SidebarChatActivityResponse"}}}}
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}

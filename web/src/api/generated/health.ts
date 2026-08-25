@@ -975,6 +975,63 @@ export interface SidebarThumbnailPendingResponse {
   safety: SidebarSafety;
 }
 
+export interface SidebarTimelineItem {
+  /** @minimum 1 */
+  id: number;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  event_type: string;
+  occurred_at: string;
+}
+
+export interface SidebarTimelineResponse {
+  /** @maxItems 100 */
+  items: SidebarTimelineItem[];
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  next_cursor?: string;
+  safety: SidebarSafety;
+}
+
+export type SidebarChatActivityItemChatType =
+  (typeof SidebarChatActivityItemChatType)[keyof typeof SidebarChatActivityItemChatType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarChatActivityItemChatType = {
+  private: "private",
+  group: "group",
+} as const;
+
+export interface SidebarChatActivityItem {
+  chat_type: SidebarChatActivityItemChatType;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  message_type: string;
+  sent_at: string;
+}
+
+export interface SidebarChatActivityResponse {
+  /** @maxItems 100 */
+  items: SidebarChatActivityItem[];
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  next_cursor?: string;
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  previous_cursor?: string;
+  safety: SidebarSafety;
+}
+
 export interface AdminOpsCategorySettings {
   enabled?: boolean;
 }
@@ -15416,6 +15473,40 @@ export type GetSidebarAgentConfigParams = {
   url: string;
 };
 
+export type ListSidebarTimelineParams = {
+  /**
+   * @maxLength 512
+   */
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type ListSidebarChatActivityParams = {
+  chat_type?: ListSidebarChatActivityChatType;
+  /**
+   * @maxLength 512
+   */
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type ListSidebarChatActivityChatType =
+  (typeof ListSidebarChatActivityChatType)[keyof typeof ListSidebarChatActivityChatType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListSidebarChatActivityChatType = {
+  private: "private",
+  group: "group",
+} as const;
+
 export type UpdateSidebarProfileBodyPatch = {
   /** @maxLength 200 */
   source?: string;
@@ -17839,6 +17930,184 @@ export const getSidebarAgentConfig = async (
     status: res.status,
     headers: res.headers,
   } as getSidebarAgentConfigResponse;
+};
+
+/**
+ * @summary Read the bound customer's safe local activity timeline
+ */
+export type listSidebarTimelineResponse200 = {
+  data: SidebarTimelineResponse;
+  status: 200;
+};
+
+export type listSidebarTimelineResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSidebarTimelineResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSidebarTimelineResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSidebarTimelineResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listSidebarTimelineResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSidebarTimelineResponseSuccess =
+  listSidebarTimelineResponse200 & {
+    headers: Headers;
+  };
+export type listSidebarTimelineResponseError = (
+  | listSidebarTimelineResponse400
+  | listSidebarTimelineResponse401
+  | listSidebarTimelineResponse403
+  | listSidebarTimelineResponse404
+  | listSidebarTimelineResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSidebarTimelineResponse =
+  listSidebarTimelineResponseSuccess | listSidebarTimelineResponseError;
+
+export const getListSidebarTimelineUrl = (
+  params?: ListSidebarTimelineParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/sidebar/v2/timeline?${stringifiedParams}`
+    : `/api/sidebar/v2/timeline`;
+};
+
+export const listSidebarTimeline = async (
+  params?: ListSidebarTimelineParams,
+  options?: RequestInit,
+): Promise<listSidebarTimelineResponse> => {
+  const res = await fetch(getListSidebarTimelineUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSidebarTimelineResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSidebarTimelineResponse;
+};
+
+/**
+ * @summary Read the bound customer's safe local chat-activity metadata
+ */
+export type listSidebarChatActivityResponse200 = {
+  data: SidebarChatActivityResponse;
+  status: 200;
+};
+
+export type listSidebarChatActivityResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSidebarChatActivityResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSidebarChatActivityResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSidebarChatActivityResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listSidebarChatActivityResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSidebarChatActivityResponseSuccess =
+  listSidebarChatActivityResponse200 & {
+    headers: Headers;
+  };
+export type listSidebarChatActivityResponseError = (
+  | listSidebarChatActivityResponse400
+  | listSidebarChatActivityResponse401
+  | listSidebarChatActivityResponse403
+  | listSidebarChatActivityResponse404
+  | listSidebarChatActivityResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSidebarChatActivityResponse =
+  listSidebarChatActivityResponseSuccess | listSidebarChatActivityResponseError;
+
+export const getListSidebarChatActivityUrl = (
+  params?: ListSidebarChatActivityParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/sidebar/v2/chat-activity?${stringifiedParams}`
+    : `/api/sidebar/v2/chat-activity`;
+};
+
+export const listSidebarChatActivity = async (
+  params?: ListSidebarChatActivityParams,
+  options?: RequestInit,
+): Promise<listSidebarChatActivityResponse> => {
+  const res = await fetch(getListSidebarChatActivityUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSidebarChatActivityResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSidebarChatActivityResponse;
 };
 
 /**
