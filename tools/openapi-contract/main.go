@@ -72,6 +72,7 @@ const (
 	p4HXCSenderManagementEvidence              = "P4-HXC-SENDER-MANAGEMENT-2026-08-20"
 	p4ExternalEffectsReadonlyEvidence          = "P4-EXTERNAL-EFFECTS-READONLY-2026-08-21"
 	p4AIAudienceConfigurationEvidence          = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22"
+	p4AIAudienceConfigurationClosureEvidence   = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-00084-2026-08-25"
 	p4GroupOpsLocalEvidence                    = "P4-GROUP-OPS-LOCAL-ONLY-2026-08-23"
 	p4ServicePeriodMembersEvidence             = "P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23"
 	p4OrderSafeExportEvidence                  = "P4-ORDER-SAFE-EXPORT-2026-08-23"
@@ -274,6 +275,9 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"acceptOutboundMediaContentPackage":          {"/api/admin/outbound-media/accept", "POST", p4MediaContentDeliveryEvidence, "media.library.write", "human_session", "internal", "media.outbound_eer.accepted_envelope", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getOutboundMediaEffectDetail":               {"/api/admin/outbound-media/{content_package_id}/effects/{target_ref}", "GET", p4MediaContentDeliveryEvidence, "media.library.read", "human_session", "internal", "media.outbound_eer.pii_minimal_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"reconcileOutboundMediaEffect":               {"/api/admin/outbound-media/{content_package_id}/effects/{target_ref}/reconcile", "POST", p4MediaContentDeliveryEvidence, "media.library.write", "human_session", "internal", "media.outbound_eer.manual_reconciliation", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"getAIAudienceConfigurationVersion":          {"/api/admin/ai-audience/packages/{package_id}/template-config", "GET", p4AIAudienceConfigurationClosureEvidence, "segments.read", "human_session", "internal", "ai_audience.configuration_versions.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	"putAIAudienceConfigurationVersion":          {"/api/admin/ai-audience/packages/{package_id}/template-config", "PUT", p4AIAudienceConfigurationClosureEvidence, "segments.write", "human_session", "internal", "ai_audience.configuration_versions.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"listAIAudienceSendRecordProjections":        {"/api/admin/ai-audience/packages/{package_id}/send-records", "GET", p4AIAudienceConfigurationClosureEvidence, "segments.read", "human_session", "internal", "ai_audience.send_record_projections.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 }
 
 var nativePackageExternalEffects = map[string]string{

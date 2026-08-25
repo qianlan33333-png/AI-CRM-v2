@@ -2140,6 +2140,8 @@ export interface AIAudienceAutomationBinding {
   /** @minimum 1 */
   automation_agent_id: number;
   /** @minimum 1 */
+  version: number;
+  /** @minimum 1 */
   created_by: number;
   /** @minimum 1 */
   updated_by: number;
@@ -2150,6 +2152,8 @@ export interface AIAudienceAutomationBinding {
 export interface AIAudienceAutomationBindingPutRequest {
   /** @minimum 1 */
   automation_agent_id: number;
+  /** @minimum 0 */
+  expected_version: number;
 }
 
 /**
@@ -2165,10 +2169,90 @@ export interface AIAudienceAutomationBindingResponse {
   real_external_call_executed: boolean;
 }
 
+export interface AIAudienceAutomationBindingDeleteRequest {
+  /** @minimum 0 */
+  expected_version: number;
+}
+
 export interface AIAudienceAutomationBindingDeleteResponse {
   /** @minimum 1 */
   package_id: number;
   deleted: boolean;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type AIAudienceConfigurationVersionTemplateConfig = {
+  [key: string]: unknown;
+};
+
+export type AIAudienceConfigurationVersionFilterConfig = {
+  [key: string]: unknown;
+};
+
+export interface AIAudienceConfigurationVersion {
+  /** @minimum 1 */
+  package_id: number;
+  /** @minimum 1 */
+  version: number;
+  template_config: AIAudienceConfigurationVersionTemplateConfig;
+  filter_config: AIAudienceConfigurationVersionFilterConfig;
+  /** @minimum 1 */
+  created_by: number;
+  created_at: string;
+}
+
+export type AIAudienceConfigurationPutRequestTemplateConfig = {
+  [key: string]: unknown;
+};
+
+export type AIAudienceConfigurationPutRequestFilterConfig = {
+  [key: string]: unknown;
+};
+
+export interface AIAudienceConfigurationPutRequest {
+  /** @minimum 0 */
+  expected_version: number;
+  template_config: AIAudienceConfigurationPutRequestTemplateConfig;
+  filter_config: AIAudienceConfigurationPutRequestFilterConfig;
+}
+
+/**
+ * @nullable
+ */
+export type AIAudienceConfigurationResponseConfiguration =
+  AIAudienceConfigurationVersion | null;
+
+export interface AIAudienceConfigurationResponse {
+  /** @nullable */
+  configuration: AIAudienceConfigurationResponseConfiguration;
+  local_projection: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type AIAudienceSendRecordProjectionState =
+  (typeof AIAudienceSendRecordProjectionState)[keyof typeof AIAudienceSendRecordProjectionState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceSendRecordProjectionState = {
+  pending: "pending",
+  unknown: "unknown",
+  sent: "sent",
+  failed: "failed",
+} as const;
+
+export interface AIAudienceSendRecordProjection {
+  record_id: string;
+  state: AIAudienceSendRecordProjectionState;
+  occurred_at: string;
+  projected_at: string;
+}
+
+export interface AIAudienceSendRecordListResponse {
+  /** @minimum 1 */
+  package_id: number;
+  /** @maxItems 100 */
+  items: AIAudienceSendRecordProjection[];
   local_projection: boolean;
   real_external_call_executed: boolean;
 }
@@ -44626,11 +44710,14 @@ export const getDeleteAIAudienceAutomationBindingUrl = (packageId: number) => {
 
 export const deleteAIAudienceAutomationBinding = async (
   packageId: number,
+  aIAudienceAutomationBindingDeleteRequest: AIAudienceAutomationBindingDeleteRequest,
   options?: RequestInit,
 ): Promise<deleteAIAudienceAutomationBindingResponse> => {
   const res = await fetch(getDeleteAIAudienceAutomationBindingUrl(packageId), {
     ...options,
     method: "DELETE",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceAutomationBindingDeleteRequest),
   });
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
@@ -44822,6 +44909,269 @@ export const replaceAIAudiencePackageSenders = async (
     status: res.status,
     headers: res.headers,
   } as replaceAIAudiencePackageSendersResponse;
+};
+
+/**
+ * This is a V2-native local snapshot, not the legacy template catalogue or preview flow.
+ * @summary Read the current immutable CRM-local AI Audience configuration snapshot
+ */
+export type getAIAudienceConfigurationVersionResponse200 = {
+  data: AIAudienceConfigurationResponse;
+  status: 200;
+};
+
+export type getAIAudienceConfigurationVersionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getAIAudienceConfigurationVersionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAIAudienceConfigurationVersionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAIAudienceConfigurationVersionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getAIAudienceConfigurationVersionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getAIAudienceConfigurationVersionResponseSuccess =
+  getAIAudienceConfigurationVersionResponse200 & {
+    headers: Headers;
+  };
+export type getAIAudienceConfigurationVersionResponseError = (
+  | getAIAudienceConfigurationVersionResponse400
+  | getAIAudienceConfigurationVersionResponse401
+  | getAIAudienceConfigurationVersionResponse403
+  | getAIAudienceConfigurationVersionResponse404
+  | getAIAudienceConfigurationVersionResponse503
+) & {
+  headers: Headers;
+};
+
+export type getAIAudienceConfigurationVersionResponse =
+  | getAIAudienceConfigurationVersionResponseSuccess
+  | getAIAudienceConfigurationVersionResponseError;
+
+export const getGetAIAudienceConfigurationVersionUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/template-config`;
+};
+
+export const getAIAudienceConfigurationVersion = async (
+  packageId: number,
+  options?: RequestInit,
+): Promise<getAIAudienceConfigurationVersionResponse> => {
+  const res = await fetch(getGetAIAudienceConfigurationVersionUrl(packageId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAIAudienceConfigurationVersionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAIAudienceConfigurationVersionResponse;
+};
+
+/**
+ * Writes only a local immutable template/filter snapshot. It does not preview, activate, enqueue, send, or call a provider.
+ * @summary Append one CRM-local AI Audience configuration snapshot with CAS
+ */
+export type putAIAudienceConfigurationVersionResponse200 = {
+  data: AIAudienceConfigurationResponse;
+  status: 200;
+};
+
+export type putAIAudienceConfigurationVersionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type putAIAudienceConfigurationVersionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type putAIAudienceConfigurationVersionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type putAIAudienceConfigurationVersionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type putAIAudienceConfigurationVersionResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type putAIAudienceConfigurationVersionResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type putAIAudienceConfigurationVersionResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type putAIAudienceConfigurationVersionResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type putAIAudienceConfigurationVersionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type putAIAudienceConfigurationVersionResponseSuccess =
+  putAIAudienceConfigurationVersionResponse200 & {
+    headers: Headers;
+  };
+export type putAIAudienceConfigurationVersionResponseError = (
+  | putAIAudienceConfigurationVersionResponse400
+  | putAIAudienceConfigurationVersionResponse401
+  | putAIAudienceConfigurationVersionResponse403
+  | putAIAudienceConfigurationVersionResponse404
+  | putAIAudienceConfigurationVersionResponse409
+  | putAIAudienceConfigurationVersionResponse413
+  | putAIAudienceConfigurationVersionResponse415
+  | putAIAudienceConfigurationVersionResponse422
+  | putAIAudienceConfigurationVersionResponse503
+) & {
+  headers: Headers;
+};
+
+export type putAIAudienceConfigurationVersionResponse =
+  | putAIAudienceConfigurationVersionResponseSuccess
+  | putAIAudienceConfigurationVersionResponseError;
+
+export const getPutAIAudienceConfigurationVersionUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/template-config`;
+};
+
+export const putAIAudienceConfigurationVersion = async (
+  packageId: number,
+  aIAudienceConfigurationPutRequest: AIAudienceConfigurationPutRequest,
+  options?: RequestInit,
+): Promise<putAIAudienceConfigurationVersionResponse> => {
+  const res = await fetch(getPutAIAudienceConfigurationVersionUrl(packageId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceConfigurationPutRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: putAIAudienceConfigurationVersionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as putAIAudienceConfigurationVersionResponse;
+};
+
+/**
+ * A record state is not a provider acceptance, send, or delivery claim. No content, recipient, sender, credential, or provider response is returned.
+ * @summary Read PII-minimal local AI Audience send-record projections
+ */
+export type listAIAudienceSendRecordProjectionsResponse200 = {
+  data: AIAudienceSendRecordListResponse;
+  status: 200;
+};
+
+export type listAIAudienceSendRecordProjectionsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAIAudienceSendRecordProjectionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAIAudienceSendRecordProjectionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAIAudienceSendRecordProjectionsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listAIAudienceSendRecordProjectionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAIAudienceSendRecordProjectionsResponseSuccess =
+  listAIAudienceSendRecordProjectionsResponse200 & {
+    headers: Headers;
+  };
+export type listAIAudienceSendRecordProjectionsResponseError = (
+  | listAIAudienceSendRecordProjectionsResponse400
+  | listAIAudienceSendRecordProjectionsResponse401
+  | listAIAudienceSendRecordProjectionsResponse403
+  | listAIAudienceSendRecordProjectionsResponse404
+  | listAIAudienceSendRecordProjectionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAIAudienceSendRecordProjectionsResponse =
+  | listAIAudienceSendRecordProjectionsResponseSuccess
+  | listAIAudienceSendRecordProjectionsResponseError;
+
+export const getListAIAudienceSendRecordProjectionsUrl = (
+  packageId: number,
+) => {
+  return `/api/admin/ai-audience/packages/${packageId}/send-records`;
+};
+
+export const listAIAudienceSendRecordProjections = async (
+  packageId: number,
+  options?: RequestInit,
+): Promise<listAIAudienceSendRecordProjectionsResponse> => {
+  const res = await fetch(
+    getListAIAudienceSendRecordProjectionsUrl(packageId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAIAudienceSendRecordProjectionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAIAudienceSendRecordProjectionsResponse;
 };
 
 /**

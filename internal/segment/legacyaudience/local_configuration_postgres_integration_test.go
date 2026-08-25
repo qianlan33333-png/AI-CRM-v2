@@ -49,6 +49,7 @@ func TestLocalConfigurationSQLRepositoryPG16(t *testing.T) {
 	defer transaction.Rollback(ctx) //nolint:errcheck -- fixture cleanup.
 
 	assertLocalConfigurationSchema(t, ctx, transaction)
+	ensureLocalConfigurationActor(t, ctx, transaction)
 	firstPackage := insertLocalConfigurationPackage(t, ctx, transaction, "first")
 	secondPackage := insertLocalConfigurationPackage(t, ctx, transaction, "second")
 	agentID := insertLocalConfigurationAgent(t, ctx, transaction)
@@ -258,6 +259,18 @@ SELECT
 	}
 	if bindings == "" || senders == "" || receipts == "" || configurations == "" || senderSecurity == "" || sendRecords == "" {
 		t.Fatalf("required tables missing: bindings=%q senders=%q receipts=%q configurations=%q sender_security=%q send_records=%q", bindings, senders, receipts, configurations, senderSecurity, sendRecords)
+	}
+}
+
+func ensureLocalConfigurationActor(t *testing.T, ctx context.Context, transaction pgx.Tx) {
+	t.Helper()
+	if _, err := transaction.Exec(ctx, `
+INSERT INTO public.admin_users
+  (id, auth_provider, wecom_corp_id, provider_subject_id, display_name, role)
+OVERRIDING SYSTEM VALUE
+VALUES (7, 'wecom', 'local-configuration-pg16', 'actor-7', 'Local Configuration PG16', 'admin')
+ON CONFLICT (id) DO NOTHING`); err != nil {
+		t.Fatal(err)
 	}
 }
 
