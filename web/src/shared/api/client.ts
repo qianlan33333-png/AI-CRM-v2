@@ -26,7 +26,7 @@ import type {
   WecomTag,
 } from './types';
 import { SEED_DB, deepCopy } from './mockData';
-import { archiveAudiencePackage, archiveTagDto, copyAudiencePackageDto, deleteAudienceGroup as deleteAudienceGroupDto, queueTagSyncDto, readAdminPage, readRadarEvents, saveAudienceGroup as saveAudienceGroupDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setRadarEnabled, type AdminReadContext } from '../../api/admin';
+import { archiveAudiencePackage, archiveTagDto, copyAudiencePackageDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, queueTagSyncDto, readAdminPage, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveRadarLinkDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setRadarEnabled, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
 
@@ -40,6 +40,7 @@ export interface AdminApi {
   toggleRadarLink(id: number, enabled: boolean): Promise<void>;
   saveRadarLink(input: RadarLinkInput): Promise<RadarLink>;
   listRadarEvents(linkId: number): Promise<RadarEvent[]>;
+  getRadarSharePath(linkId: number): Promise<string>;
   /** 上传雷达图片素材（multipart），返回可引用的素材描述 */
   uploadRadarImage(file: File): Promise<RadarMedia>;
   /** 上传雷达 PDF 素材 */
@@ -79,49 +80,18 @@ export interface AdminApi {
 
   /* ---- 素材库（按名称定位，null = 新建） ---- */
   saveImageItem(originalName: string | null, patch: Partial<ImageItem> & { name: string }): Promise<void>;
-  deleteImageItem(name: string): Promise<void>;
+  deleteImageItem(item: ImageItem): Promise<void>;
   saveMpItem(originalName: string | null, patch: Partial<MpItem> & { name: string }): Promise<void>;
-  deleteMpItem(name: string): Promise<void>;
+  deleteMpItem(item: MpItem): Promise<void>;
   saveAttachItem(originalName: string | null, patch: Partial<AttachItem> & { name: string }): Promise<void>;
-  deleteAttachItem(name: string): Promise<void>;
+  deleteAttachItem(item: AttachItem): Promise<void>;
+  downloadAttachItem(item: AttachItem): Promise<Blob>;
 
   /* ---- 配置中心 ---- */
   toggleConfigCategory(key: string, on: boolean): Promise<void>;
   saveConfigCategory(key: string, values: Record<string, string>, switches: Record<string, boolean>): Promise<void>;
   checkConfigCategory(key: string): Promise<string>;
 }
-
-/* ================= 遗留壳 Adapter（待逐屏用 generated operation 替换） ================= */
-
-export const ROUTES = {
-  radarLinks: '/api/admin/radar-links',
-  radarLink: (id: number | string) => `/api/admin/radar-links/${id}`,
-  radarLinkEnable: (id: number | string) => `/api/admin/radar-links/${id}/enable`,
-  radarLinkDisable: (id: number | string) => `/api/admin/radar-links/${id}/disable`,
-  radarUploadImage: '/api/admin/radar-links/upload-image',
-  radarUploadPdf: '/api/admin/radar-links/upload-pdf',
-  aiReviewPlans: '/api/admin/ai-assist/review-plans',
-  aiRecipients: (planId: number | string) => `/api/admin/ai-assist/review-plans/${planId}/recipients`,
-  customers: '/api/admin/customers/',
-  imageUpload: '/api/admin/image-library/upload',
-  questionnaires: '/api/admin/questionnaires',
-  funnelRows: '/api/admin/funnel/rows',
-  funnelViews: '/api/admin/funnel/views',
-  audiencePackages: '/api/admin/ai-audience/packages',
-  audiencePackage: (id: number | string) => `/api/admin/ai-audience/packages/${id}`,
-  audiencePackageGroups: '/api/admin/ai-audience/package-groups',
-  audiencePackageGroup: (id: number | string) => `/api/admin/ai-audience/package-groups/${id}`,
-  wecomTags: '/api/admin/wecom/tags',
-  wecomTag: (id: number | string) => `/api/admin/wecom/tags/${id}`,
-  wecomTagGroups: '/api/admin/wecom/tag-groups',
-  wecomTagGroup: (id: number | string) => `/api/admin/wecom/tag-groups/${id}`,
-  wecomTagsSync: '/api/admin/wecom/tags/sync',
-  questionnaireOps: (id: number | string) => `/api/admin/questionnaires/${id}/operations`,
-  imageLibrary: '/api/admin/image-library/items',
-  mpLibrary: '/api/admin/miniprogram-library/items',
-  attachLibrary: '/api/admin/attachment-library/items',
-  configCategory: (key: string) => `/api/admin/config/categories/${key}`,
-} as const;
 
 /* ================= Mock 实现 ================= */
 
@@ -209,6 +179,11 @@ export class MockApi implements AdminApi {
 
   listRadarEvents(_linkId: number): Promise<RadarEvent[]> {
     return delay(this.db.radarEvents);
+  }
+
+  getRadarSharePath(linkId: number): Promise<string> {
+    const link = this.db.radarLinks.find((item) => item.id === linkId);
+    return delay(link ? `/r/${link.code}` : '');
   }
 
   uploadRadarImage(file: File): Promise<RadarMedia> {
@@ -450,8 +425,8 @@ export class MockApi implements AdminApi {
     return delay(undefined, 500);
   }
 
-  async deleteImageItem(name: string): Promise<void> {
-    this.db.rows.images = this.db.rows.images.filter((x) => x.name !== name);
+  async deleteImageItem(item: ImageItem): Promise<void> {
+    this.db.rows.images = this.db.rows.images.filter((x) => x.name !== item.name);
     this.persist();
     return delay(undefined);
   }
@@ -462,8 +437,8 @@ export class MockApi implements AdminApi {
     return delay(undefined, 500);
   }
 
-  async deleteMpItem(name: string): Promise<void> {
-    this.db.rows.mpItems = this.db.rows.mpItems.filter((x) => x.name !== name);
+  async deleteMpItem(item: MpItem): Promise<void> {
+    this.db.rows.mpItems = this.db.rows.mpItems.filter((x) => x.name !== item.name);
     this.persist();
     return delay(undefined);
   }
@@ -474,10 +449,14 @@ export class MockApi implements AdminApi {
     return delay(undefined, 500);
   }
 
-  async deleteAttachItem(name: string): Promise<void> {
-    this.db.rows.attachItems = this.db.rows.attachItems.filter((x) => x.name !== name);
+  async deleteAttachItem(item: AttachItem): Promise<void> {
+    this.db.rows.attachItems = this.db.rows.attachItems.filter((x) => x.name !== item.name);
     this.persist();
     return delay(undefined);
+  }
+
+  downloadAttachItem(_item: AttachItem): Promise<Blob> {
+    return delay(new Blob(['mock pdf'], { type: 'application/pdf' }));
   }
 
   /* ---------- 配置中心 ---------- */
@@ -543,20 +522,7 @@ export interface HttpApiOptions {
 export class HttpApi implements AdminApi {
   readonly mode = 'http' as const;
 
-  constructor(private opts: HttpApiOptions) {}
-
-  private async req<T>(path: string, init?: RequestInit): Promise<T> {
-    const headers: Record<string, string> = {
-      ...(init?.headers as Record<string, string> | undefined),
-    };
-    if (this.opts.token) headers['Authorization'] = `Bearer ${this.opts.token}`;
-    if (init?.body && !(init.body instanceof FormData)) {
-      headers['Content-Type'] = 'application/json';
-    }
-    const resp = await fetch(this.opts.baseUrl + path, { ...init, headers, credentials: 'include' });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status} ${resp.statusText} @ ${path}`);
-    return (await resp.json()) as T;
-  }
+  constructor(_opts: HttpApiOptions) {}
 
   async loadDb(context?: AdminReadContext): Promise<AdminDb> {
     // OpenAPI failure reaches the view's loading/error state; production never merges SEED_DB.
@@ -570,75 +536,70 @@ export class HttpApi implements AdminApi {
   }
 
   async saveRadarLink(input: RadarLinkInput): Promise<RadarLink> {
-    if (input.id !== undefined) {
-      return this.req<RadarLink>(ROUTES.radarLink(input.id), {
-        method: 'PUT',
-        body: JSON.stringify(input),
-      });
-    }
-    return this.req<RadarLink>(ROUTES.radarLinks, { method: 'POST', body: JSON.stringify(input) });
+    return saveRadarLinkDto(input);
   }
 
   listRadarEvents(linkId: number): Promise<RadarEvent[]> {
     return readRadarEvents(linkId);
   }
 
-  private async upload(path: string, file: File): Promise<RadarMedia> {
-    const fd = new FormData();
-    fd.append('file', file);
-    await this.req<unknown>(path, { method: 'POST', body: fd });
-    return { name: file.name, meta: `${file.type} · ${(file.size / 1048576).toFixed(1)} MB` };
+  getRadarSharePath(linkId: number): Promise<string> {
+    return readRadarSharePath(linkId);
   }
 
   uploadRadarImage(file: File): Promise<RadarMedia> {
-    return this.upload(ROUTES.radarUploadImage, file);
+    return uploadRadarImageDto(file);
   }
 
   uploadRadarPdf(file: File): Promise<RadarMedia> {
-    return this.upload(ROUTES.radarUploadPdf, file);
+    return uploadRadarPdfDto(file);
   }
 
   /* ---------- AI 助手 ---------- */
 
   approveAiPlan(id: number): Promise<void> {
-    return this.req<void>(`${ROUTES.aiReviewPlans}/${id}/approve`, { method: 'POST' });
+    void id;
+    return Promise.reject(new Error('后端能力未就绪：当前 AI 审阅壳 DTO 与 Cloud Orchestrator 计划审批契约不等价'));
   }
 
   rejectAiPlan(id: number): Promise<void> {
-    return this.req<void>(`${ROUTES.aiReviewPlans}/${id}/reject`, { method: 'POST' });
+    void id;
+    return Promise.reject(new Error('后端能力未就绪：当前 AI 审阅壳 DTO 与 Cloud Orchestrator 计划审批契约不等价'));
   }
 
   listAiRecipients(planId: number): Promise<AiRecipient[]> {
-    return this.req<AiRecipient[]>(ROUTES.aiRecipients(planId));
+    void planId;
+    return Promise.reject(new Error('后端能力未就绪：当前 AI 收件人 DTO 与 Cloud Orchestrator recipient 契约不等价'));
   }
 
   approveAiRecipient(planId: number, rcId: number): Promise<void> {
-    return this.req<void>(`${ROUTES.aiRecipients(planId)}/${rcId}/approve`, { method: 'POST' });
+    void planId; void rcId;
+    return Promise.reject(new Error('后端能力未就绪：当前 AI 收件人审阅 DTO 与 Cloud Orchestrator review 契约不等价'));
   }
 
   rejectAiRecipient(planId: number, rcId: number): Promise<void> {
-    return this.req<void>(`${ROUTES.aiRecipients(planId)}/${rcId}/reject`, { method: 'POST' });
+    void planId; void rcId;
+    return Promise.reject(new Error('后端能力未就绪：当前 AI 收件人审阅 DTO 与 Cloud Orchestrator review 契约不等价'));
   }
 
   updateRecipientNote(planId: number, rcId: number, taskIdx: number, note: string): Promise<void> {
-    return this.req<void>(`${ROUTES.aiRecipients(planId)}/${rcId}/tasks/${taskIdx}/note`, {
-      method: 'PUT',
-      body: JSON.stringify({ note }),
-    });
+    void planId; void rcId; void taskIdx; void note;
+    return Promise.reject(new Error('后端能力未就绪：当前 AI 任务备注没有等价 OpenAPI operation'));
   }
 
   /* ---------- 漏斗 ---------- */
 
   listFunnelRows(): Promise<FunnelGridRow[]> {
-    return this.req<FunnelGridRow[]>(ROUTES.funnelRows);
+    return Promise.reject(new Error('后端能力未就绪：当前漏斗行 DTO 与 Member Grid 查询契约不等价'));
   }
 
   listFunnelViews(): Promise<FunnelView[]> {
-    return this.req<FunnelView[]>(ROUTES.funnelViews);
+    return Promise.reject(new Error('后端能力未就绪：当前漏斗视图 DTO 与 Member Grid views 契约不等价'));
   }
 
   saveFunnelViews(views: FunnelView[]): Promise<void> {
-    return this.req<void>(ROUTES.funnelViews, { method: 'PUT', body: JSON.stringify(views) });
+    void views;
+    return Promise.reject(new Error('后端能力未就绪：当前漏斗视图 DTO 与 Member Grid views 契约不等价'));
   }
 
   /* ---------- 自动化运营 · 人群包 ---------- */
@@ -689,58 +650,55 @@ export class HttpApi implements AdminApi {
   /* ---------- 问卷 · 运营配置 ---------- */
 
   saveQuestionnaireOps(qid: number, ops: QuestionnaireOps): Promise<void> {
-    return this.req<void>(ROUTES.questionnaireOps(qid), { method: 'PUT', body: JSON.stringify(ops) });
+    void qid; void ops;
+    return Promise.reject(new Error('后端能力未就绪：当前运营表单使用 URL，OpenAPI 仅接受 opaque navigation/configuration reference，DTO 不等价'));
   }
 
   /* ---------- 素材库 ---------- */
 
-  private saveLibraryItem<T extends { name: string }>(base: string, originalName: string | null, patch: Partial<T> & { name: string }): Promise<void> {
-    if (originalName) {
-      return this.req<void>(`${base}/${encodeURIComponent(originalName)}`, { method: 'PATCH', body: JSON.stringify(patch) });
-    }
-    return this.req<void>(base, { method: 'POST', body: JSON.stringify(patch) });
-  }
-
   saveImageItem(originalName: string | null, patch: Partial<ImageItem> & { name: string }): Promise<void> {
-    return this.saveLibraryItem(ROUTES.imageLibrary, originalName, patch);
+    return saveImageItemDto(originalName, patch);
   }
 
-  deleteImageItem(name: string): Promise<void> {
-    return this.req<void>(`${ROUTES.imageLibrary}/${encodeURIComponent(name)}`, { method: 'DELETE' });
+  deleteImageItem(item: ImageItem): Promise<void> {
+    return deleteImageItemDto(item);
   }
 
   saveMpItem(originalName: string | null, patch: Partial<MpItem> & { name: string }): Promise<void> {
-    return this.saveLibraryItem(ROUTES.mpLibrary, originalName, patch);
+    return saveMiniProgramItemDto(originalName, patch);
   }
 
-  deleteMpItem(name: string): Promise<void> {
-    return this.req<void>(`${ROUTES.mpLibrary}/${encodeURIComponent(name)}`, { method: 'DELETE' });
+  deleteMpItem(item: MpItem): Promise<void> {
+    return deleteMiniProgramItemDto(item);
   }
 
   saveAttachItem(originalName: string | null, patch: Partial<AttachItem> & { name: string }): Promise<void> {
-    return this.saveLibraryItem(ROUTES.attachLibrary, originalName, patch);
+    return saveAttachmentItemDto(originalName, patch);
   }
 
-  deleteAttachItem(name: string): Promise<void> {
-    return this.req<void>(`${ROUTES.attachLibrary}/${encodeURIComponent(name)}`, { method: 'DELETE' });
+  deleteAttachItem(item: AttachItem): Promise<void> {
+    return deleteAttachmentItemDto(item);
+  }
+
+  downloadAttachItem(item: AttachItem): Promise<Blob> {
+    return downloadAttachmentItemDto(item);
   }
 
   /* ---------- 配置中心 ---------- */
 
   toggleConfigCategory(key: string, on: boolean): Promise<void> {
-    return this.req<void>(`${ROUTES.configCategory(key)}/${on ? 'enable' : 'disable'}`, { method: 'POST' });
+    void key; void on;
+    return Promise.reject(new Error('后端能力未就绪：配置写入要求 route-bound Admin Action Token，当前 JSON DTO 未提供'));
   }
 
   saveConfigCategory(key: string, values: Record<string, string>, switches: Record<string, boolean>): Promise<void> {
-    return this.req<void>(ROUTES.configCategory(key), {
-      method: 'PUT',
-      body: JSON.stringify({ values, switches }),
-    });
+    void key; void values; void switches;
+    return Promise.reject(new Error('后端能力未就绪：配置 settings 是 closed allowlist 且要求 Admin Action Token，当前表单 DTO 不等价'));
   }
 
-  async checkConfigCategory(key: string): Promise<string> {
-    const r = await this.req<{ message?: string }>(`${ROUTES.configCategory(key)}/check`, { method: 'POST' });
-    return r.message || '检查完成';
+  checkConfigCategory(key: string): Promise<string> {
+    void key;
+    return Promise.reject(new Error('后端能力未就绪：配置检查要求 route-bound Admin Action Token，当前 JSON DTO 未提供'));
   }
 }
 

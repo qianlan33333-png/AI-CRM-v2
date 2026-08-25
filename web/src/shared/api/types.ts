@@ -43,6 +43,7 @@ export interface RadarEvent {
 }
 
 export interface RadarMedia {
+  id?: number;
   name: string;
   meta: string;
 }
@@ -497,6 +498,8 @@ export interface CouponClaim {
 }
 
 export interface ImageItem {
+  resourceId?: string;
+  file?: File;
   name: string;
   size: string;
   tag: string;
@@ -512,6 +515,7 @@ export interface ImageItem {
 
 /** 小程序素材库条目 */
 export interface MpItem {
+  resourceId?: number;
   name: string;
   appid: string;
   pagepath: string;
@@ -525,6 +529,8 @@ export interface MpItem {
 
 /** 附件素材库条目 */
 export interface AttachItem {
+  resourceId?: string;
+  file?: File;
   name: string;
   type: string;
   size: string;

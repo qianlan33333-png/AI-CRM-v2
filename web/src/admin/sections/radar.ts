@@ -24,16 +24,13 @@ const PSL: Record<string, string> = { pending: '未处理', processing: '处理�
 
 const TYPE_CHIP: Record<RadarType, string> = { link: 'blue', image: 'ok', pdf: 'red' };
 
-function shareUrlOf(it: RadarLink): string {
-  return 'https://crm.example.com/r/' + it.code;
-}
-
 /* ================= 伪二维码 SVG（种子 = 分享短码） ================= */
 
 
 /* ================= 入口 ================= */
 export async function mountRadar(root: HTMLElement, api: AdminApi, opts: RadarMountOpts): Promise<void> {
-  const db = await api.loadDb();
+  const page = opts.view === 'list' ? 'radar' : opts.view === 'detail' ? 'radarDetail' : 'radarForm';
+  const db = await api.loadDb({ page, id: opts.id == null ? undefined : String(opts.id) });
   const links = db.radarLinks;
   root.className = 'labs sec-radar';
 
@@ -79,13 +76,14 @@ function renderList(root: HTMLElement, api: AdminApi, links: RadarLink[]): void 
   const $ = <T extends HTMLElement>(s: string): T => root.querySelector(s) as T;
 
   let shareLink = '';
-  function openShare(id: number): void {
+  async function openShare(id: number): Promise<void> {
     const it = links.find((x) => x.id === id);
     if (!it) return;
-    shareLink = shareUrlOf(it);
-    ($('#shareUrl') as HTMLInputElement).value = shareLink;
     renderFakeQr($('#shareQr'), it.code);
     $('#shareMask').classList.add('open');
+    const path = await api.getRadarSharePath(id);
+    shareLink = new URL(path, location.origin).toString();
+    ($('#shareUrl') as HTMLInputElement).value = shareLink;
   }
 
   function paint(): void {
@@ -138,7 +136,7 @@ function renderList(root: HTMLElement, api: AdminApi, links: RadarLink[]): void 
     location.href = 'radarForm.html';
   });
   $('#shareCopy').addEventListener('click', () => copyText(shareLink, toast));
-  $('#shareDl').addEventListener('click', () => toast('二维码已保存（演示）'));
+  $('#shareDl').addEventListener('click', () => toast('二维码为浏览器本地预览，请使用系统截图保存'));
   root.querySelectorAll('[data-close]').forEach((b) =>
     b.addEventListener('click', () => (b as HTMLElement).closest('.mask')!.classList.remove('open')),
   );
@@ -156,7 +154,7 @@ function renderList(root: HTMLElement, api: AdminApi, links: RadarLink[]): void 
     const ed = t.closest('[data-edit]') as HTMLElement | null;
     const tg = t.closest('[data-toggle]') as HTMLElement | null;
     if (d) location.href = 'radarDetail.html?id=' + d.dataset.detail;
-    if (s) openShare(Number(s.dataset.share));
+    if (s) void openShare(Number(s.dataset.share)).catch((error) => toast(error instanceof Error ? error.message : '分享路径读取失败', true));
     if (ed) location.href = 'radarForm.html?id=' + ed.dataset.edit;
     if (tg) {
       const it = links.find((x) => x.id === Number(tg.dataset.toggle));
@@ -182,7 +180,9 @@ async function renderDetail(root: HTMLElement, api: AdminApi, links: RadarLink[]
     return;
   }
   const events = await api.listRadarEvents(it.id);
-  const url = shareUrlOf(it);
+  let url = '';
+  try { url = new URL(await api.getRadarSharePath(it.id), location.origin).toString(); }
+  catch (error) { root.innerHTML = `<div class="card" style="padding:40px;text-align:center;color:#C33">${esc(error instanceof Error ? error.message : '分享路径读取失败')}</div>`; return; }
 
   root.innerHTML = `
     <div class="crumb">客户管理后台 / 运营 / <a href="radar.html">内容雷达</a> / <b>${esc(it.title)}</b></div>
@@ -403,7 +403,7 @@ function renderForm(root: HTMLElement, api: AdminApi, links: RadarLink[], id?: n
     void up.then((m) => {
       form.media = m;
       sync();
-    });
+    }).catch((error) => toast(error instanceof Error ? error.message : '素材上传失败', true));
     input.value = '';
   });
   $('#mediaRemove').addEventListener('click', () => {
@@ -420,8 +420,9 @@ function renderForm(root: HTMLElement, api: AdminApi, links: RadarLink[], id?: n
     const name = ($('#fName') as HTMLInputElement).value.trim();
     if (!name) return toast('请输入内容名称', true);
     const urlVal = ($('#fUrl') as HTMLInputElement).value.trim();
-    if (form.type === 'link' && !/^https?:\/\//i.test(urlVal)) return toast('请输入合法 http/https 外部链接', true);
+    if (form.type === 'link' && !/^https:\/\//i.test(urlVal)) return toast('请输入合法 HTTPS 外部链接', true);
     if (form.type !== 'link' && !form.media) return toast('请选择或上传素材', true);
+    if (form.type !== 'link' && api.mode === 'http') return toast('后端能力未就绪：图片/PDF Radar 还需要独立的 HTTPS 目标地址，当前表单无法安全保存', true);
 
     const input: RadarLinkInput = {
       id: editing?.id,
@@ -429,7 +430,7 @@ function renderForm(root: HTMLElement, api: AdminApi, links: RadarLink[], id?: n
       target_type: form.type,
       original_url: form.type === 'link' ? urlVal : '',
       file_name_snapshot: form.media?.name || editing?.file_name_snapshot || '',
-      media_item_id: form.media ? form.media.meta.match(/media_item_id: (\w+)/)?.[1] || editing?.media_item_id || 'att_new' : '',
+      media_item_id: form.media?.id == null ? editing?.media_item_id || '' : String(form.media.id),
       enabled: form.enabled,
       auth_required: form.auth,
     };
@@ -439,9 +440,12 @@ function renderForm(root: HTMLElement, api: AdminApi, links: RadarLink[], id?: n
     btn.textContent = '⏳ 保存中…';
     void api.saveRadarLink(input).then(() => {
       toast('已保存内容雷达');
-      setTimeout(() => {
-        location.href = 'radar.html';
-      }, 450);
+      location.href = 'radar.html';
+    }).catch((error) => {
+      saving = false;
+      btn.disabled = false;
+      btn.textContent = '保存';
+      toast(error instanceof Error ? error.message : '保存失败', true);
     });
   });
 

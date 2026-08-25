@@ -942,7 +942,7 @@ export class AdminController extends PageBase {
       edit: () => this.setState({ modal: 'mpEdit', editingName: m.name }),
       del: () =>
         confirmBox('删除小程序素材', '确认删除「' + m.name + '」？删除后不可恢复。', '确认删除', true, () => {
-          void this.api.deleteMpItem(m.name).then(() => {
+          void this.api.deleteMpItem(m).then(() => {
             toast('已删除');
             void this.init();
           });
@@ -954,9 +954,19 @@ export class AdminController extends PageBase {
       badge: a.type === 'PDF' ? { background: '#FFF7ED', color: '#C2410C' } : a.type === 'XLSX' ? { background: '#ECFDF3', color: '#067647' } : { background: '#EFF4FF', color: '#245BDB' },
       rowStyle: a.enabled ? {} : { background: '#FAFAFB' },
       edit: () => this.setState({ modal: 'attEdit', editingName: a.name }),
+      download: () => {
+        void this.api.downloadAttachItem(a).then((blob) => {
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = a.name;
+          anchor.click();
+          URL.revokeObjectURL(url);
+        }).catch((error) => toast(error instanceof Error ? error.message : '附件下载失败', true));
+      },
       del: () =>
         confirmBox('删除附件', '确认删除「' + a.name + '」？删除后不可恢复。', '确认删除', true, () => {
-          void this.api.deleteAttachItem(a.name).then(() => {
+          void this.api.deleteAttachItem(a).then(() => {
             toast('已删除');
             void this.init();
           });
@@ -1277,7 +1287,7 @@ export class AdminController extends PageBase {
         del: () => {
           if (!editingImg) return;
           confirmBox('删除素材', '确认删除「' + editingImg.name + '」？删除后不可恢复。', '确认删除', true, () => {
-            void this.api.deleteImageItem(editingImg.name).then(() => {
+            void this.api.deleteImageItem(editingImg).then(() => {
               toast('已删除');
               this.setState({ modal: '' });
               void this.init();
@@ -1288,17 +1298,17 @@ export class AdminController extends PageBase {
         submitUpload: () => {
           const v = this.readModalInputs(['fImgUpName', 'fImgUpTags']);
           const fileInput = document.getElementById('fImgUpFile') as HTMLInputElement | null;
-          const fname = fileInput?.files?.[0]?.name;
+          const file = fileInput?.files?.[0];
+          const fname = file?.name;
           const name = v.fImgUpName || fname || '未命名图片';
-          simulateUpload(name, () => {
-            void this.api
-              .saveImageItem(null, {
-                name, tags: v.fImgUpTags, desc: '', size: '— · 刚上传', tag: v.fImgUpTags.split(/[,，]/)[0] || '未标记',
-                tone: 'gray', bg: 'linear-gradient(135deg,#EFF4FF,#D6E4FF)', enabled: true, uploadedAt: '刚刚',
-              })
-              .then(() => void this.init());
-          });
-          this.setState({ modal: '' });
+          if (!file) return toast('请选择真实图片文件', true);
+          void this.api
+            .saveImageItem(null, {
+              name, file, tags: v.fImgUpTags, desc: '', size: String(file.size), tag: v.fImgUpTags.split(/[,，]/)[0] || '未标记',
+              tone: 'gray', bg: 'linear-gradient(135deg,#EFF4FF,#D6E4FF)', enabled: true, uploadedAt: '刚刚',
+            })
+            .then(() => { toast('图片已上传'); this.setState({ modal: '' }); void this.init(); })
+            .catch((error) => toast(error instanceof Error ? error.message : '图片上传失败', true));
         },
       },
       mpPage: {
@@ -1321,7 +1331,7 @@ export class AdminController extends PageBase {
         del: () => {
           if (!editingMp) return;
           confirmBox('删除小程序素材', '确认删除「' + editingMp.name + '」？删除后不可恢复。', '确认删除', true, () => {
-            void this.api.deleteMpItem(editingMp.name).then(() => {
+            void this.api.deleteMpItem(editingMp).then(() => {
               toast('已删除');
               this.setState({ modal: '' });
               void this.init();
@@ -1351,7 +1361,7 @@ export class AdminController extends PageBase {
         del: () => {
           if (!editingAtt) return;
           confirmBox('删除附件', '确认删除「' + editingAtt.name + '」？删除后不可恢复。', '确认删除', true, () => {
-            void this.api.deleteAttachItem(editingAtt.name).then(() => {
+            void this.api.deleteAttachItem(editingAtt).then(() => {
               toast('已删除');
               this.setState({ modal: '' });
               void this.init();
@@ -1361,15 +1371,15 @@ export class AdminController extends PageBase {
         submitUpload: () => {
           const v = this.readModalInputs(['fAttUpName', 'fAttUpTags']);
           const fileInput = document.getElementById('fAttUpFile') as HTMLInputElement | null;
-          const fname = fileInput?.files?.[0]?.name;
+          const file = fileInput?.files?.[0];
+          const fname = file?.name;
           const name = v.fAttUpName || fname || '未命名附件';
-          simulateUpload(name, () => {
-            const ext = name.includes('.') ? name.split('.').pop()!.toUpperCase() : 'FILE';
-            void this.api
-              .saveAttachItem(null, { name, tags: v.fAttUpTags, type: ext, size: '—', uploadedAt: '刚刚', enabled: true })
-              .then(() => void this.init());
-          });
-          this.setState({ modal: '' });
+          if (!file) return toast('请选择真实 PDF 文件', true);
+          const ext = name.includes('.') ? name.split('.').pop()!.toUpperCase() : 'PDF';
+          void this.api
+            .saveAttachItem(null, { name, file, tags: v.fAttUpTags, type: ext, size: String(file.size), uploadedAt: '刚刚', enabled: true })
+            .then(() => { toast('附件已上传'); this.setState({ modal: '' }); void this.init(); })
+            .catch((error) => toast(error instanceof Error ? error.message : '附件上传失败', true));
         },
       },
 

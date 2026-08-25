@@ -11,10 +11,10 @@ import {
   listLegacyQuestionnaireSubmissions, listLegacyQuestionnaires, listLegacyWecomTagGroups, listLegacyWecomTags,
   listProductLocalEntitlements, listProducts, listServicePeriodMemberViews, listServicePeriodMembers,
   listServicePeriodProducts, listSurveyQuestionnaireExternalPushLogs,
-  activateAIAudiencePackage, archiveLegacyWecomTag, archiveLegacyWecomTagGroup, archiveAIAudiencePackage, copyAIAudiencePackage, createAIAudiencePackageGroup, createLegacyWecomTag, createLegacyWecomTagGroup, deleteAIAudiencePackageGroup, disableRadarLink, enableRadarLink, getAIAudiencePackage, getRadarLink, listAIAudiencePackageGroups, listAIAudiencePackages, listRadarLinkEvents, listRadarLinks, pauseAIAudiencePackage, queueLegacyWecomTagSync, updateAIAudiencePackageGroup, updateLegacyWecomTagGroupPatch, updateLegacyWecomTagPatch, type Customer as ApiCustomer, type LegacyChannelListItem, type LegacyQuestionnaire, type RadarLink as ApiRadarLink,
+  activateAIAudiencePackage, archiveLegacyWecomTag, archiveLegacyWecomTagGroup, archiveAIAudiencePackage, copyAIAudiencePackage, createAIAudiencePackageGroup, createLegacyMiniProgram, createLegacyWecomTag, createLegacyWecomTagGroup, createRadarLink, deleteAIAudiencePackageGroup, deleteLegacyAttachment, deleteLegacyImage, deleteLegacyMiniProgram, disableRadarLink, enableRadarLink, getAIAudiencePackage, getDownloadLegacyAttachmentUrl, getRadarLink, getRadarLinkShareProjection, listAIAudiencePackageGroups, listAIAudiencePackages, listRadarLinkEvents, listRadarLinks, pauseAIAudiencePackage, queueLegacyWecomTagSync, updateAIAudiencePackageGroup, updateLegacyAttachment, updateLegacyImage, updateLegacyMiniProgram, updateLegacyWecomTagGroupPatch, updateLegacyWecomTagPatch, updateRadarLink, uploadLegacyAttachment, uploadLegacyImage, type Customer as ApiCustomer, type LegacyChannelListItem, type LegacyQuestionnaire, type RadarLink as ApiRadarLink,
 } from './generated/health';
-import type { AdminDb, AttachItem, Channel, Coupon, Customer, ImageItem, MpItem, Order, Product, Questionnaire, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
-import { apiRequestOptions, unwrapGenerated } from './transport';
+import type { AdminDb, AttachItem, Channel, Coupon, Customer, ImageItem, MpItem, Order, Product, Questionnaire, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
+import { apiRequestOptions, request, unwrapGenerated } from './transport';
 
 type Obj = Record<string, unknown>;
 const obj = (value: unknown): Obj => value && typeof value === 'object' ? value as Obj : {};
@@ -30,9 +30,9 @@ export const orderPageDto = (value: unknown): Order => { const x = obj(value); r
 export const productPageDto = (value: unknown): Product => { const x = obj(value); return { code: text(x.id), name: text(x.name), price: text(x.price), status: text(x.status), tone: toneFor(x.status), sold: text(x.sold_count, '0'), updated: text(x.updated_at) }; };
 export const serviceProductPageDto = (value: unknown): SpProduct => { const x = obj(value); return { code: text(x.id), name: text(x.name), price: text(x.price), status: text(x.status), tone: toneFor(x.status), sold: text(x.member_count, '0'), updated: text(x.updated_at) }; };
 export const couponPageDto = (value: unknown): Coupon => { const x = obj(value); return { resourceId: Number(x.id), name: text(x.name), code: text(x.code), off: text(x.discount_label, text(x.discount)), scope: text(x.scope), window: text(x.valid_window), issue: text(x.issue_count, '0'), status: text(x.status), tone: toneFor(x.status) }; };
-export const imagePageDto = (value: unknown): ImageItem => { const x = obj(value); return { name: text(x.name, text(x.filename)), size: text(x.size), tag: text(x.category), tone: toneFor(x.status), bg: '#EFF4FF', desc: text(x.description, ''), tags: text(x.tags, ''), enabled: x.enabled !== false, uploadedAt: text(x.created_at) }; };
-export const miniProgramPageDto = (value: unknown): MpItem => { const x = obj(value); return { name: text(x.name), appid: text(x.appid), pagepath: text(x.pagepath), cardTitle: text(x.title), thumbStatus: text(x.thumbnail_status), thumbOk: x.thumbnail_status === 'ready', enabled: x.enabled !== false, bg: '#EFF4FF' }; };
-export const attachmentPageDto = (value: unknown): AttachItem => { const x = obj(value); return { name: text(x.name, text(x.filename)), type: text(x.content_type), size: text(x.size), tags: text(x.tags, ''), uploadedAt: text(x.created_at), enabled: x.enabled !== false }; };
+export const imagePageDto = (value: unknown): ImageItem => { const x = obj(value); return { resourceId: text(x.id, ''), name: text(x.name, text(x.file_name, text(x.filename))), size: text(x.file_size, text(x.size)), tag: text(x.category), tone: toneFor(x.status), bg: '#EFF4FF', desc: text(x.description, ''), tags: Array.isArray(x.tags) ? x.tags.map(String).join(', ') : text(x.tags, ''), enabled: x.enabled !== false, uploadedAt: text(x.created_at) }; };
+export const miniProgramPageDto = (value: unknown): MpItem => { const x = obj(value); return { resourceId: Number(x.id), name: text(x.name), appid: text(x.appid, text(x.app_id)), pagepath: text(x.pagepath, text(x.page_path)), cardTitle: text(x.title), thumbStatus: text(x.thumbnail_status), thumbOk: x.thumbnail_status === 'ready', enabled: x.enabled !== false, bg: '#EFF4FF' }; };
+export const attachmentPageDto = (value: unknown): AttachItem => { const x = obj(value); return { resourceId: text(x.id, ''), name: text(x.name, text(x.file_name, text(x.filename))), type: text(x.mime_type, text(x.content_type)), size: text(x.file_size, text(x.size)), tags: Array.isArray(x.tags) ? x.tags.map(String).join(', ') : text(x.tags, ''), uploadedAt: text(x.created_at), enabled: x.enabled !== false }; };
 export const tagGroupPageDto = (value: unknown): TagGroup => { const x = obj(value); return { id: Number(x.id), name: text(x.name) }; };
 export const tagPageDto = (value: unknown): WecomTag => { const x = obj(value); return { id: Number(x.id), groupId: Number(x.group_id), name: text(x.name), users: Number(x.user_count || 0), syncedAt: text(x.updated_at) }; };
 export const radarPageDto = (link: ApiRadarLink): AdminDb['radarLinks'][number] => ({ id: link.link_id, title: link.title, target_type: link.attachment_id ? 'pdf' : link.cover_image_id ? 'image' : 'link', original_url: link.destination_url, file_name_snapshot: '', media_item_id: String(link.attachment_id || link.cover_image_id || ''), enabled: link.status === 'enabled', auth_required: true, staff_id: String(link.created_by), code: link.public_code, total_landings: 0, authorized_users: 0, view_count: 0, last_viewed_at: link.updated_at });
@@ -40,6 +40,50 @@ export const audienceGroupPageDto = (value: unknown): AdminDb['audienceGroups'][
 export const audiencePackagePageDto = (value: unknown): AdminDb['audiencePackages'][number] => { const x = obj(value); return { id: Number(x.package_id), name: text(x.name), groupId: Number(x.group_id || 0), count: Number(x.member_count || 0), lastRefresh: text(x.refreshed_at), refreshMode: text(x.refresh_mode), running: x.lifecycle === 'active', version: 'v' + text(x.version), definition: '', incremental: 'off', daily: 'off', boundAutomation: '' }; };
 export async function setRadarEnabled(linkId: number, enabled: boolean): Promise<void> { const current = obj(await call(getRadarLink(linkId, apiRequestOptions()))).link as ApiRadarLink; const request = { expected_version: current.version }; await call(enabled ? enableRadarLink(linkId, request, apiRequestOptions()) : disableRadarLink(linkId, request, apiRequestOptions())); }
 export async function readRadarEvents(linkId: number): Promise<AdminDb['radarEvents']> { const page = await call(listRadarLinkEvents(linkId, undefined, apiRequestOptions())); return list(page, 'items').map((item) => ({ unionid_masked: text(obj(item).unionid_masked), external_userid: text(obj(item).external_userid), created_at: text(obj(item).occurred_at, text(obj(item).created_at)) })); }
+export async function readRadarSharePath(linkId: number): Promise<string> { const projection = obj(await call(getRadarLinkShareProjection(linkId, apiRequestOptions()))); if (projection.available !== true || typeof projection.share_path !== 'string') throw new Error('后端尚未提供可用的 Radar 公开分享路径'); return projection.share_path; }
+export async function saveRadarLinkDto(input: RadarLinkInput): Promise<AdminDb['radarLinks'][number]> {
+  if (input.target_type !== 'link') throw new Error('后端能力未就绪：图片/PDF Radar 仍要求独立的 HTTPS 目标地址，当前表单不能安全构造');
+  if (!/^https:\/\//.test(input.original_url)) throw new Error('Radar 目标地址必须是 HTTPS');
+  const refs = { cover_image_id: null, attachment_id: null };
+  const opt = apiRequestOptions();
+  if (input.id == null) {
+    const created = obj(await call(createRadarLink({ expected_version: 0, name: input.title, title: input.title, destination_url: input.original_url, ...refs }, opt)));
+    return radarPageDto(created.link as ApiRadarLink);
+  }
+  const current = obj(await call(getRadarLink(input.id, opt))).link as ApiRadarLink;
+  const updated = obj(await call(updateRadarLink(input.id, { expected_version: current.version, name: input.title, title: input.title, destination_url: input.original_url, ...refs }, opt)));
+  return radarPageDto(updated.link as ApiRadarLink);
+}
+export async function uploadRadarImageDto(file: File): Promise<RadarMedia> { const result = obj(await call(uploadLegacyImage({ image: file, name: file.name }, apiRequestOptions()))); const item = obj(result.item); return { id: Number(item.id), name: text(item.name, file.name), meta: `${text(item.mime_type, file.type)} · ${text(item.file_size, String(file.size))} bytes` }; }
+export async function uploadRadarPdfDto(file: File): Promise<RadarMedia> { const item = obj(await call(uploadLegacyAttachment({ attachment: file, name: file.name }, apiRequestOptions()))); return { id: Number(item.id), name: text(item.name, file.name), meta: `${text(item.mime_type, file.type)} · ${text(item.file_size, String(file.size))} bytes` }; }
+const splitTags = (value: string | undefined): string[] => (value || '').split(/[,，]/).map((tag) => tag.trim()).filter(Boolean);
+async function uniqueMediaId(kind: 'image' | 'attachment' | 'mini', name: string): Promise<string | number> {
+  const opt = apiRequestOptions();
+  const response = kind === 'image' ? await call(getLegacyImageList(undefined, opt)) : kind === 'attachment' ? await call(listLegacyAttachments(undefined, opt)) : await call(listLegacyMiniPrograms(undefined, opt));
+  const collection = kind === 'image' ? 'images' : kind === 'attachment' ? 'attachments' : 'mini_programs';
+  const matches = list(response, 'items', collection).map(obj).filter((item) => text(item.name, text(item.file_name)) === name);
+  if (matches.length !== 1) throw new Error(matches.length ? `存在多个同名素材「${name}」，请刷新后按资源 ID 操作` : `素材「${name}」不存在或已删除`);
+  return kind === 'mini' ? Number(matches[0].id) : text(matches[0].id, '');
+}
+export async function saveImageItemDto(originalName: string | null, patch: Partial<ImageItem> & { name: string }): Promise<void> {
+  if (!originalName) { if (!patch.file) throw new Error('请选择真实图片文件后再上传'); await call(uploadLegacyImage({ image: patch.file, name: patch.name, description: patch.desc, tags: patch.tags, category: patch.tag }, apiRequestOptions())); return; }
+  const id = patch.resourceId || String(await uniqueMediaId('image', originalName));
+  await call(updateLegacyImage(id, { name: patch.name, description: patch.desc, tags: patch.tags == null ? undefined : splitTags(patch.tags), category: patch.tag, enabled: patch.enabled }, apiRequestOptions()));
+}
+export async function deleteImageItemDto(item: ImageItem): Promise<void> { const id = item.resourceId || String(await uniqueMediaId('image', item.name)); await call(deleteLegacyImage(id, undefined, apiRequestOptions())); }
+export async function saveAttachmentItemDto(originalName: string | null, patch: Partial<AttachItem> & { name: string }): Promise<void> {
+  if (!originalName) { if (!patch.file) throw new Error('请选择真实 PDF 文件后再上传'); await call(uploadLegacyAttachment({ attachment: patch.file, name: patch.name, tags: patch.tags }, apiRequestOptions())); return; }
+  const id = patch.resourceId || String(await uniqueMediaId('attachment', originalName)); const current = obj(await call(getLegacyAttachment(id, apiRequestOptions())));
+  await call(updateLegacyAttachment(id, { expected_version: Number(current.version), name: patch.name, description: text(current.description, ''), tags: patch.tags == null ? list(current, 'tags').map(String) : splitTags(patch.tags), enabled: patch.enabled ?? current.enabled !== false }, apiRequestOptions()));
+}
+export async function deleteAttachmentItemDto(item: AttachItem): Promise<void> { const id = item.resourceId || String(await uniqueMediaId('attachment', item.name)); await call(deleteLegacyAttachment(id, apiRequestOptions())); }
+export async function downloadAttachmentItemDto(item: AttachItem): Promise<Blob> { const id = item.resourceId || String(await uniqueMediaId('attachment', item.name)); return (await request(getDownloadLegacyAttachmentUrl(id))).blob(); }
+export async function saveMiniProgramItemDto(originalName: string | null, patch: Partial<MpItem> & { name: string }): Promise<void> {
+  const payload = { name: patch.name, appid: patch.appid, pagepath: patch.pagepath, title: patch.cardTitle || patch.name, enabled: patch.enabled };
+  if (!originalName) { if (!patch.appid || !patch.pagepath) throw new Error('请填写 AppID 与页面路径'); await call(createLegacyMiniProgram(payload, apiRequestOptions())); return; }
+  const id = patch.resourceId || Number(await uniqueMediaId('mini', originalName)); await call(updateLegacyMiniProgram(id, payload, apiRequestOptions()));
+}
+export async function deleteMiniProgramItemDto(item: MpItem): Promise<void> { const id = item.resourceId || Number(await uniqueMediaId('mini', item.name)); await call(deleteLegacyMiniProgram(id, apiRequestOptions())); }
 async function audiencePackageVersion(packageId: number): Promise<number> { return Number(obj(obj(await call(getAIAudiencePackage(packageId, apiRequestOptions()))).package).version); }
 export async function saveAudienceGroup(input: { id?: number; name: string }): Promise<AdminDb['audienceGroups'][number]> {
   const opt = apiRequestOptions();
