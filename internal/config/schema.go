@@ -31,6 +31,7 @@ const (
 	weComOAuthSecretEnv       = "AICRM_WECOM_OAUTH_SECRET"
 	weComOAuthCallbackEnv     = "AICRM_WECOM_OAUTH_CALLBACK_URL"
 	identityHMACKeyEnv        = "AICRM_IDENTITY_HMAC_KEY"
+	apiClientJWTSecretEnv     = "AICRM_API_CLIENT_JWT_SECRET"
 	surveyPublicKeyEnv        = "AICRM_SURVEY_PUBLIC_TOKEN_KEY"
 	domainVerificationDirEnv  = "AICRM_DOMAIN_VERIFICATION_DIR"
 	applicationEnvironmentEnv = "AICRM_ENV"
@@ -141,6 +142,22 @@ type Identity struct {
 	HMACKey IdentityHMACKey
 }
 
+// APIClientJWTSecret is optional startup-only key material for the bounded
+// external API-client protocol. When absent, those routes remain fail-closed.
+type APIClientJWTSecret struct {
+	value      [32]byte
+	configured bool
+}
+
+func (key APIClientJWTSecret) Value() []byte    { return append([]byte(nil), key.value[:]...) }
+func (key APIClientJWTSecret) Configured() bool { return key.configured }
+func (APIClientJWTSecret) String() string       { return "[REDACTED]" }
+func (APIClientJWTSecret) GoString() string     { return "[REDACTED]" }
+
+type APIClient struct {
+	JWTSecret APIClientJWTSecret
+}
+
 // SurveyPublicKey is optional as a whole. A missing key leaves every public
 // Survey operation fail-closed with 503, while an invalid configured value
 // rejects process startup. Generic formatting can never reveal the key.
@@ -185,6 +202,7 @@ type Root struct {
 	Worker             Worker
 	WeCom              WeCom
 	Identity           Identity
+	APIClient          APIClient
 	Survey             Survey
 	DomainVerification DomainVerification
 	Release            Release
@@ -234,6 +252,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		root.WeCom.Callback = parseWeComCallback(lookup, &problems)
 		root.WeCom.OAuth = parseWeComOAuth(lookup, &problems)
 		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
+		root.APIClient.JWTSecret = parseOptionalAPIClientJWTSecret(lookup, &problems)
 		root.Survey.PublicKey = parseOptionalSurveyPublicKey(lookup, &problems)
 		root.DomainVerification.Directory, _ = lookup(domainVerificationDirEnv)
 		root.Release.Environment, _ = lookup(applicationEnvironmentEnv)
@@ -292,6 +311,22 @@ func parseOptionalSurveyPublicKey(lookup environmentLookup, problems *[]string) 
 	}
 	var key SurveyPublicKey
 	copy(key.value[:], decoded)
+	return key
+}
+
+func parseOptionalAPIClientJWTSecret(lookup environmentLookup, problems *[]string) APIClientJWTSecret {
+	value, present := lookup(apiClientJWTSecretEnv)
+	if !present || value == "" {
+		return APIClientJWTSecret{}
+	}
+	decoded, err := base64.RawURLEncoding.Strict().DecodeString(value)
+	if err != nil || len(decoded) != 32 || base64.RawURLEncoding.EncodeToString(decoded) != value {
+		*problems = append(*problems, "api_client.jwt_secret must be 32-byte canonical base64url")
+		return APIClientJWTSecret{}
+	}
+	var key APIClientJWTSecret
+	copy(key.value[:], decoded)
+	key.configured = true
 	return key
 }
 

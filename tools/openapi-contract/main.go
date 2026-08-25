@@ -791,11 +791,27 @@ var p4OrderLegacyMappings = map[string][]string{
 
 var p4CustomerCompatOperations = map[string]bool{
 	"listLegacyCustomers": true, "getLegacyCustomer": true,
+	"listLegacyCustomerTimeline": true, "getLegacyUser": true,
+	"listLegacyUserRecentMessages": true, "listLegacyUserTimeline": true,
+	"listLegacyExternalUserRecentMessages": true, "resolveLegacyIdentity": true,
 }
 
 var p4CustomerCompatLegacyMappings = map[string][]string{
-	"listLegacyCustomers": {"LEGACY-API-0609"},
-	"getLegacyCustomer":   {"LEGACY-API-0619"},
+	"listLegacyCustomers":                  {"LEGACY-API-0609"},
+	"getLegacyCustomer":                    {"LEGACY-API-0619"},
+	"listLegacyCustomerTimeline":           {"LEGACY-API-0620"},
+	"resolveLegacyIdentity":                {"LEGACY-API-0680"},
+	"listLegacyExternalUserRecentMessages": {"LEGACY-API-0690"},
+	"getLegacyUser":                        {"LEGACY-API-0743"},
+	"listLegacyUserRecentMessages":         {"LEGACY-API-0744"},
+	"listLegacyUserTimeline":               {"LEGACY-API-0745"},
+}
+
+var p4CustomerCompatEvidence = map[string]string{
+	"listLegacyCustomers": p4CI01DecisionEvidence, "getLegacyCustomer": p4CI01DecisionEvidence,
+	"listLegacyCustomerTimeline": p4CI01DecisionEvidence, "getLegacyUser": p4CI01DecisionEvidence,
+	"listLegacyUserRecentMessages": p4CI01DecisionEvidence, "listLegacyUserTimeline": p4CI01DecisionEvidence,
+	"listLegacyExternalUserRecentMessages": p4CI01DecisionEvidence, "resolveLegacyIdentity": p4CI01DecisionEvidence,
 }
 
 var p4ConfigSettingsOperations = map[string]bool{
@@ -1169,6 +1185,12 @@ var authorizationContracts = map[string]authorizationContract{
 	"createLegacyWechatRefundIntent":             {"order.write", map[string]string{"admin": "global", "ops": "global"}},
 	"listLegacyCustomers":                        {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getLegacyCustomer":                          {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listLegacyCustomerTimeline":                 {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"getLegacyUser":                              {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listLegacyUserRecentMessages":               {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listLegacyUserTimeline":                     {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listLegacyExternalUserRecentMessages":       {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"resolveLegacyIdentity":                      {"identity.resolve", map[string]string{"api_client": "identity"}},
 	"getLegacyAppSettingsPage":                   {"config.settings.manage", map[string]string{"admin": "global"}},
 	"saveLegacyAppSettingsPage":                  {"config.settings.manage", map[string]string{"admin": "global"}},
 	"getLegacyAppSettingsResource":               {"config.settings.manage", map[string]string{"admin": "global"}},
@@ -1202,7 +1224,7 @@ const p4TagABDecisionEvidence = "P4-B02AB-2026-08-15"
 const p4CouponJ01DecisionEvidence = "P4-J01-2026-08-15"
 const p4CouponABDecisionEvidence = "P4-COUPON-AB-2026-08-15"
 const p4OrderDecisionEvidence = "P4-ORDER-AB-2026-08-15"
-const p4CustomerCompatDecisionEvidence = "P4-B01-2026-08-15"
+const p4CI01DecisionEvidence = "P4-CI01-2026-08-25"
 const p4DomainVerificationDecisionEvidence = "P4-S04-DOMAIN-VERIFICATION-2026-08-16"
 const p4LegacyHealthDecisionEvidence = "P4-S04-LEGACY-HEALTH-2026-08-18"
 const p4PushCenterDecisionEvidence = "P4-PUSH-CENTER-0421-0422-2026-08-16"
@@ -2196,7 +2218,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 			} else if p4CustomerCompatOperations[op.OperationID] {
 				seenP4CustomerCompat[op.OperationID] = true
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
-				if !ok || evidence != p4CustomerCompatDecisionEvidence {
+				if !ok || evidence != p4CustomerCompatEvidence[op.OperationID] {
 					return fmt.Errorf("%s has missing or forged P4 Customer evidence", op.OperationID)
 				}
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
@@ -3158,16 +3180,22 @@ func validateCouponContract(doc *openapi3.T) error {
 }
 
 func validateCustomerCompatContract(doc *openapi3.T) error {
-	list := doc.Paths.Value("/api/customers")
-	detail := doc.Paths.Value("/api/customers/{external_userid}")
-	if list == nil || list.Get == nil || detail == nil || detail.Get == nil ||
-		!operationResponseUsesLocalSchema(list.Get, "LegacyCustomerListResponse") ||
-		!operationResponseUsesLocalSchema(detail.Get, "LegacyCustomerDetailResponse") {
-		return errors.New("P4-B01 Customer compatibility operations are incomplete")
+	contracts := map[string]string{
+		"/api/customers":                            "CI01CustomerListResponse",
+		"/api/customers/{external_userid}":          "CI01CustomerResponse",
+		"/api/customers/{external_userid}/timeline": "CI01TimelineResponse",
+		"/api/users/{unionid}":                      "CI01CustomerResponse",
+		"/api/users/{unionid}/messages/recent":      "CI01RecentMessagesResponse",
+		"/api/users/{unionid}/timeline":             "CI01TimelineResponse",
+		"/api/messages/{external_userid}/recent":    "CI01RecentMessagesResponse",
+		"/api/identity/resolve":                     "CI01IdentityResolveResponse",
 	}
-	if list.Get.Responses.Value("400") == nil || list.Get.Responses.Value("503") == nil ||
-		detail.Get.Responses.Value("404") == nil || detail.Get.Responses.Value("503") == nil {
-		return errors.New("P4-B01 Customer boundary or failure responses drifted")
+	for path, schema := range contracts {
+		item := doc.Paths.Value(path)
+		if item == nil || item.Get == nil || !operationResponseUsesLocalSchema(item.Get, schema) ||
+			item.Get.Responses.Value("401") == nil || item.Get.Responses.Value("503") == nil {
+			return fmt.Errorf("P4-CI01 operation %s is incomplete", path)
+		}
 	}
 	return nil
 }

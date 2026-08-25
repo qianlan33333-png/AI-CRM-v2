@@ -5,6 +5,236 @@
  * Canonical HTTP contract. Generated code must not be edited. P3-I00 freezes fail-closed identity semantics and P3-S00 freezes Segment DSL v1 before implementation begins.
  * OpenAPI spec version: 0.6.0-p3-segment-contract
  */
+export interface CI01Customer {
+  /** @minimum 1 */
+  customer_id: number;
+  name: string;
+  /** @minimum 1 */
+  owner_staff_id?: number;
+  /** @minimum 1 */
+  stage_id?: number;
+  /** @minimum 1 */
+  channel_id?: number;
+  added_at?: string;
+  last_interact_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type CI01CustomerResponseSourceStatus =
+  (typeof CI01CustomerResponseSourceStatus)[keyof typeof CI01CustomerResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CI01CustomerResponseSourceStatus = {
+  canonical_contact: "canonical_contact",
+} as const;
+
+export type CI01CustomerResponseRouteOwner =
+  (typeof CI01CustomerResponseRouteOwner)[keyof typeof CI01CustomerResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CI01CustomerResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface CI01CustomerResponse {
+  ok: boolean;
+  customer: CI01Customer;
+  source_status: CI01CustomerResponseSourceStatus;
+  route_owner: CI01CustomerResponseRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type CI01CustomerListResponseOffset =
+  (typeof CI01CustomerListResponseOffset)[keyof typeof CI01CustomerListResponseOffset];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CI01CustomerListResponseOffset = {
+  NUMBER_0: 0,
+} as const;
+
+export type CI01CustomerListResponseSourceStatus =
+  (typeof CI01CustomerListResponseSourceStatus)[keyof typeof CI01CustomerListResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CI01CustomerListResponseSourceStatus = {
+  canonical_contact: "canonical_contact",
+} as const;
+
+export type CI01CustomerListResponseRouteOwner =
+  (typeof CI01CustomerListResponseRouteOwner)[keyof typeof CI01CustomerListResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CI01CustomerListResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface CI01CustomerListResponse {
+  ok: boolean;
+  customers: CI01Customer[];
+  items: CI01Customer[];
+  /** @minimum 0 */
+  count: number;
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit: number;
+  offset: CI01CustomerListResponseOffset;
+  /** @nullable */
+  next_cursor: string | null;
+  source_status: CI01CustomerListResponseSourceStatus;
+  route_owner: CI01CustomerListResponseRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface CI01TimelineItem {
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  event_type: string;
+  event_time: string;
+}
+
+export type CI01TimelineOffset =
+  (typeof CI01TimelineOffset)[keyof typeof CI01TimelineOffset];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CI01TimelineOffset = {
+  NUMBER_0: 0,
+} as const;
+
+export interface CI01Timeline {
+  /** @minimum 1 */
+  customer_id: number;
+  items: CI01TimelineItem[];
+  /** @minimum 0 */
+  count: number;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit: number;
+  offset: CI01TimelineOffset;
+  /** @nullable */
+  next_cursor: string | null;
+}
+
+export type CI01TimelineResponseSourceStatus =
+  (typeof CI01TimelineResponseSourceStatus)[keyof typeof CI01TimelineResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CI01TimelineResponseSourceStatus = {
+  canonical_contact_events: "canonical_contact_events",
+} as const;
+
+export type CI01TimelineResponseRouteOwner =
+  (typeof CI01TimelineResponseRouteOwner)[keyof typeof CI01TimelineResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CI01TimelineResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface CI01TimelineResponse {
+  ok: boolean;
+  timeline: CI01Timeline;
+  source_status: CI01TimelineResponseSourceStatus;
+  route_owner: CI01TimelineResponseRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type CI01RecentMessageChatType =
+  (typeof CI01RecentMessageChatType)[keyof typeof CI01RecentMessageChatType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CI01RecentMessageChatType = {
+  private: "private",
+  group: "group",
+} as const;
+
+export interface CI01RecentMessage {
+  chat_type: CI01RecentMessageChatType;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  message_type: string;
+  send_time: string;
+}
+
+export type CI01RecentMessagesResponseSourceStatus =
+  (typeof CI01RecentMessagesResponseSourceStatus)[keyof typeof CI01RecentMessagesResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CI01RecentMessagesResponseSourceStatus = {
+  local_archive_summary: "local_archive_summary",
+} as const;
+
+export type CI01RecentMessagesResponseRouteOwner =
+  (typeof CI01RecentMessagesResponseRouteOwner)[keyof typeof CI01RecentMessagesResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CI01RecentMessagesResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface CI01RecentMessagesResponse {
+  ok: boolean;
+  messages: CI01RecentMessage[];
+  items: CI01RecentMessage[];
+  /** @minimum 0 */
+  count: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  source_status: CI01RecentMessagesResponseSourceStatus;
+  route_owner: CI01RecentMessagesResponseRouteOwner;
+  message_content_included: boolean;
+  participant_identity_included: boolean;
+  provider_message_id_included: boolean;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type CI01IdentityResolveResponseIdentity = {
+  /** @minimum 1 */
+  customer_id: number;
+};
+
+export type CI01IdentityResolveResponseSourceStatus =
+  (typeof CI01IdentityResolveResponseSourceStatus)[keyof typeof CI01IdentityResolveResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CI01IdentityResolveResponseSourceStatus = {
+  canonical_identity: "canonical_identity",
+} as const;
+
+export type CI01IdentityResolveResponseRouteOwner =
+  (typeof CI01IdentityResolveResponseRouteOwner)[keyof typeof CI01IdentityResolveResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CI01IdentityResolveResponseRouteOwner = {
+  ai_crm_next: "ai_crm_next",
+} as const;
+
+export interface CI01IdentityResolveResponse {
+  ok: boolean;
+  identity: CI01IdentityResolveResponseIdentity;
+  source_status: CI01IdentityResolveResponseSourceStatus;
+  route_owner: CI01IdentityResolveResponseRouteOwner;
+  fallback_used: boolean;
+  real_external_call_executed: boolean;
+}
+
 export type MediaContentRefKind =
   (typeof MediaContentRefKind)[keyof typeof MediaContentRefKind];
 
@@ -14959,11 +15189,6 @@ export type ListProductLocalEntitlementsParams = {
 };
 
 export type ListLegacyCustomersParams = {
-  owner_userid?: string;
-  tag?: string;
-  status?: string;
-  is_bound?: string;
-  mobile?: string;
   /**
    * @maxLength 200
    */
@@ -14978,6 +15203,66 @@ export type ListLegacyCustomersParams = {
    * @maximum 0
    */
   offset?: number;
+};
+
+export type ListLegacyCustomerTimelineParams = {
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  offset?: number;
+};
+
+export type ListLegacyUserRecentMessagesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type ListLegacyUserTimelineParams = {
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 0
+   */
+  offset?: number;
+};
+
+export type ListLegacyExternalUserRecentMessagesParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type ResolveLegacyIdentityParams = {
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  external_userid?: string;
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  mobile?: string;
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  unionid?: string;
 };
 
 export type ListCustomersParams = {
@@ -19482,10 +19767,10 @@ export const getLegacyMcpToolsRedirect = async (
 };
 
 /**
- * @summary List the channel-neutral customer projection for the frozen old UI
+ * @summary List the canonical customer projection for the external read protocol
  */
 export type listLegacyCustomersResponse200 = {
-  data: LegacyCustomerListResponse;
+  data: CI01CustomerListResponse;
   status: 200;
 };
 
@@ -19565,10 +19850,10 @@ export const listLegacyCustomers = async (
 };
 
 /**
- * @summary Resolve a WeCom external identity and read its channel-neutral customer projection
+ * @summary Resolve a verified WeCom external identity and read its owner-scoped canonical customer
  */
 export type getLegacyCustomerResponse200 = {
-  data: LegacyCustomerDetailResponse;
+  data: CI01CustomerResponse;
   status: 200;
 };
 
@@ -19628,6 +19913,564 @@ export const getLegacyCustomer = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyCustomerResponse;
+};
+
+/**
+ * @summary Resolve a verified WeCom identity and list safe canonical customer events
+ */
+export type listLegacyCustomerTimelineResponse200 = {
+  data: CI01TimelineResponse;
+  status: 200;
+};
+
+export type listLegacyCustomerTimelineResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyCustomerTimelineResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyCustomerTimelineResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyCustomerTimelineResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listLegacyCustomerTimelineResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyCustomerTimelineResponseSuccess =
+  listLegacyCustomerTimelineResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyCustomerTimelineResponseError = (
+  | listLegacyCustomerTimelineResponse400
+  | listLegacyCustomerTimelineResponse401
+  | listLegacyCustomerTimelineResponse403
+  | listLegacyCustomerTimelineResponse404
+  | listLegacyCustomerTimelineResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyCustomerTimelineResponse =
+  | listLegacyCustomerTimelineResponseSuccess
+  | listLegacyCustomerTimelineResponseError;
+
+export const getListLegacyCustomerTimelineUrl = (
+  externalUserid: string,
+  params?: ListLegacyCustomerTimelineParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/customers/${externalUserid}/timeline?${stringifiedParams}`
+    : `/api/customers/${externalUserid}/timeline`;
+};
+
+export const listLegacyCustomerTimeline = async (
+  externalUserid: string,
+  params?: ListLegacyCustomerTimelineParams,
+  options?: RequestInit,
+): Promise<listLegacyCustomerTimelineResponse> => {
+  const res = await fetch(
+    getListLegacyCustomerTimelineUrl(externalUserid, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyCustomerTimelineResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyCustomerTimelineResponse;
+};
+
+/**
+ * @summary Resolve a verified, unambiguous unionid and read its owner-scoped canonical customer
+ */
+export type getLegacyUserResponse200 = {
+  data: CI01CustomerResponse;
+  status: 200;
+};
+
+export type getLegacyUserResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getLegacyUserResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getLegacyUserResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getLegacyUserResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getLegacyUserResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type getLegacyUserResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getLegacyUserResponseSuccess = getLegacyUserResponse200 & {
+  headers: Headers;
+};
+export type getLegacyUserResponseError = (
+  | getLegacyUserResponse400
+  | getLegacyUserResponse401
+  | getLegacyUserResponse403
+  | getLegacyUserResponse404
+  | getLegacyUserResponse409
+  | getLegacyUserResponse503
+) & {
+  headers: Headers;
+};
+
+export type getLegacyUserResponse =
+  getLegacyUserResponseSuccess | getLegacyUserResponseError;
+
+export const getGetLegacyUserUrl = (unionid: string) => {
+  return `/api/users/${unionid}`;
+};
+
+export const getLegacyUser = async (
+  unionid: string,
+  options?: RequestInit,
+): Promise<getLegacyUserResponse> => {
+  const res = await fetch(getGetLegacyUserUrl(unionid), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegacyUserResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getLegacyUserResponse;
+};
+
+/**
+ * @summary List bounded safe archive metadata for a verified, unambiguous unionid
+ */
+export type listLegacyUserRecentMessagesResponse200 = {
+  data: CI01RecentMessagesResponse;
+  status: 200;
+};
+
+export type listLegacyUserRecentMessagesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyUserRecentMessagesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyUserRecentMessagesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyUserRecentMessagesResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listLegacyUserRecentMessagesResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type listLegacyUserRecentMessagesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyUserRecentMessagesResponseSuccess =
+  listLegacyUserRecentMessagesResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyUserRecentMessagesResponseError = (
+  | listLegacyUserRecentMessagesResponse400
+  | listLegacyUserRecentMessagesResponse401
+  | listLegacyUserRecentMessagesResponse403
+  | listLegacyUserRecentMessagesResponse404
+  | listLegacyUserRecentMessagesResponse409
+  | listLegacyUserRecentMessagesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyUserRecentMessagesResponse =
+  | listLegacyUserRecentMessagesResponseSuccess
+  | listLegacyUserRecentMessagesResponseError;
+
+export const getListLegacyUserRecentMessagesUrl = (
+  unionid: string,
+  params?: ListLegacyUserRecentMessagesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/users/${unionid}/messages/recent?${stringifiedParams}`
+    : `/api/users/${unionid}/messages/recent`;
+};
+
+export const listLegacyUserRecentMessages = async (
+  unionid: string,
+  params?: ListLegacyUserRecentMessagesParams,
+  options?: RequestInit,
+): Promise<listLegacyUserRecentMessagesResponse> => {
+  const res = await fetch(getListLegacyUserRecentMessagesUrl(unionid, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyUserRecentMessagesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyUserRecentMessagesResponse;
+};
+
+/**
+ * @summary List safe canonical events for a verified, unambiguous unionid
+ */
+export type listLegacyUserTimelineResponse200 = {
+  data: CI01TimelineResponse;
+  status: 200;
+};
+
+export type listLegacyUserTimelineResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyUserTimelineResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyUserTimelineResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyUserTimelineResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listLegacyUserTimelineResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type listLegacyUserTimelineResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyUserTimelineResponseSuccess =
+  listLegacyUserTimelineResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyUserTimelineResponseError = (
+  | listLegacyUserTimelineResponse400
+  | listLegacyUserTimelineResponse401
+  | listLegacyUserTimelineResponse403
+  | listLegacyUserTimelineResponse404
+  | listLegacyUserTimelineResponse409
+  | listLegacyUserTimelineResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyUserTimelineResponse =
+  listLegacyUserTimelineResponseSuccess | listLegacyUserTimelineResponseError;
+
+export const getListLegacyUserTimelineUrl = (
+  unionid: string,
+  params?: ListLegacyUserTimelineParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/users/${unionid}/timeline?${stringifiedParams}`
+    : `/api/users/${unionid}/timeline`;
+};
+
+export const listLegacyUserTimeline = async (
+  unionid: string,
+  params?: ListLegacyUserTimelineParams,
+  options?: RequestInit,
+): Promise<listLegacyUserTimelineResponse> => {
+  const res = await fetch(getListLegacyUserTimelineUrl(unionid, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyUserTimelineResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyUserTimelineResponse;
+};
+
+/**
+ * @summary Resolve a verified WeCom identity and list bounded safe archive metadata
+ */
+export type listLegacyExternalUserRecentMessagesResponse200 = {
+  data: CI01RecentMessagesResponse;
+  status: 200;
+};
+
+export type listLegacyExternalUserRecentMessagesResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listLegacyExternalUserRecentMessagesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyExternalUserRecentMessagesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyExternalUserRecentMessagesResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listLegacyExternalUserRecentMessagesResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listLegacyExternalUserRecentMessagesResponseSuccess =
+  listLegacyExternalUserRecentMessagesResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyExternalUserRecentMessagesResponseError = (
+  | listLegacyExternalUserRecentMessagesResponse400
+  | listLegacyExternalUserRecentMessagesResponse401
+  | listLegacyExternalUserRecentMessagesResponse403
+  | listLegacyExternalUserRecentMessagesResponse404
+  | listLegacyExternalUserRecentMessagesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyExternalUserRecentMessagesResponse =
+  | listLegacyExternalUserRecentMessagesResponseSuccess
+  | listLegacyExternalUserRecentMessagesResponseError;
+
+export const getListLegacyExternalUserRecentMessagesUrl = (
+  externalUserid: string,
+  params?: ListLegacyExternalUserRecentMessagesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/messages/${externalUserid}/recent?${stringifiedParams}`
+    : `/api/messages/${externalUserid}/recent`;
+};
+
+export const listLegacyExternalUserRecentMessages = async (
+  externalUserid: string,
+  params?: ListLegacyExternalUserRecentMessagesParams,
+  options?: RequestInit,
+): Promise<listLegacyExternalUserRecentMessagesResponse> => {
+  const res = await fetch(
+    getListLegacyExternalUserRecentMessagesUrl(externalUserid, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyExternalUserRecentMessagesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyExternalUserRecentMessagesResponse;
+};
+
+/**
+ * @summary Resolve exactly one verified external identity to its canonical customer ID
+ */
+export type resolveLegacyIdentityResponse200 = {
+  data: CI01IdentityResolveResponse;
+  status: 200;
+};
+
+export type resolveLegacyIdentityResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type resolveLegacyIdentityResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type resolveLegacyIdentityResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type resolveLegacyIdentityResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type resolveLegacyIdentityResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type resolveLegacyIdentityResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type resolveLegacyIdentityResponseSuccess =
+  resolveLegacyIdentityResponse200 & {
+    headers: Headers;
+  };
+export type resolveLegacyIdentityResponseError = (
+  | resolveLegacyIdentityResponse400
+  | resolveLegacyIdentityResponse401
+  | resolveLegacyIdentityResponse403
+  | resolveLegacyIdentityResponse404
+  | resolveLegacyIdentityResponse409
+  | resolveLegacyIdentityResponse503
+) & {
+  headers: Headers;
+};
+
+export type resolveLegacyIdentityResponse =
+  resolveLegacyIdentityResponseSuccess | resolveLegacyIdentityResponseError;
+
+export const getResolveLegacyIdentityUrl = (
+  params?: ResolveLegacyIdentityParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/identity/resolve?${stringifiedParams}`
+    : `/api/identity/resolve`;
+};
+
+export const resolveLegacyIdentity = async (
+  params?: ResolveLegacyIdentityParams,
+  options?: RequestInit,
+): Promise<resolveLegacyIdentityResponse> => {
+  const res = await fetch(getResolveLegacyIdentityUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: resolveLegacyIdentityResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as resolveLegacyIdentityResponse;
 };
 
 /**

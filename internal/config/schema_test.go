@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"reflect"
@@ -352,6 +353,33 @@ func TestLoadSurveyPublicKeyIsOptionalStrictAndRedacted(t *testing.T) {
 	_, err = load(appruntime.RoleAPI, mapLookup(values))
 	if err == nil || err.Error() != "invalid startup configuration: survey.public_key must be 32-byte canonical base64url" || strings.Contains(err.Error(), "sentinel") {
 		t.Fatalf("invalid survey key error = %v", err)
+	}
+}
+
+func TestLoadAPIClientJWTSecretIsOptionalStrictAndRedacted(t *testing.T) {
+	base := map[string]string{
+		databaseURLEnv:      "postgres://db/aicrm",
+		apiListenAddressEnv: "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:  "1",
+		identityHMACKeyEnv:  strings.Repeat("A", 43),
+	}
+	root, err := load(appruntime.RoleAPI, mapLookup(base))
+	if err != nil || string(root.APIClient.JWTSecret.Value()) != string(make([]byte, 32)) {
+		t.Fatalf("optional api-client JWT secret load = %#v, %v", root.APIClient, err)
+	}
+	values := cloneValues(base)
+	values[apiClientJWTSecretEnv] = base64.RawURLEncoding.EncodeToString([]byte("01234567890123456789012345678901"))
+	root, err = load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil || len(root.APIClient.JWTSecret.Value()) != 32 {
+		t.Fatalf("configured api-client JWT secret load = %#v, %v", root.APIClient, err)
+	}
+	if strings.Contains(fmt.Sprintf("%#v", root), values[apiClientJWTSecretEnv]) {
+		t.Fatal("Root formatting exposed the API-client JWT secret")
+	}
+	values[apiClientJWTSecretEnv] = "bad-api-client-key-sentinel"
+	_, err = load(appruntime.RoleAPI, mapLookup(values))
+	if err == nil || err.Error() != "invalid startup configuration: api_client.jwt_secret must be 32-byte canonical base64url" || strings.Contains(err.Error(), "sentinel") {
+		t.Fatalf("invalid api-client JWT secret error = %v", err)
 	}
 }
 

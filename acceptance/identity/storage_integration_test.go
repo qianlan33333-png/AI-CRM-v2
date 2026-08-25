@@ -13,9 +13,55 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
+	identitydb "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store/generated"
 )
 
 var databaseURL = flag.String("database-url", "", "isolated PostgreSQL 16.14 identity database")
+
+func TestCI01UnionIDLookupExcludesUnverifiedIdentity(t *testing.T) {
+	pool := openIdentityPool(t)
+	resetIdentityStorage(t, pool)
+	ctx := context.Background()
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	verifiedCustomerID, err := contactfixture.CreateCustomer(ctx, tx)
+	if err != nil {
+		t.Fatalf("create verified customer: %v", err)
+	}
+	unverifiedCustomerID, err := contactfixture.CreateCustomer(ctx, tx)
+	if err != nil {
+		t.Fatalf("create unverified customer: %v", err)
+	}
+	const unionID = "ci01-unionid-normalized"
+	for _, record := range []struct {
+		customerID  int64
+		scope       string
+		assurance   string
+		fingerprint string
+	}{
+		{verifiedCustomerID, "wechat-open-platform:ci01-verified", "verified", "00112233445566778899aabbccddeeff"},
+		{unverifiedCustomerID, "wechat-open-platform:ci01-declared", "declared", "ffeeddccbbaa99887766554433221100"},
+	} {
+		if _, err = tx.Exec(ctx, `
+INSERT INTO identities (customer_id, kind, scope, normalized_value, normalizer_version, assurance, source, review_fingerprint, fingerprint_key_version, bound_at)
+VALUES ($1::bigint, 'unionid', $2::text, $3::text, 1, $4::text, 'ci01-acceptance', decode($5::text, 'hex'), 1, now())`,
+			record.customerID, record.scope, unionID, record.assurance, record.fingerprint); err != nil {
+			t.Fatalf("insert %s identity: %v", record.assurance, err)
+		}
+	}
+
+	rows, err := identitydb.New(tx).LookupMessageArchiveUnionIDCustomers(ctx, unionID)
+	if err != nil {
+		t.Fatalf("lookup unionid: %v", err)
+	}
+	if len(rows) != 1 || !rows[0].Valid || rows[0].Int64 != verifiedCustomerID {
+		t.Fatalf("unionid lookup=%v, want verified customer %d only", rows, verifiedCustomerID)
+	}
+}
 
 func TestIdentityStorageCatalogAndOwnership(t *testing.T) {
 	pool := openIdentityPool(t)
