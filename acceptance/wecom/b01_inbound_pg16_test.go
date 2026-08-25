@@ -46,7 +46,7 @@ func TestB01WeComInboundPG16(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	message := []byte(`<xml><ToUserName>corp-b01</ToUserName><CreateTime>1700000000</CreateTime><MsgType>event</MsgType><Event>change_external_contact</Event><ChangeType>add_external_contact</ChangeType><ExternalUserID>external-b01</ExternalUserID></xml>`)
+	message := []byte(`<xml><ToUserName>corp-b01</ToUserName><CreateTime>1700000000</CreateTime><MsgType>event</MsgType><Event>change_external_contact</Event><ChangeType>add_external_contact</ChangeType><UserID>staff-b01</UserID><ExternalUserID>external-b01</ExternalUserID></xml>`)
 	if err = service.Dispatch(ctx, message); err != nil {
 		t.Fatal(err)
 	}

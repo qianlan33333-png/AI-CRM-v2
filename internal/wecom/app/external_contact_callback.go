@@ -43,7 +43,7 @@ type ExternalContactCallbackFact struct {
 // All other lifecycle events remain auditable but must not be treated as a new
 // entrant.
 func (fact ExternalContactCallbackFact) IsEntrant() bool {
-	return (fact.ChangeType == addExternalContact || fact.ChangeType == addHalfExternal) && fact.UserID != ""
+	return fact.ChangeType == addExternalContact || fact.ChangeType == addHalfExternal
 }
 
 // EventType is stable for durable-inbox routing without exposing any callback
@@ -104,18 +104,18 @@ func ParseExternalContactCallbackFact(message []byte, corpID string) (ExternalCo
 		OccurredAt:     occurredAt,
 		State:          payload.State,
 	}
-	if payload.UserID != "" {
+	if fact.IsEntrant() {
 		if !validText(payload.UserID, 1024) {
 			return ExternalContactCallbackFact{}, invalidExternalContactCallback(nil)
 		}
 		fact.UserID = payload.UserID
-	}
-	if payload.WelcomeCode != "" {
-		if !validSecretCallbackValue(payload.WelcomeCode) {
-			return ExternalContactCallbackFact{}, invalidExternalContactCallback(nil)
+		if payload.WelcomeCode != "" {
+			if !validSecretCallbackValue(payload.WelcomeCode) {
+				return ExternalContactCallbackFact{}, invalidExternalContactCallback(nil)
+			}
+			fact.WelcomeCodePresent = true
+			fact.WelcomeCodeDigest = callbackValueDigest(payload.WelcomeCode)
 		}
-		fact.WelcomeCodePresent = true
-		fact.WelcomeCodeDigest = callbackValueDigest(payload.WelcomeCode)
 	}
 	if payload.Source != "" {
 		if !validSecretCallbackValue(payload.Source) {
