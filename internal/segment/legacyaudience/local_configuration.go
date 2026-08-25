@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"time"
+
+	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
 )
 
 const (
 	OperationMembersRoute          = "/api/admin/common/operation-members"
 	OperationMemberScope           = "ai_audience"
+	ConfigurationSchemaVersion     = "ai_audience_local_configuration.v1"
 	MaximumSenderCount             = 5
 	MaximumOperationMemberPageSize = 100
 )
@@ -69,15 +72,20 @@ type PackageSendersResponse struct {
 	Projection
 }
 
-// ConfigurationVersion is an append-only local snapshot. It has no runtime
-// flag, provider identity, credential, or model prompt execution semantics.
+// ConfigurationVersion is an append-only typed snapshot of the canonical
+// Segment definition that owns this Audience package. It contains no prompt,
+// free-form configuration, identity, credential or provider payload.
 type ConfigurationVersion struct {
-	PackageID      int64           `json:"package_id"`
-	Version        int64           `json:"version"`
-	TemplateConfig json.RawMessage `json:"template_config"`
-	FilterConfig   json.RawMessage `json:"filter_config"`
-	CreatedBy      int64           `json:"created_by"`
-	CreatedAt      time.Time       `json:"created_at"`
+	PackageID        int64                   `json:"package_id"`
+	Version          int64                   `json:"version"`
+	SchemaVersion    string                  `json:"schema_version"`
+	PackageVersion   int64                   `json:"package_version"`
+	Definition       segmentport.Definition  `json:"definition"`
+	DefinitionDigest string                  `json:"definition_digest"`
+	RefreshMode      segmentport.RefreshMode `json:"refresh_mode"`
+	RefreshCron      *string                 `json:"refresh_cron"`
+	CreatedBy        int64                   `json:"created_by"`
+	CreatedAt        time.Time               `json:"created_at"`
 }
 
 type ConfigurationResponse struct {
@@ -87,16 +95,15 @@ type ConfigurationResponse struct {
 
 // SendRecordProjection intentionally excludes message content, recipient
 // identifiers, sender identifiers, provider response data and credentials.
-type SendRecordProjection struct {
-	RecordID    string    `json:"record_id"`
-	State       string    `json:"state"`
-	OccurredAt  time.Time `json:"occurred_at"`
-	ProjectedAt time.Time `json:"projected_at"`
-}
-
-type SendRecordListResponse struct {
-	PackageID int64                  `json:"package_id"`
-	Items     []SendRecordProjection `json:"items"`
+type ConfigurationEvaluationResponse struct {
+	PackageID            int64     `json:"package_id"`
+	ConfigurationVersion int64     `json:"configuration_version"`
+	PackageVersion       int64     `json:"package_version"`
+	DefinitionDigest     string    `json:"definition_digest"`
+	MemberCount          int64     `json:"member_count"`
+	MemberDigest         string    `json:"member_digest"`
+	EvaluatedAt          time.Time `json:"evaluated_at"`
+	Materialized         bool      `json:"materialized"`
 	Projection
 }
 
@@ -123,12 +130,25 @@ type ReplaceSendersInput struct {
 }
 
 type PutConfigurationInput struct {
-	PackageID       int64
-	ExpectedVersion int64
-	TemplateConfig  json.RawMessage
-	FilterConfig    json.RawMessage
-	Actor           Actor
-	IdempotencyKey  string
+	PackageID              int64
+	ExpectedVersion        int64
+	ExpectedPackageVersion int64
+	Actor                  Actor
+	IdempotencyKey         string
+}
+
+type PreviewConfigurationInput struct {
+	PackageID            int64
+	ConfigurationVersion int64
+	EvaluatedAt          time.Time
+}
+
+type MaterializeConfigurationInput struct {
+	PackageID              int64
+	ConfigurationVersion   int64
+	ExpectedPackageVersion int64
+	Actor                  Actor
+	IdempotencyKey         string
 }
 
 // LocalConfigurationRepository owns only AI Audience-local references and
@@ -141,13 +161,11 @@ type LocalConfigurationRepository interface {
 	DeleteAutomationBinding(context.Context, int64, int64) (bool, error)
 	ListPackageSenders(context.Context, int64) ([]PackageSender, error)
 	ReplacePackageSenders(context.Context, int64, []PackageSender, int64, time.Time) ([]PackageSender, bool, error)
-	ListEligibleSenderUserIDs(context.Context, []string) ([]string, error)
-	LockEligibleSenderUserIDs(context.Context, []string) ([]string, error)
 	ReserveConfigurationReceipt(context.Context, ReceiptReservation) (Receipt, bool, error)
 	CompleteConfigurationReceipt(context.Context, int64, json.RawMessage, time.Time) (Receipt, error)
 	GetCurrentConfiguration(context.Context, int64) (*ConfigurationVersion, error)
+	GetConfigurationVersion(context.Context, int64, int64) (*ConfigurationVersion, error)
 	InsertConfigurationVersion(context.Context, ConfigurationVersion) (ConfigurationVersion, error)
-	ListSendRecordProjections(context.Context, int64, int) ([]SendRecordProjection, error)
 }
 
 type LocalConfigurationApplication interface {
@@ -159,7 +177,8 @@ type LocalConfigurationApplication interface {
 	ReplaceSenders(context.Context, ReplaceSendersInput) (PackageSendersResponse, error)
 	GetConfiguration(context.Context, int64) (ConfigurationResponse, error)
 	PutConfiguration(context.Context, PutConfigurationInput) (ConfigurationResponse, error)
-	ListSendRecords(context.Context, int64) (SendRecordListResponse, error)
+	PreviewConfiguration(context.Context, PreviewConfigurationInput) (ConfigurationEvaluationResponse, error)
+	MaterializeConfiguration(context.Context, MaterializeConfigurationInput) (ConfigurationEvaluationResponse, error)
 }
 
 type LocalConfigurationRouteSpec struct {
@@ -177,8 +196,9 @@ func LocalConfigurationRouteSpecs() []LocalConfigurationRouteSpec {
 		{Method: "DELETE", Pattern: RoutePrefix + "/packages/{package_id}/automation-binding", Capability: CapabilitySegmentsWrite, RequiresCSRF: true},
 		{Method: "GET", Pattern: RoutePrefix + "/packages/{package_id}/senders", Capability: CapabilitySegmentsRead},
 		{Method: "PUT", Pattern: RoutePrefix + "/packages/{package_id}/senders", Capability: CapabilitySegmentsWrite, RequiresCSRF: true},
-		{Method: "GET", Pattern: RoutePrefix + "/packages/{package_id}/template-config", Capability: CapabilitySegmentsRead},
-		{Method: "PUT", Pattern: RoutePrefix + "/packages/{package_id}/template-config", Capability: CapabilitySegmentsWrite, RequiresCSRF: true},
-		{Method: "GET", Pattern: RoutePrefix + "/packages/{package_id}/send-records", Capability: CapabilitySegmentsRead},
+		{Method: "GET", Pattern: RoutePrefix + "/packages/{package_id}/configuration", Capability: CapabilitySegmentsRead},
+		{Method: "PUT", Pattern: RoutePrefix + "/packages/{package_id}/configuration", Capability: CapabilitySegmentsWrite, RequiresCSRF: true},
+		{Method: "GET", Pattern: RoutePrefix + "/packages/{package_id}/configuration-preview", Capability: CapabilitySegmentsRead},
+		{Method: "POST", Pattern: RoutePrefix + "/packages/{package_id}/configuration-materialize", Capability: CapabilitySegmentsWrite, RequiresCSRF: true},
 	}
 }

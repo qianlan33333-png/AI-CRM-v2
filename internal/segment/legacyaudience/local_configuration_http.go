@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 )
 
 type LocalConfigurationHandler struct {
@@ -48,7 +49,8 @@ func (fragment *localConfigurationRouteFragment) ServeHTTP(writer http.ResponseW
 		return
 	}
 	segments := strings.Split(strings.TrimPrefix(path, "/"), "/")
-	if len(segments) != 3 || segments[0] != "packages" || (segments[2] != "automation-binding" && segments[2] != "senders" && segments[2] != "template-config" && segments[2] != "send-records") {
+	if len(segments) != 3 || segments[0] != "packages" || (segments[2] != "automation-binding" && segments[2] != "senders" &&
+		segments[2] != "configuration" && segments[2] != "configuration-preview" && segments[2] != "configuration-materialize") {
 		writeHTTPError(writer, request, http.StatusNotFound, "NOT_FOUND", "The resource was not found.", nil)
 		return
 	}
@@ -59,10 +61,12 @@ func (fragment *localConfigurationRouteFragment) ServeHTTP(writer http.ResponseW
 	switch segments[2] {
 	case "senders":
 		fragment.handler.senders(writer, request, segments[1])
-	case "template-config":
+	case "configuration":
 		fragment.handler.configuration(writer, request, segments[1])
-	case "send-records":
-		fragment.handler.sendRecords(writer, request, segments[1])
+	case "configuration-preview":
+		fragment.handler.previewConfiguration(writer, request, segments[1])
+	case "configuration-materialize":
+		fragment.handler.materializeConfiguration(writer, request, segments[1])
 	}
 }
 
@@ -207,12 +211,12 @@ func (handler *LocalConfigurationHandler) configuration(writer http.ResponseWrit
 	}
 }
 
-func (handler *LocalConfigurationHandler) sendRecords(writer http.ResponseWriter, request *http.Request, rawID string) {
+func (handler *LocalConfigurationHandler) previewConfiguration(writer http.ResponseWriter, request *http.Request, rawID string) {
 	if request.Method != http.MethodGet {
 		writeMethodNotAllowed(writer, request, http.MethodGet)
 		return
 	}
-	if !requireNoQuery(writer, request) || !handler.authorize(writer, request, false, nil) {
+	if !handler.authorize(writer, request, false, nil) {
 		return
 	}
 	packageID, problem := parseID(rawID, "package_id")
@@ -220,7 +224,49 @@ func (handler *LocalConfigurationHandler) sendRecords(writer http.ResponseWriter
 		writeProblem(writer, request, problem)
 		return
 	}
-	response, err := handler.application.ListSendRecords(request.Context(), packageID)
+	input, queryProblem := parsePreviewConfigurationQuery(request.URL.RawQuery)
+	if queryProblem != nil {
+		writeProblem(writer, request, queryProblem)
+		return
+	}
+	input.PackageID = packageID
+	response, err := handler.application.PreviewConfiguration(request.Context(), input)
+	if err != nil {
+		writeFailure(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, response)
+}
+
+func (handler *LocalConfigurationHandler) materializeConfiguration(writer http.ResponseWriter, request *http.Request, rawID string) {
+	if request.Method != http.MethodPost {
+		writeMethodNotAllowed(writer, request, http.MethodPost)
+		return
+	}
+	if !requireNoQuery(writer, request) {
+		return
+	}
+	packageID, problem := parseID(rawID, "package_id")
+	if problem != nil {
+		writeProblem(writer, request, problem)
+		return
+	}
+	var actor Actor
+	if !handler.authorize(writer, request, true, &actor) {
+		return
+	}
+	key, keyProblem := idempotencyKey(request)
+	if keyProblem != nil {
+		writeProblem(writer, request, keyProblem)
+		return
+	}
+	input, decodeProblem := decodeMaterializeConfiguration(writer, request)
+	if decodeProblem != nil {
+		writeProblem(writer, request, decodeProblem)
+		return
+	}
+	input.PackageID, input.Actor, input.IdempotencyKey = packageID, actor, key
+	response, err := handler.application.MaterializeConfiguration(request.Context(), input)
 	if err != nil {
 		writeFailure(writer, request, err)
 		return
@@ -355,7 +401,7 @@ func decodeDeleteAutomationBinding(writer http.ResponseWriter, request *http.Req
 }
 
 func decodePutConfiguration(writer http.ResponseWriter, request *http.Request) (PutConfigurationInput, *requestProblem) {
-	fields, problem := decodeObject(writer, request, map[string]bool{"expected_version": true, "template_config": true, "filter_config": true})
+	fields, problem := decodeObject(writer, request, map[string]bool{"expected_version": true, "expected_package_version": true})
 	if problem != nil {
 		return PutConfigurationInput{}, problem
 	}
@@ -363,15 +409,59 @@ func decodePutConfiguration(writer http.ResponseWriter, request *http.Request) (
 	if problem != nil {
 		return PutConfigurationInput{}, problem
 	}
-	template, templateExists := fields["template_config"]
-	filter, filterExists := fields["filter_config"]
-	if !templateExists || !filterExists {
-		return PutConfigurationInput{}, validation("template_config", "required")
+	packageVersion, problem := requiredInteger(fields, "expected_package_version", 1, 1<<62)
+	if problem != nil {
+		return PutConfigurationInput{}, problem
 	}
-	if _, _, err := normalizeConfiguration(template, filter); err != nil {
-		return PutConfigurationInput{}, validation("configuration", "invalid")
+	return PutConfigurationInput{ExpectedVersion: expected, ExpectedPackageVersion: packageVersion}, nil
+}
+
+func decodeMaterializeConfiguration(writer http.ResponseWriter, request *http.Request) (MaterializeConfigurationInput, *requestProblem) {
+	fields, problem := decodeObject(writer, request, map[string]bool{"configuration_version": true, "expected_package_version": true})
+	if problem != nil {
+		return MaterializeConfigurationInput{}, problem
 	}
-	return PutConfigurationInput{ExpectedVersion: expected, TemplateConfig: template, FilterConfig: filter}, nil
+	version, problem := requiredInteger(fields, "configuration_version", 1, 1<<62)
+	if problem != nil {
+		return MaterializeConfigurationInput{}, problem
+	}
+	packageVersion, problem := requiredInteger(fields, "expected_package_version", 1, 1<<62)
+	if problem != nil {
+		return MaterializeConfigurationInput{}, problem
+	}
+	return MaterializeConfigurationInput{ConfigurationVersion: version, ExpectedPackageVersion: packageVersion}, nil
+}
+
+func parsePreviewConfigurationQuery(raw string) (PreviewConfigurationInput, *requestProblem) {
+	values, err := url.ParseQuery(raw)
+	if err != nil {
+		return PreviewConfigurationInput{}, malformed("query", "invalid_encoding")
+	}
+	for key, entries := range values {
+		if key != "configuration_version" && key != "evaluated_at" {
+			return PreviewConfigurationInput{}, malformed("query", "unknown_parameter")
+		}
+		if len(entries) != 1 || entries[0] == "" {
+			return PreviewConfigurationInput{}, malformed(key, "duplicate_or_empty")
+		}
+	}
+	rawVersion, exists := values["configuration_version"]
+	if !exists {
+		return PreviewConfigurationInput{}, validation("configuration_version", "required")
+	}
+	version, problem := parseQueryInteger(rawVersion[0], "configuration_version", 1, 1<<62)
+	if problem != nil {
+		return PreviewConfigurationInput{}, problem
+	}
+	input := PreviewConfigurationInput{ConfigurationVersion: version}
+	if rawTime, exists := values["evaluated_at"]; exists {
+		parsed, parseErr := time.Parse(time.RFC3339, rawTime[0])
+		if parseErr != nil || parsed.Location() != time.UTC {
+			return PreviewConfigurationInput{}, validation("evaluated_at", "utc_rfc3339_required")
+		}
+		input.EvaluatedAt = parsed
+	}
+	return input, nil
 }
 
 func decodeReplaceSenders(writer http.ResponseWriter, request *http.Request) (ReplaceSendersInput, *requestProblem) {

@@ -78,6 +78,22 @@ type RefreshCommand struct {
 	IdempotencyKey string
 }
 
+// DefinitionEvaluation is a PII-free, reproducible result for one canonical
+// definition at one frozen UTC instant. MemberDigest is over sorted OneIDs and
+// must never be decoded or exposed as member identities.
+type DefinitionEvaluation struct {
+	MemberCount  int64
+	MemberDigest [32]byte
+	EvaluatedAt  time.Time
+}
+
+// AudienceDefinitionEngine evaluates or materializes a caller-frozen Segment
+// definition inside the caller's transaction. It never invokes a provider.
+type AudienceDefinitionEngine interface {
+	Preview(context.Context, Definition, time.Time) (DefinitionEvaluation, error)
+	Materialize(context.Context, SegmentID, Definition, time.Time) (DefinitionEvaluation, error)
+}
+
 type ArchiveCommand struct {
 	SegmentID      SegmentID
 	Actor          Actor

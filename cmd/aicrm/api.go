@@ -1014,6 +1014,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		legacyAIAudienceRepository,
 		legacyAIAudienceAutomationAgentReader{store: automationstore.NewAgentRepository()},
 		audienceOperationMembers,
+		channelStaffDirectory,
+		segmentapp.NewAudienceDefinitionEngine(segmentstore.NewRefreshRepository()),
 		legacyAIAudienceEventAppender{appender: eventstore.NewAppender()},
 	)
 	if err != nil {

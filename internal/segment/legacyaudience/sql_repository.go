@@ -2,7 +2,6 @@ package legacyaudience
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -533,9 +532,6 @@ SELECT pg_advisory_xact_lock(hashtextextended('ai_audience.package.senders.v1:' 
 	if _, err = database.Exec(ctx, `DELETE FROM public.ai_audience_package_senders WHERE package_id = $1`, packageID); err != nil {
 		return nil, false, classifySQLError(err)
 	}
-	if _, err = database.Exec(ctx, `DELETE FROM public.ai_audience_package_sender_security_config WHERE package_id = $1`, packageID); err != nil {
-		return nil, false, classifySQLError(err)
-	}
 	for _, item := range wanted {
 		if _, err = database.Exec(ctx, `
 INSERT INTO public.ai_audience_package_senders
@@ -544,37 +540,12 @@ VALUES ($1, $2, $3, $4, $5, $5, $6, $6)`,
 			packageID, item.SenderUserID, item.SortOrder, item.IsEnabled, actorID, now); err != nil {
 			return nil, false, classifySQLError(err)
 		}
-		ref := "staff:" + item.SenderUserID
-		digest := sha256.Sum256([]byte(ref))
-		if _, err = database.Exec(ctx, `
-INSERT INTO public.ai_audience_package_sender_security_config
-  (package_id, sender_ref, sender_digest, is_enabled, created_by, updated_by, created_at, updated_at)
-VALUES ($1, $2, $3, $4, $5, $5, $6, $6)`,
-			packageID, ref, digest[:], item.IsEnabled, actorID, now); err != nil {
-			return nil, false, classifySQLError(err)
-		}
 	}
 	stored, err := listPackageSenders(ctx, database, packageID, true)
 	if err != nil {
 		return nil, false, err
 	}
 	return stored, true, nil
-}
-
-func (repository *SQLRepository) ListEligibleSenderUserIDs(ctx context.Context, userIDs []string) ([]string, error) {
-	database, err := repository.reader(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return listEligibleSenderUserIDs(ctx, database, userIDs, false)
-}
-
-func (repository *SQLRepository) LockEligibleSenderUserIDs(ctx context.Context, userIDs []string) ([]string, error) {
-	database, err := repository.transaction(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return listEligibleSenderUserIDs(ctx, database, userIDs, true)
 }
 
 func (repository *SQLRepository) ReserveConfigurationReceipt(ctx context.Context, wanted ReceiptReservation) (Receipt, bool, error) {
@@ -631,11 +602,29 @@ func (repository *SQLRepository) GetCurrentConfiguration(ctx context.Context, pa
 		return nil, err
 	}
 	configuration, err := scanConfigurationVersion(database.QueryRow(ctx, `
-SELECT package_id, version, template_config, filter_config, created_by, created_at
+SELECT package_id, version, schema_version, package_version, definition, encode(definition_digest, 'hex'), refresh_mode, refresh_cron, created_by, created_at
 FROM public.ai_audience_package_configuration_versions
 WHERE package_id = $1
 ORDER BY version DESC
 LIMIT 1`, packageID))
+	if err != nil {
+		if repository.provider.IsNoRows(err) {
+			return nil, nil
+		}
+		return nil, classifySQLError(err)
+	}
+	return &configuration, nil
+}
+
+func (repository *SQLRepository) GetConfigurationVersion(ctx context.Context, packageID, version int64) (*ConfigurationVersion, error) {
+	database, err := repository.reader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	configuration, err := scanConfigurationVersion(database.QueryRow(ctx, `
+SELECT package_id, version, schema_version, package_version, definition, definition_digest, refresh_mode, refresh_cron, created_by, created_at
+FROM public.ai_audience_package_configuration_versions
+WHERE package_id = $1 AND version = $2`, packageID, version))
 	if err != nil {
 		if repository.provider.IsNoRows(err) {
 			return nil, nil
@@ -652,46 +641,15 @@ func (repository *SQLRepository) InsertConfigurationVersion(ctx context.Context,
 	}
 	stored, err := scanConfigurationVersion(database.QueryRow(ctx, `
 INSERT INTO public.ai_audience_package_configuration_versions
-  (package_id, version, template_config, filter_config, created_by, created_at)
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING package_id, version, template_config, filter_config, created_by, created_at`,
-		value.PackageID, value.Version, []byte(value.TemplateConfig), []byte(value.FilterConfig), value.CreatedBy, value.CreatedAt))
+  (package_id, version, schema_version, package_version, definition, definition_digest, refresh_mode, refresh_cron, created_by, created_at)
+VALUES ($1, $2, $3, $4, $5, decode($6, 'hex'), $7, $8, $9, $10)
+RETURNING package_id, version, schema_version, package_version, definition, encode(definition_digest, 'hex'), refresh_mode, refresh_cron, created_by, created_at`,
+		value.PackageID, value.Version, value.SchemaVersion, value.PackageVersion, []byte(value.Definition), value.DefinitionDigest,
+		string(value.RefreshMode), value.RefreshCron, value.CreatedBy, value.CreatedAt))
 	if err != nil {
 		return ConfigurationVersion{}, classifySQLError(err)
 	}
 	return stored, nil
-}
-
-func (repository *SQLRepository) ListSendRecordProjections(ctx context.Context, packageID int64, limit int) ([]SendRecordProjection, error) {
-	if limit < 1 || limit > 100 {
-		return nil, ErrInvalidInput
-	}
-	database, err := repository.reader(ctx)
-	if err != nil {
-		return nil, err
-	}
-	rows, err := database.Query(ctx, `
-SELECT record_id, state, occurred_at, projected_at
-FROM public.ai_audience_package_send_record_projections
-WHERE package_id = $1
-ORDER BY occurred_at DESC, record_id DESC
-LIMIT $2`, packageID, limit)
-	if err != nil {
-		return nil, classifySQLError(err)
-	}
-	defer rows.Close()
-	items := make([]SendRecordProjection, 0, limit)
-	for rows.Next() {
-		var item SendRecordProjection
-		if err = rows.Scan(&item.RecordID, &item.State, &item.OccurredAt, &item.ProjectedAt); err != nil {
-			return nil, classifySQLError(err)
-		}
-		items = append(items, item)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, classifySQLError(err)
-	}
-	return items, nil
 }
 
 func listPackageSenders(ctx context.Context, database SQLExecutor, packageID int64, lock bool) ([]PackageSender, error) {
@@ -725,42 +683,6 @@ ORDER BY sort_order ASC, sender_userid ASC`
 	return items, nil
 }
 
-func listEligibleSenderUserIDs(ctx context.Context, database SQLExecutor, userIDs []string, lock bool) ([]string, error) {
-	if len(userIDs) == 0 {
-		return []string{}, nil
-	}
-	query := `
-SELECT wecom_userid
-FROM public.staff
-WHERE is_active
-  AND btrim(wecom_userid) <> ''
-  AND wecom_userid = ANY($1::text[])
-ORDER BY wecom_userid ASC`
-	if lock {
-		// FOR SHARE conflicts with the row lock taken by UPDATE/DELETE, so an
-		// in-flight staff deactivation or identifier change cannot pass between
-		// validation and the sender replacement in this same transaction.
-		query += ` FOR SHARE`
-	}
-	rows, err := database.Query(ctx, query, userIDs)
-	if err != nil {
-		return nil, classifySQLError(err)
-	}
-	defer rows.Close()
-	items := make([]string, 0, len(userIDs))
-	for rows.Next() {
-		var userID string
-		if err = rows.Scan(&userID); err != nil {
-			return nil, classifySQLError(err)
-		}
-		items = append(items, userID)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, classifySQLError(err)
-	}
-	return items, nil
-}
-
 func scanAutomationBinding(row interface{ Scan(...any) error }) (AutomationBinding, error) {
 	var binding AutomationBinding
 	err := row.Scan(
@@ -777,10 +699,14 @@ func scanAutomationBinding(row interface{ Scan(...any) error }) (AutomationBindi
 
 func scanConfigurationVersion(row interface{ Scan(...any) error }) (ConfigurationVersion, error) {
 	var value ConfigurationVersion
-	var template, filter []byte
-	err := row.Scan(&value.PackageID, &value.Version, &template, &filter, &value.CreatedBy, &value.CreatedAt)
-	value.TemplateConfig = append(json.RawMessage(nil), template...)
-	value.FilterConfig = append(json.RawMessage(nil), filter...)
+	var definition []byte
+	var refreshMode string
+	var refreshCron sql.NullString
+	err := row.Scan(&value.PackageID, &value.Version, &value.SchemaVersion, &value.PackageVersion, &definition, &value.DefinitionDigest,
+		&refreshMode, &refreshCron, &value.CreatedBy, &value.CreatedAt)
+	value.Definition = append(segmentport.Definition(nil), definition...)
+	value.RefreshMode = segmentport.RefreshMode(refreshMode)
+	value.RefreshCron = nullableString(refreshCron)
 	return value, err
 }
 

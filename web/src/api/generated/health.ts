@@ -2182,39 +2182,47 @@ export interface AIAudienceAutomationBindingDeleteResponse {
   real_external_call_executed: boolean;
 }
 
-export type AIAudienceConfigurationVersionTemplateConfig = {
-  [key: string]: unknown;
-};
+export type AIAudienceConfigurationVersionSchemaVersion =
+  (typeof AIAudienceConfigurationVersionSchemaVersion)[keyof typeof AIAudienceConfigurationVersionSchemaVersion];
 
-export type AIAudienceConfigurationVersionFilterConfig = {
-  [key: string]: unknown;
-};
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceConfigurationVersionSchemaVersion = {
+  ai_audience_local_configurationv1: "ai_audience_local_configuration.v1",
+} as const;
+
+export type AIAudienceConfigurationVersionRefreshMode =
+  (typeof AIAudienceConfigurationVersionRefreshMode)[keyof typeof AIAudienceConfigurationVersionRefreshMode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceConfigurationVersionRefreshMode = {
+  manual: "manual",
+  scheduled: "scheduled",
+} as const;
 
 export interface AIAudienceConfigurationVersion {
   /** @minimum 1 */
   package_id: number;
   /** @minimum 1 */
   version: number;
-  template_config: AIAudienceConfigurationVersionTemplateConfig;
-  filter_config: AIAudienceConfigurationVersionFilterConfig;
+  schema_version: AIAudienceConfigurationVersionSchemaVersion;
+  /** @minimum 1 */
+  package_version: number;
+  definition: SegmentDefinition;
+  /** @pattern ^[0-9a-f]{64}$ */
+  definition_digest: string;
+  refresh_mode: AIAudienceConfigurationVersionRefreshMode;
+  /** @nullable */
+  refresh_cron: string | null;
   /** @minimum 1 */
   created_by: number;
   created_at: string;
 }
 
-export type AIAudienceConfigurationPutRequestTemplateConfig = {
-  [key: string]: unknown;
-};
-
-export type AIAudienceConfigurationPutRequestFilterConfig = {
-  [key: string]: unknown;
-};
-
 export interface AIAudienceConfigurationPutRequest {
   /** @minimum 0 */
   expected_version: number;
-  template_config: AIAudienceConfigurationPutRequestTemplateConfig;
-  filter_config: AIAudienceConfigurationPutRequestFilterConfig;
+  /** @minimum 1 */
+  expected_package_version: number;
 }
 
 /**
@@ -2230,29 +2238,28 @@ export interface AIAudienceConfigurationResponse {
   real_external_call_executed: boolean;
 }
 
-export type AIAudienceSendRecordProjectionState =
-  (typeof AIAudienceSendRecordProjectionState)[keyof typeof AIAudienceSendRecordProjectionState];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const AIAudienceSendRecordProjectionState = {
-  pending: "pending",
-  unknown: "unknown",
-  sent: "sent",
-  failed: "failed",
-} as const;
-
-export interface AIAudienceSendRecordProjection {
-  record_id: string;
-  state: AIAudienceSendRecordProjectionState;
-  occurred_at: string;
-  projected_at: string;
+export interface AIAudienceConfigurationMaterializeRequest {
+  /** @minimum 1 */
+  configuration_version: number;
+  /** @minimum 1 */
+  expected_package_version: number;
 }
 
-export interface AIAudienceSendRecordListResponse {
+export interface AIAudienceConfigurationEvaluationResponse {
   /** @minimum 1 */
   package_id: number;
-  /** @maxItems 100 */
-  items: AIAudienceSendRecordProjection[];
+  /** @minimum 1 */
+  configuration_version: number;
+  /** @minimum 1 */
+  package_version: number;
+  /** @pattern ^[0-9a-f]{64}$ */
+  definition_digest: string;
+  /** @minimum 0 */
+  member_count: number;
+  /** @pattern ^[0-9a-f]{64}$ */
+  member_digest: string;
+  evaluated_at: string;
+  materialized: boolean;
   local_projection: boolean;
   real_external_call_executed: boolean;
 }
@@ -15704,6 +15711,14 @@ export type ListAIAudiencePackagesParams = {
    * @maximum 100000
    */
   offset?: number;
+};
+
+export type PreviewAIAudienceConfigurationParams = {
+  /**
+   * @minimum 1
+   */
+  configuration_version: number;
+  evaluated_at?: string;
 };
 
 export type ListAIAudiencePackageMembersParams = {
@@ -44912,7 +44927,7 @@ export const replaceAIAudiencePackageSenders = async (
 };
 
 /**
- * This is a V2-native local snapshot, not the legacy template catalogue or preview flow.
+ * This is a V2-native typed snapshot of the canonical Segment definition, not the legacy template catalogue.
  * @summary Read the current immutable CRM-local AI Audience configuration snapshot
  */
 export type getAIAudienceConfigurationVersionResponse200 = {
@@ -44964,7 +44979,7 @@ export type getAIAudienceConfigurationVersionResponse =
   | getAIAudienceConfigurationVersionResponseError;
 
 export const getGetAIAudienceConfigurationVersionUrl = (packageId: number) => {
-  return `/api/admin/ai-audience/packages/${packageId}/template-config`;
+  return `/api/admin/ai-audience/packages/${packageId}/configuration`;
 };
 
 export const getAIAudienceConfigurationVersion = async (
@@ -44989,7 +45004,7 @@ export const getAIAudienceConfigurationVersion = async (
 };
 
 /**
- * Writes only a local immutable template/filter snapshot. It does not preview, activate, enqueue, send, or call a provider.
+ * Freezes the current canonical Segment definition and package version. It does not enqueue, send, or call a provider.
  * @summary Append one CRM-local AI Audience configuration snapshot with CAS
  */
 export type putAIAudienceConfigurationVersionResponse200 = {
@@ -45065,7 +45080,7 @@ export type putAIAudienceConfigurationVersionResponse =
   | putAIAudienceConfigurationVersionResponseError;
 
 export const getPutAIAudienceConfigurationVersionUrl = (packageId: number) => {
-  return `/api/admin/ai-audience/packages/${packageId}/template-config`;
+  return `/api/admin/ai-audience/packages/${packageId}/configuration`;
 };
 
 export const putAIAudienceConfigurationVersion = async (
@@ -45093,69 +45108,83 @@ export const putAIAudienceConfigurationVersion = async (
 };
 
 /**
- * A record state is not a provider acceptance, send, or delivery claim. No content, recipient, sender, credential, or provider response is returned.
- * @summary Read PII-minimal local AI Audience send-record projections
+ * Returns only count and deterministic lineage digests. No contact identifiers, provider call, enqueue, or delivery assertion.
+ * @summary Preview a frozen local AI Audience definition without storing members
  */
-export type listAIAudienceSendRecordProjectionsResponse200 = {
-  data: AIAudienceSendRecordListResponse;
+export type previewAIAudienceConfigurationResponse200 = {
+  data: AIAudienceConfigurationEvaluationResponse;
   status: 200;
 };
 
-export type listAIAudienceSendRecordProjectionsResponse400 = {
+export type previewAIAudienceConfigurationResponse400 = {
   data: BadRequestResponse;
   status: 400;
 };
 
-export type listAIAudienceSendRecordProjectionsResponse401 = {
+export type previewAIAudienceConfigurationResponse401 = {
   data: UnauthorizedResponse;
   status: 401;
 };
 
-export type listAIAudienceSendRecordProjectionsResponse403 = {
+export type previewAIAudienceConfigurationResponse403 = {
   data: ForbiddenResponse;
   status: 403;
 };
 
-export type listAIAudienceSendRecordProjectionsResponse404 = {
+export type previewAIAudienceConfigurationResponse404 = {
   data: NotFoundResponse;
   status: 404;
 };
 
-export type listAIAudienceSendRecordProjectionsResponse503 = {
+export type previewAIAudienceConfigurationResponse503 = {
   data: ServiceUnavailableResponse;
   status: 503;
 };
 
-export type listAIAudienceSendRecordProjectionsResponseSuccess =
-  listAIAudienceSendRecordProjectionsResponse200 & {
+export type previewAIAudienceConfigurationResponseSuccess =
+  previewAIAudienceConfigurationResponse200 & {
     headers: Headers;
   };
-export type listAIAudienceSendRecordProjectionsResponseError = (
-  | listAIAudienceSendRecordProjectionsResponse400
-  | listAIAudienceSendRecordProjectionsResponse401
-  | listAIAudienceSendRecordProjectionsResponse403
-  | listAIAudienceSendRecordProjectionsResponse404
-  | listAIAudienceSendRecordProjectionsResponse503
+export type previewAIAudienceConfigurationResponseError = (
+  | previewAIAudienceConfigurationResponse400
+  | previewAIAudienceConfigurationResponse401
+  | previewAIAudienceConfigurationResponse403
+  | previewAIAudienceConfigurationResponse404
+  | previewAIAudienceConfigurationResponse503
 ) & {
   headers: Headers;
 };
 
-export type listAIAudienceSendRecordProjectionsResponse =
-  | listAIAudienceSendRecordProjectionsResponseSuccess
-  | listAIAudienceSendRecordProjectionsResponseError;
+export type previewAIAudienceConfigurationResponse =
+  | previewAIAudienceConfigurationResponseSuccess
+  | previewAIAudienceConfigurationResponseError;
 
-export const getListAIAudienceSendRecordProjectionsUrl = (
+export const getPreviewAIAudienceConfigurationUrl = (
   packageId: number,
+  params: PreviewAIAudienceConfigurationParams,
 ) => {
-  return `/api/admin/ai-audience/packages/${packageId}/send-records`;
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/ai-audience/packages/${packageId}/configuration-preview?${stringifiedParams}`
+    : `/api/admin/ai-audience/packages/${packageId}/configuration-preview`;
 };
 
-export const listAIAudienceSendRecordProjections = async (
+export const previewAIAudienceConfiguration = async (
   packageId: number,
+  params: PreviewAIAudienceConfigurationParams,
   options?: RequestInit,
-): Promise<listAIAudienceSendRecordProjectionsResponse> => {
+): Promise<previewAIAudienceConfigurationResponse> => {
   const res = await fetch(
-    getListAIAudienceSendRecordProjectionsUrl(packageId),
+    getPreviewAIAudienceConfigurationUrl(packageId, params),
     {
       ...options,
       method: "GET",
@@ -45164,14 +45193,118 @@ export const listAIAudienceSendRecordProjections = async (
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: listAIAudienceSendRecordProjectionsResponse["data"] = body
+  const data: previewAIAudienceConfigurationResponse["data"] = body
     ? JSON.parse(body)
     : {};
   return {
     data,
     status: res.status,
     headers: res.headers,
-  } as listAIAudienceSendRecordProjectionsResponse;
+  } as previewAIAudienceConfigurationResponse;
+};
+
+/**
+ * Evaluates the frozen definition in the caller transaction and stores local members with a completed receipt and lineage event. It makes no Provider call.
+ * @summary Materialize one frozen configuration into the local Segment member snapshot
+ */
+export type materializeAIAudienceConfigurationResponse200 = {
+  data: AIAudienceConfigurationEvaluationResponse;
+  status: 200;
+};
+
+export type materializeAIAudienceConfigurationResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type materializeAIAudienceConfigurationResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type materializeAIAudienceConfigurationResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type materializeAIAudienceConfigurationResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type materializeAIAudienceConfigurationResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type materializeAIAudienceConfigurationResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type materializeAIAudienceConfigurationResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type materializeAIAudienceConfigurationResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type materializeAIAudienceConfigurationResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type materializeAIAudienceConfigurationResponseSuccess =
+  materializeAIAudienceConfigurationResponse200 & {
+    headers: Headers;
+  };
+export type materializeAIAudienceConfigurationResponseError = (
+  | materializeAIAudienceConfigurationResponse400
+  | materializeAIAudienceConfigurationResponse401
+  | materializeAIAudienceConfigurationResponse403
+  | materializeAIAudienceConfigurationResponse404
+  | materializeAIAudienceConfigurationResponse409
+  | materializeAIAudienceConfigurationResponse413
+  | materializeAIAudienceConfigurationResponse415
+  | materializeAIAudienceConfigurationResponse422
+  | materializeAIAudienceConfigurationResponse503
+) & {
+  headers: Headers;
+};
+
+export type materializeAIAudienceConfigurationResponse =
+  | materializeAIAudienceConfigurationResponseSuccess
+  | materializeAIAudienceConfigurationResponseError;
+
+export const getMaterializeAIAudienceConfigurationUrl = (packageId: number) => {
+  return `/api/admin/ai-audience/packages/${packageId}/configuration-materialize`;
+};
+
+export const materializeAIAudienceConfiguration = async (
+  packageId: number,
+  aIAudienceConfigurationMaterializeRequest: AIAudienceConfigurationMaterializeRequest,
+  options?: RequestInit,
+): Promise<materializeAIAudienceConfigurationResponse> => {
+  const res = await fetch(getMaterializeAIAudienceConfigurationUrl(packageId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceConfigurationMaterializeRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: materializeAIAudienceConfigurationResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as materializeAIAudienceConfigurationResponse;
 };
 
 /**

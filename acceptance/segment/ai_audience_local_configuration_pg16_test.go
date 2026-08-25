@@ -6,18 +6,31 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	authacceptance "github.com/qianlan33333-png/AI-CRM-v2/acceptance/auth"
 	automationfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/automationfixture"
 	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
+	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
+	automationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/store"
+	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
+	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 	legacyaudience "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/legacyaudience"
+	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
+	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 )
 
 // TestLocalConfigurationSQLRepositoryPG16 runs against a database migrated
@@ -60,8 +73,11 @@ func TestLocalConfigurationSQLRepositoryPG16(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Date(2026, 8, 22, 5, 6, 7, 0, time.UTC)
+	definition := json.RawMessage(`{"field":"is_deleted","op":"eq","value":false}`)
+	definitionDigest := sha256.Sum256(definition)
 	configuration, err := repository.InsertConfigurationVersion(ctx, legacyaudience.ConfigurationVersion{
-		PackageID: firstPackage, Version: 1, TemplateConfig: json.RawMessage(`{"title":"local"}`), FilterConfig: json.RawMessage(`{"segment":"active"}`), CreatedBy: actorID, CreatedAt: now,
+		PackageID: firstPackage, Version: 1, SchemaVersion: legacyaudience.ConfigurationSchemaVersion, PackageVersion: 1,
+		Definition: segmentport.Definition(definition), DefinitionDigest: fmt.Sprintf("%x", definitionDigest), RefreshMode: "manual", CreatedBy: actorID, CreatedAt: now,
 	})
 	if err != nil || configuration.PackageID != firstPackage || configuration.Version != 1 || configuration.CreatedBy != actorID || configuration.CreatedAt.IsZero() {
 		t.Fatalf("InsertConfigurationVersion configuration=%+v err=%v", configuration, err)
@@ -77,13 +93,6 @@ func TestLocalConfigurationSQLRepositoryPG16(t *testing.T) {
 	}
 	if _, err = transaction.Exec(ctx, "RELEASE SAVEPOINT immutable_configuration_version"); err != nil {
 		t.Fatal(err)
-	}
-	if _, err = transaction.Exec(ctx, `INSERT INTO public.ai_audience_package_send_record_projections(package_id, record_id, record_digest, state, occurred_at, projected_at) VALUES($1, '5d70331f-6bf5-48e5-ba8b-3fbfc0c002b3', decode(repeat('42',32),'hex'), 'unknown', $2, $2)`, firstPackage, now); err != nil {
-		t.Fatal(err)
-	}
-	records, err := repository.ListSendRecordProjections(ctx, firstPackage, 100)
-	if err != nil || len(records) != 1 || records[0].RecordID != "5d70331f-6bf5-48e5-ba8b-3fbfc0c002b3" || records[0].State != "unknown" || records[0].OccurredAt.IsZero() || records[0].ProjectedAt.IsZero() {
-		t.Fatalf("ListSendRecordProjections records=%+v err=%v", records, err)
 	}
 	first, err := repository.SaveAutomationBinding(ctx, legacyaudience.AutomationBinding{PackageID: firstPackage, AutomationAgentID: agentID}, actorID, 0, now)
 	if err != nil || first.PackageID != firstPackage || first.AutomationAgentID != agentID || first.CreatedBy != actorID || first.UpdatedBy != actorID || first.Version != 1 {
@@ -125,10 +134,6 @@ func TestLocalConfigurationSQLRepositoryPG16(t *testing.T) {
 	if err != nil || !changed || !reflect.DeepEqual(stored, wanted) {
 		t.Fatalf("ReplacePackageSenders stored=%+v changed=%t err=%v", stored, changed, err)
 	}
-	var senderSecurityCount int
-	if err = transaction.QueryRow(ctx, `SELECT count(*) FROM public.ai_audience_package_sender_security_config WHERE package_id = $1 AND sender_ref = 'staff:alpha' AND octet_length(sender_digest) = 32`, secondPackage).Scan(&senderSecurityCount); err != nil || senderSecurityCount != 1 {
-		t.Fatalf("sender security config count=%d err=%v", senderSecurityCount, err)
-	}
 	stored, changed, err = repository.ReplacePackageSenders(ctx, secondPackage, wanted, actorID, now)
 	if err != nil || changed || !reflect.DeepEqual(stored, wanted) {
 		t.Fatalf("idempotent sender replacement stored=%+v changed=%t err=%v", stored, changed, err)
@@ -148,102 +153,114 @@ func TestLocalConfigurationSQLRepositoryPG16(t *testing.T) {
 	}
 }
 
-func TestLocalConfigurationSQLRepositoryPG16SerializesStaffDeactivationAndSenderReplacement(t *testing.T) {
+func TestLocalConfigurationHTTPServicePG16ReceiptsAndRollback(t *testing.T) {
 	ctx := context.Background()
 	dsn := os.Getenv("CI_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("CI_TEST_DATABASE_URL is required for the isolated migrated PG16 test")
 	}
-	connection, err := pgx.Connect(ctx, dsn)
+	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer connection.Close(ctx)
-	fixturePool, err := pgxpool.New(ctx, dsn)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(fixturePool.Close)
-
+	t.Cleanup(pool.Close)
 	actorID := seedLocalConfigurationActor(t, ctx, dsn)
-	setup, err := connection.Begin(ctx)
+	setup, err := pool.Begin(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	packageID := insertLocalConfigurationPackage(t, ctx, setup, actorID, "staff-lock")
-	senderUserID := fmt.Sprintf("audience_local_staff-lock_%d", time.Now().UnixNano())
-	staffID, err := contactfixture.CreateStaffRecord(ctx, fixturePool, senderUserID, "Audience local configuration staff", true, time.Now().UTC())
-	if err != nil {
-		t.Fatal(err)
-	}
+	packageID := insertLocalConfigurationPackage(t, ctx, setup, actorID, "http-service")
+	agentID := insertLocalConfigurationAgent(t, ctx, setup)
 	if err = setup.Commit(ctx); err != nil {
 		t.Fatal(err)
 	}
+	senderUserID := fmt.Sprintf("audience_local_http_%d", time.Now().UnixNano())
+	staffID, err := contactfixture.CreateStaffRecord(ctx, pool, senderUserID, "Audience local HTTP", true, time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() {
-		_, _ = fixturePool.Exec(context.Background(), `DELETE FROM public.segments WHERE id = $1`, packageID)
-		_ = contactfixture.DeleteStaff(context.Background(), fixturePool, staffID)
+		_, _ = pool.Exec(context.Background(), `DELETE FROM public.segments WHERE id = $1`, packageID)
+		_ = contactfixture.DeleteStaff(context.Background(), pool, staffID)
 	})
 
-	transaction, err := connection.Begin(ctx)
+	repository, err := legacyaudience.NewSQLRepository(localConfigurationPoolProvider{pool: pool})
 	if err != nil {
 		t.Fatal(err)
 	}
-	repository, err := legacyaudience.NewSQLRepository(localConfigurationPGProvider{transaction: transaction})
+	staff := contactstore.NewStaffDirectoryRepository(pool)
+	service, err := legacyaudience.NewLocalConfigurationService(
+		platformstore.NewUnitOfWork(pool), repository,
+		localConfigurationAutomationReader{store: automationstore.NewAgentRepository()}, staff, staff,
+		segmentapp.NewAudienceDefinitionEngine(segmentstore.NewRefreshRepository()),
+		localConfigurationEventAppender{appender: eventstore.NewAppender()},
+	)
 	if err != nil {
-		_ = transaction.Rollback(ctx)
 		t.Fatal(err)
 	}
-	if _, err = repository.LockPackage(ctx, packageID); err != nil {
-		_ = transaction.Rollback(ctx)
+	handler, err := legacyaudience.NewLocalConfigurationHandler(service, localConfigurationSecurity{actorID: actorID})
+	if err != nil {
 		t.Fatal(err)
 	}
-	eligible, err := repository.LockEligibleSenderUserIDs(ctx, []string{senderUserID})
-	if err != nil || !reflect.DeepEqual(eligible, []string{senderUserID}) {
-		_ = transaction.Rollback(ctx)
-		t.Fatalf("LockEligibleSenderUserIDs eligible=%v err=%v", eligible, err)
-	}
-
-	deactivationDone := make(chan error, 1)
-	go func() {
-		updateErr := contactfixture.SetStaffActive(ctx, fixturePool, staffID, false)
-		deactivationDone <- updateErr
-	}()
-	select {
-	case updateErr := <-deactivationDone:
-		_ = transaction.Rollback(ctx)
-		if updateErr != nil {
-			t.Fatalf("staff deactivation returned before sender transaction: %v", updateErr)
-		}
-		t.Fatal("staff deactivation did not block on sender eligibility lock")
-	case <-time.After(200 * time.Millisecond):
-	}
-
-	stored, changed, err := repository.ReplacePackageSenders(ctx, packageID, []legacyaudience.PackageSender{{
-		SenderUserID: senderUserID, SortOrder: 1, IsEnabled: true,
-	}}, actorID, time.Date(2026, 8, 22, 5, 6, 8, 0, time.UTC))
-	if err != nil || !changed || !reflect.DeepEqual(stored, []legacyaudience.PackageSender{{SenderUserID: senderUserID, SortOrder: 1, IsEnabled: true}}) {
-		_ = transaction.Rollback(ctx)
-		t.Fatalf("ReplacePackageSenders stored=%v changed=%t err=%v", stored, changed, err)
-	}
-	if err = transaction.Commit(ctx); err != nil {
+	fragment, err := legacyaudience.NewLocalConfigurationRouteFragment(handler)
+	if err != nil {
 		t.Fatal(err)
 	}
-	select {
-	case updateErr := <-deactivationDone:
-		if updateErr != nil {
-			t.Fatalf("staff deactivation after sender commit: %v", updateErr)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("staff deactivation remained blocked after sender commit")
-	}
 
-	var active bool
-	if err = connection.QueryRow(ctx, `SELECT is_active FROM public.staff WHERE wecom_userid = $1`, senderUserID).Scan(&active); err != nil || active {
-		t.Fatalf("staff active=%t err=%v, want committed deactivation", active, err)
+	mutations := []struct {
+		method, suffix, key, body, changed string
+	}{
+		{http.MethodPut, "/automation-binding", "audience-binding-http-key", fmt.Sprintf(`{"automation_agent_id":%d,"expected_version":0}`, agentID), fmt.Sprintf(`{"automation_agent_id":%d,"expected_version":1}`, agentID)},
+		{http.MethodPut, "/senders", "audience-senders-http-key", fmt.Sprintf(`{"items":[{"sender_userid":%q,"sort_order":1,"is_enabled":true}]}`, senderUserID), `{"items":[]}`},
+		{http.MethodPut, "/configuration", "audience-config-http-key", `{"expected_version":0,"expected_package_version":1}`, `{"expected_version":0,"expected_package_version":2}`},
 	}
-	var senderCount int
-	if err = connection.QueryRow(ctx, `SELECT count(*) FROM public.ai_audience_package_senders WHERE package_id = $1 AND sender_userid = $2`, packageID, senderUserID).Scan(&senderCount); err != nil || senderCount != 1 {
-		t.Fatalf("sender count=%d err=%v, want committed replacement", senderCount, err)
+	for _, mutation := range mutations {
+		path := fmt.Sprintf("%s/packages/%d%s", legacyaudience.RoutePrefix, packageID, mutation.suffix)
+		assertLocalConfigurationHTTPStatus(t, fragment, mutation.method, path, mutation.key, mutation.body, http.StatusOK)
+		assertLocalConfigurationHTTPStatus(t, fragment, mutation.method, path, mutation.key, mutation.body, http.StatusOK)
+		assertLocalConfigurationHTTPStatus(t, fragment, mutation.method, path, mutation.key, mutation.changed, http.StatusConflict)
+	}
+	deletePath := fmt.Sprintf("%s/packages/%d/automation-binding", legacyaudience.RoutePrefix, packageID)
+	assertLocalConfigurationHTTPStatus(t, fragment, http.MethodDelete, deletePath, "audience-delete-http-key", `{"expected_version":1}`, http.StatusOK)
+	assertLocalConfigurationHTTPStatus(t, fragment, http.MethodDelete, deletePath, "audience-delete-http-key", `{"expected_version":1}`, http.StatusOK)
+	assertLocalConfigurationHTTPStatus(t, fragment, http.MethodDelete, deletePath, "audience-delete-http-key", `{"expected_version":0}`, http.StatusConflict)
+
+	previewPath := fmt.Sprintf("%s/packages/%d/configuration-preview?configuration_version=1&evaluated_at=2026-08-25T01%%3A02%%3A03Z", legacyaudience.RoutePrefix, packageID)
+	assertLocalConfigurationHTTPStatus(t, fragment, http.MethodGet, previewPath, "", "", http.StatusOK)
+	materializePath := fmt.Sprintf("%s/packages/%d/configuration-materialize", legacyaudience.RoutePrefix, packageID)
+	materializeBody := `{"configuration_version":1,"expected_package_version":1}`
+	assertLocalConfigurationHTTPStatus(t, fragment, http.MethodPost, materializePath, "audience-materialize-http-key", materializeBody, http.StatusOK)
+	assertLocalConfigurationHTTPStatus(t, fragment, http.MethodPost, materializePath, "audience-materialize-http-key", materializeBody, http.StatusOK)
+	assertLocalConfigurationHTTPStatus(t, fragment, http.MethodPost, materializePath, "audience-materialize-http-key", `{"configuration_version":1,"expected_package_version":2}`, http.StatusConflict)
+
+	var receipts, events int
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.ai_audience_local_configuration_receipts WHERE actor_id = $1 AND state = 'completed'`, actorID).Scan(&receipts); err != nil || receipts != 5 {
+		t.Fatalf("completed receipts=%d err=%v, want 5", receipts, err)
+	}
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.event_log WHERE idempotency_key LIKE 'ai-audience:%'`).Scan(&events); err != nil || events != 5 {
+		t.Fatalf("events=%d err=%v, want 5", events, err)
+	}
+	before := receipts
+	failurePath := fmt.Sprintf("%s/packages/%d/senders", legacyaudience.RoutePrefix, packageID)
+	assertLocalConfigurationHTTPStatus(t, fragment, http.MethodPut, failurePath, "audience-rollback-http-key", `{"items":[{"sender_userid":"not-local","sort_order":1,"is_enabled":true}]}`, http.StatusConflict)
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.ai_audience_local_configuration_receipts WHERE actor_id = $1`, actorID).Scan(&receipts); err != nil || receipts != before {
+		t.Fatalf("failed mutation receipt count=%d before=%d err=%v", receipts, before, err)
+	}
+}
+
+func assertLocalConfigurationHTTPStatus(t *testing.T, handler http.Handler, method, path, key, body string, want int) {
+	t.Helper()
+	request := httptest.NewRequest(method, path, strings.NewReader(body))
+	if body != "" {
+		request.Header.Set("Content-Type", "application/json")
+	}
+	if key != "" {
+		request.Header.Set("Idempotency-Key", key)
+	}
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, request)
+	if response.Code != want {
+		t.Fatalf("%s %s status=%d want=%d body=%s", method, path, response.Code, want, response.Body.String())
 	}
 }
 
@@ -260,7 +277,7 @@ SELECT
   COALESCE(to_regclass('public.ai_audience_package_send_record_projections')::text, '')`).Scan(&bindings, &senders, &receipts, &configurations, &senderSecurity, &sendRecords); err != nil {
 		t.Fatal(err)
 	}
-	if bindings == "" || senders == "" || receipts == "" || configurations == "" || senderSecurity == "" || sendRecords == "" {
+	if bindings == "" || senders == "" || receipts == "" || configurations == "" || senderSecurity != "" || sendRecords != "" {
 		t.Fatalf("required tables missing: bindings=%q senders=%q receipts=%q configurations=%q sender_security=%q send_records=%q", bindings, senders, receipts, configurations, senderSecurity, sendRecords)
 	}
 }
@@ -329,4 +346,69 @@ func (executor localConfigurationPGExecutor) Query(ctx context.Context, query st
 }
 func (executor localConfigurationPGExecutor) QueryRow(ctx context.Context, query string, arguments ...any) legacyaudience.SQLRow {
 	return executor.transaction.QueryRow(ctx, query, arguments...)
+}
+
+type localConfigurationPoolProvider struct{ pool *pgxpool.Pool }
+
+func (provider localConfigurationPoolProvider) Reader(context.Context) (legacyaudience.SQLExecutor, error) {
+	return localConfigurationPoolExecutor{queryer: provider.pool, execer: provider.pool}, nil
+}
+func (localConfigurationPoolProvider) Transaction(ctx context.Context) (legacyaudience.SQLExecutor, error) {
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return localConfigurationPoolExecutor{queryer: tx, execer: tx}, nil
+}
+func (localConfigurationPoolProvider) IsNoRows(err error) bool { return errors.Is(err, pgx.ErrNoRows) }
+
+type localConfigurationPoolQueryer interface {
+	Query(context.Context, string, ...any) (pgx.Rows, error)
+	QueryRow(context.Context, string, ...any) pgx.Row
+}
+type localConfigurationPoolExecer interface {
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+}
+type localConfigurationPoolExecutor struct {
+	queryer localConfigurationPoolQueryer
+	execer  localConfigurationPoolExecer
+}
+
+func (executor localConfigurationPoolExecutor) Exec(ctx context.Context, query string, arguments ...any) (int64, error) {
+	tag, err := executor.execer.Exec(ctx, query, arguments...)
+	return tag.RowsAffected(), err
+}
+func (executor localConfigurationPoolExecutor) Query(ctx context.Context, query string, arguments ...any) (legacyaudience.SQLRows, error) {
+	return executor.queryer.Query(ctx, query, arguments...)
+}
+func (executor localConfigurationPoolExecutor) QueryRow(ctx context.Context, query string, arguments ...any) legacyaudience.SQLRow {
+	return executor.queryer.QueryRow(ctx, query, arguments...)
+}
+
+type localConfigurationAutomationReader struct {
+	store *automationstore.AgentRepository
+}
+
+func (reader localConfigurationAutomationReader) GetAutomationAgent(ctx context.Context, id int64) (legacyaudience.AutomationAgent, error) {
+	agent, err := reader.store.Lock(ctx, automationport.AgentID(id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return legacyaudience.AutomationAgent{}, legacyaudience.ErrNotFound
+	}
+	if err != nil {
+		return legacyaudience.AutomationAgent{}, err
+	}
+	return legacyaudience.AutomationAgent{ID: int64(agent.ID), Status: string(agent.Status)}, nil
+}
+
+type localConfigurationEventAppender struct{ appender eventport.Appender }
+
+func (adapter localConfigurationEventAppender) Append(ctx context.Context, event legacyaudience.LocalEvent) error {
+	_, err := adapter.appender.Append(ctx, eventport.Event{Type: event.Type, Payload: event.Payload, OccurredAt: event.OccurredAt, IdempotencyKey: event.IdempotencyKey})
+	return err
+}
+
+type localConfigurationSecurity struct{ actorID int64 }
+
+func (security localConfigurationSecurity) Authorize(_ *http.Request, _ legacyaudience.AccessRequirement) (legacyaudience.Actor, error) {
+	return legacyaudience.Actor{AdminUserID: security.actorID}, nil
 }
