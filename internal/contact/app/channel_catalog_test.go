@@ -37,6 +37,45 @@ func TestC01ChannelCreateReplayUpdateListAndGet(t *testing.T) {
 	}
 }
 
+func TestCH01ChannelReplaysLegacyAssigneeReceiptWithoutSecondWriteOrEvent(t *testing.T) {
+	service, store, events := channelTestService()
+	command := CreateChannelCommand{
+		Actor: 7, IdempotencyKey: "channel-legacy-replay-key-0001", ChannelName: "公开课",
+		LegacyProjection: json.RawMessage(`{"owner_staff_id":"staff-7"}`),
+	}
+	created, err := service.CreateChannel(context.Background(), command)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var receiptKey string
+	var legacySnapshot json.RawMessage
+	for key, receipt := range store.receipts {
+		var snapshot map[string]json.RawMessage
+		if err = json.Unmarshal(receipt.ResultSnapshot, &snapshot); err != nil {
+			t.Fatal(err)
+		}
+		snapshot["assignees"] = json.RawMessage(`[{"wecom_userid":"staff-7","display_name":"成员 7"}]`)
+		legacySnapshot, err = json.Marshal(snapshot)
+		if err != nil {
+			t.Fatal(err)
+		}
+		receipt.ResultSnapshot = append(json.RawMessage(nil), legacySnapshot...)
+		store.receipts[key] = receipt
+		receiptKey = key
+	}
+	if receiptKey == "" {
+		t.Fatal("completed receipt is missing")
+	}
+
+	replay, err := service.CreateChannel(context.Background(), command)
+	if err != nil || replay.ID != created.ID || len(replay.Assignees) != 1 || replay.Assignees[0].WeComUserID != "staff-7" || replay.Assignees[0].Status != "active" || replay.Assignees[0].Priority != 1 {
+		t.Fatalf("replay=%+v err=%v", replay, err)
+	}
+	if store.creates != 1 || store.updates != 0 || store.completes != 1 || len(events.items) != 1 || string(store.receipts[receiptKey].ResultSnapshot) != string(legacySnapshot) {
+		t.Fatalf("creates/updates/completes/events/snapshot=%d/%d/%d/%d/%s", store.creates, store.updates, store.completes, len(events.items), store.receipts[receiptKey].ResultSnapshot)
+	}
+}
+
 func TestC01ChannelBoundariesAndActorScopedReceipt(t *testing.T) {
 	service, store, events := channelTestService()
 	base := CreateChannelCommand{Actor: 7, IdempotencyKey: "channel-shared-key-0001", ChannelCode: "course", ChannelName: "课程"}
@@ -171,9 +210,11 @@ func (events *channelEvents) Append(_ context.Context, event eventport.Event) (e
 }
 
 type channelStore struct {
-	items    []Channel
-	receipts map[string]ChannelReceipt
-	creates  int
+	items     []Channel
+	receipts  map[string]ChannelReceipt
+	creates   int
+	updates   int
+	completes int
 }
 
 func (store *channelStore) ListChannels(_ context.Context, limit int32, status string, includeArchived bool) ([]Channel, error) {
@@ -205,6 +246,7 @@ func (store *channelStore) CreateChannel(_ context.Context, c CreateChannelComma
 	return item, nil
 }
 func (store *channelStore) UpdateChannel(_ context.Context, current Channel, actor int64, now time.Time) (Channel, error) {
+	store.updates++
 	for i := range store.items {
 		if store.items[i].ID == current.ID {
 			current.CreatedAt = store.items[i].CreatedAt
@@ -227,6 +269,7 @@ func (store *channelStore) ReserveChannel(_ context.Context, x ChannelReservatio
 	return r, true, nil
 }
 func (store *channelStore) CompleteChannel(_ context.Context, id int64, snapshot json.RawMessage, _ time.Time) (ChannelReceipt, error) {
+	store.completes++
 	for key, r := range store.receipts {
 		if r.ID == id {
 			r.State = "completed"

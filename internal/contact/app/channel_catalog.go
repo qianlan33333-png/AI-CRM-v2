@@ -233,15 +233,14 @@ func (service *ChannelService) mutate(ctx context.Context, operation string, act
 			return ErrChannelConflict
 		}
 		if !owned {
-			if receipt.State != "completed" || json.Unmarshal(receipt.ResultSnapshot, &result) != nil || !validChannel(result) {
-				return ErrChannelUnavailable
-			}
-			snapshot, snapErr := json.Marshal(result)
-			if snapErr != nil || !jsonEquivalent(snapshot, receipt.ResultSnapshot) {
+			if receipt.State != "completed" || json.Unmarshal(receipt.ResultSnapshot, &result) != nil || !validChannelReceiptSnapshot(result) {
 				return ErrChannelUnavailable
 			}
 			if reserveErr = service.hydrateChannelAssignees(tx, &result); reserveErr != nil {
 				return reserveErr
+			}
+			if !validChannel(result) {
+				return ErrChannelUnavailable
 			}
 			return nil
 		}
@@ -774,6 +773,32 @@ func validChannel(v Channel) bool {
 			return false
 		}
 		if assignee.RatioPercent != nil && *assignee.RatioPercent < 1 || assignee.MaxScans24h != nil && *assignee.MaxScans24h < 1 {
+			return false
+		}
+		if _, duplicate := seen[assignee.WeComUserID]; duplicate {
+			return false
+		}
+		seen[assignee.WeComUserID] = struct{}{}
+	}
+	return true
+}
+
+// validChannelReceiptSnapshot accepts the historical completed-receipt shape.
+// Before CH01, a receipt could retain only the stable WeCom user ID and the
+// display-name snapshot for each assignee. Replay re-hydrates that local
+// projection from the authoritative staff reader, so it must not require
+// fields introduced by the current response projection.
+func validChannelReceiptSnapshot(v Channel) bool {
+	assignees := v.Assignees
+	v.Assignees = nil
+	if !validChannel(v) {
+		return false
+	}
+	seen := map[string]struct{}{}
+	for _, assignee := range assignees {
+		if !validText(assignee.WeComUserID, 200) || !validText(assignee.DisplayName, 200) ||
+			(assignee.Status != "" && assignee.Status != "active" && assignee.Status != "inactive" && assignee.Status != "archived") || assignee.Priority < 0 ||
+			assignee.RatioPercent != nil && *assignee.RatioPercent < 1 || assignee.MaxScans24h != nil && *assignee.MaxScans24h < 1 {
 			return false
 		}
 		if _, duplicate := seen[assignee.WeComUserID]; duplicate {

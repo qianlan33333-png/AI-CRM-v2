@@ -79,7 +79,7 @@ func TestCH01ChannelAcquisitionPreviewUsesReadCapabilityOnly(t *testing.T) {
 	preview := &channelAcquisitionPreviewStub{result: contactapp.ChannelAcquisitionPreview{
 		ChannelID: 7, ChannelCode: "course", ChannelName: "公开课",
 		Assignees: []contactapp.ChannelAssignee{{WeComUserID: "staff-1", DisplayName: "成员一", Status: "active", Priority: 1}},
-		Lifecycle: contactapp.ChannelAcquisitionLifecycle{State: "ready", EntrantReady: true, ReadinessBlockers: []string{}},
+		Lifecycle: contactapp.ChannelAcquisitionLifecycle{State: "local_prerequisites_ready", EntrantReady: false, ReadinessBlockers: []string{"provider_asset_unverified"}},
 		QRCode:    contactapp.ChannelQRCodePreview{Status: "legacy_untracked", SceneValue: "scene-7", URL: "https://cdn.example.test/channel-7.jpg"},
 		Share:     contactapp.ChannelSharePreview{URL: "https://go.example.test/channel-7", CopyText: "https://go.example.test/channel-7"},
 	}}
@@ -87,8 +87,23 @@ func TestCH01ChannelAcquisitionPreviewUsesReadCapabilityOnly(t *testing.T) {
 	handler := mustChannelAcquisitionHandler(t, &channelAcquisitionMutationStub{}, preview, csrf)
 	response := httptest.NewRecorder()
 	handler.Preview(response, channelAcquisitionRequest(http.MethodGet, "", authport.CapabilityChannelsRead), "7")
-	if response.Code != http.StatusOK || preview.calls != 1 || csrf.calls != 0 || !strings.Contains(response.Body.String(), `"entrant_ready":true`) || !strings.Contains(response.Body.String(), `"local_only":true`) || !strings.Contains(response.Body.String(), `"real_external_call_executed":false`) {
+	if response.Code != http.StatusOK || preview.calls != 1 || csrf.calls != 0 || !strings.Contains(response.Body.String(), `"entrant_ready":false`) || !strings.Contains(response.Body.String(), `"provider_asset_unverified"`) || !strings.Contains(response.Body.String(), `"local_only":true`) || !strings.Contains(response.Body.String(), `"real_external_call_executed":false`) {
 		t.Fatalf("status/calls/body=%d/%d/%d/%s", response.Code, preview.calls, csrf.calls, response.Body.String())
+	}
+}
+
+func TestCH01ChannelAcquisitionPreviewRejectsEntrantReadyWithoutProviderReceipt(t *testing.T) {
+	preview := &channelAcquisitionPreviewStub{result: contactapp.ChannelAcquisitionPreview{
+		ChannelID: 7, ChannelCode: "course", ChannelName: "公开课",
+		Assignees: []contactapp.ChannelAssignee{{WeComUserID: "staff-1", DisplayName: "成员一", Status: "active", Priority: 1}},
+		Lifecycle: contactapp.ChannelAcquisitionLifecycle{State: "ready", EntrantReady: true},
+		QRCode:    contactapp.ChannelQRCodePreview{Status: "legacy_untracked", SceneValue: "scene-7", URL: "https://cdn.example.test/channel-7.jpg"},
+	}}
+	handler := mustChannelAcquisitionHandler(t, &channelAcquisitionMutationStub{}, preview, &channelAcquisitionCSRFStub{})
+	response := httptest.NewRecorder()
+	handler.Preview(response, channelAcquisitionRequest(http.MethodGet, "", authport.CapabilityChannelsRead), "7")
+	if response.Code != http.StatusServiceUnavailable || preview.calls != 1 || strings.Contains(response.Body.String(), `"entrant_ready":true`) {
+		t.Fatalf("status/calls/body=%d/%d/%s", response.Code, preview.calls, response.Body.String())
 	}
 }
 

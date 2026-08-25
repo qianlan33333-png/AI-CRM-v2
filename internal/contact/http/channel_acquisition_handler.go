@@ -401,13 +401,13 @@ func channelAcquisitionIdempotencyKey(request *http.Request) (string, error) {
 
 func channelAcquisitionValidPreview(preview contactapp.ChannelAcquisitionPreview, channelID int64) bool {
 	if preview.ChannelID != channelID || !channelAcquisitionValidText(preview.ChannelCode, 200) || !channelAcquisitionValidText(preview.ChannelName, 200) ||
-		(preview.Lifecycle.State != "ready" && preview.Lifecycle.State != "draft" && preview.Lifecycle.State != "paused" && preview.Lifecycle.State != "archived") ||
-		preview.Lifecycle.EntrantReady != (preview.Lifecycle.State == "ready") ||
+		(preview.Lifecycle.State != "local_prerequisites_ready" && preview.Lifecycle.State != "draft" && preview.Lifecycle.State != "paused" && preview.Lifecycle.State != "archived") ||
+		preview.Lifecycle.EntrantReady ||
 		(preview.QRCode.Status != "not_generated" && preview.QRCode.Status != "legacy_untracked") ||
 		!channelAcquisitionValidAssignees(preview.Assignees) {
 		return false
 	}
-	if preview.Lifecycle.State == "ready" && len(preview.Lifecycle.ReadinessBlockers) != 0 || preview.Lifecycle.State != "ready" && len(preview.Lifecycle.ReadinessBlockers) == 0 {
+	if len(preview.Lifecycle.ReadinessBlockers) == 0 {
 		return false
 	}
 	for _, blocker := range preview.Lifecycle.ReadinessBlockers {
@@ -415,7 +415,18 @@ func channelAcquisitionValidPreview(preview contactapp.ChannelAcquisitionPreview
 			return false
 		}
 	}
-	return channelAcquisitionValidTextOrEmpty(preview.QRCode.SceneValue, 10000) && channelAcquisitionValidTextOrEmpty(preview.QRCode.URL, 10000) &&
+	stateValid := false
+	switch preview.Lifecycle.State {
+	case "local_prerequisites_ready":
+		stateValid = len(preview.Lifecycle.ReadinessBlockers) == 1 && preview.Lifecycle.ReadinessBlockers[0] == "provider_asset_unverified"
+	case "draft":
+		stateValid = preview.Lifecycle.ReadinessBlockers[len(preview.Lifecycle.ReadinessBlockers)-1] == "provider_asset_unverified"
+	case "paused":
+		stateValid = len(preview.Lifecycle.ReadinessBlockers) == 1 && preview.Lifecycle.ReadinessBlockers[0] == "channel_inactive"
+	case "archived":
+		stateValid = len(preview.Lifecycle.ReadinessBlockers) == 1 && preview.Lifecycle.ReadinessBlockers[0] == "channel_archived"
+	}
+	return stateValid && channelAcquisitionValidTextOrEmpty(preview.QRCode.SceneValue, 10000) && channelAcquisitionValidTextOrEmpty(preview.QRCode.URL, 10000) &&
 		channelAcquisitionValidTextOrEmpty(preview.Share.URL, 10000) && channelAcquisitionValidTextOrEmpty(preview.Share.CopyText, 10000)
 }
 

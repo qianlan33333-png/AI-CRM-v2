@@ -90,7 +90,7 @@ func channelAcquisitionPreview(channel Channel) (ChannelAcquisitionPreview, erro
 	if qrURL != "" && sceneValue != "" {
 		qrStatus = "legacy_untracked"
 	}
-	blockers := make([]string, 0, 3)
+	blockers := make([]string, 0, 4)
 	state := "draft"
 	if channel.Status == "archived" {
 		state, blockers = "archived", append(blockers, "channel_archived")
@@ -111,13 +111,16 @@ func channelAcquisitionPreview(channel Channel) (ChannelAcquisitionPreview, erro
 			blockers = append(blockers, "share_url_required")
 		}
 		if len(blockers) == 0 {
-			state = "ready"
+			state = "local_prerequisites_ready"
 		}
+		// QR and share values in this local projection have no provider asset
+		// receipt. They are useful to inspect, but cannot authorize entrants.
+		blockers = append(blockers, "provider_asset_unverified")
 	}
 	return ChannelAcquisitionPreview{
 		ChannelID: channel.ID, ChannelCode: channel.ChannelCode, ChannelName: channel.ChannelName,
 		Assignees: cloneChannel(channel).Assignees,
-		Lifecycle: ChannelAcquisitionLifecycle{State: state, EntrantReady: state == "ready", ReadinessBlockers: blockers},
+		Lifecycle: ChannelAcquisitionLifecycle{State: state, EntrantReady: false, ReadinessBlockers: blockers},
 		QRCode:    ChannelQRCodePreview{Status: qrStatus, SceneValue: sceneValue, URL: qrURL},
 		Share:     ChannelSharePreview{URL: shareURL, CopyText: firstChannelAcquisitionValue(shareURL, qrURL)},
 	}, nil

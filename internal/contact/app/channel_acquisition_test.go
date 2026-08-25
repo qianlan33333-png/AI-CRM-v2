@@ -16,7 +16,7 @@ func TestCH01AcquisitionPreviewDerivesLocalReadinessWithoutProviderExecution(t *
 		t.Fatal(err)
 	}
 	preview, err := NewChannelAcquisitionService(service).Preview(context.Background(), created.ID)
-	if err != nil || !preview.Lifecycle.EntrantReady || preview.Lifecycle.State != "ready" || preview.QRCode.Status != "legacy_untracked" || preview.Share.URL != "https://go.example.test/channel-7" || preview.Share.CopyText != preview.Share.URL || len(preview.Assignees) != 1 {
+	if err != nil || preview.Lifecycle.EntrantReady || preview.Lifecycle.State != "local_prerequisites_ready" || len(preview.Lifecycle.ReadinessBlockers) != 1 || preview.Lifecycle.ReadinessBlockers[0] != "provider_asset_unverified" || preview.QRCode.Status != "legacy_untracked" || preview.Share.URL != "https://go.example.test/channel-7" || preview.Share.CopyText != preview.Share.URL || len(preview.Assignees) != 1 {
 		t.Fatalf("preview=%+v err=%v", preview, err)
 	}
 	if preview.QRCode.URL != "https://cdn.example.test/channel-7.jpg" || preview.Assignees[0].DisplayName != "成员 7" {
@@ -34,7 +34,7 @@ func TestCH01AcquisitionPreviewMasksMissingLocalPrerequisitesAsDraft(t *testing.
 		t.Fatal(err)
 	}
 	preview, err := NewChannelAcquisitionService(service).Preview(context.Background(), created.ID)
-	if err != nil || preview.Lifecycle.EntrantReady || preview.Lifecycle.State != "draft" || len(preview.Lifecycle.ReadinessBlockers) != 1 || preview.Lifecycle.ReadinessBlockers[0] != "qrcode_required" || preview.QRCode.Status != "not_generated" {
+	if err != nil || preview.Lifecycle.EntrantReady || preview.Lifecycle.State != "draft" || len(preview.Lifecycle.ReadinessBlockers) != 2 || preview.Lifecycle.ReadinessBlockers[0] != "qrcode_required" || preview.Lifecycle.ReadinessBlockers[1] != "provider_asset_unverified" || preview.QRCode.Status != "not_generated" {
 		t.Fatalf("preview=%+v err=%v", preview, err)
 	}
 }
@@ -49,7 +49,7 @@ func TestCH01AcquisitionPreviewSupportsLinkShareCarrier(t *testing.T) {
 		t.Fatal(err)
 	}
 	preview, err := NewChannelAcquisitionService(service).Preview(context.Background(), created.ID)
-	if err != nil || preview.Lifecycle.State != "ready" || !preview.Lifecycle.EntrantReady || preview.Share.URL != "https://go.example.test/link-7" || preview.Share.CopyText != preview.Share.URL || preview.QRCode.Status != "not_generated" {
+	if err != nil || preview.Lifecycle.State != "local_prerequisites_ready" || preview.Lifecycle.EntrantReady || len(preview.Lifecycle.ReadinessBlockers) != 1 || preview.Lifecycle.ReadinessBlockers[0] != "provider_asset_unverified" || preview.Share.URL != "https://go.example.test/link-7" || preview.Share.CopyText != preview.Share.URL || preview.QRCode.Status != "not_generated" {
 		t.Fatalf("preview=%+v err=%v", preview, err)
 	}
 }
