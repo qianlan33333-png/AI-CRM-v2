@@ -1,13 +1,17 @@
 import {
   getSidebarMaterialThumbnailStatus,
   getSidebarWorkbench,
+  listSidebarChatActivity,
   listSidebarMaterials,
   listSidebarOrders,
   listSidebarPeriodicOrders,
   listSidebarQuestionnaires,
+  listSidebarTimeline,
   mintSidebarContext,
   updateSidebarPeriodicRemark,
   updateSidebarProfile,
+  type SidebarChatActivityResponse,
+  type SidebarTimelineResponse,
 } from './generated/health';
 import { apiRequestOptions, unwrapGenerated } from './transport';
 
@@ -18,6 +22,8 @@ function scopedOptions(contextToken: string, init: RequestInit = {}): RequestIni
 export const sidebarApi = {
   mintContext: async (body: Parameters<typeof mintSidebarContext>[0]) => unwrapGenerated(await mintSidebarContext(body, apiRequestOptions())),
   workbench: async (contextToken: string) => unwrapGenerated(await getSidebarWorkbench(scopedOptions(contextToken))),
+  timeline: async (contextToken: string, params?: Parameters<typeof listSidebarTimeline>[0]) => unwrapGenerated(await listSidebarTimeline(params, scopedOptions(contextToken))) as SidebarTimelineResponse,
+  chatActivity: async (contextToken: string, params?: Parameters<typeof listSidebarChatActivity>[0]) => unwrapGenerated(await listSidebarChatActivity(params, scopedOptions(contextToken))) as SidebarChatActivityResponse,
   profile: async (contextToken: string, body: Parameters<typeof updateSidebarProfile>[0]) => unwrapGenerated(await updateSidebarProfile(body, scopedOptions(contextToken))),
   questionnaires: async (contextToken: string, params?: Parameters<typeof listSidebarQuestionnaires>[0]) => unwrapGenerated(await listSidebarQuestionnaires(params, scopedOptions(contextToken))),
   orders: async (contextToken: string, params?: Parameters<typeof listSidebarOrders>[0]) => unwrapGenerated(await listSidebarOrders(params, scopedOptions(contextToken))),

@@ -64,7 +64,7 @@ export const CAPABILITIES: readonly Capability[] = [
   { surface: 'admin', screen: 'apidocs', action: 'OpenAPI 文档浏览、搜索与复制', state: 'presentation_only' },
   { surface: 'h5', screen: 'auth/all/one/loading/error/result/done', action: '公开问卷读取、OAuth、提交、结果查询', state: 'real', operation: 'getPublicSurveyDefinition/submitPublicSurvey/queryPublicSurveySubmissionResult' },
   { surface: 'h5', screen: 'signup/active/expired/pay/qr', action: '报名或支付跳转', state: 'backend_blocked', reason: '当前公开契约没有该 H5 支付或报名会话' },
-  { surface: 'sidebar', screen: 'index', action: 'context-token、workbench、profile、订单、问卷、周期订单、素材、缩略图、备注', state: 'real', operation: 'mintSidebarContext/getSidebarWorkbench/updateSidebarProfile/listSidebarOrders' },
+  { surface: 'sidebar', screen: 'index', action: 'context-token、workbench、安全时间线、聊天活动、profile、订单、问卷、周期订单、素材、缩略图、备注', state: 'real', operation: 'mintSidebarContext/getSidebarWorkbench/listSidebarTimeline/listSidebarChatActivity/updateSidebarProfile/listSidebarOrders' },
   { surface: 'sidebar', screen: 'index', action: '素材发送', state: 'backend_blocked', reason: 'OpenAPI 只有读取素材，没有发送契约' },
 ] as const;
 

@@ -1,4 +1,5 @@
 import { apiRequestOptions, ApiError, request, unwrapGenerated } from './transport';
+import { sidebarApi } from './sidebar';
 
 function assert(ok: unknown, message: string): asserts ok {
   if (!ok) throw new Error(message);
@@ -20,6 +21,30 @@ export async function runTransportContractTests(): Promise<void> {
   }
 
   const originalFetch = globalThis.fetch;
+  const sidebarRequests: Array<{ input: string; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => {
+    sidebarRequests.push({ input: String(input), init });
+    const data = String(input).includes('chat-activity')
+      ? { items: [{ chat_type: 'private', message_type: 'text', sent_at: '2026-08-26T01:00:00Z' }], safety: { local_only: true, provider_execution_eligible: false, real_external_call_executed: false } }
+      : { items: [{ id: 7, event_type: 'survey_submitted', occurred_at: '2026-08-26T00:00:00Z' }], next_cursor: 'next-opaque', safety: { local_only: true, provider_execution_eligible: false, real_external_call_executed: false } };
+    return new Response(JSON.stringify(data), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  try {
+    const timeline = await sidebarApi.timeline('sidebar-context', { limit: 20 });
+    const chat = await sidebarApi.chatActivity('sidebar-context', { chat_type: 'private', limit: 10 });
+    assert(timeline.items[0]?.event_type === 'survey_submitted' && timeline.next_cursor === 'next-opaque', 'Sidebar timeline response must retain safe DTO and cursor');
+    assert(chat.items[0]?.chat_type === 'private', 'Sidebar chat activity response must retain safe metadata DTO');
+    assert(sidebarRequests[0]?.input === '/api/sidebar/v2/timeline?limit=20', 'Sidebar timeline must use generated GET URL');
+    assert(sidebarRequests[1]?.input === '/api/sidebar/v2/chat-activity?chat_type=private&limit=10', 'Sidebar chat activity must use generated GET URL');
+    for (const call of sidebarRequests) {
+      assert(call.init?.method === 'GET', 'Sidebar activity reads must use GET');
+      assert(new Headers(call.init?.headers).get('X-Sidebar-Context-Token') === 'sidebar-context', 'Sidebar activity reads must carry scoped context token');
+      assert(call.init?.credentials === 'include', 'Sidebar activity reads must include same-origin credentials');
+    }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
   let seen: RequestInit | undefined;
   globalThis.fetch = async (_input, init) => {
     seen = init;

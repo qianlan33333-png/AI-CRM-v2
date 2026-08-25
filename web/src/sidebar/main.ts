@@ -3,7 +3,7 @@
  */
 import { initFeedback } from '../shared/ui/feedback';
 import { sidebarApi } from '../api/sidebar';
-import type { SidebarContextResponse, SidebarMaterialResponse, SidebarOrderResponse, SidebarPeriodicOrderResponse, SidebarQuestionnaireResponse, SidebarWorkbenchResponse } from '../api/generated/health';
+import type { SidebarChatActivityResponse, SidebarContextResponse, SidebarMaterialResponse, SidebarOrderResponse, SidebarPeriodicOrderResponse, SidebarQuestionnaireResponse, SidebarTimelineResponse, SidebarWorkbenchResponse } from '../api/generated/health';
 
 function status(message: string, failed = false): void {
   const el = document.createElement('div');
@@ -25,14 +25,16 @@ async function loadWorkbench(): Promise<void> {
       status(`Sidebar 上下文不可用：${context.state}`, true);
       return;
     }
-    const [workbench, questionnaires, orders, periodicOrders, materials] = await Promise.all([
+    const [workbench, questionnaires, orders, periodicOrders, materials, timeline, chatActivity] = await Promise.all([
       sidebarApi.workbench(context.context_token),
       sidebarApi.questionnaires(context.context_token),
       sidebarApi.orders(context.context_token),
       sidebarApi.periodicOrders(context.context_token),
       sidebarApi.materials(context.context_token),
-    ]) as [SidebarWorkbenchResponse, SidebarQuestionnaireResponse, SidebarOrderResponse, SidebarPeriodicOrderResponse, SidebarMaterialResponse];
-    status(`已读取本地工作台：问卷 ${questionnaires.items.length}、订单 ${orders.total}、周期订单 ${periodicOrders.items.length}、素材 ${materials.total}；不含任何外部发送。`);
+      sidebarApi.timeline(context.context_token),
+      sidebarApi.chatActivity(context.context_token),
+    ]) as [SidebarWorkbenchResponse, SidebarQuestionnaireResponse, SidebarOrderResponse, SidebarPeriodicOrderResponse, SidebarMaterialResponse, SidebarTimelineResponse, SidebarChatActivityResponse];
+    status(`已读取本地工作台：问卷 ${questionnaires.items.length}、订单 ${orders.total}、周期订单 ${periodicOrders.items.length}、素材 ${materials.total}、时间线 ${timeline.items.length}、聊天活动 ${chatActivity.items.length}；不含任何外部发送。`);
     document.body.dataset.sidebarCustomerId = String(workbench.profile.customer_id);
   } catch (error) {
     status(error instanceof Error ? error.message : 'Sidebar 工作台读取失败', true);
