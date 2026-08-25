@@ -35,7 +35,10 @@ type PublicService interface {
 }
 
 type PublicHandler struct {
-	Service   PublicService
+	Service        PublicService
+	IdentityReader interface {
+		Identity(*http.Request) (surveyapp.H5CanonicalIdentity, error)
+	}
 	CookieKey [32]byte
 	// AbuseKey is injected from the server-side Survey configuration. It never
 	// reaches the browser and is domain-separated from result/cookie keys.
@@ -83,7 +86,18 @@ func (h *PublicHandler) Submit(w http.ResponseWriter, r *http.Request, slug stri
 		h.reply(w, nil, surveyapp.ErrPublicUnavailable)
 		return
 	}
-	receipt, token, err := h.Service.Submit(r.Context(), surveyport.PublicSubmissionCommand{Slug: slug, Version: body.Version, SubmissionKey: body.SubmissionKey, AnonymousDigest: anon, RateDigest: rate, Answers: body.Answers})
+	command := surveyport.PublicSubmissionCommand{Slug: slug, Version: body.Version, SubmissionKey: body.SubmissionKey, AnonymousDigest: anon, RateDigest: rate, Answers: body.Answers}
+	if h.IdentityReader != nil {
+		if _, cookieErr := r.Cookie(h5IdentityCookie); cookieErr == nil {
+			identity, identityErr := h.IdentityReader.Identity(r)
+			if identityErr != nil || identity.CustomerID < 1 {
+				h.reply(w, nil, surveyapp.ErrH5IdentityRequired)
+				return
+			}
+			command.CanonicalCustomerID = identity.CustomerID
+		}
+	}
+	receipt, token, err := h.Service.Submit(r.Context(), command)
 	if err != nil {
 		h.reply(w, nil, err)
 		return
@@ -284,6 +298,8 @@ func (h *PublicHandler) reply(w http.ResponseWriter, out any, err error) {
 		write(w, http.StatusConflict, map[string]string{"code": "idempotency_conflict"})
 	case errors.Is(err, surveyapp.ErrPublicRateLimited):
 		write(w, http.StatusTooManyRequests, map[string]string{"code": "rate_limited"})
+	case errors.Is(err, surveyapp.ErrH5IdentityRequired):
+		write(w, http.StatusUnauthorized, map[string]string{"code": "identity_required"})
 	default:
 		write(w, http.StatusServiceUnavailable, map[string]string{"code": "unavailable"})
 	}
