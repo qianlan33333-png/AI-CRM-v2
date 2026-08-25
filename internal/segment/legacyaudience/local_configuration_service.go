@@ -85,13 +85,14 @@ func (service *LocalConfigurationService) GetAutomationBinding(ctx context.Conte
 }
 
 func (service *LocalConfigurationService) PutAutomationBinding(ctx context.Context, input PutAutomationBindingInput) (AutomationBindingResponse, error) {
-	if !service.ready(ctx) || input.PackageID < 1 || input.AutomationAgentID < 1 || !validLocalConfigurationWrite(input.Actor, input.IdempotencyKey) {
+	if !service.ready(ctx) || input.PackageID < 1 || input.AutomationAgentID < 1 || input.ExpectedVersion < 0 || !validLocalConfigurationWrite(input.Actor, input.IdempotencyKey) {
 		return AutomationBindingResponse{}, ErrInvalidInput
 	}
 	payload, err := digestJSON(struct {
 		PackageID         int64 `json:"package_id"`
 		AutomationAgentID int64 `json:"automation_agent_id"`
-	}{PackageID: input.PackageID, AutomationAgentID: input.AutomationAgentID})
+		ExpectedVersion   int64 `json:"expected_version"`
+	}{PackageID: input.PackageID, AutomationAgentID: input.AutomationAgentID, ExpectedVersion: input.ExpectedVersion})
 	if err != nil {
 		return AutomationBindingResponse{}, ErrUnavailable
 	}
@@ -104,6 +105,13 @@ func (service *LocalConfigurationService) PutAutomationBinding(ctx context.Conte
 			if validateErr := validateWriteModel(packageModel); validateErr != nil {
 				return nil, nil, validateErr
 			}
+			current, readErr := service.repo.GetAutomationBinding(tx, input.PackageID)
+			if readErr != nil {
+				return nil, nil, readErr
+			}
+			if current == nil && input.ExpectedVersion != 0 || current != nil && current.Version != input.ExpectedVersion {
+				return nil, nil, ErrVersionConflict
+			}
 			agent, agentErr := service.agents.GetAutomationAgent(tx, input.AutomationAgentID)
 			if agentErr != nil {
 				return nil, nil, agentErr
@@ -111,16 +119,12 @@ func (service *LocalConfigurationService) PutAutomationBinding(ctx context.Conte
 			if agent.ID != input.AutomationAgentID || !selectableAutomationAgentStatus(agent.Status) {
 				return nil, nil, ErrConflict
 			}
-			current, readErr := service.repo.GetAutomationBinding(tx, input.PackageID)
-			if readErr != nil {
-				return nil, nil, readErr
-			}
 			if current != nil && current.AutomationAgentID == input.AutomationAgentID {
 				return AutomationBindingResponse{Binding: cloneAutomationBinding(current), Projection: localProjection()}, nil, nil
 			}
 			binding, saveErr := service.repo.SaveAutomationBinding(tx, AutomationBinding{
 				PackageID: input.PackageID, AutomationAgentID: input.AutomationAgentID,
-			}, input.Actor.AdminUserID, now)
+			}, input.Actor.AdminUserID, input.ExpectedVersion, now)
 			if saveErr != nil {
 				return nil, nil, saveErr
 			}
@@ -138,12 +142,13 @@ func (service *LocalConfigurationService) PutAutomationBinding(ctx context.Conte
 }
 
 func (service *LocalConfigurationService) DeleteAutomationBinding(ctx context.Context, input DeleteAutomationBindingInput) (AutomationBindingDeleteResponse, error) {
-	if !service.ready(ctx) || input.PackageID < 1 || !validLocalConfigurationWrite(input.Actor, input.IdempotencyKey) {
+	if !service.ready(ctx) || input.PackageID < 1 || input.ExpectedVersion < 0 || !validLocalConfigurationWrite(input.Actor, input.IdempotencyKey) {
 		return AutomationBindingDeleteResponse{}, ErrInvalidInput
 	}
 	payload, err := digestJSON(struct {
-		PackageID int64 `json:"package_id"`
-	}{PackageID: input.PackageID})
+		PackageID       int64 `json:"package_id"`
+		ExpectedVersion int64 `json:"expected_version"`
+	}{PackageID: input.PackageID, ExpectedVersion: input.ExpectedVersion})
 	if err != nil {
 		return AutomationBindingDeleteResponse{}, ErrUnavailable
 	}
@@ -156,7 +161,14 @@ func (service *LocalConfigurationService) DeleteAutomationBinding(ctx context.Co
 			if validateErr := validateWriteModel(packageModel); validateErr != nil {
 				return nil, nil, validateErr
 			}
-			deleted, deleteErr := service.repo.DeleteAutomationBinding(tx, input.PackageID)
+			current, readErr := service.repo.GetAutomationBinding(tx, input.PackageID)
+			if readErr != nil {
+				return nil, nil, readErr
+			}
+			if current == nil && input.ExpectedVersion != 0 || current != nil && current.Version != input.ExpectedVersion {
+				return nil, nil, ErrVersionConflict
+			}
+			deleted, deleteErr := service.repo.DeleteAutomationBinding(tx, input.PackageID, input.ExpectedVersion)
 			if deleteErr != nil {
 				return nil, nil, deleteErr
 			}
@@ -238,6 +250,102 @@ func (service *LocalConfigurationService) ReplaceSenders(ctx context.Context, in
 		return PackageSendersResponse{}, err
 	}
 	return decodeMutation[PackageSendersResponse](raw)
+}
+
+func (service *LocalConfigurationService) GetConfiguration(ctx context.Context, packageID int64) (ConfigurationResponse, error) {
+	if !service.ready(ctx) || packageID < 1 {
+		return ConfigurationResponse{}, service.invalidOrUnavailable(ctx)
+	}
+	if _, err := service.repo.GetPackageMetadata(ctx, packageID); err != nil {
+		return ConfigurationResponse{}, classifyServiceError(err)
+	}
+	configuration, err := service.repo.GetCurrentConfiguration(ctx, packageID)
+	if err != nil {
+		return ConfigurationResponse{}, classifyServiceError(err)
+	}
+	if configuration != nil && !validConfigurationVersion(*configuration) {
+		return ConfigurationResponse{}, ErrUnavailable
+	}
+	return ConfigurationResponse{Configuration: cloneConfigurationVersion(configuration), Projection: localProjection()}, nil
+}
+
+func (service *LocalConfigurationService) PutConfiguration(ctx context.Context, input PutConfigurationInput) (ConfigurationResponse, error) {
+	if !service.ready(ctx) || input.PackageID < 1 || input.ExpectedVersion < 0 || !validLocalConfigurationWrite(input.Actor, input.IdempotencyKey) {
+		return ConfigurationResponse{}, ErrInvalidInput
+	}
+	template, filter, err := normalizeConfiguration(input.TemplateConfig, input.FilterConfig)
+	if err != nil {
+		return ConfigurationResponse{}, err
+	}
+	payload, err := digestJSON(struct {
+		PackageID       int64           `json:"package_id"`
+		ExpectedVersion int64           `json:"expected_version"`
+		Template        json.RawMessage `json:"template_config"`
+		Filter          json.RawMessage `json:"filter_config"`
+	}{input.PackageID, input.ExpectedVersion, template, filter})
+	if err != nil {
+		return ConfigurationResponse{}, ErrUnavailable
+	}
+	raw, err := service.execute(ctx, ReceiptOperation("configuration_version_put"), input.Actor, input.IdempotencyKey, payload,
+		func(tx context.Context, now time.Time) (any, *LocalEvent, error) {
+			packageModel, lockErr := service.repo.LockPackage(tx, input.PackageID)
+			if lockErr != nil {
+				return nil, nil, lockErr
+			}
+			if validateErr := validateWriteModel(packageModel); validateErr != nil {
+				return nil, nil, validateErr
+			}
+			current, currentErr := service.repo.GetCurrentConfiguration(tx, input.PackageID)
+			if currentErr != nil {
+				return nil, nil, currentErr
+			}
+			currentVersion := int64(0)
+			if current != nil {
+				if !validConfigurationVersion(*current) {
+					return nil, nil, ErrUnavailable
+				}
+				currentVersion = current.Version
+			}
+			if currentVersion != input.ExpectedVersion {
+				return nil, nil, ErrVersionConflict
+			}
+			stored, insertErr := service.repo.InsertConfigurationVersion(tx, ConfigurationVersion{
+				PackageID: input.PackageID, Version: currentVersion + 1, TemplateConfig: template, FilterConfig: filter,
+				CreatedBy: input.Actor.AdminUserID, CreatedAt: now,
+			})
+			if insertErr != nil || !validConfigurationVersion(stored) || stored.Version != currentVersion+1 {
+				if insertErr != nil {
+					return nil, nil, insertErr
+				}
+				return nil, nil, ErrUnavailable
+			}
+			response := ConfigurationResponse{Configuration: cloneConfigurationVersion(&stored), Projection: localProjection()}
+			event, eventErr := mutationEvent("ai_audience.package.configuration.versioned", input.PackageID, input.Actor, input.IdempotencyKey, now)
+			return response, event, eventErr
+		})
+	if err != nil {
+		return ConfigurationResponse{}, err
+	}
+	return decodeMutation[ConfigurationResponse](raw)
+}
+
+func (service *LocalConfigurationService) ListSendRecords(ctx context.Context, packageID int64) (SendRecordListResponse, error) {
+	if !service.ready(ctx) || packageID < 1 {
+		return SendRecordListResponse{}, service.invalidOrUnavailable(ctx)
+	}
+	if _, err := service.repo.GetPackageMetadata(ctx, packageID); err != nil {
+		return SendRecordListResponse{}, classifyServiceError(err)
+	}
+	items, err := service.repo.ListSendRecordProjections(ctx, packageID, 100)
+	if err != nil {
+		return SendRecordListResponse{}, classifyServiceError(err)
+	}
+	for _, item := range items {
+		if !validSendRecordProjection(item) {
+			return SendRecordListResponse{}, ErrUnavailable
+		}
+	}
+	return SendRecordListResponse{PackageID: packageID, Items: append([]SendRecordProjection(nil), items...), Projection: localProjection()}, nil
 }
 
 func (service *LocalConfigurationService) validateCurrentSenders(ctx context.Context, items []PackageSender, lock bool) error {
@@ -364,7 +472,7 @@ func validLocalConfigurationWrite(actor Actor, key string) bool {
 }
 
 func validAutomationBinding(binding AutomationBinding) bool {
-	return binding.PackageID > 0 && binding.AutomationAgentID > 0 && binding.CreatedBy > 0 && binding.UpdatedBy > 0 &&
+	return binding.PackageID > 0 && binding.AutomationAgentID > 0 && binding.Version > 0 && binding.CreatedBy > 0 && binding.UpdatedBy > 0 &&
 		!binding.CreatedAt.IsZero() && !binding.UpdatedAt.IsZero() && !binding.UpdatedAt.Before(binding.CreatedAt)
 }
 
@@ -419,4 +527,61 @@ func samePackageSenders(left, right []PackageSender) bool {
 		}
 	}
 	return true
+}
+
+func normalizeConfiguration(template, filter json.RawMessage) (json.RawMessage, json.RawMessage, error) {
+	if len(template) == 0 || len(filter) == 0 || int64(len(template)) > MaximumRequestBodyBytes || int64(len(filter)) > MaximumRequestBodyBytes {
+		return nil, nil, ErrInvalidInput
+	}
+	var templateObject, filterObject map[string]any
+	if json.Unmarshal(template, &templateObject) != nil || json.Unmarshal(filter, &filterObject) != nil || templateObject == nil || filterObject == nil {
+		return nil, nil, ErrInvalidInput
+	}
+	if containsSecretConfigurationKey(templateObject) || containsSecretConfigurationKey(filterObject) {
+		return nil, nil, ErrInvalidInput
+	}
+	return append(json.RawMessage(nil), template...), append(json.RawMessage(nil), filter...), nil
+}
+
+func containsSecretConfigurationKey(value any) bool {
+	switch current := value.(type) {
+	case map[string]any:
+		for key, nested := range current {
+			key = strings.ToLower(key)
+			if strings.Contains(key, "credential") || strings.Contains(key, "secret") || strings.Contains(key, "token") || strings.Contains(key, "password") ||
+				key == "api_key" || key == "access_key" || key == "private_key" {
+				return true
+			}
+			if containsSecretConfigurationKey(nested) {
+				return true
+			}
+		}
+	case []any:
+		for _, nested := range current {
+			if containsSecretConfigurationKey(nested) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func validConfigurationVersion(value ConfigurationVersion) bool {
+	_, _, err := normalizeConfiguration(value.TemplateConfig, value.FilterConfig)
+	return value.PackageID > 0 && value.Version > 0 && value.CreatedBy > 0 && !value.CreatedAt.IsZero() && err == nil
+}
+
+func cloneConfigurationVersion(value *ConfigurationVersion) *ConfigurationVersion {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	copy.TemplateConfig = append(json.RawMessage(nil), value.TemplateConfig...)
+	copy.FilterConfig = append(json.RawMessage(nil), value.FilterConfig...)
+	return &copy
+}
+
+func validSendRecordProjection(value SendRecordProjection) bool {
+	return value.RecordID != "" && (value.State == "pending" || value.State == "unknown" || value.State == "sent" || value.State == "failed") &&
+		!value.OccurredAt.IsZero() && !value.ProjectedAt.IsZero() && !value.ProjectedAt.Before(value.OccurredAt)
 }

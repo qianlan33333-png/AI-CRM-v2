@@ -48,7 +48,7 @@ func (fragment *localConfigurationRouteFragment) ServeHTTP(writer http.ResponseW
 		return
 	}
 	segments := strings.Split(strings.TrimPrefix(path, "/"), "/")
-	if len(segments) != 3 || segments[0] != "packages" || (segments[2] != "automation-binding" && segments[2] != "senders") {
+	if len(segments) != 3 || segments[0] != "packages" || (segments[2] != "automation-binding" && segments[2] != "senders" && segments[2] != "template-config" && segments[2] != "send-records") {
 		writeHTTPError(writer, request, http.StatusNotFound, "NOT_FOUND", "The resource was not found.", nil)
 		return
 	}
@@ -56,7 +56,14 @@ func (fragment *localConfigurationRouteFragment) ServeHTTP(writer http.ResponseW
 		fragment.handler.automationBinding(writer, request, segments[1])
 		return
 	}
-	fragment.handler.senders(writer, request, segments[1])
+	switch segments[2] {
+	case "senders":
+		fragment.handler.senders(writer, request, segments[1])
+	case "template-config":
+		fragment.handler.configuration(writer, request, segments[1])
+	case "send-records":
+		fragment.handler.sendRecords(writer, request, segments[1])
+	}
 }
 
 func (handler *LocalConfigurationHandler) operationMembers(writer http.ResponseWriter, request *http.Request) {
@@ -135,12 +142,13 @@ func (handler *LocalConfigurationHandler) automationBinding(writer http.Response
 			writeProblem(writer, request, keyProblem)
 			return
 		}
-		if emptyProblem := requireEmptyBody(request); emptyProblem != nil {
-			writeProblem(writer, request, emptyProblem)
+		input, decodeProblem := decodeDeleteAutomationBinding(writer, request)
+		if decodeProblem != nil {
+			writeProblem(writer, request, decodeProblem)
 			return
 		}
 		response, err := handler.application.DeleteAutomationBinding(request.Context(), DeleteAutomationBindingInput{
-			PackageID: packageID, Actor: actor, IdempotencyKey: key,
+			PackageID: packageID, ExpectedVersion: input.ExpectedVersion, Actor: actor, IdempotencyKey: key,
 		})
 		if err != nil {
 			writeFailure(writer, request, err)
@@ -150,6 +158,74 @@ func (handler *LocalConfigurationHandler) automationBinding(writer http.Response
 	default:
 		writeMethodNotAllowed(writer, request, http.MethodGet+", "+http.MethodPut+", "+http.MethodDelete)
 	}
+}
+
+func (handler *LocalConfigurationHandler) configuration(writer http.ResponseWriter, request *http.Request, rawID string) {
+	packageID, problem := parseID(rawID, "package_id")
+	if problem != nil {
+		writeProblem(writer, request, problem)
+		return
+	}
+	switch request.Method {
+	case http.MethodGet:
+		if !requireNoQuery(writer, request) || !handler.authorize(writer, request, false, nil) {
+			return
+		}
+		response, err := handler.application.GetConfiguration(request.Context(), packageID)
+		if err != nil {
+			writeFailure(writer, request, err)
+			return
+		}
+		writeJSON(writer, http.StatusOK, response)
+	case http.MethodPut:
+		if !requireNoQuery(writer, request) {
+			return
+		}
+		var actor Actor
+		if !handler.authorize(writer, request, true, &actor) {
+			return
+		}
+		key, keyProblem := idempotencyKey(request)
+		if keyProblem != nil {
+			writeProblem(writer, request, keyProblem)
+			return
+		}
+		input, decodeProblem := decodePutConfiguration(writer, request)
+		if decodeProblem != nil {
+			writeProblem(writer, request, decodeProblem)
+			return
+		}
+		input.PackageID, input.Actor, input.IdempotencyKey = packageID, actor, key
+		response, err := handler.application.PutConfiguration(request.Context(), input)
+		if err != nil {
+			writeFailure(writer, request, err)
+			return
+		}
+		writeJSON(writer, http.StatusOK, response)
+	default:
+		writeMethodNotAllowed(writer, request, http.MethodGet+", "+http.MethodPut)
+	}
+}
+
+func (handler *LocalConfigurationHandler) sendRecords(writer http.ResponseWriter, request *http.Request, rawID string) {
+	if request.Method != http.MethodGet {
+		writeMethodNotAllowed(writer, request, http.MethodGet)
+		return
+	}
+	if !requireNoQuery(writer, request) || !handler.authorize(writer, request, false, nil) {
+		return
+	}
+	packageID, problem := parseID(rawID, "package_id")
+	if problem != nil {
+		writeProblem(writer, request, problem)
+		return
+	}
+	response, err := handler.application.ListSendRecords(request.Context(), packageID)
+	if err != nil {
+		writeFailure(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, response)
 }
 
 func (handler *LocalConfigurationHandler) senders(writer http.ResponseWriter, request *http.Request, rawID string) {
@@ -251,7 +327,7 @@ func parseOperationMembersQuery(raw string) (int, *requestProblem) {
 }
 
 func decodePutAutomationBinding(writer http.ResponseWriter, request *http.Request) (PutAutomationBindingInput, *requestProblem) {
-	fields, problem := decodeObject(writer, request, map[string]bool{"automation_agent_id": true})
+	fields, problem := decodeObject(writer, request, map[string]bool{"automation_agent_id": true, "expected_version": true})
 	if problem != nil {
 		return PutAutomationBindingInput{}, problem
 	}
@@ -259,7 +335,43 @@ func decodePutAutomationBinding(writer http.ResponseWriter, request *http.Reques
 	if problem != nil {
 		return PutAutomationBindingInput{}, problem
 	}
-	return PutAutomationBindingInput{AutomationAgentID: agentID}, nil
+	expected, problem := requiredInteger(fields, "expected_version", 0, 1<<62)
+	if problem != nil {
+		return PutAutomationBindingInput{}, problem
+	}
+	return PutAutomationBindingInput{AutomationAgentID: agentID, ExpectedVersion: expected}, nil
+}
+
+func decodeDeleteAutomationBinding(writer http.ResponseWriter, request *http.Request) (DeleteAutomationBindingInput, *requestProblem) {
+	fields, problem := decodeObject(writer, request, map[string]bool{"expected_version": true})
+	if problem != nil {
+		return DeleteAutomationBindingInput{}, problem
+	}
+	expected, problem := requiredInteger(fields, "expected_version", 0, 1<<62)
+	if problem != nil {
+		return DeleteAutomationBindingInput{}, problem
+	}
+	return DeleteAutomationBindingInput{ExpectedVersion: expected}, nil
+}
+
+func decodePutConfiguration(writer http.ResponseWriter, request *http.Request) (PutConfigurationInput, *requestProblem) {
+	fields, problem := decodeObject(writer, request, map[string]bool{"expected_version": true, "template_config": true, "filter_config": true})
+	if problem != nil {
+		return PutConfigurationInput{}, problem
+	}
+	expected, problem := requiredInteger(fields, "expected_version", 0, 1<<62)
+	if problem != nil {
+		return PutConfigurationInput{}, problem
+	}
+	template, templateExists := fields["template_config"]
+	filter, filterExists := fields["filter_config"]
+	if !templateExists || !filterExists {
+		return PutConfigurationInput{}, validation("template_config", "required")
+	}
+	if _, _, err := normalizeConfiguration(template, filter); err != nil {
+		return PutConfigurationInput{}, validation("configuration", "invalid")
+	}
+	return PutConfigurationInput{ExpectedVersion: expected, TemplateConfig: template, FilterConfig: filter}, nil
 }
 
 func decodeReplaceSenders(writer http.ResponseWriter, request *http.Request) (ReplaceSendersInput, *requestProblem) {
@@ -348,22 +460,4 @@ func decodeSenderItem(raw json.RawMessage, index int) (PackageSender, *requestPr
 		return PackageSender{}, validation("sort_order", "sequence_required")
 	}
 	return PackageSender{SenderUserID: sender, SortOrder: int32(order), IsEnabled: enabled}, nil
-}
-
-func requireEmptyBody(request *http.Request) *requestProblem {
-	if request == nil || request.Body == nil {
-		return nil
-	}
-	if request.ContentLength > 0 {
-		return malformed("body", "not_allowed")
-	}
-	buffer := make([]byte, 1)
-	count, err := request.Body.Read(buffer)
-	if count != 0 {
-		return malformed("body", "not_allowed")
-	}
-	if err != nil && err != io.EOF {
-		return malformed("body", "invalid")
-	}
-	return nil
 }

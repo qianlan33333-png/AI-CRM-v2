@@ -7,13 +7,26 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 type localConfigurationHTTPApplication struct {
-	membersPageSize int
-	bindingInput    PutAutomationBindingInput
-	sendersInput    ReplaceSendersInput
-	deleteInput     DeleteAutomationBindingInput
+	membersPageSize    int
+	bindingInput       PutAutomationBindingInput
+	sendersInput       ReplaceSendersInput
+	deleteInput        DeleteAutomationBindingInput
+	configurationInput PutConfigurationInput
+}
+
+func (*localConfigurationHTTPApplication) GetConfiguration(context.Context, int64) (ConfigurationResponse, error) {
+	return ConfigurationResponse{Configuration: &ConfigurationVersion{PackageID: 42, Version: 1, TemplateConfig: []byte(`{"title":"local"}`), FilterConfig: []byte(`{}`), CreatedBy: 7, CreatedAt: time.Unix(1, 0).UTC()}, Projection: localProjection()}, nil
+}
+func (application *localConfigurationHTTPApplication) PutConfiguration(_ context.Context, input PutConfigurationInput) (ConfigurationResponse, error) {
+	application.configurationInput = input
+	return ConfigurationResponse{Projection: localProjection()}, nil
+}
+func (*localConfigurationHTTPApplication) ListSendRecords(context.Context, int64) (SendRecordListResponse, error) {
+	return SendRecordListResponse{Projection: localProjection()}, nil
 }
 
 func (application *localConfigurationHTTPApplication) ListOperationMembers(_ context.Context, pageSize int) (OperationMemberListResponse, error) {
@@ -91,7 +104,7 @@ func TestLocalConfigurationHTTPEnforcesClosedMutationDTOAndSecurity(t *testing.T
 	}
 
 	good := httptest.NewRecorder()
-	goodRequest := httptest.NewRequest(http.MethodPut, RoutePrefix+"/packages/42/automation-binding", strings.NewReader(`{"automation_agent_id":7}`))
+	goodRequest := httptest.NewRequest(http.MethodPut, RoutePrefix+"/packages/42/automation-binding", strings.NewReader(`{"automation_agent_id":7,"expected_version":0}`))
 	goodRequest.Header.Set("Content-Type", "application/json")
 	goodRequest.Header.Set("Idempotency-Key", "binding-http-key-0002")
 	handler.ServeHTTP(good, goodRequest)
@@ -130,7 +143,8 @@ func TestLocalConfigurationHTTPRequiresOrderedLocalSenderPayloadAndIdempotency(t
 	}
 
 	deleteResponse := httptest.NewRecorder()
-	deleteRequest := httptest.NewRequest(http.MethodDelete, RoutePrefix+"/packages/42/automation-binding", nil)
+	deleteRequest := httptest.NewRequest(http.MethodDelete, RoutePrefix+"/packages/42/automation-binding", strings.NewReader(`{"expected_version":0}`))
+	deleteRequest.Header.Set("Content-Type", "application/json")
 	deleteRequest.Header.Set("Idempotency-Key", "delete-http-key-00001")
 	handler.ServeHTTP(deleteResponse, deleteRequest)
 	if deleteResponse.Code != http.StatusOK || application.deleteInput.PackageID != 42 || application.deleteInput.IdempotencyKey == "" {
@@ -142,5 +156,35 @@ func TestLocalConfigurationHTTPRequiresOrderedLocalSenderPayloadAndIdempotency(t
 	handler.ServeHTTP(denied, httptest.NewRequest(http.MethodGet, RoutePrefix+"/packages/42/senders", nil))
 	if denied.Code != http.StatusServiceUnavailable {
 		t.Fatalf("security unavailable response=%d", denied.Code)
+	}
+}
+
+func TestLocalConfigurationHTTPVersionsOnlyLocalConfigurationAndReadsRedactedRecords(t *testing.T) {
+	application := &localConfigurationHTTPApplication{}
+	security := &localConfigurationHTTPSecurity{}
+	handler := newLocalConfigurationHTTPHandler(t, application, security)
+
+	put := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPut, RoutePrefix+"/packages/42/template-config", strings.NewReader(`{"expected_version":0,"template_config":{"title":"local"},"filter_config":{"segment":"active"}}`))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Idempotency-Key", "configuration-http-key-01")
+	handler.ServeHTTP(put, request)
+	if put.Code != http.StatusOK || application.configurationInput.ExpectedVersion != 0 || application.configurationInput.PackageID != 42 || application.configurationInput.Actor.AdminUserID != 7 {
+		t.Fatalf("configuration response=%d input=%+v", put.Code, application.configurationInput)
+	}
+
+	secret := httptest.NewRecorder()
+	secretRequest := httptest.NewRequest(http.MethodPut, RoutePrefix+"/packages/42/template-config", strings.NewReader(`{"expected_version":0,"template_config":{"token":"no"},"filter_config":{}}`))
+	secretRequest.Header.Set("Content-Type", "application/json")
+	secretRequest.Header.Set("Idempotency-Key", "configuration-http-key-02")
+	handler.ServeHTTP(secret, secretRequest)
+	if secret.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("secret configuration response=%d", secret.Code)
+	}
+
+	records := httptest.NewRecorder()
+	handler.ServeHTTP(records, httptest.NewRequest(http.MethodGet, RoutePrefix+"/packages/42/send-records", nil))
+	if records.Code != http.StatusOK || strings.Contains(records.Body.String(), "provider") || strings.Contains(records.Body.String(), "recipient") || strings.Contains(records.Body.String(), "content") {
+		t.Fatalf("send-record response=%d body=%s", records.Code, records.Body.String())
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +16,8 @@ type localConfigurationWorld struct {
 	base     *memoryWorld
 	bindings map[int64]AutomationBinding
 	senders  map[int64][]PackageSender
+	configs  map[int64]ConfigurationVersion
+	records  map[int64][]SendRecordProjection
 	receipts map[string]Receipt
 	entries  []contactport.StaffDirectoryEntry
 	agents   map[int64]AutomationAgent
@@ -24,7 +27,7 @@ type localConfigurationWorld struct {
 func newLocalConfigurationWorld() *localConfigurationWorld {
 	return &localConfigurationWorld{
 		base: newMemoryWorld(), bindings: make(map[int64]AutomationBinding), senders: make(map[int64][]PackageSender),
-		receipts: make(map[string]Receipt), nextID: 1,
+		receipts: make(map[string]Receipt), configs: make(map[int64]ConfigurationVersion), records: make(map[int64][]SendRecordProjection), nextID: 1,
 		entries: []contactport.StaffDirectoryEntry{{WeComUserID: "beta", DisplayName: "Beta"}, {WeComUserID: "alpha", DisplayName: "Alpha"}},
 		agents:  map[int64]AutomationAgent{7: {ID: 7, Status: "active"}, 8: {ID: 8, Status: "paused"}, 9: {ID: 9, Status: "archived"}},
 	}
@@ -50,25 +53,37 @@ func (world *localConfigurationWorld) GetAutomationBinding(ctx context.Context, 
 	copy := binding
 	return &copy, nil
 }
-func (world *localConfigurationWorld) SaveAutomationBinding(ctx context.Context, value AutomationBinding, actor int64, now time.Time) (AutomationBinding, error) {
+func (world *localConfigurationWorld) SaveAutomationBinding(ctx context.Context, value AutomationBinding, actor, expectedVersion int64, now time.Time) (AutomationBinding, error) {
 	if err := requireTransaction(ctx); err != nil {
 		return AutomationBinding{}, err
 	}
 	if existing, found := world.bindings[value.PackageID]; found {
+		if existing.Version != expectedVersion {
+			return AutomationBinding{}, ErrVersionConflict
+		}
 		value.CreatedBy, value.CreatedAt = existing.CreatedBy, existing.CreatedAt
+		value.Version = existing.Version + 1
 	} else {
+		if expectedVersion != 0 {
+			return AutomationBinding{}, ErrVersionConflict
+		}
 		value.CreatedBy, value.CreatedAt = actor, now
+		value.Version = 1
 	}
 	value.UpdatedBy, value.UpdatedAt = actor, now
 	world.bindings[value.PackageID] = value
 	return value, nil
 }
-func (world *localConfigurationWorld) DeleteAutomationBinding(ctx context.Context, id int64) (bool, error) {
+func (world *localConfigurationWorld) DeleteAutomationBinding(ctx context.Context, id, expectedVersion int64) (bool, error) {
 	if err := requireTransaction(ctx); err != nil {
 		return false, err
 	}
-	if _, found := world.bindings[id]; !found {
+	binding, found := world.bindings[id]
+	if !found {
 		return false, nil
+	}
+	if binding.Version != expectedVersion {
+		return false, ErrVersionConflict
 	}
 	delete(world.bindings, id)
 	return true, nil
@@ -138,6 +153,26 @@ func (world *localConfigurationWorld) CompleteConfigurationReceipt(ctx context.C
 	}
 	return Receipt{}, ErrConflict
 }
+func (world *localConfigurationWorld) GetCurrentConfiguration(_ context.Context, packageID int64) (*ConfigurationVersion, error) {
+	value, found := world.configs[packageID]
+	if !found {
+		return nil, nil
+	}
+	return cloneConfigurationVersion(&value), nil
+}
+func (world *localConfigurationWorld) InsertConfigurationVersion(ctx context.Context, value ConfigurationVersion) (ConfigurationVersion, error) {
+	if err := requireTransaction(ctx); err != nil {
+		return ConfigurationVersion{}, err
+	}
+	if current, found := world.configs[value.PackageID]; found && current.Version+1 != value.Version {
+		return ConfigurationVersion{}, ErrVersionConflict
+	}
+	world.configs[value.PackageID] = *cloneConfigurationVersion(&value)
+	return *cloneConfigurationVersion(&value), nil
+}
+func (world *localConfigurationWorld) ListSendRecordProjections(_ context.Context, packageID int64, _ int) ([]SendRecordProjection, error) {
+	return append([]SendRecordProjection(nil), world.records[packageID]...), nil
+}
 func (world *localConfigurationWorld) GetAutomationAgent(ctx context.Context, id int64) (AutomationAgent, error) {
 	if err := requireTransaction(ctx); err != nil {
 		return AutomationAgent{}, err
@@ -180,23 +215,41 @@ func TestLocalConfigurationServiceBindsOnlyNonArchivedAutomationAndReplaysReceip
 	if err != nil || !reflect.DeepEqual(first, second) || len(world.base.events) != 1 {
 		t.Fatalf("binding replay response=%+v err=%v events=%d", second, err, len(world.base.events))
 	}
-	paused, err := service.PutAutomationBinding(context.Background(), PutAutomationBindingInput{PackageID: 101, AutomationAgentID: 8, Actor: Actor{AdminUserID: 9}, IdempotencyKey: "binding-paused-key-01"})
+	paused, err := service.PutAutomationBinding(context.Background(), PutAutomationBindingInput{PackageID: 101, AutomationAgentID: 8, ExpectedVersion: 1, Actor: Actor{AdminUserID: 9}, IdempotencyKey: "binding-paused-key-01"})
 	if err != nil || paused.Binding == nil || paused.Binding.AutomationAgentID != 8 {
 		t.Fatalf("paused agent response=%+v err=%v", paused, err)
 	}
-	if _, err = service.PutAutomationBinding(context.Background(), PutAutomationBindingInput{PackageID: 101, AutomationAgentID: 9, Actor: Actor{AdminUserID: 9}, IdempotencyKey: "binding-archived-key-1"}); !errors.Is(err, ErrConflict) {
+	if _, err = service.PutAutomationBinding(context.Background(), PutAutomationBindingInput{PackageID: 101, AutomationAgentID: 9, ExpectedVersion: 2, Actor: Actor{AdminUserID: 9}, IdempotencyKey: "binding-archived-key-1"}); !errors.Is(err, ErrConflict) {
 		t.Fatalf("archived agent error=%v, want conflict", err)
 	}
-	if _, err = service.PutAutomationBinding(context.Background(), PutAutomationBindingInput{PackageID: 101, AutomationAgentID: 99, Actor: Actor{AdminUserID: 9}, IdempotencyKey: "binding-missing-key-1"}); !errors.Is(err, ErrNotFound) {
+	if _, err = service.PutAutomationBinding(context.Background(), PutAutomationBindingInput{PackageID: 101, AutomationAgentID: 99, ExpectedVersion: 2, Actor: Actor{AdminUserID: 9}, IdempotencyKey: "binding-missing-key-1"}); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing agent error=%v, want not found", err)
 	}
-	deleted, err := service.DeleteAutomationBinding(context.Background(), DeleteAutomationBindingInput{PackageID: 101, Actor: Actor{AdminUserID: 9}, IdempotencyKey: "binding-delete-key-1"})
+	deleted, err := service.DeleteAutomationBinding(context.Background(), DeleteAutomationBindingInput{PackageID: 101, ExpectedVersion: 2, Actor: Actor{AdminUserID: 9}, IdempotencyKey: "binding-delete-key-1"})
 	if err != nil || !deleted.Deleted {
 		t.Fatalf("DeleteAutomationBinding response=%+v err=%v", deleted, err)
 	}
-	repeated, err := service.DeleteAutomationBinding(context.Background(), DeleteAutomationBindingInput{PackageID: 101, Actor: Actor{AdminUserID: 9}, IdempotencyKey: "binding-delete-key-2"})
+	repeated, err := service.DeleteAutomationBinding(context.Background(), DeleteAutomationBindingInput{PackageID: 101, ExpectedVersion: 0, Actor: Actor{AdminUserID: 9}, IdempotencyKey: "binding-delete-key-2"})
 	if err != nil || repeated.Deleted {
 		t.Fatalf("idempotent unbind response=%+v err=%v", repeated, err)
+	}
+}
+
+func TestLocalConfigurationServiceRejectsStaleAutomationBindingCAS(t *testing.T) {
+	world := newLocalConfigurationWorld()
+	service := newLocalConfigurationService(t, world)
+	if _, err := service.PutAutomationBinding(context.Background(), PutAutomationBindingInput{
+		PackageID: 101, AutomationAgentID: 7, ExpectedVersion: 0, Actor: Actor{AdminUserID: 9}, IdempotencyKey: "binding-cas-first-key",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := service.PutAutomationBinding(context.Background(), PutAutomationBindingInput{
+		PackageID: 101, AutomationAgentID: 8, ExpectedVersion: 0, Actor: Actor{AdminUserID: 9}, IdempotencyKey: "binding-cas-stale-key",
+	}); !errors.Is(err, ErrVersionConflict) {
+		t.Fatalf("stale binding CAS error=%v, want version conflict", err)
+	}
+	if stored := world.bindings[101]; stored.AutomationAgentID != 7 || stored.Version != 1 {
+		t.Fatalf("stale write changed binding=%+v", stored)
 	}
 }
 
@@ -246,5 +299,40 @@ func TestLocalConfigurationServiceRejectsConflictingIdempotencyPayload(t *testin
 	}
 	if len(world.receipts) != 1 {
 		t.Fatalf("receipt count=%d", len(world.receipts))
+	}
+}
+
+func TestLocalConfigurationServiceVersionsLocalTemplateAndRedactsSendRecords(t *testing.T) {
+	world := newLocalConfigurationWorld()
+	service := newLocalConfigurationService(t, world)
+	first, err := service.PutConfiguration(context.Background(), PutConfigurationInput{
+		PackageID: 101, ExpectedVersion: 0, TemplateConfig: json.RawMessage(`{"title":"local"}`), FilterConfig: json.RawMessage(`{"segment":"active"}`),
+		Actor: Actor{AdminUserID: 9}, IdempotencyKey: "configuration-version-key-1",
+	})
+	if err != nil || first.Configuration == nil || first.Configuration.Version != 1 || !first.LocalProjection || first.RealExternalCallExecuted {
+		t.Fatalf("PutConfiguration response=%+v err=%v", first, err)
+	}
+	if _, err = service.PutConfiguration(context.Background(), PutConfigurationInput{
+		PackageID: 101, ExpectedVersion: 0, TemplateConfig: json.RawMessage(`{"title":"stale"}`), FilterConfig: json.RawMessage(`{}`),
+		Actor: Actor{AdminUserID: 9}, IdempotencyKey: "configuration-version-key-2",
+	}); !errors.Is(err, ErrVersionConflict) {
+		t.Fatalf("stale configuration error=%v, want version conflict", err)
+	}
+	if _, err = service.PutConfiguration(context.Background(), PutConfigurationInput{
+		PackageID: 101, ExpectedVersion: 1, TemplateConfig: json.RawMessage(`{"nested":{"api_key":"must-not-store"}}`), FilterConfig: json.RawMessage(`{}`),
+		Actor: Actor{AdminUserID: 9}, IdempotencyKey: "configuration-secret-key-01",
+	}); !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("secret configuration error=%v, want invalid", err)
+	}
+	world.records[101] = []SendRecordProjection{{RecordID: "record-local-1", State: "unknown", OccurredAt: time.Date(2026, 8, 25, 1, 0, 0, 0, time.UTC), ProjectedAt: time.Date(2026, 8, 25, 1, 0, 1, 0, time.UTC)}}
+	records, err := service.ListSendRecords(context.Background(), 101)
+	if err != nil || len(records.Items) != 1 || records.Items[0].RecordID != "record-local-1" || !records.LocalProjection || records.RealExternalCallExecuted {
+		t.Fatalf("ListSendRecords response=%+v err=%v", records, err)
+	}
+	encoded, _ := json.Marshal(records)
+	for _, forbidden := range []string{"recipient", "provider", "credential", "content", "sender"} {
+		if strings.Contains(string(encoded), `"`+forbidden+`"`) {
+			t.Fatalf("send record projection leaked %q: %s", forbidden, encoded)
+		}
 	}
 }

@@ -19,7 +19,7 @@ import (
 )
 
 // TestLocalConfigurationSQLRepositoryPG16 runs against a database migrated
-// through 00057_ai_audience_local_configuration.sql. All fixtures roll back.
+// through 00084_ai_audience_local_configuration_closure.sql. All fixtures roll back.
 func TestLocalConfigurationSQLRepositoryPG16(t *testing.T) {
 	ctx := context.Background()
 	dsn := os.Getenv("CI_TEST_DATABASE_URL")
@@ -57,14 +57,39 @@ func TestLocalConfigurationSQLRepositoryPG16(t *testing.T) {
 		t.Fatal(err)
 	}
 	now := time.Date(2026, 8, 22, 5, 6, 7, 0, time.UTC)
-	first, err := repository.SaveAutomationBinding(ctx, AutomationBinding{PackageID: firstPackage, AutomationAgentID: agentID}, 7, now)
+	configuration, err := repository.InsertConfigurationVersion(ctx, ConfigurationVersion{
+		PackageID: firstPackage, Version: 1, TemplateConfig: json.RawMessage(`{"title":"local"}`), FilterConfig: json.RawMessage(`{"segment":"active"}`), CreatedBy: 7, CreatedAt: now,
+	})
+	if err != nil || !validConfigurationVersion(configuration) || configuration.Version != 1 {
+		t.Fatalf("InsertConfigurationVersion configuration=%+v err=%v", configuration, err)
+	}
+	if _, err = transaction.Exec(ctx, "SAVEPOINT immutable_configuration_version"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = transaction.Exec(ctx, `UPDATE public.ai_audience_package_configuration_versions SET version = 2 WHERE package_id = $1`, firstPackage); err == nil {
+		t.Fatal("immutable configuration version unexpectedly updated")
+	}
+	if _, err = transaction.Exec(ctx, "ROLLBACK TO SAVEPOINT immutable_configuration_version"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = transaction.Exec(ctx, "RELEASE SAVEPOINT immutable_configuration_version"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = transaction.Exec(ctx, `INSERT INTO public.ai_audience_package_send_record_projections(package_id, record_id, record_digest, state, occurred_at, projected_at) VALUES($1, '5d70331f-6bf5-48e5-ba8b-3fbfc0c002b3', decode(repeat('42',32),'hex'), 'unknown', $2, $2)`, firstPackage, now); err != nil {
+		t.Fatal(err)
+	}
+	records, err := repository.ListSendRecordProjections(ctx, firstPackage, 100)
+	if err != nil || len(records) != 1 || records[0].RecordID != "5d70331f-6bf5-48e5-ba8b-3fbfc0c002b3" || !validSendRecordProjection(records[0]) {
+		t.Fatalf("ListSendRecordProjections records=%+v err=%v", records, err)
+	}
+	first, err := repository.SaveAutomationBinding(ctx, AutomationBinding{PackageID: firstPackage, AutomationAgentID: agentID}, 7, 0, now)
 	if err != nil || !validAutomationBinding(first) || first.PackageID != firstPackage {
 		t.Fatalf("SaveAutomationBinding first=%+v err=%v", first, err)
 	}
 	if _, err = transaction.Exec(ctx, "SAVEPOINT active_binding_collision"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = repository.SaveAutomationBinding(ctx, AutomationBinding{PackageID: secondPackage, AutomationAgentID: agentID}, 7, now); !errors.Is(err, ErrConflict) {
+	if _, err = repository.SaveAutomationBinding(ctx, AutomationBinding{PackageID: secondPackage, AutomationAgentID: agentID}, 7, 0, now); !errors.Is(err, ErrConflict) {
 		t.Fatalf("active package collision error=%v, want conflict", err)
 	}
 	if _, err = transaction.Exec(ctx, "ROLLBACK TO SAVEPOINT active_binding_collision"); err != nil {
@@ -76,7 +101,7 @@ func TestLocalConfigurationSQLRepositoryPG16(t *testing.T) {
 	if _, err = transaction.Exec(ctx, `UPDATE public.ai_audience_package_metadata SET lifecycle = 'archived' WHERE segment_id = $1`, firstPackage); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = repository.SaveAutomationBinding(ctx, AutomationBinding{PackageID: secondPackage, AutomationAgentID: agentID}, 7, now); err != nil {
+	if _, err = repository.SaveAutomationBinding(ctx, AutomationBinding{PackageID: secondPackage, AutomationAgentID: agentID}, 7, 0, now); err != nil {
 		t.Fatalf("archived owner must release agent: %v", err)
 	}
 	if _, err = transaction.Exec(ctx, "SAVEPOINT activation_binding_collision"); err != nil {
@@ -96,6 +121,10 @@ func TestLocalConfigurationSQLRepositoryPG16(t *testing.T) {
 	stored, changed, err := repository.ReplacePackageSenders(ctx, secondPackage, wanted, 7, now)
 	if err != nil || !changed || !reflect.DeepEqual(stored, wanted) {
 		t.Fatalf("ReplacePackageSenders stored=%+v changed=%t err=%v", stored, changed, err)
+	}
+	var senderSecurityCount int
+	if err = transaction.QueryRow(ctx, `SELECT count(*) FROM public.ai_audience_package_sender_security_config WHERE package_id = $1 AND sender_ref = 'staff:alpha' AND octet_length(sender_digest) = 32`, secondPackage).Scan(&senderSecurityCount); err != nil || senderSecurityCount != 1 {
+		t.Fatalf("sender security config count=%d err=%v", senderSecurityCount, err)
 	}
 	stored, changed, err = repository.ReplacePackageSenders(ctx, secondPackage, wanted, 7, now)
 	if err != nil || changed || !reflect.DeepEqual(stored, wanted) {
@@ -216,16 +245,19 @@ func TestLocalConfigurationSQLRepositoryPG16SerializesStaffDeactivationAndSender
 
 func assertLocalConfigurationSchema(t *testing.T, ctx context.Context, transaction pgx.Tx) {
 	t.Helper()
-	var bindings, senders, receipts string
+	var bindings, senders, receipts, configurations, senderSecurity, sendRecords string
 	if err := transaction.QueryRow(ctx, `
 SELECT
   COALESCE(to_regclass('public.ai_audience_package_automation_bindings')::text, ''),
   COALESCE(to_regclass('public.ai_audience_package_senders')::text, ''),
-  COALESCE(to_regclass('public.ai_audience_local_configuration_receipts')::text, '')`).Scan(&bindings, &senders, &receipts); err != nil {
+	  COALESCE(to_regclass('public.ai_audience_local_configuration_receipts')::text, ''),
+  COALESCE(to_regclass('public.ai_audience_package_configuration_versions')::text, ''),
+  COALESCE(to_regclass('public.ai_audience_package_sender_security_config')::text, ''),
+  COALESCE(to_regclass('public.ai_audience_package_send_record_projections')::text, '')`).Scan(&bindings, &senders, &receipts, &configurations, &senderSecurity, &sendRecords); err != nil {
 		t.Fatal(err)
 	}
-	if bindings == "" || senders == "" || receipts == "" {
-		t.Fatalf("required tables missing: bindings=%q senders=%q receipts=%q", bindings, senders, receipts)
+	if bindings == "" || senders == "" || receipts == "" || configurations == "" || senderSecurity == "" || sendRecords == "" {
+		t.Fatalf("required tables missing: bindings=%q senders=%q receipts=%q configurations=%q sender_security=%q send_records=%q", bindings, senders, receipts, configurations, senderSecurity, sendRecords)
 	}
 }
 

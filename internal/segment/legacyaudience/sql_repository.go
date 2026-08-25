@@ -2,6 +2,7 @@ package legacyaudience
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -440,7 +441,7 @@ func (repository *SQLRepository) GetAutomationBinding(ctx context.Context, packa
 		return nil, err
 	}
 	binding, err := scanAutomationBinding(database.QueryRow(ctx, `
-SELECT package_id, automation_agent_id, created_by, updated_by, created_at, updated_at
+SELECT package_id, automation_agent_id, version, created_by, updated_by, created_at, updated_at
 FROM public.ai_audience_package_automation_bindings
 WHERE package_id = $1`, packageID))
 	if err != nil {
@@ -452,35 +453,41 @@ WHERE package_id = $1`, packageID))
 	return &binding, nil
 }
 
-func (repository *SQLRepository) SaveAutomationBinding(ctx context.Context, value AutomationBinding, actorID int64, now time.Time) (AutomationBinding, error) {
+func (repository *SQLRepository) SaveAutomationBinding(ctx context.Context, value AutomationBinding, actorID, expectedVersion int64, now time.Time) (AutomationBinding, error) {
 	database, err := repository.transaction(ctx)
 	if err != nil {
 		return AutomationBinding{}, err
 	}
 	binding, err := scanAutomationBinding(database.QueryRow(ctx, `
 INSERT INTO public.ai_audience_package_automation_bindings
-  (package_id, automation_agent_id, created_by, updated_by, created_at, updated_at)
-VALUES ($1, $2, $3, $3, $4, $4)
+  (package_id, automation_agent_id, version, created_by, updated_by, created_at, updated_at)
+SELECT $1, $2, 1, $3, $3, $5, $5
+WHERE $4 = 0
 ON CONFLICT (package_id) DO UPDATE
 SET automation_agent_id = EXCLUDED.automation_agent_id,
+    version = public.ai_audience_package_automation_bindings.version + 1,
     updated_by = EXCLUDED.updated_by,
     updated_at = EXCLUDED.updated_at
-RETURNING package_id, automation_agent_id, created_by, updated_by, created_at, updated_at`,
-		value.PackageID, value.AutomationAgentID, actorID, now))
+WHERE public.ai_audience_package_automation_bindings.version = $4
+RETURNING package_id, automation_agent_id, version, created_by, updated_by, created_at, updated_at`,
+		value.PackageID, value.AutomationAgentID, actorID, expectedVersion, now))
 	if err != nil {
+		if repository.provider.IsNoRows(err) {
+			return AutomationBinding{}, ErrVersionConflict
+		}
 		return AutomationBinding{}, classifySQLError(err)
 	}
 	return binding, nil
 }
 
-func (repository *SQLRepository) DeleteAutomationBinding(ctx context.Context, packageID int64) (bool, error) {
+func (repository *SQLRepository) DeleteAutomationBinding(ctx context.Context, packageID, expectedVersion int64) (bool, error) {
 	database, err := repository.transaction(ctx)
 	if err != nil {
 		return false, err
 	}
 	rows, err := database.Exec(ctx, `
 DELETE FROM public.ai_audience_package_automation_bindings
-WHERE package_id = $1`, packageID)
+WHERE package_id = $1 AND version = $2`, packageID, expectedVersion)
 	if err != nil {
 		return false, classifySQLError(err)
 	}
@@ -526,12 +533,24 @@ SELECT pg_advisory_xact_lock(hashtextextended('ai_audience.package.senders.v1:' 
 	if _, err = database.Exec(ctx, `DELETE FROM public.ai_audience_package_senders WHERE package_id = $1`, packageID); err != nil {
 		return nil, false, classifySQLError(err)
 	}
+	if _, err = database.Exec(ctx, `DELETE FROM public.ai_audience_package_sender_security_config WHERE package_id = $1`, packageID); err != nil {
+		return nil, false, classifySQLError(err)
+	}
 	for _, item := range wanted {
 		if _, err = database.Exec(ctx, `
 INSERT INTO public.ai_audience_package_senders
   (package_id, sender_userid, sort_order, is_enabled, created_by, updated_by, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $5, $6, $6)`,
 			packageID, item.SenderUserID, item.SortOrder, item.IsEnabled, actorID, now); err != nil {
+			return nil, false, classifySQLError(err)
+		}
+		ref := "staff:" + item.SenderUserID
+		digest := sha256.Sum256([]byte(ref))
+		if _, err = database.Exec(ctx, `
+INSERT INTO public.ai_audience_package_sender_security_config
+  (package_id, sender_ref, sender_digest, is_enabled, created_by, updated_by, created_at, updated_at)
+VALUES ($1, $2, $3, $4, $5, $5, $6, $6)`,
+			packageID, ref, digest[:], item.IsEnabled, actorID, now); err != nil {
 			return nil, false, classifySQLError(err)
 		}
 	}
@@ -606,6 +625,75 @@ RETURNING id, operation, actor_id, key_digest, payload_digest, state, result_jso
 	return receipt, nil
 }
 
+func (repository *SQLRepository) GetCurrentConfiguration(ctx context.Context, packageID int64) (*ConfigurationVersion, error) {
+	database, err := repository.reader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	configuration, err := scanConfigurationVersion(database.QueryRow(ctx, `
+SELECT package_id, version, template_config, filter_config, created_by, created_at
+FROM public.ai_audience_package_configuration_versions
+WHERE package_id = $1
+ORDER BY version DESC
+LIMIT 1`, packageID))
+	if err != nil {
+		if repository.provider.IsNoRows(err) {
+			return nil, nil
+		}
+		return nil, classifySQLError(err)
+	}
+	return &configuration, nil
+}
+
+func (repository *SQLRepository) InsertConfigurationVersion(ctx context.Context, value ConfigurationVersion) (ConfigurationVersion, error) {
+	database, err := repository.transaction(ctx)
+	if err != nil {
+		return ConfigurationVersion{}, err
+	}
+	stored, err := scanConfigurationVersion(database.QueryRow(ctx, `
+INSERT INTO public.ai_audience_package_configuration_versions
+  (package_id, version, template_config, filter_config, created_by, created_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING package_id, version, template_config, filter_config, created_by, created_at`,
+		value.PackageID, value.Version, []byte(value.TemplateConfig), []byte(value.FilterConfig), value.CreatedBy, value.CreatedAt))
+	if err != nil {
+		return ConfigurationVersion{}, classifySQLError(err)
+	}
+	return stored, nil
+}
+
+func (repository *SQLRepository) ListSendRecordProjections(ctx context.Context, packageID int64, limit int) ([]SendRecordProjection, error) {
+	if limit < 1 || limit > 100 {
+		return nil, ErrInvalidInput
+	}
+	database, err := repository.reader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := database.Query(ctx, `
+SELECT record_id, state, occurred_at, projected_at
+FROM public.ai_audience_package_send_record_projections
+WHERE package_id = $1
+ORDER BY occurred_at DESC, record_id DESC
+LIMIT $2`, packageID, limit)
+	if err != nil {
+		return nil, classifySQLError(err)
+	}
+	defer rows.Close()
+	items := make([]SendRecordProjection, 0, limit)
+	for rows.Next() {
+		var item SendRecordProjection
+		if err = rows.Scan(&item.RecordID, &item.State, &item.OccurredAt, &item.ProjectedAt); err != nil {
+			return nil, classifySQLError(err)
+		}
+		items = append(items, item)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, classifySQLError(err)
+	}
+	return items, nil
+}
+
 func listPackageSenders(ctx context.Context, database SQLExecutor, packageID int64, lock bool) ([]PackageSender, error) {
 	query := `
 SELECT sender_userid, sort_order, is_enabled
@@ -678,12 +766,22 @@ func scanAutomationBinding(row interface{ Scan(...any) error }) (AutomationBindi
 	err := row.Scan(
 		&binding.PackageID,
 		&binding.AutomationAgentID,
+		&binding.Version,
 		&binding.CreatedBy,
 		&binding.UpdatedBy,
 		&binding.CreatedAt,
 		&binding.UpdatedAt,
 	)
 	return binding, err
+}
+
+func scanConfigurationVersion(row interface{ Scan(...any) error }) (ConfigurationVersion, error) {
+	var value ConfigurationVersion
+	var template, filter []byte
+	err := row.Scan(&value.PackageID, &value.Version, &template, &filter, &value.CreatedBy, &value.CreatedAt)
+	value.TemplateConfig = append(json.RawMessage(nil), template...)
+	value.FilterConfig = append(json.RawMessage(nil), filter...)
+	return value, err
 }
 
 func scanGroup(row interface{ Scan(...any) error }) (Group, error) {
