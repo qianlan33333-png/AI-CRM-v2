@@ -71,6 +71,38 @@ WITH action AS (
 )
 SELECT enrollment.id FROM enrollment;
 
+-- name: AttachAutomationActionExternalEffect :one
+UPDATE automation_execution_actions
+   SET external_effect_id=sqlc.arg(external_effect_id)
+ WHERE id=sqlc.arg(action_id)
+   AND action_type='outbound_message'
+   AND state='queued'
+   AND external_effect_id IS NULL
+RETURNING *;
+
+-- name: GetAutomationActionForReconcile :one
+SELECT *
+  FROM automation_execution_actions
+ WHERE id=sqlc.arg(action_id)
+   AND action_type='outbound_message'
+ FOR UPDATE;
+
+-- name: ProjectAutomationActionTerminalEffect :one
+WITH action AS (
+  UPDATE automation_execution_actions
+     SET state=sqlc.arg(state), receipt_digest=sqlc.arg(receipt_digest), completed_at=sqlc.arg(now)
+   WHERE external_effect_id=sqlc.arg(external_effect_id)
+     AND action_type='outbound_message'
+     AND state IN ('queued','outcome_unknown')
+  RETURNING enrollment_id
+), enrollment AS (
+  UPDATE automation_enrollments
+     SET state=sqlc.arg(state), completed_at=sqlc.arg(now)
+   WHERE id=(SELECT enrollment_id FROM action)
+  RETURNING id
+)
+SELECT enrollment.id FROM enrollment;
+
 -- name: ListAutomationExecutionActions :many
 SELECT a.id,a.enrollment_id,a.action_type,a.state,a.external_effect_id,a.receipt_digest,a.created_at,a.completed_at,
        e.automation_id,e.automation_version,e.source_event_id,e.customer_id,e.enrolled_at

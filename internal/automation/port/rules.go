@@ -3,6 +3,8 @@ package port
 import (
 	"context"
 	"time"
+
+	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/port"
 )
 
 type RuleID int64
@@ -22,9 +24,11 @@ type TagAppliedCondition struct {
 }
 
 // Action is closed to a local receipt and an Outbound/EER-owned message handoff.
-// The latter contains no recipient, body, provider, or credential material.
+// V2 stores only the existing Outbound template reference; the EER envelope is
+// digest-only and never carries a recipient, body, provider, or credential.
 type Action struct {
-	Type string `json:"type"`
+	Type        string `json:"type"`
+	TemplateKey string `json:"template_key,omitempty"`
 }
 
 type Rule struct {
@@ -85,6 +89,23 @@ type RuntimeExecution struct {
 
 type RuntimeReader interface {
 	ListRuleExecutions(context.Context, int32, int32) ([]RuntimeExecution, error)
+}
+
+// ReconcileOutboundMessageCommand is an operator-only local closure of a
+// previously outcome-unknown EER binding. Its evidence is a digest, never a
+// provider body or delivery assertion.
+type ReconcileOutboundMessageCommand struct {
+	ActionID       int64
+	Actor          int64
+	IdempotencyKey string
+	Generation     int64
+	Fence          int64
+	LeaseExpiresAt time.Time
+	EvidenceDigest eer.Digest
+}
+
+type RuntimeReconciler interface {
+	ReconcileOutboundMessage(context.Context, ReconcileOutboundMessageCommand) (RuntimeExecution, error)
 }
 
 type RuleOperationReceipt struct {

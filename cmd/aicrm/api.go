@@ -1273,6 +1273,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	automationOutboundMessage, err := automationstore.NewOutboundMessageHandoff(pool, uow, externalEffectsRuntime)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	campaignDispatchRepository, err := outboundstore.NewCampaignDispatchRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -1453,6 +1458,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.automationAgents = automationAgentService
 	legacyHandler.automationRules = automationRuleService
 	legacyHandler.automationRuleRuns = automationRuleRepository
+	legacyHandler.automationRuleReconcile = automationOutboundMessage
 	legacyHandler.messageArchive = messageArchiveService
 	legacyHandler.messageArchiveUnionID = legacyUnionIDResolver
 	legacyHandler.operationCycles = operationapp.NewService(uow, operationstore.NewRepository(), eventstore.NewAppender(), deliveryProducer)
@@ -2501,6 +2507,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/api/admin/automation-agents/{agent_id}/pause", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.PauseAutomationAgent)},
 			{http.MethodPost, "/api/admin/automation-agents/{agent_id}/publish", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.PublishAutomationAgent)},
 			{http.MethodGet, "/api/admin/automations/executions", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ListAutomationRuleRuns)},
+			{http.MethodPost, "/api/admin/automations/executions/{action_id}/reconcile", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.ReconcileAutomationRuleRun)},
 			{http.MethodGet, "/api/admin/automations", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.ListAutomationRules)},
 			{http.MethodPost, "/api/admin/automations", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.CreateAutomationRule)},
 			{http.MethodGet, "/api/admin/automations/{rule_id}", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.GetAutomationRule)},

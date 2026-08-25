@@ -15331,8 +15331,21 @@ export const CreateAutomationRuleRuntimeBodyActionType = {
   outbound_message: "outbound_message",
 } as const;
 
+/**
+ * Required for outbound_message; the V2 handoff stores only this immutable template reference and opaque digests.
+ */
+export type CreateAutomationRuleRuntimeBodyActionTemplateKey =
+  (typeof CreateAutomationRuleRuntimeBodyActionTemplateKey)[keyof typeof CreateAutomationRuleRuntimeBodyActionTemplateKey];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CreateAutomationRuleRuntimeBodyActionTemplateKey = {
+  textnoticev1: "text.notice.v1",
+} as const;
+
 export type CreateAutomationRuleRuntimeBodyAction = {
   type: CreateAutomationRuleRuntimeBodyActionType;
+  /** Required for outbound_message; the V2 handoff stores only this immutable template reference and opaque digests. */
+  template_key?: CreateAutomationRuleRuntimeBodyActionTemplateKey;
 };
 
 export type CreateAutomationRuleRuntimeBody = {
@@ -15349,6 +15362,16 @@ export type CreateAutomationRuleRuntimeBody = {
 };
 
 export type UpdateAutomationRuleRuntimeBody = { [key: string]: unknown };
+
+export type ReconcileAutomationRuleRuntimeExecutionBody = {
+  /** @minimum 1 */
+  generation: number;
+  /** @minimum 1 */
+  fence: number;
+  lease_expires_at: string;
+  /** @pattern ^sha256:[0-9a-f]{64}$ */
+  evidence_digest: string;
+};
 
 /**
  * @summary Download the safe local owner-reassignment CSV template
@@ -49508,4 +49531,94 @@ export const listAutomationRuleRuntimeExecutions = async (
     status: res.status,
     headers: res.headers,
   } as listAutomationRuleRuntimeExecutionsResponse;
+};
+
+/**
+ * @summary Manually reconcile one outcome-unknown Automation EER binding
+ */
+export type reconcileAutomationRuleRuntimeExecutionResponse200 = {
+  data: void;
+  status: 200;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponseSuccess =
+  reconcileAutomationRuleRuntimeExecutionResponse200 & {
+    headers: Headers;
+  };
+export type reconcileAutomationRuleRuntimeExecutionResponseError = (
+  | reconcileAutomationRuleRuntimeExecutionResponse400
+  | reconcileAutomationRuleRuntimeExecutionResponse401
+  | reconcileAutomationRuleRuntimeExecutionResponse403
+  | reconcileAutomationRuleRuntimeExecutionResponse404
+  | reconcileAutomationRuleRuntimeExecutionResponse409
+  | reconcileAutomationRuleRuntimeExecutionResponse503
+) & {
+  headers: Headers;
+};
+
+export type reconcileAutomationRuleRuntimeExecutionResponse =
+  | reconcileAutomationRuleRuntimeExecutionResponseSuccess
+  | reconcileAutomationRuleRuntimeExecutionResponseError;
+
+export const getReconcileAutomationRuleRuntimeExecutionUrl = (
+  actionId: number,
+) => {
+  return `/api/admin/automations/executions/${actionId}/reconcile`;
+};
+
+export const reconcileAutomationRuleRuntimeExecution = async (
+  actionId: number,
+  reconcileAutomationRuleRuntimeExecutionBody: ReconcileAutomationRuleRuntimeExecutionBody,
+  options?: RequestInit,
+): Promise<reconcileAutomationRuleRuntimeExecutionResponse> => {
+  const res = await fetch(
+    getReconcileAutomationRuleRuntimeExecutionUrl(actionId),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(reconcileAutomationRuleRuntimeExecutionBody),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reconcileAutomationRuleRuntimeExecutionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reconcileAutomationRuleRuntimeExecutionResponse;
 };

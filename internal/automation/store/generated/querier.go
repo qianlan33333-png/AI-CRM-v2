@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	AttachAutomationActionExternalEffect(ctx context.Context, arg AttachAutomationActionExternalEffectParams) (AutomationExecutionAction, error)
 	CompleteAutomationAgentReceipt(ctx context.Context, arg CompleteAutomationAgentReceiptParams) (AutomationAgentOperationReceipt, error)
 	CompleteAutomationRecordAction(ctx context.Context, arg CompleteAutomationRecordActionParams) (int64, error)
 	CompleteAutomationRuleOperation(ctx context.Context, arg CompleteAutomationRuleOperationParams) (AutomationOperationReceipt, error)
@@ -18,6 +19,7 @@ type Querier interface {
 	CreateAutomationExecutionAction(ctx context.Context, arg CreateAutomationExecutionActionParams) (AutomationExecutionAction, error)
 	CreateAutomationRule(ctx context.Context, arg CreateAutomationRuleParams) (Automation, error)
 	CreateAutomationRuleVersion(ctx context.Context, arg CreateAutomationRuleVersionParams) error
+	GetAutomationActionForReconcile(ctx context.Context, actionID int64) (AutomationExecutionAction, error)
 	GetAutomationAgent(ctx context.Context, id int64) (AutomationAgentConfiguration, error)
 	GetAutomationAgentReceipt(ctx context.Context, arg GetAutomationAgentReceiptParams) (AutomationAgentOperationReceipt, error)
 	GetAutomationRule(ctx context.Context, id int64) (Automation, error)
@@ -31,6 +33,7 @@ type Querier interface {
 	ListAutomationTriggerReceipts(ctx context.Context, arg ListAutomationTriggerReceiptsParams) ([]AutomationTriggerReceipt, error)
 	LockAutomationAgent(ctx context.Context, id int64) (AutomationAgentConfiguration, error)
 	MarkAutomationActionOutcomeUnknown(ctx context.Context, arg MarkAutomationActionOutcomeUnknownParams) (int64, error)
+	ProjectAutomationActionTerminalEffect(ctx context.Context, arg ProjectAutomationActionTerminalEffectParams) (int64, error)
 	ReserveAutomationAgentReceipt(ctx context.Context, arg ReserveAutomationAgentReceiptParams) (AutomationAgentOperationReceipt, error)
 	ReserveAutomationEnrollment(ctx context.Context, arg ReserveAutomationEnrollmentParams) (AutomationEnrollment, error)
 	ReserveAutomationRuleOperation(ctx context.Context, arg ReserveAutomationRuleOperationParams) (AutomationOperationReceipt, error)

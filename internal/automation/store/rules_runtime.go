@@ -15,18 +15,25 @@ import (
 )
 
 // RuleRuntime evaluates the deliberately closed A01 condition/action forms
-// inside the existing Automation delivery transaction.  It never calls a
-// provider: outbound_message remains a durable queued action for Outbound/EER.
-type RuleRuntime struct{}
+// inside the existing Automation delivery transaction. It never calls a
+// provider: outbound_message is accepted into EER and queued to River only.
+type RuleRuntime struct {
+	outbound *OutboundMessageHandoff
+}
 
 func NewRuleRuntime() *RuleRuntime { return &RuleRuntime{} }
+
+func NewRuleRuntimeWithOutboundMessage(handoff *OutboundMessageHandoff) *RuleRuntime {
+	return &RuleRuntime{outbound: handoff}
+}
 
 type tagRuleCondition struct {
 	TagID int64 `json:"tag_id"`
 }
 
 type ruleAction struct {
-	Type string `json:"type"`
+	Type        string `json:"type"`
+	TemplateKey string `json:"template_key"`
 }
 
 func (runtime *RuleRuntime) ExecuteTagApplied(ctx context.Context, sourceEventID, customerID, tagID int64, payload json.RawMessage, now time.Time) error {
@@ -67,6 +74,14 @@ func (runtime *RuleRuntime) ExecuteTagApplied(ctx context.Context, sourceEventID
 				return err
 			}
 		}
+		if action.Type == "outbound_message" && runtime.outbound != nil && !actionRow.ExternalEffectID.Valid {
+			if _, err = runtime.outbound.Queue(ctx, outboundMessageInput{
+				ActionID: actionRow.ID, SourceEventID: sourceEventID, RuleID: rule.ID, RuleVersion: rule.CurrentVersion,
+				CustomerID: customerID, TemplateKey: action.TemplateKey, Now: now,
+			}); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -78,7 +93,9 @@ func decodeRuntimeRule(rule automationdb.Automation) (tagRuleCondition, ruleActi
 		json.Unmarshal(rule.ConditionJson, &condition) != nil || json.Unmarshal(rule.ActionJson, &action) != nil || condition.TagID < 1 {
 		return tagRuleCondition{}, ruleAction{}, false
 	}
-	if action.Type != "record" && action.Type != "outbound_message" {
+	if (action.Type != "record" && action.Type != "outbound_message") ||
+		(action.Type == "record" && action.TemplateKey != "") ||
+		(action.Type == "outbound_message" && action.TemplateKey != "text.notice.v1") {
 		return tagRuleCondition{}, ruleAction{}, false
 	}
 	return condition, action, true

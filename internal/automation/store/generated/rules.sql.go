@@ -11,6 +11,38 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const attachAutomationActionExternalEffect = `-- name: AttachAutomationActionExternalEffect :one
+UPDATE automation_execution_actions
+   SET external_effect_id=$1
+ WHERE id=$2
+   AND action_type='outbound_message'
+   AND state='queued'
+   AND external_effect_id IS NULL
+RETURNING id, enrollment_id, action_type, action_snapshot, state, external_effect_id, receipt_digest, created_at, completed_at
+`
+
+type AttachAutomationActionExternalEffectParams struct {
+	ExternalEffectID pgtype.Text `json:"external_effect_id"`
+	ActionID         int64       `json:"action_id"`
+}
+
+func (q *Queries) AttachAutomationActionExternalEffect(ctx context.Context, arg AttachAutomationActionExternalEffectParams) (AutomationExecutionAction, error) {
+	row := q.db.QueryRow(ctx, attachAutomationActionExternalEffect, arg.ExternalEffectID, arg.ActionID)
+	var i AutomationExecutionAction
+	err := row.Scan(
+		&i.ID,
+		&i.EnrollmentID,
+		&i.ActionType,
+		&i.ActionSnapshot,
+		&i.State,
+		&i.ExternalEffectID,
+		&i.ReceiptDigest,
+		&i.CreatedAt,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
 const completeAutomationRecordAction = `-- name: CompleteAutomationRecordAction :one
 WITH action AS (
   UPDATE automation_execution_actions
@@ -177,6 +209,31 @@ func (q *Queries) CreateAutomationRuleVersion(ctx context.Context, arg CreateAut
 		arg.ActorID,
 	)
 	return err
+}
+
+const getAutomationActionForReconcile = `-- name: GetAutomationActionForReconcile :one
+SELECT id, enrollment_id, action_type, action_snapshot, state, external_effect_id, receipt_digest, created_at, completed_at
+  FROM automation_execution_actions
+ WHERE id=$1
+   AND action_type='outbound_message'
+ FOR UPDATE
+`
+
+func (q *Queries) GetAutomationActionForReconcile(ctx context.Context, actionID int64) (AutomationExecutionAction, error) {
+	row := q.db.QueryRow(ctx, getAutomationActionForReconcile, actionID)
+	var i AutomationExecutionAction
+	err := row.Scan(
+		&i.ID,
+		&i.EnrollmentID,
+		&i.ActionType,
+		&i.ActionSnapshot,
+		&i.State,
+		&i.ExternalEffectID,
+		&i.ReceiptDigest,
+		&i.CreatedAt,
+		&i.CompletedAt,
+	)
+	return i, err
 }
 
 const getAutomationRule = `-- name: GetAutomationRule :one
@@ -364,6 +421,42 @@ type MarkAutomationActionOutcomeUnknownParams struct {
 
 func (q *Queries) MarkAutomationActionOutcomeUnknown(ctx context.Context, arg MarkAutomationActionOutcomeUnknownParams) (int64, error) {
 	row := q.db.QueryRow(ctx, markAutomationActionOutcomeUnknown, arg.ReceiptDigest, arg.Now, arg.ActionID)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
+const projectAutomationActionTerminalEffect = `-- name: ProjectAutomationActionTerminalEffect :one
+WITH action AS (
+  UPDATE automation_execution_actions
+     SET state=$1, receipt_digest=$2, completed_at=$3
+   WHERE external_effect_id=$4
+     AND action_type='outbound_message'
+     AND state IN ('queued','outcome_unknown')
+  RETURNING enrollment_id
+), enrollment AS (
+  UPDATE automation_enrollments
+     SET state=$1, completed_at=$3
+   WHERE id=(SELECT enrollment_id FROM action)
+  RETURNING id
+)
+SELECT enrollment.id FROM enrollment
+`
+
+type ProjectAutomationActionTerminalEffectParams struct {
+	State            string             `json:"state"`
+	ReceiptDigest    pgtype.Text        `json:"receipt_digest"`
+	Now              pgtype.Timestamptz `json:"now"`
+	ExternalEffectID pgtype.Text        `json:"external_effect_id"`
+}
+
+func (q *Queries) ProjectAutomationActionTerminalEffect(ctx context.Context, arg ProjectAutomationActionTerminalEffectParams) (int64, error) {
+	row := q.db.QueryRow(ctx, projectAutomationActionTerminalEffect,
+		arg.State,
+		arg.ReceiptDigest,
+		arg.Now,
+		arg.ExternalEffectID,
+	)
 	var id int64
 	err := row.Scan(&id)
 	return id, err

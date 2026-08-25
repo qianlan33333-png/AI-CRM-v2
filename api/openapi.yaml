@@ -10182,7 +10182,7 @@ paths:
       x-aicrm-session-bound-csrf: required
       x-aicrm-rbac-scopes: {admin: global}
       parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
-      requestBody: {required: true, content: {application/json: {schema: {type: object, additionalProperties: false, required: [code, name, status, condition, action], properties: {code: {type: string, pattern: '^[a-z0-9_-]{1,120}$'}, name: {type: string, minLength: 1, maxLength: 120}, status: {type: string, enum: [active, paused]}, condition: {type: object, additionalProperties: false, required: [tag_id], properties: {tag_id: {type: integer, format: int64, minimum: 1}}}, action: {type: object, additionalProperties: false, required: [type], properties: {type: {type: string, enum: [record, outbound_message]}}}}}}}}
+      requestBody: {required: true, content: {application/json: {schema: {type: object, additionalProperties: false, required: [code, name, status, condition, action], properties: {code: {type: string, pattern: '^[a-z0-9_-]{1,120}$'}, name: {type: string, minLength: 1, maxLength: 120}, status: {type: string, enum: [active, paused]}, condition: {type: object, additionalProperties: false, required: [tag_id], properties: {tag_id: {type: integer, format: int64, minimum: 1}}}, action: {type: object, additionalProperties: false, required: [type], properties: {type: {type: string, enum: [record, outbound_message]}, template_key: {type: string, enum: [text.notice.v1], description: Required for outbound_message; the V2 handoff stores only this immutable template reference and opaque digests.}}}}}}}}
       responses: {"200": {description: Durable local rule snapshot}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
   /api/admin/automations/{rule_id}:
     get:
@@ -10243,6 +10243,22 @@ paths:
       x-aicrm-session-bound-csrf: none
       x-aicrm-rbac-scopes: {admin: global, ops: global}
       responses: {"200": {description: Redacted execution states}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/admin/automations/executions/{action_id}/reconcile:
+    post:
+      tags: [p4-automation-runtime]
+      operationId: reconcileAutomationRuleRuntimeExecution
+      summary: Manually reconcile one outcome-unknown Automation EER binding
+      x-p4-decision-evidence: P4-A01-AUTOMATION-RULES-RUNTIME-2026-08-25
+      x-aicrm-capability: config.settings.manage
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: automation.local_eer_reconciliation_transaction
+      x-aicrm-external-effect: none
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-rbac-scopes: {admin: global}
+      parameters: [{name: action_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
+      requestBody: {required: true, content: {application/json: {schema: {type: object, additionalProperties: false, required: [generation, fence, lease_expires_at, evidence_digest], properties: {generation: {type: integer, format: int64, minimum: 1}, fence: {type: integer, format: int64, minimum: 1}, lease_expires_at: {type: string, format: date-time}, evidence_digest: {type: string, pattern: '^sha256:[0-9a-f]{64}$'}}}}}}
+      responses: {"200": {description: Reconciled local action projection; never delivery proof.}, "400": {$ref: "#/components/responses/BadRequest"}, "401": {$ref: "#/components/responses/Unauthorized"}, "403": {$ref: "#/components/responses/Forbidden"}, "404": {$ref: "#/components/responses/NotFound"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
 components:
   securitySchemes:
     AdminSession:

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
+	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 )
 
@@ -142,7 +143,14 @@ func validRuleStatus(status automationport.RuleStatus) bool {
 	return status == automationport.RuleStatusActive || status == automationport.RuleStatusPaused || status == automationport.RuleStatusArchived
 }
 func validRuleAction(action automationport.Action) bool {
-	return action.Type == "record" || action.Type == "outbound_message"
+	switch action.Type {
+	case "record":
+		return action.TemplateKey == ""
+	case "outbound_message":
+		return action.TemplateKey == outboundapp.TemplateTextNoticeV1
+	default:
+		return false
+	}
 }
 func validStoredRule(rule automationport.Rule) bool {
 	return rule.ID > 0 && rule.Version > 0 && (rule.Status == automationport.RuleStatusArchived || (ruleCode.MatchString(rule.Code) && strings.TrimSpace(rule.Name) == rule.Name && rule.Name != "" && rule.Condition.TagID > 0 && validRuleAction(rule.Action)))
