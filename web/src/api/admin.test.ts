@@ -1,6 +1,6 @@
-import { attachmentPageDto, channelPageDto, couponPageDto, customerPageDto, imagePageDto, miniProgramPageDto, orderPageDto, productPageDto, questionnairePageDto, readAdminRows, serviceProductPageDto, tagPageDto } from './admin';
+import { attachmentPageDto, audiencePackagePageDto, channelPageDto, couponPageDto, customerPageDto, imagePageDto, miniProgramPageDto, orderPageDto, productPageDto, questionnairePageDto, radarPageDto, readAdminRows, serviceProductPageDto, tagPageDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
-import { getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetServicePeriodProductUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListServicePeriodProductsUrl } from './generated/health';
+import { getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetServicePeriodProductUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl } from './generated/health';
 
 function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
 const response = (data: unknown, status = 200) => ({ status, data, headers: new Headers() });
@@ -20,6 +20,8 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(getGetLegacyImageUrl('img-1') === '/api/admin/image-library/img-1', 'image detail URL/method');
   assert(getGetLegacyAttachmentUrl('att-1') === '/api/admin/attachment-library/att-1', 'attachment detail URL/method');
   assert(getGetLegacyWecomTagUrl(5) === '/api/admin/wecom/tags/5', 'tag detail URL/method');
+  assert(getListRadarLinksUrl() === '/api/admin/radar-links', 'radar list URL/method');
+  assert(getListAIAudiencePackagesUrl() === '/api/admin/ai-audience/packages', 'audience list URL/method');
 
   const customer = customerPageDto({ id: 7, name: '陈晨', is_deleted: false, extra: {}, created_at: '2026-08-25T00:00:00Z', updated_at: '2026-08-25T00:00:00Z', owner_staff_id: 3 });
   assert(customer.id === '7' && customer.owner === '3' && customer.mobile === '—', 'customer response mapping');
@@ -34,6 +36,8 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(attachmentPageDto({ filename: 'a.pdf', content_type: 'application/pdf' }).type === 'application/pdf', 'attachment response mapping');
   assert(miniProgramPageDto({ name: '小程序', thumbnail_status: 'ready' }).thumbOk, 'mini-program response mapping');
   assert(tagPageDto({ id: 1, group_id: 2, name: '新客', user_count: 6 }).users === 6, 'tag response mapping');
+  assert(radarPageDto({ link_id: 5, public_code: 'rd_1234567890123456789012', name: '雷达', title: '内容', destination_url: 'https://example.test/r', cover_image_id: null, attachment_id: null, status: 'enabled', version: 2, created_by: 9, updated_by: 9, created_at: '', updated_at: '' }).enabled, 'radar response mapping');
+  assert(audiencePackagePageDto({ package_id: 3, name: '沉默用户', group_id: null, lifecycle: 'active', version: 4, refresh_mode: 'manual', member_count: 12, refreshed_at: null }).count === 12, 'audience response mapping');
 
   const savedFetch = globalThis.fetch;
   globalThis.fetch = async () => new Response(JSON.stringify({ code: 'bad' }), { status: 503 });

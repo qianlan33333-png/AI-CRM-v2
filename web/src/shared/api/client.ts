@@ -26,7 +26,7 @@ import type {
   WecomTag,
 } from './types';
 import { SEED_DB, deepCopy } from './mockData';
-import { readAdminPage, type AdminReadContext } from '../../api/admin';
+import { archiveAudiencePackage, copyAudiencePackageDto, deleteAudienceGroup as deleteAudienceGroupDto, readAdminPage, readRadarEvents, saveAudienceGroup as saveAudienceGroupDto, setAudiencePackageRunning, setRadarEnabled, type AdminReadContext } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
 
@@ -566,9 +566,7 @@ export class HttpApi implements AdminApi {
   /* ---------- 内容雷达 ---------- */
 
   toggleRadarLink(id: number, enabled: boolean): Promise<void> {
-    return this.req<void>(enabled ? ROUTES.radarLinkEnable(id) : ROUTES.radarLinkDisable(id), {
-      method: 'POST',
-    });
+    return setRadarEnabled(id, enabled);
   }
 
   async saveRadarLink(input: RadarLinkInput): Promise<RadarLink> {
@@ -582,7 +580,7 @@ export class HttpApi implements AdminApi {
   }
 
   listRadarEvents(linkId: number): Promise<RadarEvent[]> {
-    return this.req<RadarEvent[]>(`${ROUTES.radarLink(linkId)}/events`);
+    return readRadarEvents(linkId);
   }
 
   private async upload(path: string, file: File): Promise<RadarMedia> {
@@ -646,33 +644,28 @@ export class HttpApi implements AdminApi {
   /* ---------- 自动化运营 · 人群包 ---------- */
 
   async saveAudienceGroup(input: { id?: number; name: string }): Promise<AudienceGroup> {
-    if (input.id !== undefined) {
-      return this.req<AudienceGroup>(ROUTES.audiencePackageGroup(input.id), {
-        method: 'PATCH',
-        body: JSON.stringify({ name: input.name }),
-      });
-    }
-    return this.req<AudienceGroup>(ROUTES.audiencePackageGroups, { method: 'POST', body: JSON.stringify(input) });
+    return saveAudienceGroupDto(input);
   }
 
   deleteAudienceGroup(id: number): Promise<void> {
-    return this.req<void>(ROUTES.audiencePackageGroup(id), { method: 'DELETE' });
+    return deleteAudienceGroupDto(id);
   }
 
   saveAudiencePackage(input: Partial<AudiencePackage> & { id: number }): Promise<void> {
-    return this.req<void>(ROUTES.audiencePackage(input.id), { method: 'PATCH', body: JSON.stringify(input) });
+    void input;
+    return Promise.reject(new Error('后端能力未就绪：当前人群包表单缺少 SegmentDefinition 与版本字段，不能安全调用更新契约'));
   }
 
   toggleAudiencePackage(id: number, running: boolean): Promise<void> {
-    return this.req<void>(`${ROUTES.audiencePackage(id)}/${running ? 'enable' : 'disable'}`, { method: 'POST' });
+    return setAudiencePackageRunning(id, running);
   }
 
   copyAudiencePackage(id: number): Promise<AudiencePackage> {
-    return this.req<AudiencePackage>(`${ROUTES.audiencePackage(id)}/copy`, { method: 'POST' });
+    return copyAudiencePackageDto(id);
   }
 
   deleteAudiencePackage(id: number): Promise<void> {
-    return this.req<void>(ROUTES.audiencePackage(id), { method: 'DELETE' });
+    return archiveAudiencePackage(id);
   }
 
   /* ---------- 企微标签 ---------- */

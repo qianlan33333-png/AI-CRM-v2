@@ -1,0 +1,10 @@
+import { CAPABILITIES } from './capabilities';
+
+function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
+
+export function runCapabilityTests(): void {
+  const stale = CAPABILITIES.filter((cap) => cap.state === 'backend_blocked' && cap.reason === 'OpenAPI operation 已存在，Kimi 壳尚未完成 DTO Adapter');
+  assert(stale.length === 0, 'existing OpenAPI operation must be real or have a precise semantic reason');
+  assert(CAPABILITIES.every((cap) => cap.state !== 'excluded_duplicate_page'), 'excluded legacy rows belong only in docs/frontend-capability-scope.md');
+  assert(CAPABILITIES.filter((cap) => cap.state === 'real').length > 0, 'real inventory must not be empty');
+}

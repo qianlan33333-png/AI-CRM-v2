@@ -2,7 +2,7 @@
  * 前端构建输入：每个屏幕的业务能力只可标为 real、backend_blocked 或 presentation_only。
  * backend_blocked 表示当前 OpenAPI 没有可安全调用的契约，页面不得伪造成功。
  */
-export type CapabilityState = 'real' | 'backend_blocked' | 'presentation_only';
+export type CapabilityState = 'real' | 'backend_blocked' | 'presentation_only' | 'excluded_duplicate_page';
 
 export type Capability = Readonly<{
   surface: 'admin' | 'h5' | 'sidebar';
@@ -32,9 +32,11 @@ export const CAPABILITIES: readonly Capability[] = [
   { surface: 'admin', screen: 'images/attach/mpLib', action: '素材上传、编辑、删除、下载', state: 'backend_blocked', operation: 'uploadLegacyImage/updateLegacyImage/deleteLegacyImage', reason: '读取已接入；写入待批次2 DTO Adapter' },
   { surface: 'admin', screen: 'tags', action: '企微标签组、标签和 live gate 读取', state: 'real', operation: 'listLegacyWecomTags/listLegacyWecomTagGroups/getLegacyWecomTag/getLegacyWecomTagGroup/getLegacyWecomTagExecutionGate' },
   { surface: 'admin', screen: 'tags', action: '企微标签同步与写入', state: 'backend_blocked', operation: 'createLegacyWecomTag/updateLegacyWecomTag', reason: '读取已接入；写入待批次2 DTO Adapter' },
-  { surface: 'admin', screen: 'automation/audienceEdit', action: '人群包、成员、发送人、配置', state: 'backend_blocked', operation: 'listAIAudiencePackages/getAIAudiencePackageSenders', reason: 'OpenAPI operation 已存在，Kimi 壳尚未完成 DTO Adapter' },
-  { surface: 'admin', screen: 'groupops/groupopsDetail', action: '群运营计划及预览', state: 'backend_blocked', operation: 'listGroupOpsPlans/previewGroupOpsPlanContent', reason: 'OpenAPI operation 已存在，Kimi 壳尚未完成 DTO Adapter' },
-  { surface: 'admin', screen: 'radar/radarDetail/radarForm', action: '内容雷达读取、保存、启停、事件', state: 'backend_blocked', operation: 'listRadarLinks/createRadarLink/updateRadarLink', reason: 'OpenAPI operation 已存在，Kimi 壳尚未完成 DTO Adapter' },
+  { surface: 'admin', screen: 'automation/audienceEdit', action: '人群包与分组读取、分组增改删、启停、复制、归档', state: 'real', operation: 'listAIAudiencePackageGroups/listAIAudiencePackages/createAIAudiencePackageGroup/updateAIAudiencePackageGroup/deleteAIAudiencePackageGroup/activateAIAudiencePackage/pauseAIAudiencePackage/copyAIAudiencePackage/archiveAIAudiencePackage' },
+  { surface: 'admin', screen: 'automation/audienceEdit', action: '人群条件、发送人、配置物化与群发确认', state: 'backend_blocked', operation: 'updateAIAudiencePackage/replaceAIAudiencePackageSenders/putAIAudienceConfigurationVersion/materializeAIAudienceConfiguration', reason: '当前 Kimi 表单未持有 SegmentDefinition、sender/version 与物化回执 DTO，不能安全构造请求' },
+  { surface: 'admin', screen: 'groupops/groupopsDetail', action: '群运营计划及预览', state: 'backend_blocked', operation: 'listGroupOpsPlans/previewGroupOpsPlanContent', reason: '当前 Kimi Group Ops 壳未持有节点、群组、成员与 CAS version DTO' },
+  { surface: 'admin', screen: 'radar/radarDetail/radarForm', action: '内容雷达列表、事件与启停', state: 'real', operation: 'listRadarLinks/getRadarLink/listRadarLinkEvents/enableRadarLink/disableRadarLink' },
+  { surface: 'admin', screen: 'radar/radarDetail/radarForm', action: '雷达新建、编辑与素材绑定', state: 'backend_blocked', operation: 'createRadarLink/updateRadarLink', reason: 'Kimi 图片/PDF 表单只保留媒体展示名，未持有 cover_image_id 或 attachment_id 的版本化 DTO' },
   { surface: 'admin', screen: 'ai', action: 'AI 计划审批', state: 'backend_blocked', reason: '当前导入壳使用的 ai-assist/review-plans DTO 不在 OpenAPI 中' },
   { surface: 'admin', screen: 'funnel/cycles', action: '原型漏斗和复盘会话', state: 'backend_blocked', reason: '当前 DTO 与 OpenAPI 不匹配' },
   { surface: 'admin', screen: 'config/agents/ownerMig/apidocs', action: '页面壳与导航', state: 'presentation_only' },
