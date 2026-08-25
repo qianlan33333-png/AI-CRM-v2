@@ -1307,6 +1307,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	surveyExternalPushReconcileHandler := &surveyhttp.ExternalPushReconcileHandler{Application: surveyExternalPushService}
 	publishedOutboundRepository := mediastore.NewPublishedOutboundRepository()
 	publishedOutboundService := mediaapp.NewPublishedOutboundService(publishedOutboundRepository, mediaapp.NewOutboundMediaService(externalEffectsRuntime), publishedOutboundRepository)
+	outboundMediaEffectDetailService := mediaapp.NewOutboundMediaEffectDetailService(uow, mediastore.NewContentDeliveryRepository())
 	campaignDispatchRepository, err := outboundstore.NewCampaignDispatchRepository(pool)
 	if err != nil {
 		pool.Close()
@@ -1479,6 +1480,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.attachments = attachmentService
 	legacyHandler.contentDelivery = contentDeliveryService
 	legacyHandler.outboundMediaAccepted = publishedOutboundService
+	legacyHandler.outboundMediaDetail = outboundMediaEffectDetailService
 	legacyHandler.legacyTagLive = legacyTagLiveService
 	legacyHandler.legacyTagStatus = legacyTagStatusService
 	legacyHandler.adminOps = adminOpsService
@@ -2639,6 +2641,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPut, "/api/admin/attachment-library/uploads/{upload_id}/parts/{part_number}", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.PDFMultipartPart)},
 			{http.MethodPost, "/api/admin/attachment-library/uploads/{upload_id}/complete", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.PDFMultipartComplete)},
 			{http.MethodPost, "/api/admin/outbound-media/accept", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.AcceptOutboundMedia)},
+			{http.MethodGet, "/api/admin/outbound-media/{content_package_id}/effects/{target_ref}", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetOutboundMediaEffectDetail)},
 			{http.MethodGet, "/api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding", authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.ContentDeliveryBindingGet)},
 			{http.MethodPost, "/api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ContentDeliveryBindingCreate)},
 			{http.MethodPut, "/api/admin/campaigns/{campaign_code}/plans/{plan_id}/content-delivery-binding", authport.CapabilityMediaLibraryWrite, true, http.HandlerFunc(legacy.ContentDeliveryBindingUpdate)},

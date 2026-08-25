@@ -22,11 +22,6 @@ type OutboundMediaEffectBinding struct {
 	TargetDigest, SnapshotDigest   string
 	Replay                         bool
 }
-type OutboundMediaEffectDetail struct {
-	ContentPackageID                 int64
-	EffectID, State                  string
-	ProviderAccepted, DeliveryProven bool
-}
 
 var ErrOutboundMediaEffectBindingConflict = errors.New("outbound media effect binding conflict")
 
@@ -120,20 +115,20 @@ func (r *ContentDeliveryRepository) BindOutboundMediaEffect(ctx context.Context,
 	}
 	return OutboundMediaEffectBinding{ID: existing.ID, ContentPackageID: existing.ContentPackageID, EffectID: existing.EffectID, TargetDigest: existing.TargetDigest, SnapshotDigest: existing.SnapshotDigest, Replay: true}, nil
 }
-func (r *ContentDeliveryRepository) ReadOutboundMediaEffectDetail(ctx context.Context, contentPackageID int64, targetDigest string) (OutboundMediaEffectDetail, error) {
+func (r *ContentDeliveryRepository) ReadOutboundMediaEffectDetail(ctx context.Context, contentPackageID int64, targetDigest string) (mediaapp.OutboundMediaEffectDetail, error) {
 	q, e := contentQueries(ctx)
 	if e != nil {
-		return OutboundMediaEffectDetail{}, e
+		return mediaapp.OutboundMediaEffectDetail{}, e
 	}
 	v, e := q.ReadOutboundMediaEffectDetail(ctx, mediadb.ReadOutboundMediaEffectDetailParams{ContentPackageID: contentPackageID, TargetDigest: targetDigest})
 	if e != nil {
-		return OutboundMediaEffectDetail{}, e
+		return mediaapp.OutboundMediaEffectDetail{}, e
 	}
 	return outboundMediaEffectDetail(contentPackageID, v.EffectID, v.State), nil
 }
 
-func outboundMediaEffectDetail(contentPackageID, effectID int64, state string) OutboundMediaEffectDetail {
-	return OutboundMediaEffectDetail{
+func outboundMediaEffectDetail(contentPackageID, effectID int64, state string) mediaapp.OutboundMediaEffectDetail {
+	return mediaapp.OutboundMediaEffectDetail{
 		ContentPackageID: contentPackageID,
 		EffectID:         "eer_" + strconv.FormatInt(effectID, 10),
 		State:            state,

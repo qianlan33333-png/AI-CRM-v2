@@ -190,6 +190,7 @@ type Handler struct {
 	attachments             legacyAttachmentApplication
 	contentDelivery         mediaport.ContentDeliveryService
 	outboundMediaAccepted   outboundMediaAcceptedApplication
+	outboundMediaDetail     outboundMediaEffectDetailApplication
 	groupInvites            groupInviteApplication
 	miniPrograms            miniProgramApplication
 	surveys                 legacySurveyApplication
