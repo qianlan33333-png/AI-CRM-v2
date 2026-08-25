@@ -70,7 +70,7 @@ func TestValidateDatabaseURLDoesNotExposeRejectedInput(t *testing.T) {
 
 func TestValidateDatabaseURLForDedicatedTemporaryDatabases(t *testing.T) {
 	t.Parallel()
-	for _, databaseName := range []string{H01A1DatabaseName, H03DatabaseName, I01BDatabaseName, F01ADatabaseName, F01ABDatabaseName, F01PublicDatabaseName, AutomationAgentsABDatabaseName, AdminOpsABDatabaseName, C01ChannelDatabaseName, J01CouponDatabaseName, CouponABDatabaseName, I03OrderDatabaseName, OrderABDatabaseName, MessageArchiveDatabaseName, PushCenterDatabaseName, MiniProgramLibraryDatabaseName, ImageUpdateDatabaseName, AttachmentLibraryDatabaseName, HXCSenderDatabaseName, ContactPolicyDatabaseName, OutboundCampaignHandoffDatabaseName, SegmentCRUDDatabaseName, EE01DatabaseName, AutomationRulesDatabaseName, StatsL01DatabaseName, AuthA01DatabaseName} {
+	for _, databaseName := range []string{H01A1DatabaseName, H03DatabaseName, I01BDatabaseName, F01ADatabaseName, F01ABDatabaseName, F01PublicDatabaseName, AutomationAgentsABDatabaseName, AdminOpsABDatabaseName, C01ChannelDatabaseName, J01CouponDatabaseName, CouponABDatabaseName, I03OrderDatabaseName, OrderABDatabaseName, MessageArchiveDatabaseName, PushCenterDatabaseName, MiniProgramLibraryDatabaseName, ImageUpdateDatabaseName, AttachmentLibraryDatabaseName, HXCSenderDatabaseName, ContactPolicyDatabaseName, OutboundCampaignHandoffDatabaseName, SegmentCRUDDatabaseName, EE01DatabaseName, AutomationRulesDatabaseName, StatsL01DatabaseName, AuthA01DatabaseName, AuthSI00BDatabaseName} {
 		databaseURL := "postgres://postgres:postgres@127.0.0.1:5432/" + databaseName + "?sslmode=disable"
 		if err := ValidateDatabaseURLForDatabase(databaseURL, databaseName); err != nil {
 			t.Fatalf("temporary database %q rejected: %v", databaseName, err)
