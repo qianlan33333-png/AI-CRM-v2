@@ -14,7 +14,7 @@ import (
 )
 
 func TestSidebarOAuthHTTPFailsClosedWhenDisabled(t *testing.T) {
-	handler := NewOAuthHandler(nil)
+	handler := NewOAuthHandler(nil, nil)
 	request := httptest.NewRequest(http.MethodGet, "/api/sidebar/v2/oauth/start?external_userid=wm_external_41", nil)
 	response := httptest.NewRecorder()
 	handler.Start(response, request)
@@ -31,7 +31,7 @@ func TestSidebarOAuthHTTPFailsClosedWhenDisabled(t *testing.T) {
 
 func TestSidebarOAuthHTTPRejectsUnknownStartQueryBeforeService(t *testing.T) {
 	response := httptest.NewRecorder()
-	NewOAuthHandler(nil).Start(response, httptest.NewRequest(http.MethodGet, "/api/sidebar/v2/oauth/start?external_userid=wm_external_41&unexpected=1", nil))
+	NewOAuthHandler(nil, nil).Start(response, httptest.NewRequest(http.MethodGet, "/api/sidebar/v2/oauth/start?external_userid=wm_external_41&unexpected=1", nil))
 	if response.Code != http.StatusBadRequest {
 		t.Fatalf("unknown query status = %d", response.Code)
 	}

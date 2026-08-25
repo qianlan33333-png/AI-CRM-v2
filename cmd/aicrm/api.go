@@ -1611,7 +1611,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			return nil, err
 		}
 	}
-	candidate.sidebarOAuth = sidebarhttp.NewOAuthHandler(sidebarOAuthService)
+	candidate.sidebarOAuth = sidebarhttp.NewOAuthHandler(sidebarOAuthService, authhttp.WriteBrowserSession)
 	var sidebarTicketProvider sidebarapp.AgentConfigTicketProvider
 	if sidebarAgentConfigClient != nil {
 		sidebarTicketProvider = sidebarAgentConfigTicketProvider{client: sidebarAgentConfigClient}
