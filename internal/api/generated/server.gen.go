@@ -197,6 +197,9 @@ type CustomerID = int64
 // CustomerSafeExportID defines model for CustomerSafeExportID.
 type CustomerSafeExportID = string
 
+// ExternalEffectRuntimeID defines model for ExternalEffectRuntimeID.
+type ExternalEffectRuntimeID = string
+
 // GroupOpsPlanID defines model for GroupOpsPlanID.
 type GroupOpsPlanID = string
 

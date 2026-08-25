@@ -43,6 +43,9 @@ import (
 	eventhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/events/http"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	externaleffectsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/app"
+	externaleffectshttp "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/http"
+	externaleffectsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
 	groupopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/app"
 	groupopshttp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/http"
 	groupopsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/store"
@@ -174,6 +177,7 @@ type candidateHandler struct {
 	campaignInitiation      http.Handler
 	campaignReview          http.Handler
 	outboundCampaignHandoff *outboundhttp.CampaignHandoffHandler
+	externalEffectsRuntime  *externaleffectshttp.Handler
 	release                 *releasehttp.Handler
 	adminOps                http.Handler
 	outboundLegacy          *Handler
@@ -1191,6 +1195,17 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	externalEffectsRuntimeRepository := externaleffectsstore.NewRepository(pool, uow)
+	externalEffectsRuntimeService, err := externaleffectsapp.NewService(externalEffectsRuntimeRepository, externalEffectsRuntimeRepository)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	externalEffectsRuntimeHandler, err := externaleffectshttp.NewHandler(externalEffectsRuntimeService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
 		customerIdentity: identityResolver, customerDetail: customerDetailHandler, customerDetailReader: customerDetailService,
@@ -1220,6 +1235,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		campaignInitiation:      campaignInitiationFragment,
 		campaignReview:          campaignReviewFragment,
 		outboundCampaignHandoff: outboundCampaignHandler,
+		externalEffectsRuntime:  externalEffectsRuntimeHandler,
 		release:                 releaseHandler,
 	}
 	outboundControlRepository, err := outboundstore.NewControlRepository(pool)
@@ -1557,6 +1573,17 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 	}
 
 	wrapper := &api.ServerInterfaceWrapper{Handler: candidate, ErrorHandlerFunc: platformhttp.RequestErrorHandler}
+	externalEffectsRuntimeDiagnostics := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if concrete, ok := candidate.(*candidateHandler); ok && concrete.externalEffectsRuntime != nil {
+			wrapper.GetExternalEffectsDiagnostics(writer, request)
+			return
+		}
+		if legacy != nil && legacy.externalEffects != nil {
+			legacy.ExternalEffectsDiagnostics(writer, request)
+			return
+		}
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+	})
 	registerPublicSurvey := func(method, pattern string, endpoint http.Handler) error {
 		var allowed http.Handler = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			defer func() {
@@ -1720,6 +1747,11 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPost, "/api/v1/admin/release-candidates/{candidate_id}/rollback-checks", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.RecordReleaseRollbackCheck)},
 		{http.MethodPost, "/api/v1/admin/release-candidates/{candidate_id}/rollback/request", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.RequestReleaseRollback)},
 		{http.MethodPost, "/api/v1/admin/release-candidates/{candidate_id}/rollback/complete", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.CompleteReleaseRollback)},
+		{http.MethodGet, "/api/admin/external-effects", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListExternalEffectsRuntime)},
+		{http.MethodGet, "/api/admin/external-effects/{effect_id}", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetExternalEffectRuntime)},
+		{http.MethodPost, "/api/admin/external-effects/{effect_id}/cancel", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.CancelExternalEffectRuntime)},
+		{http.MethodPost, "/api/admin/external-effects/{effect_id}/retry", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.RetryExternalEffectRuntime)},
+		{http.MethodPost, "/api/admin/external-effects/{effect_id}/reconcile", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.ReconcileExternalEffectRuntime)},
 		{http.MethodPost, "/api/v1/customer-exports", authport.CapabilityCustomersRead, true, http.HandlerFunc(wrapper.CreateCustomerSafeExport)},
 		{http.MethodGet, "/api/v1/customer-exports/{export_id}", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetCustomerSafeExport)},
 		{http.MethodGet, "/api/v1/customer-exports/{export_id}/download", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.DownloadCustomerSafeExport)},
@@ -2334,7 +2366,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodGet, "/api/admin/push-center/sections", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.PushCenterSections)},
 			{http.MethodGet, "/api/admin/push-center/stats", authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.PushCenterStats)},
 			{http.MethodGet, outboundhttp.ExternalEffectsJobsPath, authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.ExternalEffectsJobs)},
-			{http.MethodGet, outboundhttp.ExternalEffectsDiagnosticsPath, authport.CapabilityOperationsRead, false, http.HandlerFunc(legacy.ExternalEffectsDiagnostics)},
+			{http.MethodGet, outboundhttp.ExternalEffectsDiagnosticsPath, authport.CapabilityOperationsRead, false, externalEffectsRuntimeDiagnostics},
 			{http.MethodGet, legacyExecutionRuntimePagePath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ExecutionRuntimePage)},
 			{http.MethodGet, "/api/admin/execution-runtime", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ExecutionRuntime)},
 			{http.MethodGet, "/api/admin/executions/{execution_id}", authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.ExecutionTimeline)},

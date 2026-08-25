@@ -54,6 +54,12 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 		{http.MethodPost, "/api/v1/admin/release-candidates/1/rollback-checks", authport.CapabilityReleaseManage},
 		{http.MethodPost, "/api/v1/admin/release-candidates/1/rollback/request", authport.CapabilityReleaseManage},
 		{http.MethodPost, "/api/v1/admin/release-candidates/1/rollback/complete", authport.CapabilityReleaseManage},
+		{http.MethodGet, "/api/admin/external-effects", authport.CapabilityOperationsRead},
+		{http.MethodGet, "/api/admin/external-effects/1", authport.CapabilityOperationsRead},
+		{http.MethodGet, "/api/admin/external-effects/diagnostics", authport.CapabilityOperationsRead},
+		{http.MethodPost, "/api/admin/external-effects/1/cancel", authport.CapabilityOperationsManage},
+		{http.MethodPost, "/api/admin/external-effects/1/retry", authport.CapabilityOperationsManage},
+		{http.MethodPost, "/api/admin/external-effects/1/reconcile", authport.CapabilityOperationsManage},
 		{http.MethodPost, "/api/v1/customer-exports", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/v1/customer-exports/cse_0123456789abcdef0123456789abcdef", authport.CapabilityCustomersRead},
 		{http.MethodGet, "/api/v1/customer-exports/cse_0123456789abcdef0123456789abcdef/download", authport.CapabilityCustomersRead},
@@ -154,6 +160,11 @@ func TestFinalRouterBindsEveryFrozenOperationCapability(t *testing.T) {
 				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
 				request.Header.Set("Idempotency-Key", "router-release-plane-key")
 			}
+			if test.method == http.MethodPost && strings.Contains(test.path, "/external-effects/") {
+				request.Header.Set("X-CSRF-Token", strings.Repeat("A", 43))
+				request.Header.Set("Idempotency-Key", "router-external-effects-key")
+				request.Header.Set("Content-Type", "application/json")
+			}
 			response := httptest.NewRecorder()
 			handler.ServeHTTP(response, request)
 			if got := service.capabilities(); len(got) != 1 || got[0] != test.capability {
@@ -196,6 +207,9 @@ func TestFinalRouterRejectsProtectedWriteWithoutValidCSRF(t *testing.T) {
 		{http.MethodPost, "/api/v1/admin/release-candidates/1/rollback-checks", `{}`},
 		{http.MethodPost, "/api/v1/admin/release-candidates/1/rollback/request", ``},
 		{http.MethodPost, "/api/v1/admin/release-candidates/1/rollback/complete", ``},
+		{http.MethodPost, "/api/admin/external-effects/1/cancel", ``},
+		{http.MethodPost, "/api/admin/external-effects/1/retry", `{}`},
+		{http.MethodPost, "/api/admin/external-effects/1/reconcile", `{}`},
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/approve", `{"expected_version":1,"primary_customer_id":1,"reason":"confirm"}`},
 		{http.MethodPost, "/api/v1/identity/merge-reviews/1/reject", `{"expected_version":1,"reason":"reject"}`},
 		{http.MethodPost, "/api/v1/products", `{"product_code":"sku","name":"商品","description":"","price_minor":1,"currency":"CNY","stock_quantity":0,"images":[]}`},

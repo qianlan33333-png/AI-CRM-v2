@@ -185,6 +185,15 @@ owners:
       release_rollback_checks: append_only_rollback_precondition_evidence
       release_operation_receipts: actor_scoped_idempotent_release_operation_receipts
 
+  externaleffects:
+    package: internal/externaleffects
+    tables: [external_effects, external_effect_attempts, external_effect_receipts, external_effect_reconciliations]
+    constraints:
+      external_effects: digest_only_external_execution_state_without_provider_body_or_credentials
+      external_effect_attempts: generation_and_fence_bound_attempt_facts
+      external_effect_receipts: actor_bound_http_or_domain_scoped_idempotent_operation_receipts
+      external_effect_reconciliations: digest_only_outcome_unknown_reconciliation_evidence
+
   auth:
     package: internal/auth
     tables: [admin_users, admin_sessions, admin_oauth_states]

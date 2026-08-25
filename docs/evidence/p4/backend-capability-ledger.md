@@ -1,5 +1,25 @@
 # P4 后端冻结收据总账
 
+## EER External Effects Runtime（V2-native foundation；不变更旧 Matrix 分母）
+
+`00075_external_effects_runtime.sql` 交付 digest-only 的外部效果执行内核：领域内部
+Accept/Queue 与 worker Claim/Attempt/Complete/Recover 不暴露为 HTTP；共享 Ops 面只有
+`listExternalEffectsRuntime`、`getExternalEffectRuntime`、`getExternalEffectsDiagnostics`、
+`cancelExternalEffectRuntime`、`retryExternalEffectRuntime`、`reconcileExternalEffectRuntime`。
+
+- 状态机为 `accepted -> queued -> attempted -> terminal/unknown -> reconciled`；
+  `outcome_unknown` 不得自动 retry，Provider I/O 不在数据库事务内。
+- API 仅输出 opaque ID、closed owner/kind/state、attempt/generation 和时间；不落库、
+  不返回 raw payload、recipient、credential 或 Provider body。
+- 读操作为 admin/ops global `operations.read`；控制操作为 admin/ops global
+  `operations.manage`，要求 session CSRF 和按 authenticated AdminUserID 绑定的
+  Idempotency-Key digest。
+- `make p4-external-effects-runtime-acceptance` 在隔离 PostgreSQL 16.14 上验证
+  CAS generation/fence、attempt/receipt、unknown/reconcile/recovery、空库 down/up
+  与 populated down guard；已登记 manifest/selected database CI。
+- 这一包只建立后续 WeCom、Outbound、Webhook、Payment/Refund 所依赖的
+  runtime；当前 `x-aicrm-external-effect: none`，不声明任何真实 Provider、支付、退款或企微效果。
+
 ## RP01 Release Plane（V2-native local package；不变更旧 Matrix 分母）
 
 `00074_release_plane.sql` 交付一个 V2-native、本地 release attestation / journal

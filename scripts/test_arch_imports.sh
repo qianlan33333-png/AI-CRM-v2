@@ -21,7 +21,7 @@ seed() {
     "$root/internal/identity/port" "$root/internal/identity/store" \
     "$root/internal/automation/app" "$root/internal/stats/app" "$root/internal/events/store" \
     "$root/internal/outbound/app" "$root/internal/product/app" "$root/internal/media/app" "$root/internal/survey/app" \
-    "$root/internal/radar/app" "$root/internal/radar/port" "$root/internal/release/app" \
+    "$root/internal/radar/app" "$root/internal/radar/port" "$root/internal/release/app" "$root/internal/externaleffects/app" \
     "$root/internal/platform/store" "$root/internal/api/generated" \
     "$root/internal/config"
   printf '%s\n' 'package app' \
@@ -30,6 +30,7 @@ seed() {
   printf '%s\n' 'package main' \
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/app"' \
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/release/app"' \
+    'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/app"' \
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"' \
     >"$root/cmd/aicrm/main.go"
   printf '%s\n' 'package main' \

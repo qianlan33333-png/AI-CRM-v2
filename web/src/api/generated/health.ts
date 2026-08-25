@@ -3622,6 +3622,115 @@ export interface ExternalEffectsDiagnosticsResponse {
   delivery_semantics: ExternalEffectsDiagnosticsResponseDeliverySemantics;
 }
 
+export type ExternalEffectRuntimeOwner =
+  (typeof ExternalEffectRuntimeOwner)[keyof typeof ExternalEffectRuntimeOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ExternalEffectRuntimeOwner = {
+  campaign: "campaign",
+  contact: "contact",
+  outbound: "outbound",
+  wecom: "wecom",
+  survey: "survey",
+  audience: "audience",
+  order: "order",
+} as const;
+
+export type ExternalEffectRuntimeKind =
+  (typeof ExternalEffectRuntimeKind)[keyof typeof ExternalEffectRuntimeKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ExternalEffectRuntimeKind = {
+  campaign_dispatch: "campaign_dispatch",
+  campaign_group_announcement: "campaign_group_announcement",
+  contact_touch: "contact_touch",
+  outbound_message: "outbound_message",
+  outbound_media: "outbound_media",
+  wecom_tag_sync: "wecom_tag_sync",
+  wecom_profile_sync: "wecom_profile_sync",
+  survey_webhook: "survey_webhook",
+  audience_webhook: "audience_webhook",
+  order_payment_capture: "order_payment_capture",
+  order_refund: "order_refund",
+} as const;
+
+export type ExternalEffectRuntimeState =
+  (typeof ExternalEffectRuntimeState)[keyof typeof ExternalEffectRuntimeState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ExternalEffectRuntimeState = {
+  accepted: "accepted",
+  queued: "queued",
+  attempted: "attempted",
+  executed: "executed",
+  outcome_unknown: "outcome_unknown",
+  reconciled: "reconciled",
+  retryable_failed: "retryable_failed",
+  final_failed: "final_failed",
+  cancelled: "cancelled",
+} as const;
+
+export interface ExternalEffectRuntimeProjection {
+  /**
+   * @minLength 1
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  id: string;
+  owner: ExternalEffectRuntimeOwner;
+  kind: ExternalEffectRuntimeKind;
+  state: ExternalEffectRuntimeState;
+  /** @minimum 0 */
+  attempt_count: number;
+  /** @minimum 1 */
+  generation: number;
+  updated_at: string;
+}
+
+export interface ExternalEffectsRuntimeList {
+  /** @maxItems 100 */
+  items: ExternalEffectRuntimeProjection[];
+}
+
+export interface ExternalEffectsRuntimeDiagnostics {
+  /** @minimum 0 */
+  accepted: number;
+  /** @minimum 0 */
+  queued: number;
+  /** @minimum 0 */
+  attempted: number;
+  /** @minimum 0 */
+  outcome_unknown: number;
+  /** @minimum 0 */
+  retryable_failed: number;
+}
+
+export interface ExternalEffectRuntimeRetryRequest {
+  /** @minimum 1 */
+  job_id: number;
+  /** @minimum 1 */
+  generation: number;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   * @pattern ^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$
+   */
+  queue: string;
+  /** @pattern ^sha256:[0-9a-f]{64}$ */
+  args_digest: string;
+  scheduled_at: string;
+}
+
+export interface ExternalEffectRuntimeReconcileRequest {
+  /** @minimum 1 */
+  generation: number;
+  /** @minimum 1 */
+  fence: number;
+  lease_expires_at: string;
+  /** @pattern ^sha256:[0-9a-f]{64}$ */
+  evidence_digest: string;
+}
+
 export type PublicSurveyErrorCode =
   (typeof PublicSurveyErrorCode)[keyof typeof PublicSurveyErrorCode];
 
@@ -14792,6 +14901,14 @@ export const GetLegacyInternalEventDiagnosticsStatus = {
   final_failed: "final_failed",
   outcome_unknown: "outcome_unknown",
 } as const;
+
+export type ListExternalEffectsRuntimeParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
 
 export type ListExternalEffectJobsParams = {
   status?: ExternalEffectStatus;
@@ -37782,6 +37899,418 @@ export const getLegacyInternalEvent = async (
 };
 
 /**
+ * @summary List the safe local execution projection for the external-effects runtime
+ */
+export type listExternalEffectsRuntimeResponse200 = {
+  data: ExternalEffectsRuntimeList;
+  status: 200;
+};
+
+export type listExternalEffectsRuntimeResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listExternalEffectsRuntimeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listExternalEffectsRuntimeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listExternalEffectsRuntimeResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listExternalEffectsRuntimeResponseSuccess =
+  listExternalEffectsRuntimeResponse200 & {
+    headers: Headers;
+  };
+export type listExternalEffectsRuntimeResponseError = (
+  | listExternalEffectsRuntimeResponse400
+  | listExternalEffectsRuntimeResponse401
+  | listExternalEffectsRuntimeResponse403
+  | listExternalEffectsRuntimeResponse503
+) & {
+  headers: Headers;
+};
+
+export type listExternalEffectsRuntimeResponse =
+  | listExternalEffectsRuntimeResponseSuccess
+  | listExternalEffectsRuntimeResponseError;
+
+export const getListExternalEffectsRuntimeUrl = (
+  params?: ListExternalEffectsRuntimeParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/external-effects?${stringifiedParams}`
+    : `/api/admin/external-effects`;
+};
+
+export const listExternalEffectsRuntime = async (
+  params?: ListExternalEffectsRuntimeParams,
+  options?: RequestInit,
+): Promise<listExternalEffectsRuntimeResponse> => {
+  const res = await fetch(getListExternalEffectsRuntimeUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listExternalEffectsRuntimeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listExternalEffectsRuntimeResponse;
+};
+
+/**
+ * @summary Read one safe local external-effect execution projection
+ */
+export type getExternalEffectRuntimeResponse200 = {
+  data: ExternalEffectRuntimeProjection;
+  status: 200;
+};
+
+export type getExternalEffectRuntimeResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getExternalEffectRuntimeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getExternalEffectRuntimeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getExternalEffectRuntimeResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getExternalEffectRuntimeResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getExternalEffectRuntimeResponseSuccess =
+  getExternalEffectRuntimeResponse200 & {
+    headers: Headers;
+  };
+export type getExternalEffectRuntimeResponseError = (
+  | getExternalEffectRuntimeResponse400
+  | getExternalEffectRuntimeResponse401
+  | getExternalEffectRuntimeResponse403
+  | getExternalEffectRuntimeResponse404
+  | getExternalEffectRuntimeResponse503
+) & {
+  headers: Headers;
+};
+
+export type getExternalEffectRuntimeResponse =
+  | getExternalEffectRuntimeResponseSuccess
+  | getExternalEffectRuntimeResponseError;
+
+export const getGetExternalEffectRuntimeUrl = (effectId: string) => {
+  return `/api/admin/external-effects/${effectId}`;
+};
+
+export const getExternalEffectRuntime = async (
+  effectId: string,
+  options?: RequestInit,
+): Promise<getExternalEffectRuntimeResponse> => {
+  const res = await fetch(getGetExternalEffectRuntimeUrl(effectId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getExternalEffectRuntimeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getExternalEffectRuntimeResponse;
+};
+
+/**
+ * @summary Cancel a local external effect only before an attempt starts
+ */
+export type cancelExternalEffectRuntimeResponse200 = {
+  data: ExternalEffectRuntimeProjection;
+  status: 200;
+};
+
+export type cancelExternalEffectRuntimeResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type cancelExternalEffectRuntimeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type cancelExternalEffectRuntimeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type cancelExternalEffectRuntimeResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type cancelExternalEffectRuntimeResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type cancelExternalEffectRuntimeResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type cancelExternalEffectRuntimeResponseSuccess =
+  cancelExternalEffectRuntimeResponse200 & {
+    headers: Headers;
+  };
+export type cancelExternalEffectRuntimeResponseError = (
+  | cancelExternalEffectRuntimeResponse400
+  | cancelExternalEffectRuntimeResponse401
+  | cancelExternalEffectRuntimeResponse403
+  | cancelExternalEffectRuntimeResponse404
+  | cancelExternalEffectRuntimeResponse409
+  | cancelExternalEffectRuntimeResponse503
+) & {
+  headers: Headers;
+};
+
+export type cancelExternalEffectRuntimeResponse =
+  | cancelExternalEffectRuntimeResponseSuccess
+  | cancelExternalEffectRuntimeResponseError;
+
+export const getCancelExternalEffectRuntimeUrl = (effectId: string) => {
+  return `/api/admin/external-effects/${effectId}/cancel`;
+};
+
+export const cancelExternalEffectRuntime = async (
+  effectId: string,
+  options?: RequestInit,
+): Promise<cancelExternalEffectRuntimeResponse> => {
+  const res = await fetch(getCancelExternalEffectRuntimeUrl(effectId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: cancelExternalEffectRuntimeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as cancelExternalEffectRuntimeResponse;
+};
+
+/**
+ * @summary Requeue only a deterministically retryable failed local effect
+ */
+export type retryExternalEffectRuntimeResponse200 = {
+  data: ExternalEffectRuntimeProjection;
+  status: 200;
+};
+
+export type retryExternalEffectRuntimeResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type retryExternalEffectRuntimeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type retryExternalEffectRuntimeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type retryExternalEffectRuntimeResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type retryExternalEffectRuntimeResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type retryExternalEffectRuntimeResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type retryExternalEffectRuntimeResponseSuccess =
+  retryExternalEffectRuntimeResponse200 & {
+    headers: Headers;
+  };
+export type retryExternalEffectRuntimeResponseError = (
+  | retryExternalEffectRuntimeResponse400
+  | retryExternalEffectRuntimeResponse401
+  | retryExternalEffectRuntimeResponse403
+  | retryExternalEffectRuntimeResponse404
+  | retryExternalEffectRuntimeResponse409
+  | retryExternalEffectRuntimeResponse503
+) & {
+  headers: Headers;
+};
+
+export type retryExternalEffectRuntimeResponse =
+  | retryExternalEffectRuntimeResponseSuccess
+  | retryExternalEffectRuntimeResponseError;
+
+export const getRetryExternalEffectRuntimeUrl = (effectId: string) => {
+  return `/api/admin/external-effects/${effectId}/retry`;
+};
+
+export const retryExternalEffectRuntime = async (
+  effectId: string,
+  externalEffectRuntimeRetryRequest: ExternalEffectRuntimeRetryRequest,
+  options?: RequestInit,
+): Promise<retryExternalEffectRuntimeResponse> => {
+  const res = await fetch(getRetryExternalEffectRuntimeUrl(effectId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(externalEffectRuntimeRetryRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: retryExternalEffectRuntimeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as retryExternalEffectRuntimeResponse;
+};
+
+/**
+ * @summary Record digest-only evidence for an outcome-unknown effect
+ */
+export type reconcileExternalEffectRuntimeResponse200 = {
+  data: ExternalEffectRuntimeProjection;
+  status: 200;
+};
+
+export type reconcileExternalEffectRuntimeResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type reconcileExternalEffectRuntimeResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reconcileExternalEffectRuntimeResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reconcileExternalEffectRuntimeResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type reconcileExternalEffectRuntimeResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type reconcileExternalEffectRuntimeResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type reconcileExternalEffectRuntimeResponseSuccess =
+  reconcileExternalEffectRuntimeResponse200 & {
+    headers: Headers;
+  };
+export type reconcileExternalEffectRuntimeResponseError = (
+  | reconcileExternalEffectRuntimeResponse400
+  | reconcileExternalEffectRuntimeResponse401
+  | reconcileExternalEffectRuntimeResponse403
+  | reconcileExternalEffectRuntimeResponse404
+  | reconcileExternalEffectRuntimeResponse409
+  | reconcileExternalEffectRuntimeResponse503
+) & {
+  headers: Headers;
+};
+
+export type reconcileExternalEffectRuntimeResponse =
+  | reconcileExternalEffectRuntimeResponseSuccess
+  | reconcileExternalEffectRuntimeResponseError;
+
+export const getReconcileExternalEffectRuntimeUrl = (effectId: string) => {
+  return `/api/admin/external-effects/${effectId}/reconcile`;
+};
+
+export const reconcileExternalEffectRuntime = async (
+  effectId: string,
+  externalEffectRuntimeReconcileRequest: ExternalEffectRuntimeReconcileRequest,
+  options?: RequestInit,
+): Promise<reconcileExternalEffectRuntimeResponse> => {
+  const res = await fetch(getReconcileExternalEffectRuntimeUrl(effectId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(externalEffectRuntimeReconcileRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reconcileExternalEffectRuntimeResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reconcileExternalEffectRuntimeResponse;
+};
+
+/**
  * @summary Read a bounded local projection of external-effect job states without executing work
  */
 export type listExternalEffectJobsResponse200 = {
@@ -37865,10 +38394,10 @@ export const listExternalEffectJobs = async (
 };
 
 /**
- * @summary Read local external-effect status counts and manual-review risk without executing work
+ * @summary Read digest-only local external-effects runtime diagnostics without executing work
  */
 export type getExternalEffectsDiagnosticsResponse200 = {
-  data: ExternalEffectsDiagnosticsResponse;
+  data: ExternalEffectsRuntimeDiagnostics;
   status: 200;
 };
 

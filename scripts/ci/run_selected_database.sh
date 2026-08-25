@@ -99,6 +99,9 @@ while [[ -n "$remaining_groups" ]]; do
       run_make_acceptance P4INTERNAL_EVENTS_TEST_DATABASE_URL p4-internal-events-0367-0368-acceptance
       run_make_acceptance P4EE01_TEST_DATABASE_URL p4-ee01-internal-event-safe-export-acceptance
       ;;
+    externaleffects)
+      run_make_acceptance P4EER_TEST_DATABASE_URL p4-external-effects-runtime-acceptance
+      ;;
     release)
       run_make_acceptance P4RP01_TEST_DATABASE_URL p4-rp01-release-plane-acceptance
       ;;
