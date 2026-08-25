@@ -74,7 +74,16 @@ func TestPE01FakeWeChatPayOutcomeUnknownReconcilesAndCompensates(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	refund, err := settlement.RequestRefundV2(ctx, orderport.RefundCommandV2{OrderID: checkout.OrderID, AmountMinor: checkout.AmountMinor, Reason: "acceptance full refund", Actor: 1, IdempotencyKey: prefix + "/refund-key"})
+	paymentDigest := sha256.Sum256([]byte("fake-transaction"))
+	commerceRefunds, repositoryErr := orderstore.NewCommerceRefundRepository(pool)
+	if repositoryErr != nil {
+		t.Fatal(repositoryErr)
+	}
+	compatibility, compatibilityErr := orderapp.NewWeChatPayRefundCompatibilityService(platformstore.NewUnitOfWork(pool), commerceRefunds, settlement)
+	if compatibilityErr != nil {
+		t.Fatal(compatibilityErr)
+	}
+	refund, err := compatibility.RequestWeChatPayRefundV2(ctx, orderport.WeChatPayRefundCompatibilityCommand{OrderReference: checkout.MerchantOrderNo, AmountMinor: checkout.AmountMinor, Reason: "acceptance full refund", TransactionIDConfirmation: "sha256:" + hex.EncodeToString(paymentDigest[:]), Checked: true, Actor: 1, IdempotencyKey: prefix + "/refund-key"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +96,7 @@ func TestPE01FakeWeChatPayOutcomeUnknownReconcilesAndCompensates(t *testing.T) {
 	}
 
 	var orderState, entitlementState string
-	var checkoutReceipts, callbackReceipts, orderEvents, productEvents, effects, mergeSideEffects, pendingSideEffects int
+	var checkoutReceipts, callbackReceipts, orderEvents, productEvents, effects, legacyRefunds, mergeSideEffects, pendingSideEffects int
 	err = pool.QueryRow(ctx, `SELECT
       (SELECT status FROM order_list_projections WHERE id=$1),
 	      (SELECT state FROM product_local_entitlements WHERE order_id=$1 AND source='paid_order'),
@@ -96,13 +105,14 @@ func TestPE01FakeWeChatPayOutcomeUnknownReconcilesAndCompensates(t *testing.T) {
       (SELECT count(*) FROM event_log WHERE customer_id=$2 AND event_type LIKE 'order.%'),
 	      (SELECT count(*) FROM event_log WHERE customer_id=$2 AND event_type IN ('product.entitlement_granted','product.entitlement_revoked')),
 	      (SELECT count(*) FROM external_effects e WHERE e.id=(SELECT external_effect_id FROM order_payment_commands WHERE order_id=$1) OR e.id IN (SELECT external_effect_id FROM order_financial_refunds WHERE order_id=$1)),
-      (SELECT count(*) FROM customer_merges),
-      (SELECT count(*) FROM pending_events)`, checkout.OrderID, customerID).Scan(&orderState, &entitlementState, &checkoutReceipts, &callbackReceipts, &orderEvents, &productEvents, &effects, &mergeSideEffects, &pendingSideEffects)
+	      (SELECT count(*) FROM order_refunds WHERE order_id=$1),
+	      (SELECT count(*) FROM customer_merges),
+	      (SELECT count(*) FROM pending_events)`, checkout.OrderID, customerID).Scan(&orderState, &entitlementState, &checkoutReceipts, &callbackReceipts, &orderEvents, &productEvents, &effects, &legacyRefunds, &mergeSideEffects, &pendingSideEffects)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if orderState != "refunded" || entitlementState != "revoked" || checkoutReceipts != 2 || callbackReceipts != 2 || orderEvents != 4 || productEvents != 2 || effects != 2 || mergeSideEffects != 0 || pendingSideEffects != 0 {
-		t.Fatalf("state=%s entitlement=%s receipts=%d/%d events=%d/%d effects=%d side_effects=%d/%d", orderState, entitlementState, checkoutReceipts, callbackReceipts, orderEvents, productEvents, effects, mergeSideEffects, pendingSideEffects)
+	if orderState != "refunded" || entitlementState != "revoked" || checkoutReceipts != 2 || callbackReceipts != 2 || orderEvents != 4 || productEvents != 2 || effects != 2 || legacyRefunds != 0 || mergeSideEffects != 0 || pendingSideEffects != 0 {
+		t.Fatalf("state=%s entitlement=%s receipts=%d/%d events=%d/%d effects=%d legacy_refunds=%d side_effects=%d/%d", orderState, entitlementState, checkoutReceipts, callbackReceipts, orderEvents, productEvents, effects, legacyRefunds, mergeSideEffects, pendingSideEffects)
 	}
 }
 
@@ -155,7 +165,9 @@ func openPE01Pool(t *testing.T) (*pgxpool.Pool, context.Context) {
 		t.Skip("database-url is not set")
 	}
 	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(*i03DatabaseURL, acceptancefixtures.PE01DatabaseName); err != nil {
-		t.Fatal(err)
+		if commerceErr := acceptancefixtures.ValidateDatabaseURLForDatabase(*i03DatabaseURL, acceptancefixtures.CommerceRefundV2DatabaseName); commerceErr != nil {
+			t.Fatal(err)
+		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	t.Cleanup(cancel)

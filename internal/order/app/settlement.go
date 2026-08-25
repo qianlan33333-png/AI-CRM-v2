@@ -229,7 +229,7 @@ func (service *SettlementService) ApplyPaymentCallback(ctx context.Context, comm
 }
 
 func (service *SettlementService) RequestRefundV2(ctx context.Context, command orderport.RefundCommandV2) (orderport.RefundV2, error) {
-	if !service.ready() || command.OrderID < 1 || command.AmountMinor < 1 || command.AmountMinor > 1_000_000_000 || command.Actor < 1 || !validKey(command.IdempotencyKey) || strings.TrimSpace(command.Reason) != command.Reason || command.Reason == "" || len(command.Reason) > 500 {
+	if !service.ready() || command.OrderID < 1 || command.AmountMinor < 1 || command.AmountMinor > 1_000_000_000 || command.Actor < 1 || !validKey(command.IdempotencyKey) || strings.TrimSpace(command.Reason) != command.Reason || command.Reason == "" || len(command.Reason) > 500 || !validReference(command.TransactionIDConfirmation) {
 		return orderport.RefundV2{}, orderport.ErrInvalidSettlement
 	}
 	payload := refundCommandDigest(command)
@@ -252,7 +252,7 @@ func (service *SettlementService) RequestRefundV2(ctx context.Context, command o
 			return nil
 		}
 		order, err := service.store.LockOrderByID(tx, command.OrderID)
-		if err != nil || (order.State != orderport.FinancialPaid && order.State != orderport.FinancialPartiallyRefunded) {
+		if err != nil || (order.State != orderport.FinancialPaid && order.State != orderport.FinancialPartiallyRefunded) || order.ProviderTransactionRef != command.TransactionIDConfirmation {
 			return orderport.ErrSettlementConflict
 		}
 		reserved, err := service.store.CountReservedRefundAmount(tx, order.ID)
@@ -443,11 +443,11 @@ func paymentDigests(order FinancialOrderRecord) ([32]byte, [32]byte, [32]byte, [
 }
 
 func refundDigests(order FinancialOrderRecord, command orderport.RefundCommandV2, outRefundNo string) ([32]byte, [32]byte, [32]byte, [32]byte) {
-	return domainDigest("pe01/source/refund/v1", outRefundNo), domainDigest("pe01/target/wechat-refund/v1", order.MerchantOrderNo), domainDigest("pe01/payload/refund/v1", fmt.Sprint(order.ID), fmt.Sprint(command.AmountMinor), order.Currency, command.Reason), sha256.Sum256([]byte(pe01PolicyVersion))
+	return domainDigest("pe01/source/refund/v1", outRefundNo), domainDigest("pe01/target/wechat-refund/v1", order.MerchantOrderNo), domainDigest("pe01/payload/refund/v2", fmt.Sprint(order.ID), fmt.Sprint(command.AmountMinor), order.Currency, command.Reason, command.TransactionIDConfirmation), sha256.Sum256([]byte(pe01PolicyVersion))
 }
 
 func refundCommandDigest(command orderport.RefundCommandV2) [32]byte {
-	return domainDigest("pe01/refund-command/v1", fmt.Sprint(command.OrderID), fmt.Sprint(command.AmountMinor), command.Reason, fmt.Sprint(command.Actor))
+	return domainDigest("pe01/refund-command/v2", fmt.Sprint(command.OrderID), fmt.Sprint(command.AmountMinor), command.Reason, command.TransactionIDConfirmation, fmt.Sprint(command.Actor))
 }
 
 func paymentResultDigest(command orderport.PaymentCallbackCommand, orderID orderport.ID) [32]byte {

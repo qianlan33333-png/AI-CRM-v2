@@ -75,14 +75,15 @@ func (handler *Handler) Get(writer http.ResponseWriter, request *http.Request, m
 func (handler *Handler) Refund(writer http.ResponseWriter, request *http.Request, orderID int64) {
 	principal, err := adminActor(request, authport.CapabilityOrderWrite)
 	var input struct {
-		AmountMinor int64  `json:"amount_minor"`
-		Reason      string `json:"reason"`
+		AmountMinor               int64  `json:"amount_minor"`
+		Reason                    string `json:"reason"`
+		TransactionIDConfirmation string `json:"transaction_id_confirmation"`
 	}
 	if err == nil {
 		err = decode(writer, request, &input)
 	}
 	if err == nil && len(request.Header.Values("Idempotency-Key")) == 1 {
-		result, callErr := handler.application.RequestRefundV2(request.Context(), orderport.RefundCommandV2{OrderID: orderport.ID(orderID), AmountMinor: input.AmountMinor, Reason: input.Reason, Actor: principal.AdminUserID, IdempotencyKey: request.Header.Get("Idempotency-Key")})
+		result, callErr := handler.application.RequestRefundV2(request.Context(), orderport.RefundCommandV2{OrderID: orderport.ID(orderID), AmountMinor: input.AmountMinor, Reason: input.Reason, TransactionIDConfirmation: input.TransactionIDConfirmation, Actor: principal.AdminUserID, IdempotencyKey: request.Header.Get("Idempotency-Key")})
 		if callErr == nil {
 			writeJSON(writer, http.StatusAccepted, result)
 			return
@@ -184,11 +185,8 @@ func decode(writer http.ResponseWriter, request *http.Request, destination any) 
 }
 
 func callbackInput(writer http.ResponseWriter, request *http.Request) ([]byte, map[string]string, error) {
-	if request == nil || request.Body == nil || len(request.Header.Values("Content-Type")) != 1 || request.Header.Get("Content-Type") != "application/json" {
-		return nil, nil, orderport.ErrInvalidSettlement
-	}
-	body, err := io.ReadAll(http.MaxBytesReader(writer, request.Body, maxBody))
-	if err != nil || len(body) == 0 || !json.Valid(body) {
+	body, err := rawCallbackBody(writer, request)
+	if err != nil {
 		return nil, nil, orderport.ErrInvalidSettlement
 	}
 	headers := make(map[string]string, 4)
@@ -199,6 +197,17 @@ func callbackInput(writer http.ResponseWriter, request *http.Request) ([]byte, m
 		headers[name] = request.Header.Get(name)
 	}
 	return body, headers, nil
+}
+
+func rawCallbackBody(writer http.ResponseWriter, request *http.Request) ([]byte, error) {
+	if request == nil || request.Body == nil || len(request.Header.Values("Content-Type")) != 1 || request.Header.Get("Content-Type") != "application/json" {
+		return nil, orderport.ErrInvalidSettlement
+	}
+	body, err := io.ReadAll(http.MaxBytesReader(writer, request.Body, maxBody))
+	if err != nil || len(body) == 0 || !json.Valid(body) {
+		return nil, orderport.ErrInvalidSettlement
+	}
+	return body, nil
 }
 
 func writeJSON(writer http.ResponseWriter, status int, value any) {
@@ -216,11 +225,11 @@ func writeError(writer http.ResponseWriter, request *http.Request, err error) {
 		code = platformhttp.CodeUnauthenticated
 	case errors.Is(err, authport.ErrUnauthorized):
 		code = platformhttp.CodeUnauthorized
-	case errors.Is(err, orderport.ErrInvalidSettlement):
+	case errors.Is(err, orderport.ErrInvalidSettlement), errors.Is(err, orderport.ErrCommerceRefundInvalid):
 		code = platformhttp.CodeMalformedRequest
-	case errors.Is(err, orderport.ErrSettlementNotFound):
+	case errors.Is(err, orderport.ErrSettlementNotFound), errors.Is(err, orderport.ErrCommerceRefundNotFound):
 		code = platformhttp.CodeNotFound
-	case errors.Is(err, orderport.ErrSettlementConflict):
+	case errors.Is(err, orderport.ErrSettlementConflict), errors.Is(err, orderport.ErrCommerceRefundConflict), errors.Is(err, orderport.ErrProviderOutcomeUnknown):
 		code = platformhttp.CodeConflict
 	}
 	platformhttp.WriteError(writer, request, platformhttp.NewError(code, err))

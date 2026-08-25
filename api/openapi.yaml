@@ -3627,6 +3627,21 @@ paths:
       parameters: [{$ref: "#/components/parameters/WechatpayTimestamp"}, {$ref: "#/components/parameters/WechatpayNonce"}, {$ref: "#/components/parameters/WechatpaySerial"}, {$ref: "#/components/parameters/WechatpaySignature"}]
       requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/WechatPayEncryptedCallback"}}}}
       responses: {"200": {description: Verified callback committed receipt-last, content: {application/json: {schema: {$ref: "#/components/schemas/WechatPayCallbackAck"}}}}, "400": {$ref: "#/components/responses/BadRequest"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
+  /api/public/wechat-shop/callbacks/refund:
+    post:
+      tags: [commerce-refund-v2]
+      operationId: receiveWechatShopRefundCallback
+      summary: Verify and apply one authoritative WeChat Shop refund callback through its independent Order-owned provider boundary
+      security: []
+      x-p4-decision-evidence: P4-COMMERCE-REFUND-V2-2026-08-25
+      x-aicrm-auth-scheme: wechat_shop_signature
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: order.wechat_shop_verified_callback
+      x-aicrm-external-effect: provider_callback
+      parameters: [{$ref: "#/components/parameters/WechatshopTimestamp"}, {$ref: "#/components/parameters/WechatshopNonce"}, {$ref: "#/components/parameters/WechatshopSerial"}, {$ref: "#/components/parameters/WechatshopSignature"}]
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/WechatShopRefundCallbackEnvelope"}}}}
+      responses: {"200": {description: Independently verified callback evidence committed; this is the only delivery-proven transition, content: {application/json: {schema: {$ref: "#/components/schemas/WechatPayCallbackAck"}}}}, "400": {$ref: "#/components/responses/BadRequest"}, "409": {$ref: "#/components/responses/Conflict"}, "503": {$ref: "#/components/responses/ServiceUnavailable"}}
   /api/admin/orders:
     get:
       tags: [p4-order-compat]
@@ -3772,15 +3787,17 @@ paths:
     post:
       tags: [p4-order-compat]
       operationId: createLegacyRefundIntent
-      summary: Record one idempotent refund intent without calling a provider
+      summary: Reserve one canonical Order-owned WeChat Shop refund without using the WeChat Pay adapter
       x-legacy-mapping-ids: [LEGACY-API-0464]
-      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-p4-decision-evidence: P4-COMMERCE-REFUND-V2-2026-08-25
       x-aicrm-capability: order.write
       x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-data-source: order.wechat_shop_refund_transaction
+      x-aicrm-external-effect: accepted_only
       parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderRefundRequest" } } } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/WechatShopRefundRequest" } } } }
       responses:
-        "200": { description: Local refund intent and pending external gate, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderRefund" } } } }
+        "202": { description: "Canonical refund reservation; the production-default provider is disabled, provider acceptance is not delivery proof, and this V2 response is not legacy-equivalent", content: { application/json: { schema: { $ref: "#/components/schemas/WechatShopRefund" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -3959,18 +3976,45 @@ paths:
     post:
       tags: [p4-order-compat]
       operationId: createLegacyWechatRefundIntent
-      summary: Record one local WeChat refund intent without calling WeChat
+      summary: Resolve an unambiguous PE01 order reference and reserve its canonical V2 refund
       x-legacy-mapping-ids: [LEGACY-API-0524]
-      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-p4-decision-evidence: P4-COMMERCE-REFUND-V2-2026-08-25
       x-aicrm-capability: order.write
       x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-data-source: order.pe01_refund_transaction
+      x-aicrm-external-effect: accepted_only
       parameters:
         - $ref: "#/components/parameters/CSRFToken"
         - $ref: "#/components/parameters/IdempotencyKey"
         - { name: order_id, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 200 } }
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyWechatOrderRefundRequest" } } } }
       responses:
-        "200": { description: Local WeChat refund intent and pending external gate, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderRefund" } } } }
+        "202": { description: "Canonical PE01 refund reservation and accepted EER bridge job; ambiguous references fail closed and this V2 response is not legacy-equivalent", content: { application/json: { schema: { $ref: "#/components/schemas/WechatPaySettlementRefund" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/wechat-shop/refunds/{refund_id}/reconcile:
+    post:
+      tags: [commerce-refund-v2]
+      operationId: reconcileWechatShopRefund
+      summary: Manually query independent WeChat Shop evidence for one unknown refund outcome
+      x-p4-decision-evidence: P4-COMMERCE-REFUND-V2-2026-08-25
+      x-aicrm-capability: order.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: order.wechat_shop_refund_query
+      x-aicrm-external-effect: required
+      parameters:
+        - $ref: "#/components/parameters/CSRFToken"
+        - {name: refund_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: "#/components/schemas/EmptyObject"}}}}
+      responses:
+        "200": {description: Persisted query evidence and current refund state; only exact confirmed evidence is delivery proof, content: {application/json: {schema: {$ref: "#/components/schemas/WechatShopRefund"}}}}
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -11283,6 +11327,26 @@ components:
       in: header
       required: true
       schema: {type: string, minLength: 1, maxLength: 1024}
+    WechatshopTimestamp:
+      name: Wechatshop-Timestamp
+      in: header
+      required: true
+      schema: {type: string, pattern: '^[0-9]{10}$'}
+    WechatshopNonce:
+      name: Wechatshop-Nonce
+      in: header
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 64}
+    WechatshopSerial:
+      name: Wechatshop-Serial
+      in: header
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 128}
+    WechatshopSignature:
+      name: Wechatshop-Signature
+      in: header
+      required: true
+      schema: {type: string, minLength: 1, maxLength: 1024}
     CustomerSafeExportID:
       name: export_id
       in: path
@@ -15326,10 +15390,11 @@ components:
     WechatPaySettlementRefundRequest:
       type: object
       additionalProperties: false
-      required: [amount_minor, reason]
+      required: [amount_minor, reason, transaction_id_confirmation]
       properties:
         amount_minor: {type: integer, format: int64, minimum: 1, maximum: 1000000000}
         reason: {type: string, minLength: 1, maxLength: 500}
+        transaction_id_confirmation: {type: string, minLength: 1, maxLength: 200}
     WechatPaySettlementRefund:
       type: object
       additionalProperties: false
@@ -15371,6 +15436,56 @@ components:
       required: [code]
       properties:
         code: {type: string, enum: [SUCCESS], x-enum-varnames: [WechatPayCallbackSuccess]}
+    WechatShopRefundRequest:
+      type: object
+      additionalProperties: false
+      required: [provider, order_no, refund_amount_total, reason, transaction_id_confirmation, checked]
+      properties:
+        provider: {type: string, enum: [wechat_shop], x-enum-varnames: [WechatShopRefundProvider]}
+        order_no: {type: string, minLength: 1, maxLength: 200}
+        refund_amount_total: {type: integer, format: int64, minimum: 1, maximum: 1000000000}
+        reason: {type: string, minLength: 1, maxLength: 500}
+        transaction_id_confirmation: {type: string, minLength: 1, maxLength: 200}
+        checked: {type: boolean, enum: [true], x-enum-varnames: [WechatShopRefundChecked]}
+        operator: {type: string, maxLength: 200, description: Legacy display field; authenticated admin identity remains authoritative.}
+    WechatShopRefund:
+      type: object
+      additionalProperties: false
+      required: [id, order_id, merchant_order_no, out_refund_no, amount_minor, currency, state, provider_accepted, delivery_proven, attempt_count, version, created_at, updated_at]
+      properties:
+        id: {type: integer, format: int64, minimum: 1}
+        order_id: {type: integer, format: int64, minimum: 1}
+        merchant_order_no: {type: string, minLength: 1, maxLength: 200}
+        out_refund_no: {type: string, pattern: '^wsr_[a-f0-9]{32}$'}
+        amount_minor: {type: integer, format: int64, minimum: 1, maximum: 1000000000}
+        currency: {type: string, enum: [CNY], x-enum-varnames: [WechatShopRefundCurrencyCNY]}
+        state:
+          type: string
+          enum: [accepted, executing, provider_accepted, outcome_unknown, succeeded, final_failed]
+          x-enum-varnames: [WechatShopRefundStateAccepted, WechatShopRefundStateExecuting, WechatShopRefundStateProviderAccepted, WechatShopRefundStateOutcomeUnknown, WechatShopRefundStateSucceeded, WechatShopRefundStateFinalFailed]
+        provider_accepted: {type: boolean, description: True only for provider_accepted; it is never delivery proof.}
+        delivery_proven: {type: boolean, description: True only after an independently verified callback or exact manual query evidence.}
+        attempt_count: {type: integer, format: int64, minimum: 0}
+        version: {type: integer, format: int64, minimum: 1}
+        created_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+    WechatShopRefundCallbackEnvelope:
+      type: object
+      additionalProperties: false
+      required: [id, event_type, resource_type, resource]
+      properties:
+        id: {type: string, minLength: 1, maxLength: 128}
+        event_type: {type: string, enum: [REFUND.SUCCESS, REFUND.CLOSED], x-enum-varnames: [WechatShopEventRefundSuccess, WechatShopEventRefundClosed]}
+        resource_type: {type: string, enum: [encrypt-resource], x-enum-varnames: [WechatShopResourceEncrypted]}
+        resource:
+          type: object
+          additionalProperties: false
+          required: [algorithm, ciphertext, nonce, associated_data]
+          properties:
+            algorithm: {type: string, enum: [AEAD_AES_256_GCM], x-enum-varnames: [WechatShopAlgorithmAEADAES256GCM]}
+            ciphertext: {type: string, minLength: 1, maxLength: 131072}
+            nonce: {type: string, minLength: 1, maxLength: 64}
+            associated_data: {type: string, maxLength: 1024}
     LegacyOrderListItem:
       type: object
       additionalProperties: false

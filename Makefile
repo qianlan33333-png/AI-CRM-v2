@@ -25,6 +25,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: p4-data-migration-harness-acceptance
 .PHONY: p4-b01-wecom-inbound-acceptance
 .PHONY: p4-pe01-wechat-pay-settlement-acceptance
+.PHONY: p4-commerce-refund-v2-acceptance
 .PHONY: p4-automation-rules-runtime-acceptance
 .PHONY: p4-radar-local-tracking-acceptance
 .PHONY: p2-s04-acceptance
@@ -566,6 +567,10 @@ p4-data-migration-harness-acceptance:
 p4-pe01-wechat-pay-settlement-acceptance:
 	@test -n "$${P4PE01_TEST_DATABASE_URL:-}" || { echo "P4PE01_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/order/pe01_migration_compatibility.sh
+
+p4-commerce-refund-v2-acceptance:
+	@test -n "$${P4COMMERCE_REFUND_V2_TEST_DATABASE_URL:-}" || { echo "P4COMMERCE_REFUND_V2_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" acceptance/order/commerce_refund_v2_migration_compatibility.sh
 
 p4-automation-rules-runtime-acceptance:
 	@test -n "$${P4AUTOMATIONRULES_TEST_DATABASE_URL:-}" || { echo "P4AUTOMATIONRULES_TEST_DATABASE_URL is required" >&2; exit 2; }

@@ -166,6 +166,7 @@ type candidateHandler struct {
 	productLifecycle          *producthttp.LocalProductLifecycleHandler
 	servicePeriodMembers      *memberhttp.Handler
 	wechatPaySettlement       *orderhttp.Handler
+	commerceRefunds           *orderhttp.CommerceRefundHandler
 	sidebar                   *sidebarhttp.Handler
 	surveyPublic              *surveyhttp.PublicHandler
 	radarPublic               *radarthttp.PublicHandler
@@ -379,6 +380,22 @@ func (handler *candidateHandler) ReceiveWechatPayPaymentCallback(writer http.Res
 
 func (handler *candidateHandler) ReceiveWechatPayRefundCallback(writer http.ResponseWriter, request *http.Request, _ api.ReceiveWechatPayRefundCallbackParams) {
 	handler.wechatPaySettlement.RefundCallback(writer, request)
+}
+
+func (handler *candidateHandler) ReconcileWechatShopRefund(writer http.ResponseWriter, request *http.Request, refundID int64, _ api.ReconcileWechatShopRefundParams) {
+	if handler == nil || handler.commerceRefunds == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.commerceRefunds.ReconcileWeChatShopRefund(writer, request, strconv.FormatInt(refundID, 10))
+}
+
+func (handler *candidateHandler) ReceiveWechatShopRefundCallback(writer http.ResponseWriter, request *http.Request, _ api.ReceiveWechatShopRefundCallbackParams) {
+	if handler == nil || handler.commerceRefunds == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.commerceRefunds.WeChatShopCallback(writer, request)
 }
 
 func (handler *candidateHandler) CreateProduct(writer http.ResponseWriter, request *http.Request, params api.CreateProductParams) {
@@ -1364,6 +1381,26 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	commerceRefundRepository, err := orderstore.NewCommerceRefundRepository(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	wechatPayRefundCompatibility, err := orderapp.NewWeChatPayRefundCompatibilityService(uow, commerceRefundRepository, settlementService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	wechatShopRefunds, err := orderapp.NewWeChatShopRefundService(uow, commerceRefundRepository, orderprovider.DisabledWeChatShopRefund{}, eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	commerceRefundHandler, err := orderhttp.NewCommerceRefundHandler(wechatPayRefundCompatibility, wechatShopRefunds, orderprovider.DisabledWeChatShopCallbackVerifier{})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	candidate := &candidateHandler{
 		Handler: authHandler, customers: customerHandler,
 		customerIdentity: identityResolver, customerDetail: customerDetailHandler, customerDetailReader: customerDetailService,
@@ -1378,6 +1415,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		productLifecycle:     productLifecycleHandler,
 		servicePeriodMembers: servicePeriodMemberHandler,
 		wechatPaySettlement:  wechatPaySettlementHandler,
+		commerceRefunds:      commerceRefundHandler,
 		surveyPublic:         surveyPublicHandler,
 		radarPublic:          radarPublicHandler,
 		surveyH5OAuth:        surveyH5OAuthHandler,
@@ -1939,6 +1977,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 	if err = registerPublic(orderhttp.RefundCallbackPath, http.HandlerFunc(wrapper.ReceiveWechatPayRefundCallback)); err != nil {
 		return nil, err
 	}
+	if err = registerPublic(orderhttp.WeChatShopCallbackPath, http.HandlerFunc(wrapper.ReceiveWechatShopRefundCallback)); err != nil {
+		return nil, err
+	}
 	internalEventSafeExportEndpoint := func(method func(http.ResponseWriter, *http.Request)) http.Handler {
 		return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			concrete, ok := candidate.(*candidateHandler)
@@ -2085,6 +2126,12 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, surveyhttp.ExternalPushDetailPath, authport.CapabilityQuestionnairesRead, false, http.HandlerFunc(wrapper.GetSurveyExternalPushDetail)},
 		{http.MethodPost, surveyhttp.ExternalPushReconcilePath, authport.CapabilityQuestionnairesWrite, true, http.HandlerFunc(wrapper.ReconcileSurveyExternalPush)},
 	}
+	routes = append(routes, struct {
+		method, pattern string
+		capability      authport.Capability
+		csrf            bool
+		endpoint        http.Handler
+	}{http.MethodPost, orderhttp.WeChatShopReconcilePath, authport.CapabilityOrderWrite, true, http.HandlerFunc(wrapper.ReconcileWechatShopRefund)})
 	for _, route := range routes {
 		if err = register(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
 			return nil, err
@@ -2477,6 +2524,17 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				return nil, err
 			}
 		}
+		refundUnavailable := http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		})
+		wechatShopRefundEndpoint := http.Handler(refundUnavailable)
+		wechatPayRefundEndpoint := http.Handler(refundUnavailable)
+		if concrete, ok := candidate.(*candidateHandler); ok && concrete.commerceRefunds != nil {
+			wechatShopRefundEndpoint = http.HandlerFunc(concrete.commerceRefunds.WeChatShopCompatibility)
+			wechatPayRefundEndpoint = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				concrete.commerceRefunds.WeChatPayCompatibility(writer, request, chi.URLParam(request, "order_id"))
+			})
+		}
 		for _, route := range []struct {
 			method, pattern string
 			capability      authport.Capability
@@ -2662,8 +2720,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/api/admin/wechat-pay/order-exports", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.CreateWechatOrderBoardExport)},
 			{http.MethodGet, "/api/admin/wechat-pay/order-exports/{job_id}", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.DeprecatedWechatOrderBoardExport)},
 			{http.MethodGet, "/api/admin/wechat-pay/order-exports/{job_id}/download", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.DeprecatedWechatOrderBoardExport)},
-			{http.MethodPost, "/api/admin/refunds", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.CreateOrderBoardRefund)},
-			{http.MethodPost, "/api/admin/wechat-pay/orders/{order_id}/refunds", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.CreateWechatOrderBoardRefund)},
+			{http.MethodPost, "/api/admin/refunds", authport.CapabilityOrderWrite, true, wechatShopRefundEndpoint},
+			{http.MethodPost, "/api/admin/wechat-pay/orders/{order_id}/refunds", authport.CapabilityOrderWrite, true, wechatPayRefundEndpoint},
 			{http.MethodGet, "/api/admin/wechat-pay/orders/{order_id}/external-push-deliveries", authport.CapabilityOrderRead, false, http.HandlerFunc(legacy.ListWechatOrderExternalEffects)},
 			{http.MethodPost, "/api/admin/wechat-pay/orders/{order_id}/external-push-deliveries/{delivery_id}/retry", authport.CapabilityOrderWrite, true, http.HandlerFunc(legacy.ReviewWechatOrderExternalEffect)},
 			{http.MethodGet, legacyImageCollectionPath, authport.CapabilityMediaLibraryRead, false, http.HandlerFunc(legacy.GetImageList)},

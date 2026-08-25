@@ -92,6 +92,7 @@ const (
 	p4PE01WeChatPaySettlementEvidence          = "PE01-WECHAT-PAY-SETTLEMENT-2026-08-25"
 	p4AutomationRulesRuntimeEvidence           = "P4-A01-AUTOMATION-RULES-RUNTIME-2026-08-25"
 	p4MediaContentDeliveryEvidence             = "P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25"
+	p4CommerceRefundV2Evidence                 = "P4-COMMERCE-REFUND-V2-2026-08-25"
 	p4ServicePeriodMemberGridCanonicalEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24"
 	c01DispatchOperationID                     = "dispatchOutboundCampaignHandoff"
 	c01DispatchReadOperationID                 = "getOutboundCampaignDispatchReconciliation"
@@ -104,6 +105,11 @@ var pe01Operations = map[string]nativePackageOperation{
 	"createWechatPaySettlementRefund": {"/api/v1/wechat-pay/orders/{order_id}/refunds", "POST", p4PE01WeChatPaySettlementEvidence, "order.write", "human_session", "financial", "order.pe01_refund_transaction", "required", map[string]string{"admin": "global"}},
 	"receiveWechatPayPaymentCallback": {"/api/public/wechat-pay/callbacks/payment", "POST", p4PE01WeChatPaySettlementEvidence, "", "wechat_pay_signature", "financial", "order.pe01_verified_callback", "none", nil},
 	"receiveWechatPayRefundCallback":  {"/api/public/wechat-pay/callbacks/refund", "POST", p4PE01WeChatPaySettlementEvidence, "", "wechat_pay_signature", "financial", "order.pe01_verified_callback", "none", nil},
+}
+
+var commerceRefundOperations = map[string]nativePackageOperation{
+	"receiveWechatShopRefundCallback": {"/api/public/wechat-shop/callbacks/refund", "POST", p4CommerceRefundV2Evidence, "", "wechat_shop_signature", "financial", "order.wechat_shop_verified_callback", "none", nil},
+	"reconcileWechatShopRefund":       {"/api/admin/wechat-shop/refunds/{refund_id}/reconcile", "POST", p4CommerceRefundV2Evidence, "order.write", "human_session", "financial", "order.wechat_shop_refund_query", "required", map[string]string{"admin": "global", "ops": "global"}},
 }
 
 var nativePackageOperations = map[string]nativePackageOperation{
@@ -1276,10 +1282,15 @@ func isRunnerDeclaredOperation(operationID string) bool {
 		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] || p4AdminOpsSafeOperations[operationID].path != "" || p4SetupWizardOperations[operationID] ||
 		p4DomainVerificationOperations[operationID] || p4PushCenterOperations[operationID] ||
 		p4ExecutionRuntimeOperations[operationID] || p4AdminShellOperations[operationID] ||
-		p4LegacyHealthOperations[operationID] || nativePackageOperationDeclared(operationID) || pe01OperationDeclared(operationID)
+		p4LegacyHealthOperations[operationID] || nativePackageOperationDeclared(operationID) || pe01OperationDeclared(operationID) || commerceRefundOperationDeclared(operationID)
 }
 
 func pe01OperationDeclared(operationID string) bool { _, ok := pe01Operations[operationID]; return ok }
+
+func commerceRefundOperationDeclared(operationID string) bool {
+	_, ok := commerceRefundOperations[operationID]
+	return ok
+}
 
 func validatePE01Operation(path string, item *openapi3.PathItem, op *openapi3.Operation, contract nativePackageOperation) error {
 	if path != contract.path || operationForMethod(item, contract.method) != op || op.Extensions["x-p4-decision-evidence"] != contract.evidence || op.Extensions["x-aicrm-auth-scheme"] != contract.authScheme || op.Extensions["x-aicrm-data-classification"] != contract.classification || op.Extensions["x-aicrm-data-source"] != contract.dataSource || op.Extensions["x-aicrm-session-bound-csrf"] != contract.csrf {
@@ -1307,6 +1318,32 @@ func validatePE01Operation(path string, item *openapi3.PathItem, op *openapi3.Op
 	}
 	if op.Extensions["x-aicrm-external-effect"] != wantEffect {
 		return fmt.Errorf("%s PE01 external effect drifted", op.OperationID)
+	}
+	return nil
+}
+
+func validateCommerceRefundOperation(path string, item *openapi3.PathItem, op *openapi3.Operation, contract nativePackageOperation) error {
+	if path != contract.path || operationForMethod(item, contract.method) != op || op.Extensions["x-p4-decision-evidence"] != contract.evidence || op.Extensions["x-aicrm-auth-scheme"] != contract.authScheme || op.Extensions["x-aicrm-data-classification"] != contract.classification || op.Extensions["x-aicrm-data-source"] != contract.dataSource || op.Extensions["x-aicrm-session-bound-csrf"] != contract.csrf {
+		return fmt.Errorf("%s Commerce Refund V2 route boundary drifted", op.OperationID)
+	}
+	if _, linked := op.Extensions["x-legacy-mapping-ids"]; linked {
+		return fmt.Errorf("%s independent Commerce Refund V2 route must not claim a legacy mapping", op.OperationID)
+	}
+	if contract.authScheme == "wechat_shop_signature" {
+		if op.Security == nil || len(*op.Security) != 0 || op.Extensions["x-aicrm-external-effect"] != "provider_callback" {
+			return fmt.Errorf("%s WeChat Shop callback boundary drifted", op.OperationID)
+		}
+		if _, ok := op.Extensions["x-aicrm-capability"]; ok {
+			return fmt.Errorf("%s WeChat Shop callback must not declare human capability", op.OperationID)
+		}
+		return nil
+	}
+	if op.Extensions["x-aicrm-capability"] != contract.capability || op.Extensions["x-aicrm-external-effect"] != "required" {
+		return fmt.Errorf("%s manual reconcile boundary drifted", op.OperationID)
+	}
+	scopes, err := stringMap(op.Extensions["x-aicrm-rbac-scopes"])
+	if err != nil || !reflect.DeepEqual(scopes, contract.scopes) {
+		return fmt.Errorf("%s Commerce Refund V2 RBAC scopes=%v", op.OperationID, scopes)
 	}
 	return nil
 }
@@ -2137,8 +2174,12 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				}
 			} else if p4OrderOperations[op.OperationID] {
 				seenP4Order[op.OperationID] = true
+				expectedEvidence := p4OrderDecisionEvidence
+				if op.OperationID == "createLegacyRefundIntent" || op.OperationID == "createLegacyWechatRefundIntent" {
+					expectedEvidence = p4CommerceRefundV2Evidence
+				}
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
-				if !ok || evidence != p4OrderDecisionEvidence {
+				if !ok || evidence != expectedEvidence {
 					return fmt.Errorf("%s has missing or forged P4 Order evidence", op.OperationID)
 				}
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
@@ -2298,6 +2339,10 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				if err := validatePE01Operation(path, item, op, pe01Contract); err != nil {
 					return err
 				}
+			} else if commerceRefundContract, commerceRefund := commerceRefundOperations[op.OperationID]; commerceRefund {
+				if err := validateCommerceRefundOperation(path, item, op, commerceRefundContract); err != nil {
+					return err
+				}
 			} else if nativeContract, native := nativePackageOperations[op.OperationID]; native {
 				if err := validateNativePackageOperationWithCanonicalMapping(path, item, op, nativeContract, canonicalDeclared); err != nil {
 					return err
@@ -2332,7 +2377,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 					return fmt.Errorf("%s has missing or forged P3 segment evidence", op.OperationID)
 				}
 			}
-			if p4DomainVerificationOperations[op.OperationID] || p4LegacyHealthOperations[op.OperationID] || p4RadarPublicOperations[op.OperationID] || nativePackageOperationDeclared(op.OperationID) || pe01OperationDeclared(op.OperationID) {
+			if p4DomainVerificationOperations[op.OperationID] || p4LegacyHealthOperations[op.OperationID] || p4RadarPublicOperations[op.OperationID] || nativePackageOperationDeclared(op.OperationID) || pe01OperationDeclared(op.OperationID) || commerceRefundOperationDeclared(op.OperationID) {
 				// The public static route and the public runtime-mode snapshot are
 				// fully constrained in their dedicated branches above. Native
 				// package operations are likewise validated against their exact

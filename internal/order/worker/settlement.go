@@ -8,6 +8,7 @@ import (
 	"time"
 
 	orderapp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/app"
+	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
 	"github.com/riverqueue/river"
 )
@@ -34,6 +35,11 @@ type RefundReconcileWorker struct {
 	service *orderapp.EffectExecutionService
 }
 
+type WeChatShopRefundWorker struct {
+	river.WorkerDefaults[orderapp.WeChatShopRefundArgs]
+	service orderport.WeChatShopRefundApplication
+}
+
 func RegisterSettlementWorkers(registry *platformjobqueue.WorkerRegistry, service *orderapp.EffectExecutionService) error {
 	if registry == nil || service == nil {
 		return ErrInvalidSettlementWorker
@@ -48,6 +54,13 @@ func RegisterSettlementWorkers(registry *platformjobqueue.WorkerRegistry, servic
 		return err
 	}
 	return platformjobqueue.AddWorker(registry, platformjobqueue.QueueCritical, &RefundReconcileWorker{service: service})
+}
+
+func RegisterWeChatShopRefundWorker(registry *platformjobqueue.WorkerRegistry, service orderport.WeChatShopRefundApplication) error {
+	if registry == nil || service == nil {
+		return ErrInvalidSettlementWorker
+	}
+	return platformjobqueue.AddWorker(registry, platformjobqueue.QueueCritical, &WeChatShopRefundWorker{service: service})
 }
 
 func (worker *PaymentEffectWorker) Work(ctx context.Context, job *river.Job[orderapp.PaymentEffectBridgeArgs]) error {
@@ -78,6 +91,15 @@ func (worker *RefundReconcileWorker) Work(ctx context.Context, job *river.Job[or
 	return worker.service.ReconcileRefund(ctx, job.Args.RefundID)
 }
 
+func (worker *WeChatShopRefundWorker) Work(ctx context.Context, job *river.Job[orderapp.WeChatShopRefundArgs]) error {
+	if worker == nil || worker.service == nil || job == nil || job.JobRow == nil || job.ID < 1 || job.Attempt < 1 || job.Args.RefundID < 1 || job.ScheduledAt.IsZero() {
+		return ErrInvalidSettlementWorker
+	}
+	digest := sha256.Sum256([]byte("order/wechat-shop/river-args/v1\x00" + strconv.FormatInt(job.Args.RefundID, 10)))
+	_, err := worker.service.ExecuteRefund(ctx, orderport.WeChatShopExecutionJob{RefundID: job.Args.RefundID, RiverJobID: job.ID, RiverAttempt: int64(job.Attempt), ArgsDigest: digest, ScheduledAt: job.ScheduledAt.UTC()})
+	return err
+}
+
 func (*PaymentEffectWorker) Timeout(*river.Job[orderapp.PaymentEffectBridgeArgs]) time.Duration {
 	return 30 * time.Second
 }
@@ -88,6 +110,9 @@ func (*PaymentReconcileWorker) Timeout(*river.Job[orderapp.PaymentReconcileArgs]
 	return 30 * time.Second
 }
 func (*RefundReconcileWorker) Timeout(*river.Job[orderapp.RefundReconcileArgs]) time.Duration {
+	return 30 * time.Second
+}
+func (*WeChatShopRefundWorker) Timeout(*river.Job[orderapp.WeChatShopRefundArgs]) time.Duration {
 	return 30 * time.Second
 }
 

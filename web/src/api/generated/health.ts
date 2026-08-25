@@ -7602,6 +7602,11 @@ export interface WechatPaySettlementRefundRequest {
    * @maxLength 500
    */
   reason: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  transaction_id_confirmation: string;
 }
 
 export type WechatPaySettlementRefundCurrency =
@@ -7706,6 +7711,148 @@ export const WechatPayCallbackAckCode = {
 
 export interface WechatPayCallbackAck {
   code: WechatPayCallbackAckCode;
+}
+
+export type WechatShopRefundRequestProvider =
+  (typeof WechatShopRefundRequestProvider)[keyof typeof WechatShopRefundRequestProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatShopRefundRequestProvider = {
+  WechatShopRefundProvider: "wechat_shop",
+} as const;
+
+export interface WechatShopRefundRequest {
+  provider: WechatShopRefundRequestProvider;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  order_no: string;
+  /**
+   * @minimum 1
+   * @maximum 1000000000
+   */
+  refund_amount_total: number;
+  /**
+   * @minLength 1
+   * @maxLength 500
+   */
+  reason: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  transaction_id_confirmation: string;
+  checked: boolean;
+  /**
+   * Legacy display field; authenticated admin identity remains authoritative.
+   * @maxLength 200
+   */
+  operator?: string;
+}
+
+export type WechatShopRefundCurrency =
+  (typeof WechatShopRefundCurrency)[keyof typeof WechatShopRefundCurrency];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatShopRefundCurrency = {
+  WechatShopRefundCurrencyCNY: "CNY",
+} as const;
+
+export type WechatShopRefundState =
+  (typeof WechatShopRefundState)[keyof typeof WechatShopRefundState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatShopRefundState = {
+  WechatShopRefundStateAccepted: "accepted",
+  WechatShopRefundStateExecuting: "executing",
+  WechatShopRefundStateProviderAccepted: "provider_accepted",
+  WechatShopRefundStateOutcomeUnknown: "outcome_unknown",
+  WechatShopRefundStateSucceeded: "succeeded",
+  WechatShopRefundStateFinalFailed: "final_failed",
+} as const;
+
+export interface WechatShopRefund {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  order_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  merchant_order_no: string;
+  /** @pattern ^wsr_[a-f0-9]{32}$ */
+  out_refund_no: string;
+  /**
+   * @minimum 1
+   * @maximum 1000000000
+   */
+  amount_minor: number;
+  currency: WechatShopRefundCurrency;
+  state: WechatShopRefundState;
+  /** True only for provider_accepted; it is never delivery proof. */
+  provider_accepted: boolean;
+  /** True only after an independently verified callback or exact manual query evidence. */
+  delivery_proven: boolean;
+  /** @minimum 0 */
+  attempt_count: number;
+  /** @minimum 1 */
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type WechatShopRefundCallbackEnvelopeEventType =
+  (typeof WechatShopRefundCallbackEnvelopeEventType)[keyof typeof WechatShopRefundCallbackEnvelopeEventType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatShopRefundCallbackEnvelopeEventType = {
+  WechatShopEventRefundSuccess: "REFUND.SUCCESS",
+  WechatShopEventRefundClosed: "REFUND.CLOSED",
+} as const;
+
+export type WechatShopRefundCallbackEnvelopeResourceType =
+  (typeof WechatShopRefundCallbackEnvelopeResourceType)[keyof typeof WechatShopRefundCallbackEnvelopeResourceType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatShopRefundCallbackEnvelopeResourceType = {
+  WechatShopResourceEncrypted: "encrypt-resource",
+} as const;
+
+export type WechatShopRefundCallbackEnvelopeResourceAlgorithm =
+  (typeof WechatShopRefundCallbackEnvelopeResourceAlgorithm)[keyof typeof WechatShopRefundCallbackEnvelopeResourceAlgorithm];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatShopRefundCallbackEnvelopeResourceAlgorithm = {
+  WechatShopAlgorithmAEADAES256GCM: "AEAD_AES_256_GCM",
+} as const;
+
+export type WechatShopRefundCallbackEnvelopeResource = {
+  algorithm: WechatShopRefundCallbackEnvelopeResourceAlgorithm;
+  /**
+   * @minLength 1
+   * @maxLength 131072
+   */
+  ciphertext: string;
+  /**
+   * @minLength 1
+   * @maxLength 64
+   */
+  nonce: string;
+  /** @maxLength 1024 */
+  associated_data: string;
+};
+
+export interface WechatShopRefundCallbackEnvelope {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  id: string;
+  event_type: WechatShopRefundCallbackEnvelopeEventType;
+  resource_type: WechatShopRefundCallbackEnvelopeResourceType;
+  resource: WechatShopRefundCallbackEnvelopeResource;
 }
 
 export type LegacyOrderListItemProvider =
@@ -14557,6 +14704,14 @@ export type WechatpayNonceParameter = string;
 export type WechatpaySerialParameter = string;
 
 export type WechatpaySignatureParameter = string;
+
+export type WechatshopTimestampParameter = string;
+
+export type WechatshopNonceParameter = string;
+
+export type WechatshopSerialParameter = string;
+
+export type WechatshopSignatureParameter = string;
 
 /**
  * Stable local-only setup-wizard request key; exact retries replay and mismatches conflict.
@@ -28171,6 +28326,72 @@ export const receiveWechatPayRefundCallback = async (
 };
 
 /**
+ * @summary Verify and apply one authoritative WeChat Shop refund callback through its independent Order-owned provider boundary
+ */
+export type receiveWechatShopRefundCallbackResponse200 = {
+  data: WechatPayCallbackAck;
+  status: 200;
+};
+
+export type receiveWechatShopRefundCallbackResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type receiveWechatShopRefundCallbackResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type receiveWechatShopRefundCallbackResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type receiveWechatShopRefundCallbackResponseSuccess =
+  receiveWechatShopRefundCallbackResponse200 & {
+    headers: Headers;
+  };
+export type receiveWechatShopRefundCallbackResponseError = (
+  | receiveWechatShopRefundCallbackResponse400
+  | receiveWechatShopRefundCallbackResponse409
+  | receiveWechatShopRefundCallbackResponse503
+) & {
+  headers: Headers;
+};
+
+export type receiveWechatShopRefundCallbackResponse =
+  | receiveWechatShopRefundCallbackResponseSuccess
+  | receiveWechatShopRefundCallbackResponseError;
+
+export const getReceiveWechatShopRefundCallbackUrl = () => {
+  return `/api/public/wechat-shop/callbacks/refund`;
+};
+
+export const receiveWechatShopRefundCallback = async (
+  wechatShopRefundCallbackEnvelope: WechatShopRefundCallbackEnvelope,
+  options?: RequestInit,
+): Promise<receiveWechatShopRefundCallbackResponse> => {
+  const res = await fetch(getReceiveWechatShopRefundCallbackUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(wechatShopRefundCallbackEnvelope),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: receiveWechatShopRefundCallbackResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as receiveWechatShopRefundCallbackResponse;
+};
+
+/**
  * @summary List persisted unified order projections without provider execution
  */
 export type listLegacyOrdersResponse200 = {
@@ -28678,11 +28899,11 @@ export const listLegacyRefunds = async (
 };
 
 /**
- * @summary Record one idempotent refund intent without calling a provider
+ * @summary Reserve one canonical Order-owned WeChat Shop refund without using the WeChat Pay adapter
  */
-export type createLegacyRefundIntentResponse200 = {
-  data: LegacyOrderRefund;
-  status: 200;
+export type createLegacyRefundIntentResponse202 = {
+  data: WechatShopRefund;
+  status: 202;
 };
 
 export type createLegacyRefundIntentResponse400 = {
@@ -28716,7 +28937,7 @@ export type createLegacyRefundIntentResponse503 = {
 };
 
 export type createLegacyRefundIntentResponseSuccess =
-  createLegacyRefundIntentResponse200 & {
+  createLegacyRefundIntentResponse202 & {
     headers: Headers;
   };
 export type createLegacyRefundIntentResponseError = (
@@ -28739,14 +28960,14 @@ export const getCreateLegacyRefundIntentUrl = () => {
 };
 
 export const createLegacyRefundIntent = async (
-  legacyOrderRefundRequest: LegacyOrderRefundRequest,
+  wechatShopRefundRequest: WechatShopRefundRequest,
   options?: RequestInit,
 ): Promise<createLegacyRefundIntentResponse> => {
   const res = await fetch(getCreateLegacyRefundIntentUrl(), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(legacyOrderRefundRequest),
+    body: JSON.stringify(wechatShopRefundRequest),
   });
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
@@ -29435,11 +29656,11 @@ export const reviewLegacyWechatOrderExternalEffect = async (
 };
 
 /**
- * @summary Record one local WeChat refund intent without calling WeChat
+ * @summary Resolve an unambiguous PE01 order reference and reserve its canonical V2 refund
  */
-export type createLegacyWechatRefundIntentResponse200 = {
-  data: LegacyOrderRefund;
-  status: 200;
+export type createLegacyWechatRefundIntentResponse202 = {
+  data: WechatPaySettlementRefund;
+  status: 202;
 };
 
 export type createLegacyWechatRefundIntentResponse400 = {
@@ -29473,7 +29694,7 @@ export type createLegacyWechatRefundIntentResponse503 = {
 };
 
 export type createLegacyWechatRefundIntentResponseSuccess =
-  createLegacyWechatRefundIntentResponse200 & {
+  createLegacyWechatRefundIntentResponse202 & {
     headers: Headers;
   };
 export type createLegacyWechatRefundIntentResponseError = (
@@ -29517,6 +29738,91 @@ export const createLegacyWechatRefundIntent = async (
     status: res.status,
     headers: res.headers,
   } as createLegacyWechatRefundIntentResponse;
+};
+
+/**
+ * @summary Manually query independent WeChat Shop evidence for one unknown refund outcome
+ */
+export type reconcileWechatShopRefundResponse200 = {
+  data: WechatShopRefund;
+  status: 200;
+};
+
+export type reconcileWechatShopRefundResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type reconcileWechatShopRefundResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type reconcileWechatShopRefundResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type reconcileWechatShopRefundResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type reconcileWechatShopRefundResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type reconcileWechatShopRefundResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type reconcileWechatShopRefundResponseSuccess =
+  reconcileWechatShopRefundResponse200 & {
+    headers: Headers;
+  };
+export type reconcileWechatShopRefundResponseError = (
+  | reconcileWechatShopRefundResponse400
+  | reconcileWechatShopRefundResponse401
+  | reconcileWechatShopRefundResponse403
+  | reconcileWechatShopRefundResponse404
+  | reconcileWechatShopRefundResponse409
+  | reconcileWechatShopRefundResponse503
+) & {
+  headers: Headers;
+};
+
+export type reconcileWechatShopRefundResponse =
+  | reconcileWechatShopRefundResponseSuccess
+  | reconcileWechatShopRefundResponseError;
+
+export const getReconcileWechatShopRefundUrl = (refundId: number) => {
+  return `/api/admin/wechat-shop/refunds/${refundId}/reconcile`;
+};
+
+export const reconcileWechatShopRefund = async (
+  refundId: number,
+  emptyObject: EmptyObject,
+  options?: RequestInit,
+): Promise<reconcileWechatShopRefundResponse> => {
+  const res = await fetch(getReconcileWechatShopRefundUrl(refundId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(emptyObject),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reconcileWechatShopRefundResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as reconcileWechatShopRefundResponse;
 };
 
 /**
