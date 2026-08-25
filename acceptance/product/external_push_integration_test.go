@@ -39,11 +39,11 @@ func TestCommerceExternalPushPG16RoundTrip(t *testing.T) {
 		ProductID: product.ID, ProductKind: productport.ExternalPushWeChatPay, Enabled: true,
 		ConfigurationReference: saved.ConfigurationReference, Actor: actor, IdempotencyKey: saveKey,
 	})
-	if err != nil || replayedSave != saved {
+	if err != nil || !sameExternalPushConfiguration(replayedSave, saved) {
 		t.Fatalf("save replay=%+v err=%v want=%+v", replayedSave, err, saved)
 	}
 	read, err := service.GetExternalPushConfiguration(ctx, product.ID, productport.ExternalPushWeChatPay)
-	if err != nil || read != saved {
+	if err != nil || !sameExternalPushConfiguration(read, saved) {
 		t.Fatalf("read=%+v err=%v want=%+v", read, err, saved)
 	}
 
@@ -56,7 +56,7 @@ func TestCommerceExternalPushPG16RoundTrip(t *testing.T) {
 	replayedTest, err := service.QueueExternalPushTest(ctx, productport.QueueExternalPushTestCommand{
 		ProductID: product.ID, ProductKind: productport.ExternalPushWeChatPay, Actor: actor, IdempotencyKey: testKey,
 	})
-	if err != nil || replayedTest != accepted {
+	if err != nil || !sameExternalPushTest(replayedTest, accepted) {
 		t.Fatalf("test replay=%+v err=%v want=%+v", replayedTest, err, accepted)
 	}
 
@@ -107,6 +107,26 @@ func TestCommerceExternalPushPG16RoundTrip(t *testing.T) {
 	if err != nil || periodConfigurations != 1 || periodBindings != 1 {
 		t.Fatalf("period facts config/binding=%d/%d err=%v", periodConfigurations, periodBindings, err)
 	}
+}
+
+func sameExternalPushConfiguration(left, right productport.ExternalPushConfiguration) bool {
+	return left.ProductID == right.ProductID &&
+		left.ProductKind == right.ProductKind &&
+		left.Enabled == right.Enabled &&
+		left.ConfigurationReference == right.ConfigurationReference &&
+		left.UpdatedAt.Equal(right.UpdatedAt)
+}
+
+func sameExternalPushTest(left, right productport.ExternalPushTest) bool {
+	return left.ProductID == right.ProductID &&
+		left.ProductKind == right.ProductKind &&
+		left.EffectID == right.EffectID &&
+		left.State == right.State &&
+		left.ProviderAccepted == right.ProviderAccepted &&
+		left.DeliveryProven == right.DeliveryProven &&
+		left.RealExternalCallExecuted == right.RealExternalCallExecuted &&
+		left.AutoRetryAllowed == right.AutoRetryAllowed &&
+		left.CreatedAt.Equal(right.CreatedAt)
 }
 
 func mustCreateExternalPushProduct(t *testing.T, ctx context.Context, pool *pgxpool.Pool) productport.Product {
