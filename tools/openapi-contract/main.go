@@ -1416,10 +1416,14 @@ func validateGenericCanonicalAuthorization(op *openapi3.Operation, method string
 }
 
 func validateNativePackageOperation(path string, item *openapi3.PathItem, op *openapi3.Operation, contract nativePackageOperation) error {
+	return validateNativePackageOperationWithCanonicalMapping(path, item, op, contract, false)
+}
+
+func validateNativePackageOperationWithCanonicalMapping(path string, item *openapi3.PathItem, op *openapi3.Operation, contract nativePackageOperation, canonicalDeclared bool) error {
 	if path != contract.path || operationForMethod(item, contract.method) != op {
 		return fmt.Errorf("%s path or method differs from owner-approved native package", op.OperationID)
 	}
-	if _, linked := op.Extensions["x-legacy-mapping-ids"]; linked {
+	if _, linked := op.Extensions["x-legacy-mapping-ids"]; linked && !canonicalDeclared {
 		return fmt.Errorf("%s native package operation must not claim a legacy mapping", op.OperationID)
 	}
 	externalEffect := "none"
@@ -2251,7 +2255,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 					return err
 				}
 			} else if nativeContract, native := nativePackageOperations[op.OperationID]; native {
-				if err := validateNativePackageOperation(path, item, op, nativeContract); err != nil {
+				if err := validateNativePackageOperationWithCanonicalMapping(path, item, op, nativeContract, canonicalDeclared); err != nil {
 					return err
 				}
 				if op.OperationID == "cancelLegacyOutboundJob" {

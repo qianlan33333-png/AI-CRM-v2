@@ -12277,6 +12277,17 @@ type EnableLegacyWechatPayProductParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// CallbackSurveyH5OAuthParams defines parameters for CallbackSurveyH5OAuth.
+type CallbackSurveyH5OAuthParams struct {
+	State string `form:"state" json:"state"`
+	Code  string `form:"code" json:"code"`
+}
+
+// StartSurveyH5OAuthParams defines parameters for StartSurveyH5OAuth.
+type StartSurveyH5OAuthParams struct {
+	Next string `form:"next" json:"next"`
+}
+
 // ReceiveWechatPayPaymentCallbackParams defines parameters for ReceiveWechatPayPaymentCallback.
 type ReceiveWechatPayPaymentCallbackParams struct {
 	WechatpayTimestamp WechatpayTimestamp `json:"Wechatpay-Timestamp"`
@@ -12291,17 +12302,6 @@ type ReceiveWechatPayRefundCallbackParams struct {
 	WechatpayNonce     WechatpayNonce     `json:"Wechatpay-Nonce"`
 	WechatpaySerial    WechatpaySerial    `json:"Wechatpay-Serial"`
 	WechatpaySignature WechatpaySignature `json:"Wechatpay-Signature"`
-}
-
-// CallbackSurveyH5OAuthParams defines parameters for CallbackSurveyH5OAuth.
-type CallbackSurveyH5OAuthParams struct {
-	State string `form:"state" json:"state"`
-	Code  string `form:"code" json:"code"`
-}
-
-// StartSurveyH5OAuthParams defines parameters for StartSurveyH5OAuth.
-type StartSurveyH5OAuthParams struct {
-	Next string `form:"next" json:"next"`
 }
 
 // MintSidebarContextJSONBody defines parameters for MintSidebarContext.
