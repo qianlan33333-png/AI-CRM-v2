@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
@@ -31,10 +30,13 @@ type Handler struct{ service *sidebarapp.Service }
 // OAuthHandler exposes the sidebar-only browser OAuth boundary. A nil service
 // is an intentional disabled configuration and fails closed without a provider
 // call.
-type OAuthHandler struct{ service *sidebarapp.OAuthGrantService }
+type OAuthHandler struct {
+	service      *sidebarapp.OAuthGrantService
+	writeSession func(http.ResponseWriter, authport.BrowserSession) error
+}
 
-func NewOAuthHandler(service *sidebarapp.OAuthGrantService) *OAuthHandler {
-	return &OAuthHandler{service: service}
+func NewOAuthHandler(service *sidebarapp.OAuthGrantService, writeSession func(http.ResponseWriter, authport.BrowserSession) error) *OAuthHandler {
+	return &OAuthHandler{service: service, writeSession: writeSession}
 }
 
 func (handler *OAuthHandler) Start(writer http.ResponseWriter, request *http.Request) {
@@ -44,7 +46,7 @@ func (handler *OAuthHandler) Start(writer http.ResponseWriter, request *http.Req
 		writeError(writer, request, err)
 		return
 	}
-	if handler == nil || nilValue(handler.service) {
+	if handler == nil || nilValue(handler.service) || handler.writeSession == nil {
 		writeError(writer, request, sidebarapp.ErrOAuthUnavailable)
 		return
 	}
@@ -70,7 +72,7 @@ func (handler *OAuthHandler) Callback(writer http.ResponseWriter, request *http.
 		return
 	}
 	clearSidebarOAuthBinding(writer)
-	if handler == nil || nilValue(handler.service) {
+	if handler == nil || nilValue(handler.service) || handler.writeSession == nil {
 		writeError(writer, request, sidebarapp.ErrOAuthUnavailable)
 		return
 	}
@@ -79,7 +81,7 @@ func (handler *OAuthHandler) Callback(writer http.ResponseWriter, request *http.
 		writeError(writer, request, err)
 		return
 	}
-	if err = authhttp.WriteBrowserSession(writer, completed.Session); err != nil {
+	if err = handler.writeSession(writer, completed.Session); err != nil {
 		if revokeErr := handler.service.RevokeCompletedSession(request.Context(), completed.Session); revokeErr != nil {
 			writeError(writer, request, revokeErr)
 			return
