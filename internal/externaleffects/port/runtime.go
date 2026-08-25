@@ -30,9 +30,11 @@ type (
 const (
 	OwnerOutbound         = eer.OwnerOutbound
 	OwnerSurvey           = eer.OwnerSurvey
+	OwnerGroupOps         = eer.OwnerGroupOps
 	KindOutboundMessage   = eer.KindOutboundMessage
 	KindSurveyWebhook     = eer.KindSurveyWebhook
 	KindOutboundMedia     = eer.KindOutboundMedia
+	KindGroupOpsBroadcast = eer.KindGroupOpsBroadcast
 	StateAccepted         = eer.StateAccepted
 	StateQueued           = eer.StateQueued
 	StateExecuted         = eer.StateExecuted

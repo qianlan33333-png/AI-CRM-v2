@@ -131,10 +131,10 @@ func (r *Repository) Save(ctx context.Context, value groupopsport.Detail) error 
 	}
 	for _, node := range value.Nodes {
 		if node.ID == 0 {
-			err = q.CreateGroupOpsPlanNode(ctx, groupopsdb.CreateGroupOpsPlanNodeParams{PlanID: value.Plan.ID, Position: node.Position, Kind: string(node.Kind), MessageText: node.MessageText, DelayMinutes: node.DelayMinutes})
+			err = q.CreateGroupOpsPlanNode(ctx, groupopsdb.CreateGroupOpsPlanNodeParams{PlanID: value.Plan.ID, Position: node.Position, Kind: string(node.Kind), MessageText: node.MessageText, DelayMinutes: node.DelayMinutes, MaterialReference: node.MaterialRef})
 		} else {
 			var updated int64
-			updated, err = q.UpdateGroupOpsPlanNode(ctx, groupopsdb.UpdateGroupOpsPlanNodeParams{PlanID: value.Plan.ID, NodeID: node.ID, Position: node.Position, Kind: string(node.Kind), MessageText: node.MessageText, DelayMinutes: node.DelayMinutes})
+			updated, err = q.UpdateGroupOpsPlanNode(ctx, groupopsdb.UpdateGroupOpsPlanNodeParams{PlanID: value.Plan.ID, NodeID: node.ID, Position: node.Position, Kind: string(node.Kind), MessageText: node.MessageText, DelayMinutes: node.DelayMinutes, MaterialReference: node.MaterialRef})
 			if err == nil && updated != 1 {
 				return groupopsapp.ErrConflict
 			}
@@ -223,7 +223,7 @@ func detail(ctx context.Context, q *groupopsdb.Queries, row groupopsdb.GroupOpsP
 		result.GroupAssets[index] = groupopsport.GroupAsset{ID: asset.ID, AssetRef: asset.AssetReference}
 	}
 	for index, node := range nodes {
-		result.Nodes[index] = groupopsport.Node{ID: node.ID, Position: node.Position, Kind: groupopsport.NodeKind(node.Kind), MessageText: node.MessageText, DelayMinutes: node.DelayMinutes}
+		result.Nodes[index] = groupopsport.Node{ID: node.ID, Position: node.Position, Kind: groupopsport.NodeKind(node.Kind), MessageText: node.MessageText, DelayMinutes: node.DelayMinutes, MaterialRef: node.MaterialReference}
 	}
 	if reference == "" {
 		result.WebhookDescriptor = groupopsport.WebhookDescriptor{Description: "not configured"}

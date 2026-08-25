@@ -54,6 +54,7 @@ type Node struct {
 	Kind         NodeKind `json:"kind"`
 	MessageText  string   `json:"message_text,omitempty"`
 	DelayMinutes int32    `json:"delay_minutes,omitempty"`
+	MaterialRef  string   `json:"material_reference,omitempty"`
 }
 
 // WebhookDescriptor never contains a URL, credential, token, payload, or
@@ -162,6 +163,7 @@ type NodeCreateCommand struct {
 	Kind             NodeKind
 	MessageText      string
 	DelayMinutes     int32
+	MaterialRef      string
 	Actor            int64
 	IdempotencyKey   string
 }
@@ -174,6 +176,7 @@ type NodeUpdateCommand struct {
 	Kind             NodeKind
 	MessageText      string
 	DelayMinutes     int32
+	MaterialRef      string
 	Actor            int64
 	IdempotencyKey   string
 }
