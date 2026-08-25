@@ -12,7 +12,6 @@ import (
 	"time"
 
 	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
-	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 )
 
@@ -21,6 +20,8 @@ var (
 	ErrRuleConflict    = errors.New("automation rule command conflict")
 	ErrRuleUnavailable = errors.New("automation rule service unavailable")
 )
+
+const outboundMessageTemplateTextNoticeV1 = "text.notice.v1"
 
 var ruleCode = regexp.MustCompile(`^[a-z0-9_-]{1,120}$`)
 
@@ -147,7 +148,7 @@ func validRuleAction(action automationport.Action) bool {
 	case "record":
 		return action.TemplateKey == ""
 	case "outbound_message":
-		return action.TemplateKey == outboundapp.TemplateTextNoticeV1
+		return action.TemplateKey == outboundMessageTemplateTextNoticeV1
 	default:
 		return false
 	}
