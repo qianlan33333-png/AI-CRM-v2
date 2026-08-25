@@ -4,10 +4,15 @@ package app
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
+	"time"
 
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
@@ -35,6 +40,23 @@ type SyncStateStore interface {
 	AdvanceCursor(context.Context, string, string, string, bool) error
 }
 
+type SyncHandoff struct {
+	FactID         string
+	CorpID         string
+	ExternalUserID string
+	Payload        []byte
+	OccurredAt     time.Time
+}
+
+type SyncHandoffStore interface {
+	ReserveSyncFact(context.Context, SyncHandoff) (InboundReservation, error)
+	MarkInboundQueued(context.Context, int64, int64) error
+}
+
+type SyncJobInserter interface {
+	Insert(context.Context, InboundJobArgs) (int64, error)
+}
+
 type CursorState struct {
 	Cursor    string
 	Completed bool
@@ -44,9 +66,13 @@ type CursorState struct {
 // cursor is persisted. A restarted service then resumes from that committed
 // successor and a completed run never falls back to the first page.
 type ExternalContactSyncService struct {
-	uow    platformport.UnitOfWork
-	reader ExternalContactPageReader
-	state  SyncStateStore
+	uow     platformport.UnitOfWork
+	reader  ExternalContactPageReader
+	state   SyncStateStore
+	handoff SyncHandoffStore
+	jobs    SyncJobInserter
+	corpID  string
+	clock   func() time.Time
 }
 
 func NewExternalContactSyncService(
@@ -55,6 +81,22 @@ func NewExternalContactSyncService(
 	state SyncStateStore,
 ) *ExternalContactSyncService {
 	return &ExternalContactSyncService{uow: uow, reader: reader, state: state}
+}
+
+func NewExternalContactSyncServiceWithHandoff(
+	uow platformport.UnitOfWork,
+	reader ExternalContactPageReader,
+	state SyncStateStore,
+	handoff SyncHandoffStore,
+	jobs SyncJobInserter,
+	corpID string,
+	clock func() time.Time,
+) (*ExternalContactSyncService, error) {
+	if isNilDependency(uow) || isNilDependency(reader) || isNilDependency(state) ||
+		isNilDependency(handoff) || isNilDependency(jobs) || !validCorpID(corpID) || clock == nil {
+		return nil, ErrInvalidCursorSync
+	}
+	return &ExternalContactSyncService{uow: uow, reader: reader, state: state, handoff: handoff, jobs: jobs, corpID: corpID, clock: clock}, nil
 }
 
 func (service *ExternalContactSyncService) SyncNext(ctx context.Context, staffUserID string) (wecomclient.ExternalContactPage, error) {
@@ -79,6 +121,36 @@ func (service *ExternalContactSyncService) SyncNext(ctx context.Context, staffUs
 			return wecomclient.ExternalContactPage{}, ErrCursorSyncFailed
 		}
 		err = service.uow.Within(ctx, func(txCtx context.Context) error {
+			if service.handoff != nil || service.jobs != nil {
+				if service.handoff == nil || service.jobs == nil || service.corpID == "" || service.clock == nil {
+					return ErrCursorSyncFailed
+				}
+				for index, externalUserID := range page.ExternalUserIDs {
+					factID := syncFactID(service.corpID, key, state.Cursor, index, externalUserID)
+					payload, marshalErr := json.Marshal(map[string]string{
+						"source": "directory_sync", "sync_key": key, "external_userid": externalUserID,
+					})
+					if marshalErr != nil {
+						return marshalErr
+					}
+					reservation, reserveErr := service.handoff.ReserveSyncFact(txCtx, SyncHandoff{
+						FactID: factID, CorpID: service.corpID, ExternalUserID: externalUserID,
+						Payload: payload, OccurredAt: service.clock().UTC(),
+					})
+					if reserveErr != nil {
+						return reserveErr
+					}
+					if reservation.Inserted {
+						jobID, insertErr := service.jobs.Insert(txCtx, InboundJobArgs{InboxID: reservation.ID})
+						if insertErr != nil || jobID <= 0 {
+							return errors.Join(ErrCursorSyncFailed, insertErr)
+						}
+						if queueErr := service.handoff.MarkInboundQueued(txCtx, reservation.ID, jobID); queueErr != nil {
+							return queueErr
+						}
+					}
+				}
+			}
 			return service.state.AdvanceCursor(txCtx, key, state.Cursor, page.NextCursor, page.NextCursor == "")
 		})
 		if errors.Is(err, ErrCursorAdvanced) {
@@ -90,6 +162,11 @@ func (service *ExternalContactSyncService) SyncNext(ctx context.Context, staffUs
 		return page, nil
 	}
 	return wecomclient.ExternalContactPage{}, ErrCursorSyncFailed
+}
+
+func syncFactID(corpID, syncKey, cursor string, index int, externalUserID string) string {
+	digest := sha256.Sum256([]byte("wecom.sync.v1\x00" + corpID + "\x00" + syncKey + "\x00" + cursor + "\x00" + strconv.Itoa(index) + "\x00" + externalUserID))
+	return "sha256:" + hex.EncodeToString(digest[:])
 }
 
 func validStaffUserID(value string) bool {

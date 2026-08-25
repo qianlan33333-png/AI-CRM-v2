@@ -14,6 +14,8 @@ import (
 	eventdispatcher "github.com/qianlan33333-png/AI-CRM-v2/internal/events/dispatcher"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
+	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
+	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
 	operationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/store"
 	outbound "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
@@ -24,7 +26,10 @@ import (
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 	segmentworker "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/worker"
 	statsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/stats/store"
+	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
+	wecomstore "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/store"
+	wecomworker "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/worker"
 )
 
 var errInvalidWorkerDatabaseConfig = errors.New("invalid worker database configuration")
@@ -103,6 +108,33 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	if err = platformjobqueue.AddWorker(workers, platformjobqueue.QueueHeavy, refreshWorker); err != nil {
 		pool.Close()
 		return nil, err
+	}
+	if config.WeCom.Callback.Enabled {
+		inboundJobs, jobErr := wecomstore.NewRiverJobInserter(pool)
+		if jobErr != nil {
+			pool.Close()
+			return nil, jobErr
+		}
+		identityIngest := identityapp.NewIngestService(
+			platformstore.NewUnitOfWork(pool), identitystore.NewRepository(), contactstore.NewMergePortRepository(), eventstore.NewAppender(), config.Identity.HMACKey.Value(),
+		)
+		processor, processorErr := wecomapp.NewIdentityContactProcessor(identityIngest)
+		if processorErr != nil {
+			pool.Close()
+			return nil, processorErr
+		}
+		inboundService, inboundErr := wecomapp.NewInboundService(
+			platformstore.NewUnitOfWork(pool), wecomstore.NewInboundRepository(), inboundJobs, processor,
+			config.WeCom.Callback.CorpID, time.Now,
+		)
+		if inboundErr != nil {
+			pool.Close()
+			return nil, inboundErr
+		}
+		if err = wecomworker.RegisterInboundWorker(workers, inboundService); err != nil {
+			pool.Close()
+			return nil, err
+		}
 	}
 	enqueuer := eventdispatcher.NewDeferredEnqueuer()
 	deliveries, err := eventstore.NewRuntimeDeliveryRepository(pool, enqueuer, eventdispatcher.DefaultBatchSize, []eventport.DeliveryBinding{

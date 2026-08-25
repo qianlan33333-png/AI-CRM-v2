@@ -167,6 +167,7 @@ type candidateHandler struct {
 	segmentRefresh            *segmenthttp.RefreshHandler
 	identityReviews           *identityhttp.ReviewHandler
 	identityConsole           *identityhttp.ConsoleHandler
+	identityIngest            *identityhttp.IngestHandler
 	automationRuns            interface {
 		List(context.Context, automationstore.TriggerListInput) (automationstore.TriggerListResult, error)
 	}
@@ -472,6 +473,14 @@ func (handler *candidateHandler) ResolveIdentity(writer http.ResponseWriter, req
 
 func (handler *candidateHandler) BindIdentity(writer http.ResponseWriter, request *http.Request, params api.BindIdentityParams) {
 	handler.identityConsole.BindIdentity(writer, request, params)
+}
+
+func (handler *candidateHandler) IngestIdentityEvent(writer http.ResponseWriter, request *http.Request, params api.IngestIdentityEventParams) {
+	if handler == nil || handler.identityIngest == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, identityapp.ErrIdentityIngestFailed))
+		return
+	}
+	handler.identityIngest.IngestIdentityEvent(writer, request, params)
 }
 
 func (handler *candidateHandler) ListAutomationTriggerRuns(writer http.ResponseWriter, request *http.Request, params api.ListAutomationTriggerRunsParams) {
@@ -1185,6 +1194,13 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	identityIngestHandler, err := identityhttp.NewIngestHandler(identityapp.NewIngestService(
+		uow, identityRepository, contactstore.NewMergePortRepository(), eventstore.NewAppender(), config.Identity.HMACKey.Value(),
+	))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	domainVerification, err := domainverification.New(config.DomainVerification.Directory)
 	if err != nil {
 		pool.Close()
@@ -1223,6 +1239,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		segmentRefresh:       segmentRefreshHandler,
 		identityReviews:      identityReviewHandler,
 		identityConsole:      identityConsoleHandler,
+		identityIngest:       identityIngestHandler,
 		automationRuns:       automationstore.NewRepository(pool),
 		domainVerification:   domainVerification,
 		legacyHealth: legacyhealth.NewHandler(legacyhealth.NewQuery(legacyhealth.RuntimeSnapshot{
@@ -1380,10 +1397,22 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	legacyHandler.systemHealth = systemHealth
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	callbackDispatcher, err := wecomcallback.NewEventDispatcher(uow, eventstore.NewAppender())
-	if err != nil {
-		pool.Close()
-		return nil, errInvalidAPIComponent
+	var callbackDispatcher wecomcallback.MessageDispatcher
+	if config.WeCom.Callback.Enabled {
+		inboundJobs, jobErr := wecomstore.NewRiverJobInserter(pool)
+		if jobErr != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		inboundService, inboundErr := wecomapp.NewInboundService(
+			uow, wecomstore.NewInboundRepository(), inboundJobs, nil,
+			config.WeCom.Callback.CorpID, time.Now,
+		)
+		if inboundErr != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		callbackDispatcher = inboundService
 	}
 	callbackHandler, err := wecomcallback.NewHandler(wecomcallback.Config{
 		Enabled:        config.WeCom.Callback.Enabled,
