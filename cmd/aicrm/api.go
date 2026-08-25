@@ -1585,7 +1585,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		sidebarCorpID = config.WeCom.Sidebar.CorpID
 	}
 	sidebarService, err := sidebarapp.NewService(
-		sidebarCorpReader{settings: configManager, fallback: sidebarCorpID},
+		sidebarCorpReader{settings: configManager, fallback: sidebarCorpID, fallbackAuthoritative: config.WeCom.Sidebar.Enabled},
 		identityResolver,
 		contactapp.NewSidebarProfileService(uow, contactstore.NewSidebarProfileRepository(), eventstore.NewAppender()),
 		customerAnswerService,
