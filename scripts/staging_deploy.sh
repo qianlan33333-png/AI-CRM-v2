@@ -6,13 +6,15 @@ fail() {
   exit 2
 }
 
-usage='Usage: staging_deploy.sh --tier=<s|m|l> --output-dir=<directory> [--render-only|--apply]'
+usage='Usage: staging_deploy.sh --tier=<s|m|l> --output-dir=<directory> [--edge-base-url=<http://host:port>] [--render-only|--apply]'
 script_directory="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)"
 repository_root="$(CDPATH= cd -- "$script_directory/.." && pwd -P)"
 tier_value=''
 output_directory=''
 deployment_mode='render-only'
 mode_seen=0
+edge_base_url="http://127.0.0.1:${AICRM_HTTP_PORT:-8080}"
+edge_base_url_seen=0
 
 for argument in "$@"; do
   case "$argument" in
@@ -23,6 +25,11 @@ for argument in "$@"; do
     --output-dir=*)
       [[ -z "$output_directory" ]] || fail 'duplicate --output-dir'
       output_directory="${argument#--output-dir=}"
+      ;;
+    --edge-base-url=*)
+      [[ "$edge_base_url_seen" -eq 0 ]] || fail 'duplicate --edge-base-url'
+      edge_base_url="${argument#--edge-base-url=}"
+      edge_base_url_seen=1
       ;;
     --render-only)
       [[ "$mode_seen" -eq 0 ]] || fail 'deployment mode may be specified once'
@@ -71,8 +78,21 @@ fi
 
 [[ "${AICRM_ALLOW_STAGING_DEPLOY:-}" = '1' ]] || fail 'AICRM_ALLOW_STAGING_DEPLOY=1 is required for --apply'
 [[ -n "${AICRM_IMAGE:-}" ]] || fail 'AICRM_IMAGE is required for --apply'
+[[ "${AICRM_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'AICRM_IMAGE must be pinned with @sha256:<64 lowercase hex> for --apply'
 [[ -n "${AICRM_DATABASE_URL:-}" ]] || fail 'AICRM_DATABASE_URL is required for --apply'
 [[ -n "${AICRM_POSTGRES_PASSWORD:-}" ]] || fail 'AICRM_POSTGRES_PASSWORD is required for --apply'
+[[ -n "${AICRM_IDENTITY_HMAC_KEY:-}" ]] || fail 'AICRM_IDENTITY_HMAC_KEY must be injected by the process environment for --apply'
+[[ "${AICRM_RELEASE_SHA:-}" =~ ^[a-f0-9]{40}$ ]] || fail 'AICRM_RELEASE_SHA must be a 40-character lowercase commit SHA for --apply'
+[[ "${AICRM_ENV:-}" = 'staging' ]] || fail 'AICRM_ENV=staging is required for --apply'
+[[ -n "${AICRM_STAGING_SESSION_COOKIE:-}" ]] || fail 'AICRM_STAGING_SESSION_COOKIE is required for authenticated staging smoke'
+[[ "$edge_base_url_seen" -eq 1 && -n "$edge_base_url" ]] || fail '--edge-base-url is required for --apply'
+case "${AICRM_STAGING_PROVIDER_MODE:-}" in
+  disabled|fake) ;;
+  *) fail 'AICRM_STAGING_PROVIDER_MODE must be disabled or fake for --apply' ;;
+esac
+for provider_flag in AICRM_WECOM_OUTBOUND_ENABLED AICRM_WECOM_CUSTOMER_ACQUISITION_ENABLED AICRM_WECHAT_PAY_ENABLED AICRM_WECHAT_SHOP_ORDER_SYNC_ENABLED AICRM_WECHAT_SHOP_REFUND_ENABLED; do
+  [[ "${!provider_flag:-false}" != 'true' ]] || fail "$provider_flag=true is forbidden by the staging provider mode"
+done
 command -v docker >/dev/null 2>&1 || fail 'docker with Compose v2 is required for --apply'
 docker compose version >/dev/null 2>&1 || fail 'docker with Compose v2 is required for --apply'
 command -v pg_dump >/dev/null 2>&1 || fail 'pg_dump is required for the pre-migration snapshot'
@@ -114,8 +134,7 @@ chmod 600 "$snapshot_file"
 )
 
 docker compose --env-file "$environment_file" -f "$repository_root/deploy/compose.yml" up -d --wait
-staging_base_url="http://127.0.0.1:${AICRM_HTTP_PORT:-8080}"
-"$script_directory/staging_smoke.sh" --base-url="$staging_base_url"
+AICRM_STAGING_REQUIRE_AUTH_SMOKE=1 "$script_directory/staging_smoke.sh" --base-url="$edge_base_url"
 printf 'staging-deploy: tier %s snapshot, Goose, River, Compose and staging smoke completed; restore drill NOT EXECUTED (snapshot=%s)\n' \
   "$tier_value" "$snapshot_file"
 printf 'staging-deploy: restore drill is available with scripts/staging_restore_drill.sh --snapshot="%s" --render-only; --apply requires explicit staging approval\n' \

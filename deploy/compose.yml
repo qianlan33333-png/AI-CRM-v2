@@ -6,6 +6,9 @@ x-aicrm-app: &aicrm-app
     - ${AICRM_GENERATED_ENV_FILE:?AICRM_GENERATED_ENV_FILE is required}
   environment:
     AICRM_DATABASE_URL: ${AICRM_DATABASE_URL:?AICRM_DATABASE_URL is required}
+    AICRM_ENV: ${AICRM_ENV:?AICRM_ENV is required}
+    AICRM_IDENTITY_HMAC_KEY: ${AICRM_IDENTITY_HMAC_KEY:?AICRM_IDENTITY_HMAC_KEY is required}
+    AICRM_RELEASE_SHA: ${AICRM_RELEASE_SHA:?AICRM_RELEASE_SHA is required}
   depends_on:
     postgres:
       condition: service_healthy

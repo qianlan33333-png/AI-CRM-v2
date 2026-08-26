@@ -64,6 +64,9 @@ validate_compose_file() {
   [[ "$(grep -Fxc '    profiles: [split]' "$compose_file")" = '2' ]] || return 1
   grep -Fq 'command: ["--role=api"]' "$compose_file" || return 1
   grep -Fq 'command: ["--role=worker"]' "$compose_file" || return 1
+  grep -Fq 'AICRM_ENV: ${AICRM_ENV:?AICRM_ENV is required}' "$compose_file" || return 1
+  grep -Fq 'AICRM_IDENTITY_HMAC_KEY: ${AICRM_IDENTITY_HMAC_KEY:?AICRM_IDENTITY_HMAC_KEY is required}' "$compose_file" || return 1
+  grep -Fq 'AICRM_RELEASE_SHA: ${AICRM_RELEASE_SHA:?AICRM_RELEASE_SHA is required}' "$compose_file" || return 1
   ! grep -Eiq '(redis|kafka|rabbitmq|nats|kubernetes)' "$compose_file"
 }
 
@@ -180,12 +183,16 @@ restore_apply="$test_directory/restore-apply.log"
   cd "$repository_root"
   AICRM_ALLOW_STAGING_RESTORE=1 \
   AICRM_DATABASE_URL='postgres://test-only:test-only@127.0.0.1:5432/aicrm?sslmode=disable' \
+  AICRM_STAGING_SESSION_COOKIE='aicrm_session=test-only-session' \
+  AICRM_CURL_LOG="$test_directory/restore-curl.log" \
   AICRM_PG_RESTORE_LOG="$restore_log" \
   PATH="$fake_binary_directory:$PATH" \
-    scripts/staging_restore_drill.sh --snapshot="$restore_snapshot" --apply >"$restore_apply"
+    scripts/staging_restore_drill.sh --snapshot="$restore_snapshot" --edge-base-url='https://staging.invalid' --apply >"$restore_apply"
 )
 grep -Fq -- '--exit-on-error --clean --if-exists --no-owner' "$restore_log" || fail 'restore drill apply did not execute pg_restore'
-grep -Fq 'pg_restore completed' "$restore_apply" || fail 'restore drill apply did not report completion'
+grep -Fq 'post-restore authenticated smoke completed' "$restore_apply" || fail 'restore drill apply did not report completion'
+grep -Fq '/readyz' "$test_directory/restore-curl.log" || fail 'restore drill did not run readiness smoke'
+grep -Fq '/api/v1/products' "$test_directory/restore-curl.log" || fail 'restore drill did not run authenticated core read smoke'
 
 if (
   cd "$repository_root"
@@ -196,19 +203,56 @@ if (
 fi
 [[ ! -e "$docker_log" ]] || fail 'unauthorized staging apply invoked Docker'
 
-(
+if (
   cd "$repository_root"
   AICRM_ALLOW_STAGING_DEPLOY=1 \
   AICRM_IMAGE='registry.invalid/aicrm:test-only' \
   AICRM_DATABASE_URL='postgres://test-only:test-only@127.0.0.1:5432/aicrm?sslmode=disable' \
   AICRM_POSTGRES_PASSWORD='test-only' \
+  AICRM_IDENTITY_HMAC_KEY='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' \
+  AICRM_RELEASE_SHA='0123456789abcdef0123456789abcdef01234567' \
+  AICRM_ENV='staging' \
+  AICRM_STAGING_PROVIDER_MODE='disabled' \
+  AICRM_STAGING_SESSION_COOKIE='aicrm_session=test-only-session' \
+  PATH="$fake_binary_directory:$PATH" \
+    scripts/staging_deploy.sh --tier=m --output-dir="$test_directory/unpinned-image" --edge-base-url='https://staging.invalid' --apply >/dev/null 2>&1
+); then
+  fail 'unpinned staging image was accepted'
+fi
+
+if (
+  cd "$repository_root"
+  AICRM_ALLOW_STAGING_DEPLOY=1 \
+  AICRM_IMAGE='registry.invalid/aicrm@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' \
+  AICRM_DATABASE_URL='postgres://test-only:test-only@127.0.0.1:5432/aicrm?sslmode=disable' \
+  AICRM_POSTGRES_PASSWORD='test-only' \
+  AICRM_IDENTITY_HMAC_KEY='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' \
+  AICRM_RELEASE_SHA='0123456789abcdef0123456789abcdef01234567' \
+  AICRM_ENV='staging' \
+  AICRM_STAGING_PROVIDER_MODE='disabled' \
+  PATH="$fake_binary_directory:$PATH" \
+    scripts/staging_deploy.sh --tier=m --output-dir="$test_directory/missing-auth" --edge-base-url='https://staging.invalid' --apply >/dev/null 2>&1
+); then
+  fail 'staging apply without authenticated smoke session was accepted'
+fi
+
+(
+  cd "$repository_root"
+  AICRM_ALLOW_STAGING_DEPLOY=1 \
+  AICRM_IMAGE='registry.invalid/aicrm@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' \
+  AICRM_DATABASE_URL='postgres://test-only:test-only@127.0.0.1:5432/aicrm?sslmode=disable' \
+  AICRM_POSTGRES_PASSWORD='test-only' \
+  AICRM_IDENTITY_HMAC_KEY='AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' \
+  AICRM_RELEASE_SHA='0123456789abcdef0123456789abcdef01234567' \
+  AICRM_ENV='staging' \
+  AICRM_STAGING_PROVIDER_MODE='disabled' \
   AICRM_STAGING_SESSION_COOKIE='aicrm_session=test-only-session' \
   AICRM_DOCKER_LOG="$docker_log" \
   AICRM_CURL_LOG="$test_directory/curl.log" \
   AICRM_GO_LOG="$go_log" \
   AICRM_REAL_GO="$real_go" \
   PATH="$fake_binary_directory:$PATH" \
-    scripts/staging_deploy.sh --tier=m --output-dir="$test_directory/authorized" --apply >/dev/null
+    scripts/staging_deploy.sh --tier=m --output-dir="$test_directory/authorized" --edge-base-url='https://staging.invalid' --apply >/dev/null
 )
 [[ "$(wc -l <"$docker_log" | tr -d ' ')" = '4' ]] || fail 'authorized staging apply did not execute four Compose checks/actions'
 grep -Fq 'compose version' "$docker_log" || fail 'Compose version check was not executed'
