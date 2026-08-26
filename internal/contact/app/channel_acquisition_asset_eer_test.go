@@ -80,6 +80,11 @@ func (stub *channelAcquisitionAssetEERStub) RecoverAttemptedToUnknown(_ context.
 	return projection, channelAcquisitionAssetEERReceipt("recover", projection, stub.now), nil
 }
 
+func (stub *channelAcquisitionAssetEERStub) CompleteRecordedAttempt(_ context.Context, command eer.CompleteRecordedAttemptCommand) (eer.Projection, eer.OperationReceipt, error) {
+	projection := eer.Projection{ID: command.Lease.EffectID, Owner: eer.OwnerContact, Kind: eer.KindContactAcquisitionAssetPublish, State: eer.StateExecuted, Generation: command.Lease.Generation, UpdatedAt: stub.now}
+	return projection, channelAcquisitionAssetEERReceipt("complete-recorded", projection, stub.now), nil
+}
+
 func (stub *channelAcquisitionAssetEERStub) GetTerminalOutcome(context.Context, string) (eer.TerminalOutcome, error) {
 	if stub.terminalOutcome.EffectID == "" {
 		return eer.TerminalOutcome{}, eer.ErrNotFound

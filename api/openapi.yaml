@@ -14949,10 +14949,10 @@ components:
         delivery_semantics: { type: string, enum: [local_state_not_delivery_proof] }
     ExternalEffectRuntimeOwner:
       type: string
-      enum: [campaign, contact, outbound, wecom, survey, audience, order]
+      enum: [campaign, contact, outbound, wecom, survey, audience, order, group_ops, product, media]
     ExternalEffectRuntimeKind:
       type: string
-      enum: [campaign_dispatch, campaign_group_announcement, contact_touch, outbound_message, outbound_media, wecom_tag_sync, wecom_profile_sync, survey_webhook, audience_webhook, order_payment_capture, order_refund]
+      enum: [campaign_dispatch, campaign_group_announcement, contact_touch, contact_acquisition_asset_publish, outbound_message, outbound_media, wecom_tag_sync, wecom_profile_sync, survey_webhook, audience_webhook, order_payment_prepay, order_payment_capture, order_refund, group_ops_broadcast, product_external_push_test, media_wecom_upload]
     ExternalEffectRuntimeState:
       type: string
       enum: [accepted, queued, attempted, executed, outcome_unknown, reconciled, retryable_failed, final_failed, cancelled]

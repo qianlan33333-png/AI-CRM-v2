@@ -4756,6 +4756,9 @@ export const ExternalEffectRuntimeOwner = {
   survey: "survey",
   audience: "audience",
   order: "order",
+  group_ops: "group_ops",
+  product: "product",
+  media: "media",
 } as const;
 
 export type ExternalEffectRuntimeKind =
@@ -4766,14 +4769,19 @@ export const ExternalEffectRuntimeKind = {
   campaign_dispatch: "campaign_dispatch",
   campaign_group_announcement: "campaign_group_announcement",
   contact_touch: "contact_touch",
+  contact_acquisition_asset_publish: "contact_acquisition_asset_publish",
   outbound_message: "outbound_message",
   outbound_media: "outbound_media",
   wecom_tag_sync: "wecom_tag_sync",
   wecom_profile_sync: "wecom_profile_sync",
   survey_webhook: "survey_webhook",
   audience_webhook: "audience_webhook",
+  order_payment_prepay: "order_payment_prepay",
   order_payment_capture: "order_payment_capture",
   order_refund: "order_refund",
+  group_ops_broadcast: "group_ops_broadcast",
+  product_external_push_test: "product_external_push_test",
+  media_wecom_upload: "media_wecom_upload",
 } as const;
 
 export type ExternalEffectRuntimeState =

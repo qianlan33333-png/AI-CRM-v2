@@ -2758,6 +2758,35 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	if err := validateLegacyHealthContract(doc); err != nil {
 		return err
 	}
+	if err := validateExternalEffectRuntimeEnumContract(doc); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateExternalEffectRuntimeEnumContract(doc *openapi3.T) error {
+	want := map[string][]string{
+		"ExternalEffectRuntimeOwner": {"audience", "campaign", "contact", "group_ops", "media", "order", "outbound", "product", "survey", "wecom"},
+		"ExternalEffectRuntimeKind": {
+			"audience_webhook", "campaign_dispatch", "campaign_group_announcement", "contact_acquisition_asset_publish", "contact_touch",
+			"group_ops_broadcast", "media_wecom_upload", "order_payment_capture", "order_payment_prepay", "order_refund", "outbound_media",
+			"outbound_message", "product_external_push_test", "survey_webhook", "wecom_profile_sync", "wecom_tag_sync",
+		},
+	}
+	for name, expected := range want {
+		schema := doc.Components.Schemas[name]
+		if schema == nil || schema.Value == nil {
+			return fmt.Errorf("%s schema missing", name)
+		}
+		actual, err := stringList(schema.Value.Enum)
+		if err != nil {
+			return fmt.Errorf("%s enum invalid", name)
+		}
+		sort.Strings(actual)
+		if !reflect.DeepEqual(actual, expected) {
+			return fmt.Errorf("%s enum=%v", name, actual)
+		}
+	}
 	return nil
 }
 
