@@ -62,15 +62,8 @@ func (adapter groupOpsTokenAdapter) RefreshToken(ctx context.Context) (string, e
 	return token.Value(), err
 }
 
-func newGroupOpsEvidenceVerifier(config appconfig.WeComOAuth, httpClient *http.Client, now func() time.Time, receipts groupopsport.GroupMessageReceiptReader) (groupopsport.ReconciliationEvidenceVerifier, error) {
-	if !config.Enabled || httpClient == nil || now == nil {
-		return nil, errInvalidGroupOpsProviderConfig
-	}
-	credentials, err := wecomclient.NewCredentials(config.CorpID, config.Secret.Value())
-	if err != nil {
-		return nil, errors.Join(errInvalidGroupOpsProviderConfig, err)
-	}
-	tokens, err := wecomclient.NewTokenProvider(wecomclient.TokenProviderConfig{BaseURL: wecomclient.ProductionBaseURL, Credentials: credentials, HTTPClient: httpClient, Now: now})
+func newGroupOpsEvidenceVerifier(config appconfig.WeComOutbound, httpClient *http.Client, now func() time.Time, receipts groupopsport.GroupMessageReceiptReader) (groupopsport.ReconciliationEvidenceVerifier, error) {
+	tokens, err := newGroupOpsTokens(config, httpClient, now)
 	if err != nil {
 		return nil, err
 	}
