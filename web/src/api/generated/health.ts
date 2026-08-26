@@ -19506,7 +19506,7 @@ export const listSidebarQuestionnaires = async (
 };
 
 /**
- * @summary List customer-scoped local orders with same-origin detail links and without payer or identity fields
+ * @summary List customer-scoped local orders with inline safe details and without payer or identity fields
  */
 export type listSidebarOrdersResponse200 = {
   data: SidebarOrderResponse;

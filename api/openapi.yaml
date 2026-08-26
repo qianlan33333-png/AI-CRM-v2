@@ -360,7 +360,7 @@ paths:
     get:
       tags: [p4-sidebar-local]
       operationId: listSidebarOrders
-      summary: List customer-scoped local orders with same-origin detail links and without payer or identity fields
+      summary: List customer-scoped local orders with inline safe details and without payer or identity fields
       x-p4-decision-evidence: P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24
       x-aicrm-capability: customers.read
       x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}

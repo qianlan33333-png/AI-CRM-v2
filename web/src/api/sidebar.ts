@@ -45,7 +45,7 @@ function scopedOptions(
   });
 }
 
-function newIdempotencyKey(scope: string): string {
+export function newSidebarIdempotencyKey(scope: string): string {
   const randomUUID = globalThis.crypto?.randomUUID?.();
   return randomUUID
     ? `${scope}-${randomUUID}`
@@ -89,7 +89,7 @@ export const sidebarApi = {
   profile: async (
     contextToken: string,
     body: Parameters<typeof updateSidebarProfile>[0],
-    idempotencyKey = newIdempotencyKey("sidebar-profile"),
+    idempotencyKey = newSidebarIdempotencyKey("sidebar-profile"),
   ) =>
     unwrapGenerated(
       await updateSidebarProfile(
@@ -102,7 +102,7 @@ export const sidebarApi = {
   bindPhone: async (
     contextToken: string,
     body: Parameters<typeof bindSidebarPhone>[0],
-    idempotencyKey = newIdempotencyKey("sidebar-phone"),
+    idempotencyKey = newSidebarIdempotencyKey("sidebar-phone"),
   ) =>
     unwrapGenerated(
       await bindSidebarPhone(
@@ -138,7 +138,7 @@ export const sidebarApi = {
     serviceProductId: number,
     memberRef: string,
     body: Parameters<typeof updateSidebarPeriodicRemark>[2],
-    idempotencyKey = newIdempotencyKey("sidebar-periodic-remark"),
+    idempotencyKey = newSidebarIdempotencyKey("sidebar-periodic-remark"),
   ) =>
     unwrapGenerated(
       await updateSidebarPeriodicRemark(
@@ -167,7 +167,7 @@ export const sidebarApi = {
   prepareTemporaryImage: async (
     contextToken: string,
     imageId: number,
-    idempotencyKey = newIdempotencyKey("sidebar-image-temporary-media"),
+    idempotencyKey: string,
   ) =>
     unwrapGenerated(
       await prepareSidebarImageTemporaryMedia(

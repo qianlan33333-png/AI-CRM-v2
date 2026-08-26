@@ -4,7 +4,7 @@
  * 这里仅消费当前 Go OpenAPI 的 sidebar V2 契约。没有上下文或真实读取失败时，
  * 页面保持失败/待授权状态，不回退到示例数据或静态成功文案。
  */
-import { sidebarApi } from "../api/sidebar";
+import { newSidebarIdempotencyKey, sidebarApi } from "../api/sidebar";
 import type {
   SidebarAgentConfigSignature,
   SidebarChatActivityResponse,
@@ -96,6 +96,14 @@ type ReceiptStep = {
   key: "accepted" | "queued" | "outcome_unknown";
   label: string;
 };
+
+type TemporaryMediaOperation = {
+  idempotencyKey: string;
+  requiresManualConfirmation: boolean;
+};
+
+const TEMPORARY_MEDIA_OPERATION_STORAGE_PREFIX =
+  "aicrm.sidebar.temporary-media-operation.v1:";
 
 type SidebarTab =
   | "profile"
@@ -292,6 +300,10 @@ export class SidebarController {
     { message: string; failed: boolean }
   >();
   private readonly imageSendPreparing = new Set<number>();
+  private readonly imagePrepareOperations = new Map<
+    string,
+    TemporaryMediaOperation
+  >();
   private jssdkReady = false;
   private readonly thumbnailStatuses = new Map<number, ThumbnailStatus>();
   private readonly thumbnailURLs = new Map<number, string>();
@@ -429,6 +441,10 @@ export class SidebarController {
         const imageID = Number(button.dataset.materialId);
         if (Number.isSafeInteger(imageID) && imageID > 0)
           void this.sendMaterialImage(imageID);
+      } else if (action === "confirm-image-prepare-review") {
+        const imageID = Number(button.dataset.materialId);
+        if (Number.isSafeInteger(imageID) && imageID > 0)
+          this.confirmImagePrepareReview(imageID);
       } else if (action === "retry-materials") {
         button.disabled = true;
         void this.loadMaterials();
@@ -2154,27 +2170,161 @@ export class SidebarController {
       throw new Error("临时媒体未就绪，未调用 JSSDK。");
   }
 
+  // A reminted context still represents the same browser-session actor and
+  // customer. Keeping the key at this scope prevents an unknown Provider
+  // outcome from being retried with a newly generated idempotency key.
+  private temporaryMediaOperationScope(imageID: number): string | null {
+    const ownerStaffID = this.workbench?.profile.owner_staff_id;
+    if (
+      !this.externalUserId ||
+      !Number.isSafeInteger(ownerStaffID) ||
+      !ownerStaffID ||
+      !Number.isSafeInteger(imageID) ||
+      imageID < 1
+    )
+      return null;
+    return JSON.stringify([this.externalUserId, ownerStaffID, imageID]);
+  }
+
+  private storedTemporaryMediaOperation(
+    scope: string,
+  ): TemporaryMediaOperation | undefined {
+    const cached = this.imagePrepareOperations.get(scope);
+    if (cached) return cached;
+    try {
+      const raw = this.doc.defaultView?.sessionStorage?.getItem(
+        TEMPORARY_MEDIA_OPERATION_STORAGE_PREFIX + encodeURIComponent(scope),
+      );
+      if (!raw) return undefined;
+      const operation = JSON.parse(raw) as Partial<TemporaryMediaOperation>;
+      if (
+        typeof operation.idempotencyKey !== "string" ||
+        !operation.idempotencyKey ||
+        operation.idempotencyKey.length > 255 ||
+        typeof operation.requiresManualConfirmation !== "boolean"
+      )
+        return undefined;
+      const restored: TemporaryMediaOperation = {
+        idempotencyKey: operation.idempotencyKey,
+        requiresManualConfirmation: operation.requiresManualConfirmation,
+      };
+      this.imagePrepareOperations.set(scope, restored);
+      return restored;
+    } catch {
+      return undefined;
+    }
+  }
+
+  private saveTemporaryMediaOperation(
+    scope: string,
+    operation: TemporaryMediaOperation,
+  ): void {
+    this.imagePrepareOperations.set(scope, operation);
+    try {
+      this.doc.defaultView?.sessionStorage?.setItem(
+        TEMPORARY_MEDIA_OPERATION_STORAGE_PREFIX + encodeURIComponent(scope),
+        JSON.stringify(operation),
+      );
+    } catch {
+      // Storage is a retry-safety enhancement; the in-memory key remains.
+    }
+  }
+
+  private clearTemporaryMediaOperation(scope: string): void {
+    this.imagePrepareOperations.delete(scope);
+    try {
+      this.doc.defaultView?.sessionStorage?.removeItem(
+        TEMPORARY_MEDIA_OPERATION_STORAGE_PREFIX + encodeURIComponent(scope),
+      );
+    } catch {
+      // A denied storage write cannot turn this completed operation into a retry.
+    }
+  }
+
+  private imagePrepareNeedsManualConfirmation(imageID: number): boolean {
+    const scope = this.temporaryMediaOperationScope(imageID);
+    return Boolean(
+      scope && this.storedTemporaryMediaOperation(scope)?.requiresManualConfirmation,
+    );
+  }
+
+  private confirmImagePrepareReview(imageID: number): void {
+    const scope = this.temporaryMediaOperationScope(imageID);
+    const operation = scope
+      ? this.storedTemporaryMediaOperation(scope)
+      : undefined;
+    if (!scope || !operation?.requiresManualConfirmation) return;
+    this.clearTemporaryMediaOperation(scope);
+    this.imageSendStatuses.set(imageID, {
+      message:
+        "已记录人工确认未上传；可重新准备临时媒体。此前图片消息未调用 JSSDK，送达状态仍未知。",
+      failed: false,
+    });
+    if (this.activeTab === "materials") this.renderActiveContent();
+  }
+
   private async sendMaterialImage(imageID: number): Promise<void> {
-    if (!this.contextToken || this.imageSendPreparing.has(imageID)) return;
+    const scope = this.temporaryMediaOperationScope(imageID);
+    if (
+      !this.contextToken ||
+      !scope ||
+      this.imageSendPreparing.has(imageID) ||
+      this.imagePrepareNeedsManualConfirmation(imageID)
+    )
+      return;
+    const operation = this.storedTemporaryMediaOperation(scope) || {
+      idempotencyKey: newSidebarIdempotencyKey("sidebar-image-temporary-media"),
+      requiresManualConfirmation: false,
+    };
+    this.saveTemporaryMediaOperation(scope, operation);
     this.imageSendPreparing.add(imageID);
     this.imageSendStatuses.set(imageID, {
       message: "正在准备企微临时图片媒体…",
       failed: false,
     });
     if (this.activeTab === "materials") this.renderActiveContent();
+    let prepared: SidebarTemporaryMediaResponse;
     try {
-      const prepared = await this.api.prepareTemporaryImage(
+      prepared = await this.api.prepareTemporaryImage(
         this.contextToken,
         imageID,
+        operation.idempotencyKey,
       );
       this.validateTemporaryMedia(prepared, imageID);
-      if (prepared.upload_state !== "ready" || !prepared.media_id) {
-        this.imageSendStatuses.set(imageID, {
-          message: `${prepared.upload_state} · client_callback · not_called；delivery_unknown · 未调用图片消息，未取得送达回执。`,
-          failed: true,
-        });
-        return;
+    } catch (error) {
+      operation.requiresManualConfirmation = true;
+      this.saveTemporaryMediaOperation(scope, operation);
+      this.imageSendStatuses.set(imageID, {
+        message: `outcome_unknown · 临时媒体准备未得到可验证结果，已锁定本次操作键；请在企微后台人工确认。client_callback · JSSDK 未确认；delivery_unknown · 未取得外部送达状态。${errorMessage(error, "")}`,
+        failed: true,
+      });
+      this.imageSendPreparing.delete(imageID);
+      if (this.activeTab === "materials") this.renderActiveContent();
+      return;
+    }
+    if (prepared.upload_state !== "ready" || !prepared.media_id) {
+      if (prepared.upload_state === "outcome_unknown") {
+        operation.requiresManualConfirmation = true;
+        this.saveTemporaryMediaOperation(scope, operation);
+      } else {
+        this.clearTemporaryMediaOperation(scope);
       }
+      this.imageSendStatuses.set(imageID, {
+        message:
+          prepared.upload_state === "outcome_unknown"
+            ? "outcome_unknown · 临时媒体上传结果未知，未调用 JSSDK。请先在企微后台人工确认；确认未上传后才能重新准备，未取得送达回执。"
+            : "final_failed · 临时媒体未上传，未调用 JSSDK；可重新准备，未取得送达回执。",
+        failed: true,
+      });
+      this.imageSendPreparing.delete(imageID);
+      if (this.activeTab === "materials") this.renderActiveContent();
+      return;
+    }
+    // A verified prepared medium concludes this idempotent Provider operation.
+    // A later user-initiated send may prepare a fresh medium; JSSDK delivery is
+    // deliberately a separate, still-unproven client callback.
+    this.clearTemporaryMediaOperation(scope);
+    try {
       const wx = await this.ensureJssdkForSend();
       await this.invokeWx(wx, "sendChatMessage", {
         msgtype: "image",
@@ -2447,21 +2597,39 @@ export class SidebarController {
         const actions = createElement(this.doc, "div", "context-actions");
         const send = createElement(this.doc, "button", "btn primary", "发送图片");
         send.type = "button";
-        send.disabled = this.imageSendPreparing.has(item.id);
+        const needsManualConfirmation = this.imagePrepareNeedsManualConfirmation(
+          item.id,
+        );
+        send.disabled =
+          this.imageSendPreparing.has(item.id) || needsManualConfirmation;
         send.dataset.sidebarAction = "send-material-image";
         send.dataset.materialId = String(item.id);
         markBound(send);
         actions.append(send);
+        if (needsManualConfirmation) {
+          const confirm = createElement(
+            this.doc,
+            "button",
+            "btn ghost",
+            "已人工确认未上传，重新准备",
+          );
+          confirm.type = "button";
+          confirm.dataset.sidebarAction = "confirm-image-prepare-review";
+          confirm.dataset.materialId = String(item.id);
+          markBound(confirm);
+          actions.append(confirm);
+        }
         card.append(actions);
         const receipt = this.imageSendStatuses.get(item.id);
-        if (receipt) {
+        if (receipt || needsManualConfirmation) {
           const sendStatus = createElement(
             this.doc,
             "div",
-            `sidebar-status${receipt.failed ? " error" : ""}`,
-            receipt.message,
+            `sidebar-status${receipt?.failed || needsManualConfirmation ? " error" : ""}`,
+            receipt?.message ||
+              "outcome_unknown · 临时媒体上传结果未知；请先在企微后台人工确认，系统不会自动重试。",
           );
-          sendStatus.dataset.sendReceipt = receipt.failed
+          sendStatus.dataset.sendReceipt = receipt?.failed || needsManualConfirmation
             ? "client_callback,delivery_unknown,error"
             : "client_callback,delivery_unknown";
           card.append(sendStatus);

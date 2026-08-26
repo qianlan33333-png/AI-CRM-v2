@@ -113,6 +113,23 @@ func (sidebarRouteMedia) Facets(context.Context) (mediaport.ImageFacets, error) 
 }
 func (sidebarRouteMedia) LocalImageExists(context.Context, int64) (bool, error) { return false, nil }
 
+type sidebarRouteCatalog struct {
+	product sidebarapp.ShareableProduct
+	calls   int
+}
+
+func (catalog *sidebarRouteCatalog) ListShareableProducts(context.Context, int32) ([]sidebarapp.ShareableProduct, error) {
+	return []sidebarapp.ShareableProduct{catalog.product}, nil
+}
+
+func (catalog *sidebarRouteCatalog) GetShareableProduct(_ context.Context, kind sidebarapp.ShareableProductKind, productID int64) (sidebarapp.ShareableProduct, error) {
+	catalog.calls++
+	if catalog.product.Kind != kind || catalog.product.ProductID != productID {
+		return sidebarapp.ShareableProduct{}, sidebarapp.ErrNotFound
+	}
+	return catalog.product, nil
+}
+
 type sidebarPublicMethodCandidate struct {
 	api.Unimplemented
 	startCalls, callbackCalls, agentConfigCalls int
@@ -162,6 +179,48 @@ func TestSidebarPublicProtocolRoutesRejectWrongMethodsWithoutCallingEndpoint(t *
 	}
 	if candidate.startCalls != 0 || candidate.callbackCalls != 0 || candidate.agentConfigCalls != 0 {
 		t.Fatalf("start/callback/agent-config calls=%d/%d/%d", candidate.startCalls, candidate.callbackCalls, candidate.agentConfigCalls)
+	}
+}
+
+func TestPublicSidebarProductRouteIsUnauthenticatedReadOnlyHTML(t *testing.T) {
+	authService := &sidebarRouteAuth{}
+	authHandler, err := authhttp.NewHandler(authService)
+	if err != nil {
+		t.Fatal(err)
+	}
+	catalog := &sidebarRouteCatalog{product: sidebarapp.ShareableProduct{
+		Kind: sidebarapp.ShareableProductOrdinary, ProductID: 31, ProductCode: "P-31", Name: "公开商品", Description: "仅本地只读详情", PriceMinor: 990, Currency: "CNY", StockQuantity: 5,
+	}}
+	service, err := sidebarapp.NewService(
+		sidebarRouteCorp{}, &sidebarRouteIdentity{status: identityport.ResolveFound}, sidebarRoutePhones{},
+		&sidebarRouteProfiles{profile: contactport.SidebarProfile{CustomerID: 41, OwnerStaffID: 7, Name: "customer", UpdatedAt: time.Now().UTC()}},
+		sidebarRouteSurveys{}, sidebarRouteOrders{}, sidebarRouteMembers{}, sidebarRouteMedia{},
+		[]byte("01234567890123456789012345678901"), sidebarapp.ServiceOptions{Products: catalog},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sidebarHandler, err := sidebarhttp.NewHandler(service)
+	if err != nil {
+		t.Fatal(err)
+	}
+	router, err := newAPIHandler(slog.New(slog.NewJSONHandler(io.Discard, nil)), authHandler, &candidateHandler{sidebar: sidebarHandler})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/p/ordinary/31", nil))
+	if response.Code != http.StatusOK || response.Header().Get("Content-Type") != "text/html; charset=utf-8" ||
+		response.Header().Get("Cache-Control") != "no-store" || response.Header().Get("Referrer-Policy") != "no-referrer" ||
+		authService.authorizeCalls != 0 || catalog.calls != 1 || !strings.Contains(response.Body.String(), "公开商品") || strings.Contains(response.Body.String(), "payment") {
+		t.Fatalf("public HTML status/headers/auth/catalog/body=%d/%v/%d/%d/%q", response.Code, response.Header(), authService.authorizeCalls, catalog.calls, response.Body.String())
+	}
+
+	wrongMethod := httptest.NewRecorder()
+	router.ServeHTTP(wrongMethod, httptest.NewRequest(http.MethodPost, "/p/ordinary/31", nil))
+	if wrongMethod.Code != http.StatusMethodNotAllowed || wrongMethod.Header().Get("Allow") != http.MethodGet || authService.authorizeCalls != 0 || catalog.calls != 1 {
+		t.Fatalf("public HTML method guard status/allow/auth/catalog=%d/%q/%d/%d", wrongMethod.Code, wrongMethod.Header().Get("Allow"), authService.authorizeCalls, catalog.calls)
 	}
 }
 

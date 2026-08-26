@@ -256,6 +256,21 @@ export async function runTransportContractTests(): Promise<void> {
         { status: 200 },
       );
     }
+    if (String(input).includes("/temporary-media")) {
+      return new Response(
+        JSON.stringify({
+          image_id: 31,
+          media_id: "media-temporary-31",
+          media_expires_at: "2026-08-26T03:00:00Z",
+          upload_state: "ready",
+          provider_call_dispatched: true,
+          real_external_call_executed: true,
+          client_callback: "not_called",
+          delivery_state: "not_sent_yet",
+        }),
+        { status: 200 },
+      );
+    }
     if (String(input).includes("/materials/image/31/preview")) {
       return new Response(new Blob(["image-bytes"], { type: "image/png" }), {
         status: 200,
@@ -300,6 +315,17 @@ export async function runTransportContractTests(): Promise<void> {
     assert(
       thumbnail.type === "image/png" && thumbnail.size > 0,
       "Sidebar thumbnail preview must read real binary bytes",
+    );
+    const temporaryMedia = await sidebarApi.prepareTemporaryImage(
+      "sidebar-context",
+      31,
+      "sidebar-temporary-media-stable-key",
+    );
+    assert(
+      temporaryMedia.upload_state === "ready" &&
+        temporaryMedia.client_callback === "not_called" &&
+        temporaryMedia.delivery_state === "not_sent_yet",
+      "Temporary media must keep upload preparation separate from JSSDK and delivery",
     );
     const oauth = sidebarApi.oauthStartUrl({
       external_userid: "ext-7",
@@ -363,6 +389,20 @@ export async function runTransportContractTests(): Promise<void> {
           "X-Sidebar-Context-Token",
         ) === "sidebar-context",
       "Thumbnail preview must use the generated URL with scoped browser transport",
+    );
+    const temporaryMediaCall = sidebarWriteRequests.find((call) =>
+      call.input.includes("/materials/image/31/temporary-media"),
+    );
+    const temporaryMediaHeaders = new Headers(
+      temporaryMediaCall?.init?.headers,
+    );
+    assert(
+      temporaryMediaCall?.init?.method === "POST" &&
+        temporaryMediaHeaders.get("X-Sidebar-Context-Token") ===
+          "sidebar-context" &&
+        temporaryMediaHeaders.get("Idempotency-Key") ===
+          "sidebar-temporary-media-stable-key",
+      "Temporary media must forward the caller's stable scoped idempotency key",
     );
     assert(
       profileReceiptSteps({

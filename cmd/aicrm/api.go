@@ -2358,6 +2358,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		}
 	}
 	if concrete, ok := candidate.(*candidateHandler); ok && concrete.sidebar != nil {
+		// /p is deliberately a public, read-only HTML browser route. It is not an
+		// OpenAPI JSON operation; its route regression test fixes that boundary.
 		if err = registerPublicProtocol(http.MethodGet, "/p/{kind}/{product_id}", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			concrete.sidebar.PublicProductDetailByPath(writer, request, chi.URLParam(request, "kind"), chi.URLParam(request, "product_id"))
 		})); err != nil {

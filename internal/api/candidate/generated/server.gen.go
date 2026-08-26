@@ -15799,7 +15799,7 @@ type ServerInterface interface {
 	// Start a state-bound Sidebar WeCom OAuth grant for one external contact
 	// (GET /api/sidebar/v2/oauth/start)
 	StartSidebarOAuth(w http.ResponseWriter, r *http.Request, params StartSidebarOAuthParams)
-	// List customer-scoped local orders with same-origin detail links and without payer or identity fields
+	// List customer-scoped local orders with inline safe details and without payer or identity fields
 	// (GET /api/sidebar/v2/orders)
 	ListSidebarOrders(w http.ResponseWriter, r *http.Request, params ListSidebarOrdersParams)
 	// List canonical service-period members for one scoped customer
@@ -16975,7 +16975,7 @@ func (_ Unimplemented) StartSidebarOAuth(w http.ResponseWriter, r *http.Request,
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List customer-scoped local orders with same-origin detail links and without payer or identity fields
+// List customer-scoped local orders with inline safe details and without payer or identity fields
 // (GET /api/sidebar/v2/orders)
 func (_ Unimplemented) ListSidebarOrders(w http.ResponseWriter, r *http.Request, params ListSidebarOrdersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -48583,7 +48583,7 @@ type StrictServerInterface interface {
 	// Start a state-bound Sidebar WeCom OAuth grant for one external contact
 	// (GET /api/sidebar/v2/oauth/start)
 	StartSidebarOAuth(ctx context.Context, request StartSidebarOAuthRequestObject) (StartSidebarOAuthResponseObject, error)
-	// List customer-scoped local orders with same-origin detail links and without payer or identity fields
+	// List customer-scoped local orders with inline safe details and without payer or identity fields
 	// (GET /api/sidebar/v2/orders)
 	ListSidebarOrders(ctx context.Context, request ListSidebarOrdersRequestObject) (ListSidebarOrdersResponseObject, error)
 	// List canonical service-period members for one scoped customer
