@@ -485,10 +485,15 @@ console.log('admin/customerDetail.html?id=999（404 占位态）');
 }
 
 /* ================= 本轮新增：二级页 + 通用选择器 ================= */
+let audienceDetailPackageId = 1;
 console.log('admin/automation.html（新增分组弹窗 → 测试 Mock 创建）');
 {
   const dom = await loadPage('admin/automation.html');
   const d = dom.window.document;
+  const audienceDetail = d.querySelector('a[href^="audienceEdit.html?id="]');
+  const audienceDetailId = Number(audienceDetail && new URL(audienceDetail.href).searchParams.get('id'));
+  if (Number.isSafeInteger(audienceDetailId) && audienceDetailId > 0) audienceDetailPackageId = audienceDetailId;
+  ok('人群包详情链接保留实际 package_id', audienceDetail?.__dcBound === true && Number.isSafeInteger(audienceDetailId) && audienceDetailId > 0);
   const addBtn = [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '新增');
   click(dom, addBtn);
   await sleep(30);
@@ -500,9 +505,9 @@ console.log('admin/automation.html（新增分组弹窗 → 测试 Mock 创建�
   dom.window.close();
 }
 
-console.log('admin/audienceEdit.html?id=1（真实配置与发送人 DTO）');
+console.log('admin/audienceEdit.html?id={package_id}（真实配置与发送人 DTO）');
 {
-  const dom = await loadPage('admin/audienceEdit.html', { id: 1 });
+  const dom = await loadPage('admin/audienceEdit.html', { id: audienceDetailPackageId });
   const d = dom.window.document;
   const nav4 = [...d.querySelectorAll('button')].find((b) => b.textContent.includes('成员列表'));
   click(dom, nav4);
