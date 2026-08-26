@@ -1,50 +1,49 @@
 # P4 Group Ops Runtime backend evidence
 
-Baseline: `origin/main=4ad7edb126715401776a90502d289795c154c596`.
-Local package commits: `6cdb8592` and `bdbd1e4a`. Migration: `00085`.
-This evidence is local-branch evidence only; it is not a merge, deployment, Provider call, or delivery receipt.
+Baseline: `origin/main=1f6671dd9c80a6f53737cdf3eb4eb6e5e483a41e`.
+Business package migrations: `00085`, `00097`, and `00098`.
+This is branch-local backend evidence only. It is not a main merge, Nightly result, deployment, Provider call, delivery receipt, or external-effect acceptance.
 
 ## Capability boundary
 
-- Existing `00063` plans, members, group assets, nodes, webhook descriptor, and content preview remain the local configuration source.
-- `00085` adds immutable runs and executions, group-directory and refresh receipts, node material references, and an External Effect Registry owner/kind for `group_ops_broadcast`.
-- Run-due, broadcast, and webhook acceptance atomically bind fixed content and material snapshots to EER. A `202` means EER acceptance only. It does not mean Provider acceptance or delivery.
-- Execution projection keeps `provider_accepted` and `delivery_proven` independent. No Group Ops outcome writer is wired in this package, so manual reconciliation explicitly returns `provider_disabled`; it does not claim an EER acceptance as a Provider or delivery outcome.
-- Group and operation-member refresh use an injected read-only source. The production composition root injects no source, so refresh returns `provider_disabled` and performs no Provider call.
-- Public broadcast and webhook protocols use an injected authenticator. The production composition root injects no authenticator, so both routes fail closed with `503`; this package does not invent the pending API-client JWT or webhook-HMAC credential policy.
+- The `00063` control plane remains the source for plans, operation members, group assets, nodes, webhook descriptors, and content preview. Independent USER OPS is removed; `scope=group_ops` owns the operation-member responsibility.
+- `00085` owns immutable runs/executions, sender snapshots, group-directory projections, EER acceptance, dispatch outcomes, and reconciliation.
+- `00097` persists WeCom group-message task receipts separately from verified delivery evidence. Provider acceptance and delivery proof remain distinct facts.
+- `00098` adds typed material plans, durable HMAC replay receipts, Media-owned temporary-upload preparations/receipts, and Group Ops execution intents.
+- Text-only nodes are accepted and queued atomically. Material nodes first persist an intent and Media preparation jobs; only a provider-ready lease covering dispatch plus one hour can become an immutable Group Ops execution.
+- Upload preparation and group broadcast are different EER effects. A Media upload receipt never counts as Group Ops Provider acceptance or delivery.
+- Provider transport/parse ambiguity becomes `outcome_unknown` and is never automatically replayed. Explicit Provider rejection becomes `final_failed`. Attempted crash recovery performs no Provider call.
 
-## API and route evidence
+## API, protocol, and route evidence
 
-The exact backend routes are registered and described in OpenAPI, including:
+The backend and OpenAPI register the control-plane routes plus:
 
-- plan list/create/get/PUT/delete/enable/disable, plan group bindings, standard nodes, webhook descriptor, run-due preview and acceptance;
-- group directory and picker read/explicit refresh;
-- `GET/POST /api/admin/common/operation-members` for `scope=group_ops`, with USER OPS responsibility folded into this package and no separate board;
-- `POST /api/automation/group-ops/broadcast` and `POST /api/automation/group-ops/webhooks/{webhook_key}`;
-- execution projection; the reconcile route is deliberately documented as unavailable (`503 provider_disabled`) until an outcome writer is introduced in a separately authorized package.
+- run-due preview/acceptance, API-client broadcast acceptance, HMAC webhook acceptance, run/execution reads, and evidence-gated reconciliation;
+- typed `material_plan` references for image, mini-program, attachment, and group invite; non-empty legacy `material_reference` fails closed;
+- group directory/picker reads and explicit refresh;
+- `GET/POST /api/admin/common/operation-members?scope=group_ops`, with no separate USER OPS board.
 
-`docs/api-mapping.jsonl` and the deterministic route/protocol ledgers carry 25 exact Group Ops legacy mappings. `LEGACY-API-0165` remains `DEFERRED_POST_LAUNCH`; the native execution projection does not forge that frozen mapping. `LEGACY-S06-036` and the other cancelled USER OPS rows remain `DEPRECATED`.
+Broadcast authentication is strict JWT (`purpose=group_broadcast`, `aud=external_integration`, `scope=write`, `capability=group_broadcast_execute`). Webhook authentication uses client/timestamp/event/signature headers, HMAC-SHA256 over the canonical timestamp, event ID, and raw body, a five-minute past/sixty-second future window, and a durable one-time replay reservation.
 
-## Migration evidence
+When WeCom outbound is disabled, intake fails closed before EER acceptance. When enabled, API accepts only local intents; Provider credentials and upload/dispatch clients are bound in the worker component. No test in this package performs a real WeCom call.
 
-- PG server: PostgreSQL `16.14` (`server_version_num=160014`).
-- Fresh migration reaches waterline `85`.
-- A populated Group Ops runtime table, runtime receipt, or `material_reference` fact blocks down migration and leaves waterline `85`.
-- Empty rollback and reapply complete `85 -> 78 -> 85`.
-- Store integration verifies versioned content/material snapshots and EER binding in one transaction; HTTP acceptance verifies scoped receipt replay, changed-snapshot conflict, and rollback atomically.
-- No legacy production data import or backfill ran. The data-migration ledger is therefore unchanged.
-- This isolated lane intentionally lacks reserved migrations `00079` through `00084`; `migration-mapping-contract` must be rerun only after root serial integration restores the contiguous migration set.
+## Migration and generated evidence
 
-## Verification receipts
+- Migration waterline is contiguous through `00098`; populated `00098` material/replay/intent facts block rollback.
+- The runtime acceptance target now verifies exact `85` and `98`, populated guards, and empty `84/85` plus `96/98` rollback/reapply on PostgreSQL 16.14 CI.
+- Local PostgreSQL 16.13 supplementary checks proved fresh `1 -> 98`, populated `00098` rollback rejection, and empty `98 -> 96 -> 98`. The repository's exact-version acceptance correctly rejects 16.13, so it is not reported as PostgreSQL 16.14 evidence.
+- OpenAPI Go output, SQLC output, Orval TypeScript output, and `scripts/generated-sources.sha256` are regenerated from source contracts; generated files are not hand-edited.
 
-- `make p4-group-ops-runtime-acceptance` — PASS on PG16.14, including race tests, populated down guard, and empty down/up.
-- `scripts/ci/run_selected_go.sh selected groupops,segment,externaleffects,composition false` — PASS.
-- `scripts/ci/run_selected_database.sh selected groupops` — PASS, including `generated-check` and migration integration.
-- `make openapi-p1-contract replacement-baseline-contract p1-reconciliation-contract feature-matrix-contract ownership-lint` — PASS for the gates available in this isolated lane.
-- OpenAPI, sqlc, and Orval were generated; generated source hashes match.
+## Local verification receipts
 
-## Matrix and external-effect statement
+- focused Group Ops/Media/WeCom/outbound-provider/cmd tests: PASS;
+- focused race tests and vet: PASS;
+- `make migration-validate`: PASS;
+- `make generate-check`: PASS;
+- `go -C tools test ./openapi-contract`: PASS after updating the canonical external-effect declarations to the implemented EER/material-intent and reconciliation behavior;
+- `make arch-import-lint`: PASS with the pinned Go 1.26.6 toolchain;
+- Orval regenerated. The final clean-tree `orval-check`, exact PostgreSQL 16.14 acceptance, PR required CI, and exact-main batch Nightly remain required before merge/batch closure.
 
-`LEGACY-S06-028` through `LEGACY-S06-035` are recorded as `IN_PROGRESS/NOT_RUN`: the backend package is locally verified but has no PR/merge receipt, so the Matrix deliberately does not claim `IMPLEMENTED` or synthetic/staging/production closure.
+## Layered status
 
-`PROVIDER_DISABLED`; `PROTOCOL_AUTH_INJECTION_PENDING`; `REAL_PROVIDER_NOT_EXECUTED`; `REAL_WEBHOOK_NOT_EXECUTED`; `DELIVERY_NOT_PROVEN`; `PRODUCTION_DATABASE_NOT_EXECUTED`; `DEPLOYMENT_NOT_EXECUTED`.
+`BACKEND_CAPABILITY_BRANCH_COMPLETE_PENDING_FINAL_REVIEW`; `MAIN_NOT_MERGED`; `BATCH_NIGHTLY_NOT_RUN`; `DEPLOYMENT_NOT_EXECUTED`; `REAL_PROVIDER_NOT_EXECUTED`; `REAL_WEBHOOK_NOT_EXECUTED`; `DELIVERY_NOT_PROVEN`.

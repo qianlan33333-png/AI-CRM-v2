@@ -1522,17 +1522,44 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			return nil, err
 		}
 	}
-	groupOpsRuntime, err := groupopsapp.NewRuntimeService(
-		uow,
-		groupOpsRepository,
-		groupOpsRepository,
-		externalEffectsRuntime,
-		groupOpsStaffDirectory,
-		groupOpsDirectorySource,
-		groupOpsSenderResolver{groups: groupOpsRepository, staff: groupOpsStaffDirectory},
-		groupOpsJobs,
-		groupOpsEvidence,
-	)
+	var groupOpsRuntime *groupopsapp.RuntimeService
+	if config.WeCom.Outbound.Enabled {
+		groupOpsMaterials, _, materialErr := newGroupOpsMaterialRuntime(pool, uow, externalEffectsRuntime, config.WeCom.Outbound.CorpID)
+		if materialErr != nil {
+			pool.Close()
+			return nil, materialErr
+		}
+		continuations, continuationErr := groupopsstore.NewMaterialContinuationJobInserter(pool)
+		if continuationErr != nil {
+			pool.Close()
+			return nil, continuationErr
+		}
+		groupOpsRuntime, err = groupopsapp.NewRuntimeServiceWithMaterials(
+			uow,
+			groupOpsRepository,
+			groupOpsRepository,
+			externalEffectsRuntime,
+			groupOpsStaffDirectory,
+			groupOpsDirectorySource,
+			groupOpsSenderResolver{groups: groupOpsRepository, staff: groupOpsStaffDirectory},
+			groupOpsJobs,
+			groupOpsMaterials,
+			continuations,
+			groupOpsEvidence,
+		)
+	} else {
+		groupOpsRuntime, err = groupopsapp.NewRuntimeService(
+			uow,
+			groupOpsRepository,
+			groupOpsRepository,
+			externalEffectsRuntime,
+			groupOpsStaffDirectory,
+			groupOpsDirectorySource,
+			groupOpsSenderResolver{groups: groupOpsRepository, staff: groupOpsStaffDirectory},
+			groupOpsJobs,
+			groupOpsEvidence,
+		)
+	}
 	if err != nil {
 		pool.Close()
 		return nil, err

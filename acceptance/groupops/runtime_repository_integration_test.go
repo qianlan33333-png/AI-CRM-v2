@@ -290,8 +290,13 @@ func (runtimeDirectory) ListEligibleStaff(context.Context) ([]contactport.StaffD
 }
 
 type runtimeSender struct{}
-func (runtimeSender) ResolveExecutionSender(context.Context, string) (string, bool, error) { return "staff-7", true, nil }
+
+func (runtimeSender) ResolveExecutionSender(context.Context, string) (string, bool, error) {
+	return "staff-7", true, nil
+}
+
 type runtimeJobs struct{}
+
 func (runtimeJobs) Insert(_ context.Context, args groupopsapp.GroupOpsDispatchJobArgs, generation int64, scheduled time.Time) (eerport.RiverJobLink, error) {
 	return eerport.RiverJobLink{JobID: 1, Generation: generation, Queue: "outbound", ArgsDigest: eerport.Digest("sha256:0000000000000000000000000000000000000000000000000000000000000000"), ScheduledAt: scheduled}, nil
 }

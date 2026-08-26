@@ -101,7 +101,9 @@ func groupMessageReceipt(row groupopsdb.GroupOpsWecomGroupMessageReceipt) groupo
 		status := int(row.SendStatus.Int32)
 		value.DeliveryStatus = &status
 	}
-	if row.DeliveryEvidenceDigest.Valid { value.DeliveryEvidenceDigest = row.DeliveryEvidenceDigest.String }
+	if row.DeliveryEvidenceDigest.Valid {
+		value.DeliveryEvidenceDigest = row.DeliveryEvidenceDigest.String
+	}
 	return value
 }
 

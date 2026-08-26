@@ -8,20 +8,15 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
-	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
 )
 
 func TestWeComGroupMessageClientUsesGroupProtocolAndRefreshesToken(t *testing.T) {
-	var grants, createCalls int
+	var createCalls int
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		switch request.URL.Path {
-		case "/cgi-bin/gettoken":
-			grants++
-			_, _ = writer.Write([]byte(`{"errcode":0,"access_token":"token-` + string(rune('0'+grants)) + `","expires_in":7200}`))
 		case "/cgi-bin/externalcontact/add_msg_template":
 			createCalls++
 			if request.Method != http.MethodPost || request.URL.Query().Get("access_token") == "" {
@@ -45,29 +40,20 @@ func TestWeComGroupMessageClientUsesGroupProtocolAndRefreshesToken(t *testing.T)
 		}
 	}))
 	defer server.Close()
-	credentials, err := wecomclient.NewCredentials("corp-1", "secret-1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	tokens, err := wecomclient.NewTokenProvider(wecomclient.TokenProviderConfig{BaseURL: server.URL, Credentials: credentials, HTTPClient: server.Client(), Now: time.Now})
-	if err != nil {
-		t.Fatal(err)
-	}
+	tokens := &groupMessageTokenStub{token: "token-1", refreshed: "token-2"}
 	client, err := NewWeComGroupMessageClient(WeComGroupMessageClientConfig{BaseURL: server.URL, HTTPClient: server.Client(), Token: tokens})
 	if err != nil {
 		t.Fatal(err)
 	}
 	created, err := client.CreateGroupMessageTask(context.Background(), GroupMessageCreateRequest{Sender: "staff-1", ChatIDs: []string{"chat-1"}, Text: "hello group"})
-	if err != nil || created.MessageID != "msg-1" || created.Partial || grants != 2 || createCalls != 2 {
-		t.Fatalf("created=%+v err=%v grants=%d calls=%d", created, err, grants, createCalls)
+	if err != nil || created.MessageID != "msg-1" || created.Partial || tokens.refreshes != 1 || createCalls != 2 {
+		t.Fatalf("created=%+v err=%v refreshes=%d calls=%d", created, err, tokens.refreshes, createCalls)
 	}
 }
 
 func TestWeComGroupMessageClientSendsTypedMaterialManifestExactJSON(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		switch request.URL.Path {
-		case "/cgi-bin/gettoken":
-			_, _ = writer.Write([]byte(`{"errcode":0,"access_token":"token","expires_in":7200}`))
 		case "/cgi-bin/externalcontact/add_msg_template":
 			var got map[string]any
 			if request.Method != http.MethodPost || json.NewDecoder(request.Body).Decode(&got) != nil {
@@ -92,14 +78,7 @@ func TestWeComGroupMessageClientSendsTypedMaterialManifestExactJSON(t *testing.T
 		}
 	}))
 	defer server.Close()
-	credentials, err := wecomclient.NewCredentials("corp-1", "secret-1")
-	if err != nil {
-		t.Fatal(err)
-	}
-	tokens, err := wecomclient.NewTokenProvider(wecomclient.TokenProviderConfig{BaseURL: server.URL, Credentials: credentials, HTTPClient: server.Client(), Now: time.Now})
-	if err != nil {
-		t.Fatal(err)
-	}
+	tokens := &groupMessageTokenStub{token: "token"}
 	client, err := NewWeComGroupMessageClient(WeComGroupMessageClientConfig{BaseURL: server.URL, HTTPClient: server.Client(), Token: tokens})
 	if err != nil {
 		t.Fatal(err)
@@ -109,6 +88,17 @@ func TestWeComGroupMessageClientSendsTypedMaterialManifestExactJSON(t *testing.T
 	if err != nil || created.MessageID != "msg-material-1" {
 		t.Fatalf("created=%+v err=%v", created, err)
 	}
+}
+
+type groupMessageTokenStub struct {
+	token, refreshed string
+	refreshes        int
+}
+
+func (stub *groupMessageTokenStub) Token(context.Context) (string, error) { return stub.token, nil }
+func (stub *groupMessageTokenStub) RefreshToken(context.Context) (string, error) {
+	stub.refreshes++
+	return stub.refreshed, nil
 }
 
 func TestWeComGroupMessageProviderAcceptsMaterialOnlySnapshot(t *testing.T) {

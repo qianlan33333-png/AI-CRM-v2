@@ -37,7 +37,7 @@ func newGroupOpsDispatchProvider(config appconfig.WeComOutbound, httpClient *htt
 	if err != nil {
 		return nil, err
 	}
-	client, err := outboundprovider.NewWeComGroupMessageClient(outboundprovider.WeComGroupMessageClientConfig{BaseURL: wecomclient.ProductionBaseURL, HTTPClient: httpClient, Token: tokens})
+	client, err := outboundprovider.NewWeComGroupMessageClient(outboundprovider.WeComGroupMessageClientConfig{BaseURL: wecomclient.ProductionBaseURL, HTTPClient: httpClient, Token: groupOpsTokenAdapter{provider: tokens}})
 	if err != nil {
 		return nil, errors.Join(errInvalidGroupOpsProviderConfig, err)
 	}
@@ -46,6 +46,20 @@ func newGroupOpsDispatchProvider(config appconfig.WeComOutbound, httpClient *htt
 		return nil, errors.Join(errInvalidGroupOpsProviderConfig, err)
 	}
 	return provider, nil
+}
+
+type groupOpsTokenAdapter struct {
+	provider *wecomclient.CachingTokenProvider
+}
+
+func (adapter groupOpsTokenAdapter) Token(ctx context.Context) (string, error) {
+	token, err := adapter.provider.Token(ctx)
+	return token.Value(), err
+}
+
+func (adapter groupOpsTokenAdapter) RefreshToken(ctx context.Context) (string, error) {
+	token, err := adapter.provider.RefreshToken(ctx)
+	return token.Value(), err
 }
 
 func newGroupOpsEvidenceVerifier(config appconfig.WeComOAuth, httpClient *http.Client, now func() time.Time, receipts groupopsport.GroupMessageReceiptReader) (groupopsport.ReconciliationEvidenceVerifier, error) {

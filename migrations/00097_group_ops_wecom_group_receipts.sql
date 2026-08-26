@@ -50,9 +50,11 @@ CREATE TABLE public.group_ops_wecom_group_message_receipts (
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
   CONSTRAINT group_ops_wecom_group_message_receipts_identifiers CHECK (
-    msgid ~ '^[^[:space:]]{1,1024}$'
+    msgid ~ '^[^[:space:]]+$'
+    AND char_length(msgid) BETWEEN 1 AND 1024
     AND sender_userid ~ '^[^[:space:]]{1,128}$'
-    AND chat_id ~ '^[^[:space:]]{1,1024}$'
+    AND chat_id ~ '^[^[:space:]]+$'
+    AND char_length(chat_id) BETWEEN 1 AND 1024
     AND userid ~ '^[^[:space:]]{1,128}$'
   ),
   CONSTRAINT group_ops_wecom_group_message_receipts_delivery CHECK (

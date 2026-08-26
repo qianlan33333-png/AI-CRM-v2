@@ -16,7 +16,6 @@ import (
 
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
-	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
 )
 
 const maxWeComGroupMessageResponseBytes = 1 << 20
@@ -28,12 +27,11 @@ var (
 	errWeComGroupUpstream       = errors.New("WeCom group message API rejected request")
 )
 
-// GroupMessageTokenProvider is satisfied by wecomclient.CachingTokenProvider.
-// Refreshing is kept at the protocol edge so stale tokens never become a
-// delivery or task-creation claim.
+// GroupMessageTokenProvider keeps the outbound write boundary independent of
+// the concrete credential client assembled by the composition root.
 type GroupMessageTokenProvider interface {
-	Token(context.Context) (wecomclient.AccessToken, error)
-	RefreshToken(context.Context) (wecomclient.AccessToken, error)
+	Token(context.Context) (string, error)
+	RefreshToken(context.Context) (string, error)
 }
 
 type WeComGroupMessageClientConfig struct {
@@ -139,19 +137,19 @@ func (client *WeComGroupMessageClient) post(ctx context.Context, path string, pa
 		return ErrInvalidWeComGroupMessage
 	}
 	token, err := client.token.Token(ctx)
-	if err != nil || token.Value() == "" {
+	if err != nil || token == "" {
 		return errors.Join(errWeComGroupNotDispatched, err)
 	}
-	err = client.postWithToken(ctx, path, token.Value(), payload, target)
+	err = client.postWithToken(ctx, path, token, payload, target)
 	var apiErr *weComGroupMessageAPIError
 	if !errors.As(err, &apiErr) || !expiredTokenCode(apiErr.Code) {
 		return err
 	}
 	token, refreshErr := client.token.RefreshToken(ctx)
-	if refreshErr != nil || token.Value() == "" {
+	if refreshErr != nil || token == "" {
 		return err
 	}
-	return client.postWithToken(ctx, path, token.Value(), payload, target)
+	return client.postWithToken(ctx, path, token, payload, target)
 }
 
 func (client *WeComGroupMessageClient) postWithToken(ctx context.Context, path, token string, payload any, target any) error {

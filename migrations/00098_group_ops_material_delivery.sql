@@ -62,7 +62,10 @@ CREATE TABLE public.media_wecom_upload_preparations (
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
   CONSTRAINT media_wecom_upload_preparations_media_id CHECK (
-    provider_media_id IS NULL OR provider_media_id ~ '^[^[:space:]]{1,1024}$'
+    provider_media_id IS NULL OR (
+      provider_media_id ~ '^[^[:space:]]+$'
+      AND char_length(provider_media_id) BETWEEN 1 AND 1024
+    )
   ),
   CONSTRAINT media_wecom_upload_preparations_outcome CHECK (
     (state IN ('preparing','retryable_failed','outcome_unknown','final_failed')
@@ -102,7 +105,10 @@ FOR EACH ROW EXECUTE FUNCTION public.aicrm_media_wecom_upload_effect_binding();
 CREATE TABLE public.media_wecom_upload_receipts (
   external_effect_id BIGINT PRIMARY KEY REFERENCES public.external_effects(id) ON DELETE RESTRICT,
   preparation_id BIGINT NOT NULL UNIQUE REFERENCES public.media_wecom_upload_preparations(id) ON DELETE RESTRICT,
-  provider_media_id TEXT NOT NULL CHECK (provider_media_id ~ '^[^[:space:]]{1,1024}$'),
+  provider_media_id TEXT NOT NULL CHECK (
+    provider_media_id ~ '^[^[:space:]]+$'
+    AND char_length(provider_media_id) BETWEEN 1 AND 1024
+  ),
   provider_created_at TIMESTAMPTZ NOT NULL,
   expires_at TIMESTAMPTZ NOT NULL,
   receipt_digest TEXT NOT NULL CHECK (receipt_digest ~ '^sha256:[0-9a-f]{64}$'),
