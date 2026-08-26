@@ -222,7 +222,7 @@ func (h *Handler) ListOperationMembers(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_page")
 		return
 	}
-	result, err := h.Runtime.ListOperationMembers(r.Context(), 200)
+	result, err := h.Runtime.ListOperationMembers(r.Context(), 100)
 	if err != nil {
 		runtimeError(w, err)
 		return

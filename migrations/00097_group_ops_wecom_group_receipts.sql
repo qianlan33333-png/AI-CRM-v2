@@ -13,6 +13,7 @@ ALTER TABLE public.group_ops_executions
 -- 00085's guard predates sender snapshots. Recreate it with the same closed
 -- transition rules plus immutable sender evidence; existing rows remain NULL
 -- and fail closed in the dispatch reader.
+-- +goose StatementBegin
 CREATE OR REPLACE FUNCTION public.aicrm_group_ops_runtime_guard()
 RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
 BEGIN
@@ -34,6 +35,7 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+-- +goose StatementEnd
 
 CREATE TABLE public.group_ops_wecom_group_message_receipts (
   external_effect_id BIGINT PRIMARY KEY REFERENCES public.external_effects(id) ON DELETE RESTRICT,

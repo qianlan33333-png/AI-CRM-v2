@@ -20,7 +20,7 @@ var _ groupopsapp.Store = (*Repository)(nil)
 
 func NewRepository() *Repository { return &Repository{} }
 
-func (r *Repository) List(ctx context.Context, limit, offset int32) ([]groupopsport.Plan, error) {
+func (r *Repository) List(ctx context.Context, limit, offset int32) ([]groupopsport.PlanListItem, error) {
 	q, err := queries(ctx)
 	if r == nil || err != nil {
 		return nil, unavailable(err)
@@ -29,7 +29,7 @@ func (r *Repository) List(ctx context.Context, limit, offset int32) ([]groupopsp
 	if err != nil {
 		return nil, unavailable(err)
 	}
-	plans := make([]groupopsport.Plan, len(rows))
+	plans := make([]groupopsport.PlanListItem, len(rows))
 	for index, row := range rows {
 		plans[index], err = listPlan(row)
 		if err != nil {
@@ -240,16 +240,15 @@ func plan(row groupopsdb.GroupOpsPlan) (groupopsport.Plan, error) {
 	return groupopsport.Plan{ID: row.ID, Name: row.Name, Status: groupopsport.PlanStatus(row.Status), Revision: row.Revision, CreatedBy: row.CreatedBy, UpdatedBy: row.UpdatedBy, CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time}, nil
 }
 
-func listPlan(row groupopsdb.ListGroupOpsPlansRow) (groupopsport.Plan, error) {
+func listPlan(row groupopsdb.ListGroupOpsPlansRow) (groupopsport.PlanListItem, error) {
 	value, err := plan(groupopsdb.GroupOpsPlan{
 		ID: row.ID, Name: row.Name, Status: row.Status, Revision: row.Revision,
 		CreatedBy: row.CreatedBy, UpdatedBy: row.UpdatedBy, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
 	})
 	if err != nil || row.QueueCount < 0 {
-		return groupopsport.Plan{}, groupopsapp.ErrUnavailable
+		return groupopsport.PlanListItem{}, groupopsapp.ErrUnavailable
 	}
-	value.QueueCount = row.QueueCount
-	return value, nil
+	return groupopsport.PlanListItem{Plan: value, QueueCount: row.QueueCount}, nil
 }
 
 func receipt(id int64, operation, actorScope string, keyDigest, payloadDigest []byte, state string, snapshot []byte) groupopsapp.Receipt {

@@ -56,7 +56,7 @@ type Receipt struct {
 // runtime method. Save, receipt, and event append share the UnitOfWork passed
 // to the service.
 type Store interface {
-	List(context.Context, int32, int32) ([]groupopsport.Plan, error)
+	List(context.Context, int32, int32) ([]groupopsport.PlanListItem, error)
 	Count(context.Context) (int64, error)
 	Get(context.Context, int64) (groupopsport.Detail, error)
 	Lock(context.Context, int64) (groupopsport.Detail, error)
@@ -82,7 +82,7 @@ func (s *Service) List(ctx context.Context, limit, offset int32) (groupopsport.P
 	if !ready(s) || !validPage(limit, offset) {
 		return groupopsport.PlanPage{}, invalidOrUnavailable(s)
 	}
-	result := groupopsport.PlanPage{Limit: limit, Offset: offset, Items: []groupopsport.Plan{}, Safety: groupopsport.LocalSafety()}
+	result := groupopsport.PlanPage{Limit: limit, Offset: offset, Items: []groupopsport.PlanListItem{}, Safety: groupopsport.LocalSafety()}
 	err := s.uow.Within(ctx, func(tx context.Context) error {
 		var err error
 		result.Items, err = s.store.List(tx, limit, offset)
@@ -597,9 +597,9 @@ func validPage(limit, offset int32) bool {
 func validPlan(value groupopsport.Plan) bool {
 	return value.ID > 0 && validName(value.Name) && (value.Status == groupopsport.PlanDraft || value.Status == groupopsport.PlanActive || value.Status == groupopsport.PlanPaused || value.Status == groupopsport.PlanArchived) && value.Revision > 0 && value.CreatedBy > 0 && value.UpdatedBy > 0 && !value.CreatedAt.IsZero() && !value.UpdatedAt.IsZero() && !value.UpdatedAt.Before(value.CreatedAt)
 }
-func validPlanList(items []groupopsport.Plan) bool {
+func validPlanList(items []groupopsport.PlanListItem) bool {
 	for i, item := range items {
-		if !validPlan(item) {
+		if !validPlan(item.Plan) || item.QueueCount < 0 {
 			return false
 		}
 		if i > 0 && (items[i-1].UpdatedAt.Before(item.UpdatedAt) || items[i-1].UpdatedAt.Equal(item.UpdatedAt) && items[i-1].ID <= item.ID) {
@@ -713,7 +713,7 @@ func classify(err error) error {
 	}
 }
 func clonePlanPage(value groupopsport.PlanPage) groupopsport.PlanPage {
-	value.Items = append([]groupopsport.Plan{}, value.Items...)
+	value.Items = append([]groupopsport.PlanListItem{}, value.Items...)
 	return value
 }
 func cloneDetail(value groupopsport.Detail) groupopsport.Detail {

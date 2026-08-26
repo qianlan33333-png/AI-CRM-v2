@@ -13224,6 +13224,13 @@ components:
         updated_by: { type: integer, format: int64, minimum: 1 }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+    GroupOpsPlanListItem:
+      allOf:
+        - $ref: "#/components/schemas/GroupOpsPlan"
+        - type: object
+          required: [queue_count]
+          properties:
+            queue_count: { type: integer, format: int64, minimum: 0 }
     GroupOpsMember:
       type: object
       additionalProperties: false
@@ -13414,7 +13421,7 @@ components:
       additionalProperties: false
       required: [items, total, limit, offset, has_more, provider_execution_eligible, real_external_call_executed]
       properties:
-        items: { type: array, items: { $ref: "#/components/schemas/GroupOpsPlan" } }
+        items: { type: array, items: { $ref: "#/components/schemas/GroupOpsPlanListItem" } }
         total: { type: integer, format: int64, minimum: 0 }
         limit: { type: integer, minimum: 1, maximum: 100 }
         offset: { type: integer, minimum: 0, maximum: 1000000 }
