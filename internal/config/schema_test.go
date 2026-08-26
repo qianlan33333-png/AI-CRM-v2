@@ -569,6 +569,24 @@ func TestLoadAPIClientJWTSecretIsOptionalStrictAndRedacted(t *testing.T) {
 	}
 }
 
+func TestLoadGroupOpsWebhookSecretIsOptionalStrictAndRedacted(t *testing.T) {
+	base := map[string]string{databaseURLEnv: "postgres://db/aicrm", apiListenAddressEnv: "127.0.0.1:8080", apiPoolMaxConnsEnv: "1", identityHMACKeyEnv: strings.Repeat("A", 43)}
+	root, err := load(appruntime.RoleAPI, mapLookup(base))
+	if err != nil || root.GroupOps.WebhookSecret.Configured() {
+		t.Fatalf("optional webhook secret=%#v err=%v", root.GroupOps, err)
+	}
+	values := cloneValues(base)
+	values[groupOpsWebhookSecretEnv] = base64.RawURLEncoding.EncodeToString([]byte("01234567890123456789012345678901"))
+	root, err = load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil || !root.GroupOps.WebhookSecret.Configured() || strings.Contains(fmt.Sprintf("%#v", root), values[groupOpsWebhookSecretEnv]) {
+		t.Fatalf("configured webhook secret=%#v err=%v", root.GroupOps, err)
+	}
+	values[groupOpsWebhookSecretEnv] = "bad-group-ops-webhook-secret"
+	if _, err = load(appruntime.RoleAPI, mapLookup(values)); err == nil || !strings.Contains(err.Error(), "group_ops.webhook_secret must be 32-byte canonical base64url") {
+		t.Fatalf("invalid webhook secret err=%v", err)
+	}
+}
+
 func TestLoadWeChatPayProviderIsExplicitAndRedacted(t *testing.T) {
 	values := map[string]string{
 		databaseURLEnv:                  "postgres://db/aicrm",
