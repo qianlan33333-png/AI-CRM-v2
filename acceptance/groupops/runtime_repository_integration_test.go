@@ -61,7 +61,7 @@ func TestRuntimeRepositoryPostgreSQLBindsSnapshotsToEERAtomically(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	detail, err = planService.AddNode(ctx, groupopsport.NodeCreateCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, Position: 1, Kind: groupopsport.NodeMessage, MessageText: "immutable content", MaterialRef: "material:runtime", Actor: 41, IdempotencyKey: key + "-node"})
+	detail, err = planService.AddNode(ctx, groupopsport.NodeCreateCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, Position: 1, Kind: groupopsport.NodeMessage, MessageText: "immutable content", Actor: 41, IdempotencyKey: key + "-node"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestRuntimeRepositoryPostgreSQLBindsSnapshotsToEERAtomically(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if summary.Accepted != 1 || summary.ProviderAccepted != 0 || summary.DeliveryProven != 0 || summary.ProviderExecutionEligible || summary.RealExternalCallExecuted {
+	if summary.Accepted != 1 || summary.ProviderAccepted != 0 || summary.DeliveryProven != 0 || !summary.ProviderExecutionEligible || summary.RealExternalCallExecuted {
 		t.Fatalf("unsafe runtime summary: %+v", summary)
 	}
 	var owner, kind, state, content, material string
@@ -85,7 +85,7 @@ func TestRuntimeRepositoryPostgreSQLBindsSnapshotsToEERAtomically(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	if owner != "group_ops" || kind != "group_ops_broadcast" || state != "accepted" || content != `{"node_kind": "message", "message_text": "immutable content", "schema_version": 1}` || material != `{"node_kind": "message", "reference": "material:runtime", "schema_version": 1}` {
+	if owner != "group_ops" || kind != "group_ops_broadcast" || state != "accepted" || content != `{"node_kind": "message", "message_text": "immutable content", "schema_version": 1}` || material != `{"node_kind": "message", "reference": "", "schema_version": 1}` {
 		t.Fatalf("runtime snapshot binding owner=%q kind=%q state=%q content=%q material=%q", owner, kind, state, content, material)
 	}
 }
@@ -238,7 +238,7 @@ func createActiveRuntimePlan(t *testing.T, ctx context.Context, service *groupop
 	if err != nil {
 		t.Fatal(err)
 	}
-	detail, err = service.AddNode(ctx, groupopsport.NodeCreateCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, Position: 1, Kind: groupopsport.NodeMessage, MessageText: "http receipt", MaterialRef: "material:http", Actor: 41, IdempotencyKey: key + "-node"})
+	detail, err = service.AddNode(ctx, groupopsport.NodeCreateCommand{PlanID: detail.Plan.ID, ExpectedRevision: detail.Plan.Revision, Position: 1, Kind: groupopsport.NodeMessage, MessageText: "http receipt", Actor: 41, IdempotencyKey: key + "-node"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -264,7 +264,7 @@ type runtimeFailingEffects struct{}
 type runtimeProtocol struct{}
 
 func (runtimeProtocol) Authenticate(context.Context, *http.Request, string, string, []byte) (groupopshttp.ProtocolPrincipal, error) {
-	return groupopshttp.ProtocolPrincipal{ID: "runtime-http"}, nil
+	return groupopshttp.ProtocolPrincipal{ID: "runtime-http-event-0001"}, nil
 }
 
 func (runtimeFailingEffects) Accept(context.Context, eerport.AcceptCommand) (eerport.Projection, eerport.OperationReceipt, error) {
