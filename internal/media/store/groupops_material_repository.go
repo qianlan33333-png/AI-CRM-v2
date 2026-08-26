@@ -139,6 +139,24 @@ func (repository *GroupOpsMaterialRepository) HasSufficientGroupOpsUploadLease(c
 	return query.HasSufficientGroupOpsUploadLease(ctx, mediadb.HasSufficientGroupOpsUploadLeaseParams{SourceKind: sourceKind, SourceID: sourceID, SourceDigest: sourceDigest, ProviderScopeDigest: providerScopeDigest, UploadKind: uploadKind, RequiredThrough: stamp(requiredThrough.UTC())})
 }
 
+// ReadGroupOpsUploadPreparationState returns the latest local preparation
+// state for one immutable source. An absent state means no preparation has
+// been accepted yet; outcome_unknown remains a manual-reconciliation blocker.
+func (repository *GroupOpsMaterialRepository) ReadGroupOpsUploadPreparationState(ctx context.Context, sourceKind string, sourceID int64, sourceDigest, providerScopeDigest, uploadKind string) (string, error) {
+	query, err := queries(ctx)
+	if repository == nil || err != nil || sourceID < 1 || providerScopeDigest != repository.providerScopeDigest || !groupOpsDigest(sourceDigest) || !groupOpsDigest(providerScopeDigest) || (sourceKind != "image" && sourceKind != "attachment") || (uploadKind != "image" && uploadKind != "file") {
+		return "", groupOpsMaterialUnavailable(err)
+	}
+	state, err := query.ReadLatestGroupOpsUploadPreparationState(ctx, mediadb.ReadLatestGroupOpsUploadPreparationStateParams{SourceKind: sourceKind, SourceID: sourceID, SourceDigest: sourceDigest, ProviderScopeDigest: providerScopeDigest, UploadKind: uploadKind})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil || (state != "preparing" && state != "ready" && state != "outcome_unknown" && state != "final_failed") {
+		return "", groupOpsMaterialUnavailable(err)
+	}
+	return state, nil
+}
+
 func (repository *GroupOpsMaterialRepository) NextGroupOpsUploadPreparationGeneration(ctx context.Context, sourceKind string, sourceID int64, sourceDigest, providerScopeDigest, uploadKind string) (int64, error) {
 	query, err := queries(ctx)
 	if repository == nil || err != nil || sourceID < 1 || providerScopeDigest != repository.providerScopeDigest || !groupOpsDigest(sourceDigest) || !groupOpsDigest(providerScopeDigest) {

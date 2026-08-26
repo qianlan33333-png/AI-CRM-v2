@@ -57,6 +57,31 @@ func TestEnsureGroupOpsPreparationDoesNotReplayTerminalEffect(t *testing.T) {
 	}
 }
 
+func TestEnsureGroupOpsPreparationDoesNotQueueWhenPreviousOutcomeIsUncertain(t *testing.T) {
+	now := time.Date(2026, 8, 26, 8, 0, 0, 0, time.UTC)
+	for _, test := range []struct {
+		name  string
+		state string
+		want  error
+	}{
+		{name: "live preparation", state: "preparing", want: ErrGroupOpsMaterialAttemptStillRunning},
+		{name: "unknown provider outcome", state: "outcome_unknown", want: ErrGroupOpsMaterialOutcomeUnknown},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			store := &preparationStoreStub{generation: 2, state: test.state}
+			effects := &preparationEffectsStub{}
+			jobs := &preparationJobsStub{}
+			service := newPreparationService(t, store, effects, jobs)
+			service.now = func() time.Time { return now }
+
+			result, err := service.Ensure(context.Background(), preparationSources(), now.Add(time.Hour), now.Add(2*time.Hour))
+			if !errors.Is(err, test.want) || result != nil || effects.accepts != 0 || effects.queues != 0 || jobs.calls != 0 || store.nextCalls != 0 {
+				t.Fatalf("result=%+v err=%v store=%+v effects=%+v jobs=%+v", result, err, store, effects, jobs)
+			}
+		})
+	}
+}
+
 func TestGroupOpsUploadAdapterPersistsReadyBeforeExecutedAndNeverRetriesUnknown(t *testing.T) {
 	source := "sha256:7777777777777777777777777777777777777777777777777777777777777777"
 	envelope, err := eer.NewEnvelope(eer.EnvelopeInput{Owner: eer.OwnerMedia, Kind: eer.KindMediaWeComUpload, SourceRefDigest: eer.Digest(source), TargetRefDigest: eer.Digest("sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"), PayloadDigest: eer.Digest("sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"), PolicyVersionHash: eer.Digest("sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")})
@@ -155,10 +180,14 @@ type preparationStoreStub struct {
 	ready, bound bool
 	generation   int64
 	nextCalls    int
+	state        string
 }
 
 func (stub *preparationStoreStub) HasSufficientGroupOpsUploadLease(context.Context, string, int64, string, string, string, time.Time) (bool, error) {
 	return stub.ready, nil
+}
+func (stub *preparationStoreStub) ReadGroupOpsUploadPreparationState(context.Context, string, int64, string, string, string) (string, error) {
+	return stub.state, nil
 }
 func (stub *preparationStoreStub) NextGroupOpsUploadPreparationGeneration(context.Context, string, int64, string, string, string) (int64, error) {
 	stub.nextCalls++

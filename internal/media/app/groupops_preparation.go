@@ -16,6 +16,7 @@ import (
 var (
 	ErrGroupOpsMaterialPreparation         = errors.New("group ops material preparation unavailable")
 	ErrGroupOpsMaterialAttemptStillRunning = errors.New("group ops material upload attempt still running")
+	ErrGroupOpsMaterialOutcomeUnknown      = errors.New("group ops material upload outcome unknown")
 )
 
 // GroupOpsMaterialPreparationJobArgs contains only the opaque EER ID. Source
@@ -34,6 +35,7 @@ type GroupOpsMaterialPreparation struct {
 
 type GroupOpsMaterialPreparationStore interface {
 	HasSufficientGroupOpsUploadLease(context.Context, string, int64, string, string, string, time.Time) (bool, error)
+	ReadGroupOpsUploadPreparationState(context.Context, string, int64, string, string, string) (string, error)
 	NextGroupOpsUploadPreparationGeneration(context.Context, string, int64, string, string, string) (int64, error)
 	BindGroupOpsUploadPreparation(context.Context, GroupOpsMaterialPreparation) (bool, error)
 }
@@ -133,6 +135,19 @@ func (service *GroupOpsMaterialPreparationService) Ensure(ctx context.Context, s
 		}
 		if ready {
 			continue
+		}
+		state, err := service.store.ReadGroupOpsUploadPreparationState(ctx, input.SourceKind, input.SourceID, input.SourceDigest, string(service.scope), input.UploadKind)
+		if err != nil {
+			return nil, errors.Join(ErrGroupOpsMaterialPreparation, err)
+		}
+		switch state {
+		case "", "ready", "final_failed":
+		case "preparing":
+			return nil, ErrGroupOpsMaterialAttemptStillRunning
+		case "outcome_unknown":
+			return nil, ErrGroupOpsMaterialOutcomeUnknown
+		default:
+			return nil, ErrGroupOpsMaterialPreparation
 		}
 		generation, err := service.store.NextGroupOpsUploadPreparationGeneration(ctx, input.SourceKind, input.SourceID, input.SourceDigest, string(service.scope), input.UploadKind)
 		if err != nil || generation < 1 {
