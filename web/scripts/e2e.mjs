@@ -378,6 +378,14 @@ console.log('admin/radarForm.html（新建校验）');
   dom.window.close();
 }
 
+console.log('admin/radarForm.html?id=2（编辑路由）');
+{
+  const dom = await loadPage('admin/radarForm.html', { id: 2 });
+  const d = dom.window.document;
+  ok('雷达编辑路由加载现有链接', d.querySelector('.page-title')?.textContent === '编辑雷达链接' && d.querySelector('#fName')?.value === '共学营开营通知（可追踪）' && d.querySelector('#fUrl')?.value === 'https://mp.weixin.qq.com/s/gongxueying-kaiying');
+  dom.window.close();
+}
+
 /* ================= 后台 · AI 助手 ================= */
 console.log('admin/ai.html（计划列表）');
 {
@@ -489,6 +497,19 @@ console.log('admin/questionnaires.html');
   const d = dom.window.document;
   ok('问卷列表 6 行', d.querySelectorAll('tbody tr').length === 6);
   dom.window.close();
+}
+
+console.log('admin/questionnaireDetail.html（新建/编辑路由）');
+{
+  const createDom = await loadPage('admin/questionnaireDetail.html');
+  const createDoc = createDom.window.document;
+  ok('问卷新建路由保持创建态', createDoc.body.textContent.includes('创建问卷') && !!createDoc.querySelector('#questionnaireName') && !!createDoc.querySelector('#questionnaireQuestions'));
+  createDom.window.close();
+
+  const editDom = await loadPage('admin/questionnaireDetail.html', { id: 1 });
+  const editDoc = editDom.window.document;
+  ok('问卷编辑路由保持编辑态', editDoc.body.textContent.includes('编辑问卷') && !!editDoc.querySelector('#questionnaireName') && !!editDoc.querySelector('#questionnaireQuestions'));
+  editDom.window.close();
 }
 
 console.log('admin/customers.html（筛选、opaque cursor 翻页与详情导航）');

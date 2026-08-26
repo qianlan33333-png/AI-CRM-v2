@@ -1731,7 +1731,7 @@ export class AdminController extends PageBase {
     const productFormValue = this.qs().get('id') ? rows.products[0] : undefined;
     const serviceFormValue = this.qs().get('id') ? rows.spProducts[0] : undefined;
     const couponFormValue = this.qs().get('id') ? rows.coupons[0] : undefined;
-    const questionnaireFormValue = this.page === 'questionnaireDetail' ? rows.questionnaires[0] : undefined;
+    const questionnaireFormValue = this.page === 'questionnaireDetail' && this.qs().get('id') ? rows.questionnaires[0] : undefined;
     const channelFormValue = this.page === 'channelForm' && Boolean(this.qs().get('id')) ? rows.channels[0] : undefined;
     const channelFinalUrlPreview = channelFormValue?.carrierType === 'link' ? buildChannelFinalUrl(channelFormValue.linkUrl || '', channelFormValue.customerChannel || '') : '';
     const dateInput = (value?: string | null): string => value ? value.slice(0, 16) : '';
