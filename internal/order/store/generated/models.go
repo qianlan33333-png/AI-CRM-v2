@@ -102,6 +102,52 @@ type OrderRefund struct {
 	CreatedAt         pgtype.Timestamptz `json:"created_at"`
 }
 
+type OrderWechatShopMaterial struct {
+	ID                int64              `json:"id"`
+	ProviderOrderID   string             `json:"provider_order_id"`
+	StatusCode        int64              `json:"status_code"`
+	DealRecorded      bool               `json:"deal_recorded"`
+	AmountMinor       int64              `json:"amount_minor"`
+	Currency          string             `json:"currency"`
+	TransactionDigest []byte             `json:"transaction_digest"`
+	EvidenceDigest    []byte             `json:"evidence_digest"`
+	Source            string             `json:"source"`
+	SourceKeyDigest   []byte             `json:"source_key_digest"`
+	Readiness         string             `json:"readiness"`
+	ProviderVerified  bool               `json:"provider_verified"`
+	ProviderCreatedAt pgtype.Timestamptz `json:"provider_created_at"`
+	ProviderPaidAt    pgtype.Timestamptz `json:"provider_paid_at"`
+	ProviderUpdatedAt pgtype.Timestamptz `json:"provider_updated_at"`
+	SyncedAt          pgtype.Timestamptz `json:"synced_at"`
+	Version           int64              `json:"version"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+}
+
+type OrderWechatShopMaterialLine struct {
+	MaterialID              int64              `json:"material_id"`
+	Position                int32              `json:"position"`
+	ProductID               string             `json:"product_id"`
+	SkuID                   string             `json:"sku_id"`
+	SkuCount                int64              `json:"sku_count"`
+	OnAftersaleSkuCount     pgtype.Int8        `json:"on_aftersale_sku_count"`
+	FinishAftersaleSkuCount pgtype.Int8        `json:"finish_aftersale_sku_count"`
+	RealPriceMinor          int64              `json:"real_price_minor"`
+	RemainingSkuCount       pgtype.Int8        `json:"remaining_sku_count"`
+	AftersaleEvidenceExact  bool               `json:"aftersale_evidence_exact"`
+	Readiness               string             `json:"readiness"`
+	CreatedAt               pgtype.Timestamptz `json:"created_at"`
+}
+
+type OrderWechatShopMaterialQuarantine struct {
+	ID              int64              `json:"id"`
+	SourceTable     string             `json:"source_table"`
+	SourceKeyDigest []byte             `json:"source_key_digest"`
+	PayloadDigest   []byte             `json:"payload_digest"`
+	ReasonCode      string             `json:"reason_code"`
+	RecordedAt      pgtype.Timestamptz `json:"recorded_at"`
+}
+
 type OrderWechatShopRefund struct {
 	ID                       int64              `json:"id"`
 	OrderID                  int64              `json:"order_id"`

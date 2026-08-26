@@ -54,6 +54,10 @@ const (
 	weChatPayPaymentNotifyURLEnv      = "AICRM_WECHAT_PAY_PAYMENT_NOTIFY_URL"
 	weChatPayRefundNotifyURLEnv       = "AICRM_WECHAT_PAY_REFUND_NOTIFY_URL"
 	weChatPayPermissionConfirmedEnv   = "AICRM_WECHAT_PAY_PERMISSION_CONFIRMED"
+	weChatShopOrderSyncEnabledEnv     = "AICRM_WECHAT_SHOP_ORDER_SYNC_ENABLED"
+	weChatShopAppIDEnv                = "AICRM_WECHAT_SHOP_APP_ID"
+	weChatShopAppSecretEnv            = "AICRM_WECHAT_SHOP_APP_SECRET"
+	weChatShopPermissionConfirmedEnv  = "AICRM_WECHAT_SHOP_ORDER_SYNC_PERMISSION_CONFIRMED"
 
 	legacySecretKeyEnv                        = "SECRET_KEY"
 	legacyWeChatShopCallbackTokenEnv          = "WECHAT_SHOP_CALLBACK_TOKEN"
@@ -246,8 +250,24 @@ type WeChatPayProvider struct {
 	PermissionConfirmed bool
 }
 
+// WeChatShopOrderSecret is worker-only and deliberately opaque. The API role
+// never reads this credential.
+type WeChatShopOrderSecret struct{ value string }
+
+func (secret WeChatShopOrderSecret) Value() string { return secret.value }
+func (WeChatShopOrderSecret) String() string       { return "[REDACTED]" }
+func (WeChatShopOrderSecret) GoString() string     { return "[REDACTED]" }
+
+type WeChatShopOrderProvider struct {
+	Enabled             bool
+	AppID               string
+	AppSecret           WeChatShopOrderSecret
+	PermissionConfirmed bool
+}
+
 type CommerceProviders struct {
-	WeChatPay WeChatPayProvider
+	WeChatPay       WeChatPayProvider
+	WeChatShopOrder WeChatShopOrderProvider
 }
 
 type IdentityHMACKey struct{ value [32]byte }
@@ -390,6 +410,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		root.LegacyHealth.ProductionEnvironment = legacyProductionEnvironment(lookup)
 	}
 	if needWorker {
+		root.Commerce.WeChatShopOrder = parseWeChatShopOrderProvider(lookup, &problems)
 		root.Worker.PoolMaxConns = parsePositiveInt32(lookup, workerPoolMaxConnsEnv, "worker.pool_max_conns", &problems)
 		root.Worker.Queues = QueueConcurrency{
 			Critical: parsePositiveInt32(lookup, criticalWorkersEnv, "worker.queues.critical", &problems),
@@ -684,6 +705,40 @@ func parseWeChatPayProvider(lookup environmentLookup, needAPI, needWorker bool, 
 		*problems = append(*problems, "wechat_pay.permission_confirmed must be true when enabled")
 	}
 	return WeChatPayProvider{Enabled: true, AppID: appID, MerchantID: merchantID, MerchantSerial: merchantSerial, MerchantPrivateKey: CommerceProviderSecret{value: merchantKey}, APIV3Key: CommerceProviderSecret{value: apiV3Key}, PlatformSerial: platformSerial, PlatformCertificate: CommerceProviderSecret{value: platformCertificate}, PaymentNotifyURL: paymentNotifyURL, RefundNotifyURL: refundNotifyURL, PermissionConfirmed: permission == "true"}
+}
+
+func parseWeChatShopOrderProvider(lookup environmentLookup, problems *[]string) WeChatShopOrderProvider {
+	enabled, enabledPresent := lookup(weChatShopOrderSyncEnabledEnv)
+	appID, appIDPresent := lookup(weChatShopAppIDEnv)
+	secret, secretPresent := lookup(weChatShopAppSecretEnv)
+	permission, permissionPresent := lookup(weChatShopPermissionConfirmedEnv)
+	if !enabledPresent && !appIDPresent && !secretPresent && !permissionPresent {
+		return WeChatShopOrderProvider{}
+	}
+	if !enabledPresent || enabled != "true" && enabled != "false" {
+		*problems = append(*problems, "wechat_shop.order_sync.enabled must be true or false")
+		return WeChatShopOrderProvider{}
+	}
+	if enabled == "false" {
+		if appIDPresent || secretPresent || permissionPresent {
+			*problems = append(*problems, "wechat_shop.order_sync credentials require enabled=true")
+		}
+		return WeChatShopOrderProvider{}
+	}
+	if !appIDPresent || !secretPresent || !permissionPresent || appID == "" || secret == "" {
+		*problems = append(*problems, "wechat_shop.order_sync requires app_id, app_secret, and permission_confirmed together")
+		return WeChatShopOrderProvider{}
+	}
+	if !validProviderIdentifier(appID) || !validOpaqueProviderSecret(secret) {
+		*problems = append(*problems, "wechat_shop.order_sync credentials are invalid")
+	}
+	if permission != "true" {
+		*problems = append(*problems, "wechat_shop.order_sync.permission_confirmed must be true when enabled")
+	}
+	return WeChatShopOrderProvider{
+		Enabled: true, AppID: appID, AppSecret: WeChatShopOrderSecret{value: secret},
+		PermissionConfirmed: permission == "true",
+	}
 }
 
 func validProviderIdentifier(value string) bool {

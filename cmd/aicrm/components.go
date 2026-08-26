@@ -244,6 +244,26 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	if config.Commerce.WeChatShopOrder.Enabled {
+		shopProvider, shopErr := newWeChatShopOrderProviderRuntime(
+			config.Commerce.WeChatShopOrder, &http.Client{Timeout: 5 * time.Second},
+		)
+		if shopErr != nil {
+			pool.Close()
+			return nil, shopErr
+		}
+		shopMaterials, shopErr := orderapp.NewWeChatShopMaterialService(
+			uow, orderstore.NewWeChatShopMaterialRepository(), shopProvider, eventstore.NewAppender(),
+		)
+		if shopErr != nil {
+			pool.Close()
+			return nil, shopErr
+		}
+		if shopErr = orderworker.RegisterWeChatShopMaterialSyncWorker(workers, shopMaterials); shopErr != nil {
+			pool.Close()
+			return nil, shopErr
+		}
+	}
 	commerceRefunds, err := orderstore.NewCommerceRefundRepository(pool)
 	if err != nil {
 		pool.Close()
