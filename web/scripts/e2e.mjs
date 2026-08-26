@@ -670,6 +670,21 @@ console.log('admin/couponForm.html?id=31（HTTP 表单与商品选项）');
   dom.window.close();
 }
 
+console.log('admin/couponForm.html（HTTP 新建与商品选项筛选）');
+{
+  const dom = await loadPage('admin/couponForm.html', { couponHttp: true });
+  const d = dom.window.document;
+  ok('HTTP 模式挂载新建优惠券表单', d.body.textContent.includes('创建优惠券') && !!d.querySelector('#coupon-name') && !d.querySelector('#couponName'));
+  input(dom, d.querySelector('#option-query'), '增长');
+  d.querySelector('#option-type').value = 'standard_product';
+  click(dom, d.querySelector('#option-search'));
+  await sleep(30);
+  const calls = dom.window.__couponHttpTest.calls;
+  ok('商品选项筛选携带关键词、类型与分页参数', calls.some((call) => call.path === '/api/admin/coupons/product-options' && call.query.includes('q=%E5%A2%9E%E9%95%BF') && call.query.includes('product_type=standard_product') && call.query.includes('limit=20') && call.query.includes('offset=0')));
+  ok('新建页只展示服务端返回的商品引用', d.body.textContent.includes('standard_product:9') && !d.body.textContent.includes('service_period:'));
+  dom.window.close();
+}
+
 console.log('admin/couponForm.html?id=31（HTTP 读取失败关闭）');
 {
   const dom = await loadPage('admin/couponForm.html', { id: 31, couponHttp: true, couponHttpFailure: true });
