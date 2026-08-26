@@ -6,8 +6,10 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	sidebarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/sidebar/app"
+	sidebardb "github.com/qianlan33333-png/AI-CRM-v2/internal/sidebar/store/generated"
 )
 
 type MaterialSendReceiptStore struct{ pool *pgxpool.Pool }
@@ -23,63 +25,57 @@ func (store *MaterialSendReceiptStore) ReserveSidebarImageSend(ctx context.Conte
 	if store == nil || store.pool == nil || ctx == nil || actorID < 1 || customerID < 1 || imageID < 1 {
 		return sidebarapp.SidebarImageSendReceipt{}, false, sidebarapp.ErrUnavailable
 	}
-	const insert = `INSERT INTO public.sidebar_image_temporary_media_receipts(actor_id, customer_id, image_id, key_digest, state)
-VALUES ($1, $2, $3, $4, 'pending')
-ON CONFLICT (actor_id, customer_id, key_digest) DO NOTHING
-RETURNING id, image_id, state, media_id, media_expires_at, provider_call_dispatched`
-	receipt, err := scanMaterialSendReceipt(store.pool.QueryRow(ctx, insert, actorID, customerID, imageID, keyDigest[:]))
+	queries := sidebardb.New(store.pool)
+	row, err := queries.ReserveSidebarImageSend(ctx, sidebardb.ReserveSidebarImageSendParams{
+		ActorID: actorID, CustomerID: customerID, ImageID: imageID, KeyDigest: keyDigest[:],
+	})
 	if err == nil {
-		return receipt, true, nil
+		return mapMaterialSendReceipt(row.ID, row.ImageID, row.State, row.MediaID, row.MediaExpiresAt, row.ProviderCallDispatched), true, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return sidebarapp.SidebarImageSendReceipt{}, false, err
 	}
-	const read = `SELECT id, image_id, state, media_id, media_expires_at, provider_call_dispatched
-FROM public.sidebar_image_temporary_media_receipts
-WHERE actor_id = $1 AND customer_id = $2 AND key_digest = $3`
-	receipt, err = scanMaterialSendReceipt(store.pool.QueryRow(ctx, read, actorID, customerID, keyDigest[:]))
+	existing, err := queries.GetSidebarImageSendByKey(ctx, sidebardb.GetSidebarImageSendByKeyParams{
+		ActorID: actorID, CustomerID: customerID, KeyDigest: keyDigest[:],
+	})
 	if err != nil {
 		return sidebarapp.SidebarImageSendReceipt{}, false, err
 	}
-	return receipt, false, nil
+	return mapMaterialSendReceipt(existing.ID, existing.ImageID, existing.State, existing.MediaID, existing.MediaExpiresAt, existing.ProviderCallDispatched), false, nil
 }
 
 func (store *MaterialSendReceiptStore) CompleteSidebarImageSend(ctx context.Context, receiptID int64, state, mediaID string, mediaExpiresAt time.Time, providerCallDispatched bool) (sidebarapp.SidebarImageSendReceipt, error) {
 	if store == nil || store.pool == nil || ctx == nil || receiptID < 1 || (state != "ready" && state != "outcome_unknown" && state != "final_failed") {
 		return sidebarapp.SidebarImageSendReceipt{}, sidebarapp.ErrUnavailable
 	}
-	const complete = `UPDATE public.sidebar_image_temporary_media_receipts
-SET state = $2, media_id = NULLIF($3, ''), media_expires_at = $4, provider_call_dispatched = $5, updated_at = now()
-WHERE id = $1 AND state = 'pending'
-RETURNING id, image_id, state, media_id, media_expires_at, provider_call_dispatched`
-	receipt, err := scanMaterialSendReceipt(store.pool.QueryRow(ctx, complete, receiptID, state, mediaID, nullableTime(mediaExpiresAt), providerCallDispatched))
+	row, err := sidebardb.New(store.pool).CompleteSidebarImageSend(ctx, sidebardb.CompleteSidebarImageSendParams{
+		ID: receiptID, State: state, MediaID: mediaID, MediaExpiresAt: nullableTime(mediaExpiresAt),
+		ProviderCallDispatched: providerCallDispatched,
+	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return sidebarapp.SidebarImageSendReceipt{}, sidebarapp.ErrUnavailable
 	}
-	return receipt, err
-}
-
-type materialSendRow interface{ Scan(...any) error }
-
-func scanMaterialSendReceipt(row materialSendRow) (sidebarapp.SidebarImageSendReceipt, error) {
-	var receipt sidebarapp.SidebarImageSendReceipt
-	var mediaID *string
-	var mediaExpiresAt *time.Time
-	if err := row.Scan(&receipt.ID, &receipt.ImageID, &receipt.State, &mediaID, &mediaExpiresAt, &receipt.ProviderCallDispatched); err != nil {
+	if err != nil {
 		return sidebarapp.SidebarImageSendReceipt{}, err
 	}
-	if mediaID != nil {
-		receipt.MediaID = *mediaID
-	}
-	if mediaExpiresAt != nil {
-		receipt.MediaExpiresAt = mediaExpiresAt.UTC()
-	}
-	return receipt, nil
+	return mapMaterialSendReceipt(row.ID, row.ImageID, row.State, row.MediaID, row.MediaExpiresAt, row.ProviderCallDispatched), nil
 }
 
-func nullableTime(value time.Time) any {
-	if value.IsZero() {
-		return nil
+func mapMaterialSendReceipt(id, imageID int64, state string, mediaID pgtype.Text, mediaExpiresAt pgtype.Timestamptz, dispatched bool) sidebarapp.SidebarImageSendReceipt {
+	receipt := sidebarapp.SidebarImageSendReceipt{ID: id, ImageID: imageID, State: state, ProviderCallDispatched: dispatched}
+	if mediaID.Valid {
+		receipt.MediaID = mediaID.String
 	}
-	return value.UTC()
+	if mediaExpiresAt.Valid {
+		value := mediaExpiresAt.Time.UTC()
+		receipt.MediaExpiresAt = value
+	}
+	return receipt
+}
+
+func nullableTime(value time.Time) pgtype.Timestamptz {
+	if value.IsZero() {
+		return pgtype.Timestamptz{}
+	}
+	return pgtype.Timestamptz{Time: value.UTC(), Valid: true}
 }
