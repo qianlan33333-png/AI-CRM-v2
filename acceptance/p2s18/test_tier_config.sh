@@ -58,7 +58,7 @@ validate_postgresql_file() {
 validate_compose_file() {
   local compose_file="$1"
   [[ -f "$compose_file" && ! -L "$compose_file" ]] || return 1
-  grep -Fq 'image: postgres:16.14-bookworm' "$compose_file" || return 1
+  grep -Fq 'image: postgres:16.14-trixie@sha256:95206741a5b214807675e14165369d05b93a9cf692223b616d07cca227e74b0b' "$compose_file" || return 1
   grep -Fq 'profiles: [combined]' "$compose_file" || return 1
   grep -Fq 'command: ["--role=all"]' "$compose_file" || return 1
   [[ "$(grep -Fxc '    profiles: [split]' "$compose_file")" = '2' ]] || return 1
@@ -145,6 +145,12 @@ mkdir -p "$fake_binary_directory"
 docker_log="$test_directory/docker.log"
 printf '%s\n' '#!/usr/bin/env bash' 'printf "%s\n" "$*" >>"$AICRM_DOCKER_LOG"' >"$fake_binary_directory/docker"
 chmod 755 "$fake_binary_directory/docker"
+printf '%s\n' '#!/usr/bin/env bash' 'for argument in "$@"; do case "$argument" in --file=*) snapshot_file="${argument#--file=}" ;; esac; done' ': >"$snapshot_file"' >"$fake_binary_directory/pg_dump"
+printf '%s\n' '#!/usr/bin/env bash' 'exit 0' >"$fake_binary_directory/curl"
+real_go="$(command -v go)"
+go_log="$test_directory/go.log"
+printf '%s\n' '#!/usr/bin/env bash' 'if [[ "$1" = "env" && "$2" = "GOVERSION" ]]; then exec "$AICRM_REAL_GO" "$@"; fi' 'if [[ "$*" = *"run ./cmd/aicrm-config"* ]]; then exec "$AICRM_REAL_GO" "$@"; fi' 'printf "%s\n" "$*" >>"$AICRM_GO_LOG"' >"$fake_binary_directory/go"
+chmod 755 "$fake_binary_directory/pg_dump" "$fake_binary_directory/curl" "$fake_binary_directory/go"
 
 if (
   cd "$repository_root"
@@ -162,12 +168,18 @@ fi
   AICRM_DATABASE_URL='postgres://test-only:test-only@127.0.0.1:5432/aicrm?sslmode=disable' \
   AICRM_POSTGRES_PASSWORD='test-only' \
   AICRM_DOCKER_LOG="$docker_log" \
+  AICRM_GO_LOG="$go_log" \
+  AICRM_REAL_GO="$real_go" \
   PATH="$fake_binary_directory:$PATH" \
     scripts/staging_deploy.sh --tier=m --output-dir="$test_directory/authorized" --apply >/dev/null
 )
-[[ "$(wc -l <"$docker_log" | tr -d ' ')" = '3' ]] || fail 'authorized staging apply did not execute three Compose checks/actions'
+[[ "$(wc -l <"$docker_log" | tr -d ' ')" = '4' ]] || fail 'authorized staging apply did not execute four Compose checks/actions'
 grep -Fq 'compose version' "$docker_log" || fail 'Compose version check was not executed'
 grep -Fq 'config --quiet' "$docker_log" || fail 'Compose config check was not executed'
-grep -Fq 'up -d --wait' "$docker_log" || fail 'Compose apply was not executed'
+grep -Fq 'up -d --wait postgres' "$docker_log" || fail 'PostgreSQL was not started before migrations'
+[[ "$(grep -Fc 'up -d --wait' "$docker_log")" = '2' ]] || fail 'Compose application did not resume after migrations'
+grep -Fq 'tool -modfile=tools/go.mod goose -dir migrations up' "$go_log" || fail 'Goose migration was not executed'
+grep -Fq 'run ./cmd/aicrm-river-migrate --direction=up' "$go_log" || fail 'River migration was not executed'
+compgen -G "$test_directory/authorized/staging-pre-migration.*.dump" >/dev/null || fail 'pre-migration snapshot was not created'
 
 printf 'p2-s18-acceptance: PASS (render-only; staging deployment NOT EXECUTED)\n'

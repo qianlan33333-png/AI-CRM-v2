@@ -75,6 +75,8 @@ fi
 [[ -n "${AICRM_POSTGRES_PASSWORD:-}" ]] || fail 'AICRM_POSTGRES_PASSWORD is required for --apply'
 command -v docker >/dev/null 2>&1 || fail 'docker with Compose v2 is required for --apply'
 docker compose version >/dev/null 2>&1 || fail 'docker with Compose v2 is required for --apply'
+command -v pg_dump >/dev/null 2>&1 || fail 'pg_dump is required for the pre-migration snapshot'
+command -v curl >/dev/null 2>&1 || fail 'curl is required for the readiness smoke test'
 
 swap_target_mib="$(awk -F= '$1 == "AICRM_SWAP_TARGET_MIB" { print $2 }' "$environment_file")"
 swap_policy="$(awk -F= '$1 == "AICRM_SWAP_POLICY" { print $2 }' "$environment_file")"
@@ -90,6 +92,28 @@ fi
 
 export AICRM_GENERATED_ENV_FILE="$environment_file"
 export AICRM_POSTGRESQL_CONF_FILE="$postgresql_file"
+set -a
+# The generated file is deterministic, contains no credentials, and is the
+# deployment owner's source for COMPOSE_PROFILES and bounded runtime sizing.
+. "$environment_file"
+set +a
 docker compose --env-file "$environment_file" -f "$repository_root/deploy/compose.yml" config --quiet
+docker compose --env-file "$environment_file" -f "$repository_root/deploy/compose.yml" up -d --wait postgres
+
+snapshot_file="$(mktemp "$resolved_output_directory/staging-pre-migration.XXXXXX.dump")"
+pg_dump --format=custom --file="$snapshot_file" "$AICRM_DATABASE_URL"
+chmod 600 "$snapshot_file"
+
+(
+  cd "$repository_root"
+  GOOSE_DRIVER=postgres GOOSE_DBSTRING="$AICRM_DATABASE_URL" \
+    GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+    go tool -modfile=tools/go.mod goose -dir migrations up
+  GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+    go run ./cmd/aicrm-river-migrate --direction=up
+)
+
 docker compose --env-file "$environment_file" -f "$repository_root/deploy/compose.yml" up -d --wait
-printf 'staging-deploy: tier %s Compose apply completed; migrations NOT EXECUTED\n' "$tier_value"
+readiness_url="http://127.0.0.1:${AICRM_HTTP_PORT:-8080}/readyz"
+curl --fail --silent --show-error --max-time 10 "$readiness_url" >/dev/null
+printf 'staging-deploy: tier %s snapshot, Goose, River, Compose and /readyz completed; rollback NOT EXECUTED\n' "$tier_value"
