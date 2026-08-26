@@ -36,6 +36,7 @@ const (
 	OwnerSurvey                        = eer.OwnerSurvey
 	OwnerGroupOps                      = eer.OwnerGroupOps
 	OwnerWeCom                         = eer.OwnerWeCom
+	OwnerMedia                         = eer.OwnerMedia
 	KindOutboundMessage                = eer.KindOutboundMessage
 	KindContactAcquisitionAssetPublish = eer.KindContactAcquisitionAssetPublish
 	KindProductExternalPushTest        = eer.KindProductExternalPushTest
@@ -43,6 +44,7 @@ const (
 	KindOutboundMedia                  = eer.KindOutboundMedia
 	KindGroupOpsBroadcast              = eer.KindGroupOpsBroadcast
 	KindWeComTagSync                   = eer.KindWeComTagSync
+	KindMediaWeComUpload               = eer.KindMediaWeComUpload
 	StateAccepted                      = eer.StateAccepted
 	StateQueued                        = eer.StateQueued
 	StateAttempted                     = eer.StateAttempted

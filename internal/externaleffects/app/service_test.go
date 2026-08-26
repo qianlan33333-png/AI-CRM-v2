@@ -22,7 +22,7 @@ func TestGenericMutationsCannotBypassTypedDomainControl(t *testing.T) {
 		{eer.OwnerSurvey, eer.KindSurveyWebhook},
 		{eer.OwnerOrder, eer.KindOrderPaymentPrepay},
 		{eer.OwnerOrder, eer.KindOrderRefund},
-		{eer.OwnerGroupOps, eer.KindGroupOpsBroadcast},
+		{eer.OwnerGroupOps, eer.KindGroupOpsBroadcast}, {eer.OwnerMedia, eer.KindMediaWeComUpload},
 		{eer.OwnerProduct, eer.KindProductExternalPushTest},
 	}
 	digest := eer.Digest("sha256:" + strings.Repeat("a", 64))
