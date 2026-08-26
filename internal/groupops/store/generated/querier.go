@@ -49,6 +49,7 @@ type Querier interface {
 	RecordGroupOpsWeComGroupMessageDelivery(ctx context.Context, arg RecordGroupOpsWeComGroupMessageDeliveryParams) (GroupOpsWecomGroupMessageReceipt, error)
 	ReserveGroupOpsDirectoryRefresh(ctx context.Context, arg ReserveGroupOpsDirectoryRefreshParams) (GroupOpsDirectoryRefreshReceipt, error)
 	ReserveGroupOpsOperationReceipt(ctx context.Context, arg ReserveGroupOpsOperationReceiptParams) (ReserveGroupOpsOperationReceiptRow, error)
+	ReserveGroupOpsProtocolReplay(ctx context.Context, arg ReserveGroupOpsProtocolReplayParams) ([]byte, error)
 	ReserveGroupOpsRun(ctx context.Context, arg ReserveGroupOpsRunParams) (ReserveGroupOpsRunRow, error)
 	SaveGroupOpsPlan(ctx context.Context, arg SaveGroupOpsPlanParams) (int64, error)
 	SaveGroupOpsPlanWebhookDescriptor(ctx context.Context, arg SaveGroupOpsPlanWebhookDescriptorParams) (int64, error)

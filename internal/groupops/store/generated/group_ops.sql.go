@@ -1321,6 +1321,41 @@ func (q *Queries) ReserveGroupOpsOperationReceipt(ctx context.Context, arg Reser
 	return i, err
 }
 
+const reserveGroupOpsProtocolReplay = `-- name: ReserveGroupOpsProtocolReplay :one
+INSERT INTO group_ops_protocol_replays (
+  client_id, resource_reference, event_id, event_id_digest, payload_digest, created_at
+) VALUES (
+  $1::text, $2::text,
+  $3::text, $4::bytea,
+  $5::bytea, $6::timestamptz
+)
+ON CONFLICT (client_id, event_id_digest) DO NOTHING
+RETURNING event_id_digest
+`
+
+type ReserveGroupOpsProtocolReplayParams struct {
+	ClientID          string             `json:"client_id"`
+	ResourceReference string             `json:"resource_reference"`
+	EventID           string             `json:"event_id"`
+	EventIDDigest     []byte             `json:"event_id_digest"`
+	PayloadDigest     []byte             `json:"payload_digest"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) ReserveGroupOpsProtocolReplay(ctx context.Context, arg ReserveGroupOpsProtocolReplayParams) ([]byte, error) {
+	row := q.db.QueryRow(ctx, reserveGroupOpsProtocolReplay,
+		arg.ClientID,
+		arg.ResourceReference,
+		arg.EventID,
+		arg.EventIDDigest,
+		arg.PayloadDigest,
+		arg.CreatedAt,
+	)
+	var event_id_digest []byte
+	err := row.Scan(&event_id_digest)
+	return event_id_digest, err
+}
+
 const reserveGroupOpsRun = `-- name: ReserveGroupOpsRun :one
 WITH inserted AS (
   INSERT INTO group_ops_runs (plan_id, trigger_kind, source_key_digest, plan_revision, scheduled_for, accepted_at, accepted_by)

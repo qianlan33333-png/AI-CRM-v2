@@ -281,3 +281,14 @@ RETURNING *;
 -- name: GetGroupOpsDirectoryRefresh :one
 SELECT * FROM group_ops_directory_refresh_receipts
 WHERE refresh_kind = sqlc.arg(refresh_kind) AND actor_id = sqlc.arg(actor_id) AND key_digest = sqlc.arg(key_digest);
+
+-- name: ReserveGroupOpsProtocolReplay :one
+INSERT INTO group_ops_protocol_replays (
+  client_id, resource_reference, event_id, event_id_digest, payload_digest, created_at
+) VALUES (
+  sqlc.arg(client_id)::text, sqlc.arg(resource_reference)::text,
+  sqlc.arg(event_id)::text, sqlc.arg(event_id_digest)::bytea,
+  sqlc.arg(payload_digest)::bytea, sqlc.arg(created_at)::timestamptz
+)
+ON CONFLICT (client_id, event_id_digest) DO NOTHING
+RETURNING event_id_digest;
