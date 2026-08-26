@@ -316,16 +316,16 @@ func (h *Handler) Webhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	reference, ok := templateOpaque(r, WebhookPath, "{webhook_key}")
-	idempotencyKey, keyOK := key(r)
 	body, bodyOK := jsonObjectBody(r)
-	if !ok || !keyOK || !bodyOK {
+	if !ok || !bodyOK {
 		writeError(w, http.StatusBadRequest, "invalid_request")
 		return
 	}
-	if _, ok = h.protocolPrincipal(w, r, "group_ops_webhook", reference, body); !ok {
+	principal, ok := h.protocolPrincipal(w, r, "group_ops_webhook", reference, body)
+	if !ok {
 		return
 	}
-	result, err := h.Runtime.AcceptWebhook(r.Context(), reference, idempotencyKey)
+	result, err := h.Runtime.AcceptWebhook(r.Context(), reference, principal.ID)
 	if err != nil {
 		runtimeError(w, err)
 		return

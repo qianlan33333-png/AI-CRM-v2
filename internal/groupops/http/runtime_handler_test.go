@@ -43,7 +43,7 @@ func TestBroadcastAndWebhookProtocolsFailClosedThenAcceptWithInjectedAuth(t *tes
 		},
 		acceptWebhook: func(_ context.Context, reference, key string) (groupopsport.RunSummary, error) {
 			webhook++
-			if reference != "hook-1" || key != "group-ops-webhook-http-01" {
+			if reference != "hook-1" || key != "event-0123456789abcdef" {
 				t.Fatalf("webhook reference/key=%q/%q", reference, key)
 			}
 			return groupopsport.RunSummary{Accepted: 1, RuntimeSafety: groupopsport.DisabledRuntimeSafety()}, nil
@@ -68,7 +68,7 @@ func TestBroadcastAndWebhookProtocolsFailClosedThenAcceptWithInjectedAuth(t *tes
 	}
 	request := httptest.NewRequest(http.MethodPost, "/api/automation/group-ops/webhooks/hook-1", strings.NewReader(`{"event":"accepted-only"}`))
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Idempotency-Key", "group-ops-webhook-http-01")
+	authenticator.principal = ProtocolPrincipal{ID: "event-0123456789abcdef"}
 	response = httptest.NewRecorder()
 	NewWithRuntime(applicationStub{}, runtime, authenticator).Webhook(response, request)
 	if response.Code != http.StatusAccepted || webhook != 1 || authenticator.purpose != "group_ops_webhook" || authenticator.resource != "hook-1" || string(authenticator.body) != `{"event":"accepted-only"}` {
