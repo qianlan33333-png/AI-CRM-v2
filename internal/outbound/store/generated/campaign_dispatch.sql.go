@@ -58,16 +58,18 @@ func (q *Queries) InsertOutboundCampaignDispatch(ctx context.Context, arg Insert
 }
 
 const insertOutboundCampaignProviderAttemptReceipt = `-- name: InsertOutboundCampaignProviderAttemptReceipt :exec
-INSERT INTO public.outbound_campaign_provider_attempt_receipts(external_effect_id,attempt_number,completion,provider_receipt_digest)
-VALUES($1,$2,$3,$4)
+INSERT INTO public.outbound_campaign_provider_attempt_receipts(external_effect_id,attempt_number,completion,provider_receipt_digest,business_call_dispatched,real_external_call_executed)
+VALUES($1,$2,$3,$4,$5,$6)
 ON CONFLICT(external_effect_id,attempt_number,completion) DO NOTHING
 `
 
 type InsertOutboundCampaignProviderAttemptReceiptParams struct {
-	ExternalEffectID      int64  `json:"external_effect_id"`
-	AttemptNumber         int32  `json:"attempt_number"`
-	Completion            string `json:"completion"`
-	ProviderReceiptDigest string `json:"provider_receipt_digest"`
+	ExternalEffectID         int64  `json:"external_effect_id"`
+	AttemptNumber            int32  `json:"attempt_number"`
+	Completion               string `json:"completion"`
+	ProviderReceiptDigest    string `json:"provider_receipt_digest"`
+	BusinessCallDispatched   bool   `json:"business_call_dispatched"`
+	RealExternalCallExecuted bool   `json:"real_external_call_executed"`
 }
 
 func (q *Queries) InsertOutboundCampaignProviderAttemptReceipt(ctx context.Context, arg InsertOutboundCampaignProviderAttemptReceiptParams) error {
@@ -76,6 +78,8 @@ func (q *Queries) InsertOutboundCampaignProviderAttemptReceipt(ctx context.Conte
 		arg.AttemptNumber,
 		arg.Completion,
 		arg.ProviderReceiptDigest,
+		arg.BusinessCallDispatched,
+		arg.RealExternalCallExecuted,
 	)
 	return err
 }
@@ -170,6 +174,37 @@ func (q *Queries) LoadOutboundCampaignDispatchByEffect(ctx context.Context, exte
 	return i, err
 }
 
+const loadOutboundCampaignDispatchProviderRequest = `-- name: LoadOutboundCampaignDispatchProviderRequest :one
+SELECT dispatch.id,dispatch.handoff_id,dispatch.customer_id,dispatch.step_index,dispatch.payload_digest,step.content
+FROM public.outbound_campaign_dispatches AS dispatch
+JOIN public.outbound_campaign_handoff_steps AS step
+  ON step.handoff_id = dispatch.handoff_id AND step.step_index = dispatch.step_index
+WHERE dispatch.payload_digest=$1
+`
+
+type LoadOutboundCampaignDispatchProviderRequestRow struct {
+	ID            int64  `json:"id"`
+	HandoffID     int64  `json:"handoff_id"`
+	CustomerID    int64  `json:"customer_id"`
+	StepIndex     int32  `json:"step_index"`
+	PayloadDigest string `json:"payload_digest"`
+	Content       string `json:"content"`
+}
+
+func (q *Queries) LoadOutboundCampaignDispatchProviderRequest(ctx context.Context, payloadDigest string) (LoadOutboundCampaignDispatchProviderRequestRow, error) {
+	row := q.db.QueryRow(ctx, loadOutboundCampaignDispatchProviderRequest, payloadDigest)
+	var i LoadOutboundCampaignDispatchProviderRequestRow
+	err := row.Scan(
+		&i.ID,
+		&i.HandoffID,
+		&i.CustomerID,
+		&i.StepIndex,
+		&i.PayloadDigest,
+		&i.Content,
+	)
+	return i, err
+}
+
 const loadOutboundCampaignDispatchReceipt = `-- name: LoadOutboundCampaignDispatchReceipt :one
 SELECT id,actor_id,handoff_id,key_digest,payload_digest,result_snapshot,created_at
 FROM public.outbound_campaign_dispatch_receipts WHERE actor_id=$1 AND key_digest=$2 FOR UPDATE
@@ -231,6 +266,27 @@ func (q *Queries) LockOutboundCampaignHandoffForDispatch(ctx context.Context, ar
 		&i.ContentDigest,
 		&i.AcceptedAt,
 	)
+	return i, err
+}
+
+const readOutboundCampaignDispatchEvidence = `-- name: ReadOutboundCampaignDispatchEvidence :one
+SELECT COALESCE(bool_or(receipt.business_call_dispatched), FALSE)::boolean AS business_call_dispatched,
+       COALESCE(bool_or(receipt.real_external_call_executed), FALSE)::boolean AS real_external_call_executed
+FROM public.outbound_campaign_dispatches AS dispatch
+LEFT JOIN public.outbound_campaign_provider_attempt_receipts AS receipt
+  ON receipt.external_effect_id = dispatch.external_effect_id
+WHERE dispatch.handoff_id=$1
+`
+
+type ReadOutboundCampaignDispatchEvidenceRow struct {
+	BusinessCallDispatched   bool `json:"business_call_dispatched"`
+	RealExternalCallExecuted bool `json:"real_external_call_executed"`
+}
+
+func (q *Queries) ReadOutboundCampaignDispatchEvidence(ctx context.Context, handoffID int64) (ReadOutboundCampaignDispatchEvidenceRow, error) {
+	row := q.db.QueryRow(ctx, readOutboundCampaignDispatchEvidence, handoffID)
+	var i ReadOutboundCampaignDispatchEvidenceRow
+	err := row.Scan(&i.BusinessCallDispatched, &i.RealExternalCallExecuted)
 	return i, err
 }
 

@@ -41,6 +41,9 @@ func (fixture *campaignDispatchFixture) LoadCampaignDispatchByEffect(_ context.C
 	}
 	return outboundport.CampaignDispatchBinding{}, errors.New("binding not found")
 }
+func (*campaignDispatchFixture) LoadCampaignDispatchProviderRequest(context.Context, string) (outboundport.CampaignDispatchProviderRequest, error) {
+	return outboundport.CampaignDispatchProviderRequest{}, errors.New("not used")
+}
 func (fixture *campaignDispatchFixture) ListCampaignDispatchCandidates(context.Context, int64) ([]outboundport.CampaignDispatchCandidate, error) {
 	if fixture.candidates != nil {
 		return append([]outboundport.CampaignDispatchCandidate(nil), fixture.candidates...), nil
@@ -110,7 +113,7 @@ func (fixture *campaignDispatchFixture) ReadCampaignDispatchSummary(_ context.Co
 	}
 	return result, nil
 }
-func (*campaignDispatchFixture) RecordCampaignProviderAttemptReceipt(context.Context, string, int32, string, eer.Digest) error {
+func (*campaignDispatchFixture) RecordCampaignProviderAttemptReceipt(context.Context, string, int32, outboundport.CampaignDispatchProviderAttemptReceipt) error {
 	return nil
 }
 func (fixture *campaignDispatchFixture) EnqueueCampaignDispatch(_ context.Context, effectID string) (eer.RiverJobLink, error) {

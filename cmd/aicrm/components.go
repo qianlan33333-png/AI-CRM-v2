@@ -176,10 +176,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	if err = outboundworker.RegisterCampaignDispatchWorker(workers, campaignDispatchService, outboundworker.ProviderShapedAdapter{}); err != nil {
-		pool.Close()
-		return nil, err
-	}
+	var campaignDispatchAdapter eer.Adapter = outboundworker.ProviderShapedAdapter{}
 	if config.WeCom.Outbound.Enabled {
 		targets, targetErr := contactstore.NewWeComOutboundTargetResolver(pool, config.WeCom.Outbound.CorpID)
 		if targetErr != nil {
@@ -192,6 +189,12 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 			pool.Close()
 			return nil, providerErr
 		}
+		campaignAdapter, providerErr := outboundworker.NewCampaignWeComAdapter(campaignDispatchRepository, provider)
+		if providerErr != nil {
+			pool.Close()
+			return nil, providerErr
+		}
+		campaignDispatchAdapter = campaignAdapter
 		rate, rateErr := outboundworker.NewTokenBucket(10)
 		if rateErr != nil {
 			pool.Close()
@@ -202,6 +205,10 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 			pool.Close()
 			return nil, registerErr
 		}
+	}
+	if err = outboundworker.RegisterCampaignDispatchWorker(workers, campaignDispatchService, campaignDispatchAdapter); err != nil {
+		pool.Close()
+		return nil, err
 	}
 	financialOrders, err := orderstore.NewFinancialRepository(pool)
 	if err != nil {

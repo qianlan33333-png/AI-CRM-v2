@@ -18,6 +18,7 @@ type Querier interface {
 	CompleteIngestReceipt(ctx context.Context, arg CompleteIngestReceiptParams) (int64, error)
 	CompleteMergeReviewReceipt(ctx context.Context, arg CompleteMergeReviewReceiptParams) (int64, error)
 	CompletePendingReplay(ctx context.Context, arg CompletePendingReplayParams) (int64, error)
+	CreateVerifiedIdentityFixture(ctx context.Context, arg CreateVerifiedIdentityFixtureParams) error
 	DeferPendingReplay(ctx context.Context, arg DeferPendingReplayParams) (int64, error)
 	HasVerifiedWeComIdentityForBindCustomer(ctx context.Context, customerID int64) (bool, error)
 	InsertAutoCustomerMergeAudit(ctx context.Context, arg InsertAutoCustomerMergeAuditParams) (int64, error)

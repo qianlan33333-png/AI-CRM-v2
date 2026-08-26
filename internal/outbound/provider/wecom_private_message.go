@@ -68,9 +68,9 @@ func (provider *WeComPrivateMessageProvider) Send(ctx context.Context, request o
 		return classifyWeComPrivateMessageError(err), nil
 	}
 	if strings.TrimSpace(result.MessageID) == "" {
-		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureInvalidResult, Code: "wecom_missing_msgid"}, nil
+		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureInvalidResult, Code: "wecom_missing_msgid", BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
 	}
-	return outboundapp.ProviderResult{MessageID: result.MessageID}, nil
+	return outboundapp.ProviderResult{MessageID: result.MessageID, BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
 }
 
 type privateMessagePayload struct {
@@ -102,9 +102,9 @@ func validPrivateMessageText(value string, limit int) bool {
 func classifyWeComPrivateMessageError(err error) outboundapp.ProviderResult {
 	switch {
 	case errors.Is(err, errWeComPrivateMessageOutcomeUnknown):
-		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureConnection, Code: "wecom_write_outcome_unknown"}
+		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureConnection, Code: "wecom_write_outcome_unknown", BusinessCallDispatched: true, RealExternalCallExecuted: true}
 	case errors.Is(err, errWeComPrivateMessageTargetRejected):
-		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureRecipientUnavailable, Code: "wecom_private_target_rejected"}
+		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureRecipientUnavailable, Code: "wecom_private_target_rejected", BusinessCallDispatched: true, RealExternalCallExecuted: true}
 	case errors.Is(err, errWeComPrivateMessageNotDispatched):
 		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureTemporary, Code: "wecom_not_dispatched"}
 	case errors.Is(err, errWeComPrivateMessageUpstream):
@@ -113,15 +113,15 @@ func classifyWeComPrivateMessageError(err error) outboundapp.ProviderResult {
 			code := fmt.Sprintf("wecom_errcode_%d", apiErr.Code)
 			switch apiErr.Code {
 			case 45009, 45011, 45035:
-				return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureRateLimited, Code: code}
+				return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureRateLimited, Code: code, BusinessCallDispatched: true, RealExternalCallExecuted: true}
 			case 84061:
-				return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureRecipientUnavailable, Code: code}
+				return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureRecipientUnavailable, Code: code, BusinessCallDispatched: true, RealExternalCallExecuted: true}
 			default:
-				return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureInvalidArgument, Code: code}
+				return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureInvalidArgument, Code: code, BusinessCallDispatched: true, RealExternalCallExecuted: true}
 			}
 		}
-		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureInvalidArgument, Code: "wecom_upstream"}
+		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureInvalidArgument, Code: "wecom_upstream", BusinessCallDispatched: true, RealExternalCallExecuted: true}
 	default:
-		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureInvalidResult, Code: "wecom_provider_error"}
+		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureInvalidResult, Code: "wecom_provider_error", BusinessCallDispatched: true, RealExternalCallExecuted: true}
 	}
 }

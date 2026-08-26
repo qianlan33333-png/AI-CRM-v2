@@ -5242,6 +5242,9 @@ export interface OutboundCampaignDispatchReconciliation {
   /** @minimum 0 */
   final_failed: number;
   provider_execution_eligible: boolean;
+  /** True only when an attempt crossed the business Provider boundary; not delivery proof. */
+  business_call_dispatched: boolean;
+  /** True only when that Provider boundary was the real external WeCom call; not delivery proof. */
   real_external_call_executed: boolean;
   delivery_proven: boolean;
 }

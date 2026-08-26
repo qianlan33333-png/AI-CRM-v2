@@ -8,6 +8,7 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	identitydb "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store/generated"
 )
 
 var ErrInvalidVerifiedIdentityFixture = errors.New("invalid verified identity fixture")
@@ -25,10 +26,12 @@ func createVerifiedIdentity(ctx context.Context, pool *pgxpool.Pool, customerID 
 		return ErrInvalidVerifiedIdentityFixture
 	}
 	fingerprint := sha256.Sum256([]byte(source + ":" + scope + ":" + value))
-	_, err := pool.Exec(ctx, `
-INSERT INTO identities (
-  customer_id, kind, scope, normalized_value, normalizer_version,
-  assurance, source, review_fingerprint, fingerprint_key_version, bound_at
-) VALUES ($1,$2,$3,$4,1,'verified',$5,$6,1,now())`, customerID, kind, scope, value, source, fingerprint[:16])
-	return err
+	return identitydb.New(pool).CreateVerifiedIdentityFixture(ctx, identitydb.CreateVerifiedIdentityFixtureParams{
+		CustomerID:        customerID,
+		Kind:              kind,
+		Scope:             scope,
+		NormalizedValue:   value,
+		Source:            source,
+		ReviewFingerprint: fingerprint[:16],
+	})
 }

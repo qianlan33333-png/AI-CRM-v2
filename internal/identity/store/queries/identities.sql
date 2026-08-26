@@ -22,6 +22,16 @@ ON CONFLICT (kind, scope, normalized_value) DO UPDATE
 SET normalized_value = EXCLUDED.normalized_value
 RETURNING id, (xmax = 0) AS created;
 
+-- name: CreateVerifiedIdentityFixture :exec
+INSERT INTO identities (
+  customer_id, kind, scope, normalized_value, normalizer_version,
+  assurance, source, review_fingerprint, fingerprint_key_version, bound_at
+) VALUES (
+  sqlc.arg(customer_id)::bigint, sqlc.arg(kind)::text, sqlc.arg(scope)::text,
+  sqlc.arg(normalized_value)::text, 1, 'verified', sqlc.arg(source)::text,
+  sqlc.arg(review_fingerprint)::bytea, 1, now()
+);
+
 -- name: LookupNormalizedIdentity :one
 SELECT
   i.customer_id AS identity_customer_id,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"flag"
 	"strings"
@@ -29,24 +30,25 @@ import (
 
 var outboundCampaignDispatchDatabaseURL = flag.String("campaign-dispatch-database-url", "", "dedicated PostgreSQL 16.14 C01 outbound campaign dispatch database")
 
-type campaignDispatchFakeAdapter struct{}
-
-func (campaignDispatchFakeAdapter) Execute(_ context.Context, envelope eer.EffectEnvelope, attempt eer.Attempt) (eer.AdapterResult, error) {
-	return eer.AdapterResult{Completion: eer.CompletionExecuted, ReceiptDigest: campaignDispatchDigest("fake-receipt", string(envelope.Fingerprint()), string(rune(attempt.Number)))}, nil
-}
-
 type campaignDispatchUnknownAdapter struct{}
 
 func (campaignDispatchUnknownAdapter) Execute(context.Context, eer.EffectEnvelope, eer.Attempt) (eer.AdapterResult, error) {
 	return eer.AdapterResult{}, errors.New("fake transport outcome unknown")
 }
 
+type campaignDispatchWeComProviderFake struct{ requests []outboundapp.SendRequest }
+
+func (fake *campaignDispatchWeComProviderFake) Send(_ context.Context, request outboundapp.SendRequest) (outboundapp.ProviderResult, error) {
+	fake.requests = append(fake.requests, request)
+	return outboundapp.ProviderResult{MessageID: "fake-provider-message-id", BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
+}
+
 func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) {
 	pool := openCampaignDispatchPool(t)
 	ctx := context.Background()
 	var migrationsApplied bool
-	if err := pool.QueryRow(ctx, `SELECT count(*)=2 FROM public.goose_db_version WHERE version_id IN (78,92) AND is_applied`).Scan(&migrationsApplied); err != nil || !migrationsApplied {
-		t.Fatalf("migrations 78/92 applied=%t err=%v, want true", migrationsApplied, err)
+	if err := pool.QueryRow(ctx, `SELECT count(*)=3 FROM public.goose_db_version WHERE version_id IN (78,92,94) AND is_applied`).Scan(&migrationsApplied); err != nil || !migrationsApplied {
+		t.Fatalf("migrations 78/92/94 applied=%t err=%v, want true", migrationsApplied, err)
 	}
 	ensureOutboundRiverCatalog(t, ctx, pool)
 	policyTime := time.Now().UTC().Truncate(time.Microsecond)
@@ -132,7 +134,12 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 		t.Fatalf("effects=%v, want two", effectIDs)
 	}
 
-	worker, err := outboundworker.NewCampaignDispatchWorker(service, campaignDispatchFakeAdapter{})
+	provider := &campaignDispatchWeComProviderFake{}
+	adapter, err := outboundworker.NewCampaignWeComAdapter(repository, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	worker, err := outboundworker.NewCampaignDispatchWorker(service, adapter)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,6 +147,13 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 		JobRow: &rivertype.JobRow{ID: 901, Attempt: 1, MaxAttempts: 1, State: rivertype.JobStateRunning}, Args: outboundstore.CampaignDispatchArgs{EffectID: effectIDs[0]},
 	}); err != nil {
 		t.Fatal(err)
+	}
+	if len(provider.requests) != 1 || provider.requests[0].CustomerID != contactFacts.EligibleCustomerID || provider.requests[0].TemplateKey != outboundapp.TemplateTextNoticeV1 {
+		t.Fatalf("controlled WeCom provider requests=%+v", provider.requests)
+	}
+	var providerPayload map[string]string
+	if err = json.Unmarshal(provider.requests[0].Payload, &providerPayload); err != nil || len(providerPayload) != 1 || providerPayload["text"] != "approved immutable content" {
+		t.Fatalf("controlled WeCom payload=%s err=%v", provider.requests[0].Payload, err)
 	}
 
 	lease, _, err := runtime.Claim(ctx, eer.ClaimCommand{EffectID: effectIDs[1], WorkerDigest: campaignDispatchDigest("unknown-worker")})
@@ -157,13 +171,13 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 	}
 
 	summary, err = service.Reconciliation(ctx, source.snapshot.CampaignCode, planID)
-	if err != nil || summary.Blocked != 1 || summary.Executed != 1 || summary.Reconciled != 1 || summary.OutcomeUnknown != 0 || summary.DeliveryProven || summary.RealExternalCallExecuted {
+	if err != nil || summary.Blocked != 1 || summary.Executed != 1 || summary.Reconciled != 1 || summary.OutcomeUnknown != 0 || summary.DeliveryProven || !summary.BusinessCallDispatched || !summary.RealExternalCallExecuted {
 		t.Fatalf("terminal summary=%+v err=%v", summary, err)
 	}
 	var receiptCount int
-	var proven bool
-	if err = pool.QueryRow(ctx, `SELECT count(*), bool_or(delivery_proven) FROM public.outbound_campaign_provider_attempt_receipts`).Scan(&receiptCount, &proven); err != nil || receiptCount != 2 || proven {
-		t.Fatalf("provider attempt receipts=%d proven=%t err=%v, want 2/false", receiptCount, proven, err)
+	var businessCallDispatched, realExternalCallExecuted, proven bool
+	if err = pool.QueryRow(ctx, `SELECT count(*), bool_or(business_call_dispatched), bool_or(real_external_call_executed), bool_or(delivery_proven) FROM public.outbound_campaign_provider_attempt_receipts`).Scan(&receiptCount, &businessCallDispatched, &realExternalCallExecuted, &proven); err != nil || receiptCount != 2 || !businessCallDispatched || !realExternalCallExecuted || proven {
+		t.Fatalf("provider attempt receipts=%d business=%t real=%t proven=%t err=%v, want 2/true/true/false", receiptCount, businessCallDispatched, realExternalCallExecuted, proven, err)
 	}
 }
 

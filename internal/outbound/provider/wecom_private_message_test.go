@@ -29,7 +29,7 @@ func TestWeComPrivateMessageProviderSendsExactTaskPayload(t *testing.T) {
 		t.Fatal(err)
 	}
 	result, err := provider.Send(context.Background(), privateMessageRequest(`{"sender":"staff-1","external_userid":"external-1","text":"hello"}`))
-	if err != nil || result.MessageID != "msg-1" || fake.calls != 1 || fake.request != (privateMessageTemplateRequest{Sender: "staff-1", ExternalUserID: "external-1", Text: "hello"}) {
+	if err != nil || result.MessageID != "msg-1" || !result.BusinessCallDispatched || !result.RealExternalCallExecuted || fake.calls != 1 || fake.request != (privateMessageTemplateRequest{Sender: "staff-1", ExternalUserID: "external-1", Text: "hello"}) {
 		t.Fatalf("result=%+v err=%v calls=%d request=%+v", result, err, fake.calls, fake.request)
 	}
 }
@@ -41,21 +41,23 @@ func TestWeComPrivateMessageProviderRejectsMissingRecipientBeforeClient(t *testi
 		t.Fatal(err)
 	}
 	result, err := provider.Send(context.Background(), privateMessageRequest(`{"sender":"staff-1","text":"hello"}`))
-	if err != nil || result.FailureKind != outboundapp.ProviderFailureInvalidArgument || fake.calls != 0 {
+	if err != nil || result.FailureKind != outboundapp.ProviderFailureInvalidArgument || result.BusinessCallDispatched || result.RealExternalCallExecuted || fake.calls != 0 {
 		t.Fatalf("result=%+v err=%v calls=%d", result, err, fake.calls)
 	}
 }
 
 func TestWeComPrivateMessageProviderPreservesNoReplayOutcomes(t *testing.T) {
 	for name, test := range map[string]struct {
-		err  error
-		kind outboundapp.ProviderFailureKind
-		code string
+		err            error
+		kind           outboundapp.ProviderFailureKind
+		code           string
+		business, real bool
 	}{
-		"unknown":         {errWeComPrivateMessageOutcomeUnknown, outboundapp.ProviderFailureConnection, "wecom_write_outcome_unknown"},
-		"target rejected": {errWeComPrivateMessageTargetRejected, outboundapp.ProviderFailureRecipientUnavailable, "wecom_private_target_rejected"},
-		"throttled":       {fmt.Errorf("%w: %w", errWeComPrivateMessageUpstream, &weComPrivateMessageAPIError{Code: 45009}), outboundapp.ProviderFailureRateLimited, "wecom_errcode_45009"},
-		"contact missing": {fmt.Errorf("%w: %w", errWeComPrivateMessageUpstream, &weComPrivateMessageAPIError{Code: 84061}), outboundapp.ProviderFailureRecipientUnavailable, "wecom_errcode_84061"},
+		"unknown":         {errWeComPrivateMessageOutcomeUnknown, outboundapp.ProviderFailureConnection, "wecom_write_outcome_unknown", true, true},
+		"target rejected": {errWeComPrivateMessageTargetRejected, outboundapp.ProviderFailureRecipientUnavailable, "wecom_private_target_rejected", true, true},
+		"not dispatched":  {errWeComPrivateMessageNotDispatched, outboundapp.ProviderFailureTemporary, "wecom_not_dispatched", false, false},
+		"throttled":       {fmt.Errorf("%w: %w", errWeComPrivateMessageUpstream, &weComPrivateMessageAPIError{Code: 45009}), outboundapp.ProviderFailureRateLimited, "wecom_errcode_45009", true, true},
+		"contact missing": {fmt.Errorf("%w: %w", errWeComPrivateMessageUpstream, &weComPrivateMessageAPIError{Code: 84061}), outboundapp.ProviderFailureRecipientUnavailable, "wecom_errcode_84061", true, true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			fake := &privateMessageClientFake{err: test.err}
@@ -64,7 +66,7 @@ func TestWeComPrivateMessageProviderPreservesNoReplayOutcomes(t *testing.T) {
 				t.Fatal(err)
 			}
 			result, err := provider.Send(context.Background(), privateMessageRequest(`{"sender":"staff-1","external_userid":"external-1","text":"hello"}`))
-			if err != nil || result.FailureKind != test.kind || result.Code != test.code || fake.calls != 1 {
+			if err != nil || result.FailureKind != test.kind || result.Code != test.code || result.BusinessCallDispatched != test.business || result.RealExternalCallExecuted != test.real || fake.calls != 1 {
 				t.Fatalf("result=%+v err=%v calls=%d", result, err, fake.calls)
 			}
 		})
@@ -78,7 +80,7 @@ func TestWeComPrivateMessageProviderDoesNotHideUnexpectedClientErrors(t *testing
 		t.Fatal(err)
 	}
 	result, err := provider.Send(context.Background(), privateMessageRequest(`{"sender":"staff-1","external_userid":"external-1","text":"hello"}`))
-	if err != nil || result.FailureKind != outboundapp.ProviderFailureInvalidResult || result.Code != "wecom_provider_error" {
+	if err != nil || result.FailureKind != outboundapp.ProviderFailureInvalidResult || result.Code != "wecom_provider_error" || !result.BusinessCallDispatched || !result.RealExternalCallExecuted {
 		t.Fatalf("result=%+v err=%v", result, err)
 	}
 }
@@ -97,7 +99,7 @@ func TestWeComPrivateMessageProviderResolvesOnlyWhenPayloadHasNoTarget(t *testin
 		t.Fatal(err)
 	}
 	result, err := provider.Send(context.Background(), privateMessageRequest(`{"text":"hello"}`))
-	if err != nil || result.MessageID != "msg-1" || calls != 1 || fake.request.Sender != "owner-1" || fake.request.ExternalUserID != "external-1" {
+	if err != nil || result.MessageID != "msg-1" || !result.BusinessCallDispatched || !result.RealExternalCallExecuted || calls != 1 || fake.request.Sender != "owner-1" || fake.request.ExternalUserID != "external-1" {
 		t.Fatalf("result=%+v err=%v resolverCalls=%d request=%+v", result, err, calls, fake.request)
 	}
 }
@@ -111,7 +113,7 @@ func TestWeComPrivateMessageProviderFailsClosedForUnresolvedTarget(t *testing.T)
 		t.Fatal(err)
 	}
 	result, err := provider.Send(context.Background(), privateMessageRequest(`{"text":"hello"}`))
-	if err != nil || result.FailureKind != outboundapp.ProviderFailureInvalidArgument || result.Code != "wecom_private_target_unavailable" || fake.calls != 0 {
+	if err != nil || result.FailureKind != outboundapp.ProviderFailureInvalidArgument || result.Code != "wecom_private_target_unavailable" || result.BusinessCallDispatched || result.RealExternalCallExecuted || fake.calls != 0 {
 		t.Fatalf("result=%+v err=%v calls=%d", result, err, fake.calls)
 	}
 }
@@ -125,7 +127,7 @@ func TestWeComPrivateMessageProviderRetriesResolverFailureBeforeProviderCall(t *
 		t.Fatal(err)
 	}
 	result, err := provider.Send(context.Background(), privateMessageRequest(`{"text":"hello"}`))
-	if err != nil || result.FailureKind != outboundapp.ProviderFailureTemporary || result.Code != "wecom_private_target_resolution_unavailable" || fake.calls != 0 {
+	if err != nil || result.FailureKind != outboundapp.ProviderFailureTemporary || result.Code != "wecom_private_target_resolution_unavailable" || result.BusinessCallDispatched || result.RealExternalCallExecuted || fake.calls != 0 {
 		t.Fatalf("result=%+v err=%v calls=%d", result, err, fake.calls)
 	}
 }
