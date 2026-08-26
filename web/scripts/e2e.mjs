@@ -800,6 +800,25 @@ console.log('admin/ownerMig.html（本地安全 CSV 迁移边界）');
   const csv = d.querySelector('#ownerMigCsv');
   ok('仅接受 CSV 且不再显示企微转接/欢迎语控件', csv?.getAttribute('accept')?.includes('.csv') && !d.body.textContent.includes('同时发起企微转接') && !d.body.textContent.includes('转接欢迎语'));
   ok('初始明确为空且真实动作均已绑定', d.body.textContent.includes('尚未生成迁移预览，不会发送执行请求') && [...d.querySelectorAll('button')].filter((b) => b.__dcBound).length >= 2);
+
+  dom.window.__aicrmDownload = null;
+  dom.window.URL.createObjectURL = () => 'blob:owner-migration';
+  dom.window.URL.revokeObjectURL = () => {};
+  dom.window.HTMLAnchorElement.prototype.click = function () {
+    dom.window.__aicrmDownload = { filename: this.download, href: this.href };
+  };
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.includes('下载安全 CSV 模板')));
+  await sleep(250);
+  ok('下载负责人迁移模板触发本地 CSV 下载', dom.window.__aicrmDownload?.filename === '负责人迁移模板.csv');
+
+  Object.defineProperty(csv, 'files', {
+    configurable: true,
+    value: [new dom.window.File(['customer_id,expected_owner_staff_id,expected_updated_at,target_owner_staff_id\n7,3,2026-08-25T00:00:00Z,9\n'], 'owners.csv', { type: 'text/csv' })],
+  });
+  const parseButton = [...d.querySelectorAll('button')].find((b) => b.textContent.includes('上传并生成预览'));
+  click(dom, parseButton);
+  await sleep(250);
+  ok('上传 CSV 生成服务端持久预览投影', d.body.textContent.includes('服务端持久预览') && d.body.textContent.includes('preview_id: cor_0123456789012345678901') && d.body.textContent.includes('预览已生成'));
   dom.window.close();
 }
 
