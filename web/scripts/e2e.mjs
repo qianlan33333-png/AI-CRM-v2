@@ -627,8 +627,8 @@ for (const scenario of ['success', 'empty', 'error']) {
     !d.querySelector('[data-sidebar-tab="periodic_orders"]').disabled &&
     !d.querySelector('[data-sidebar-tab="materials"]').disabled &&
     !d.querySelector('[data-sidebar-tab="products"]').disabled &&
-    d.querySelector('[data-sidebar-tab="coupons"]').disabled &&
-    d.querySelector('[data-sidebar-tab="other_staff_messages"]').disabled);
+    !d.querySelector('[data-sidebar-tab="other_staff_messages"]').disabled &&
+    d.querySelector('[data-sidebar-tab="coupons"]').disabled);
   click(dom, questionnaireTab);
   ok('问卷切换先显示 loading', d.body.textContent.includes('正在读取问卷答案'));
   await sleep(30);
