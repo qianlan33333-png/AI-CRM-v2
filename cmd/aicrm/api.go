@@ -93,6 +93,7 @@ import (
 	segmentapp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/app"
 	segmenthttp "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/http"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/segment/legacyaudience"
+	legacyaudiencestore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/legacyaudience/store"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/segment/legacyaudiencemembers"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
 	sidebarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/sidebar/app"
@@ -1019,6 +1020,32 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	inboundWebhookRepository, err := legacyaudiencestore.NewInboundWebhookRepository(legacyaudiencestore.NewInboundWebhookQueryFactory())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	inboundWebhookService, err := legacyaudience.NewInboundWebhookService(
+		uow, inboundWebhookRepository, legacyAIAudienceEventAppender{appender: eventstore.NewAppender()},
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	inboundWebhookAuthenticator := &aiAudienceProtocolAuthenticator{now: time.Now}
+	if config.AIAudience.WebhookSecret.Configured() {
+		inboundWebhookAuthenticator.key = config.AIAudience.WebhookSecret.Value()
+	}
+	inboundWebhookHandler, err := legacyaudience.NewInboundWebhookHandler(inboundWebhookService, inboundWebhookAuthenticator)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	retiredOutboundSubscriptionHandler, err := legacyaudience.NewRetiredOutboundSubscriptionHandler(legacyAIAudienceRetiredOutboundSubscriptionAuthenticator{})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	legacyAIAudienceMembersRepository := legacyaudiencemembers.NewSQLRepository()
 	legacyAIAudienceMembersService, err := legacyaudiencemembers.NewService(
 		legacyAIAudienceMembersRepository,
@@ -1921,6 +1948,9 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.radar = radarFragment
 	legacyHandler.campaign = campaignFragment
 	legacyHandler.aiAudience = legacyAIAudienceFragment
+	legacyHandler.aiAudienceInbound = &aiAudienceInboundRoutes{
+		webhook: inboundWebhookHandler, retiredSubscriptions: retiredOutboundSubscriptionHandler,
+	}
 	legacyHandler.aiAudienceMembers = legacyAIAudienceMembersFragment
 	legacyHandler.aiAudienceConfiguration = legacyAIAudienceConfigurationFragment
 	legacyHandler.aiAudienceSendRecords = audienceSendRecordHandler
@@ -2431,6 +2461,11 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 	}
 	if err = registerPublic(http.MethodPost, orderhttp.WeChatShopCallbackPath, http.HandlerFunc(wrapper.ReceiveWechatShopRefundCallback)); err != nil {
 		return nil, err
+	}
+	if legacy != nil && legacy.aiAudienceInbound != nil && legacy.aiAudienceInbound.webhook != nil {
+		if err = registerPublic(http.MethodPost, "/api/ai/audience/packages/{package_id}/webhook", legacy.aiAudienceInbound.webhook); err != nil {
+			return nil, err
+		}
 	}
 	if err = registerSidebarActivityRead("/api/sidebar/v2/timeline", http.HandlerFunc(wrapper.ListSidebarTimeline)); err != nil {
 		return nil, err
@@ -2969,6 +3004,22 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		if legacy.aiAudience != nil {
 			for _, route := range legacyaudience.RouteSpecs() {
 				if err = registerLegacy(route.Method, route.Pattern, authport.Capability(route.Capability), route.RequiresCSRF, legacy.aiAudience); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if legacy.aiAudienceInbound != nil && legacy.aiAudienceInbound.retiredSubscriptions != nil {
+			for _, route := range []struct {
+				method, pattern string
+				capability      authport.Capability
+				csrf            bool
+			}{
+				{http.MethodGet, "/api/ai/audience/packages/{package_id}/outbound-subscriptions", authport.CapabilitySegmentsRead, false},
+				{http.MethodPost, "/api/ai/audience/packages/{package_id}/outbound-subscriptions", authport.CapabilitySegmentsWrite, true},
+				{http.MethodPatch, "/api/ai/audience/outbound-subscriptions/{subscription_id}", authport.CapabilitySegmentsWrite, true},
+				{http.MethodPost, "/api/ai/audience/outbound-subscriptions/{subscription_id}/pause", authport.CapabilitySegmentsWrite, true},
+			} {
+				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.aiAudienceInbound.retiredSubscriptions); err != nil {
 					return nil, err
 				}
 			}

@@ -40,6 +40,7 @@ const (
 	identityHMACKeyEnv                = "AICRM_IDENTITY_HMAC_KEY"
 	apiClientJWTSecretEnv             = "AICRM_API_CLIENT_JWT_SECRET"
 	groupOpsWebhookSecretEnv          = "AICRM_AUTH_GROUP_OPS_WEBHOOK_SECRET"
+	aiAudienceWebhookSecretEnv        = "AICRM_AUTH_AI_AUDIENCE_WEBHOOK_SECRET"
 	surveyPublicKeyEnv                = "AICRM_SURVEY_PUBLIC_TOKEN_KEY"
 	domainVerificationDirEnv          = "AICRM_DOMAIN_VERIFICATION_DIR"
 	applicationEnvironmentEnv         = "AICRM_ENV"
@@ -328,6 +329,20 @@ func (GroupOpsWebhookSecret) GoString() string     { return "[REDACTED]" }
 
 type GroupOps struct{ WebhookSecret GroupOpsWebhookSecret }
 
+// AIAudienceWebhookSecret is optional startup-only HMAC key material. Without
+// it the public AI Audience inbound webhook remains fail-closed.
+type AIAudienceWebhookSecret struct {
+	value      [32]byte
+	configured bool
+}
+
+func (key AIAudienceWebhookSecret) Value() []byte    { return append([]byte(nil), key.value[:]...) }
+func (key AIAudienceWebhookSecret) Configured() bool { return key.configured }
+func (AIAudienceWebhookSecret) String() string       { return "[REDACTED]" }
+func (AIAudienceWebhookSecret) GoString() string     { return "[REDACTED]" }
+
+type AIAudience struct{ WebhookSecret AIAudienceWebhookSecret }
+
 // SurveyPublicKey is optional as a whole. A missing key leaves every public
 // Survey operation fail-closed with 503, while an invalid configured value
 // rejects process startup. Generic formatting can never reveal the key.
@@ -375,6 +390,7 @@ type Root struct {
 	Identity           Identity
 	APIClient          APIClient
 	GroupOps           GroupOps
+	AIAudience         AIAudience
 	Survey             Survey
 	DomainVerification DomainVerification
 	Release            Release
@@ -435,6 +451,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
 		root.APIClient.JWTSecret = parseOptionalAPIClientJWTSecret(lookup, &problems)
 		root.GroupOps.WebhookSecret = parseOptionalGroupOpsWebhookSecret(lookup, &problems)
+		root.AIAudience.WebhookSecret = parseOptionalAIAudienceWebhookSecret(lookup, &problems)
 		root.Survey.PublicKey = parseOptionalSurveyPublicKey(lookup, &problems)
 		root.DomainVerification.Directory, _ = lookup(domainVerificationDirEnv)
 		root.Release.Environment, _ = lookup(applicationEnvironmentEnv)
@@ -536,6 +553,22 @@ func parseOptionalGroupOpsWebhookSecret(lookup environmentLookup, problems *[]st
 		return GroupOpsWebhookSecret{}
 	}
 	var key GroupOpsWebhookSecret
+	copy(key.value[:], decoded)
+	key.configured = true
+	return key
+}
+
+func parseOptionalAIAudienceWebhookSecret(lookup environmentLookup, problems *[]string) AIAudienceWebhookSecret {
+	value, present := lookup(aiAudienceWebhookSecretEnv)
+	if !present || value == "" {
+		return AIAudienceWebhookSecret{}
+	}
+	decoded, err := base64.RawURLEncoding.Strict().DecodeString(value)
+	if err != nil || len(decoded) != 32 || base64.RawURLEncoding.EncodeToString(decoded) != value {
+		*problems = append(*problems, "ai_audience.webhook_secret must be 32-byte canonical base64url")
+		return AIAudienceWebhookSecret{}
+	}
+	var key AIAudienceWebhookSecret
 	copy(key.value[:], decoded)
 	key.configured = true
 	return key

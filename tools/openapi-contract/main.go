@@ -1526,6 +1526,16 @@ func validateGenericCanonicalAuthorization(op *openapi3.Operation, method string
 	classification, classificationOK := op.Extensions["x-aicrm-data-classification"].(string)
 	_, scopesDeclared := op.Extensions["x-aicrm-rbac-scopes"]
 	scopes, scopeErr := stringMap(op.Extensions["x-aicrm-rbac-scopes"])
+	if op.OperationID == "receiveAIAudienceInboundWebhook" {
+		csrf, csrfOK := op.Extensions["x-aicrm-csrf"].(string)
+		if decisionEvidence == "" || !capabilityOK || capability != "ai.audience.inbound.webhook" ||
+			!authSchemeOK || authScheme != "hmac_sha256" || !classificationOK || classification != "restricted" ||
+			scopesDeclared || scopeErr == nil || len(scopes) != 0 || op.Security == nil || len(*op.Security) != 1 ||
+			!csrfOK || csrf != "none" || method != "POST" || op.Extensions["x-aicrm-external-effect"] != "none" {
+			return fmt.Errorf("%s Audience webhook protocol declaration is incomplete", op.OperationID)
+		}
+		return nil
+	}
 	if protocolScheme, protocol := groupOpsCanonicalProtocolAuth[op.OperationID]; protocol {
 		csrf, csrfOK := op.Extensions["x-aicrm-csrf"].(string)
 		if decisionEvidence == "" || !capabilityOK || !regexp.MustCompile(`^[a-z][a-z0-9.]*$`).MatchString(capability) ||

@@ -30,6 +30,21 @@ func TestFrozenOpenAPI(t *testing.T) {
 	}
 }
 
+func TestAIAudienceWebhookProtocolAuthorization(t *testing.T) {
+	doc, _, err := load(specPath, mappingPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	operation := doc.Paths.Value("/api/ai/audience/packages/{package_id}/webhook").Post
+	if err = validateGenericCanonicalAuthorization(operation, "POST"); err != nil {
+		t.Fatal(err)
+	}
+	operation.Extensions["x-aicrm-csrf"] = "required"
+	if err = validateGenericCanonicalAuthorization(operation, "POST"); err == nil {
+		t.Fatal("expected session CSRF declaration on HMAC webhook to be rejected")
+	}
+}
+
 func TestSurveyIdentityGatedExternalPushContract(t *testing.T) {
 	doc, ids, err := load(specPath, mappingPath)
 	if err != nil {

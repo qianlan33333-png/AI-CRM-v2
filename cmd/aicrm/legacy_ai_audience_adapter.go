@@ -20,6 +20,16 @@ import (
 
 type legacyAIAudienceSecurity struct{}
 
+type legacyAIAudienceRetiredOutboundSubscriptionAuthenticator struct{}
+
+func (legacyAIAudienceRetiredOutboundSubscriptionAuthenticator) Authenticate(ctx context.Context, _ *http.Request) error {
+	principal, ok := authport.PrincipalFromContext(ctx)
+	if !ok || principal.AdminUserID < 1 {
+		return legacyaudience.ErrUnauthenticated
+	}
+	return nil
+}
+
 func (legacyAIAudienceSecurity) Authorize(request *http.Request, requirement legacyaudience.AccessRequirement) (legacyaudience.Actor, error) {
 	if request == nil {
 		return legacyaudience.Actor{}, legacyaudience.ErrUnauthenticated

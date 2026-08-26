@@ -11,14 +11,19 @@ import (
 )
 
 type Querier interface {
+	AIAudienceInboundPackageExists(ctx context.Context, packageID int64) (bool, error)
 	AcceptSegmentRefreshReceipt(ctx context.Context, arg AcceptSegmentRefreshReceiptParams) (AcceptSegmentRefreshReceiptRow, error)
 	ArchiveSegment(ctx context.Context, arg ArchiveSegmentParams) (ArchiveSegmentRow, error)
 	CompleteSegmentOperationReceipt(ctx context.Context, arg CompleteSegmentOperationReceiptParams) (CompleteSegmentOperationReceiptRow, error)
 	CompleteSegmentRefresh(ctx context.Context, arg CompleteSegmentRefreshParams) (int64, error)
+	CreateAIAudienceInboundWebhookReceipt(ctx context.Context, arg CreateAIAudienceInboundWebhookReceiptParams) (CreateAIAudienceInboundWebhookReceiptRow, error)
+	CreateAIAudienceInboundWebhookTransportReplay(ctx context.Context, arg CreateAIAudienceInboundWebhookTransportReplayParams) (CreateAIAudienceInboundWebhookTransportReplayRow, error)
 	CreateSegment(ctx context.Context, arg CreateSegmentParams) (CreateSegmentRow, error)
 	DeleteAIAudienceOperationMembers(ctx context.Context) error
 	DeleteSegmentMembersForRefresh(ctx context.Context, segmentID int64) error
 	EnsureSegmentRefreshable(ctx context.Context, segmentID int64) (int64, error)
+	GetAIAudienceInboundWebhookReceipt(ctx context.Context, arg GetAIAudienceInboundWebhookReceiptParams) (GetAIAudienceInboundWebhookReceiptRow, error)
+	GetAIAudienceInboundWebhookTransportReplay(ctx context.Context, arg GetAIAudienceInboundWebhookTransportReplayParams) (GetAIAudienceInboundWebhookTransportReplayRow, error)
 	GetSegment(ctx context.Context, segmentID int64) (GetSegmentRow, error)
 	GetSegmentOperationReceipt(ctx context.Context, arg GetSegmentOperationReceiptParams) (GetSegmentOperationReceiptRow, error)
 	InsertAIAudienceOperationMember(ctx context.Context, arg InsertAIAudienceOperationMemberParams) error

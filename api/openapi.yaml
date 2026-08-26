@@ -10250,6 +10250,103 @@ paths:
             X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
           content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/ai/audience/packages/{package_id}/webhook:
+    post:
+      tags: [p4-ai-audience]
+      operationId: receiveAIAudienceInboundWebhook
+      summary: Verify and record one AI Audience inbound webhook without any outbound execution
+      security: [{ AIAudienceWebhookSignature: [] }]
+      x-legacy-mapping-ids: [LEGACY-API-0588]
+      x-p4-decision-evidence: LEGACY-S06-027-AI-AUDIENCE-INBOUND-WEBHOOK-2026-08-26
+      x-aicrm-capability: ai.audience.inbound.webhook
+      x-aicrm-auth-scheme: hmac_sha256
+      x-aicrm-csrf: none
+      x-aicrm-data-source: ai_audience.inbound_webhook.local_receipt
+      x-aicrm-data-classification: restricted
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: X-AICRM-Client-Id, in: header, required: true, schema: { type: string, enum: [aicrm-webhook-ai-audience] } }
+        - { name: X-AICRM-Timestamp, in: header, required: true, schema: { type: string, pattern: '^[0-9]{1,19}$' } }
+        - { name: X-AICRM-Event-Id, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 256, pattern: '^[!-~]+$' } }
+        - { name: X-AICRM-Signature, in: header, required: true, description: HMAC-SHA256 of `timestamp + "\\n" + event_id + "\\n" + exact raw body`, schema: { type: string, pattern: '^sha256=[0-9a-f]{64}$' } }
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: "#/components/schemas/AIAudienceInboundWebhookRequest" } }
+      responses:
+        "200": { description: "Authenticated local receipt only; no automation, send, Provider, or external-effect job is created.", content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceInboundWebhookResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "413": { $ref: "#/components/responses/PayloadTooLarge" }
+        "415": { $ref: "#/components/responses/UnsupportedMediaType" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/ai/audience/packages/{package_id}/outbound-subscriptions:
+    get:
+      tags: [p4-ai-audience]
+      operationId: listRetiredAIAudienceOutboundSubscriptions
+      summary: Retired AI Audience outbound-subscription route
+      x-legacy-mapping-ids: [LEGACY-API-0580]
+      x-p4-decision-evidence: LEGACY-S06-027-AI-AUDIENCE-INBOUND-WEBHOOK-2026-08-26
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: retired
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses: { "401": { $ref: "#/components/responses/Unauthorized" }, "410": { description: Route is retired; outbound subscriptions are not supported, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceRetiredWebhookResponse" } } } }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+    post:
+      tags: [p4-ai-audience]
+      operationId: createRetiredAIAudienceOutboundSubscription
+      summary: Retired AI Audience outbound-subscription route
+      x-legacy-mapping-ids: [LEGACY-API-0581]
+      x-p4-decision-evidence: LEGACY-S06-027-AI-AUDIENCE-INBOUND-WEBHOOK-2026-08-26
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: retired
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }]
+      responses: { "401": { $ref: "#/components/responses/Unauthorized" }, "410": { description: Route is retired; outbound subscriptions are not supported, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceRetiredWebhookResponse" } } } }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /api/ai/audience/outbound-subscriptions/{subscription_id}:
+    patch:
+      tags: [p4-ai-audience]
+      operationId: updateRetiredAIAudienceOutboundSubscription
+      summary: Retired AI Audience outbound-subscription route
+      x-legacy-mapping-ids: [LEGACY-API-0571]
+      x-p4-decision-evidence: LEGACY-S06-027-AI-AUDIENCE-INBOUND-WEBHOOK-2026-08-26
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: retired
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ name: subscription_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }]
+      responses: { "401": { $ref: "#/components/responses/Unauthorized" }, "410": { description: Route is retired; outbound subscriptions are not supported, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceRetiredWebhookResponse" } } } }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
+  /api/ai/audience/outbound-subscriptions/{subscription_id}/pause:
+    post:
+      tags: [p4-ai-audience]
+      operationId: pauseRetiredAIAudienceOutboundSubscription
+      summary: Retired AI Audience outbound-subscription route
+      x-legacy-mapping-ids: [LEGACY-API-0572]
+      x-p4-decision-evidence: LEGACY-S06-027-AI-AUDIENCE-INBOUND-WEBHOOK-2026-08-26
+      x-aicrm-capability: segments.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: retired
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters: [{ name: subscription_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }, { $ref: "#/components/parameters/CSRFToken" }]
+      responses: { "401": { $ref: "#/components/responses/Unauthorized" }, "410": { description: Route is retired; outbound subscriptions are not supported, content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceRetiredWebhookResponse" } } } }, "503": { $ref: "#/components/responses/ServiceUnavailable" } }
   /api/admin/ai-audience/packages/{package_id}/send-records:
     get:
       tags: [p4-ai-audience]
@@ -12126,6 +12223,11 @@ components:
       in: header
       name: Signature
       description: HTTP Message Signature verification is injected at composition; absent verifier fails closed before runtime acceptance.
+    AIAudienceWebhookSignature:
+      type: apiKey
+      in: header
+      name: X-AICRM-Signature
+      description: Audience HMAC-SHA256 verification also requires the declared client, timestamp, and event-id headers; an absent startup key fails closed.
     PaymentIdentitySession:
       type: apiKey
       in: cookie
@@ -14232,6 +14334,46 @@ components:
         sender_userid: { type: string, minLength: 1 }
         sort_order: { type: integer, format: int32, minimum: 1, maximum: 5 }
         is_enabled: { type: boolean }
+    AIAudienceInboundWebhookRequest:
+      type: object
+      additionalProperties: false
+      required: [external_event_id]
+      properties:
+        external_event_id: { type: string, minLength: 1, maxLength: 256, pattern: '^[^\\s\\x00-\\x1f\\x7f]+$' }
+        member_event_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        status: { type: string, maxLength: 64 }
+        message: { type: object, additionalProperties: true }
+        action: { type: object, additionalProperties: true }
+    AIAudienceInboundWebhookReceipt:
+      type: object
+      additionalProperties: false
+      required: [id, package_id, status, created_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        package_id: { type: integer, format: int64, minimum: 1 }
+        status: { type: string, enum: [received] }
+        created_at: { type: string, format: date-time }
+    AIAudienceInboundWebhookResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, accepted, deduplicated, recorded, signal, automation_send_plan, external_effect_job_id, record_only, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        accepted: { type: boolean, enum: [true] }
+        deduplicated: { type: boolean }
+        recorded: { $ref: "#/components/schemas/AIAudienceInboundWebhookReceipt" }
+        signal: { nullable: true }
+        automation_send_plan: { nullable: true }
+        external_effect_job_id: { nullable: true }
+        record_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceRetiredWebhookResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, error]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        error: { type: string, enum: [webhook_configuration_retired] }
     AIAudiencePackageSendersReplaceRequest:
       type: object
       additionalProperties: false
