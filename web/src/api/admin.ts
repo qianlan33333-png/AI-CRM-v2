@@ -14,6 +14,7 @@ import {
   activateAIAudiencePackage, archiveLegacyWecomTag, archiveLegacyWecomTagGroup, archiveAIAudiencePackage, archiveServicePeriodProduct, copyAIAudiencePackage, copyLegacyWechatPayProduct, copyServicePeriodProduct, createAIAudiencePackageGroup, createLegacyMiniProgram, createLegacyWecomTag, createLegacyWecomTagGroup, createProduct, createRadarLink, createServicePeriodProduct, createServicePeriodMemberGridCollaborator, deleteAIAudiencePackageGroup, deleteLegacyAttachment, deleteLegacyImage, deleteLegacyMiniProgram, deleteServicePeriodMemberGridCollaborator, disableLegacyWechatPayProduct, disableRadarLink, disableServicePeriodProduct, enableLegacyWechatPayProduct, enableRadarLink, enableServicePeriodProduct, executeContactOwnerReassignmentPreview, getAIAudiencePackage, getCreateContactOwnerReassignmentPreviewUrl, getDownloadContactOwnerReassignmentErrorsUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getDownloadLegacyAttachmentUrl, getGetLegacyImageVariantUrl, getRadarLink, getRadarLinkShareProjection, listAIAudiencePackageGroups, listAIAudiencePackages, listRadarLinkEvents, listRadarLinks, pauseAIAudiencePackage, queueLegacyWecomTagSync, updateAIAudiencePackageGroup, updateLegacyAttachment, updateLegacyImage, updateLegacyMiniProgram, updateLegacyWecomTagGroupPatch, updateLegacyWecomTagPatch, updateProduct, updateRadarLink, updateServicePeriodMemberFields, updateServicePeriodMemberGridCollaborator, updateServicePeriodProduct, uploadLegacyAttachment, uploadLegacyImage, type ContactOwnerReassignmentPreview as ApiOwnerReassignmentPreview, type Customer as ApiCustomer, type LegacyChannel, type LegacyChannelListItem, type LegacyQuestionnaire, type RadarLink as ApiRadarLink,
 } from './generated/health';
 import { completeMediaAttachmentMultipartUpload, initiateMediaAttachmentMultipartUpload, putMediaAttachmentMultipartPart } from './generated/health';
+import { getExportRadarLinkEventsUrl } from './generated/health';
 import { archiveLegacyHXCSendConfig, getLegacyHXCSendConfig, reorderLegacyHXCSendConfigs, upsertLegacyHXCSendConfig, type LegacyHXCSenderConfig } from './generated/health';
 import { getLegacyAppSettingsResource, saveLegacyAppSettingsResource } from './generated/health';
 import { getAdminOpsPushCapabilities, listAdminOpsReleases } from './generated/health';
@@ -594,7 +595,37 @@ export async function downloadOwnerReassignmentReportDto(previewId: string, kind
   return (await request(url)).blob();
 }
 export async function setRadarEnabled(linkId: number, enabled: boolean): Promise<void> { const current = obj(await call(getRadarLink(linkId, apiRequestOptions()))).link as ApiRadarLink; const request = { expected_version: current.version }; await call(enabled ? enableRadarLink(linkId, request, apiRequestOptions()) : disableRadarLink(linkId, request, apiRequestOptions())); }
-export async function readRadarEvents(linkId: number): Promise<AdminDb['radarEvents']> { const page = await call(listRadarLinkEvents(linkId, undefined, apiRequestOptions())); return list(page, 'items').map((item) => ({ unionid_masked: text(obj(item).unionid_masked), external_userid: text(obj(item).external_userid), created_at: text(obj(item).occurred_at, text(obj(item).created_at)) })); }
+type RadarEventFilters = { startAt?: string; endAt?: string };
+const radarEventParams = (linkId: number, filters: RadarEventFilters) => {
+  if (!Number.isSafeInteger(linkId) || linkId < 1) throw new Error('Radar 链接 ID 无效');
+  const toISO = (value: string | undefined, field: string): string | undefined => {
+    if (!value) return undefined;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) throw new Error(`Radar ${field}无效`);
+    return date.toISOString();
+  };
+  const startAt = toISO(filters.startAt, '开始时间');
+  const endAt = toISO(filters.endAt, '结束时间');
+  if (startAt && endAt && startAt > endAt) throw new Error('Radar 开始时间不能晚于结束时间');
+  return { start_at: startAt, end_at: endAt };
+};
+export async function readRadarEvents(linkId: number, filters: RadarEventFilters = {}): Promise<AdminDb['radarEvents']> {
+  const page = obj(await call(listRadarLinkEvents(linkId, { limit: 500, ...radarEventParams(linkId, filters) }, apiRequestOptions())));
+  if (page.identity_attributed !== false || page.real_external_call_executed !== false || page.has_more === true) throw new Error('Radar 事件响应越过本地边界或超出 500 条，请缩小时间范围');
+  return list(page, 'items').map((item) => {
+    const event = obj(item);
+    const receiptID = typeof event.receipt_id === 'string' ? event.receipt_id : '';
+    const stage = typeof event.stage === 'string' ? event.stage : '';
+    const createdAt = typeof event.created_at === 'string' ? event.created_at : '';
+    if (!/^rre_[0-9a-f]{32}$/.test(receiptID) || !stage || Number.isNaN(new Date(createdAt).getTime())) throw new Error('Radar 本地事件响应不完整');
+    return { unionid_masked: receiptID, external_userid: stage, created_at: createdAt };
+  });
+}
+export async function exportRadarEventsCsv(linkId: number, filters: RadarEventFilters = {}): Promise<string> {
+  const response = await request(getExportRadarLinkEventsUrl(linkId, radarEventParams(linkId, filters)));
+  if (!response.headers.get('Content-Type')?.toLowerCase().includes('text/csv')) throw new Error('Radar 导出响应不是 CSV');
+  return response.text();
+}
 export async function readRadarSharePath(linkId: number): Promise<string> {
   if (!Number.isSafeInteger(linkId) || linkId < 1) throw new Error('Radar 链接 ID 无效');
   const projection = obj(await call(getRadarLinkShareProjection(linkId, apiRequestOptions())));

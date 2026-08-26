@@ -2,6 +2,7 @@ import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto
 import { createServicePeriodMemberGridCollaboratorDto, deleteServicePeriodMemberGridCollaboratorDto, getServicePeriodMemberDto, queryServicePeriodMemberGridDto, updateServicePeriodMemberFieldsDto, updateServicePeriodMemberGridCollaboratorDto } from './admin';
 import { exportWechatOrdersDto } from './admin';
 import { readRadarSharePath } from './admin';
+import { exportRadarEventsCsv, readRadarEvents } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyAttachmentsUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
@@ -816,5 +817,35 @@ export async function runAdminAdapterTests(): Promise<void> {
     const secondPart = JSON.parse(String(chunkCalls[2].init?.body));
     assert(secondPart.content === 'AA==' && /^sha256:[0-9a-f]{64}$/.test(secondPart.sha256), 'large radar PDF part is base64 encoded and digest checked');
   } finally { globalThis.fetch = savedFetch; }
+
+  let oversizedPdfRequested = false;
+  globalThis.fetch = async () => { oversizedPdfRequested = true; return new Response('{}', { status: 200 }); };
+  try { await uploadRadarPdfDto({ size: (10 << 20) + 1, type: 'application/pdf', name: '过大.pdf' } as File); assert(false, 'oversized radar PDF was accepted'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('10MB') && !oversizedPdfRequested, 'oversized radar PDF must fail before request'); }
+  finally { globalThis.fetch = savedFetch; }
+
+  const radarCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const receiptID = `rre_${'a'.repeat(32)}`;
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    radarCalls.push({ input: url, init });
+    if (url.includes('/events/export')) return new Response(`unionid,external_userid,created_at\n,,2026-08-01T00:00:00Z\n`, { status: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8' } });
+    return new Response(JSON.stringify({ items: [{ event_id: 1, receipt_id: receiptID, link_id: 5, stage: 'landing', source: 'public_redirect', created_at: '2026-08-01T00:00:00Z' }], events: [], total: 1, limit: 500, offset: 0, has_more: false, identity_attributed: false, real_external_call_executed: false }), { status: 200 });
+  };
+  try {
+    const filters = { startAt: '2026-08-01T08:00', endAt: '2026-08-01T09:00' };
+    const radarEvents = await readRadarEvents(5, filters);
+    const csv = await exportRadarEventsCsv(5, filters);
+    const listURL = new URL(radarCalls[0].input, 'https://aicrm.test');
+    const exportURL = new URL(radarCalls[1].input, 'https://aicrm.test');
+    assert(radarEvents.length === 1 && radarEvents[0].unionid_masked === receiptID && radarEvents[0].external_userid === 'landing', 'radar event reads only local receipt and stage');
+    assert(listURL.searchParams.get('limit') === '500' && listURL.searchParams.get('start_at') === new Date(filters.startAt).toISOString() && listURL.searchParams.get('end_at') === new Date(filters.endAt).toISOString(), 'radar event refresh sends time filters to generated endpoint');
+    assert(exportURL.pathname === '/api/admin/radar-links/5/events/export' && exportURL.searchParams.get('start_at') === new Date(filters.startAt).toISOString() && csv.includes('unionid,external_userid,created_at'), 'radar export downloads server CSV with matching time filters');
+  } finally { globalThis.fetch = savedFetch; }
+
+  globalThis.fetch = async () => new Response('unavailable', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+  try { await exportRadarEventsCsv(5); assert(false, 'radar export 503 was accepted'); }
+  catch (error) { assert(error instanceof ApiError && error.status === 503, 'radar export must fail closed without local CSV fallback'); }
+  finally { globalThis.fetch = savedFetch; }
   void response;
 }
