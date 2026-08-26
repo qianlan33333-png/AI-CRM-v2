@@ -253,12 +253,20 @@ LIMIT sqlc.arg(row_limit) OFFSET sqlc.arg(row_offset);
 SELECT count(*) FROM group_ops_directory_groups
 WHERE sqlc.arg(owner_staff_id)::bigint = 0 OR owner_staff_id = sqlc.arg(owner_staff_id);
 
--- name: DeleteGroupOpsDirectoryGroups :exec
-DELETE FROM group_ops_directory_groups WHERE owner_staff_id = sqlc.arg(owner_staff_id);
+-- name: DeleteMissingGroupOpsDirectoryGroups :exec
+DELETE FROM group_ops_directory_groups
+WHERE owner_staff_id = sqlc.arg(owner_staff_id)
+  AND NOT (chat_reference = ANY(sqlc.arg(chat_references)::text[]));
 
--- name: InsertGroupOpsDirectoryGroup :exec
+-- name: UpsertGroupOpsDirectoryGroup :exec
 INSERT INTO group_ops_directory_groups (chat_reference, owner_staff_id, display_name, member_count, source_digest, refreshed_at)
-VALUES (sqlc.arg(chat_reference), sqlc.arg(owner_staff_id), sqlc.arg(display_name), sqlc.arg(member_count), sqlc.arg(source_digest), sqlc.arg(refreshed_at));
+VALUES (sqlc.arg(chat_reference), sqlc.arg(owner_staff_id), sqlc.arg(display_name), sqlc.arg(member_count), sqlc.arg(source_digest), sqlc.arg(refreshed_at))
+ON CONFLICT (chat_reference) DO UPDATE SET
+  owner_staff_id = EXCLUDED.owner_staff_id,
+  display_name = EXCLUDED.display_name,
+  member_count = EXCLUDED.member_count,
+  source_digest = EXCLUDED.source_digest,
+  refreshed_at = EXCLUDED.refreshed_at;
 
 -- name: ReserveGroupOpsDirectoryRefresh :one
 INSERT INTO group_ops_directory_refresh_receipts (

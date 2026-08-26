@@ -21,6 +21,8 @@ import (
 
 var ErrProviderDisabled = errors.New("group ops provider disabled")
 
+const completeDirectorySnapshotLimit int32 = 1000
+
 type ExecutionKey struct {
 	NodeID          int64
 	TargetReference string
@@ -121,6 +123,13 @@ func (service *RuntimeService) SetDispatchEnabled(enabled bool) {
 	}
 }
 
+func (service *RuntimeService) runtimeSafety() groupopsport.RuntimeSafety {
+	if service != nil && service.dispatchEnabled {
+		return groupopsport.DispatchEnabledRuntimeSafety()
+	}
+	return groupopsport.DisabledRuntimeSafety()
+}
+
 func (service *RuntimeService) PreviewRunDue(ctx context.Context, planID int64) (groupopsport.RunDuePreview, error) {
 	if ctx == nil || service == nil || service.now == nil || planID < 1 {
 		return groupopsport.RunDuePreview{}, ErrInvalid
@@ -135,7 +144,7 @@ func (service *RuntimeService) PreviewRunDue(ctx context.Context, planID int64) 
 		if !validDetail(detail, planID) {
 			return ErrUnavailable
 		}
-		result = groupopsport.RunDuePreview{PlanID: planID, PlanStatus: detail.Plan.Status, SnapshotRevision: detail.Plan.Revision, EvaluatedAt: now, Blockers: []string{}, RuntimeSafety: groupopsport.DisabledRuntimeSafety()}
+		result = groupopsport.RunDuePreview{PlanID: planID, PlanStatus: detail.Plan.Status, SnapshotRevision: detail.Plan.Revision, EvaluatedAt: now, Blockers: []string{}, RuntimeSafety: service.runtimeSafety()}
 		if detail.Plan.Status != groupopsport.PlanActive {
 			result.Blockers = append(result.Blockers, "plan_not_active")
 			return nil
@@ -227,7 +236,11 @@ func (service *RuntimeService) acceptPlan(ctx context.Context, command groupopsp
 			return ErrConflict
 		}
 		if !owned {
-			if receipt.State != "completed" || !decode(receipt.ResultSnapshot, &summary) || !validRuntimeSummary(summary, command, detail.Plan.Revision) {
+			if receipt.State != "completed" || !decode(receipt.ResultSnapshot, &summary) {
+				return ErrUnavailable
+			}
+			summary.RuntimeSafety = service.runtimeSafety()
+			if !validRuntimeSummary(summary, command, detail.Plan.Revision) {
 				return ErrUnavailable
 			}
 			return nil
@@ -289,6 +302,7 @@ func (service *RuntimeService) acceptPlan(ctx context.Context, command groupopsp
 			}
 		}
 		summary, err = service.runtime.ReadRunSummary(tx, run.ID)
+		summary.RuntimeSafety = service.runtimeSafety()
 		if err != nil || !validRuntimeSummary(summary, command, detail.Plan.Revision) {
 			return errors.Join(ErrUnavailable, err)
 		}
@@ -348,7 +362,7 @@ func (service *RuntimeService) runtimeReceiptPayload(ctx context.Context, comman
 }
 
 func validRuntimeSummary(value groupopsport.RunSummary, command groupopsport.AcceptPlanCommand, revision int64) bool {
-	if value.Run.ID < 1 || value.Run.PlanID != command.PlanID || value.Run.Trigger != command.Trigger || value.Run.PlanRevision != revision || value.Run.AcceptedBy != command.AcceptedBy || value.Run.ScheduledFor.IsZero() || value.Run.AcceptedAt.IsZero() || value.ProviderExecutionEligible || value.RealExternalCallExecuted || value.ProviderAccepted != 0 || value.DeliveryProven != 0 || value.OutcomeUnknown != 0 || value.Reconciled != 0 || value.FinalFailed != 0 || value.Accepted != int32(len(value.Executions)) {
+	if value.Run.ID < 1 || value.Run.PlanID != command.PlanID || value.Run.Trigger != command.Trigger || value.Run.PlanRevision != revision || value.Run.AcceptedBy != command.AcceptedBy || value.Run.ScheduledFor.IsZero() || value.Run.AcceptedAt.IsZero() || value.RealExternalCallExecuted || value.ProviderAccepted != 0 || value.DeliveryProven != 0 || value.OutcomeUnknown != 0 || value.Reconciled != 0 || value.FinalFailed != 0 || value.Accepted != int32(len(value.Executions)) {
 		return false
 	}
 	for _, execution := range value.Executions {
@@ -363,7 +377,7 @@ func (service *RuntimeService) ListExecutions(ctx context.Context, planID int64,
 	if ctx == nil || service == nil || planID < 1 || !validPage(limit, offset) {
 		return groupopsport.ExecutionPage{}, ErrInvalid
 	}
-	result := groupopsport.ExecutionPage{Items: []groupopsport.Execution{}, Limit: limit, Offset: offset, RuntimeSafety: groupopsport.DisabledRuntimeSafety()}
+	result := groupopsport.ExecutionPage{Items: []groupopsport.Execution{}, Limit: limit, Offset: offset, RuntimeSafety: service.runtimeSafety()}
 	err := service.uow.Within(ctx, func(tx context.Context) error {
 		var err error
 		result.Items, result.Total, err = service.runtime.ListExecutions(tx, planID, limit, offset)
@@ -477,7 +491,7 @@ func (service *RuntimeService) ListOperationMembers(ctx context.Context, pageSiz
 			items = append(items, groupopsport.OperationMember{SenderUserID: id, DisplayName: name})
 		}
 	}
-	return groupopsport.OperationMemberPage{Scope: "group_ops", Items: items, PageSize: pageSize, RuntimeSafety: groupopsport.DisabledRuntimeSafety()}, nil
+	return groupopsport.OperationMemberPage{Scope: "group_ops", Items: items, PageSize: pageSize, RuntimeSafety: service.runtimeSafety()}, nil
 }
 
 func (service *RuntimeService) RefreshOperationMembers(ctx context.Context, command groupopsport.OperationMemberRefreshCommand) (groupopsport.OperationMemberPage, error) {
@@ -500,14 +514,14 @@ func (service *RuntimeService) RefreshOperationMembers(ctx context.Context, comm
 	if err != nil {
 		return groupopsport.OperationMemberPage{}, classify(err)
 	}
-	return groupopsport.OperationMemberPage{Scope: "group_ops", Items: items, PageSize: command.PageSize, RuntimeSafety: groupopsport.DisabledRuntimeSafety()}, nil
+	return groupopsport.OperationMemberPage{Scope: "group_ops", Items: items, PageSize: command.PageSize, RuntimeSafety: service.runtimeSafety()}, nil
 }
 
 func (service *RuntimeService) ListGroups(ctx context.Context, ownerStaffID int64, limit, offset int32) (groupopsport.GroupDirectoryPage, error) {
-	if ctx == nil || service == nil || ownerStaffID < 0 || !validPage(limit, offset) {
+	if ctx == nil || service == nil || ownerStaffID < 0 || !validDirectoryPage(limit, offset) {
 		return groupopsport.GroupDirectoryPage{}, ErrInvalid
 	}
-	result := groupopsport.GroupDirectoryPage{Items: []groupopsport.GroupDirectoryItem{}, Limit: limit, Offset: offset, RuntimeSafety: groupopsport.DisabledRuntimeSafety()}
+	result := groupopsport.GroupDirectoryPage{Items: []groupopsport.GroupDirectoryItem{}, Limit: limit, Offset: offset, RuntimeSafety: service.runtimeSafety()}
 	err := service.uow.Within(ctx, func(tx context.Context) error {
 		var err error
 		result.Items, result.Total, err = service.runtime.ListDirectoryGroups(tx, ownerStaffID, limit, offset)
@@ -520,6 +534,10 @@ func (service *RuntimeService) ListGroups(ctx context.Context, ownerStaffID int6
 	return result, nil
 }
 
+func validDirectoryPage(limit, offset int32) bool {
+	return limit >= 1 && limit <= 200 && offset >= 0 && offset <= MaximumOffset
+}
+
 func (service *RuntimeService) RefreshGroups(ctx context.Context, command groupopsport.GroupRefreshCommand) (groupopsport.GroupDirectoryPage, error) {
 	if ctx == nil || service == nil || command.OwnerStaffID < 1 || command.ActorID < 1 || command.Limit < 1 || command.Limit > 200 || !validKey(command.IdempotencyKey) {
 		return groupopsport.GroupDirectoryPage{}, ErrInvalid
@@ -527,10 +545,11 @@ func (service *RuntimeService) RefreshGroups(ctx context.Context, command groupo
 	if nilRuntimeDependency(service.groups) {
 		return groupopsport.GroupDirectoryPage{}, ErrProviderDisabled
 	}
-	items, err := service.groups.ListOwnedGroups(ctx, command.OwnerStaffID, command.Limit)
-	if err != nil || !validDirectoryGroups(items, command.OwnerStaffID, command.Limit) {
+	snapshot, err := service.groups.ListOwnedGroups(ctx, command.OwnerStaffID, completeDirectorySnapshotLimit)
+	if err != nil || !snapshot.Complete || !validDirectoryGroups(snapshot.Items, command.OwnerStaffID, completeDirectorySnapshotLimit) {
 		return groupopsport.GroupDirectoryPage{}, ErrUnavailable
 	}
+	items := snapshot.Items
 	now := service.nowUTC()
 	raw, _ := json.Marshal(items)
 	snapshotDigest := runtimeDigest("group-ops-group-directory", string(raw))

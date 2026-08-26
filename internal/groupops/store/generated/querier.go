@@ -17,8 +17,8 @@ type Querier interface {
 	CreateGroupOpsPlanMember(ctx context.Context, arg CreateGroupOpsPlanMemberParams) error
 	CreateGroupOpsPlanNode(ctx context.Context, arg CreateGroupOpsPlanNodeParams) error
 	CreateGroupOpsPlanWebhookDescriptor(ctx context.Context, planID int64) error
-	DeleteGroupOpsDirectoryGroups(ctx context.Context, ownerStaffID int64) error
 	DeleteGroupOpsPlanMembers(ctx context.Context, planID int64) error
+	DeleteMissingGroupOpsDirectoryGroups(ctx context.Context, arg DeleteMissingGroupOpsDirectoryGroupsParams) error
 	DeleteMissingGroupOpsPlanGroupAssets(ctx context.Context, arg DeleteMissingGroupOpsPlanGroupAssetsParams) error
 	DeleteMissingGroupOpsPlanNodes(ctx context.Context, arg DeleteMissingGroupOpsPlanNodesParams) error
 	FindGroupOpsPlanByWebhookReference(ctx context.Context, reference string) (int64, error)
@@ -32,7 +32,6 @@ type Querier interface {
 	GetGroupOpsPlanWebhookDescriptor(ctx context.Context, planID int64) (string, error)
 	GetGroupOpsRun(ctx context.Context, runID int64) (GroupOpsRun, error)
 	GetGroupOpsWeComGroupMessageReceipt(ctx context.Context, externalEffectID int64) (GroupOpsWecomGroupMessageReceipt, error)
-	InsertGroupOpsDirectoryGroup(ctx context.Context, arg InsertGroupOpsDirectoryGroupParams) error
 	InsertGroupOpsExecution(ctx context.Context, arg InsertGroupOpsExecutionParams) (InsertGroupOpsExecutionRow, error)
 	InsertGroupOpsWeComGroupMessageReceipt(ctx context.Context, arg InsertGroupOpsWeComGroupMessageReceiptParams) (GroupOpsWecomGroupMessageReceipt, error)
 	ListGroupOpsDirectoryGroups(ctx context.Context, arg ListGroupOpsDirectoryGroupsParams) ([]GroupOpsDirectoryGroup, error)
@@ -54,6 +53,7 @@ type Querier interface {
 	SaveGroupOpsPlan(ctx context.Context, arg SaveGroupOpsPlanParams) (int64, error)
 	SaveGroupOpsPlanWebhookDescriptor(ctx context.Context, arg SaveGroupOpsPlanWebhookDescriptorParams) (int64, error)
 	UpdateGroupOpsPlanNode(ctx context.Context, arg UpdateGroupOpsPlanNodeParams) (int64, error)
+	UpsertGroupOpsDirectoryGroup(ctx context.Context, arg UpsertGroupOpsDirectoryGroupParams) error
 	UpsertGroupOpsPlanGroupAsset(ctx context.Context, arg UpsertGroupOpsPlanGroupAssetParams) error
 }
 

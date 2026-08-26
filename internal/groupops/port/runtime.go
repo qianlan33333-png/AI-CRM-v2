@@ -33,6 +33,12 @@ type RuntimeSafety struct {
 
 func DisabledRuntimeSafety() RuntimeSafety { return RuntimeSafety{} }
 
+// DispatchEnabledRuntimeSafety describes only whether this runtime can accept
+// a new dispatch intent. It never asserts that a Provider call occurred.
+func DispatchEnabledRuntimeSafety() RuntimeSafety {
+	return RuntimeSafety{ProviderExecutionEligible: true}
+}
+
 type RunDuePreview struct {
 	PlanID            int64      `json:"plan_id,string"`
 	PlanStatus        PlanStatus `json:"plan_status"`
@@ -173,8 +179,15 @@ type OperationMemberRefreshCommand struct {
 }
 
 type GroupDirectorySource interface {
-	ListOwnedGroups(context.Context, int64, int32) ([]GroupDirectoryItem, error)
+	ListOwnedGroups(context.Context, int64, int32) (GroupDirectorySnapshot, error)
 	RefreshOperationMembers(context.Context, int32) ([]OperationMember, error)
+}
+
+// GroupDirectorySnapshot may replace a local owner projection only when
+// Complete is true. A partial provider page is never a deletion authority.
+type GroupDirectorySnapshot struct {
+	Items    []GroupDirectoryItem
+	Complete bool
 }
 
 // ExecutionSenderResolver freezes the verified active owner of one local

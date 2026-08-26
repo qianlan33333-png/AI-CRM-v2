@@ -13274,7 +13274,7 @@ components:
       additionalProperties: false
       required: [provider_execution_eligible, real_external_call_executed, provider_accepted, delivery_proven]
       properties:
-        provider_execution_eligible: { type: boolean, enum: [false] }
+        provider_execution_eligible: { type: boolean }
         real_external_call_executed: { type: boolean, enum: [false] }
         provider_accepted: { type: boolean }
         delivery_proven: { type: boolean }
@@ -13290,7 +13290,7 @@ components:
         due_execution_count: { type: integer, minimum: 0 }
         next_due_at: { type: string, format: date-time }
         blockers: { type: array, items: { type: string, enum: [plan_not_active, group_asset_required, member_required, node_required, invalid_node] } }
-        provider_execution_eligible: { type: boolean, enum: [false] }
+        provider_execution_eligible: { type: boolean }
         real_external_call_executed: { type: boolean, enum: [false] }
         provider_accepted: { type: boolean, enum: [false] }
         delivery_proven: { type: boolean, enum: [false] }
@@ -13343,7 +13343,7 @@ components:
         outcome_unknown: { type: integer, minimum: 0 }
         reconciled: { type: integer, minimum: 0 }
         final_failed: { type: integer, minimum: 0 }
-        provider_execution_eligible: { type: boolean, enum: [false] }
+        provider_execution_eligible: { type: boolean }
         real_external_call_executed: { type: boolean, enum: [false] }
         provider_accepted: { type: boolean, enum: [false] }
         delivery_proven: { type: boolean, enum: [false] }
@@ -13357,7 +13357,7 @@ components:
         limit: { type: integer, minimum: 1, maximum: 100 }
         offset: { type: integer, minimum: 0, maximum: 1000000 }
         has_more: { type: boolean }
-        provider_execution_eligible: { type: boolean, enum: [false] }
+        provider_execution_eligible: { type: boolean }
         real_external_call_executed: { type: boolean, enum: [false] }
         provider_accepted: { type: boolean, enum: [false] }
         delivery_proven: { type: boolean, enum: [false] }
@@ -13381,7 +13381,7 @@ components:
         limit: { type: integer, minimum: 1, maximum: 200 }
         offset: { type: integer, minimum: 0, maximum: 1000000 }
         has_more: { type: boolean }
-        provider_execution_eligible: { type: boolean, enum: [false] }
+        provider_execution_eligible: { type: boolean }
         real_external_call_executed: { type: boolean, enum: [false] }
         provider_accepted: { type: boolean, enum: [false] }
         delivery_proven: { type: boolean, enum: [false] }
@@ -13400,7 +13400,7 @@ components:
         scope: { type: string, enum: [group_ops] }
         items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/GroupOpsOperationMember" } }
         page_size: { type: integer, minimum: 1, maximum: 100 }
-        provider_execution_eligible: { type: boolean, enum: [false] }
+        provider_execution_eligible: { type: boolean }
         real_external_call_executed: { type: boolean, enum: [false] }
         provider_accepted: { type: boolean, enum: [false] }
         delivery_proven: { type: boolean, enum: [false] }

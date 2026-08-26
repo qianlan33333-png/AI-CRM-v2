@@ -208,14 +208,16 @@ func (repository *Repository) ReplaceDirectoryGroups(ctx context.Context, owner 
 	if repository == nil || err != nil || owner < 1 {
 		return unavailable(err)
 	}
-	if err = q.DeleteGroupOpsDirectoryGroups(ctx, owner); err != nil {
-		return unavailable(err)
-	}
-	for _, item := range items {
+	references := make([]string, len(items))
+	for index, item := range items {
 		digest := sha256.Sum256([]byte(strings.Join([]string{item.ChatReference, strconv.FormatInt(owner, 10), item.DisplayName, strconv.FormatInt(int64(item.MemberCount), 10)}, "\x00")))
-		if err = q.InsertGroupOpsDirectoryGroup(ctx, groupopsdb.InsertGroupOpsDirectoryGroupParams{ChatReference: item.ChatReference, OwnerStaffID: owner, DisplayName: item.DisplayName, MemberCount: item.MemberCount, SourceDigest: "sha256:" + hex.EncodeToString(digest[:]), RefreshedAt: timestamp(now)}); err != nil {
+		if err = q.UpsertGroupOpsDirectoryGroup(ctx, groupopsdb.UpsertGroupOpsDirectoryGroupParams{ChatReference: item.ChatReference, OwnerStaffID: owner, DisplayName: item.DisplayName, MemberCount: item.MemberCount, SourceDigest: "sha256:" + hex.EncodeToString(digest[:]), RefreshedAt: timestamp(now)}); err != nil {
 			return unavailable(err)
 		}
+		references[index] = item.ChatReference
+	}
+	if err = q.DeleteMissingGroupOpsDirectoryGroups(ctx, groupopsdb.DeleteMissingGroupOpsDirectoryGroupsParams{OwnerStaffID: owner, ChatReferences: references}); err != nil {
+		return unavailable(err)
 	}
 	return nil
 }

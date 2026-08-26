@@ -28,7 +28,7 @@ func TestRuntimeRunDueBindsImmutableContentAndMaterialSnapshotsToEER(t *testing.
 			t.Fatalf("draft=%+v", draft)
 		}
 	}
-	if summary.ProviderExecutionEligible || summary.RealExternalCallExecuted || summary.ProviderAccepted != 0 || summary.DeliveryProven != 0 {
+	if !summary.ProviderExecutionEligible || summary.RealExternalCallExecuted || summary.ProviderAccepted != 0 || summary.DeliveryProven != 0 {
 		t.Fatalf("unsafe summary=%+v", summary)
 	}
 
@@ -144,7 +144,7 @@ func TestRuntimeGroupRefreshIsDisabledByDefault(t *testing.T) {
 		t.Fatalf("err=%v", err)
 	}
 	members, err := service.ListOperationMembers(context.Background(), 100)
-	if err != nil || members.Scope != "group_ops" || len(members.Items) != 1 || members.Items[0].SenderUserID != "staff-7" || members.ProviderExecutionEligible {
+	if err != nil || members.Scope != "group_ops" || len(members.Items) != 1 || members.Items[0].SenderUserID != "staff-7" || !members.ProviderExecutionEligible || members.RealExternalCallExecuted {
 		t.Fatalf("members=%+v err=%v", members, err)
 	}
 }
@@ -152,9 +152,26 @@ func TestRuntimeGroupRefreshIsDisabledByDefault(t *testing.T) {
 func TestAcceptPlanFailsClosedWhenDispatchProviderIsDisabled(t *testing.T) {
 	service, _, effects := newRuntimeFixture(t)
 	service.SetDispatchEnabled(false)
+	preview, previewErr := service.PreviewRunDue(context.Background(), 91)
+	if previewErr != nil || preview.ProviderExecutionEligible || preview.RealExternalCallExecuted {
+		t.Fatalf("preview=%+v err=%v", preview, previewErr)
+	}
 	_, err := service.AcceptPlan(context.Background(), groupopsport.AcceptPlanCommand{PlanID: 91, Trigger: groupopsport.RunTriggerBroadcast, AcceptedBy: "service:fixture", IdempotencyKey: "group-ops-disabled-0001"})
 	if !errors.Is(err, ErrProviderDisabled) || effects.accepts != 0 {
 		t.Fatalf("err=%v accepts=%d", err, effects.accepts)
+	}
+}
+
+func TestRefreshGroupsRequiresCompleteSnapshotBeforeReplacingOwnerProjection(t *testing.T) {
+	service, runtime, _ := newRuntimeFixture(t)
+	source := &runtimeDirectorySource{snapshot: groupopsport.GroupDirectorySnapshot{Items: []groupopsport.GroupDirectoryItem{{ChatReference: "chat-1", OwnerStaffID: 7, DisplayName: "Group 1"}}, Complete: true}}
+	service.groups = source
+	if _, err := service.RefreshGroups(context.Background(), groupopsport.GroupRefreshCommand{OwnerStaffID: 7, ActorID: 7, Limit: 200, IdempotencyKey: "groupops-full-0001"}); err != nil || source.limit != completeDirectorySnapshotLimit || runtime.directoryReplacements != 1 || len(runtime.directoryItems) != 1 {
+		t.Fatalf("err=%v source=%+v runtime=%+v", err, source, runtime)
+	}
+	source.snapshot.Complete = false
+	if _, err := service.RefreshGroups(context.Background(), groupopsport.GroupRefreshCommand{OwnerStaffID: 7, ActorID: 7, Limit: 200, IdempotencyKey: "groupops-partial-0001"}); !errors.Is(err, ErrUnavailable) || runtime.directoryReplacements != 1 {
+		t.Fatalf("partial err=%v replacements=%d", err, runtime.directoryReplacements)
 	}
 }
 
@@ -194,6 +211,20 @@ type runtimeJobFixture struct{}
 
 func (runtimeJobFixture) Insert(_ context.Context, args GroupOpsDispatchJobArgs, generation int64, scheduled time.Time) (eer.RiverJobLink, error) {
 	return eer.RiverJobLink{JobID: 1, Generation: generation, Queue: "outbound", ArgsDigest: runtimeDigest("job", args.EffectID), ScheduledAt: scheduled}, nil
+}
+
+type runtimeDirectorySource struct {
+	snapshot groupopsport.GroupDirectorySnapshot
+	limit    int32
+}
+
+func (source *runtimeDirectorySource) ListOwnedGroups(_ context.Context, _ int64, limit int32) (groupopsport.GroupDirectorySnapshot, error) {
+	source.limit = limit
+	return source.snapshot, nil
+}
+
+func (*runtimeDirectorySource) RefreshOperationMembers(context.Context, int32) ([]groupopsport.OperationMember, error) {
+	return nil, errors.New("unexpected")
 }
 
 func (stub evidenceVerifierStub) VerifyReconciliationEvidence(_ context.Context, evidence groupopsport.ReconciliationEvidence) (groupopsport.ReconciliationEvidenceResult, error) {
@@ -242,10 +273,12 @@ func (fixture *runtimeEffectsFixture) Reconcile(_ context.Context, command eer.R
 }
 
 type runtimeStoreFixture struct {
-	runs        map[string]groupopsport.Run
-	executions  map[int64]groupopsport.Execution
-	drafts      []ExecutionDraft
-	webhookPlan int64
+	runs                  map[string]groupopsport.Run
+	executions            map[int64]groupopsport.Execution
+	drafts                []ExecutionDraft
+	webhookPlan           int64
+	directoryReplacements int
+	directoryItems        []groupopsport.GroupDirectoryItem
 }
 
 func (fixture *runtimeStoreFixture) ListExecutionKeys(_ context.Context, planID, revision int64) ([]ExecutionKey, error) {
@@ -347,7 +380,9 @@ func (fixture *runtimeStoreFixture) FindPlanByWebhookReference(context.Context, 
 func (*runtimeStoreFixture) ListDirectoryGroups(context.Context, int64, int32, int32) ([]groupopsport.GroupDirectoryItem, int64, error) {
 	return []groupopsport.GroupDirectoryItem{}, 0, nil
 }
-func (*runtimeStoreFixture) ReplaceDirectoryGroups(context.Context, int64, []groupopsport.GroupDirectoryItem, time.Time) error {
+func (fixture *runtimeStoreFixture) ReplaceDirectoryGroups(_ context.Context, _ int64, items []groupopsport.GroupDirectoryItem, _ time.Time) error {
+	fixture.directoryReplacements++
+	fixture.directoryItems = append([]groupopsport.GroupDirectoryItem{}, items...)
 	return nil
 }
 func (*runtimeStoreFixture) RecordDirectoryRefresh(context.Context, string, int64, int64, [sha256.Size]byte, string, int32, bool, time.Time) error {

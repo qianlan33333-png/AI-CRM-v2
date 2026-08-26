@@ -165,21 +165,28 @@ func (q *Queries) CreateGroupOpsPlanWebhookDescriptor(ctx context.Context, planI
 	return err
 }
 
-const deleteGroupOpsDirectoryGroups = `-- name: DeleteGroupOpsDirectoryGroups :exec
-DELETE FROM group_ops_directory_groups WHERE owner_staff_id = $1
-`
-
-func (q *Queries) DeleteGroupOpsDirectoryGroups(ctx context.Context, ownerStaffID int64) error {
-	_, err := q.db.Exec(ctx, deleteGroupOpsDirectoryGroups, ownerStaffID)
-	return err
-}
-
 const deleteGroupOpsPlanMembers = `-- name: DeleteGroupOpsPlanMembers :exec
 DELETE FROM group_ops_plan_members WHERE plan_id = $1
 `
 
 func (q *Queries) DeleteGroupOpsPlanMembers(ctx context.Context, planID int64) error {
 	_, err := q.db.Exec(ctx, deleteGroupOpsPlanMembers, planID)
+	return err
+}
+
+const deleteMissingGroupOpsDirectoryGroups = `-- name: DeleteMissingGroupOpsDirectoryGroups :exec
+DELETE FROM group_ops_directory_groups
+WHERE owner_staff_id = $1
+  AND NOT (chat_reference = ANY($2::text[]))
+`
+
+type DeleteMissingGroupOpsDirectoryGroupsParams struct {
+	OwnerStaffID   int64    `json:"owner_staff_id"`
+	ChatReferences []string `json:"chat_references"`
+}
+
+func (q *Queries) DeleteMissingGroupOpsDirectoryGroups(ctx context.Context, arg DeleteMissingGroupOpsDirectoryGroupsParams) error {
+	_, err := q.db.Exec(ctx, deleteMissingGroupOpsDirectoryGroups, arg.OwnerStaffID, arg.ChatReferences)
 	return err
 }
 
@@ -510,32 +517,6 @@ func (q *Queries) GetGroupOpsWeComGroupMessageReceipt(ctx context.Context, exter
 		&i.UpdatedAt,
 	)
 	return i, err
-}
-
-const insertGroupOpsDirectoryGroup = `-- name: InsertGroupOpsDirectoryGroup :exec
-INSERT INTO group_ops_directory_groups (chat_reference, owner_staff_id, display_name, member_count, source_digest, refreshed_at)
-VALUES ($1, $2, $3, $4, $5, $6)
-`
-
-type InsertGroupOpsDirectoryGroupParams struct {
-	ChatReference string             `json:"chat_reference"`
-	OwnerStaffID  int64              `json:"owner_staff_id"`
-	DisplayName   string             `json:"display_name"`
-	MemberCount   int32              `json:"member_count"`
-	SourceDigest  string             `json:"source_digest"`
-	RefreshedAt   pgtype.Timestamptz `json:"refreshed_at"`
-}
-
-func (q *Queries) InsertGroupOpsDirectoryGroup(ctx context.Context, arg InsertGroupOpsDirectoryGroupParams) error {
-	_, err := q.db.Exec(ctx, insertGroupOpsDirectoryGroup,
-		arg.ChatReference,
-		arg.OwnerStaffID,
-		arg.DisplayName,
-		arg.MemberCount,
-		arg.SourceDigest,
-		arg.RefreshedAt,
-	)
-	return err
 }
 
 const insertGroupOpsExecution = `-- name: InsertGroupOpsExecution :one
@@ -1482,6 +1463,38 @@ func (q *Queries) UpdateGroupOpsPlanNode(ctx context.Context, arg UpdateGroupOps
 		return 0, err
 	}
 	return result.RowsAffected(), nil
+}
+
+const upsertGroupOpsDirectoryGroup = `-- name: UpsertGroupOpsDirectoryGroup :exec
+INSERT INTO group_ops_directory_groups (chat_reference, owner_staff_id, display_name, member_count, source_digest, refreshed_at)
+VALUES ($1, $2, $3, $4, $5, $6)
+ON CONFLICT (chat_reference) DO UPDATE SET
+  owner_staff_id = EXCLUDED.owner_staff_id,
+  display_name = EXCLUDED.display_name,
+  member_count = EXCLUDED.member_count,
+  source_digest = EXCLUDED.source_digest,
+  refreshed_at = EXCLUDED.refreshed_at
+`
+
+type UpsertGroupOpsDirectoryGroupParams struct {
+	ChatReference string             `json:"chat_reference"`
+	OwnerStaffID  int64              `json:"owner_staff_id"`
+	DisplayName   string             `json:"display_name"`
+	MemberCount   int32              `json:"member_count"`
+	SourceDigest  string             `json:"source_digest"`
+	RefreshedAt   pgtype.Timestamptz `json:"refreshed_at"`
+}
+
+func (q *Queries) UpsertGroupOpsDirectoryGroup(ctx context.Context, arg UpsertGroupOpsDirectoryGroupParams) error {
+	_, err := q.db.Exec(ctx, upsertGroupOpsDirectoryGroup,
+		arg.ChatReference,
+		arg.OwnerStaffID,
+		arg.DisplayName,
+		arg.MemberCount,
+		arg.SourceDigest,
+		arg.RefreshedAt,
+	)
+	return err
 }
 
 const upsertGroupOpsPlanGroupAsset = `-- name: UpsertGroupOpsPlanGroupAsset :exec

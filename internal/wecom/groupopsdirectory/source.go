@@ -82,30 +82,30 @@ func New(config Config) (*Source, error) {
 	return &Source{baseURL: baseURL, httpClient: config.HTTPClient, token: config.Token, ownerStaff: config.OwnerStaff, activeStaff: config.ActiveStaff}, nil
 }
 
-func (source *Source) ListOwnedGroups(ctx context.Context, ownerStaffID int64, limit int32) ([]groupopsport.GroupDirectoryItem, error) {
+func (source *Source) ListOwnedGroups(ctx context.Context, ownerStaffID int64, limit int32) (groupopsport.GroupDirectorySnapshot, error) {
 	if source == nil || ctx == nil || ownerStaffID < 1 || limit < 1 || limit > 1000 {
-		return nil, ErrInvalidConfig
+		return groupopsport.GroupDirectorySnapshot{}, ErrInvalidConfig
 	}
 	ownerUserID, err := source.ownerStaff.ResolveActiveWeComUserID(ctx, ownerStaffID)
 	if err != nil || !validText(ownerUserID, 128) {
-		return nil, ErrUnexpectedResponse
+		return groupopsport.GroupDirectorySnapshot{}, ErrUnexpectedResponse
 	}
 	chatIDs, err := source.listGroupChatIDs(ctx, ownerUserID, limit)
 	if err != nil {
-		return nil, err
+		return groupopsport.GroupDirectorySnapshot{}, err
 	}
 	items := make([]groupopsport.GroupDirectoryItem, 0, len(chatIDs))
 	for _, chatID := range chatIDs {
 		group, getErr := source.getGroupChat(ctx, chatID)
 		if getErr != nil {
-			return nil, getErr
+			return groupopsport.GroupDirectorySnapshot{}, getErr
 		}
 		if group.ChatID != chatID || group.Owner != ownerUserID || !validText(group.Name, 128) || !validMembers(group.MemberCount) {
-			return nil, ErrUnexpectedResponse
+			return groupopsport.GroupDirectorySnapshot{}, ErrUnexpectedResponse
 		}
 		items = append(items, groupopsport.GroupDirectoryItem{ChatReference: chatID, OwnerStaffID: ownerStaffID, DisplayName: group.Name, MemberCount: group.MemberCount})
 	}
-	return items, nil
+	return groupopsport.GroupDirectorySnapshot{Items: items, Complete: true}, nil
 }
 
 func (source *Source) RefreshOperationMembers(ctx context.Context, pageSize int32) ([]groupopsport.OperationMember, error) {
@@ -157,18 +157,14 @@ func (source *Source) RefreshOperationMembers(ctx context.Context, pageSize int3
 }
 
 func (source *Source) listGroupChatIDs(ctx context.Context, ownerUserID string, limit int32) ([]string, error) {
-	chatIDs := make([]string, 0, limit)
-	seenChatIDs := make(map[string]struct{}, limit)
+	chatIDs := []string{}
+	seenChatIDs := map[string]struct{}{}
 	seenCursors := map[string]struct{}{}
 	for cursor := ""; ; {
 		if _, duplicate := seenCursors[cursor]; duplicate {
 			return nil, ErrUnexpectedResponse
 		}
 		seenCursors[cursor] = struct{}{}
-		remaining := limit - int32(len(chatIDs))
-		if remaining < 1 {
-			return chatIDs, nil
-		}
 		var response struct {
 			GroupChatList []struct {
 				ChatID string `json:"chat_id"`
@@ -179,12 +175,12 @@ func (source *Source) listGroupChatIDs(ctx context.Context, ownerUserID string, 
 			"owner_filter":  map[string][]string{"userid_list": []string{ownerUserID}},
 			"status_filter": 0,
 			"cursor":        cursor,
-			"limit":         remaining,
+			"limit":         limit,
 		}
 		if err := source.post(ctx, "/cgi-bin/externalcontact/groupchat/list", payload, &response); err != nil {
 			return nil, err
 		}
-		if !validCursor(response.NextCursor) || len(response.GroupChatList) > int(remaining) {
+		if !validCursor(response.NextCursor) || len(response.GroupChatList) > int(limit) {
 			return nil, ErrUnexpectedResponse
 		}
 		for _, item := range response.GroupChatList {
@@ -197,7 +193,7 @@ func (source *Source) listGroupChatIDs(ctx context.Context, ownerUserID string, 
 			seenChatIDs[item.ChatID] = struct{}{}
 			chatIDs = append(chatIDs, item.ChatID)
 		}
-		if response.NextCursor == "" || len(chatIDs) == int(limit) {
+		if response.NextCursor == "" {
 			return chatIDs, nil
 		}
 		cursor = response.NextCursor

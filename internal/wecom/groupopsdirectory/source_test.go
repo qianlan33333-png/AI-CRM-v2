@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -43,7 +44,7 @@ func TestListOwnedGroupsReadsOwnerScopedPagesAndExactGroups(t *testing.T) {
 				}
 				_, _ = writer.Write([]byte(`{"errcode":0,"group_chat_list":[{"chat_id":"chat-1"}],"next_cursor":"cursor-2"}`))
 			case 2:
-				if payload.Cursor != "cursor-2" || payload.Limit != 1 {
+				if payload.Cursor != "cursor-2" || payload.Limit != 2 {
 					t.Fatalf("second list page = %#v", payload)
 				}
 				_, _ = writer.Write([]byte(`{"errcode":0,"group_chat_list":[{"chat_id":"chat-2"}]}`))
@@ -76,7 +77,7 @@ func TestListOwnedGroupsReadsOwnerScopedPagesAndExactGroups(t *testing.T) {
 	defer server.Close()
 
 	source := newSource(t, server, ownerResolverFunc(func(context.Context, int64) (string, error) { return "owner-7", nil }), activeStaffFunc(nil))
-	items, err := source.ListOwnedGroups(context.Background(), 7, 2)
+	snapshot, err := source.ListOwnedGroups(context.Background(), 7, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,8 +85,8 @@ func TestListOwnedGroupsReadsOwnerScopedPagesAndExactGroups(t *testing.T) {
 		{ChatReference: "chat-1", OwnerStaffID: 7, DisplayName: "一号群", MemberCount: 2},
 		{ChatReference: "chat-2", OwnerStaffID: 7, DisplayName: "二号群", MemberCount: 1},
 	}
-	if !reflect.DeepEqual(items, want) {
-		t.Fatalf("ListOwnedGroups() = %#v, want %#v", items, want)
+	if !snapshot.Complete || !reflect.DeepEqual(snapshot.Items, want) {
+		t.Fatalf("ListOwnedGroups() = %#v, want %#v", snapshot, want)
 	}
 }
 
@@ -119,6 +120,38 @@ func TestListOwnedGroupsFailsClosedForWrongOwnerAndDuplicateChats(t *testing.T) 
 				t.Fatalf("ListOwnedGroups() error = %v, want %v", err, testCase.wantErr)
 			}
 		})
+	}
+}
+
+func TestListGroupChatIDsReadsMoreThanOneThousandGroupsBeforeSnapshotCompletion(t *testing.T) {
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		switch request.URL.Path {
+		case "/cgi-bin/gettoken":
+			_, _ = writer.Write([]byte(`{"errcode":0,"access_token":"token-safe","expires_in":7200}`))
+		case "/cgi-bin/externalcontact/groupchat/list":
+			requests++
+			itemCount := 1000
+			nextCursor := "more"
+			if requests == 2 {
+				itemCount = 1
+				nextCursor = ""
+			}
+			items := make([]map[string]string, itemCount)
+			for index := range items {
+				items[index] = map[string]string{"chat_id": "chat-" + strconv.Itoa((requests-1)*1000+index+1)}
+			}
+			_ = json.NewEncoder(writer).Encode(map[string]any{"errcode": 0, "group_chat_list": items, "next_cursor": nextCursor})
+		default:
+			t.Fatalf("unexpected request %s", request.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	source := newSource(t, server, ownerResolverFunc(func(context.Context, int64) (string, error) { return "owner-7", nil }), activeStaffFunc(nil))
+	items, err := source.listGroupChatIDs(context.Background(), "owner-7", 1000)
+	if err != nil || requests != 2 || len(items) != 1001 {
+		t.Fatalf("listGroupChatIDs() = %d items requests=%d err=%v", len(items), requests, err)
 	}
 }
 
