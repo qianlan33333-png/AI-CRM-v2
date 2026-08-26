@@ -467,22 +467,43 @@ func (q *Queries) ReadGroupOpsPreparedUpload(ctx context.Context, arg ReadGroupO
 }
 
 const readGroupOpsUploadPreparationAttempt = `-- name: ReadGroupOpsUploadPreparationAttempt :one
-SELECT id, source_kind, source_id, source_digest, provider_scope_digest,
-       upload_kind, external_effect_id, state
-FROM public.media_wecom_upload_preparations
-WHERE external_effect_id = $1::bigint
-FOR UPDATE
+SELECT preparation.id, preparation.source_kind, preparation.source_id,
+       preparation.source_digest, preparation.provider_scope_digest,
+       preparation.upload_kind, preparation.external_effect_id,
+       preparation.state AS preparation_state,
+       effect.owner AS effect_owner, effect.kind AS effect_kind,
+       effect.state AS effect_state, effect.generation, effect.lease_fence,
+       effect.lease_expires_at, attempt.number AS attempt_number,
+       attempt.started_at AS attempt_started_at,
+       receipt.receipt_digest
+FROM public.media_wecom_upload_preparations AS preparation
+JOIN public.external_effects AS effect ON effect.id = preparation.external_effect_id
+LEFT JOIN public.external_effect_attempts AS attempt
+  ON attempt.effect_id = effect.id AND attempt.completion IS NULL
+LEFT JOIN public.media_wecom_upload_receipts AS receipt
+  ON receipt.preparation_id = preparation.id
+WHERE preparation.external_effect_id = $1::bigint
+FOR UPDATE OF preparation
 `
 
 type ReadGroupOpsUploadPreparationAttemptRow struct {
-	ID                  int64  `json:"id"`
-	SourceKind          string `json:"source_kind"`
-	SourceID            int64  `json:"source_id"`
-	SourceDigest        string `json:"source_digest"`
-	ProviderScopeDigest string `json:"provider_scope_digest"`
-	UploadKind          string `json:"upload_kind"`
-	ExternalEffectID    int64  `json:"external_effect_id"`
-	State               string `json:"state"`
+	ID                  int64              `json:"id"`
+	SourceKind          string             `json:"source_kind"`
+	SourceID            int64              `json:"source_id"`
+	SourceDigest        string             `json:"source_digest"`
+	ProviderScopeDigest string             `json:"provider_scope_digest"`
+	UploadKind          string             `json:"upload_kind"`
+	ExternalEffectID    int64              `json:"external_effect_id"`
+	PreparationState    string             `json:"preparation_state"`
+	EffectOwner         string             `json:"effect_owner"`
+	EffectKind          string             `json:"effect_kind"`
+	EffectState         string             `json:"effect_state"`
+	Generation          int64              `json:"generation"`
+	LeaseFence          int64              `json:"lease_fence"`
+	LeaseExpiresAt      pgtype.Timestamptz `json:"lease_expires_at"`
+	AttemptNumber       pgtype.Int4        `json:"attempt_number"`
+	AttemptStartedAt    pgtype.Timestamptz `json:"attempt_started_at"`
+	ReceiptDigest       pgtype.Text        `json:"receipt_digest"`
 }
 
 func (q *Queries) ReadGroupOpsUploadPreparationAttempt(ctx context.Context, externalEffectID int64) (ReadGroupOpsUploadPreparationAttemptRow, error) {
@@ -496,7 +517,50 @@ func (q *Queries) ReadGroupOpsUploadPreparationAttempt(ctx context.Context, exte
 		&i.ProviderScopeDigest,
 		&i.UploadKind,
 		&i.ExternalEffectID,
-		&i.State,
+		&i.PreparationState,
+		&i.EffectOwner,
+		&i.EffectKind,
+		&i.EffectState,
+		&i.Generation,
+		&i.LeaseFence,
+		&i.LeaseExpiresAt,
+		&i.AttemptNumber,
+		&i.AttemptStartedAt,
+		&i.ReceiptDigest,
 	)
 	return i, err
+}
+
+const readLatestGroupOpsUploadPreparationState = `-- name: ReadLatestGroupOpsUploadPreparationState :one
+SELECT state
+FROM public.media_wecom_upload_preparations
+WHERE source_kind = $1::text
+  AND source_id = $2::bigint
+  AND source_digest = $3::text
+  AND provider_scope_digest = $4::text
+  AND upload_kind = $5::text
+ORDER BY created_at DESC, id DESC
+LIMIT 1
+FOR KEY SHARE
+`
+
+type ReadLatestGroupOpsUploadPreparationStateParams struct {
+	SourceKind          string `json:"source_kind"`
+	SourceID            int64  `json:"source_id"`
+	SourceDigest        string `json:"source_digest"`
+	ProviderScopeDigest string `json:"provider_scope_digest"`
+	UploadKind          string `json:"upload_kind"`
+}
+
+func (q *Queries) ReadLatestGroupOpsUploadPreparationState(ctx context.Context, arg ReadLatestGroupOpsUploadPreparationStateParams) (string, error) {
+	row := q.db.QueryRow(ctx, readLatestGroupOpsUploadPreparationState,
+		arg.SourceKind,
+		arg.SourceID,
+		arg.SourceDigest,
+		arg.ProviderScopeDigest,
+		arg.UploadKind,
+	)
+	var state string
+	err := row.Scan(&state)
+	return state, err
 }

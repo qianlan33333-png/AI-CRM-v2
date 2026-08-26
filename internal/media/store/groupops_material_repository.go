@@ -79,6 +79,50 @@ func (repository *GroupOpsMaterialRepository) ReadPreparedGroupOpsPlan(ctx conte
 	return plan, nil
 }
 
+// ReadGroupOpsMaterialPreparationState classifies why a captured source is
+// not provider-ready. Outcome unknown is sticky and requires reconciliation;
+// preparing/expired-ready remains a local pending condition.
+func (repository *GroupOpsMaterialRepository) ReadGroupOpsMaterialPreparationState(ctx context.Context, sources mediaport.GroupOpsMaterialSourceSnapshot) (string, error) {
+	query, err := queries(ctx)
+	if repository == nil || err != nil || mediaport.ValidateGroupOpsMaterialSourceSnapshot(sources) != nil {
+		return "", groupOpsMaterialUnavailable(err)
+	}
+	state := "ready"
+	seen := make(map[string]struct{}, len(sources.References))
+	for _, source := range sources.References {
+		kind, id, digest, uploadKind := source.Reference.Kind, source.Reference.ID, source.SourceDigest, "image"
+		switch source.Reference.Kind {
+		case "group_invite":
+			continue
+		case "attachment":
+			uploadKind = "file"
+		case "miniprogram":
+			kind, id, digest = "image", source.ThumbnailImageID, source.ThumbnailSourceDigest
+		}
+		key := kind + "\x00" + strconv.FormatInt(id, 10) + "\x00" + digest + "\x00" + uploadKind
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		current, readErr := query.ReadLatestGroupOpsUploadPreparationState(ctx, mediadb.ReadLatestGroupOpsUploadPreparationStateParams{
+			SourceKind: kind, SourceID: id, SourceDigest: digest,
+			ProviderScopeDigest: repository.providerScopeDigest, UploadKind: uploadKind,
+		})
+		if readErr != nil {
+			return "", groupOpsMaterialUnavailable(readErr)
+		}
+		if current == "outcome_unknown" {
+			return current, nil
+		}
+		if current == "final_failed" {
+			state = current
+		} else if state == "ready" && current == "preparing" {
+			state = current
+		}
+	}
+	return state, nil
+}
+
 // BindGroupOpsUploadPreparation persists the Media-owned typed fact after EER
 // accepted the effect and before it is queued. The same external effect may
 // replay, but it may never be rebound to another source or provider scope.
@@ -122,8 +166,27 @@ func (repository *GroupOpsMaterialRepository) LoadGroupOpsMaterialUpload(ctx con
 		return mediaapp.GroupOpsMaterialUploadInput{}, groupOpsMaterialUnavailable(errors.Join(err, parseErr))
 	}
 	preparation, err := query.ReadGroupOpsUploadPreparationAttempt(ctx, parsedEffectID)
-	if err != nil || preparation.State != "preparing" || preparation.ProviderScopeDigest != repository.providerScopeDigest {
+	if err != nil || preparation.ProviderScopeDigest != repository.providerScopeDigest || preparation.EffectOwner != string(eer.OwnerMedia) || preparation.EffectKind != string(eer.KindMediaWeComUpload) {
 		return mediaapp.GroupOpsMaterialUploadInput{}, groupOpsMaterialUnavailable(err)
+	}
+	input := mediaapp.GroupOpsMaterialUploadInput{
+		EffectID: effectID, SourceDigest: preparation.SourceDigest, Kind: preparation.UploadKind,
+		PreparationState: preparation.PreparationState, EffectState: preparation.EffectState,
+	}
+	if preparation.EffectState == string(eer.StateAttempted) {
+		if !preparation.LeaseExpiresAt.Valid || !preparation.AttemptNumber.Valid || !preparation.AttemptStartedAt.Valid || preparation.Generation < 1 || preparation.LeaseFence < 1 || preparation.AttemptNumber.Int32 < 1 {
+			return mediaapp.GroupOpsMaterialUploadInput{}, groupOpsMaterialUnavailable(nil)
+		}
+		input.Recovery = &mediaapp.GroupOpsMaterialUploadRecovery{
+			Lease:   eer.Lease{EffectID: effectID, Generation: preparation.Generation, Fence: preparation.LeaseFence, ExpiresAt: preparation.LeaseExpiresAt.Time.UTC()},
+			Attempt: eer.Attempt{Number: preparation.AttemptNumber.Int32, Generation: preparation.Generation, Fence: preparation.LeaseFence, StartedAt: preparation.AttemptStartedAt.Time.UTC()},
+		}
+		if preparation.ReceiptDigest.Valid {
+			input.Recovery.ReceiptDigest = eer.Digest(preparation.ReceiptDigest.String)
+		}
+	}
+	if preparation.PreparationState != "preparing" {
+		return input, nil
 	}
 	var filename, mimeType string
 	var content, sourceChecksum, blobChecksum []byte
@@ -146,7 +209,9 @@ func (repository *GroupOpsMaterialRepository) LoadGroupOpsMaterialUpload(ctx con
 	if digestErr != nil || digest != preparation.SourceDigest {
 		return mediaapp.GroupOpsMaterialUploadInput{}, groupOpsMaterialUnavailable(digestErr)
 	}
-	return mediaapp.GroupOpsMaterialUploadInput{EffectID: effectID, SourceDigest: digest, Filename: filename, MIME: mimeType, Checksum: "sha256:" + hex.EncodeToString(sourceChecksum), Kind: preparation.UploadKind, Bytes: append([]byte(nil), content...)}, nil
+	input.Filename, input.MIME = filename, mimeType
+	input.Checksum, input.Bytes = "sha256:"+hex.EncodeToString(sourceChecksum), append([]byte(nil), content...)
+	return input, nil
 }
 
 func (repository *GroupOpsMaterialRepository) RecordGroupOpsMaterialUploadReady(ctx context.Context, effectID string, result mediaapp.GroupOpsMaterialUploadResult, receiptDigest eer.Digest) error {
@@ -156,7 +221,7 @@ func (repository *GroupOpsMaterialRepository) RecordGroupOpsMaterialUploadReady(
 		return groupOpsMaterialUnavailable(errors.Join(err, parseErr))
 	}
 	preparation, err := query.ReadGroupOpsUploadPreparationAttempt(ctx, parsedEffectID)
-	if err != nil || preparation.State != "preparing" {
+	if err != nil || preparation.PreparationState != "preparing" {
 		return groupOpsMaterialUnavailable(err)
 	}
 	now := time.Now().UTC().Truncate(time.Microsecond)
@@ -181,7 +246,7 @@ func (repository *GroupOpsMaterialRepository) markGroupOpsMaterialUploadTerminal
 		return groupOpsMaterialUnavailable(errors.Join(err, parseErr))
 	}
 	preparation, err := query.ReadGroupOpsUploadPreparationAttempt(ctx, parsedEffectID)
-	if err != nil || preparation.State != "preparing" {
+	if err != nil || preparation.PreparationState != "preparing" {
 		return groupOpsMaterialUnavailable(err)
 	}
 	if unknown {

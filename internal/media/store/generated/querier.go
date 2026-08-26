@@ -97,6 +97,7 @@ type Querier interface {
 	PutMediaAttachmentUploadPart(ctx context.Context, arg PutMediaAttachmentUploadPartParams) (int64, error)
 	ReadGroupOpsPreparedUpload(ctx context.Context, arg ReadGroupOpsPreparedUploadParams) (ReadGroupOpsPreparedUploadRow, error)
 	ReadGroupOpsUploadPreparationAttempt(ctx context.Context, externalEffectID int64) (ReadGroupOpsUploadPreparationAttemptRow, error)
+	ReadLatestGroupOpsUploadPreparationState(ctx context.Context, arg ReadLatestGroupOpsUploadPreparationStateParams) (string, error)
 	ReadMediaAttachment(ctx context.Context, attachmentID int64) (ReadMediaAttachmentRow, error)
 	ReadMediaAttachmentUploadForCompletion(ctx context.Context, uploadID int64) (ReadMediaAttachmentUploadForCompletionRow, error)
 	ReadOutboundMediaEffectDetail(ctx context.Context, arg ReadOutboundMediaEffectDetailParams) (ReadOutboundMediaEffectDetailRow, error)

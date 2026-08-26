@@ -56,6 +56,18 @@ SELECT EXISTS (
     AND receipt.expires_at > sqlc.arg(required_through)::timestamptz
 );
 
+-- name: ReadLatestGroupOpsUploadPreparationState :one
+SELECT state
+FROM public.media_wecom_upload_preparations
+WHERE source_kind = sqlc.arg(source_kind)::text
+  AND source_id = sqlc.arg(source_id)::bigint
+  AND source_digest = sqlc.arg(source_digest)::text
+  AND provider_scope_digest = sqlc.arg(provider_scope_digest)::text
+  AND upload_kind = sqlc.arg(upload_kind)::text
+ORDER BY created_at DESC, id DESC
+LIMIT 1
+FOR KEY SHARE;
+
 -- name: NextGroupOpsUploadPreparationGeneration :one
 SELECT count(*)::bigint + 1
 FROM public.media_wecom_upload_preparations
@@ -89,11 +101,23 @@ FROM public.media_wecom_upload_preparations
 WHERE external_effect_id = sqlc.arg(external_effect_id)::bigint;
 
 -- name: ReadGroupOpsUploadPreparationAttempt :one
-SELECT id, source_kind, source_id, source_digest, provider_scope_digest,
-       upload_kind, external_effect_id, state
-FROM public.media_wecom_upload_preparations
-WHERE external_effect_id = sqlc.arg(external_effect_id)::bigint
-FOR UPDATE;
+SELECT preparation.id, preparation.source_kind, preparation.source_id,
+       preparation.source_digest, preparation.provider_scope_digest,
+       preparation.upload_kind, preparation.external_effect_id,
+       preparation.state AS preparation_state,
+       effect.owner AS effect_owner, effect.kind AS effect_kind,
+       effect.state AS effect_state, effect.generation, effect.lease_fence,
+       effect.lease_expires_at, attempt.number AS attempt_number,
+       attempt.started_at AS attempt_started_at,
+       receipt.receipt_digest
+FROM public.media_wecom_upload_preparations AS preparation
+JOIN public.external_effects AS effect ON effect.id = preparation.external_effect_id
+LEFT JOIN public.external_effect_attempts AS attempt
+  ON attempt.effect_id = effect.id AND attempt.completion IS NULL
+LEFT JOIN public.media_wecom_upload_receipts AS receipt
+  ON receipt.preparation_id = preparation.id
+WHERE preparation.external_effect_id = sqlc.arg(external_effect_id)::bigint
+FOR UPDATE OF preparation;
 
 -- name: InsertGroupOpsUploadReceipt :one
 INSERT INTO public.media_wecom_upload_receipts (

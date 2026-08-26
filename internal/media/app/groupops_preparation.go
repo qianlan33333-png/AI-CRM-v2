@@ -13,7 +13,10 @@ import (
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 )
 
-var ErrGroupOpsMaterialPreparation = errors.New("group ops material preparation unavailable")
+var (
+	ErrGroupOpsMaterialPreparation         = errors.New("group ops material preparation unavailable")
+	ErrGroupOpsMaterialAttemptStillRunning = errors.New("group ops material upload attempt still running")
+)
 
 // GroupOpsMaterialPreparationJobArgs contains only the opaque EER ID. Source
 // bytes and provider tokens remain in Media's private store/provider boundary.
@@ -40,6 +43,8 @@ type GroupOpsMaterialPreparationEffects interface {
 	Queue(context.Context, eer.QueueCommand) (eer.Projection, eer.OperationReceipt, error)
 	Claim(context.Context, eer.ClaimCommand) (eer.Lease, eer.Projection, error)
 	RunAttempt(context.Context, eer.Lease, eer.Adapter) (eer.Projection, eer.OperationReceipt, error)
+	RecoverAttemptedToUnknown(context.Context, eer.RecoverAttemptedCommand) (eer.Projection, eer.OperationReceipt, error)
+	CompleteRecordedAttempt(context.Context, eer.CompleteRecordedAttemptCommand) (eer.Projection, eer.OperationReceipt, error)
 }
 
 type GroupOpsMaterialPreparationJobs interface {
@@ -49,6 +54,14 @@ type GroupOpsMaterialPreparationJobs interface {
 type GroupOpsMaterialUploadInput struct {
 	EffectID, SourceDigest, Filename, MIME, Checksum, Kind string
 	Bytes                                                  []byte
+	PreparationState, EffectState                          string
+	Recovery                                               *GroupOpsMaterialUploadRecovery
+}
+
+type GroupOpsMaterialUploadRecovery struct {
+	Lease         eer.Lease
+	Attempt       eer.Attempt
+	ReceiptDigest eer.Digest
 }
 
 type GroupOpsMaterialUploadResult struct {
@@ -162,12 +175,69 @@ func (service *GroupOpsMaterialPreparationService) RunUploadEffect(ctx context.C
 	if service == nil || ctx == nil || service.attempts == nil || service.uploader == nil || service.now == nil || effectID == "" || !validPreparationDigest(workerDigest) {
 		return ErrGroupOpsMaterialPreparation
 	}
+	control, err := service.attempts.LoadGroupOpsMaterialUpload(ctx, effectID)
+	if err != nil || control.EffectID != effectID {
+		return errors.Join(ErrGroupOpsMaterialPreparation, err)
+	}
+	if handled, recoverErr := service.recoverUploadEffect(ctx, control); handled {
+		return recoverErr
+	}
 	lease, projection, err := service.effects.Claim(ctx, eer.ClaimCommand{EffectID: effectID, WorkerDigest: workerDigest})
 	if err != nil || projection.ID != effectID || projection.Owner != eer.OwnerMedia || projection.Kind != eer.KindMediaWeComUpload {
 		return errors.Join(ErrGroupOpsMaterialPreparation, err)
 	}
 	_, _, err = service.effects.RunAttempt(ctx, lease, &groupOpsMaterialUploadAdapter{effectID: effectID, store: service.attempts, provider: service.uploader, now: service.now})
 	return err
+}
+
+func (service *GroupOpsMaterialPreparationService) recoverUploadEffect(ctx context.Context, control GroupOpsMaterialUploadInput) (bool, error) {
+	switch eer.State(control.EffectState) {
+	case eer.StateQueued:
+		return false, nil
+	case eer.StateAttempted:
+		if control.Recovery == nil || control.Recovery.Lease.EffectID != control.EffectID || control.Recovery.Attempt.Number < 1 {
+			return true, ErrGroupOpsMaterialPreparation
+		}
+		now := service.now().UTC()
+		if control.Recovery.Lease.ExpiresAt.After(now) {
+			return true, ErrGroupOpsMaterialAttemptStillRunning
+		}
+		if control.PreparationState == "ready" && validPreparationDigest(control.Recovery.ReceiptDigest) {
+			projection, _, err := service.effects.CompleteRecordedAttempt(ctx, eer.CompleteRecordedAttemptCommand{
+				Lease: control.Recovery.Lease, Attempt: control.Recovery.Attempt,
+				Result: eer.AdapterResult{Completion: eer.CompletionExecuted, ReceiptDigest: control.Recovery.ReceiptDigest, BusinessCallDispatched: true, RealExternalCallExecuted: true},
+			})
+			if err != nil || projection.ID != control.EffectID || projection.State != eer.StateExecuted {
+				return true, errors.Join(ErrGroupOpsMaterialPreparation, err)
+			}
+			return true, nil
+		}
+		if control.PreparationState != "preparing" {
+			return true, ErrGroupOpsMaterialPreparation
+		}
+		projection, _, err := service.effects.RecoverAttemptedToUnknown(ctx, eer.RecoverAttemptedCommand{Lease: control.Recovery.Lease})
+		if err != nil || projection.ID != control.EffectID || projection.State != eer.StateOutcomeUnknown {
+			return true, errors.Join(ErrGroupOpsMaterialPreparation, err)
+		}
+		if err = service.attempts.MarkGroupOpsMaterialUploadOutcomeUnknown(ctx, control.EffectID, now); err != nil {
+			return true, errors.Join(ErrGroupOpsMaterialPreparation, err)
+		}
+		return true, nil
+	case eer.StateExecuted:
+		return true, nil
+	case eer.StateOutcomeUnknown:
+		if control.PreparationState == "preparing" {
+			return true, service.attempts.MarkGroupOpsMaterialUploadOutcomeUnknown(ctx, control.EffectID, service.now().UTC())
+		}
+		return true, nil
+	case eer.StateFinalFailed:
+		if control.PreparationState == "preparing" {
+			return true, service.attempts.MarkGroupOpsMaterialUploadFinalFailed(ctx, control.EffectID, service.now().UTC())
+		}
+		return true, nil
+	default:
+		return true, ErrGroupOpsMaterialPreparation
+	}
 }
 
 type groupOpsMaterialUploadAdapter struct {
@@ -199,6 +269,15 @@ func (adapter *groupOpsMaterialUploadAdapter) Execute(ctx context.Context, envel
 		}
 		return eer.AdapterResult{Completion: eer.CompletionFinalFailed, ReceiptDigest: receipt}, nil
 	}
+	// A Provider error code is an authoritative rejection, not an ambiguous
+	// transport outcome. Return nil after persisting it so EER does not coerce
+	// the known final result into outcome_unknown.
+	if result.FinalFailed {
+		if err := adapter.store.MarkGroupOpsMaterialUploadFinalFailed(ctx, adapter.effectID, now); err != nil {
+			return eer.AdapterResult{}, err
+		}
+		return eer.AdapterResult{Completion: eer.CompletionFinalFailed, ReceiptDigest: receipt, BusinessCallDispatched: result.BusinessCallDispatched, RealExternalCallExecuted: result.BusinessCallDispatched}, nil
+	}
 	if uploadErr != nil || result.OutcomeUnknown {
 		if result.BusinessCallDispatched {
 			if err := adapter.store.MarkGroupOpsMaterialUploadOutcomeUnknown(ctx, adapter.effectID, now); err != nil {
@@ -207,7 +286,7 @@ func (adapter *groupOpsMaterialUploadAdapter) Execute(ctx context.Context, envel
 		}
 		return eer.AdapterResult{Completion: eer.CompletionOutcomeUnknown, ReceiptDigest: receipt, BusinessCallDispatched: result.BusinessCallDispatched, RealExternalCallExecuted: result.BusinessCallDispatched}, uploadErr
 	}
-	if result.FinalFailed || result.MediaID == "" || result.CreatedAt.IsZero() || !result.ExpiresAt.After(result.CreatedAt) {
+	if result.MediaID == "" || result.CreatedAt.IsZero() || !result.ExpiresAt.After(result.CreatedAt) {
 		if err := adapter.store.MarkGroupOpsMaterialUploadFinalFailed(ctx, adapter.effectID, now); err != nil {
 			return eer.AdapterResult{}, err
 		}

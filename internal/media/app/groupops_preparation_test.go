@@ -74,6 +74,7 @@ func TestGroupOpsUploadAdapterPersistsReadyBeforeExecutedAndNeverRetriesUnknown(
 	}{
 		{name: "success", result: GroupOpsMaterialUploadResult{MediaID: "media-1", CreatedAt: now, ExpiresAt: now.Add(71 * time.Hour), BusinessCallDispatched: true}, completion: eer.CompletionExecuted, ready: 1},
 		{name: "unknown after boundary", result: GroupOpsMaterialUploadResult{BusinessCallDispatched: true, OutcomeUnknown: true}, err: errors.New("timeout"), completion: eer.CompletionOutcomeUnknown, unknown: 1, wantErr: true},
+		{name: "provider rejection", result: GroupOpsMaterialUploadResult{BusinessCallDispatched: true, FinalFailed: true}, err: errors.New("provider rejected"), completion: eer.CompletionFinalFailed, final: 1},
 		{name: "pre-dispatch failure", err: errors.New("invalid input"), completion: eer.CompletionFinalFailed, final: 1},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -84,6 +85,55 @@ func TestGroupOpsUploadAdapterPersistsReadyBeforeExecutedAndNeverRetriesUnknown(
 				t.Fatalf("result=%+v err=%v store=%+v", result, err, store)
 			}
 		})
+	}
+}
+
+func TestRunUploadEffectRecoversCrashBeforeOwnerReceiptWithoutProviderReplay(t *testing.T) {
+	now := time.Date(2026, 8, 26, 8, 0, 0, 0, time.UTC)
+	effects := &preparationEffectsStub{}
+	service := newPreparationService(t, &preparationStoreStub{}, effects, &preparationJobsStub{})
+	service.now = func() time.Time { return now }
+	attempts := &uploadAttemptStoreStub{input: crashedUploadInput(now, "preparing", "")}
+	uploader := &uploadProviderSpy{}
+	if err := service.SetUploadAttemptDependencies(attempts, uploader); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.RunUploadEffect(context.Background(), "eer_7", preparationDigest("worker", "before receipt")); err != nil {
+		t.Fatal(err)
+	}
+	if uploader.calls != 0 || effects.claims != 0 || effects.runs != 0 || effects.recoveries != 1 || effects.recordedCompletions != 0 || attempts.unknown != 1 {
+		t.Fatalf("uploader=%+v effects=%+v attempts=%+v", uploader, effects, attempts)
+	}
+}
+
+func TestRunUploadEffectCompletesCrashAfterOwnerReceiptWithoutProviderReplay(t *testing.T) {
+	now := time.Date(2026, 8, 26, 8, 0, 0, 0, time.UTC)
+	effects := &preparationEffectsStub{}
+	service := newPreparationService(t, &preparationStoreStub{}, effects, &preparationJobsStub{})
+	service.now = func() time.Time { return now }
+	receipt := preparationDigest("provider", "recorded")
+	attempts := &uploadAttemptStoreStub{input: crashedUploadInput(now, "ready", receipt)}
+	uploader := &uploadProviderSpy{}
+	if err := service.SetUploadAttemptDependencies(attempts, uploader); err != nil {
+		t.Fatal(err)
+	}
+	if err := service.RunUploadEffect(context.Background(), "eer_7", preparationDigest("worker", "after receipt")); err != nil {
+		t.Fatal(err)
+	}
+	if uploader.calls != 0 || effects.claims != 0 || effects.runs != 0 || effects.recoveries != 0 || effects.recordedCompletions != 1 || effects.recordedReceipt != receipt || attempts.unknown != 0 {
+		t.Fatalf("uploader=%+v effects=%+v attempts=%+v", uploader, effects, attempts)
+	}
+}
+
+func crashedUploadInput(now time.Time, preparationState string, receipt eer.Digest) GroupOpsMaterialUploadInput {
+	return GroupOpsMaterialUploadInput{
+		EffectID: "eer_7", SourceDigest: "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+		PreparationState: preparationState, EffectState: string(eer.StateAttempted),
+		Recovery: &GroupOpsMaterialUploadRecovery{
+			Lease:         eer.Lease{EffectID: "eer_7", Generation: 2, Fence: 1, ExpiresAt: now.Add(-time.Minute)},
+			Attempt:       eer.Attempt{Number: 1, Generation: 2, Fence: 1, StartedAt: now.Add(-2 * time.Minute)},
+			ReceiptDigest: receipt,
+		},
 	}
 }
 
@@ -120,8 +170,9 @@ func (stub *preparationStoreStub) BindGroupOpsUploadPreparation(_ context.Contex
 }
 
 type preparationEffectsStub struct {
-	accepts, queues int
-	fingerprints    []eer.Digest
+	accepts, queues, claims, runs, recoveries, recordedCompletions int
+	fingerprints                                                   []eer.Digest
+	recordedReceipt                                                eer.Digest
 }
 
 func (stub *preparationEffectsStub) Accept(_ context.Context, command eer.AcceptCommand) (eer.Projection, eer.OperationReceipt, error) {
@@ -133,11 +184,22 @@ func (stub *preparationEffectsStub) Queue(_ context.Context, command eer.QueueCo
 	stub.queues++
 	return eer.Projection{ID: command.EffectID, Owner: eer.OwnerMedia, Kind: eer.KindMediaWeComUpload, State: eer.StateQueued, Generation: 2, UpdatedAt: time.Now()}, eer.OperationReceipt{}, nil
 }
-func (*preparationEffectsStub) Claim(context.Context, eer.ClaimCommand) (eer.Lease, eer.Projection, error) {
+func (stub *preparationEffectsStub) Claim(context.Context, eer.ClaimCommand) (eer.Lease, eer.Projection, error) {
+	stub.claims++
 	return eer.Lease{}, eer.Projection{}, fmt.Errorf("not used")
 }
-func (*preparationEffectsStub) RunAttempt(context.Context, eer.Lease, eer.Adapter) (eer.Projection, eer.OperationReceipt, error) {
+func (stub *preparationEffectsStub) RunAttempt(context.Context, eer.Lease, eer.Adapter) (eer.Projection, eer.OperationReceipt, error) {
+	stub.runs++
 	return eer.Projection{}, eer.OperationReceipt{}, fmt.Errorf("not used")
+}
+func (stub *preparationEffectsStub) RecoverAttemptedToUnknown(_ context.Context, command eer.RecoverAttemptedCommand) (eer.Projection, eer.OperationReceipt, error) {
+	stub.recoveries++
+	return eer.Projection{ID: command.Lease.EffectID, Owner: eer.OwnerMedia, Kind: eer.KindMediaWeComUpload, State: eer.StateOutcomeUnknown, Generation: command.Lease.Generation, UpdatedAt: time.Now()}, eer.OperationReceipt{}, nil
+}
+func (stub *preparationEffectsStub) CompleteRecordedAttempt(_ context.Context, command eer.CompleteRecordedAttemptCommand) (eer.Projection, eer.OperationReceipt, error) {
+	stub.recordedCompletions++
+	stub.recordedReceipt = command.Result.ReceiptDigest
+	return eer.Projection{ID: command.Lease.EffectID, Owner: eer.OwnerMedia, Kind: eer.KindMediaWeComUpload, State: eer.StateExecuted, Generation: command.Lease.Generation, UpdatedAt: time.Now()}, eer.OperationReceipt{}, nil
 }
 
 type preparationJobsStub struct {
@@ -181,4 +243,11 @@ type uploadProviderStub struct {
 
 func (stub uploadProviderStub) Upload(context.Context, GroupOpsMaterialUploadInput) (GroupOpsMaterialUploadResult, error) {
 	return stub.result, stub.err
+}
+
+type uploadProviderSpy struct{ calls int }
+
+func (spy *uploadProviderSpy) Upload(context.Context, GroupOpsMaterialUploadInput) (GroupOpsMaterialUploadResult, error) {
+	spy.calls++
+	return GroupOpsMaterialUploadResult{}, errors.New("provider must not be called during crash recovery")
 }

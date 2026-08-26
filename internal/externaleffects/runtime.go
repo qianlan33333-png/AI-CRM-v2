@@ -411,6 +411,22 @@ func (command RecoverAttemptedCommand) digest() Digest {
 
 func (command RecoverAttemptedCommand) CommandDigest() Digest { return command.digest() }
 
+// CompleteRecordedAttemptCommand closes an expired attempted effect from an
+// owner receipt that was durably recorded after Provider I/O. It never invokes
+// an Adapter and therefore cannot replay the external call.
+type CompleteRecordedAttemptCommand struct {
+	Lease   Lease
+	Attempt Attempt
+	Result  AdapterResult
+}
+
+func (command CompleteRecordedAttemptCommand) valid(now time.Time) bool {
+	return command.Lease.validFields() && !command.Lease.ExpiresAt.After(now) &&
+		command.Attempt.validFor(command.Lease) && command.Result.valid() &&
+		command.Result.Completion == CompletionExecuted && command.Result.BusinessCallDispatched &&
+		command.Result.RealExternalCallExecuted
+}
+
 type Completion string
 
 const (
@@ -600,6 +616,25 @@ func (service *Service) RunAttempt(ctx context.Context, lease Lease, adapter Ada
 	}
 	if invalidResult {
 		return projection, receipt, ErrInvalidAdapterResult
+	}
+	return projection, receipt, nil
+}
+
+// CompleteRecordedAttempt is crash recovery for the narrow window after an
+// owner persisted an exact Provider receipt but before EER completion. The
+// expired lease prevents racing a still-live Adapter; CompleteAttempt's fence
+// CAS chooses one terminal writer if the original worker resumes concurrently.
+func (service *Service) CompleteRecordedAttempt(ctx context.Context, command CompleteRecordedAttemptCommand) (Projection, OperationReceipt, error) {
+	if service == nil || service.store == nil || service.clock == nil || ctx == nil || !command.valid(service.clock()) {
+		return Projection{}, OperationReceipt{}, ErrInvalidCommand
+	}
+	projection, receipt, err := service.store.CompleteAttempt(ctx, command.Lease, command.Attempt, command.Result)
+	if err != nil {
+		return Projection{}, OperationReceipt{}, err
+	}
+	if !projection.valid() || projection.ID != command.Lease.EffectID || projection.State != StateExecuted ||
+		!receipt.validFor(command.Lease.EffectID, command.Result.ReceiptDigest) {
+		return Projection{}, OperationReceipt{}, ErrInvalidTransition
 	}
 	return projection, receipt, nil
 }

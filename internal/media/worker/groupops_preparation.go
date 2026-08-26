@@ -44,9 +44,13 @@ func (worker *GroupOpsMaterialPreparationWorker) Work(ctx context.Context, job *
 		return ErrGroupOpsMaterialPreparationWorker
 	}
 	sum := sha256.Sum256([]byte("media.group_ops_preparation.worker.v1\x00" + job.Args.EffectID))
-	return worker.service.RunUploadEffect(ctx, job.Args.EffectID, eer.Digest("sha256:"+hex.EncodeToString(sum[:])))
+	err := worker.service.RunUploadEffect(ctx, job.Args.EffectID, eer.Digest("sha256:"+hex.EncodeToString(sum[:])))
+	if errors.Is(err, mediaapp.ErrGroupOpsMaterialAttemptStillRunning) {
+		return river.JobSnooze(5 * time.Second)
+	}
+	return err
 }
 
 func (*GroupOpsMaterialPreparationWorker) Timeout(*river.Job[mediaapp.GroupOpsMaterialPreparationJobArgs]) time.Duration {
-	return 30 * time.Second
+	return 60 * time.Second
 }
