@@ -19,6 +19,7 @@ import type {
   ChannelAcquisitionAssignmentInput,
   ChannelAcquisitionAssignee,
   ChannelAcquisitionPreview,
+  ChannelAcquisitionStaff,
   ChannelEntrant,
   ConfigCategory,
   Coupon,
@@ -45,7 +46,7 @@ import { SEED_DB, deepCopy } from './mockData';
 import { deleteProductDto } from '../../api/admin';
 import { archiveCouponDto, copyCouponDto, deleteCouponDto, saveCouponDto, setCouponPublishedDto, type CouponWriteInput } from '../../api/admin';
 import { deleteQuestionnaireDto, duplicateQuestionnaireDto, queueQuestionnairePushTestDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, setQuestionnaireEnabledDto, type QuestionnaireWriteInput } from '../../api/admin';
-import { getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getChannelDto, listChannelAcquisitionAssetsDto, listChannelEntrantsDto, publishChannelAcquisitionAssetDto, saveChannelDto, updateChannelAcquisitionAssigneesDto, type ChannelWriteInput } from '../../api/admin';
+import { getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getChannelDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listChannelEntrantsDto, publishChannelAcquisitionAssetDto, saveChannelDto, updateChannelAcquisitionAssigneesDto, type ChannelWriteInput } from '../../api/admin';
 import { materializeAudienceConfigurationDto, previewAudienceConfigurationDto, replaceAudienceSendersDto, saveAudiencePackageDto, setAudienceBindingDto, snapshotAudienceConfigurationDto, type AudienceEvaluation, type AudiencePackageWriteInput } from '../../api/admin';
 import type { AIAudiencePackageSender } from '../../api/generated/health';
 import { deleteGroupOpsPlanDto, saveGroupOpsPlanDto, transitionGroupOpsPlanDto, type GroupOpsWriteInput } from '../../api/admin';
@@ -66,6 +67,7 @@ export interface AdminApi {
   getChannel(channelId: number): Promise<Channel>;
   listChannelEntrants(channelId: number): Promise<ChannelEntrant[]>;
   getChannelAcquisitionPreview(channelId: number): Promise<ChannelAcquisitionPreview>;
+  listChannelAcquisitionStaff(channelId: number): Promise<ChannelAcquisitionStaff[]>;
   updateChannelAcquisitionAssignees(channelId: number, input: ChannelAcquisitionAssignmentInput): Promise<ChannelAcquisitionAssignee[]>;
   listChannelAcquisitionAssets(channelId: number): Promise<ChannelAcquisitionAsset[]>;
   publishChannelAcquisitionAsset(channelId: number, kind: ChannelAcquisitionAssetKind): Promise<ChannelAcquisitionAsset>;
@@ -327,6 +329,9 @@ export class MockApi implements AdminApi {
     const channel = this.db.rows.channels.find((item) => item.resourceId === channelId);
     if (!channel) return Promise.reject(new Error('渠道不存在或当前账号不可见'));
     return delay({ channelId, channelCode: channel.code, channelName: channel.name, assignees: deepCopy(this.channelAssignments.get(channelId) || []), lifecycleState: 'draft', blockers: ['Provider 未执行'], localOnly: true, providerExecutionEligible: false, realExternalCallExecuted: false });
+  }
+  listChannelAcquisitionStaff(channelId: number): Promise<ChannelAcquisitionStaff[]> {
+    return this.getChannel(channelId).then(() => delay(this.db.staff.map((item) => ({ staffId: item.uid, name: item.name, assigned: false }))));
   }
   updateChannelAcquisitionAssignees(channelId: number, input: ChannelAcquisitionAssignmentInput): Promise<ChannelAcquisitionAssignee[]> {
     const channel = this.db.rows.channels.find((item) => item.resourceId === channelId);
@@ -822,6 +827,7 @@ export class HttpApi implements AdminApi {
   getChannel(channelId: number): Promise<Channel> { return getChannelDto(channelId); }
   listChannelEntrants(channelId: number): Promise<ChannelEntrant[]> { return listChannelEntrantsDto(channelId); }
   getChannelAcquisitionPreview(channelId: number): Promise<ChannelAcquisitionPreview> { return getChannelAcquisitionPreviewDto(channelId); }
+  listChannelAcquisitionStaff(channelId: number): Promise<ChannelAcquisitionStaff[]> { return listChannelAcquisitionStaffDto(channelId); }
   updateChannelAcquisitionAssignees(channelId: number, input: ChannelAcquisitionAssignmentInput): Promise<ChannelAcquisitionAssignee[]> { return updateChannelAcquisitionAssigneesDto(channelId, input); }
   listChannelAcquisitionAssets(channelId: number): Promise<ChannelAcquisitionAsset[]> { return listChannelAcquisitionAssetsDto(channelId); }
   publishChannelAcquisitionAsset(channelId: number, kind: ChannelAcquisitionAssetKind): Promise<ChannelAcquisitionAsset> { return publishChannelAcquisitionAssetDto(channelId, kind); }

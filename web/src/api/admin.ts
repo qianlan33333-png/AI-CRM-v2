@@ -22,8 +22,8 @@ import { createLegacyChannel, updateLegacyChannel, type LegacyChannelWriteReques
 import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, updateAIAudiencePackage, type AIAudiencePackageSender, type SegmentDefinition } from './generated/health';
 import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
-import { getChannelAcquisitionAsset, getChannelAcquisitionPreview, listChannelAcquisitionAssets, publishChannelAcquisitionAsset, updateChannelAcquisitionAssignees, type ChannelAcquisitionAssignmentRequest, type ChannelAcquisitionAssetPublishRequest } from './generated/health';
-import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelEntrant, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
+import { getChannelAcquisitionAsset, getChannelAcquisitionPreview, listChannelAcquisitionAssets, listChannelAcquisitionStaff, publishChannelAcquisitionAsset, updateChannelAcquisitionAssignees, type ChannelAcquisitionAssignmentRequest, type ChannelAcquisitionAssetPublishRequest } from './generated/health';
+import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelAcquisitionStaff, ChannelEntrant, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
 import { ApiError, apiRequestOptions, request, unwrapGenerated } from './transport';
 
 type Obj = Record<string, unknown>;
@@ -188,6 +188,21 @@ export function channelAcquisitionPreviewDto(value: unknown): ChannelAcquisition
 
 export async function getChannelAcquisitionPreviewDto(channelId: number): Promise<ChannelAcquisitionPreview> {
   return channelAcquisitionPreviewDto(await call(getChannelAcquisitionPreview(channelId, apiRequestOptions())));
+}
+
+export async function listChannelAcquisitionStaffDto(channelId: number): Promise<ChannelAcquisitionStaff[]> {
+  const result = obj(await call(listChannelAcquisitionStaff(channelId, apiRequestOptions())));
+  if (Number(result.channel_id) !== channelId || result.provider_source !== 'wecom_follow_user_list' || result.provider_read_succeeded !== true || result.real_external_call_executed !== false) throw new Error('企微客服同步响应不完整');
+  return list(result, 'items').map((value) => {
+    const item = obj(value);
+    const staffId = text(item.wecom_userid, '');
+    const name = text(item.display_name, '');
+    const priority = item.priority == null ? undefined : Number(item.priority);
+    const ratioPercent = item.ratio_percent == null ? undefined : Number(item.ratio_percent);
+    const maxScans24h = item.max_scans_24h == null ? undefined : Number(item.max_scans_24h);
+    if (!staffId || !name || item.assigned !== true && item.assigned !== false || priority != null && (!Number.isSafeInteger(priority) || priority < 1) || ratioPercent != null && (!Number.isSafeInteger(ratioPercent) || ratioPercent < 1 || ratioPercent > 100) || maxScans24h != null && (!Number.isSafeInteger(maxScans24h) || maxScans24h < 1)) throw new Error('企微客服条目不完整');
+    return { staffId, name, assigned: item.assigned, ...(priority == null ? {} : { priority }), ...(ratioPercent == null ? {} : { ratioPercent }), ...(maxScans24h == null ? {} : { maxScans24h }) };
+  });
 }
 
 export async function updateChannelAcquisitionAssigneesDto(channelId: number, input: ChannelAcquisitionAssignmentInput): Promise<ChannelAcquisitionAssignee[]> {

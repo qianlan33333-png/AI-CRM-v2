@@ -4059,6 +4059,30 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/channels/{channel_id}/acquisition-staff:
+    get:
+      tags: [p4-channel]
+      operationId: listChannelAcquisitionStaff
+      summary: Refresh selectable channel staff from WeCom and active local staff
+      x-p4-decision-evidence: P4-S06-008-CHANNEL-ACQUISITION-STAFF-2026-08-27
+      x-aicrm-capability: channels.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: wecom.follow_user_list_intersect_contact.active_staff
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: channel_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        "200":
+          description: Provider read succeeded; items contain only matching active local staff and current local assignment fields.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ChannelAcquisitionStaffResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/channels/{channel_id}/acquisition-assets:
     get:
       tags: [p4-channel]
@@ -16690,6 +16714,27 @@ components:
           items: { $ref: "#/components/schemas/ChannelAcquisitionAssignee" }
         local_only: { type: boolean, enum: [true] }
         provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    ChannelAcquisitionStaffItem:
+      type: object
+      additionalProperties: false
+      required: [wecom_userid, display_name, assigned]
+      properties:
+        wecom_userid: { type: string, minLength: 1, maxLength: 128 }
+        display_name: { type: string, minLength: 1, maxLength: 128 }
+        assigned: { type: boolean }
+        priority: { type: integer, format: int32, minimum: 1 }
+        ratio_percent: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        max_scans_24h: { type: integer, format: int32, minimum: 1 }
+    ChannelAcquisitionStaffResponse:
+      type: object
+      additionalProperties: false
+      required: [channel_id, items, provider_source, provider_read_succeeded, real_external_call_executed]
+      properties:
+        channel_id: { type: integer, format: int64, minimum: 1 }
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/ChannelAcquisitionStaffItem" } }
+        provider_source: { type: string, enum: [wecom_follow_user_list] }
+        provider_read_succeeded: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
     ChannelAcquisitionLifecycle:
       type: object

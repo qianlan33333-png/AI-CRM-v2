@@ -152,7 +152,7 @@ export async function openPicker(api: AdminApi, opts: PickerOpts): Promise<Picke
     const isSel = (id: string): boolean => selected.some((i) => i.id === id);
 
     /* ---------- 头部 ---------- */
-    const showSync = kind === 'tags' || kind === 'members';
+    const showSync = kind === 'tags';
     card.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #EFF0F1;flex:none">
         <div><div style="font-size:15px;font-weight:600;color:#1F2329">${opts.title || KIND_TITLE[kind]}</div>

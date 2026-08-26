@@ -592,6 +592,15 @@ export interface ChannelAcquisitionAssignee {
   maxScans24h?: number;
 }
 
+export interface ChannelAcquisitionStaff {
+  staffId: string;
+  name: string;
+  assigned: boolean;
+  priority?: number;
+  ratioPercent?: number;
+  maxScans24h?: number;
+}
+
 export interface ChannelAcquisitionPreview {
   channelId: number;
   channelCode: string;

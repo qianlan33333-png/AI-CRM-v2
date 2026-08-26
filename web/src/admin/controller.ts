@@ -682,14 +682,18 @@ export class AdminController extends PageBase {
     this.state.channelFormAssets = [];
     this.state.channelFormPreviewError = '';
     this.state.channelFormAssetError = '';
-    const [preview, assets] = await Promise.allSettled([
+    const [preview, assets, staff] = await Promise.allSettled([
       this.api.getChannelAcquisitionPreview(channelId),
       this.loadChannelAcquisitionAssets(channelId),
+      this.api.listChannelAcquisitionStaff(channelId),
     ]);
     this.state.channelFormPreview = preview.status === 'fulfilled' ? preview.value : null;
-    this.state.channelFormPreviewError = preview.status === 'rejected' ? (preview.reason instanceof Error ? preview.reason.message : '本地分配配置读取失败') : '';
+    const previewError = preview.status === 'rejected' ? (preview.reason instanceof Error ? preview.reason.message : '本地分配配置读取失败') : '';
+    const staffError = staff.status === 'rejected' ? (staff.reason instanceof Error ? staff.reason.message : '企微客服目录读取失败') : '';
+    this.state.channelFormPreviewError = [previewError, staffError].filter(Boolean).join('；');
     this.state.channelFormAssets = assets.status === 'fulfilled' ? assets.value : [];
     this.state.channelFormAssetError = assets.status === 'rejected' ? (assets.reason instanceof Error ? assets.reason.message : '资产状态读取失败') : '';
+    this.db.staff = staff.status === 'fulfilled' ? staff.value.map((item) => ({ name: item.name, uid: item.staffId, dept: '企微可用客服' })) : [];
     if (this.state.channelFormPreview?.assignees.length && !this.state.cfStaff) {
       this.state.cfStaff = this.state.channelFormPreview.assignees.map((assignee) => ({ id: assignee.staffId, uid: assignee.staffId, name: assignee.name }));
     }

@@ -15,6 +15,18 @@ var errInvalidChannelAcquisitionAssetConfig = errors.New("invalid CH02 customer-
 // deferred until a registered effect_id job executes. Disabled configuration
 // returns before constructing any credential or network client.
 func newChannelAcquisitionAssetProvider(config appconfig.WeComCustomerAcquisition, httpClient *http.Client, now func() time.Time) (*wecomclient.CustomerAcquisitionAssetProvider, error) {
+	client, err := newChannelAcquisitionClient(config, httpClient, now)
+	if err != nil || client == nil {
+		return nil, err
+	}
+	provider, err := wecomclient.NewCustomerAcquisitionAssetProvider(client)
+	if err != nil {
+		return nil, errors.Join(errInvalidChannelAcquisitionAssetConfig, err)
+	}
+	return provider, nil
+}
+
+func newChannelAcquisitionClient(config appconfig.WeComCustomerAcquisition, httpClient *http.Client, now func() time.Time) (*wecomclient.CustomerAcquisitionClient, error) {
 	if !config.Enabled {
 		return nil, nil
 	}
@@ -37,9 +49,5 @@ func newChannelAcquisitionAssetProvider(config appconfig.WeComCustomerAcquisitio
 	if err != nil {
 		return nil, errors.Join(errInvalidChannelAcquisitionAssetConfig, err)
 	}
-	provider, err := wecomclient.NewCustomerAcquisitionAssetProvider(client)
-	if err != nil {
-		return nil, errors.Join(errInvalidChannelAcquisitionAssetConfig, err)
-	}
-	return provider, nil
+	return client, nil
 }
