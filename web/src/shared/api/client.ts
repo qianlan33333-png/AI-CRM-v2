@@ -44,7 +44,7 @@ import type { AIAudiencePackageSender } from '../../api/generated/health';
 import { deleteGroupOpsPlanDto, saveGroupOpsPlanDto, transitionGroupOpsPlanDto, type GroupOpsWriteInput } from '../../api/admin';
 import { archiveHxcSenderDto, reorderHxcSendersDto, saveHxcSenderDto, type HxcSenderWriteInput } from '../../api/admin';
 import { saveAppSettingsDto } from '../../api/admin';
-import { archiveAudiencePackage, archiveServiceProductDto, archiveTagDto, copyAudiencePackageDto, copyProductDto, copyServiceProductDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, getImageThumbnailDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setProductEnabledDto, setRadarEnabled, setServiceProductEnabledDto, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext, type ProductWriteInput, type RefundIntentInput, type RefundIntentResult } from '../../api/admin';
+import { archiveAudiencePackage, archiveServiceProductDto, archiveTagDto, copyAudiencePackageDto, copyProductDto, copyServiceProductDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, getImageThumbnailDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setProductEnabledDto, setRadarEnabled, setServiceProductEnabledDto, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext, type CustomerListQuery, type ProductWriteInput, type RefundIntentInput, type RefundIntentResult } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
 
@@ -161,6 +161,9 @@ export interface AdminApi {
 
 const SS_KEY = 'aicrm.mock.db.v4';
 const MOCK_DELAY = 200;
+const MOCK_CUSTOMER_PAGE_SIZE = 50;
+
+type MockCustomerListRow = Customer & { ownerStaffId?: number; tagId: number };
 
 function delay<T>(v: T, ms = MOCK_DELAY): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(v), ms));
@@ -169,6 +172,8 @@ function delay<T>(v: T, ms = MOCK_DELAY): Promise<T> {
 export class MockApi implements AdminApi {
   readonly mode = 'mock' as const;
   private db: AdminDb;
+  private customerCursors = new Map<string, { filterKey: string; start: number }>();
+  private customerCursorSequence = 0;
 
   constructor() {
     this.db = this.restore();
@@ -194,8 +199,40 @@ export class MockApi implements AdminApi {
     }
   }
 
-  loadDb(_context?: AdminReadContext): Promise<AdminDb> {
+  private customerListRows(): MockCustomerListRow[] {
+    const ownerStaffIds: Record<string, number | undefined> = { 张敏: 101, 李由: 102, 王恺: 103, 未分配: undefined };
+    const base = this.db.rows.customers;
+    return Array.from({ length: 55 }, (_, index) => {
+      const source = base[index % base.length];
+      const mobile = `+86138${String(100000000 + index).padStart(9, '0')}`;
+      return { ...source, id: String(index + 1), mobile, ownerStaffId: ownerStaffIds[source.owner], tagId: (index % 3) + 1 };
+    });
+  }
+
+  private readCustomerList(query: CustomerListQuery = {}): AdminDb {
+    const result = deepCopy(this.db);
+    const filterKey = JSON.stringify({ keyword: query.keyword || '', mobile: query.mobile || '', ownerStaffId: query.ownerStaffId ?? null, tagId: query.tagId ?? null });
+    const filtered = this.customerListRows().filter((row) => {
+      if (query.keyword && !`${row.name} ${row.id}`.toLowerCase().includes(query.keyword.toLowerCase())) return false;
+      if (query.mobile && row.mobile !== query.mobile) return false;
+      if (query.ownerStaffId != null && row.ownerStaffId !== query.ownerStaffId) return false;
+      if (query.tagId != null && row.tagId !== query.tagId) return false;
+      return true;
+    });
+    const start = query.cursor && this.customerCursors.get(query.cursor)?.filterKey === filterKey ? this.customerCursors.get(query.cursor)!.start : 0;
+    const page = filtered.slice(start, start + MOCK_CUSTOMER_PAGE_SIZE);
+    const end = start + page.length;
+    const nextCursor = end < filtered.length ? `mock-customer-cursor-${++this.customerCursorSequence}` : null;
+    if (nextCursor) this.customerCursors.set(nextCursor, { filterKey, start: end });
+    result.rows.customers = page.map(({ ownerStaffId: _ownerStaffId, tagId: _tagId, ...row }) => row);
+    result.customerList = { total: filtered.length, totalIsEstimate: false, nextCursor };
+    return result;
+  }
+
+  loadDb(context?: AdminReadContext): Promise<AdminDb> {
     this.db = this.restore();
+    if (!this.db.customerList) this.db.customerList = { total: this.db.rows.customers.length, totalIsEstimate: false, nextCursor: null };
+    if (context?.page === 'customers') return delay(this.readCustomerList(context.customerList), 120);
     return delay(this.db, 120);
   }
 

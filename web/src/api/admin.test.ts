@@ -21,6 +21,20 @@ const response = (data: unknown, status = 200) => ({ status, data, headers: new 
 export async function runAdminAdapterTests(): Promise<void> {
   // URL factories are generated from api/openapi.yaml; generated callers use GET for every read below.
   assert(getListCustomersUrl({ limit: 50 }) === '/api/v1/customers?limit=50', 'customer list URL/method');
+  const customerListCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const savedCustomerListFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    customerListCalls.push({ input: String(input), init });
+    return new Response(JSON.stringify({ items: [{ id: 7, name: '陈晨', owner_staff_id: 3, stage_id: null, is_deleted: false, extra: {}, created_at: '', updated_at: '' }], next_cursor: 'opaque-next-cursor', total: 51, total_is_estimate: true, watermark: 'wm-1' }), { status: 200 });
+  };
+  try {
+    const customerPage = await readAdminRows('customers', { cursor: 'opaque-cursor', keyword: '陈晨', mobile: '+8613800000000', ownerStaffId: 3, tagId: 9 });
+    const customerUrl = new URL('http://localhost' + customerListCalls[0].input);
+    assert(customerListCalls.length === 1 && customerListCalls[0].init?.method === 'GET', 'customer list adapter uses generated GET');
+    assert(customerUrl.pathname === '/api/v1/customers' && customerUrl.searchParams.get('cursor') === 'opaque-cursor' && !customerUrl.searchParams.has('offset'), 'customer list preserves opaque cursor without offset');
+    assert(customerUrl.searchParams.get('keyword') === '陈晨' && customerUrl.searchParams.get('mobile') === '+8613800000000' && customerUrl.searchParams.get('owner_staff_id') === '3' && customerUrl.searchParams.get('tag_id') === '9', 'customer list filter parameters');
+    assert(customerPage.customerList.total === 51 && customerPage.customerList.totalIsEstimate && customerPage.customerList.nextCursor === 'opaque-next-cursor', 'customer list metadata mapping');
+  } finally { globalThis.fetch = savedCustomerListFetch; }
   assert(getGetLegacyQuestionnaireUrl(4) === '/api/admin/questionnaires/4', 'questionnaire detail URL/method');
   assert(getCreateLegacyQuestionnaireUrl() === '/api/admin/questionnaires' && getUpdateLegacyQuestionnaireUrl(4) === '/api/admin/questionnaires/4', 'questionnaire create/update URLs');
   assert(getEnableLegacyQuestionnaireUrl(4).endsWith('/4/enable') && getDisableLegacyQuestionnaireUrl(4).endsWith('/4/disable'), 'questionnaire lifecycle URLs');

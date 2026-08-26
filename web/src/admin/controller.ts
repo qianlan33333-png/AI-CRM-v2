@@ -14,7 +14,7 @@ import type { AdminApi } from '../shared/api/client';
 import type { AdminDb, AudienceSender, OwnerReassignmentPreview, QuestionnaireOps, Tone } from '../shared/api/types';
 import { deepCopy } from '../shared/api/mockData';
 import { emptyAdminDb } from '../api/admin';
-import type { ChannelWriteInput, CouponWriteInput, GroupOpsWriteInput, QuestionnaireWriteInput } from '../api/admin';
+import type { AdminReadContext, ChannelWriteInput, CouponWriteInput, CustomerListQuery, GroupOpsWriteInput, QuestionnaireWriteInput } from '../api/admin';
 import { toast, confirmBox, busy } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
 import { copyText, renderFakeQr } from './sections/util';
@@ -68,6 +68,12 @@ type AdminState = {
   /** 商品/周期商品表单 · 引流渠道码 code */
   pfChannelId: string;
   spfChannelId: string;
+  /** 客户列表筛选与 opaque cursor 导航 */
+  customerFilters: CustomerListFilters;
+  customerCursors: string[];
+  customerPage: number;
+  customerLoading: boolean;
+  customerError: string;
 };
 
 /** 全部屏幕键（go 跳转表） */
@@ -83,6 +89,13 @@ const SCREENS = [
 interface FbEl extends HTMLElement {
   __fbBusy?: boolean;
 }
+
+type CustomerListFilters = {
+  keyword: string;
+  owner: string;
+  mobile: string;
+  tag: string;
+};
 
 export class AdminController extends PageBase {
   override state: AdminState = {
@@ -117,6 +130,11 @@ export class AdminController extends PageBase {
     opsChannelId: '',
     pfChannelId: 'shalongyaoyue',
     spfChannelId: 'shalongyaoyue',
+    customerFilters: { keyword: '', owner: '', mobile: '', tag: '' },
+    customerCursors: [],
+    customerPage: 0,
+    customerLoading: false,
+    customerError: '',
   };
 
   db: AdminDb = emptyAdminDb();
@@ -137,7 +155,19 @@ export class AdminController extends PageBase {
   /** 页面入口调用：加载数据仓库 → 重渲染 */
   async init(): Promise<void> {
     const resourceId = this.qs().get(this.page === 'configDetail' ? 'cat' : 'id') || undefined;
-    this.db = await this.api.loadDb({ page: this.page, id: resourceId });
+    const context: AdminReadContext = { page: this.page, id: resourceId };
+    if (this.page === 'customers') {
+      const parsed = this.parseCustomerListQuery(this.state.customerFilters);
+      if ('error' in parsed) throw new Error(parsed.error);
+      context.customerList = parsed.query;
+    }
+    this.db = await this.api.loadDb(context);
+    if (this.page === 'customers') {
+      this.state.customerPage = 0;
+      this.state.customerCursors = [];
+      this.state.customerLoading = false;
+      this.state.customerError = '';
+    }
     if (this.page === 'images' && this.api.mode === 'http') {
       for (const url of this.imageObjectUrls) URL.revokeObjectURL(url);
       this.imageObjectUrls = [];
@@ -171,6 +201,86 @@ export class AdminController extends PageBase {
 
   private qs(): URLSearchParams {
     return new URLSearchParams(location.search);
+  }
+
+  private readCustomerFilters(): CustomerListFilters {
+    const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | null)?.value.trim() || '';
+    return { keyword: value('fCustomerKeyword'), owner: value('fCustomerOwner'), mobile: value('fCustomerMobile'), tag: value('fCustomerTag') };
+  }
+
+  private parseCustomerListQuery(filters: CustomerListFilters, cursor?: string): { query: CustomerListQuery } | { error: string } {
+    const query: CustomerListQuery = {};
+    if (filters.keyword) query.keyword = filters.keyword;
+    if (filters.mobile) {
+      if (!/^\+[1-9][0-9]{1,14}$/.test(filters.mobile)) return { error: '手机号必须是 E.164 格式，例如 +8613800000000' };
+      query.mobile = filters.mobile;
+    }
+    if (filters.owner) {
+      const ownerStaffId = Number(filters.owner);
+      if (!Number.isSafeInteger(ownerStaffId) || ownerStaffId < 1) return { error: '负责人必须填写正整数 staff_id' };
+      query.ownerStaffId = ownerStaffId;
+    }
+    if (filters.tag) {
+      const tagId = Number(filters.tag);
+      if (!Number.isSafeInteger(tagId) || tagId < 1) return { error: '标签必须填写正整数 tag_id' };
+      query.tagId = tagId;
+    }
+    if (cursor) query.cursor = cursor;
+    return { query };
+  }
+
+  private async loadCustomerPage(page: number, cursor: string | undefined, cursorStack: string[], filters = this.state.customerFilters): Promise<void> {
+    if (this.state.customerLoading) return;
+    const parsed = this.parseCustomerListQuery(filters, cursor);
+    if ('error' in parsed) {
+      this.setState({ customerError: parsed.error });
+      return;
+    }
+    this.db = emptyAdminDb();
+    this.setState({ customerLoading: true, customerError: '' });
+    try {
+      this.db = await this.api.loadDb({ page: 'customers', customerList: parsed.query });
+      this.setState({ customerPage: page, customerCursors: cursorStack, customerLoading: false, customerError: '' });
+    } catch (error) {
+      this.db = emptyAdminDb();
+      this.setState({ customerLoading: false, customerError: error instanceof Error ? error.message : '客户列表读取失败' });
+    }
+  }
+
+  private queryCustomers(): void {
+    if (this.state.customerLoading) return;
+    const filters = this.readCustomerFilters();
+    const parsed = this.parseCustomerListQuery(filters);
+    if ('error' in parsed) {
+      this.setState({ customerFilters: filters, customerError: parsed.error });
+      return;
+    }
+    this.setState({ customerFilters: filters, customerCursors: [], customerPage: 0, customerError: '' });
+    void this.loadCustomerPage(0, undefined, [], filters);
+  }
+
+  private clearCustomers(): void {
+    if (this.state.customerLoading) return;
+    const filters: CustomerListFilters = { keyword: '', owner: '', mobile: '', tag: '' };
+    this.setState({ customerFilters: filters, customerCursors: [], customerPage: 0, customerError: '' });
+    void this.loadCustomerPage(0, undefined, [], filters);
+  }
+
+  private nextCustomerPage(): void {
+    if (this.state.customerLoading) return;
+    const cursor = this.db.customerList.nextCursor;
+    if (!cursor) return;
+    const page = this.state.customerPage + 1;
+    const cursorStack = this.state.customerCursors.slice();
+    cursorStack[page - 1] = cursor;
+    void this.loadCustomerPage(page, cursor, cursorStack);
+  }
+
+  private previousCustomerPage(): void {
+    if (this.state.customerLoading || this.state.customerPage === 0) return;
+    const page = this.state.customerPage - 1;
+    const cursor = page === 0 ? undefined : this.state.customerCursors[page - 1];
+    void this.loadCustomerPage(page, cursor, this.state.customerCursors.slice(0, page));
   }
 
   private pageId(): number {
@@ -1328,8 +1438,32 @@ export class AdminController extends PageBase {
         }
       : null;
 
+    const customerMeta = this.db.customerList || { total: rows.customers.length, totalIsEstimate: false, nextCursor: null };
+    const customerStart = rows.customers.length ? this.state.customerPage * 50 + 1 : 0;
+    const customerEnd = rows.customers.length ? customerStart + rows.customers.length - 1 : 0;
+    const customerEstimate = customerMeta.totalIsEstimate ? '（估算）' : '';
+    const customerButtonStyle = (enabled: boolean): StyleObj => ({
+      height: '28px', minWidth: '28px', padding: '0 8px', border: '1px solid #DEE0E3', borderRadius: '6px',
+      background: '#fff', color: enabled ? '#1F2329' : '#BBBFC4', fontSize: '12px', cursor: enabled ? 'pointer' : 'not-allowed',
+    });
+
     return {
       go,
+      customersPage: {
+        filters: this.state.customerFilters,
+        totalLabel: `共 ${customerMeta.total.toLocaleString()} 位客户${customerEstimate}`,
+        rangeLabel: this.state.customerLoading ? '正在读取客户列表…' : rows.customers.length ? `第 ${customerStart} – ${customerEnd} 条，共 ${customerMeta.total.toLocaleString()} 条${customerEstimate}` : `暂无客户，共 ${customerMeta.total.toLocaleString()} 条${customerEstimate}`,
+        previous: () => this.previousCustomerPage(),
+        next: () => this.nextCustomerPage(),
+        query: () => this.queryCustomers(),
+        clear: () => this.clearCustomers(),
+        page: this.state.customerPage + 1,
+        previousStyle: customerButtonStyle(this.state.customerPage > 0 && !this.state.customerLoading),
+        nextStyle: customerButtonStyle(Boolean(customerMeta.nextCursor) && !this.state.customerLoading),
+        loading: this.state.customerLoading,
+        error: this.state.customerError,
+        empty: rows.customers.length === 0 && !this.state.customerLoading && !this.state.customerError,
+      },
       productFormPage: {
         title: productFormValue ? '编辑普通商品' : '创建普通商品',
         item: productFormValue || { code: '', name: '', price: '0.00', description: '', currency: 'CNY', stockQuantity: 0 },

@@ -364,6 +364,12 @@ export interface Customer {
   stageId?: number | null;
 }
 
+export interface CustomerListMeta {
+  total: number;
+  totalIsEstimate: boolean;
+  nextCursor: string | null;
+}
+
 export interface Tag {
   name: string;
 }
@@ -754,6 +760,7 @@ export interface AdminDb {
   /* ---- 通用选择器数据源（企微员工目录 / 客户群） ---- */
   staff: StaffMember[];
   groupChats: GroupChat[];
+  customerList: CustomerListMeta;
   rows: RowsData;
 }
 

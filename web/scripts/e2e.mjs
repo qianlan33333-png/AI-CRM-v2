@@ -237,6 +237,50 @@ console.log('admin/questionnaires.html');
   dom.window.close();
 }
 
+console.log('admin/customers.html（筛选、opaque cursor 翻页与详情导航）');
+{
+  const dom = await loadPage('admin/customers.html');
+  const d = dom.window.document;
+  ok('客户首屏按服务端页大小渲染 50 行', d.querySelectorAll('tbody tr').length === 50);
+  ok('客户列表使用真实总数 55', d.body.textContent.includes('共 55 位客户') && d.body.textContent.includes('第 1 – 50 条，共 55 条'));
+  ok('客户行详情链接使用 canonical numeric OneID', d.querySelector('a[href="customerDetail.html?id=1"]')?.__dcBound === true);
+
+  input(dom, d.querySelector('#fCustomerKeyword'), '李思远');
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查询'));
+  await sleep(300);
+  ok('关键词查询只保留匹配客户并重置到第 1 页', d.querySelectorAll('tbody tr').length === 10 && d.body.textContent.includes('共 10 位客户') && d.body.textContent.includes('第 1 页'));
+
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '清空'));
+  await sleep(300);
+  input(dom, d.querySelector('#fCustomerOwner'), '101');
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查询'));
+  await sleep(300);
+  ok('负责人 staff_id 查询按 canonical 参数过滤', d.querySelectorAll('tbody tr').length === 19 && d.body.textContent.includes('共 19 位客户'));
+
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '清空'));
+  await sleep(300);
+  input(dom, d.querySelector('#fCustomerTag'), '2');
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查询'));
+  await sleep(300);
+  ok('标签 tag_id 查询按 canonical 参数过滤', d.querySelectorAll('tbody tr').length === 18 && d.body.textContent.includes('共 18 位客户'));
+
+  input(dom, d.querySelector('#fCustomerMobile'), '138000000000');
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查询'));
+  await sleep(30);
+  ok('非法手机号在请求前显示 E.164 错误', d.querySelector('[data-customer-error]')?.textContent.includes('E.164'));
+
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '清空'));
+  await sleep(300);
+  const next = [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '下一页');
+  click(dom, next);
+  await sleep(300);
+  ok('下一页使用服务端 opaque cursor 并显示第 2 页 5 行', d.querySelectorAll('tbody tr').length === 5 && d.body.textContent.includes('第 2 页') && d.querySelector('a[href="customerDetail.html?id=51"]')?.__dcBound === true);
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '上一页'));
+  await sleep(300);
+  ok('上一页沿 cursor 栈返回第 1 页', d.querySelectorAll('tbody tr').length === 50 && d.body.textContent.includes('第 1 页'));
+  dom.window.close();
+}
+
 /* ================= 本轮新增：二级页 + 通用选择器 ================= */
 console.log('admin/automation.html（新增分组弹窗 → 测试 Mock 创建）');
 {
