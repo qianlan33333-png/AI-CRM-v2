@@ -12,6 +12,7 @@ import { mountRadar } from './sections/radar';
 import { mountAiAssistant } from './sections/aiAssistant';
 import { mountFunnelGrid } from './sections/funnelGrid';
 import { mountCampaignWorkspace } from './sections/campaigns';
+import { mountSetupWizard } from './sections/setupWizard';
 import { esc } from './sections/util';
 import { mountCouponData, mountCouponForm, mountServicePeriodMemberGrid } from './sections/commerce';
 
@@ -86,7 +87,13 @@ function boot(): void {
   initFeedback();
   stage.textContent = '正在读取页面数据…';
   void controller.init()
-    .then(() => mount(stage, tpl.innerHTML, controller))
+    .then(async () => {
+      mount(stage, tpl.innerHTML, controller);
+      if (page === 'config') {
+        const setupWizard = stage.querySelector<HTMLElement>('#setup-wizard-card');
+        if (setupWizard) await mountSetupWizard(setupWizard);
+      }
+    })
     .catch((error) => showLoadError(stage, error));
 }
 

@@ -120,6 +120,58 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
         window.URL.revokeObjectURL = () => {};
         window.HTMLAnchorElement.prototype.click = function () { window.__orderDownload = { href: this.href, download: this.download }; };
       }
+      if (rel === 'admin/config.html') {
+        const digest = 'a'.repeat(64);
+        const token = 'b'.repeat(43);
+        const state = { corpId: 'ww-existing', agentId: 1001 };
+        const snapshot = () => ({
+          ok: true,
+          expected_digest: digest,
+          editable: { 'wecom.corp_id': state.corpId, 'wecom.agent_id': state.agentId },
+          editable_configured: { 'wecom.corp_id': true, 'wecom.agent_id': true },
+          masked: {
+            'wecom.secret': { configured: true, masked: true },
+            'wecom.callback_token': { configured: true, masked: true },
+            'wecom.callback_aes_key': { configured: false, masked: true },
+            'ai.api_key': { configured: false, masked: true },
+          },
+          admin_action_token: token,
+          external: false,
+          local_only: true,
+          runtime_applied: false,
+        });
+        const json = (data, status = 200) => ({
+          ok: status >= 200 && status < 300,
+          status,
+          headers: new Headers({ 'Content-Type': 'application/json' }),
+          text: async () => JSON.stringify(data),
+        });
+        window.__setupWizardTest = { posts: [] };
+        window.fetch = async (input, init = {}) => {
+          if (!String(input).includes('/api/admin/setup-wizard')) return json({ error: 'unexpected_request' }, 500);
+          if ((init.method || 'GET') === 'POST') {
+            const body = JSON.parse(init.body || '{}');
+            window.__setupWizardTest.posts.push({ body, key: new Headers(init.headers).get('Idempotency-Key') });
+            state.corpId = body['wecom.corp_id'];
+            state.agentId = body['wecom.agent_id'];
+            return json({
+              ok: true,
+              config: snapshot(),
+              receipt: {
+                idempotency_key: window.__setupWizardTest.posts.at(-1).key,
+                replayed: false,
+                audits: [{ key: 'wecom.corp_id', id: 1 }, { key: 'wecom.agent_id', id: 2 }],
+                events: [{ key: 'wecom.corp_id', type: 'setting.updated' }, { key: 'wecom.agent_id', type: 'setting.updated' }],
+              },
+              external: false,
+              local_only: true,
+              runtime_applied: false,
+            });
+          }
+          return json(snapshot());
+        };
+        return;
+      }
       if (rel !== 'sidebar/index.html') return;
       window.URL.createObjectURL = () => 'blob:sidebar-thumbnail';
       window.URL.revokeObjectURL = () => {};
@@ -775,6 +827,27 @@ console.log('admin/configDetail.html?cat=wechat_pay（类目配置点渲染）')
   const d = dom.window.document;
   ok('微信支付类目字段渲染（含 WECHAT_PAY_MCH_ID）', d.body.textContent.includes('WECHAT_PAY_MCH_ID'));
   ok('支持检查的类目显示「检查」按钮', [...d.querySelectorAll('button')].some((b) => b.textContent.trim() === '检查'));
+  dom.window.close();
+}
+
+console.log('admin/config.html（本地 setup wizard 最小闭环）');
+{
+  const dom = await loadPage('admin/config.html');
+  const d = dom.window.document;
+  ok('只展示密钥配置状态且不渲染密钥输入框', d.body.textContent.includes('已配置（值不展示）') && !d.querySelector('input[type="password"]') && !d.body.textContent.includes('secret-value'));
+  input(dom, d.querySelector('#setup-corp-id'), '');
+  input(dom, d.querySelector('#setup-agent-id'), '0');
+  d.querySelector('#setup-wizard-form').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+  await sleep(30);
+  ok('无效输入在请求前失败', d.querySelector('#setup-wizard-result')?.textContent === 'validation_error' && dom.window.__setupWizardTest.posts.length === 0);
+
+  input(dom, d.querySelector('#setup-corp-id'), 'ww-updated');
+  input(dom, d.querySelector('#setup-agent-id'), '2002');
+  d.querySelector('#setup-wizard-form').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+  await sleep(80);
+  const post = dom.window.__setupWizardTest.posts[0];
+  ok('保存只写两个本地字段且密钥字段固定为空', post?.body['wecom.corp_id'] === 'ww-updated' && post?.body['wecom.agent_id'] === 2002 && ['wecom.secret', 'wecom.callback_token', 'wecom.callback_aes_key', 'ai.api_key'].every((key) => post.body[key] === ''));
+  ok('保存携带幂等键并以本地回执成功，不跳转', typeof post?.key === 'string' && post.key.length > 0 && d.querySelector('#setup-wizard-result')?.textContent === 'save_success' && dom.window.location.pathname.endsWith('/admin/config.html'));
   dom.window.close();
 }
 
