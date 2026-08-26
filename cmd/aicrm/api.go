@@ -1623,6 +1623,23 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	if config.WeCom.Outbound.Enabled {
+		targets, targetErr := contactstore.NewWeComOutboundTargetResolver(pool, config.WeCom.Outbound.CorpID)
+		if targetErr != nil {
+			pool.Close()
+			return nil, targetErr
+		}
+		qualifier, qualifierErr := legacyaudience.NewAudienceDispatchTargetQualifier(legacyAIAudienceRepository, targets)
+		if qualifierErr != nil {
+			pool.Close()
+			return nil, qualifierErr
+		}
+		campaignDispatchService, err = campaignDispatchService.WithAudienceQualification(qualifier, nil)
+		if err != nil {
+			pool.Close()
+			return nil, err
+		}
+	}
 	campaignDispatchHandler, err := outboundhttp.NewCampaignDispatchHandler(campaignDispatchService)
 	if err != nil {
 		pool.Close()
