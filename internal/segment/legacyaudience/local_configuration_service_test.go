@@ -300,7 +300,7 @@ func TestLocalConfigurationServiceReplacesOnlyEligibleOrderedSenders(t *testing.
 	}
 	world.operationMembers = []OperationMember{{SenderUserID: "alpha", DisplayName: "Alpha"}}
 	members, err := service.ListOperationMembers(context.Background(), 1)
-	if err != nil || !reflect.DeepEqual(members.Items, []OperationMember{{SenderUserID: "alpha", DisplayName: "Alpha"}}) || members.Scope != OperationMemberScope {
+	if err != nil || !reflect.DeepEqual(members.Items, []OperationMember{{SenderUserID: "alpha", DisplayName: "Alpha"}}) || members.Scope != OperationMemberScope || members.ProviderReadExecuted {
 		t.Fatalf("ListOperationMembers response=%+v err=%v", members, err)
 	}
 }

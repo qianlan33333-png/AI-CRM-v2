@@ -66,7 +66,10 @@ func operationMemberResponse(items []OperationMember, pageSize int) OperationMem
 	if len(page) > pageSize {
 		page = page[:pageSize]
 	}
-	return OperationMemberListResponse{Scope: OperationMemberScope, Items: page, PageSize: pageSize, Projection: localProjection()}
+	return OperationMemberListResponse{
+		Scope: OperationMemberScope, Items: page, PageSize: pageSize,
+		ProviderReadExecuted: true, Projection: localProjection(),
+	}
 }
 
 func sameOperationMembers(left, right []OperationMember) bool {

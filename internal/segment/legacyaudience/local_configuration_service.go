@@ -73,7 +73,9 @@ func (service *LocalConfigurationService) ListOperationMembers(ctx context.Conte
 	if len(items) > pageSize {
 		items = items[:pageSize]
 	}
-	return operationMemberResponse(items, pageSize), nil
+	response := operationMemberResponse(items, pageSize)
+	response.ProviderReadExecuted = false
+	return response, nil
 }
 
 func (service *LocalConfigurationService) GetAutomationBinding(ctx context.Context, packageID int64) (AutomationBindingResponse, error) {

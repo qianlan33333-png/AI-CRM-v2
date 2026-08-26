@@ -17,6 +17,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	authacceptance "github.com/qianlan33333-png/AI-CRM-v2/acceptance/auth"
 	automationfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/automationfixture"
@@ -32,7 +33,103 @@ import (
 	legacyaudience "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/legacyaudience"
 	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
 	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
+	segmentdb "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store/generated"
 )
+
+func TestAIAudienceOperationMemberSyncPG16(t *testing.T) {
+	ctx := context.Background()
+	dsn := os.Getenv("CI_TEST_DATABASE_URL")
+	if dsn == "" {
+		t.Skip("CI_TEST_DATABASE_URL is required for the isolated migrated PG16 test")
+	}
+	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(dsn, acceptancefixtures.Audience100DatabaseName); err != nil {
+		if errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
+			t.Skip("Audience 100 PG16 tests require the isolated Audience 100 database")
+		}
+		t.Fatal(err)
+	}
+	pool, err := pgxpool.New(ctx, dsn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(pool.Close)
+	actorID := seedLocalConfigurationActor(t, ctx, dsn)
+	repository, err := legacyaudience.NewSQLRepository(
+		localConfigurationPoolProvider{pool: pool},
+		localConfigurationOperationMemberStore{pool: pool},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	staff := contactstore.NewStaffDirectoryRepository(pool)
+	service, err := legacyaudience.NewLocalConfigurationService(
+		platformstore.NewUnitOfWork(pool), repository,
+		localConfigurationAutomationReader{store: automationstore.NewAgentRepository()}, staff, staff,
+		segmentapp.NewAudienceDefinitionEngine(segmentstore.NewRefreshRepository()),
+		localConfigurationEventAppender{appender: eventstore.NewAppender()},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := &localConfigurationOperationMemberSource{items: []legacyaudience.OperationMember{
+		{SenderUserID: "beta", DisplayName: "Beta"},
+		{SenderUserID: "alpha", DisplayName: "Alpha"},
+	}}
+	if err = service.SetOperationMemberSource(source); err != nil {
+		t.Fatal(err)
+	}
+	handler, err := legacyaudience.NewLocalConfigurationHandler(service, localConfigurationSecurity{actorID: actorID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fragment, err := legacyaudience.NewLocalConfigurationRouteFragment(handler)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	syncRequest := func() *http.Request {
+		request := httptest.NewRequest(http.MethodPost, legacyaudience.OperationMembersSyncRoute,
+			strings.NewReader(`{"scope":"ai_audience","page_size":1}`))
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("Idempotency-Key", "audience-operation-member-sync-pg16")
+		return request
+	}
+	for attempt := 0; attempt < 2; attempt++ {
+		response := httptest.NewRecorder()
+		fragment.ServeHTTP(response, syncRequest())
+		if response.Code != http.StatusOK {
+			t.Fatalf("sync attempt=%d status=%d body=%s", attempt+1, response.Code, response.Body.String())
+		}
+		var body legacyaudience.OperationMemberListResponse
+		if err = json.NewDecoder(response.Body).Decode(&body); err != nil || body.Scope != legacyaudience.OperationMemberScope ||
+			len(body.Items) != 1 || body.Items[0].SenderUserID != "alpha" || !body.ProviderReadExecuted || body.RealExternalCallExecuted {
+			t.Fatalf("sync attempt=%d body=%+v err=%v", attempt+1, body, err)
+		}
+	}
+	read := httptest.NewRecorder()
+	fragment.ServeHTTP(read, httptest.NewRequest(http.MethodGet,
+		legacyaudience.OperationMembersRoute+"?scope=ai_audience&page_size=100", nil))
+	var readBody legacyaudience.OperationMemberListResponse
+	if read.Code != http.StatusOK || json.NewDecoder(read.Body).Decode(&readBody) != nil || len(readBody.Items) != 2 ||
+		readBody.ProviderReadExecuted || readBody.RealExternalCallExecuted {
+		t.Fatalf("read status=%d body=%+v raw=%s", read.Code, readBody, read.Body.String())
+	}
+	var projectionCount, receiptCount, eventCount int
+	var receiptResult, eventPayload string
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.ai_audience_operation_member_projection`).Scan(&projectionCount); err != nil {
+		t.Fatal(err)
+	}
+	if err = pool.QueryRow(ctx, `SELECT count(*), min(result_json::text) FROM public.ai_audience_local_configuration_receipts WHERE operation='operation_members_sync'`).Scan(&receiptCount, &receiptResult); err != nil {
+		t.Fatal(err)
+	}
+	if err = pool.QueryRow(ctx, `SELECT count(*), min(payload::text) FROM public.event_log WHERE event_type='ai_audience.operation_members.synced'`).Scan(&eventCount, &eventPayload); err != nil {
+		t.Fatal(err)
+	}
+	if projectionCount != 2 || receiptCount != 1 || eventCount != 1 || !strings.Contains(receiptResult, `"provider_read_executed": true`) ||
+		strings.Contains(eventPayload, "alpha") || strings.Contains(eventPayload, "beta") {
+		t.Fatalf("projection/receipt/event=%d/%d/%d receipt=%s event=%s source_calls=%d", projectionCount, receiptCount, eventCount, receiptResult, eventPayload, source.calls)
+	}
+}
 
 // TestLocalConfigurationSQLRepositoryPG16 runs against a database migrated
 // through 00084_ai_audience_local_configuration_closure.sql. All fixtures roll back.
@@ -362,6 +459,62 @@ func (executor localConfigurationPGExecutor) QueryRow(ctx context.Context, query
 }
 
 type localConfigurationPoolProvider struct{ pool *pgxpool.Pool }
+
+type localConfigurationOperationMemberSource struct {
+	items []legacyaudience.OperationMember
+	calls int
+}
+
+func (source *localConfigurationOperationMemberSource) ReadOperationMembers(context.Context) ([]legacyaudience.OperationMember, error) {
+	source.calls++
+	return append([]legacyaudience.OperationMember(nil), source.items...), nil
+}
+
+type localConfigurationOperationMemberStore struct{ pool *pgxpool.Pool }
+
+func (store localConfigurationOperationMemberStore) ListOperationMembers(ctx context.Context) ([]legacyaudience.OperationMember, error) {
+	rows, err := segmentdb.New(store.pool).ListAIAudienceOperationMembers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]legacyaudience.OperationMember, len(rows))
+	for index, row := range rows {
+		items[index] = legacyaudience.OperationMember{SenderUserID: row.SenderUserid, DisplayName: row.DisplayName}
+	}
+	return items, nil
+}
+
+func (store localConfigurationOperationMemberStore) ReplaceOperationMembers(ctx context.Context, items []legacyaudience.OperationMember, syncedAt time.Time) ([]legacyaudience.OperationMember, error) {
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	queries := segmentdb.New(tx)
+	if err = queries.LockAIAudienceOperationMemberProjection(ctx); err != nil {
+		return nil, err
+	}
+	if err = queries.DeleteAIAudienceOperationMembers(ctx); err != nil {
+		return nil, err
+	}
+	for _, item := range items {
+		if err = queries.InsertAIAudienceOperationMember(ctx, segmentdb.InsertAIAudienceOperationMemberParams{
+			SenderUserid: item.SenderUserID,
+			DisplayName:  item.DisplayName,
+			SyncedAt:     pgtype.Timestamptz{Time: syncedAt, Valid: true},
+		}); err != nil {
+			return nil, err
+		}
+	}
+	rows, err := queries.ListAIAudienceOperationMembers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	stored := make([]legacyaudience.OperationMember, len(rows))
+	for index, row := range rows {
+		stored[index] = legacyaudience.OperationMember{SenderUserID: row.SenderUserid, DisplayName: row.DisplayName}
+	}
+	return stored, nil
+}
 
 func (provider localConfigurationPoolProvider) Reader(context.Context) (legacyaudience.SQLExecutor, error) {
 	return localConfigurationPoolExecutor{queryer: provider.pool, execer: provider.pool}, nil

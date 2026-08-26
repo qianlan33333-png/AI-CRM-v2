@@ -232,26 +232,37 @@ func TestSQLRepositoryReceiptReservationIsScopedAndLocked(t *testing.T) {
 }
 
 func TestSQLRepositoryOperationMemberReplacementIsSerializedAndAudienceOwned(t *testing.T) {
-	executor := &scriptedExecutor{}
-	repository, err := NewSQLRepository(scriptedProvider{executor: executor})
+	store := &operationMemberProjectionStoreStub{}
+	repository, err := NewSQLRepository(scriptedProvider{executor: &scriptedExecutor{}}, store)
 	if err != nil {
 		t.Fatal(err)
 	}
 	items := []OperationMember{{SenderUserID: "alpha", DisplayName: "Alpha"}, {SenderUserID: "beta", DisplayName: "Beta"}}
-	if _, err = repository.ReplaceOperationMembers(context.Background(), items, time.Date(2026, 8, 26, 1, 2, 3, 0, time.UTC)); err != nil {
+	stored, err := repository.ReplaceOperationMembers(context.Background(), items, time.Date(2026, 8, 26, 1, 2, 3, 0, time.UTC))
+	if err != nil || len(stored) != 2 || store.replacements != 1 {
 		t.Fatal(err)
 	}
-	if len(executor.execs) != 4 || !strings.Contains(executor.execs[0], "pg_advisory_xact_lock") ||
-		!strings.Contains(executor.execs[0], "ai_audience.operation_members.v1") ||
-		!strings.Contains(executor.execs[1], "DELETE FROM public.ai_audience_operation_member_projection") ||
-		!strings.Contains(executor.execs[2], "INSERT INTO public.ai_audience_operation_member_projection") ||
-		!strings.Contains(executor.execs[3], "INSERT INTO public.ai_audience_operation_member_projection") {
-		t.Fatalf("replacement SQL=%s", strings.Join(executor.execs, "\n"))
+	listed, err := repository.ListOperationMembers(context.Background())
+	if err != nil || len(listed) != 2 || store.lists != 1 {
+		t.Fatalf("listed=%+v err=%v", listed, err)
 	}
-	if len(executor.queries) != 1 || !strings.Contains(executor.queries[0], "FROM public.ai_audience_operation_member_projection") ||
-		strings.Contains(strings.Join(executor.execs, "\n")+"\n"+strings.Join(executor.queries, "\n"), "group_ops_") {
-		t.Fatalf("projection queries=%s", strings.Join(executor.queries, "\n"))
-	}
+}
+
+type operationMemberProjectionStoreStub struct {
+	items        []OperationMember
+	lists        int
+	replacements int
+}
+
+func (stub *operationMemberProjectionStoreStub) ListOperationMembers(context.Context) ([]OperationMember, error) {
+	stub.lists++
+	return append([]OperationMember(nil), stub.items...), nil
+}
+
+func (stub *operationMemberProjectionStoreStub) ReplaceOperationMembers(_ context.Context, items []OperationMember, _ time.Time) ([]OperationMember, error) {
+	stub.replacements++
+	stub.items = append([]OperationMember(nil), items...)
+	return append([]OperationMember(nil), stub.items...), nil
 }
 
 func TestScriptedExecutorJSONDefinitionIsValid(t *testing.T) {

@@ -51,9 +51,10 @@ type OperationMember struct {
 }
 
 type OperationMemberListResponse struct {
-	Scope    string            `json:"scope"`
-	Items    []OperationMember `json:"items"`
-	PageSize int               `json:"page_size"`
+	Scope                string            `json:"scope"`
+	Items                []OperationMember `json:"items"`
+	PageSize             int               `json:"page_size"`
+	ProviderReadExecuted bool              `json:"provider_read_executed"`
 	Projection
 }
 

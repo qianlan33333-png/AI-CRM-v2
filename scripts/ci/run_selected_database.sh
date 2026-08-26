@@ -159,6 +159,7 @@ while [[ -n "$remaining_groups" ]]; do
       ;;
     segment)
       run_make_acceptance SEGMENT_CRUD_TEST_DATABASE_URL p3-s05b-acceptance
+      run_make_acceptance P4AIAUDIENCEOPMEMBER_TEST_DATABASE_URL p4-ai-audience-operation-member-acceptance
       ;;
     stats)
       run_make_acceptance P4W0L01_STATS_TEST_DATABASE_URL p4-w0-l01-stats-acceptance

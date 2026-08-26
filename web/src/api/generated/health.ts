@@ -2171,16 +2171,17 @@ export interface GroupOpsDirectorySyncRequest {
   limit: number;
 }
 
-export type GroupOpsOperationMemberSyncRequestScope =
-  (typeof GroupOpsOperationMemberSyncRequestScope)[keyof typeof GroupOpsOperationMemberSyncRequestScope];
+export type OperationMemberSyncRequestScope =
+  (typeof OperationMemberSyncRequestScope)[keyof typeof OperationMemberSyncRequestScope];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const GroupOpsOperationMemberSyncRequestScope = {
+export const OperationMemberSyncRequestScope = {
+  ai_audience: "ai_audience",
   group_ops: "group_ops",
 } as const;
 
-export interface GroupOpsOperationMemberSyncRequest {
-  scope: GroupOpsOperationMemberSyncRequestScope;
+export interface OperationMemberSyncRequest {
+  scope: OperationMemberSyncRequestScope;
   /**
    * @minimum 1
    * @maximum 100
@@ -2846,6 +2847,8 @@ export interface AIAudienceOperationMemberListResponse {
    * @maximum 100
    */
   page_size: number;
+  /** False for GET; true when this response was produced by a successful sync Provider read. */
+  provider_read_executed: boolean;
   local_projection: boolean;
   real_external_call_executed: boolean;
 }
@@ -17854,6 +17857,9 @@ export const ListAIAudienceOperationMembersScope = {
 } as const;
 
 export type ListAIAudienceOperationMembers200 =
+  AIAudienceOperationMemberListResponse | GroupOpsOperationMemberPage;
+
+export type SyncGroupOpsOperationMembers200 =
   AIAudienceOperationMemberListResponse | GroupOpsOperationMemberPage;
 
 export type ListAIAudiencePackagesParams = {
@@ -50265,7 +50271,7 @@ export const recordRadarPublicEvent = async (
 };
 
 /**
- * @summary List the active local staff projection for AI Audience or Group Ops sender selection
+ * @summary List the last durable operation-member projection for AI Audience or Group Ops sender selection
  */
 export type listAIAudienceOperationMembersResponse200 = {
   data: ListAIAudienceOperationMembers200;
@@ -50355,10 +50361,10 @@ export const listAIAudienceOperationMembers = async (
 };
 
 /**
- * @summary Explicitly request the injected read-only member-directory refresh boundary
+ * @summary Explicitly refresh the scope-owned operation-member projection from the injected read-only directory boundary
  */
 export type syncGroupOpsOperationMembersResponse200 = {
-  data: GroupOpsOperationMemberPage;
+  data: SyncGroupOpsOperationMembers200;
   status: 200;
 };
 
@@ -50377,6 +50383,16 @@ export type syncGroupOpsOperationMembersResponse403 = {
   status: 403;
 };
 
+export type syncGroupOpsOperationMembersResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type syncGroupOpsOperationMembersResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
 export type syncGroupOpsOperationMembersResponse503 = {
   data: ServiceUnavailableResponse;
   status: 503;
@@ -50390,6 +50406,8 @@ export type syncGroupOpsOperationMembersResponseError = (
   | syncGroupOpsOperationMembersResponse400
   | syncGroupOpsOperationMembersResponse401
   | syncGroupOpsOperationMembersResponse403
+  | syncGroupOpsOperationMembersResponse409
+  | syncGroupOpsOperationMembersResponse422
   | syncGroupOpsOperationMembersResponse503
 ) & {
   headers: Headers;
@@ -50404,14 +50422,14 @@ export const getSyncGroupOpsOperationMembersUrl = () => {
 };
 
 export const syncGroupOpsOperationMembers = async (
-  groupOpsOperationMemberSyncRequest: GroupOpsOperationMemberSyncRequest,
+  operationMemberSyncRequest: OperationMemberSyncRequest,
   options?: RequestInit,
 ): Promise<syncGroupOpsOperationMembersResponse> => {
   const res = await fetch(getSyncGroupOpsOperationMembersUrl(), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(groupOpsOperationMemberSyncRequest),
+    body: JSON.stringify(operationMemberSyncRequest),
   });
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();

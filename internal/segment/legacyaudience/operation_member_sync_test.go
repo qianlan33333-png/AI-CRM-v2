@@ -36,7 +36,7 @@ func TestSyncOperationMembersReplacesProjectionAndRecordsOnlyRedactedEvent(t *te
 		Actor: Actor{AdminUserID: 9}, IdempotencyKey: "audience-member-sync-key-1", PageSize: 1,
 	})
 	if err != nil || !reflect.DeepEqual(response.Items, []OperationMember{{SenderUserID: "alpha", DisplayName: "Alpha"}}) ||
-		response.PageSize != 1 || response.Scope != OperationMemberScope || !response.LocalProjection || response.RealExternalCallExecuted {
+		response.PageSize != 1 || response.Scope != OperationMemberScope || !response.ProviderReadExecuted || !response.LocalProjection || response.RealExternalCallExecuted {
 		t.Fatalf("SyncOperationMembers response=%+v err=%v", response, err)
 	}
 	want := []OperationMember{{SenderUserID: "alpha", DisplayName: "Alpha"}, {SenderUserID: "beta", DisplayName: "Beta"}}

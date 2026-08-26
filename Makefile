@@ -11,7 +11,7 @@ ORVAL ?= ./node_modules/.bin/orval
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
 .PHONY: p4-h01a1-media-acceptance p4-h03-media-acceptance p4-miniprogram-library-ab-acceptance p4-hxc-sender-read-acceptance p4-delivery-lineage-0308-acceptance p4-customer-profile-tags-0301-acceptance p4-i01b-product-entitlement-acceptance
-.PHONY: p4-f01a-survey-acceptance p4-f01ab-survey-acceptance p4-survey-identity-external-push-acceptance p4-ai-audience-local-configuration-acceptance p4-group-ops-acceptance p4-group-ops-runtime-acceptance
+.PHONY: p4-f01a-survey-acceptance p4-f01ab-survey-acceptance p4-survey-identity-external-push-acceptance p4-ai-audience-local-configuration-acceptance p4-ai-audience-operation-member-acceptance p4-group-ops-acceptance p4-group-ops-runtime-acceptance
 .PHONY: p4-c01-channel-acceptance p4-contact-policy-acceptance
 .PHONY: p4-f01a-survey-acceptance
 .PHONY: p4-c01-channel-acceptance p4-b02ab-tag-acceptance
@@ -671,6 +671,10 @@ p4-survey-identity-external-push-acceptance:
 p4-ai-audience-local-configuration-acceptance:
 	@test -n "$${P4AIAUDIENCE_TEST_DATABASE_URL:-}" || { echo "P4AIAUDIENCE_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" /usr/bin/env bash acceptance/segment/ai_audience_local_configuration_pg16.sh
+
+p4-ai-audience-operation-member-acceptance:
+	@test -n "$${P4AIAUDIENCEOPMEMBER_TEST_DATABASE_URL:-}" || { echo "P4AIAUDIENCEOPMEMBER_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@GO="$(GO)" TOOLS_MOD="$(TOOLS_MOD)" /usr/bin/env bash acceptance/segment/ai_audience_operation_member_pg16.sh
 
 p4-c01-channel-acceptance:
 	@test -n "$${P4C01_CHANNEL_TEST_DATABASE_URL:-}" || { echo "P4C01_CHANNEL_TEST_DATABASE_URL is required" >&2; exit 2; }
