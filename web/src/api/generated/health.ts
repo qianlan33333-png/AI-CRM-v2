@@ -2869,6 +2869,40 @@ export interface CloudCampaignTouchPlanListResponse {
   delivery_proven: boolean;
 }
 
+export type CloudCampaignTouchPlanIndexItemReviewStatus =
+  (typeof CloudCampaignTouchPlanIndexItemReviewStatus)[keyof typeof CloudCampaignTouchPlanIndexItemReviewStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignTouchPlanIndexItemReviewStatus = {
+  draft: "draft",
+  pending_review: "pending_review",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
+
+export interface CloudCampaignTouchPlanIndexItem {
+  plan: CloudCampaignTouchPlanSummary;
+  review_status: CloudCampaignTouchPlanIndexItemReviewStatus;
+  /** @minimum 1 */
+  review_version: number;
+}
+
+export interface CloudCampaignTouchPlanIndexResponse {
+  /** @maxItems 100 */
+  items: CloudCampaignTouchPlanIndexItem[];
+  /**
+   * @minLength 1
+   * @maxLength 512
+   * @nullable
+   */
+  next_cursor?: string | null;
+  local_only: boolean;
+  provider_execution_eligible: boolean;
+  runtime_executed: boolean;
+  real_external_call_executed: boolean;
+  delivery_proven: boolean;
+}
+
 export interface CloudCampaignTouchPlanReviewMutationRequest {
   /** @minimum 1 */
   expected_version: number;
@@ -2958,6 +2992,54 @@ export interface CloudCampaignTouchPlanRecipientListResponse {
    * @nullable
    */
   next_cursor?: string | null;
+  local_only: boolean;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+  delivery_proven: boolean;
+}
+
+export interface CloudCampaignTouchPlanRecipientReviewMutationRequest {
+  /** @minimum 1 */
+  expected_plan_version: number;
+  /** @minimum 0 */
+  expected_recipient_version: number;
+  /**
+   * @minLength 1
+   * @maxLength 4000
+   */
+  message_override?: string;
+}
+
+export type CloudCampaignTouchPlanRecipientReviewStatus =
+  (typeof CloudCampaignTouchPlanRecipientReviewStatus)[keyof typeof CloudCampaignTouchPlanRecipientReviewStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignTouchPlanRecipientReviewStatus = {
+  pending_review: "pending_review",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
+
+export interface CloudCampaignTouchPlanRecipientReview {
+  /** @minimum 1 */
+  canonical_customer_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 4000
+   */
+  message_override?: string;
+  status: CloudCampaignTouchPlanRecipientReviewStatus;
+  /** @minimum 1 */
+  version: number;
+  /** @minimum 1 */
+  updated_by_actor_id: number;
+  updated_at: string;
+}
+
+export interface CloudCampaignTouchPlanRecipientReviewMutationResponse {
+  review: CloudCampaignTouchPlanRecipientReview;
+  /** @minimum 1 */
+  event_id?: number;
   local_only: boolean;
   provider_execution_eligible: boolean;
   real_external_call_executed: boolean;
@@ -18199,6 +18281,31 @@ export type ListAIAudiencePackageSendRecordsParams = {
    */
   offset?: number;
 };
+
+export type ListCloudCampaignPlansParams = {
+  review_status?: ListCloudCampaignPlansReviewStatus;
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type ListCloudCampaignPlansReviewStatus =
+  (typeof ListCloudCampaignPlansReviewStatus)[keyof typeof ListCloudCampaignPlansReviewStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListCloudCampaignPlansReviewStatus = {
+  draft: "draft",
+  pending_review: "pending_review",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
 
 export type ListCloudCampaignsParams = {
   approval_status?: ListCloudCampaignsApprovalStatus;
@@ -53665,6 +53772,89 @@ export const activateAIAudiencePackage = async (
   } as activateAIAudiencePackageResponse;
 };
 
+/**
+ * @summary List local Campaign touch plans by review state
+ */
+export type listCloudCampaignPlansResponse200 = {
+  data: CloudCampaignTouchPlanIndexResponse;
+  status: 200;
+};
+
+export type listCloudCampaignPlansResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type listCloudCampaignPlansResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type listCloudCampaignPlansResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type listCloudCampaignPlansResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type listCloudCampaignPlansResponseSuccess =
+  listCloudCampaignPlansResponse200 & {
+    headers: Headers;
+  };
+export type listCloudCampaignPlansResponseError = (
+  | listCloudCampaignPlansResponse400
+  | listCloudCampaignPlansResponse401
+  | listCloudCampaignPlansResponse403
+  | listCloudCampaignPlansResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCloudCampaignPlansResponse =
+  listCloudCampaignPlansResponseSuccess | listCloudCampaignPlansResponseError;
+
+export const getListCloudCampaignPlansUrl = (
+  params?: ListCloudCampaignPlansParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/cloud-orchestrator/plans?${stringifiedParams}`
+    : `/api/admin/cloud-orchestrator/plans`;
+};
+
+export const listCloudCampaignPlans = async (
+  params?: ListCloudCampaignPlansParams,
+  options?: RequestInit,
+): Promise<listCloudCampaignPlansResponse> => {
+  const res = await fetch(getListCloudCampaignPlansUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCloudCampaignPlansResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCloudCampaignPlansResponse;
+};
+
 export type listCloudCampaignsResponse200 = {
   data: CloudCampaignListResponse;
   status: 200;
@@ -54273,6 +54463,198 @@ export const getCloudCampaignTouchPlanRecipient = async (
     status: res.status,
     headers: res.headers,
   } as getCloudCampaignTouchPlanRecipientResponse;
+};
+
+/**
+ * @summary Read one recipient-scoped local review
+ */
+export type getCloudCampaignTouchPlanRecipientReviewResponse200 = {
+  data: CloudCampaignTouchPlanRecipientReviewMutationResponse;
+  status: 200;
+};
+
+export type getCloudCampaignTouchPlanRecipientReviewResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type getCloudCampaignTouchPlanRecipientReviewResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type getCloudCampaignTouchPlanRecipientReviewResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type getCloudCampaignTouchPlanRecipientReviewResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type getCloudCampaignTouchPlanRecipientReviewResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type getCloudCampaignTouchPlanRecipientReviewResponseSuccess =
+  getCloudCampaignTouchPlanRecipientReviewResponse200 & {
+    headers: Headers;
+  };
+export type getCloudCampaignTouchPlanRecipientReviewResponseError = (
+  | getCloudCampaignTouchPlanRecipientReviewResponse400
+  | getCloudCampaignTouchPlanRecipientReviewResponse401
+  | getCloudCampaignTouchPlanRecipientReviewResponse403
+  | getCloudCampaignTouchPlanRecipientReviewResponse404
+  | getCloudCampaignTouchPlanRecipientReviewResponse503
+) & {
+  headers: Headers;
+};
+
+export type getCloudCampaignTouchPlanRecipientReviewResponse =
+  | getCloudCampaignTouchPlanRecipientReviewResponseSuccess
+  | getCloudCampaignTouchPlanRecipientReviewResponseError;
+
+export const getGetCloudCampaignTouchPlanRecipientReviewUrl = (
+  campaignCode: string,
+  planId: string,
+  customerId: number,
+) => {
+  return `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/touch-plans/${planId}/recipients/${customerId}/review`;
+};
+
+export const getCloudCampaignTouchPlanRecipientReview = async (
+  campaignCode: string,
+  planId: string,
+  customerId: number,
+  options?: RequestInit,
+): Promise<getCloudCampaignTouchPlanRecipientReviewResponse> => {
+  const res = await fetch(
+    getGetCloudCampaignTouchPlanRecipientReviewUrl(
+      campaignCode,
+      planId,
+      customerId,
+    ),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getCloudCampaignTouchPlanRecipientReviewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getCloudCampaignTouchPlanRecipientReviewResponse;
+};
+
+/**
+ * @summary Save a recipient message override or local review decision
+ */
+export type mutateCloudCampaignTouchPlanRecipientReviewResponse200 = {
+  data: CloudCampaignTouchPlanRecipientReviewMutationResponse;
+  status: 200;
+};
+
+export type mutateCloudCampaignTouchPlanRecipientReviewResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type mutateCloudCampaignTouchPlanRecipientReviewResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type mutateCloudCampaignTouchPlanRecipientReviewResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type mutateCloudCampaignTouchPlanRecipientReviewResponse404 = {
+  data: CloudCampaignError;
+  status: 404;
+};
+
+export type mutateCloudCampaignTouchPlanRecipientReviewResponse409 = {
+  data: CloudCampaignError;
+  status: 409;
+};
+
+export type mutateCloudCampaignTouchPlanRecipientReviewResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type mutateCloudCampaignTouchPlanRecipientReviewResponseSuccess =
+  mutateCloudCampaignTouchPlanRecipientReviewResponse200 & {
+    headers: Headers;
+  };
+export type mutateCloudCampaignTouchPlanRecipientReviewResponseError = (
+  | mutateCloudCampaignTouchPlanRecipientReviewResponse400
+  | mutateCloudCampaignTouchPlanRecipientReviewResponse401
+  | mutateCloudCampaignTouchPlanRecipientReviewResponse403
+  | mutateCloudCampaignTouchPlanRecipientReviewResponse404
+  | mutateCloudCampaignTouchPlanRecipientReviewResponse409
+  | mutateCloudCampaignTouchPlanRecipientReviewResponse503
+) & {
+  headers: Headers;
+};
+
+export type mutateCloudCampaignTouchPlanRecipientReviewResponse =
+  | mutateCloudCampaignTouchPlanRecipientReviewResponseSuccess
+  | mutateCloudCampaignTouchPlanRecipientReviewResponseError;
+
+export const getMutateCloudCampaignTouchPlanRecipientReviewUrl = (
+  campaignCode: string,
+  planId: string,
+  customerId: number,
+  operation: "message" | "approve" | "reject",
+) => {
+  return `/api/admin/cloud-orchestrator/campaigns/${campaignCode}/touch-plans/${planId}/recipients/${customerId}/review/${operation}`;
+};
+
+export const mutateCloudCampaignTouchPlanRecipientReview = async (
+  campaignCode: string,
+  planId: string,
+  customerId: number,
+  operation: "message" | "approve" | "reject",
+  cloudCampaignTouchPlanRecipientReviewMutationRequest: CloudCampaignTouchPlanRecipientReviewMutationRequest,
+  options?: RequestInit,
+): Promise<mutateCloudCampaignTouchPlanRecipientReviewResponse> => {
+  const res = await fetch(
+    getMutateCloudCampaignTouchPlanRecipientReviewUrl(
+      campaignCode,
+      planId,
+      customerId,
+      operation,
+    ),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(
+        cloudCampaignTouchPlanRecipientReviewMutationRequest,
+      ),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: mutateCloudCampaignTouchPlanRecipientReviewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as mutateCloudCampaignTouchPlanRecipientReviewResponse;
 };
 
 /**

@@ -302,6 +302,24 @@ type DraftTouchPlanPage struct {
 	NextCursor string                  `json:"next_cursor,omitempty"`
 }
 
+// TouchPlanIndexItem adds only the local review state needed by the global
+// operations list. It never introduces recipients, message bodies, runtime,
+// Provider, or delivery facts.
+type TouchPlanIndexItem struct {
+	Plan          DraftTouchPlanSummary `json:"plan"`
+	ReviewStatus  TouchPlanReviewStatus `json:"review_status"`
+	ReviewVersion int64                 `json:"review_version"`
+}
+
+type TouchPlanIndexPage struct {
+	Items      []TouchPlanIndexItem `json:"items"`
+	NextCursor string               `json:"next_cursor,omitempty"`
+}
+
+func ValidTouchPlanIndexItem(item TouchPlanIndexItem) bool {
+	return ValidDraftTouchPlanSummary(item.Plan) && item.ReviewStatus.Valid() && item.ReviewVersion > 0
+}
+
 func DraftTouchPlanSummaryOf(plan DraftTouchPlan) DraftTouchPlanSummary {
 	return DraftTouchPlanSummary{
 		ID:               plan.ID,

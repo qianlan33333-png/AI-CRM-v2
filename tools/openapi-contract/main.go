@@ -80,6 +80,8 @@ const (
 	p4OrderSafeExportEvidence                  = "P4-ORDER-SAFE-EXPORT-2026-08-23"
 	p4ContactPolicyEvidence                    = "P4-CONTACT-POLICY-2026-08-23"
 	p4CampaignInitiationEvidence               = "P4-CAMPAIGN-INITIATION-SNAPSHOTS-00066-2026-08-23"
+	p4CampaignTouchPlanIndexEvidence           = "P4-W4-A-2026-08-27"
+	p4CampaignRecipientReviewEvidence          = "P4-W4-RECIPIENT-REVIEW-2026-08-27"
 	p4CampaignReviewHandoffEvidence            = "P4-CAMPAIGN-REVIEW-HANDOFF-00067-2026-08-23"
 	p4OutboundCampaignHandoffEvidence          = "P4-OUTBOUND-CAMPAIGN-HANDOFF-2026-08-23"
 	p4SidebarLocalCoreEvidence                 = "P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24"
@@ -112,6 +114,8 @@ const (
 	c01DispatchOperationID                     = "dispatchOutboundCampaignHandoff"
 	c01DispatchReadOperationID                 = "getOutboundCampaignDispatchReconciliation"
 	c01DispatchReconcileOperationID            = "reconcileOutboundCampaignDispatch"
+	campaignRecipientReviewReadID              = "getCloudCampaignTouchPlanRecipientReview"
+	campaignRecipientReviewMutateID            = "mutateCloudCampaignTouchPlanRecipientReview"
 	ch03UnassignedListID                       = "listUnassignedChannelAcquisitionEntrantReceipts"
 	ch03UnassignedGetID                        = "getUnassignedChannelAcquisitionEntrantReceipt"
 	ch03UnassignedReconcileID                  = "reconcileUnassignedChannelAcquisitionEntrantReceipt"
@@ -217,11 +221,14 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getCustomerContactPolicy":                  {"/api/v1/customers/{customer_id}/contact-policy", "GET", p4ContactPolicyEvidence, "operations.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"putCustomerContactPolicy":                  {"/api/v1/customers/{customer_id}/contact-policy", "PUT", p4ContactPolicyEvidence, "operations.manage", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteCustomerContactPolicy":               {"/api/v1/customers/{customer_id}/contact-policy", "DELETE", p4ContactPolicyEvidence, "operations.manage", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"listCloudCampaignPlans":                    {"/api/admin/cloud-orchestrator/plans", "GET", p4CampaignTouchPlanIndexEvidence, "operations.read", "human_session", "internal", "campaign.touch_plan.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"listCloudCampaignTouchPlans":               {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans", "GET", p4CampaignInitiationEvidence, "operations.read", "human_session", "internal", "campaign.touch_plan.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"createCloudCampaignTouchPlan":              {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans", "POST", p4CampaignInitiationEvidence, "operations.manage", "human_session", "internal", "campaign.touch_plan.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getCloudCampaignTouchPlan":                 {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}", "GET", p4CampaignInitiationEvidence, "operations.read", "human_session", "internal", "campaign.touch_plan.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"listCloudCampaignTouchPlanRecipients":      {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients", "GET", p4CampaignReviewHandoffEvidence, "operations.read", "human_session", "internal", "campaign.touch_plan.targets", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"getCloudCampaignTouchPlanRecipient":        {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}", "GET", p4CampaignReviewHandoffEvidence, "operations.read", "human_session", "internal", "campaign.touch_plan.targets", "none", map[string]string{"admin": "global", "ops": "global"}},
+	campaignRecipientReviewReadID:               {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}/review", "GET", p4CampaignRecipientReviewEvidence, "operations.read", "human_session", "internal", "campaign.touch_plan.recipient_review_local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
+	campaignRecipientReviewMutateID:             {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}/review/{operation}", "POST", p4CampaignRecipientReviewEvidence, "operations.manage", "human_session", "internal", "campaign.touch_plan.recipient_review_local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getCloudCampaignTouchPlanReview":           {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review", "GET", p4CampaignReviewHandoffEvidence, "operations.read", "human_session", "internal", "campaign.touch_plan.review_local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"mutateCloudCampaignTouchPlanReview":        {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review/{operation}", "POST", p4CampaignReviewHandoffEvidence, "operations.manage", "human_session", "internal", "campaign.touch_plan.review_local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getOutboundCampaignHandoffSummary":         {"/api/admin/outbound/campaign-handoffs/{campaign_code}/{plan_id}", "GET", p4OutboundCampaignHandoffEvidence, "operations.read", "human_session", "internal", "outbound_campaign_handoffs.local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},

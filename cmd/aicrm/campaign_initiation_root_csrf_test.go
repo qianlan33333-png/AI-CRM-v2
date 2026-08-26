@@ -45,8 +45,14 @@ func (*campaignInitiationRootAuth) Invalidate(context.Context, authport.SessionR
 type campaignInitiationRootApplication struct {
 	plan        campaign.DraftTouchPlan
 	createCalls int
+	indexCalls  int
 	listCalls   int
 	detailCalls int
+}
+
+func (application *campaignInitiationRootApplication) ListTouchPlanIndex(context.Context, campaign.TouchPlanReviewStatus, string, int32) (campaign.TouchPlanIndexPage, error) {
+	application.indexCalls++
+	return campaign.TouchPlanIndexPage{}, nil
 }
 
 func (application *campaignInitiationRootApplication) CreateDraftTouchPlan(context.Context, campaign.CreateDraftTouchPlanCommand) (campaign.DraftTouchPlan, error) {
@@ -125,8 +131,10 @@ func TestCampaignInitiationRootCSRFIsValidatedExactlyOnce(t *testing.T) {
 	}{
 		{"list", campaign.RoutePrefix + "/spring-campaign/touch-plans?limit=1", func() int { return application.listCalls }},
 		{"detail", campaign.RoutePrefix + "/spring-campaign/touch-plans/" + string(application.plan.ID), func() int { return application.detailCalls }},
+		{"global index", campaign.TouchPlanIndexPath + "?limit=1", func() int { return application.indexCalls }},
 	} {
 		t.Run(test.name+" delegates through generated candidate adapter", func(t *testing.T) {
+			application.indexCalls = 0
 			application.listCalls = 0
 			application.detailCalls = 0
 			request := httptest.NewRequest(http.MethodGet, test.path, nil)

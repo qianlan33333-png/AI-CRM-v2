@@ -197,6 +197,7 @@ type candidateHandler struct {
 	legacyHealth             *legacyhealth.Handler
 	campaignInitiation       http.Handler
 	campaignReview           http.Handler
+	campaignRecipientReview  http.Handler
 	outboundCampaignHandoff  *outboundhttp.CampaignHandoffHandler
 	outboundCampaignDispatch *outboundhttp.CampaignDispatchHandler
 	externalEffectsRuntime   *externaleffectshttp.Handler
@@ -703,6 +704,10 @@ func (handler *candidateHandler) GetLegacyHealth(writer http.ResponseWriter, req
 // These generated operations deliberately delegate to Campaign's narrow
 // initiation fragment. The composition root owns authorization and the one
 // CSRF validation; the fragment only consumes the bound auth context.
+func (handler *candidateHandler) ListCloudCampaignPlans(writer http.ResponseWriter, request *http.Request, _ api.ListCloudCampaignPlansParams) {
+	handler.serveCampaignInitiation(writer, request)
+}
+
 func (handler *candidateHandler) ListCloudCampaignTouchPlans(writer http.ResponseWriter, request *http.Request, _ string, _ api.ListCloudCampaignTouchPlansParams) {
 	handler.serveCampaignInitiation(writer, request)
 }
@@ -735,12 +740,26 @@ func (handler *candidateHandler) GetCloudCampaignTouchPlanReview(writer http.Res
 func (handler *candidateHandler) MutateCloudCampaignTouchPlanReview(writer http.ResponseWriter, request *http.Request, _ string, _ string, _ string, _ api.MutateCloudCampaignTouchPlanReviewParams) {
 	handler.serveCampaignReview(writer, request)
 }
+func (handler *candidateHandler) GetCloudCampaignTouchPlanRecipientReview(writer http.ResponseWriter, request *http.Request, _ string, _ string, _ int64) {
+	handler.serveCampaignRecipientReview(writer, request)
+}
+func (handler *candidateHandler) MutateCloudCampaignTouchPlanRecipientReview(writer http.ResponseWriter, request *http.Request, _ string, _ string, _ int64, _ string, _ api.MutateCloudCampaignTouchPlanRecipientReviewParams) {
+	handler.serveCampaignRecipientReview(writer, request)
+}
 func (handler *candidateHandler) serveCampaignReview(writer http.ResponseWriter, request *http.Request) {
 	if handler == nil || handler.campaignReview == nil {
 		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
 		return
 	}
 	handler.campaignReview.ServeHTTP(writer, request)
+}
+
+func (handler *candidateHandler) serveCampaignRecipientReview(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || handler.campaignRecipientReview == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.campaignRecipientReview.ServeHTTP(writer, request)
 }
 
 func (handler *candidateHandler) GetOutboundCampaignHandoffSummary(writer http.ResponseWriter, request *http.Request, campaignCode string, planID string) {
@@ -1329,6 +1348,21 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	campaignRecipientReviewAudit, err := campaignstore.NewRecipientReviewEventLogAdapter(eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignRecipientReviewService, err := campaignapp.NewRecipientReviewService(uow, campaignRepository, campaignRecipientReviewAudit)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignRecipientReviewFragment, err := campaign.NewRecipientReviewRouteFragment(campaignRecipientReviewService, legacyCampaignAuthorizer{})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	outboundCampaignSource, err := newOutboundCampaignHandoffSourceAdapter(campaignRepository)
 	if err != nil {
 		pool.Close()
@@ -1806,6 +1840,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		})),
 		campaignInitiation:       campaignInitiationFragment,
 		campaignReview:           campaignReviewFragment,
+		campaignRecipientReview:  campaignRecipientReviewFragment,
 		outboundCampaignHandoff:  outboundCampaignHandler,
 		outboundCampaignDispatch: campaignDispatchHandler,
 		externalEffectsRuntime:   externalEffectsRuntimeHandler,
@@ -2686,6 +2721,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPut, "/api/v1/stages/reorder", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.ReorderStages)},
 		{http.MethodDelete, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.ArchiveStage)},
 		{http.MethodPatch, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.RenameStage)},
+		{http.MethodGet, campaign.TouchPlanIndexPath, authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListCloudCampaignPlans)},
 		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListCloudCampaignTouchPlans)},
 		{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/touch-plans", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.CreateCloudCampaignTouchPlan)},
 		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetCloudCampaignTouchPlan)},

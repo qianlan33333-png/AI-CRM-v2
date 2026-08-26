@@ -40,6 +40,66 @@ async function loadPage(rel, { id, q } = {}) {
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
       window.__AICRM_TEST_MOCK__ = true;
+      if (rel === 'admin/campaigns.html' && new URL(window.location.href).searchParams.get('legacy_admin_path') === '/admin/cloud-orchestrator/plans') {
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
+        const local = { local_only: true, provider_execution_eligible: false, runtime_executed: false, real_external_call_executed: false, delivery_proven: false };
+        window.__planIndexCalls = [];
+        window.fetch = async (input) => {
+          const url = String(input);
+          window.__planIndexCalls.push(url);
+          return json({ items: [{ plan: { id: 'ctp_' + 'a'.repeat(64), campaign_code: 'spring-campaign', campaign_version: 3, source: { kind: 'customer_selection' }, target_count: 2, content_step_count: 1, created_at: '2026-08-27T00:00:00Z', ...local }, review_status: 'pending_review', review_version: 2 }], ...local });
+        };
+        return;
+      }
+      if (rel === 'admin/campaigns.html' && new URL(window.location.href).searchParams.get('recipient') === '7') {
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
+        const planID = 'ctp_' + 'a'.repeat(64);
+        const local = { local_only: true, provider_execution_eligible: false, runtime_executed: false, real_external_call_executed: false, delivery_proven: false };
+        const plan = { id: planID, campaign_code: 'spring-campaign', campaign_version: 3, source: { kind: 'customer_selection' }, target_count: 1, content_step_count: 1, created_at: '2026-08-27T00:00:00Z' };
+        window.__recipientCalls = [];
+        window.fetch = async (input) => {
+          const url = String(input);
+          window.__recipientCalls.push(url);
+          if (url.endsWith('/recipients/7/review')) return json({ review: { canonical_customer_id: 7, status: 'pending_review', version: 1, updated_by_actor_id: 1, updated_at: '2026-08-27T00:00:00Z' }, ...local });
+          if (url.endsWith(`/touch-plans/${planID}/review`)) return json({ review: { status: 'pending_review', version: 2 }, handoff: null, ...local });
+          if (url.endsWith('/recipients/7')) return json({ canonical_customer_id: 7, ...local });
+          if (url.endsWith('/recipients?limit=50')) return json({ items: [{ canonical_customer_id: 7 }], next_cursor: null, ...local });
+          if (url.endsWith(`/touch-plans/${planID}`)) return json({ ...plan, content: { steps: [{ step_index: 1, delay_minutes: 0, content: '本地审核内容' }] }, ...local });
+          if (url.includes('/touch-plans')) return json({ items: [plan], ...local });
+          return json({ campaign: { campaign_code: 'spring-campaign', name: '春季激活', approval_status: 'draft', runtime_status: 'idle', version: 3, updated_at: '2026-08-27T00:00:00Z' }, steps: [], local_projection: true, real_external_call_executed: false, real_send: false, runtime_executed: false });
+        };
+        return;
+      }
+      if (rel === 'admin/campaigns.html' && new URL(window.location.href).searchParams.get('view') === 'observability') {
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
+        window.__observabilityCalls = [];
+        window.fetch = async (input, init = {}) => {
+          const url = String(input);
+          window.__observabilityCalls.push({ url, init });
+          const traceID = new URL('http://localhost' + url).searchParams.get('trace_id') || undefined;
+          if (url.includes('/push-center/stats')) return json({ ok: true, counts: { total: 2, pending: 1, running: 0, succeeded: 0, sent: 1, failed: 0, shadow_warning: 0, by_effective_status: {}, by_status: {}, by_section: {} }, sections: [], status_definitions: [], filters: traceID ? { trace_id: traceID } : {}, route_owner: 'ai_crm_next', real_external_call_executed: false, runtime_queue: {}, capability_owner: 'ai_crm_next/platform_foundation/push_center' });
+          return json({ ok: true, sections: [{ key: 'order', label: '订单', count: 2 }], status_definitions: [], filters: traceID ? { trace_id: traceID } : {}, route_owner: 'ai_crm_next' });
+        };
+        return;
+      }
+      if (rel === 'admin/campaigns.html' && new URL(window.location.href).searchParams.get('view') === 'external-effects') {
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
+        const local = { local_fact_only: true, real_external_call_executed: false, delivery_proven: false, delivery_semantics: 'local_state_not_delivery_proof' };
+        const pushJob = { job_id: 18, task_id: 5, customer_id: 7, status: 'outcome_unknown', attempt_count: 1, failure_present: true, failure_class: 'outcome_unknown', provider_receipt_present: false, queue_job: { river_job_id: 9, generation: 1, kind: 'outbound_enqueue_one' }, created_at: '2026-08-27T00:00:00Z', status_updated_at: '2026-08-27T00:01:00Z', ...local };
+        const pushEnvelope = { ok: true, fallback_used: false, source_status: 'v2_outbound_service', ...local };
+        window.fetch = async (input) => {
+          const url = String(input);
+          if (url.includes('/external-effects/diagnostics')) return json({ accepted: 1, queued: 2, attempted: 1, outcome_unknown: 1, retryable_failed: 0 });
+          if (url.includes('/external-effects/jobs')) return json({ ok: true, items: [{ id: 'eej_v1_abcdefghijklmnopqrstuv', status: 'outcome_unknown', classification: 'manual_review', attempt_count: 1, created_at: '2026-08-27T00:00:00Z', status_updated_at: '2026-08-27T00:01:00Z' }], next_cursor: null, page_size: 50, applied_filters: { status: null, classification: null }, provider_execution_eligible: false, ...local });
+          if (url.includes('/external-effects')) return json({ items: [{ id: '18', owner: 'campaign', kind: 'campaign_dispatch', state: 'accepted', attempt_count: 0, generation: 1, updated_at: '2026-08-27T00:00:00Z' }] });
+          if (url.includes('/push-center/sections')) return json({ ok: true, sections: [{ key: 'order', label: '订单', count: 2 }], status_definitions: [], filters: {}, route_owner: 'ai_crm_next' });
+          if (url.includes('/push-center/stats')) return json({ ok: true, counts: { total: 2, pending: 1, running: 0, succeeded: 0, sent: 1, failed: 0, shadow_warning: 0, by_effective_status: {}, by_status: {}, by_section: {} }, sections: [], status_definitions: [], filters: {}, route_owner: 'ai_crm_next', real_external_call_executed: false, runtime_queue: {}, capability_owner: 'ai_crm_next/platform_foundation/push_center' });
+          if (url.endsWith('/reconciliation')) return json({ ...pushEnvelope, job: pushJob, attempts: [{ attempt_id: 1, history_id: 2, generation: 1, river_job_id: 9, attempt: 1, max_attempts: 3, state: 'outcome_unknown', failure_present: true, failure_class: 'outcome_unknown', provider_receipt_present: false, dispatch_started_at: '2026-08-27T00:00:00Z', ...local }], control_receipts: [] });
+          if (url.endsWith('/18')) return json({ ...pushEnvelope, job: pushJob });
+          return json({ ...pushEnvelope, jobs: [pushJob], items: [pushJob], count: 1, has_more: false, limit: 50, offset: 0 });
+        };
+        return;
+      }
       if (rel !== 'sidebar/index.html') return;
       window.URL.createObjectURL = () => 'blob:sidebar-thumbnail';
       window.URL.revokeObjectURL = () => {};
@@ -455,10 +515,15 @@ console.log('admin/customerDetail.html?id=999（404 占位态）');
 }
 
 /* ================= 本轮新增：二级页 + 通用选择器 ================= */
+let audienceDetailPackageId = 1;
 console.log('admin/automation.html（新增分组弹窗 → 测试 Mock 创建）');
 {
   const dom = await loadPage('admin/automation.html');
   const d = dom.window.document;
+  const audienceDetail = d.querySelector('a[href^="audienceEdit.html?id="]');
+  const audienceDetailId = Number(audienceDetail && new URL(audienceDetail.href).searchParams.get('id'));
+  if (Number.isSafeInteger(audienceDetailId) && audienceDetailId > 0) audienceDetailPackageId = audienceDetailId;
+  ok('人群包详情链接保留实际 package_id', audienceDetail?.__dcBound === true && Number.isSafeInteger(audienceDetailId) && audienceDetailId > 0);
   const addBtn = [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '新增');
   click(dom, addBtn);
   await sleep(30);
@@ -470,9 +535,9 @@ console.log('admin/automation.html（新增分组弹窗 → 测试 Mock 创建�
   dom.window.close();
 }
 
-console.log('admin/audienceEdit.html?id=1（真实配置与发送人 DTO）');
+console.log('admin/audienceEdit.html?id={package_id}（真实配置与发送人 DTO）');
 {
-  const dom = await loadPage('admin/audienceEdit.html', { id: 1 });
+  const dom = await loadPage('admin/audienceEdit.html', { id: audienceDetailPackageId });
   const d = dom.window.document;
   const nav4 = [...d.querySelectorAll('button')].find((b) => b.textContent.includes('成员列表'));
   click(dom, nav4);
@@ -485,6 +550,7 @@ console.log('admin/audienceEdit.html?id=1（真实配置与发送人 DTO）');
   click(dom, nav3);
   await sleep(30);
   ok('发送人使用 sender_userid 明文 DTO', !!d.querySelector('#aeSenders') && d.body.textContent.includes('最多 5 位'));
+  ok('模板目录缺契约明确标为 backend_blocked', d.querySelector('[data-template-contract="backend_blocked"]')?.textContent.includes('不会把 SegmentDefinition 伪装成可选模板'));
   d.querySelector('#aeSenders').value = 'a\nb\nc\nd\ne\nf';
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '保存发送人白名单'));
   await sleep(30);
@@ -775,6 +841,99 @@ console.log('sidebar/index.html（新增能力空态与失败态）');
   await sleep(30);
   ok('周期订单失败态提供重试', failedDoc.body.textContent.includes('周期订单读取失败') && !!failedDoc.querySelector('[data-sidebar-action="retry-periodic-orders"]'));
   failed.window.close();
+}
+
+console.log('admin/campaigns.html（External Effects / Push Center 本地边界）');
+{
+  const effects = await loadPage('admin/campaigns.html', { q: 'view=external-effects' });
+  await sleep(40);
+  const doc = effects.window.document;
+  const effectsText = doc.querySelector('#stage')?.textContent || '';
+  ok('External Effects 显示本地事实边界与 outcome_unknown 人工确认',
+    effectsText.includes('不证明 Provider 调用、外部发送或送达') &&
+    effectsText.includes('outcome_unknown 存在') &&
+    effectsText.includes('不得自动重试'));
+  ok('Push Center 把 sent 标为本地状态，且未知结果没有重试操作',
+    effectsText.includes('sent（本地状态）') &&
+    effectsText.includes('结果未知：人工确认，禁止重试') &&
+    !doc.querySelector('[data-push-retry="18"]'));
+  ok('缺失 run-due 契约明确 backend_blocked', effectsText.includes('backend_blocked') && effectsText.includes('run-due'));
+  effects.window.close();
+
+  const detail = await loadPage('admin/campaigns.html', { q: 'view=external-effects&job=18' });
+  await sleep(40);
+  const detailDoc = detail.window.document;
+  const detailText = detailDoc.querySelector('#stage')?.textContent || '';
+  ok('Push Center job 详情只呈现本地 attempt/控制回执，不泄露收件人字段',
+    detailText.includes('Push Center job 本地对账') &&
+    detailText.includes('结果未知：需人工确认，禁止重试') &&
+    !detailText.includes('customer_id') &&
+    !detailText.includes('owner_staff_id'));
+  detail.window.close();
+}
+
+console.log('admin/campaigns.html（运营计划全局本地审核列表）');
+{
+  const plans = await loadPage('admin/campaigns.html', { q: 'legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans' });
+  await sleep(40);
+  const doc = plans.window.document;
+  let text = doc.querySelector('#stage')?.textContent || '';
+  ok('运营计划入口读取真实全局计划索引并保留本地边界',
+    text.includes('运营计划本地审核') && text.includes('spring-campaign') && text.includes('pending_review') &&
+    text.includes('不代表发送、Provider 执行或送达') && plans.window.__planIndexCalls.some((url) => url.includes('/api/admin/cloud-orchestrator/plans')));
+  input(plans, doc.querySelector('#plan-index-status'), 'pending_review');
+  click(plans, doc.querySelector('#plan-index-refresh'));
+  await sleep(40);
+  text = doc.querySelector('#stage')?.textContent || '';
+  ok('审核状态筛选传给真实计划索引且页面不展示收件人或消息正文',
+    plans.window.__planIndexCalls.some((url) => url.includes('review_status=pending_review')) &&
+    !text.includes('customer_ids') && !text.includes('message_override'));
+  plans.window.close();
+}
+
+console.log('admin/campaigns.html（目标人员 Customer360 链接）');
+{
+  const planID = 'ctp_' + 'a'.repeat(64);
+  const recipient = await loadPage('admin/campaigns.html', { q: `campaign=spring-campaign&plan=${planID}&recipient=7` });
+  await sleep(40);
+  const doc = recipient.window.document;
+  const text = doc.querySelector('#stage')?.textContent || '';
+  const customer360 = doc.querySelector('a[href="customerDetail.html?id=7"]');
+  ok('已验证的 plan 目标只用 canonical OneID 链接既有 Customer360 档案',
+    customer360?.textContent === '在 Customer360 查看档案' &&
+    recipient.window.__recipientCalls.some((url) => url.endsWith('/recipients/7')));
+  ok('目标人员列表没有可信状态投影时保持无成员状态筛选',
+    text.includes('当前契约不含昵称、成员状态或消息任务') &&
+    !doc.querySelector('[data-recipient-status]') &&
+    recipient.window.__recipientCalls.every((url) => !url.includes('status=')));
+  recipient.window.close();
+}
+
+console.log('admin/campaigns.html（trace_id 可观察性边界）');
+{
+  const observability = await loadPage('admin/campaigns.html', { q: 'view=observability' });
+  await sleep(40);
+  const doc = observability.window.document;
+  let text = doc.querySelector('#stage')?.textContent || '';
+  ok('无 trace_id 时刷新本地聚合，并明确没有 audit JSON',
+    text.includes('未输入 trace_id') && text.includes('当前没有可渲染的 audit JSON') &&
+    observability.window.__observabilityCalls.length === 2 && observability.window.__observabilityCalls.every((call) => !call.url.includes('trace_id=')));
+  input(observability, doc.querySelector('#observability-trace'), 'trace-audit-7');
+  click(observability, doc.querySelector('#observability-filter'));
+  await sleep(40);
+  text = doc.querySelector('#stage')?.textContent || '';
+  ok('trace_id 只筛选真实 Push Center sections/stats，不伪造 session/audit',
+    text.includes('已以 trace-audit-7 调用真实 Push Center sections/stats 聚合') &&
+    observability.window.__observabilityCalls.some((call) => call.url.includes('trace_id=trace-audit-7')) &&
+    observability.window.__observabilityCalls.every((call) => !call.url.includes('session_id')));
+  observability.window.close();
+
+  const session = await loadPage('admin/campaigns.html', { q: 'view=observability&session_id=session-7' });
+  await sleep(40);
+  const sessionText = session.window.document.querySelector('#stage')?.textContent || '';
+  ok('session_id 缺契约时 fail closed 且不降级为全局查询',
+    sessionText.includes('backend_blocked') && sessionText.includes('session_id') && session.window.__observabilityCalls.length === 0);
+  session.window.close();
 }
 
 console.log(`\n${pass} 通过 / ${fail} 失败`);

@@ -52,7 +52,7 @@ const navItems = JSON.parse(read(path.join(SRC, 'admin/nav.json')));
 const h5Registry = JSON.parse(read(path.join(SRC, 'h5/registry.json')));
 
 /** 富交互页（sections/* TS 模块渲染，不走模板） */
-const RICH = new Set(['radar', 'radarDetail', 'radarForm', 'ai', 'aiDetail', 'funnel', 'spProductData']);
+const RICH = new Set(['radar', 'radarDetail', 'radarForm', 'ai', 'aiDetail', 'funnel', 'spProductData', 'campaigns']);
 
 /* ---------- 后台导航 ---------- */
 function navHtml(activeNav) {

@@ -55,6 +55,26 @@ func TestEventLogAdapterSeparatesBatchCampaignReceiptKeys(t *testing.T) {
 	}
 }
 
+func TestEventLogAdapterAppendsRecipientReviewAsLocalCampaignFact(t *testing.T) {
+	spy := &eventAppenderSpy{}
+	adapter, err := NewEventLogAdapter(spy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	planID := DraftTouchPlanID(7, "spring-campaign", "recipient-review-event")
+	eventID, err := adapter.AppendTouchPlanRecipientReview(context.Background(), TouchPlanRecipientReviewAuditEvent{
+		AuditType: RecipientReviewAuditApproved, PlanID: planID, CampaignCode: "spring-campaign", CustomerID: 19,
+		RecipientVersion: 2, ActorID: 7, OccurredAt: time.Date(2026, time.August, 27, 2, 3, 4, 0, time.UTC), IdempotencyKey: "recipient-review-event-key",
+	})
+	if err != nil || eventID != 1 || len(spy.events) != 1 || spy.events[0].Type != eventport.EvCloudCampaignFact {
+		t.Fatalf("event id/error/events=%d/%v/%+v", eventID, err, spy.events)
+	}
+	var payload map[string]any
+	if err = json.Unmarshal(spy.events[0].Payload, &payload); err != nil || payload["audit_type"] != RecipientReviewAuditApproved || payload["customer_id"] != float64(19) || payload["provider"] != nil || payload["outbound_task_id"] != nil {
+		t.Fatalf("payload=%s parsed=%#v err=%v", spy.events[0].Payload, payload, err)
+	}
+}
+
 func TestEventLogAdapterSeparatesActorsWithSameReceiptKey(t *testing.T) {
 	spy := &eventAppenderSpy{}
 	adapter, err := NewEventLogAdapter(spy)

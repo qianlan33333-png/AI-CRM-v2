@@ -16,6 +16,7 @@ import (
 type DraftTouchPlanApplication interface {
 	CreateDraftTouchPlan(context.Context, CreateDraftTouchPlanCommand) (DraftTouchPlan, error)
 	ListDraftTouchPlans(context.Context, string, string, int32) (DraftTouchPlanPage, error)
+	ListTouchPlanIndex(context.Context, TouchPlanReviewStatus, string, int32) (TouchPlanIndexPage, error)
 	GetDraftTouchPlan(context.Context, string, string) (DraftTouchPlan, error)
 }
 
@@ -35,6 +36,7 @@ func NewInitiationRouteFragment(application DraftTouchPlanApplication, authorize
 
 func (handler *InitiationRouteFragment) Routes() []Route {
 	return []Route{
+		{Method: stdhttp.MethodGet, Pattern: TouchPlanIndexPath, Capability: CapabilityOperationsRead, RequiresCSRF: false},
 		{Method: stdhttp.MethodGet, Pattern: RoutePrefix + "/{campaign_code}/touch-plans", Capability: CapabilityOperationsRead, RequiresCSRF: false},
 		{Method: stdhttp.MethodPost, Pattern: RoutePrefix + "/{campaign_code}/touch-plans", Capability: CapabilityManageAutomation, RequiresCSRF: true},
 		{Method: stdhttp.MethodGet, Pattern: RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}", Capability: CapabilityOperationsRead, RequiresCSRF: false},
@@ -48,6 +50,14 @@ func (handler *InitiationRouteFragment) ServeHTTP(writer stdhttp.ResponseWriter,
 	}
 	if request.URL.EscapedPath() != request.URL.Path || strings.Contains(request.URL.Path, "\\") {
 		writeHTTPError(writer, stdhttp.StatusBadRequest, "MALFORMED_REQUEST")
+		return
+	}
+	if request.URL.Path == TouchPlanIndexPath {
+		if request.Method != stdhttp.MethodGet {
+			methodNotAllowed(writer, "GET")
+			return
+		}
+		handler.index(writer, request)
 		return
 	}
 	tail := strings.TrimPrefix(request.URL.Path, RoutePrefix+"/")
@@ -76,6 +86,39 @@ func (handler *InitiationRouteFragment) ServeHTTP(writer stdhttp.ResponseWriter,
 		return
 	}
 	handler.detail(writer, request, parts[0], parts[2])
+}
+
+func (handler *InitiationRouteFragment) index(writer stdhttp.ResponseWriter, request *stdhttp.Request) {
+	if !emptyBody(request) {
+		writeHTTPError(writer, stdhttp.StatusBadRequest, "MALFORMED_REQUEST")
+		return
+	}
+	if _, ok := handler.authorize(writer, request, CapabilityOperationsRead, false); !ok {
+		return
+	}
+	status, cursor, limit, valid := parseTouchPlanIndexInput(request.URL.RawQuery)
+	if !valid {
+		writeHTTPError(writer, stdhttp.StatusBadRequest, "MALFORMED_REQUEST")
+		return
+	}
+	page, err := handler.application.ListTouchPlanIndex(request.Context(), status, cursor, limit)
+	if err != nil {
+		mapInitiationError(writer, err)
+		return
+	}
+	if len(page.Items) > MaximumDraftTouchPlanPageLimit || page.NextCursor != "" && len(page.NextCursor) > 512 {
+		writeHTTPError(writer, stdhttp.StatusServiceUnavailable, "UNAVAILABLE")
+		return
+	}
+	items := make([]touchPlanIndexItemResponse, len(page.Items))
+	for index, item := range page.Items {
+		if !ValidTouchPlanIndexItem(item) || status != "" && item.ReviewStatus != status {
+			writeHTTPError(writer, stdhttp.StatusServiceUnavailable, "UNAVAILABLE")
+			return
+		}
+		items[index] = touchPlanIndexItemResponse{Plan: draftTouchPlanSummaryProjection(item.Plan), ReviewStatus: item.ReviewStatus, ReviewVersion: item.ReviewVersion}
+	}
+	writeJSON(writer, stdhttp.StatusOK, touchPlanIndexResponse{Items: items, NextCursor: optionalCursor(page.NextCursor), InitiationSafety: LocalInitiationSafety()})
 }
 
 func (handler *InitiationRouteFragment) list(writer stdhttp.ResponseWriter, request *stdhttp.Request, campaignCode string) {
@@ -197,6 +240,18 @@ type draftTouchPlanListResponse struct {
 	InitiationSafety
 }
 
+type touchPlanIndexResponse struct {
+	Items      []touchPlanIndexItemResponse `json:"items"`
+	NextCursor *string                      `json:"next_cursor,omitempty"`
+	InitiationSafety
+}
+
+type touchPlanIndexItemResponse struct {
+	Plan          draftTouchPlanSummaryResponse `json:"plan"`
+	ReviewStatus  TouchPlanReviewStatus         `json:"review_status"`
+	ReviewVersion int64                         `json:"review_version"`
+}
+
 type draftTouchPlanSummaryResponse struct {
 	ID               string                  `json:"id"`
 	CampaignCode     string                  `json:"campaign_code"`
@@ -273,6 +328,42 @@ func parseDraftTouchPlanListInput(raw string) (string, int32, bool) {
 		}
 	}
 	return cursor, limit, true
+}
+
+func parseTouchPlanIndexInput(raw string) (TouchPlanReviewStatus, string, int32, bool) {
+	values, err := url.ParseQuery(raw)
+	if err != nil {
+		return "", "", 0, false
+	}
+	var status TouchPlanReviewStatus
+	var cursor string
+	var limit int32
+	for key, items := range values {
+		if len(items) != 1 {
+			return "", "", 0, false
+		}
+		switch key {
+		case "review_status":
+			status = TouchPlanReviewStatus(items[0])
+			if !status.Valid() {
+				return "", "", 0, false
+			}
+		case "cursor":
+			if items[0] == "" || len(items[0]) > 512 {
+				return "", "", 0, false
+			}
+			cursor = items[0]
+		case "limit":
+			parsed, parseErr := strconv.ParseInt(items[0], 10, 32)
+			if parseErr != nil || parsed < 1 || parsed > 100 {
+				return "", "", 0, false
+			}
+			limit = int32(parsed)
+		default:
+			return "", "", 0, false
+		}
+	}
+	return status, cursor, limit, true
 }
 
 func mapInitiationError(writer stdhttp.ResponseWriter, err error) {

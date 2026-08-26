@@ -1,4 +1,4 @@
-import { appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, executeOwnerReassignmentPreviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
+import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, dispatchCampaignOutboundHandoffDto, executeOwnerReassignmentPreviewDto, getCampaignOutboundDispatchReconciliationDto, getCampaignOutboundHandoffDto, getCampaignOutboundHandoffReconciliationDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, listCampaignPlanIndexDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, tryGetCampaignOutboundDispatchReconciliationDto, tryGetCampaignOutboundHandoffDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
@@ -15,6 +15,9 @@ import { getArchiveLegacyHXCSendConfigUrl, getGetLegacyHXCSendConfigUrl, getReor
 import { getGetLegacyAppSettingsResourceUrl, getSaveLegacyAppSettingsResourceUrl } from './generated/health';
 import { getGetAdminOpsPushCapabilitiesUrl, getListAdminOpsReleasesUrl } from './generated/health';
 import { getGetCustomerContextUrl, getListCustomerSurveyAnswersUrl, getListStagesUrl } from './generated/health';
+import { getDeleteCloudCampaignUrl, getGetCloudCampaignTouchPlanRecipientUrl, getGetCloudCampaignTouchPlanReviewUrl, getListCloudCampaignPlansUrl, getListCloudCampaignTouchPlanRecipientsUrl, getListCloudCampaignsUrl, getMutateCloudCampaignTouchPlanReviewUrl } from './generated/health';
+import { getGetCloudCampaignTouchPlanRecipientReviewUrl, getMutateCloudCampaignTouchPlanRecipientReviewUrl } from './generated/health';
+import { getAcceptOutboundCampaignHandoffUrl, getDispatchOutboundCampaignHandoffUrl, getGetOutboundCampaignDispatchReconciliationUrl, getGetOutboundCampaignHandoffSummaryUrl, getReconcileOutboundCampaignHandoffUrl } from './generated/health';
 
 function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
 const response = (data: unknown, status = 200) => ({ status, data, headers: new Headers() });
@@ -118,6 +121,107 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(getGetAIAudienceConfigurationVersionUrl(6).endsWith('/6/configuration') && getPutAIAudienceConfigurationVersionUrl(6).endsWith('/6/configuration'), 'audience configuration URLs');
   assert(getPreviewAIAudienceConfigurationUrl(6, { configuration_version: 2 }).endsWith('/6/configuration-preview?configuration_version=2') && getMaterializeAIAudienceConfigurationUrl(6).endsWith('/6/configuration-materialize'), 'audience preview/materialize URLs');
   assert(getListAIAudiencePackageMembersUrl(6, { limit: 200, offset: 0 }).endsWith('/6/members?limit=200&offset=0'), 'audience members URL');
+  const campaignCode = 'spring-campaign';
+  const touchPlanID = 'ctp_' + 'a'.repeat(64);
+  assert(getListCloudCampaignsUrl({ approval_status: 'draft', runtime_status: 'idle' }).includes('approval_status=draft') && getDeleteCloudCampaignUrl(campaignCode).endsWith('/campaigns/spring-campaign'), 'Campaign list/delete URLs');
+  assert(getListCloudCampaignPlansUrl({ review_status: 'pending_review', limit: 100 }).endsWith('/plans?review_status=pending_review&limit=100'), 'Campaign global plan index URL');
+  assert(getGetCloudCampaignTouchPlanReviewUrl(campaignCode, touchPlanID).endsWith(`/touch-plans/${touchPlanID}/review`) && getMutateCloudCampaignTouchPlanReviewUrl(campaignCode, touchPlanID, 'approve').endsWith('/review/approve'), 'Campaign touch-plan review URLs');
+  assert(getListCloudCampaignTouchPlanRecipientsUrl(campaignCode, touchPlanID, { limit: 50, cursor: 'opaque-cursor' }).endsWith('/recipients?limit=50&cursor=opaque-cursor') && getGetCloudCampaignTouchPlanRecipientUrl(campaignCode, touchPlanID, 7).endsWith('/recipients/7'), 'Campaign recipient URLs');
+  assert(getGetCloudCampaignTouchPlanRecipientReviewUrl(campaignCode, touchPlanID, 7).endsWith('/recipients/7/review') && getMutateCloudCampaignTouchPlanRecipientReviewUrl(campaignCode, touchPlanID, 7, 'approve').endsWith('/recipients/7/review/approve'), 'Campaign recipient local-review URLs');
+  const campaignCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const campaignResponse = { campaign_code: campaignCode, name: '春季激活', approval_status: 'draft', runtime_status: 'idle', version: 3, created_by: 1, updated_by: 1, created_at: '2026-08-27T00:00:00Z', updated_at: '2026-08-27T00:00:00Z' };
+  const localCampaign = { local_projection: true, real_external_call_executed: false, real_send: false, runtime_executed: false };
+  const localTouchPlan = { local_only: true, provider_execution_eligible: false, real_external_call_executed: false, delivery_proven: false };
+  const savedCampaignFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    campaignCalls.push({ input: url, init });
+    if (url.includes('/cloud-orchestrator/plans')) return new Response(JSON.stringify({ items: [{ plan: { id: touchPlanID, campaign_code: campaignCode, campaign_version: 3, source: { kind: 'customer_selection' }, target_count: 2, content_step_count: 1, created_at: '2026-08-27T00:00:00Z', ...localTouchPlan }, review_status: 'pending_review', review_version: 2 }], next_cursor: 'plan-next', ...localTouchPlan }), { status: 200 });
+    if (url.includes('/recipients/7/review')) return new Response(JSON.stringify({ review: { canonical_customer_id: 7, message_override: url.endsWith('/message') ? '更新消息' : '原消息', status: url.endsWith('/approve') ? 'approved' : url.endsWith('/reject') ? 'rejected' : 'pending_review', version: init?.method === 'POST' ? 2 : 1, updated_by_actor_id: 1, updated_at: '2026-08-27T00:00:00Z' }, event_id: init?.method === 'POST' ? 41 : undefined, ...localTouchPlan }), { status: 200 });
+    if (url.includes('/review')) return new Response(JSON.stringify({ review: { status: init?.method === 'POST' ? 'approved' : 'pending_review', version: init?.method === 'POST' ? 3 : 2 }, ...localTouchPlan }), { status: 200 });
+    if (url.includes('/recipients/7')) return new Response(JSON.stringify({ canonical_customer_id: 7, ...localTouchPlan }), { status: 200 });
+    if (url.endsWith('/recipients?limit=50')) return new Response(JSON.stringify({ items: [{ canonical_customer_id: 7 }], next_cursor: 'opaque-next', ...localTouchPlan }), { status: 200 });
+    if (init?.method === 'DELETE') return new Response(JSON.stringify({ campaign_code: campaignCode, deleted: true, ...localCampaign }), { status: 200 });
+    if (url.endsWith('/campaigns/spring-campaign')) return new Response(JSON.stringify({ campaign: campaignResponse, steps: [], ...localCampaign }), { status: 200 });
+    return new Response(JSON.stringify({ items: [campaignResponse], ...localCampaign }), { status: 200 });
+  };
+  try {
+    const campaigns = await listCampaignsDto({ approvalStatus: 'draft', runtimeStatus: 'idle' });
+    assert(campaigns[0].code === campaignCode && campaignCalls[0].init?.method === 'GET', 'Campaign adapter reads generated list without Seed fallback');
+    const planIndex = await listCampaignPlanIndexDto('pending_review');
+    assert(planIndex.items[0].campaignCode === campaignCode && planIndex.items[0].reviewStatus === 'pending_review' && planIndex.nextCursor === 'plan-next', 'Campaign global plan index preserves local review state and opaque paging');
+    await deleteCampaignDto(campaignCode);
+    assert(campaignCalls.some((call) => call.init?.method === 'DELETE' && JSON.parse(String(call.init.body)).expected_version === 3 && Boolean(new Headers(call.init.headers).get('Idempotency-Key'))), 'Campaign delete reads current version and includes its required idempotency key');
+    const decision = await decideCampaignTouchPlanReviewDto(campaignCode, touchPlanID, 'approve');
+    const decisionCall = campaignCalls.find((call) => call.input.endsWith('/review/approve'));
+    assert(decision.status === 'approved' && decisionCall?.init?.method === 'POST' && JSON.parse(String(decisionCall.init.body)).confirmation === `APPROVE ${touchPlanID}` && Boolean(new Headers(decisionCall.init.headers).get('Idempotency-Key')), 'Campaign approval is local-review CAS with explicit confirmation and idempotency');
+    const recipients = await listCampaignTouchPlanRecipientsDto(campaignCode, touchPlanID);
+    const recipient = await getCampaignTouchPlanRecipientDto(campaignCode, touchPlanID, 7);
+    assert(recipients.items.length === 1 && recipients.nextCursor === 'opaque-next' && recipient.customerID === 7, 'Campaign recipient reads remain touch-plan scoped and preserve opaque pagination');
+    const recipientReview = await getCampaignTouchPlanRecipientReviewDto(campaignCode, touchPlanID, 7);
+    assert(recipientReview?.status === 'pending_review' && recipientReview.version === 1, 'Campaign recipient review reads scoped local state');
+    await saveCampaignTouchPlanRecipientMessageDto(campaignCode, touchPlanID, 7, '更新消息');
+    await decideCampaignTouchPlanRecipientReviewDto(campaignCode, touchPlanID, 7, 'approve');
+    const recipientMessageCall = campaignCalls.find((call) => call.input.endsWith('/recipients/7/review/message'));
+    const recipientApproveCall = campaignCalls.find((call) => call.input.endsWith('/recipients/7/review/approve'));
+    assert(recipientMessageCall?.init?.method === 'POST' && JSON.parse(String(recipientMessageCall.init.body)).expected_plan_version === 2 && JSON.parse(String(recipientMessageCall.init.body)).expected_recipient_version === 1, 'Campaign recipient message uses plan and recipient CAS');
+    assert(recipientApproveCall?.init?.method === 'POST' && JSON.parse(String(recipientApproveCall.init.body)).expected_recipient_version === 1 && !('message_override' in JSON.parse(String(recipientApproveCall.init.body))), 'Campaign recipient approval stays a local decision without message mutation');
+  } finally { globalThis.fetch = savedCampaignFetch; }
+  globalThis.fetch = async () => new Response(JSON.stringify({ items: [campaignResponse], local_projection: true, real_external_call_executed: true, real_send: false, runtime_executed: false }), { status: 200 });
+  try { await listCampaignsDto(); assert(false, 'Campaign response with an external effect must fail closed'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'Campaign external-effect response fails closed'); }
+  finally { globalThis.fetch = savedCampaignFetch; }
+  globalThis.fetch = async () => new Response(JSON.stringify({ items: [], local_only: true, provider_execution_eligible: false, runtime_executed: true, real_external_call_executed: false, delivery_proven: false }), { status: 200 });
+  try { await listCampaignTouchPlanRecipientsDto(campaignCode, touchPlanID); assert(false, 'Executed touch plan response must fail closed'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'Campaign executed touch plan response fails closed'); }
+  finally { globalThis.fetch = savedCampaignFetch; }
+  assert(getGetOutboundCampaignHandoffSummaryUrl(campaignCode, touchPlanID).endsWith(`/campaign-handoffs/${campaignCode}/${touchPlanID}`) && getAcceptOutboundCampaignHandoffUrl(campaignCode, touchPlanID).endsWith('/accept') && getReconcileOutboundCampaignHandoffUrl(campaignCode, touchPlanID).endsWith('/reconciliation') && getDispatchOutboundCampaignHandoffUrl(campaignCode, touchPlanID).endsWith('/dispatch') && getGetOutboundCampaignDispatchReconciliationUrl(campaignCode, touchPlanID).endsWith('/dispatch-reconciliation'), 'Campaign handoff generated URLs remain scoped to campaign and touch plan');
+  const handoffSafety = { local_only: true, provider_execution_eligible: false, real_external_call_executed: false, delivery_proven: false };
+  const handoffSummary = { id: 31, campaign_code: campaignCode, plan_id: touchPlanID, review_version: 3, status: 'held', target_count: 2, step_count: 1, accepted_at: '2026-08-27T00:00:00Z', safety: handoffSafety };
+  const handoffReconciliation = { ...handoffSummary, held_count: 2, blocked_count: 0, pending_count: 0, not_evaluated_count: 0, eligible_count: 2, inactive_count: 0, contact_policy_count: 0 };
+  const dispatchReconciliation = { handoff_id: 31, blocked: 0, accepted: 2, queued: 2, attempted: 0, executed: 0, outcome_unknown: 1, reconciled: 0, retryable_failed: 0, final_failed: 0, provider_execution_eligible: false, business_call_dispatched: false, real_external_call_executed: false, delivery_proven: false };
+  const outboundCalls: Array<{ input: string; init?: RequestInit }> = [];
+  let handoffAccepted = false;
+  let dispatchBound = false;
+  let unsafeHandoff = false;
+  let unsafeDispatch = false;
+  let wrongHandoffScope = false;
+  const savedOutboundFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    outboundCalls.push({ input: url, init });
+    if (url.endsWith('/touch-plans/' + touchPlanID + '/review')) return new Response(JSON.stringify({ review: { status: 'approved', version: 3 }, handoff: { status: 'pending_outbound_acceptance' }, ...localTouchPlan }), { status: 200 });
+    if (url.endsWith('/dispatch-reconciliation')) return dispatchBound ? new Response(JSON.stringify({ ...dispatchReconciliation, ...(unsafeDispatch ? { business_call_dispatched: true } : {}) }), { status: 200 }) : new Response(JSON.stringify({ code: 'not_found' }), { status: 404 });
+    if (url.endsWith('/reconciliation')) return new Response(JSON.stringify(handoffReconciliation), { status: 200 });
+    if (url.endsWith('/accept')) { handoffAccepted = true; return new Response(JSON.stringify(handoffReconciliation), { status: 200 }); }
+    if (url.endsWith('/dispatch')) { dispatchBound = true; return new Response(JSON.stringify(dispatchReconciliation), { status: 200 }); }
+    if (url.includes('/campaign-handoffs/')) return handoffAccepted ? new Response(JSON.stringify({ ...handoffSummary, campaign_code: wrongHandoffScope ? 'other-campaign' : campaignCode, safety: unsafeHandoff ? { ...handoffSafety, delivery_proven: true } : handoffSafety }), { status: 200 }) : new Response(JSON.stringify({ code: 'not_found' }), { status: 404 });
+    return new Response(JSON.stringify({ code: 'unexpected' }), { status: 500 });
+  };
+  try {
+    assert(await tryGetCampaignOutboundHandoffDto(campaignCode, touchPlanID) === null && await tryGetCampaignOutboundDispatchReconciliationDto(campaignCode, touchPlanID) === null, 'Campaign handoff reads preserve not-yet-accepted and not-yet-queued states');
+    const acceptedHandoff = await acceptCampaignOutboundHandoffDto(campaignCode, touchPlanID);
+    const acceptCall = outboundCalls.find((call) => call.input.endsWith('/accept'));
+    assert(acceptedHandoff.heldCount === 2 && acceptCall?.init?.method === 'POST' && JSON.parse(String(acceptCall.init.body)).expected_review_version === 3 && Boolean(new Headers(acceptCall.init.headers).get('Idempotency-Key')), 'Campaign handoff accept re-reads review version and posts CAS plus idempotency key');
+    const [handoff, reconciledHandoff] = await Promise.all([getCampaignOutboundHandoffDto(campaignCode, touchPlanID), getCampaignOutboundHandoffReconciliationDto(campaignCode, touchPlanID)]);
+    assert(handoff.status === 'held' && reconciledHandoff.eligibleCount === 2 && !('customerID' in reconciledHandoff), 'Campaign handoff read/reconciliation remains held and count-only');
+    const queued = await dispatchCampaignOutboundHandoffDto(campaignCode, touchPlanID);
+    const dispatchCall = outboundCalls.find((call) => call.input.endsWith('/dispatch'));
+    assert(queued.queued === 2 && dispatchCall?.init?.method === 'POST' && JSON.parse(String(dispatchCall.init.body)).external_gate === true && Boolean(new Headers(dispatchCall.init.headers).get('Idempotency-Key')), 'Campaign handoff dispatch only creates explicit-gate local EER work');
+    const dispatchRead = await getCampaignOutboundDispatchReconciliationDto(campaignCode, touchPlanID);
+    assert(dispatchRead.accepted === 2 && dispatchRead.queued === 2 && dispatchRead.outcomeUnknown === 1, 'Campaign dispatch reconciliation preserves count-only outcome_unknown without a send claim');
+    unsafeHandoff = true;
+    try { await getCampaignOutboundHandoffDto(campaignCode, touchPlanID); assert(false, 'handoff delivery claim must fail closed'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'handoff delivery claim fails closed'); }
+    unsafeHandoff = false;
+    wrongHandoffScope = true;
+    try { await getCampaignOutboundHandoffDto(campaignCode, touchPlanID); assert(false, 'handoff scope mismatch must fail closed'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('范围不匹配'), 'handoff scope mismatch fails closed'); }
+    wrongHandoffScope = false;
+    unsafeDispatch = true;
+    try { await getCampaignOutboundDispatchReconciliationDto(campaignCode, touchPlanID); assert(false, 'dispatch provider-boundary claim must fail closed'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'dispatch provider-boundary claim fails closed'); }
+  } finally { globalThis.fetch = savedOutboundFetch; }
   assert(getListGroupOpsPlansUrl({ limit: 100, offset: 0 }).endsWith('/group-ops/plans?limit=100&offset=0') && getCreateGroupOpsPlanUrl().endsWith('/group-ops/plans'), 'group ops list/create URLs');
   assert(getGetGroupOpsPlanUrl('9').endsWith('/plans/9') && getUpdateGroupOpsPlanUrl('9').endsWith('/plans/9') && getDeleteGroupOpsPlanUrl('9').endsWith('/plans/9'), 'group ops detail CRUD URLs');
   assert(getAddGroupOpsPlanMemberUrl('9').endsWith('/plans/9/members') && getAddGroupOpsPlanGroupAssetUrl('9').endsWith('/plans/9/group-assets') && getAddGroupOpsPlanNodeUrl('9').endsWith('/plans/9/nodes'), 'group ops member/asset/node URLs');

@@ -9,6 +9,6 @@ export function runCapabilityTests(): void {
   assert(pending.length === 0, 'adapter-pending is not an allowed backend_blocked reason');
   assert(CAPABILITIES.every((cap) => cap.state !== 'excluded_duplicate_page'), 'excluded legacy rows belong only in docs/frontend-capability-scope.md');
   assert(CAPABILITIES.filter((cap) => cap.state === 'real').length > 0, 'real inventory must not be empty');
-  assert(ADMIN_SCREENS.length === 39, 'Admin screen denominator changed without capability review');
+  assert(ADMIN_SCREENS.length === 40, 'Admin screen denominator changed without capability review');
   for (const screen of ADMIN_SCREENS) assert(CAPABILITIES.some((cap) => cap.surface === 'admin' && cap.screen.split('/').includes(screen)), `Admin screen has no capability classification: ${screen}`);
 }

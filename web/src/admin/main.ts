@@ -11,6 +11,7 @@ import { AdminController } from './controller';
 import { mountRadar } from './sections/radar';
 import { mountAiAssistant } from './sections/aiAssistant';
 import { mountFunnelGrid } from './sections/funnelGrid';
+import { mountCampaignWorkspace } from './sections/campaigns';
 import { esc } from './sections/util';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
@@ -44,6 +45,9 @@ function boot(): void {
       return;
     case 'funnel':
       void mountFunnelGrid(stage, api).catch((error) => showLoadError(stage, error));
+      return;
+    case 'campaigns':
+      void mountCampaignWorkspace(stage).catch((error) => showLoadError(stage, error));
       return;
     case 'spProductData': {
       void (async () => {

@@ -10602,6 +10602,29 @@ paths:
         "415": { $ref: "#/components/responses/UnsupportedMediaType" }
         "422": { $ref: "#/components/responses/UnprocessableEntity" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/cloud-orchestrator/plans:
+    get:
+      tags: [p4-campaign-initiation]
+      operationId: listCloudCampaignPlans
+      summary: List local Campaign touch plans by review state
+      x-p4-decision-evidence: P4-W4-A-2026-08-27
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: campaign.touch_plan.local_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: review_status, in: query, required: false, schema: { type: string, enum: [draft, pending_review, approved, rejected] } }
+        - { name: cursor, in: query, required: false, schema: { type: string, minLength: 1, maxLength: 512 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        "200": { description: Local review-state plan page, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignTouchPlanIndexResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
   /api/admin/cloud-orchestrator/campaigns:
     get:
       tags: [p4-cloud-campaign]
@@ -10767,6 +10790,58 @@ paths:
         "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
         "403": { description: Forbidden, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
         "404": { description: Recipient absent from immutable snapshot, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}/review:
+    parameters:
+      - { name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }
+      - { name: plan_id, in: path, required: true, schema: { type: string, minLength: 68, maxLength: 68, pattern: '^ctp_[0-9a-f]{64}$' } }
+      - { name: customer_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    get:
+      tags: [p4-campaign-review-handoff]
+      operationId: getCloudCampaignTouchPlanRecipientReview
+      summary: Read one recipient-scoped local review
+      x-p4-decision-evidence: P4-W4-RECIPIENT-REVIEW-2026-08-27
+      x-aicrm-capability: operations.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: campaign.touch_plan.recipient_review_local_read_model
+      x-aicrm-external-effect: none
+      responses:
+        "200": { description: Recipient-scoped local review, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignTouchPlanRecipientReviewMutationResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Recipient review not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+  /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}/review/{operation}:
+    parameters:
+      - { name: campaign_code, in: path, required: true, schema: { type: string, minLength: 1, maxLength: 96, pattern: '^[A-Za-z0-9._-]+$' } }
+      - { name: plan_id, in: path, required: true, schema: { type: string, minLength: 68, maxLength: 68, pattern: '^ctp_[0-9a-f]{64}$' } }
+      - { name: customer_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+      - { name: operation, in: path, required: true, schema: { type: string, enum: [message, approve, reject] } }
+    post:
+      tags: [p4-campaign-review-handoff]
+      operationId: mutateCloudCampaignTouchPlanRecipientReview
+      summary: Save a recipient message override or local review decision
+      x-p4-decision-evidence: P4-W4-RECIPIENT-REVIEW-2026-08-27
+      x-aicrm-capability: operations.manage
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: campaign.touch_plan.recipient_review_local_transaction
+      x-aicrm-external-effect: none
+      parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignTouchPlanRecipientReviewMutationRequest" } } } }
+      responses:
+        "200": { description: Recipient-scoped local review fact only, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignTouchPlanRecipientReviewMutationResponse" } } } }
+        "400": { description: Malformed request, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "401": { description: Unauthenticated, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "403": { description: Forbidden or invalid CSRF token, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "404": { description: Snapshot or recipient not found, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
+        "409": { description: Plan or recipient CAS conflict, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
         "503": { description: Local persistence unavailable, content: { application/json: { schema: { $ref: "#/components/schemas/CloudCampaignError" } } } }
   /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review/{operation}:
     parameters:
@@ -14370,6 +14445,26 @@ components:
         runtime_executed: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }
         delivery_proven: { type: boolean, enum: [false] }
+    CloudCampaignTouchPlanIndexItem:
+      type: object
+      additionalProperties: false
+      required: [plan, review_status, review_version]
+      properties:
+        plan: { $ref: "#/components/schemas/CloudCampaignTouchPlanSummary" }
+        review_status: { type: string, enum: [draft, pending_review, approved, rejected] }
+        review_version: { type: integer, format: int64, minimum: 1 }
+    CloudCampaignTouchPlanIndexResponse:
+      type: object
+      additionalProperties: false
+      required: [items, local_only, provider_execution_eligible, runtime_executed, real_external_call_executed, delivery_proven]
+      properties:
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignTouchPlanIndexItem" } }
+        next_cursor: { type: string, minLength: 1, maxLength: 512, nullable: true }
+        local_only: { type: boolean, enum: [true] }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        runtime_executed: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
     CloudCampaignTouchPlanReviewMutationRequest:
       type: object
       additionalProperties: false
@@ -14430,6 +14525,36 @@ components:
       properties:
         items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/CloudCampaignTouchPlanRecipient" } }
         next_cursor: { type: string, minLength: 1, maxLength: 20, nullable: true }
+        local_only: { type: boolean, enum: [true] }
+        provider_execution_eligible: { type: boolean, enum: [false] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+    CloudCampaignTouchPlanRecipientReviewMutationRequest:
+      type: object
+      additionalProperties: false
+      required: [expected_plan_version, expected_recipient_version]
+      properties:
+        expected_plan_version: { type: integer, format: int64, minimum: 1 }
+        expected_recipient_version: { type: integer, format: int64, minimum: 0 }
+        message_override: { type: string, minLength: 1, maxLength: 4000 }
+    CloudCampaignTouchPlanRecipientReview:
+      type: object
+      additionalProperties: false
+      required: [canonical_customer_id, status, version, updated_by_actor_id, updated_at]
+      properties:
+        canonical_customer_id: { type: integer, format: int64, minimum: 1 }
+        message_override: { type: string, minLength: 1, maxLength: 4000 }
+        status: { type: string, enum: [pending_review, approved, rejected] }
+        version: { type: integer, format: int64, minimum: 1 }
+        updated_by_actor_id: { type: integer, format: int64, minimum: 1 }
+        updated_at: { type: string, format: date-time }
+    CloudCampaignTouchPlanRecipientReviewMutationResponse:
+      type: object
+      additionalProperties: false
+      required: [review, local_only, provider_execution_eligible, real_external_call_executed, delivery_proven]
+      properties:
+        review: { $ref: "#/components/schemas/CloudCampaignTouchPlanRecipientReview" }
+        event_id: { type: integer, format: int64, minimum: 1 }
         local_only: { type: boolean, enum: [true] }
         provider_execution_eligible: { type: boolean, enum: [false] }
         real_external_call_executed: { type: boolean, enum: [false] }

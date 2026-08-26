@@ -116,6 +116,7 @@ type Repository interface {
 	SaveDraftTouchPlan(context.Context, campaign.DraftTouchPlan) error
 	CompleteDraftCreate(context.Context, CreateReceipt, int64) error
 	ListDraftTouchPlanSummaries(context.Context, string, *DraftTouchPlanKeyset, int32) ([]campaign.DraftTouchPlanSummary, error)
+	ListTouchPlanIndex(context.Context, campaign.TouchPlanReviewStatus, *DraftTouchPlanKeyset, int32) ([]campaign.TouchPlanIndexItem, error)
 	// ReadDraftTouchPlan is a strict readback and must receive the UnitOfWork
 	// transaction context used for ReserveDraftCreate.
 	ReadDraftTouchPlan(context.Context, string, string) (campaign.DraftTouchPlan, error)

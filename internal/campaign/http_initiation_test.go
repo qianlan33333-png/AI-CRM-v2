@@ -13,6 +13,10 @@ import (
 
 type initiationHTTPApplicationStub struct {
 	createCommand CreateDraftTouchPlanCommand
+	indexStatus   TouchPlanReviewStatus
+	indexCursor   string
+	indexLimit    int32
+	indexPage     TouchPlanIndexPage
 	listCode      string
 	listCursor    string
 	listLimit     int32
@@ -21,6 +25,11 @@ type initiationHTTPApplicationStub struct {
 	plan          DraftTouchPlan
 	page          DraftTouchPlanPage
 	err           error
+}
+
+func (stub *initiationHTTPApplicationStub) ListTouchPlanIndex(_ context.Context, status TouchPlanReviewStatus, cursor string, limit int32) (TouchPlanIndexPage, error) {
+	stub.indexStatus, stub.indexCursor, stub.indexLimit = status, cursor, limit
+	return TouchPlanIndexPage{Items: append([]TouchPlanIndexItem(nil), stub.indexPage.Items...), NextCursor: stub.indexPage.NextCursor}, stub.err
 }
 
 func (stub *initiationHTTPApplicationStub) CreateDraftTouchPlan(_ context.Context, command CreateDraftTouchPlanCommand) (DraftTouchPlan, error) {
@@ -103,6 +112,27 @@ func TestInitiationRouteFragmentListsAndGetsRecipientSafeProjection(t *testing.T
 	}
 }
 
+func TestInitiationRouteFragmentListsGlobalReviewIndexWithoutRecipients(t *testing.T) {
+	plan := testHTTPDraftTouchPlan(t)
+	item := TouchPlanIndexItem{Plan: DraftTouchPlanSummaryOf(plan), ReviewStatus: TouchPlanReviewPending, ReviewVersion: 2}
+	application := &initiationHTTPApplicationStub{indexPage: TouchPlanIndexPage{Items: []TouchPlanIndexItem{item}, NextCursor: "opaque"}}
+	authorizer := &initiationHTTPAuthorizerStub{actor: Actor{ID: 7}}
+	handler, err := NewInitiationRouteFragment(application, authorizer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, httptest.NewRequest(http.MethodGet, TouchPlanIndexPath+"?review_status=pending_review&limit=10", nil))
+	body := response.Body.String()
+	if response.Code != http.StatusOK || application.indexStatus != TouchPlanReviewPending || application.indexLimit != 10 ||
+		len(authorizer.requirements) != 1 || authorizer.requirements[0] != (AccessRequirement{Capability: CapabilityOperationsRead}) ||
+		!strings.Contains(body, `"campaign_code":"spring-campaign"`) || !strings.Contains(body, `"review_status":"pending_review"`) ||
+		!strings.Contains(body, `"review_version":2`) || !strings.Contains(body, `"local_only":true`) ||
+		strings.Contains(body, "customer_ids") || strings.Contains(body, `"content":"`) {
+		t.Fatalf("status=%d requirements=%+v input=%q/%d body=%s", response.Code, authorizer.requirements, application.indexStatus, application.indexLimit, body)
+	}
+}
+
 func TestInitiationRouteFragmentRejectsPageLargerThanFrozenLimit(t *testing.T) {
 	plan := testHTTPDraftTouchPlan(t)
 	items := make([]DraftTouchPlanSummary, MaximumDraftTouchPlanPageLimit+1)
@@ -137,6 +167,10 @@ func TestInitiationRouteFragmentRejectsMalformedInputAndMapsRedline(t *testing.T
 		want               int
 	}{
 		{"repeated cursor", http.MethodGet, RoutePrefix + "/spring-campaign/touch-plans?cursor=a&cursor=b", "", http.StatusBadRequest},
+		{"invalid index status", http.MethodGet, TouchPlanIndexPath + "?review_status=sent", "", http.StatusBadRequest},
+		{"repeated index status", http.MethodGet, TouchPlanIndexPath + "?review_status=draft&review_status=pending_review", "", http.StatusBadRequest},
+		{"unknown index query", http.MethodGet, TouchPlanIndexPath + "?sort=created_at", "", http.StatusBadRequest},
+		{"oversized index page", http.MethodGet, TouchPlanIndexPath + "?limit=101", "", http.StatusBadRequest},
 		{"customer filter redline", http.MethodPost, RoutePrefix + "/spring-campaign/touch-plans", `{"expected_campaign_version":4,"source":{"kind":"customer_filter"}}`, http.StatusConflict},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -161,7 +195,7 @@ func TestInitiationRouteFragmentDefersReviewAndHandoffTo00067(t *testing.T) {
 		t.Fatal(err)
 	}
 	routes := handler.Routes()
-	if len(routes) != 3 {
+	if len(routes) != 4 {
 		t.Fatalf("routes=%+v", routes)
 	}
 	for _, route := range routes {
