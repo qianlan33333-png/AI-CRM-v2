@@ -189,6 +189,7 @@ type Handler struct {
 	aiAudience              http.Handler
 	aiAudienceMembers       http.Handler
 	aiAudienceConfiguration http.Handler
+	aiAudienceSendRecords   http.Handler
 	channelEntrants         http.Handler
 	channelAcquisition      http.Handler
 	channelAcquisitionAsset http.Handler

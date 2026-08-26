@@ -38,6 +38,14 @@ func NewCampaignWeComAdapter(loader campaignDispatchProviderRequestLoader, provi
 }
 
 func (adapter *CampaignWeComAdapter) Execute(ctx context.Context, envelope eer.EffectEnvelope, attempt eer.Attempt) (eer.AdapterResult, error) {
+	return adapter.execute(ctx, envelope, attempt, nil)
+}
+
+func (adapter *CampaignWeComAdapter) ExecuteWithCampaignDispatchProviderEvidence(ctx context.Context, envelope eer.EffectEnvelope, attempt eer.Attempt, record func(outboundport.CampaignDispatchProviderAttemptReceipt) error) (eer.AdapterResult, error) {
+	return adapter.execute(ctx, envelope, attempt, record)
+}
+
+func (adapter *CampaignWeComAdapter) execute(ctx context.Context, envelope eer.EffectEnvelope, attempt eer.Attempt, record func(outboundport.CampaignDispatchProviderAttemptReceipt) error) (eer.AdapterResult, error) {
 	if ctx == nil || adapter == nil || adapter.loader == nil || adapter.provider == nil || envelope.Owner() != eer.OwnerOutbound || envelope.Kind() != eer.KindOutboundMessage || attempt.Number < 1 {
 		return eer.AdapterResult{}, ErrCampaignWeComAdapter
 	}
@@ -45,9 +53,20 @@ func (adapter *CampaignWeComAdapter) Execute(ctx context.Context, envelope eer.E
 	if err != nil || request.DispatchID < 1 || request.CustomerID < 1 || request.StepIndex < 1 || strings.TrimSpace(request.Content) == "" || request.PayloadDigest != string(envelope.PayloadDigest()) {
 		return eer.AdapterResult{}, errors.Join(ErrCampaignWeComAdapter, err)
 	}
-	payload, err := json.Marshal(struct {
-		Text string `json:"text"`
-	}{Text: request.Content})
+	payloadValue := struct {
+		Text           string `json:"text"`
+		Sender         string `json:"sender,omitempty"`
+		ExternalUserID string `json:"external_userid,omitempty"`
+	}{Text: request.Content}
+	if request.AudiencePackageID > 0 {
+		if !validCampaignSnapshotText(request.SenderUserIDSnapshot, 128) || !validCampaignSnapshotText(request.ExternalUserIDSnapshot, 1024) {
+			return eer.AdapterResult{}, ErrCampaignWeComAdapter
+		}
+		payloadValue.Sender, payloadValue.ExternalUserID = request.SenderUserIDSnapshot, request.ExternalUserIDSnapshot
+	} else if request.SenderUserIDSnapshot != "" || request.ExternalUserIDSnapshot != "" {
+		return eer.AdapterResult{}, ErrCampaignWeComAdapter
+	}
+	payload, err := json.Marshal(payloadValue)
 	if err != nil {
 		return eer.AdapterResult{}, errors.Join(ErrCampaignWeComAdapter, err)
 	}
@@ -55,7 +74,26 @@ func (adapter *CampaignWeComAdapter) Execute(ctx context.Context, envelope eer.E
 	if err != nil {
 		return eer.AdapterResult{}, err
 	}
-	return campaignWeComResult(envelope, attempt, result), nil
+	adapterResult := campaignWeComResult(envelope, attempt, result)
+	if record != nil {
+		received := result.ProviderResultReceived || result.MessageID != ""
+		evidence := outboundport.CampaignDispatchProviderAttemptReceipt{
+			Completion: string(adapterResult.Completion), ReceiptDigest: adapterResult.ReceiptDigest,
+			BusinessCallDispatched: adapterResult.BusinessCallDispatched, RealExternalCallExecuted: adapterResult.RealExternalCallExecuted,
+			ProviderResultReceived: received,
+		}
+		if received {
+			evidence.ProviderMessageID, evidence.ProviderCode = result.MessageID, result.Code
+		}
+		if err = record(evidence); err != nil {
+			return adapterResult, errors.Join(ErrCampaignWeComAdapter, err)
+		}
+	}
+	return adapterResult, nil
+}
+
+func validCampaignSnapshotText(value string, maximum int) bool {
+	return value != "" && len(value) <= maximum && strings.TrimSpace(value) == value
 }
 
 func campaignWeComResult(envelope eer.EffectEnvelope, attempt eer.Attempt, result outboundapp.ProviderResult) eer.AdapterResult {

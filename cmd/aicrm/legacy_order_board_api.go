@@ -221,6 +221,15 @@ func (handler *Handler) createOrderBoardExport(writer http.ResponseWriter, reque
 		writeOrderError(writer, err)
 		return
 	}
+	if wechatOnly {
+		writer.Header().Set("Content-Type", "text/csv; charset=utf-8")
+		writer.Header().Set("Content-Disposition", `attachment; filename="wechat-pay-orders.csv"`)
+		writer.Header().Set("Cache-Control", "private, no-store")
+		writer.Header().Set("X-Content-Type-Options", "nosniff")
+		writer.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(writer, result.ContentText)
+		return
+	}
 	writeJSON(writer, http.StatusOK, result)
 }
 
@@ -479,12 +488,38 @@ type legacyOrderExportRequest struct {
 	Filter   orderport.ExportFilter `json:"filter"`
 }
 
+type legacyWechatOrderExportRequest struct {
+	Resource string                        `json:"resource"`
+	Format   string                        `json:"format"`
+	Filters  legacyWechatOrderExportFilter `json:"filters"`
+}
+
+type legacyWechatOrderExportFilter struct {
+	Provider      string `json:"provider"`
+	Mobile        string `json:"mobile"`
+	Identity      string `json:"identity"`
+	TransactionID string `json:"transaction_id"`
+	ProductCode   string `json:"product_code"`
+	Status        string `json:"status"`
+	CreatedFrom   string `json:"created_from"`
+	CreatedTo     string `json:"created_to"`
+}
+
 func legacyExportCommand(writer http.ResponseWriter, request *http.Request, actor int64, key string, wechatOnly bool) (orderport.ExportCommand, error) {
 	if wechatOnly {
-		if !emptyOrderBoardBody(writer, request) {
+		decoder := json.NewDecoder(http.MaxBytesReader(writer, request.Body, 64<<10))
+		decoder.DisallowUnknownFields()
+		var body legacyWechatOrderExportRequest
+		if decoder.Decode(&body) != nil || !errors.Is(decoder.Decode(&struct{}{}), io.EOF) || strings.TrimSpace(body.Resource) != "orders" || strings.TrimSpace(body.Format) != "csv" || strings.TrimSpace(body.Filters.Provider) != "wechat" {
 			return orderport.ExportCommand{}, orderapp.ErrInvalidBoardCommand
 		}
-		return orderport.ExportCommand{Resource: "orders", Format: "csv", Actor: actor, IdempotencyKey: key}, nil
+		createdFrom, fromErr := parseLegacyOrderTime(body.Filters.CreatedFrom)
+		createdTo, toErr := parseLegacyOrderTime(body.Filters.CreatedTo)
+		if fromErr != nil || toErr != nil {
+			return orderport.ExportCommand{}, orderapp.ErrInvalidBoardCommand
+		}
+		filter := orderport.ExportFilter{Provider: "wechat", Mobile: body.Filters.Mobile, Identity: body.Filters.Identity, TransactionID: body.Filters.TransactionID, ProductCode: body.Filters.ProductCode, Status: body.Filters.Status, CreatedFrom: createdFrom, CreatedTo: createdTo}
+		return orderport.ExportCommand{Resource: "orders", Format: "csv", Filter: filter, Actor: actor, IdempotencyKey: key}, nil
 	}
 	decoder := json.NewDecoder(http.MaxBytesReader(writer, request.Body, 64<<10))
 	decoder.DisallowUnknownFields()

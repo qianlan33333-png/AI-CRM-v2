@@ -469,7 +469,7 @@ func (s *BoardService) exportSafeOrders(ctx context.Context, filter orderport.Ex
 	if provider == "" {
 		provider = "all"
 	}
-	boardFilter := orderport.BoardFilter{Provider: provider, Status: filter.Status, ProductCode: filter.ProductCode, CreatedFrom: filter.CreatedFrom, CreatedTo: filter.CreatedTo, Limit: MaximumLimit}
+	boardFilter := orderport.BoardFilter{Provider: provider, Status: filter.Status, ProductCode: filter.ProductCode, Mobile: filter.Mobile, Identity: filter.Identity, TransactionID: filter.TransactionID, CreatedFrom: filter.CreatedFrom, CreatedTo: filter.CreatedTo, Limit: MaximumLimit}
 	var rows []orderport.Record
 	var total int64
 	if filter.LocalID != nil {
@@ -645,13 +645,17 @@ func safeCSVRow(row []string) []string {
 }
 
 func matchesSafeOrderFilter(row orderport.Record, filter orderport.ExportFilter) bool {
-	if filter.LocalID != nil && int64(row.ID) != *filter.LocalID || filter.Provider != "" && row.Provider != filter.Provider || filter.Status != "" && row.Status != filter.Status || filter.ProductCode != "" && row.ProductCode != filter.ProductCode {
+	if filter.LocalID != nil && int64(row.ID) != *filter.LocalID || filter.Provider != "" && row.Provider != filter.Provider || filter.Status != "" && row.Status != filter.Status || filter.ProductCode != "" && row.ProductCode != filter.ProductCode || !containsFold(row.MobileSnapshot, filter.Mobile) || !containsFold(row.IdentityValue, filter.Identity) || !containsFold(row.PlatformTransactionNo, filter.TransactionID) {
 		return false
 	}
 	if filter.CreatedFrom != nil && row.CreatedAt.Before(*filter.CreatedFrom) || filter.CreatedTo != nil && row.CreatedAt.After(*filter.CreatedTo) {
 		return false
 	}
 	return true
+}
+
+func containsFold(value, filter string) bool {
+	return filter == "" || strings.Contains(strings.ToLower(value), strings.ToLower(filter))
 }
 
 func matchesSafeRefundFilter(row orderport.Refund, filter orderport.ExportFilter) bool {
@@ -777,7 +781,8 @@ func normalizeExportCommand(ctx context.Context, command orderport.ExportCommand
 	command.Resource, command.Format, command.IdempotencyKey = strings.ToLower(strings.TrimSpace(command.Resource)), strings.ToLower(strings.TrimSpace(command.Format)), strings.TrimSpace(command.IdempotencyKey)
 	filter := command.Filter
 	filter.Provider, filter.Status, filter.ProductCode = strings.ToLower(strings.TrimSpace(filter.Provider)), strings.ToLower(strings.TrimSpace(filter.Status)), strings.TrimSpace(filter.ProductCode)
-	if filter.Provider != "" && filter.Provider != "wechat" && filter.Provider != "alipay" && filter.Provider != "wechat_shop" || !validText(filter.Status, 64) || !validText(filter.ProductCode, 200) || filter.LocalID != nil && *filter.LocalID < 1 || invalidTime(filter.CreatedFrom) || invalidTime(filter.CreatedTo) || filter.CreatedFrom != nil && filter.CreatedTo != nil && filter.CreatedFrom.After(*filter.CreatedTo) {
+	filter.Mobile, filter.Identity, filter.TransactionID = strings.TrimSpace(filter.Mobile), strings.TrimSpace(filter.Identity), strings.TrimSpace(filter.TransactionID)
+	if filter.Provider != "" && filter.Provider != "wechat" && filter.Provider != "alipay" && filter.Provider != "wechat_shop" || !validText(filter.Status, 64) || !validText(filter.ProductCode, 200) || !validText(filter.Mobile, 80) || !validText(filter.Identity, 200) || !validText(filter.TransactionID, 200) || filter.LocalID != nil && *filter.LocalID < 1 || invalidTime(filter.CreatedFrom) || invalidTime(filter.CreatedTo) || filter.CreatedFrom != nil && filter.CreatedTo != nil && filter.CreatedFrom.After(*filter.CreatedTo) {
 		return orderport.ExportCommand{}, ErrInvalidBoardCommand
 	}
 	filter.CreatedFrom, filter.CreatedTo = utcTime(filter.CreatedFrom), utcTime(filter.CreatedTo)

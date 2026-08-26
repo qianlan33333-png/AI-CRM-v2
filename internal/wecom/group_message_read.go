@@ -92,9 +92,10 @@ func (client *GroupMessageReadClient) GetGroupMessageTask(ctx context.Context, m
 }
 
 type GroupMessageSendResult struct {
-	ChatID string
-	UserID string
-	Status int
+	ChatID         string
+	ExternalUserID string
+	UserID         string
+	Status         int
 }
 
 type GroupMessageSendResultPage struct {
@@ -111,9 +112,10 @@ func (client *GroupMessageReadClient) GetGroupMessageSendResult(ctx context.Cont
 	var response struct {
 		NextCursor string `json:"next_cursor"`
 		SendList   []struct {
-			ChatID string `json:"chat_id"`
-			UserID string `json:"userid"`
-			Status int    `json:"status"`
+			ChatID         string `json:"chat_id"`
+			ExternalUserID string `json:"external_userid"`
+			UserID         string `json:"userid"`
+			Status         int    `json:"status"`
 		} `json:"send_list"`
 	}
 	if err := client.post(ctx, "/cgi-bin/externalcontact/get_groupmsg_send_result", payload, &response); err != nil {
@@ -127,7 +129,7 @@ func (client *GroupMessageReadClient) GetGroupMessageSendResult(ctx context.Cont
 		if !validGroupMessageReadText(item.ChatID, 1024) || !validGroupMessageReadText(item.UserID, 128) {
 			return GroupMessageSendResultPage{}, errGroupMessageReadUnknown
 		}
-		items[index] = GroupMessageSendResult{ChatID: item.ChatID, UserID: item.UserID, Status: item.Status}
+		items[index] = GroupMessageSendResult{ChatID: item.ChatID, ExternalUserID: item.ExternalUserID, UserID: item.UserID, Status: item.Status}
 	}
 	return GroupMessageSendResultPage{Items: items, NextCursor: response.NextCursor}, nil
 }

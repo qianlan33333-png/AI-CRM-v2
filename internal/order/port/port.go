@@ -151,16 +151,18 @@ type ExportJob struct {
 	ContentText string    `json:"content_text,omitempty"`
 }
 
-// ExportFilter deliberately accepts only locally held, non-identity facts.
-// It is shared by the preview and the durable CSV export so their projections
-// cannot drift.
+// ExportFilter keeps identity values query-only. They can only be populated by
+// the dedicated WeChat parser; generic JSON export requests must reject them.
 type ExportFilter struct {
-	Provider    string     `json:"provider,omitempty"`
-	Status      string     `json:"status,omitempty"`
-	ProductCode string     `json:"product_code,omitempty"`
-	LocalID     *int64     `json:"local_id,omitempty"`
-	CreatedFrom *time.Time `json:"created_from,omitempty"`
-	CreatedTo   *time.Time `json:"created_to,omitempty"`
+	Provider      string     `json:"provider"`
+	Status        string     `json:"status"`
+	ProductCode   string     `json:"product_code"`
+	Mobile        string     `json:"-"`
+	Identity      string     `json:"-"`
+	TransactionID string     `json:"-"`
+	LocalID       *int64     `json:"local_id"`
+	CreatedFrom   *time.Time `json:"created_from"`
+	CreatedTo     *time.Time `json:"created_to"`
 }
 
 // ExportPreview is read-only. It has no job, receipt, event, provider result,

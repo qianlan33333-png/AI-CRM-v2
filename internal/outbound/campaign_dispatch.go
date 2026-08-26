@@ -44,8 +44,22 @@ func CampaignDispatchPayloadDigest(handoffID, customerID int64, stepIndex int32,
 	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
+// AudienceCampaignDispatchPayloadDigest binds the exact sender and verified
+// external identity selected before the effect is accepted. It is deliberately
+// distinct from the historical v1 digest so a delayed Audience worker can
+// never re-resolve a changed relationship owner.
+func AudienceCampaignDispatchPayloadDigest(handoffID, customerID int64, stepIndex int32, content, senderUserID, externalUserID string) string {
+	sum := sha256.Sum256([]byte("outbound.campaign_dispatch.audience.v2\x00" + strconv.FormatInt(handoffID, 10) + "\x00" + strconv.FormatInt(customerID, 10) + "\x00" + strconv.FormatInt(int64(stepIndex), 10) + "\x00" + content + "\x00" + senderUserID + "\x00" + externalUserID))
+	return "sha256:" + hex.EncodeToString(sum[:])
+}
+
 func CampaignDispatchRecipientDigest(customerID int64) string {
 	sum := sha256.Sum256([]byte("outbound.campaign_dispatch.recipient.v1\x00" + strconv.FormatInt(customerID, 10)))
+	return "sha256:" + hex.EncodeToString(sum[:])
+}
+
+func AudienceCampaignDispatchRecipientDigest(customerID int64, senderUserID, externalUserID string) string {
+	sum := sha256.Sum256([]byte("outbound.campaign_dispatch.audience.recipient.v2\x00" + strconv.FormatInt(customerID, 10) + "\x00" + senderUserID + "\x00" + externalUserID))
 	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
@@ -61,8 +75,7 @@ func ValidCampaignDispatchSummary(value CampaignDispatchSummary) bool {
 	if value.HandoffID < 1 || value.Blocked < 0 || value.Accepted < 0 || value.Queued < 0 || value.Attempted < 0 || value.Executed < 0 || value.OutcomeUnknown < 0 || value.Reconciled < 0 || value.RetryableFailed < 0 || value.FinalFailed < 0 || value.UpdatedAt.IsZero() {
 		return false
 	}
-	// A provider call fact is not delivery proof. Delivery remains a separate
-	// provider-verification concern even when the real call is known to have
-	// crossed the Provider boundary.
-	return (!value.RealExternalCallExecuted || value.BusinessCallDispatched) && !value.DeliveryProven
+	// A provider call fact is not delivery proof. Delivery may become true only
+	// after an owner-specific protocol verifier records independent evidence.
+	return (!value.RealExternalCallExecuted || value.BusinessCallDispatched) && (!value.DeliveryProven || (value.BusinessCallDispatched && value.RealExternalCallExecuted))
 }

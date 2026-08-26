@@ -26,6 +26,7 @@ type legacyOrderBoardStub struct {
 	retryID        int64
 	page           orderport.Page
 	refund         orderport.Refund
+	exportResult   orderport.ExportJob
 }
 
 func (s *legacyOrderBoardStub) ListOrders(_ context.Context, filter orderport.BoardFilter) (orderport.Page, error) {
@@ -45,7 +46,7 @@ func (s *legacyOrderBoardStub) PreviewExport(_ context.Context, command orderpor
 }
 func (s *legacyOrderBoardStub) CreateExport(_ context.Context, command orderport.ExportCommand) (orderport.ExportJob, error) {
 	s.exportCommand = command
-	return orderport.ExportJob{}, nil
+	return s.exportResult, nil
 }
 func (s *legacyOrderBoardStub) GetExport(_ context.Context, _ string, actor int64) (orderport.ExportJob, error) {
 	s.getActor = actor
@@ -140,6 +141,58 @@ func TestOrderBoardProviderFilteredExportsRequireCSRFAndUseServerActor(t *testin
 				t.Fatalf("capabilities=%v", auth.capabilities)
 			}
 		})
+	}
+}
+
+func TestWechatOrderExportDownloadsFilteredSafeCSV(t *testing.T) {
+	csrf := legacyToken(0x32)
+	stub := &legacyOrderBoardStub{}
+	stubExport := orderport.ExportJob{
+		JobID: "exp_0000000000000042", Resource: "orders", Format: "csv", Status: "completed",
+		Operator: 41, ContentType: "text/csv", FileName: "exp_0000000000000042.csv",
+		ContentText: "local_id,provider,product_code,amount_minor,currency,status,created_at\n42,wechat,'=SUM(A1),1990,CNY,paid,2026-08-26T00:00:00Z\n",
+	}
+	stub.exportResult = stubExport
+	auth := &orderBoardExportAuth{expectedCSRF: csrf}
+	router := legacyOrderBoardRouterWithService(t, stub, auth)
+	missingCSRF := legacyChannelWriteRequest(http.MethodPost, "/api/admin/wechat-pay/order-exports", `{}`)
+	missingCSRF.Header.Set("Idempotency-Key", "wechat-export-key-0001")
+	denied := httptest.NewRecorder()
+	router.ServeHTTP(denied, missingCSRF)
+	if denied.Code != http.StatusForbidden || stub.exportCommand.Actor != 0 {
+		t.Fatalf("missing csrf status=%d command=%+v body=%s", denied.Code, stub.exportCommand, denied.Body.String())
+	}
+
+	request := legacyChannelWriteRequest(http.MethodPost, "/api/admin/wechat-pay/order-exports", `{"resource":"orders","format":"csv","filters":{"provider":"wechat","mobile":"1380000","identity":"union-secret","transaction_id":"wx-secret","product_code":"=SUM(A1)","status":"paid","created_from":"2026-08-01T00:00:00Z","created_to":"2026-08-31T23:59:59Z"}}`)
+	request.Header.Set("Idempotency-Key", "wechat-export-key-0001")
+	request.Header.Set("X-CSRF-Token", csrf)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK || response.Header().Get("Content-Type") != "text/csv; charset=utf-8" || response.Header().Get("Content-Disposition") != `attachment; filename="wechat-pay-orders.csv"` || response.Header().Get("Cache-Control") != "private, no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" {
+		t.Fatalf("status/headers=%d/%q/%q/%q/%q", response.Code, response.Header().Get("Content-Type"), response.Header().Get("Content-Disposition"), response.Header().Get("Cache-Control"), response.Header().Get("X-Content-Type-Options"))
+	}
+	if response.Body.String() != stubExport.ContentText {
+		t.Fatalf("body=%q", response.Body.String())
+	}
+	command := stub.exportCommand
+	if command.Resource != "orders" || command.Format != "csv" || command.Actor != 41 || command.IdempotencyKey != "wechat-export-key-0001" || command.Filter.Provider != "wechat" || command.Filter.Status != "paid" || command.Filter.ProductCode != "=SUM(A1)" || command.Filter.Mobile != "1380000" || command.Filter.Identity != "union-secret" || command.Filter.TransactionID != "wx-secret" || command.Filter.CreatedFrom == nil || command.Filter.CreatedTo == nil {
+		t.Fatalf("command=%+v", command)
+	}
+}
+
+func TestWechatOrderExportRejectsCallerSelectedProvider(t *testing.T) {
+	csrf := legacyToken(0x33)
+	stub := &legacyOrderBoardStub{}
+	auth := &orderBoardExportAuth{expectedCSRF: csrf}
+	router := legacyOrderBoardRouterWithService(t, stub, auth)
+	request := legacyChannelWriteRequest(http.MethodPost, "/api/admin/wechat-pay/order-exports", `{"resource":"orders","format":"csv","filters":{"provider":"alipay","status":"paid"}}`)
+	request.Header.Set("Idempotency-Key", "wechat-export-key-0002")
+	request.Header.Set("X-CSRF-Token", csrf)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusBadRequest || stub.exportCommand.Actor != 0 || !strings.Contains(response.Body.String(), `"error_code":"invalid_argument"`) {
+		t.Fatalf("status=%d command=%+v body=%s", response.Code, stub.exportCommand, response.Body.String())
 	}
 }
 

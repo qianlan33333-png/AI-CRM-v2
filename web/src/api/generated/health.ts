@@ -3280,6 +3280,78 @@ export interface AIAudienceMemberListResponse {
   real_external_call_executed: boolean;
 }
 
+export type AIAudienceSendRecordStatus =
+  (typeof AIAudienceSendRecordStatus)[keyof typeof AIAudienceSendRecordStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceSendRecordStatus = {
+  blocked: "blocked",
+  accepted: "accepted",
+  queued: "queued",
+  attempted: "attempted",
+  executed: "executed",
+  outcome_unknown: "outcome_unknown",
+  reconciled: "reconciled",
+  retryable_failed: "retryable_failed",
+  final_failed: "final_failed",
+} as const;
+
+export type AIAudienceSendRecordFailureReason =
+  (typeof AIAudienceSendRecordFailureReason)[keyof typeof AIAudienceSendRecordFailureReason];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceSendRecordFailureReason = {
+  external_gate_disabled: "external_gate_disabled",
+  identity_unresolved: "identity_unresolved",
+  contact_policy: "contact_policy",
+  inactive_customer: "inactive_customer",
+  provider_preflight_failed: "provider_preflight_failed",
+  sender_not_allowed: "sender_not_allowed",
+  target_unresolved: "target_unresolved",
+  retryable_provider_failure: "retryable_provider_failure",
+  final_provider_failure: "final_provider_failure",
+  outcome_unknown: "outcome_unknown",
+} as const;
+
+export interface AIAudienceSendRecord {
+  /** @pattern ^campaign:[1-9][0-9]{0,18}$ */
+  record_id: string;
+  status: AIAudienceSendRecordStatus;
+  /** @minimum 0 */
+  technical_attempt_count: number;
+  failure_reason?: AIAudienceSendRecordFailureReason;
+  provider_result_received: boolean;
+  receipt_present: boolean;
+  delivery_proven: boolean;
+  business_call_dispatched: boolean;
+  real_external_call_executed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIAudienceSendRecordListResponse {
+  ok: boolean;
+  /** @maxItems 100 */
+  items: AIAudienceSendRecord[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /**
+   * @minimum 0
+   * @maximum 100000
+   */
+  offset: number;
+}
+
+export interface AIAudienceSendRecordDetailResponse {
+  ok: boolean;
+  record: AIAudienceSendRecord;
+}
+
 export interface AIAudiencePackageDetailResponse {
   package: AIAudiencePackage;
   local_projection: boolean;
@@ -9239,6 +9311,54 @@ export interface LegacyOrderExportFilter {
   /** @minimum 1 */
   local_id?: number;
   created_from?: string;
+  created_to?: string;
+}
+
+export type LegacyWechatOrderExportRequestResource =
+  (typeof LegacyWechatOrderExportRequestResource)[keyof typeof LegacyWechatOrderExportRequestResource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyWechatOrderExportRequestResource = {
+  orders: "orders",
+} as const;
+
+export type LegacyWechatOrderExportRequestFormat =
+  (typeof LegacyWechatOrderExportRequestFormat)[keyof typeof LegacyWechatOrderExportRequestFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyWechatOrderExportRequestFormat = {
+  csv: "csv",
+} as const;
+
+export interface LegacyWechatOrderExportRequest {
+  resource: LegacyWechatOrderExportRequestResource;
+  format: LegacyWechatOrderExportRequestFormat;
+  filters: LegacyWechatOrderExportFilter;
+}
+
+export type LegacyWechatOrderExportFilterProvider =
+  (typeof LegacyWechatOrderExportFilterProvider)[keyof typeof LegacyWechatOrderExportFilterProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyWechatOrderExportFilterProvider = {
+  wechat: "wechat",
+} as const;
+
+export interface LegacyWechatOrderExportFilter {
+  provider: LegacyWechatOrderExportFilterProvider;
+  /** @maxLength 80 */
+  mobile?: string;
+  /** @maxLength 200 */
+  identity?: string;
+  /** @maxLength 200 */
+  transaction_id?: string;
+  /** @maxLength 200 */
+  product_code?: string;
+  /** @maxLength 64 */
+  status?: string;
+  /** @maxLength 64 */
+  created_from?: string;
+  /** @maxLength 64 */
   created_to?: string;
 }
 
@@ -17531,6 +17651,19 @@ export type ListAIAudiencePackageMembersParams = {
   limit?: number;
   /**
    * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListAIAudiencePackageSendRecordsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   * @maximum 100000
    */
   offset?: number;
 };
@@ -32871,10 +33004,10 @@ export const getLegacyOrderExport = async (
 };
 
 /**
- * @summary Create the local WeChat order CSV export
+ * @summary Download a receipt-backed, PII-safe local WeChat order CSV export
  */
 export type createLegacyWechatOrderExportResponse200 = {
-  data: LegacyOrderExport;
+  data: string;
   status: 200;
 };
 
@@ -32926,14 +33059,14 @@ export const getCreateLegacyWechatOrderExportUrl = () => {
 };
 
 export const createLegacyWechatOrderExport = async (
-  emptyObject: EmptyObject,
+  legacyWechatOrderExportRequest: LegacyWechatOrderExportRequest,
   options?: RequestInit,
 ): Promise<createLegacyWechatOrderExportResponse> => {
   const res = await fetch(getCreateLegacyWechatOrderExportUrl(), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(emptyObject),
+    body: JSON.stringify(legacyWechatOrderExportRequest),
   });
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
@@ -51603,6 +51736,184 @@ export const listAIAudiencePackageMembers = async (
     status: res.status,
     headers: res.headers,
   } as listAIAudiencePackageMembersResponse;
+};
+
+/**
+ * @summary List PII-closed dispatch and receipt facts for one AI Audience package
+ */
+export type listAIAudiencePackageSendRecordsResponse200 = {
+  data: AIAudienceSendRecordListResponse;
+  status: 200;
+};
+
+export type listAIAudiencePackageSendRecordsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAIAudiencePackageSendRecordsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAIAudiencePackageSendRecordsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAIAudiencePackageSendRecordsResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listAIAudiencePackageSendRecordsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAIAudiencePackageSendRecordsResponseSuccess =
+  listAIAudiencePackageSendRecordsResponse200 & {
+    headers: Headers;
+  };
+export type listAIAudiencePackageSendRecordsResponseError = (
+  | listAIAudiencePackageSendRecordsResponse400
+  | listAIAudiencePackageSendRecordsResponse401
+  | listAIAudiencePackageSendRecordsResponse403
+  | listAIAudiencePackageSendRecordsResponse404
+  | listAIAudiencePackageSendRecordsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAIAudiencePackageSendRecordsResponse =
+  | listAIAudiencePackageSendRecordsResponseSuccess
+  | listAIAudiencePackageSendRecordsResponseError;
+
+export const getListAIAudiencePackageSendRecordsUrl = (
+  packageId: number,
+  params?: ListAIAudiencePackageSendRecordsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/ai-audience/packages/${packageId}/send-records?${stringifiedParams}`
+    : `/api/admin/ai-audience/packages/${packageId}/send-records`;
+};
+
+export const listAIAudiencePackageSendRecords = async (
+  packageId: number,
+  params?: ListAIAudiencePackageSendRecordsParams,
+  options?: RequestInit,
+): Promise<listAIAudiencePackageSendRecordsResponse> => {
+  const res = await fetch(
+    getListAIAudiencePackageSendRecordsUrl(packageId, params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAIAudiencePackageSendRecordsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAIAudiencePackageSendRecordsResponse;
+};
+
+/**
+ * @summary Read one PII-closed AI Audience dispatch and receipt record
+ */
+export type getAIAudiencePackageSendRecordResponse200 = {
+  data: AIAudienceSendRecordDetailResponse;
+  status: 200;
+};
+
+export type getAIAudiencePackageSendRecordResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getAIAudiencePackageSendRecordResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getAIAudiencePackageSendRecordResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getAIAudiencePackageSendRecordResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getAIAudiencePackageSendRecordResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getAIAudiencePackageSendRecordResponseSuccess =
+  getAIAudiencePackageSendRecordResponse200 & {
+    headers: Headers;
+  };
+export type getAIAudiencePackageSendRecordResponseError = (
+  | getAIAudiencePackageSendRecordResponse400
+  | getAIAudiencePackageSendRecordResponse401
+  | getAIAudiencePackageSendRecordResponse403
+  | getAIAudiencePackageSendRecordResponse404
+  | getAIAudiencePackageSendRecordResponse503
+) & {
+  headers: Headers;
+};
+
+export type getAIAudiencePackageSendRecordResponse =
+  | getAIAudiencePackageSendRecordResponseSuccess
+  | getAIAudiencePackageSendRecordResponseError;
+
+export const getGetAIAudiencePackageSendRecordUrl = (
+  packageId: number,
+  recordId: string,
+) => {
+  return `/api/admin/ai-audience/packages/${packageId}/send-records/${recordId}`;
+};
+
+export const getAIAudiencePackageSendRecord = async (
+  packageId: number,
+  recordId: string,
+  options?: RequestInit,
+): Promise<getAIAudiencePackageSendRecordResponse> => {
+  const res = await fetch(
+    getGetAIAudiencePackageSendRecordUrl(packageId, recordId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAIAudiencePackageSendRecordResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getAIAudiencePackageSendRecordResponse;
 };
 
 /**

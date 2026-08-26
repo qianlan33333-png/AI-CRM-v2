@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -14,7 +16,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
+	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
+	campaignapp "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/app"
+	campaignport "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/port"
+	campaignstore "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/store"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
+	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
 	eerstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
 	identityfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store/acceptancefixture"
@@ -24,6 +31,9 @@ import (
 	outboundstore "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/store"
 	outboundworker "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/worker"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
+	segmentport "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/port"
+	segmentstore "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store"
+	segmentfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store/acceptancefixture"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/rivertype"
 )
@@ -43,12 +53,57 @@ func (fake *campaignDispatchWeComProviderFake) Send(_ context.Context, request o
 	return outboundapp.ProviderResult{MessageID: "fake-provider-message-id", BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
 }
 
+type campaignDispatchAllEligibleInitiation struct{}
+
+func (campaignDispatchAllEligibleInitiation) CheckCampaignEligibility(_ context.Context, request campaignport.EligibilityRequest) ([]campaignport.EligibilityDecision, error) {
+	decisions := make([]campaignport.EligibilityDecision, len(request.CustomerIDs))
+	for index, customerID := range request.CustomerIDs {
+		decisions[index] = campaignport.EligibilityDecision{CustomerID: customerID, CustomerActive: true, Eligible: true, Exclusion: campaignport.EligibilityExclusionNone}
+	}
+	return decisions, nil
+}
+
+type campaignDispatchAudienceQualifier struct{}
+
+func (campaignDispatchAudienceQualifier) QualifyAudienceDispatchTargets(_ context.Context, _ int64, customerIDs []int64) ([]outboundport.AudienceDispatchTargetQualification, error) {
+	result := make([]outboundport.AudienceDispatchTargetQualification, len(customerIDs))
+	for index, customerID := range customerIDs {
+		result[index] = outboundport.AudienceDispatchTargetQualification{
+			CustomerID: customerID, Eligible: true, SenderUserID: "records-owner", ExternalUserID: fmt.Sprintf("records-external-%d", customerID),
+		}
+	}
+	return result, nil
+}
+
+type campaignDispatchAudienceSource struct {
+	reader segmentport.TouchPlanSnapshotReader
+}
+
+func (source campaignDispatchAudienceSource) ResolveCampaignTargets(ctx context.Context, request campaign.InitiationSourceRequest) (campaignport.SourceResolution, error) {
+	if source.reader == nil || request.Kind != campaign.InitiationSourceAudiencePackageMembers {
+		return campaignport.SourceResolution{}, campaignport.ErrSourceFactsUnavailable
+	}
+	snapshot, err := source.reader.ReadAudiencePackageTouchPlanSnapshot(ctx, segmentport.SegmentID(request.AudiencePackageID))
+	if err != nil || !snapshot.Valid() || int64(snapshot.PackageID) != request.AudiencePackageID {
+		return campaignport.SourceResolution{}, campaignport.ErrSourceFactsUnavailable
+	}
+	reference, valid := campaign.NewAudiencePackageMemberSourceRefFromSnapshot(int64(snapshot.PackageID), snapshot.PackageVersion, snapshot.RefreshedAt, snapshot.Digest)
+	if !valid {
+		return campaignport.SourceResolution{}, campaignport.ErrSourceFactsUnavailable
+	}
+	customerIDs := make([]int64, len(snapshot.CustomerIDs))
+	for index, customerID := range snapshot.CustomerIDs {
+		customerIDs[index] = int64(customerID)
+	}
+	return campaignport.SourceResolution{Source: reference, CustomerIDs: customerIDs}, nil
+}
+
 func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) {
 	pool := openCampaignDispatchPool(t)
 	ctx := context.Background()
 	var migrationsApplied bool
-	if err := pool.QueryRow(ctx, `SELECT count(*)=3 FROM public.goose_db_version WHERE version_id IN (78,92,94) AND is_applied`).Scan(&migrationsApplied); err != nil || !migrationsApplied {
-		t.Fatalf("migrations 78/92/94 applied=%t err=%v, want true", migrationsApplied, err)
+	if err := pool.QueryRow(ctx, `SELECT count(*)=4 FROM public.goose_db_version WHERE version_id IN (78,92,94,99) AND is_applied`).Scan(&migrationsApplied); err != nil || !migrationsApplied {
+		t.Fatalf("migrations 78/92/94/99 applied=%t err=%v, want true", migrationsApplied, err)
 	}
 	ensureOutboundRiverCatalog(t, ctx, pool)
 	policyTime := time.Now().UTC().Truncate(time.Microsecond)
@@ -151,6 +206,19 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 	if len(provider.requests) != 1 || provider.requests[0].CustomerID != contactFacts.EligibleCustomerID || provider.requests[0].TemplateKey != outboundapp.TemplateTextNoticeV1 {
 		t.Fatalf("controlled WeCom provider requests=%+v", provider.requests)
 	}
+	var exactReceiptDigest string
+	if err = pool.QueryRow(ctx, `SELECT provider_receipt_digest FROM public.outbound_campaign_provider_attempt_receipts WHERE external_effect_id=substring($1 from 5)::bigint AND attempt_number=1 AND completion='executed'`, effectIDs[0]).Scan(&exactReceiptDigest); err != nil {
+		t.Fatal(err)
+	}
+	exactReceipt := outboundport.CampaignDispatchProviderAttemptReceipt{Completion: string(eer.CompletionExecuted), ReceiptDigest: eer.Digest(exactReceiptDigest), BusinessCallDispatched: true, RealExternalCallExecuted: true, ProviderMessageID: "fake-provider-message-id", ProviderResultReceived: true}
+	if err = repository.RecordCampaignProviderAttemptReceipt(ctx, effectIDs[0], 1, exactReceipt); err != nil {
+		t.Fatalf("exact provider receipt replay: %v", err)
+	}
+	conflictingReceipt := exactReceipt
+	conflictingReceipt.ProviderMessageID = "conflicting-provider-message-id"
+	if err = repository.RecordCampaignProviderAttemptReceipt(ctx, effectIDs[0], 1, conflictingReceipt); !errors.Is(err, outbound.ErrCampaignDispatchConflict) {
+		t.Fatalf("conflicting provider receipt error=%v, want conflict", err)
+	}
 	var providerPayload map[string]string
 	if err = json.Unmarshal(provider.requests[0].Payload, &providerPayload); err != nil || len(providerPayload) != 1 || providerPayload["text"] != "approved immutable content" {
 		t.Fatalf("controlled WeCom payload=%s err=%v", provider.requests[0].Payload, err)
@@ -175,9 +243,132 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 		t.Fatalf("terminal summary=%+v err=%v", summary, err)
 	}
 	var receiptCount int
-	var businessCallDispatched, realExternalCallExecuted, proven bool
-	if err = pool.QueryRow(ctx, `SELECT count(*), bool_or(business_call_dispatched), bool_or(real_external_call_executed), bool_or(delivery_proven) FROM public.outbound_campaign_provider_attempt_receipts`).Scan(&receiptCount, &businessCallDispatched, &realExternalCallExecuted, &proven); err != nil || receiptCount != 2 || !businessCallDispatched || !realExternalCallExecuted || proven {
-		t.Fatalf("provider attempt receipts=%d business=%t real=%t proven=%t err=%v, want 2/true/true/false", receiptCount, businessCallDispatched, realExternalCallExecuted, proven, err)
+	var businessCallDispatched, realExternalCallExecuted, resultReceived, messageIDStored, proven bool
+	if err = pool.QueryRow(ctx, `SELECT count(*), bool_or(business_call_dispatched), bool_or(real_external_call_executed), bool_or(provider_result_received), bool_or(provider_message_id='fake-provider-message-id'), bool_or(delivery_proven) FROM public.outbound_campaign_provider_attempt_receipts`).Scan(&receiptCount, &businessCallDispatched, &realExternalCallExecuted, &resultReceived, &messageIDStored, &proven); err != nil || receiptCount != 2 || !businessCallDispatched || !realExternalCallExecuted || !resultReceived || !messageIDStored || proven {
+		t.Fatalf("provider attempt receipts=%d business=%t real=%t received=%t msgid=%t proven=%t err=%v, want 2/true/true/true/true/false", receiptCount, businessCallDispatched, realExternalCallExecuted, resultReceived, messageIDStored, proven, err)
+	}
+}
+
+func TestCampaignDispatchPG16AudienceSendRecordsUsesDispatchAndProviderReceiptFacts(t *testing.T) {
+	pool := openCampaignDispatchPool(t)
+	ctx := context.Background()
+	ensureOutboundRiverCatalog(t, ctx, pool)
+	prefix := fmt.Sprintf("audience-records-%d", time.Now().UnixNano())
+	policyTime := time.Now().UTC().Truncate(time.Microsecond)
+	contactFacts, err := contactfixture.CreateCampaignDispatchFacts(ctx, pool, prefix+"-owner", policyTime)
+	if err != nil {
+		t.Fatal(err)
+	}
+	customerIDs := []int64{contactFacts.SuppressedCustomerID, contactFacts.EligibleCustomerID, contactFacts.UnresolvedCustomerID}
+	slices.Sort(customerIDs)
+	packageID, err := segmentfixture.CreateTouchPlanSnapshot(ctx, pool, prefix, customerIDs, policyTime, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	campaignCode := prefix
+	if _, err = pool.Exec(ctx, `INSERT INTO public.cloud_campaigns (campaign_code,name,approval_status,runtime_status,version,created_by,updated_by,created_at,updated_at)
+VALUES ($1,$1,'draft','idle',1,73,73,$2,$2)`, campaignCode, policyTime); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = pool.Exec(ctx, `INSERT INTO public.cloud_campaign_steps (campaign_code,step_index,delay_minutes,content) VALUES ($1,1,0,'audience record content')`, campaignCode); err != nil {
+		t.Fatal(err)
+	}
+	campaignRepository := campaignstore.NewRepository()
+	campaignEvents, err := campaignstore.NewInitiationEventLogAdapter(eventstore.NewAppender())
+	if err != nil {
+		t.Fatal(err)
+	}
+	campaignService, err := campaignapp.NewService(
+		platformstore.NewUnitOfWork(pool), campaignRepository, campaignDispatchAudienceSource{reader: segmentstore.NewTouchPlanSnapshotRepository()},
+		campaignDispatchAllEligibleInitiation{}, campaignRepository, campaignEvents,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, err := campaignService.CreateDraftTouchPlan(ctx, campaign.CreateDraftTouchPlanCommand{
+		CampaignCode: campaignCode, ExpectedCampaignVersion: 1,
+		Source: campaign.InitiationSourceRequest{Kind: campaign.InitiationSourceAudiencePackageMembers, AudiencePackageID: packageID},
+		Owner:  campaign.Actor{ID: 73}, IdempotencyKey: prefix + "-touch-plan-idempotency",
+	})
+	if err != nil || plan.Source.AudiencePackage == nil {
+		t.Fatalf("audience touch plan=%+v err=%v", plan, err)
+	}
+	source := &approvedCampaignHandoffSource{snapshot: outboundport.ApprovedCampaignHandoffSnapshot{
+		CampaignCode: campaignCode, PlanID: plan.ID, ReviewVersion: 3,
+		SourceDigest: plan.Source.AudiencePackage.Digest, TargetDigest: plan.Targets.Digest, ContentDigest: plan.Content.Digest,
+		CustomerIDs: plan.Targets.CustomerIDs, Steps: []outbound.CampaignHandoffStep{{Index: 1, Content: "audience record content"}}, ApprovedAt: policyTime,
+	}}
+	if _, err = newCampaignHandoffService(t, pool, source).Accept(ctx, outboundapp.AcceptCampaignHandoffCommand{
+		CampaignCode: campaignCode, PlanID: plan.ID, ExpectedReviewVersion: 3, ActorID: 73, IdempotencyKey: prefix + "-handoff-idempotency",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	uow := platformstore.NewUnitOfWork(pool)
+	runtime, err := eer.NewService(eerstore.NewRepository(pool, uow))
+	if err != nil {
+		t.Fatal(err)
+	}
+	repository, err := outboundstore.NewCampaignDispatchRepository(pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dispatchService, err := outboundapp.NewCampaignDispatchService(uow, repository, runtime, repository, contactstore.NewContactPolicyRepository())
+	if err != nil {
+		t.Fatal(err)
+	}
+	dispatchService, err = dispatchService.WithAudienceQualification(campaignDispatchAudienceQualifier{}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	summary, err := dispatchService.Dispatch(ctx, outboundapp.CampaignDispatchCommand{
+		CampaignCode: campaignCode, PlanID: plan.ID, ActorID: 73, IdempotencyKey: prefix + "-dispatch-idempotency", ExternalGate: true,
+	})
+	if err != nil || summary.Blocked != 1 || summary.Queued != 2 {
+		t.Fatalf("audience dispatch summary=%+v err=%v", summary, err)
+	}
+	var effectID string
+	if err = pool.QueryRow(ctx, `SELECT 'eer_' || external_effect_id::text FROM public.outbound_campaign_dispatches WHERE handoff_id=(SELECT id FROM public.outbound_campaign_handoffs WHERE plan_id=$1) AND external_effect_id IS NOT NULL ORDER BY customer_id LIMIT 1`, plan.ID).Scan(&effectID); err != nil {
+		t.Fatal(err)
+	}
+	provider := &campaignDispatchWeComProviderFake{}
+	adapter, err := outboundworker.NewCampaignWeComAdapter(repository, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	worker, err := outboundworker.NewCampaignDispatchWorker(dispatchService, adapter)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = worker.Work(ctx, &river.Job[outboundstore.CampaignDispatchArgs]{
+		JobRow: &rivertype.JobRow{ID: 902, Attempt: 1, MaxAttempts: 1, State: rivertype.JobStateRunning}, Args: outboundstore.CampaignDispatchArgs{EffectID: effectID},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	readService, err := outboundapp.NewAudienceSendRecordService(repository)
+	if err != nil {
+		t.Fatal(err)
+	}
+	page, err := readService.List(ctx, packageID, 20, 0)
+	if err != nil || page.Total != 3 || len(page.Items) != 3 {
+		t.Fatalf("audience send-record page=%+v err=%v", page, err)
+	}
+	var blocked, executed, queued bool
+	for _, record := range page.Items {
+		switch record.State {
+		case outbound.CampaignDispatchBlocked:
+			blocked = record.FailureClassification == "contact_policy" && record.TechnicalAttemptCount == 0 && !record.ReceiptPresent
+		case outbound.CampaignDispatchExecuted:
+			executed = record.TechnicalAttemptCount == 1 && record.ProviderResultReceived && record.ReceiptPresent && record.BusinessCallDispatched && record.RealExternalCallExecuted && !record.DeliveryProven
+		case outbound.CampaignDispatchQueued:
+			queued = record.TechnicalAttemptCount == 0 && !record.ReceiptPresent
+		}
+		readback, getErr := readService.Get(ctx, packageID, record.ID)
+		if getErr != nil || readback != record {
+			t.Fatalf("audience send-record readback=%+v record=%+v err=%v", readback, record, getErr)
+		}
+	}
+	if !blocked || !executed || !queued {
+		t.Fatalf("audience send-record states blocked/executed/queued=%t/%t/%t page=%+v", blocked, executed, queued, page)
 	}
 }
 
