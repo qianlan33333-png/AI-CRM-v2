@@ -40,6 +40,24 @@ async function loadPage(rel, { id, q } = {}) {
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
       window.__AICRM_TEST_MOCK__ = true;
+      if (rel === 'admin/campaigns.html' && new URL(window.location.href).searchParams.get('view') === 'external-effects') {
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
+        const local = { local_fact_only: true, real_external_call_executed: false, delivery_proven: false, delivery_semantics: 'local_state_not_delivery_proof' };
+        const pushJob = { job_id: 18, task_id: 5, customer_id: 7, status: 'outcome_unknown', attempt_count: 1, failure_present: true, failure_class: 'outcome_unknown', provider_receipt_present: false, queue_job: { river_job_id: 9, generation: 1, kind: 'outbound_enqueue_one' }, created_at: '2026-08-27T00:00:00Z', status_updated_at: '2026-08-27T00:01:00Z', ...local };
+        const pushEnvelope = { ok: true, fallback_used: false, source_status: 'v2_outbound_service', ...local };
+        window.fetch = async (input) => {
+          const url = String(input);
+          if (url.includes('/external-effects/diagnostics')) return json({ accepted: 1, queued: 2, attempted: 1, outcome_unknown: 1, retryable_failed: 0 });
+          if (url.includes('/external-effects/jobs')) return json({ ok: true, items: [{ id: 'eej_v1_abcdefghijklmnopqrstuv', status: 'outcome_unknown', classification: 'manual_review', attempt_count: 1, created_at: '2026-08-27T00:00:00Z', status_updated_at: '2026-08-27T00:01:00Z' }], next_cursor: null, page_size: 50, applied_filters: { status: null, classification: null }, provider_execution_eligible: false, ...local });
+          if (url.includes('/external-effects')) return json({ items: [{ id: '18', owner: 'campaign', kind: 'campaign_dispatch', state: 'accepted', attempt_count: 0, generation: 1, updated_at: '2026-08-27T00:00:00Z' }] });
+          if (url.includes('/push-center/sections')) return json({ ok: true, sections: [{ key: 'order', label: '订单', count: 2 }], status_definitions: [], filters: {}, route_owner: 'ai_crm_next' });
+          if (url.includes('/push-center/stats')) return json({ ok: true, counts: { total: 2, pending: 1, running: 0, succeeded: 0, sent: 1, failed: 0, shadow_warning: 0, by_effective_status: {}, by_status: {}, by_section: {} }, sections: [], status_definitions: [], filters: {}, route_owner: 'ai_crm_next', real_external_call_executed: false, runtime_queue: {}, capability_owner: 'ai_crm_next/platform_foundation/push_center' });
+          if (url.endsWith('/reconciliation')) return json({ ...pushEnvelope, job: pushJob, attempts: [{ attempt_id: 1, history_id: 2, generation: 1, river_job_id: 9, attempt: 1, max_attempts: 3, state: 'outcome_unknown', failure_present: true, failure_class: 'outcome_unknown', provider_receipt_present: false, dispatch_started_at: '2026-08-27T00:00:00Z', ...local }], control_receipts: [] });
+          if (url.endsWith('/18')) return json({ ...pushEnvelope, job: pushJob });
+          return json({ ...pushEnvelope, jobs: [pushJob], items: [pushJob], count: 1, has_more: false, limit: 50, offset: 0 });
+        };
+        return;
+      }
       if (rel !== 'sidebar/index.html') return;
       window.URL.createObjectURL = () => 'blob:sidebar-thumbnail';
       window.URL.revokeObjectURL = () => {};
@@ -776,6 +794,35 @@ console.log('sidebar/index.html（新增能力空态与失败态）');
   await sleep(30);
   ok('周期订单失败态提供重试', failedDoc.body.textContent.includes('周期订单读取失败') && !!failedDoc.querySelector('[data-sidebar-action="retry-periodic-orders"]'));
   failed.window.close();
+}
+
+console.log('admin/campaigns.html（External Effects / Push Center 本地边界）');
+{
+  const effects = await loadPage('admin/campaigns.html', { q: 'view=external-effects' });
+  await sleep(40);
+  const doc = effects.window.document;
+  const effectsText = doc.querySelector('#stage')?.textContent || '';
+  ok('External Effects 显示本地事实边界与 outcome_unknown 人工确认',
+    effectsText.includes('不证明 Provider 调用、外部发送或送达') &&
+    effectsText.includes('outcome_unknown 存在') &&
+    effectsText.includes('不得自动重试'));
+  ok('Push Center 把 sent 标为本地状态，且未知结果没有重试操作',
+    effectsText.includes('sent（本地状态）') &&
+    effectsText.includes('结果未知：人工确认，禁止重试') &&
+    !doc.querySelector('[data-push-retry="18"]'));
+  ok('缺失 run-due 契约明确 backend_blocked', effectsText.includes('backend_blocked') && effectsText.includes('run-due'));
+  effects.window.close();
+
+  const detail = await loadPage('admin/campaigns.html', { q: 'view=external-effects&job=18' });
+  await sleep(40);
+  const detailDoc = detail.window.document;
+  const detailText = detailDoc.querySelector('#stage')?.textContent || '';
+  ok('Push Center job 详情只呈现本地 attempt/控制回执，不泄露收件人字段',
+    detailText.includes('Push Center job 本地对账') &&
+    detailText.includes('结果未知：需人工确认，禁止重试') &&
+    !detailText.includes('customer_id') &&
+    !detailText.includes('owner_staff_id'));
+  detail.window.close();
 }
 
 console.log(`\n${pass} 通过 / ${fail} 失败`);

@@ -28,6 +28,15 @@ import {
   type CampaignTouchPlanRecipientReview,
   type CampaignTouchPlanReview,
 } from '../../api/admin';
+import {
+  cancelExternalEffectRuntimeDto,
+  cancelPushCenterJobDto,
+  getPushCenterJobDetailDto,
+  readExternalEffectsWorkspaceDto,
+  retryPushCenterJobDto,
+  type ExternalEffectsWorkspace,
+  type PushCenterJobDetail,
+} from '../../api/external_effects';
 import { confirmBox, toast } from '../../shared/ui/feedback';
 import { esc } from './util';
 
@@ -56,6 +65,11 @@ const goto = (campaignCode?: string, planID?: string, customerID?: number): void
   if (customerID) params.set('recipient', String(customerID));
   location.href = `campaigns.html${params.size ? `?${params.toString()}` : ''}`;
 };
+const gotoExternalEffects = (jobID?: number): void => {
+  const params = new URLSearchParams({ view: 'external-effects' });
+  if (jobID) params.set('job', String(jobID));
+  location.href = `campaigns.html?${params.toString()}`;
+};
 const status = (value: string): string => `<span style="display:inline-flex;padding:2px 8px;border-radius:999px;background:#F2F4F7;color:#475467;font-size:12px">${esc(value)}</span>`;
 const safety = '<p style="margin:0;color:#8F5A16;font-size:12px">只读快照/本地审核不证明 Provider 调用、外部发送或送达。</p>';
 
@@ -65,7 +79,7 @@ function shell(title: string, body: string): string {
 
 function listHtml(rows: CampaignDetail[], filter: CampaignFilter): string {
   const rowHtml = rows.map((item) => `<tr><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3"><button data-campaign="${esc(item.code)}" style="border:0;background:transparent;color:#1849A9;cursor:pointer;font-weight:600">${esc(item.name)}</button><div style="margin-top:3px;color:#8F959E;font-family:ui-monospace,Menlo,monospace;font-size:12px">${esc(item.code)}</div></td><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3">${status(item.approvalStatus)}</td><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3">${status(item.runtimeStatus)}</td><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3">v${item.version}</td><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3">${esc(item.updatedAt)}</td></tr>`).join('') || '<tr><td colspan="5" style="padding:24px;text-align:center;color:#8F959E">当前筛选下没有 Campaign</td></tr>';
-  return shell('Campaign 本地生命周期', `<div style="display:flex;gap:10px;flex-wrap:wrap"><label>审核状态 <select id="campaign-approval"><option value="">全部</option>${['draft', 'approved', 'rejected'].map((value) => `<option value="${value}"${filter.approvalStatus === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label><label>运行状态 <select id="campaign-runtime"><option value="">全部</option>${['idle', 'planned', 'paused'].map((value) => `<option value="${value}"${filter.runtimeStatus === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label><button id="campaign-refresh" style="${button}">刷新</button></div><div style="border:1px solid #DEE0E3;border-radius:8px;overflow:hidden"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#FAFAFB;color:#667085;text-align:left"><th style="padding:10px 12px">Campaign</th><th style="padding:10px 12px">审核</th><th style="padding:10px 12px">运行</th><th style="padding:10px 12px">版本</th><th style="padding:10px 12px">更新时间</th></tr></thead><tbody>${rowHtml}</tbody></table></div><div style="display:grid;gap:10px"><div><h2 style="margin:0 0 6px;font-size:15px">Campaign 命中成员</h2>${blocked.replace('该读取契约', '按成员状态读取 Campaign 成员与总数的')}</div><div><h2 style="margin:0 0 6px;font-size:15px">可观察性与审计筛选</h2>${blocked.replace('该读取契约', '按 trace_id/session_id 刷新 observability 与 audit 的 JSON')}</div></div>`);
+  return shell('Campaign 本地生命周期', `<div style="display:flex;gap:10px;flex-wrap:wrap"><label>审核状态 <select id="campaign-approval"><option value="">全部</option>${['draft', 'approved', 'rejected'].map((value) => `<option value="${value}"${filter.approvalStatus === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label><label>运行状态 <select id="campaign-runtime"><option value="">全部</option>${['idle', 'planned', 'paused'].map((value) => `<option value="${value}"${filter.runtimeStatus === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label><button id="campaign-refresh" style="${button}">刷新</button><button id="external-effects-open" style="${button}">外部效果与 Push Center</button></div><div style="border:1px solid #DEE0E3;border-radius:8px;overflow:hidden"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#FAFAFB;color:#667085;text-align:left"><th style="padding:10px 12px">Campaign</th><th style="padding:10px 12px">审核</th><th style="padding:10px 12px">运行</th><th style="padding:10px 12px">版本</th><th style="padding:10px 12px">更新时间</th></tr></thead><tbody>${rowHtml}</tbody></table></div><div style="display:grid;gap:10px"><div><h2 style="margin:0 0 6px;font-size:15px">Campaign 命中成员</h2>${blocked.replace('该读取契约', '按成员状态读取 Campaign 成员与总数的')}</div><div><h2 style="margin:0 0 6px;font-size:15px">可观察性与审计筛选</h2>${blocked.replace('该读取契约', '按 trace_id/session_id 刷新 observability 与 audit 的 JSON')}</div></div>`);
 }
 
 function planRows(plans: CampaignTouchPlan[]): string {
@@ -103,10 +117,68 @@ function planHtml(page: CampaignPage): string {
   return shell('Touch plan 本地审核', `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="plan-back" style="${button}">返回 Campaign</button><span style="font-family:ui-monospace,Menlo,monospace;color:#667085">${esc(plan.id)}</span>${status(review.status)}<span>审核版本 v${review.version}</span>${review.handoffStatus ? status(review.handoffStatus) : ''}</div><div style="padding:12px;border:1px solid #D6E4FF;border-radius:8px;background:#F5F8FF;color:#1849A9;font-size:13px">批准只写入本地 touch-plan review；即使生成 handoff 也仍须二次确认受理，不等于发送或送达。</div>${handoffHtml(page)}<div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1fr);gap:14px"><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">计划详情</h2><p>来源：${esc(plan.sourceKind)} · 目标：${plan.targetCount} · Campaign 版本：v${plan.campaignVersion}</p><ol style="padding-left:20px">${steps}</ol><div style="display:flex;gap:8px;flex-wrap:wrap">${actions}</div></section><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">目标人员（canonical OneID）</h2><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;color:#667085"><th style="padding:8px">OneID</th><th style="padding:8px">范围详情</th></tr></thead><tbody>${recipientRows}</tbody></table>${more}${recipientDetail}</section></div>`);
 }
 
+const effectBoundary = '<div style="padding:10px;border:1px solid #F5D6A7;border-radius:8px;background:#FFF9F0;color:#8F5A16;font-size:13px;line-height:20px"><strong>本地事实边界：</strong>accepted、queued、attempted、executed、sent 仅为本地投影或任务状态，不证明 Provider 调用、外部发送或送达。outcome_unknown 必须人工确认，不得自动重试。</div>';
+const effectBlocked = '<div style="padding:10px;border:1px solid #F5D6A7;border-radius:8px;background:#FFF9F0;color:#8F5A16;font-size:13px"><strong>backend_blocked</strong>：当前真实 OpenAPI 没有安全的 run-due / runtime retry / 人工证据对账输入契约；页面不会推测参数、不会发起请求。</div>';
+
+function countCard(label: string, value: number): string {
+  return `<div style="padding:10px;border:1px solid #DEE0E3;border-radius:8px;background:#fff"><div style="font-size:12px;color:#667085">${esc(label)}</div><strong style="font-size:19px">${value}</strong></div>`;
+}
+
+function externalEffectsHtml(page: ExternalEffectsWorkspace): string {
+  const runtime = page.runtime.map((item) => `<tr><td style="padding:8px;border-bottom:1px solid #EEF0F3;font-family:ui-monospace,Menlo,monospace">${esc(item.id)}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${esc(item.owner)} / ${esc(item.kind)}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${status(item.state)} · ${item.attemptCount} attempts</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${item.state === 'accepted' ? `<button data-effect-cancel="${esc(item.id)}" style="${button}">取消本地 effect</button>` : '<span style="color:#8F959E;font-size:12px">无安全本地操作</span>'}</td></tr>`).join('') || '<tr><td colspan="4" style="padding:16px;color:#8F959E">没有可读的本地 effect runtime</td></tr>';
+  const jobs = page.jobs.map((item) => `<tr><td style="padding:8px;border-bottom:1px solid #EEF0F3;font-family:ui-monospace,Menlo,monospace">${esc(item.id)}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${status(item.status)} · ${esc(item.classification)}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${item.attemptCount}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${esc(item.updatedAt)}</td></tr>`).join('') || '<tr><td colspan="4" style="padding:16px;color:#8F959E">没有可读的本地 job</td></tr>';
+  const pushSections = page.push.sections.map((item) => `<tr><td style="padding:8px;border-bottom:1px solid #EEF0F3">${esc(item.label)}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3;font-family:ui-monospace,Menlo,monospace">${esc(item.key)}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${item.count}</td></tr>`).join('') || '<tr><td colspan="3" style="padding:16px;color:#8F959E">当前没有可用 section 投影</td></tr>';
+  const pushJobs = page.push.jobs.map((item) => {
+    const control = item.status === 'pending' ? `<button data-push-cancel="${item.jobID}" style="${button}">取消本地任务</button>` : item.status === 'retryable_failed' ? `<button data-push-retry="${item.jobID}" style="${button}">创建本地重试</button>` : item.status === 'outcome_unknown' ? '<span style="color:#B54708;font-size:12px">结果未知：人工确认，禁止重试</span>' : '<span style="color:#8F959E;font-size:12px">无安全本地操作</span>';
+    return `<tr><td style="padding:8px;border-bottom:1px solid #EEF0F3"><button data-push-detail="${item.jobID}" style="border:0;background:transparent;color:#1849A9;cursor:pointer;font-family:ui-monospace,Menlo,monospace">#${item.jobID}</button></td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${status(item.status)} · ${esc(item.failureClass)}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${item.attemptCount}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${control}</td></tr>`;
+  }).join('') || '<tr><td colspan="4" style="padding:16px;color:#8F959E">没有可读的 Push Center job</td></tr>';
+  const diagnostics = [countCard('accepted（本地）', page.runtimeDiagnostics.accepted), countCard('queued（本地）', page.runtimeDiagnostics.queued), countCard('attempted（本地）', page.runtimeDiagnostics.attempted), countCard('outcome_unknown', page.runtimeDiagnostics.outcomeUnknown), countCard('retryable_failed', page.runtimeDiagnostics.retryableFailed)].join('');
+  const pushStats = page.push.counts ? `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:8px">${[countCard('总数（本地）', page.push.counts.total), countCard('pending', page.push.counts.pending), countCard('running', page.push.counts.running), countCard('sent（本地状态）', page.push.counts.sent), countCard('failed', page.push.counts.failed)].join('')}</div>` : `<div style="padding:10px;border:1px solid #F5D6A7;border-radius:8px;background:#FFF9F0;color:#8F5A16;font-size:13px"><strong>Push Center degraded：</strong>${esc(page.push.message || '读模型暂不可用')}；不会把空计数视为成功或零任务。</div>`;
+  const unknown = page.jobRisk.outcomeUnknown > 0 || page.runtimeDiagnostics.outcomeUnknown > 0 || page.push.jobs.some((item) => item.status === 'outcome_unknown');
+  return shell('外部效果与 Push Center', `<div style="display:flex;gap:8px;flex-wrap:wrap"><button id="effects-back" style="${button}">返回 Campaign</button><button id="effects-refresh" style="${button}">刷新真实本地投影</button></div>${effectBoundary}${unknown ? '<div style="padding:10px;border:1px solid #F5D6A7;border-radius:8px;background:#FFF9F0;color:#8F5A16;font-size:13px"><strong>outcome_unknown 存在：</strong>需人工确认或独立对账；页面已禁用自动重试。</div>' : ''}<section style="display:grid;gap:10px"><div><h2 style="margin:0;font-size:16px">External Effects runtime / diagnostics</h2><p style="margin:4px 0 0;color:#667085;font-size:13px">只读本地投影；取消仅在 accepted、worker 未开始时可用。</p></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">${diagnostics}</div><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;color:#667085"><th style="padding:8px">effect</th><th style="padding:8px">owner / kind</th><th style="padding:8px">本地状态</th><th style="padding:8px">操作</th></tr></thead><tbody>${runtime}</tbody></table><h3 style="margin:0;font-size:14px">本地 job（诊断）</h3><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;color:#667085"><th style="padding:8px">job</th><th style="padding:8px">本地状态</th><th style="padding:8px">attempts</th><th style="padding:8px">更新时间</th></tr></thead><tbody>${jobs}</tbody></table>${effectBlocked}</section><section style="display:grid;gap:10px"><div><h2 style="margin:0;font-size:16px">Push Center</h2><p style="margin:4px 0 0;color:#667085;font-size:13px">仅读取 section、stats、job 与本地 reconciliation；不展示收件人或 Provider 成功。</p></div>${pushStats}<div style="display:grid;grid-template-columns:minmax(260px,1fr) minmax(360px,2fr);gap:12px"><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;color:#667085"><th style="padding:8px">section</th><th style="padding:8px">key</th><th style="padding:8px">count</th></tr></thead><tbody>${pushSections}</tbody></table><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;color:#667085"><th style="padding:8px">job</th><th style="padding:8px">本地状态</th><th style="padding:8px">attempts</th><th style="padding:8px">安全操作</th></tr></thead><tbody>${pushJobs}</tbody></table></div></section>`);
+}
+
+function pushDetailHtml(detail: PushCenterJobDetail): string {
+  const attempts = detail.attempts.map((item) => `<tr><td style="padding:8px;border-bottom:1px solid #EEF0F3">${item.attempt}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${status(item.state)} · ${esc(item.failureClass)}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${esc(item.updatedAt)}</td></tr>`).join('') || '<tr><td colspan="3" style="padding:14px;color:#8F959E">暂无本地 attempt 记录</td></tr>';
+  const receipts = detail.receipts.map((item) => `<tr><td style="padding:8px;border-bottom:1px solid #EEF0F3">${esc(item.operation)}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${status(item.taskStatus)}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3">${esc(item.completedAt)}</td></tr>`).join('') || '<tr><td colspan="3" style="padding:14px;color:#8F959E">暂无本地控制回执</td></tr>';
+  const control = detail.job.status === 'pending' ? `<button id="push-detail-cancel" style="${button}">取消本地任务</button>` : detail.job.status === 'retryable_failed' ? `<button id="push-detail-retry" style="${button}">创建本地重试</button>` : detail.job.status === 'outcome_unknown' ? '<span style="color:#B54708">结果未知：需人工确认，禁止重试</span>' : '<span style="color:#8F959E">无安全本地操作</span>';
+  return shell('Push Center job 本地对账', `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="push-detail-back" style="${button}">返回 Push Center</button><span style="font-family:ui-monospace,Menlo,monospace">#${detail.job.jobID}</span>${status(detail.job.status)}<span>${detail.job.attemptCount} attempts</span>${control}</div>${effectBoundary}<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><section><h2 style="margin:0 0 8px;font-size:15px">本地 attempt</h2><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;color:#667085"><th style="padding:8px">次数</th><th style="padding:8px">状态</th><th style="padding:8px">记录时间</th></tr></thead><tbody>${attempts}</tbody></table></section><section><h2 style="margin:0 0 8px;font-size:15px">本地控制回执</h2><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;color:#667085"><th style="padding:8px">操作</th><th style="padding:8px">本地状态</th><th style="padding:8px">完成时间</th></tr></thead><tbody>${receipts}</tbody></table></section></div>`);
+}
+
+async function loadExternalEffects(stage: HTMLElement): Promise<void> {
+  const page = await readExternalEffectsWorkspaceDto();
+  stage.innerHTML = externalEffectsHtml(page);
+  stage.querySelector<HTMLButtonElement>('#effects-back')?.addEventListener('click', () => goto());
+  stage.querySelector<HTMLButtonElement>('#effects-refresh')?.addEventListener('click', () => void loadExternalEffects(stage).catch((error) => showError(stage, error)));
+  stage.querySelectorAll<HTMLButtonElement>('[data-push-detail]').forEach((element) => element.addEventListener('click', () => gotoExternalEffects(Number(element.dataset.pushDetail))));
+  stage.querySelectorAll<HTMLButtonElement>('[data-effect-cancel]').forEach((element) => element.addEventListener('click', () => confirmBox('取消本地 external effect', '仅允许取消尚未尝试的 accepted 本地 effect；不会撤回任何外部结果。', '确认取消', true, () => {
+    void cancelExternalEffectRuntimeDto(element.dataset.effectCancel || '').then(() => { toast('已取消本地 effect；不代表外部撤回或送达状态'); void loadExternalEffects(stage); }).catch((error) => toast(error instanceof Error ? error.message : '本地 effect 取消失败', true));
+  })));
+  stage.querySelectorAll<HTMLButtonElement>('[data-push-cancel]').forEach((element) => element.addEventListener('click', () => confirmBox('取消本地 Push Center job', '仅允许取消 pending 本地任务；不会调用 Provider，也不会撤回任何外部结果。', '确认取消', true, () => {
+    void cancelPushCenterJobDto(Number(element.dataset.pushCancel)).then(() => { toast('已受理本地取消；不等于 Provider 调用、发送或送达'); void loadExternalEffects(stage); }).catch((error) => toast(error instanceof Error ? error.message : 'Push Center 取消失败', true));
+  })));
+  stage.querySelectorAll<HTMLButtonElement>('[data-push-retry]').forEach((element) => element.addEventListener('click', () => confirmBox('创建本地 Push Center 重试', '只会为 retryable_failed 创建下一代本地任务；不调用 Provider、不证明发送或送达。outcome_unknown 不允许重试。', '确认创建', false, () => {
+    void retryPushCenterJobDto(Number(element.dataset.pushRetry)).then(() => { toast('已受理本地重试；不等于 Provider 调用、发送或送达'); void loadExternalEffects(stage); }).catch((error) => toast(error instanceof Error ? error.message : 'Push Center 重试失败', true));
+  })));
+}
+
+async function loadPushCenterDetail(stage: HTMLElement, jobID: number): Promise<void> {
+  const detail = await getPushCenterJobDetailDto(jobID);
+  stage.innerHTML = pushDetailHtml(detail);
+  stage.querySelector<HTMLButtonElement>('#push-detail-back')?.addEventListener('click', () => gotoExternalEffects());
+  stage.querySelector<HTMLButtonElement>('#push-detail-cancel')?.addEventListener('click', () => confirmBox('取消本地 Push Center job', '仅允许取消 pending 本地任务；不会调用 Provider，也不会撤回任何外部结果。', '确认取消', true, () => {
+    void cancelPushCenterJobDto(jobID).then(() => { toast('已受理本地取消；不等于 Provider 调用、发送或送达'); gotoExternalEffects(jobID); }).catch((error) => toast(error instanceof Error ? error.message : 'Push Center 取消失败', true));
+  }));
+  stage.querySelector<HTMLButtonElement>('#push-detail-retry')?.addEventListener('click', () => confirmBox('创建本地 Push Center 重试', '只会为 retryable_failed 创建下一代本地任务；outcome_unknown 不允许重试。', '确认创建', false, () => {
+    void retryPushCenterJobDto(jobID).then(() => { toast('已受理本地重试；不等于 Provider 调用、发送或送达'); gotoExternalEffects(jobID); }).catch((error) => toast(error instanceof Error ? error.message : 'Push Center 重试失败', true));
+  }));
+}
+
 async function loadList(stage: HTMLElement, filter: CampaignFilter = {}): Promise<void> {
   const rows = await listCampaignsDto(filter);
   stage.innerHTML = listHtml(rows.map((item) => ({ ...item, steps: [] })), filter);
   stage.querySelectorAll<HTMLButtonElement>('[data-campaign]').forEach((element) => element.addEventListener('click', () => goto(element.dataset.campaign)));
+  stage.querySelector<HTMLButtonElement>('#external-effects-open')?.addEventListener('click', () => gotoExternalEffects());
   stage.querySelector<HTMLButtonElement>('#campaign-refresh')?.addEventListener('click', () => {
     const approval = (stage.querySelector<HTMLSelectElement>('#campaign-approval')?.value || '') as CampaignFilter['approvalStatus'] | '';
     const runtime = (stage.querySelector<HTMLSelectElement>('#campaign-runtime')?.value || '') as CampaignFilter['runtimeStatus'] | '';
@@ -164,6 +236,13 @@ async function loadCampaign(stage: HTMLElement, campaignCode: string, planID?: s
 
 export async function mountCampaignWorkspace(stage: HTMLElement): Promise<void> {
   const params = query();
+  if (params.get('view') === 'external-effects') {
+    const rawJobID = params.get('job');
+    if (!rawJobID) return loadExternalEffects(stage);
+    const jobID = Number(rawJobID);
+    if (!Number.isSafeInteger(jobID) || jobID <= 0) throw new Error('Push Center job 范围无效，已拒绝读取');
+    return loadPushCenterDetail(stage, jobID);
+  }
   const campaignCode = params.get('campaign') || undefined;
   const planID = params.get('plan') || undefined;
   const rawCustomerID = Number(params.get('recipient') || '');
