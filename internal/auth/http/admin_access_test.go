@@ -50,13 +50,13 @@ func TestAdminAccessHandlerReadsAndSavesOnlyGlobalConfigAdmin(t *testing.T) {
 	put.Header.Set("Idempotency-Key", "admin-access-0001")
 	putResponse := httptest.NewRecorder()
 	handler.ServeHTTP(putResponse, put)
-	if putResponse.Code != http.StatusOK || application.saveCalls != 1 || len(application.saved) != 1 || application.saved[0].AdminUserID != 7 || application.saved[0].LoginEnabled || !strings.Contains(putResponse.Body.String(), `"idempotency_key":"admin-access-0001"`) {
+	if putResponse.Code != http.StatusOK || application.saveCalls != 1 || application.listCalls != 2 || len(application.saved) != 1 || application.saved[0].AdminUserID != 7 || application.saved[0].LoginEnabled || !strings.Contains(putResponse.Body.String(), `"idempotency_key":"admin-access-0001"`) {
 		t.Fatalf("PUT status/saved/body=%d/%#v/%s", putResponse.Code, application.saved, putResponse.Body.String())
 	}
 	wrong := adminAccessRequest(t, http.MethodGet, nil, authport.CapabilityConfigOverviewRead)
 	wrongResponse := httptest.NewRecorder()
 	handler.ServeHTTP(wrongResponse, wrong)
-	if wrongResponse.Code != http.StatusForbidden || application.listCalls != 1 {
+	if wrongResponse.Code != http.StatusForbidden || application.listCalls != 2 {
 		t.Fatalf("wrong GET status/calls=%d/%d", wrongResponse.Code, application.listCalls)
 	}
 }

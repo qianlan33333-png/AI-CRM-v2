@@ -15677,6 +15677,91 @@ export interface SetupWizardError {
   error: SetupWizardErrorError;
 }
 
+export type AdminAccessMemberRole =
+  (typeof AdminAccessMemberRole)[keyof typeof AdminAccessMemberRole];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminAccessMemberRole = {
+  admin: "admin",
+  ops: "ops",
+  sales: "sales",
+} as const;
+
+export interface AdminAccessMember {
+  /** @minimum 1 */
+  admin_user_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  display_name: string;
+  role: AdminAccessMemberRole;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  staff_id: number | null;
+  /** @maxLength 128 */
+  staff_wecom_userid: string;
+  /** @maxLength 200 */
+  staff_name: string;
+  is_active: boolean;
+  login_enabled: boolean;
+}
+
+export interface AdminAccessSaveMember {
+  /** @minimum 1 */
+  admin_user_id: number;
+  login_enabled: boolean;
+}
+
+export interface AdminAccessSaveRequest {
+  /**
+   * @minItems 1
+   * @maxItems 200
+   */
+  members: AdminAccessSaveMember[];
+}
+
+export interface AdminAccessReadResponse {
+  ok: boolean;
+  /** @maxItems 200 */
+  members: AdminAccessMember[];
+  local_only: boolean;
+  external: boolean;
+}
+
+export interface AdminAccessSaveResponse {
+  ok: boolean;
+  /**
+   * @minItems 1
+   * @maxItems 200
+   */
+  members: AdminAccessMember[];
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  idempotency_key: string;
+  local_only: boolean;
+  external: boolean;
+}
+
+export type AdminAccessErrorError =
+  (typeof AdminAccessErrorError)[keyof typeof AdminAccessErrorError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AdminAccessErrorError = {
+  invalid_request: "invalid_request",
+  invalid_member: "invalid_member",
+  admin_access_unavailable: "admin_access_unavailable",
+} as const;
+
+export interface AdminAccessError {
+  ok: boolean;
+  error: AdminAccessErrorError;
+}
+
 export type LegacyPushCenterSectionKey =
   (typeof LegacyPushCenterSectionKey)[keyof typeof LegacyPushCenterSectionKey];
 
@@ -16437,6 +16522,11 @@ export type WechatshopEchoStrParameter = string;
  * Stable local-only setup-wizard request key; exact retries replay and mismatches conflict.
  */
 export type SetupWizardIdempotencyKeyParameter = string;
+
+/**
+ * Stable local admin-access request key. Repeating the same desired flags does not create another session-version change.
+ */
+export type AdminAccessIdempotencyKeyParameter = string;
 
 export type GroupOpsLimitParameter = number;
 
@@ -27533,6 +27623,145 @@ export const saveSetupWizard = async (
     status: res.status,
     headers: res.headers,
   } as saveSetupWizardResponse;
+};
+
+/**
+ * @summary List existing local admin accounts and their current login access
+ */
+export type listAdminAccessMembersResponse200 = {
+  data: AdminAccessReadResponse;
+  status: 200;
+};
+
+export type listAdminAccessMembersResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listAdminAccessMembersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listAdminAccessMembersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listAdminAccessMembersResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listAdminAccessMembersResponseSuccess =
+  listAdminAccessMembersResponse200 & {
+    headers: Headers;
+  };
+export type listAdminAccessMembersResponseError = (
+  | listAdminAccessMembersResponse400
+  | listAdminAccessMembersResponse401
+  | listAdminAccessMembersResponse403
+  | listAdminAccessMembersResponse503
+) & {
+  headers: Headers;
+};
+
+export type listAdminAccessMembersResponse =
+  listAdminAccessMembersResponseSuccess | listAdminAccessMembersResponseError;
+
+export const getListAdminAccessMembersUrl = () => {
+  return `/api/admin/admin-access`;
+};
+
+export const listAdminAccessMembers = async (
+  options?: RequestInit,
+): Promise<listAdminAccessMembersResponse> => {
+  const res = await fetch(getListAdminAccessMembersUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listAdminAccessMembersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listAdminAccessMembersResponse;
+};
+
+/**
+ * @summary Save local login access for existing admin accounts
+ */
+export type saveAdminAccessMembersResponse200 = {
+  data: AdminAccessSaveResponse;
+  status: 200;
+};
+
+export type saveAdminAccessMembersResponse400 = {
+  data: AdminAccessError;
+  status: 400;
+};
+
+export type saveAdminAccessMembersResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type saveAdminAccessMembersResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type saveAdminAccessMembersResponse503 = {
+  data: AdminAccessError;
+  status: 503;
+};
+
+export type saveAdminAccessMembersResponseSuccess =
+  saveAdminAccessMembersResponse200 & {
+    headers: Headers;
+  };
+export type saveAdminAccessMembersResponseError = (
+  | saveAdminAccessMembersResponse400
+  | saveAdminAccessMembersResponse401
+  | saveAdminAccessMembersResponse403
+  | saveAdminAccessMembersResponse503
+) & {
+  headers: Headers;
+};
+
+export type saveAdminAccessMembersResponse =
+  saveAdminAccessMembersResponseSuccess | saveAdminAccessMembersResponseError;
+
+export const getSaveAdminAccessMembersUrl = () => {
+  return `/api/admin/admin-access`;
+};
+
+export const saveAdminAccessMembers = async (
+  adminAccessSaveRequest: AdminAccessSaveRequest,
+  options?: RequestInit,
+): Promise<saveAdminAccessMembersResponse> => {
+  const res = await fetch(getSaveAdminAccessMembersUrl(), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminAccessSaveRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: saveAdminAccessMembersResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as saveAdminAccessMembersResponse;
 };
 
 /**

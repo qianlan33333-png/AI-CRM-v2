@@ -83,7 +83,11 @@ func (handler *AdminAccessHandler) save(writer http.ResponseWriter, request *htt
 		adminAccessError(writer, http.StatusBadRequest, "invalid_request")
 		return
 	}
-	members, err := handler.application.Save(request.Context(), input.Members)
+	if _, err := handler.application.Save(request.Context(), input.Members); err != nil {
+		adminAccessApplicationError(writer, err)
+		return
+	}
+	members, err := handler.application.List(request.Context())
 	if err != nil {
 		adminAccessApplicationError(writer, err)
 		return

@@ -124,6 +124,12 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
         const digest = 'a'.repeat(64);
         const token = 'b'.repeat(43);
         const state = { corpId: 'ww-existing', agentId: 1001 };
+        const accessMembers = [
+          { admin_user_id: 7, display_name: '管理员甲', role: 'admin', staff_id: 7, staff_wecom_userid: 'staff-7', staff_name: '管理员甲', is_active: true, login_enabled: true },
+          { admin_user_id: 8, display_name: '运营乙', role: 'ops', staff_id: 8, staff_wecom_userid: 'staff-8', staff_name: '运营乙', is_active: true, login_enabled: false },
+          { admin_user_id: 9, display_name: '停用成员', role: 'sales', staff_id: 9, staff_wecom_userid: 'staff-9', staff_name: '停用成员', is_active: false, login_enabled: false },
+        ];
+        window.document.cookie = 'aicrm_csrf=' + 'c'.repeat(43);
         const snapshot = () => ({
           ok: true,
           expected_digest: digest,
@@ -147,8 +153,23 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
           text: async () => JSON.stringify(data),
         });
         window.__setupWizardTest = { posts: [] };
+        window.__adminAccessTest = { puts: [] };
         window.fetch = async (input, init = {}) => {
-          if (!String(input).includes('/api/admin/setup-wizard')) return json({ error: 'unexpected_request' }, 500);
+          const url = String(input);
+          if (url.includes('/api/admin/admin-access')) {
+            if ((init.method || 'GET') === 'PUT') {
+              const body = JSON.parse(init.body || '{}');
+              const headers = new Headers(init.headers);
+              window.__adminAccessTest.puts.push({ body, key: headers.get('Idempotency-Key'), csrf: headers.get('X-CSRF-Token') });
+              for (const update of body.members || []) {
+                const member = accessMembers.find((item) => item.admin_user_id === update.admin_user_id && item.is_active);
+                if (member) member.login_enabled = update.login_enabled;
+              }
+              return json({ ok: true, members: accessMembers, idempotency_key: window.__adminAccessTest.puts.at(-1).key, local_only: true, external: false });
+            }
+            return json({ ok: true, members: accessMembers, local_only: true, external: false });
+          }
+          if (!url.includes('/api/admin/setup-wizard')) return json({ error: 'unexpected_request' }, 500);
           if ((init.method || 'GET') === 'POST') {
             const body = JSON.parse(init.body || '{}');
             window.__setupWizardTest.posts.push({ body, key: new Headers(init.headers).get('Idempotency-Key') });
@@ -848,6 +869,14 @@ console.log('admin/config.html（本地 setup wizard 最小闭环）');
   const post = dom.window.__setupWizardTest.posts[0];
   ok('保存只写两个本地字段且密钥字段固定为空', post?.body['wecom.corp_id'] === 'ww-updated' && post?.body['wecom.agent_id'] === 2002 && ['wecom.secret', 'wecom.callback_token', 'wecom.callback_aes_key', 'ai.api_key'].every((key) => post.body[key] === ''));
   ok('保存携带幂等键并以本地回执成功，不跳转', typeof post?.key === 'string' && post.key.length > 0 && d.querySelector('#setup-wizard-result')?.textContent === 'save_success' && dom.window.location.pathname.endsWith('/admin/config.html'));
+  ok('后台访问成员读取且明确仅限本地登录', d.querySelectorAll('[data-admin-access-id]').length === 3 && d.body.textContent.includes('不创建账号、角色或企微身份，不同步企微'));
+  const access = d.querySelector('[data-admin-access-id="7"]');
+  access.checked = false;
+  access.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  d.querySelector('#admin-access-form').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+  await sleep(80);
+  const accessPut = dom.window.__adminAccessTest.puts[0];
+  ok('后台登录权限保存带 CSRF、幂等且不提交停用成员', accessPut?.body.members?.length === 2 && accessPut.body.members.find((member) => member.admin_user_id === 7)?.login_enabled === false && typeof accessPut.key === 'string' && accessPut.key.length > 0 && accessPut.csrf === 'c'.repeat(43) && d.querySelector('#admin-access-result')?.textContent === 'save_success');
   dom.window.close();
 }
 

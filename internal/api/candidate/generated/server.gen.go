@@ -22,6 +22,153 @@ const (
 	AdminSessionScopes = "AdminSession.Scopes"
 )
 
+// Defines values for AdminAccessErrorError.
+const (
+	AdminAccessErrorErrorAdminAccessUnavailable AdminAccessErrorError = "admin_access_unavailable"
+	AdminAccessErrorErrorInvalidMember          AdminAccessErrorError = "invalid_member"
+	AdminAccessErrorErrorInvalidRequest         AdminAccessErrorError = "invalid_request"
+)
+
+// Valid indicates whether the value is a known member of the AdminAccessErrorError enum.
+func (e AdminAccessErrorError) Valid() bool {
+	switch e {
+	case AdminAccessErrorErrorAdminAccessUnavailable:
+		return true
+	case AdminAccessErrorErrorInvalidMember:
+		return true
+	case AdminAccessErrorErrorInvalidRequest:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAccessErrorOk.
+const (
+	AdminAccessErrorOkFalse AdminAccessErrorOk = false
+)
+
+// Valid indicates whether the value is a known member of the AdminAccessErrorOk enum.
+func (e AdminAccessErrorOk) Valid() bool {
+	switch e {
+	case AdminAccessErrorOkFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAccessMemberRole.
+const (
+	AdminAccessMemberRoleAdmin AdminAccessMemberRole = "admin"
+	AdminAccessMemberRoleOps   AdminAccessMemberRole = "ops"
+	AdminAccessMemberRoleSales AdminAccessMemberRole = "sales"
+)
+
+// Valid indicates whether the value is a known member of the AdminAccessMemberRole enum.
+func (e AdminAccessMemberRole) Valid() bool {
+	switch e {
+	case AdminAccessMemberRoleAdmin:
+		return true
+	case AdminAccessMemberRoleOps:
+		return true
+	case AdminAccessMemberRoleSales:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAccessReadResponseExternal.
+const (
+	AdminAccessReadResponseExternalFalse AdminAccessReadResponseExternal = false
+)
+
+// Valid indicates whether the value is a known member of the AdminAccessReadResponseExternal enum.
+func (e AdminAccessReadResponseExternal) Valid() bool {
+	switch e {
+	case AdminAccessReadResponseExternalFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAccessReadResponseLocalOnly.
+const (
+	AdminAccessReadResponseLocalOnlyTrue AdminAccessReadResponseLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AdminAccessReadResponseLocalOnly enum.
+func (e AdminAccessReadResponseLocalOnly) Valid() bool {
+	switch e {
+	case AdminAccessReadResponseLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAccessReadResponseOk.
+const (
+	AdminAccessReadResponseOkTrue AdminAccessReadResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the AdminAccessReadResponseOk enum.
+func (e AdminAccessReadResponseOk) Valid() bool {
+	switch e {
+	case AdminAccessReadResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAccessSaveResponseExternal.
+const (
+	AdminAccessSaveResponseExternalFalse AdminAccessSaveResponseExternal = false
+)
+
+// Valid indicates whether the value is a known member of the AdminAccessSaveResponseExternal enum.
+func (e AdminAccessSaveResponseExternal) Valid() bool {
+	switch e {
+	case AdminAccessSaveResponseExternalFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAccessSaveResponseLocalOnly.
+const (
+	AdminAccessSaveResponseLocalOnlyTrue AdminAccessSaveResponseLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the AdminAccessSaveResponseLocalOnly enum.
+func (e AdminAccessSaveResponseLocalOnly) Valid() bool {
+	switch e {
+	case AdminAccessSaveResponseLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminAccessSaveResponseOk.
+const (
+	AdminAccessSaveResponseOkTrue AdminAccessSaveResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the AdminAccessSaveResponseOk enum.
+func (e AdminAccessSaveResponseOk) Valid() bool {
+	switch e {
+	case AdminAccessSaveResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AdminConfigEntrySourceStatus.
 const (
 	Configured AdminConfigEntrySourceStatus = "configured"
@@ -525,19 +672,19 @@ func (e AdminOpsReleaseComparisonExternalCalls) Valid() bool {
 
 // Defines values for AuthSessionResponseRole.
 const (
-	Admin AuthSessionResponseRole = "admin"
-	Ops   AuthSessionResponseRole = "ops"
-	Sales AuthSessionResponseRole = "sales"
+	AuthSessionResponseRoleAdmin AuthSessionResponseRole = "admin"
+	AuthSessionResponseRoleOps   AuthSessionResponseRole = "ops"
+	AuthSessionResponseRoleSales AuthSessionResponseRole = "sales"
 )
 
 // Valid indicates whether the value is a known member of the AuthSessionResponseRole enum.
 func (e AuthSessionResponseRole) Valid() bool {
 	switch e {
-	case Admin:
+	case AuthSessionResponseRoleAdmin:
 		return true
-	case Ops:
+	case AuthSessionResponseRoleOps:
 		return true
-	case Sales:
+	case AuthSessionResponseRoleSales:
 		return true
 	default:
 		return false
@@ -6852,31 +6999,31 @@ func (e SetupWizardAuditReceiptKey) Valid() bool {
 
 // Defines values for SetupWizardErrorError.
 const (
-	InvalidActionToken     SetupWizardErrorError = "invalid_action_token"
-	InvalidIdempotencyKey  SetupWizardErrorError = "invalid_idempotency_key"
-	InvalidRequest         SetupWizardErrorError = "invalid_request"
-	InvalidSetting         SetupWizardErrorError = "invalid_setting"
-	SecretInputForbidden   SetupWizardErrorError = "secret_input_forbidden"
-	SetupWizardConflict    SetupWizardErrorError = "setup_wizard_conflict"
-	SetupWizardUnavailable SetupWizardErrorError = "setup_wizard_unavailable"
+	SetupWizardErrorErrorInvalidActionToken     SetupWizardErrorError = "invalid_action_token"
+	SetupWizardErrorErrorInvalidIdempotencyKey  SetupWizardErrorError = "invalid_idempotency_key"
+	SetupWizardErrorErrorInvalidRequest         SetupWizardErrorError = "invalid_request"
+	SetupWizardErrorErrorInvalidSetting         SetupWizardErrorError = "invalid_setting"
+	SetupWizardErrorErrorSecretInputForbidden   SetupWizardErrorError = "secret_input_forbidden"
+	SetupWizardErrorErrorSetupWizardConflict    SetupWizardErrorError = "setup_wizard_conflict"
+	SetupWizardErrorErrorSetupWizardUnavailable SetupWizardErrorError = "setup_wizard_unavailable"
 )
 
 // Valid indicates whether the value is a known member of the SetupWizardErrorError enum.
 func (e SetupWizardErrorError) Valid() bool {
 	switch e {
-	case InvalidActionToken:
+	case SetupWizardErrorErrorInvalidActionToken:
 		return true
-	case InvalidIdempotencyKey:
+	case SetupWizardErrorErrorInvalidIdempotencyKey:
 		return true
-	case InvalidRequest:
+	case SetupWizardErrorErrorInvalidRequest:
 		return true
-	case InvalidSetting:
+	case SetupWizardErrorErrorInvalidSetting:
 		return true
-	case SecretInputForbidden:
+	case SetupWizardErrorErrorSecretInputForbidden:
 		return true
-	case SetupWizardConflict:
+	case SetupWizardErrorErrorSetupWizardConflict:
 		return true
-	case SetupWizardUnavailable:
+	case SetupWizardErrorErrorSetupWizardUnavailable:
 		return true
 	default:
 		return false
@@ -7269,13 +7416,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
+	False SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case SidebarSafetyRealExternalCallExecutedFalse:
+	case False:
 		return true
 	default:
 		return false
@@ -7881,6 +8028,79 @@ func (e ListIdentityMergeReviewsParamsStatus) Valid() bool {
 		return false
 	}
 }
+
+// AdminAccessError defines model for AdminAccessError.
+type AdminAccessError struct {
+	Error AdminAccessErrorError `json:"error"`
+	Ok    AdminAccessErrorOk    `json:"ok"`
+}
+
+// AdminAccessErrorError defines model for AdminAccessError.Error.
+type AdminAccessErrorError string
+
+// AdminAccessErrorOk defines model for AdminAccessError.Ok.
+type AdminAccessErrorOk bool
+
+// AdminAccessMember defines model for AdminAccessMember.
+type AdminAccessMember struct {
+	AdminUserId      int64                 `json:"admin_user_id"`
+	DisplayName      string                `json:"display_name"`
+	IsActive         bool                  `json:"is_active"`
+	LoginEnabled     bool                  `json:"login_enabled"`
+	Role             AdminAccessMemberRole `json:"role"`
+	StaffId          *int64                `json:"staff_id"`
+	StaffName        string                `json:"staff_name"`
+	StaffWecomUserid string                `json:"staff_wecom_userid"`
+}
+
+// AdminAccessMemberRole defines model for AdminAccessMember.Role.
+type AdminAccessMemberRole string
+
+// AdminAccessReadResponse defines model for AdminAccessReadResponse.
+type AdminAccessReadResponse struct {
+	External  AdminAccessReadResponseExternal  `json:"external"`
+	LocalOnly AdminAccessReadResponseLocalOnly `json:"local_only"`
+	Members   []AdminAccessMember              `json:"members"`
+	Ok        AdminAccessReadResponseOk        `json:"ok"`
+}
+
+// AdminAccessReadResponseExternal defines model for AdminAccessReadResponse.External.
+type AdminAccessReadResponseExternal bool
+
+// AdminAccessReadResponseLocalOnly defines model for AdminAccessReadResponse.LocalOnly.
+type AdminAccessReadResponseLocalOnly bool
+
+// AdminAccessReadResponseOk defines model for AdminAccessReadResponse.Ok.
+type AdminAccessReadResponseOk bool
+
+// AdminAccessSaveMember defines model for AdminAccessSaveMember.
+type AdminAccessSaveMember struct {
+	AdminUserId  int64 `json:"admin_user_id"`
+	LoginEnabled bool  `json:"login_enabled"`
+}
+
+// AdminAccessSaveRequest defines model for AdminAccessSaveRequest.
+type AdminAccessSaveRequest struct {
+	Members []AdminAccessSaveMember `json:"members"`
+}
+
+// AdminAccessSaveResponse defines model for AdminAccessSaveResponse.
+type AdminAccessSaveResponse struct {
+	External       AdminAccessSaveResponseExternal  `json:"external"`
+	IdempotencyKey string                           `json:"idempotency_key"`
+	LocalOnly      AdminAccessSaveResponseLocalOnly `json:"local_only"`
+	Members        []AdminAccessMember              `json:"members"`
+	Ok             AdminAccessSaveResponseOk        `json:"ok"`
+}
+
+// AdminAccessSaveResponseExternal defines model for AdminAccessSaveResponse.External.
+type AdminAccessSaveResponseExternal bool
+
+// AdminAccessSaveResponseLocalOnly defines model for AdminAccessSaveResponse.LocalOnly.
+type AdminAccessSaveResponseLocalOnly bool
+
+// AdminAccessSaveResponseOk defines model for AdminAccessSaveResponse.Ok.
+type AdminAccessSaveResponseOk bool
 
 // AdminConfigEntry defines model for AdminConfigEntry.
 type AdminConfigEntry struct {
@@ -12523,6 +12743,9 @@ type AddedAfterFilter = time.Time
 // AddedBeforeFilter defines model for AddedBeforeFilter.
 type AddedBeforeFilter = time.Time
 
+// AdminAccessIdempotencyKey defines model for AdminAccessIdempotencyKey.
+type AdminAccessIdempotencyKey = string
+
 // AdminOpsActionToken defines model for AdminOpsActionToken.
 type AdminOpsActionToken = string
 
@@ -12765,6 +12988,15 @@ type Unauthorized = ErrorResponse
 
 // UnprocessableEntity defines model for UnprocessableEntity.
 type UnprocessableEntity = ErrorResponse
+
+// SaveAdminAccessMembersParams defines parameters for SaveAdminAccessMembers.
+type SaveAdminAccessMembersParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable local admin-access request key. Repeating the same desired flags does not create another session-version change.
+	IdempotencyKey AdminAccessIdempotencyKey `json:"Idempotency-Key"`
+}
 
 // InitiateMediaAttachmentMultipartUploadParams defines parameters for InitiateMediaAttachmentMultipartUpload.
 type InitiateMediaAttachmentMultipartUploadParams struct {
@@ -14253,6 +14485,9 @@ type CreateWechatPaySettlementRefundParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// SaveAdminAccessMembersJSONRequestBody defines body for SaveAdminAccessMembers for application/json ContentType.
+type SaveAdminAccessMembersJSONRequestBody = AdminAccessSaveRequest
+
 // InitiateMediaAttachmentMultipartUploadJSONRequestBody defines body for InitiateMediaAttachmentMultipartUpload for application/json ContentType.
 type InitiateMediaAttachmentMultipartUploadJSONRequestBody = MediaAttachmentUploadInitiateRequest
 
@@ -15712,6 +15947,12 @@ type ServerInterface interface {
 	// Carry the safe local execution-runtime observation into the existing admin shell
 	// (GET /admin/execution-runtime)
 	GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request)
+	// List existing local admin accounts and their current login access
+	// (GET /api/admin/admin-access)
+	ListAdminAccessMembers(w http.ResponseWriter, r *http.Request)
+	// Save local login access for existing admin accounts
+	// (PUT /api/admin/admin-access)
+	SaveAdminAccessMembers(w http.ResponseWriter, r *http.Request, params SaveAdminAccessMembersParams)
 	// Initiate a local private PDF multipart upload
 	// (POST /api/admin/attachment-library/uploads)
 	InitiateMediaAttachmentMultipartUpload(w http.ResponseWriter, r *http.Request, params InitiateMediaAttachmentMultipartUploadParams)
@@ -16465,6 +16706,18 @@ func (_ Unimplemented) GetAdminOpsReleasePage(w http.ResponseWriter, r *http.Req
 // Carry the safe local execution-runtime observation into the existing admin shell
 // (GET /admin/execution-runtime)
 func (_ Unimplemented) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List existing local admin accounts and their current login access
+// (GET /api/admin/admin-access)
+func (_ Unimplemented) ListAdminAccessMembers(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Save local login access for existing admin accounts
+// (PUT /api/admin/admin-access)
+func (_ Unimplemented) SaveAdminAccessMembers(w http.ResponseWriter, r *http.Request, params SaveAdminAccessMembersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -18027,6 +18280,99 @@ func (siw *ServerInterfaceWrapper) GetLegacyExecutionRuntimePage(w http.Response
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetLegacyExecutionRuntimePage(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAdminAccessMembers operation middleware
+func (siw *ServerInterfaceWrapper) ListAdminAccessMembers(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAdminAccessMembers(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SaveAdminAccessMembers operation middleware
+func (siw *ServerInterfaceWrapper) SaveAdminAccessMembers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SaveAdminAccessMembersParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey AdminAccessIdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SaveAdminAccessMembers(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -32733,6 +33079,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/admin/execution-runtime", wrapper.GetLegacyExecutionRuntimePage)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/admin-access", wrapper.ListAdminAccessMembers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/admin/admin-access", wrapper.SaveAdminAccessMembers)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/attachment-library/uploads", wrapper.InitiateMediaAttachmentMultipartUpload)
 	})
 	r.Group(func(r chi.Router) {
@@ -33832,6 +34184,112 @@ func (response GetLegacyExecutionRuntimePage405Response) VisitGetLegacyExecution
 	w.Header().Set("X-Content-Type-Options", fmt.Sprint(response.Headers.XContentTypeOptions))
 	w.WriteHeader(405)
 	return nil
+}
+
+type ListAdminAccessMembersRequestObject struct {
+}
+
+type ListAdminAccessMembersResponseObject interface {
+	VisitListAdminAccessMembersResponse(w http.ResponseWriter) error
+}
+
+type ListAdminAccessMembers200JSONResponse AdminAccessReadResponse
+
+func (response ListAdminAccessMembers200JSONResponse) VisitListAdminAccessMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminAccessMembers400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListAdminAccessMembers400JSONResponse) VisitListAdminAccessMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminAccessMembers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAdminAccessMembers401JSONResponse) VisitListAdminAccessMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminAccessMembers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListAdminAccessMembers403JSONResponse) VisitListAdminAccessMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListAdminAccessMembers503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListAdminAccessMembers503JSONResponse) VisitListAdminAccessMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveAdminAccessMembersRequestObject struct {
+	Params SaveAdminAccessMembersParams
+	Body   *SaveAdminAccessMembersJSONRequestBody
+}
+
+type SaveAdminAccessMembersResponseObject interface {
+	VisitSaveAdminAccessMembersResponse(w http.ResponseWriter) error
+}
+
+type SaveAdminAccessMembers200JSONResponse AdminAccessSaveResponse
+
+func (response SaveAdminAccessMembers200JSONResponse) VisitSaveAdminAccessMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveAdminAccessMembers400JSONResponse AdminAccessError
+
+func (response SaveAdminAccessMembers400JSONResponse) VisitSaveAdminAccessMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveAdminAccessMembers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SaveAdminAccessMembers401JSONResponse) VisitSaveAdminAccessMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveAdminAccessMembers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SaveAdminAccessMembers403JSONResponse) VisitSaveAdminAccessMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SaveAdminAccessMembers503JSONResponse AdminAccessError
+
+func (response SaveAdminAccessMembers503JSONResponse) VisitSaveAdminAccessMembersResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
 }
 
 type InitiateMediaAttachmentMultipartUploadRequestObject struct {
@@ -49047,6 +49505,12 @@ type StrictServerInterface interface {
 	// Carry the safe local execution-runtime observation into the existing admin shell
 	// (GET /admin/execution-runtime)
 	GetLegacyExecutionRuntimePage(ctx context.Context, request GetLegacyExecutionRuntimePageRequestObject) (GetLegacyExecutionRuntimePageResponseObject, error)
+	// List existing local admin accounts and their current login access
+	// (GET /api/admin/admin-access)
+	ListAdminAccessMembers(ctx context.Context, request ListAdminAccessMembersRequestObject) (ListAdminAccessMembersResponseObject, error)
+	// Save local login access for existing admin accounts
+	// (PUT /api/admin/admin-access)
+	SaveAdminAccessMembers(ctx context.Context, request SaveAdminAccessMembersRequestObject) (SaveAdminAccessMembersResponseObject, error)
 	// Initiate a local private PDF multipart upload
 	// (POST /api/admin/attachment-library/uploads)
 	InitiateMediaAttachmentMultipartUpload(ctx context.Context, request InitiateMediaAttachmentMultipartUploadRequestObject) (InitiateMediaAttachmentMultipartUploadResponseObject, error)
@@ -49931,6 +50395,63 @@ func (sh *strictHandler) GetLegacyExecutionRuntimePage(w http.ResponseWriter, r 
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetLegacyExecutionRuntimePageResponseObject); ok {
 		if err := validResponse.VisitGetLegacyExecutionRuntimePageResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListAdminAccessMembers operation middleware
+func (sh *strictHandler) ListAdminAccessMembers(w http.ResponseWriter, r *http.Request) {
+	var request ListAdminAccessMembersRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListAdminAccessMembers(ctx, request.(ListAdminAccessMembersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAdminAccessMembers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAdminAccessMembersResponseObject); ok {
+		if err := validResponse.VisitListAdminAccessMembersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SaveAdminAccessMembers operation middleware
+func (sh *strictHandler) SaveAdminAccessMembers(w http.ResponseWriter, r *http.Request, params SaveAdminAccessMembersParams) {
+	var request SaveAdminAccessMembersRequestObject
+
+	request.Params = params
+
+	var body SaveAdminAccessMembersJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SaveAdminAccessMembers(ctx, request.(SaveAdminAccessMembersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SaveAdminAccessMembers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SaveAdminAccessMembersResponseObject); ok {
+		if err := validResponse.VisitSaveAdminAccessMembersResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

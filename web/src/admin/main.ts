@@ -12,6 +12,7 @@ import { mountRadar } from './sections/radar';
 import { mountAiAssistant } from './sections/aiAssistant';
 import { mountFunnelGrid } from './sections/funnelGrid';
 import { mountCampaignWorkspace } from './sections/campaigns';
+import { mountAdminAccess } from './sections/adminAccess';
 import { mountSetupWizard } from './sections/setupWizard';
 import { esc } from './sections/util';
 import { mountCouponData, mountCouponForm, mountServicePeriodMemberGrid } from './sections/commerce';
@@ -92,6 +93,8 @@ function boot(): void {
       if (page === 'config') {
         const setupWizard = stage.querySelector<HTMLElement>('#setup-wizard-card');
         if (setupWizard) await mountSetupWizard(setupWizard);
+        const adminAccess = stage.querySelector<HTMLElement>('#admin-access-card');
+        if (adminAccess) await mountAdminAccess(adminAccess);
       }
     })
     .catch((error) => showLoadError(stage, error));

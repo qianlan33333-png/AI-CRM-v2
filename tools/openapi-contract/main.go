@@ -881,7 +881,7 @@ var p4ConfigSettingsOperations = map[string]bool{
 }
 
 var p4SetupWizardOperations = map[string]bool{
-	"getSetupWizard": true, "saveSetupWizard": true,
+	"getSetupWizard": true, "saveSetupWizard": true, "listAdminAccessMembers": true, "saveAdminAccessMembers": true,
 }
 
 var p4DomainVerificationOperations = map[string]bool{
@@ -1262,6 +1262,8 @@ var authorizationContracts = map[string]authorizationContract{
 	"saveLegacyAppSettingsResource":              {"config.settings.manage", map[string]string{"admin": "global"}},
 	"getSetupWizard":                             {"config.overview.read", map[string]string{"admin": "global"}},
 	"saveSetupWizard":                            {"config.settings.manage", map[string]string{"admin": "global"}},
+	"listAdminAccessMembers":                     {"config.settings.manage", map[string]string{"admin": "global"}},
+	"saveAdminAccessMembers":                     {"config.settings.manage", map[string]string{"admin": "global"}},
 	"getLegacyAdminShell":                        {"admin.shell.read", map[string]string{"admin": "global", "ops": "global"}},
 	"getLegacyAdminLogoutCompat":                 {"admin.shell.read", map[string]string{"admin": "global", "ops": "global"}},
 	"upsertLegacyHXCSendConfig":                  {"operations.manage", map[string]string{"admin": "global"}},
@@ -2330,12 +2332,25 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				}
 			} else if p4SetupWizardOperations[op.OperationID] {
 				seenP4SetupWizard[op.OperationID] = true
-				read := op.OperationID == "getSetupWizard"
+				adminAccess := op.OperationID == "listAdminAccessMembers" || op.OperationID == "saveAdminAccessMembers"
+				read := op.OperationID == "getSetupWizard" || op.OperationID == "listAdminAccessMembers"
 				capability, csrf, source := "config.settings.manage", "required", "local_command"
 				if read {
 					capability, csrf, source = "config.overview.read", "none", "local_read_model"
 				}
-				if op.Extensions["x-p4-decision-evidence"] != "P4-SETUP-WIZARD-LOCAL-2026-08-23" ||
+				if adminAccess {
+					capability = "config.settings.manage"
+					if read {
+						source = "admin_users.staff_local_projection"
+					} else {
+						source = "admin_users.login_enabled.local_command"
+					}
+				}
+				evidence := "P4-SETUP-WIZARD-LOCAL-2026-08-23"
+				if adminAccess {
+					evidence = "P4-ADMIN-ACCESS-LOCAL-2026-08-27"
+				}
+				if op.Extensions["x-p4-decision-evidence"] != evidence ||
 					op.Extensions["x-aicrm-capability"] != capability || op.Extensions["x-aicrm-auth-scheme"] != "human_session" ||
 					op.Extensions["x-aicrm-session-bound-csrf"] != csrf || op.Extensions["x-aicrm-data-classification"] != "internal" ||
 					op.Extensions["x-aicrm-data-source"] != source || op.Extensions["x-aicrm-external-effect"] != "none" ||
