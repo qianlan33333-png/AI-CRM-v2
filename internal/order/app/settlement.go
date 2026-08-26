@@ -71,6 +71,7 @@ type SettlementStore interface {
 	EnqueueRefundReconcile(context.Context, int64) (int64, error)
 	GetPaymentCommandByOrder(context.Context, orderport.ID) (orderport.PaymentCommand, error)
 	LockPaymentCommand(context.Context, int64) (orderport.PaymentCommand, error)
+	RecordPaymentHandoff(context.Context, orderport.PaymentCommand, orderport.JSAPIHandoff, [32]byte, time.Time) (orderport.PaymentCommand, error)
 	BindPaymentEffect(context.Context, orderport.PaymentCommand, string, time.Time) (orderport.PaymentCommand, error)
 	CompletePaymentEffect(context.Context, orderport.PaymentCommand, orderport.EffectState, [32]byte, time.Time) (orderport.PaymentCommand, error)
 	LockOrderByMerchantNo(context.Context, string) (FinancialOrderRecord, error)
@@ -349,11 +350,19 @@ func (service *SettlementService) GetSelfScoped(ctx context.Context, merchantOrd
 		if err != nil {
 			return err
 		}
-		paymentID, getErr := paymentCommandID(tx, service.store, order.ID)
+		payment, getErr := service.store.GetPaymentCommandByOrder(tx, order.ID)
 		if getErr != nil {
-			return getErr
+			return settlementStoreError(getErr)
 		}
-		result = checkoutProjection(order, paymentID)
+		result = checkoutProjection(order, payment.ID)
+		if order.State == orderport.FinancialAwaitingPayment && payment.State == orderport.EffectExecuted && payment.JSAPIHandoff != nil && validStoredJSAPIHandoff(*payment.JSAPIHandoff) {
+			expiresAt := payment.JSAPIHandoff.ExpiresAt.UTC()
+			result.PrepayExpiresAt = &expiresAt
+			if service.now().UTC().Before(expiresAt) {
+				handoff := *payment.JSAPIHandoff
+				result.PayParams = &handoff
+			}
+		}
 		return nil
 	})
 	return result, classifySettlement(err)
@@ -480,9 +489,28 @@ func paymentCommandID(ctx context.Context, store SettlementStore, orderID orderp
 }
 
 func replayCheckout(receipt BoardReceipt, result *orderport.Checkout) error {
-	if receipt.State != "completed" || json.Unmarshal(receipt.ResultSnapshot, result) != nil || result.OrderID < 1 || result.PaymentCommandID < 1 {
+	if receipt.State != "completed" {
 		return orderport.ErrSettlementUnavailable
 	}
+	if json.Unmarshal(receipt.ResultSnapshot, result) == nil && result.OrderID > 0 && result.PaymentCommandID > 0 {
+		return nil
+	}
+	var legacy struct {
+		OrderID          orderport.ID
+		MerchantOrderNo  string
+		State            orderport.FinancialState
+		ProductKind      orderport.ProductKind
+		CustomerID       int64
+		ProductID        int64
+		AmountMinor      int64
+		Currency         string
+		PaymentCommandID int64
+		CreatedAt        time.Time
+	}
+	if json.Unmarshal(receipt.ResultSnapshot, &legacy) != nil || legacy.OrderID < 1 || legacy.PaymentCommandID < 1 {
+		return orderport.ErrSettlementUnavailable
+	}
+	*result = orderport.Checkout{OrderID: legacy.OrderID, MerchantOrderNo: legacy.MerchantOrderNo, State: legacy.State, ProductKind: legacy.ProductKind, CustomerID: legacy.CustomerID, ProductID: legacy.ProductID, AmountMinor: legacy.AmountMinor, Currency: legacy.Currency, PaymentCommandID: legacy.PaymentCommandID, CreatedAt: legacy.CreatedAt}
 	return nil
 }
 

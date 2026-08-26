@@ -56,16 +56,18 @@ type CheckoutCommand struct {
 }
 
 type Checkout struct {
-	OrderID          ID
-	MerchantOrderNo  string
-	State            FinancialState
-	ProductKind      ProductKind
-	CustomerID       int64
-	ProductID        int64
-	AmountMinor      int64
-	Currency         string
-	PaymentCommandID int64
-	CreatedAt        time.Time
+	OrderID          ID             `json:"order_id"`
+	MerchantOrderNo  string         `json:"merchant_order_no"`
+	State            FinancialState `json:"state"`
+	ProductKind      ProductKind    `json:"product_kind"`
+	CustomerID       int64          `json:"customer_id"`
+	ProductID        int64          `json:"product_id"`
+	AmountMinor      int64          `json:"amount_minor"`
+	Currency         string         `json:"currency"`
+	PaymentCommandID int64          `json:"payment_command_id"`
+	PayParams        *JSAPIHandoff  `json:"pay_params,omitempty"`
+	PrepayExpiresAt  *time.Time     `json:"prepay_expires_at,omitempty"`
+	CreatedAt        time.Time      `json:"created_at"`
 }
 
 type PaymentCallbackCommand struct {
@@ -100,17 +102,19 @@ type RefundCallbackCommand struct {
 }
 
 type PaymentCommand struct {
-	ID                  int64
-	OrderID             ID
-	SourceRefDigest     [32]byte
-	TargetRefDigest     [32]byte
-	PayloadDigest       [32]byte
-	PolicyVersionDigest [32]byte
-	ExternalEffectID    string
-	State               EffectState
-	Version             int64
-	CreatedAt           time.Time
-	UpdatedAt           time.Time
+	ID                   int64
+	OrderID              ID
+	SourceRefDigest      [32]byte
+	TargetRefDigest      [32]byte
+	PayloadDigest        [32]byte
+	PolicyVersionDigest  [32]byte
+	ProviderPrepayDigest [32]byte
+	JSAPIHandoff         *JSAPIHandoff
+	ExternalEffectID     string
+	State                EffectState
+	Version              int64
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
 }
 
 type RefundV2 struct {

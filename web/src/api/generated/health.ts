@@ -8396,6 +8396,9 @@ export const WechatPayCheckoutCurrency = {
   WechatPayCurrencyCNY: "CNY",
 } as const;
 
+/**
+ * Actor-bound checkout projection. pay_params is present only while an awaiting_payment JSAPI handoff is unexpired; clients must create a new checkout after prepay_expires_at and must not replay the Provider call.
+ */
 export interface WechatPayCheckout {
   /** @minimum 1 */
   order_id: number;
@@ -8415,7 +8418,47 @@ export interface WechatPayCheckout {
   currency: WechatPayCheckoutCurrency;
   /** @minimum 1 */
   payment_command_id: number;
+  pay_params?: WechatPayJSAPIHandoff;
+  /** Expiry of the materialized JSAPI handoff; retained after expiry while pay_params is omitted. */
+  prepay_expires_at?: string;
   created_at: string;
+}
+
+export type WechatPayJSAPIHandoffSignType =
+  (typeof WechatPayJSAPIHandoffSignType)[keyof typeof WechatPayJSAPIHandoffSignType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatPayJSAPIHandoffSignType = {
+  RSA: "RSA",
+} as const;
+
+/**
+ * Short-lived fields passed unchanged to WeixinJSBridge.getBrandWCPayRequest. Contains no payer identity or merchant private key.
+ */
+export interface WechatPayJSAPIHandoff {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  appId: string;
+  /** @pattern ^[1-9][0-9]{0,18}$ */
+  timeStamp: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  nonceStr: string;
+  /**
+   * @maxLength 256
+   * @pattern ^prepay_id=.{1,245}$
+   */
+  package: string;
+  signType: WechatPayJSAPIHandoffSignType;
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  paySign: string;
 }
 
 export interface WechatPaySettlementRefundRequest {

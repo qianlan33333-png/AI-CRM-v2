@@ -43,6 +43,17 @@ const (
 	domainVerificationDirEnv          = "AICRM_DOMAIN_VERIFICATION_DIR"
 	applicationEnvironmentEnv         = "AICRM_ENV"
 	releaseSHAEnv                     = "AICRM_RELEASE_SHA"
+	weChatPayEnabledEnv               = "AICRM_WECHAT_PAY_ENABLED"
+	weChatPayAppIDEnv                 = "AICRM_WECHAT_PAY_APP_ID"
+	weChatPayMerchantIDEnv            = "AICRM_WECHAT_PAY_MERCHANT_ID"
+	weChatPayMerchantSerialEnv        = "AICRM_WECHAT_PAY_MERCHANT_SERIAL"
+	weChatPayMerchantPrivateKeyEnv    = "AICRM_WECHAT_PAY_MERCHANT_PRIVATE_KEY"
+	weChatPayAPIV3KeyEnv              = "AICRM_WECHAT_PAY_API_V3_KEY"
+	weChatPayPlatformSerialEnv        = "AICRM_WECHAT_PAY_PLATFORM_SERIAL"
+	weChatPayPlatformCertificateEnv   = "AICRM_WECHAT_PAY_PLATFORM_CERTIFICATE"
+	weChatPayPaymentNotifyURLEnv      = "AICRM_WECHAT_PAY_PAYMENT_NOTIFY_URL"
+	weChatPayRefundNotifyURLEnv       = "AICRM_WECHAT_PAY_REFUND_NOTIFY_URL"
+	weChatPayPermissionConfirmedEnv   = "AICRM_WECHAT_PAY_PERMISSION_CONFIRMED"
 
 	legacySecretKeyEnv                        = "SECRET_KEY"
 	legacyWeChatShopCallbackTokenEnv          = "WECHAT_SHOP_CALLBACK_TOKEN"
@@ -54,6 +65,10 @@ const (
 	weComCustomerAcquisitionCorpIDEnv              = "AICRM_WECOM_CUSTOMER_ACQUISITION_CORP_ID"
 	weComCustomerAcquisitionSecretEnv              = "AICRM_WECOM_CUSTOMER_ACQUISITION_SECRET"
 	weComCustomerAcquisitionPermissionConfirmedEnv = "AICRM_WECOM_CUSTOMER_ACQUISITION_PERMISSION_CONFIRMED"
+	weComOutboundEnabledEnv                        = "AICRM_WECOM_OUTBOUND_ENABLED"
+	weComOutboundCorpIDEnv                         = "AICRM_WECOM_OUTBOUND_CORP_ID"
+	weComOutboundSecretEnv                         = "AICRM_WECOM_OUTBOUND_SECRET"
+	weComOutboundPermissionConfirmedEnv            = "AICRM_WECOM_OUTBOUND_PERMISSION_CONFIRMED"
 )
 
 // legacyProductionEnvironmentEnvs are the legacy production aliases. The v2
@@ -169,6 +184,22 @@ type WeComCustomerAcquisition struct {
 	PermissionConfirmed bool
 }
 
+type WeComOutboundSecret struct{ value string }
+
+func (secret WeComOutboundSecret) Value() string { return secret.value }
+func (WeComOutboundSecret) String() string       { return "[REDACTED]" }
+func (WeComOutboundSecret) GoString() string     { return "[REDACTED]" }
+
+// WeComOutbound is an independent, worker-only opt-in for creating external-
+// contact message templates. It cannot inherit OAuth, Sidebar, callback, or
+// customer-acquisition credentials.
+type WeComOutbound struct {
+	Enabled             bool
+	CorpID              string
+	Secret              WeComOutboundSecret
+	PermissionConfirmed bool
+}
+
 // WeComSidebar is the independent OAuth and JSSDK configuration for the
 // embedded sidebar. It deliberately cannot reuse the administrator OAuth
 // callback, because the two browser protocols have different bindings.
@@ -187,6 +218,36 @@ type WeCom struct {
 	DirectorySync       WeComDirectorySync
 	Sidebar             WeComSidebar
 	CustomerAcquisition WeComCustomerAcquisition
+	Outbound            WeComOutbound
+}
+
+// CommerceProviderSecret is intentionally opaque. Payment credentials must
+// never surface through config formatting or startup error text.
+type CommerceProviderSecret struct{ value string }
+
+func (secret CommerceProviderSecret) Value() string { return secret.value }
+func (CommerceProviderSecret) String() string       { return "[REDACTED]" }
+func (CommerceProviderSecret) GoString() string     { return "[REDACTED]" }
+
+// WeChatPayProvider is role-scoped: API loads only callback verification
+// material, while Worker loads only outbound payment credentials and requires
+// an explicit permission assertion.
+type WeChatPayProvider struct {
+	Enabled             bool
+	AppID               string
+	MerchantID          string
+	MerchantSerial      string
+	MerchantPrivateKey  CommerceProviderSecret
+	APIV3Key            CommerceProviderSecret
+	PlatformSerial      string
+	PlatformCertificate CommerceProviderSecret
+	PaymentNotifyURL    string
+	RefundNotifyURL     string
+	PermissionConfirmed bool
+}
+
+type CommerceProviders struct {
+	WeChatPay WeChatPayProvider
 }
 
 type IdentityHMACKey struct{ value [32]byte }
@@ -258,6 +319,7 @@ type Root struct {
 	API                API
 	Worker             Worker
 	WeCom              WeCom
+	Commerce           CommerceProviders
 	Identity           Identity
 	APIClient          APIClient
 	Survey             Survey
@@ -295,6 +357,9 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 	needAPI, needWorker, roleValid := selectedComponents(role)
 	if !roleValid {
 		problems = append(problems, "process.role is invalid")
+	}
+	if needAPI || needWorker {
+		root.Commerce.WeChatPay = parseWeChatPayProvider(lookup, needAPI, needWorker, &problems)
 	}
 	if needAPI {
 		listenAddress, present := lookup(apiListenAddressEnv)
@@ -339,6 +404,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 			problems = append(problems, "worker.pool_max_conns must be at least queue concurrency total + 2")
 		}
 		root.WeCom.CustomerAcquisition = parseWeComCustomerAcquisition(lookup, &problems)
+		root.WeCom.Outbound = parseWeComOutbound(lookup, &problems)
 		if !needAPI {
 			root.WeCom.DirectorySync = parseWeComDirectorySync(lookup, &problems)
 			if root.WeCom.DirectorySync.Enabled {
@@ -523,6 +589,122 @@ func parseWeComCustomerAcquisition(lookup environmentLookup, problems *[]string)
 	return WeComCustomerAcquisition{
 		Enabled: true, CorpID: corpID, Secret: CustomerAcquisitionSecret{value: secret}, PermissionConfirmed: permission == "true",
 	}
+}
+
+func parseWeComOutbound(lookup environmentLookup, problems *[]string) WeComOutbound {
+	enabled, enabledPresent := lookup(weComOutboundEnabledEnv)
+	corpID, corpIDPresent := lookup(weComOutboundCorpIDEnv)
+	secret, secretPresent := lookup(weComOutboundSecretEnv)
+	permission, permissionPresent := lookup(weComOutboundPermissionConfirmedEnv)
+	if !enabledPresent && !corpIDPresent && !secretPresent && !permissionPresent {
+		return WeComOutbound{}
+	}
+	if !enabledPresent || enabled != "true" && enabled != "false" {
+		*problems = append(*problems, "wecom.outbound.enabled must be true or false")
+		return WeComOutbound{}
+	}
+	if enabled == "false" {
+		if corpIDPresent || secretPresent || permissionPresent {
+			*problems = append(*problems, "wecom.outbound credentials require enabled=true")
+		}
+		return WeComOutbound{}
+	}
+	if !corpIDPresent || !secretPresent || !permissionPresent || corpID == "" || secret == "" {
+		*problems = append(*problems, "wecom.outbound requires corp_id, secret, and permission_confirmed together")
+		return WeComOutbound{}
+	}
+	if !validWeComCorpID(corpID) {
+		*problems = append(*problems, "wecom.outbound.corp_id is invalid")
+	}
+	if len(secret) > 256 || strings.TrimSpace(secret) != secret {
+		*problems = append(*problems, "wecom.outbound.secret is invalid")
+	}
+	if permission != "true" {
+		*problems = append(*problems, "wecom.outbound.permission_confirmed must be true when enabled")
+	}
+	return WeComOutbound{Enabled: true, CorpID: corpID, Secret: WeComOutboundSecret{value: secret}, PermissionConfirmed: permission == "true"}
+}
+
+func parseWeChatPayProvider(lookup environmentLookup, needAPI, needWorker bool, problems *[]string) WeChatPayProvider {
+	enabled, enabledPresent := lookup(weChatPayEnabledEnv)
+	appID, appIDPresent := lookup(weChatPayAppIDEnv)
+	merchantID, merchantIDPresent := lookup(weChatPayMerchantIDEnv)
+	platformSerial, platformSerialPresent := lookup(weChatPayPlatformSerialEnv)
+	platformCertificate, platformCertificatePresent := lookup(weChatPayPlatformCertificateEnv)
+	var merchantSerial, merchantKey, paymentNotifyURL, refundNotifyURL, permission string
+	var merchantSerialPresent, merchantKeyPresent, paymentNotifyPresent, refundNotifyPresent, permissionPresent bool
+	if needWorker {
+		merchantSerial, merchantSerialPresent = lookup(weChatPayMerchantSerialEnv)
+		merchantKey, merchantKeyPresent = lookup(weChatPayMerchantPrivateKeyEnv)
+		paymentNotifyURL, paymentNotifyPresent = lookup(weChatPayPaymentNotifyURLEnv)
+		refundNotifyURL, refundNotifyPresent = lookup(weChatPayRefundNotifyURLEnv)
+		permission, permissionPresent = lookup(weChatPayPermissionConfirmedEnv)
+	}
+	var apiV3Key string
+	var apiV3KeySet bool
+	if needAPI {
+		apiV3Key, apiV3KeySet = lookup(weChatPayAPIV3KeyEnv)
+	}
+	anyPresent := enabledPresent || appIDPresent || merchantIDPresent || platformSerialPresent || platformCertificatePresent || merchantSerialPresent || merchantKeyPresent || paymentNotifyPresent || refundNotifyPresent || permissionPresent || apiV3KeySet
+	if !anyPresent {
+		return WeChatPayProvider{}
+	}
+	if !enabledPresent || (enabled != "true" && enabled != "false") {
+		*problems = append(*problems, "wechat_pay.enabled must be true or false")
+		return WeChatPayProvider{}
+	}
+	if enabled == "false" {
+		if anyPresent && (appIDPresent || merchantIDPresent || platformSerialPresent || platformCertificatePresent || merchantSerialPresent || merchantKeyPresent || paymentNotifyPresent || refundNotifyPresent || permissionPresent || apiV3KeySet) {
+			*problems = append(*problems, "wechat_pay credentials require enabled=true")
+		}
+		return WeChatPayProvider{}
+	}
+	if !appIDPresent || !merchantIDPresent || !platformSerialPresent || !platformCertificatePresent || appID == "" || merchantID == "" || platformSerial == "" || platformCertificate == "" {
+		*problems = append(*problems, "wechat_pay requires app_id, merchant_id, platform_serial, and platform_certificate")
+		return WeChatPayProvider{}
+	}
+	if needAPI && (!apiV3KeySet || apiV3Key == "") {
+		*problems = append(*problems, "wechat_pay callback requires api_v3_key")
+		return WeChatPayProvider{}
+	}
+	if needWorker && (!merchantSerialPresent || !merchantKeyPresent || !paymentNotifyPresent || !refundNotifyPresent || !permissionPresent || merchantSerial == "" || merchantKey == "" || paymentNotifyURL == "" || refundNotifyURL == "") {
+		*problems = append(*problems, "wechat_pay worker requires merchant_serial, merchant_private_key, payment_notify_url, refund_notify_url, and permission_confirmed")
+		return WeChatPayProvider{}
+	}
+	if !validProviderIdentifier(appID) || !validProviderIdentifier(merchantID) || !validProviderIdentifier(platformSerial) || (needWorker && !validProviderIdentifier(merchantSerial)) {
+		*problems = append(*problems, "wechat_pay identifiers are invalid")
+	}
+	if (needWorker && !validOpaqueProviderSecret(merchantKey)) || (needAPI && (len(apiV3Key) != 32 || !validOpaqueProviderSecret(apiV3Key))) || !validOpaqueProviderSecret(platformCertificate) {
+		*problems = append(*problems, "wechat_pay credentials are invalid")
+	}
+	if needWorker && (!validProviderCallbackURL(paymentNotifyURL) || !validProviderCallbackURL(refundNotifyURL) || paymentNotifyURL == refundNotifyURL) {
+		*problems = append(*problems, "wechat_pay notify urls are invalid")
+	}
+	if needWorker && permission != "true" {
+		*problems = append(*problems, "wechat_pay.permission_confirmed must be true when enabled")
+	}
+	return WeChatPayProvider{Enabled: true, AppID: appID, MerchantID: merchantID, MerchantSerial: merchantSerial, MerchantPrivateKey: CommerceProviderSecret{value: merchantKey}, APIV3Key: CommerceProviderSecret{value: apiV3Key}, PlatformSerial: platformSerial, PlatformCertificate: CommerceProviderSecret{value: platformCertificate}, PaymentNotifyURL: paymentNotifyURL, RefundNotifyURL: refundNotifyURL, PermissionConfirmed: permission == "true"}
+}
+
+func validProviderIdentifier(value string) bool {
+	if value == "" || len(value) > 128 || strings.TrimSpace(value) != value {
+		return false
+	}
+	for _, character := range value {
+		if !(character >= 'a' && character <= 'z') && !(character >= 'A' && character <= 'Z') && !(character >= '0' && character <= '9') && character != '_' && character != '-' && character != '.' {
+			return false
+		}
+	}
+	return true
+}
+
+func validOpaqueProviderSecret(value string) bool {
+	return value != "" && len(value) <= 16<<10 && strings.TrimSpace(value) == value
+}
+
+func validProviderCallbackURL(value string) bool {
+	parsed, err := url.Parse(value)
+	return err == nil && parsed.Scheme == "https" && parsed.Host != "" && parsed.User == nil && parsed.Opaque == "" && parsed.RawQuery == "" && parsed.Fragment == "" && parsed.Path != ""
 }
 
 func validWeComDirectorySyncStaffUserID(value string) bool {

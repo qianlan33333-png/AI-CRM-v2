@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/port"
 	outbound "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound"
 	outboundport "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/port"
@@ -15,6 +16,12 @@ type campaignDispatchFixture struct {
 	bindings                                    []outboundport.CampaignDispatchBinding
 	effects                                     map[string]string
 	runtimeAccepts, runtimeQueues, enqueueCalls int
+	eligibility                                 map[int64]contactport.ContactEligibility
+	eligibilityCalls                            int
+	eligibilityErr                              error
+	checkedIDs                                  []contactport.CustomerID
+	candidates                                  []outboundport.CampaignDispatchCandidate
+	receipt                                     *outboundport.CampaignDispatchReceipt
 }
 
 func (*campaignDispatchFixture) Within(ctx context.Context, callback func(context.Context) error) error {
@@ -34,11 +41,41 @@ func (fixture *campaignDispatchFixture) LoadCampaignDispatchByEffect(_ context.C
 	}
 	return outboundport.CampaignDispatchBinding{}, errors.New("binding not found")
 }
-func (*campaignDispatchFixture) ListCampaignDispatchCandidates(context.Context, int64) ([]outboundport.CampaignDispatchCandidate, error) {
+func (fixture *campaignDispatchFixture) ListCampaignDispatchCandidates(context.Context, int64) ([]outboundport.CampaignDispatchCandidate, error) {
+	if fixture.candidates != nil {
+		return append([]outboundport.CampaignDispatchCandidate(nil), fixture.candidates...), nil
+	}
 	return []outboundport.CampaignDispatchCandidate{{CustomerID: 2, StepIndex: 1, Content: "hello"}, {CustomerID: 7, StepIndex: 1, Content: "hello"}}, nil
 }
+func (fixture *campaignDispatchFixture) CheckContactEligibility(_ context.Context, check contactport.ContactEligibilityCheck) ([]contactport.ContactEligibility, error) {
+	fixture.eligibilityCalls++
+	fixture.checkedIDs = append([]contactport.CustomerID(nil), check.CustomerIDs...)
+	if fixture.eligibilityErr != nil {
+		return nil, fixture.eligibilityErr
+	}
+	if check.Checkpoint != contactport.ContactEligibilityDispatch || check.EvaluatedAt.IsZero() {
+		return nil, contactport.ErrInvalidContactEligibility
+	}
+	result := make([]contactport.ContactEligibility, len(check.CustomerIDs))
+	for index, customerID := range check.CustomerIDs {
+		decision, present := fixture.eligibility[int64(customerID)]
+		if !present {
+			decision = contactport.ContactEligibility{CustomerID: customerID, CustomerActive: true, Eligible: true, Exclusion: contactport.ContactEligibilityExclusionNone}
+		}
+		result[index] = decision
+	}
+	return result, nil
+}
 func (fixture *campaignDispatchFixture) ReserveCampaignDispatchReceipt(_ context.Context, actorID, handoffID int64, key, payload [32]byte, result outbound.CampaignDispatchSummary) (outboundport.CampaignDispatchReceipt, error) {
-	return outboundport.CampaignDispatchReceipt{ID: 1, ActorID: actorID, HandoffID: handoffID, KeyDigest: key, PayloadDigest: payload, Result: result}, nil
+	receipt := outboundport.CampaignDispatchReceipt{ID: 1, ActorID: actorID, HandoffID: handoffID, KeyDigest: key, PayloadDigest: payload, Result: result}
+	fixture.receipt = &receipt
+	return receipt, nil
+}
+func (fixture *campaignDispatchFixture) LoadCampaignDispatchReceipt(_ context.Context, actorID int64, key [32]byte) (outboundport.CampaignDispatchReceipt, bool, error) {
+	if fixture.receipt == nil || fixture.receipt.ActorID != actorID || fixture.receipt.KeyDigest != key {
+		return outboundport.CampaignDispatchReceipt{}, false, nil
+	}
+	return *fixture.receipt, true, nil
 }
 func (fixture *campaignDispatchFixture) InsertCampaignDispatchBinding(_ context.Context, binding outboundport.CampaignDispatchBinding) (outboundport.CampaignDispatchBinding, error) {
 	for _, current := range fixture.bindings {
@@ -109,7 +146,7 @@ func (*campaignDispatchFixture) Reconcile(context.Context, eer.ReconcileCommand)
 
 func TestCampaignDispatchExternalGateOffCreatesOnlyBlockedBindings(t *testing.T) {
 	fixture := &campaignDispatchFixture{}
-	service, err := NewCampaignDispatchService(fixture, fixture, fixture, fixture)
+	service, err := NewCampaignDispatchService(fixture, fixture, fixture, fixture, fixture)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +158,7 @@ func TestCampaignDispatchExternalGateOffCreatesOnlyBlockedBindings(t *testing.T)
 
 func TestCampaignDispatchGatedQueueUsesEERAndNeverClaimsDelivery(t *testing.T) {
 	fixture := &campaignDispatchFixture{}
-	service, err := NewCampaignDispatchService(fixture, fixture, fixture, fixture)
+	service, err := NewCampaignDispatchService(fixture, fixture, fixture, fixture, fixture)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +170,7 @@ func TestCampaignDispatchGatedQueueUsesEERAndNeverClaimsDelivery(t *testing.T) {
 
 func TestCampaignDispatchReplayDoesNotInsertAnotherRiverJob(t *testing.T) {
 	fixture := &campaignDispatchFixture{}
-	service, err := NewCampaignDispatchService(fixture, fixture, fixture, fixture)
+	service, err := NewCampaignDispatchService(fixture, fixture, fixture, fixture, fixture)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,9 +178,59 @@ func TestCampaignDispatchReplayDoesNotInsertAnotherRiverJob(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	fixture.eligibility = map[int64]contactport.ContactEligibility{
+		2: {CustomerID: 2, CustomerActive: true, Eligible: false, Exclusion: contactport.ContactEligibilityExclusionContactPolicy},
+	}
 	replayed, err := service.Dispatch(context.Background(), campaignDispatchTestCommand(true))
-	if err != nil || replayed.Queued != first.Queued || fixture.runtimeAccepts != 2 || fixture.runtimeQueues != 2 || fixture.enqueueCalls != 2 {
-		t.Fatalf("first=%+v replayed=%+v err=%v accepts/queues/enqueues=%d/%d/%d", first, replayed, err, fixture.runtimeAccepts, fixture.runtimeQueues, fixture.enqueueCalls)
+	if err != nil || replayed.Queued != first.Queued || fixture.runtimeAccepts != 2 || fixture.runtimeQueues != 2 || fixture.enqueueCalls != 2 || fixture.eligibilityCalls != 1 {
+		t.Fatalf("first=%+v replayed=%+v err=%v accepts/queues/enqueues/checks=%d/%d/%d/%d", first, replayed, err, fixture.runtimeAccepts, fixture.runtimeQueues, fixture.enqueueCalls, fixture.eligibilityCalls)
+	}
+}
+
+func TestCampaignDispatchRechecksContactPolicyBeforeQueue(t *testing.T) {
+	fixture := &campaignDispatchFixture{eligibility: map[int64]contactport.ContactEligibility{
+		2: {CustomerID: 2, CustomerActive: true, Eligible: false, Exclusion: contactport.ContactEligibilityExclusionContactPolicy},
+	}}
+	service, err := NewCampaignDispatchService(fixture, fixture, fixture, fixture, fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	summary, err := service.Dispatch(context.Background(), campaignDispatchTestCommand(true))
+	if err != nil || summary.Blocked != 1 || summary.Queued != 1 || fixture.runtimeAccepts != 1 || fixture.runtimeQueues != 1 || fixture.enqueueCalls != 1 || fixture.eligibilityCalls != 1 {
+		t.Fatalf("summary=%+v err=%v accepts/queues/enqueues/checks=%d/%d/%d/%d", summary, err, fixture.runtimeAccepts, fixture.runtimeQueues, fixture.enqueueCalls, fixture.eligibilityCalls)
+	}
+	if len(fixture.bindings) != 2 || fixture.bindings[0].State != outbound.CampaignDispatchBlocked || fixture.bindings[0].BlockReason != "contact_policy" {
+		t.Fatalf("bindings=%+v", fixture.bindings)
+	}
+}
+
+func TestCampaignDispatchEligibilityFailureRollsBackBeforeEffects(t *testing.T) {
+	fixture := &campaignDispatchFixture{eligibilityErr: contactport.ErrContactEligibilityUnavailable}
+	service, err := NewCampaignDispatchService(fixture, fixture, fixture, fixture, fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = service.Dispatch(context.Background(), campaignDispatchTestCommand(true)); !errors.Is(err, outbound.ErrCampaignDispatchUnavailable) {
+		t.Fatalf("Dispatch() error = %v", err)
+	}
+	if len(fixture.bindings) != 0 || fixture.runtimeAccepts != 0 || fixture.runtimeQueues != 0 || fixture.enqueueCalls != 0 {
+		t.Fatalf("bindings=%+v accepts/queues/enqueues=%d/%d/%d", fixture.bindings, fixture.runtimeAccepts, fixture.runtimeQueues, fixture.enqueueCalls)
+	}
+}
+
+func TestCampaignDispatchEligibilityDeduplicatesAndSortsCustomers(t *testing.T) {
+	fixture := &campaignDispatchFixture{candidates: []outboundport.CampaignDispatchCandidate{
+		{CustomerID: 7, StepIndex: 2, Content: "later"},
+		{CustomerID: 2, StepIndex: 1, Content: "first"},
+		{CustomerID: 7, StepIndex: 1, Content: "earlier"},
+	}}
+	service, err := NewCampaignDispatchService(fixture, fixture, fixture, fixture, fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	summary, err := service.Dispatch(context.Background(), campaignDispatchTestCommand(true))
+	if err != nil || summary.Queued != 3 || len(fixture.checkedIDs) != 2 || fixture.checkedIDs[0] != 2 || fixture.checkedIDs[1] != 7 {
+		t.Fatalf("summary=%+v err=%v checked=%v", summary, err, fixture.checkedIDs)
 	}
 }
 

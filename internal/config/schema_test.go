@@ -307,6 +307,60 @@ func TestLoadWeComCustomerAcquisitionIsIndependentExplicitAndRedacted(t *testing
 	}
 }
 
+func TestLoadWeComOutboundIsIndependentExplicitAndRedacted(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv:                      "postgres://db/aicrm",
+		workerPoolMaxConnsEnv:               "9",
+		criticalWorkersEnv:                  "2",
+		eventWorkersEnv:                     "1",
+		outboundWorkersEnv:                  "1",
+		syncWorkersEnv:                      "1",
+		heavyWorkersEnv:                     "1",
+		aiWorkersEnv:                        "1",
+		weComOutboundEnabledEnv:             "true",
+		weComOutboundCorpIDEnv:              "outbound-corp",
+		weComOutboundSecretEnv:              "outbound-secret-must-not-leak",
+		weComOutboundPermissionConfirmedEnv: "true",
+	}
+	root, err := load(appruntime.RoleWorker, mapLookup(values))
+	if err != nil || !root.WeCom.Outbound.Enabled || !root.WeCom.Outbound.PermissionConfirmed ||
+		root.WeCom.Outbound.CorpID != "outbound-corp" || root.WeCom.Outbound.Secret.Value() != values[weComOutboundSecretEnv] {
+		t.Fatalf("outbound=%#v err=%v", root.WeCom.Outbound, err)
+	}
+	for _, formatted := range []string{fmt.Sprint(root), fmt.Sprintf("%#v", root)} {
+		if strings.Contains(formatted, values[weComOutboundSecretEnv]) {
+			t.Fatalf("Root formatting leaked outbound credential: %q", formatted)
+		}
+	}
+	if root.WeCom.OAuth.Enabled || root.WeCom.Sidebar.Enabled || root.WeCom.Callback.Enabled || root.WeCom.CustomerAcquisition.Enabled {
+		t.Fatalf("outbound unexpectedly enabled unrelated WeCom credentials: %#v", root.WeCom)
+	}
+
+	values[weComOutboundPermissionConfirmedEnv] = "false"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.outbound.permission_confirmed must be true when enabled" {
+		t.Fatalf("permission prerequisite error=%v", err)
+	}
+	delete(values, weComOutboundSecretEnv)
+	values[weComOutboundPermissionConfirmedEnv] = "true"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.outbound requires corp_id, secret, and permission_confirmed together" {
+		t.Fatalf("partial outbound credential error=%v", err)
+	}
+
+	values = map[string]string{
+		databaseURLEnv: "postgres://db/aicrm", workerPoolMaxConnsEnv: "9", criticalWorkersEnv: "2", eventWorkersEnv: "1",
+		outboundWorkersEnv: "1", syncWorkersEnv: "1", heavyWorkersEnv: "1", aiWorkersEnv: "1",
+		weComOutboundEnabledEnv: "false",
+	}
+	root, err = load(appruntime.RoleWorker, mapLookup(values))
+	if err != nil || root.WeCom.Outbound.Enabled {
+		t.Fatalf("disabled outbound=%#v err=%v", root.WeCom.Outbound, err)
+	}
+	values[weComOutboundCorpIDEnv] = "must-not-be-accepted"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.outbound credentials require enabled=true" {
+		t.Fatalf("disabled credential error=%v", err)
+	}
+}
+
 func TestLoadWeComSidebarIsAtomicAndUsesIndependentCallback(t *testing.T) {
 	values := map[string]string{
 		databaseURLEnv:          "postgres://db/aicrm",
@@ -512,6 +566,72 @@ func TestLoadAPIClientJWTSecretIsOptionalStrictAndRedacted(t *testing.T) {
 	_, err = load(appruntime.RoleAPI, mapLookup(values))
 	if err == nil || err.Error() != "invalid startup configuration: api_client.jwt_secret must be 32-byte canonical base64url" || strings.Contains(err.Error(), "sentinel") {
 		t.Fatalf("invalid api-client JWT secret error = %v", err)
+	}
+}
+
+func TestLoadWeChatPayProviderIsExplicitAndRedacted(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv:                  "postgres://db/aicrm",
+		workerPoolMaxConnsEnv:           "9",
+		criticalWorkersEnv:              "2",
+		eventWorkersEnv:                 "1",
+		outboundWorkersEnv:              "1",
+		syncWorkersEnv:                  "1",
+		heavyWorkersEnv:                 "1",
+		aiWorkersEnv:                    "1",
+		weChatPayEnabledEnv:             "true",
+		weChatPayAppIDEnv:               "wx-app-1",
+		weChatPayMerchantIDEnv:          "merchant-1",
+		weChatPayMerchantSerialEnv:      "merchant-serial-1",
+		weChatPayMerchantPrivateKeyEnv:  "merchant-private-key-sentinel",
+		weChatPayAPIV3KeyEnv:            "0123456789ABCDEF0123456789ABCDEF",
+		weChatPayPlatformSerialEnv:      "platform-serial-1",
+		weChatPayPlatformCertificateEnv: "platform-certificate-sentinel",
+		weChatPayPaymentNotifyURLEnv:    "https://crm.example.test/api/public/wechat-pay/callbacks/payment",
+		weChatPayRefundNotifyURLEnv:     "https://crm.example.test/api/public/wechat-pay/callbacks/refund",
+		weChatPayPermissionConfirmedEnv: "true",
+	}
+	root, err := load(appruntime.RoleWorker, mapLookup(values))
+	if err != nil || !root.Commerce.WeChatPay.Enabled || !root.Commerce.WeChatPay.PermissionConfirmed || root.Commerce.WeChatPay.AppID != "wx-app-1" {
+		t.Fatalf("wechat pay config = %#v, %v", root.Commerce.WeChatPay, err)
+	}
+	for _, formatted := range []string{fmt.Sprint(root), fmt.Sprintf("%#v", root)} {
+		if strings.Contains(formatted, values[weChatPayMerchantPrivateKeyEnv]) || strings.Contains(formatted, values[weChatPayAPIV3KeyEnv]) || strings.Contains(formatted, values[weChatPayPlatformCertificateEnv]) {
+			t.Fatalf("Root formatting leaked payment credentials: %q", formatted)
+		}
+	}
+	values[weChatPayPermissionConfirmedEnv] = "false"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wechat_pay.permission_confirmed must be true when enabled" {
+		t.Fatalf("unconfirmed payment config error = %v", err)
+	}
+}
+
+func TestLoadWeChatPayAPIDoesNotReadMerchantWriteCredential(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv:                  "postgres://db/aicrm",
+		apiListenAddressEnv:             "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:              "1",
+		identityHMACKeyEnv:              strings.Repeat("A", 43),
+		weChatPayEnabledEnv:             "true",
+		weChatPayAppIDEnv:               "wx-app-1",
+		weChatPayMerchantIDEnv:          "merchant-1",
+		weChatPayAPIV3KeyEnv:            "0123456789ABCDEF0123456789ABCDEF",
+		weChatPayPlatformSerialEnv:      "platform-serial-1",
+		weChatPayPlatformCertificateEnv: "platform-certificate-sentinel",
+		weChatPayMerchantPrivateKeyEnv:  "must-not-enter-api-config",
+		weChatPayPermissionConfirmedEnv: "must-not-be-read-by-api",
+		weChatPayPaymentNotifyURLEnv:    "must-not-be-read-by-api",
+		weChatPayRefundNotifyURLEnv:     "must-not-be-read-by-api",
+	}
+	root, err := load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil || !root.Commerce.WeChatPay.Enabled || root.Commerce.WeChatPay.MerchantPrivateKey.Value() != "" || root.Commerce.WeChatPay.PermissionConfirmed || root.Commerce.WeChatPay.PaymentNotifyURL != "" || root.Commerce.WeChatPay.RefundNotifyURL != "" {
+		t.Fatalf("API payment config = %#v, %v", root.Commerce.WeChatPay, err)
+	}
+	formatted := fmt.Sprintf("%#v", root)
+	for _, forbidden := range []string{values[weChatPayMerchantPrivateKeyEnv], values[weChatPayPermissionConfirmedEnv], values[weChatPayPaymentNotifyURLEnv]} {
+		if strings.Contains(formatted, forbidden) {
+			t.Fatalf("API config read worker-only value %q", forbidden)
+		}
 	}
 }
 

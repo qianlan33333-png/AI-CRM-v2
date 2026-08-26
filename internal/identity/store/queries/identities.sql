@@ -101,6 +101,17 @@ GROUP BY customer_id
 HAVING count(DISTINCT normalized_value) = 1
 ORDER BY customer_id;
 
+-- name: ResolveUniqueVerifiedMPOpenID :one
+SELECT min(i.normalized_value)::text AS openid
+FROM identities AS i
+JOIN customers AS c ON c.id = i.customer_id
+WHERE i.customer_id = sqlc.arg(customer_id)::bigint
+  AND i.kind = 'mp_openid'
+  AND i.scope = sqlc.arg(scope)::text
+  AND i.assurance = 'verified'
+  AND c.is_deleted = FALSE
+HAVING count(DISTINCT i.normalized_value) = 1;
+
 -- name: LookupMessageArchiveUnionIDCustomers :many
 SELECT DISTINCT i.customer_id
 FROM identities AS i

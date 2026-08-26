@@ -159,6 +159,7 @@ type Querier interface {
 	ResetDM01AcceptanceFixture(ctx context.Context) error
 	ResolveChannelAcquisitionAssetCorrelation(ctx context.Context, arg ResolveChannelAcquisitionAssetCorrelationParams) ([]ResolveChannelAcquisitionAssetCorrelationRow, error)
 	ResolveEffectiveCustomerRoot(ctx context.Context, customerID int64) (int64, error)
+	ResolveVerifiedWeComOutboundTarget(ctx context.Context, arg ResolveVerifiedWeComOutboundTargetParams) (ResolveVerifiedWeComOutboundTargetRow, error)
 	SetCustomerStage(ctx context.Context, arg SetCustomerStageParams) (Customer, error)
 	SetDM01AcceptanceRunState(ctx context.Context, arg SetDM01AcceptanceRunStateParams) error
 	TransitionChannelAcquisitionEntrantPending(ctx context.Context, arg TransitionChannelAcquisitionEntrantPendingParams) (TransitionChannelAcquisitionEntrantPendingRow, error)

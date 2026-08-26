@@ -171,7 +171,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	campaignDispatchService, err := outboundapp.NewCampaignDispatchService(uow, campaignDispatchRepository, externalEffectsRuntime, campaignDispatchRepository)
+	campaignDispatchService, err := outboundapp.NewCampaignDispatchService(uow, campaignDispatchRepository, externalEffectsRuntime, campaignDispatchRepository, contactstore.NewContactPolicyRepository())
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -179,6 +179,29 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	if err = outboundworker.RegisterCampaignDispatchWorker(workers, campaignDispatchService, outboundworker.ProviderShapedAdapter{}); err != nil {
 		pool.Close()
 		return nil, err
+	}
+	if config.WeCom.Outbound.Enabled {
+		targets, targetErr := contactstore.NewWeComOutboundTargetResolver(pool, config.WeCom.Outbound.CorpID)
+		if targetErr != nil {
+			pool.Close()
+			return nil, targetErr
+		}
+		providerHTTP := &http.Client{Timeout: 15 * time.Second}
+		provider, providerErr := newWeComOutboundProvider(config.WeCom.Outbound, providerHTTP, time.Now, targets.Resolve)
+		if providerErr != nil {
+			pool.Close()
+			return nil, providerErr
+		}
+		rate, rateErr := outboundworker.NewTokenBucket(10)
+		if rateErr != nil {
+			pool.Close()
+			return nil, rateErr
+		}
+		sender := outboundapp.NewSenderService(uow, outboundstore.NewSenderRepository(), eventstore.NewAppender(), provider, rate)
+		if registerErr := outboundworker.RegisterSenderWorkers(workers, sender); registerErr != nil {
+			pool.Close()
+			return nil, registerErr
+		}
 	}
 	financialOrders, err := orderstore.NewFinancialRepository(pool)
 	if err != nil {
@@ -200,7 +223,12 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	effectExecution, err := orderapp.NewEffectExecutionService(uow, financialOrders, eerRuntime, orderprovider.DisabledWeChatPay{}, settlement)
+	weChatPayProvider, err := newWeChatPayProviderRuntime(config.Commerce.WeChatPay, uow, &http.Client{Timeout: 15 * time.Second})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	effectExecution, err := orderapp.NewEffectExecutionService(uow, financialOrders, eerRuntime, weChatPayProvider, settlement)
 	if err != nil {
 		pool.Close()
 		return nil, err

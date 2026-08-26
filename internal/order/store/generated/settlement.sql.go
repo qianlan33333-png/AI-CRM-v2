@@ -207,7 +207,10 @@ WHERE id = $3 AND state = 'accepted'
   AND external_effect_id IS NULL AND version = $4
 RETURNING id, order_id, external_effect_id, source_ref_digest, target_ref_digest,
   payload_digest, policy_version_digest, state, provider_prepay_digest,
-  version, created_at, updated_at
+  version, created_at, updated_at,
+  provider_jsapi_contract_version, provider_jsapi_app_id, provider_jsapi_timestamp,
+  provider_jsapi_nonce_str, provider_jsapi_package, provider_jsapi_sign_type,
+  provider_jsapi_pay_sign, provider_jsapi_expires_at
 `
 
 type BindPE01PaymentEffectParams struct {
@@ -238,6 +241,14 @@ func (q *Queries) BindPE01PaymentEffect(ctx context.Context, arg BindPE01Payment
 		&i.Version,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ProviderJsapiContractVersion,
+		&i.ProviderJsapiAppID,
+		&i.ProviderJsapiTimestamp,
+		&i.ProviderJsapiNonceStr,
+		&i.ProviderJsapiPackage,
+		&i.ProviderJsapiSignType,
+		&i.ProviderJsapiPaySign,
+		&i.ProviderJsapiExpiresAt,
 	)
 	return i, err
 }
@@ -334,30 +345,45 @@ func (q *Queries) CompletePE01CallbackReceipt(ctx context.Context, arg CompleteP
 
 const completePE01Prepay = `-- name: CompletePE01Prepay :one
 UPDATE public.order_payment_commands
-SET state = $1, provider_prepay_digest = $2,
-    version = version + 1, updated_at = $3
-WHERE id = $4 AND version = $5
+SET state = $1,
+    provider_prepay_digest = CASE WHEN $1::text = 'prepay_ready' THEN provider_prepay_digest ELSE NULL END,
+    provider_jsapi_contract_version = CASE WHEN $1::text = 'prepay_ready' THEN provider_jsapi_contract_version ELSE NULL END,
+    provider_jsapi_app_id = CASE WHEN $1::text = 'prepay_ready' THEN provider_jsapi_app_id ELSE NULL END,
+    provider_jsapi_timestamp = CASE WHEN $1::text = 'prepay_ready' THEN provider_jsapi_timestamp ELSE NULL END,
+    provider_jsapi_nonce_str = CASE WHEN $1::text = 'prepay_ready' THEN provider_jsapi_nonce_str ELSE NULL END,
+    provider_jsapi_package = CASE WHEN $1::text = 'prepay_ready' THEN provider_jsapi_package ELSE NULL END,
+    provider_jsapi_sign_type = CASE WHEN $1::text = 'prepay_ready' THEN provider_jsapi_sign_type ELSE NULL END,
+    provider_jsapi_pay_sign = CASE WHEN $1::text = 'prepay_ready' THEN provider_jsapi_pay_sign ELSE NULL END,
+    provider_jsapi_expires_at = CASE WHEN $1::text = 'prepay_ready' THEN provider_jsapi_expires_at ELSE NULL END,
+    version = version + 1, updated_at = $2
+WHERE id = $3 AND version = $4
   AND state IN ('queued','outcome_unknown')
+  AND ($1::text <> 'prepay_ready'
+    OR provider_prepay_digest = $5
+      AND provider_jsapi_contract_version = 'wechat-jsapi/v1')
 RETURNING id, order_id, external_effect_id, source_ref_digest, target_ref_digest,
   payload_digest, policy_version_digest, state, provider_prepay_digest,
-  version, created_at, updated_at
+  version, created_at, updated_at,
+  provider_jsapi_contract_version, provider_jsapi_app_id, provider_jsapi_timestamp,
+  provider_jsapi_nonce_str, provider_jsapi_package, provider_jsapi_sign_type,
+  provider_jsapi_pay_sign, provider_jsapi_expires_at
 `
 
 type CompletePE01PrepayParams struct {
 	State                string             `json:"state"`
-	ProviderPrepayDigest []byte             `json:"provider_prepay_digest"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	CommandID            int64              `json:"command_id"`
 	ExpectedVersion      int64              `json:"expected_version"`
+	ProviderPrepayDigest []byte             `json:"provider_prepay_digest"`
 }
 
 func (q *Queries) CompletePE01Prepay(ctx context.Context, arg CompletePE01PrepayParams) (OrderPaymentCommand, error) {
 	row := q.db.QueryRow(ctx, completePE01Prepay,
 		arg.State,
-		arg.ProviderPrepayDigest,
 		arg.UpdatedAt,
 		arg.CommandID,
 		arg.ExpectedVersion,
+		arg.ProviderPrepayDigest,
 	)
 	var i OrderPaymentCommand
 	err := row.Scan(
@@ -373,6 +399,14 @@ func (q *Queries) CompletePE01Prepay(ctx context.Context, arg CompletePE01Prepay
 		&i.Version,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ProviderJsapiContractVersion,
+		&i.ProviderJsapiAppID,
+		&i.ProviderJsapiTimestamp,
+		&i.ProviderJsapiNonceStr,
+		&i.ProviderJsapiPackage,
+		&i.ProviderJsapiSignType,
+		&i.ProviderJsapiPaySign,
+		&i.ProviderJsapiExpiresAt,
 	)
 	return i, err
 }
@@ -476,7 +510,10 @@ INSERT INTO public.order_payment_commands (
 )
 RETURNING id, order_id, external_effect_id, source_ref_digest, target_ref_digest,
   payload_digest, policy_version_digest, state, provider_prepay_digest,
-  version, created_at, updated_at
+  version, created_at, updated_at,
+  provider_jsapi_contract_version, provider_jsapi_app_id, provider_jsapi_timestamp,
+  provider_jsapi_nonce_str, provider_jsapi_package, provider_jsapi_sign_type,
+  provider_jsapi_pay_sign, provider_jsapi_expires_at
 `
 
 type CreatePE01PaymentCommandParams struct {
@@ -511,6 +548,14 @@ func (q *Queries) CreatePE01PaymentCommand(ctx context.Context, arg CreatePE01Pa
 		&i.Version,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ProviderJsapiContractVersion,
+		&i.ProviderJsapiAppID,
+		&i.ProviderJsapiTimestamp,
+		&i.ProviderJsapiNonceStr,
+		&i.ProviderJsapiPackage,
+		&i.ProviderJsapiSignType,
+		&i.ProviderJsapiPaySign,
+		&i.ProviderJsapiExpiresAt,
 	)
 	return i, err
 }
@@ -656,7 +701,10 @@ func (q *Queries) GetPE01OrderSelfScoped(ctx context.Context, arg GetPE01OrderSe
 const getPE01PaymentCommandByOrder = `-- name: GetPE01PaymentCommandByOrder :one
 SELECT id, order_id, external_effect_id, source_ref_digest, target_ref_digest,
   payload_digest, policy_version_digest, state, provider_prepay_digest,
-  version, created_at, updated_at
+  version, created_at, updated_at,
+  provider_jsapi_contract_version, provider_jsapi_app_id, provider_jsapi_timestamp,
+  provider_jsapi_nonce_str, provider_jsapi_package, provider_jsapi_sign_type,
+  provider_jsapi_pay_sign, provider_jsapi_expires_at
 FROM public.order_payment_commands
 WHERE order_id = $1
 `
@@ -677,6 +725,14 @@ func (q *Queries) GetPE01PaymentCommandByOrder(ctx context.Context, orderID int6
 		&i.Version,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ProviderJsapiContractVersion,
+		&i.ProviderJsapiAppID,
+		&i.ProviderJsapiTimestamp,
+		&i.ProviderJsapiNonceStr,
+		&i.ProviderJsapiPackage,
+		&i.ProviderJsapiSignType,
+		&i.ProviderJsapiPaySign,
+		&i.ProviderJsapiExpiresAt,
 	)
 	return i, err
 }
@@ -842,7 +898,10 @@ func (q *Queries) LockPE01OrderByMerchantNo(ctx context.Context, merchantOrderNo
 const lockPE01PaymentCommandByID = `-- name: LockPE01PaymentCommandByID :one
 SELECT id, order_id, external_effect_id, source_ref_digest, target_ref_digest,
   payload_digest, policy_version_digest, state, provider_prepay_digest,
-  version, created_at, updated_at
+  version, created_at, updated_at,
+  provider_jsapi_contract_version, provider_jsapi_app_id, provider_jsapi_timestamp,
+  provider_jsapi_nonce_str, provider_jsapi_package, provider_jsapi_sign_type,
+  provider_jsapi_pay_sign, provider_jsapi_expires_at
 FROM public.order_payment_commands
 WHERE id = $1
 FOR UPDATE
@@ -864,6 +923,14 @@ func (q *Queries) LockPE01PaymentCommandByID(ctx context.Context, commandID int6
 		&i.Version,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ProviderJsapiContractVersion,
+		&i.ProviderJsapiAppID,
+		&i.ProviderJsapiTimestamp,
+		&i.ProviderJsapiNonceStr,
+		&i.ProviderJsapiPackage,
+		&i.ProviderJsapiSignType,
+		&i.ProviderJsapiPaySign,
+		&i.ProviderJsapiExpiresAt,
 	)
 	return i, err
 }
@@ -871,7 +938,10 @@ func (q *Queries) LockPE01PaymentCommandByID(ctx context.Context, commandID int6
 const lockPE01PaymentCommandBySourceDigest = `-- name: LockPE01PaymentCommandBySourceDigest :one
 SELECT id, order_id, external_effect_id, source_ref_digest, target_ref_digest,
   payload_digest, policy_version_digest, state, provider_prepay_digest,
-  version, created_at, updated_at
+  version, created_at, updated_at,
+  provider_jsapi_contract_version, provider_jsapi_app_id, provider_jsapi_timestamp,
+  provider_jsapi_nonce_str, provider_jsapi_package, provider_jsapi_sign_type,
+  provider_jsapi_pay_sign, provider_jsapi_expires_at
 FROM public.order_payment_commands
 WHERE source_ref_digest = $1
 FOR UPDATE
@@ -893,6 +963,14 @@ func (q *Queries) LockPE01PaymentCommandBySourceDigest(ctx context.Context, sour
 		&i.Version,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ProviderJsapiContractVersion,
+		&i.ProviderJsapiAppID,
+		&i.ProviderJsapiTimestamp,
+		&i.ProviderJsapiNonceStr,
+		&i.ProviderJsapiPackage,
+		&i.ProviderJsapiSignType,
+		&i.ProviderJsapiPaySign,
+		&i.ProviderJsapiExpiresAt,
 	)
 	return i, err
 }
@@ -1097,6 +1175,151 @@ func (q *Queries) MarkPE01RefundEffectResult(ctx context.Context, arg MarkPE01Re
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SettledAt,
+	)
+	return i, err
+}
+
+const readPE01PrepayProviderMaterial = `-- name: ReadPE01PrepayProviderMaterial :one
+SELECT merchant_order_no, customer_id, product_name_snapshot, amount_minor,
+  currency, payment_identity_digest
+FROM public.order_list_projections AS projection
+JOIN public.order_payment_commands AS command ON command.order_id = projection.id
+WHERE projection.provider = 'wechat' AND projection.merchant_order_no = $1
+  AND projection.pe01_contract_version = 'pe01/v1'
+  AND projection.status = 'awaiting_prepay' AND command.state = 'accepted'
+`
+
+type ReadPE01PrepayProviderMaterialRow struct {
+	MerchantOrderNo       string      `json:"merchant_order_no"`
+	CustomerID            pgtype.Int8 `json:"customer_id"`
+	ProductNameSnapshot   string      `json:"product_name_snapshot"`
+	AmountMinor           int64       `json:"amount_minor"`
+	Currency              string      `json:"currency"`
+	PaymentIdentityDigest []byte      `json:"payment_identity_digest"`
+}
+
+func (q *Queries) ReadPE01PrepayProviderMaterial(ctx context.Context, merchantOrderNo string) (ReadPE01PrepayProviderMaterialRow, error) {
+	row := q.db.QueryRow(ctx, readPE01PrepayProviderMaterial, merchantOrderNo)
+	var i ReadPE01PrepayProviderMaterialRow
+	err := row.Scan(
+		&i.MerchantOrderNo,
+		&i.CustomerID,
+		&i.ProductNameSnapshot,
+		&i.AmountMinor,
+		&i.Currency,
+		&i.PaymentIdentityDigest,
+	)
+	return i, err
+}
+
+const readPE01RefundProviderMaterial = `-- name: ReadPE01RefundProviderMaterial :one
+SELECT projection.merchant_order_no, projection.amount_minor AS original_amount_minor,
+  projection.currency, refund.out_refund_no, refund.amount_minor AS refund_amount_minor,
+  refund.reason
+FROM public.order_financial_refunds AS refund
+JOIN public.order_list_projections AS projection ON projection.id = refund.order_id
+WHERE refund.out_refund_no = $1
+  AND refund.state = 'accepted'
+  AND projection.provider = 'wechat' AND projection.pe01_contract_version = 'pe01/v1'
+  AND projection.status IN ('paid','partially_refunded')
+`
+
+type ReadPE01RefundProviderMaterialRow struct {
+	MerchantOrderNo     string `json:"merchant_order_no"`
+	OriginalAmountMinor int64  `json:"original_amount_minor"`
+	Currency            string `json:"currency"`
+	OutRefundNo         string `json:"out_refund_no"`
+	RefundAmountMinor   int64  `json:"refund_amount_minor"`
+	Reason              string `json:"reason"`
+}
+
+func (q *Queries) ReadPE01RefundProviderMaterial(ctx context.Context, outRefundNo string) (ReadPE01RefundProviderMaterialRow, error) {
+	row := q.db.QueryRow(ctx, readPE01RefundProviderMaterial, outRefundNo)
+	var i ReadPE01RefundProviderMaterialRow
+	err := row.Scan(
+		&i.MerchantOrderNo,
+		&i.OriginalAmountMinor,
+		&i.Currency,
+		&i.OutRefundNo,
+		&i.RefundAmountMinor,
+		&i.Reason,
+	)
+	return i, err
+}
+
+const recordPE01JSAPIHandoff = `-- name: RecordPE01JSAPIHandoff :one
+UPDATE public.order_payment_commands
+SET provider_prepay_digest = $1,
+    provider_jsapi_contract_version = 'wechat-jsapi/v1',
+    provider_jsapi_app_id = $2,
+    provider_jsapi_timestamp = $3,
+    provider_jsapi_nonce_str = $4,
+    provider_jsapi_package = $5,
+    provider_jsapi_sign_type = $6,
+    provider_jsapi_pay_sign = $7,
+    provider_jsapi_expires_at = $8,
+    version = version + 1, updated_at = $9
+WHERE id = $10 AND version = $11
+  AND state = 'accepted' AND provider_prepay_digest IS NULL
+  AND provider_jsapi_contract_version IS NULL
+RETURNING id, order_id, external_effect_id, source_ref_digest, target_ref_digest,
+  payload_digest, policy_version_digest, state, provider_prepay_digest,
+  version, created_at, updated_at,
+  provider_jsapi_contract_version, provider_jsapi_app_id, provider_jsapi_timestamp,
+  provider_jsapi_nonce_str, provider_jsapi_package, provider_jsapi_sign_type,
+  provider_jsapi_pay_sign, provider_jsapi_expires_at
+`
+
+type RecordPE01JSAPIHandoffParams struct {
+	ProviderPrepayDigest   []byte             `json:"provider_prepay_digest"`
+	ProviderJsapiAppID     pgtype.Text        `json:"provider_jsapi_app_id"`
+	ProviderJsapiTimestamp pgtype.Int8        `json:"provider_jsapi_timestamp"`
+	ProviderJsapiNonceStr  pgtype.Text        `json:"provider_jsapi_nonce_str"`
+	ProviderJsapiPackage   pgtype.Text        `json:"provider_jsapi_package"`
+	ProviderJsapiSignType  pgtype.Text        `json:"provider_jsapi_sign_type"`
+	ProviderJsapiPaySign   pgtype.Text        `json:"provider_jsapi_pay_sign"`
+	ProviderJsapiExpiresAt pgtype.Timestamptz `json:"provider_jsapi_expires_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	CommandID              int64              `json:"command_id"`
+	ExpectedVersion        int64              `json:"expected_version"`
+}
+
+func (q *Queries) RecordPE01JSAPIHandoff(ctx context.Context, arg RecordPE01JSAPIHandoffParams) (OrderPaymentCommand, error) {
+	row := q.db.QueryRow(ctx, recordPE01JSAPIHandoff,
+		arg.ProviderPrepayDigest,
+		arg.ProviderJsapiAppID,
+		arg.ProviderJsapiTimestamp,
+		arg.ProviderJsapiNonceStr,
+		arg.ProviderJsapiPackage,
+		arg.ProviderJsapiSignType,
+		arg.ProviderJsapiPaySign,
+		arg.ProviderJsapiExpiresAt,
+		arg.UpdatedAt,
+		arg.CommandID,
+		arg.ExpectedVersion,
+	)
+	var i OrderPaymentCommand
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.ExternalEffectID,
+		&i.SourceRefDigest,
+		&i.TargetRefDigest,
+		&i.PayloadDigest,
+		&i.PolicyVersionDigest,
+		&i.State,
+		&i.ProviderPrepayDigest,
+		&i.Version,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ProviderJsapiContractVersion,
+		&i.ProviderJsapiAppID,
+		&i.ProviderJsapiTimestamp,
+		&i.ProviderJsapiNonceStr,
+		&i.ProviderJsapiPackage,
+		&i.ProviderJsapiSignType,
+		&i.ProviderJsapiPaySign,
+		&i.ProviderJsapiExpiresAt,
 	)
 	return i, err
 }

@@ -118,6 +118,39 @@ func (*FinancialRepository) LockPaymentCommand(ctx context.Context, commandID in
 	return mapPayment(row), settlementError(err)
 }
 
+func (*FinancialRepository) RecordPaymentHandoff(ctx context.Context, command orderport.PaymentCommand, handoff orderport.JSAPIHandoff, receipt [32]byte, at time.Time) (orderport.PaymentCommand, error) {
+	q, err := settlementQueries(ctx)
+	if err != nil {
+		return orderport.PaymentCommand{}, err
+	}
+	timestamp, err := strconv.ParseInt(handoff.TimeStamp, 10, 64)
+	if err != nil {
+		return orderport.PaymentCommand{}, orderport.ErrInvalidSettlement
+	}
+	row, err := q.RecordPE01JSAPIHandoff(ctx, orderdb.RecordPE01JSAPIHandoffParams{
+		ProviderPrepayDigest: receipt[:], ProviderJsapiAppID: textValue(handoff.AppID),
+		ProviderJsapiTimestamp: int8Value(timestamp), ProviderJsapiNonceStr: textValue(handoff.NonceStr),
+		ProviderJsapiPackage: textValue(handoff.Package), ProviderJsapiSignType: textValue(handoff.SignType),
+		ProviderJsapiPaySign: textValue(handoff.PaySign), ProviderJsapiExpiresAt: pgTime(handoff.ExpiresAt),
+		UpdatedAt: pgTime(at), CommandID: command.ID, ExpectedVersion: command.Version,
+	})
+	if err == nil {
+		return mapPayment(row), nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return orderport.PaymentCommand{}, settlementError(err)
+	}
+	existing, getErr := q.LockPE01PaymentCommandByID(ctx, command.ID)
+	mapped := mapPayment(existing)
+	if getErr != nil {
+		return orderport.PaymentCommand{}, settlementError(getErr)
+	}
+	if mapped.ProviderPrepayDigest != receipt || !sameJSAPIHandoff(mapped.JSAPIHandoff, handoff) {
+		return orderport.PaymentCommand{}, orderport.ErrSettlementConflict
+	}
+	return mapped, nil
+}
+
 func (*FinancialRepository) BindPaymentEffect(ctx context.Context, command orderport.PaymentCommand, effectID string, at time.Time) (orderport.PaymentCommand, error) {
 	q, err := settlementQueries(ctx)
 	if err != nil {
@@ -136,10 +169,11 @@ func (*FinancialRepository) CompletePaymentEffect(ctx context.Context, command o
 	if err != nil {
 		return orderport.PaymentCommand{}, err
 	}
-	params := orderdb.CompletePE01PrepayParams{State: string(state), UpdatedAt: pgTime(at), CommandID: command.ID, ExpectedVersion: command.Version}
-	if state == orderport.EffectExecuted {
-		params.ProviderPrepayDigest = receipt[:]
+	databaseState := string(state)
+	if state == orderport.EffectExecuted || state == orderport.EffectReconciled && command.JSAPIHandoff != nil && command.ProviderPrepayDigest == receipt {
+		databaseState = "prepay_ready"
 	}
+	params := orderdb.CompletePE01PrepayParams{State: databaseState, UpdatedAt: pgTime(at), CommandID: command.ID, ExpectedVersion: command.Version, ProviderPrepayDigest: receipt[:]}
 	row, err := q.CompletePE01Prepay(ctx, params)
 	return mapPayment(row), settlementError(err)
 }
@@ -341,7 +375,22 @@ func mapPayment(row orderdb.OrderPaymentCommand) orderport.PaymentCommand {
 	if row.ExternalEffectID.Valid {
 		effectID = "eer_" + strconv.FormatInt(row.ExternalEffectID.Int64, 10)
 	}
-	return orderport.PaymentCommand{ID: row.ID, OrderID: orderport.ID(row.OrderID), SourceRefDigest: digestValue(row.SourceRefDigest), TargetRefDigest: digestValue(row.TargetRefDigest), PayloadDigest: digestValue(row.PayloadDigest), PolicyVersionDigest: digestValue(row.PolicyVersionDigest), ExternalEffectID: effectID, State: orderport.EffectState(row.State), Version: row.Version, CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC()}
+	state := orderport.EffectState(row.State)
+	if row.State == "prepay_ready" {
+		state = orderport.EffectExecuted
+	}
+	result := orderport.PaymentCommand{ID: row.ID, OrderID: orderport.ID(row.OrderID), SourceRefDigest: digestValue(row.SourceRefDigest), TargetRefDigest: digestValue(row.TargetRefDigest), PayloadDigest: digestValue(row.PayloadDigest), PolicyVersionDigest: digestValue(row.PolicyVersionDigest), ProviderPrepayDigest: digestValue(row.ProviderPrepayDigest), ExternalEffectID: effectID, State: state, Version: row.Version, CreatedAt: row.CreatedAt.Time.UTC(), UpdatedAt: row.UpdatedAt.Time.UTC()}
+	if row.ProviderJsapiContractVersion.String == "wechat-jsapi/v1" && row.ProviderJsapiTimestamp.Valid && row.ProviderJsapiExpiresAt.Valid {
+		result.JSAPIHandoff = &orderport.JSAPIHandoff{AppID: row.ProviderJsapiAppID.String, TimeStamp: strconv.FormatInt(row.ProviderJsapiTimestamp.Int64, 10), NonceStr: row.ProviderJsapiNonceStr.String, Package: row.ProviderJsapiPackage.String, SignType: row.ProviderJsapiSignType.String, PaySign: row.ProviderJsapiPaySign.String, ExpiresAt: row.ProviderJsapiExpiresAt.Time.UTC()}
+	}
+	return result
+}
+
+func sameJSAPIHandoff(existing *orderport.JSAPIHandoff, expected orderport.JSAPIHandoff) bool {
+	return existing != nil && existing.AppID == expected.AppID && existing.TimeStamp == expected.TimeStamp &&
+		existing.NonceStr == expected.NonceStr && existing.Package == expected.Package &&
+		existing.SignType == expected.SignType && existing.PaySign == expected.PaySign &&
+		existing.ExpiresAt.Equal(expected.ExpiresAt)
 }
 
 func mapRefund(row orderdb.OrderFinancialRefund) orderport.RefundV2 {

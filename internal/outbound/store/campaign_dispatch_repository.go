@@ -185,6 +185,35 @@ func (repository *CampaignDispatchRepository) ReserveCampaignDispatchReceipt(ctx
 	return outboundport.CampaignDispatchReceipt{ID: row.ID, ActorID: row.ActorID, HandoffID: row.HandoffID, KeyDigest: key, PayloadDigest: payload, Result: stored}, nil
 }
 
+func (repository *CampaignDispatchRepository) LoadCampaignDispatchReceipt(ctx context.Context, actorID int64, key [32]byte) (outboundport.CampaignDispatchReceipt, bool, error) {
+	if repository == nil || actorID < 1 {
+		return outboundport.CampaignDispatchReceipt{}, false, outbound.ErrCampaignDispatchInvalid
+	}
+	queries, err := dispatchQueries(ctx)
+	if err != nil {
+		return outboundport.CampaignDispatchReceipt{}, false, err
+	}
+	row, err := queries.LoadOutboundCampaignDispatchReceipt(ctx, outbounddb.LoadOutboundCampaignDispatchReceiptParams{ActorID: actorID, KeyDigest: key[:]})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outboundport.CampaignDispatchReceipt{}, false, nil
+	}
+	if err != nil {
+		return outboundport.CampaignDispatchReceipt{}, false, err
+	}
+	if row.ID < 1 || row.ActorID != actorID || row.HandoffID < 1 || subtle.ConstantTimeCompare(row.KeyDigest, key[:]) != 1 || len(row.PayloadDigest) != sha256.Size {
+		return outboundport.CampaignDispatchReceipt{}, false, outbound.ErrCampaignDispatchUnavailable
+	}
+	var payloadDigest [32]byte
+	copy(payloadDigest[:], row.PayloadDigest)
+	var result outbound.CampaignDispatchSummary
+	if err = json.Unmarshal(row.ResultSnapshot, &result); err != nil || !outbound.ValidCampaignDispatchSummary(result) || result.HandoffID != row.HandoffID {
+		return outboundport.CampaignDispatchReceipt{}, false, outbound.ErrCampaignDispatchUnavailable
+	}
+	return outboundport.CampaignDispatchReceipt{
+		ID: row.ID, ActorID: row.ActorID, HandoffID: row.HandoffID, KeyDigest: key, PayloadDigest: payloadDigest, Result: result,
+	}, true, nil
+}
+
 func (repository *CampaignDispatchRepository) UpdateCampaignDispatchState(ctx context.Context, effectID string, state outbound.CampaignDispatchState) error {
 	id, err := parseCampaignExternalEffectID(effectID)
 	if repository == nil || err != nil || id < 1 {

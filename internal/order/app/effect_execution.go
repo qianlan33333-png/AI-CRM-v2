@@ -2,8 +2,11 @@ package app
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"strconv"
+	"strings"
 	"time"
 
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
@@ -56,9 +59,34 @@ func (service *EffectExecutionService) ExecutePayment(ctx context.Context, job E
 		return nil
 	}
 	result, err := service.runtime.Execute(ctx, effectCommand(orderport.ExternalEffectPaymentPrepay, command.SourceRefDigest, command.TargetRefDigest, command.PayloadDigest, command.PolicyVersionDigest, job), func(providerCtx context.Context) (orderport.ProviderResult, error) {
-		return service.provider.CreatePrepay(providerCtx, orderport.PrepayRequest{MerchantOrderNo: order.MerchantOrderNo, AmountMinor: order.AmountMinor, Currency: order.Currency, ProductSnapshot: hex.EncodeToString(command.PayloadDigest[:]), PayerIdentityDigest: order.PaymentIdentityDigest, ProviderNotifyTarget: command.TargetRefDigest})
+		providerResult, providerErr := service.provider.CreatePrepay(providerCtx, orderport.PrepayRequest{MerchantOrderNo: order.MerchantOrderNo, AmountMinor: order.AmountMinor, Currency: order.Currency, ProductSnapshot: hex.EncodeToString(command.PayloadDigest[:]), PayerIdentityDigest: order.PaymentIdentityDigest, ProviderNotifyTarget: command.TargetRefDigest})
+		if providerErr != nil || providerResult.Completion != orderport.ProviderExecuted {
+			if providerResult.JSAPIHandoff != nil {
+				return providerResult, orderport.ErrSettlementUnavailable
+			}
+			return providerResult, providerErr
+		}
+		if providerResult.JSAPIHandoff == nil || !validJSAPIHandoff(*providerResult.JSAPIHandoff, service.now().UTC()) || allZeroDigest(providerResult.ReceiptDigest) {
+			return providerResult, orderport.ErrSettlementUnavailable
+		}
+		persistErr := service.uow.Within(providerCtx, func(tx context.Context) error {
+			current, lockErr := service.store.LockPaymentCommand(tx, command.ID)
+			if lockErr != nil {
+				return lockErr
+			}
+			if current.OrderID != command.OrderID || current.State != orderport.EffectAccepted {
+				return orderport.ErrSettlementConflict
+			}
+			_, lockErr = service.store.RecordPaymentHandoff(tx, current, *providerResult.JSAPIHandoff, providerResult.ReceiptDigest, service.now().UTC())
+			return lockErr
+		})
+		return providerResult, persistErr
 	})
 	if err != nil && result.State == "" {
+		return err
+	}
+	result, err = service.reconcileStagedPaymentHandoff(ctx, command.ID, result)
+	if err != nil {
 		return err
 	}
 	return service.uow.Within(ctx, func(tx context.Context) error {
@@ -95,6 +123,32 @@ func (service *EffectExecutionService) ExecutePayment(ctx context.Context, job E
 		}
 		return nil
 	})
+}
+
+func (service *EffectExecutionService) reconcileStagedPaymentHandoff(ctx context.Context, commandID int64, result orderport.ExternalEffectResult) (orderport.ExternalEffectResult, error) {
+	if result.State != orderport.EffectOutcomeUnknown {
+		return result, nil
+	}
+	var staged orderport.PaymentCommand
+	if err := service.uow.Within(ctx, func(tx context.Context) error {
+		var err error
+		staged, err = service.store.LockPaymentCommand(tx, commandID)
+		return err
+	}); err != nil {
+		return orderport.ExternalEffectResult{}, err
+	}
+	if (staged.State != orderport.EffectAccepted && staged.State != orderport.EffectQueued) || staged.JSAPIHandoff == nil ||
+		!validStoredJSAPIHandoff(*staged.JSAPIHandoff) || allZeroDigest(staged.ProviderPrepayDigest) {
+		return result, nil
+	}
+	reconciled, err := service.runtime.Reconcile(ctx, result.EffectID, staged.ProviderPrepayDigest)
+	if err != nil {
+		return orderport.ExternalEffectResult{}, err
+	}
+	if reconciled.EffectID != result.EffectID || reconciled.State != orderport.EffectReconciled || reconciled.ReceiptDigest != staged.ProviderPrepayDigest {
+		return orderport.ExternalEffectResult{}, orderport.ErrSettlementUnavailable
+	}
+	return reconciled, nil
 }
 
 func (service *EffectExecutionService) ExecuteRefund(ctx context.Context, job EffectJob) error {
@@ -264,6 +318,34 @@ func effectCommand(kind orderport.ExternalEffectKind, source, target, payload, p
 
 func validEffectJob(job EffectJob) bool {
 	return job.RecordID > 0 && job.RiverJobID > 0 && job.RiverGeneration > 0 && job.RiverQueue != "" && !allZeroDigest(job.RiverArgsDigest) && !job.ScheduledAt.IsZero()
+}
+
+func validJSAPIHandoff(handoff orderport.JSAPIHandoff, now time.Time) bool {
+	if !validStoredJSAPIHandoff(handoff) {
+		return false
+	}
+	timestamp, _ := strconv.ParseInt(handoff.TimeStamp, 10, 64)
+	issuedAt := time.Unix(timestamp, 0).UTC()
+	return !issuedAt.Before(now.Add(-5*time.Minute)) && !issuedAt.After(now.Add(5*time.Minute)) && handoff.ExpiresAt.After(now)
+}
+
+func validStoredJSAPIHandoff(handoff orderport.JSAPIHandoff) bool {
+	if strings.TrimSpace(handoff.AppID) != handoff.AppID || handoff.AppID == "" || len(handoff.AppID) > 128 ||
+		strings.TrimSpace(handoff.NonceStr) != handoff.NonceStr || handoff.NonceStr == "" || len(handoff.NonceStr) > 128 ||
+		!strings.HasPrefix(handoff.Package, "prepay_id=") || len(handoff.Package) < 12 || len(handoff.Package) > 256 ||
+		handoff.SignType != "RSA" || handoff.PaySign == "" || len(handoff.PaySign) > 1024 || handoff.ExpiresAt.IsZero() {
+		return false
+	}
+	timestamp, err := strconv.ParseInt(handoff.TimeStamp, 10, 64)
+	if err != nil || timestamp < 1 {
+		return false
+	}
+	issuedAt := time.Unix(timestamp, 0).UTC()
+	if !handoff.ExpiresAt.After(issuedAt) || handoff.ExpiresAt.After(issuedAt.Add(24*time.Hour)) {
+		return false
+	}
+	signature, err := base64.StdEncoding.Strict().DecodeString(handoff.PaySign)
+	return err == nil && len(signature) >= 256
 }
 
 func effectTerminal(state orderport.EffectState) bool {

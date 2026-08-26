@@ -91,6 +91,18 @@ type TrustedWeComIdentityReader interface {
 	ListPrimaryWeComExternalUserIDs(context.Context, []contactport.CustomerID) ([]TrustedWeComExternalIdentity, error)
 }
 
+// VerifiedMPOpenID is the sole verified mini-program payer identifier for one
+// canonical customer and one WeChat application scope. Missing, inactive, or
+// ambiguous identities must never be guessed by a payment adapter.
+type VerifiedMPOpenID struct {
+	CustomerID contactport.CustomerID
+	OpenID     string
+}
+
+type VerifiedMPOpenIDReader interface {
+	ResolveUniqueVerifiedMPOpenID(context.Context, contactport.CustomerID, string) (VerifiedMPOpenID, bool, error)
+}
+
 // CustomerMatchRequest keeps raw identity hints inside the local matching
 // boundary. Callers receive only a boolean OneID match and must never expose
 // the refs or the unscoped legacy unionid in an HTTP projection.

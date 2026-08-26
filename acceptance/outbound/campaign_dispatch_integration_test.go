@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
+	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
 	eerstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
 	outbound "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound"
@@ -41,22 +42,57 @@ func (campaignDispatchUnknownAdapter) Execute(context.Context, eer.EffectEnvelop
 func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) {
 	pool := openCampaignDispatchPool(t)
 	ctx := context.Background()
-	var migrationApplied bool
-	if err := pool.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM public.goose_db_version WHERE version_id=78 AND is_applied)`).Scan(&migrationApplied); err != nil || !migrationApplied {
-		t.Fatalf("migration 78 applied=%t err=%v, want true", migrationApplied, err)
+	var migrationsApplied bool
+	if err := pool.QueryRow(ctx, `SELECT count(*)=2 FROM public.goose_db_version WHERE version_id IN (78,92) AND is_applied`).Scan(&migrationsApplied); err != nil || !migrationsApplied {
+		t.Fatalf("migrations 78/92 applied=%t err=%v, want true", migrationsApplied, err)
 	}
 	ensureOutboundRiverCatalog(t, ctx, pool)
+	var ownerStaffID int64
+	if err := pool.QueryRow(ctx, `
+INSERT INTO public.staff(wecom_userid,name,is_active)
+VALUES('dispatch-owner','dispatch owner',TRUE)
+ON CONFLICT(wecom_userid) DO UPDATE SET is_active=TRUE,updated_at=now()
+RETURNING id`).Scan(&ownerStaffID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `
+INSERT INTO public.customers(id,name,owner_staff_id,is_deleted)
+OVERRIDING SYSTEM VALUE
+VALUES (101,'suppressed after preview',NULL,FALSE),(202,'eligible one',$1,FALSE),(303,'eligible two',NULL,FALSE)
+ON CONFLICT(id) DO UPDATE SET owner_staff_id=EXCLUDED.owner_staff_id,is_deleted=FALSE`, ownerStaffID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `
+INSERT INTO public.identities(customer_id,kind,scope,normalized_value,normalizer_version,assurance,source,review_fingerprint,fingerprint_key_version,bound_at)
+VALUES (202,'wecom_external_userid','wecom-corp:dispatch-corp','dispatch-external',1,'verified','campaign-dispatch-acceptance',decode(repeat('11',16),'hex'),1,now())
+ON CONFLICT(kind,scope,normalized_value) DO NOTHING`); err != nil {
+		t.Fatal(err)
+	}
+	targets, err := contactstore.NewWeComOutboundTargetResolver(pool, "dispatch-corp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sender, externalUserID, resolved, err := targets.Resolve(ctx, 202)
+	if err != nil || !resolved || sender != "dispatch-owner" || externalUserID != "dispatch-external" {
+		t.Fatalf("outbound target sender=%q external=%q resolved=%t err=%v", sender, externalUserID, resolved, err)
+	}
 
 	planID := outboundCampaignHandoffPlanID('d')
 	source := &approvedCampaignHandoffSource{snapshot: outboundport.ApprovedCampaignHandoffSnapshot{
 		CampaignCode: "c01-dispatch", PlanID: planID, ReviewVersion: 3,
 		SourceDigest: strings.Repeat("11", 32), TargetDigest: strings.Repeat("22", 32), ContentDigest: strings.Repeat("33", 32),
-		CustomerIDs: []int64{101, 202}, Steps: []outbound.CampaignHandoffStep{{Index: 1, Content: "approved immutable content"}},
+		CustomerIDs: []int64{101, 202, 303}, Steps: []outbound.CampaignHandoffStep{{Index: 1, Content: "approved immutable content"}},
 		ApprovedAt: time.Now().UTC().Truncate(time.Microsecond),
 	}}
 	if _, err := newCampaignHandoffService(t, pool, source).Accept(ctx, outboundapp.AcceptCampaignHandoffCommand{
 		CampaignCode: source.snapshot.CampaignCode, PlanID: planID, ExpectedReviewVersion: 3, ActorID: 71, IdempotencyKey: "c01-dispatch-handoff-accept",
 	}); err != nil {
+		t.Fatal(err)
+	}
+	policyTime := time.Now().UTC().Truncate(time.Microsecond)
+	if _, err := pool.Exec(ctx, `
+INSERT INTO public.customer_contact_policies(customer_id,reason_code,created_at,updated_at)
+VALUES (101,'manual_opt_out',$1,$1)`, policyTime); err != nil {
 		t.Fatal(err)
 	}
 
@@ -70,19 +106,32 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := outboundapp.NewCampaignDispatchService(uow, repository, runtime, repository)
+	service, err := outboundapp.NewCampaignDispatchService(uow, repository, runtime, repository, contactstore.NewContactPolicyRepository())
 	if err != nil {
 		t.Fatal(err)
 	}
 	summary, err := service.Dispatch(ctx, outboundapp.CampaignDispatchCommand{
 		CampaignCode: source.snapshot.CampaignCode, PlanID: planID, ActorID: 71, IdempotencyKey: "c01-dispatch-operator-command", ExternalGate: true,
 	})
-	if err != nil || summary.Queued != 2 || summary.DeliveryProven || summary.RealExternalCallExecuted {
+	if err != nil || summary.Blocked != 1 || summary.Queued != 2 || summary.DeliveryProven || summary.RealExternalCallExecuted {
 		t.Fatalf("queued summary=%+v err=%v", summary, err)
+	}
+	var blocked int
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.outbound_campaign_dispatches WHERE customer_id=101 AND state='blocked' AND block_reason='contact_policy' AND external_effect_id IS NULL`).Scan(&blocked); err != nil || blocked != 1 {
+		t.Fatalf("contact-policy blocked bindings=%d err=%v, want 1", blocked, err)
+	}
+	if _, err = pool.Exec(ctx, `DELETE FROM public.customer_contact_policies WHERE customer_id=101`); err != nil {
+		t.Fatal(err)
+	}
+	replayed, err := service.Dispatch(ctx, outboundapp.CampaignDispatchCommand{
+		CampaignCode: source.snapshot.CampaignCode, PlanID: planID, ActorID: 71, IdempotencyKey: "c01-dispatch-operator-command", ExternalGate: true,
+	})
+	if err != nil || replayed.Blocked != 1 || replayed.Queued != 2 {
+		t.Fatalf("replayed summary=%+v err=%v", replayed, err)
 	}
 
 	var effectIDs []string
-	if rows, queryErr := pool.Query(ctx, `SELECT 'eer_' || external_effect_id::text FROM public.outbound_campaign_dispatches ORDER BY customer_id`); queryErr != nil {
+	if rows, queryErr := pool.Query(ctx, `SELECT 'eer_' || external_effect_id::text FROM public.outbound_campaign_dispatches WHERE external_effect_id IS NOT NULL ORDER BY customer_id`); queryErr != nil {
 		t.Fatal(queryErr)
 	} else {
 		defer rows.Close()
@@ -126,7 +175,7 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 	}
 
 	summary, err = service.Reconciliation(ctx, source.snapshot.CampaignCode, planID)
-	if err != nil || summary.Executed != 1 || summary.Reconciled != 1 || summary.OutcomeUnknown != 0 || summary.DeliveryProven || summary.RealExternalCallExecuted {
+	if err != nil || summary.Blocked != 1 || summary.Executed != 1 || summary.Reconciled != 1 || summary.OutcomeUnknown != 0 || summary.DeliveryProven || summary.RealExternalCallExecuted {
 		t.Fatalf("terminal summary=%+v err=%v", summary, err)
 	}
 	var receiptCount int
