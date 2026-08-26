@@ -23,7 +23,7 @@ func (repository *CampaignDispatchRepository) ListAudienceSendRecords(ctx contex
 		return nil, 0, outbound.ErrCampaignDispatchInvalid
 	}
 	queries := outbounddb.New(repository.pool)
-	total, err := queries.CountAudienceSendRecords(ctx, packageID)
+	total, err := queries.CountAudienceSendRecords(ctx, pgtype.Int8{Int64: packageID, Valid: true})
 	if err != nil {
 		return nil, 0, err
 	}
@@ -55,13 +55,13 @@ func (repository *CampaignDispatchRepository) GetAudienceSendRecord(ctx context.
 	return audienceSendRecordFromRow(row.ID, row.State, row.TechnicalAttemptCount, row.FailureClassification, row.ProviderResultReceived, row.ReceiptPresent, row.DeliveryProven, row.BusinessCallDispatched, row.RealExternalCallExecuted, row.CreatedAt, row.UpdatedAt)
 }
 
-func audienceSendRecordFromRow(id int64, state string, attempts int32, failure pgtype.Text, providerResult, receipt, delivery, dispatched, executed bool, createdAt, updatedAt pgtype.Timestamptz) (outboundport.AudienceSendRecord, error) {
+func audienceSendRecordFromRow(id int64, state string, attempts int32, failure string, providerResult, receipt, delivery, dispatched, executed bool, createdAt, updatedAt pgtype.Timestamptz) (outboundport.AudienceSendRecord, error) {
 	if id < 1 || attempts < 0 || !createdAt.Valid || !updatedAt.Valid {
 		return outboundport.AudienceSendRecord{}, outbound.ErrCampaignDispatchUnavailable
 	}
 	return outboundport.AudienceSendRecord{
 		ID: id, State: outbound.CampaignDispatchState(state), TechnicalAttemptCount: attempts,
-		FailureClassification: textOrEmpty(failure), ProviderResultReceived: providerResult,
+		FailureClassification: failure, ProviderResultReceived: providerResult,
 		ReceiptPresent: receipt, DeliveryProven: delivery, BusinessCallDispatched: dispatched,
 		RealExternalCallExecuted: executed, CreatedAt: createdAt.Time.UTC(), UpdatedAt: updatedAt.Time.UTC(),
 	}, nil

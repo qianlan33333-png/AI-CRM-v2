@@ -8,12 +8,12 @@ SELECT EXISTS (
 -- name: ListAudienceSendRecords :many
 SELECT dispatch.id, dispatch.state,
        COALESCE(MAX(receipt.attempt_number), 0)::int AS technical_attempt_count,
-       CASE
+       COALESCE(CASE
          WHEN dispatch.block_reason IS NOT NULL THEN dispatch.block_reason
          WHEN dispatch.state = 'retryable_failed' THEN 'retryable_provider_failure'
          WHEN dispatch.state = 'final_failed' THEN 'final_provider_failure'
          WHEN dispatch.state = 'outcome_unknown' THEN 'outcome_unknown'
-       END AS failure_classification,
+       END, '')::text AS failure_classification,
        COALESCE(bool_or(receipt.provider_result_received), FALSE)::boolean AS provider_result_received,
        (count(receipt.id) > 0)::boolean AS receipt_present,
        COALESCE(bool_or(receipt.delivery_proven), FALSE)::boolean AS delivery_proven,
@@ -44,12 +44,12 @@ JOIN public.cloud_campaign_touch_plans AS plan
 -- name: GetAudienceSendRecord :one
 SELECT dispatch.id, dispatch.state,
        COALESCE(MAX(receipt.attempt_number), 0)::int AS technical_attempt_count,
-       CASE
+       COALESCE(CASE
          WHEN dispatch.block_reason IS NOT NULL THEN dispatch.block_reason
          WHEN dispatch.state = 'retryable_failed' THEN 'retryable_provider_failure'
          WHEN dispatch.state = 'final_failed' THEN 'final_provider_failure'
          WHEN dispatch.state = 'outcome_unknown' THEN 'outcome_unknown'
-       END AS failure_classification,
+       END, '')::text AS failure_classification,
        COALESCE(bool_or(receipt.provider_result_received), FALSE)::boolean AS provider_result_received,
        (count(receipt.id) > 0)::boolean AS receipt_present,
        COALESCE(bool_or(receipt.delivery_proven), FALSE)::boolean AS delivery_proven,
