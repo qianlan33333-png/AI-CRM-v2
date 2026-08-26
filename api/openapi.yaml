@@ -269,7 +269,7 @@ paths:
       x-aicrm-session-bound-csrf: required
       x-aicrm-data-classification: internal_pii
       x-aicrm-data-source: contact.local_command
-      x-aicrm-external-effect: external_protocol
+      x-aicrm-external-effect: accepted_only
       parameters: [{$ref: "#/components/parameters/SidebarContextToken"}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
       requestBody:
         required: true
