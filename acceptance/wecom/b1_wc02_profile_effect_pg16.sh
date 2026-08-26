@@ -21,7 +21,7 @@ psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "CREATE DATABASE $temporar
 goose=("$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url")
 "${goose[@]}" up >/dev/null
 [[ "$(psql "$database_url" -X -q -At -c 'SHOW server_version_num')" = '160014' ]]
-[[ "$(psql "$database_url" -X -q -At -c "SELECT max(version_id) FROM goose_db_version WHERE is_applied")" = '102' ]]
+[[ "$(psql "$database_url" -X -q -At -c "SELECT count(*) FROM goose_db_version WHERE version_id=102 AND is_applied")" = '1' ]]
 [[ "$(psql "$database_url" -X -q -At -c "SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='wecom_contact_profile_effects' AND column_name IN ('effect_id','accept_receipt_id','queue_receipt_id','attempt_receipt_id','reconcile_receipt_id')")" = '5' ]]
 
 P4B1WC02_WECOM_PROFILE_EFFECT_TEST_DATABASE_URL="$database_url" \
