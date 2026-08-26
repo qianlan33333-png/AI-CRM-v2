@@ -103,6 +103,9 @@ const (
 	p4ChannelAcquisitionEntrantEvidence        = "P4-CH03-2026-08-26"
 	p4SidebarOAuthEvidence                     = "P4-SB01-SIDEBAR-OAUTH-AGENT-CONFIG-2026-08-26"
 	p4SidebarSafeActivityEvidence              = "P4-SB02-SIDEBAR-SAFE-ACTIVITY-2026-08-26"
+	p4SidebarOtherStaffChatsEvidence           = "P4-S05-035-SIDEBAR-OTHER-STAFF-LOCAL-ARCHIVE-2026-08-27"
+	p4SidebarSendEvidence                      = "P4-W2-SIDEBAR-SEND-2026-08-26"
+	p4SidebarPhoneAndPreviewEvidence           = "P4-W2-A-2026-08-26"
 	p4CustomerProfileReadEvidence              = "P4-CUSTOMER-PROFILE-READ-V2-2026-08-26"
 	p4ServicePeriodMemberGridCanonicalEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24"
 	c01DispatchOperationID                     = "dispatchOutboundCampaignHandoff"
@@ -195,14 +198,19 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"getSidebarAgentConfig":                     {"/api/sidebar/v2/jssdk/agent-config", "GET", p4SidebarOAuthEvidence, "sidebar.jssdk", "public", "internal", "wecom.agent_config_ticket.read", "none", nil},
 	"listSidebarTimeline":                       {"/api/sidebar/v2/timeline", "GET", p4SidebarSafeActivityEvidence, "customers.read", "human_session_and_sidebar_context", "internal", "contact.local_timeline_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"listSidebarChatActivity":                   {"/api/sidebar/v2/chat-activity", "GET", p4SidebarSafeActivityEvidence, "customers.read", "human_session_and_sidebar_context", "internal", "wecom.local_message_archive_metadata", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listSidebarOtherStaffChats":                {"/api/sidebar/v2/other-staff-chats", "GET", p4SidebarOtherStaffChatsEvidence, "customers.read", "human_session_and_sidebar_context", "internal_pii", "wecom.local_message_archive_masked_content", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getSidebarWorkbench":                       {"/api/sidebar/v2/workbench", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "internal_pii", "sidebar.local_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"updateSidebarProfile":                      {"/api/sidebar/v2/profile", "PUT", p4SidebarLocalCoreEvidence, "customers.write", "human_session_and_sidebar_context", "internal_pii", "contact.local_command", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"bindSidebarPhone":                          {"/api/sidebar/v2/phone-binding", "POST", p4SidebarPhoneAndPreviewEvidence, "customers.write", "human_session_and_sidebar_context", "restricted_pii", "identity.bind.declared_phone", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"listSidebarQuestionnaires":                 {"/api/sidebar/v2/questionnaires", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "internal_deidentified", "survey.local_safe_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"listSidebarOrders":                         {"/api/sidebar/v2/orders", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "financial", "order.local_safe_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"listSidebarPeriodicOrders":                 {"/api/sidebar/v2/periodic-orders", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "internal_pii", "service_period_members.local_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"updateSidebarPeriodicRemark":               {"/api/sidebar/v2/periodic-orders/{service_product_id}/members/{member_ref}/remark", "PUT", p4SidebarLocalCoreEvidence, "customers.write", "human_session_and_sidebar_context", "internal_pii", "service_period_members.local_command", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"listSidebarMaterials":                      {"/api/sidebar/v2/materials", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "internal", "media.local_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listSidebarShareableProducts":              {"/api/sidebar/v2/shareable-products", "GET", p4SidebarSendEvidence, "customers.read", "human_session_and_sidebar_context", "internal", "product.local_shareable_read_model", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"prepareSidebarImageTemporaryMedia":         {"/api/sidebar/v2/materials/image/{image_id}/temporary-media", "POST", p4SidebarSendEvidence, "customers.read", "human_session_and_sidebar_context", "internal", "media.local_original_and_sidebar_upload_receipt", "required", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"getSidebarMaterialThumbnailStatus":         {"/api/sidebar/v2/materials/image/{image_id}/thumbnail", "GET", p4SidebarLocalCoreEvidence, "customers.read", "human_session_and_sidebar_context", "internal", "media.local_existence_read", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"getSidebarMaterialThumbnailPreview":        {"/api/sidebar/v2/materials/image/{image_id}/preview", "GET", p4SidebarPhoneAndPreviewEvidence, "customers.read", "human_session_and_sidebar_context", "internal", "media.local_image_variant", "none", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"previewLegacyOrderExport":                  {"/api/admin/exports/preview", "POST", p4OrderSafeExportEvidence, "order.read", "human_session", "internal", "order.local_safe_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"getCustomerContactPolicy":                  {"/api/v1/customers/{customer_id}/contact-policy", "GET", p4ContactPolicyEvidence, "operations.read", "human_session", "internal", "local_read_model", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"putCustomerContactPolicy":                  {"/api/v1/customers/{customer_id}/contact-policy", "PUT", p4ContactPolicyEvidence, "operations.manage", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
@@ -323,12 +331,13 @@ var nativePackageOperations = map[string]nativePackageOperation{
 }
 
 var nativePackageExternalEffects = map[string]string{
-	"startSurveyH5OAuth":               "external_protocol",
-	"callbackSurveyH5OAuth":            "external_protocol",
-	"updateSidebarProfile":             "accepted_only",
-	"reconcileWecomTagEffect":          "reconciliation_only",
-	"publishChannelAcquisitionAsset":   "accepted_only",
-	"reconcileChannelAcquisitionAsset": "reconciliation_only",
+	"startSurveyH5OAuth":                "external_protocol",
+	"callbackSurveyH5OAuth":             "external_protocol",
+	"updateSidebarProfile":              "accepted_only",
+	"prepareSidebarImageTemporaryMedia": "media_wecom_upload",
+	"reconcileWecomTagEffect":           "reconciliation_only",
+	"publishChannelAcquisitionAsset":    "accepted_only",
+	"reconcileChannelAcquisitionAsset":  "reconciliation_only",
 }
 
 var groupOpsCanonicalExternalEffects = map[string]string{

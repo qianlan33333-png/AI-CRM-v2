@@ -70,6 +70,16 @@ type ImageListPage struct {
 	Offset int64
 }
 
+type ImageVariant struct {
+	Content   []byte
+	MediaType string
+	ETag      string
+}
+
+type ImageVariantReader interface {
+	GetImageVariant(context.Context, int64, string) (ImageVariant, error)
+}
+
 // ImageLibraryReader is the narrow Media-owned local projection consumed by
 // sidebar workbench reads. Implementations must not invoke a provider or create
 // image variants while serving these methods.

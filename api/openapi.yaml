@@ -236,6 +236,27 @@ paths:
         "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/other-staff-chats:
+    get:
+      tags: [p4-sidebar-local]
+      operationId: listSidebarOtherStaffChats
+      summary: Read the bound customer's recent masked chats owned by other active staff
+      x-p4-decision-evidence: P4-S05-035-SIDEBAR-OTHER-STAFF-LOCAL-ARCHIVE-2026-08-27
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
+      x-aicrm-auth-scheme: human_session_and_sidebar_context
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: wecom.local_message_archive_masked_content
+      x-aicrm-external-effect: none
+      parameters:
+        - {$ref: "#/components/parameters/SidebarContextToken"}
+      responses:
+        "200": {description: "At most 20 newest local text/image archive rows owned by staff other than the bound customer's active owner; returns only masked content and no provider receipts", content: {application/json: {schema: {$ref: "#/components/schemas/SidebarOtherStaffChatResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/workbench:
     get:
       tags: [p4-sidebar-local]
@@ -299,6 +320,41 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
         "409": {$ref: "#/components/responses/Conflict"}
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/phone-binding:
+    post:
+      tags: [p4-sidebar-local]
+      operationId: bindSidebarPhone
+      summary: Bind a declared E.164 phone to the customer from the live sidebar scope
+      x-p4-decision-evidence: P4-W2-A-2026-08-26
+      x-aicrm-v2-difference: does not support legacy force-rebind or expose the phone after binding
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
+      x-aicrm-auth-scheme: human_session_and_sidebar_context
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: restricted_pii
+      x-aicrm-data-source: identity.bind.declared_phone
+      x-aicrm-external-effect: none
+      parameters:
+        - {$ref: "#/components/parameters/SidebarContextToken"}
+        - {$ref: "#/components/parameters/CSRFToken"}
+        - {$ref: "#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [mobile]
+              properties:
+                mobile: {type: string, pattern: '^\+[1-9][0-9]{1,14}$'}
+      responses:
+        "200": {description: Durable local identity bind result, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarPhoneBindingResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/questionnaires:
     get:
       tags: [p4-sidebar-local]
@@ -325,7 +381,7 @@ paths:
     get:
       tags: [p4-sidebar-local]
       operationId: listSidebarOrders
-      summary: List customer-scoped local orders without payer or identity fields
+      summary: List customer-scoped local orders with inline safe details and without payer or identity fields
       x-p4-decision-evidence: P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24
       x-aicrm-capability: customers.read
       x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
@@ -432,6 +488,55 @@ paths:
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/shareable-products:
+    get:
+      tags: [p4-sidebar-send]
+      operationId: listSidebarShareableProducts
+      summary: List enabled ordinary and service-period products with a same-origin read-only detail page
+      x-p4-decision-evidence: P4-W2-SIDEBAR-SEND-2026-08-26
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
+      x-aicrm-auth-scheme: human_session_and_sidebar_context
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: product.local_shareable_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - {$ref: "#/components/parameters/SidebarContextToken"}
+        - {name: limit, in: query, required: false, schema: {type: integer, format: int32, minimum: 1, maximum: 100, default: 50}}
+      responses:
+        "200": {description: Enabled local products whose same-origin public detail page is available, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarShareableProductResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/materials/image/{image_id}/temporary-media:
+    post:
+      tags: [p4-sidebar-send]
+      operationId: prepareSidebarImageTemporaryMedia
+      summary: Upload one enabled local image as temporary WeCom media before the client JSSDK callback
+      x-p4-decision-evidence: P4-W2-SIDEBAR-SEND-2026-08-26
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
+      x-aicrm-auth-scheme: human_session_and_sidebar_context
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.local_original_and_sidebar_upload_receipt
+      x-aicrm-external-effect: media_wecom_upload
+      parameters:
+        - {name: image_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+        - {$ref: "#/components/parameters/SidebarContextToken"}
+        - {$ref: "#/components/parameters/CSRFToken"}
+        - {$ref: "#/components/parameters/IdempotencyKey"}
+      responses:
+        "200": {description: Temporary media is ready for a client-side JSSDK image callback; this is not chat delivery, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarTemporaryMediaResponse"}}}}
+        "202": {description: The upload outcome is unknown or finally rejected; no JSSDK send is attempted, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarTemporaryMediaResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/materials/image/{image_id}/thumbnail:
     get:
       tags: [p4-sidebar-local]
@@ -451,6 +556,31 @@ paths:
         - {$ref: "#/components/parameters/SidebarContextToken"}
       responses:
         "202": {description: Thumbnail remains pending and no generator ran, headers: {X-Thumbnail-Status: {schema: {type: string, enum: [pending]}}}, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarThumbnailPendingResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/materials/image/{image_id}/preview:
+    get:
+      tags: [p4-sidebar-local]
+      operationId: getSidebarMaterialThumbnailPreview
+      summary: Read a real local thumb_320 image variant for the scoped sidebar
+      x-p4-decision-evidence: P4-W2-A-2026-08-26
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
+      x-aicrm-auth-scheme: human_session_and_sidebar_context
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.local_image_variant
+      x-aicrm-external-effect: none
+      parameters:
+        - {name: image_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+        - {$ref: "#/components/parameters/SidebarContextToken"}
+        - {name: If-None-Match, in: header, required: false, schema: {type: string, maxLength: 256}}
+      responses:
+        "200": {description: Local image thumbnail bytes, headers: {ETag: {schema: {type: string}}}, content: {image/png: {schema: {type: string, format: binary}}, image/jpeg: {schema: {type: string, format: binary}}, image/gif: {schema: {type: string, format: binary}}}}
+        "304": {description: Cached thumbnail remains current}
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
@@ -13051,6 +13181,13 @@ components:
       properties:
         profile: {$ref: "#/components/schemas/SidebarProfile"}
         safety: {$ref: "#/components/schemas/SidebarProfileUpdateSafety"}
+    SidebarPhoneBindingResponse:
+      type: object
+      additionalProperties: false
+      required: [status, safety]
+      properties:
+        status: {type: string, enum: [bound, already_bound, rejected]}
+        safety: {$ref: "#/components/schemas/SidebarSafety"}
     SidebarSafeChoiceAnswer:
       type: object
       additionalProperties: false
@@ -13172,6 +13309,40 @@ components:
         offset: {type: integer, format: int64, minimum: 0}
         quick_keywords: {type: array, uniqueItems: true, items: {type: string, minLength: 1}}
         safety: {$ref: "#/components/schemas/SidebarSafety"}
+    SidebarShareableProduct:
+      type: object
+      additionalProperties: false
+      required: [kind, product_id, product_code, name, description, price_minor, currency, stock_quantity, public_path]
+      properties:
+        kind: {type: string, enum: [ordinary, service_period]}
+        product_id: {type: integer, format: int64, minimum: 1}
+        product_code: {type: string, minLength: 1, maxLength: 200}
+        name: {type: string, minLength: 1, maxLength: 200}
+        description: {type: string, maxLength: 10000}
+        price_minor: {type: integer, format: int64, minimum: 0}
+        currency: {type: string, pattern: '^[A-Z]{3}$'}
+        stock_quantity: {type: integer, format: int32, minimum: 0}
+        public_path: {type: string, pattern: '^/p/(ordinary|service_period)/[1-9][0-9]{0,18}$', maxLength: 80}
+    SidebarShareableProductResponse:
+      type: object
+      additionalProperties: false
+      required: [items, safety]
+      properties:
+        items: {type: array, maxItems: 100, items: {$ref: "#/components/schemas/SidebarShareableProduct"}}
+        safety: {$ref: "#/components/schemas/SidebarSafety"}
+    SidebarTemporaryMediaResponse:
+      type: object
+      additionalProperties: false
+      required: [image_id, upload_state, provider_call_dispatched, real_external_call_executed, client_callback, delivery_state]
+      properties:
+        image_id: {type: integer, format: int64, minimum: 1}
+        media_id: {type: string, minLength: 1, maxLength: 1024}
+        media_expires_at: {type: string, format: date-time}
+        upload_state: {type: string, enum: [ready, outcome_unknown, final_failed]}
+        provider_call_dispatched: {type: boolean}
+        real_external_call_executed: {type: boolean}
+        client_callback: {type: string, enum: [not_called]}
+        delivery_state: {type: string, enum: [not_sent_yet]}
     SidebarWorkbenchResponse:
       type: object
       additionalProperties: false
@@ -13222,6 +13393,22 @@ components:
         items: {type: array, maxItems: 100, items: {$ref: "#/components/schemas/SidebarChatActivityItem"}}
         next_cursor: {type: string, minLength: 1, maxLength: 512}
         previous_cursor: {type: string, minLength: 1, maxLength: 512}
+        safety: {$ref: "#/components/schemas/SidebarSafety"}
+    SidebarOtherStaffChatItem:
+      type: object
+      additionalProperties: false
+      required: [staff_userid, message_type, content_masked, sent_at]
+      properties:
+        staff_userid: {type: string, minLength: 1, maxLength: 128}
+        message_type: {type: string, enum: [text, image]}
+        content_masked: {type: string, minLength: 1, maxLength: 10000}
+        sent_at: {type: string, format: date-time}
+    SidebarOtherStaffChatResponse:
+      type: object
+      additionalProperties: false
+      required: [items, safety]
+      properties:
+        items: {type: array, maxItems: 20, items: {$ref: "#/components/schemas/SidebarOtherStaffChatItem"}}
         safety: {$ref: "#/components/schemas/SidebarSafety"}
     AdminOpsCategorySettings:
       type: object

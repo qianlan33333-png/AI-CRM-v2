@@ -27,6 +27,12 @@ func (thumbnailIdentity) Resolve(context.Context, identityport.IDRef) (identityp
 	return identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: 41}, nil
 }
 
+type thumbnailPhones struct{}
+
+func (thumbnailPhones) BindPhone(context.Context, sidebarapp.PhoneBindingCommand) (string, error) {
+	return "already_bound", nil
+}
+
 type thumbnailProfiles struct{ profile contactport.SidebarProfile }
 
 func (profiles thumbnailProfiles) ResolveSidebarProfile(context.Context, contactport.CustomerID) (contactport.SidebarProfile, error) {
@@ -63,7 +69,10 @@ func (thumbnailMembers) ListCustomer(context.Context, sidebarapp.PeriodicListQue
 	return sidebarapp.PeriodicListResult{}, nil
 }
 
-type thumbnailMedia struct{ exists bool }
+type thumbnailMedia struct {
+	exists  bool
+	variant mediaport.ImageVariant
+}
 
 func (*thumbnailMedia) ListImages(context.Context, mediaport.ImageListQuery) (mediaport.ImageListPage, error) {
 	return mediaport.ImageListPage{}, nil
@@ -74,12 +83,15 @@ func (*thumbnailMedia) Facets(context.Context) (mediaport.ImageFacets, error) {
 func (media *thumbnailMedia) LocalImageExists(context.Context, int64) (bool, error) {
 	return media.exists, nil
 }
+func (media *thumbnailMedia) GetImageVariant(context.Context, int64, string) (mediaport.ImageVariant, error) {
+	return media.variant, nil
+}
 
 func TestThumbnailStatusHTTPReturnsOnlyPendingOrNotFound(t *testing.T) {
 	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
 	profiles := thumbnailProfiles{contactport.SidebarProfile{CustomerID: 41, OwnerStaffID: 7, Name: "customer", UpdatedAt: time.Now().UTC()}}
-	media := &thumbnailMedia{exists: true}
-	service, err := sidebarapp.NewService(thumbnailCorp{}, thumbnailIdentity{}, profiles, thumbnailSurveys{}, thumbnailOrders{}, thumbnailMembers{}, media, []byte("01234567890123456789012345678901"))
+	media := &thumbnailMedia{exists: true, variant: mediaport.ImageVariant{Content: []byte("png"), MediaType: "image/png", ETag: `"thumb"`}}
+	service, err := sidebarapp.NewService(thumbnailCorp{}, thumbnailIdentity{}, thumbnailPhones{}, profiles, thumbnailSurveys{}, thumbnailOrders{}, thumbnailMembers{}, media, []byte("01234567890123456789012345678901"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,5 +125,43 @@ func TestThumbnailStatusHTTPReturnsOnlyPendingOrNotFound(t *testing.T) {
 	missing := call()
 	if missing.Code != http.StatusNotFound || missing.Header().Get("X-Thumbnail-Status") != "" {
 		t.Fatalf("missing response=%d headers=%v body=%s", missing.Code, missing.Header(), missing.Body.String())
+	}
+}
+
+func TestThumbnailPreviewHTTPReturnsLocalBytesAndETag(t *testing.T) {
+	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
+	profiles := thumbnailProfiles{contactport.SidebarProfile{CustomerID: 41, OwnerStaffID: 7, Name: "customer", UpdatedAt: time.Now().UTC()}}
+	media := &thumbnailMedia{exists: true, variant: mediaport.ImageVariant{Content: []byte("image-bytes"), MediaType: "image/png", ETag: `"thumb-etag"`}}
+	service, err := sidebarapp.NewService(thumbnailCorp{}, thumbnailIdentity{}, thumbnailPhones{}, profiles, thumbnailSurveys{}, thumbnailOrders{}, thumbnailMembers{}, media, []byte("01234567890123456789012345678901"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	minted, err := service.MintContext(context.Background(), principal, authport.SessionRef("sidebar-test-session"), true, "wm_external_41")
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler, err := NewHandler(service)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := authport.WithAuthenticatedSession(context.Background(), principal, "sidebar-test-session")
+	ctx, err = authport.WithAuthorization(ctx, authport.Authorization{Capability: authport.CapabilityCustomersRead, Scope: authport.ScopeGlobal})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	request := httptest.NewRequest(http.MethodGet, "/api/sidebar/v2/materials/image/31/preview", nil).WithContext(ctx)
+	response := httptest.NewRecorder()
+	handler.ThumbnailPreview(response, request, minted.Token, 31)
+	if response.Code != http.StatusOK || response.Body.String() != "image-bytes" || response.Header().Get("Content-Type") != "image/png" || response.Header().Get("ETag") != `"thumb-etag"` {
+		t.Fatalf("preview response=%d headers=%v body=%q", response.Code, response.Header(), response.Body.String())
+	}
+
+	cachedRequest := httptest.NewRequest(http.MethodGet, "/api/sidebar/v2/materials/image/31/preview", nil).WithContext(ctx)
+	cachedRequest.Header.Set("If-None-Match", `"thumb-etag"`)
+	cached := httptest.NewRecorder()
+	handler.ThumbnailPreview(cached, cachedRequest, minted.Token, 31)
+	if cached.Code != http.StatusNotModified || cached.Body.Len() != 0 {
+		t.Fatalf("cached response=%d body=%q", cached.Code, cached.Body.String())
 	}
 }

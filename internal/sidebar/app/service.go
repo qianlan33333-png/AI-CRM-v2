@@ -37,6 +37,17 @@ type IdentityResolver interface {
 	Resolve(context.Context, identityport.IDRef) (identityport.ResolveResult, error)
 }
 
+type PhoneBindingCommand struct {
+	CustomerID     int64
+	Mobile         string
+	ActorID        int64
+	IdempotencyKey string
+}
+
+type PhoneBinder interface {
+	BindPhone(context.Context, PhoneBindingCommand) (string, error)
+}
+
 type MemberApplication interface {
 	Get(context.Context, int64, string) (PeriodicMember, error)
 	UpdateRemark(context.Context, PeriodicRemarkCommand) (PeriodicMember, error)
@@ -205,27 +216,40 @@ type WorkbenchResult struct {
 }
 
 type Service struct {
-	corp     CorpReader
-	identity IdentityResolver
-	profiles contactport.SidebarProfileService
-	surveys  surveyport.CustomerSurveyAnswerReader
-	orders   orderport.Query
-	members  MemberApplication
-	media    mediaport.ImageLibraryReader
-	codec    *tokenCodec
-	now      func() time.Time
-	tokenTTL time.Duration
+	corp           CorpReader
+	identity       IdentityResolver
+	phones         PhoneBinder
+	profiles       contactport.SidebarProfileService
+	surveys        surveyport.CustomerSurveyAnswerReader
+	orders         orderport.Query
+	members        MemberApplication
+	media          mediaport.ImageLibraryReader
+	variants       mediaport.ImageVariantReader
+	products       ShareableProductCatalog
+	temporaryMedia TemporaryMediaPreparer
+	codec          *tokenCodec
+	now            func() time.Time
+	tokenTTL       time.Duration
 }
 
-func NewService(corp CorpReader, identity IdentityResolver, profiles contactport.SidebarProfileService, surveys surveyport.CustomerSurveyAnswerReader, orders orderport.Query, members MemberApplication, media mediaport.ImageLibraryReader, tokenKey []byte) (*Service, error) {
+func NewService(corp CorpReader, identity IdentityResolver, phones PhoneBinder, profiles contactport.SidebarProfileService, surveys surveyport.CustomerSurveyAnswerReader, orders orderport.Query, members MemberApplication, media mediaport.ImageLibraryReader, tokenKey []byte, options ...ServiceOptions) (*Service, error) {
 	codec, err := newTokenCodec(tokenKey)
 	if err != nil {
 		return nil, err
 	}
-	if corp == nil || identity == nil || profiles == nil || surveys == nil || orders == nil || members == nil || media == nil {
+	if corp == nil || identity == nil || phones == nil || profiles == nil || surveys == nil || orders == nil || members == nil || media == nil {
 		return nil, ErrUnavailable
 	}
-	return &Service{corp: corp, identity: identity, profiles: profiles, surveys: surveys, orders: orders, members: members, media: media, codec: codec, now: time.Now, tokenTTL: 15 * time.Minute}, nil
+	service := &Service{corp: corp, identity: identity, phones: phones, profiles: profiles, surveys: surveys, orders: orders, members: members, media: media, codec: codec, now: time.Now, tokenTTL: 15 * time.Minute}
+	if len(options) > 1 {
+		return nil, ErrUnavailable
+	}
+	if len(options) == 1 {
+		service.products = options[0].Products
+		service.temporaryMedia = options[0].Media
+	}
+	service.variants, _ = media.(mediaport.ImageVariantReader)
+	return service, nil
 }
 
 func (service *Service) MintContext(ctx context.Context, principal authport.Principal, session authport.SessionRef, authenticated bool, externalUserID string) (ContextResult, error) {
@@ -325,6 +349,20 @@ func (service *Service) UpdateProfile(ctx context.Context, scope Scope, expected
 	return ProfileUpdateResult{Profile: profile, Safety: ProfileUpdateSafety{LocalOnly: true}}, mapDependencyError(err)
 }
 
+func (service *Service) BindPhone(ctx context.Context, scope Scope, mobile, key string) (string, error) {
+	if ctx == nil || scope.CustomerID < 1 || scope.Principal.AdminUserID < 1 || service == nil || service.phones == nil {
+		return "", ErrInvalidInput
+	}
+	status, err := service.phones.BindPhone(ctx, PhoneBindingCommand{CustomerID: scope.CustomerID, Mobile: mobile, ActorID: scope.Principal.AdminUserID, IdempotencyKey: key})
+	if err != nil {
+		return "", err
+	}
+	if status != "bound" && status != "already_bound" && status != "rejected" {
+		return "", ErrUnavailable
+	}
+	return status, nil
+}
+
 func (service *Service) Questionnaires(ctx context.Context, scope Scope, limit int32) (QuestionnaireResult, error) {
 	page, err := service.surveys.ListCustomerSurveyAnswers(ctx, contactport.CustomerID(scope.CustomerID), limit)
 	if err != nil {
@@ -406,6 +444,27 @@ func (service *Service) ThumbnailStatus(ctx context.Context, imageID int64) (str
 		return "", ErrNotFound
 	}
 	return "pending", nil
+}
+
+func (service *Service) ThumbnailPreview(ctx context.Context, imageID int64) (mediaport.ImageVariant, error) {
+	if imageID < 1 {
+		return mediaport.ImageVariant{}, ErrInvalidInput
+	}
+	exists, err := service.media.LocalImageExists(ctx, imageID)
+	if err != nil {
+		return mediaport.ImageVariant{}, ErrUnavailable
+	}
+	if !exists {
+		return mediaport.ImageVariant{}, ErrNotFound
+	}
+	if service.variants == nil {
+		return mediaport.ImageVariant{}, ErrUnavailable
+	}
+	variant, err := service.variants.GetImageVariant(ctx, imageID, "thumb_320")
+	if err != nil || len(variant.Content) == 0 || (variant.MediaType != "image/png" && variant.MediaType != "image/jpeg" && variant.MediaType != "image/gif") || variant.ETag == "" {
+		return mediaport.ImageVariant{}, ErrUnavailable
+	}
+	return variant, nil
 }
 
 func (service *Service) Workbench(ctx context.Context, scope Scope) (WorkbenchResult, error) {

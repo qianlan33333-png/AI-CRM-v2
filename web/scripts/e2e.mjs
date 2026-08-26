@@ -40,6 +40,155 @@ async function loadPage(rel, { id, q } = {}) {
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
       window.__AICRM_TEST_MOCK__ = true;
+      if (rel !== 'sidebar/index.html') return;
+      window.URL.createObjectURL = () => 'blob:sidebar-thumbnail';
+      window.URL.revokeObjectURL = () => {};
+      window.wx = {
+        agentConfig(options) { options.success?.({ err_msg: 'agentConfig:ok' }); },
+        invoke(method, payload, callback) {
+          window.__sidebarTest.wxMessages.push({ method, payload });
+          callback({ err_msg: method + ':ok' });
+        },
+      };
+      const scenario = new URL(window.location.href).searchParams.get('sidebar_case') || 'success';
+      const safety = { local_only: true, provider_execution_eligible: false, real_external_call_executed: false };
+      const memberRef = 'spm_' + 'A'.repeat(22);
+      const profile = {
+        customer_id: 7,
+        name: '侧边栏测试客户',
+        owner_staff_id: 9,
+        source: '企微',
+        industry: '教育',
+        description: '测试画像',
+        needs: '测试需求',
+        pain_points: '测试卡点',
+        updated_at: '2026-08-26T01:00:00Z',
+      };
+      const json = (data, status = 200) => ({
+        ok: status >= 200 && status < 300,
+        status,
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        text: async () => JSON.stringify(data),
+        json: async () => data,
+        blob: async () => new window.Blob([JSON.stringify(data)], { type: 'application/json' }),
+        clone() { return this; },
+      });
+      window.__sidebarTest = { remarkBody: null, idempotencyKey: null, phoneBody: null, phoneKey: null, materialQueries: [], temporaryKeys: [], wxMessages: [] };
+      window.fetch = async (input, init = {}) => {
+        const url = String(input);
+        if (url.includes('/jssdk/agent-config')) {
+          return json({ signature_type: 'agent_config', corp_id: 'ww-test', agent_id: 1, nonce: 'nonce', timestamp: 1, signature: 'signature', url: 'http://localhost/sidebar/index.html' });
+        }
+        if (url.includes('/context-token')) {
+          return json({ state: 'ready', context_token: 'sidebar-context-token-' + 'x'.repeat(52), customer_id: 7, owner_staff_id: 9, safety });
+        }
+        if (url.includes('/workbench')) {
+          return json({ profile, questionnaire_count: scenario === 'empty' ? 0 : 1, order_count: scenario === 'success' ? 1 : 0, periodic_order_count: scenario === 'success' ? 1 : 0, material_count: scenario === 'success' ? 2 : 0, safety });
+        }
+        if (url.includes('/phone-binding')) {
+          window.__sidebarTest.phoneBody = JSON.parse(init.body || '{}');
+          window.__sidebarTest.phoneKey = new Headers(init.headers).get('Idempotency-Key');
+          return json({ status: 'bound', safety });
+        }
+        if (url.includes('/questionnaires')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          return json({
+            items: scenario === 'empty' ? [] : [{ submission_id: 11, questionnaire_id: 3, submitted_at: '2026-08-26T01:00:00Z', score: 8.5, choice_answers: [{ question_id: 2, question_type: 'single_choice', sort_order: 0, option_ids: [9] }] }],
+            scan_truncated: false,
+            result_truncated: false,
+            safety,
+          });
+        }
+        if (url.includes('/timeline')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          return json({
+            items: scenario === 'empty' ? [] : [{ id: 7, event_type: 'survey_submitted', occurred_at: '2026-08-26T00:00:00Z' }],
+            next_cursor: scenario === 'success' ? 'timeline-next' : undefined,
+            safety,
+          });
+        }
+        if (url.includes('/chat-activity')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          const chatType = url.includes('chat_type=group') ? 'group' : 'private';
+          return json({
+            items: scenario === 'empty' ? [] : [{ chat_type: chatType, message_type: 'text', sent_at: '2026-08-26T00:30:00Z' }],
+            next_cursor: undefined,
+            previous_cursor: undefined,
+            safety,
+          });
+        }
+        if (url.includes('/periodic-orders/') && url.includes('/remark')) {
+          if (scenario === 'error') return json({ code: 'conflict' }, 409);
+          window.__sidebarTest.remarkBody = JSON.parse(init.body || '{}');
+          window.__sidebarTest.idempotencyKey = new Headers(init.headers).get('Idempotency-Key');
+          return json({
+            member: { member_ref: memberRef, service_product_id: 3, customer_id: 7, state: 'active', source: 'paid_order', starts_at: '2026-08-01T00:00:00Z', expires_at: '2026-09-01T00:00:00Z', remark: window.__sidebarTest.remarkBody.remark, alliance: '测试联盟', version: 2, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T02:00:00Z' },
+            safety,
+          });
+        }
+        if (url.includes('/periodic-orders')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          return json({
+            items: scenario === 'empty' ? [] : [{ member_ref: memberRef, service_product_id: 3, customer_id: 7, state: 'active', source: 'paid_order', starts_at: '2026-08-01T00:00:00Z', expires_at: '2026-09-01T00:00:00Z', remark: '首期备注', alliance: '测试联盟', version: 1, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-01T00:00:00Z' }],
+            limit: 20,
+            offset: 0,
+            has_more: false,
+            safety,
+          });
+        }
+        if (url.includes('/orders')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          return json({
+            items: scenario === 'empty' ? [] : [{ created_at: '2026-08-26T00:40:00Z', merchant_order_no: 'M20260826001', product_code: 'course-1', product_name: '测试课程', amount_yuan: '99.00', currency: 'CNY', status: 'paid', status_label: '已支付', provider: 'wechat_pay', provider_label: '微信支付' }],
+            total: scenario === 'empty' ? 0 : 1,
+            limit: 20,
+            has_more: false,
+            safety,
+          });
+        }
+        if (url.includes('/shareable-products')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          return json({
+            items: scenario === 'empty' ? [] : [
+              { kind: 'ordinary', product_id: 41, product_code: 'course-ordinary', name: '普通课程', description: '真实普通商品字段', price_minor: 9900, currency: 'CNY', stock_quantity: 10, public_path: '/p/ordinary/41' },
+              { kind: 'service_period', product_id: 42, product_code: 'course-period', name: '周期课程', description: '真实周期商品字段', price_minor: 19900, currency: 'CNY', stock_quantity: 8, public_path: '/p/service_period/42' },
+            ],
+            safety,
+          });
+        }
+        if (url.includes('/temporary-media')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          window.__sidebarTest.temporaryKeys.push(new Headers(init.headers).get('Idempotency-Key'));
+          return json({ image_id: 31, media_id: 'media-real-31', media_expires_at: '2026-08-28T00:00:00Z', upload_state: 'ready', provider_call_dispatched: true, real_external_call_executed: true, client_callback: 'not_called', delivery_state: 'not_sent_yet' });
+        }
+        if (url.includes('/materials/image/')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          if (url.includes('/image/32/')) return json({ code: 'not_found' }, 404);
+          return {
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'Content-Type': 'image/png', ETag: '"thumb"' }),
+            text: async () => '',
+            blob: async () => new window.Blob(['image-bytes'], { type: 'image/png' }),
+          };
+        }
+        if (url.includes('/materials')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          window.__sidebarTest.materialQueries.push(url);
+          return json({
+            items: scenario === 'empty' ? [] : [
+              { id: 31, name: '欢迎海报', file_name: 'welcome.png', mime_type: 'image/png', file_size: 1024, description: '测试素材', tags: ['欢迎语'], category: '海报', width: 800, height: 600, updated_at: '2026-08-26T00:50:00Z', thumbnail_status: 'pending' },
+              { id: 32, name: '课程卡片', file_name: 'course.png', mime_type: 'image/png', file_size: 2048, description: '', tags: ['课程'], category: '课程', width: 600, height: 400, updated_at: '2026-08-26T00:51:00Z', thumbnail_status: 'pending' },
+            ],
+            total: scenario === 'empty' ? 0 : 2,
+            limit: 20,
+            offset: 0,
+            quick_keywords: ['欢迎语', '课程卡片'],
+            safety,
+          });
+        }
+        return json({ code: 'unexpected_sidebar_request' }, 500);
+      };
     },
   });
   // 等 loadDb（120ms）+ 二级加载（200ms）+ 余量
@@ -463,6 +612,166 @@ console.log('sidebar/index.html');
   const d = dom.window.document;
   ok('侧边栏渲染（含 WX 顶栏）', d.body.textContent.includes('WX'));
   dom.window.close();
+}
+
+console.log('sidebar/index.html（问卷读取状态）');
+for (const scenario of ['success', 'empty', 'error']) {
+  const dom = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=' + scenario });
+  const d = dom.window.document;
+  const questionnaireTab = d.querySelector('[data-sidebar-tab="questionnaires"]');
+  ok('workbench ready 后问卷 tab 可用', questionnaireTab && !questionnaireTab.disabled);
+  ok('真实 Sidebar tabs 可用、未接入能力仍关闭',
+    !d.querySelector('[data-sidebar-tab="timeline"]').disabled &&
+    !d.querySelector('[data-sidebar-tab="chat_activity"]').disabled &&
+    !d.querySelector('[data-sidebar-tab="orders"]').disabled &&
+    !d.querySelector('[data-sidebar-tab="periodic_orders"]').disabled &&
+    !d.querySelector('[data-sidebar-tab="materials"]').disabled &&
+    !d.querySelector('[data-sidebar-tab="products"]').disabled &&
+    !d.querySelector('[data-sidebar-tab="other_staff_messages"]').disabled &&
+    d.querySelector('[data-sidebar-tab="coupons"]').disabled);
+  click(dom, questionnaireTab);
+  ok('问卷切换先显示 loading', d.body.textContent.includes('正在读取问卷答案'));
+  await sleep(30);
+  if (scenario === 'success') {
+    ok('问卷真实读取并可展开答案', d.body.textContent.includes('展开答案（1）') && !!d.querySelector('.questionnaire-answers'));
+  } else if (scenario === 'empty') {
+    ok('问卷空结果显示 empty', d.body.textContent.includes('暂无问卷回答记录'));
+  } else {
+    ok('问卷失败显示 error 与重试', d.body.textContent.includes('问卷读取失败') && d.body.textContent.includes('重试读取问卷'));
+  }
+  dom.window.close();
+}
+
+console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备注）');
+{
+  const dom = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=success' });
+  const d = dom.window.document;
+
+  input(dom, d.querySelector('#sidebar-phone-input'), '+8613800138000');
+  click(dom, d.querySelector('[data-sidebar-action="bind-phone"]'));
+  await sleep(30);
+  ok('手机号只绑定当前 Sidebar 客户并携带幂等键',
+    d.querySelector('#sidebar-phone-status')?.textContent.includes('本地事实') &&
+    dom.window.__sidebarTest.phoneBody?.mobile === '+8613800138000' &&
+    dom.window.__sidebarTest.phoneKey?.startsWith('sidebar-phone-'));
+
+  click(dom, d.querySelector('[data-sidebar-tab="timeline"]'));
+  await sleep(30);
+  ok('时间线只展示安全事件元数据',
+    d.querySelectorAll('[data-timeline-event-id]').length === 1 &&
+    d.querySelector('[data-sidebar-section="timeline"]')?.textContent.includes('survey_submitted') &&
+    !d.querySelector('[data-sidebar-section="timeline"]')?.textContent.includes('payload') &&
+    !d.querySelector('[data-sidebar-section="timeline"]')?.textContent.includes('actor'));
+  ok('问卷来源事件只导航到已加载问卷板块', !!d.querySelector('[data-sidebar-action="open-related-questionnaires"]'));
+  click(dom, d.querySelector('[data-sidebar-action="timeline-more"]'));
+  await sleep(30);
+  ok('时间线使用 opaque cursor 加载更多', d.querySelectorAll('[data-timeline-event-id]').length === 2);
+
+  click(dom, d.querySelector('[data-sidebar-tab="chat_activity"]'));
+  await sleep(30);
+  ok('聊天活动独立标注 V2 补充能力且不展示正文',
+    d.querySelector('[data-sidebar-capability="v2-supplement"]')?.textContent.includes('不计 LEGACY-S05-028 销项') &&
+    d.querySelectorAll('[data-chat-activity-at]').length === 1 &&
+    !d.body.textContent.includes('消息正文'));
+  const chatFilter = d.querySelector('[data-chat-filter="chat_type"]');
+  chatFilter.value = 'group';
+  chatFilter.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  await sleep(30);
+  ok('聊天活动支持私聊/群聊筛选', d.body.textContent.includes('群聊 · text'));
+
+  click(dom, d.querySelector('[data-sidebar-tab="orders"]'));
+  await sleep(30);
+  const orderCard = d.querySelector('[data-order-no="M20260826001"]');
+  ok('普通订单渲染安全订单字段',
+    orderCard?.textContent.includes('测试课程') &&
+    orderCard?.textContent.includes('99.00 CNY') &&
+    !orderCard?.textContent.includes('payer_name'));
+  const orderDetail = d.querySelector('[data-order-detail="local"]');
+  ok('普通订单详情在当前客户范围内本地展开',
+    orderDetail?.tagName === 'DETAILS' &&
+    orderDetail?.textContent.includes('订单号 M20260826001') &&
+    orderDetail?.textContent.includes('商品编码 course-1') &&
+    !orderDetail?.textContent.includes('/api/admin/orders/'));
+
+  click(dom, d.querySelector('[data-sidebar-tab="periodic_orders"]'));
+  await sleep(30);
+  ok('周期订单渲染 canonical member 与版本',
+    d.querySelectorAll('[data-periodic-member-ref]').length === 1 &&
+    d.body.textContent.includes('member_ref spm_') &&
+    d.body.textContent.includes('version 1'));
+  input(dom, d.querySelector('[data-periodic-remark]'), '更新后的备注');
+  click(dom, d.querySelector('[data-sidebar-action="periodic-remark-save"]'));
+  await sleep(30);
+  ok('周期备注写入回执含 accepted 与新 CAS 版本',
+    d.querySelector('[data-periodic-remark-receipt="accepted"]')?.textContent.includes('version 2') &&
+    dom.window.__sidebarTest.remarkBody?.expected_version === 1 &&
+    dom.window.__sidebarTest.remarkBody?.remark === '更新后的备注' &&
+    typeof dom.window.__sidebarTest.idempotencyKey === 'string' &&
+    dom.window.__sidebarTest.idempotencyKey.startsWith('sidebar-periodic-remark-'));
+
+  click(dom, d.querySelector('[data-sidebar-tab="products"]'));
+  await sleep(30);
+  ok('可分享商品同时渲染普通与周期商品，且只显示本地字段',
+    d.querySelectorAll('article[data-product-kind="ordinary"]').length === 1 &&
+    d.querySelectorAll('article[data-product-kind="service_period"]').length === 1 &&
+    d.body.textContent.includes('普通课程') && d.body.textContent.includes('周期课程'));
+  click(dom, d.querySelector('[data-sidebar-action="send-product"]'));
+  await sleep(30);
+  const productMessage = dom.window.__sidebarTest.wxMessages.find((entry) => entry.payload?.msgtype === 'news');
+  ok('商品卡片仅以 JSSDK 回调为 receipt，明确 delivery_unknown',
+    productMessage?.method === 'sendChatMessage' &&
+    productMessage?.payload?.news?.link === 'http://localhost/p/ordinary/41' &&
+    d.body.textContent.includes('client_callback · JSSDK 已回调') &&
+    d.body.textContent.includes('delivery_unknown · 未取得企微外部送达回执'));
+
+  click(dom, d.querySelector('[data-sidebar-tab="materials"]'));
+  await sleep(30);
+  ok('素材支持搜索/分类/标签筛选与元数据',
+    !!d.querySelector('#material-q') && !!d.querySelector('#material-category') && !!d.querySelector('#material-tags') &&
+    d.querySelectorAll('article[data-material-id]').length === 2 &&
+    d.body.textContent.includes('welcome.png') && d.body.textContent.includes('800×600'));
+  click(dom, d.querySelector('[data-sidebar-action="send-material-image"]'));
+  await sleep(30);
+  const imageMessage = dom.window.__sidebarTest.wxMessages.find((entry) => entry.payload?.msgtype === 'image');
+  ok('图片先取得临时 media_id 再调用 JSSDK，receipt 不宣称外部送达',
+    dom.window.__sidebarTest.temporaryKeys[0]?.startsWith('sidebar-image-temporary-media-') &&
+    imageMessage?.method === 'sendChatMessage' &&
+    imageMessage?.payload?.image?.mediaid === 'media-real-31' &&
+    d.body.textContent.includes('delivery_unknown · 未取得企微外部送达回执'));
+  input(dom, d.querySelector('#material-q'), '欢迎');
+  input(dom, d.querySelector('#material-category'), '海报');
+  input(dom, d.querySelector('#material-tags'), '欢迎语');
+  click(dom, d.querySelector('[data-sidebar-action="materials-search"]'));
+  await sleep(30);
+  ok('素材筛选请求沿用真实 q/category/tags 参数',
+    dom.window.__sidebarTest.materialQueries.some((url) => url.includes('q=%E6%AC%A2%E8%BF%8E') && url.includes('category=%E6%B5%B7%E6%8A%A5') && url.includes('tags=%E6%AC%A2%E8%BF%8E%E8%AF%AD')));
+  ok('缩略图展示真实本地图片或明确 not_found',
+    d.querySelector('[data-thumbnail-status="ready"]') &&
+    d.querySelector('[data-thumbnail-status="not_found"]') &&
+    d.querySelector('[data-material-preview="ready"]')?.getAttribute('src') === 'blob:sidebar-thumbnail');
+  dom.window.close();
+}
+
+console.log('sidebar/index.html（新增能力空态与失败态）');
+{
+  const empty = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=empty' });
+  const emptyDoc = empty.window.document;
+  for (const tab of ['timeline', 'chat_activity', 'orders', 'periodic_orders', 'products', 'materials']) {
+    click(empty, emptyDoc.querySelector(`[data-sidebar-tab="${tab}"]`));
+    await sleep(30);
+    ok(`${tab} 空态清晰`, emptyDoc.body.textContent.includes(tab === 'timeline' ? '暂无时间线记录' : tab === 'chat_activity' ? '暂无聊天活动记录' : tab === 'orders' ? '暂无普通订单记录' : tab === 'periodic_orders' ? '暂无周期订单记录' : tab === 'products' ? '暂无可分享的已启用商品' : '暂无匹配素材'));
+  }
+  empty.window.close();
+
+  const failed = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=error' });
+  const failedDoc = failed.window.document;
+  click(failed, failedDoc.querySelector('[data-sidebar-tab="timeline"]'));
+  await sleep(30);
+  ok('时间线失败态提供重试', failedDoc.body.textContent.includes('时间线读取失败') && !!failedDoc.querySelector('[data-sidebar-action="retry-timeline"]'));
+  click(failed, failedDoc.querySelector('[data-sidebar-tab="periodic_orders"]'));
+  await sleep(30);
+  ok('周期订单失败态提供重试', failedDoc.body.textContent.includes('周期订单读取失败') && !!failedDoc.querySelector('[data-sidebar-action="retry-periodic-orders"]'));
+  failed.window.close();
 }
 
 console.log(`\n${pass} 通过 / ${fail} 失败`);

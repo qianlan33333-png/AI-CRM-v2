@@ -476,6 +476,12 @@ func projectLocalProduct(product productport.Product) (productport.LocalProduct,
 	return result, nil
 }
 
+// ProjectLocalProduct is the typed read projection used by other local
+// application boundaries. It does not make the product purchasable or shared.
+func ProjectLocalProduct(product productport.Product) (productport.LocalProduct, error) {
+	return projectLocalProduct(product)
+}
+
 func localProductLifecycleFromProjection(raw json.RawMessage) (productport.LocalProductLifecycle, bool, error) {
 	canonical, err := CanonicalLegacyAdminProjection(raw)
 	if err != nil || !jsonEquivalent(canonical, raw) {

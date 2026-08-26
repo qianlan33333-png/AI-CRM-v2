@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/media/domain"
+	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 )
 
 var (
@@ -39,11 +40,7 @@ type ImageVariantStore interface {
 
 // ImageVariant is fully materialized before the HTTP layer writes a header or
 // body. ETag is an already-quoted strong SHA-256 tag for Content.
-type ImageVariant struct {
-	Content   []byte
-	MediaType string
-	ETag      string
-}
+type ImageVariant = mediaport.ImageVariant
 
 type imageVariantSpec struct {
 	limit int32

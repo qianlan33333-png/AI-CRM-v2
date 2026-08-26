@@ -772,6 +772,21 @@ export interface SidebarProfileUpdateResponse {
   safety: SidebarProfileUpdateSafety;
 }
 
+export type SidebarPhoneBindingResponseStatus =
+  (typeof SidebarPhoneBindingResponseStatus)[keyof typeof SidebarPhoneBindingResponseStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarPhoneBindingResponseStatus = {
+  bound: "bound",
+  already_bound: "already_bound",
+  rejected: "rejected",
+} as const;
+
+export interface SidebarPhoneBindingResponse {
+  status: SidebarPhoneBindingResponseStatus;
+  safety: SidebarSafety;
+}
+
 export type SidebarSafeChoiceAnswerQuestionType =
   (typeof SidebarSafeChoiceAnswerQuestionType)[keyof typeof SidebarSafeChoiceAnswerQuestionType];
 
@@ -957,6 +972,92 @@ export interface SidebarMaterialResponse {
   safety: SidebarSafety;
 }
 
+export type SidebarShareableProductKind =
+  (typeof SidebarShareableProductKind)[keyof typeof SidebarShareableProductKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarShareableProductKind = {
+  ordinary: "ordinary",
+  service_period: "service_period",
+} as const;
+
+export interface SidebarShareableProduct {
+  kind: SidebarShareableProductKind;
+  /** @minimum 1 */
+  product_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  product_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @maxLength 10000 */
+  description: string;
+  /** @minimum 0 */
+  price_minor: number;
+  /** @pattern ^[A-Z]{3}$ */
+  currency: string;
+  /** @minimum 0 */
+  stock_quantity: number;
+  /**
+   * @maxLength 80
+   * @pattern ^/p/(ordinary|service_period)/[1-9][0-9]{0,18}$
+   */
+  public_path: string;
+}
+
+export interface SidebarShareableProductResponse {
+  /** @maxItems 100 */
+  items: SidebarShareableProduct[];
+  safety: SidebarSafety;
+}
+
+export type SidebarTemporaryMediaResponseUploadState =
+  (typeof SidebarTemporaryMediaResponseUploadState)[keyof typeof SidebarTemporaryMediaResponseUploadState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarTemporaryMediaResponseUploadState = {
+  ready: "ready",
+  outcome_unknown: "outcome_unknown",
+  final_failed: "final_failed",
+} as const;
+
+export type SidebarTemporaryMediaResponseClientCallback =
+  (typeof SidebarTemporaryMediaResponseClientCallback)[keyof typeof SidebarTemporaryMediaResponseClientCallback];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarTemporaryMediaResponseClientCallback = {
+  not_called: "not_called",
+} as const;
+
+export type SidebarTemporaryMediaResponseDeliveryState =
+  (typeof SidebarTemporaryMediaResponseDeliveryState)[keyof typeof SidebarTemporaryMediaResponseDeliveryState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarTemporaryMediaResponseDeliveryState = {
+  not_sent_yet: "not_sent_yet",
+} as const;
+
+export interface SidebarTemporaryMediaResponse {
+  /** @minimum 1 */
+  image_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  media_id?: string;
+  media_expires_at?: string;
+  upload_state: SidebarTemporaryMediaResponseUploadState;
+  provider_call_dispatched: boolean;
+  real_external_call_executed: boolean;
+  client_callback: SidebarTemporaryMediaResponseClientCallback;
+  delivery_state: SidebarTemporaryMediaResponseDeliveryState;
+}
+
 export interface SidebarWorkbenchResponse {
   profile: SidebarProfile;
   /**
@@ -1043,6 +1144,36 @@ export interface SidebarChatActivityResponse {
    * @maxLength 512
    */
   previous_cursor?: string;
+  safety: SidebarSafety;
+}
+
+export type SidebarOtherStaffChatItemMessageType =
+  (typeof SidebarOtherStaffChatItemMessageType)[keyof typeof SidebarOtherStaffChatItemMessageType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarOtherStaffChatItemMessageType = {
+  text: "text",
+  image: "image",
+} as const;
+
+export interface SidebarOtherStaffChatItem {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  staff_userid: string;
+  message_type: SidebarOtherStaffChatItemMessageType;
+  /**
+   * @minLength 1
+   * @maxLength 10000
+   */
+  content_masked: string;
+  sent_at: string;
+}
+
+export interface SidebarOtherStaffChatResponse {
+  /** @maxItems 20 */
+  items: SidebarOtherStaffChatItem[];
   safety: SidebarSafety;
 }
 
@@ -16339,6 +16470,11 @@ export type UpdateSidebarProfileBody = {
   patch: UpdateSidebarProfileBodyPatch;
 };
 
+export type BindSidebarPhoneBody = {
+  /** @pattern ^\+[1-9][0-9]{1,14}$ */
+  mobile: string;
+};
+
 export type ListSidebarQuestionnairesParams = {
   /**
    * @minimum 1
@@ -16403,6 +16539,14 @@ export type ListSidebarMaterialsParams = {
    * @minimum 0
    */
   offset?: number;
+};
+
+export type ListSidebarShareableProductsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
 };
 
 export type ListProductsParams = {
@@ -19077,6 +19221,75 @@ export const listSidebarChatActivity = async (
 };
 
 /**
+ * @summary Read the bound customer's recent masked chats owned by other active staff
+ */
+export type listSidebarOtherStaffChatsResponse200 = {
+  data: SidebarOtherStaffChatResponse;
+  status: 200;
+};
+
+export type listSidebarOtherStaffChatsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSidebarOtherStaffChatsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSidebarOtherStaffChatsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSidebarOtherStaffChatsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSidebarOtherStaffChatsResponseSuccess =
+  listSidebarOtherStaffChatsResponse200 & {
+    headers: Headers;
+  };
+export type listSidebarOtherStaffChatsResponseError = (
+  | listSidebarOtherStaffChatsResponse400
+  | listSidebarOtherStaffChatsResponse401
+  | listSidebarOtherStaffChatsResponse403
+  | listSidebarOtherStaffChatsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSidebarOtherStaffChatsResponse =
+  | listSidebarOtherStaffChatsResponseSuccess
+  | listSidebarOtherStaffChatsResponseError;
+
+export const getListSidebarOtherStaffChatsUrl = () => {
+  return `/api/sidebar/v2/other-staff-chats`;
+};
+
+export const listSidebarOtherStaffChats = async (
+  options?: RequestInit,
+): Promise<listSidebarOtherStaffChatsResponse> => {
+  const res = await fetch(getListSidebarOtherStaffChatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSidebarOtherStaffChatsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSidebarOtherStaffChatsResponse;
+};
+
+/**
  * @summary Read the customer sidebar local workbench aggregate
  */
 export type getSidebarWorkbenchResponse200 = {
@@ -19234,6 +19447,80 @@ export const updateSidebarProfile = async (
 };
 
 /**
+ * @summary Bind a declared E.164 phone to the customer from the live sidebar scope
+ */
+export type bindSidebarPhoneResponse200 = {
+  data: SidebarPhoneBindingResponse;
+  status: 200;
+};
+
+export type bindSidebarPhoneResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type bindSidebarPhoneResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type bindSidebarPhoneResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type bindSidebarPhoneResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type bindSidebarPhoneResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type bindSidebarPhoneResponseSuccess = bindSidebarPhoneResponse200 & {
+  headers: Headers;
+};
+export type bindSidebarPhoneResponseError = (
+  | bindSidebarPhoneResponse400
+  | bindSidebarPhoneResponse401
+  | bindSidebarPhoneResponse403
+  | bindSidebarPhoneResponse409
+  | bindSidebarPhoneResponse503
+) & {
+  headers: Headers;
+};
+
+export type bindSidebarPhoneResponse =
+  bindSidebarPhoneResponseSuccess | bindSidebarPhoneResponseError;
+
+export const getBindSidebarPhoneUrl = () => {
+  return `/api/sidebar/v2/phone-binding`;
+};
+
+export const bindSidebarPhone = async (
+  bindSidebarPhoneBody: BindSidebarPhoneBody,
+  options?: RequestInit,
+): Promise<bindSidebarPhoneResponse> => {
+  const res = await fetch(getBindSidebarPhoneUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(bindSidebarPhoneBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: bindSidebarPhoneResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as bindSidebarPhoneResponse;
+};
+
+/**
  * @summary List bounded safe-choice questionnaire answers for one scoped customer
  */
 export type listSidebarQuestionnairesResponse200 = {
@@ -19318,7 +19605,7 @@ export const listSidebarQuestionnaires = async (
 };
 
 /**
- * @summary List customer-scoped local orders without payer or identity fields
+ * @summary List customer-scoped local orders with inline safe details and without payer or identity fields
  */
 export type listSidebarOrdersResponse200 = {
   data: SidebarOrderResponse;
@@ -19655,6 +19942,179 @@ export const listSidebarMaterials = async (
 };
 
 /**
+ * @summary List enabled ordinary and service-period products with a same-origin read-only detail page
+ */
+export type listSidebarShareableProductsResponse200 = {
+  data: SidebarShareableProductResponse;
+  status: 200;
+};
+
+export type listSidebarShareableProductsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSidebarShareableProductsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSidebarShareableProductsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSidebarShareableProductsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSidebarShareableProductsResponseSuccess =
+  listSidebarShareableProductsResponse200 & {
+    headers: Headers;
+  };
+export type listSidebarShareableProductsResponseError = (
+  | listSidebarShareableProductsResponse400
+  | listSidebarShareableProductsResponse401
+  | listSidebarShareableProductsResponse403
+  | listSidebarShareableProductsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSidebarShareableProductsResponse =
+  | listSidebarShareableProductsResponseSuccess
+  | listSidebarShareableProductsResponseError;
+
+export const getListSidebarShareableProductsUrl = (
+  params?: ListSidebarShareableProductsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/sidebar/v2/shareable-products?${stringifiedParams}`
+    : `/api/sidebar/v2/shareable-products`;
+};
+
+export const listSidebarShareableProducts = async (
+  params?: ListSidebarShareableProductsParams,
+  options?: RequestInit,
+): Promise<listSidebarShareableProductsResponse> => {
+  const res = await fetch(getListSidebarShareableProductsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSidebarShareableProductsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSidebarShareableProductsResponse;
+};
+
+/**
+ * @summary Upload one enabled local image as temporary WeCom media before the client JSSDK callback
+ */
+export type prepareSidebarImageTemporaryMediaResponse200 = {
+  data: SidebarTemporaryMediaResponse;
+  status: 200;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse202 = {
+  data: SidebarTemporaryMediaResponse;
+  status: 202;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type prepareSidebarImageTemporaryMediaResponseSuccess = (
+  | prepareSidebarImageTemporaryMediaResponse200
+  | prepareSidebarImageTemporaryMediaResponse202
+) & {
+  headers: Headers;
+};
+export type prepareSidebarImageTemporaryMediaResponseError = (
+  | prepareSidebarImageTemporaryMediaResponse400
+  | prepareSidebarImageTemporaryMediaResponse401
+  | prepareSidebarImageTemporaryMediaResponse403
+  | prepareSidebarImageTemporaryMediaResponse404
+  | prepareSidebarImageTemporaryMediaResponse409
+  | prepareSidebarImageTemporaryMediaResponse503
+) & {
+  headers: Headers;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse =
+  | prepareSidebarImageTemporaryMediaResponseSuccess
+  | prepareSidebarImageTemporaryMediaResponseError;
+
+export const getPrepareSidebarImageTemporaryMediaUrl = (imageId: number) => {
+  return `/api/sidebar/v2/materials/image/${imageId}/temporary-media`;
+};
+
+export const prepareSidebarImageTemporaryMedia = async (
+  imageId: number,
+  options?: RequestInit,
+): Promise<prepareSidebarImageTemporaryMediaResponse> => {
+  const res = await fetch(getPrepareSidebarImageTemporaryMediaUrl(imageId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: prepareSidebarImageTemporaryMediaResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as prepareSidebarImageTemporaryMediaResponse;
+};
+
+/**
  * @summary Return pending for a local image without generating a thumbnail
  */
 export type getSidebarMaterialThumbnailStatusResponse202 = {
@@ -19728,6 +20188,88 @@ export const getSidebarMaterialThumbnailStatus = async (
     status: res.status,
     headers: res.headers,
   } as getSidebarMaterialThumbnailStatusResponse;
+};
+
+/**
+ * @summary Read a real local thumb_320 image variant for the scoped sidebar
+ */
+export type getSidebarMaterialThumbnailPreviewResponse200 = {
+  data: Blob;
+  status: 200;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse304 = {
+  data: void;
+  status: 304;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponseSuccess =
+  getSidebarMaterialThumbnailPreviewResponse200 & {
+    headers: Headers;
+  };
+export type getSidebarMaterialThumbnailPreviewResponseError = (
+  | getSidebarMaterialThumbnailPreviewResponse304
+  | getSidebarMaterialThumbnailPreviewResponse400
+  | getSidebarMaterialThumbnailPreviewResponse401
+  | getSidebarMaterialThumbnailPreviewResponse403
+  | getSidebarMaterialThumbnailPreviewResponse404
+  | getSidebarMaterialThumbnailPreviewResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse =
+  | getSidebarMaterialThumbnailPreviewResponseSuccess
+  | getSidebarMaterialThumbnailPreviewResponseError;
+
+export const getGetSidebarMaterialThumbnailPreviewUrl = (imageId: number) => {
+  return `/api/sidebar/v2/materials/image/${imageId}/preview`;
+};
+
+export const getSidebarMaterialThumbnailPreview = async (
+  imageId: number,
+  options?: RequestInit,
+): Promise<getSidebarMaterialThumbnailPreviewResponse> => {
+  const res = await fetch(getGetSidebarMaterialThumbnailPreviewUrl(imageId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSidebarMaterialThumbnailPreviewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSidebarMaterialThumbnailPreviewResponse;
 };
 
 /**

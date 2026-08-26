@@ -20,6 +20,10 @@ func (handler *candidateHandler) UpdateSidebarProfile(writer http.ResponseWriter
 	handler.sidebar.UpdateProfile(writer, request, string(params.XSidebarContextToken), string(params.IdempotencyKey))
 }
 
+func (handler *candidateHandler) BindSidebarPhone(writer http.ResponseWriter, request *http.Request, params api.BindSidebarPhoneParams) {
+	handler.sidebar.BindPhone(writer, request, string(params.XSidebarContextToken), string(params.IdempotencyKey))
+}
+
 func (handler *candidateHandler) ListSidebarQuestionnaires(writer http.ResponseWriter, request *http.Request, params api.ListSidebarQuestionnairesParams) {
 	limit := int32(20)
 	if params.Limit != nil {
@@ -74,8 +78,24 @@ func (handler *candidateHandler) ListSidebarMaterials(writer http.ResponseWriter
 	handler.sidebar.Materials(writer, request, string(params.XSidebarContextToken), query)
 }
 
+func (handler *candidateHandler) ListSidebarShareableProducts(writer http.ResponseWriter, request *http.Request, params api.ListSidebarShareableProductsParams) {
+	limit := int32(50)
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	handler.sidebar.ShareableProducts(writer, request, string(params.XSidebarContextToken), limit)
+}
+
+func (handler *candidateHandler) PrepareSidebarImageTemporaryMedia(writer http.ResponseWriter, request *http.Request, imageID int64, params api.PrepareSidebarImageTemporaryMediaParams) {
+	handler.sidebar.PrepareTemporaryImageMedia(writer, request, string(params.XSidebarContextToken), string(params.IdempotencyKey), imageID)
+}
+
 func (handler *candidateHandler) GetSidebarMaterialThumbnailStatus(writer http.ResponseWriter, request *http.Request, imageID int64, params api.GetSidebarMaterialThumbnailStatusParams) {
 	handler.sidebar.ThumbnailStatus(writer, request, string(params.XSidebarContextToken), imageID)
+}
+
+func (handler *candidateHandler) GetSidebarMaterialThumbnailPreview(writer http.ResponseWriter, request *http.Request, imageID int64, params api.GetSidebarMaterialThumbnailPreviewParams) {
+	handler.sidebar.ThumbnailPreview(writer, request, string(params.XSidebarContextToken), imageID)
 }
 
 func (handler *candidateHandler) ListSidebarTimeline(writer http.ResponseWriter, request *http.Request, params api.ListSidebarTimelineParams) {
@@ -119,6 +139,14 @@ func (handler *candidateHandler) ListSidebarChatActivity(writer http.ResponseWri
 		limit = *params.Limit
 	}
 	handler.sidebarActivity.Chat(writer, request, chatType, cursor, limit)
+}
+
+func (handler *candidateHandler) ListSidebarOtherStaffChats(writer http.ResponseWriter, request *http.Request, _ api.ListSidebarOtherStaffChatsParams) {
+	if handler == nil || handler.sidebarOtherStaffChats == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.sidebarOtherStaffChats.List(writer, request)
 }
 
 func writeSidebarActivityMethodNotAllowed(writer http.ResponseWriter, _ *http.Request) {

@@ -121,7 +121,7 @@ func sidebarActivityHandler(t *testing.T) (*ActivityHandler, *sidebarActivityTim
 	t.Helper()
 	principal := authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}
 	profiles := thumbnailProfiles{profile: contactport.SidebarProfile{CustomerID: 41, OwnerStaffID: 7, Name: "customer", UpdatedAt: time.Now().UTC()}}
-	contextService, err := sidebarapp.NewService(thumbnailCorp{}, thumbnailIdentity{}, profiles, thumbnailSurveys{}, thumbnailOrders{}, thumbnailMembers{}, &thumbnailMedia{}, []byte("01234567890123456789012345678901"))
+	contextService, err := sidebarapp.NewService(thumbnailCorp{}, thumbnailIdentity{}, thumbnailPhones{}, profiles, thumbnailSurveys{}, thumbnailOrders{}, thumbnailMembers{}, &thumbnailMedia{}, []byte("01234567890123456789012345678901"))
 	if err != nil {
 		t.Fatal(err)
 	}

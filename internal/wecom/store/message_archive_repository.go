@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
@@ -16,6 +17,7 @@ import (
 type MessageArchiveRepository struct{}
 
 var _ wecomapp.MessageArchiveStore = (*MessageArchiveRepository)(nil)
+var _ wecomapp.OtherStaffChatStore = (*MessageArchiveRepository)(nil)
 
 func NewMessageArchiveRepository() *MessageArchiveRepository { return &MessageArchiveRepository{} }
 
@@ -100,6 +102,30 @@ func (*MessageArchiveRepository) ListMessageArchive(ctx context.Context, query w
 		return nil, 0, err
 	}
 	return mapArchiveRows(rows), total, nil
+}
+
+func (*MessageArchiveRepository) ListOtherStaffChatRecords(ctx context.Context, customerID contactport.CustomerID, ownerUserID string, limit int32) ([]wecomapp.OtherStaffChatRecord, error) {
+	queries, err := messageArchiveQueries(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := queries.ListSidebarOtherStaffChatRecords(ctx, wecomdb.ListSidebarOtherStaffChatRecordsParams{
+		CustomerID: int64(customerID), OwnerUserid: ownerUserID, RowLimit: limit,
+	})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]wecomapp.OtherStaffChatRecord, 0, len(rows))
+	for _, row := range rows {
+		sentAt := time.Time{}
+		if row.SentAt.Valid {
+			sentAt = row.SentAt.Time.UTC()
+		}
+		result = append(result, wecomapp.OtherStaffChatRecord{
+			StaffUserID: row.StaffUserid, MessageType: row.MessageType, ContentMasked: row.ContentMasked, SentAt: sentAt,
+		})
+	}
+	return result, nil
 }
 
 func messageArchiveQueries(ctx context.Context) (*wecomdb.Queries, error) {

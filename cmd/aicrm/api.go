@@ -175,6 +175,7 @@ type candidateHandler struct {
 	commerceRefunds           *orderhttp.CommerceRefundHandler
 	sidebar                   *sidebarhttp.Handler
 	sidebarActivity           *sidebarhttp.ActivityHandler
+	sidebarOtherStaffChats    *sidebarhttp.OtherStaffChatHandler
 	sidebarOAuth              *sidebarhttp.OAuthHandler
 	sidebarJSSDK              *sidebarhttp.JSSDKHandler
 	surveyPublic              *surveyhttp.PublicHandler
@@ -1177,11 +1178,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	servicePeriodHandler, err := serviceperiodhttp.NewHandler(productapp.NewServicePeriodService(
+	servicePeriodProductService := productapp.NewServicePeriodService(
 		uow,
 		productstore.NewCatalogRepository(),
 		eventstore.NewAppender(),
-	))
+	)
+	servicePeriodHandler, err := serviceperiodhttp.NewHandler(servicePeriodProductService)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -1396,15 +1398,16 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	identityBinder := identityapp.NewBindServiceWithMergePort(
+		uow,
+		identityRepository,
+		contactstore.NewMergePortRepository(),
+		eventstore.NewAppender(),
+		config.Identity.HMACKey.Value(),
+	)
 	identityConsoleHandler, err := identityhttp.NewConsoleHandler(identityConsoleApplication{
 		resolver: identityResolver,
-		binder: identityapp.NewBindServiceWithMergePort(
-			uow,
-			identityRepository,
-			contactstore.NewMergePortRepository(),
-			eventstore.NewAppender(),
-			config.Identity.HMACKey.Value(),
-		),
+		binder:   identityBinder,
 	})
 	if err != nil {
 		pool.Close()
@@ -1854,15 +1857,28 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			&sidebarWeComProfileEffect{targets: profileTargets, effects: profileEffects},
 		)
 	}
+	var sidebarTemporaryMedia sidebarapp.TemporaryMediaPreparer
+	if config.WeCom.Sidebar.Enabled && config.WeCom.Outbound.Enabled && config.WeCom.Outbound.PermissionConfirmed {
+		sidebarTemporaryMedia, err = newSidebarTemporaryMediaPreparer(pool, mediaService, config.WeCom.Outbound)
+		if err != nil {
+			pool.Close()
+			return nil, err
+		}
+	}
 	sidebarService, err := sidebarapp.NewService(
 		sidebarCorpReader{settings: configManager, fallback: sidebarCorpID, fallbackAuthoritative: config.WeCom.Sidebar.Enabled},
 		identityResolver,
+		sidebarPhoneAdapter{source: identityBinder},
 		sidebarProfiles,
 		customerAnswerService,
 		orderapp.NewService(uow, orderstore.NewRepository(), contactstore.NewCustomerDetailRepository(), productstore.NewCatalogRepository()),
 		sidebarMemberAdapter{source: servicePeriodMemberService},
 		mediaService,
 		config.Identity.HMACKey.Value(),
+		sidebarapp.ServiceOptions{
+			Products: sidebarShareableProductCatalog{ordinary: productService, period: servicePeriodProductService},
+			Media:    sidebarTemporaryMedia,
+		},
 	)
 	if err != nil {
 		pool.Close()
@@ -1879,6 +1895,19 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	candidate.sidebarActivity, err = sidebarhttp.NewActivityHandler(candidate.sidebar, sidebarActivityService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	sidebarOtherStaffChatService := wecomapp.NewOtherStaffChatService(
+		uow, wecomstore.NewMessageArchiveRepository(), contactstore.NewStaffDirectoryRepository(pool),
+	)
+	sidebarOtherStaffChats, err := sidebarapp.NewOtherStaffChatService(sidebarOtherStaffChatService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	candidate.sidebarOtherStaffChats, err = sidebarhttp.NewOtherStaffChatHandler(candidate.sidebar, sidebarOtherStaffChats)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -2342,6 +2371,15 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			return nil, err
 		}
 	}
+	if concrete, ok := candidate.(*candidateHandler); ok && concrete.sidebar != nil {
+		// /p is deliberately a public, read-only HTML browser route. It is not an
+		// OpenAPI JSON operation; its route regression test fixes that boundary.
+		if err = registerPublicProtocol(http.MethodGet, "/p/{kind}/{product_id}", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			concrete.sidebar.PublicProductDetailByPath(writer, request, chi.URLParam(request, "kind"), chi.URLParam(request, "product_id"))
+		})); err != nil {
+			return nil, err
+		}
+	}
 	if legacy != nil {
 		if err = registerPublicProtocol(http.MethodGet, "/api/identity/resolve", http.HandlerFunc(legacy.ResolveExternalIdentity)); err != nil {
 			return nil, err
@@ -2526,12 +2564,16 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/v1/contact-owner-reassignments/previews/{preview_id}/results.csv", authport.CapabilityContactOwnerReassignment, false, http.HandlerFunc(wrapper.DownloadContactOwnerReassignmentResults)},
 		{http.MethodGet, "/api/sidebar/v2/workbench", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarWorkbench)},
 		{http.MethodPut, "/api/sidebar/v2/profile", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateSidebarProfile)},
+		{http.MethodPost, "/api/sidebar/v2/phone-binding", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.BindSidebarPhone)},
 		{http.MethodGet, "/api/sidebar/v2/questionnaires", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarQuestionnaires)},
 		{http.MethodGet, "/api/sidebar/v2/orders", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarOrders)},
 		{http.MethodGet, "/api/sidebar/v2/periodic-orders", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarPeriodicOrders)},
 		{http.MethodPut, "/api/sidebar/v2/periodic-orders/{service_product_id}/members/{member_ref}/remark", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateSidebarPeriodicRemark)},
+		{http.MethodGet, "/api/sidebar/v2/shareable-products", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarShareableProducts)},
 		{http.MethodGet, "/api/sidebar/v2/materials", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarMaterials)},
+		{http.MethodPost, "/api/sidebar/v2/materials/image/{image_id}/temporary-media", authport.CapabilityCustomersRead, true, http.HandlerFunc(wrapper.PrepareSidebarImageTemporaryMedia)},
 		{http.MethodGet, "/api/sidebar/v2/materials/image/{image_id}/thumbnail", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarMaterialThumbnailStatus)},
+		{http.MethodGet, "/api/sidebar/v2/materials/image/{image_id}/preview", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarMaterialThumbnailPreview)},
 		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListCustomers)},
 		{http.MethodGet, "/api/v1/admin/release-candidates", authport.CapabilityReleaseRead, false, http.HandlerFunc(wrapper.ListReleaseCandidates)},
 		{http.MethodPost, "/api/v1/admin/release-candidates", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.RegisterReleaseCandidate)},
