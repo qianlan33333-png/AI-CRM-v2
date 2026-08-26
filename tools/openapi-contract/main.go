@@ -73,6 +73,7 @@ const (
 	p4ExternalEffectsReadonlyEvidence          = "P4-EXTERNAL-EFFECTS-READONLY-2026-08-21"
 	p4AIAudienceConfigurationEvidence          = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22"
 	p4AIAudienceConfigurationClosureEvidence   = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-00084-2026-08-25"
+	p4AIAudienceOutboundReceiptsEvidence       = "P4-AI-AUDIENCE-OUTBOUND-RECEIPTS-2026-08-26"
 	p4GroupOpsLocalEvidence                    = "P4-GROUP-OPS-LOCAL-ONLY-2026-08-23"
 	p4GroupOpsRuntimeEvidence                  = "P4-GROUP-OPS-RUNTIME-2026-08-25"
 	p4ServicePeriodMembersEvidence             = "P4-SERVICE-PERIOD-MEMBERS-LOCAL-2026-08-23"
@@ -93,6 +94,7 @@ const (
 	p4AutomationRulesRuntimeEvidence           = "P4-A01-AUTOMATION-RULES-RUNTIME-2026-08-25"
 	p4MediaContentDeliveryEvidence             = "P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25"
 	p4CommerceRefundV2Evidence                 = "P4-COMMERCE-REFUND-V2-2026-08-25"
+	p4CommerceWxPayDirectExportEvidence        = "P4-COMMERCE-WXPAY-DIRECT-EXPORT-2026-08-26"
 	p4WeChatShopRefundProviderEvidence         = "P4-COMMERCE-REFUND-PROVIDER-V2-2026-08-26"
 	p4CommerceExternalPushEvidence             = "P4-COMMERCE-EXTERNAL-PUSH-00087-2026-08-25"
 	p4WeComTagEffectEvidence                   = "P4-B1-WC01-2026-08-25"
@@ -587,6 +589,7 @@ var p4AIAudienceOperations = map[string]bool{
 	"updateAIAudiencePackage": true, "copyAIAudiencePackage": true,
 	"pauseAIAudiencePackage": true, "activateAIAudiencePackage": true,
 	"archiveAIAudiencePackage": true, "listAIAudiencePackageMembers": true,
+	"listAIAudiencePackageSendRecords": true, "getAIAudiencePackageSendRecord": true,
 }
 
 var p4AIAudienceLegacyMappings = map[string][]string{
@@ -595,8 +598,10 @@ var p4AIAudienceLegacyMappings = map[string][]string{
 	"listAIAudiencePackages": {"LEGACY-API-0093"}, "archiveAIAudiencePackage": {"LEGACY-API-0095"},
 	"getAIAudiencePackage": {"LEGACY-API-0096"}, "updateAIAudiencePackage": {"LEGACY-API-0097"},
 	"activateAIAudiencePackage": {"LEGACY-API-0098"}, "copyAIAudiencePackage": {"LEGACY-API-0102"},
-	"pauseAIAudiencePackage":       {"LEGACY-API-0104"},
-	"listAIAudiencePackageMembers": {"LEGACY-API-0103"},
+	"pauseAIAudiencePackage":           {"LEGACY-API-0104"},
+	"listAIAudiencePackageMembers":     {"LEGACY-API-0103"},
+	"listAIAudiencePackageSendRecords": {"LEGACY-API-0107"},
+	"getAIAudiencePackageSendRecord":   {"LEGACY-API-0108"},
 }
 
 var p4MediaOperations = map[string]bool{
@@ -1118,6 +1123,8 @@ var authorizationContracts = map[string]authorizationContract{
 	"activateAIAudiencePackage":                  {"segments.write", map[string]string{"admin": "global", "ops": "global"}},
 	"archiveAIAudiencePackage":                   {"segments.write", map[string]string{"admin": "global", "ops": "global"}},
 	"listAIAudiencePackageMembers":               {"segments.read", map[string]string{"admin": "global", "ops": "global"}},
+	"listAIAudiencePackageSendRecords":           {"segments.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getAIAudiencePackageSendRecord":             {"segments.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createServicePeriodMemberGridCollaborator":  {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"updateServicePeriodMemberGridCollaborator":  {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"deleteServicePeriodMemberGridCollaborator":  {"products.write", map[string]string{"admin": "global", "ops": "global"}},
@@ -2151,8 +2158,9 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				if linkErr != nil || !reflect.DeepEqual(ids, p4AIAudienceLegacyMappings[op.OperationID]) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
 				}
-				read := op.OperationID == "listAIAudiencePackageGroups" || op.OperationID == "listAIAudiencePackages" || op.OperationID == "getAIAudiencePackage" || op.OperationID == "listAIAudiencePackageMembers"
+				read := op.OperationID == "listAIAudiencePackageGroups" || op.OperationID == "listAIAudiencePackages" || op.OperationID == "getAIAudiencePackage" || op.OperationID == "listAIAudiencePackageMembers" || op.OperationID == "listAIAudiencePackageSendRecords" || op.OperationID == "getAIAudiencePackageSendRecord"
 				wantCapability, wantCSRF, wantSource := "segments.write", "required", "local_command"
+				wantEvidence, wantClassification := p4AIAudienceEvidence, "internal"
 				if read {
 					wantCapability, wantCSRF = "segments.read", "none"
 					wantSource = "local_read_model"
@@ -2160,9 +2168,13 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 						wantSource = "segments.local_read_model"
 					}
 				}
-				if op.Extensions["x-p4-decision-evidence"] != p4AIAudienceEvidence || op.Extensions["x-aicrm-capability"] != wantCapability ||
+				if op.OperationID == "listAIAudiencePackageSendRecords" || op.OperationID == "getAIAudiencePackageSendRecord" {
+					wantEvidence, wantClassification = p4AIAudienceOutboundReceiptsEvidence, "restricted"
+					wantSource = "outbound_campaign_dispatches.local_receipt_projection"
+				}
+				if op.Extensions["x-p4-decision-evidence"] != wantEvidence || op.Extensions["x-aicrm-capability"] != wantCapability ||
 					op.Extensions["x-aicrm-auth-scheme"] != "human_session" || op.Extensions["x-aicrm-session-bound-csrf"] != wantCSRF ||
-					op.Extensions["x-aicrm-data-classification"] != "internal" || op.Extensions["x-aicrm-data-source"] != wantSource ||
+					op.Extensions["x-aicrm-data-classification"] != wantClassification || op.Extensions["x-aicrm-data-source"] != wantSource ||
 					op.Extensions["x-aicrm-external-effect"] != "none" || op.Responses.Value("401") == nil ||
 					op.Responses.Value("403") == nil || op.Responses.Value("503") == nil {
 					return fmt.Errorf("%s local AI Audience boundary drifted", op.OperationID)
@@ -2244,6 +2256,8 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 					expectedEvidence = p4CommerceRefundV2Evidence
 				} else if op.OperationID == "createLegacyRefundIntent" {
 					expectedEvidence = p4WeChatShopRefundProviderEvidence
+				} else if op.OperationID == "createLegacyWechatOrderExport" {
+					expectedEvidence = p4CommerceWxPayDirectExportEvidence
 				}
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
 				if !ok || evidence != expectedEvidence {
