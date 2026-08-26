@@ -429,6 +429,9 @@ func (service *RuntimeService) acceptPlan(ctx context.Context, command groupopsp
 		drafts := allDrafts
 		if dueOnly {
 			drafts, _ = scheduledExecutions(detail, now, executionKeySet(existing), true)
+			if len(drafts) == 0 {
+				return ErrStateConflict
+			}
 		}
 		sourceKey := runtimeDigest("group-ops-run", strconv.FormatInt(command.PlanID, 10), strconv.FormatInt(detail.Plan.Revision, 10), string(command.Trigger), command.IdempotencyKey, executionFingerprint(allDrafts))
 		if dueOnly {
