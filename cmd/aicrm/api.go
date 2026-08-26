@@ -1177,11 +1177,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	servicePeriodHandler, err := serviceperiodhttp.NewHandler(productapp.NewServicePeriodService(
+	servicePeriodProductService := productapp.NewServicePeriodService(
 		uow,
 		productstore.NewCatalogRepository(),
 		eventstore.NewAppender(),
-	))
+	)
+	servicePeriodHandler, err := serviceperiodhttp.NewHandler(servicePeriodProductService)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -1855,6 +1856,14 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			&sidebarWeComProfileEffect{targets: profileTargets, effects: profileEffects},
 		)
 	}
+	var sidebarTemporaryMedia sidebarapp.TemporaryMediaPreparer
+	if config.WeCom.Sidebar.Enabled && config.WeCom.Outbound.Enabled && config.WeCom.Outbound.PermissionConfirmed {
+		sidebarTemporaryMedia, err = newSidebarTemporaryMediaPreparer(pool, mediaService, config.WeCom.Outbound)
+		if err != nil {
+			pool.Close()
+			return nil, err
+		}
+	}
 	sidebarService, err := sidebarapp.NewService(
 		sidebarCorpReader{settings: configManager, fallback: sidebarCorpID, fallbackAuthoritative: config.WeCom.Sidebar.Enabled},
 		identityResolver,
@@ -1865,6 +1874,10 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		sidebarMemberAdapter{source: servicePeriodMemberService},
 		mediaService,
 		config.Identity.HMACKey.Value(),
+		sidebarapp.ServiceOptions{
+			Products: sidebarShareableProductCatalog{ordinary: productService, period: servicePeriodProductService},
+			Media:    sidebarTemporaryMedia,
+		},
 	)
 	if err != nil {
 		pool.Close()
@@ -2344,6 +2357,13 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			return nil, err
 		}
 	}
+	if concrete, ok := candidate.(*candidateHandler); ok && concrete.sidebar != nil {
+		if err = registerPublicProtocol(http.MethodGet, "/p/{kind}/{product_id}", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+			concrete.sidebar.PublicProductDetailByPath(writer, request, chi.URLParam(request, "kind"), chi.URLParam(request, "product_id"))
+		})); err != nil {
+			return nil, err
+		}
+	}
 	if legacy != nil {
 		if err = registerPublicProtocol(http.MethodGet, "/api/identity/resolve", http.HandlerFunc(legacy.ResolveExternalIdentity)); err != nil {
 			return nil, err
@@ -2533,7 +2553,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/sidebar/v2/orders", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarOrders)},
 		{http.MethodGet, "/api/sidebar/v2/periodic-orders", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarPeriodicOrders)},
 		{http.MethodPut, "/api/sidebar/v2/periodic-orders/{service_product_id}/members/{member_ref}/remark", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateSidebarPeriodicRemark)},
+		{http.MethodGet, "/api/sidebar/v2/shareable-products", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarShareableProducts)},
 		{http.MethodGet, "/api/sidebar/v2/materials", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarMaterials)},
+		{http.MethodPost, "/api/sidebar/v2/materials/image/{image_id}/temporary-media", authport.CapabilityCustomersRead, true, http.HandlerFunc(wrapper.PrepareSidebarImageTemporaryMedia)},
 		{http.MethodGet, "/api/sidebar/v2/materials/image/{image_id}/thumbnail", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarMaterialThumbnailStatus)},
 		{http.MethodGet, "/api/sidebar/v2/materials/image/{image_id}/preview", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarMaterialThumbnailPreview)},
 		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListCustomers)},

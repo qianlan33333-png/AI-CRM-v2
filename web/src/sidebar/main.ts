@@ -16,8 +16,11 @@ import type {
   SidebarProfileUpdateResponse,
   SidebarProfileUpdateSafety,
   SidebarQuestionnaireResponse,
+  SidebarShareableProduct,
+  SidebarShareableProductResponse,
   SidebarServicePeriodMember,
   SidebarSafety,
+  SidebarTemporaryMediaResponse,
   SidebarTimelineResponse,
   SidebarWorkbenchResponse,
   UpdateSidebarProfileBodyPatch,
@@ -60,6 +63,8 @@ type BoundSidebarApi = Pick<
   | "periodicOrders"
   | "updateRemark"
   | "materials"
+  | "shareableProducts"
+  | "prepareTemporaryImage"
   | "thumbnailPreview"
 >;
 
@@ -99,6 +104,7 @@ type SidebarTab =
   | "chat_activity"
   | "orders"
   | "periodic_orders"
+  | "products"
   | "materials";
 
 function isSidebarTab(value: string | undefined): value is SidebarTab {
@@ -109,6 +115,7 @@ function isSidebarTab(value: string | undefined): value is SidebarTab {
     value === "chat_activity" ||
     value === "orders" ||
     value === "periodic_orders" ||
+    value === "products" ||
     value === "materials"
   );
 }
@@ -272,6 +279,20 @@ export class SidebarController {
   private materialsLoading = false;
   private materialsError: unknown = null;
   private materialsRequestVersion = 0;
+  private products: SidebarShareableProductResponse | null = null;
+  private productsLoading = false;
+  private productsError: unknown = null;
+  private productsRequestVersion = 0;
+  private readonly productSendStatuses = new Map<
+    string,
+    { message: string; failed: boolean }
+  >();
+  private readonly imageSendStatuses = new Map<
+    number,
+    { message: string; failed: boolean }
+  >();
+  private readonly imageSendPreparing = new Set<number>();
+  private jssdkReady = false;
   private readonly thumbnailStatuses = new Map<number, ThumbnailStatus>();
   private readonly thumbnailURLs = new Map<number, string>();
   private phoneBindingLoading = false;
@@ -395,6 +416,19 @@ export class SidebarController {
         void this.loadPeriodicOrders(this.periodicOrders?.items.length || 0);
       } else if (action === "periodic-remark-save") {
         void this.savePeriodicRemark(button);
+      } else if (action === "retry-products") {
+        button.disabled = true;
+        void this.loadProducts();
+      } else if (action === "send-product") {
+        const product = this.findShareableProduct(
+          button.dataset.productKind,
+          Number(button.dataset.productId),
+        );
+        if (product) void this.sendProduct(product);
+      } else if (action === "send-material-image") {
+        const imageID = Number(button.dataset.materialId);
+        if (Number.isSafeInteger(imageID) && imageID > 0)
+          void this.sendMaterialImage(imageID);
       } else if (action === "retry-materials") {
         button.disabled = true;
         void this.loadMaterials();
@@ -510,6 +544,7 @@ export class SidebarController {
   }
 
   private async prepareJssdk(): Promise<boolean> {
+    this.jssdkReady = false;
     const view = this.doc.defaultView;
     const wx = view?.wx;
     if (!wx) {
@@ -540,8 +575,10 @@ export class SidebarController {
         "企微 JSSDK 初始化超时，请从企微侧边栏重试。",
       );
       this.setSdkStatus("ready", "JSSDK 就绪");
+      this.jssdkReady = true;
       return true;
     } catch (error) {
+      this.jssdkReady = false;
       this.setSdkStatus("error", "JSSDK 配置失败");
       this.setContextStatus(
         `JSSDK 配置读取失败：${errorMessage(error, "请确认企微配置后重试。")}`,
@@ -589,7 +626,7 @@ export class SidebarController {
           timestamp: config.timestamp,
           nonceStr: config.nonce,
           signature: config.signature,
-          jsApiList: ["getContext", "getCurExternalContact"],
+          jsApiList: ["getContext", "getCurExternalContact", "sendChatMessage"],
           success: () => finish(),
           fail: (result) =>
             finish(
@@ -760,6 +797,13 @@ export class SidebarController {
     this.materialsError = null;
     this.materialsLoading = false;
     this.materialsRequestVersion += 1;
+    this.products = null;
+    this.productsError = null;
+    this.productsLoading = false;
+    this.productsRequestVersion += 1;
+    this.productSendStatuses.clear();
+    this.imageSendStatuses.clear();
+    this.imageSendPreparing.clear();
     this.thumbnailStatuses.clear();
     this.clearThumbnailURLs();
     this.phoneBindingLoading = false;
@@ -865,6 +909,7 @@ export class SidebarController {
     else if (tab === "orders" && !this.orders) void this.loadOrders();
     else if (tab === "periodic_orders" && !this.periodicOrders)
       void this.loadPeriodicOrders();
+    else if (tab === "products" && !this.products) void this.loadProducts();
     else if (tab === "materials" && !this.materials) void this.loadMaterials();
   }
 
@@ -884,7 +929,9 @@ export class SidebarController {
                 ? this.renderOrdersPanel()
                 : this.activeTab === "periodic_orders"
                   ? this.renderPeriodicOrdersPanel()
-                  : this.renderMaterialsPanel();
+                  : this.activeTab === "products"
+                    ? this.renderProductsPanel()
+                    : this.renderMaterialsPanel();
     this.content.replaceChildren(this.renderOverview(workbench), panel);
   }
 
@@ -1960,6 +2007,262 @@ export class SidebarController {
     }
   }
 
+  private validateShareableProducts(
+    response: SidebarShareableProductResponse,
+  ): void {
+    if (!response || !Array.isArray(response.items) || !response.safety)
+      throw new Error("可分享商品响应不完整，已停止渲染。");
+    validateSidebarSafety(response.safety, "可分享商品");
+    for (const product of response.items) {
+      if (
+        (product.kind !== "ordinary" && product.kind !== "service_period") ||
+        !Number.isSafeInteger(product.product_id) ||
+        product.product_id < 1 ||
+        typeof product.product_code !== "string" ||
+        !product.product_code ||
+        typeof product.name !== "string" ||
+        !product.name ||
+        typeof product.description !== "string" ||
+        !Number.isSafeInteger(product.price_minor) ||
+        product.price_minor < 0 ||
+        !/^[A-Z]{3}$/.test(product.currency) ||
+        !Number.isSafeInteger(product.stock_quantity) ||
+        product.stock_quantity < 0 ||
+        !new RegExp(
+          `^/p/${product.kind}/[1-9][0-9]{0,18}$`,
+        ).test(product.public_path)
+      )
+        throw new Error("可分享商品响应不完整，已停止渲染。");
+    }
+  }
+
+  private async loadProducts(): Promise<void> {
+    if (!this.contextToken || !this.workbench) return;
+    const requestVersion = ++this.productsRequestVersion;
+    this.productsLoading = true;
+    this.productsError = null;
+    if (this.activeTab === "products") this.renderActiveContent();
+    try {
+      const response = await this.api.shareableProducts(this.contextToken, {
+        limit: 50,
+      });
+      if (requestVersion !== this.productsRequestVersion) return;
+      this.validateShareableProducts(response);
+      this.products = response;
+    } catch (error) {
+      if (requestVersion !== this.productsRequestVersion) return;
+      this.productsError = error;
+    } finally {
+      if (requestVersion === this.productsRequestVersion) {
+        this.productsLoading = false;
+        if (this.activeTab === "products") this.renderActiveContent();
+      }
+    }
+  }
+
+  private findShareableProduct(
+    kind: string | undefined,
+    productID: number,
+  ): SidebarShareableProduct | undefined {
+    if (
+      (kind !== "ordinary" && kind !== "service_period") ||
+      !Number.isSafeInteger(productID) ||
+      productID < 1
+    )
+      return undefined;
+    return this.products?.items.find(
+      (product) => product.kind === kind && product.product_id === productID,
+    );
+  }
+
+  private productSendKey(product: SidebarShareableProduct): string {
+    return `${product.kind}:${product.product_id}`;
+  }
+
+  private productPublicURL(product: SidebarShareableProduct): string {
+    const origin = this.doc.defaultView?.location.origin;
+    if (!origin || origin === "null")
+      throw new Error("当前页面缺少同源商品详情地址。");
+    const url = new URL(product.public_path, origin);
+    if (url.origin !== origin || url.pathname !== product.public_path)
+      throw new Error("商品详情地址不在当前同源站点。");
+    return url.toString();
+  }
+
+  private async ensureJssdkForSend(): Promise<SidebarWx> {
+    if (!this.jssdkReady && !(await this.prepareJssdk()))
+      throw new Error("JSSDK 未就绪，未调用发送接口。");
+    const wx = this.doc.defaultView?.wx;
+    if (!wx || typeof wx.invoke !== "function")
+      throw new Error("当前企微 SDK 不支持发送接口。");
+    return wx;
+  }
+
+  private async sendProduct(product: SidebarShareableProduct): Promise<void> {
+    const key = this.productSendKey(product);
+    this.productSendStatuses.set(key, {
+      message: "正在调用企微 JSSDK 商品卡片…",
+      failed: false,
+    });
+    if (this.activeTab === "products") this.renderActiveContent();
+    try {
+      const wx = await this.ensureJssdkForSend();
+      await this.invokeWx(wx, "sendChatMessage", {
+        msgtype: "news",
+        news: {
+          link: this.productPublicURL(product),
+          title: product.name,
+          desc: product.description || product.product_code,
+        },
+      });
+      this.productSendStatuses.set(key, {
+        message:
+          "client_callback · JSSDK 已回调；delivery_unknown · 未取得企微外部送达回执。",
+        failed: false,
+      });
+    } catch (error) {
+      this.productSendStatuses.set(key, {
+        message: `client_callback · JSSDK 调用失败；delivery_unknown · 未取得外部送达状态。${errorMessage(error, "")}`,
+        failed: true,
+      });
+    }
+    if (this.activeTab === "products") this.renderActiveContent();
+  }
+
+  private validateTemporaryMedia(
+    response: SidebarTemporaryMediaResponse,
+    imageID: number,
+  ): void {
+    if (
+      !response ||
+      response.image_id !== imageID ||
+      (response.upload_state !== "ready" &&
+        response.upload_state !== "outcome_unknown" &&
+        response.upload_state !== "final_failed") ||
+      response.client_callback !== "not_called" ||
+      response.delivery_state !== "not_sent_yet" ||
+      typeof response.provider_call_dispatched !== "boolean" ||
+      typeof response.real_external_call_executed !== "boolean"
+    )
+      throw new Error("临时媒体响应不完整，未调用 JSSDK。");
+    if (
+      response.upload_state === "ready" &&
+      (!response.media_id || !response.media_expires_at ||
+        !response.provider_call_dispatched ||
+        !response.real_external_call_executed)
+    )
+      throw new Error("临时媒体未就绪，未调用 JSSDK。");
+  }
+
+  private async sendMaterialImage(imageID: number): Promise<void> {
+    if (!this.contextToken || this.imageSendPreparing.has(imageID)) return;
+    this.imageSendPreparing.add(imageID);
+    this.imageSendStatuses.set(imageID, {
+      message: "正在准备企微临时图片媒体…",
+      failed: false,
+    });
+    if (this.activeTab === "materials") this.renderActiveContent();
+    try {
+      const prepared = await this.api.prepareTemporaryImage(
+        this.contextToken,
+        imageID,
+      );
+      this.validateTemporaryMedia(prepared, imageID);
+      if (prepared.upload_state !== "ready" || !prepared.media_id) {
+        this.imageSendStatuses.set(imageID, {
+          message: `${prepared.upload_state} · client_callback · not_called；delivery_unknown · 未调用图片消息，未取得送达回执。`,
+          failed: true,
+        });
+        return;
+      }
+      const wx = await this.ensureJssdkForSend();
+      await this.invokeWx(wx, "sendChatMessage", {
+        msgtype: "image",
+        image: { mediaid: prepared.media_id },
+      });
+      this.imageSendStatuses.set(imageID, {
+        message:
+          "client_callback · JSSDK 已回调；delivery_unknown · 未取得企微外部送达回执。",
+        failed: false,
+      });
+    } catch (error) {
+      this.imageSendStatuses.set(imageID, {
+        message: `client_callback · JSSDK 未确认；delivery_unknown · 未取得外部送达状态。${errorMessage(error, "")}`,
+        failed: true,
+      });
+    } finally {
+      this.imageSendPreparing.delete(imageID);
+      if (this.activeTab === "materials") this.renderActiveContent();
+    }
+  }
+
+  private renderProductsPanel(): HTMLElement {
+    const response = this.products;
+    const panel = this.panelShell(
+      "products",
+      "商品",
+      "仅已启用的本地普通/周期商品；卡片仅链接同源只读详情页",
+    );
+    if (!response) {
+      if (this.productsError)
+        this.appendRetry(
+          panel,
+          `商品读取失败：${errorMessage(this.productsError, "请稍后重试。")}`,
+          "retry-products",
+          "重试读取商品",
+        );
+      else this.appendLoading(panel, "正在读取可分享商品…");
+      return panel;
+    }
+    if (!response.items.length)
+      panel.append(createElement(this.doc, "div", "empty", "暂无可分享的已启用商品"));
+    else {
+      const list = createElement(this.doc, "div", "list");
+      for (const product of response.items) {
+        const card = createElement(this.doc, "article", "list-item");
+        card.dataset.productId = String(product.product_id);
+        card.dataset.productKind = product.kind;
+        const kind = product.kind === "ordinary" ? "普通商品" : "周期商品";
+        card.append(
+          createElement(this.doc, "div", "item-title", product.name),
+          createElement(
+            this.doc,
+            "div",
+            "item-meta",
+            `${kind} · ${product.product_code} · ${product.currency} ${(product.price_minor / 100).toFixed(2)} · 库存 ${product.stock_quantity}`,
+          ),
+          createElement(this.doc, "div", "item-meta", product.description || "无商品描述"),
+        );
+        const actions = createElement(this.doc, "div", "context-actions");
+        const send = createElement(this.doc, "button", "btn primary", "发送商品卡片");
+        send.type = "button";
+        send.dataset.sidebarAction = "send-product";
+        send.dataset.productId = String(product.product_id);
+        send.dataset.productKind = product.kind;
+        markBound(send);
+        actions.append(send);
+        card.append(actions);
+        const receipt = this.productSendStatuses.get(this.productSendKey(product));
+        if (receipt) {
+          const status = createElement(
+            this.doc,
+            "div",
+            `sidebar-status${receipt.failed ? " error" : ""}`,
+            receipt.message,
+          );
+          status.dataset.sendReceipt = receipt.failed
+            ? "client_callback,delivery_unknown,error"
+            : "client_callback,delivery_unknown";
+          card.append(status);
+        }
+        list.append(card);
+      }
+      panel.append(list);
+    }
+    this.appendSafety(panel, response.safety);
+    return panel;
+  }
+
   private async loadMaterials(offset = 0): Promise<void> {
     if (!this.contextToken || !this.workbench) return;
     const append = Boolean(offset && this.materials);
@@ -2141,6 +2444,28 @@ export class SidebarController {
         );
         if (item.description)
           card.append(createElement(this.doc, "div", "item-meta", item.description));
+        const actions = createElement(this.doc, "div", "context-actions");
+        const send = createElement(this.doc, "button", "btn primary", "发送图片");
+        send.type = "button";
+        send.disabled = this.imageSendPreparing.has(item.id);
+        send.dataset.sidebarAction = "send-material-image";
+        send.dataset.materialId = String(item.id);
+        markBound(send);
+        actions.append(send);
+        card.append(actions);
+        const receipt = this.imageSendStatuses.get(item.id);
+        if (receipt) {
+          const sendStatus = createElement(
+            this.doc,
+            "div",
+            `sidebar-status${receipt.failed ? " error" : ""}`,
+            receipt.message,
+          );
+          sendStatus.dataset.sendReceipt = receipt.failed
+            ? "client_callback,delivery_unknown,error"
+            : "client_callback,delivery_unknown";
+          card.append(sendStatus);
+        }
         list.append(card);
       }
       panel.append(list);

@@ -43,6 +43,13 @@ async function loadPage(rel, { id, q } = {}) {
       if (rel !== 'sidebar/index.html') return;
       window.URL.createObjectURL = () => 'blob:sidebar-thumbnail';
       window.URL.revokeObjectURL = () => {};
+      window.wx = {
+        agentConfig(options) { options.success?.({ err_msg: 'agentConfig:ok' }); },
+        invoke(method, payload, callback) {
+          window.__sidebarTest.wxMessages.push({ method, payload });
+          callback({ err_msg: method + ':ok' });
+        },
+      };
       const scenario = new URL(window.location.href).searchParams.get('sidebar_case') || 'success';
       const safety = { local_only: true, provider_execution_eligible: false, real_external_call_executed: false };
       const memberRef = 'spm_' + 'A'.repeat(22);
@@ -66,9 +73,12 @@ async function loadPage(rel, { id, q } = {}) {
         blob: async () => new window.Blob([JSON.stringify(data)], { type: 'application/json' }),
         clone() { return this; },
       });
-      window.__sidebarTest = { remarkBody: null, idempotencyKey: null, phoneBody: null, phoneKey: null, materialQueries: [] };
+      window.__sidebarTest = { remarkBody: null, idempotencyKey: null, phoneBody: null, phoneKey: null, materialQueries: [], temporaryKeys: [], wxMessages: [] };
       window.fetch = async (input, init = {}) => {
         const url = String(input);
+        if (url.includes('/jssdk/agent-config')) {
+          return json({ signature_type: 'agent_config', corp_id: 'ww-test', agent_id: 1, nonce: 'nonce', timestamp: 1, signature: 'signature', url: 'http://localhost/sidebar/index.html' });
+        }
         if (url.includes('/context-token')) {
           return json({ state: 'ready', context_token: 'sidebar-context-token-' + 'x'.repeat(52), customer_id: 7, owner_staff_id: 9, safety });
         }
@@ -135,6 +145,21 @@ async function loadPage(rel, { id, q } = {}) {
             has_more: false,
             safety,
           });
+        }
+        if (url.includes('/shareable-products')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          return json({
+            items: scenario === 'empty' ? [] : [
+              { kind: 'ordinary', product_id: 41, product_code: 'course-ordinary', name: '普通课程', description: '真实普通商品字段', price_minor: 9900, currency: 'CNY', stock_quantity: 10, public_path: '/p/ordinary/41' },
+              { kind: 'service_period', product_id: 42, product_code: 'course-period', name: '周期课程', description: '真实周期商品字段', price_minor: 19900, currency: 'CNY', stock_quantity: 8, public_path: '/p/service_period/42' },
+            ],
+            safety,
+          });
+        }
+        if (url.includes('/temporary-media')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          window.__sidebarTest.temporaryKeys.push(new Headers(init.headers).get('Idempotency-Key'));
+          return json({ image_id: 31, media_id: 'media-real-31', media_expires_at: '2026-08-28T00:00:00Z', upload_state: 'ready', provider_call_dispatched: true, real_external_call_executed: true, client_callback: 'not_called', delivery_state: 'not_sent_yet' });
         }
         if (url.includes('/materials/image/')) {
           if (scenario === 'error') return json({ code: 'unavailable' }, 503);
@@ -601,7 +626,7 @@ for (const scenario of ['success', 'empty', 'error']) {
     !d.querySelector('[data-sidebar-tab="orders"]').disabled &&
     !d.querySelector('[data-sidebar-tab="periodic_orders"]').disabled &&
     !d.querySelector('[data-sidebar-tab="materials"]').disabled &&
-    d.querySelector('[data-sidebar-tab="products"]').disabled &&
+    !d.querySelector('[data-sidebar-tab="products"]').disabled &&
     d.querySelector('[data-sidebar-tab="coupons"]').disabled &&
     d.querySelector('[data-sidebar-tab="other_staff_messages"]').disabled);
   click(dom, questionnaireTab);
@@ -684,12 +709,35 @@ console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备�
     typeof dom.window.__sidebarTest.idempotencyKey === 'string' &&
     dom.window.__sidebarTest.idempotencyKey.startsWith('sidebar-periodic-remark-'));
 
+  click(dom, d.querySelector('[data-sidebar-tab="products"]'));
+  await sleep(30);
+  ok('可分享商品同时渲染普通与周期商品，且只显示本地字段',
+    d.querySelectorAll('article[data-product-kind="ordinary"]').length === 1 &&
+    d.querySelectorAll('article[data-product-kind="service_period"]').length === 1 &&
+    d.body.textContent.includes('普通课程') && d.body.textContent.includes('周期课程'));
+  click(dom, d.querySelector('[data-sidebar-action="send-product"]'));
+  await sleep(30);
+  const productMessage = dom.window.__sidebarTest.wxMessages.find((entry) => entry.payload?.msgtype === 'news');
+  ok('商品卡片仅以 JSSDK 回调为 receipt，明确 delivery_unknown',
+    productMessage?.method === 'sendChatMessage' &&
+    productMessage?.payload?.news?.link === 'http://localhost/p/ordinary/41' &&
+    d.body.textContent.includes('client_callback · JSSDK 已回调') &&
+    d.body.textContent.includes('delivery_unknown · 未取得企微外部送达回执'));
+
   click(dom, d.querySelector('[data-sidebar-tab="materials"]'));
   await sleep(30);
   ok('素材支持搜索/分类/标签筛选与元数据',
     !!d.querySelector('#material-q') && !!d.querySelector('#material-category') && !!d.querySelector('#material-tags') &&
-    d.querySelectorAll('[data-material-id]').length === 2 &&
+    d.querySelectorAll('article[data-material-id]').length === 2 &&
     d.body.textContent.includes('welcome.png') && d.body.textContent.includes('800×600'));
+  click(dom, d.querySelector('[data-sidebar-action="send-material-image"]'));
+  await sleep(30);
+  const imageMessage = dom.window.__sidebarTest.wxMessages.find((entry) => entry.payload?.msgtype === 'image');
+  ok('图片先取得临时 media_id 再调用 JSSDK，receipt 不宣称外部送达',
+    dom.window.__sidebarTest.temporaryKeys[0]?.startsWith('sidebar-image-temporary-media-') &&
+    imageMessage?.method === 'sendChatMessage' &&
+    imageMessage?.payload?.image?.mediaid === 'media-real-31' &&
+    d.body.textContent.includes('delivery_unknown · 未取得企微外部送达回执'));
   input(dom, d.querySelector('#material-q'), '欢迎');
   input(dom, d.querySelector('#material-category'), '海报');
   input(dom, d.querySelector('#material-tags'), '欢迎语');
@@ -708,10 +756,10 @@ console.log('sidebar/index.html（新增能力空态与失败态）');
 {
   const empty = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=empty' });
   const emptyDoc = empty.window.document;
-  for (const tab of ['timeline', 'chat_activity', 'orders', 'periodic_orders', 'materials']) {
+  for (const tab of ['timeline', 'chat_activity', 'orders', 'periodic_orders', 'products', 'materials']) {
     click(empty, emptyDoc.querySelector(`[data-sidebar-tab="${tab}"]`));
     await sleep(30);
-    ok(`${tab} 空态清晰`, emptyDoc.body.textContent.includes(tab === 'timeline' ? '暂无时间线记录' : tab === 'chat_activity' ? '暂无聊天活动记录' : tab === 'orders' ? '暂无普通订单记录' : tab === 'periodic_orders' ? '暂无周期订单记录' : '暂无匹配素材'));
+    ok(`${tab} 空态清晰`, emptyDoc.body.textContent.includes(tab === 'timeline' ? '暂无时间线记录' : tab === 'chat_activity' ? '暂无聊天活动记录' : tab === 'orders' ? '暂无普通订单记录' : tab === 'periodic_orders' ? '暂无周期订单记录' : tab === 'products' ? '暂无可分享的已启用商品' : '暂无匹配素材'));
   }
   empty.window.close();
 

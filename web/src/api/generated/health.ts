@@ -972,6 +972,92 @@ export interface SidebarMaterialResponse {
   safety: SidebarSafety;
 }
 
+export type SidebarShareableProductKind =
+  (typeof SidebarShareableProductKind)[keyof typeof SidebarShareableProductKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarShareableProductKind = {
+  ordinary: "ordinary",
+  service_period: "service_period",
+} as const;
+
+export interface SidebarShareableProduct {
+  kind: SidebarShareableProductKind;
+  /** @minimum 1 */
+  product_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  product_code: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  name: string;
+  /** @maxLength 10000 */
+  description: string;
+  /** @minimum 0 */
+  price_minor: number;
+  /** @pattern ^[A-Z]{3}$ */
+  currency: string;
+  /** @minimum 0 */
+  stock_quantity: number;
+  /**
+   * @maxLength 80
+   * @pattern ^/p/(ordinary|service_period)/[1-9][0-9]{0,18}$
+   */
+  public_path: string;
+}
+
+export interface SidebarShareableProductResponse {
+  /** @maxItems 100 */
+  items: SidebarShareableProduct[];
+  safety: SidebarSafety;
+}
+
+export type SidebarTemporaryMediaResponseUploadState =
+  (typeof SidebarTemporaryMediaResponseUploadState)[keyof typeof SidebarTemporaryMediaResponseUploadState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarTemporaryMediaResponseUploadState = {
+  ready: "ready",
+  outcome_unknown: "outcome_unknown",
+  final_failed: "final_failed",
+} as const;
+
+export type SidebarTemporaryMediaResponseClientCallback =
+  (typeof SidebarTemporaryMediaResponseClientCallback)[keyof typeof SidebarTemporaryMediaResponseClientCallback];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarTemporaryMediaResponseClientCallback = {
+  not_called: "not_called",
+} as const;
+
+export type SidebarTemporaryMediaResponseDeliveryState =
+  (typeof SidebarTemporaryMediaResponseDeliveryState)[keyof typeof SidebarTemporaryMediaResponseDeliveryState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarTemporaryMediaResponseDeliveryState = {
+  not_sent_yet: "not_sent_yet",
+} as const;
+
+export interface SidebarTemporaryMediaResponse {
+  /** @minimum 1 */
+  image_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  media_id?: string;
+  media_expires_at?: string;
+  upload_state: SidebarTemporaryMediaResponseUploadState;
+  provider_call_dispatched: boolean;
+  real_external_call_executed: boolean;
+  client_callback: SidebarTemporaryMediaResponseClientCallback;
+  delivery_state: SidebarTemporaryMediaResponseDeliveryState;
+}
+
 export interface SidebarWorkbenchResponse {
   profile: SidebarProfile;
   /**
@@ -16425,6 +16511,14 @@ export type ListSidebarMaterialsParams = {
   offset?: number;
 };
 
+export type ListSidebarShareableProductsParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
 export type ListProductsParams = {
   /**
    * Opaque keyset cursor; clients must not parse or synthesize it.
@@ -19746,6 +19840,179 @@ export const listSidebarMaterials = async (
     status: res.status,
     headers: res.headers,
   } as listSidebarMaterialsResponse;
+};
+
+/**
+ * @summary List enabled ordinary and service-period products with a same-origin read-only detail page
+ */
+export type listSidebarShareableProductsResponse200 = {
+  data: SidebarShareableProductResponse;
+  status: 200;
+};
+
+export type listSidebarShareableProductsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSidebarShareableProductsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSidebarShareableProductsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSidebarShareableProductsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSidebarShareableProductsResponseSuccess =
+  listSidebarShareableProductsResponse200 & {
+    headers: Headers;
+  };
+export type listSidebarShareableProductsResponseError = (
+  | listSidebarShareableProductsResponse400
+  | listSidebarShareableProductsResponse401
+  | listSidebarShareableProductsResponse403
+  | listSidebarShareableProductsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSidebarShareableProductsResponse =
+  | listSidebarShareableProductsResponseSuccess
+  | listSidebarShareableProductsResponseError;
+
+export const getListSidebarShareableProductsUrl = (
+  params?: ListSidebarShareableProductsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/sidebar/v2/shareable-products?${stringifiedParams}`
+    : `/api/sidebar/v2/shareable-products`;
+};
+
+export const listSidebarShareableProducts = async (
+  params?: ListSidebarShareableProductsParams,
+  options?: RequestInit,
+): Promise<listSidebarShareableProductsResponse> => {
+  const res = await fetch(getListSidebarShareableProductsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSidebarShareableProductsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSidebarShareableProductsResponse;
+};
+
+/**
+ * @summary Upload one enabled local image as temporary WeCom media before the client JSSDK callback
+ */
+export type prepareSidebarImageTemporaryMediaResponse200 = {
+  data: SidebarTemporaryMediaResponse;
+  status: 200;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse202 = {
+  data: SidebarTemporaryMediaResponse;
+  status: 202;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type prepareSidebarImageTemporaryMediaResponseSuccess = (
+  | prepareSidebarImageTemporaryMediaResponse200
+  | prepareSidebarImageTemporaryMediaResponse202
+) & {
+  headers: Headers;
+};
+export type prepareSidebarImageTemporaryMediaResponseError = (
+  | prepareSidebarImageTemporaryMediaResponse400
+  | prepareSidebarImageTemporaryMediaResponse401
+  | prepareSidebarImageTemporaryMediaResponse403
+  | prepareSidebarImageTemporaryMediaResponse404
+  | prepareSidebarImageTemporaryMediaResponse409
+  | prepareSidebarImageTemporaryMediaResponse503
+) & {
+  headers: Headers;
+};
+
+export type prepareSidebarImageTemporaryMediaResponse =
+  | prepareSidebarImageTemporaryMediaResponseSuccess
+  | prepareSidebarImageTemporaryMediaResponseError;
+
+export const getPrepareSidebarImageTemporaryMediaUrl = (imageId: number) => {
+  return `/api/sidebar/v2/materials/image/${imageId}/temporary-media`;
+};
+
+export const prepareSidebarImageTemporaryMedia = async (
+  imageId: number,
+  options?: RequestInit,
+): Promise<prepareSidebarImageTemporaryMediaResponse> => {
+  const res = await fetch(getPrepareSidebarImageTemporaryMediaUrl(imageId), {
+    ...options,
+    method: "POST",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: prepareSidebarImageTemporaryMediaResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as prepareSidebarImageTemporaryMediaResponse;
 };
 
 /**

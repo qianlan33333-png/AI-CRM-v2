@@ -467,6 +467,55 @@ paths:
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/shareable-products:
+    get:
+      tags: [p4-sidebar-send]
+      operationId: listSidebarShareableProducts
+      summary: List enabled ordinary and service-period products with a same-origin read-only detail page
+      x-p4-decision-evidence: P4-W2-SIDEBAR-SEND-2026-08-26
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
+      x-aicrm-auth-scheme: human_session_and_sidebar_context
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: product.local_shareable_read_model
+      x-aicrm-external-effect: none
+      parameters:
+        - {$ref: "#/components/parameters/SidebarContextToken"}
+        - {name: limit, in: query, required: false, schema: {type: integer, format: int32, minimum: 1, maximum: 100, default: 50}}
+      responses:
+        "200": {description: Enabled local products whose same-origin public detail page is available, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarShareableProductResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/materials/image/{image_id}/temporary-media:
+    post:
+      tags: [p4-sidebar-send]
+      operationId: prepareSidebarImageTemporaryMedia
+      summary: Upload one enabled local image as temporary WeCom media before the client JSSDK callback
+      x-p4-decision-evidence: P4-W2-SIDEBAR-SEND-2026-08-26
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
+      x-aicrm-auth-scheme: human_session_and_sidebar_context
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.local_original_and_sidebar_upload_receipt
+      x-aicrm-external-effect: media_wecom_upload
+      parameters:
+        - {name: image_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+        - {$ref: "#/components/parameters/SidebarContextToken"}
+        - {$ref: "#/components/parameters/CSRFToken"}
+        - {$ref: "#/components/parameters/IdempotencyKey"}
+      responses:
+        "200": {description: Temporary media is ready for a client-side JSSDK image callback; this is not chat delivery, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarTemporaryMediaResponse"}}}}
+        "202": {description: The upload outcome is unknown or finally rejected; no JSSDK send is attempted, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarTemporaryMediaResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/materials/image/{image_id}/thumbnail:
     get:
       tags: [p4-sidebar-local]
@@ -13239,6 +13288,40 @@ components:
         offset: {type: integer, format: int64, minimum: 0}
         quick_keywords: {type: array, uniqueItems: true, items: {type: string, minLength: 1}}
         safety: {$ref: "#/components/schemas/SidebarSafety"}
+    SidebarShareableProduct:
+      type: object
+      additionalProperties: false
+      required: [kind, product_id, product_code, name, description, price_minor, currency, stock_quantity, public_path]
+      properties:
+        kind: {type: string, enum: [ordinary, service_period]}
+        product_id: {type: integer, format: int64, minimum: 1}
+        product_code: {type: string, minLength: 1, maxLength: 200}
+        name: {type: string, minLength: 1, maxLength: 200}
+        description: {type: string, maxLength: 10000}
+        price_minor: {type: integer, format: int64, minimum: 0}
+        currency: {type: string, pattern: '^[A-Z]{3}$'}
+        stock_quantity: {type: integer, format: int32, minimum: 0}
+        public_path: {type: string, pattern: '^/p/(ordinary|service_period)/[1-9][0-9]{0,18}$', maxLength: 80}
+    SidebarShareableProductResponse:
+      type: object
+      additionalProperties: false
+      required: [items, safety]
+      properties:
+        items: {type: array, maxItems: 100, items: {$ref: "#/components/schemas/SidebarShareableProduct"}}
+        safety: {$ref: "#/components/schemas/SidebarSafety"}
+    SidebarTemporaryMediaResponse:
+      type: object
+      additionalProperties: false
+      required: [image_id, upload_state, provider_call_dispatched, real_external_call_executed, client_callback, delivery_state]
+      properties:
+        image_id: {type: integer, format: int64, minimum: 1}
+        media_id: {type: string, minLength: 1, maxLength: 1024}
+        media_expires_at: {type: string, format: date-time}
+        upload_state: {type: string, enum: [ready, outcome_unknown, final_failed]}
+        provider_call_dispatched: {type: boolean}
+        real_external_call_executed: {type: boolean}
+        client_callback: {type: string, enum: [not_called]}
+        delivery_state: {type: string, enum: [not_sent_yet]}
     SidebarWorkbenchResponse:
       type: object
       additionalProperties: false

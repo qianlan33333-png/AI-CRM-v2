@@ -28,6 +28,23 @@ const (
 
 type Handler struct{ service *sidebarapp.Service }
 
+type sidebarShareableProductResponse struct {
+	Items  []sidebarShareableProductJSON `json:"items"`
+	Safety sidebarapp.Safety             `json:"safety"`
+}
+
+type sidebarShareableProductJSON struct {
+	Kind          sidebarapp.ShareableProductKind `json:"kind"`
+	ProductID     int64                           `json:"product_id"`
+	ProductCode   string                          `json:"product_code"`
+	Name          string                          `json:"name"`
+	Description   string                          `json:"description"`
+	PriceMinor    int64                           `json:"price_minor"`
+	Currency      string                          `json:"currency"`
+	StockQuantity int32                           `json:"stock_quantity"`
+	PublicPath    string                          `json:"public_path"`
+}
+
 // OAuthHandler exposes the sidebar-only browser OAuth boundary. A nil service
 // is an intentional disabled configuration and fails closed without a provider
 // call.
@@ -279,6 +296,59 @@ func (handler *Handler) Materials(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 	writeJSON(writer, http.StatusOK, result)
+}
+
+func (handler *Handler) ShareableProducts(writer http.ResponseWriter, request *http.Request, token string, limit int32) {
+	scope, err := handler.scope(request, token, authport.CapabilityCustomersRead)
+	if err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	result, err := handler.service.ShareableProducts(request.Context(), scope, limit)
+	if err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	items := make([]sidebarShareableProductJSON, 0, len(result.Items))
+	for _, product := range result.Items {
+		items = append(items, sidebarShareableProductJSON{
+			Kind: product.Kind, ProductID: product.ProductID, ProductCode: product.ProductCode, Name: product.Name,
+			Description: product.Description, PriceMinor: product.PriceMinor, Currency: product.Currency, StockQuantity: product.StockQuantity,
+			PublicPath: "/p/" + string(product.Kind) + "/" + strconv.FormatInt(product.ProductID, 10),
+		})
+	}
+	writeJSON(writer, http.StatusOK, sidebarShareableProductResponse{Items: items, Safety: result.Safety})
+}
+
+func (handler *Handler) PrepareTemporaryImageMedia(writer http.ResponseWriter, request *http.Request, token, idempotencyKey string, imageID int64) {
+	scope, err := handler.scope(request, token, authport.CapabilityCustomersRead)
+	if err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	result, err := handler.service.PrepareTemporaryImageMedia(request.Context(), scope, imageID, idempotencyKey)
+	if err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	status := http.StatusOK
+	if result.UploadState != "ready" {
+		status = http.StatusAccepted
+	}
+	writeJSON(writer, status, struct {
+		ImageID                  int64     `json:"image_id"`
+		MediaID                  string    `json:"media_id,omitempty"`
+		MediaExpiresAt           time.Time `json:"media_expires_at,omitempty"`
+		UploadState              string    `json:"upload_state"`
+		ProviderCallDispatched   bool      `json:"provider_call_dispatched"`
+		RealExternalCallExecuted bool      `json:"real_external_call_executed"`
+		ClientCallback           string    `json:"client_callback"`
+		DeliveryState            string    `json:"delivery_state"`
+	}{
+		ImageID: result.ImageID, MediaID: result.MediaID, MediaExpiresAt: result.MediaExpiresAt,
+		UploadState: result.UploadState, ProviderCallDispatched: result.ProviderCallDispatched,
+		RealExternalCallExecuted: result.ProviderCallDispatched, ClientCallback: "not_called", DeliveryState: "not_sent_yet",
+	})
 }
 
 func (handler *Handler) ThumbnailStatus(writer http.ResponseWriter, request *http.Request, token string, imageID int64) {

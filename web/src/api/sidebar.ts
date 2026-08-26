@@ -11,8 +11,10 @@ import {
   listSidebarOrders,
   listSidebarPeriodicOrders,
   listSidebarQuestionnaires,
+  listSidebarShareableProducts,
   listSidebarTimeline,
   mintSidebarContext,
+  prepareSidebarImageTemporaryMedia,
   updateSidebarPeriodicRemark,
   updateSidebarProfile,
   type SidebarChatActivityResponse,
@@ -24,7 +26,9 @@ import {
   type SidebarPeriodicRemarkResponse,
   type SidebarPhoneBindingResponse,
   type SidebarQuestionnaireResponse,
+  type SidebarShareableProductResponse,
   type SidebarProfileUpdateResponse,
+  type SidebarTemporaryMediaResponse,
   type SidebarThumbnailPendingResponse,
   type SidebarTimelineResponse,
   type SidebarWorkbenchResponse,
@@ -61,8 +65,9 @@ export const sidebarApi = {
   // prefetching avoids creating duplicate state/binding records before redirect.
   oauthStartUrl: (params: Parameters<typeof getStartSidebarOAuthUrl>[0]) =>
     getStartSidebarOAuthUrl(params),
-  oauthCallbackUrl: (params: Parameters<typeof getCompleteSidebarOAuthUrl>[0]) =>
-    getCompleteSidebarOAuthUrl(params),
+  oauthCallbackUrl: (
+    params: Parameters<typeof getCompleteSidebarOAuthUrl>[0],
+  ) => getCompleteSidebarOAuthUrl(params),
   workbench: async (contextToken: string) =>
     unwrapGenerated(
       await getSidebarWorkbench(scopedOptions(contextToken)),
@@ -152,6 +157,26 @@ export const sidebarApi = {
     unwrapGenerated(
       await listSidebarMaterials(params, scopedOptions(contextToken)),
     ) as SidebarMaterialResponse,
+  shareableProducts: async (
+    contextToken: string,
+    params?: Parameters<typeof listSidebarShareableProducts>[0],
+  ) =>
+    unwrapGenerated(
+      await listSidebarShareableProducts(params, scopedOptions(contextToken)),
+    ) as SidebarShareableProductResponse,
+  prepareTemporaryImage: async (
+    contextToken: string,
+    imageId: number,
+    idempotencyKey = newIdempotencyKey("sidebar-image-temporary-media"),
+  ) =>
+    unwrapGenerated(
+      await prepareSidebarImageTemporaryMedia(
+        imageId,
+        scopedOptions(contextToken, {
+          headers: { "Idempotency-Key": idempotencyKey },
+        }),
+      ),
+    ) as SidebarTemporaryMediaResponse,
   thumbnail: async (contextToken: string, imageId: number) =>
     unwrapGenerated(
       await getSidebarMaterialThumbnailStatus(

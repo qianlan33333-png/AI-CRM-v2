@@ -216,21 +216,23 @@ type WorkbenchResult struct {
 }
 
 type Service struct {
-	corp     CorpReader
-	identity IdentityResolver
-	phones   PhoneBinder
-	profiles contactport.SidebarProfileService
-	surveys  surveyport.CustomerSurveyAnswerReader
-	orders   orderport.Query
-	members  MemberApplication
-	media    mediaport.ImageLibraryReader
-	variants mediaport.ImageVariantReader
-	codec    *tokenCodec
-	now      func() time.Time
-	tokenTTL time.Duration
+	corp           CorpReader
+	identity       IdentityResolver
+	phones         PhoneBinder
+	profiles       contactport.SidebarProfileService
+	surveys        surveyport.CustomerSurveyAnswerReader
+	orders         orderport.Query
+	members        MemberApplication
+	media          mediaport.ImageLibraryReader
+	variants       mediaport.ImageVariantReader
+	products       ShareableProductCatalog
+	temporaryMedia TemporaryMediaPreparer
+	codec          *tokenCodec
+	now            func() time.Time
+	tokenTTL       time.Duration
 }
 
-func NewService(corp CorpReader, identity IdentityResolver, phones PhoneBinder, profiles contactport.SidebarProfileService, surveys surveyport.CustomerSurveyAnswerReader, orders orderport.Query, members MemberApplication, media mediaport.ImageLibraryReader, tokenKey []byte) (*Service, error) {
+func NewService(corp CorpReader, identity IdentityResolver, phones PhoneBinder, profiles contactport.SidebarProfileService, surveys surveyport.CustomerSurveyAnswerReader, orders orderport.Query, members MemberApplication, media mediaport.ImageLibraryReader, tokenKey []byte, options ...ServiceOptions) (*Service, error) {
 	codec, err := newTokenCodec(tokenKey)
 	if err != nil {
 		return nil, err
@@ -239,6 +241,13 @@ func NewService(corp CorpReader, identity IdentityResolver, phones PhoneBinder, 
 		return nil, ErrUnavailable
 	}
 	service := &Service{corp: corp, identity: identity, phones: phones, profiles: profiles, surveys: surveys, orders: orders, members: members, media: media, codec: codec, now: time.Now, tokenTTL: 15 * time.Minute}
+	if len(options) > 1 {
+		return nil, ErrUnavailable
+	}
+	if len(options) == 1 {
+		service.products = options[0].Products
+		service.temporaryMedia = options[0].Media
+	}
 	service.variants, _ = media.(mediaport.ImageVariantReader)
 	return service, nil
 }

@@ -78,6 +78,18 @@ func (handler *candidateHandler) ListSidebarMaterials(writer http.ResponseWriter
 	handler.sidebar.Materials(writer, request, string(params.XSidebarContextToken), query)
 }
 
+func (handler *candidateHandler) ListSidebarShareableProducts(writer http.ResponseWriter, request *http.Request, params api.ListSidebarShareableProductsParams) {
+	limit := int32(50)
+	if params.Limit != nil {
+		limit = *params.Limit
+	}
+	handler.sidebar.ShareableProducts(writer, request, string(params.XSidebarContextToken), limit)
+}
+
+func (handler *candidateHandler) PrepareSidebarImageTemporaryMedia(writer http.ResponseWriter, request *http.Request, imageID int64, params api.PrepareSidebarImageTemporaryMediaParams) {
+	handler.sidebar.PrepareTemporaryImageMedia(writer, request, string(params.XSidebarContextToken), string(params.IdempotencyKey), imageID)
+}
+
 func (handler *candidateHandler) GetSidebarMaterialThumbnailStatus(writer http.ResponseWriter, request *http.Request, imageID int64, params api.GetSidebarMaterialThumbnailStatusParams) {
 	handler.sidebar.ThumbnailStatus(writer, request, string(params.XSidebarContextToken), imageID)
 }
