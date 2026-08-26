@@ -11683,7 +11683,6 @@ type SidebarOrderItem struct {
 	AmountYuan      string    `json:"amount_yuan"`
 	CreatedAt       time.Time `json:"created_at"`
 	Currency        string    `json:"currency"`
-	DetailUrl       string    `json:"detail_url"`
 	MerchantOrderNo string    `json:"merchant_order_no"`
 	ProductCode     string    `json:"product_code"`
 	ProductName     string    `json:"product_name"`

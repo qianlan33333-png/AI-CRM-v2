@@ -841,11 +841,6 @@ export interface SidebarOrderItem {
   status_label: string;
   provider: string;
   provider_label: string;
-  /**
-   * @maxLength 2048
-   * @pattern ^/[^/]
-   */
-  detail_url: string;
 }
 
 export interface SidebarOrderResponse {

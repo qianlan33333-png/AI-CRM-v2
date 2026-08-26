@@ -119,7 +119,6 @@ type OrderItem struct {
 	StatusLabel     string    `json:"status_label"`
 	Provider        string    `json:"provider"`
 	ProviderLabel   string    `json:"provider_label"`
-	DetailURL       string    `json:"detail_url"`
 }
 
 type OrderResult struct {
@@ -375,10 +374,7 @@ func (service *Service) Orders(ctx context.Context, scope Scope, limit, offset i
 	}
 	items := make([]OrderItem, len(page.Items))
 	for index, item := range page.Items {
-		if !safeSidebarLocalURL(item.DetailURL) {
-			return OrderResult{}, ErrUnavailable
-		}
-		items[index] = OrderItem{CreatedAt: item.CreatedAt, MerchantOrderNo: item.MerchantOrderNo, ProductCode: item.ProductCode, ProductName: item.ProductName, AmountYuan: item.AmountYuan, Currency: item.Currency, Status: item.Status, StatusLabel: item.StatusLabel, Provider: item.Provider, ProviderLabel: item.ProviderLabel, DetailURL: item.DetailURL}
+		items[index] = OrderItem{CreatedAt: item.CreatedAt, MerchantOrderNo: item.MerchantOrderNo, ProductCode: item.ProductCode, ProductName: item.ProductName, AmountYuan: item.AmountYuan, Currency: item.Currency, Status: item.Status, StatusLabel: item.StatusLabel, Provider: item.Provider, ProviderLabel: item.ProviderLabel}
 	}
 	return OrderResult{Items: items, Total: page.Total, Limit: page.Limit, HasMore: page.HasMore, Safety: localSafety()}, nil
 }
@@ -504,12 +500,6 @@ func validExternalUserID(value string) bool {
 		}
 	}
 	return true
-}
-
-func safeSidebarLocalURL(value string) bool {
-	return strings.HasPrefix(value, "/") && !strings.HasPrefix(value, "//") && !strings.Contains(value, "\\") &&
-		strings.TrimSpace(value) == value && utf8.ValidString(value) && utf8.RuneCountInString(value) <= 2048 &&
-		strings.IndexFunc(value, func(character rune) bool { return character < 0x20 || character == 0x7f }) < 0
 }
 
 func mapDependencyError(err error) error {

@@ -13153,7 +13153,7 @@ components:
     SidebarOrderItem:
       type: object
       additionalProperties: false
-      required: [created_at, merchant_order_no, product_code, product_name, amount_yuan, currency, status, status_label, provider, provider_label, detail_url]
+      required: [created_at, merchant_order_no, product_code, product_name, amount_yuan, currency, status, status_label, provider, provider_label]
       properties:
         created_at: {type: string, format: date-time}
         merchant_order_no: {type: string}
@@ -13165,7 +13165,6 @@ components:
         status_label: {type: string}
         provider: {type: string}
         provider_label: {type: string}
-        detail_url: {type: string, pattern: '^/[^/]', maxLength: 2048}
     SidebarOrderResponse:
       type: object
       additionalProperties: false

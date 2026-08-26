@@ -341,8 +341,8 @@ func TestOrdersRedactPayerAndIdentityFields(t *testing.T) {
 			t.Fatalf("unsafe order projection %s", raw)
 		}
 	}
-	if !stringContains(string(raw), `"detail_url":"/api/admin/orders/order-41"`) {
-		t.Fatal("same-origin order detail URL missing")
+	if stringContains(string(raw), "detail_url") {
+		t.Fatal("sidebar order projection must not expose an admin-only detail URL")
 	}
 }
 

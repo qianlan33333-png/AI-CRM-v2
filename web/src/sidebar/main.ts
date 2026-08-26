@@ -1563,11 +1563,7 @@ export class SidebarController {
         typeof item.status !== "string" ||
         typeof item.status_label !== "string" ||
         typeof item.provider !== "string" ||
-        typeof item.provider_label !== "string" ||
-        typeof item.detail_url !== "string" ||
-        !/^\/[^/]/.test(item.detail_url) ||
-        item.detail_url.includes("\\") ||
-        /[\u0000-\u001f\u007f]/.test(item.detail_url)
+        typeof item.provider_label !== "string"
       )
         throw new Error("订单安全投影响应不完整，已停止渲染。");
     }
@@ -1644,23 +1640,28 @@ export class SidebarController {
             "item-meta",
             `${item.amount_yuan} ${item.currency} · ${item.status_label || item.status} · ${item.provider_label || item.provider}`,
           ),
+        );
+        const detail = createElement(
+          this.doc,
+          "details",
+          "order-detail",
+        ) as HTMLDetailsElement;
+        detail.dataset.orderDetail = "local";
+        detail.append(
+          createElement(this.doc, "summary", "link-button", "展开安全订单详情"),
           createElement(
             this.doc,
             "div",
             "item-meta",
-            `订单号 ${item.merchant_order_no} · 商品编码 ${item.product_code} · 创建 ${item.created_at}`,
+            `订单号 ${item.merchant_order_no} · 商品编码 ${item.product_code}`,
+          ),
+          createElement(
+            this.doc,
+            "div",
+            "item-meta",
+            `渠道 ${item.provider_label || item.provider} · 创建 ${item.created_at}`,
           ),
         );
-        const detail = createElement(
-          this.doc,
-          "a",
-          "link-button",
-          "打开订单详情",
-        ) as HTMLAnchorElement;
-        detail.href = item.detail_url;
-        detail.target = "_blank";
-        detail.rel = "noopener noreferrer";
-        detail.dataset.orderDetail = "local";
         card.append(detail);
         list.append(card);
       }

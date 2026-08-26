@@ -129,7 +129,7 @@ async function loadPage(rel, { id, q } = {}) {
         if (url.includes('/orders')) {
           if (scenario === 'error') return json({ code: 'unavailable' }, 503);
           return json({
-            items: scenario === 'empty' ? [] : [{ created_at: '2026-08-26T00:40:00Z', merchant_order_no: 'M20260826001', product_code: 'course-1', product_name: '测试课程', amount_yuan: '99.00', currency: 'CNY', status: 'paid', status_label: '已支付', provider: 'wechat_pay', provider_label: '微信支付', detail_url: '/api/admin/orders/M20260826001' }],
+            items: scenario === 'empty' ? [] : [{ created_at: '2026-08-26T00:40:00Z', merchant_order_no: 'M20260826001', product_code: 'course-1', product_name: '测试课程', amount_yuan: '99.00', currency: 'CNY', status: 'paid', status_label: '已支付', provider: 'wechat_pay', provider_label: '微信支付' }],
             total: scenario === 'empty' ? 0 : 1,
             limit: 20,
             has_more: false,
@@ -662,10 +662,11 @@ console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备�
     orderCard?.textContent.includes('99.00 CNY') &&
     !orderCard?.textContent.includes('payer_name'));
   const orderDetail = d.querySelector('[data-order-detail="local"]');
-  ok('普通订单详情跳转只使用同源路径',
-    orderDetail?.getAttribute('href') === '/api/admin/orders/M20260826001' &&
-    orderDetail?.getAttribute('target') === '_blank' &&
-    orderDetail?.getAttribute('rel') === 'noopener noreferrer');
+  ok('普通订单详情在当前客户范围内本地展开',
+    orderDetail?.tagName === 'DETAILS' &&
+    orderDetail?.textContent.includes('订单号 M20260826001') &&
+    orderDetail?.textContent.includes('商品编码 course-1') &&
+    !orderDetail?.textContent.includes('/api/admin/orders/'));
 
   click(dom, d.querySelector('[data-sidebar-tab="periodic_orders"]'));
   await sleep(30);
