@@ -14,11 +14,14 @@ import (
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 	platformhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/http"
-	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
 	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 )
 
-const legacyCustomerProfileMessagesPath = "/api/admin/customers/profile/messages"
+const (
+	legacyCustomerProfileMessagesPath          = "/api/admin/customers/profile/messages"
+	legacyCustomerProfileMessagesDefaultLimit  = int32(30)
+	legacyCustomerProfileMessagesFetchAllLimit = int32(100)
+)
 
 var (
 	errInvalidLegacyCustomerProfileMessagesQuery    = errors.New("invalid customer profile messages query")
@@ -113,9 +116,9 @@ func (handler *Handler) GetCustomerProfileMessages(writer http.ResponseWriter, r
 		writeLegacyCustomerProfileMessagesUnavailable(writer)
 		return
 	}
-	limit := int32(wecomapp.MessageArchiveDefaultLimit)
+	limit := legacyCustomerProfileMessagesDefaultLimit
 	if query.FetchAll {
-		limit = int32(wecomapp.MessageArchiveMaximumLimit)
+		limit = legacyCustomerProfileMessagesFetchAllLimit
 	}
 	page, err := archiveReader.ListCustomerChatSummaries(request.Context(), wecomport.CustomerChatSummaryQuery{
 		CustomerID: customerID,
