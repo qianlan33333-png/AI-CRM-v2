@@ -15154,7 +15154,7 @@ components:
     OutboundCampaignDispatchReconciliation:
       type: object
       additionalProperties: false
-      required: [handoff_id, blocked, accepted, queued, attempted, executed, outcome_unknown, reconciled, retryable_failed, final_failed, provider_execution_eligible, real_external_call_executed, delivery_proven]
+      required: [handoff_id, blocked, accepted, queued, attempted, executed, outcome_unknown, reconciled, retryable_failed, final_failed, provider_execution_eligible, business_call_dispatched, real_external_call_executed, delivery_proven]
       properties:
         handoff_id: { type: integer, format: int64, minimum: 1 }
         blocked: { type: integer, format: int64, minimum: 0 }
@@ -15167,7 +15167,8 @@ components:
         retryable_failed: { type: integer, format: int64, minimum: 0 }
         final_failed: { type: integer, format: int64, minimum: 0 }
         provider_execution_eligible: { type: boolean, enum: [false] }
-        real_external_call_executed: { type: boolean, enum: [false] }
+        business_call_dispatched: { type: boolean, description: True only when an attempt crossed the business Provider boundary; not delivery proof. }
+        real_external_call_executed: { type: boolean, description: True only when that Provider boundary was the real external WeCom call; not delivery proof. }
         delivery_proven: { type: boolean, enum: [false] }
     OutboundCampaignDispatchReconcileRequest:
       type: object

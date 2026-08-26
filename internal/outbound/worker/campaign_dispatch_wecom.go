@@ -71,7 +71,9 @@ func campaignWeComResult(envelope eer.EffectEnvelope, attempt eer.Attempt, resul
 		}
 	}
 	digest := campaignWeComReceiptDigest(envelope, attempt, result)
-	return eer.AdapterResult{Completion: completion, ReceiptDigest: digest, ResultReferenceDigest: digest}
+	businessCallDispatched := result.BusinessCallDispatched
+	return eer.AdapterResult{Completion: completion, ReceiptDigest: digest, ResultReferenceDigest: digest,
+		BusinessCallDispatched: businessCallDispatched, RealExternalCallExecuted: businessCallDispatched && result.RealExternalCallExecuted}
 }
 
 func campaignWeComReceiptDigest(envelope eer.EffectEnvelope, attempt eer.Attempt, result outboundapp.ProviderResult) eer.Digest {

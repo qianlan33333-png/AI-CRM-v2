@@ -37,5 +37,5 @@ set +e
 status=$?
 set -e
 [[ $status -ne 0 ]]
-grep -Fq 'cannot roll back populated outbound campaign external dispatch facts' /tmp/aicrm-c01-dispatch-down.out
-printf 'P4 C01 Outbound dispatch PG16 acceptance: PASS (78 down/up, fake receipt, unknown/manual reconcile; no delivery proof)\n'
+grep -Fq 'cannot roll back populated outbound campaign provider evidence' /tmp/aicrm-c01-dispatch-down.out
+printf 'P4 C01 Outbound dispatch PG16 acceptance: PASS (78/94 down/up, controlled provider evidence, unknown/manual reconcile; no delivery proof)\n'

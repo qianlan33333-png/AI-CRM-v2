@@ -49,6 +49,13 @@ type CampaignDispatchProviderRequest struct {
 	PayloadDigest string
 }
 
+type CampaignDispatchProviderAttemptReceipt struct {
+	Completion               string
+	ReceiptDigest            eer.Digest
+	BusinessCallDispatched   bool
+	RealExternalCallExecuted bool
+}
+
 type CampaignDispatchRepository interface {
 	LockCampaignHandoffForDispatch(context.Context, string, string) (int64, error)
 	ReadCampaignHandoffForDispatch(context.Context, string, string) (int64, error)
@@ -60,7 +67,7 @@ type CampaignDispatchRepository interface {
 	LoadCampaignDispatchProviderRequest(context.Context, string) (CampaignDispatchProviderRequest, error)
 	UpdateCampaignDispatchState(context.Context, string, outbound.CampaignDispatchState) error
 	ReadCampaignDispatchSummary(context.Context, int64) (outbound.CampaignDispatchSummary, error)
-	RecordCampaignProviderAttemptReceipt(context.Context, string, int32, string, eer.Digest) error
+	RecordCampaignProviderAttemptReceipt(context.Context, string, int32, CampaignDispatchProviderAttemptReceipt) error
 }
 
 type CampaignDispatchEnqueuer interface {

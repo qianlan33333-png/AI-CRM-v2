@@ -284,19 +284,25 @@ func (repository *CampaignDispatchRepository) ReadCampaignDispatchSummary(ctx co
 			return outbound.CampaignDispatchSummary{}, outbound.ErrCampaignDispatchUnavailable
 		}
 	}
+	evidence, err := queries.ReadOutboundCampaignDispatchEvidence(ctx, handoffID)
+	if err != nil || (evidence.RealExternalCallExecuted && !evidence.BusinessCallDispatched) {
+		return outbound.CampaignDispatchSummary{}, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
+	}
+	result.BusinessCallDispatched = evidence.BusinessCallDispatched
+	result.RealExternalCallExecuted = evidence.RealExternalCallExecuted
 	return result, nil
 }
 
-func (repository *CampaignDispatchRepository) RecordCampaignProviderAttemptReceipt(ctx context.Context, effectID string, attempt int32, completion string, receipt eer.Digest) error {
+func (repository *CampaignDispatchRepository) RecordCampaignProviderAttemptReceipt(ctx context.Context, effectID string, attempt int32, evidence outboundport.CampaignDispatchProviderAttemptReceipt) error {
 	id, err := parseCampaignExternalEffectID(effectID)
-	if repository == nil || err != nil || id < 1 || attempt < 1 || !validCampaignDispatchCompletion(completion) || !outbound.ValidCampaignDispatchDigest(string(receipt)) {
+	if repository == nil || err != nil || id < 1 || attempt < 1 || !validCampaignDispatchCompletion(evidence.Completion) || !outbound.ValidCampaignDispatchDigest(string(evidence.ReceiptDigest)) || (evidence.RealExternalCallExecuted && !evidence.BusinessCallDispatched) {
 		return outbound.ErrCampaignDispatchInvalid
 	}
 	queries, err := dispatchQueries(ctx)
 	if err != nil {
 		return err
 	}
-	return queries.InsertOutboundCampaignProviderAttemptReceipt(ctx, outbounddb.InsertOutboundCampaignProviderAttemptReceiptParams{ExternalEffectID: id, AttemptNumber: attempt, Completion: completion, ProviderReceiptDigest: string(receipt)})
+	return queries.InsertOutboundCampaignProviderAttemptReceipt(ctx, outbounddb.InsertOutboundCampaignProviderAttemptReceiptParams{ExternalEffectID: id, AttemptNumber: attempt, Completion: evidence.Completion, ProviderReceiptDigest: string(evidence.ReceiptDigest), BusinessCallDispatched: evidence.BusinessCallDispatched, RealExternalCallExecuted: evidence.RealExternalCallExecuted})
 }
 
 type CampaignDispatchArgs struct {

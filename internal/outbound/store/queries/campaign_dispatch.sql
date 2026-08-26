@@ -38,6 +38,14 @@ FROM public.outbound_campaign_dispatches AS dispatch
 WHERE dispatch.handoff_id=$1
 GROUP BY dispatch.state;
 
+-- name: ReadOutboundCampaignDispatchEvidence :one
+SELECT COALESCE(bool_or(receipt.business_call_dispatched), FALSE)::boolean AS business_call_dispatched,
+       COALESCE(bool_or(receipt.real_external_call_executed), FALSE)::boolean AS real_external_call_executed
+FROM public.outbound_campaign_dispatches AS dispatch
+LEFT JOIN public.outbound_campaign_provider_attempt_receipts AS receipt
+  ON receipt.external_effect_id = dispatch.external_effect_id
+WHERE dispatch.handoff_id=$1;
+
 -- name: LoadOutboundCampaignDispatchByEffect :one
 SELECT id,handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,state,block_reason,created_at,updated_at
 FROM public.outbound_campaign_dispatches WHERE external_effect_id=$1;
@@ -54,6 +62,6 @@ UPDATE public.outbound_campaign_dispatches SET state=$2, updated_at=now()
 WHERE external_effect_id=$1 AND state <> 'blocked';
 
 -- name: InsertOutboundCampaignProviderAttemptReceipt :exec
-INSERT INTO public.outbound_campaign_provider_attempt_receipts(external_effect_id,attempt_number,completion,provider_receipt_digest)
-VALUES($1,$2,$3,$4)
+INSERT INTO public.outbound_campaign_provider_attempt_receipts(external_effect_id,attempt_number,completion,provider_receipt_digest,business_call_dispatched,real_external_call_executed)
+VALUES($1,$2,$3,$4,$5,$6)
 ON CONFLICT(external_effect_id,attempt_number,completion) DO NOTHING;

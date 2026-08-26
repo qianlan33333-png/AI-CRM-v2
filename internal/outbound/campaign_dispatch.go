@@ -33,6 +33,7 @@ type CampaignDispatchSummary struct {
 	HandoffID                                                                                                int64
 	Blocked, Accepted, Queued, Attempted, Executed, OutcomeUnknown, Reconciled, RetryableFailed, FinalFailed int64
 	ProviderExecutionEligible                                                                                bool
+	BusinessCallDispatched                                                                                   bool
 	RealExternalCallExecuted                                                                                 bool
 	DeliveryProven                                                                                           bool
 	UpdatedAt                                                                                                time.Time
@@ -60,7 +61,8 @@ func ValidCampaignDispatchSummary(value CampaignDispatchSummary) bool {
 	if value.HandoffID < 1 || value.Blocked < 0 || value.Accepted < 0 || value.Queued < 0 || value.Attempted < 0 || value.Executed < 0 || value.OutcomeUnknown < 0 || value.Reconciled < 0 || value.RetryableFailed < 0 || value.FinalFailed < 0 || value.UpdatedAt.IsZero() {
 		return false
 	}
-	// This package intentionally never turns a local/fake receipt into a
-	// delivery claim. A production verifier remains a later provider concern.
-	return !value.RealExternalCallExecuted && !value.DeliveryProven
+	// A provider call fact is not delivery proof. Delivery remains a separate
+	// provider-verification concern even when the real call is known to have
+	// crossed the Provider boundary.
+	return (!value.RealExternalCallExecuted || value.BusinessCallDispatched) && !value.DeliveryProven
 }

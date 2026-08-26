@@ -55,6 +55,20 @@ type CampaignDispatchService struct {
 	now      func() time.Time
 }
 
+type campaignDispatchEvidenceAdapter struct {
+	adapter   eer.Adapter
+	result    eer.AdapterResult
+	completed bool
+}
+
+func (adapter *campaignDispatchEvidenceAdapter) Execute(ctx context.Context, envelope eer.EffectEnvelope, attempt eer.Attempt) (eer.AdapterResult, error) {
+	result, err := adapter.adapter.Execute(ctx, envelope, attempt)
+	if err == nil {
+		adapter.result, adapter.completed = result, true
+	}
+	return result, err
+}
+
 func NewCampaignDispatchService(uow platformport.UnitOfWork, repo outboundport.CampaignDispatchRepository, runtime CampaignDispatchRuntime, enqueuer outboundport.CampaignDispatchEnqueuer, contact contactport.EligibilityChecker) (*CampaignDispatchService, error) {
 	if nilCampaignDispatchDependency(uow) || nilCampaignDispatchDependency(repo) || nilCampaignDispatchDependency(runtime) || nilCampaignDispatchDependency(enqueuer) || nilCampaignDispatchDependency(contact) {
 		return nil, outbound.ErrCampaignDispatchUnavailable
@@ -252,7 +266,8 @@ func (service *CampaignDispatchService) RunEffect(ctx context.Context, effectID 
 	if err != nil {
 		return campaignDispatchError(err)
 	}
-	projection, receipt, runErr := service.runtime.RunAttempt(ctx, lease, adapter)
+	captured := &campaignDispatchEvidenceAdapter{adapter: adapter}
+	projection, receipt, runErr := service.runtime.RunAttempt(ctx, lease, captured)
 	state, valid := campaignDispatchState(projection.State)
 	if !valid {
 		return outbound.ErrCampaignDispatchUnavailable
@@ -261,7 +276,13 @@ func (service *CampaignDispatchService) RunEffect(ctx context.Context, effectID 
 		if err := service.repo.UpdateCampaignDispatchState(tx, effectID, state); err != nil {
 			return err
 		}
-		return service.repo.RecordCampaignProviderAttemptReceipt(tx, effectID, projection.AttemptCount, string(projection.State), receipt.CommandDigest)
+		evidence := outboundport.CampaignDispatchProviderAttemptReceipt{Completion: string(projection.State), ReceiptDigest: receipt.CommandDigest}
+		if captured.completed && outbound.ValidCampaignDispatchDigest(string(captured.result.ReceiptDigest)) {
+			evidence.ReceiptDigest = captured.result.ReceiptDigest
+			evidence.BusinessCallDispatched = captured.result.BusinessCallDispatched
+			evidence.RealExternalCallExecuted = captured.result.RealExternalCallExecuted
+		}
+		return service.repo.RecordCampaignProviderAttemptReceipt(tx, effectID, projection.AttemptCount, evidence)
 	})
 	if writeErr != nil {
 		return campaignDispatchError(writeErr)
@@ -293,7 +314,7 @@ func (service *CampaignDispatchService) ReconcileEffect(ctx context.Context, com
 		if err := service.repo.UpdateCampaignDispatchState(tx, projection.ID, outbound.CampaignDispatchReconciled); err != nil {
 			return err
 		}
-		return service.repo.RecordCampaignProviderAttemptReceipt(tx, projection.ID, projection.AttemptCount, string(eer.StateReconciled), receipt.CommandDigest)
+		return service.repo.RecordCampaignProviderAttemptReceipt(tx, projection.ID, projection.AttemptCount, outboundport.CampaignDispatchProviderAttemptReceipt{Completion: string(eer.StateReconciled), ReceiptDigest: receipt.CommandDigest})
 	})
 }
 
@@ -346,7 +367,7 @@ func (service *CampaignDispatchService) ManualReconcile(ctx context.Context, com
 		if err = service.repo.UpdateCampaignDispatchState(tx, command.EffectID, outbound.CampaignDispatchReconciled); err != nil {
 			return err
 		}
-		if err = service.repo.RecordCampaignProviderAttemptReceipt(tx, command.EffectID, projection.AttemptCount, string(eer.StateReconciled), receipt.CommandDigest); err != nil {
+		if err = service.repo.RecordCampaignProviderAttemptReceipt(tx, command.EffectID, projection.AttemptCount, outboundport.CampaignDispatchProviderAttemptReceipt{Completion: string(eer.StateReconciled), ReceiptDigest: receipt.CommandDigest}); err != nil {
 			return err
 		}
 		summary, err = service.repo.ReadCampaignDispatchSummary(tx, handoffID)

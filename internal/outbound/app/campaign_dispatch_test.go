@@ -113,7 +113,7 @@ func (fixture *campaignDispatchFixture) ReadCampaignDispatchSummary(_ context.Co
 	}
 	return result, nil
 }
-func (*campaignDispatchFixture) RecordCampaignProviderAttemptReceipt(context.Context, string, int32, string, eer.Digest) error {
+func (*campaignDispatchFixture) RecordCampaignProviderAttemptReceipt(context.Context, string, int32, outboundport.CampaignDispatchProviderAttemptReceipt) error {
 	return nil
 }
 func (fixture *campaignDispatchFixture) EnqueueCampaignDispatch(_ context.Context, effectID string) (eer.RiverJobLink, error) {

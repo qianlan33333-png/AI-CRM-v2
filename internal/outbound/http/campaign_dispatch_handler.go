@@ -145,12 +145,13 @@ type campaignDispatchResponse struct {
 	RetryableFailed           int64 `json:"retryable_failed"`
 	FinalFailed               int64 `json:"final_failed"`
 	ProviderExecutionEligible bool  `json:"provider_execution_eligible"`
+	BusinessCallDispatched    bool  `json:"business_call_dispatched"`
 	RealExternalCallExecuted  bool  `json:"real_external_call_executed"`
 	DeliveryProven            bool  `json:"delivery_proven"`
 }
 
 func campaignDispatchResponseOf(value outbound.CampaignDispatchSummary) campaignDispatchResponse {
-	return campaignDispatchResponse{HandoffID: value.HandoffID, Blocked: value.Blocked, Accepted: value.Accepted, Queued: value.Queued, Attempted: value.Attempted, Executed: value.Executed, OutcomeUnknown: value.OutcomeUnknown, Reconciled: value.Reconciled, RetryableFailed: value.RetryableFailed, FinalFailed: value.FinalFailed}
+	return campaignDispatchResponse{HandoffID: value.HandoffID, Blocked: value.Blocked, Accepted: value.Accepted, Queued: value.Queued, Attempted: value.Attempted, Executed: value.Executed, OutcomeUnknown: value.OutcomeUnknown, Reconciled: value.Reconciled, RetryableFailed: value.RetryableFailed, FinalFailed: value.FinalFailed, BusinessCallDispatched: value.BusinessCallDispatched, RealExternalCallExecuted: value.RealExternalCallExecuted, DeliveryProven: value.DeliveryProven}
 }
 
 func writeCampaignDispatchError(writer http.ResponseWriter, request *http.Request, err error) {

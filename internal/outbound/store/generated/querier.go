@@ -56,6 +56,7 @@ type Querier interface {
 	MarkOutboundTaskSending(ctx context.Context, arg MarkOutboundTaskSendingParams) (int64, error)
 	PrepareOutboundSendAttemptRetry(ctx context.Context, arg PrepareOutboundSendAttemptRetryParams) (PrepareOutboundSendAttemptRetryRow, error)
 	ProjectOutboundTaskResult(ctx context.Context, arg ProjectOutboundTaskResultParams) (int64, error)
+	ReadOutboundCampaignDispatchEvidence(ctx context.Context, handoffID int64) (ReadOutboundCampaignDispatchEvidenceRow, error)
 	ReadOutboundCampaignHandoffForDispatch(ctx context.Context, arg ReadOutboundCampaignHandoffForDispatchParams) (int64, error)
 	RecordOutboundTaskJobLink(ctx context.Context, arg RecordOutboundTaskJobLinkParams) (RecordOutboundTaskJobLinkRow, error)
 	ReserveOutboundAttemptHistory(ctx context.Context, arg ReserveOutboundAttemptHistoryParams) (ReserveOutboundAttemptHistoryRow, error)

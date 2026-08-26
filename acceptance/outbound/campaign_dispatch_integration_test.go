@@ -40,15 +40,15 @@ type campaignDispatchWeComProviderFake struct{ requests []outboundapp.SendReques
 
 func (fake *campaignDispatchWeComProviderFake) Send(_ context.Context, request outboundapp.SendRequest) (outboundapp.ProviderResult, error) {
 	fake.requests = append(fake.requests, request)
-	return outboundapp.ProviderResult{MessageID: "fake-provider-message-id"}, nil
+	return outboundapp.ProviderResult{MessageID: "fake-provider-message-id", BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
 }
 
 func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) {
 	pool := openCampaignDispatchPool(t)
 	ctx := context.Background()
 	var migrationsApplied bool
-	if err := pool.QueryRow(ctx, `SELECT count(*)=2 FROM public.goose_db_version WHERE version_id IN (78,92) AND is_applied`).Scan(&migrationsApplied); err != nil || !migrationsApplied {
-		t.Fatalf("migrations 78/92 applied=%t err=%v, want true", migrationsApplied, err)
+	if err := pool.QueryRow(ctx, `SELECT count(*)=3 FROM public.goose_db_version WHERE version_id IN (78,92,94) AND is_applied`).Scan(&migrationsApplied); err != nil || !migrationsApplied {
+		t.Fatalf("migrations 78/92/94 applied=%t err=%v, want true", migrationsApplied, err)
 	}
 	ensureOutboundRiverCatalog(t, ctx, pool)
 	policyTime := time.Now().UTC().Truncate(time.Microsecond)
@@ -171,13 +171,13 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 	}
 
 	summary, err = service.Reconciliation(ctx, source.snapshot.CampaignCode, planID)
-	if err != nil || summary.Blocked != 1 || summary.Executed != 1 || summary.Reconciled != 1 || summary.OutcomeUnknown != 0 || summary.DeliveryProven || summary.RealExternalCallExecuted {
+	if err != nil || summary.Blocked != 1 || summary.Executed != 1 || summary.Reconciled != 1 || summary.OutcomeUnknown != 0 || summary.DeliveryProven || !summary.BusinessCallDispatched || !summary.RealExternalCallExecuted {
 		t.Fatalf("terminal summary=%+v err=%v", summary, err)
 	}
 	var receiptCount int
-	var proven bool
-	if err = pool.QueryRow(ctx, `SELECT count(*), bool_or(delivery_proven) FROM public.outbound_campaign_provider_attempt_receipts`).Scan(&receiptCount, &proven); err != nil || receiptCount != 2 || proven {
-		t.Fatalf("provider attempt receipts=%d proven=%t err=%v, want 2/false", receiptCount, proven, err)
+	var businessCallDispatched, realExternalCallExecuted, proven bool
+	if err = pool.QueryRow(ctx, `SELECT count(*), bool_or(business_call_dispatched), bool_or(real_external_call_executed), bool_or(delivery_proven) FROM public.outbound_campaign_provider_attempt_receipts`).Scan(&receiptCount, &businessCallDispatched, &realExternalCallExecuted, &proven); err != nil || receiptCount != 2 || !businessCallDispatched || !realExternalCallExecuted || proven {
+		t.Fatalf("provider attempt receipts=%d business=%t real=%t proven=%t err=%v, want 2/true/true/false", receiptCount, businessCallDispatched, realExternalCallExecuted, proven, err)
 	}
 }
 

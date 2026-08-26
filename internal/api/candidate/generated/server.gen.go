@@ -5224,21 +5224,6 @@ func (e OutboundCampaignDispatchReconciliationProviderExecutionEligible) Valid()
 	}
 }
 
-// Defines values for OutboundCampaignDispatchReconciliationRealExternalCallExecuted.
-const (
-	OutboundCampaignDispatchReconciliationRealExternalCallExecutedFalse OutboundCampaignDispatchReconciliationRealExternalCallExecuted = false
-)
-
-// Valid indicates whether the value is a known member of the OutboundCampaignDispatchReconciliationRealExternalCallExecuted enum.
-func (e OutboundCampaignDispatchReconciliationRealExternalCallExecuted) Valid() bool {
-	switch e {
-	case OutboundCampaignDispatchReconciliationRealExternalCallExecutedFalse:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for OutboundCampaignHandoffReconciliationStatus.
 const (
 	OutboundCampaignHandoffReconciliationStatusHeld OutboundCampaignHandoffReconciliationStatus = "held"
@@ -7026,13 +7011,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
+	False SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case SidebarSafetyRealExternalCallExecutedFalse:
+	case False:
 		return true
 	default:
 		return false
@@ -10344,9 +10329,12 @@ type OutboundCampaignDispatchReconcileRequest struct {
 
 // OutboundCampaignDispatchReconciliation defines model for OutboundCampaignDispatchReconciliation.
 type OutboundCampaignDispatchReconciliation struct {
-	Accepted                  int64                                                           `json:"accepted"`
-	Attempted                 int64                                                           `json:"attempted"`
-	Blocked                   int64                                                           `json:"blocked"`
+	Accepted  int64 `json:"accepted"`
+	Attempted int64 `json:"attempted"`
+	Blocked   int64 `json:"blocked"`
+
+	// BusinessCallDispatched True only when an attempt crossed the business Provider boundary; not delivery proof.
+	BusinessCallDispatched    bool                                                            `json:"business_call_dispatched"`
 	DeliveryProven            OutboundCampaignDispatchReconciliationDeliveryProven            `json:"delivery_proven"`
 	Executed                  int64                                                           `json:"executed"`
 	FinalFailed               int64                                                           `json:"final_failed"`
@@ -10354,9 +10342,11 @@ type OutboundCampaignDispatchReconciliation struct {
 	OutcomeUnknown            int64                                                           `json:"outcome_unknown"`
 	ProviderExecutionEligible OutboundCampaignDispatchReconciliationProviderExecutionEligible `json:"provider_execution_eligible"`
 	Queued                    int64                                                           `json:"queued"`
-	RealExternalCallExecuted  OutboundCampaignDispatchReconciliationRealExternalCallExecuted  `json:"real_external_call_executed"`
-	Reconciled                int64                                                           `json:"reconciled"`
-	RetryableFailed           int64                                                           `json:"retryable_failed"`
+
+	// RealExternalCallExecuted True only when that Provider boundary was the real external WeCom call; not delivery proof.
+	RealExternalCallExecuted bool  `json:"real_external_call_executed"`
+	Reconciled               int64 `json:"reconciled"`
+	RetryableFailed          int64 `json:"retryable_failed"`
 }
 
 // OutboundCampaignDispatchReconciliationDeliveryProven defines model for OutboundCampaignDispatchReconciliation.DeliveryProven.
@@ -10364,9 +10354,6 @@ type OutboundCampaignDispatchReconciliationDeliveryProven bool
 
 // OutboundCampaignDispatchReconciliationProviderExecutionEligible defines model for OutboundCampaignDispatchReconciliation.ProviderExecutionEligible.
 type OutboundCampaignDispatchReconciliationProviderExecutionEligible bool
-
-// OutboundCampaignDispatchReconciliationRealExternalCallExecuted defines model for OutboundCampaignDispatchReconciliation.RealExternalCallExecuted.
-type OutboundCampaignDispatchReconciliationRealExternalCallExecuted bool
 
 // OutboundCampaignDispatchRequest defines model for OutboundCampaignDispatchRequest.
 type OutboundCampaignDispatchRequest struct {

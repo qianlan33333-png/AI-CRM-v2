@@ -64,13 +64,13 @@ func TestCampaignWeComAdapterResolvesPrivateRequestAfterAttemptFence(t *testing.
 		t.Fatal(err)
 	}
 	loader := &campaignWeComLoaderSpy{request: outboundport.CampaignDispatchProviderRequest{DispatchID: 41, HandoffID: 19, CustomerID: 7, StepIndex: 2, Content: "hello", PayloadDigest: string(envelope.PayloadDigest())}}
-	provider := &campaignWeComProviderSpy{result: outboundapp.ProviderResult{MessageID: "provider-message-id"}}
+	provider := &campaignWeComProviderSpy{result: outboundapp.ProviderResult{MessageID: "provider-message-id", BusinessCallDispatched: true, RealExternalCallExecuted: true}}
 	adapter, err := NewCampaignWeComAdapter(loader, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
 	result, err := adapter.Execute(context.Background(), envelope, eer.Attempt{Number: 1, Generation: 2, Fence: 3})
-	if err != nil || result.Completion != eer.CompletionExecuted || result.ReceiptDigest == "" || loader.digest != string(envelope.PayloadDigest()) || provider.calls != 1 || provider.request.TaskID != 41 || provider.request.CustomerID != 7 || provider.request.TemplateKey != outboundapp.TemplateTextNoticeV1 {
+	if err != nil || result.Completion != eer.CompletionExecuted || result.ReceiptDigest == "" || !result.BusinessCallDispatched || !result.RealExternalCallExecuted || loader.digest != string(envelope.PayloadDigest()) || provider.calls != 1 || provider.request.TaskID != 41 || provider.request.CustomerID != 7 || provider.request.TemplateKey != outboundapp.TemplateTextNoticeV1 {
 		t.Fatalf("result=%+v err=%v loader=%+v provider=%+v", result, err, loader, provider)
 	}
 	var payload map[string]string
@@ -101,17 +101,18 @@ func TestCampaignWeComAdapterClassifiesProviderTerminalStates(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, test := range []struct {
-		name string
-		in   outboundapp.ProviderResult
-		want eer.Completion
+		name           string
+		in             outboundapp.ProviderResult
+		want           eer.Completion
+		business, real bool
 	}{
-		{name: "retryable", in: outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureTemporary, Code: "temporary"}, want: eer.Completion("retryable_failed")},
-		{name: "final", in: outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureRecipientUnavailable, Code: "84061"}, want: eer.CompletionFinalFailed},
-		{name: "unknown", in: outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureConnection, Code: "unknown"}, want: eer.CompletionOutcomeUnknown},
+		{name: "retryable", in: outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureTemporary, Code: "temporary", BusinessCallDispatched: true, RealExternalCallExecuted: true}, want: eer.Completion("retryable_failed"), business: true, real: true},
+		{name: "final", in: outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureRecipientUnavailable, Code: "84061", BusinessCallDispatched: true, RealExternalCallExecuted: true}, want: eer.CompletionFinalFailed, business: true, real: true},
+		{name: "unknown", in: outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureConnection, Code: "unknown", BusinessCallDispatched: true, RealExternalCallExecuted: true}, want: eer.CompletionOutcomeUnknown, business: true, real: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			result := campaignWeComResult(envelope, eer.Attempt{Number: 1, Generation: 2, Fence: 3}, test.in)
-			if result.Completion != test.want || result.ReceiptDigest == "" || result.BusinessCallDispatched || result.RealExternalCallExecuted {
+			if result.Completion != test.want || result.ReceiptDigest == "" || result.BusinessCallDispatched != test.business || result.RealExternalCallExecuted != test.real {
 				t.Fatalf("result=%+v", result)
 			}
 		})
