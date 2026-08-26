@@ -10250,7 +10250,7 @@ paths:
             X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
           content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
-  /api/ai/audience/packages/{package_id}/webhook:
+  /api/ai/audience/packages/{package_key}/webhook:
     post:
       tags: [p4-ai-audience]
       operationId: receiveAIAudienceInboundWebhook
@@ -10265,7 +10265,7 @@ paths:
       x-aicrm-data-classification: restricted
       x-aicrm-external-effect: none
       parameters:
-        - { name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: package_key, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
         - { name: X-AICRM-Client-Id, in: header, required: true, schema: { type: string, enum: [aicrm-webhook-ai-audience] } }
         - { name: X-AICRM-Timestamp, in: header, required: true, schema: { type: string, pattern: '^[0-9]{1,19}$' } }
         - { name: X-AICRM-Event-Id, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 256, pattern: '^[!-~]+$' } }

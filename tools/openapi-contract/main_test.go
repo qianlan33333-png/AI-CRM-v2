@@ -35,7 +35,7 @@ func TestAIAudienceWebhookProtocolAuthorization(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	operation := doc.Paths.Value("/api/ai/audience/packages/{package_id}/webhook").Post
+	operation := doc.Paths.Value("/api/ai/audience/packages/{package_key}/webhook").Post
 	if err = validateGenericCanonicalAuthorization(operation, "POST"); err != nil {
 		t.Fatal(err)
 	}

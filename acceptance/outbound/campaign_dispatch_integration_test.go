@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	campaignfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/campaignfixture"
 	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
@@ -266,11 +267,7 @@ func TestCampaignDispatchPG16AudienceSendRecordsUsesDispatchAndProviderReceiptFa
 		t.Fatal(err)
 	}
 	campaignCode := prefix
-	if _, err = pool.Exec(ctx, `INSERT INTO public.cloud_campaigns (campaign_code,name,approval_status,runtime_status,version,created_by,updated_by,created_at,updated_at)
-VALUES ($1,$1,'draft','idle',1,73,73,$2,$2)`, campaignCode, policyTime); err != nil {
-		t.Fatal(err)
-	}
-	if _, err = pool.Exec(ctx, `INSERT INTO public.cloud_campaign_steps (campaign_code,step_index,delay_minutes,content) VALUES ($1,1,0,'audience record content')`, campaignCode); err != nil {
+	if err = campaignfixture.CreateDraftCampaign(ctx, pool, campaignCode, "audience record content", 73, policyTime); err != nil {
 		t.Fatal(err)
 	}
 	campaignRepository := campaignstore.NewRepository()

@@ -2489,7 +2489,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		return nil, err
 	}
 	if legacy != nil && legacy.aiAudienceInbound != nil && legacy.aiAudienceInbound.webhook != nil {
-		if err = registerPublic(http.MethodPost, "/api/ai/audience/packages/{package_id}/webhook", legacy.aiAudienceInbound.webhook); err != nil {
+		if err = registerPublic(http.MethodPost, "/api/ai/audience/packages/{package_key}/webhook", legacy.aiAudienceInbound.webhook); err != nil {
 			return nil, err
 		}
 	}

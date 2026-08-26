@@ -594,6 +594,11 @@ class WorkflowWiringTests(unittest.TestCase):
             self.assertRegex(source, r"(?m)^permissions:\n  contents: read\n")
             permission_entries = re.findall(r"(?m)^  [a-z-]+: (?:read|write|write-all)$", source)
             self.assertEqual(permission_entries, ["  contents: read"])
+            if relative_name == ".github/workflows/nightly.yml":
+                self.assertEqual(
+                    re.findall(r"(?m)^      [a-z-]+: (?:write|write-all)$", source),
+                    ["      statuses: write"],
+                )
             self.assertNotIn("pull_request_target", source)
             self.assertNotRegex(source, r"(?m)^\s+paths(?:-ignore)?:")
             for action_ref in re.findall(r"(?m)^\s+(?:- )?uses: ([^\s#]+)", source):
@@ -620,12 +625,20 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertIn("go=", source)
         self.assertIn("cancelled", CLASSIFIER_PATH.read_text(encoding="utf-8"))
 
-    def test_nightly_is_not_a_pull_request_gate(self) -> None:
+    def test_nightly_uses_trusted_triggers_and_isolates_status_write(self) -> None:
         source = (REPO_ROOT / ".github/workflows/nightly.yml").read_text(encoding="utf-8")
         self.assertNotIn("pull_request:", source)
+        self.assertNotIn("workflow_dispatch:", source)
+        self.assertIn("push:", source)
         self.assertIn("schedule:", source)
-        self.assertIn("workflow_dispatch:", source)
+        self.assertIn("workflow_run:", source)
         self.assertNotIn("ci / merge-gate", source)
+        full_regression, publisher = source.split("  publish_block_compatibility:\n", 1)
+        self.assertNotIn("statuses: write", full_regression)
+        self.assertIn("      statuses: write", publisher)
+        self.assertNotIn("actions/checkout", publisher)
+        self.assertIn("name: Publish block compatibility status", publisher)
+        self.assertIn('"context": "ci / block compatibility"', source)
 
     def test_workflow_script_references_exist(self) -> None:
         references: set[str] = set()
