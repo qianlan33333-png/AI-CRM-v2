@@ -635,6 +635,60 @@ func TestLoadWeChatPayAPIDoesNotReadMerchantWriteCredential(t *testing.T) {
 	}
 }
 
+func TestLoadWeChatShopOrderSyncIsWorkerOnlyExplicitAndRedacted(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv:                   "postgres://db/aicrm",
+		workerPoolMaxConnsEnv:            "9",
+		criticalWorkersEnv:               "2",
+		eventWorkersEnv:                  "1",
+		outboundWorkersEnv:               "1",
+		syncWorkersEnv:                   "1",
+		heavyWorkersEnv:                  "1",
+		aiWorkersEnv:                     "1",
+		weChatShopOrderSyncEnabledEnv:    "true",
+		weChatShopAppIDEnv:               "wx-shop-app-1",
+		weChatShopAppSecretEnv:           "shop-app-secret-sentinel",
+		weChatShopPermissionConfirmedEnv: "true",
+	}
+	root, err := load(appruntime.RoleWorker, mapLookup(values))
+	if err != nil || !root.Commerce.WeChatShopOrder.Enabled || !root.Commerce.WeChatShopOrder.PermissionConfirmed || root.Commerce.WeChatShopOrder.AppID != "wx-shop-app-1" {
+		t.Fatalf("wechat shop order config = %#v, %v", root.Commerce.WeChatShopOrder, err)
+	}
+	for _, formatted := range []string{fmt.Sprint(root), fmt.Sprintf("%#v", root)} {
+		if strings.Contains(formatted, values[weChatShopAppSecretEnv]) {
+			t.Fatalf("Root formatting leaked WeChat Shop credential: %q", formatted)
+		}
+	}
+	values[weChatShopPermissionConfirmedEnv] = "false"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wechat_shop.order_sync.permission_confirmed must be true when enabled" {
+		t.Fatalf("unconfirmed WeChat Shop config error = %v", err)
+	}
+	values[weChatShopOrderSyncEnabledEnv] = "false"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wechat_shop.order_sync credentials require enabled=true" {
+		t.Fatalf("disabled WeChat Shop credential error = %v", err)
+	}
+}
+
+func TestLoadWeChatShopOrderSyncCredentialIsNotReadByAPI(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv:                   "postgres://db/aicrm",
+		apiListenAddressEnv:              "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:               "1",
+		identityHMACKeyEnv:               strings.Repeat("A", 43),
+		weChatShopOrderSyncEnabledEnv:    "not-a-boolean",
+		weChatShopAppIDEnv:               "not valid",
+		weChatShopAppSecretEnv:           "must-not-enter-api-config",
+		weChatShopPermissionConfirmedEnv: "not-a-boolean",
+	}
+	root, err := load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil || root.Commerce.WeChatShopOrder.Enabled || root.Commerce.WeChatShopOrder.AppSecret.Value() != "" {
+		t.Fatalf("API WeChat Shop config = %#v, %v", root.Commerce.WeChatShopOrder, err)
+	}
+	if strings.Contains(fmt.Sprintf("%#v", root), values[weChatShopAppSecretEnv]) {
+		t.Fatal("API config read worker-only WeChat Shop secret")
+	}
+}
+
 func mapLookup(values map[string]string) environmentLookup {
 	return func(key string) (string, bool) {
 		value, ok := values[key]

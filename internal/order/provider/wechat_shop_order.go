@@ -18,8 +18,9 @@ import (
 )
 
 const (
-	weChatShopStableTokenPath = "/cgi-bin/stable_token"
-	weChatShopOrderGetPath    = "/channels/ec/order/get"
+	WeChatShopProductionBaseURL = "https://api.weixin.qq.com"
+	weChatShopStableTokenPath   = "/cgi-bin/stable_token"
+	weChatShopOrderGetPath      = "/channels/ec/order/get"
 )
 
 // WeChatShopCredential intentionally keeps the secret fields unexported so
