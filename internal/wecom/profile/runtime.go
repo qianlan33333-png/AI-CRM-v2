@@ -334,8 +334,8 @@ func acceptance(e Effect) (Acceptance, error) {
 	}
 	return Acceptance{EffectID: e.EffectID, State: e.State, RiverJobID: e.RiverJobID, AcceptReceiptID: e.AcceptReceiptID, QueueReceiptID: e.QueueReceiptID}, nil
 }
-func execution(e Effect, _ bool) Execution {
-	return Execution{EffectID: e.EffectID, State: e.State, AttemptReceiptDigest: e.AttemptReceiptDigest, ProviderCallAttempted: e.ProviderCallAttempted, RealExternalCallExecuted: e.RealExternalCallExecuted, ManualReconcileRequired: e.State == eer.StateOutcomeUnknown}
+func execution(e Effect, attemptedNow bool) Execution {
+	return Execution{EffectID: e.EffectID, State: e.State, AttemptReceiptDigest: e.AttemptReceiptDigest, ProviderCallAttempted: attemptedNow && e.ProviderCallAttempted, RealExternalCallExecuted: attemptedNow && e.RealExternalCallExecuted, ManualReconcileRequired: e.State == eer.StateOutcomeUnknown}
 }
 func validProjection(p eer.Projection) bool {
 	return p.ID != "" && string(p.Owner) == ownerWeCom && string(p.Kind) == kindProfile && p.Generation > 0 && !p.UpdatedAt.IsZero()

@@ -170,7 +170,7 @@ func TestProfileQueueReplayAndUnknownReconcile(t *testing.T) {
 		t.Fatalf("unknown=%+v calls=%d err=%v", one, writer.calls, err)
 	}
 	two, err := service.Execute(context.Background(), first.EffectID, digest("worker", "1"), writer)
-	if err != nil || !two.ProviderCallAttempted || writer.calls != 1 || runtime.claims != 1 {
+	if err != nil || two.ProviderCallAttempted || two.RealExternalCallExecuted || writer.calls != 1 || runtime.claims != 1 {
 		t.Fatalf("replay=%+v calls=%d claims=%d err=%v", two, writer.calls, runtime.claims, err)
 	}
 	reconciled, err := service.Reconcile(context.Background(), ReconcileCommand{EffectID: first.EffectID, Actor: 7, IdempotencyKey: "wecom-profile-reconcile-0001", Generation: store.item.Generation, Fence: store.item.Fence, LeaseExpiresAt: store.item.LeaseExpiresAt, EvidenceDigest: digest("evidence", "1"), Resolution: ResolutionProviderApplied})
