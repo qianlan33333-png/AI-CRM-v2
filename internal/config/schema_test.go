@@ -587,6 +587,23 @@ func TestLoadGroupOpsWebhookSecretIsOptionalStrictAndRedacted(t *testing.T) {
 	}
 }
 
+func TestLoadAIAudienceWebhookSecretIsOptionalStrictAndRedacted(t *testing.T) {
+	values := map[string]string{databaseURLEnv: "postgres://db/aicrm", apiListenAddressEnv: "127.0.0.1:8080", apiPoolMaxConnsEnv: "1", identityHMACKeyEnv: strings.Repeat("A", 43)}
+	root, err := load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil || root.AIAudience.WebhookSecret.Configured() {
+		t.Fatalf("absent secret root=%#v err=%v", root, err)
+	}
+	values[aiAudienceWebhookSecretEnv] = base64.RawURLEncoding.EncodeToString([]byte("01234567890123456789012345678901"))
+	root, err = load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil || !root.AIAudience.WebhookSecret.Configured() || strings.Contains(fmt.Sprintf("%#v", root), values[aiAudienceWebhookSecretEnv]) {
+		t.Fatalf("configured secret root=%#v err=%v", root, err)
+	}
+	values[aiAudienceWebhookSecretEnv] = "bad-ai-audience-webhook-secret"
+	if _, err = load(appruntime.RoleAPI, mapLookup(values)); !errors.Is(err, ErrInvalid) || strings.Contains(err.Error(), values[aiAudienceWebhookSecretEnv]) {
+		t.Fatalf("invalid secret err=%v", err)
+	}
+}
+
 func TestLoadWeChatPayProviderIsExplicitAndRedacted(t *testing.T) {
 	values := map[string]string{
 		databaseURLEnv:                  "postgres://db/aicrm",
