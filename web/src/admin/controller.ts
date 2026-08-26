@@ -11,9 +11,10 @@
  */
 import { PageBase, type StyleObj, type Vals } from '../shared/ui/runtime';
 import type { AdminApi } from '../shared/api/client';
-import type { AdminDb, AudienceSender, OwnerReassignmentPreview, QuestionnaireOps, Tone } from '../shared/api/types';
+import type { AdminDb, AudienceSender, Channel, ChannelEntrant, OwnerReassignmentPreview, QuestionnaireOps, Tone } from '../shared/api/types';
 import { deepCopy } from '../shared/api/mockData';
 import { emptyAdminDb } from '../api/admin';
+import { buildChannelFinalUrl } from '../api/admin';
 import type { AdminReadContext, ChannelWriteInput, CouponWriteInput, CustomerListQuery, GroupOpsWriteInput, QuestionnaireWriteInput } from '../api/admin';
 import { toast, confirmBox, busy } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
@@ -74,6 +75,12 @@ type AdminState = {
   customerPage: number;
   customerLoading: boolean;
   customerError: string;
+  channelFormNotFound: boolean;
+  channelDrawerOpen: boolean;
+  channelDrawerLoading: boolean;
+  channelDrawerError: string;
+  channelDrawerChannel: Channel | null;
+  channelDrawerEntrants: ChannelEntrant[];
 };
 
 /** 全部屏幕键（go 跳转表） */
@@ -135,6 +142,12 @@ export class AdminController extends PageBase {
     customerPage: 0,
     customerLoading: false,
     customerError: '',
+    channelFormNotFound: false,
+    channelDrawerOpen: false,
+    channelDrawerLoading: false,
+    channelDrawerError: '',
+    channelDrawerChannel: null,
+    channelDrawerEntrants: [],
   };
 
   db: AdminDb = emptyAdminDb();
@@ -162,6 +175,7 @@ export class AdminController extends PageBase {
       context.customerList = parsed.query;
     }
     this.db = await this.api.loadDb(context);
+    if (this.page === 'channelForm') this.state.channelFormNotFound = Boolean(resourceId && this.db.rows.channels.length === 0);
     if (this.page === 'customers') {
       this.state.customerPage = 0;
       this.state.customerCursors = [];
@@ -508,6 +522,82 @@ export class AdminController extends PageBase {
 
   private pick(opts: PickerOpts): Promise<PickerItem[] | null> {
     return openPicker(this.api, opts);
+  }
+
+  private channelCopyValue(channel: Channel | null | undefined): string {
+    return [channel?.copyText, channel?.shareUrl, channel?.finalUrl, channel?.linkUrl, channel?.qrUrl].find((value) => Boolean(value?.trim()))?.trim() || '';
+  }
+
+  private channelShareValue(channel: Channel | null | undefined): string {
+    return [channel?.shareUrl, channel?.finalUrl, channel?.linkUrl, channel?.copyText, channel?.qrUrl].find((value) => Boolean(value?.trim()))?.trim() || '';
+  }
+
+  private copyChannelLink(channel: Channel | null | undefined): void {
+    const value = this.channelCopyValue(channel);
+    if (!value) return toast('当前渠道没有可复制链接', true);
+    copyText(value, (message, error) => toast(message, error));
+  }
+
+  private shareChannelLink(channel: Channel | null | undefined): void {
+    const value = this.channelShareValue(channel);
+    if (!value) return toast('当前渠道没有可分享链接', true);
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      void navigator.share({ title: channel?.name || '企微获客助手链接', url: value }).catch(() => this.copyChannelLink(channel));
+      return;
+    }
+    this.copyChannelLink(channel);
+  }
+
+  private openChannelDrawer(channelId: number | undefined): void {
+    if (!channelId || !Number.isSafeInteger(channelId) || channelId < 1) return toast('渠道缺少有效服务端 ID', true);
+    this.setState({ channelDrawerOpen: true, channelDrawerLoading: true, channelDrawerError: '', channelDrawerChannel: null, channelDrawerEntrants: [] });
+    void (async () => {
+      let channel: Channel;
+      try {
+        channel = await this.api.getChannel(channelId);
+      } catch (error) {
+        this.setState({ channelDrawerLoading: false, channelDrawerError: error instanceof Error ? error.message : '渠道详情读取失败' });
+        return;
+      }
+      try {
+        const entrants = await this.api.listChannelEntrants(channelId);
+        this.setState({ channelDrawerLoading: false, channelDrawerChannel: channel, channelDrawerEntrants: entrants, channelDrawerError: '' });
+      } catch {
+        this.setState({ channelDrawerLoading: false, channelDrawerChannel: channel, channelDrawerEntrants: [], channelDrawerError: '近期进入用户读取失败，当前显示空列表' });
+      }
+    })();
+  }
+
+  private closeChannelDrawer(): void {
+    this.setState({ channelDrawerOpen: false, channelDrawerLoading: false, channelDrawerError: '', channelDrawerChannel: null, channelDrawerEntrants: [] });
+  }
+
+  private channelFormValue(id: string): string {
+    return (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value.trim() || '';
+  }
+
+  private currentChannelFinalUrl(): string {
+    if (this.channelFormValue('channelCarrier') !== 'link') return '';
+    return buildChannelFinalUrl(this.channelFormValue('channelLinkUrl'), this.channelFormValue('channelCustomerChannel'));
+  }
+
+  private refreshChannelFinalUrlPreview(): void {
+    const carrierType = this.channelFormValue('channelCarrier');
+    const node = document.getElementById('channelFinalUrlPreview');
+    const finalUrl = this.currentChannelFinalUrl();
+    if (node) node.textContent = finalUrl || (carrierType === 'link' ? '填写链接 URL 后生成本地预览' : '二维码载体不生成本地链接预览');
+    const input = document.getElementById('channelFinalUrl') as HTMLInputElement | null;
+    if (input) input.value = finalUrl;
+  }
+
+  private copyChannelFormLink(): void {
+    const value = this.channelFormValue('channelFinalUrl') || this.currentChannelFinalUrl() || this.channelFormValue('channelLinkUrl') || this.channelFormValue('channelQrUrl');
+    this.copyChannelLink(value ? { name: this.channelFormValue('channelName'), finalUrl: value, linkUrl: value, copyText: value } as Channel : null);
+  }
+
+  private shareChannelFormLink(): void {
+    const value = this.channelFormValue('channelFinalUrl') || this.currentChannelFinalUrl() || this.channelFormValue('channelLinkUrl') || this.channelFormValue('channelQrUrl');
+    this.shareChannelLink(value ? { name: this.channelFormValue('channelName'), finalUrl: value, linkUrl: value, copyText: value } as Channel : null);
   }
 
   private channelName(code: string): string {
@@ -941,20 +1031,27 @@ export class AdminController extends PageBase {
     let assignmentConfig: Record<string, unknown>;
     try { assignmentConfig = JSON.parse(value('channelAssignmentConfig') || '{}') as Record<string, unknown>; }
     catch { return toast('客服分配配置不是有效 JSON', true); }
+    const carrierType = value('channelCarrier') === 'link' ? 'link' : 'qrcode';
+    const linkUrl = value('channelLinkUrl');
+    const customerChannel = value('channelCustomerChannel');
+    if (carrierType === 'link' && !linkUrl) return toast('链接载体必须填写链接 URL', true);
     const input: ChannelWriteInput = {
       id: Number(this.qs().get('id') || '') || undefined,
       channel_type: value('channelType') === 'wecom_customer_acquisition' ? 'wecom_customer_acquisition' : 'qrcode',
-      carrier_type: value('channelCarrier') === 'link' ? 'link' : 'qrcode',
+      carrier_type: carrierType,
       channel_name: value('channelName'), channel_code: value('channelCode'), scene_value: value('channelScene'), qr_url: value('channelQrUrl'),
       status: ['active', 'archived'].includes(value('channelStatus')) ? value('channelStatus') as 'active' | 'archived' : 'inactive',
-      owner_staff_id: value('channelOwner'), customer_channel: value('channelCustomerChannel'), link_url: value('channelLinkUrl'), final_url: value('channelFinalUrl'),
+      owner_staff_id: value('channelOwner'), customer_channel: customerChannel, link_url: linkUrl, final_url: carrierType === 'link' ? buildChannelFinalUrl(linkUrl, customerChannel) : value('channelFinalUrl'),
       welcome_message: value('channelWelcome'), welcome_image_library_ids: ids('channelImageIds'), welcome_miniprogram_library_ids: ids('channelMiniIds'), welcome_attachment_library_ids: ids('channelAttachmentIds'), welcome_group_invite_library_ids: ids('channelGroupInviteIds'),
       auto_accept_friend: checked('channelAutoAccept'), entry_tag_id: value('channelTagId'), entry_tag_name: value('channelTagName'), entry_tag_group_name: value('channelTagGroup'),
       assignment_mode: value('channelAssignmentMode') === 'multi_staff' ? 'multi_staff' : 'single_owner', assignment_strategy: value('channelAssignmentStrategy') === 'cap_switch' ? 'cap_switch' : 'ratio', overflow_policy: value('channelOverflow'), assignment_config_json: assignmentConfig,
     };
     if (!input.channel_name || !input.channel_code) return toast('渠道名称和编码不能为空', true);
     if ([...(input.welcome_image_library_ids || []), ...(input.welcome_miniprogram_library_ids || []), ...(input.welcome_attachment_library_ids || []), ...(input.welcome_group_invite_library_ids || [])].some((id) => !Number.isInteger(id) || id < 1)) return toast('素材引用必须是正整数 ID', true);
-    void this.api.saveChannel(input).then(() => { toast('渠道配置已保存（本地事实，不代表企微执行）'); this.goto('channels'); }).catch((error) => toast(error instanceof Error ? error.message : '渠道保存失败', true));
+    void this.api.saveChannel(input).then(() => {
+      toast('渠道配置已保存（本地事实，不代表企微执行）');
+      this.goto('channels');
+    }).catch((error) => toast(error instanceof Error ? error.message : '渠道保存失败', true));
   }
 
   private saveGroupOpsForm(): void {
@@ -1379,7 +1476,8 @@ export class AdminController extends PageBase {
     const serviceFormValue = this.qs().get('id') ? rows.spProducts[0] : undefined;
     const couponFormValue = this.qs().get('id') ? rows.coupons[0] : undefined;
     const questionnaireFormValue = this.page === 'questionnaireDetail' ? rows.questionnaires[0] : undefined;
-    const channelFormValue = this.page === 'channelForm' ? rows.channels[0] : undefined;
+    const channelFormValue = this.page === 'channelForm' && Boolean(this.qs().get('id')) ? rows.channels[0] : undefined;
+    const channelFinalUrlPreview = channelFormValue?.carrierType === 'link' ? buildChannelFinalUrl(channelFormValue.linkUrl || '', channelFormValue.customerChannel || '') : '';
     const dateInput = (value?: string | null): string => value ? value.slice(0, 16) : '';
 
     /* ================= 配置中心 ================= */
@@ -1550,10 +1648,34 @@ export class AdminController extends PageBase {
         create: () => this.goto('questionnaireDetail'),
         blockedTemplate: () => this.blocked('当前 OpenAPI 没有独立的测评问卷模板资源；可在问卷 JSON 中配置 assessment 字段'),
       },
+      channelDrawer: {
+        open: s.channelDrawerOpen,
+        loading: s.channelDrawerLoading,
+        error: s.channelDrawerError,
+        ready: Boolean(s.channelDrawerChannel),
+        channel: s.channelDrawerChannel ? {
+          ...s.channelDrawerChannel,
+          link: this.channelShareValue(s.channelDrawerChannel),
+          statusLabel: ({ active: '启用', inactive: '停用', archived: '归档' } as Record<string, string>)[s.channelDrawerChannel.status] || s.channelDrawerChannel.status,
+          copy: () => this.copyChannelLink(s.channelDrawerChannel),
+          share: () => this.shareChannelLink(s.channelDrawerChannel),
+        } : { name: '', code: '', statusLabel: '', link: '', copy: () => undefined, share: () => undefined },
+        entrants: s.channelDrawerEntrants.map((item) => ({ ...item, lastInteract: item.lastInteractAt || '—' })),
+        entrantsEmpty: s.channelDrawerEntrants.length === 0,
+        close: () => this.closeChannelDrawer(),
+        stop: (event: Event) => event.stopPropagation(),
+      },
       channelFormPage: {
-        title: channelFormValue ? '编辑渠道' : '创建渠道',
+        title: s.channelFormNotFound ? '渠道不存在' : channelFormValue ? '编辑渠道' : '创建渠道',
+        notFound: s.channelFormNotFound,
+        exists: !s.channelFormNotFound,
+        finalUrlPreview: channelFormValue?.carrierType === 'link' ? channelFinalUrlPreview || '填写链接 URL 后生成本地预览' : '二维码载体不生成本地链接预览',
+        copyLink: () => this.copyChannelFormLink(),
+        shareLink: () => this.shareChannelFormLink(),
+        preview: () => this.refreshChannelFinalUrlPreview(),
         item: channelFormValue ? {
           ...channelFormValue,
+          finalUrl: channelFinalUrlPreview || channelFormValue.finalUrl || '',
           imageIds: (channelFormValue.welcomeImageLibraryIds || []).join(', '), miniIds: (channelFormValue.welcomeMiniprogramLibraryIds || []).join(', '), attachmentIds: (channelFormValue.welcomeAttachmentLibraryIds || []).join(', '), groupInviteIds: (channelFormValue.welcomeGroupInviteLibraryIds || []).join(', '), assignmentConfigJson: JSON.stringify(channelFormValue.assignmentConfig || {}, null, 2),
           qrcodeType: channelFormValue.channelType !== 'wecom_customer_acquisition', acquisitionType: channelFormValue.channelType === 'wecom_customer_acquisition', qrcodeCarrier: channelFormValue.carrierType !== 'link', linkCarrier: channelFormValue.carrierType === 'link',
           statusActive: channelFormValue.status === 'active', statusInactive: channelFormValue.status === 'inactive', statusArchived: channelFormValue.status === 'archived', singleOwner: channelFormValue.assignmentMode !== 'multi_staff', multiStaff: channelFormValue.assignmentMode === 'multi_staff', ratio: channelFormValue.assignmentStrategy !== 'cap_switch', capSwitch: channelFormValue.assignmentStrategy === 'cap_switch', autoAcceptOff: !channelFormValue.autoAcceptFriend,
@@ -2000,6 +2122,7 @@ export class AdminController extends PageBase {
         chStats: rows.chStats,
         channels: rows.channels.map((r) => ({
           ...r,
+          view: () => this.openChannelDrawer(r.resourceId),
           edit: () => this.goto('channelForm', r.resourceId == null ? '' : '?id=' + r.resourceId),
           cs: mk(r.tone), tcs: mk(r.tagTone), typeCs: mk('blue'), matCs: mk('gray'), welCs: mk('ok'),
         })),

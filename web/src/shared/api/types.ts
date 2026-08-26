@@ -554,6 +554,16 @@ export interface Channel {
   assignmentStrategy?: 'ratio' | 'cap_switch';
   overflowPolicy?: string;
   assignmentConfig?: Record<string, unknown>;
+  /** 仅由已保存的本地渠道详情提供，复制/分享不触发外部写入。 */
+  shareUrl?: string;
+  copyText?: string;
+}
+
+export interface ChannelEntrant {
+  customerId: number;
+  displayName: string;
+  addedAt: string;
+  lastInteractAt: string | null;
 }
 
 /** 企微员工目录条目（通用选择器 · 选客服人员） */

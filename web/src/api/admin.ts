@@ -22,7 +22,7 @@ import { createLegacyChannel, updateLegacyChannel, type LegacyChannelWriteReques
 import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, updateAIAudiencePackage, type AIAudiencePackageSender, type SegmentDefinition } from './generated/health';
 import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
-import type { AdminDb, AttachItem, Channel, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
+import type { AdminDb, AttachItem, Channel, ChannelEntrant, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
 import { ApiError, apiRequestOptions, request, unwrapGenerated } from './transport';
 
 type Obj = Record<string, unknown>;
@@ -96,7 +96,44 @@ export function customerSurveyPageDto(value: unknown, expectedCustomerId: number
   return { items, scanTruncated: source.scan_truncated === true, resultTruncated: source.result_truncated === true, nonAtomicSnapshot: source.non_atomic_snapshot === true };
 }
 export function questionnairePageDto(questionnaire: LegacyQuestionnaire): Questionnaire { return { resourceId: questionnaire.id, publicPath: questionnaire.public_path, name: questionnaire.title, assess: questionnaire.assessment_enabled, off: questionnaire.is_disabled, action: questionnaire.status, created: questionnaire.created_at, count: String(questionnaire.submission_count), internalName: questionnaire.name, title: questionnaire.title, description: questionnaire.description, answerDisplayMode: questionnaire.answer_display_mode, assessmentEnabled: questionnaire.assessment_enabled, assessmentConfig: questionnaire.assessment_config, slug: questionnaire.slug, questions: questionnaire.questions, scoreRules: questionnaire.score_rules, version: questionnaire.version }; }
-export function channelPageDto(channel: LegacyChannelListItem | LegacyChannel): Channel { const x = obj(channel); return { resourceId: Number(x.id), name: text(x.channel_name), code: text(x.channel_code), type: text(x.channel_type, 'qrcode'), status: text(x.status), tone: toneFor(x.status), mat: list(x, 'welcome_image_library_ids', 'welcome_attachment_library_ids').join('、') || '—', tag: text(x.entry_tag_name, '—'), tagTone: 'gray', users: text(x.channel_contact_count, '0'), qr: text(x.qr_download_url, '后端未返回二维码地址'), channelType: x.channel_type === 'wecom_customer_acquisition' ? 'wecom_customer_acquisition' : 'qrcode', carrierType: x.carrier_type === 'link' ? 'link' : 'qrcode', sceneValue: text(x.scene_value, ''), qrUrl: text(x.qr_url, ''), ownerStaffId: text(x.owner_staff_id, ''), customerChannel: text(x.customer_channel, ''), linkUrl: text(x.link_url, ''), finalUrl: text(x.final_url, ''), welcomeMessage: text(x.welcome_message, ''), welcomeImageLibraryIds: list(x, 'welcome_image_library_ids').map(Number), welcomeMiniprogramLibraryIds: list(x, 'welcome_miniprogram_library_ids').map(Number), welcomeAttachmentLibraryIds: list(x, 'welcome_attachment_library_ids').map(Number), welcomeGroupInviteLibraryIds: list(x, 'welcome_group_invite_library_ids').map(Number), autoAcceptFriend: x.auto_accept_friend === true, entryTagId: text(x.entry_tag_id, ''), entryTagName: text(x.entry_tag_name, ''), entryTagGroupName: text(x.entry_tag_group_name, ''), assignmentMode: x.assignment_mode === 'multi_staff' ? 'multi_staff' : 'single_owner', assignmentStrategy: x.assignment_strategy === 'cap_switch' ? 'cap_switch' : 'ratio', overflowPolicy: text(x.overflow_policy, ''), assignmentConfig: obj(x.assignment_config_json) }; }
+export function channelPageDto(channel: LegacyChannelListItem | LegacyChannel): Channel {
+  const x = obj(channel);
+  return {
+    resourceId: Number(x.id), name: text(x.channel_name), code: text(x.channel_code), type: text(x.channel_type, 'qrcode'), status: text(x.status), tone: toneFor(x.status),
+    mat: list(x, 'welcome_image_library_ids', 'welcome_attachment_library_ids').join('、') || '—', tag: text(x.entry_tag_name, '—'), tagTone: 'gray', users: text(x.channel_contact_count, '0'), qr: text(x.qr_download_url, '后端未返回二维码地址'),
+    channelType: x.channel_type === 'wecom_customer_acquisition' ? 'wecom_customer_acquisition' : 'qrcode', carrierType: x.carrier_type === 'link' ? 'link' : 'qrcode', sceneValue: text(x.scene_value, ''), qrUrl: text(x.qr_url, ''), ownerStaffId: text(x.owner_staff_id, ''), customerChannel: text(x.customer_channel, ''), linkUrl: text(x.link_url, ''), finalUrl: text(x.final_url, ''), shareUrl: text(x.share_url, ''), copyText: text(x.copy_text, ''),
+    welcomeMessage: text(x.welcome_message, ''), welcomeImageLibraryIds: list(x, 'welcome_image_library_ids').map(Number), welcomeMiniprogramLibraryIds: list(x, 'welcome_miniprogram_library_ids').map(Number), welcomeAttachmentLibraryIds: list(x, 'welcome_attachment_library_ids').map(Number), welcomeGroupInviteLibraryIds: list(x, 'welcome_group_invite_library_ids').map(Number),
+    autoAcceptFriend: x.auto_accept_friend === true, entryTagId: text(x.entry_tag_id, ''), entryTagName: text(x.entry_tag_name, ''), entryTagGroupName: text(x.entry_tag_group_name, ''), assignmentMode: x.assignment_mode === 'multi_staff' ? 'multi_staff' : 'single_owner', assignmentStrategy: x.assignment_strategy === 'cap_switch' ? 'cap_switch' : 'ratio', overflowPolicy: text(x.overflow_policy, ''), assignmentConfig: obj(x.assignment_config_json),
+  };
+}
+
+export function channelEntrantDto(value: unknown): ChannelEntrant {
+  const x = obj(value);
+  return { customerId: Number(x.customer_id), displayName: text(x.display_name), addedAt: text(x.added_at, ''), lastInteractAt: x.last_interact_at == null ? null : String(x.last_interact_at) };
+}
+
+export async function getChannelDto(channelId: number): Promise<Channel> {
+  const result = obj(await call(getLegacyChannel(channelId, apiRequestOptions())));
+  return channelPageDto((result.channel || result) as LegacyChannel);
+}
+
+export async function listChannelEntrantsDto(channelId: number): Promise<ChannelEntrant[]> {
+  const result = await call(listLegacyChannelEntrants(channelId, { limit: 20 }, apiRequestOptions()));
+  return list(result, 'items', 'entrants').map(channelEntrantDto);
+}
+
+export function buildChannelFinalUrl(linkUrl: string, customerChannel: string): string {
+  const link = linkUrl.trim();
+  const channel = customerChannel.trim();
+  if (!link || !channel) return link;
+  try {
+    const url = new URL(link, typeof window === 'undefined' ? 'http://localhost' : window.location.origin);
+    url.searchParams.set('customer_channel', channel);
+    return url.toString();
+  } catch {
+    return link + (link.includes('?') ? '&' : '?') + 'customer_channel=' + encodeURIComponent(channel);
+  }
+}
 export const orderPageDto = (value: unknown): Order => { const x = obj(value); return { time: text(x.created_at), no: text(x.merchant_order_no, text(x.order_no)), plat: text(x.provider_label, text(x.provider)), payer: text(x.payer_name), uid: text(x.payer_id), product: text(x.product_name), amount: text(x.amount), status: text(x.status_label, text(x.status)), tone: toneFor(x.status), pay: text(x.currency) }; };
 export const productPageDto = (value: unknown): Product => { const source = obj(value); const x = obj(source.product || value); const lifecycle = text(x.lifecycle, text(x.status, x.enabled === true ? 'enabled' : x.enabled === false ? 'disabled' : '未投影')); return { resourceId: Number(x.id), code: text(x.product_code), name: text(x.name), price: (Number(x.price_minor || 0) / 100).toFixed(2), description: text(x.description, ''), currency: text(x.currency, 'CNY'), stockQuantity: Number(x.stock_quantity || 0), version: Number(x.version || 0), lifecycle, status: lifecycle, tone: toneFor(lifecycle), sold: text(x.sold_count, '0'), updated: text(x.updated_at) }; };
 export const serviceProductPageDto = (value: unknown): SpProduct => { const source = obj(value); const x = obj(source.product || value); const lifecycle = text(x.lifecycle, text(x.status, x.enabled === true ? 'enabled' : x.enabled === false ? 'disabled' : '未投影')); return { resourceId: Number(x.service_product_id || x.id), code: text(x.product_code), name: text(x.name), price: (Number(x.price_minor || 0) / 100).toFixed(2), description: text(x.description, ''), currency: text(x.currency, 'CNY'), stockQuantity: Number(x.stock_quantity || 0), version: Number(x.version || 0), lifecycle, status: lifecycle, tone: toneFor(lifecycle), sold: text(x.member_count, '0'), updated: text(x.updated_at) }; };
@@ -226,7 +263,7 @@ export async function setQuestionnaireEnabledDto(questionnaireId: number, enable
 export async function duplicateQuestionnaireDto(questionnaireId: number): Promise<Questionnaire> { const result = obj(await call(duplicateLegacyQuestionnaire(questionnaireId, undefined, apiRequestOptions()))); const id = Number(result.questionnaire_id || obj(result.questionnaire).id); if (!id) throw new Error('后端未返回复制后的问卷 ID'); const detail = obj(await call(getLegacyQuestionnaire(id, apiRequestOptions()))); return questionnairePageDto((detail.questionnaire || obj(detail.data).questionnaire) as LegacyQuestionnaire); }
 export async function deleteQuestionnaireDto(questionnaireId: number): Promise<void> { await call(deleteLegacyQuestionnaire(questionnaireId, apiRequestOptions())); }
 export type ChannelWriteInput = LegacyChannelWriteRequest & { id?: number };
-export async function saveChannelDto(input: ChannelWriteInput): Promise<Channel> { const { id, ...payload } = input; const result = obj(await call(id == null ? createLegacyChannel(payload, apiRequestOptions()) : updateLegacyChannel(id, payload, apiRequestOptions()) as ReturnType<typeof createLegacyChannel>)); return channelPageDto(result.channel as LegacyChannel); }
+export async function saveChannelDto(input: ChannelWriteInput): Promise<Channel> { const { id, ...payload } = input; const options = apiRequestOptions({ headers: { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() || `web-channel-${Date.now()}` } }); const result = obj(await call(id == null ? createLegacyChannel(payload, options) : updateLegacyChannel(id, payload, options) as ReturnType<typeof createLegacyChannel>)); return channelPageDto(result.channel as LegacyChannel); }
 export async function saveRadarLinkDto(input: RadarLinkInput): Promise<AdminDb['radarLinks'][number]> {
   if (!/^https:\/\//.test(input.original_url)) throw new Error('Radar 目标地址必须是 HTTPS');
   const mediaId = input.target_type === 'link' ? undefined : Number(input.media_item_id);
@@ -424,7 +461,18 @@ export async function readAdminPage(context: AdminReadContext = {}): Promise<Adm
   }
   if (!id) return db;
   if (context.page === 'questionnaireDetail' || context.page === 'questionnaireOps') { const [detail, results, submissions, analysis, operations, pageData, logs] = await Promise.all([call(getLegacyQuestionnaire(numeric, opt)), call(getLegacyQuestionnaireResults(numeric, opt)), call(listLegacyQuestionnaireSubmissions(numeric, undefined, opt)), call(getSurveySafeSubmissionAnalysis(numeric, undefined, opt)), call(getSurveyOperations(numeric, opt)), call(getSurveyOperationsPageData(numeric, opt)), call(listSurveyQuestionnaireExternalPushLogs(numeric, undefined, opt))]); const q = obj(detail).questionnaire || detail; db.rows.questionnaires = [questionnairePageDto(q as LegacyQuestionnaire)]; db.qOps[numeric] = questionnaireOpsPageDto(operations); db.rows.qSubs = list(submissions, 'items', 'submissions').map((x) => ({ time: text(obj(x).submitted_at), uid: text(obj(x).customer_id), by: text(obj(x).customer_name), score: text(obj(x).score), tags: list(obj(x).tags).map(String) })); db.rows.qApply = list(logs, 'items', 'logs').map((x) => ({ time: text(obj(x).created_at), sid: text(obj(x).submission_id), uid: text(obj(x).external_userid), status: text(obj(x).status), tone: toneFor(obj(x).status), err: text(obj(x).error, '') })); void results; void analysis; void pageData; }
-  if (context.page === 'channelForm') { const [detail, entrants] = await Promise.all([call(getLegacyChannel(numeric, opt)), call(listLegacyChannelEntrants(numeric, undefined, opt))]); db.rows.channels = [channelPageDto((obj(detail).channel || detail) as LegacyChannelListItem)]; db.rows.chStats = list(entrants, 'items', 'entrants').map((x) => ({ label: text(obj(x).label), value: text(obj(x).value), unit: text(obj(x).unit, '') })); }
+  if (context.page === 'channelForm') {
+    try {
+      const detail = await call(getLegacyChannel(numeric, opt));
+      db.rows.channels = [channelPageDto((obj(detail).channel || detail) as LegacyChannel)];
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        db.rows.channels = [];
+        return db;
+      }
+      throw error;
+    }
+  }
   if (context.page === 'orderDetail') { const [detail, items, refunds, effects] = await Promise.all([call(getLegacyOrder(id, undefined, opt)), call(getLegacyOrderItems(id, undefined, opt)), call(listLegacyRefunds(undefined, opt)), call(listLegacyWechatOrderExternalEffects(id, opt))]); db.rows.orders = [orderPageDto(obj(detail).order || detail)]; db.rows.orderKv = Object.entries(obj(detail)).map(([k, v]) => ({ k, v: text(v), mono: false })); db.rows.orderEvents = [...list(items, 'items').map((x) => ({ time: text(obj(x).created_at), ev: text(obj(x).name), st: text(obj(x).status), tone: toneFor(obj(x).status) })), ...list(refunds, 'items', 'refunds').map((x) => ({ time: text(obj(x).created_at), ev: '退款 ' + text(obj(x).refund_no), st: text(obj(x).status), tone: toneFor(obj(x).status) })), ...list(effects, 'items', 'effects').map((x) => ({ time: text(obj(x).created_at), ev: '外推回执', st: text(obj(x).status), tone: toneFor(obj(x).status) }))]; }
   if (context.page === 'productForm') { const [detail, entitlements] = await Promise.all([call(getProduct(numeric, opt)), call(listProductLocalEntitlements(numeric, undefined, opt))]); db.rows.products = [productPageDto(detail)]; db.rows.orderKv = list(entitlements, 'items').map((x) => ({ k: text(obj(x).name), v: text(obj(x).status), mono: false })); }
   if (context.page === 'spProductForm' || context.page === 'spProductData') { const [detail, members, access, schema, views, share] = await Promise.all([call(getServicePeriodProduct(numeric, opt)), call(listServicePeriodMembers(numeric, undefined, opt)), call(getServicePeriodMemberGridAccess(numeric, opt)), call(getServicePeriodMemberGridSchema(numeric, opt)), call(listServicePeriodMemberViews(numeric, opt)), call(getServicePeriodMemberGridShareSettings(numeric, opt))]); db.rows.spProducts = [serviceProductPageDto(detail)]; db.rows.orderKv = [...list(members, 'items').map((x) => ({ k: text(obj(x).name), v: text(obj(x).status), mono: false })), { k: 'member-grid', v: text(obj(schema).version), mono: false }, { k: 'views', v: String(list(views, 'items').length), mono: false }, { k: 'share', v: text(obj(share).enabled), mono: false }, { k: 'access', v: text(obj(access).role), mono: false }]; }

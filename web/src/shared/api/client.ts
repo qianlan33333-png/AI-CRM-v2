@@ -14,6 +14,7 @@ import type {
   AudienceSender,
   AttachItem,
   Channel,
+  ChannelEntrant,
   ConfigCategory,
   Coupon,
   Customer,
@@ -39,7 +40,7 @@ import { SEED_DB, deepCopy } from './mockData';
 import { deleteProductDto } from '../../api/admin';
 import { archiveCouponDto, copyCouponDto, deleteCouponDto, saveCouponDto, setCouponPublishedDto, type CouponWriteInput } from '../../api/admin';
 import { deleteQuestionnaireDto, duplicateQuestionnaireDto, queueQuestionnairePushTestDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, setQuestionnaireEnabledDto, type QuestionnaireWriteInput } from '../../api/admin';
-import { saveChannelDto, type ChannelWriteInput } from '../../api/admin';
+import { getChannelDto, listChannelEntrantsDto, saveChannelDto, type ChannelWriteInput } from '../../api/admin';
 import { materializeAudienceConfigurationDto, previewAudienceConfigurationDto, replaceAudienceSendersDto, saveAudiencePackageDto, setAudienceBindingDto, snapshotAudienceConfigurationDto, type AudienceEvaluation, type AudiencePackageWriteInput } from '../../api/admin';
 import type { AIAudiencePackageSender } from '../../api/generated/health';
 import { deleteGroupOpsPlanDto, saveGroupOpsPlanDto, transitionGroupOpsPlanDto, type GroupOpsWriteInput } from '../../api/admin';
@@ -57,6 +58,8 @@ export interface AdminApi {
   updateCustomer(id: number, input: { name?: string; stageId?: number | null }): Promise<Customer>;
   setCustomerTag(customerId: number, tagId: number, applied: boolean): Promise<void>;
   saveChannel(input: ChannelWriteInput): Promise<Channel>;
+  getChannel(channelId: number): Promise<Channel>;
+  listChannelEntrants(channelId: number): Promise<ChannelEntrant[]>;
   createRefundIntent(input: RefundIntentInput): Promise<RefundIntentResult>;
   saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]>;
   reorderHxcSenders(ids: string[]): Promise<void>;
@@ -285,6 +288,12 @@ export class MockApi implements AdminApi {
     if (!this.db.customerDetail) this.db.customerDetail = { status: 'not_found', context: null, survey: null, error: '' };
     if (context?.page === 'customers') return delay(this.readCustomerList(context.customerList), 120);
     if (context?.page === 'customerDetail') return delay(this.readCustomerDetail(context.id), 120);
+    if (context?.page === 'channelForm' && context.id) {
+      const result = deepCopy(this.db);
+      const id = Number(context.id);
+      result.rows.channels = Number.isSafeInteger(id) && id > 0 ? result.rows.channels.filter((item) => item.resourceId === id) : [];
+      return delay(result, 120);
+    }
     return delay(this.db, 120);
   }
 
@@ -298,6 +307,11 @@ export class MockApi implements AdminApi {
   }
 
   setCustomerTag(_customerId: number, _tagId: number, _applied: boolean): Promise<void> { return delay(undefined); }
+  getChannel(channelId: number): Promise<Channel> {
+    const channel = this.db.rows.channels.find((item) => item.resourceId === channelId);
+    return channel ? delay(deepCopy(channel)) : Promise.reject(new Error('渠道不存在或当前账号不可见'));
+  }
+  listChannelEntrants(_channelId: number): Promise<ChannelEntrant[]> { return delay([]); }
   saveChannel(input: ChannelWriteInput): Promise<Channel> { const item = input.id == null ? { resourceId: Date.now(), name: input.channel_name || '', code: input.channel_code || '', type: input.channel_type || 'qrcode', status: input.status || 'inactive', tone: 'warn' as const, mat: '—', tag: input.entry_tag_name || '—', tagTone: 'gray' as const, users: '0', qr: '' } : this.db.rows.channels.find((row) => row.resourceId === input.id)!; Object.assign(item, { name: input.channel_name, code: input.channel_code, channelType: input.channel_type, carrierType: input.carrier_type, status: input.status, sceneValue: input.scene_value, qrUrl: input.qr_url, ownerStaffId: input.owner_staff_id, customerChannel: input.customer_channel, linkUrl: input.link_url, finalUrl: input.final_url, welcomeMessage: input.welcome_message, welcomeImageLibraryIds: input.welcome_image_library_ids, welcomeMiniprogramLibraryIds: input.welcome_miniprogram_library_ids, welcomeAttachmentLibraryIds: input.welcome_attachment_library_ids, welcomeGroupInviteLibraryIds: input.welcome_group_invite_library_ids, autoAcceptFriend: input.auto_accept_friend, entryTagId: input.entry_tag_id, entryTagName: input.entry_tag_name, entryTagGroupName: input.entry_tag_group_name, assignmentMode: input.assignment_mode, assignmentStrategy: input.assignment_strategy, overflowPolicy: input.overflow_policy, assignmentConfig: input.assignment_config_json }); if (input.id == null) this.db.rows.channels.push(item); this.persist(); return delay(item); }
   createRefundIntent(input: RefundIntentInput): Promise<RefundIntentResult> { if (!input.checked || input.transactionIdConfirmation !== input.orderNo) return Promise.reject(new Error('必须勾选确认并完整输入当前订单号')); return delay({ id: `mock-refund-${input.orderNo}`, state: 'reserved', provider: input.provider, realExternalCallExecuted: false, deliveryProven: false }); }
   saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]> { const item = this.db.rows.agents.find((row) => row.code === input.senderUserid) || { name: input.displayName, code: input.senderUserid, type: 'HXC 本地发送人', material: '', status: '', tone: 'gray' as const }; Object.assign(item, { senderId: input.id, priority: input.priority, isActive: input.active, name: input.displayName || input.senderUserid, material: `优先级 ${input.priority}`, status: input.active ? '启用中' : '已停用', tone: input.active ? 'ok' : 'gray' }); if (!this.db.rows.agents.includes(item)) this.db.rows.agents.push(item); this.persist(); return delay(item); }
@@ -777,6 +791,8 @@ export class HttpApi implements AdminApi {
 
   setCustomerTag(customerId: number, tagId: number, applied: boolean): Promise<void> { return setCustomerTagDto(customerId, tagId, applied); }
   saveChannel(input: ChannelWriteInput): Promise<Channel> { return saveChannelDto(input); }
+  getChannel(channelId: number): Promise<Channel> { return getChannelDto(channelId); }
+  listChannelEntrants(channelId: number): Promise<ChannelEntrant[]> { return listChannelEntrantsDto(channelId); }
   createRefundIntent(input: RefundIntentInput): Promise<RefundIntentResult> { return createRefundIntentDto(input); }
   saveHxcSender(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]> { return saveHxcSenderDto(input); }
   reorderHxcSenders(ids: string[]): Promise<void> { return reorderHxcSendersDto(ids); }

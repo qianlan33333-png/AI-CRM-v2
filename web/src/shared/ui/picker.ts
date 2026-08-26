@@ -371,7 +371,7 @@ export async function openPicker(api: AdminApi, opts: PickerOpts): Promise<Picke
     /* ---------- 头部事件 ---------- */
     (card.querySelector('[data-pk="x"]') as HTMLElement).addEventListener('click', () => finish(null));
     card.querySelector('[data-pk="sync"]')?.addEventListener('click', () =>
-      toast(kind === 'tags' ? '已与企微同步标签库' : '已同步企微通讯录'),
+      toast(kind === 'tags' ? '已排队刷新标签目录；未证明企微同步' : '已排队刷新通讯录目录；未证明企微同步'),
     );
     (card.querySelector('[data-pk="q"]') as HTMLInputElement).addEventListener('input', (e) => {
       q = (e.target as HTMLInputElement).value.trim().toLowerCase();
