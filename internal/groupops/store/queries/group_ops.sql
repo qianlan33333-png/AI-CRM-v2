@@ -168,6 +168,50 @@ SELECT count(*) FROM group_ops_executions WHERE plan_id = sqlc.arg(plan_id);
 -- name: GetGroupOpsExecution :one
 SELECT * FROM group_ops_executions WHERE id = sqlc.arg(execution_id) FOR UPDATE;
 
+-- name: GetGroupOpsExecutionByExternalEffectID :one
+SELECT * FROM group_ops_executions
+WHERE external_effect_id = sqlc.arg(external_effect_id)
+FOR UPDATE;
+
+-- name: GetGroupOpsExternalEffect :one
+SELECT id, owner, kind, state, generation, lease_fence, lease_expires_at, attempt_count
+FROM external_effects
+WHERE id = sqlc.arg(external_effect_id);
+
+-- name: GetGroupOpsExternalEffectAttempt :one
+SELECT effect_id, number, generation, fence, completion, receipt_digest, started_at, completed_at
+FROM external_effect_attempts
+WHERE effect_id = sqlc.arg(external_effect_id)
+ORDER BY number DESC
+LIMIT 1;
+
+-- name: GetGroupOpsWeComGroupMessageReceipt :one
+SELECT * FROM group_ops_wecom_group_message_receipts
+WHERE external_effect_id = sqlc.arg(external_effect_id);
+
+-- name: InsertGroupOpsWeComGroupMessageReceipt :one
+INSERT INTO group_ops_wecom_group_message_receipts (
+  external_effect_id, execution_id, msgid, sender_userid, chat_id, userid,
+  task_evidence_digest, created_at, updated_at
+) VALUES (
+  sqlc.arg(external_effect_id), sqlc.arg(execution_id), sqlc.arg(msgid),
+  sqlc.arg(sender_userid), sqlc.arg(chat_id), sqlc.arg(userid),
+  sqlc.arg(task_evidence_digest), sqlc.arg(created_at), sqlc.arg(updated_at)
+)
+ON CONFLICT (external_effect_id) DO NOTHING
+RETURNING *;
+
+-- name: RecordGroupOpsWeComGroupMessageDelivery :one
+UPDATE group_ops_wecom_group_message_receipts
+SET send_status = 1, delivery_evidence_digest = sqlc.arg(delivery_evidence_digest), updated_at = sqlc.arg(updated_at)
+WHERE external_effect_id = sqlc.arg(external_effect_id)
+  AND msgid = sqlc.arg(msgid)
+  AND sender_userid = sqlc.arg(sender_userid)
+  AND chat_id = sqlc.arg(chat_id)
+  AND userid = sqlc.arg(userid)
+  AND task_evidence_digest = sqlc.arg(task_evidence_digest)
+RETURNING *;
+
 -- name: RecordGroupOpsExecutionOutcome :one
 UPDATE group_ops_executions
 SET state = sqlc.arg(state), provider_accepted = sqlc.arg(provider_accepted), delivery_proven = sqlc.arg(delivery_proven),

@@ -75,3 +75,17 @@ type GroupOpsRun struct {
 	AcceptedAt      pgtype.Timestamptz `json:"accepted_at"`
 	AcceptedBy      string             `json:"accepted_by"`
 }
+
+type GroupOpsWecomGroupMessageReceipt struct {
+	ExternalEffectID       int64              `json:"external_effect_id"`
+	ExecutionID            int64              `json:"execution_id"`
+	Msgid                  string             `json:"msgid"`
+	SenderUserid           string             `json:"sender_userid"`
+	ChatID                 string             `json:"chat_id"`
+	Userid                 string             `json:"userid"`
+	SendStatus             pgtype.Int4        `json:"send_status"`
+	TaskEvidenceDigest     string             `json:"task_evidence_digest"`
+	DeliveryEvidenceDigest pgtype.Text        `json:"delivery_evidence_digest"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}

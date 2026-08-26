@@ -179,7 +179,7 @@ func (stub evidenceVerifierStub) VerifyReconciliationEvidence(_ context.Context,
 	if evidence.ExecutionID < 1 || evidence.ExternalEffectID == "" || evidence.EvidenceDigest == "" {
 		return groupopsport.ReconciliationEvidenceResult{}, errors.New("invalid evidence")
 	}
-	return groupopsport.ReconciliationEvidenceResult{DeliveryProven: stub.delivery}, nil
+	return groupopsport.ReconciliationEvidenceResult{DeliveryProven: stub.delivery, EvidenceDigest: evidence.EvidenceDigest}, nil
 }
 
 type runtimeStaffFixture struct{}

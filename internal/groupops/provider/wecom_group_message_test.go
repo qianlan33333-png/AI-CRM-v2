@@ -104,7 +104,7 @@ func TestWeComGroupMessageProviderClassifiesCreateTaskWithoutDeliveryClaim(t *te
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			client := &groupMessageCreatorStub{result: test.created, err: test.err}
-			provider, err := NewWeComGroupMessageProvider(client, "staff-1", groupMessageTargetResolver("chat-1"))
+			provider, err := NewWeComGroupMessageProvider(client, "staff-1", groupMessageTargetResolver("chat-1"), &groupMessageReceiptWriterStub{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -127,17 +127,17 @@ func TestWeComGroupMessageProviderClassifiesCreateTaskWithoutDeliveryClaim(t *te
 }
 
 func TestWeComGroupMessageReconciliationVerifierFailsClosed(t *testing.T) {
-	evidence := GroupMessageEvidence{MessageID: "msg-1", Sender: "staff-1", ChatID: "chat-1"}
-	request := groupopsport.ReconciliationEvidence{ExecutionID: 11, ExternalEffectID: "eer_41", EvidenceDigest: evidence.ReceiptDigest()}
-	verifier, err := NewWeComGroupMessageReconciliationVerifier(&groupMessageQueryStub{results: []GroupMessageSendResultPage{{Items: []GroupMessageSendResult{{ChatID: "chat-1", UserID: "staff-1", Status: 1}}}}}, groupMessageEvidenceSource{evidence: evidence})
+	evidence := GroupMessageEvidence{ExecutionID: 11, ExternalEffectID: "eer_41", MessageID: "msg-1", SenderUserID: "staff-1", UserID: "staff-1", ChatID: "chat-1", TaskEvidenceDigest: groupMessageReceiptDigest("task", "msg-1", "staff-1", "chat-1")}
+	request := groupopsport.ReconciliationEvidence{ExecutionID: 11, ExternalEffectID: "eer_41", EvidenceDigest: evidence.TaskEvidenceDigest}
+	verifier, err := NewWeComGroupMessageReconciliationVerifier(&groupMessageQueryStub{results: []GroupMessageSendResultPage{{Items: []GroupMessageSendResult{{ChatID: "chat-1", UserID: "staff-1", Status: 1}}}}}, &groupMessageEvidenceSource{evidence: evidence})
 	if err != nil {
 		t.Fatal(err)
 	}
 	result, err := verifier.VerifyReconciliationEvidence(context.Background(), request)
-	if err != nil || !result.DeliveryProven {
+	if err != nil || !result.DeliveryProven || result.EvidenceDigest == "" {
 		t.Fatalf("result=%+v err=%v", result, err)
 	}
-	verifier, err = NewWeComGroupMessageReconciliationVerifier(&groupMessageQueryStub{results: []GroupMessageSendResultPage{{Items: []GroupMessageSendResult{{ChatID: "chat-1", UserID: "staff-1", Status: 2}}}}}, groupMessageEvidenceSource{evidence: evidence})
+	verifier, err = NewWeComGroupMessageReconciliationVerifier(&groupMessageQueryStub{results: []GroupMessageSendResultPage{{Items: []GroupMessageSendResult{{ChatID: "chat-1", UserID: "staff-1", Status: 2}}}}}, &groupMessageEvidenceSource{evidence: evidence})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,10 +193,19 @@ func (stub *groupMessageQueryStub) GetGroupMessageSendResult(_ context.Context, 
 	return result, nil
 }
 
-type groupMessageEvidenceSource struct{ evidence GroupMessageEvidence }
+type groupMessageEvidenceSource struct{ evidence GroupMessageEvidence; delivery string }
 
-func (source groupMessageEvidenceSource) FindGroupMessageEvidence(_ context.Context, _ groupopsport.ReconciliationEvidence) (GroupMessageEvidence, bool, error) {
+func (source *groupMessageEvidenceSource) FindGroupMessageReceipt(_ context.Context, _ groupopsport.ReconciliationEvidence) (GroupMessageEvidence, bool, error) {
 	return source.evidence, true, nil
+}
+
+func (source *groupMessageEvidenceSource) RecordGroupMessageDelivery(_ context.Context, _ GroupMessageEvidence, digest string) error { source.delivery = digest; return nil }
+
+type groupMessageReceiptWriterStub struct{ calls int }
+func (stub *groupMessageReceiptWriterStub) RecordGroupMessageTask(_ context.Context, receipt groupopsport.GroupMessageReceipt) error {
+	stub.calls++
+	if receipt.ExecutionID != 11 || receipt.ExternalEffectID != "eer_41" || receipt.MessageID != "msg-1" || receipt.SenderUserID != "staff-1" || receipt.UserID != "staff-1" || receipt.ChatID != "chat-1" { return errors.New("unexpected receipt") }
+	return nil
 }
 
 func groupMessageDispatchRequest() groupopsport.DispatchRequest {

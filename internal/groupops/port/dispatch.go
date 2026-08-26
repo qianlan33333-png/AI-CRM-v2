@@ -59,6 +59,31 @@ type ReconciliationEvidence struct {
 
 type ReconciliationEvidenceResult struct {
 	DeliveryProven bool
+	EvidenceDigest string
+}
+
+// GroupMessageReceipt is owner-only Provider evidence. It is intentionally
+// absent from EER and HTTP contracts; its identifiers are required solely for
+// the independently documented WeCom reconciliation query.
+type GroupMessageReceipt struct {
+	ExecutionID        int64
+	ExternalEffectID   string
+	MessageID          string
+	SenderUserID       string
+	ChatID             string
+	UserID             string
+	TaskEvidenceDigest string
+	DeliveryStatus     *int
+	DeliveryEvidenceDigest string
+}
+
+type GroupMessageReceiptWriter interface {
+	RecordGroupMessageTask(context.Context, GroupMessageReceipt) error
+}
+
+type GroupMessageReceiptReader interface {
+	FindGroupMessageReceipt(context.Context, ReconciliationEvidence) (GroupMessageReceipt, bool, error)
+	RecordGroupMessageDelivery(context.Context, GroupMessageReceipt, string) error
 }
 
 type DispatchOutcome string

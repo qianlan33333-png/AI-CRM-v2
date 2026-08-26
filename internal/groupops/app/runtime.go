@@ -373,22 +373,29 @@ func (service *RuntimeService) ManualReconcile(ctx context.Context, command grou
 			return ErrStateConflict
 		}
 		deliveryProven := false
+		verifiedEvidence := command.EvidenceDigest
 		if service.evidence != nil {
 			verified, verifyErr := service.evidence.VerifyReconciliationEvidence(tx, groupopsport.ReconciliationEvidence{ExecutionID: current.ID, ExternalEffectID: current.ExternalEffectID, EvidenceDigest: command.EvidenceDigest})
 			if verifyErr != nil {
 				return errors.Join(ErrUnavailable, verifyErr)
 			}
 			deliveryProven = verified.DeliveryProven
+			verifiedEvidence = verified.EvidenceDigest
+		}
+		// A documented group-message query can prove only an exact status=1
+		// record. Missing evidence leaves the EER outcome_unknown.
+		if service.evidence != nil && (!deliveryProven || !validRuntimeDigest(verifiedEvidence)) {
+			return ErrStateConflict
 		}
 		projection, _, err := service.effects.Reconcile(tx, eer.ReconcileCommand{
 			Lease:            eer.Lease{EffectID: current.ExternalEffectID, Generation: command.Generation, Fence: command.Fence, ExpiresAt: command.LeaseExpiresAt},
 			ReceiptKeyDigest: runtimeDigest("group-ops-manual-reconcile", strconv.FormatInt(command.ExecutionID, 10), strconv.FormatInt(command.ActorID, 10), command.IdempotencyKey),
-			EvidenceDigest:   eer.Digest(command.EvidenceDigest),
+			EvidenceDigest:   eer.Digest(verifiedEvidence),
 		})
 		if err != nil || projection.ID != current.ExternalEffectID || projection.Owner != eer.OwnerGroupOps || projection.Kind != eer.KindGroupOpsBroadcast || projection.State != eer.StateReconciled {
 			return errors.Join(ErrUnavailable, err)
 		}
-		result, err = service.runtime.ReconcileExecution(tx, command.ExecutionID, command.EvidenceDigest, deliveryProven, service.nowUTC())
+		result, err = service.runtime.ReconcileExecution(tx, command.ExecutionID, verifiedEvidence, deliveryProven, service.nowUTC())
 		if err != nil {
 			return err
 		}

@@ -270,15 +270,24 @@ type WeComGroupMessageProvider struct {
 	client  groupMessageTaskCreator
 	sender  string
 	resolve GroupMessageTargetResolver
+	receipts groupopsport.GroupMessageReceiptWriter
 }
 
 var _ groupopsport.DispatchProvider = (*WeComGroupMessageProvider)(nil)
 
-func NewWeComGroupMessageProvider(client groupMessageTaskCreator, sender string, resolve GroupMessageTargetResolver) (*WeComGroupMessageProvider, error) {
+func NewWeComGroupMessageProvider(client groupMessageTaskCreator, sender string, resolve GroupMessageTargetResolver, receipts ...groupopsport.GroupMessageReceiptWriter) (*WeComGroupMessageProvider, error) {
 	if client == nil || !validGroupMessageText(sender, 128) || resolve == nil {
 		return nil, ErrInvalidWeComGroupMessage
 	}
-	return &WeComGroupMessageProvider{client: client, sender: sender, resolve: resolve}, nil
+	if len(receipts) > 1 {
+		return nil, ErrInvalidWeComGroupMessage
+	}
+	provider := &WeComGroupMessageProvider{client: client, sender: sender, resolve: resolve}
+	if len(receipts) == 1 {
+		if receipts[0] == nil { return nil, ErrInvalidWeComGroupMessage }
+		provider.receipts = receipts[0]
+	}
+	return provider, nil
 }
 
 func (provider *WeComGroupMessageProvider) Dispatch(ctx context.Context, request groupopsport.DispatchRequest) (groupopsport.DispatchProviderResult, error) {
@@ -298,10 +307,19 @@ func (provider *WeComGroupMessageProvider) Dispatch(ctx context.Context, request
 	if err != nil {
 		return classifyGroupMessageCreateError(err, request, provider.sender, chatID), nil
 	}
-	if created.Partial {
-		return groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderRejected, ReceiptDigest: groupMessageReceiptDigest("partial", created.MessageID, provider.sender, chatID), BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
+	label := "task"
+	if created.Partial { label = "partial" }
+	digest := groupMessageReceiptDigest(label, created.MessageID, provider.sender, chatID)
+	// The accepted task is durable before it becomes an EER success. If that
+	// owner receipt cannot be stored, the real Provider call remains unknown
+	// and is never replayed as a fresh create-task request.
+	if provider.receipts == nil || provider.receipts.RecordGroupMessageTask(ctx, groupopsport.GroupMessageReceipt{ExecutionID: request.ExecutionID, ExternalEffectID: request.ExternalEffectID, MessageID: created.MessageID, SenderUserID: provider.sender, ChatID: chatID, UserID: provider.sender, TaskEvidenceDigest: digest}) != nil {
+		return groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchOutcomeUnknown, ReceiptDigest: groupMessageReceiptDigest("receipt-store-unknown", request.ExternalEffectID, created.MessageID), BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
 	}
-	return groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: groupMessageReceiptDigest("task", created.MessageID, provider.sender, chatID), BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
+	if created.Partial {
+		return groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderRejected, ReceiptDigest: digest, BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
+	}
+	return groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: digest, BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
 }
 
 type groupMessageSnapshot struct {
@@ -358,23 +376,15 @@ func groupMessageReceiptDigest(label string, values ...string) string {
 	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
-type GroupMessageEvidence struct {
-	MessageID string
-	Sender    string
-	ChatID    string
+type GroupMessageEvidence = groupopsport.GroupMessageReceipt
+
+func groupMessageEvidenceDigest(evidence GroupMessageEvidence) string { return evidence.TaskEvidenceDigest }
+
+func validGroupMessageEvidence(evidence GroupMessageEvidence) bool {
+	return evidence.ExecutionID > 0 && validGroupMessageText(evidence.MessageID, 1024) && validGroupMessageText(evidence.SenderUserID, 128) && validGroupMessageText(evidence.ChatID, 1024) && validGroupMessageText(evidence.UserID, 128) && validDigestValue(evidence.TaskEvidenceDigest)
 }
 
-func (evidence GroupMessageEvidence) ReceiptDigest() string {
-	return groupMessageReceiptDigest("task", evidence.MessageID, evidence.Sender, evidence.ChatID)
-}
-
-func (evidence GroupMessageEvidence) valid() bool {
-	return validGroupMessageText(evidence.MessageID, 1024) && validGroupMessageText(evidence.Sender, 128) && validGroupMessageText(evidence.ChatID, 1024)
-}
-
-type GroupMessageEvidenceSource interface {
-	FindGroupMessageEvidence(context.Context, groupopsport.ReconciliationEvidence) (GroupMessageEvidence, bool, error)
-}
+type GroupMessageEvidenceSource = groupopsport.GroupMessageReceiptReader
 
 type groupMessageQueryClient interface {
 	GetGroupMessageTask(context.Context, string, string) (GroupMessageTaskPage, error)
@@ -401,11 +411,11 @@ func (verifier *WeComGroupMessageReconciliationVerifier) VerifyReconciliationEvi
 	if verifier == nil || verifier.client == nil || verifier.evidence == nil || ctx == nil || request.ExecutionID < 1 || strings.TrimSpace(request.ExternalEffectID) == "" || !validDigestValue(request.EvidenceDigest) {
 		return groupopsport.ReconciliationEvidenceResult{}, ErrInvalidWeComGroupMessage
 	}
-	evidence, found, err := verifier.evidence.FindGroupMessageEvidence(ctx, request)
+	evidence, found, err := verifier.evidence.FindGroupMessageReceipt(ctx, request)
 	if err != nil {
 		return groupopsport.ReconciliationEvidenceResult{}, err
 	}
-	if !found || !evidence.valid() || evidence.ReceiptDigest() != request.EvidenceDigest {
+	if !found || !validGroupMessageEvidence(evidence) || groupMessageEvidenceDigest(evidence) != request.EvidenceDigest {
 		return groupopsport.ReconciliationEvidenceResult{}, nil
 	}
 	if _, err = verifier.client.GetGroupMessageTask(ctx, evidence.MessageID, ""); err != nil {
@@ -417,13 +427,17 @@ func (verifier *WeComGroupMessageReconciliationVerifier) VerifyReconciliationEvi
 			return groupopsport.ReconciliationEvidenceResult{}, errWeComGroupOutcomeUnknown
 		}
 		seen[cursor] = struct{}{}
-		page, queryErr := verifier.client.GetGroupMessageSendResult(ctx, evidence.MessageID, evidence.Sender, cursor)
+		page, queryErr := verifier.client.GetGroupMessageSendResult(ctx, evidence.MessageID, evidence.SenderUserID, cursor)
 		if queryErr != nil {
 			return groupopsport.ReconciliationEvidenceResult{}, queryErr
 		}
 		for _, item := range page.Items {
-			if item.ChatID == evidence.ChatID && item.UserID == evidence.Sender && item.Status == 1 {
-				return groupopsport.ReconciliationEvidenceResult{DeliveryProven: true}, nil
+			if item.ChatID == evidence.ChatID && item.UserID == evidence.UserID && item.Status == 1 {
+				digest := groupMessageReceiptDigest("delivery", evidence.MessageID, evidence.SenderUserID, evidence.ChatID, evidence.UserID, "1")
+				if err = verifier.evidence.RecordGroupMessageDelivery(ctx, evidence, digest); err != nil {
+					return groupopsport.ReconciliationEvidenceResult{}, err
+				}
+				return groupopsport.ReconciliationEvidenceResult{DeliveryProven: true, EvidenceDigest: digest}, nil
 			}
 		}
 		if page.NextCursor == "" {

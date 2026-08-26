@@ -289,6 +289,110 @@ func (q *Queries) GetGroupOpsExecution(ctx context.Context, executionID int64) (
 	return i, err
 }
 
+const getGroupOpsExecutionByExternalEffectID = `-- name: GetGroupOpsExecutionByExternalEffectID :one
+SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at FROM group_ops_executions
+WHERE external_effect_id = $1
+FOR UPDATE
+`
+
+func (q *Queries) GetGroupOpsExecutionByExternalEffectID(ctx context.Context, externalEffectID int64) (GroupOpsExecution, error) {
+	row := q.db.QueryRow(ctx, getGroupOpsExecutionByExternalEffectID, externalEffectID)
+	var i GroupOpsExecution
+	err := row.Scan(
+		&i.ID,
+		&i.RunID,
+		&i.PlanID,
+		&i.NodeID,
+		&i.PlanRevision,
+		&i.NodePosition,
+		&i.TargetReference,
+		&i.TargetDigest,
+		&i.ContentSnapshot,
+		&i.ContentDigest,
+		&i.MaterialSnapshot,
+		&i.MaterialDigest,
+		&i.ExecutionKeyDigest,
+		&i.ExternalEffectID,
+		&i.State,
+		&i.ProviderAccepted,
+		&i.DeliveryProven,
+		&i.ProviderReceiptDigest,
+		&i.ReconciliationEvidenceDigest,
+		&i.AttemptCount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getGroupOpsExternalEffect = `-- name: GetGroupOpsExternalEffect :one
+SELECT id, owner, kind, state, generation, lease_fence, lease_expires_at, attempt_count
+FROM external_effects
+WHERE id = $1
+`
+
+type GetGroupOpsExternalEffectRow struct {
+	ID             int64              `json:"id"`
+	Owner          string             `json:"owner"`
+	Kind           string             `json:"kind"`
+	State          string             `json:"state"`
+	Generation     int64              `json:"generation"`
+	LeaseFence     int64              `json:"lease_fence"`
+	LeaseExpiresAt pgtype.Timestamptz `json:"lease_expires_at"`
+	AttemptCount   int32              `json:"attempt_count"`
+}
+
+func (q *Queries) GetGroupOpsExternalEffect(ctx context.Context, externalEffectID int64) (GetGroupOpsExternalEffectRow, error) {
+	row := q.db.QueryRow(ctx, getGroupOpsExternalEffect, externalEffectID)
+	var i GetGroupOpsExternalEffectRow
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.Kind,
+		&i.State,
+		&i.Generation,
+		&i.LeaseFence,
+		&i.LeaseExpiresAt,
+		&i.AttemptCount,
+	)
+	return i, err
+}
+
+const getGroupOpsExternalEffectAttempt = `-- name: GetGroupOpsExternalEffectAttempt :one
+SELECT effect_id, number, generation, fence, completion, receipt_digest, started_at, completed_at
+FROM external_effect_attempts
+WHERE effect_id = $1
+ORDER BY number DESC
+LIMIT 1
+`
+
+type GetGroupOpsExternalEffectAttemptRow struct {
+	EffectID      int64              `json:"effect_id"`
+	Number        int32              `json:"number"`
+	Generation    int64              `json:"generation"`
+	Fence         int64              `json:"fence"`
+	Completion    pgtype.Text        `json:"completion"`
+	ReceiptDigest pgtype.Text        `json:"receipt_digest"`
+	StartedAt     pgtype.Timestamptz `json:"started_at"`
+	CompletedAt   pgtype.Timestamptz `json:"completed_at"`
+}
+
+func (q *Queries) GetGroupOpsExternalEffectAttempt(ctx context.Context, externalEffectID int64) (GetGroupOpsExternalEffectAttemptRow, error) {
+	row := q.db.QueryRow(ctx, getGroupOpsExternalEffectAttempt, externalEffectID)
+	var i GetGroupOpsExternalEffectAttemptRow
+	err := row.Scan(
+		&i.EffectID,
+		&i.Number,
+		&i.Generation,
+		&i.Fence,
+		&i.Completion,
+		&i.ReceiptDigest,
+		&i.StartedAt,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
 const getGroupOpsOperationReceipt = `-- name: GetGroupOpsOperationReceipt :one
 SELECT id, operation, actor_scope, key_digest, payload_digest, state, result_snapshot
 FROM group_ops_operation_receipts
@@ -378,6 +482,30 @@ func (q *Queries) GetGroupOpsRun(ctx context.Context, runID int64) (GroupOpsRun,
 		&i.ScheduledFor,
 		&i.AcceptedAt,
 		&i.AcceptedBy,
+	)
+	return i, err
+}
+
+const getGroupOpsWeComGroupMessageReceipt = `-- name: GetGroupOpsWeComGroupMessageReceipt :one
+SELECT external_effect_id, execution_id, msgid, sender_userid, chat_id, userid, send_status, task_evidence_digest, delivery_evidence_digest, created_at, updated_at FROM group_ops_wecom_group_message_receipts
+WHERE external_effect_id = $1
+`
+
+func (q *Queries) GetGroupOpsWeComGroupMessageReceipt(ctx context.Context, externalEffectID int64) (GroupOpsWecomGroupMessageReceipt, error) {
+	row := q.db.QueryRow(ctx, getGroupOpsWeComGroupMessageReceipt, externalEffectID)
+	var i GroupOpsWecomGroupMessageReceipt
+	err := row.Scan(
+		&i.ExternalEffectID,
+		&i.ExecutionID,
+		&i.Msgid,
+		&i.SenderUserid,
+		&i.ChatID,
+		&i.Userid,
+		&i.SendStatus,
+		&i.TaskEvidenceDigest,
+		&i.DeliveryEvidenceDigest,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -511,6 +639,60 @@ func (q *Queries) InsertGroupOpsExecution(ctx context.Context, arg InsertGroupOp
 		&i.ProviderReceiptDigest,
 		&i.ReconciliationEvidenceDigest,
 		&i.AttemptCount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const insertGroupOpsWeComGroupMessageReceipt = `-- name: InsertGroupOpsWeComGroupMessageReceipt :one
+INSERT INTO group_ops_wecom_group_message_receipts (
+  external_effect_id, execution_id, msgid, sender_userid, chat_id, userid,
+  task_evidence_digest, created_at, updated_at
+) VALUES (
+  $1, $2, $3,
+  $4, $5, $6,
+  $7, $8, $9
+)
+ON CONFLICT (external_effect_id) DO NOTHING
+RETURNING external_effect_id, execution_id, msgid, sender_userid, chat_id, userid, send_status, task_evidence_digest, delivery_evidence_digest, created_at, updated_at
+`
+
+type InsertGroupOpsWeComGroupMessageReceiptParams struct {
+	ExternalEffectID   int64              `json:"external_effect_id"`
+	ExecutionID        int64              `json:"execution_id"`
+	Msgid              string             `json:"msgid"`
+	SenderUserid       string             `json:"sender_userid"`
+	ChatID             string             `json:"chat_id"`
+	Userid             string             `json:"userid"`
+	TaskEvidenceDigest string             `json:"task_evidence_digest"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) InsertGroupOpsWeComGroupMessageReceipt(ctx context.Context, arg InsertGroupOpsWeComGroupMessageReceiptParams) (GroupOpsWecomGroupMessageReceipt, error) {
+	row := q.db.QueryRow(ctx, insertGroupOpsWeComGroupMessageReceipt,
+		arg.ExternalEffectID,
+		arg.ExecutionID,
+		arg.Msgid,
+		arg.SenderUserid,
+		arg.ChatID,
+		arg.Userid,
+		arg.TaskEvidenceDigest,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+	)
+	var i GroupOpsWecomGroupMessageReceipt
+	err := row.Scan(
+		&i.ExternalEffectID,
+		&i.ExecutionID,
+		&i.Msgid,
+		&i.SenderUserid,
+		&i.ChatID,
+		&i.Userid,
+		&i.SendStatus,
+		&i.TaskEvidenceDigest,
+		&i.DeliveryEvidenceDigest,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -966,6 +1148,57 @@ func (q *Queries) RecordGroupOpsExecutionOutcome(ctx context.Context, arg Record
 		&i.ProviderReceiptDigest,
 		&i.ReconciliationEvidenceDigest,
 		&i.AttemptCount,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const recordGroupOpsWeComGroupMessageDelivery = `-- name: RecordGroupOpsWeComGroupMessageDelivery :one
+UPDATE group_ops_wecom_group_message_receipts
+SET send_status = 1, delivery_evidence_digest = $1, updated_at = $2
+WHERE external_effect_id = $3
+  AND msgid = $4
+  AND sender_userid = $5
+  AND chat_id = $6
+  AND userid = $7
+  AND task_evidence_digest = $8
+RETURNING external_effect_id, execution_id, msgid, sender_userid, chat_id, userid, send_status, task_evidence_digest, delivery_evidence_digest, created_at, updated_at
+`
+
+type RecordGroupOpsWeComGroupMessageDeliveryParams struct {
+	DeliveryEvidenceDigest pgtype.Text        `json:"delivery_evidence_digest"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+	ExternalEffectID       int64              `json:"external_effect_id"`
+	Msgid                  string             `json:"msgid"`
+	SenderUserid           string             `json:"sender_userid"`
+	ChatID                 string             `json:"chat_id"`
+	Userid                 string             `json:"userid"`
+	TaskEvidenceDigest     string             `json:"task_evidence_digest"`
+}
+
+func (q *Queries) RecordGroupOpsWeComGroupMessageDelivery(ctx context.Context, arg RecordGroupOpsWeComGroupMessageDeliveryParams) (GroupOpsWecomGroupMessageReceipt, error) {
+	row := q.db.QueryRow(ctx, recordGroupOpsWeComGroupMessageDelivery,
+		arg.DeliveryEvidenceDigest,
+		arg.UpdatedAt,
+		arg.ExternalEffectID,
+		arg.Msgid,
+		arg.SenderUserid,
+		arg.ChatID,
+		arg.Userid,
+		arg.TaskEvidenceDigest,
+	)
+	var i GroupOpsWecomGroupMessageReceipt
+	err := row.Scan(
+		&i.ExternalEffectID,
+		&i.ExecutionID,
+		&i.Msgid,
+		&i.SenderUserid,
+		&i.ChatID,
+		&i.Userid,
+		&i.SendStatus,
+		&i.TaskEvidenceDigest,
+		&i.DeliveryEvidenceDigest,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
