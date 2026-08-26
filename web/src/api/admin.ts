@@ -637,7 +637,7 @@ export type ServicePeriodMemberGridRow = { memberRef: string; serviceProductId: 
 export type ServicePeriodMemberGridPage = { rows: ServicePeriodMemberGridRow[]; limit: number; nextCursor: string; hasMore: boolean };
 export type ServicePeriodMemberDetail = ServicePeriodMemberGridRow & { remark: string | null; alliance: string | null; createdAt: string };
 export type ServicePeriodMemberGridCollaborator = { collaboratorId: number; serviceProductId: number; staffId: number; permission: 'view' | 'edit'; version: number; invitedBy: number; createdAt: string; updatedAt: string };
-export type ServicePeriodMemberGridMeta = { product: SpProduct; columns: Array<{ key: string; label: string; type: string; nullable: boolean }>; views: Array<{ id: string; name: string; readOnly: boolean }>; externalShareSupported: boolean; externalShareEnabled: boolean; collaborators: number; collaboratorRows: ServicePeriodMemberGridCollaborator[]; publicShareUrl: string | null };
+export type ServicePeriodMemberGridMeta = { product: SpProduct; columns: Array<{ key: string; label: string; type: string; nullable: boolean }>; views: Array<{ id: string; name: string; readOnly: boolean }>; collaborators: number; collaboratorRows: ServicePeriodMemberGridCollaborator[] };
 const requiredPositive = (value: unknown, field: string): number => { const number = Number(value); if (!Number.isSafeInteger(number) || number < 1) throw new Error(`响应缺少有效 ${field}`); return number; };
 const requiredNonNegative = (value: unknown, field: string): number => { const number = Number(value); if (!Number.isSafeInteger(number) || number < 0) throw new Error(`响应缺少有效 ${field}`); return number; };
 const requiredString = (value: unknown, field: string): string => { if (typeof value !== 'string' || !value) throw new Error(`响应缺少 ${field}`); return value; };
@@ -689,8 +689,7 @@ export async function getServicePeriodMemberGridMetaDto(productId: number): Prom
   const builtInViews = list(views, 'views').map((item) => { const view = obj(item); if (view.source !== 'built_in' || view.read_only !== true) throw new Error('Member Grid 视图不是受限内置视图'); return { id: requiredString(view.id, 'view.id'), name: requiredString(view.name, 'view.name'), readOnly: true }; });
   if (columns.length !== 12 || builtInViews.length < 1) throw new Error('Member Grid 闭合 schema 或内置视图响应不完整');
   const collaboratorRows = list(share, 'collaborators').map((item) => collaboratorDto(item, productId));
-  const publicShareUrl = [share.share_url, share.public_url].find((value): value is string => typeof value === 'string' && value.trim().length > 0)?.trim() || null;
-  return { product: serviceProductPageDto(productSource.product || productSource), columns, views: builtInViews, externalShareSupported: false, externalShareEnabled: false, collaborators: collaboratorRows.length, collaboratorRows, publicShareUrl };
+  return { product: serviceProductPageDto(productSource.product || productSource), columns, views: builtInViews, collaborators: collaboratorRows.length, collaboratorRows };
 }
 export async function queryServicePeriodMemberGridDto(productId: number, input: { state?: MemberGridState; source?: MemberGridSourceFilter; limit?: number; cursor?: string } = {}): Promise<ServicePeriodMemberGridPage> {
   if (!Number.isSafeInteger(productId) || productId < 1) throw new Error('Member Grid 商品 ID 无效');

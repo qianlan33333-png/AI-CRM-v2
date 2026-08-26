@@ -351,13 +351,13 @@ export async function runAdminAdapterTests(): Promise<void> {
     const body = path.endsWith('/member-grid/access') ? { product_id: 8, can_view: true, can_query: true, can_manage_views: false, can_share: false }
       : path.endsWith('/member-grid/schema') ? { service_product_id: 8, columns: gridColumns }
         : path.endsWith('/member-views') ? { product_id: 8, views: [{ id: 'all-members', name: '全部成员', source: 'built_in', read_only: true }] }
-          : path.endsWith('/member-grid/share-settings') ? { service_product_id: 8, saved_views: [], collaborators: [{ collaborator_id: 6, service_product_id: 8, staff_id: 5, permission: 'view', version: 1, invited_by: 1, created_at: '2026-08-26T00:00:00Z', updated_at: '2026-08-26T00:00:00Z' }], external_share_supported: false, external_share_enabled: false, real_external_call_executed: unsafeGridShare, collaborator_edit_is_local_metadata_only: true, collaborator_edit_grants_central_permission: false }
+          : path.endsWith('/member-grid/share-settings') ? { service_product_id: 8, saved_views: [], collaborators: [{ collaborator_id: 6, service_product_id: 8, staff_id: 5, permission: 'view', version: 1, invited_by: 1, created_at: '2026-08-26T00:00:00Z', updated_at: '2026-08-26T00:00:00Z' }], external_share_supported: false, external_share_enabled: false, real_external_call_executed: unsafeGridShare, collaborator_edit_is_local_metadata_only: true, collaborator_edit_grants_central_permission: false, public_url: 'https://untrusted.invalid/member-grid' }
             : { ok: true, product };
     return new Response(JSON.stringify(body), { status: 200 });
   };
   try {
     const grid = await getServicePeriodMemberGridMetaDto(8);
-    assert(grid.product.resourceId === 8 && grid.columns.length === 12 && grid.views[0].readOnly && grid.collaborators === 1 && !grid.externalShareSupported && grid.publicShareUrl === null, 'Member Grid initializes only closed local metadata');
+    assert(grid.product.resourceId === 8 && grid.columns.length === 12 && grid.views[0].readOnly && grid.collaborators === 1 && !('publicShareUrl' in grid), 'Member Grid initializes only closed local metadata and discards undeclared public URLs');
     assert(gridCalls.length === 5 && gridCalls.every((call) => call.init?.method === 'GET'), 'Member Grid initialization uses five generated GET reads');
     unsafeGridShare = true;
     try { await getServicePeriodMemberGridMetaDto(8); assert(false, 'Member Grid external effect flag must fail closed'); }
