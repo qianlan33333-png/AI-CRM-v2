@@ -1,6 +1,5 @@
 // Package groupopsprovider holds the protocol-neutral Group Ops Provider
-// boundary. It deliberately has no concrete WeCom client: the approved
-// request/callback contract belongs to the integrating Provider owner.
+// boundary and the approved WeCom group-message protocol adapter.
 package groupopsprovider
 
 import (
