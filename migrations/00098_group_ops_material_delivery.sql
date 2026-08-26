@@ -128,9 +128,31 @@ END;
 $$;
 -- +goose StatementEnd
 
-CREATE TRIGGER media_wecom_upload_receipts_binding
-BEFORE INSERT ON public.media_wecom_upload_receipts
+CREATE CONSTRAINT TRIGGER media_wecom_upload_receipts_binding
+AFTER INSERT ON public.media_wecom_upload_receipts DEFERRABLE INITIALLY DEFERRED
 FOR EACH ROW EXECUTE FUNCTION public.aicrm_media_wecom_upload_receipt_binding();
+
+-- +goose StatementBegin
+CREATE FUNCTION public.aicrm_media_wecom_upload_ready_receipt_required()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+BEGIN
+  IF NEW.state IN ('ready','expired') AND NOT EXISTS (
+    SELECT 1 FROM public.media_wecom_upload_receipts r
+    WHERE r.preparation_id = NEW.id AND r.external_effect_id = NEW.external_effect_id
+      AND r.provider_media_id = NEW.provider_media_id
+      AND r.provider_created_at = NEW.provider_created_at AND r.expires_at = NEW.expires_at
+      AND r.receipt_digest = NEW.provider_receipt_digest
+  ) THEN
+    RAISE EXCEPTION 'ready media upload preparation requires its exact receipt' USING ERRCODE = '23514';
+  END IF;
+  RETURN NULL;
+END;
+$$;
+-- +goose StatementEnd
+
+CREATE CONSTRAINT TRIGGER media_wecom_upload_preparations_ready_receipt
+AFTER INSERT OR UPDATE ON public.media_wecom_upload_preparations DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION public.aicrm_media_wecom_upload_ready_receipt_required();
 
 CREATE TABLE public.group_ops_execution_intents (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -283,10 +305,12 @@ DROP TRIGGER group_ops_execution_intents_guard ON public.group_ops_execution_int
 DROP TRIGGER media_wecom_upload_preparations_guard ON public.media_wecom_upload_preparations;
 DROP TRIGGER media_wecom_upload_receipts_append_only ON public.media_wecom_upload_receipts;
 DROP TRIGGER media_wecom_upload_receipts_binding ON public.media_wecom_upload_receipts;
+DROP TRIGGER media_wecom_upload_preparations_ready_receipt ON public.media_wecom_upload_preparations;
 DROP TRIGGER media_wecom_upload_preparations_effect_binding ON public.media_wecom_upload_preparations;
 DROP TRIGGER group_ops_protocol_replays_append_only ON public.group_ops_protocol_replays;
 DROP FUNCTION public.aicrm_group_ops_execution_intent_guard();
 DROP FUNCTION public.aicrm_media_wecom_upload_preparation_guard();
+DROP FUNCTION public.aicrm_media_wecom_upload_ready_receipt_required();
 DROP FUNCTION public.aicrm_media_wecom_upload_receipt_binding();
 DROP FUNCTION public.aicrm_media_wecom_upload_effect_binding();
 DROP FUNCTION public.aicrm_group_ops_material_append_only();
