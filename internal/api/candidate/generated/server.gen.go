@@ -6985,6 +6985,21 @@ func (e SidebarMaterialItemThumbnailStatus) Valid() bool {
 	}
 }
 
+// Defines values for SidebarProfileUpdateSafetyRealExternalCallExecuted.
+const (
+	SidebarProfileUpdateSafetyRealExternalCallExecutedFalse SidebarProfileUpdateSafetyRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the SidebarProfileUpdateSafetyRealExternalCallExecuted enum.
+func (e SidebarProfileUpdateSafetyRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case SidebarProfileUpdateSafetyRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SidebarSafeChoiceAnswerQuestionType.
 const (
 	SidebarSafeChoiceAnswerQuestionTypeMultiChoice  SidebarSafeChoiceAnswerQuestionType = "multi_choice"
@@ -11693,11 +11708,25 @@ type SidebarProfile struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-// SidebarProfileResponse defines model for SidebarProfileResponse.
-type SidebarProfileResponse struct {
-	Profile SidebarProfile `json:"profile"`
-	Safety  SidebarSafety  `json:"safety"`
+// SidebarProfileUpdateResponse defines model for SidebarProfileUpdateResponse.
+type SidebarProfileUpdateResponse struct {
+	Profile SidebarProfile             `json:"profile"`
+	Safety  SidebarProfileUpdateSafety `json:"safety"`
 }
+
+// SidebarProfileUpdateSafety defines model for SidebarProfileUpdateSafety.
+type SidebarProfileUpdateSafety struct {
+	// EffectQueued True only after the effect and River job commit with the profile receipt.
+	EffectQueued bool `json:"effect_queued"`
+	LocalOnly    bool `json:"local_only"`
+
+	// ProviderExecutionEligible True only for a queued effect created under enabled WeCom outbound configuration.
+	ProviderExecutionEligible bool                                               `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  SidebarProfileUpdateSafetyRealExternalCallExecuted `json:"real_external_call_executed"`
+}
+
+// SidebarProfileUpdateSafetyRealExternalCallExecuted defines model for SidebarProfileUpdateSafety.RealExternalCallExecuted.
+type SidebarProfileUpdateSafetyRealExternalCallExecuted bool
 
 // SidebarQuestionnaireItem defines model for SidebarQuestionnaireItem.
 type SidebarQuestionnaireItem struct {
@@ -15584,7 +15613,7 @@ type ServerInterface interface {
 	// Update a scoped service-period member remark by canonical key and CAS version
 	// (PUT /api/sidebar/v2/periodic-orders/{service_product_id}/members/{member_ref}/remark)
 	UpdateSidebarPeriodicRemark(w http.ResponseWriter, r *http.Request, serviceProductId int64, memberRef string, params UpdateSidebarPeriodicRemarkParams)
-	// Update Contact-owned sidebar fields with CAS and a durable receipt
+	// Update Contact-owned sidebar fields and conditionally queue a WeCom profile effect
 	// (PUT /api/sidebar/v2/profile)
 	UpdateSidebarProfile(w http.ResponseWriter, r *http.Request, params UpdateSidebarProfileParams)
 	// List bounded safe-choice questionnaire answers for one scoped customer
@@ -16751,7 +16780,7 @@ func (_ Unimplemented) UpdateSidebarPeriodicRemark(w http.ResponseWriter, r *htt
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Update Contact-owned sidebar fields with CAS and a durable receipt
+// Update Contact-owned sidebar fields and conditionally queue a WeCom profile effect
 // (PUT /api/sidebar/v2/profile)
 func (_ Unimplemented) UpdateSidebarProfile(w http.ResponseWriter, r *http.Request, params UpdateSidebarProfileParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -41680,7 +41709,7 @@ type UpdateSidebarProfileResponseObject interface {
 	VisitUpdateSidebarProfileResponse(w http.ResponseWriter) error
 }
 
-type UpdateSidebarProfile200JSONResponse SidebarProfileResponse
+type UpdateSidebarProfile200JSONResponse SidebarProfileUpdateResponse
 
 func (response UpdateSidebarProfile200JSONResponse) VisitUpdateSidebarProfileResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
@@ -47657,7 +47686,7 @@ type StrictServerInterface interface {
 	// Update a scoped service-period member remark by canonical key and CAS version
 	// (PUT /api/sidebar/v2/periodic-orders/{service_product_id}/members/{member_ref}/remark)
 	UpdateSidebarPeriodicRemark(ctx context.Context, request UpdateSidebarPeriodicRemarkRequestObject) (UpdateSidebarPeriodicRemarkResponseObject, error)
-	// Update Contact-owned sidebar fields with CAS and a durable receipt
+	// Update Contact-owned sidebar fields and conditionally queue a WeCom profile effect
 	// (PUT /api/sidebar/v2/profile)
 	UpdateSidebarProfile(ctx context.Context, request UpdateSidebarProfileRequestObject) (UpdateSidebarProfileResponseObject, error)
 	// List bounded safe-choice questionnaire answers for one scoped customer

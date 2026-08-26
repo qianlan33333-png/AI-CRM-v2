@@ -50,6 +50,7 @@ import (
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
+	wecomprofile "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/profile"
 	wecomstore "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/store"
 	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 	wecomworker "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/worker"
@@ -226,6 +227,29 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		if acquisitionErr = contactworker.RegisterChannelAcquisitionAssetRecoveryWorker(workers, acquisitionRecovery); acquisitionErr != nil {
 			pool.Close()
 			return nil, acquisitionErr
+		}
+	}
+	if config.WeCom.Outbound.Enabled {
+		profileJobs, profileErr := wecomprofile.NewRiverJobInserter(pool)
+		if profileErr != nil {
+			pool.Close()
+			return nil, profileErr
+		}
+		profileEffects, profileErr := wecomprofile.NewService(
+			uow, wecomstore.NewProfileEffectRepository(pool), externalEffectsRuntime, profileJobs, config.WeCom.Outbound.CorpID,
+		)
+		if profileErr != nil {
+			pool.Close()
+			return nil, profileErr
+		}
+		profileWriter, profileErr := newWeComContactProfileWriter(config.WeCom.Outbound, &http.Client{Timeout: 15 * time.Second}, time.Now)
+		if profileErr != nil {
+			pool.Close()
+			return nil, profileErr
+		}
+		if profileErr = wecomprofile.RegisterWorker(workers, profileEffects, profileWriter); profileErr != nil {
+			pool.Close()
+			return nil, profileErr
 		}
 	}
 	weComTagCorpID := config.WeCom.OAuth.CorpID

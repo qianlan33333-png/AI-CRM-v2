@@ -48,11 +48,32 @@ type SidebarProfileService struct {
 	uow    platformport.UnitOfWork
 	store  SidebarProfileStore
 	events eventport.Appender
+	effect SidebarProfileEffect
 	now    func() time.Time
+}
+
+type SidebarProfileEffectCommand struct {
+	ReceiptID, ActorID int64
+	CustomerID         contactport.CustomerID
+	IdempotencyKey     string
+	Profile            contactport.SidebarProfile
+}
+
+type SidebarProfileEffectAcceptance struct {
+	Queued                    bool
+	ProviderExecutionEligible bool
+}
+
+type SidebarProfileEffect interface {
+	QueueInTransaction(context.Context, SidebarProfileEffectCommand) (SidebarProfileEffectAcceptance, error)
 }
 
 func NewSidebarProfileService(uow platformport.UnitOfWork, store SidebarProfileStore, events eventport.Appender) *SidebarProfileService {
 	return &SidebarProfileService{uow: uow, store: store, events: events, now: time.Now}
+}
+
+func NewSidebarProfileServiceWithEffect(uow platformport.UnitOfWork, store SidebarProfileStore, events eventport.Appender, effect SidebarProfileEffect) *SidebarProfileService {
+	return &SidebarProfileService{uow: uow, store: store, events: events, effect: effect, now: time.Now}
 }
 
 func (service *SidebarProfileService) ResolveSidebarProfile(ctx context.Context, customerID contactport.CustomerID) (contactport.SidebarProfile, error) {
@@ -83,16 +104,21 @@ func (service *SidebarProfileService) readSidebarProfile(ctx context.Context, cu
 }
 
 func (service *SidebarProfileService) UpdateSidebarProfile(ctx context.Context, command contactport.SidebarProfileUpdateCommand) (contactport.SidebarProfile, error) {
+	result, err := service.UpdateSidebarProfileWithEffect(ctx, command)
+	return result.Profile, err
+}
+
+func (service *SidebarProfileService) UpdateSidebarProfileWithEffect(ctx context.Context, command contactport.SidebarProfileUpdateCommand) (contactport.SidebarProfileUpdateResult, error) {
 	if !sidebarProfileReady(service) || ctx == nil || !validSidebarProfileCommand(command) {
-		return contactport.SidebarProfile{}, contactport.ErrSidebarProfileInvalid
+		return contactport.SidebarProfileUpdateResult{}, contactport.ErrSidebarProfileInvalid
 	}
 	payload, err := json.Marshal(command)
 	if err != nil {
-		return contactport.SidebarProfile{}, contactport.ErrSidebarProfileInvalid
+		return contactport.SidebarProfileUpdateResult{}, contactport.ErrSidebarProfileInvalid
 	}
 	now := service.now().UTC().Truncate(time.Microsecond)
 	if now.IsZero() {
-		return contactport.SidebarProfile{}, contactport.ErrSidebarProfileUnavailable
+		return contactport.SidebarProfileUpdateResult{}, contactport.ErrSidebarProfileUnavailable
 	}
 	actorID, _ := strconv.ParseInt(strings.TrimPrefix(string(command.Actor), "admin:"), 10, 64)
 	reservation := SidebarProfileReceiptReservation{
@@ -100,6 +126,7 @@ func (service *SidebarProfileService) UpdateSidebarProfile(ctx context.Context, 
 		KeyDigest:  sha256.Sum256([]byte(command.IdempotencyKey)), PayloadDigest: sha256.Sum256(payload), CreatedAt: now,
 	}
 	var result contactport.SidebarProfile
+	var effectAcceptance SidebarProfileEffectAcceptance
 	err = service.uow.Within(ctx, func(tx context.Context) error {
 		receipt, owned, reserveErr := service.store.ReserveSidebarProfileReceipt(tx, reservation)
 		if reserveErr != nil || !validSidebarProfileReceipt(receipt, reservation) {
@@ -112,7 +139,7 @@ func (service *SidebarProfileService) UpdateSidebarProfile(ctx context.Context, 
 			if receipt.State != "completed" || json.Unmarshal(receipt.ResultSnapshot, &result) != nil || !validSidebarProfile(result, command.CustomerID, command.OwnerStaffID) {
 				return contactport.ErrSidebarProfileUnavailable
 			}
-			return nil
+			return service.queueSidebarProfileEffect(tx, receipt.ID, actorID, command, result, &effectAcceptance)
 		}
 		current, readErr := service.store.ReadSidebarProfile(tx, int64(command.CustomerID), command.OwnerStaffID)
 		if readErr != nil {
@@ -145,6 +172,9 @@ func (service *SidebarProfileService) UpdateSidebarProfile(ctx context.Context, 
 		}); appendErr != nil {
 			return appendErr
 		}
+		if effectErr := service.queueSidebarProfileEffect(tx, receipt.ID, actorID, command, result, &effectAcceptance); effectErr != nil {
+			return effectErr
+		}
 		snapshot, marshalErr := json.Marshal(result)
 		if marshalErr != nil {
 			return marshalErr
@@ -157,9 +187,27 @@ func (service *SidebarProfileService) UpdateSidebarProfile(ctx context.Context, 
 		return nil
 	})
 	if err != nil {
-		return contactport.SidebarProfile{}, sidebarProfileError(err)
+		return contactport.SidebarProfileUpdateResult{}, sidebarProfileError(err)
 	}
-	return result, nil
+	return contactport.SidebarProfileUpdateResult{
+		Profile: result, EffectQueued: effectAcceptance.Queued,
+		ProviderExecutionEligible: effectAcceptance.ProviderExecutionEligible,
+	}, nil
+}
+
+func (service *SidebarProfileService) queueSidebarProfileEffect(ctx context.Context, receiptID, actorID int64, command contactport.SidebarProfileUpdateCommand, profile contactport.SidebarProfile, acceptance *SidebarProfileEffectAcceptance) error {
+	if service.effect == nil {
+		return nil
+	}
+	queued, err := service.effect.QueueInTransaction(ctx, SidebarProfileEffectCommand{
+		ReceiptID: receiptID, ActorID: actorID, CustomerID: command.CustomerID,
+		IdempotencyKey: command.IdempotencyKey, Profile: profile,
+	})
+	if err != nil || !queued.Queued || !queued.ProviderExecutionEligible {
+		return errors.Join(contactport.ErrSidebarProfileUnavailable, err)
+	}
+	*acceptance = queued
+	return nil
 }
 
 func mergeSidebarProfileObject(extra json.RawMessage, patch contactport.SidebarProfilePatch) (json.RawMessage, error) {

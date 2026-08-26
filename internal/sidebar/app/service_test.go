@@ -34,6 +34,18 @@ type profileFake struct {
 	updateErr               error
 }
 
+type profileEffectFake struct {
+	*profileFake
+	result  contactport.SidebarProfileUpdateResult
+	command contactport.SidebarProfileUpdateCommand
+	err     error
+}
+
+func (fake *profileEffectFake) UpdateSidebarProfileWithEffect(_ context.Context, command contactport.SidebarProfileUpdateCommand) (contactport.SidebarProfileUpdateResult, error) {
+	fake.command = command
+	return fake.result, fake.err
+}
+
 func (fake *profileFake) ResolveSidebarProfile(_ context.Context, customerID contactport.CustomerID) (contactport.SidebarProfile, error) {
 	fake.resolveCalls++
 	if fake.resolveErr != nil {
@@ -163,6 +175,25 @@ func TestContextTokenBindsViewerOwnerCorpAndExpiry(t *testing.T) {
 	service.now = func() time.Time { return result.ExpiresAt }
 	if _, err = service.VerifyContext(context.Background(), principal, sidebarTestSession, result.Token); !errors.Is(err, ErrTokenExpired) {
 		t.Fatalf("expiry error=%v, want expired token", err)
+	}
+}
+
+func TestUpdateProfileReportsQueuedProviderEligibleWithoutExecution(t *testing.T) {
+	service, staff := sidebarTestService(t)
+	profile := service.profiles.(*profileFake).profile
+	effects := &profileEffectFake{
+		profileFake: &profileFake{profile: profile},
+		result: contactport.SidebarProfileUpdateResult{
+			Profile: profile, EffectQueued: true, ProviderExecutionEligible: true,
+		},
+	}
+	service.profiles = effects
+	description := "follow-up"
+	result, err := service.UpdateProfile(context.Background(), Scope{
+		CustomerID: 41, OwnerStaffID: staff, Principal: authport.Principal{AdminUserID: 9, Role: authport.RoleSales, StaffID: &staff},
+	}, profile.UpdatedAt, contactport.SidebarProfilePatch{Description: &description}, "sidebar-profile-queued-0001")
+	if err != nil || result.Safety.LocalOnly || !result.Safety.EffectQueued || !result.Safety.ProviderExecutionEligible || result.Safety.RealExternalCallExecuted || effects.command.CustomerID != 41 || effects.command.OwnerStaffID != staff || effects.command.Actor != "admin:9" {
+		t.Fatalf("result=%+v command=%+v err=%v", result, effects.command, err)
 	}
 }
 

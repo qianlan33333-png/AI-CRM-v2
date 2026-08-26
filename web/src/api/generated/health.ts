@@ -758,6 +758,20 @@ export interface SidebarProfileResponse {
   safety: SidebarSafety;
 }
 
+export interface SidebarProfileUpdateSafety {
+  local_only: boolean;
+  /** True only after the effect and River job commit with the profile receipt. */
+  effect_queued: boolean;
+  /** True only for a queued effect created under enabled WeCom outbound configuration. */
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+}
+
+export interface SidebarProfileUpdateResponse {
+  profile: SidebarProfile;
+  safety: SidebarProfileUpdateSafety;
+}
+
 export type SidebarSafeChoiceAnswerQuestionType =
   (typeof SidebarSafeChoiceAnswerQuestionType)[keyof typeof SidebarSafeChoiceAnswerQuestionType];
 
@@ -19137,10 +19151,10 @@ export const getSidebarWorkbench = async (
 };
 
 /**
- * @summary Update Contact-owned sidebar fields with CAS and a durable receipt
+ * @summary Update Contact-owned sidebar fields and conditionally queue a WeCom profile effect
  */
 export type updateSidebarProfileResponse200 = {
-  data: SidebarProfileResponse;
+  data: SidebarProfileUpdateResponse;
   status: 200;
 };
 

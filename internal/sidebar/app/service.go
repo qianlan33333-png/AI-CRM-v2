@@ -70,6 +70,18 @@ type ProfileResult struct {
 	Safety  Safety                     `json:"safety"`
 }
 
+type ProfileUpdateSafety struct {
+	LocalOnly                 bool `json:"local_only"`
+	EffectQueued              bool `json:"effect_queued"`
+	ProviderExecutionEligible bool `json:"provider_execution_eligible"`
+	RealExternalCallExecuted  bool `json:"real_external_call_executed"`
+}
+
+type ProfileUpdateResult struct {
+	Profile contactport.SidebarProfile `json:"profile"`
+	Safety  ProfileUpdateSafety        `json:"safety"`
+}
+
 type QuestionnaireItem struct {
 	SubmissionID    int64                                `json:"submission_id"`
 	QuestionnaireID int64                                `json:"questionnaire_id"`
@@ -300,9 +312,17 @@ func (service *Service) Profile(ctx context.Context, scope Scope) (ProfileResult
 	return ProfileResult{Profile: profile, Safety: localSafety()}, mapDependencyError(err)
 }
 
-func (service *Service) UpdateProfile(ctx context.Context, scope Scope, expected time.Time, patch contactport.SidebarProfilePatch, key string) (ProfileResult, error) {
-	profile, err := service.profiles.UpdateSidebarProfile(ctx, contactport.SidebarProfileUpdateCommand{CustomerID: contactport.CustomerID(scope.CustomerID), OwnerStaffID: scope.OwnerStaffID, ExpectedUpdatedAt: expected, Patch: patch, Actor: contactport.Actor("admin:" + int64String(scope.Principal.AdminUserID)), IdempotencyKey: key})
-	return ProfileResult{Profile: profile, Safety: localSafety()}, mapDependencyError(err)
+func (service *Service) UpdateProfile(ctx context.Context, scope Scope, expected time.Time, patch contactport.SidebarProfilePatch, key string) (ProfileUpdateResult, error) {
+	command := contactport.SidebarProfileUpdateCommand{CustomerID: contactport.CustomerID(scope.CustomerID), OwnerStaffID: scope.OwnerStaffID, ExpectedUpdatedAt: expected, Patch: patch, Actor: contactport.Actor("admin:" + int64String(scope.Principal.AdminUserID)), IdempotencyKey: key}
+	if effects, ok := service.profiles.(contactport.SidebarProfileEffectService); ok {
+		result, err := effects.UpdateSidebarProfileWithEffect(ctx, command)
+		return ProfileUpdateResult{Profile: result.Profile, Safety: ProfileUpdateSafety{
+			LocalOnly: !result.EffectQueued, EffectQueued: result.EffectQueued,
+			ProviderExecutionEligible: result.ProviderExecutionEligible,
+		}}, mapDependencyError(err)
+	}
+	profile, err := service.profiles.UpdateSidebarProfile(ctx, command)
+	return ProfileUpdateResult{Profile: profile, Safety: ProfileUpdateSafety{LocalOnly: true}}, mapDependencyError(err)
 }
 
 func (service *Service) Questionnaires(ctx context.Context, scope Scope, limit int32) (QuestionnaireResult, error) {

@@ -108,6 +108,7 @@ import (
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
 	groupopsdirectory "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/groupopsdirectory"
+	wecomprofile "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/profile"
 	wecomstore "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/store"
 	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 )
@@ -1828,10 +1829,35 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	if config.WeCom.Sidebar.Enabled {
 		sidebarCorpID = config.WeCom.Sidebar.CorpID
 	}
+	sidebarProfileRepository := contactstore.NewSidebarProfileRepository()
+	var sidebarProfiles contactport.SidebarProfileService = contactapp.NewSidebarProfileService(uow, sidebarProfileRepository, eventstore.NewAppender())
+	if config.WeCom.Outbound.Enabled {
+		profileTargets, profileErr := contactstore.NewWeComOutboundTargetResolver(pool, config.WeCom.Outbound.CorpID)
+		if profileErr != nil {
+			pool.Close()
+			return nil, profileErr
+		}
+		profileJobs, profileErr := wecomprofile.NewRiverJobInserter(pool)
+		if profileErr != nil {
+			pool.Close()
+			return nil, profileErr
+		}
+		profileEffects, profileErr := wecomprofile.NewService(
+			uow, wecomstore.NewProfileEffectRepository(pool), externalEffectsRuntime, profileJobs, config.WeCom.Outbound.CorpID,
+		)
+		if profileErr != nil {
+			pool.Close()
+			return nil, profileErr
+		}
+		sidebarProfiles = contactapp.NewSidebarProfileServiceWithEffect(
+			uow, sidebarProfileRepository, eventstore.NewAppender(),
+			&sidebarWeComProfileEffect{targets: profileTargets, effects: profileEffects},
+		)
+	}
 	sidebarService, err := sidebarapp.NewService(
 		sidebarCorpReader{settings: configManager, fallback: sidebarCorpID, fallbackAuthoritative: config.WeCom.Sidebar.Enabled},
 		identityResolver,
-		contactapp.NewSidebarProfileService(uow, contactstore.NewSidebarProfileRepository(), eventstore.NewAppender()),
+		sidebarProfiles,
 		customerAnswerService,
 		orderapp.NewService(uow, orderstore.NewRepository(), contactstore.NewCustomerDetailRepository(), productstore.NewCatalogRepository()),
 		sidebarMemberAdapter{source: servicePeriodMemberService},
