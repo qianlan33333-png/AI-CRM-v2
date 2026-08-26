@@ -24,6 +24,9 @@ func TestAIAudienceInboundWebhookPG16(t *testing.T) {
 		t.Skip("CI_TEST_DATABASE_URL is required for the isolated migrated PG16 test")
 	}
 	if err := acceptancefixtures.ValidateDatabaseURLForDatabase(dsn, acceptancefixtures.Audience101DatabaseName); err != nil {
+		if errors.Is(err, acceptancefixtures.ErrUnsafeDatabaseURL) {
+			t.Skip("Audience 101 PG16 tests require the isolated Audience 101 database")
+		}
 		t.Fatal(err)
 	}
 	pool, err := pgxpool.New(ctx, dsn)
