@@ -1461,6 +1461,22 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	adminOpsService := adminopsapp.NewService(uow, adminopsstore.NewRepository())
+	var serviceAuthenticator operationServiceAuthenticator
+	var apiClientJWT *apiClientJWTAuthenticator
+	if config.APIClient.JWTSecret.Configured() {
+		serviceAuthenticator = newAPIClientJWTAuthenticator(adminOpsService, config.APIClient.JWTSecret.Value())
+		apiClientJWT, _ = serviceAuthenticator.(*apiClientJWTAuthenticator)
+	}
+	groupOpsProtocolReplay, err := groupopsstore.NewProtocolReplayStore(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	groupOpsProtocols := &groupOpsProtocolAuthenticator{jwt: apiClientJWT, replay: groupOpsProtocolReplay, now: time.Now}
+	if config.GroupOps.WebhookSecret.Configured() {
+		groupOpsProtocols.webhookKey = config.GroupOps.WebhookSecret.Value()
+	}
 	groupOpsRepository := groupopsstore.NewRepository()
 	groupOpsStaffDirectory := contactstore.NewStaffDirectoryRepository(pool)
 	var groupOpsDirectorySource groupopsport.GroupDirectorySource
@@ -1538,7 +1554,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	groupOpsHandler := groupopshttp.NewWithRuntime(
 		groupopsapp.NewService(uow, groupOpsRepository, channelStaffDirectory, eventstore.NewAppender()),
 		groupOpsRuntime,
-		nil,
+		groupOpsProtocols,
 	)
 	legacyAIAudienceConfigurationHandler, err := legacyaudience.NewLocalConfigurationHandler(
 		groupOpsOperationMemberApplication{LocalConfigurationApplication: legacyAIAudienceConfigurationService, runtime: groupOpsRuntime},
@@ -1781,7 +1797,6 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		WeComCallbackToken: config.WeCom.Callback.Enabled, WeComCallbackAESKey: config.WeCom.Callback.Enabled,
 		AuthJWTSecret: config.APIClient.JWTSecret.Configured(),
 	})
-	adminOpsService := adminopsapp.NewService(uow, adminopsstore.NewRepository())
 	var externalCustomerRead *legacyExternalCustomerReadHandler
 	weComIdentityCorpID := config.WeCom.OAuth.CorpID
 	if weComIdentityCorpID == "" {
@@ -1801,10 +1816,6 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			pool.Close()
 			return nil, tagErr
 		}
-	}
-	var serviceAuthenticator operationServiceAuthenticator
-	if config.APIClient.JWTSecret.Configured() {
-		serviceAuthenticator = newAPIClientJWTAuthenticator(adminOpsService, config.APIClient.JWTSecret.Value())
 	}
 	externalCustomerRead, err = newLegacyExternalCustomerReadHandler(
 		customerService, customerDetailService, customerEventService, customerContextService,

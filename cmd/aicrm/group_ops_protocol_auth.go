@@ -33,11 +33,11 @@ type groupOpsProtocolAuthenticator struct {
 
 func (a *groupOpsProtocolAuthenticator) Authenticate(ctx context.Context, r *http.Request, purpose, resource string, body []byte) (groupopshttp.ProtocolPrincipal, error) {
 	if a == nil || ctx == nil || r == nil || a.now == nil {
-		return groupopshttp.ProtocolPrincipal{}, errors.New("unavailable")
+		return groupopshttp.ProtocolPrincipal{}, groupopshttp.ErrProtocolUnavailable
 	}
 	if purpose == "group_ops_broadcast" {
 		if a.jwt == nil {
-			return groupopshttp.ProtocolPrincipal{}, errors.New("unavailable")
+			return groupopshttp.ProtocolPrincipal{}, groupopshttp.ErrProtocolUnavailable
 		}
 		p, err := a.jwt.authenticate(ctx, r, groupOpsBroadcastExpectation)
 		if err != nil {
@@ -46,7 +46,7 @@ func (a *groupOpsProtocolAuthenticator) Authenticate(ctx context.Context, r *htt
 		return groupopshttp.ProtocolPrincipal{ID: p.ClientID}, nil
 	}
 	if purpose != "group_ops_webhook" || a.replay == nil || len(a.webhookKey) != sha256.Size || resource == "" {
-		return groupopshttp.ProtocolPrincipal{}, errors.New("unavailable")
+		return groupopshttp.ProtocolPrincipal{}, groupopshttp.ErrProtocolUnavailable
 	}
 	client, timestamp, event, signature := r.Header.Get("X-AICRM-Client-Id"), r.Header.Get("X-AICRM-Timestamp"), r.Header.Get("X-AICRM-Event-Id"), r.Header.Get("X-AICRM-Signature")
 	if client != groupOpsWebhookClientID || len(event) < 16 || len(event) > 256 || strings.TrimSpace(event) != event {
@@ -73,7 +73,10 @@ func (a *groupOpsProtocolAuthenticator) Authenticate(ctx context.Context, r *htt
 	payloadBytes = append(payloadBytes, body...)
 	payload := sha256.Sum256(payloadBytes)
 	created, err := a.replay.Reserve(ctx, resource, event, payload)
-	if err != nil || !created {
+	if err != nil {
+		return groupopshttp.ProtocolPrincipal{}, groupopshttp.ErrProtocolUnavailable
+	}
+	if !created {
 		return groupopshttp.ProtocolPrincipal{}, errors.New("unauthorized")
 	}
 	return groupopshttp.ProtocolPrincipal{ID: event}, nil

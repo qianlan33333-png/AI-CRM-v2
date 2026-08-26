@@ -55,6 +55,8 @@ var _ RuntimeApplication = (*groupopsapp.RuntimeService)(nil)
 
 type ProtocolPrincipal struct{ ID string }
 
+var ErrProtocolUnavailable = errors.New("group ops protocol authentication unavailable")
+
 // ProtocolAuthenticator is intentionally an injected boundary. The Group Ops
 // package neither invents API-client JWT nor webhook-HMAC credential policy,
 // and a nil implementation fails closed in production.
@@ -339,6 +341,10 @@ func (h *Handler) protocolPrincipal(w http.ResponseWriter, r *http.Request, purp
 		return ProtocolPrincipal{}, false
 	}
 	principal, err := h.Protocols.Authenticate(r.Context(), r, purpose, resource, body)
+	if errors.Is(err, ErrProtocolUnavailable) {
+		writeError(w, http.StatusServiceUnavailable, "protocol_auth_unavailable")
+		return ProtocolPrincipal{}, false
+	}
 	if err != nil || !opaqueHTTP(principal.ID) {
 		writeError(w, http.StatusUnauthorized, "protocol_authentication_failed")
 		return ProtocolPrincipal{}, false
