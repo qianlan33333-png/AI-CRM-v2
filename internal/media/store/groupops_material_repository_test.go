@@ -13,3 +13,9 @@ func TestGroupOpsPreparationLockKeyIsStableAndSourceScoped(t *testing.T) {
 		t.Fatal("distinct source identities share a generation lock")
 	}
 }
+
+func TestGroupOpsDigestRejectsNonCanonicalHex(t *testing.T) {
+	if !groupOpsDigest("sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") || groupOpsDigest("sha256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA") || groupOpsDigest("sha256:gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg") {
+		t.Fatal("digest validation accepted a non-canonical value")
+	}
+}

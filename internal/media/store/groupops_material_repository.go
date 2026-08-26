@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -331,7 +332,7 @@ func groupOpsDigest(value string) bool {
 		return false
 	}
 	_, err := hex.DecodeString(value[7:])
-	return err == nil && value == "sha256:"+value[7:]
+	return err == nil && value[7:] == strings.ToLower(value[7:])
 }
 
 func groupOpsMaterialUnavailable(err error) error {
