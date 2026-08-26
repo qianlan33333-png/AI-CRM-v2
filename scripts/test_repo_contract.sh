@@ -137,6 +137,18 @@ refresh_manifest "$nightly_pr_fixture"
 expect_rejected "$nightly_pr_fixture" "nightly pull-request trigger"
 printf 'repo-contract-tests: nightly-trigger PASS\n'
 
+nightly_dispatch_fixture="$(make_fixture nightly-workflow-dispatch)"
+python3 - "$nightly_dispatch_fixture/.github/workflows/nightly.yml" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+source = path.read_text(encoding="utf-8")
+path.write_text(source.replace("on:\n", "on:\n  workflow_dispatch:\n", 1), encoding="utf-8")
+PY
+refresh_manifest "$nightly_dispatch_fixture"
+expect_rejected "$nightly_dispatch_fixture" "nightly workflow-dispatch trigger"
+printf 'repo-contract-tests: nightly-dispatch PASS\n'
+
 unpinned_fixture="$(make_fixture unpinned-action)"
 python3 - "$unpinned_fixture/.github/workflows/ci.yml" <<'PY'
 from pathlib import Path
@@ -166,10 +178,10 @@ from pathlib import Path
 import sys
 path = Path(sys.argv[1])
 source = path.read_text(encoding="utf-8")
-old = "  statuses: write\n"
+old = "      statuses: write\n"
 if old not in source:
     raise SystemExit("nightly status permission fixture anchor missing")
-path.write_text(source.replace(old, old + "  checks: write\n", 1), encoding="utf-8")
+path.write_text(source.replace(old, old + "      checks: write\n", 1), encoding="utf-8")
 PY
 refresh_manifest "$nightly_write_permission_fixture"
 expect_rejected "$nightly_write_permission_fixture" "nightly non-status write permission"
@@ -297,4 +309,4 @@ refresh_manifest "$events_manifest_removal_fixture"
 expect_rejected "$events_manifest_removal_fixture" "Events manifest 0052 removal"
 printf 'repo-contract-tests: events-manifest-removal PASS\n'
 
-printf 'repo-contract-tests: PASS cases=20\n'
+printf 'repo-contract-tests: PASS cases=21\n'
