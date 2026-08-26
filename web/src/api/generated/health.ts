@@ -9242,6 +9242,54 @@ export interface LegacyOrderExportFilter {
   created_to?: string;
 }
 
+export type LegacyWechatOrderExportRequestResource =
+  (typeof LegacyWechatOrderExportRequestResource)[keyof typeof LegacyWechatOrderExportRequestResource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyWechatOrderExportRequestResource = {
+  orders: "orders",
+} as const;
+
+export type LegacyWechatOrderExportRequestFormat =
+  (typeof LegacyWechatOrderExportRequestFormat)[keyof typeof LegacyWechatOrderExportRequestFormat];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyWechatOrderExportRequestFormat = {
+  csv: "csv",
+} as const;
+
+export interface LegacyWechatOrderExportRequest {
+  resource: LegacyWechatOrderExportRequestResource;
+  format: LegacyWechatOrderExportRequestFormat;
+  filters: LegacyWechatOrderExportFilter;
+}
+
+export type LegacyWechatOrderExportFilterProvider =
+  (typeof LegacyWechatOrderExportFilterProvider)[keyof typeof LegacyWechatOrderExportFilterProvider];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyWechatOrderExportFilterProvider = {
+  wechat: "wechat",
+} as const;
+
+export interface LegacyWechatOrderExportFilter {
+  provider: LegacyWechatOrderExportFilterProvider;
+  /** @maxLength 80 */
+  mobile?: string;
+  /** @maxLength 200 */
+  identity?: string;
+  /** @maxLength 200 */
+  transaction_id?: string;
+  /** @maxLength 200 */
+  product_code?: string;
+  /** @maxLength 64 */
+  status?: string;
+  /** @maxLength 64 */
+  created_from?: string;
+  /** @maxLength 64 */
+  created_to?: string;
+}
+
 export type LegacyOrderExportResource =
   (typeof LegacyOrderExportResource)[keyof typeof LegacyOrderExportResource];
 
@@ -32871,10 +32919,10 @@ export const getLegacyOrderExport = async (
 };
 
 /**
- * @summary Create the local WeChat order CSV export
+ * @summary Download a receipt-backed, PII-safe local WeChat order CSV export
  */
 export type createLegacyWechatOrderExportResponse200 = {
-  data: LegacyOrderExport;
+  data: string;
   status: 200;
 };
 
@@ -32926,14 +32974,14 @@ export const getCreateLegacyWechatOrderExportUrl = () => {
 };
 
 export const createLegacyWechatOrderExport = async (
-  emptyObject: EmptyObject,
+  legacyWechatOrderExportRequest: LegacyWechatOrderExportRequest,
   options?: RequestInit,
 ): Promise<createLegacyWechatOrderExportResponse> => {
   const res = await fetch(getCreateLegacyWechatOrderExportUrl(), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(emptyObject),
+    body: JSON.stringify(legacyWechatOrderExportRequest),
   });
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
