@@ -175,6 +175,7 @@ type candidateHandler struct {
 	commerceRefunds           *orderhttp.CommerceRefundHandler
 	sidebar                   *sidebarhttp.Handler
 	sidebarActivity           *sidebarhttp.ActivityHandler
+	sidebarOtherStaffChats    *sidebarhttp.OtherStaffChatHandler
 	sidebarOAuth              *sidebarhttp.OAuthHandler
 	sidebarJSSDK              *sidebarhttp.JSSDKHandler
 	surveyPublic              *surveyhttp.PublicHandler
@@ -1894,6 +1895,19 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	candidate.sidebarActivity, err = sidebarhttp.NewActivityHandler(candidate.sidebar, sidebarActivityService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	sidebarOtherStaffChatService := wecomapp.NewOtherStaffChatService(
+		uow, wecomstore.NewMessageArchiveRepository(), contactstore.NewStaffDirectoryRepository(pool),
+	)
+	sidebarOtherStaffChats, err := sidebarapp.NewOtherStaffChatService(sidebarOtherStaffChatService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	candidate.sidebarOtherStaffChats, err = sidebarhttp.NewOtherStaffChatHandler(candidate.sidebar, sidebarOtherStaffChats)
 	if err != nil {
 		pool.Close()
 		return nil, err

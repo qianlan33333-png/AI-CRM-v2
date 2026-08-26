@@ -141,6 +141,14 @@ func (handler *candidateHandler) ListSidebarChatActivity(writer http.ResponseWri
 	handler.sidebarActivity.Chat(writer, request, chatType, cursor, limit)
 }
 
+func (handler *candidateHandler) ListSidebarOtherStaffChats(writer http.ResponseWriter, request *http.Request, _ api.ListSidebarOtherStaffChatsParams) {
+	if handler == nil || handler.sidebarOtherStaffChats == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.sidebarOtherStaffChats.List(writer, request)
+}
+
 func writeSidebarActivityMethodNotAllowed(writer http.ResponseWriter, _ *http.Request) {
 	writer.Header().Set("Allow", http.MethodGet)
 	writer.Header().Set("Cache-Control", "no-store")

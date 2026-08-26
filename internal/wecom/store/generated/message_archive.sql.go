@@ -297,6 +297,55 @@ func (q *Queries) ListMessageArchiveRecords(ctx context.Context, arg ListMessage
 	return items, nil
 }
 
+const listSidebarOtherStaffChatRecords = `-- name: ListSidebarOtherStaffChatRecords :many
+SELECT owner_userid AS staff_userid, message_type, content_masked, sent_at
+FROM wecom_message_archive_records
+WHERE customer_id = $1::bigint
+  AND owner_userid <> $2::text
+  AND btrim(owner_userid) <> ''
+  AND message_type IN ('text', 'image')
+ORDER BY sent_at DESC, id DESC
+LIMIT $3::integer
+`
+
+type ListSidebarOtherStaffChatRecordsParams struct {
+	CustomerID  int64  `json:"customer_id"`
+	OwnerUserid string `json:"owner_userid"`
+	RowLimit    int32  `json:"row_limit"`
+}
+
+type ListSidebarOtherStaffChatRecordsRow struct {
+	StaffUserid   string             `json:"staff_userid"`
+	MessageType   string             `json:"message_type"`
+	ContentMasked string             `json:"content_masked"`
+	SentAt        pgtype.Timestamptz `json:"sent_at"`
+}
+
+func (q *Queries) ListSidebarOtherStaffChatRecords(ctx context.Context, arg ListSidebarOtherStaffChatRecordsParams) ([]ListSidebarOtherStaffChatRecordsRow, error) {
+	rows, err := q.db.Query(ctx, listSidebarOtherStaffChatRecords, arg.CustomerID, arg.OwnerUserid, arg.RowLimit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListSidebarOtherStaffChatRecordsRow{}
+	for rows.Next() {
+		var i ListSidebarOtherStaffChatRecordsRow
+		if err := rows.Scan(
+			&i.StaffUserid,
+			&i.MessageType,
+			&i.ContentMasked,
+			&i.SentAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const messageArchiveHealth = `-- name: MessageArchiveHealth :one
 SELECT
   (SELECT count(*)::bigint FROM wecom_message_archive_records) AS record_count,

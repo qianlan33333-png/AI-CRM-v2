@@ -236,6 +236,27 @@ paths:
         "403": {$ref: "#/components/responses/Forbidden"}
         "404": {$ref: "#/components/responses/NotFound"}
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/other-staff-chats:
+    get:
+      tags: [p4-sidebar-local]
+      operationId: listSidebarOtherStaffChats
+      summary: Read the bound customer's recent masked chats owned by other active staff
+      x-p4-decision-evidence: P4-S05-035-SIDEBAR-OTHER-STAFF-LOCAL-ARCHIVE-2026-08-27
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
+      x-aicrm-auth-scheme: human_session_and_sidebar_context
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: wecom.local_message_archive_masked_content
+      x-aicrm-external-effect: none
+      parameters:
+        - {$ref: "#/components/parameters/SidebarContextToken"}
+      responses:
+        "200": {description: "At most 20 newest local text/image archive rows owned by staff other than the bound customer's active owner; returns only masked content and no provider receipts", content: {application/json: {schema: {$ref: "#/components/schemas/SidebarOtherStaffChatResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/workbench:
     get:
       tags: [p4-sidebar-local]
@@ -13372,6 +13393,22 @@ components:
         items: {type: array, maxItems: 100, items: {$ref: "#/components/schemas/SidebarChatActivityItem"}}
         next_cursor: {type: string, minLength: 1, maxLength: 512}
         previous_cursor: {type: string, minLength: 1, maxLength: 512}
+        safety: {$ref: "#/components/schemas/SidebarSafety"}
+    SidebarOtherStaffChatItem:
+      type: object
+      additionalProperties: false
+      required: [staff_userid, message_type, content_masked, sent_at]
+      properties:
+        staff_userid: {type: string, minLength: 1, maxLength: 128}
+        message_type: {type: string, enum: [text, image]}
+        content_masked: {type: string, minLength: 1, maxLength: 10000}
+        sent_at: {type: string, format: date-time}
+    SidebarOtherStaffChatResponse:
+      type: object
+      additionalProperties: false
+      required: [items, safety]
+      properties:
+        items: {type: array, maxItems: 20, items: {$ref: "#/components/schemas/SidebarOtherStaffChatItem"}}
         safety: {$ref: "#/components/schemas/SidebarSafety"}
     AdminOpsCategorySettings:
       type: object

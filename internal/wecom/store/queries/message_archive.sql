@@ -46,6 +46,16 @@ ORDER BY sent_at DESC, id DESC
 LIMIT sqlc.arg(row_limit)::integer
 OFFSET sqlc.arg(row_offset)::integer;
 
+-- name: ListSidebarOtherStaffChatRecords :many
+SELECT owner_userid AS staff_userid, message_type, content_masked, sent_at
+FROM wecom_message_archive_records
+WHERE customer_id = sqlc.arg(customer_id)::bigint
+  AND owner_userid <> sqlc.arg(owner_userid)::text
+  AND btrim(owner_userid) <> ''
+  AND message_type IN ('text', 'image')
+ORDER BY sent_at DESC, id DESC
+LIMIT sqlc.arg(row_limit)::integer;
+
 -- name: CountMessageArchiveRecords :one
 SELECT count(*)::bigint
 FROM wecom_message_archive_records

@@ -52,62 +52,78 @@ export async function runTransportContractTests(): Promise<void> {
   const sidebarRequests: Array<{ input: string; init?: RequestInit }> = [];
   globalThis.fetch = async (input, init) => {
     sidebarRequests.push({ input: String(input), init });
-    const data = String(input).includes("questionnaires")
+    const data = String(input).includes("other-staff-chats")
       ? {
           items: [
             {
-              submission_id: 11,
-              questionnaire_id: 3,
-              submitted_at: "2026-08-26T01:00:00Z",
-              score: 8.5,
-              choice_answers: [
-                {
-                  question_id: 2,
-                  question_type: "single_choice",
-                  sort_order: 0,
-                  option_ids: [9],
-                },
-              ],
+              staff_userid: "staff-other",
+              message_type: "text",
+              content_masked: "已脱敏内容",
+              sent_at: "2026-08-26T01:00:00Z",
             },
           ],
-          scan_truncated: false,
-          result_truncated: false,
           safety: {
             local_only: true,
             provider_execution_eligible: false,
             real_external_call_executed: false,
           },
         }
-      : String(input).includes("chat-activity")
+      : String(input).includes("questionnaires")
         ? {
             items: [
               {
-                chat_type: "private",
-                message_type: "text",
-                sent_at: "2026-08-26T01:00:00Z",
+                submission_id: 11,
+                questionnaire_id: 3,
+                submitted_at: "2026-08-26T01:00:00Z",
+                score: 8.5,
+                choice_answers: [
+                  {
+                    question_id: 2,
+                    question_type: "single_choice",
+                    sort_order: 0,
+                    option_ids: [9],
+                  },
+                ],
               },
             ],
+            scan_truncated: false,
+            result_truncated: false,
             safety: {
               local_only: true,
               provider_execution_eligible: false,
               real_external_call_executed: false,
             },
           }
-        : {
-            items: [
-              {
-                id: 7,
-                event_type: "survey_submitted",
-                occurred_at: "2026-08-26T00:00:00Z",
+        : String(input).includes("chat-activity")
+          ? {
+              items: [
+                {
+                  chat_type: "private",
+                  message_type: "text",
+                  sent_at: "2026-08-26T01:00:00Z",
+                },
+              ],
+              safety: {
+                local_only: true,
+                provider_execution_eligible: false,
+                real_external_call_executed: false,
               },
-            ],
-            next_cursor: "next-opaque",
-            safety: {
-              local_only: true,
-              provider_execution_eligible: false,
-              real_external_call_executed: false,
-            },
-          };
+            }
+          : {
+              items: [
+                {
+                  id: 7,
+                  event_type: "survey_submitted",
+                  occurred_at: "2026-08-26T00:00:00Z",
+                },
+              ],
+              next_cursor: "next-opaque",
+              safety: {
+                local_only: true,
+                provider_execution_eligible: false,
+                real_external_call_executed: false,
+              },
+            };
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -121,6 +137,7 @@ export async function runTransportContractTests(): Promise<void> {
       chat_type: "private",
       limit: 10,
     });
+    const otherStaffChats = await sidebarApi.otherStaffChats("sidebar-context");
     const questionnaires = await sidebarApi.questionnaires("sidebar-context", {
       limit: 100,
     });
@@ -132,6 +149,11 @@ export async function runTransportContractTests(): Promise<void> {
     assert(
       chat.items[0]?.chat_type === "private",
       "Sidebar chat activity response must retain safe metadata DTO",
+    );
+    assert(
+      otherStaffChats.items[0]?.staff_userid === "staff-other" &&
+        otherStaffChats.items[0]?.content_masked === "已脱敏内容",
+      "Sidebar other-staff chat adapter must retain only the masked local DTO",
     );
     assert(
       questionnaires.items[0]?.submission_id === 11 &&
@@ -148,7 +170,11 @@ export async function runTransportContractTests(): Promise<void> {
       "Sidebar chat activity must use generated GET URL",
     );
     assert(
-      sidebarRequests[2]?.input === "/api/sidebar/v2/questionnaires?limit=100",
+      sidebarRequests[2]?.input === "/api/sidebar/v2/other-staff-chats",
+      "Sidebar other-staff chats must use the generated GET URL",
+    );
+    assert(
+      sidebarRequests[3]?.input === "/api/sidebar/v2/questionnaires?limit=100",
       "Sidebar questionnaires must use generated GET URL",
     );
     for (const call of sidebarRequests) {

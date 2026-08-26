@@ -8,6 +8,7 @@ import { newSidebarIdempotencyKey, sidebarApi } from "../api/sidebar";
 import type {
   SidebarAgentConfigSignature,
   SidebarChatActivityResponse,
+  SidebarOtherStaffChatResponse,
   SidebarMaterialResponse,
   SidebarOrderResponse,
   SidebarPeriodicOrderResponse,
@@ -56,6 +57,7 @@ type BoundSidebarApi = Pick<
   | "workbench"
   | "timeline"
   | "chatActivity"
+  | "otherStaffChats"
   | "profile"
   | "bindPhone"
   | "questionnaires"
@@ -110,6 +112,7 @@ type SidebarTab =
   | "questionnaires"
   | "timeline"
   | "chat_activity"
+  | "other_staff_messages"
   | "orders"
   | "periodic_orders"
   | "products"
@@ -121,6 +124,7 @@ function isSidebarTab(value: string | undefined): value is SidebarTab {
     value === "questionnaires" ||
     value === "timeline" ||
     value === "chat_activity" ||
+    value === "other_staff_messages" ||
     value === "orders" ||
     value === "periodic_orders" ||
     value === "products" ||
@@ -264,6 +268,10 @@ export class SidebarController {
   private chatActivityLoading = false;
   private chatActivityError: unknown = null;
   private chatActivityRequestVersion = 0;
+  private otherStaffChats: SidebarOtherStaffChatResponse | null = null;
+  private otherStaffChatsLoading = false;
+  private otherStaffChatsError: unknown = null;
+  private otherStaffChatsRequestVersion = 0;
   private orders: SidebarOrderResponse | null = null;
   private ordersLoading = false;
   private ordersError: unknown = null;
@@ -416,6 +424,9 @@ export class SidebarController {
         void this.loadChatActivity();
       } else if (action === "chat-activity-more") {
         void this.loadChatActivity(this.chatActivity?.next_cursor);
+      } else if (action === "retry-other-staff-chats") {
+        button.disabled = true;
+        void this.loadOtherStaffChats();
       } else if (action === "retry-orders") {
         button.disabled = true;
         void this.loadOrders(this.orders?.items.length || 0);
@@ -798,6 +809,10 @@ export class SidebarController {
     this.chatActivityError = null;
     this.chatActivityLoading = false;
     this.chatActivityRequestVersion += 1;
+    this.otherStaffChats = null;
+    this.otherStaffChatsError = null;
+    this.otherStaffChatsLoading = false;
+    this.otherStaffChatsRequestVersion += 1;
     this.orders = null;
     this.ordersError = null;
     this.ordersLoading = false;
@@ -922,6 +937,8 @@ export class SidebarController {
     else if (tab === "timeline" && !this.timeline) void this.loadTimeline();
     else if (tab === "chat_activity" && !this.chatActivity)
       void this.loadChatActivity();
+    else if (tab === "other_staff_messages" && !this.otherStaffChats)
+      void this.loadOtherStaffChats();
     else if (tab === "orders" && !this.orders) void this.loadOrders();
     else if (tab === "periodic_orders" && !this.periodicOrders)
       void this.loadPeriodicOrders();
@@ -941,13 +958,15 @@ export class SidebarController {
             ? this.renderTimelinePanel()
             : this.activeTab === "chat_activity"
               ? this.renderChatActivityPanel()
-              : this.activeTab === "orders"
-                ? this.renderOrdersPanel()
-                : this.activeTab === "periodic_orders"
-                  ? this.renderPeriodicOrdersPanel()
-                  : this.activeTab === "products"
-                    ? this.renderProductsPanel()
-                    : this.renderMaterialsPanel();
+              : this.activeTab === "other_staff_messages"
+                ? this.renderOtherStaffChatsPanel()
+                : this.activeTab === "orders"
+                  ? this.renderOrdersPanel()
+                  : this.activeTab === "periodic_orders"
+                    ? this.renderPeriodicOrdersPanel()
+                    : this.activeTab === "products"
+                      ? this.renderProductsPanel()
+                      : this.renderMaterialsPanel();
     this.content.replaceChildren(this.renderOverview(workbench), panel);
   }
 
@@ -1598,6 +1617,113 @@ export class SidebarController {
       markBound(more);
       controlsMore.append(more);
       panel.append(controlsMore);
+    }
+    this.appendSafety(panel, response.safety);
+    return panel;
+  }
+
+  private validateOtherStaffChats(
+    response: SidebarOtherStaffChatResponse,
+  ): void {
+    if (
+      !response ||
+      !Array.isArray(response.items) ||
+      response.items.length > 20
+    )
+      throw new Error("其他客服聊天响应不完整，已停止渲染。");
+    validateSidebarSafety(response.safety, "其他客服聊天");
+    for (const item of response.items) {
+      if (
+        typeof item.staff_userid !== "string" ||
+        !item.staff_userid ||
+        (item.message_type !== "text" && item.message_type !== "image") ||
+        typeof item.content_masked !== "string" ||
+        !item.content_masked ||
+        typeof item.sent_at !== "string" ||
+        !item.sent_at
+      )
+        throw new Error("其他客服聊天安全字段不完整，已停止渲染。");
+    }
+  }
+
+  private async loadOtherStaffChats(): Promise<void> {
+    if (!this.contextToken || !this.workbench) return;
+    const requestVersion = ++this.otherStaffChatsRequestVersion;
+    this.otherStaffChatsLoading = true;
+    this.otherStaffChatsError = null;
+    this.otherStaffChats = null;
+    if (this.activeTab === "other_staff_messages") this.renderActiveContent();
+    try {
+      const response = await this.api.otherStaffChats(this.contextToken);
+      if (requestVersion !== this.otherStaffChatsRequestVersion) return;
+      this.validateOtherStaffChats(response);
+      this.otherStaffChats = response;
+    } catch (error) {
+      if (requestVersion !== this.otherStaffChatsRequestVersion) return;
+      this.otherStaffChatsError = error;
+    } finally {
+      if (requestVersion === this.otherStaffChatsRequestVersion) {
+        this.otherStaffChatsLoading = false;
+        if (this.activeTab === "other_staff_messages")
+          this.renderActiveContent();
+      }
+    }
+  }
+
+  private renderOtherStaffChatsPanel(): HTMLElement {
+    const response = this.otherStaffChats;
+    const panel = this.panelShell(
+      "other-staff-chats",
+      "其他客服聊天",
+      response ? `${response.items.length} 条 · 最近 20 条` : "最近 20 条",
+    );
+    panel.dataset.sidebarCapability = "local-archive";
+    panel.append(
+      createElement(
+        this.doc,
+        "div",
+        "sidebar-status warn",
+        "仅展示本地归档的脱敏 text/image；当前负责人身份无法确认时会安全关闭，不调用企微，也不表示外部效果成功。",
+      ),
+    );
+    if (!response) {
+      if (this.otherStaffChatsError)
+        this.appendRetry(
+          panel,
+          `其他客服聊天读取失败：${errorMessage(this.otherStaffChatsError, "请稍后重试。")}`,
+          "retry-other-staff-chats",
+          "重试读取其他客服聊天",
+        );
+      else this.appendLoading(panel, "正在读取本地脱敏聊天归档…");
+      return panel;
+    }
+    if (!response.items.length)
+      panel.append(
+        createElement(this.doc, "div", "empty", "暂无其他客服聊天记录"),
+      );
+    else {
+      const list = createElement(this.doc, "div", "list");
+      for (const item of response.items) {
+        const card = createElement(this.doc, "article", "list-item");
+        card.dataset.otherStaffChatAt = item.sent_at;
+        card.append(
+          createElement(
+            this.doc,
+            "div",
+            "item-title",
+            `${item.staff_userid} · ${item.message_type === "image" ? "图片" : "文本"}`,
+          ),
+          createElement(this.doc, "div", "item-body", item.content_masked),
+          createElement(
+            this.doc,
+            "div",
+            "item-meta",
+            `发送时间 ${item.sent_at}`,
+          ),
+        );
+        list.append(card);
+      }
+      panel.append(list);
     }
     this.appendSafety(panel, response.safety);
     return panel;

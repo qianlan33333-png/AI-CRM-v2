@@ -5196,22 +5196,22 @@ func (e LocalProductLifecycleShareReason) Valid() bool {
 
 // Defines values for MediaContentRefKind.
 const (
-	Attachment  MediaContentRefKind = "attachment"
-	GroupInvite MediaContentRefKind = "group_invite"
-	Image       MediaContentRefKind = "image"
-	Miniprogram MediaContentRefKind = "miniprogram"
+	MediaContentRefKindAttachment  MediaContentRefKind = "attachment"
+	MediaContentRefKindGroupInvite MediaContentRefKind = "group_invite"
+	MediaContentRefKindImage       MediaContentRefKind = "image"
+	MediaContentRefKindMiniprogram MediaContentRefKind = "miniprogram"
 )
 
 // Valid indicates whether the value is a known member of the MediaContentRefKind enum.
 func (e MediaContentRefKind) Valid() bool {
 	switch e {
-	case Attachment:
+	case MediaContentRefKindAttachment:
 		return true
-	case GroupInvite:
+	case MediaContentRefKindGroupInvite:
 		return true
-	case Image:
+	case MediaContentRefKindImage:
 		return true
-	case Miniprogram:
+	case MediaContentRefKindMiniprogram:
 		return true
 	default:
 		return false
@@ -6979,6 +6979,24 @@ const (
 func (e SidebarMaterialItemThumbnailStatus) Valid() bool {
 	switch e {
 	case SidebarMaterialItemThumbnailStatusPending:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SidebarOtherStaffChatItemMessageType.
+const (
+	SidebarOtherStaffChatItemMessageTypeImage SidebarOtherStaffChatItemMessageType = "image"
+	SidebarOtherStaffChatItemMessageTypeText  SidebarOtherStaffChatItemMessageType = "text"
+)
+
+// Valid indicates whether the value is a known member of the SidebarOtherStaffChatItemMessageType enum.
+func (e SidebarOtherStaffChatItemMessageType) Valid() bool {
+	switch e {
+	case SidebarOtherStaffChatItemMessageTypeImage:
+		return true
+	case SidebarOtherStaffChatItemMessageTypeText:
 		return true
 	default:
 		return false
@@ -11770,6 +11788,23 @@ type SidebarOrderResponse struct {
 	Total   int64              `json:"total"`
 }
 
+// SidebarOtherStaffChatItem defines model for SidebarOtherStaffChatItem.
+type SidebarOtherStaffChatItem struct {
+	ContentMasked string                               `json:"content_masked"`
+	MessageType   SidebarOtherStaffChatItemMessageType `json:"message_type"`
+	SentAt        time.Time                            `json:"sent_at"`
+	StaffUserid   string                               `json:"staff_userid"`
+}
+
+// SidebarOtherStaffChatItemMessageType defines model for SidebarOtherStaffChatItem.MessageType.
+type SidebarOtherStaffChatItemMessageType string
+
+// SidebarOtherStaffChatResponse defines model for SidebarOtherStaffChatResponse.
+type SidebarOtherStaffChatResponse struct {
+	Items  []SidebarOtherStaffChatItem `json:"items"`
+	Safety SidebarSafety               `json:"safety"`
+}
+
 // SidebarPeriodicOrderResponse defines model for SidebarPeriodicOrderResponse.
 type SidebarPeriodicOrderResponse struct {
 	HasMore bool                         `json:"has_more"`
@@ -13299,6 +13334,12 @@ type ListSidebarOrdersParams struct {
 	Limit  *int32 `form:"limit,omitempty" json:"limit,omitempty"`
 	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
 
+	// XSidebarContextToken Short-lived HMAC-authenticated corp, customer, owner, and viewer scoped token.
+	XSidebarContextToken SidebarContextToken `json:"X-Sidebar-Context-Token"`
+}
+
+// ListSidebarOtherStaffChatsParams defines parameters for ListSidebarOtherStaffChats.
+type ListSidebarOtherStaffChatsParams struct {
 	// XSidebarContextToken Short-lived HMAC-authenticated corp, customer, owner, and viewer scoped token.
 	XSidebarContextToken SidebarContextToken `json:"X-Sidebar-Context-Token"`
 }
@@ -15802,6 +15843,9 @@ type ServerInterface interface {
 	// List customer-scoped local orders with inline safe details and without payer or identity fields
 	// (GET /api/sidebar/v2/orders)
 	ListSidebarOrders(w http.ResponseWriter, r *http.Request, params ListSidebarOrdersParams)
+	// Read the bound customer's recent masked chats owned by other active staff
+	// (GET /api/sidebar/v2/other-staff-chats)
+	ListSidebarOtherStaffChats(w http.ResponseWriter, r *http.Request, params ListSidebarOtherStaffChatsParams)
 	// List canonical service-period members for one scoped customer
 	// (GET /api/sidebar/v2/periodic-orders)
 	ListSidebarPeriodicOrders(w http.ResponseWriter, r *http.Request, params ListSidebarPeriodicOrdersParams)
@@ -16978,6 +17022,12 @@ func (_ Unimplemented) StartSidebarOAuth(w http.ResponseWriter, r *http.Request,
 // List customer-scoped local orders with inline safe details and without payer or identity fields
 // (GET /api/sidebar/v2/orders)
 func (_ Unimplemented) ListSidebarOrders(w http.ResponseWriter, r *http.Request, params ListSidebarOrdersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the bound customer's recent masked chats owned by other active staff
+// (GET /api/sidebar/v2/other-staff-chats)
+func (_ Unimplemented) ListSidebarOtherStaffChats(w http.ResponseWriter, r *http.Request, params ListSidebarOtherStaffChatsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -26557,6 +26607,56 @@ func (siw *ServerInterfaceWrapper) ListSidebarOrders(w http.ResponseWriter, r *h
 	handler.ServeHTTP(w, r)
 }
 
+// ListSidebarOtherStaffChats operation middleware
+func (siw *ServerInterfaceWrapper) ListSidebarOtherStaffChats(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListSidebarOtherStaffChatsParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Sidebar-Context-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Sidebar-Context-Token")]; found {
+		var XSidebarContextToken SidebarContextToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Sidebar-Context-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Sidebar-Context-Token", valueList[0], &XSidebarContextToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Sidebar-Context-Token", Err: err})
+			return
+		}
+
+		params.XSidebarContextToken = XSidebarContextToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Sidebar-Context-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Sidebar-Context-Token", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSidebarOtherStaffChats(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListSidebarPeriodicOrders operation middleware
 func (siw *ServerInterfaceWrapper) ListSidebarPeriodicOrders(w http.ResponseWriter, r *http.Request) {
 
@@ -32528,6 +32628,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/sidebar/v2/orders", wrapper.ListSidebarOrders)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/sidebar/v2/other-staff-chats", wrapper.ListSidebarOtherStaffChats)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/sidebar/v2/periodic-orders", wrapper.ListSidebarPeriodicOrders)
@@ -42357,6 +42460,59 @@ func (response ListSidebarOrders503JSONResponse) VisitListSidebarOrdersResponse(
 	return json.NewEncoder(w).Encode(response)
 }
 
+type ListSidebarOtherStaffChatsRequestObject struct {
+	Params ListSidebarOtherStaffChatsParams
+}
+
+type ListSidebarOtherStaffChatsResponseObject interface {
+	VisitListSidebarOtherStaffChatsResponse(w http.ResponseWriter) error
+}
+
+type ListSidebarOtherStaffChats200JSONResponse SidebarOtherStaffChatResponse
+
+func (response ListSidebarOtherStaffChats200JSONResponse) VisitListSidebarOtherStaffChatsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarOtherStaffChats400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListSidebarOtherStaffChats400JSONResponse) VisitListSidebarOtherStaffChatsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarOtherStaffChats401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListSidebarOtherStaffChats401JSONResponse) VisitListSidebarOtherStaffChatsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarOtherStaffChats403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListSidebarOtherStaffChats403JSONResponse) VisitListSidebarOtherStaffChatsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListSidebarOtherStaffChats503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListSidebarOtherStaffChats503JSONResponse) VisitListSidebarOtherStaffChatsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListSidebarPeriodicOrdersRequestObject struct {
 	Params ListSidebarPeriodicOrdersParams
 }
@@ -48586,6 +48742,9 @@ type StrictServerInterface interface {
 	// List customer-scoped local orders with inline safe details and without payer or identity fields
 	// (GET /api/sidebar/v2/orders)
 	ListSidebarOrders(ctx context.Context, request ListSidebarOrdersRequestObject) (ListSidebarOrdersResponseObject, error)
+	// Read the bound customer's recent masked chats owned by other active staff
+	// (GET /api/sidebar/v2/other-staff-chats)
+	ListSidebarOtherStaffChats(ctx context.Context, request ListSidebarOtherStaffChatsRequestObject) (ListSidebarOtherStaffChatsResponseObject, error)
 	// List canonical service-period members for one scoped customer
 	// (GET /api/sidebar/v2/periodic-orders)
 	ListSidebarPeriodicOrders(ctx context.Context, request ListSidebarPeriodicOrdersRequestObject) (ListSidebarPeriodicOrdersResponseObject, error)
@@ -53344,6 +53503,32 @@ func (sh *strictHandler) ListSidebarOrders(w http.ResponseWriter, r *http.Reques
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListSidebarOrdersResponseObject); ok {
 		if err := validResponse.VisitListSidebarOrdersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListSidebarOtherStaffChats operation middleware
+func (sh *strictHandler) ListSidebarOtherStaffChats(w http.ResponseWriter, r *http.Request, params ListSidebarOtherStaffChatsParams) {
+	var request ListSidebarOtherStaffChatsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListSidebarOtherStaffChats(ctx, request.(ListSidebarOtherStaffChatsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListSidebarOtherStaffChats")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListSidebarOtherStaffChatsResponseObject); ok {
+		if err := validResponse.VisitListSidebarOtherStaffChatsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

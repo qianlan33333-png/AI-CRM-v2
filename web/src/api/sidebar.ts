@@ -7,6 +7,7 @@ import {
   getStartSidebarOAuthUrl,
   getSidebarWorkbench,
   listSidebarChatActivity,
+  listSidebarOtherStaffChats,
   listSidebarMaterials,
   listSidebarOrders,
   listSidebarPeriodicOrders,
@@ -18,6 +19,7 @@ import {
   updateSidebarPeriodicRemark,
   updateSidebarProfile,
   type SidebarChatActivityResponse,
+  type SidebarOtherStaffChatResponse,
   type SidebarAgentConfigSignature,
   type SidebarContextResponse,
   type SidebarMaterialResponse,
@@ -86,6 +88,10 @@ export const sidebarApi = {
     unwrapGenerated(
       await listSidebarChatActivity(params, scopedOptions(contextToken)),
     ) as SidebarChatActivityResponse,
+  otherStaffChats: async (contextToken: string) =>
+    unwrapGenerated(
+      await listSidebarOtherStaffChats(scopedOptions(contextToken)),
+    ) as SidebarOtherStaffChatResponse,
   profile: async (
     contextToken: string,
     body: Parameters<typeof updateSidebarProfile>[0],

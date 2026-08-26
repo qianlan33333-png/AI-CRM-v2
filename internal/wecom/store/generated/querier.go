@@ -37,6 +37,7 @@ type Querier interface {
 	ListMessageArchiveExternalRecords(ctx context.Context, arg ListMessageArchiveExternalRecordsParams) ([]ListMessageArchiveExternalRecordsRow, error)
 	ListMessageArchiveLastAcceptedAt(ctx context.Context) ([]pgtype.Timestamptz, error)
 	ListMessageArchiveRecords(ctx context.Context, arg ListMessageArchiveRecordsParams) ([]ListMessageArchiveRecordsRow, error)
+	ListSidebarOtherStaffChatRecords(ctx context.Context, arg ListSidebarOtherStaffChatRecordsParams) ([]ListSidebarOtherStaffChatRecordsRow, error)
 	LoadWeComSyncState(ctx context.Context, syncKey string) (LoadWeComSyncStateRow, error)
 	MarkWeComContactInboxQueued(ctx context.Context, arg MarkWeComContactInboxQueuedParams) (MarkWeComContactInboxQueuedRow, error)
 	MarkWeComContactProfileEffectQueued(ctx context.Context, arg MarkWeComContactProfileEffectQueuedParams) (WecomContactProfileEffect, error)

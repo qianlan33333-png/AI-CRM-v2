@@ -1147,6 +1147,36 @@ export interface SidebarChatActivityResponse {
   safety: SidebarSafety;
 }
 
+export type SidebarOtherStaffChatItemMessageType =
+  (typeof SidebarOtherStaffChatItemMessageType)[keyof typeof SidebarOtherStaffChatItemMessageType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarOtherStaffChatItemMessageType = {
+  text: "text",
+  image: "image",
+} as const;
+
+export interface SidebarOtherStaffChatItem {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  staff_userid: string;
+  message_type: SidebarOtherStaffChatItemMessageType;
+  /**
+   * @minLength 1
+   * @maxLength 10000
+   */
+  content_masked: string;
+  sent_at: string;
+}
+
+export interface SidebarOtherStaffChatResponse {
+  /** @maxItems 20 */
+  items: SidebarOtherStaffChatItem[];
+  safety: SidebarSafety;
+}
+
 export interface AdminOpsCategorySettings {
   enabled?: boolean;
 }
@@ -19188,6 +19218,75 @@ export const listSidebarChatActivity = async (
     status: res.status,
     headers: res.headers,
   } as listSidebarChatActivityResponse;
+};
+
+/**
+ * @summary Read the bound customer's recent masked chats owned by other active staff
+ */
+export type listSidebarOtherStaffChatsResponse200 = {
+  data: SidebarOtherStaffChatResponse;
+  status: 200;
+};
+
+export type listSidebarOtherStaffChatsResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listSidebarOtherStaffChatsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listSidebarOtherStaffChatsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listSidebarOtherStaffChatsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listSidebarOtherStaffChatsResponseSuccess =
+  listSidebarOtherStaffChatsResponse200 & {
+    headers: Headers;
+  };
+export type listSidebarOtherStaffChatsResponseError = (
+  | listSidebarOtherStaffChatsResponse400
+  | listSidebarOtherStaffChatsResponse401
+  | listSidebarOtherStaffChatsResponse403
+  | listSidebarOtherStaffChatsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listSidebarOtherStaffChatsResponse =
+  | listSidebarOtherStaffChatsResponseSuccess
+  | listSidebarOtherStaffChatsResponseError;
+
+export const getListSidebarOtherStaffChatsUrl = () => {
+  return `/api/sidebar/v2/other-staff-chats`;
+};
+
+export const listSidebarOtherStaffChats = async (
+  options?: RequestInit,
+): Promise<listSidebarOtherStaffChatsResponse> => {
+  const res = await fetch(getListSidebarOtherStaffChatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listSidebarOtherStaffChatsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listSidebarOtherStaffChatsResponse;
 };
 
 /**
