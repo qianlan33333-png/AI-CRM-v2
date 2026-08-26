@@ -321,6 +321,27 @@ console.log('admin/radarDetail.html?id=2（详情）');
   input(dom, d.querySelector('#dKeyword'), '2f9Qn');
   await sleep(30);
   ok('明细按外部联系人 ID 过滤', d.querySelectorAll('#dRows tr').length === 3);
+  let exportedBlob = null;
+  const originalCreateObjectURL = dom.window.URL.createObjectURL;
+  const originalRevokeObjectURL = dom.window.URL.revokeObjectURL;
+  const originalAnchorClick = dom.window.HTMLAnchorElement.prototype.click;
+  dom.window.URL.createObjectURL = (blob) => {
+    exportedBlob = blob;
+    return 'blob:radar-export';
+  };
+  dom.window.URL.revokeObjectURL = () => {};
+  dom.window.HTMLAnchorElement.prototype.click = () => {};
+  click(dom, d.querySelector('#dExport'));
+  await sleep(30);
+  const reader = new dom.window.FileReader();
+  const csv = await new Promise((resolve) => {
+    reader.addEventListener('load', () => resolve(String(reader.result)));
+    reader.readAsText(exportedBlob);
+  });
+  ok('导出仅包含当前筛选后的 3 条雷达事件', csv.split('\n').filter(Boolean).length === 4 && csv.includes('2f9Qn'));
+  dom.window.URL.createObjectURL = originalCreateObjectURL;
+  dom.window.URL.revokeObjectURL = originalRevokeObjectURL;
+  dom.window.HTMLAnchorElement.prototype.click = originalAnchorClick;
   dom.window.close();
 }
 

@@ -229,16 +229,20 @@ async function renderDetail(root: HTMLElement, api: AdminApi, links: RadarLink[]
 
   const $ = <T extends HTMLElement>(s: string): T => root.querySelector(s) as T;
 
-  function paintRows(): void {
+  function filteredEvents() {
     const kw = ($('#dKeyword') as HTMLInputElement).value.trim().toLowerCase();
     const start = ($('#dStart') as HTMLInputElement).value;
     const end = ($('#dEnd') as HTMLInputElement).value;
-    const list = events.filter((e) => {
+    return events.filter((e) => {
       if (kw && !(e.external_userid || '').toLowerCase().includes(kw) && !(e.unionid_masked || '').toLowerCase().includes(kw)) return false;
       if (start && e.created_at < start.replace('T', ' ')) return false;
       if (end && e.created_at > end.replace('T', ' ')) return false;
       return true;
     });
+  }
+
+  function paintRows(): void {
+    const list = filteredEvents();
     $('#dRows').innerHTML = list.length
       ? list.map((e) => `<tr><td class="mono">${esc(e.unionid_masked)}</td><td class="mono">${esc(e.external_userid)}</td><td>${esc(e.created_at)}</td></tr>`).join('')
       : `<tr><td colspan="3" style="text-align:center;padding:36px;color:#8F959E">暂无已授权访问记录</td></tr>`;
@@ -261,7 +265,7 @@ async function renderDetail(root: HTMLElement, api: AdminApi, links: RadarLink[]
     downloadCsv(
       'radar-events.csv',
       ['unionid', '外部联系人ID', '时间'],
-      events.map((e) => [e.unionid_masked, e.external_userid, e.created_at]),
+      filteredEvents().map((e) => [e.unionid_masked, e.external_userid, e.created_at]),
     );
     toast('已导出 CSV');
   });
