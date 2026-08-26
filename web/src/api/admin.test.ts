@@ -131,6 +131,38 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(getGetServicePeriodProductUrl(8) === '/api/admin/service-period-products/8', 'service product detail URL/method');
   assert(getCreateServicePeriodProductUrl() === '/api/admin/service-period-products', 'service product create URL');
   assert(getUpdateServicePeriodProductUrl(8) === '/api/admin/service-period-products/8', 'service product update URL');
+  assert(getQueryServicePeriodMemberGridUrl(8) === '/api/admin/service-period-products/8/member-grid/query' && getGetServicePeriodMemberGridAccessUrl(8) === '/api/admin/service-period-products/8/member-grid/access' && getGetServicePeriodMemberGridSchemaUrl(8) === '/api/admin/service-period-products/8/member-grid/schema' && getListServicePeriodMemberViewsUrl(8) === '/api/admin/service-period-products/8/member-views' && getGetServicePeriodMemberGridShareSettingsUrl(8) === '/api/admin/service-period-products/8/member-grid/share-settings', 'service member grid generated URLs');
+  const memberGridCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const savedMemberGridFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const request = { input: String(input), init };
+    memberGridCalls.push(request);
+    if (request.input.endsWith('/member-grid/query')) return new Response(JSON.stringify({ rows: [{ member_ref: 'spm_0123456789012345678901', service_product_id: 8, customer_id: 21, display_name: '陈晨', state: 'active', source: 'manual', starts_at: '2026-08-01T00:00:00Z', expires_at: null, expired_at: null, removed_at: null, version: 3, updated_at: '2026-08-26T08:00:00Z' }], limit: 50, next_cursor: '', has_more: false }), { status: 200 });
+    if (request.input.endsWith('/member-grid/access')) return new Response(JSON.stringify({ product_id: 8, can_view: true, can_query: true, can_manage_views: false, can_share: false }), { status: 200 });
+    if (request.input.endsWith('/member-grid/schema')) return new Response(JSON.stringify({ service_product_id: 8, columns: Array.from({ length: 12 }, (_, index) => ({ key: index === 0 ? 'display_name' : 'state', label: `列${index + 1}`, type: 'string', nullable: false })) }), { status: 200 });
+    if (request.input.endsWith('/member-views')) return new Response(JSON.stringify({ product_id: 8, views: [{ id: 'default', name: '默认视图', source: 'built_in', read_only: true }] }), { status: 200 });
+    if (request.input.endsWith('/member-grid/share-settings')) return new Response(JSON.stringify({ service_product_id: 8, saved_views: [], collaborators: [], external_share_supported: false, external_share_enabled: false, real_external_call_executed: false, collaborator_edit_is_local_metadata_only: true, collaborator_edit_grants_central_permission: false }), { status: 200 });
+    if (request.input === '/api/admin/service-period-products') return new Response(JSON.stringify({ items: [{ service_product_id: 8, product_code: 'SP-8', name: '季度会员', description: '本地周期商品', price_minor: 398000, currency: 'CNY', stock_quantity: 5, lifecycle: 'enabled', version: 3, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T08:00:00Z' }] }), { status: 200 });
+    if (request.input === '/api/admin/service-period-products/8') return new Response(JSON.stringify({ product: { service_product_id: 8, product_code: 'SP-8', name: '季度会员', description: '本地周期商品', price_minor: 398000, currency: 'CNY', stock_quantity: 5, lifecycle: 'enabled', version: 3, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T08:00:00Z' } }), { status: 200 });
+    throw new Error(`unexpected member grid request: ${request.input}`);
+  };
+  try {
+    const memberGridPage = await new HttpApi({ baseUrl: '' }).loadDb({ page: 'spProductData', id: '8' });
+    const query = memberGridCalls.find((request) => request.input.endsWith('/member-grid/query'));
+    assert(memberGridCalls.length === 7 && query?.init?.method === 'POST', 'member grid page uses only generated reads plus bounded grid query');
+    assert(JSON.parse(String(query.init.body)).state === 'all' && JSON.parse(String(query.init.body)).limit === 50, 'member grid initial query is a bounded all-state read');
+    assert(memberGridPage.rows.orderKv[0].k === '陈晨 (spm_0123456789012345678901)' && memberGridPage.rows.orderKv[0].v.includes('active · manual'), 'member grid page renders real grid row fields instead of nonexistent member name/status aliases');
+    assert(memberGridPage.rows.orderKv.some((row) => row.k === 'member-grid-columns' && row.v === '12') && memberGridPage.rows.orderKv.some((row) => row.k === 'external-share-enabled' && row.v === 'false'), 'member grid page preserves local access and no-external-share boundary');
+  } finally { globalThis.fetch = savedMemberGridFetch; }
+
+  const savedMemberGridFailureFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ code: 'unavailable' }), { status: 503 });
+  try {
+    await new HttpApi({ baseUrl: '' }).loadDb({ page: 'spProductData', id: '8' });
+    assert(false, 'member grid accepted unavailable response');
+  } catch (error) {
+    assert(error instanceof ApiError && error.status === 503, 'member grid read failure remains visible without Mock or Seed fallback');
+  } finally { globalThis.fetch = savedMemberGridFailureFetch; }
   assert(getListLegacyCouponsUrl() === '/api/admin/coupons', 'coupon list URL/method');
   assert(getGetLegacyCouponUrl(3) === '/api/admin/coupons/3', 'coupon detail URL/method');
   assert(getCreateLegacyCouponUrl() === '/api/admin/coupons', 'coupon create URL');
