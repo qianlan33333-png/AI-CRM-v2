@@ -51,6 +51,25 @@ async function loadPage(rel, { id, q } = {}) {
         };
         return;
       }
+      if (rel === 'admin/campaigns.html' && new URL(window.location.href).searchParams.get('recipient') === '7') {
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
+        const planID = 'ctp_' + 'a'.repeat(64);
+        const local = { local_only: true, provider_execution_eligible: false, runtime_executed: false, real_external_call_executed: false, delivery_proven: false };
+        const plan = { id: planID, campaign_code: 'spring-campaign', campaign_version: 3, source: { kind: 'customer_selection' }, target_count: 1, content_step_count: 1, created_at: '2026-08-27T00:00:00Z' };
+        window.__recipientCalls = [];
+        window.fetch = async (input) => {
+          const url = String(input);
+          window.__recipientCalls.push(url);
+          if (url.endsWith('/recipients/7/review')) return json({ review: { canonical_customer_id: 7, status: 'pending_review', version: 1, updated_by_actor_id: 1, updated_at: '2026-08-27T00:00:00Z' }, ...local });
+          if (url.endsWith(`/touch-plans/${planID}/review`)) return json({ review: { status: 'pending_review', version: 2 }, handoff: null, ...local });
+          if (url.endsWith('/recipients/7')) return json({ canonical_customer_id: 7, ...local });
+          if (url.endsWith('/recipients?limit=50')) return json({ items: [{ canonical_customer_id: 7 }], next_cursor: null, ...local });
+          if (url.endsWith(`/touch-plans/${planID}`)) return json({ ...plan, content: { steps: [{ step_index: 1, delay_minutes: 0, content: '本地审核内容' }] }, ...local });
+          if (url.includes('/touch-plans')) return json({ items: [plan], ...local });
+          return json({ campaign: { campaign_code: 'spring-campaign', name: '春季激活', approval_status: 'draft', runtime_status: 'idle', version: 3, updated_at: '2026-08-27T00:00:00Z' }, steps: [], local_projection: true, real_external_call_executed: false, real_send: false, runtime_executed: false });
+        };
+        return;
+      }
       if (rel === 'admin/campaigns.html' && new URL(window.location.href).searchParams.get('view') === 'observability') {
         const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
         window.__observabilityCalls = [];
@@ -870,6 +889,24 @@ console.log('admin/campaigns.html（运营计划全局本地审核列表）');
     plans.window.__planIndexCalls.some((url) => url.includes('review_status=pending_review')) &&
     !text.includes('customer_ids') && !text.includes('message_override'));
   plans.window.close();
+}
+
+console.log('admin/campaigns.html（目标人员 Customer360 链接）');
+{
+  const planID = 'ctp_' + 'a'.repeat(64);
+  const recipient = await loadPage('admin/campaigns.html', { q: `campaign=spring-campaign&plan=${planID}&recipient=7` });
+  await sleep(40);
+  const doc = recipient.window.document;
+  const text = doc.querySelector('#stage')?.textContent || '';
+  const customer360 = doc.querySelector('a[href="customerDetail.html?id=7"]');
+  ok('已验证的 plan 目标只用 canonical OneID 链接既有 Customer360 档案',
+    customer360?.textContent === '在 Customer360 查看档案' &&
+    recipient.window.__recipientCalls.some((url) => url.endsWith('/recipients/7')));
+  ok('目标人员列表没有可信状态投影时保持无成员状态筛选',
+    text.includes('当前契约不含昵称、成员状态或消息任务') &&
+    !doc.querySelector('[data-recipient-status]') &&
+    recipient.window.__recipientCalls.every((url) => !url.includes('status=')));
+  recipient.window.close();
 }
 
 console.log('admin/campaigns.html（trace_id 可观察性边界）');
