@@ -322,6 +322,11 @@ func TestOrderBoardProviderFilteredExportIsReceiptBackedAndLocal(t *testing.T) {
 			if err != nil || replayed != job || len(store.receipts) != 1 || len(store.exports) != 1 || len(events.rows) != 1 {
 				t.Fatalf("replayed=%#v err=%v receipts=%d exports=%d events=%d", replayed, err, len(store.receipts), len(store.exports), len(events.rows))
 			}
+			command.Actor = 10
+			isolated, err := service.CreateExport(context.Background(), command)
+			if err != nil || isolated.JobID == job.JobID || isolated.Operator != 10 || len(store.receipts) != 2 || len(store.exports) != 2 || len(events.rows) != 2 {
+				t.Fatalf("isolated=%#v err=%v receipts=%d exports=%d events=%d", isolated, err, len(store.receipts), len(store.exports), len(events.rows))
+			}
 		})
 	}
 }

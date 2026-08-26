@@ -221,6 +221,15 @@ func (handler *Handler) createOrderBoardExport(writer http.ResponseWriter, reque
 		writeOrderError(writer, err)
 		return
 	}
+	if wechatOnly {
+		writer.Header().Set("Content-Type", "text/csv; charset=utf-8")
+		writer.Header().Set("Content-Disposition", `attachment; filename="wechat-pay-orders.csv"`)
+		writer.Header().Set("Cache-Control", "private, no-store")
+		writer.Header().Set("X-Content-Type-Options", "nosniff")
+		writer.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(writer, result.ContentText)
+		return
+	}
 	writeJSON(writer, http.StatusOK, result)
 }
 
@@ -479,12 +488,20 @@ type legacyOrderExportRequest struct {
 	Filter   orderport.ExportFilter `json:"filter"`
 }
 
+type legacyWechatOrderExportRequest struct {
+	Filter orderport.ExportFilter `json:"filter"`
+}
+
 func legacyExportCommand(writer http.ResponseWriter, request *http.Request, actor int64, key string, wechatOnly bool) (orderport.ExportCommand, error) {
 	if wechatOnly {
-		if !emptyOrderBoardBody(writer, request) {
+		decoder := json.NewDecoder(http.MaxBytesReader(writer, request.Body, 64<<10))
+		decoder.DisallowUnknownFields()
+		var body legacyWechatOrderExportRequest
+		if decoder.Decode(&body) != nil || !errors.Is(decoder.Decode(&struct{}{}), io.EOF) || strings.TrimSpace(body.Filter.Provider) != "" || body.Filter.LocalID != nil {
 			return orderport.ExportCommand{}, orderapp.ErrInvalidBoardCommand
 		}
-		return orderport.ExportCommand{Resource: "orders", Format: "csv", Actor: actor, IdempotencyKey: key}, nil
+		body.Filter.Provider = "wechat"
+		return orderport.ExportCommand{Resource: "orders", Format: "csv", Filter: body.Filter, Actor: actor, IdempotencyKey: key}, nil
 	}
 	decoder := json.NewDecoder(http.MaxBytesReader(writer, request.Body, 64<<10))
 	decoder.DisallowUnknownFields()
