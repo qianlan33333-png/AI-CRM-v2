@@ -42,6 +42,32 @@ ORDER BY receipt.expires_at DESC, preparation.id DESC
 LIMIT 1
 FOR KEY SHARE OF preparation, receipt;
 
+-- name: HasSufficientGroupOpsUploadLease :one
+SELECT EXISTS (
+  SELECT 1
+  FROM public.media_wecom_upload_preparations AS preparation
+  JOIN public.media_wecom_upload_receipts AS receipt ON receipt.preparation_id = preparation.id
+  WHERE preparation.source_kind = sqlc.arg(source_kind)::text
+    AND preparation.source_id = sqlc.arg(source_id)::bigint
+    AND preparation.source_digest = sqlc.arg(source_digest)::text
+    AND preparation.provider_scope_digest = sqlc.arg(provider_scope_digest)::text
+    AND preparation.upload_kind = sqlc.arg(upload_kind)::text
+    AND preparation.state = 'ready'
+    AND receipt.expires_at > sqlc.arg(required_through)::timestamptz
+);
+
+-- name: NextGroupOpsUploadPreparationGeneration :one
+SELECT count(*)::bigint + 1
+FROM public.media_wecom_upload_preparations
+WHERE source_kind = sqlc.arg(source_kind)::text
+  AND source_id = sqlc.arg(source_id)::bigint
+  AND source_digest = sqlc.arg(source_digest)::text
+  AND provider_scope_digest = sqlc.arg(provider_scope_digest)::text
+  AND upload_kind = sqlc.arg(upload_kind)::text;
+
+-- name: LockGroupOpsUploadPreparationGeneration :exec
+SELECT pg_advisory_xact_lock(sqlc.arg(lock_key)::bigint);
+
 -- name: InsertGroupOpsUploadPreparation :one
 INSERT INTO public.media_wecom_upload_preparations (
   source_kind, source_id, source_digest, provider_scope_digest, upload_kind,
@@ -61,3 +87,43 @@ SELECT id, source_kind, source_id, source_digest, provider_scope_digest,
        upload_kind, external_effect_id, state
 FROM public.media_wecom_upload_preparations
 WHERE external_effect_id = sqlc.arg(external_effect_id)::bigint;
+
+-- name: ReadGroupOpsUploadPreparationAttempt :one
+SELECT id, source_kind, source_id, source_digest, provider_scope_digest,
+       upload_kind, external_effect_id, state
+FROM public.media_wecom_upload_preparations
+WHERE external_effect_id = sqlc.arg(external_effect_id)::bigint
+FOR UPDATE;
+
+-- name: InsertGroupOpsUploadReceipt :one
+INSERT INTO public.media_wecom_upload_receipts (
+  external_effect_id, preparation_id, provider_media_id, provider_created_at,
+  expires_at, receipt_digest, created_at
+) VALUES (
+  sqlc.arg(external_effect_id)::bigint, sqlc.arg(preparation_id)::bigint,
+  sqlc.arg(provider_media_id)::text, sqlc.arg(provider_created_at)::timestamptz,
+  sqlc.arg(expires_at)::timestamptz, sqlc.arg(receipt_digest)::text,
+  sqlc.arg(created_at)::timestamptz
+)
+ON CONFLICT DO NOTHING
+RETURNING external_effect_id, preparation_id, provider_media_id, provider_created_at,
+          expires_at, receipt_digest, created_at;
+
+-- name: MarkGroupOpsUploadPreparationReady :exec
+UPDATE public.media_wecom_upload_preparations
+SET state = 'ready', provider_media_id = sqlc.arg(provider_media_id)::text,
+    provider_created_at = sqlc.arg(provider_created_at)::timestamptz,
+    expires_at = sqlc.arg(expires_at)::timestamptz,
+    provider_receipt_digest = sqlc.arg(receipt_digest)::text,
+    updated_at = sqlc.arg(updated_at)::timestamptz
+WHERE id = sqlc.arg(preparation_id)::bigint AND state = 'preparing';
+
+-- name: MarkGroupOpsUploadPreparationOutcomeUnknown :exec
+UPDATE public.media_wecom_upload_preparations
+SET state = 'outcome_unknown', updated_at = sqlc.arg(updated_at)::timestamptz
+WHERE id = sqlc.arg(preparation_id)::bigint AND state = 'preparing';
+
+-- name: MarkGroupOpsUploadPreparationFinalFailed :exec
+UPDATE public.media_wecom_upload_preparations
+SET state = 'final_failed', updated_at = sqlc.arg(updated_at)::timestamptz
+WHERE id = sqlc.arg(preparation_id)::bigint AND state = 'preparing';

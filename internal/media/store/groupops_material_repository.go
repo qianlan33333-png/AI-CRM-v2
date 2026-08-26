@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -11,6 +12,8 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/port"
+	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
 	groupopsmaterial "github.com/qianlan33333-png/AI-CRM-v2/internal/media/groupopsmaterial"
 	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	mediadb "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store/generated"
@@ -30,6 +33,8 @@ type GroupOpsUploadPreparation struct {
 
 var _ mediaport.GroupOpsMaterialSourceCapturer = (*GroupOpsMaterialRepository)(nil)
 var _ groupopsmaterial.PreparedPlanReader = (*GroupOpsMaterialRepository)(nil)
+var _ mediaapp.GroupOpsMaterialPreparationStore = (*GroupOpsMaterialRepository)(nil)
+var _ mediaapp.GroupOpsMaterialUploadAttemptStore = (*GroupOpsMaterialRepository)(nil)
 
 func NewGroupOpsMaterialRepository(providerScopeDigest string) (*GroupOpsMaterialRepository, error) {
 	if !groupOpsDigest(providerScopeDigest) {
@@ -76,7 +81,115 @@ func (repository *GroupOpsMaterialRepository) ReadPreparedGroupOpsPlan(ctx conte
 // BindGroupOpsUploadPreparation persists the Media-owned typed fact after EER
 // accepted the effect and before it is queued. The same external effect may
 // replay, but it may never be rebound to another source or provider scope.
-func (repository *GroupOpsMaterialRepository) BindGroupOpsUploadPreparation(ctx context.Context, sourceKind string, sourceID int64, sourceDigest, providerScopeDigest, uploadKind, effectID string, now time.Time) (GroupOpsUploadPreparation, bool, error) {
+func (repository *GroupOpsMaterialRepository) BindGroupOpsUploadPreparation(ctx context.Context, value mediaapp.GroupOpsMaterialPreparation) (bool, error) {
+	_, inserted, err := repository.bindGroupOpsUploadPreparation(ctx, value.SourceKind, value.SourceID, value.SourceDigest, repository.providerScopeDigest, value.UploadKind, value.EffectID, value.CreatedAt)
+	return inserted, err
+}
+
+func (repository *GroupOpsMaterialRepository) HasSufficientGroupOpsUploadLease(ctx context.Context, sourceKind string, sourceID int64, sourceDigest, providerScopeDigest, uploadKind string, requiredThrough time.Time) (bool, error) {
+	query, err := queries(ctx)
+	if repository == nil || err != nil || sourceID < 1 || requiredThrough.IsZero() || providerScopeDigest != repository.providerScopeDigest || !groupOpsDigest(sourceDigest) || !groupOpsDigest(providerScopeDigest) {
+		return false, groupOpsMaterialUnavailable(err)
+	}
+	return query.HasSufficientGroupOpsUploadLease(ctx, mediadb.HasSufficientGroupOpsUploadLeaseParams{SourceKind: sourceKind, SourceID: sourceID, SourceDigest: sourceDigest, ProviderScopeDigest: providerScopeDigest, UploadKind: uploadKind, RequiredThrough: stamp(requiredThrough.UTC())})
+}
+
+func (repository *GroupOpsMaterialRepository) NextGroupOpsUploadPreparationGeneration(ctx context.Context, sourceKind string, sourceID int64, sourceDigest, providerScopeDigest, uploadKind string) (int64, error) {
+	query, err := queries(ctx)
+	if repository == nil || err != nil || sourceID < 1 || providerScopeDigest != repository.providerScopeDigest || !groupOpsDigest(sourceDigest) || !groupOpsDigest(providerScopeDigest) {
+		return 0, groupOpsMaterialUnavailable(err)
+	}
+	if err = query.LockGroupOpsUploadPreparationGeneration(ctx, groupOpsPreparationLockKey(sourceKind, sourceID, sourceDigest, providerScopeDigest, uploadKind)); err != nil {
+		return 0, groupOpsMaterialUnavailable(err)
+	}
+	generation, err := query.NextGroupOpsUploadPreparationGeneration(ctx, mediadb.NextGroupOpsUploadPreparationGenerationParams{SourceKind: sourceKind, SourceID: sourceID, SourceDigest: sourceDigest, ProviderScopeDigest: providerScopeDigest, UploadKind: uploadKind})
+	if err != nil || generation < 1 {
+		return 0, groupOpsMaterialUnavailable(err)
+	}
+	return int64(generation), nil
+}
+
+func groupOpsPreparationLockKey(sourceKind string, sourceID int64, sourceDigest, providerScopeDigest, uploadKind string) int64 {
+	sum := sha256.Sum256([]byte(sourceKind + "\x00" + strconv.FormatInt(sourceID, 10) + "\x00" + sourceDigest + "\x00" + providerScopeDigest + "\x00" + uploadKind))
+	return int64(binary.BigEndian.Uint64(sum[:8]))
+}
+
+func (repository *GroupOpsMaterialRepository) LoadGroupOpsMaterialUpload(ctx context.Context, effectID string) (mediaapp.GroupOpsMaterialUploadInput, error) {
+	query, err := queries(ctx)
+	parsedEffectID, parseErr := parseGroupOpsEffectID(effectID)
+	if repository == nil || err != nil || parseErr != nil {
+		return mediaapp.GroupOpsMaterialUploadInput{}, groupOpsMaterialUnavailable(errors.Join(err, parseErr))
+	}
+	preparation, err := query.ReadGroupOpsUploadPreparationAttempt(ctx, parsedEffectID)
+	if err != nil || preparation.State != "preparing" || preparation.ProviderScopeDigest != repository.providerScopeDigest {
+		return mediaapp.GroupOpsMaterialUploadInput{}, groupOpsMaterialUnavailable(err)
+	}
+	var filename, mimeType string
+	var content, sourceChecksum, blobChecksum []byte
+	if preparation.SourceKind == "image" {
+		row, readErr := query.LockGroupOpsImageSource(ctx, preparation.SourceID)
+		if readErr != nil {
+			return mediaapp.GroupOpsMaterialUploadInput{}, groupOpsMaterialUnavailable(readErr)
+		}
+		filename, mimeType, content, sourceChecksum, blobChecksum = row.FileName, row.MimeType, row.Content, row.SourceChecksum, row.BlobChecksum
+	} else if preparation.SourceKind == "attachment" {
+		row, readErr := query.LockGroupOpsAttachmentSource(ctx, preparation.SourceID)
+		if readErr != nil {
+			return mediaapp.GroupOpsMaterialUploadInput{}, groupOpsMaterialUnavailable(readErr)
+		}
+		filename, mimeType, content, sourceChecksum, blobChecksum = row.FileName, row.MimeType, row.Content, row.SourceChecksum, row.BlobChecksum
+	} else {
+		return mediaapp.GroupOpsMaterialUploadInput{}, groupopsmaterial.ErrUnavailable
+	}
+	digest, digestErr := groupOpsBlobDigest(preparation.SourceKind, preparation.SourceID, filename, mimeType, sourceChecksum, blobChecksum, content)
+	if digestErr != nil || digest != preparation.SourceDigest {
+		return mediaapp.GroupOpsMaterialUploadInput{}, groupOpsMaterialUnavailable(digestErr)
+	}
+	return mediaapp.GroupOpsMaterialUploadInput{EffectID: effectID, SourceDigest: digest, Filename: filename, MIME: mimeType, Checksum: "sha256:" + hex.EncodeToString(sourceChecksum), Kind: preparation.UploadKind, Bytes: append([]byte(nil), content...)}, nil
+}
+
+func (repository *GroupOpsMaterialRepository) RecordGroupOpsMaterialUploadReady(ctx context.Context, effectID string, result mediaapp.GroupOpsMaterialUploadResult, receiptDigest eer.Digest) error {
+	query, err := queries(ctx)
+	parsedEffectID, parseErr := parseGroupOpsEffectID(effectID)
+	if repository == nil || err != nil || parseErr != nil || !groupOpsDigest(string(receiptDigest)) || result.MediaID == "" || result.CreatedAt.IsZero() || !result.ExpiresAt.After(result.CreatedAt) {
+		return groupOpsMaterialUnavailable(errors.Join(err, parseErr))
+	}
+	preparation, err := query.ReadGroupOpsUploadPreparationAttempt(ctx, parsedEffectID)
+	if err != nil || preparation.State != "preparing" {
+		return groupOpsMaterialUnavailable(err)
+	}
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	if _, err = query.InsertGroupOpsUploadReceipt(ctx, mediadb.InsertGroupOpsUploadReceiptParams{ExternalEffectID: parsedEffectID, PreparationID: preparation.ID, ProviderMediaID: result.MediaID, ProviderCreatedAt: stamp(result.CreatedAt.UTC()), ExpiresAt: stamp(result.ExpiresAt.UTC()), ReceiptDigest: string(receiptDigest), CreatedAt: stamp(now)}); err != nil {
+		return groupOpsMaterialUnavailable(err)
+	}
+	return query.MarkGroupOpsUploadPreparationReady(ctx, mediadb.MarkGroupOpsUploadPreparationReadyParams{ProviderMediaID: result.MediaID, ProviderCreatedAt: stamp(result.CreatedAt.UTC()), ExpiresAt: stamp(result.ExpiresAt.UTC()), ReceiptDigest: string(receiptDigest), UpdatedAt: stamp(now), PreparationID: preparation.ID})
+}
+
+func (repository *GroupOpsMaterialRepository) MarkGroupOpsMaterialUploadOutcomeUnknown(ctx context.Context, effectID string, now time.Time) error {
+	return repository.markGroupOpsMaterialUploadTerminal(ctx, effectID, now, true)
+}
+
+func (repository *GroupOpsMaterialRepository) MarkGroupOpsMaterialUploadFinalFailed(ctx context.Context, effectID string, now time.Time) error {
+	return repository.markGroupOpsMaterialUploadTerminal(ctx, effectID, now, false)
+}
+
+func (repository *GroupOpsMaterialRepository) markGroupOpsMaterialUploadTerminal(ctx context.Context, effectID string, now time.Time, unknown bool) error {
+	query, err := queries(ctx)
+	parsedEffectID, parseErr := parseGroupOpsEffectID(effectID)
+	if repository == nil || err != nil || parseErr != nil || now.IsZero() {
+		return groupOpsMaterialUnavailable(errors.Join(err, parseErr))
+	}
+	preparation, err := query.ReadGroupOpsUploadPreparationAttempt(ctx, parsedEffectID)
+	if err != nil || preparation.State != "preparing" {
+		return groupOpsMaterialUnavailable(err)
+	}
+	if unknown {
+		return query.MarkGroupOpsUploadPreparationOutcomeUnknown(ctx, mediadb.MarkGroupOpsUploadPreparationOutcomeUnknownParams{PreparationID: preparation.ID, UpdatedAt: stamp(now.UTC())})
+	}
+	return query.MarkGroupOpsUploadPreparationFinalFailed(ctx, mediadb.MarkGroupOpsUploadPreparationFinalFailedParams{PreparationID: preparation.ID, UpdatedAt: stamp(now.UTC())})
+}
+
+func (repository *GroupOpsMaterialRepository) bindGroupOpsUploadPreparation(ctx context.Context, sourceKind string, sourceID int64, sourceDigest, providerScopeDigest, uploadKind, effectID string, now time.Time) (GroupOpsUploadPreparation, bool, error) {
 	query, err := queries(ctx)
 	parsedEffectID, parseErr := parseGroupOpsEffectID(effectID)
 	if repository == nil || err != nil || parseErr != nil || !groupOpsDigest(sourceDigest) || providerScopeDigest != repository.providerScopeDigest || !groupOpsDigest(providerScopeDigest) || sourceID < 1 || (sourceKind != "image" && sourceKind != "attachment") || (uploadKind != "image" && uploadKind != "file") || now.IsZero() {

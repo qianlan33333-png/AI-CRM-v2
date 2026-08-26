@@ -45,6 +45,44 @@ func (q *Queries) GetGroupOpsUploadPreparation(ctx context.Context, externalEffe
 	return i, err
 }
 
+const hasSufficientGroupOpsUploadLease = `-- name: HasSufficientGroupOpsUploadLease :one
+SELECT EXISTS (
+  SELECT 1
+  FROM public.media_wecom_upload_preparations AS preparation
+  JOIN public.media_wecom_upload_receipts AS receipt ON receipt.preparation_id = preparation.id
+  WHERE preparation.source_kind = $1::text
+    AND preparation.source_id = $2::bigint
+    AND preparation.source_digest = $3::text
+    AND preparation.provider_scope_digest = $4::text
+    AND preparation.upload_kind = $5::text
+    AND preparation.state = 'ready'
+    AND receipt.expires_at > $6::timestamptz
+)
+`
+
+type HasSufficientGroupOpsUploadLeaseParams struct {
+	SourceKind          string             `json:"source_kind"`
+	SourceID            int64              `json:"source_id"`
+	SourceDigest        string             `json:"source_digest"`
+	ProviderScopeDigest string             `json:"provider_scope_digest"`
+	UploadKind          string             `json:"upload_kind"`
+	RequiredThrough     pgtype.Timestamptz `json:"required_through"`
+}
+
+func (q *Queries) HasSufficientGroupOpsUploadLease(ctx context.Context, arg HasSufficientGroupOpsUploadLeaseParams) (bool, error) {
+	row := q.db.QueryRow(ctx, hasSufficientGroupOpsUploadLease,
+		arg.SourceKind,
+		arg.SourceID,
+		arg.SourceDigest,
+		arg.ProviderScopeDigest,
+		arg.UploadKind,
+		arg.RequiredThrough,
+	)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const insertGroupOpsUploadPreparation = `-- name: InsertGroupOpsUploadPreparation :one
 INSERT INTO public.media_wecom_upload_preparations (
   source_kind, source_id, source_digest, provider_scope_digest, upload_kind,
@@ -101,6 +139,54 @@ func (q *Queries) InsertGroupOpsUploadPreparation(ctx context.Context, arg Inser
 		&i.UploadKind,
 		&i.ExternalEffectID,
 		&i.State,
+	)
+	return i, err
+}
+
+const insertGroupOpsUploadReceipt = `-- name: InsertGroupOpsUploadReceipt :one
+INSERT INTO public.media_wecom_upload_receipts (
+  external_effect_id, preparation_id, provider_media_id, provider_created_at,
+  expires_at, receipt_digest, created_at
+) VALUES (
+  $1::bigint, $2::bigint,
+  $3::text, $4::timestamptz,
+  $5::timestamptz, $6::text,
+  $7::timestamptz
+)
+ON CONFLICT DO NOTHING
+RETURNING external_effect_id, preparation_id, provider_media_id, provider_created_at,
+          expires_at, receipt_digest, created_at
+`
+
+type InsertGroupOpsUploadReceiptParams struct {
+	ExternalEffectID  int64              `json:"external_effect_id"`
+	PreparationID     int64              `json:"preparation_id"`
+	ProviderMediaID   string             `json:"provider_media_id"`
+	ProviderCreatedAt pgtype.Timestamptz `json:"provider_created_at"`
+	ExpiresAt         pgtype.Timestamptz `json:"expires_at"`
+	ReceiptDigest     string             `json:"receipt_digest"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) InsertGroupOpsUploadReceipt(ctx context.Context, arg InsertGroupOpsUploadReceiptParams) (MediaWecomUploadReceipt, error) {
+	row := q.db.QueryRow(ctx, insertGroupOpsUploadReceipt,
+		arg.ExternalEffectID,
+		arg.PreparationID,
+		arg.ProviderMediaID,
+		arg.ProviderCreatedAt,
+		arg.ExpiresAt,
+		arg.ReceiptDigest,
+		arg.CreatedAt,
+	)
+	var i MediaWecomUploadReceipt
+	err := row.Scan(
+		&i.ExternalEffectID,
+		&i.PreparationID,
+		&i.ProviderMediaID,
+		&i.ProviderCreatedAt,
+		&i.ExpiresAt,
+		&i.ReceiptDigest,
+		&i.CreatedAt,
 	)
 	return i, err
 }
@@ -223,6 +309,109 @@ func (q *Queries) LockGroupOpsMiniProgramSource(ctx context.Context, miniprogram
 	return i, err
 }
 
+const lockGroupOpsUploadPreparationGeneration = `-- name: LockGroupOpsUploadPreparationGeneration :exec
+SELECT pg_advisory_xact_lock($1::bigint)
+`
+
+func (q *Queries) LockGroupOpsUploadPreparationGeneration(ctx context.Context, lockKey int64) error {
+	_, err := q.db.Exec(ctx, lockGroupOpsUploadPreparationGeneration, lockKey)
+	return err
+}
+
+const markGroupOpsUploadPreparationFinalFailed = `-- name: MarkGroupOpsUploadPreparationFinalFailed :exec
+UPDATE public.media_wecom_upload_preparations
+SET state = 'final_failed', updated_at = $1::timestamptz
+WHERE id = $2::bigint AND state = 'preparing'
+`
+
+type MarkGroupOpsUploadPreparationFinalFailedParams struct {
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	PreparationID int64              `json:"preparation_id"`
+}
+
+func (q *Queries) MarkGroupOpsUploadPreparationFinalFailed(ctx context.Context, arg MarkGroupOpsUploadPreparationFinalFailedParams) error {
+	_, err := q.db.Exec(ctx, markGroupOpsUploadPreparationFinalFailed, arg.UpdatedAt, arg.PreparationID)
+	return err
+}
+
+const markGroupOpsUploadPreparationOutcomeUnknown = `-- name: MarkGroupOpsUploadPreparationOutcomeUnknown :exec
+UPDATE public.media_wecom_upload_preparations
+SET state = 'outcome_unknown', updated_at = $1::timestamptz
+WHERE id = $2::bigint AND state = 'preparing'
+`
+
+type MarkGroupOpsUploadPreparationOutcomeUnknownParams struct {
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	PreparationID int64              `json:"preparation_id"`
+}
+
+func (q *Queries) MarkGroupOpsUploadPreparationOutcomeUnknown(ctx context.Context, arg MarkGroupOpsUploadPreparationOutcomeUnknownParams) error {
+	_, err := q.db.Exec(ctx, markGroupOpsUploadPreparationOutcomeUnknown, arg.UpdatedAt, arg.PreparationID)
+	return err
+}
+
+const markGroupOpsUploadPreparationReady = `-- name: MarkGroupOpsUploadPreparationReady :exec
+UPDATE public.media_wecom_upload_preparations
+SET state = 'ready', provider_media_id = $1::text,
+    provider_created_at = $2::timestamptz,
+    expires_at = $3::timestamptz,
+    provider_receipt_digest = $4::text,
+    updated_at = $5::timestamptz
+WHERE id = $6::bigint AND state = 'preparing'
+`
+
+type MarkGroupOpsUploadPreparationReadyParams struct {
+	ProviderMediaID   string             `json:"provider_media_id"`
+	ProviderCreatedAt pgtype.Timestamptz `json:"provider_created_at"`
+	ExpiresAt         pgtype.Timestamptz `json:"expires_at"`
+	ReceiptDigest     string             `json:"receipt_digest"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	PreparationID     int64              `json:"preparation_id"`
+}
+
+func (q *Queries) MarkGroupOpsUploadPreparationReady(ctx context.Context, arg MarkGroupOpsUploadPreparationReadyParams) error {
+	_, err := q.db.Exec(ctx, markGroupOpsUploadPreparationReady,
+		arg.ProviderMediaID,
+		arg.ProviderCreatedAt,
+		arg.ExpiresAt,
+		arg.ReceiptDigest,
+		arg.UpdatedAt,
+		arg.PreparationID,
+	)
+	return err
+}
+
+const nextGroupOpsUploadPreparationGeneration = `-- name: NextGroupOpsUploadPreparationGeneration :one
+SELECT count(*)::bigint + 1
+FROM public.media_wecom_upload_preparations
+WHERE source_kind = $1::text
+  AND source_id = $2::bigint
+  AND source_digest = $3::text
+  AND provider_scope_digest = $4::text
+  AND upload_kind = $5::text
+`
+
+type NextGroupOpsUploadPreparationGenerationParams struct {
+	SourceKind          string `json:"source_kind"`
+	SourceID            int64  `json:"source_id"`
+	SourceDigest        string `json:"source_digest"`
+	ProviderScopeDigest string `json:"provider_scope_digest"`
+	UploadKind          string `json:"upload_kind"`
+}
+
+func (q *Queries) NextGroupOpsUploadPreparationGeneration(ctx context.Context, arg NextGroupOpsUploadPreparationGenerationParams) (int32, error) {
+	row := q.db.QueryRow(ctx, nextGroupOpsUploadPreparationGeneration,
+		arg.SourceKind,
+		arg.SourceID,
+		arg.SourceDigest,
+		arg.ProviderScopeDigest,
+		arg.UploadKind,
+	)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const readGroupOpsPreparedUpload = `-- name: ReadGroupOpsPreparedUpload :one
 SELECT preparation.source_kind, preparation.source_id, preparation.source_digest,
        receipt.receipt_digest, receipt.provider_media_id, receipt.expires_at
@@ -273,6 +462,41 @@ func (q *Queries) ReadGroupOpsPreparedUpload(ctx context.Context, arg ReadGroupO
 		&i.ReceiptDigest,
 		&i.ProviderMediaID,
 		&i.ExpiresAt,
+	)
+	return i, err
+}
+
+const readGroupOpsUploadPreparationAttempt = `-- name: ReadGroupOpsUploadPreparationAttempt :one
+SELECT id, source_kind, source_id, source_digest, provider_scope_digest,
+       upload_kind, external_effect_id, state
+FROM public.media_wecom_upload_preparations
+WHERE external_effect_id = $1::bigint
+FOR UPDATE
+`
+
+type ReadGroupOpsUploadPreparationAttemptRow struct {
+	ID                  int64  `json:"id"`
+	SourceKind          string `json:"source_kind"`
+	SourceID            int64  `json:"source_id"`
+	SourceDigest        string `json:"source_digest"`
+	ProviderScopeDigest string `json:"provider_scope_digest"`
+	UploadKind          string `json:"upload_kind"`
+	ExternalEffectID    int64  `json:"external_effect_id"`
+	State               string `json:"state"`
+}
+
+func (q *Queries) ReadGroupOpsUploadPreparationAttempt(ctx context.Context, externalEffectID int64) (ReadGroupOpsUploadPreparationAttemptRow, error) {
+	row := q.db.QueryRow(ctx, readGroupOpsUploadPreparationAttempt, externalEffectID)
+	var i ReadGroupOpsUploadPreparationAttemptRow
+	err := row.Scan(
+		&i.ID,
+		&i.SourceKind,
+		&i.SourceID,
+		&i.SourceDigest,
+		&i.ProviderScopeDigest,
+		&i.UploadKind,
+		&i.ExternalEffectID,
+		&i.State,
 	)
 	return i, err
 }
