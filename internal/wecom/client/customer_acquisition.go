@@ -12,15 +12,13 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
-
-	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 )
 
 // ErrWriteOutcomeUnknown means a write may have reached WeCom, but the client
 // cannot prove its result. Callers must reconcile it with a get operation; it
 // is deliberately never retried here.
-var ErrWriteOutcomeUnknown = wecomport.ErrWriteOutcomeUnknown
-var ErrBusinessWriteNotDispatched = wecomport.ErrBusinessWriteNotDispatched
+var ErrWriteOutcomeUnknown = errors.New("WeCom write outcome unknown")
+var ErrBusinessWriteNotDispatched = errors.New("WeCom business write not dispatched")
 
 // CustomerAcquisitionClient is the narrow provider boundary for CH02 contact
 // ways and customer-acquisition links. Construction is inert: it does not

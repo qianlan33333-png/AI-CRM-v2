@@ -7,30 +7,29 @@ import (
 	"testing"
 
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
-	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 )
 
 type privateMessageClientFake struct {
-	request wecomport.PrivateMessageTemplateRequest
-	result  wecomport.PrivateMessageTemplate
+	request privateMessageTemplateRequest
+	result  privateMessageTemplateResult
 	err     error
 	calls   int
 }
 
-func (fake *privateMessageClientFake) CreatePrivateMessageTemplate(_ context.Context, request wecomport.PrivateMessageTemplateRequest) (wecomport.PrivateMessageTemplate, error) {
+func (fake *privateMessageClientFake) CreatePrivateMessageTemplate(_ context.Context, request privateMessageTemplateRequest) (privateMessageTemplateResult, error) {
 	fake.calls++
 	fake.request = request
 	return fake.result, fake.err
 }
 
 func TestWeComPrivateMessageProviderSendsExactTaskPayload(t *testing.T) {
-	fake := &privateMessageClientFake{result: wecomport.PrivateMessageTemplate{MessageID: "msg-1"}}
+	fake := &privateMessageClientFake{result: privateMessageTemplateResult{MessageID: "msg-1"}}
 	provider, err := NewWeComPrivateMessageProvider(fake, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	result, err := provider.Send(context.Background(), privateMessageRequest(`{"sender":"staff-1","external_userid":"external-1","text":"hello"}`))
-	if err != nil || result.MessageID != "msg-1" || fake.calls != 1 || fake.request != (wecomport.PrivateMessageTemplateRequest{Sender: "staff-1", ExternalUserID: "external-1", Text: "hello"}) {
+	if err != nil || result.MessageID != "msg-1" || fake.calls != 1 || fake.request != (privateMessageTemplateRequest{Sender: "staff-1", ExternalUserID: "external-1", Text: "hello"}) {
 		t.Fatalf("result=%+v err=%v calls=%d request=%+v", result, err, fake.calls, fake.request)
 	}
 }
@@ -53,10 +52,10 @@ func TestWeComPrivateMessageProviderPreservesNoReplayOutcomes(t *testing.T) {
 		kind outboundapp.ProviderFailureKind
 		code string
 	}{
-		"unknown":         {wecomport.ErrWriteOutcomeUnknown, outboundapp.ProviderFailureConnection, "wecom_write_outcome_unknown"},
-		"target rejected": {wecomport.ErrPrivateMessageTargetRejected, outboundapp.ProviderFailureRecipientUnavailable, "wecom_private_target_rejected"},
-		"throttled":       {fmt.Errorf("%w: %w", wecomport.ErrUpstream, &wecomport.APIError{Code: 45009}), outboundapp.ProviderFailureRateLimited, "wecom_errcode_45009"},
-		"contact missing": {fmt.Errorf("%w: %w", wecomport.ErrUpstream, &wecomport.APIError{Code: 84061}), outboundapp.ProviderFailureRecipientUnavailable, "wecom_errcode_84061"},
+		"unknown":         {errWeComPrivateMessageOutcomeUnknown, outboundapp.ProviderFailureConnection, "wecom_write_outcome_unknown"},
+		"target rejected": {errWeComPrivateMessageTargetRejected, outboundapp.ProviderFailureRecipientUnavailable, "wecom_private_target_rejected"},
+		"throttled":       {fmt.Errorf("%w: %w", errWeComPrivateMessageUpstream, &weComPrivateMessageAPIError{Code: 45009}), outboundapp.ProviderFailureRateLimited, "wecom_errcode_45009"},
+		"contact missing": {fmt.Errorf("%w: %w", errWeComPrivateMessageUpstream, &weComPrivateMessageAPIError{Code: 84061}), outboundapp.ProviderFailureRecipientUnavailable, "wecom_errcode_84061"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			fake := &privateMessageClientFake{err: test.err}
@@ -85,7 +84,7 @@ func TestWeComPrivateMessageProviderDoesNotHideUnexpectedClientErrors(t *testing
 }
 
 func TestWeComPrivateMessageProviderResolvesOnlyWhenPayloadHasNoTarget(t *testing.T) {
-	fake := &privateMessageClientFake{result: wecomport.PrivateMessageTemplate{MessageID: "msg-1"}}
+	fake := &privateMessageClientFake{result: privateMessageTemplateResult{MessageID: "msg-1"}}
 	calls := 0
 	provider, err := NewWeComPrivateMessageProvider(fake, func(_ context.Context, customerID int64) (string, string, bool, error) {
 		calls++

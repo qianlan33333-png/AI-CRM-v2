@@ -30,8 +30,12 @@ func newWeComOutboundProvider(config appconfig.WeComOutbound, httpClient *http.C
 	if err != nil {
 		return nil, errors.Join(errInvalidWeComOutboundConfig, err)
 	}
-	client, err := wecomclient.NewCustomerAcquisitionClient(wecomclient.CustomerAcquisitionClientConfig{
-		BaseURL: wecomclient.ProductionBaseURL, HTTPClient: httpClient, TokenProvider: tokens,
+	client, err := outboundprovider.NewWeComPrivateMessageClient(outboundprovider.WeComPrivateMessageClientConfig{
+		BaseURL: wecomclient.ProductionBaseURL, HTTPClient: httpClient,
+		Token: func(ctx context.Context) (string, error) {
+			token, tokenErr := tokens.Token(ctx)
+			return token.Value(), tokenErr
+		},
 	})
 	if err != nil {
 		return nil, errors.Join(errInvalidWeComOutboundConfig, err)

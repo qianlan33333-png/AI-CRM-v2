@@ -11,10 +11,12 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
 	eerstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
+	identityfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store/acceptancefixture"
 	outbound "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound"
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
 	outboundport "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/port"
@@ -47,32 +49,19 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 		t.Fatalf("migrations 78/92 applied=%t err=%v, want true", migrationsApplied, err)
 	}
 	ensureOutboundRiverCatalog(t, ctx, pool)
-	var ownerStaffID int64
-	if err := pool.QueryRow(ctx, `
-INSERT INTO public.staff(wecom_userid,name,is_active)
-VALUES('dispatch-owner','dispatch owner',TRUE)
-ON CONFLICT(wecom_userid) DO UPDATE SET is_active=TRUE,updated_at=now()
-RETURNING id`).Scan(&ownerStaffID); err != nil {
+	policyTime := time.Now().UTC().Truncate(time.Microsecond)
+	contactFacts, err := contactfixture.CreateCampaignDispatchFacts(ctx, pool, "dispatch-owner", policyTime)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pool.Exec(ctx, `
-INSERT INTO public.customers(id,name,owner_staff_id,is_deleted)
-OVERRIDING SYSTEM VALUE
-VALUES (101,'suppressed after preview',NULL,FALSE),(202,'eligible one',$1,FALSE),(303,'eligible two',NULL,FALSE)
-ON CONFLICT(id) DO UPDATE SET owner_staff_id=EXCLUDED.owner_staff_id,is_deleted=FALSE`, ownerStaffID); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := pool.Exec(ctx, `
-INSERT INTO public.identities(customer_id,kind,scope,normalized_value,normalizer_version,assurance,source,review_fingerprint,fingerprint_key_version,bound_at)
-VALUES (202,'wecom_external_userid','wecom-corp:dispatch-corp','dispatch-external',1,'verified','campaign-dispatch-acceptance',decode(repeat('11',16),'hex'),1,now())
-ON CONFLICT(kind,scope,normalized_value) DO NOTHING`); err != nil {
+	if err = identityfixture.CreateCampaignDispatchVerifiedExternalUserID(ctx, pool, contactFacts.EligibleCustomerID, "dispatch-corp", "dispatch-external"); err != nil {
 		t.Fatal(err)
 	}
 	targets, err := contactstore.NewWeComOutboundTargetResolver(pool, "dispatch-corp")
 	if err != nil {
 		t.Fatal(err)
 	}
-	sender, externalUserID, resolved, err := targets.Resolve(ctx, 202)
+	sender, externalUserID, resolved, err := targets.Resolve(ctx, contactFacts.EligibleCustomerID)
 	if err != nil || !resolved || sender != "dispatch-owner" || externalUserID != "dispatch-external" {
 		t.Fatalf("outbound target sender=%q external=%q resolved=%t err=%v", sender, externalUserID, resolved, err)
 	}
@@ -81,7 +70,7 @@ ON CONFLICT(kind,scope,normalized_value) DO NOTHING`); err != nil {
 	source := &approvedCampaignHandoffSource{snapshot: outboundport.ApprovedCampaignHandoffSnapshot{
 		CampaignCode: "c01-dispatch", PlanID: planID, ReviewVersion: 3,
 		SourceDigest: strings.Repeat("11", 32), TargetDigest: strings.Repeat("22", 32), ContentDigest: strings.Repeat("33", 32),
-		CustomerIDs: []int64{101, 202, 303}, Steps: []outbound.CampaignHandoffStep{{Index: 1, Content: "approved immutable content"}},
+		CustomerIDs: []int64{contactFacts.SuppressedCustomerID, contactFacts.EligibleCustomerID, contactFacts.UnresolvedCustomerID}, Steps: []outbound.CampaignHandoffStep{{Index: 1, Content: "approved immutable content"}},
 		ApprovedAt: time.Now().UTC().Truncate(time.Microsecond),
 	}}
 	if _, err := newCampaignHandoffService(t, pool, source).Accept(ctx, outboundapp.AcceptCampaignHandoffCommand{
@@ -89,13 +78,6 @@ ON CONFLICT(kind,scope,normalized_value) DO NOTHING`); err != nil {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	policyTime := time.Now().UTC().Truncate(time.Microsecond)
-	if _, err := pool.Exec(ctx, `
-INSERT INTO public.customer_contact_policies(customer_id,reason_code,created_at,updated_at)
-VALUES (101,'manual_opt_out',$1,$1)`, policyTime); err != nil {
-		t.Fatal(err)
-	}
-
 	uow := platformstore.NewUnitOfWork(pool)
 	runtimeStore := eerstore.NewRepository(pool, uow)
 	runtime, err := eer.NewService(runtimeStore)
@@ -117,10 +99,10 @@ VALUES (101,'manual_opt_out',$1,$1)`, policyTime); err != nil {
 		t.Fatalf("queued summary=%+v err=%v", summary, err)
 	}
 	var blocked int
-	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.outbound_campaign_dispatches WHERE customer_id=101 AND state='blocked' AND block_reason='contact_policy' AND external_effect_id IS NULL`).Scan(&blocked); err != nil || blocked != 1 {
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.outbound_campaign_dispatches WHERE customer_id=$1 AND state='blocked' AND block_reason='contact_policy' AND external_effect_id IS NULL`, contactFacts.SuppressedCustomerID).Scan(&blocked); err != nil || blocked != 1 {
 		t.Fatalf("contact-policy blocked bindings=%d err=%v, want 1", blocked, err)
 	}
-	if _, err = pool.Exec(ctx, `DELETE FROM public.customer_contact_policies WHERE customer_id=101`); err != nil {
+	if err = contactfixture.DeleteCampaignDispatchPolicy(ctx, pool, contactFacts.SuppressedCustomerID); err != nil {
 		t.Fatal(err)
 	}
 	replayed, err := service.Dispatch(ctx, outboundapp.CampaignDispatchCommand{
