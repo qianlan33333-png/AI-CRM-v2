@@ -729,6 +729,8 @@ export interface Coupon {
   scope: string;
   window: string;
   issue: string;
+  /** OpenAPI availability_status；仅用于优惠券列表的本地筛选与展示。 */
+  availabilityStatus?: string;
   status: string;
   tone: Tone;
 }

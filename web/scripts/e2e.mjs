@@ -24,7 +24,7 @@ const ok = (name, cond) => {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function loadPage(rel, { id, q } = {}) {
+async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -39,7 +39,22 @@ async function loadPage(rel, { id, q } = {}) {
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = true;
+      window.__AICRM_TEST_MOCK__ = !couponHttp;
+      if (couponHttp) {
+        const calls = [];
+        const coupon = { id: 31, name: '新客券', discount_amount_total: 10000, total_issue_limit: 1200, issued_count: 0, per_user_issue_limit: 1, claim_starts_at: '2026-08-01T00:00:00Z', claim_ends_at: '2026-08-31T00:00:00Z', validity_mode: 'relative_days', relative_validity_days: 7, instructions: '说明', target_refs: ['standard_product:8'], status: 'draft', version: 1 };
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data, clone() { return this; } });
+        window.__couponHttpTest = { calls };
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          if (couponHttpFailure && url.pathname === '/api/admin/coupons/31') return json({ code: 'unavailable' }, 503);
+          if (url.pathname === '/api/admin/coupons/31') return json({ ok: true, coupon });
+          if (url.pathname === '/api/admin/coupons/product-options') return json({ ok: true, items: [{ target_ref: 'standard_product:9', name: '增长课', price_minor: 9900, currency: 'CNY' }], total: 1, limit: 20, offset: 0 });
+          return json({ code: 'unexpected_coupon_request' }, 500);
+        };
+        return;
+      }
       if (rel === 'admin/campaigns.html' && new URL(window.location.href).searchParams.get('legacy_admin_path') === '/admin/cloud-orchestrator/plans') {
         const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
         const local = { local_only: true, provider_execution_eligible: false, runtime_executed: false, real_external_call_executed: false, delivery_proven: false };
@@ -627,7 +642,7 @@ console.log('admin/groupopsDetail.html（typed 素材节点）');
   dom.window.close();
 }
 
-console.log('admin/couponData.html?id=0（5 统计卡 + 8 明细行 + 分享组件）');
+console.log('admin/couponData.html?id=0（5 统计卡 + 8 明细行 + 分享失败关闭）');
 {
   const dom = await loadPage('admin/couponData.html', { id: 0 });
   const d = dom.window.document;
@@ -638,7 +653,42 @@ console.log('admin/couponData.html?id=0（5 统计卡 + 8 明细行 + 分享组�
   ok('领取明细 8 行', d.querySelectorAll('tbody tr').length === 8);
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '分享'));
   await sleep(30);
-  ok('分享弹窗打开且伪二维码渲染', !!d.querySelector('#shareQrBox svg') && d.body.textContent.includes('分享优惠券'));
+  ok('Mock 不伪造优惠券分享成功', d.body.textContent.includes('测试 Mock 不提供伪成功') && !d.querySelector('#shareQrBox svg'));
+  dom.window.close();
+}
+
+console.log('admin/couponForm.html?id=31（HTTP 表单与商品选项）');
+{
+  const dom = await loadPage('admin/couponForm.html', { id: 31, couponHttp: true });
+  const d = dom.window.document;
+  ok('HTTP 模式挂载真实优惠券编辑表单', d.querySelector('#coupon-name')?.value === '新客券' && !!d.querySelector('#coupon-target-refs'));
+  const calls = dom.window.__couponHttpTest.calls;
+  ok('编辑读取和商品选项均经当前 OpenAPI GET', calls.some((call) => call.path === '/api/admin/coupons/31' && call.method === 'GET') && calls.some((call) => call.path === '/api/admin/coupons/product-options' && call.method === 'GET'));
+  click(dom, d.querySelector('[data-target-ref="standard_product:9"]'));
+  await sleep(30);
+  ok('商品选项仅加入服务端 target_ref', d.querySelector('#coupon-target-refs').value.includes('standard_product:8') && d.querySelector('#coupon-target-refs').value.includes('standard_product:9'));
+  dom.window.close();
+}
+
+console.log('admin/couponForm.html（HTTP 新建与商品选项筛选）');
+{
+  const dom = await loadPage('admin/couponForm.html', { couponHttp: true });
+  const d = dom.window.document;
+  ok('HTTP 模式挂载新建优惠券表单', d.body.textContent.includes('创建优惠券') && !!d.querySelector('#coupon-name') && !d.querySelector('#couponName'));
+  input(dom, d.querySelector('#option-query'), '增长');
+  d.querySelector('#option-type').value = 'standard_product';
+  click(dom, d.querySelector('#option-search'));
+  await sleep(30);
+  const calls = dom.window.__couponHttpTest.calls;
+  ok('商品选项筛选携带关键词、类型与分页参数', calls.some((call) => call.path === '/api/admin/coupons/product-options' && call.query.includes('q=%E5%A2%9E%E9%95%BF') && call.query.includes('product_type=standard_product') && call.query.includes('limit=20') && call.query.includes('offset=0')));
+  ok('新建页只展示服务端返回的商品引用', d.body.textContent.includes('standard_product:9') && !d.body.textContent.includes('service_period:'));
+  dom.window.close();
+}
+
+console.log('admin/couponForm.html?id=31（HTTP 读取失败关闭）');
+{
+  const dom = await loadPage('admin/couponForm.html', { id: 31, couponHttp: true, couponHttpFailure: true });
+  ok('HTTP 读取失败显示错误态且不回退 Mock/Seed', dom.window.document.body.textContent.includes('请求失败（HTTP 503）') && !dom.window.document.querySelector('#couponName'));
   dom.window.close();
 }
 
