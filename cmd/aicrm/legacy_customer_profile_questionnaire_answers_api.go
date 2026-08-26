@@ -89,7 +89,7 @@ func newLegacyCustomerProfileQuestionnaireAnswersHandler(
 	weComCorpID string,
 ) (*legacyCustomerProfileQuestionnaireAnswersHandler, error) {
 	if nilLegacyDependency(customerDetail) || nilLegacyDependency(identity) || nilLegacyDependency(unionID) ||
-		nilLegacyDependency(answers) || strings.TrimSpace(weComCorpID) == "" {
+		nilLegacyDependency(answers) {
 		return nil, surveyapp.ErrCustomerAnswersUnavailable
 	}
 	return &legacyCustomerProfileQuestionnaireAnswersHandler{
@@ -194,7 +194,7 @@ func validLegacyCustomerProfileQuestionnaireAnswersHint(value string) bool {
 }
 
 func (handler *legacyCustomerProfileQuestionnaireAnswersHandler) resolveCustomerID(ctx context.Context, query legacyCustomerProfileQuestionnaireAnswersQuery) (contactport.CustomerID, int) {
-	if handler == nil || nilLegacyDependency(handler.identity) || nilLegacyDependency(handler.unionID) || handler.weComCorpID == "" {
+	if handler == nil || nilLegacyDependency(handler.identity) || nilLegacyDependency(handler.unionID) {
 		return 0, http.StatusServiceUnavailable
 	}
 	results := make([]identityport.ResolveResult, 0, 3)
@@ -206,6 +206,9 @@ func (handler *legacyCustomerProfileQuestionnaireAnswersHandler) resolveCustomer
 		results = append(results, result)
 	}
 	if query.ExternalUserID != "" {
+		if handler.weComCorpID == "" {
+			return 0, http.StatusServiceUnavailable
+		}
 		result, err := handler.identity.Resolve(ctx, identityport.IDRef{Kind: identityport.KindWeComExternalUserID, Scope: "wecom-corp:" + handler.weComCorpID,
 			Value: query.ExternalUserID, Assurance: identityport.AssuranceVerified, Source: "legacy-customer-profile-questionnaire-answers"})
 		if err != nil || !validLegacyCustomerProfileTagsResolution(result) {

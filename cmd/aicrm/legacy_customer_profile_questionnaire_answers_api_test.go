@@ -100,6 +100,20 @@ func TestLegacyCustomerProfileQuestionnaireAnswersRequiresAdminGlobalAndGET(t *t
 	}
 }
 
+func TestLegacyCustomerProfileQuestionnaireAnswersStartsWithoutWeComScopeAndFailsOnlyExternalHint(t *testing.T) {
+	reader := &legacyCustomerProfileQuestionnaireAnswersReaderStub{}
+	handler, err := newLegacyCustomerProfileQuestionnaireAnswersHandler(&legacyCustomerProfileMessagesDetailStub{},
+		&legacyCustomerProfileMessagesIdentityStub{}, &legacyCustomerProfileMessagesUnionStub{}, reader, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := serveLegacyCustomerProfileQuestionnaireAnswers(handler,
+		authorizedLegacyCustomerProfileQuestionnaireAnswersRequest(http.MethodGet, "external_userid=external-one"))
+	if response.Code != http.StatusServiceUnavailable || reader.calls != 0 {
+		t.Fatalf("status/reader=%d/%d body=%s", response.Code, reader.calls, response.Body.String())
+	}
+}
+
 func mustLegacyCustomerProfileQuestionnaireAnswersHandler(t *testing.T, detail customerDetailApplication, identity identityResolveApplication, union legacyMessageArchiveUnionResolver, reader surveyport.CustomerSurveyAnswerReader) *legacyCustomerProfileQuestionnaireAnswersHandler {
 	t.Helper()
 	handler, err := newLegacyCustomerProfileQuestionnaireAnswersHandler(detail, identity, union, reader, "corp-test")
