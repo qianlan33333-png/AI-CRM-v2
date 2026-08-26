@@ -1,19 +1,23 @@
 import {
   decideCampaignTouchPlanReviewDto,
+  decideCampaignTouchPlanRecipientReviewDto,
   deleteCampaignDto,
   getCampaignDto,
   getCampaignTouchPlanDto,
   getCampaignTouchPlanRecipientDto,
+  getCampaignTouchPlanRecipientReviewDto,
   getCampaignTouchPlanReviewDto,
   listCampaignsDto,
   listCampaignTouchPlanRecipientsDto,
   listCampaignTouchPlansDto,
+  saveCampaignTouchPlanRecipientMessageDto,
   type CampaignDetail,
   type CampaignFilter,
   type CampaignTouchPlan,
   type CampaignTouchPlanDetail,
   type CampaignTouchPlanRecipient,
   type CampaignTouchPlanRecipientPage,
+  type CampaignTouchPlanRecipientReview,
   type CampaignTouchPlanReview,
 } from '../../api/admin';
 import { confirmBox, toast } from '../../shared/ui/feedback';
@@ -26,6 +30,7 @@ type CampaignPage = {
   review?: CampaignTouchPlanReview;
   recipientPage?: CampaignTouchPlanRecipientPage;
   recipient?: CampaignTouchPlanRecipient;
+  recipientReview?: CampaignTouchPlanRecipientReview | null;
 };
 
 const button = 'height:30px;padding:0 11px;border:1px solid #D0D5DD;border-radius:6px;background:#fff;color:#344054;cursor:pointer';
@@ -68,7 +73,7 @@ function planHtml(page: CampaignPage): string {
   const recipients = page.recipientPage?.items || [];
   const steps = plan.steps.map((step) => `<li><strong>第 ${step.index} 步 · 延迟 ${step.delayMinutes} 分钟</strong><div style="white-space:pre-wrap">${esc(step.content)}</div></li>`).join('') || '<li>无步骤</li>';
   const recipientRows = recipients.map((recipient) => `<tr><td style="padding:8px;border-bottom:1px solid #EEF0F3;font-family:ui-monospace,Menlo,monospace">${recipient.customerID}</td><td style="padding:8px;border-bottom:1px solid #EEF0F3"><button data-recipient="${recipient.customerID}" style="${button}">读取范围详情</button></td></tr>`).join('') || '<tr><td colspan="2" style="padding:16px;color:#8F959E">没有可展示的收件人</td></tr>';
-  const recipientDetail = page.recipient ? `<div style="padding:10px;border:1px solid #D6E4FF;border-radius:6px;background:#F5F8FF">已验证当前 plan 范围内 canonical_customer_id：<strong>${page.recipient.customerID}</strong>。当前契约不含昵称、成员状态或消息任务。</div>` : '';
+  const recipientDetail = page.recipient ? `<div style="display:grid;gap:10px;padding:10px;border:1px solid #D6E4FF;border-radius:6px;background:#F5F8FF"><div>已验证当前 plan 范围内 canonical_customer_id：<strong>${page.recipient.customerID}</strong>。当前契约不含昵称、成员状态或消息任务。</div><label style="display:grid;gap:5px">单客户消息覆盖<textarea id="recipient-message" maxlength="4000" rows="4" style="padding:8px;border:1px solid #D0D5DD;border-radius:6px">${esc(page.recipientReview?.messageOverride || '')}</textarea></label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="recipient-message-save" style="${button}">保存本地消息</button>${page.review?.status === 'pending_review' && (!page.recipientReview || page.recipientReview.status === 'pending_review') ? `<button id="recipient-review-approve" style="${primaryButton}">批准该客户</button><button id="recipient-review-reject" style="${button};border-color:#F5B7B1;color:#B42318">拒绝该客户</button>` : ''}${page.recipientReview ? status(page.recipientReview.status) + `<span style="font-size:12px;color:#667085">v${page.recipientReview.version}</span>` : '<span style="font-size:12px;color:#667085">尚无本地单客户审核记录</span>'}</div><p style="margin:0;color:#8F5A16;font-size:12px">保存、批准、拒绝均只写本地 review，不会创建发送任务或调用 Provider。</p></div>` : '';
   const actions = review.status === 'pending_review' ? `<button id="plan-approve" style="${primaryButton}">批准本地审核</button><button id="plan-reject" style="${button};border-color:#F5B7B1;color:#B42318">拒绝本地审核</button>` : `<span style="color:#8F959E;font-size:13px">当前状态不是 pending_review，不能提交批准/拒绝。</span>`;
   const more = page.recipientPage?.nextCursor ? `<button id="recipient-more" style="${button};margin-top:10px">加载更多目标人员</button>` : '';
   return shell('Touch plan 本地审核', `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="plan-back" style="${button}">返回 Campaign</button><span style="font-family:ui-monospace,Menlo,monospace;color:#667085">${esc(plan.id)}</span>${status(review.status)}<span>审核版本 v${review.version}</span>${review.handoffStatus ? status(review.handoffStatus) : ''}</div><div style="padding:12px;border:1px solid #D6E4FF;border-radius:8px;background:#F5F8FF;color:#1849A9;font-size:13px">批准只写入本地 touch-plan review；即使生成 handoff 也仍是 pending outbound acceptance，不等于发送或送达。</div><div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1fr);gap:14px"><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">计划详情</h2><p>来源：${esc(plan.sourceKind)} · 目标：${plan.targetCount} · Campaign 版本：v${plan.campaignVersion}</p><ol style="padding-left:20px">${steps}</ol><div style="display:flex;gap:8px;flex-wrap:wrap">${actions}</div></section><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">目标人员（canonical OneID）</h2><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;color:#667085"><th style="padding:8px">OneID</th><th style="padding:8px">范围详情</th></tr></thead><tbody>${recipientRows}</tbody></table>${more}${recipientDetail}</section></div>`);
@@ -102,9 +107,9 @@ async function loadCampaign(stage: HTMLElement, campaignCode: string, planID?: s
     return;
   }
   const [plan, review, recipientPage] = await Promise.all([getCampaignTouchPlanDto(campaignCode, planID), getCampaignTouchPlanReviewDto(campaignCode, planID), listCampaignTouchPlanRecipientsDto(campaignCode, planID)]);
-  const recipient = customerID == null ? undefined : await getCampaignTouchPlanRecipientDto(campaignCode, planID, customerID);
+  const [recipient, recipientReview] = customerID == null ? [undefined, undefined] as const : await Promise.all([getCampaignTouchPlanRecipientDto(campaignCode, planID, customerID), getCampaignTouchPlanRecipientReviewDto(campaignCode, planID, customerID)] as const);
   const renderPlan = (nextPage: CampaignTouchPlanRecipientPage): void => {
-    stage.innerHTML = planHtml({ campaign, plans, plan, review, recipientPage: nextPage, recipient });
+    stage.innerHTML = planHtml({ campaign, plans, plan, review, recipientPage: nextPage, recipient, recipientReview });
     stage.querySelector<HTMLButtonElement>('#plan-back')?.addEventListener('click', () => goto(campaignCode));
     stage.querySelectorAll<HTMLButtonElement>('[data-recipient]').forEach((element) => element.addEventListener('click', () => goto(campaignCode, planID, Number(element.dataset.recipient))));
     stage.querySelector<HTMLButtonElement>('#recipient-more')?.addEventListener('click', () => {
@@ -112,6 +117,13 @@ async function loadCampaign(stage: HTMLElement, campaignCode: string, planID?: s
     });
     (['approve', 'reject'] as const).forEach((operation) => stage.querySelector<HTMLButtonElement>(`#plan-${operation}`)?.addEventListener('click', () => confirmBox(`${operation === 'approve' ? '批准' : '拒绝'}本地审核`, '该操作仅写入本地 review，不会调用 Provider 或发送消息。', `确认${operation === 'approve' ? '批准' : '拒绝'}`, operation === 'reject', () => {
       void decideCampaignTouchPlanReviewDto(campaignCode, planID, operation).then(() => { toast('本地审核状态已更新'); goto(campaignCode, planID); }).catch((error) => toast(error instanceof Error ? error.message : '本地审核失败', true));
+    })));
+    stage.querySelector<HTMLButtonElement>('#recipient-message-save')?.addEventListener('click', () => {
+      const message = stage.querySelector<HTMLTextAreaElement>('#recipient-message')?.value || '';
+      void saveCampaignTouchPlanRecipientMessageDto(campaignCode, planID, customerID!, message).then(() => { toast('单客户本地消息已保存'); goto(campaignCode, planID, customerID); }).catch((error) => toast(error instanceof Error ? error.message : '单客户消息保存失败', true));
+    });
+    (['approve', 'reject'] as const).forEach((operation) => stage.querySelector<HTMLButtonElement>(`#recipient-review-${operation}`)?.addEventListener('click', () => confirmBox(`${operation === 'approve' ? '批准' : '拒绝'}该客户`, '该操作仅写入当前 touch plan 的本地单客户 review，不会发送消息。', `确认${operation === 'approve' ? '批准' : '拒绝'}`, operation === 'reject', () => {
+      void decideCampaignTouchPlanRecipientReviewDto(campaignCode, planID, customerID!, operation).then(() => { toast('单客户本地审核已更新'); goto(campaignCode, planID, customerID); }).catch((error) => toast(error instanceof Error ? error.message : '单客户审核失败', true));
     })));
   };
   renderPlan(recipientPage);

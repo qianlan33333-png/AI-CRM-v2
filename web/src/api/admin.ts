@@ -21,7 +21,7 @@ import { createLegacyQuestionnaire, deleteLegacyQuestionnaire, disableLegacyQues
 import { createLegacyChannel, updateLegacyChannel, type LegacyChannelWriteRequest } from './generated/health';
 import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, updateAIAudiencePackage, type AIAudiencePackageSender, type SegmentDefinition } from './generated/health';
 import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
-import { deleteCloudCampaign, getCloudCampaign, getCloudCampaignTouchPlan, getCloudCampaignTouchPlanRecipient, getCloudCampaignTouchPlanReview, listCloudCampaigns, listCloudCampaignTouchPlanRecipients, listCloudCampaignTouchPlans, mutateCloudCampaignTouchPlanReview } from './generated/health';
+import { deleteCloudCampaign, getCloudCampaign, getCloudCampaignTouchPlan, getCloudCampaignTouchPlanRecipient, getCloudCampaignTouchPlanRecipientReview, getCloudCampaignTouchPlanReview, listCloudCampaigns, listCloudCampaignTouchPlanRecipients, listCloudCampaignTouchPlans, mutateCloudCampaignTouchPlanRecipientReview, mutateCloudCampaignTouchPlanReview } from './generated/health';
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
 import { getChannelAcquisitionAsset, getChannelAcquisitionPreview, listChannelAcquisitionAssets, listChannelAcquisitionStaff, publishChannelAcquisitionAsset, updateChannelAcquisitionAssignees, type ChannelAcquisitionAssignmentRequest, type ChannelAcquisitionAssetPublishRequest } from './generated/health';
 import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelAcquisitionStaff, ChannelEntrant, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
@@ -45,6 +45,7 @@ export type CampaignTouchPlanDetail = CampaignTouchPlan & { steps: Array<{ index
 export type CampaignTouchPlanReview = { status: string; version: number; handoffStatus: string | null };
 export type CampaignTouchPlanRecipient = { customerID: number };
 export type CampaignTouchPlanRecipientPage = { items: CampaignTouchPlanRecipient[]; nextCursor: string | null };
+export type CampaignTouchPlanRecipientReview = { customerID: number; messageOverride: string; status: 'pending_review' | 'approved' | 'rejected'; version: number; updatedAt: string };
 
 const requiredText = (source: Obj, field: string): string => {
   const value = source[field];
@@ -132,6 +133,38 @@ export async function getCampaignTouchPlanRecipientDto(campaignCode: string, pla
   const returnedID = requiredPositive(source, 'canonical_customer_id');
   if (returnedID !== customerID) throw new Error('Campaign 收件人范围不匹配');
   return { customerID: returnedID };
+}
+const recipientReviewDto = (value: unknown, customerID: number): CampaignTouchPlanRecipientReview => {
+  const source = obj(value);
+  const returnedID = requiredPositive(source, 'canonical_customer_id');
+  const status = source.status;
+  if (returnedID !== customerID || (status !== 'pending_review' && status !== 'approved' && status !== 'rejected')) throw new Error('Campaign 单客户审核范围不匹配');
+  return { customerID: returnedID, messageOverride: typeof source.message_override === 'string' ? source.message_override : '', status, version: requiredPositive(source, 'version'), updatedAt: requiredText(source, 'updated_at') };
+};
+export async function getCampaignTouchPlanRecipientReviewDto(campaignCode: string, planID: string, customerID: number): Promise<CampaignTouchPlanRecipientReview | null> {
+  try {
+    const source = obj(await call(getCloudCampaignTouchPlanRecipientReview(campaignCode, planID, customerID, apiRequestOptions())));
+    requireTouchPlanLocal(source);
+    return recipientReviewDto(source.review, customerID);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+export async function saveCampaignTouchPlanRecipientMessageDto(campaignCode: string, planID: string, customerID: number, messageOverride: string): Promise<CampaignTouchPlanRecipientReview> {
+  const [planReview, current] = await Promise.all([getCampaignTouchPlanReviewDto(campaignCode, planID), getCampaignTouchPlanRecipientReviewDto(campaignCode, planID, customerID)]);
+  if (!messageOverride.trim()) throw new Error('单客户消息不能为空');
+  const source = obj(await call(mutateCloudCampaignTouchPlanRecipientReview(campaignCode, planID, customerID, 'message', { expected_plan_version: planReview.version, expected_recipient_version: current?.version || 0, message_override: messageOverride }, mutationOptions())));
+  requireTouchPlanLocal(source);
+  return recipientReviewDto(source.review, customerID);
+}
+export async function decideCampaignTouchPlanRecipientReviewDto(campaignCode: string, planID: string, customerID: number, operation: 'approve' | 'reject'): Promise<CampaignTouchPlanRecipientReview> {
+  const [planReview, current] = await Promise.all([getCampaignTouchPlanReviewDto(campaignCode, planID), getCampaignTouchPlanRecipientReviewDto(campaignCode, planID, customerID)]);
+  if (planReview.status !== 'pending_review') throw new Error('当前计划不在待审核状态，已拒绝单客户审核');
+  if (current && current.status !== 'pending_review') throw new Error('当前单客户审核已终态，已拒绝重复操作');
+  const source = obj(await call(mutateCloudCampaignTouchPlanRecipientReview(campaignCode, planID, customerID, operation, { expected_plan_version: planReview.version, expected_recipient_version: current?.version || 0 }, mutationOptions())));
+  requireTouchPlanLocal(source);
+  return recipientReviewDto(source.review, customerID);
 }
 
 export function customerPageDto(customer: ApiCustomer): Customer { return { id: String(customer.id), name: customer.name, owner: customer.owner_staff_id == null ? '未分配' : String(customer.owner_staff_id), stageId: customer.stage_id }; }
