@@ -10187,6 +10187,55 @@ paths:
             X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
           content: { application/json: { schema: { $ref: "#/components/schemas/ErrorResponse" } } }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}/send-records:
+    get:
+      tags: [p4-ai-audience]
+      operationId: listAIAudiencePackageSendRecords
+      summary: List PII-closed dispatch and receipt facts for one AI Audience package
+      x-legacy-mapping-ids: [LEGACY-API-0107]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-OUTBOUND-RECEIPTS-2026-08-26
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: outbound_campaign_dispatches.local_receipt_projection
+      x-aicrm-data-classification: restricted
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 20 } }
+        - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, maximum: 100000, default: 0 } }
+      responses:
+        "200": { description: Safe local send-record page without sender, external identity, msgid, or raw provider response., content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceSendRecordListResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/ai-audience/packages/{package_id}/send-records/{record_id}:
+    get:
+      tags: [p4-ai-audience]
+      operationId: getAIAudiencePackageSendRecord
+      summary: Read one PII-closed AI Audience dispatch and receipt record
+      x-legacy-mapping-ids: [LEGACY-API-0108]
+      x-p4-decision-evidence: P4-AI-AUDIENCE-OUTBOUND-RECEIPTS-2026-08-26
+      x-aicrm-capability: segments.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: outbound_campaign_dispatches.local_receipt_projection
+      x-aicrm-data-classification: restricted
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: record_id, in: path, required: true, schema: { type: string, pattern: '^campaign:[1-9][0-9]{0,18}$' } }
+      responses:
+        "200": { description: Safe local send-record detail without sender, external identity, msgid, or raw provider response., content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceSendRecordDetailResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/ai-audience/packages/{package_id}/pause:
     post:
       tags: [p4-ai-audience]
@@ -14282,6 +14331,39 @@ components:
         limit: { type: integer, minimum: 1, maximum: 200 }
         offset: { type: integer, format: int64, minimum: 0 }
         real_external_call_executed: { type: boolean, enum: [false] }
+    AIAudienceSendRecord:
+      type: object
+      additionalProperties: false
+      required: [record_id, status, technical_attempt_count, provider_result_received, receipt_present, delivery_proven, business_call_dispatched, real_external_call_executed, created_at, updated_at]
+      properties:
+        record_id: { type: string, pattern: '^campaign:[1-9][0-9]{0,18}$' }
+        status: { type: string, enum: [blocked, accepted, queued, attempted, executed, outcome_unknown, reconciled, retryable_failed, final_failed] }
+        technical_attempt_count: { type: integer, format: int32, minimum: 0 }
+        failure_reason: { type: string, enum: [external_gate_disabled, identity_unresolved, contact_policy, inactive_customer, provider_preflight_failed, sender_not_allowed, target_unresolved, retryable_provider_failure, final_provider_failure, outcome_unknown] }
+        provider_result_received: { type: boolean }
+        receipt_present: { type: boolean }
+        delivery_proven: { type: boolean }
+        business_call_dispatched: { type: boolean }
+        real_external_call_executed: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    AIAudienceSendRecordListResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, items, total, limit, offset]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/AIAudienceSendRecord" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, format: int32, minimum: 1, maximum: 100 }
+        offset: { type: integer, format: int32, minimum: 0, maximum: 100000 }
+    AIAudienceSendRecordDetailResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, record]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        record: { $ref: "#/components/schemas/AIAudienceSendRecord" }
     AIAudiencePackageDetailResponse:
       type: object
       additionalProperties: false
