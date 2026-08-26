@@ -302,6 +302,12 @@ owners:
       order_wechat_shop_refund_callbacks: verified_wechat_shop_callback_receipts_completed_in_refund_transaction
       order_wechat_shop_refund_queries: operator_recorded_reconciliation_evidence_without_automatic_provider_retry
 
+  sidebar:
+    package: internal/sidebar
+    tables: [sidebar_image_temporary_media_receipts]
+    constraints:
+      sidebar_image_temporary_media_receipts: actor_and_customer_scoped_idempotent_temporary_media_preparation_receipts_without_message_delivery_proof
+
   media:
     package: internal/media
     tables: [media_images, media_image_blobs, media_image_upload_receipts, media_image_delete_receipts, media_group_invites, media_group_invite_operation_receipts, media_thumbnail_cache_entries, media_miniprograms, media_miniprogram_import_preflights, media_miniprogram_import_ledger, media_miniprogram_operation_receipts, media_attachments, media_attachment_blobs, media_attachment_mutation_receipts, media_content_packages, media_content_package_refs, media_content_package_mutation_receipts, media_attachment_uploads, media_attachment_upload_parts, media_campaign_delivery_bindings, media_wecom_upload_preparations, media_wecom_upload_receipts, outbound_media_acceptances, outbound_media_effect_bindings, outbound_media_reconciliation_receipts]

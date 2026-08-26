@@ -24,6 +24,7 @@ expected_header="feature_id,page,section,action,triggered_api,expected_result,no
 g1_d02_evidence="decision=G1-D02-2026-08-10;approved_by=repository_owner;approved_at=2026-08-10;semantics=legacy_behavior_1_to_1;verification=NOT_EXECUTED"
 member_grid_partial_evidence="decision=P4-BACKEND-RESET-2026-08-24;approved_by=repository_owner;approved_at=2026-08-24;semantics=partial_legacy_plus_v2_native_difference;verification=NOT_EXECUTED"
 p4_w1_a_evidence="decision=P4-W1-A-2026-08-26;approved_by=repository_owner;approved_at=2026-08-26;semantics=safe_v2_customer_read_replacement;verification=NOT_EXECUTED"
+p4_w2_a_evidence="decision=P4-W2-A-2026-08-26;approved_by=repository_owner;approved_at=2026-08-26;semantics=minimal_safe_v2_sidebar_replacement;verification=NOT_EXECUTED"
 
 mode_of() {
   local file_path="$1" mode
@@ -123,7 +124,9 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   if [[ "$disposition" == UNREVIEWED ]]; then
     [[ "$signoff" == PENDING_HUMAN_SIGNOFF && -z "$decision_evidence" ]] || fail "UNREVIEWED row must await human signoff at line $line_number"
   elif [[ "$disposition" == MIGRATE ]]; then
-    if [[ "$feature_id" =~ ^LEGACY-S05-00(1|2|3|5|8|9)$ ]]; then
+    if [[ "$feature_id" =~ ^LEGACY-S05-0(2[0-9]|3[0-4])$ ]]; then
+      [[ "$signoff" == APPROVED && "$decision_evidence" == "$p4_w2_a_evidence" ]] || fail "P4 W2 A row lacks exact approved decision evidence at line $line_number"
+    elif [[ "$feature_id" =~ ^LEGACY-S05-00(1|2|3|5|8|9)$ ]]; then
       [[ "$signoff" == APPROVED && "$decision_evidence" == "$p4_w1_a_evidence" ]] || fail "P4 W1 A row lacks exact approved decision evidence at line $line_number"
     elif [[ "$feature_id" == LEGACY-S07-153 || "$feature_id" == LEGACY-S07-154 ]]; then
       [[ "$signoff" == APPROVED && "$decision_evidence" == "$member_grid_partial_evidence" ]] || fail "member-grid partial row lacks exact approved decision evidence at line $line_number"
