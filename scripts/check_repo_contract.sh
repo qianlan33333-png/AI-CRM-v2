@@ -46,8 +46,14 @@ for workflow in .github/workflows/ci.yml .github/workflows/nightly.yml; do
     fail "workflow permissions block must be unique: $workflow"
   [[ "$(grep -Fxc '  contents: read' <<<"$source" || true)" = "1" ]] ||
     fail "workflow must use contents: read: $workflow"
-  ! grep -Eq '^[[:space:]]+[A-Za-z0-9_-]+:[[:space:]]+(write|write-all)[[:space:]]*$' <<<"$source" ||
-    fail "workflow requests write permission: $workflow"
+  write_permissions="$(grep -E '^[[:space:]]+[A-Za-z0-9_-]+:[[:space:]]+(write|write-all)[[:space:]]*$' <<<"$source" || true)"
+  if [[ "$workflow" = ".github/workflows/nightly.yml" ]]; then
+    [[ "$write_permissions" = '  statuses: write' ]] ||
+      fail "nightly may only write commit statuses: $workflow"
+  else
+    [[ -z "$write_permissions" ]] ||
+      fail "workflow requests write permission: $workflow"
+  fi
   ! grep -Fq 'pull_request_target' <<<"$source" ||
     fail "pull_request_target is forbidden: $workflow"
   ! grep -Eq '^[[:space:]]+paths(-ignore)?:' <<<"$source" ||
@@ -102,6 +108,8 @@ grep -Fqx '    timeout-minutes: 60' <<<"$database_block" ||
 for anchor in \
   '  schedule:' \
   '  workflow_dispatch:' \
+  '  statuses: write' \
+  'ci / block compatibility' \
   'scripts/ci/run_full_regression.sh'; do
   grep -Fq "$anchor" <<<"$nightly_source" ||
     fail "nightly lost a required trigger or full-regression entrypoint: $anchor"

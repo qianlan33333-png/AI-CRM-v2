@@ -160,6 +160,21 @@ refresh_manifest "$write_permission_fixture"
 expect_rejected "$write_permission_fixture" "workflow write permission"
 printf 'repo-contract-tests: permission PASS\n'
 
+nightly_write_permission_fixture="$(make_fixture nightly-write-permission)"
+python3 - "$nightly_write_permission_fixture/.github/workflows/nightly.yml" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+source = path.read_text(encoding="utf-8")
+old = "  statuses: write\n"
+if old not in source:
+    raise SystemExit("nightly status permission fixture anchor missing")
+path.write_text(source.replace(old, old + "  checks: write\n", 1), encoding="utf-8")
+PY
+refresh_manifest "$nightly_write_permission_fixture"
+expect_rejected "$nightly_write_permission_fixture" "nightly non-status write permission"
+printf 'repo-contract-tests: nightly-permission PASS\n'
+
 path_filter_fixture="$(make_fixture workflow-path-filter)"
 python3 - "$path_filter_fixture/.github/workflows/ci.yml" <<'PY'
 from pathlib import Path
@@ -282,4 +297,4 @@ refresh_manifest "$events_manifest_removal_fixture"
 expect_rejected "$events_manifest_removal_fixture" "Events manifest 0052 removal"
 printf 'repo-contract-tests: events-manifest-removal PASS\n'
 
-printf 'repo-contract-tests: PASS cases=19\n'
+printf 'repo-contract-tests: PASS cases=20\n'
