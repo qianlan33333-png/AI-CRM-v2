@@ -266,8 +266,7 @@ func (source *Source) requestWithToken(ctx context.Context, method, path, token 
 		body = bytes.NewReader(encoded)
 	}
 	endpoint := source.baseURL.ResolveReference(&url.URL{Path: path})
-	query := endpoint.Query()
-	query.Set("access_token", token)
+	query := url.Values{"access_token": {token}}
 	endpoint.RawQuery = query.Encode()
 	request, err := http.NewRequestWithContext(ctx, method, endpoint.String(), body)
 	if err != nil {

@@ -79,9 +79,7 @@ func (uploader *TemporaryMediaUploader) Upload(ctx context.Context, input Tempor
 		return TemporaryMediaResult{}, err
 	}
 	endpoint := uploader.base.ResolveReference(&url.URL{Path: "/cgi-bin/media/upload"})
-	query := endpoint.Query()
-	query.Set("access_token", token)
-	query.Set("type", input.Kind)
+	query := url.Values{"access_token": {token}, "type": {input.Kind}}
 	endpoint.RawQuery = query.Encode()
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.String(), &body)
 	if err != nil {

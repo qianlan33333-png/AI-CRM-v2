@@ -570,6 +570,21 @@ func (q *Queries) FindHistoricalImportRowReceipt(ctx context.Context, arg FindHi
 	return i, err
 }
 
+const getActiveStaffWeComUserID = `-- name: GetActiveStaffWeComUserID :one
+SELECT wecom_userid
+FROM staff
+WHERE id = $1::bigint
+  AND is_active
+  AND btrim(wecom_userid) <> ''
+`
+
+func (q *Queries) GetActiveStaffWeComUserID(ctx context.Context, staffID int64) (string, error) {
+	row := q.db.QueryRow(ctx, getActiveStaffWeComUserID, staffID)
+	var wecom_userid string
+	err := row.Scan(&wecom_userid)
+	return wecom_userid, err
+}
+
 const getDM01TargetDatabaseIdentity = `-- name: GetDM01TargetDatabaseIdentity :one
 SELECT system_identifier::text AS server_id, current_database()::text AS database
 FROM pg_control_system()
@@ -779,6 +794,22 @@ func (q *Queries) ListHistoricalReconcileReceiptsPage(ctx context.Context, arg L
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockActiveStaffWeComUserID = `-- name: LockActiveStaffWeComUserID :one
+SELECT wecom_userid
+FROM staff
+WHERE id = $1::bigint
+  AND is_active
+  AND btrim(wecom_userid) <> ''
+FOR SHARE
+`
+
+func (q *Queries) LockActiveStaffWeComUserID(ctx context.Context, staffID int64) (string, error) {
+	row := q.db.QueryRow(ctx, lockActiveStaffWeComUserID, staffID)
+	var wecom_userid string
+	err := row.Scan(&wecom_userid)
+	return wecom_userid, err
 }
 
 const lockHistoricalImportCustomerForMatch = `-- name: LockHistoricalImportCustomerForMatch :one
