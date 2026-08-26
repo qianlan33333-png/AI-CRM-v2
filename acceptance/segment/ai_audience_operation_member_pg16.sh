@@ -57,7 +57,7 @@ psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "
     (operation, actor_id, key_digest, payload_digest, state, result_json, created_at, completed_at)
   VALUES
     ('operation_members_sync', 1, decode(repeat('aa', 32), 'hex'), decode(repeat('bb', 32), 'hex'),
-     'completed', '{"provider_read_executed":true}'::jsonb, now(), now())"
+     'completed', jsonb_build_object('provider_read_executed', true), now(), now())"
 if "${goose[@]}" down-to 99 >"$guard_output" 2>&1; then
   printf 'expected populated Audience operation-member receipt guard to fail\n' >&2
   exit 1
