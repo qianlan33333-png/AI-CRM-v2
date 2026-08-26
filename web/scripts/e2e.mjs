@@ -40,6 +40,18 @@ async function loadPage(rel, { id, q } = {}) {
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
       window.__AICRM_TEST_MOCK__ = true;
+      if (rel === 'admin/campaigns.html' && new URL(window.location.href).searchParams.get('view') === 'observability') {
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
+        window.__observabilityCalls = [];
+        window.fetch = async (input, init = {}) => {
+          const url = String(input);
+          window.__observabilityCalls.push({ url, init });
+          const traceID = new URL('http://localhost' + url).searchParams.get('trace_id') || undefined;
+          if (url.includes('/push-center/stats')) return json({ ok: true, counts: { total: 2, pending: 1, running: 0, succeeded: 0, sent: 1, failed: 0, shadow_warning: 0, by_effective_status: {}, by_status: {}, by_section: {} }, sections: [], status_definitions: [], filters: traceID ? { trace_id: traceID } : {}, route_owner: 'ai_crm_next', real_external_call_executed: false, runtime_queue: {}, capability_owner: 'ai_crm_next/platform_foundation/push_center' });
+          return json({ ok: true, sections: [{ key: 'order', label: '订单', count: 2 }], status_definitions: [], filters: traceID ? { trace_id: traceID } : {}, route_owner: 'ai_crm_next' });
+        };
+        return;
+      }
       if (rel === 'admin/campaigns.html' && new URL(window.location.href).searchParams.get('view') === 'external-effects') {
         const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
         const local = { local_fact_only: true, real_external_call_executed: false, delivery_proven: false, delivery_semantics: 'local_state_not_delivery_proof' };
@@ -823,6 +835,33 @@ console.log('admin/campaigns.html（External Effects / Push Center 本地边界�
     !detailText.includes('customer_id') &&
     !detailText.includes('owner_staff_id'));
   detail.window.close();
+}
+
+console.log('admin/campaigns.html（trace_id 可观察性边界）');
+{
+  const observability = await loadPage('admin/campaigns.html', { q: 'view=observability' });
+  await sleep(40);
+  const doc = observability.window.document;
+  let text = doc.querySelector('#stage')?.textContent || '';
+  ok('无 trace_id 时刷新本地聚合，并明确没有 audit JSON',
+    text.includes('未输入 trace_id') && text.includes('当前没有可渲染的 audit JSON') &&
+    observability.window.__observabilityCalls.length === 2 && observability.window.__observabilityCalls.every((call) => !call.url.includes('trace_id=')));
+  input(observability, doc.querySelector('#observability-trace'), 'trace-audit-7');
+  click(observability, doc.querySelector('#observability-filter'));
+  await sleep(40);
+  text = doc.querySelector('#stage')?.textContent || '';
+  ok('trace_id 只筛选真实 Push Center sections/stats，不伪造 session/audit',
+    text.includes('已以 trace-audit-7 调用真实 Push Center sections/stats 聚合') &&
+    observability.window.__observabilityCalls.some((call) => call.url.includes('trace_id=trace-audit-7')) &&
+    observability.window.__observabilityCalls.every((call) => !call.url.includes('session_id')));
+  observability.window.close();
+
+  const session = await loadPage('admin/campaigns.html', { q: 'view=observability&session_id=session-7' });
+  await sleep(40);
+  const sessionText = session.window.document.querySelector('#stage')?.textContent || '';
+  ok('session_id 缺契约时 fail closed 且不降级为全局查询',
+    sessionText.includes('backend_blocked') && sessionText.includes('session_id') && session.window.__observabilityCalls.length === 0);
+  session.window.close();
 }
 
 console.log(`\n${pass} 通过 / ${fail} 失败`);

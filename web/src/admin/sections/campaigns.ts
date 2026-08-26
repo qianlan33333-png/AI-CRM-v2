@@ -38,6 +38,7 @@ import {
   type PushCenterJobDetail,
 } from '../../api/external_effects';
 import { confirmBox, toast } from '../../shared/ui/feedback';
+import { mountPushObservability } from './observability';
 import { esc } from './util';
 
 type CampaignPage = {
@@ -70,6 +71,7 @@ const gotoExternalEffects = (jobID?: number): void => {
   if (jobID) params.set('job', String(jobID));
   location.href = `campaigns.html?${params.toString()}`;
 };
+const gotoObservability = (): void => { location.href = 'campaigns.html?view=observability'; };
 const status = (value: string): string => `<span style="display:inline-flex;padding:2px 8px;border-radius:999px;background:#F2F4F7;color:#475467;font-size:12px">${esc(value)}</span>`;
 const safety = '<p style="margin:0;color:#8F5A16;font-size:12px">只读快照/本地审核不证明 Provider 调用、外部发送或送达。</p>';
 
@@ -79,7 +81,7 @@ function shell(title: string, body: string): string {
 
 function listHtml(rows: CampaignDetail[], filter: CampaignFilter): string {
   const rowHtml = rows.map((item) => `<tr><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3"><button data-campaign="${esc(item.code)}" style="border:0;background:transparent;color:#1849A9;cursor:pointer;font-weight:600">${esc(item.name)}</button><div style="margin-top:3px;color:#8F959E;font-family:ui-monospace,Menlo,monospace;font-size:12px">${esc(item.code)}</div></td><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3">${status(item.approvalStatus)}</td><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3">${status(item.runtimeStatus)}</td><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3">v${item.version}</td><td style="padding:10px 12px;border-bottom:1px solid #EEF0F3">${esc(item.updatedAt)}</td></tr>`).join('') || '<tr><td colspan="5" style="padding:24px;text-align:center;color:#8F959E">当前筛选下没有 Campaign</td></tr>';
-  return shell('Campaign 本地生命周期', `<div style="display:flex;gap:10px;flex-wrap:wrap"><label>审核状态 <select id="campaign-approval"><option value="">全部</option>${['draft', 'approved', 'rejected'].map((value) => `<option value="${value}"${filter.approvalStatus === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label><label>运行状态 <select id="campaign-runtime"><option value="">全部</option>${['idle', 'planned', 'paused'].map((value) => `<option value="${value}"${filter.runtimeStatus === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label><button id="campaign-refresh" style="${button}">刷新</button><button id="external-effects-open" style="${button}">外部效果与 Push Center</button></div><div style="border:1px solid #DEE0E3;border-radius:8px;overflow:hidden"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#FAFAFB;color:#667085;text-align:left"><th style="padding:10px 12px">Campaign</th><th style="padding:10px 12px">审核</th><th style="padding:10px 12px">运行</th><th style="padding:10px 12px">版本</th><th style="padding:10px 12px">更新时间</th></tr></thead><tbody>${rowHtml}</tbody></table></div><div style="display:grid;gap:10px"><div><h2 style="margin:0 0 6px;font-size:15px">Campaign 命中成员</h2>${blocked.replace('该读取契约', '按成员状态读取 Campaign 成员与总数的')}</div><div><h2 style="margin:0 0 6px;font-size:15px">可观察性与审计筛选</h2>${blocked.replace('该读取契约', '按 trace_id/session_id 刷新 observability 与 audit 的 JSON')}</div></div>`);
+  return shell('Campaign 本地生命周期', `<div style="display:flex;gap:10px;flex-wrap:wrap"><label>审核状态 <select id="campaign-approval"><option value="">全部</option>${['draft', 'approved', 'rejected'].map((value) => `<option value="${value}"${filter.approvalStatus === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label><label>运行状态 <select id="campaign-runtime"><option value="">全部</option>${['idle', 'planned', 'paused'].map((value) => `<option value="${value}"${filter.runtimeStatus === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label><button id="campaign-refresh" style="${button}">刷新</button><button id="external-effects-open" style="${button}">外部效果与 Push Center</button><button id="observability-open" style="${button}">可观察性</button></div><div style="border:1px solid #DEE0E3;border-radius:8px;overflow:hidden"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:#FAFAFB;color:#667085;text-align:left"><th style="padding:10px 12px">Campaign</th><th style="padding:10px 12px">审核</th><th style="padding:10px 12px">运行</th><th style="padding:10px 12px">版本</th><th style="padding:10px 12px">更新时间</th></tr></thead><tbody>${rowHtml}</tbody></table></div><div style="display:grid;gap:10px"><div><h2 style="margin:0 0 6px;font-size:15px">Campaign 命中成员</h2>${blocked.replace('该读取契约', '按成员状态读取 Campaign 成员与总数的')}</div><div><h2 style="margin:0 0 6px;font-size:15px">可观察性与审计筛选</h2>${blocked.replace('该读取契约', '按 trace_id/session_id 刷新 observability 与 audit 的 JSON')}</div></div>`);
 }
 
 function planRows(plans: CampaignTouchPlan[]): string {
@@ -179,6 +181,7 @@ async function loadList(stage: HTMLElement, filter: CampaignFilter = {}): Promis
   stage.innerHTML = listHtml(rows.map((item) => ({ ...item, steps: [] })), filter);
   stage.querySelectorAll<HTMLButtonElement>('[data-campaign]').forEach((element) => element.addEventListener('click', () => goto(element.dataset.campaign)));
   stage.querySelector<HTMLButtonElement>('#external-effects-open')?.addEventListener('click', () => gotoExternalEffects());
+  stage.querySelector<HTMLButtonElement>('#observability-open')?.addEventListener('click', gotoObservability);
   stage.querySelector<HTMLButtonElement>('#campaign-refresh')?.addEventListener('click', () => {
     const approval = (stage.querySelector<HTMLSelectElement>('#campaign-approval')?.value || '') as CampaignFilter['approvalStatus'] | '';
     const runtime = (stage.querySelector<HTMLSelectElement>('#campaign-runtime')?.value || '') as CampaignFilter['runtimeStatus'] | '';
@@ -236,6 +239,7 @@ async function loadCampaign(stage: HTMLElement, campaignCode: string, planID?: s
 
 export async function mountCampaignWorkspace(stage: HTMLElement): Promise<void> {
   const params = query();
+  if (params.get('view') === 'observability') return mountPushObservability(stage);
   if (params.get('view') === 'external-effects') {
     const rawJobID = params.get('job');
     if (!rawJobID) return loadExternalEffects(stage);
