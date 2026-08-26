@@ -147,7 +147,7 @@ export async function runAdminAdapterTests(): Promise<void> {
     const campaigns = await listCampaignsDto({ approvalStatus: 'draft', runtimeStatus: 'idle' });
     assert(campaigns[0].code === campaignCode && campaignCalls[0].init?.method === 'GET', 'Campaign adapter reads generated list without Seed fallback');
     await deleteCampaignDto(campaignCode);
-    assert(campaignCalls.some((call) => call.init?.method === 'DELETE' && JSON.parse(String(call.init.body)).expected_version === 3), 'Campaign delete reads current version before CAS delete');
+    assert(campaignCalls.some((call) => call.init?.method === 'DELETE' && JSON.parse(String(call.init.body)).expected_version === 3 && Boolean(new Headers(call.init.headers).get('Idempotency-Key'))), 'Campaign delete reads current version and includes its required idempotency key');
     const decision = await decideCampaignTouchPlanReviewDto(campaignCode, touchPlanID, 'approve');
     const decisionCall = campaignCalls.find((call) => call.input.endsWith('/review/approve'));
     assert(decision.status === 'approved' && decisionCall?.init?.method === 'POST' && JSON.parse(String(decisionCall.init.body)).confirmation === `APPROVE ${touchPlanID}` && Boolean(new Headers(decisionCall.init.headers).get('Idempotency-Key')), 'Campaign approval is local-review CAS with explicit confirmation and idempotency');

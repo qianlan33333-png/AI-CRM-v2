@@ -129,7 +129,7 @@ export async function getCampaignDto(campaignCode: string): Promise<CampaignDeta
 }
 export async function deleteCampaignDto(campaignCode: string): Promise<void> {
   const campaign = await getCampaignDto(campaignCode);
-  const source = obj(await call(deleteCloudCampaign(campaignCode, { expected_version: campaign.version }, apiRequestOptions())));
+  const source = obj(await call(deleteCloudCampaign(campaignCode, { expected_version: campaign.version }, mutationOptions())));
   requireCampaignLocal(source);
   if (source.deleted !== true || requiredText(source, 'campaign_code') !== campaignCode) throw new Error('Campaign 删除响应不完整');
 }
