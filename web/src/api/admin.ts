@@ -26,6 +26,7 @@ import { acceptOutboundCampaignHandoff, dispatchOutboundCampaignHandoff, getOutb
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
 import { getChannelAcquisitionAsset, getChannelAcquisitionPreview, listChannelAcquisitionAssets, listChannelAcquisitionStaff, publishChannelAcquisitionAsset, updateChannelAcquisitionAssignees, type ChannelAcquisitionAssignmentRequest, type ChannelAcquisitionAssetPublishRequest } from './generated/health';
 import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelAcquisitionStaff, ChannelEntrant, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, GroupOpsMaterialKind, GroupOpsMaterialPlan, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
+import { getCreateLegacyWechatOrderExportUrl, type LegacyWechatOrderExportRequest } from './generated/health';
 import { ApiError, apiRequestOptions, request, unwrapGenerated } from './transport';
 
 type Obj = Record<string, unknown>;
@@ -867,6 +868,30 @@ export async function transitionGroupOpsPlanDto(planId: string, action: 'activat
 export async function deleteGroupOpsPlanDto(planId: string): Promise<void> { const revision = (await readGroupOpsDetail(planId)).plan.revision; await call(deleteGroupOpsPlan(planId, { expected_revision: revision }, apiRequestOptions())); }
 export type RefundIntentInput = { provider: string; orderNo: string; amount: string; reason: string; transactionIdConfirmation: string; checked: boolean; productId?: string; skuId?: string; refundCount?: number; reasonCode?: WechatShopRefundRequest['reason_code'] };
 export type RefundIntentResult = { id: string; state: string; provider: string; realExternalCallExecuted: boolean; deliveryProven: boolean };
+export type WechatOrderExportInput = { mobile?: string; identity?: string; transactionId?: string; productCode?: string; status?: string; createdFrom?: string; createdTo?: string };
+export async function exportWechatOrdersDto(input: WechatOrderExportInput): Promise<Blob> {
+  const clean = (value?: string): string | undefined => value?.trim() || undefined;
+  const requestBody: LegacyWechatOrderExportRequest = {
+    resource: 'orders',
+    format: 'csv',
+    filters: {
+      provider: 'wechat',
+      mobile: clean(input.mobile),
+      identity: clean(input.identity),
+      transaction_id: clean(input.transactionId),
+      product_code: clean(input.productCode),
+      status: clean(input.status),
+      created_from: clean(input.createdFrom),
+      created_to: clean(input.createdTo),
+    },
+  };
+  const response = await request(getCreateLegacyWechatOrderExportUrl(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': globalThis.crypto?.randomUUID?.() || `web-${Date.now()}` },
+    body: JSON.stringify(requestBody),
+  });
+  return response.blob();
+}
 export async function createRefundIntentDto(input: RefundIntentInput): Promise<RefundIntentResult> {
   if (!input.checked || input.transactionIdConfirmation !== input.orderNo) throw new Error('必须勾选确认并完整输入当前订单号');
   const refund_amount_total = priceMinor(input.amount);

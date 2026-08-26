@@ -877,6 +877,26 @@ export class AdminController extends PageBase {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
+  private exportWechatOrders(): void {
+    const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value.trim() || '';
+    const from = value('orderCreatedFrom');
+    const to = value('orderCreatedTo');
+    if (from && to && from > to) { toast('开始日期不能晚于结束日期', true); return; }
+    this.setState({ saving: true });
+    void this.api.exportWechatOrders({
+      transactionId: value('orderTransactionId'),
+      mobile: value('orderMobile'),
+      productCode: value('orderProductCode'),
+      status: value('orderStatus'),
+      createdFrom: from ? `${from}T00:00:00Z` : undefined,
+      createdTo: to ? `${to}T23:59:59Z` : undefined,
+    }).then((blob) => {
+      this.setState({ saving: false });
+      this.saveBlob(blob, 'wechat-pay-orders.csv');
+      toast('已下载当前筛选条件的微信支付交易 CSV');
+    }).catch((error) => { this.setState({ saving: false }); toast(error instanceof Error ? error.message : '微信支付交易导出失败', true); });
+  }
+
   private migDownloadTemplate(): void {
     void this.api.downloadOwnerReassignmentTemplate()
       .then((blob) => this.saveBlob(blob, '负责人迁移模板.csv'))
@@ -2379,6 +2399,7 @@ export class AdminController extends PageBase {
       },
 
       /* ================= 列表页数据 ================= */
+      orderPage: { exportWechat: () => this.exportWechatOrders(), saving: this.state.saving },
       rows: {
         customers: rows.customers.map((r) => ({ ...r, view: () => this.goto('customerDetail', '?id=' + encodeURIComponent(r.id)) })),
         tags: rows.tags,
