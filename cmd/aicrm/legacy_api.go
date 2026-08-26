@@ -226,6 +226,7 @@ type Handler struct {
 	orderBoard              legacyOrderBoardApplication
 	messageArchive          legacyMessageArchiveApplication
 	messageArchiveUnionID   legacyMessageArchiveUnionResolver
+	customerQuestionnaires  *legacyCustomerProfileQuestionnaireAnswersHandler
 	adminOps                legacyAdminOps
 	runtimeConfig           runtimeConfigDeclaration
 	operationCycles         legacyOperationCycleApplication

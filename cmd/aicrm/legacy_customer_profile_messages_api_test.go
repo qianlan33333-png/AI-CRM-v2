@@ -62,7 +62,7 @@ func TestLegacyCustomerProfileMessagesResolvesFrozenHintsAndReturnsOnlySafeMetad
 						{ChatType: "group", MessageType: "image", SentAt: sentAt.Add(-time.Minute)},
 					},
 					Total: 2,
-					Limit: wecomapp.MessageArchiveDefaultLimit,
+					Limit: legacyCustomerProfileMessagesDefaultLimit,
 				},
 			}
 			handler := &Handler{
@@ -83,7 +83,7 @@ func TestLegacyCustomerProfileMessagesResolvesFrozenHintsAndReturnsOnlySafeMetad
 			if archive.listCalls != 0 || archive.syncCalls != 0 || archive.healthCalls != 0 {
 				t.Fatalf("unsafe archive methods called: list=%d sync=%d health=%d", archive.listCalls, archive.syncCalls, archive.healthCalls)
 			}
-			if detail.input.ID != 44 || archive.query.CustomerID != 44 || archive.query.Limit != wecomapp.MessageArchiveDefaultLimit || archive.query.Offset != 0 || archive.query.ChatType != "" {
+			if detail.input.ID != 44 || archive.query.CustomerID != 44 || archive.query.Limit != legacyCustomerProfileMessagesDefaultLimit || archive.query.Offset != 0 || archive.query.ChatType != "" {
 				t.Fatalf("detail=%+v archive query=%+v", detail.input, archive.query)
 			}
 			if union.value != test.wantUnionValue {
@@ -105,7 +105,7 @@ func TestLegacyCustomerProfileMessagesResolvesFrozenHintsAndReturnsOnlySafeMetad
 			if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
 				t.Fatal(err)
 			}
-			if !payload.OK || payload.Count != 2 || payload.Limit != wecomapp.MessageArchiveDefaultLimit || payload.SourceStatus != "message_archive_read_model" || payload.RouteOwner != archiveRouteOwner || payload.RealExternalCallExecuted || len(payload.Messages) != 2 {
+			if !payload.OK || payload.Count != 2 || payload.Limit != legacyCustomerProfileMessagesDefaultLimit || payload.SourceStatus != "message_archive_read_model" || payload.RouteOwner != archiveRouteOwner || payload.RealExternalCallExecuted || len(payload.Messages) != 2 {
 				t.Fatalf("payload=%+v", payload)
 			}
 			if payload.Messages[0] != (legacyCustomerProfileMessage{ChatType: "private", MessageType: "text", SendTime: sentAt.Format(time.RFC3339)}) ||
@@ -171,7 +171,7 @@ func TestLegacyCustomerProfileMessagesRejectsUnsupportedAndMalformedQueriesBefor
 		{"limit is not accepted", "unionid=union-44&limit=30", "invalid_identity_hint"},
 		{"fetch all without identity", "fetch_all=true", "invalid_identity_hint"},
 		{"empty fetch all", "unionid=union-44&fetch_all=", "invalid_fetch_all"},
-		{"numeric fetch all", "unionid=union-44&fetch_all=1", "invalid_fetch_all"},
+		{"unsupported numeric fetch all", "unionid=union-44&fetch_all=2", "invalid_fetch_all"},
 		{"uppercase fetch all", "unionid=union-44&fetch_all=TRUE", "invalid_fetch_all"},
 		{"trimmed fetch all is rejected", "unionid=union-44&fetch_all=%20true", "invalid_fetch_all"},
 		{"fetch all control", "unionid=union-44&fetch_all=true%0A", "invalid_fetch_all"},
@@ -213,9 +213,11 @@ func TestLegacyCustomerProfileMessagesFetchAllUsesOnlyExistingArchiveBounds(t *t
 		name, rawQuery string
 		wantLimit      int32
 	}{
-		{"default first page", "external_userid=external-44", wecomapp.MessageArchiveDefaultLimit},
-		{"explicit first page", "external_userid=external-44&fetch_all=false", wecomapp.MessageArchiveDefaultLimit},
-		{"bounded fetch all", "external_userid=external-44&fetch_all=true", wecomapp.MessageArchiveMaximumLimit},
+		{"default first page", "external_userid=external-44", legacyCustomerProfileMessagesDefaultLimit},
+		{"explicit first page", "external_userid=external-44&fetch_all=false", legacyCustomerProfileMessagesDefaultLimit},
+		{"legacy numeric first page", "external_userid=external-44&fetch_all=0", legacyCustomerProfileMessagesDefaultLimit},
+		{"bounded fetch all", "external_userid=external-44&fetch_all=true", legacyCustomerProfileMessagesFetchAllLimit},
+		{"legacy numeric fetch all", "external_userid=external-44&fetch_all=1", legacyCustomerProfileMessagesFetchAllLimit},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			items := make([]wecomport.CustomerChatSummary, test.wantLimit)
@@ -312,7 +314,7 @@ func TestLegacyCustomerProfileMessagesFailsClosedForDependenciesAndMalformedProj
 	validDetail := &legacyCustomerProfileMessagesDetailStub{}
 	validPage := wecomport.CustomerChatSummaryPage{
 		Items: []wecomport.CustomerChatSummary{{ChatType: "private", MessageType: "text", SentAt: time.Date(2026, time.August, 21, 12, 0, 0, 0, time.UTC)}},
-		Total: 1, Limit: wecomapp.MessageArchiveDefaultLimit,
+		Total: 1, Limit: legacyCustomerProfileMessagesDefaultLimit,
 	}
 	for _, test := range []struct {
 		name    string
@@ -361,7 +363,7 @@ func TestLegacyCustomerProfileMessagesFailsClosedForDependenciesAndMalformedProj
 }
 
 func TestLegacyCustomerProfileMessagesReturnsAnAuthoritativeEmptyProjection(t *testing.T) {
-	archive := &legacyCustomerProfileMessagesArchiveStub{page: wecomport.CustomerChatSummaryPage{Items: []wecomport.CustomerChatSummary{}, Limit: wecomapp.MessageArchiveDefaultLimit}}
+	archive := &legacyCustomerProfileMessagesArchiveStub{page: wecomport.CustomerChatSummaryPage{Items: []wecomport.CustomerChatSummary{}, Limit: legacyCustomerProfileMessagesDefaultLimit}}
 	response := serveLegacyCustomerProfileMessages(&Handler{
 		customerDetail:        &legacyCustomerProfileMessagesDetailStub{},
 		messageArchiveUnionID: &legacyCustomerProfileMessagesUnionStub{result: identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: 44}},

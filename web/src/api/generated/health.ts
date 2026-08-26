@@ -12015,6 +12015,189 @@ export interface LegacyCustomerProfileTagsUnavailable {
   error_code: LegacyCustomerProfileTagsUnavailableErrorCode;
 }
 
+export type LegacyCustomerProfileMessageChatType =
+  (typeof LegacyCustomerProfileMessageChatType)[keyof typeof LegacyCustomerProfileMessageChatType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileMessageChatType = {
+  private: "private",
+  group: "group",
+} as const;
+
+export interface LegacyCustomerProfileMessage {
+  chat_type: LegacyCustomerProfileMessageChatType;
+  /**
+   * @minLength 1
+   * @maxLength 64
+   * @pattern ^[A-Za-z0-9_.-]+$
+   */
+  msgtype: string;
+  send_time: string;
+}
+
+export type LegacyCustomerProfileMessagesResponseLimit =
+  (typeof LegacyCustomerProfileMessagesResponseLimit)[keyof typeof LegacyCustomerProfileMessagesResponseLimit];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileMessagesResponseLimit = {
+  NUMBER_30: 30,
+  NUMBER_100: 100,
+} as const;
+
+export type LegacyCustomerProfileMessagesResponseSourceStatus =
+  (typeof LegacyCustomerProfileMessagesResponseSourceStatus)[keyof typeof LegacyCustomerProfileMessagesResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileMessagesResponseSourceStatus = {
+  message_archive_read_model: "message_archive_read_model",
+} as const;
+
+export type LegacyCustomerProfileMessagesResponseRouteOwner =
+  (typeof LegacyCustomerProfileMessagesResponseRouteOwner)[keyof typeof LegacyCustomerProfileMessagesResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileMessagesResponseRouteOwner = {
+  ai_crm_v2: "ai_crm_v2",
+} as const;
+
+export interface LegacyCustomerProfileMessagesResponse {
+  ok: boolean;
+  /** @maxItems 100 */
+  messages: LegacyCustomerProfileMessage[];
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  count: number;
+  limit: LegacyCustomerProfileMessagesResponseLimit;
+  source_status: LegacyCustomerProfileMessagesResponseSourceStatus;
+  route_owner: LegacyCustomerProfileMessagesResponseRouteOwner;
+  real_external_call_executed: boolean;
+}
+
+export type CustomerProfileSurveyChoiceAnswerQuestionType =
+  (typeof CustomerProfileSurveyChoiceAnswerQuestionType)[keyof typeof CustomerProfileSurveyChoiceAnswerQuestionType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerProfileSurveyChoiceAnswerQuestionType = {
+  single_choice: "single_choice",
+  multi_choice: "multi_choice",
+} as const;
+
+export interface CustomerProfileSurveyChoiceAnswer {
+  /** @minimum 1 */
+  question_id: number;
+  question_type: CustomerProfileSurveyChoiceAnswerQuestionType;
+  /** @minimum 0 */
+  sort_order: number;
+  option_ids: number[];
+}
+
+export interface CustomerProfileSurveySubmission {
+  /** @minimum 1 */
+  submission_id: number;
+  /** @minimum 1 */
+  questionnaire_id: number;
+  submitted_at: string;
+  score: number;
+  choice_answers: CustomerProfileSurveyChoiceAnswer[];
+}
+
+export type CustomerProfileSurveySubmissionsResponseLegacyParityStatus =
+  (typeof CustomerProfileSurveySubmissionsResponseLegacyParityStatus)[keyof typeof CustomerProfileSurveySubmissionsResponseLegacyParityStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerProfileSurveySubmissionsResponseLegacyParityStatus = {
+  v2_submission_projection_not_legacy_answers:
+    "v2_submission_projection_not_legacy_answers",
+} as const;
+
+/**
+ * @nullable
+ */
+export type CustomerProfileSurveySubmissionsResponseLatestAssessmentResult =
+  unknown | null;
+
+export type CustomerProfileSurveySubmissionsResponseAssessmentStatus =
+  (typeof CustomerProfileSurveySubmissionsResponseAssessmentStatus)[keyof typeof CustomerProfileSurveySubmissionsResponseAssessmentStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerProfileSurveySubmissionsResponseAssessmentStatus = {
+  v2_assessment_unavailable: "v2_assessment_unavailable",
+} as const;
+
+export type CustomerProfileSurveySubmissionsResponseSourceStatus =
+  (typeof CustomerProfileSurveySubmissionsResponseSourceStatus)[keyof typeof CustomerProfileSurveySubmissionsResponseSourceStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerProfileSurveySubmissionsResponseSourceStatus = {
+  survey_customer_answer_read_model: "survey_customer_answer_read_model",
+} as const;
+
+export type CustomerProfileSurveySubmissionsResponseRouteOwner =
+  (typeof CustomerProfileSurveySubmissionsResponseRouteOwner)[keyof typeof CustomerProfileSurveySubmissionsResponseRouteOwner];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CustomerProfileSurveySubmissionsResponseRouteOwner = {
+  ai_crm_v2: "ai_crm_v2",
+} as const;
+
+export interface CustomerProfileSurveySubmissionsResponse {
+  ok: boolean;
+  /** @maxItems 100 */
+  submissions: CustomerProfileSurveySubmission[];
+  /**
+   * @minimum 0
+   * @maximum 100
+   */
+  submission_count: number;
+  legacy_parity_status: CustomerProfileSurveySubmissionsResponseLegacyParityStatus;
+  /** @nullable */
+  latest_assessment_result: CustomerProfileSurveySubmissionsResponseLatestAssessmentResult;
+  assessment_status: CustomerProfileSurveySubmissionsResponseAssessmentStatus;
+  source_status: CustomerProfileSurveySubmissionsResponseSourceStatus;
+  route_owner: CustomerProfileSurveySubmissionsResponseRouteOwner;
+  real_external_call_executed: boolean;
+}
+
+export type LegacyCustomerProfileReadErrorStatusCode =
+  (typeof LegacyCustomerProfileReadErrorStatusCode)[keyof typeof LegacyCustomerProfileReadErrorStatusCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileReadErrorStatusCode = {
+  NUMBER_403: 403,
+  NUMBER_404: 404,
+  NUMBER_409: 409,
+  NUMBER_422: 422,
+  NUMBER_503: 503,
+} as const;
+
+export type LegacyCustomerProfileReadErrorErrorCode =
+  (typeof LegacyCustomerProfileReadErrorErrorCode)[keyof typeof LegacyCustomerProfileReadErrorErrorCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyCustomerProfileReadErrorErrorCode = {
+  customer_profile_messages_forbidden: "customer_profile_messages_forbidden",
+  customer_profile_questionnaire_answers_forbidden:
+    "customer_profile_questionnaire_answers_forbidden",
+  customer_not_found: "customer_not_found",
+  identity_hint_conflict: "identity_hint_conflict",
+  invalid_identity_hint: "invalid_identity_hint",
+  unsupported_identity_hint: "unsupported_identity_hint",
+  invalid_fetch_all: "invalid_fetch_all",
+  customer_profile_messages_unavailable:
+    "customer_profile_messages_unavailable",
+  customer_profile_questionnaire_answers_unavailable:
+    "customer_profile_questionnaire_answers_unavailable",
+} as const;
+
+export interface LegacyCustomerProfileReadError {
+  ok: boolean;
+  status_code: LegacyCustomerProfileReadErrorStatusCode;
+  error_code: LegacyCustomerProfileReadErrorErrorCode;
+  real_external_call_executed: boolean;
+}
+
 export type LegacyMiniProgramCreateRequest =
   | (unknown & {
       /** @maxLength 200 */
@@ -17334,6 +17517,61 @@ export type GetLegacyCustomerProfileTagsParams = {
   external_userid?: string;
   /**
    * Legacy ambiguous hint. It is rejected with unsupported_identity_hint and is never resolved.
+   * @maxLength 1024
+   */
+  user_id?: string;
+};
+
+export type ListLegacyCustomerProfileMessagesParams = {
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  unionid?: string;
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  external_userid?: string;
+  /**
+   * Rejected ambiguous legacy hint.
+   * @maxLength 1024
+   */
+  user_id?: string;
+  /**
+   * true or 1 raises the fixed bound from 30 to 100; false or 0 keeps 30.
+   */
+  fetch_all?: ListLegacyCustomerProfileMessagesFetchAll;
+};
+
+export type ListLegacyCustomerProfileMessagesFetchAll =
+  (typeof ListLegacyCustomerProfileMessagesFetchAll)[keyof typeof ListLegacyCustomerProfileMessagesFetchAll];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListLegacyCustomerProfileMessagesFetchAll = {
+  true: "true",
+  NUMBER_1: "1",
+  false: "false",
+  NUMBER_0: "0",
+} as const;
+
+export type ListCustomerProfileSurveySubmissionsParams = {
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  unionid?: string;
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  external_userid?: string;
+  /**
+   * @pattern ^\+[1-9][0-9]{1,14}$
+   */
+  mobile?: string;
+  /**
+   * Rejected ambiguous legacy hint.
    * @maxLength 1024
    */
   user_id?: string;
@@ -43374,6 +43612,211 @@ export const getLegacyCustomerProfileTags = async (
     status: res.status,
     headers: res.headers,
   } as getLegacyCustomerProfileTagsResponse;
+};
+
+/**
+ * @summary List bounded PII-closed message metadata for one resolved customer
+ */
+export type listLegacyCustomerProfileMessagesResponse200 = {
+  data: LegacyCustomerProfileMessagesResponse;
+  status: 200;
+};
+
+export type listLegacyCustomerProfileMessagesResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listLegacyCustomerProfileMessagesResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listLegacyCustomerProfileMessagesResponse404 = {
+  data: LegacyCustomerProfileReadError;
+  status: 404;
+};
+
+export type listLegacyCustomerProfileMessagesResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type listLegacyCustomerProfileMessagesResponse409 = {
+  data: LegacyCustomerProfileReadError;
+  status: 409;
+};
+
+export type listLegacyCustomerProfileMessagesResponse422 = {
+  data: LegacyCustomerProfileReadError;
+  status: 422;
+};
+
+export type listLegacyCustomerProfileMessagesResponse503 = {
+  data: LegacyCustomerProfileReadError;
+  status: 503;
+};
+
+export type listLegacyCustomerProfileMessagesResponseSuccess =
+  listLegacyCustomerProfileMessagesResponse200 & {
+    headers: Headers;
+  };
+export type listLegacyCustomerProfileMessagesResponseError = (
+  | listLegacyCustomerProfileMessagesResponse401
+  | listLegacyCustomerProfileMessagesResponse403
+  | listLegacyCustomerProfileMessagesResponse404
+  | listLegacyCustomerProfileMessagesResponse405
+  | listLegacyCustomerProfileMessagesResponse409
+  | listLegacyCustomerProfileMessagesResponse422
+  | listLegacyCustomerProfileMessagesResponse503
+) & {
+  headers: Headers;
+};
+
+export type listLegacyCustomerProfileMessagesResponse =
+  | listLegacyCustomerProfileMessagesResponseSuccess
+  | listLegacyCustomerProfileMessagesResponseError;
+
+export const getListLegacyCustomerProfileMessagesUrl = (
+  params?: ListLegacyCustomerProfileMessagesParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/customers/profile/messages?${stringifiedParams}`
+    : `/api/admin/customers/profile/messages`;
+};
+
+export const listLegacyCustomerProfileMessages = async (
+  params?: ListLegacyCustomerProfileMessagesParams,
+  options?: RequestInit,
+): Promise<listLegacyCustomerProfileMessagesResponse> => {
+  const res = await fetch(getListLegacyCustomerProfileMessagesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listLegacyCustomerProfileMessagesResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listLegacyCustomerProfileMessagesResponse;
+};
+
+/**
+ * This is an explicit V2 submission projection, not legacy per-question answer-text or assessment-result parity.
+ * @summary List safe V2 Survey submission facts for one resolved customer
+ */
+export type listCustomerProfileSurveySubmissionsResponse200 = {
+  data: CustomerProfileSurveySubmissionsResponse;
+  status: 200;
+};
+
+export type listCustomerProfileSurveySubmissionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listCustomerProfileSurveySubmissionsResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listCustomerProfileSurveySubmissionsResponse404 = {
+  data: LegacyCustomerProfileReadError;
+  status: 404;
+};
+
+export type listCustomerProfileSurveySubmissionsResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type listCustomerProfileSurveySubmissionsResponse409 = {
+  data: LegacyCustomerProfileReadError;
+  status: 409;
+};
+
+export type listCustomerProfileSurveySubmissionsResponse422 = {
+  data: LegacyCustomerProfileReadError;
+  status: 422;
+};
+
+export type listCustomerProfileSurveySubmissionsResponse503 = {
+  data: LegacyCustomerProfileReadError;
+  status: 503;
+};
+
+export type listCustomerProfileSurveySubmissionsResponseSuccess =
+  listCustomerProfileSurveySubmissionsResponse200 & {
+    headers: Headers;
+  };
+export type listCustomerProfileSurveySubmissionsResponseError = (
+  | listCustomerProfileSurveySubmissionsResponse401
+  | listCustomerProfileSurveySubmissionsResponse403
+  | listCustomerProfileSurveySubmissionsResponse404
+  | listCustomerProfileSurveySubmissionsResponse405
+  | listCustomerProfileSurveySubmissionsResponse409
+  | listCustomerProfileSurveySubmissionsResponse422
+  | listCustomerProfileSurveySubmissionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCustomerProfileSurveySubmissionsResponse =
+  | listCustomerProfileSurveySubmissionsResponseSuccess
+  | listCustomerProfileSurveySubmissionsResponseError;
+
+export const getListCustomerProfileSurveySubmissionsUrl = (
+  params?: ListCustomerProfileSurveySubmissionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/customers/profile/questionnaire-answers?${stringifiedParams}`
+    : `/api/admin/customers/profile/questionnaire-answers`;
+};
+
+export const listCustomerProfileSurveySubmissions = async (
+  params?: ListCustomerProfileSurveySubmissionsParams,
+  options?: RequestInit,
+): Promise<listCustomerProfileSurveySubmissionsResponse> => {
+  const res = await fetch(getListCustomerProfileSurveySubmissionsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCustomerProfileSurveySubmissionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCustomerProfileSurveySubmissionsResponse;
 };
 
 /**

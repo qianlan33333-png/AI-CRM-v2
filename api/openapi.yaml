@@ -7726,6 +7726,67 @@ paths:
         "405":
           description: The legacy route only accepts GET.
           headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+  /api/admin/customers/profile/messages:
+    get:
+      tags: [p4-customer-profile-read-compat]
+      operationId: listLegacyCustomerProfileMessages
+      summary: List bounded PII-closed message metadata for one resolved customer
+      x-legacy-mapping-ids: [LEGACY-API-0299]
+      x-p4-decision-evidence: P4-CUSTOMER-PROFILE-READ-V2-2026-08-26
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: sensitive
+      x-aicrm-data-source: identity.verified_read_model_and_message_archive.safe_summary
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: unionid, in: query, required: false, schema: { type: string, minLength: 1, maxLength: 1024 } }
+        - { name: external_userid, in: query, required: false, schema: { type: string, minLength: 1, maxLength: 1024 } }
+        - { name: user_id, in: query, required: false, deprecated: true, description: Rejected ambiguous legacy hint., schema: { type: string, maxLength: 1024 } }
+        - { name: fetch_all, in: query, required: false, description: true or 1 raises the fixed bound from 30 to 100; false or 0 keeps 30., schema: { type: string, enum: ["true", "1", "false", "0"] } }
+      responses:
+        "200": { description: "Message chat type, message type, and timestamp only.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileMessagesResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: No supplied identity hint resolves to a customer., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileReadError" } } } }
+        "409": { description: The supplied identity hints do not resolve to one customer., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileReadError" } } } }
+        "422": { description: The identity hints or fetch_all value are invalid., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileReadError" } } } }
+        "503": { description: "Identity, customer, or message archive read facts are unavailable.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileReadError" } } } }
+        "405":
+          description: The route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
+  /api/admin/customers/profile/questionnaire-answers:
+    get:
+      tags: [p4-customer-profile-read-compat]
+      operationId: listCustomerProfileSurveySubmissions
+      summary: List safe V2 Survey submission facts for one resolved customer
+      description: This is an explicit V2 submission projection, not legacy per-question answer-text or assessment-result parity.
+      x-legacy-mapping-ids: [LEGACY-API-0300]
+      x-p4-decision-evidence: P4-CUSTOMER-PROFILE-READ-V2-2026-08-26
+      x-aicrm-capability: admin.read
+      x-aicrm-rbac-scopes: { admin: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: sensitive
+      x-aicrm-data-source: identity.verified_read_model_and_survey.safe_choice_submission_projection
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: unionid, in: query, required: false, schema: { type: string, minLength: 1, maxLength: 1024 } }
+        - { name: external_userid, in: query, required: false, schema: { type: string, minLength: 1, maxLength: 1024 } }
+        - { name: mobile, in: query, required: false, schema: { type: string, pattern: '^\+[1-9][0-9]{1,14}$' } }
+        - { name: user_id, in: query, required: false, deprecated: true, description: Rejected ambiguous legacy hint., schema: { type: string, maxLength: 1024 } }
+      responses:
+        "200": { description: "Safe V2 submission facts without mobile, free text, external identity, receipt, or mutable label backfill.", content: { application/json: { schema: { $ref: "#/components/schemas/CustomerProfileSurveySubmissionsResponse" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: No supplied identity hint resolves to a customer., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileReadError" } } } }
+        "409": { description: The supplied identity hints do not resolve to one customer., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileReadError" } } } }
+        "422": { description: The identity hints are invalid., content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileReadError" } } } }
+        "503": { description: "Identity, customer, or Survey read facts are unavailable.", content: { application/json: { schema: { $ref: "#/components/schemas/LegacyCustomerProfileReadError" } } } }
+        "405":
+          description: The route only accepts GET.
+          headers: { Allow: { required: true, schema: { type: string, enum: [GET] } } }
   /admin/miniprogram-library:
     get:
       tags: [p4-media-compat]
@@ -18245,6 +18306,78 @@ components:
         ok: { type: boolean, enum: [false] }
         status_code: { type: integer, enum: [503] }
         error_code: { type: string, enum: [customer_profile_tags_unavailable] }
+    LegacyCustomerProfileMessage:
+      type: object
+      additionalProperties: false
+      required: [chat_type, msgtype, send_time]
+      properties:
+        chat_type: { type: string, enum: [private, group] }
+        msgtype: { type: string, minLength: 1, maxLength: 64, pattern: '^[A-Za-z0-9_.-]+$' }
+        send_time: { type: string, format: date-time }
+    LegacyCustomerProfileMessagesResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, messages, count, limit, source_status, route_owner, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        messages: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/LegacyCustomerProfileMessage" } }
+        count: { type: integer, minimum: 0, maximum: 100 }
+        limit: { type: integer, format: int32, enum: [30, 100] }
+        source_status: { type: string, enum: [message_archive_read_model] }
+        route_owner: { type: string, enum: [ai_crm_v2] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    CustomerProfileSurveyChoiceAnswer:
+      type: object
+      additionalProperties: false
+      required: [question_id, question_type, sort_order, option_ids]
+      properties:
+        question_id: { type: integer, format: int64, minimum: 1 }
+        question_type: { type: string, enum: [single_choice, multi_choice] }
+        sort_order: { type: integer, minimum: 0 }
+        option_ids:
+          type: array
+          uniqueItems: true
+          items: { type: integer, format: int64, minimum: 1 }
+    CustomerProfileSurveySubmission:
+      type: object
+      additionalProperties: false
+      required: [submission_id, questionnaire_id, submitted_at, score, choice_answers]
+      properties:
+        submission_id: { type: integer, format: int64, minimum: 1 }
+        questionnaire_id: { type: integer, format: int64, minimum: 1 }
+        submitted_at: { type: string, format: date-time }
+        score: { type: number, format: double }
+        choice_answers:
+          type: array
+          items: { $ref: "#/components/schemas/CustomerProfileSurveyChoiceAnswer" }
+    CustomerProfileSurveySubmissionsResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, submissions, submission_count, legacy_parity_status, latest_assessment_result, assessment_status, source_status, route_owner, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        submissions:
+          type: array
+          maxItems: 100
+          items: { $ref: "#/components/schemas/CustomerProfileSurveySubmission" }
+        submission_count: { type: integer, minimum: 0, maximum: 100 }
+        legacy_parity_status: { type: string, enum: [v2_submission_projection_not_legacy_answers] }
+        latest_assessment_result: { nullable: true }
+        assessment_status: { type: string, enum: [v2_assessment_unavailable] }
+        source_status: { type: string, enum: [survey_customer_answer_read_model] }
+        route_owner: { type: string, enum: [ai_crm_v2] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    LegacyCustomerProfileReadError:
+      type: object
+      additionalProperties: false
+      required: [ok, status_code, error_code, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [false] }
+        status_code: { type: integer, enum: [403, 404, 409, 422, 503] }
+        error_code:
+          type: string
+          enum: [customer_profile_messages_forbidden, customer_profile_questionnaire_answers_forbidden, customer_not_found, identity_hint_conflict, invalid_identity_hint, unsupported_identity_hint, invalid_fetch_all, customer_profile_messages_unavailable, customer_profile_questionnaire_answers_unavailable]
+        real_external_call_executed: { type: boolean, enum: [false] }
     LegacyMiniProgramCreateRequest:
       type: object
       additionalProperties: false
