@@ -1,11 +1,12 @@
 import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, dispatchCampaignOutboundHandoffDto, executeOwnerReassignmentPreviewDto, getCampaignOutboundDispatchReconciliationDto, getCampaignOutboundHandoffDto, getCampaignOutboundHandoffReconciliationDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getCouponDto, getImageThumbnailDto, getServicePeriodMemberGridMetaDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, listCampaignPlanIndexDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listCouponClaimsDto, listCouponProductOptionsDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, tryGetCampaignOutboundDispatchReconciliationDto, tryGetCampaignOutboundHandoffDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
+import { createServicePeriodMemberGridCollaboratorDto, deleteServicePeriodMemberGridCollaboratorDto, getServicePeriodMemberDto, queryServicePeriodMemberGridDto, updateServicePeriodMemberFieldsDto, updateServicePeriodMemberGridCollaboratorDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyAttachmentsUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
 import { HttpApi } from '../shared/api/client';
 import { getCreateProductUrl, getCreateServicePeriodProductUrl, getUpdateServicePeriodProductUrl } from './generated/health';
 import { getArchiveLegacyCouponUrl, getCopyLegacyCouponUrl, getCreateLegacyCouponUrl, getDeleteLegacyCouponUrl, getGetLegacyImageVariantUrl, getPublishLegacyCouponUrl, getStopLegacyCouponUrl, getUpdateLegacyCouponUrl } from './generated/health';
-import { getGetServicePeriodMemberGridAccessUrl, getGetServicePeriodMemberGridSchemaUrl, getGetServicePeriodMemberGridShareSettingsUrl, getListLegacyCouponClaimsUrl, getListLegacyCouponProductOptionsUrl, getListServicePeriodMemberViewsUrl } from './generated/health';
+import { getCreateServicePeriodMemberGridCollaboratorUrl, getDeleteServicePeriodMemberGridCollaboratorUrl, getGetServicePeriodMemberGridAccessUrl, getGetServicePeriodMemberGridSchemaUrl, getGetServicePeriodMemberGridShareSettingsUrl, getGetServicePeriodMemberUrl, getListLegacyCouponClaimsUrl, getListLegacyCouponProductOptionsUrl, getListServicePeriodMemberViewsUrl, getQueryServicePeriodMemberGridUrl, getUpdateServicePeriodMemberFieldsUrl, getUpdateServicePeriodMemberGridCollaboratorUrl } from './generated/health';
 import { getCreateLegacyQuestionnaireUrl, getDeleteLegacyQuestionnaireUrl, getDisableLegacyQuestionnaireUrl, getDuplicateLegacyQuestionnaireUrl, getEnableLegacyQuestionnaireUrl, getPublishQuestionnairePublicDefinitionUrl, getUpdateLegacyQuestionnaireUrl } from './generated/health';
 import { getCreateLegacyChannelUrl, getGetChannelAcquisitionAssetUrl, getGetChannelAcquisitionPreviewUrl, getListChannelAcquisitionAssetsUrl, getListChannelAcquisitionStaffUrl, getPublishChannelAcquisitionAssetUrl, getUpdateChannelAcquisitionAssigneesUrl, getUpdateLegacyChannelUrl } from './generated/health';
 import { getDeleteAIAudienceAutomationBindingUrl, getGetAIAudienceAutomationBindingUrl, getGetAIAudienceConfigurationVersionUrl, getGetAIAudiencePackageSendersUrl, getListAIAudiencePackageMembersUrl, getMaterializeAIAudienceConfigurationUrl, getPreviewAIAudienceConfigurationUrl, getPutAIAudienceAutomationBindingUrl, getPutAIAudienceConfigurationVersionUrl, getReplaceAIAudiencePackageSendersUrl, getUpdateAIAudiencePackageUrl } from './generated/health';
@@ -140,6 +141,8 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(optionUrl.pathname === '/api/admin/coupons/product-options' && optionUrl.searchParams.get('q') === '增长' && optionUrl.searchParams.get('product_type') === 'standard_product' && optionUrl.searchParams.get('limit') === '20' && optionUrl.searchParams.get('offset') === '40', 'coupon option generated URL preserves q/type/page');
   assert(getListLegacyCouponClaimsUrl(3, { limit: 50, offset: 100 }) === '/api/admin/coupons/3/claims?limit=50&offset=100', 'coupon claims generated URL preserves opaque-safe page');
   assert(getGetServicePeriodMemberGridAccessUrl(8).endsWith('/8/member-grid/access') && getGetServicePeriodMemberGridSchemaUrl(8).endsWith('/8/member-grid/schema') && getListServicePeriodMemberViewsUrl(8).endsWith('/8/member-views') && getGetServicePeriodMemberGridShareSettingsUrl(8).endsWith('/8/member-grid/share-settings'), 'Member Grid initialization generated URLs');
+  assert(getQueryServicePeriodMemberGridUrl(8) === '/api/admin/service-period-products/8/member-grid/query' && getGetServicePeriodMemberUrl(8, 'spm_abcdefghijklmnopqrstuv') === '/api/admin/service-period-products/8/members/spm_abcdefghijklmnopqrstuv' && getUpdateServicePeriodMemberFieldsUrl(8, 'spm_abcdefghijklmnopqrstuv').endsWith('/members/spm_abcdefghijklmnopqrstuv/fields'), 'Member Grid query/member field URLs');
+  assert(getCreateServicePeriodMemberGridCollaboratorUrl(8).endsWith('/8/member-grid/collaborators') && getUpdateServicePeriodMemberGridCollaboratorUrl(8, 6).endsWith('/8/member-grid/collaborators/6') && getDeleteServicePeriodMemberGridCollaboratorUrl(8, 6).endsWith('/8/member-grid/collaborators/6'), 'Member Grid collaborator URLs');
   assert(getGetLegacyImageUrl('img-1') === '/api/admin/image-library/img-1', 'image detail URL/method');
   assert(getGetLegacyImageVariantUrl('img-1', 'thumb_320') === '/api/admin/image-library/img-1/variants/thumb_320', 'image thumbnail URL/method');
   assert(getGetLegacyAttachmentUrl('att-1') === '/api/admin/attachment-library/att-1', 'attachment detail URL/method');
@@ -348,17 +351,58 @@ export async function runAdminAdapterTests(): Promise<void> {
     const body = path.endsWith('/member-grid/access') ? { product_id: 8, can_view: true, can_query: true, can_manage_views: false, can_share: false }
       : path.endsWith('/member-grid/schema') ? { service_product_id: 8, columns: gridColumns }
         : path.endsWith('/member-views') ? { product_id: 8, views: [{ id: 'all-members', name: '全部成员', source: 'built_in', read_only: true }] }
-          : path.endsWith('/member-grid/share-settings') ? { service_product_id: 8, saved_views: [], collaborators: [{ user_id: 5 }], external_share_supported: false, external_share_enabled: false, real_external_call_executed: unsafeGridShare, collaborator_edit_is_local_metadata_only: true, collaborator_edit_grants_central_permission: false }
+          : path.endsWith('/member-grid/share-settings') ? { service_product_id: 8, saved_views: [], collaborators: [{ collaborator_id: 6, service_product_id: 8, staff_id: 5, permission: 'view', version: 1, invited_by: 1, created_at: '2026-08-26T00:00:00Z', updated_at: '2026-08-26T00:00:00Z' }], external_share_supported: false, external_share_enabled: false, real_external_call_executed: unsafeGridShare, collaborator_edit_is_local_metadata_only: true, collaborator_edit_grants_central_permission: false }
             : { ok: true, product };
     return new Response(JSON.stringify(body), { status: 200 });
   };
   try {
     const grid = await getServicePeriodMemberGridMetaDto(8);
-    assert(grid.product.resourceId === 8 && grid.columns.length === 12 && grid.views[0].readOnly && grid.collaborators === 1 && !grid.externalShareSupported, 'Member Grid initializes only closed local metadata');
+    assert(grid.product.resourceId === 8 && grid.columns.length === 12 && grid.views[0].readOnly && grid.collaborators === 1 && !grid.externalShareSupported && grid.publicShareUrl === null, 'Member Grid initializes only closed local metadata');
     assert(gridCalls.length === 5 && gridCalls.every((call) => call.init?.method === 'GET'), 'Member Grid initialization uses five generated GET reads');
     unsafeGridShare = true;
     try { await getServicePeriodMemberGridMetaDto(8); assert(false, 'Member Grid external effect flag must fail closed'); }
     catch (error) { assert(error instanceof Error && error.message.includes('本地只读边界'), 'Member Grid external effect flag is rejected'); }
+  } finally { globalThis.fetch = savedFetch; }
+
+  const memberRef = 'spm_abcdefghijklmnopqrstuv';
+  const memberCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const member = { member_ref: memberRef, service_product_id: 8, customer_id: 21, state: 'active', source: 'manual', starts_at: '2026-08-01T00:00:00Z', expires_at: null, expired_at: null, removed_at: null, remark: '原备注', alliance: '原联盟', version: 2, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T00:00:00Z' };
+  const collaborator = { collaborator_id: 6, service_product_id: 8, staff_id: 5, permission: 'edit', version: 2, invited_by: 1, created_at: '2026-08-26T00:00:00Z', updated_at: '2026-08-26T00:00:00Z' };
+  globalThis.fetch = async (input, init) => {
+    memberCalls.push({ input: String(input), init });
+    const url = new URL('http://localhost' + String(input));
+    const path = url.pathname;
+    const requestBody = init?.body ? JSON.parse(String(init.body)) : {};
+    const responseBody = path.endsWith('/member-grid/query')
+      ? { rows: [{ ...member, display_name: '本地客户' }], limit: 50, next_cursor: requestBody.cursor ? '' : 'opaque-next', has_more: !requestBody.cursor }
+      : path.endsWith('/fields')
+        ? { ...member, remark: requestBody.remark, alliance: requestBody.alliance, version: 3, updated_at: '2026-08-26T01:00:00Z' }
+        : path.endsWith('/members/' + memberRef)
+          ? member
+          : path.endsWith('/collaborators') && init?.method === 'POST'
+            ? { ok: true, collaborator, edit_permission_is_local_metadata_only: true, grants_central_products_permission: false }
+            : init?.method === 'DELETE'
+              ? { ok: true, deleted: true, collaborator, edit_permission_is_local_metadata_only: true, grants_central_products_permission: false }
+              : { ok: true, collaborator, edit_permission_is_local_metadata_only: true, grants_central_products_permission: false };
+    return new Response(JSON.stringify(responseBody), { status: path.endsWith('/collaborators') && init?.method === 'POST' ? 201 : 200 });
+  };
+  try {
+    try { await getServicePeriodMemberDto(8, 'not-a-member-ref'); assert(false, 'Member Grid member ref must be validated before fetch'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('member_ref'), 'Member Grid rejects invalid member ref before fetch'); }
+    assert(memberCalls.length === 0, 'Member Grid invalid member ref does not issue a request');
+    const firstPage = await queryServicePeriodMemberGridDto(8, { state: 'active', source: 'manual', limit: 50 });
+    const secondPage = await queryServicePeriodMemberGridDto(8, { state: 'active', source: 'manual', limit: 50, cursor: firstPage.nextCursor });
+    assert(firstPage.rows[0].memberRef === memberRef && firstPage.rows[0].displayName === '本地客户' && firstPage.hasMore && firstPage.nextCursor === 'opaque-next' && !secondPage.hasMore, 'Member Grid query maps safe rows and opaque cursor');
+    const detail = await getServicePeriodMemberDto(8, memberRef);
+    const savedMember = await updateServicePeriodMemberFieldsDto(8, memberRef, { expectedVersion: detail.version, remark: '新备注', alliance: '新联盟' });
+    assert(detail.remark === '原备注' && savedMember.remark === '新备注' && savedMember.alliance === '新联盟', 'Member Grid member detail and local fields CAS mapping');
+    const createdCollaborator = await createServicePeriodMemberGridCollaboratorDto(8, { staffId: 5, permission: 'edit' });
+    const updatedCollaborator = await updateServicePeriodMemberGridCollaboratorDto(8, 6, { expectedVersion: createdCollaborator.version, permission: 'view' });
+    const deletedCollaborator = await deleteServicePeriodMemberGridCollaboratorDto(8, 6, updatedCollaborator.version);
+    assert(createdCollaborator.staffId === 5 && updatedCollaborator.collaboratorId === 6 && deletedCollaborator.collaboratorId === 6, 'Member Grid collaborator local CRUD maps real response');
+    assert(memberCalls.some((call) => call.input.endsWith('/member-grid/query') && JSON.parse(String(call.init?.body)).cursor === ''), 'Member Grid first query sends explicit empty cursor');
+    assert(memberCalls.some((call) => call.input.endsWith('/fields') && new Headers(call.init?.headers).get('Idempotency-Key')), 'Member Grid local field update carries idempotency key');
+    assert(memberCalls.filter((call) => new Headers(call.init?.headers).get('Idempotency-Key')).length === 4, 'Member Grid mutations carry idempotency keys');
   } finally { globalThis.fetch = savedFetch; }
 
   let channelRequest: { input: string; init?: RequestInit } | undefined;

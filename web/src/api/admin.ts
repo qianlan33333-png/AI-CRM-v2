@@ -4,14 +4,14 @@ import {
   getLegacyAttachment, getLegacyChannel, getLegacyCoupon, getLegacyCouponShare, getLegacyImage, getLegacyImageFacets,
   getLegacyMiniProgram, getLegacyOrder, getLegacyOrderItems, getLegacyQuestionnaire, getLegacyQuestionnaireResults,
   getAdminOpsCategory, getContactOwnerReassignmentPreview, getLegacyWecomTag, getLegacyWecomTagExecutionGate, getLegacyWecomTagGroup, getProduct,
-  getServicePeriodMemberGridAccess, getServicePeriodMemberGridSchema, getServicePeriodMemberGridShareSettings,
+  getServicePeriodMember, getServicePeriodMemberGridAccess, getServicePeriodMemberGridSchema, getServicePeriodMemberGridShareSettings,
   getServicePeriodProduct, getSurveyOperations, getSurveyOperationsPageData, getSurveySafeSubmissionAnalysis,
   listAdminOpsCategories, listCustomers, listLegacyAttachments, listLegacyChannelEntrants, listLegacyChannels, listLegacyCouponClaims,
   listLegacyCouponProductOptions, listLegacyCoupons, getLegacyImageList, listLegacyMiniPrograms, listLegacyOrders, listLegacyRefunds, listLegacyWechatOrderExternalEffects,
   listLegacyQuestionnaireSubmissions, listLegacyQuestionnaires, listLegacyWecomTagGroups, listLegacyWecomTags,
-  listProductLocalEntitlements, listProducts, listServicePeriodMemberViews, listServicePeriodMembers,
+  listProductLocalEntitlements, listProducts, listServicePeriodMemberViews, listServicePeriodMembers, queryServicePeriodMemberGrid,
   listServicePeriodProducts, listSurveyQuestionnaireExternalPushLogs,
-  activateAIAudiencePackage, archiveLegacyWecomTag, archiveLegacyWecomTagGroup, archiveAIAudiencePackage, archiveServicePeriodProduct, copyAIAudiencePackage, copyLegacyWechatPayProduct, copyServicePeriodProduct, createAIAudiencePackageGroup, createLegacyMiniProgram, createLegacyWecomTag, createLegacyWecomTagGroup, createProduct, createRadarLink, createServicePeriodProduct, deleteAIAudiencePackageGroup, deleteLegacyAttachment, deleteLegacyImage, deleteLegacyMiniProgram, disableLegacyWechatPayProduct, disableRadarLink, disableServicePeriodProduct, enableLegacyWechatPayProduct, enableRadarLink, enableServicePeriodProduct, executeContactOwnerReassignmentPreview, getAIAudiencePackage, getCreateContactOwnerReassignmentPreviewUrl, getDownloadContactOwnerReassignmentErrorsUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getDownloadLegacyAttachmentUrl, getGetLegacyImageVariantUrl, getRadarLink, getRadarLinkShareProjection, listAIAudiencePackageGroups, listAIAudiencePackages, listRadarLinkEvents, listRadarLinks, pauseAIAudiencePackage, queueLegacyWecomTagSync, updateAIAudiencePackageGroup, updateLegacyAttachment, updateLegacyImage, updateLegacyMiniProgram, updateLegacyWecomTagGroupPatch, updateLegacyWecomTagPatch, updateProduct, updateRadarLink, updateServicePeriodProduct, uploadLegacyAttachment, uploadLegacyImage, type ContactOwnerReassignmentPreview as ApiOwnerReassignmentPreview, type Customer as ApiCustomer, type LegacyChannel, type LegacyChannelListItem, type LegacyQuestionnaire, type RadarLink as ApiRadarLink,
+  activateAIAudiencePackage, archiveLegacyWecomTag, archiveLegacyWecomTagGroup, archiveAIAudiencePackage, archiveServicePeriodProduct, copyAIAudiencePackage, copyLegacyWechatPayProduct, copyServicePeriodProduct, createAIAudiencePackageGroup, createLegacyMiniProgram, createLegacyWecomTag, createLegacyWecomTagGroup, createProduct, createRadarLink, createServicePeriodProduct, createServicePeriodMemberGridCollaborator, deleteAIAudiencePackageGroup, deleteLegacyAttachment, deleteLegacyImage, deleteLegacyMiniProgram, deleteServicePeriodMemberGridCollaborator, disableLegacyWechatPayProduct, disableRadarLink, disableServicePeriodProduct, enableLegacyWechatPayProduct, enableRadarLink, enableServicePeriodProduct, executeContactOwnerReassignmentPreview, getAIAudiencePackage, getCreateContactOwnerReassignmentPreviewUrl, getDownloadContactOwnerReassignmentErrorsUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getDownloadLegacyAttachmentUrl, getGetLegacyImageVariantUrl, getRadarLink, getRadarLinkShareProjection, listAIAudiencePackageGroups, listAIAudiencePackages, listRadarLinkEvents, listRadarLinks, pauseAIAudiencePackage, queueLegacyWecomTagSync, updateAIAudiencePackageGroup, updateLegacyAttachment, updateLegacyImage, updateLegacyMiniProgram, updateLegacyWecomTagGroupPatch, updateLegacyWecomTagPatch, updateProduct, updateRadarLink, updateServicePeriodMemberFields, updateServicePeriodMemberGridCollaborator, updateServicePeriodProduct, uploadLegacyAttachment, uploadLegacyImage, type ContactOwnerReassignmentPreview as ApiOwnerReassignmentPreview, type Customer as ApiCustomer, type LegacyChannel, type LegacyChannelListItem, type LegacyQuestionnaire, type RadarLink as ApiRadarLink,
 } from './generated/health';
 import { archiveLegacyHXCSendConfig, getLegacyHXCSendConfig, reorderLegacyHXCSendConfigs, upsertLegacyHXCSendConfig, type LegacyHXCSenderConfig } from './generated/health';
 import { getLegacyAppSettingsResource, saveLegacyAppSettingsResource } from './generated/health';
@@ -630,10 +630,37 @@ export async function archiveServiceProductDto(productId: number): Promise<void>
 export type CouponWriteInput = { id?: number; name: string; discount: string; totalIssueLimit: number; perUserIssueLimit: number; claimStartsAt: string; claimEndsAt: string; validityMode: 'fixed_range' | 'relative_days'; useStartsAt?: string; useEndsAt?: string; relativeValidityDays?: number; instructions: string; targetRefs: string[] };
 export type CouponProductOptionPage = { items: Array<{ targetRef: string; name: string; priceMinor: number; currency: string }>; total: number; limit: number; offset: number };
 export type CouponClaimPage = { items: Array<{ claimRef: string; status: string; claimedAt: string }>; total: number; limit: number; offset: number };
-export type ServicePeriodMemberGridMeta = { product: SpProduct; columns: Array<{ key: string; label: string; type: string; nullable: boolean }>; views: Array<{ id: string; name: string; readOnly: boolean }>; externalShareSupported: boolean; externalShareEnabled: boolean; collaborators: number };
+export type MemberGridState = 'active' | 'expired' | 'removed' | 'all';
+export type MemberGridSource = 'manual' | 'paid_order';
+export type MemberGridSourceFilter = MemberGridSource | '';
+export type ServicePeriodMemberGridRow = { memberRef: string; serviceProductId: number; customerId: number; state: MemberGridState; source: MemberGridSource; startsAt: string; expiresAt: string | null; expiredAt: string | null; removedAt: string | null; version: number; updatedAt: string; displayName: string };
+export type ServicePeriodMemberGridPage = { rows: ServicePeriodMemberGridRow[]; limit: number; nextCursor: string; hasMore: boolean };
+export type ServicePeriodMemberDetail = ServicePeriodMemberGridRow & { remark: string | null; alliance: string | null; createdAt: string };
+export type ServicePeriodMemberGridCollaborator = { collaboratorId: number; serviceProductId: number; staffId: number; permission: 'view' | 'edit'; version: number; invitedBy: number; createdAt: string; updatedAt: string };
+export type ServicePeriodMemberGridMeta = { product: SpProduct; columns: Array<{ key: string; label: string; type: string; nullable: boolean }>; views: Array<{ id: string; name: string; readOnly: boolean }>; externalShareSupported: boolean; externalShareEnabled: boolean; collaborators: number; collaboratorRows: ServicePeriodMemberGridCollaborator[]; publicShareUrl: string | null };
 const requiredPositive = (value: unknown, field: string): number => { const number = Number(value); if (!Number.isSafeInteger(number) || number < 1) throw new Error(`响应缺少有效 ${field}`); return number; };
 const requiredNonNegative = (value: unknown, field: string): number => { const number = Number(value); if (!Number.isSafeInteger(number) || number < 0) throw new Error(`响应缺少有效 ${field}`); return number; };
 const requiredString = (value: unknown, field: string): string => { if (typeof value !== 'string' || !value) throw new Error(`响应缺少 ${field}`); return value; };
+const nullableString = (value: unknown, field: string): string | null => value == null ? null : requiredString(value, field);
+const memberState = (value: unknown, field: string): MemberGridState => { if (value === 'active' || value === 'expired' || value === 'removed') return value; throw new Error(`响应包含未知 ${field}`); };
+const memberSource = (value: unknown, field: string): MemberGridSource => { if (value === 'manual' || value === 'paid_order') return value; throw new Error(`响应包含未知 ${field}`); };
+const memberRef = (value: unknown): string => { const ref = requiredString(value, 'member_ref'); if (!/^spm_[A-Za-z0-9_-]{22}$/.test(ref)) throw new Error('响应包含无效 member_ref'); return ref; };
+const memberRowDto = (value: unknown, productId: number): ServicePeriodMemberGridRow => {
+  const source = obj(value);
+  if (requiredPositive(source.service_product_id, 'service_product_id') !== productId) throw new Error('Member Grid 行商品范围不匹配');
+  return { memberRef: memberRef(source.member_ref), serviceProductId: productId, customerId: requiredPositive(source.customer_id, 'customer_id'), state: memberState(source.state, 'state'), source: memberSource(source.source, 'source'), startsAt: requiredString(source.starts_at, 'starts_at'), expiresAt: nullableString(source.expires_at, 'expires_at'), expiredAt: nullableString(source.expired_at, 'expired_at'), removedAt: nullableString(source.removed_at, 'removed_at'), version: requiredPositive(source.version, 'version'), updatedAt: requiredString(source.updated_at, 'updated_at'), displayName: requiredString(source.display_name, 'display_name') };
+};
+const collaboratorDto = (value: unknown, productId: number): ServicePeriodMemberGridCollaborator => {
+  const source = obj(value);
+  if (requiredPositive(source.service_product_id, 'collaborator.service_product_id') !== productId) throw new Error('Member Grid 协作者商品范围不匹配');
+  if (source.permission !== 'view' && source.permission !== 'edit') throw new Error('Member Grid 协作者权限未知');
+  return { collaboratorId: requiredPositive(source.collaborator_id, 'collaborator_id'), serviceProductId: productId, staffId: requiredPositive(source.staff_id, 'staff_id'), permission: source.permission, version: requiredPositive(source.version, 'collaborator.version'), invitedBy: requiredPositive(source.invited_by, 'invited_by'), createdAt: requiredString(source.created_at, 'collaborator.created_at'), updatedAt: requiredString(source.updated_at, 'collaborator.updated_at') };
+};
+const localCollaboratorResult = (value: unknown, productId: number): ServicePeriodMemberGridCollaborator => {
+  const source = obj(value);
+  if (source.edit_permission_is_local_metadata_only !== true || source.grants_central_products_permission !== false) throw new Error('Member Grid 协作者响应越过本地元数据边界');
+  return collaboratorDto(source.collaborator || source, productId);
+};
 export async function getCouponDto(couponId: number): Promise<Coupon> { const result = obj(await call(getLegacyCoupon(couponId, apiRequestOptions()))); const coupon = couponPageDto(result.coupon || result); if (coupon.resourceId !== couponId) throw new Error('优惠券响应范围不匹配'); return coupon; }
 export async function listCouponProductOptionsDto(input: { q?: string; productType?: 'all' | 'standard_product' | 'service_period'; limit?: number; offset?: number } = {}): Promise<CouponProductOptionPage> {
   const page = obj(await call(listLegacyCouponProductOptions({ q: input.q, product_type: input.productType, limit: input.limit, offset: input.offset }, apiRequestOptions())));
@@ -661,7 +688,53 @@ export async function getServicePeriodMemberGridMetaDto(productId: number): Prom
   const columns = list(schema, 'columns').map((item) => { const column = obj(item); return { key: requiredString(column.key, 'column.key'), label: requiredString(column.label, 'column.label'), type: requiredString(column.type, 'column.type'), nullable: column.nullable === true }; });
   const builtInViews = list(views, 'views').map((item) => { const view = obj(item); if (view.source !== 'built_in' || view.read_only !== true) throw new Error('Member Grid 视图不是受限内置视图'); return { id: requiredString(view.id, 'view.id'), name: requiredString(view.name, 'view.name'), readOnly: true }; });
   if (columns.length !== 12 || builtInViews.length < 1) throw new Error('Member Grid 闭合 schema 或内置视图响应不完整');
-  return { product: serviceProductPageDto(productSource.product || productSource), columns, views: builtInViews, externalShareSupported: false, externalShareEnabled: false, collaborators: list(share, 'collaborators').length };
+  const collaboratorRows = list(share, 'collaborators').map((item) => collaboratorDto(item, productId));
+  const publicShareUrl = [share.share_url, share.public_url].find((value): value is string => typeof value === 'string' && value.trim().length > 0)?.trim() || null;
+  return { product: serviceProductPageDto(productSource.product || productSource), columns, views: builtInViews, externalShareSupported: false, externalShareEnabled: false, collaborators: collaboratorRows.length, collaboratorRows, publicShareUrl };
+}
+export async function queryServicePeriodMemberGridDto(productId: number, input: { state?: MemberGridState; source?: MemberGridSourceFilter; limit?: number; cursor?: string } = {}): Promise<ServicePeriodMemberGridPage> {
+  if (!Number.isSafeInteger(productId) || productId < 1) throw new Error('Member Grid 商品 ID 无效');
+  const state = input.state || 'all'; const source = input.source || ''; const limit = input.limit ?? 50;
+  if (!['active', 'expired', 'removed', 'all'].includes(state) || !['', 'manual', 'paid_order'].includes(source) || !Number.isSafeInteger(limit) || limit < 1 || limit > 50) throw new Error('Member Grid 查询条件无效');
+  const page = obj(await call(queryServicePeriodMemberGrid(productId, { state, source: source || undefined, limit, cursor: input.cursor || '' }, apiRequestOptions())));
+  if (!Array.isArray(page.rows) || typeof page.next_cursor !== 'string' || (page.has_more !== true && page.has_more !== false)) throw new Error('Member Grid 查询响应不完整');
+  const rows = page.rows.map((item) => memberRowDto(item, productId));
+  const pageLimit = requiredPositive(page.limit, 'limit'); if (pageLimit > 50 || pageLimit !== limit) throw new Error('Member Grid 查询页大小不匹配');
+  const nextCursor = page.next_cursor; if (page.has_more && !nextCursor) throw new Error('Member Grid 下一页缺少 cursor');
+  return { rows, limit: pageLimit, nextCursor, hasMore: page.has_more };
+}
+export async function getServicePeriodMemberDto(productId: number, ref: string): Promise<ServicePeriodMemberDetail> {
+  const requestedRef = memberRef(ref);
+  const result = obj(await call(getServicePeriodMember(productId, requestedRef, apiRequestOptions()))); const member = obj(result.member || result); const row = memberRowDto({ ...member, display_name: member.display_name || member.name || member.member_ref }, productId);
+  if (row.memberRef !== requestedRef) throw new Error('Member Grid 成员响应范围不匹配');
+  return { ...row, remark: nullableString(member.remark, 'remark'), alliance: nullableString(member.alliance, 'alliance'), createdAt: requiredString(member.created_at, 'created_at') };
+}
+export type ServicePeriodMemberFieldsInput = { expectedVersion: number; remark?: string | null; alliance?: string | null };
+const localField = (value: string | null | undefined, field: string, max: number): string | null | undefined => { if (value === undefined) return undefined; if (value === null) return null; const clean = value.trim(); if (!clean) return null; if (clean.length > max) throw new Error(`${field} 不能超过 ${max} 个字符`); return clean; };
+export async function updateServicePeriodMemberFieldsDto(productId: number, ref: string, input: ServicePeriodMemberFieldsInput): Promise<ServicePeriodMemberDetail> {
+  const requestedRef = memberRef(ref);
+  if (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 1) throw new Error('成员版本无效');
+  const remark = localField(input.remark, '备注', 500); const alliance = localField(input.alliance, '联盟', 120); const body: { expected_version: number; remark?: string | null; alliance?: string | null } = { expected_version: input.expectedVersion };
+  if (remark !== undefined) body.remark = remark; if (alliance !== undefined) body.alliance = alliance;
+  const result = obj(await call(updateServicePeriodMemberFields(productId, requestedRef, body, apiRequestOptions({ headers: { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() || `web-member-${Date.now()}` } })))); const member = obj(result.member || result); const row = memberRowDto({ ...member, display_name: member.display_name || member.name || member.member_ref }, productId);
+  if (row.memberRef !== requestedRef) throw new Error('Member Grid 成员响应范围不匹配');
+  return { ...row, remark: nullableString(member.remark, 'remark'), alliance: nullableString(member.alliance, 'alliance'), createdAt: requiredString(member.created_at, 'created_at') };
+}
+export async function createServicePeriodMemberGridCollaboratorDto(productId: number, input: { staffId: number; permission: 'view' | 'edit' }): Promise<ServicePeriodMemberGridCollaborator> {
+  if (!Number.isSafeInteger(input.staffId) || input.staffId < 1) throw new Error('协作者 staff_id 必须为正整数');
+  const result = await call(createServicePeriodMemberGridCollaborator(productId, { expected_version: 0, staff_id: input.staffId, permission: input.permission }, apiRequestOptions({ headers: { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() || `web-member-collab-${Date.now()}` } })));
+  return localCollaboratorResult(result, productId);
+}
+export async function updateServicePeriodMemberGridCollaboratorDto(productId: number, collaboratorId: number, input: { expectedVersion: number; permission: 'view' | 'edit' }): Promise<ServicePeriodMemberGridCollaborator> {
+  if (!Number.isSafeInteger(collaboratorId) || collaboratorId < 1 || !Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 1) throw new Error('协作者版本或 ID 无效');
+  const result = await call(updateServicePeriodMemberGridCollaborator(productId, collaboratorId, { expected_version: input.expectedVersion, permission: input.permission }, apiRequestOptions({ headers: { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() || `web-member-collab-${Date.now()}` } })));
+  return localCollaboratorResult(result, productId);
+}
+export async function deleteServicePeriodMemberGridCollaboratorDto(productId: number, collaboratorId: number, expectedVersion: number): Promise<ServicePeriodMemberGridCollaborator> {
+  if (!Number.isSafeInteger(collaboratorId) || collaboratorId < 1 || !Number.isSafeInteger(expectedVersion) || expectedVersion < 1) throw new Error('协作者版本或 ID 无效');
+  const result = obj(await call(deleteServicePeriodMemberGridCollaborator(productId, collaboratorId, { expected_version: expectedVersion }, apiRequestOptions({ headers: { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() || `web-member-collab-${Date.now()}` } }))));
+  if (result.deleted !== true) throw new Error('协作者删除响应不完整');
+  return localCollaboratorResult(result, productId);
 }
 const couponRequest = (input: CouponWriteInput): CouponUpsertRequest => ({
   name: input.name,
