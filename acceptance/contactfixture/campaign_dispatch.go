@@ -30,12 +30,16 @@ func CreateCampaignDispatchFacts(ctx context.Context, pool *pgxpool.Pool, ownerW
 		return CampaignDispatchFacts{}, err
 	}
 	result := CampaignDispatchFacts{}
-	for destination, name := range map[*int64]string{
-		&result.SuppressedCustomerID: "suppressed after preview",
-		&result.EligibleCustomerID:   "eligible one",
-		&result.UnresolvedCustomerID: "eligible two",
-	} {
-		if err = tx.QueryRow(ctx, `INSERT INTO customers(name,is_deleted) VALUES($1,FALSE) RETURNING id`, name).Scan(destination); err != nil {
+	customers := []struct {
+		destination *int64
+		name        string
+	}{
+		{destination: &result.SuppressedCustomerID, name: "suppressed after preview"},
+		{destination: &result.EligibleCustomerID, name: "eligible one"},
+		{destination: &result.UnresolvedCustomerID, name: "eligible two"},
+	}
+	for _, customer := range customers {
+		if err = tx.QueryRow(ctx, `INSERT INTO customers(name,is_deleted) VALUES($1,FALSE) RETURNING id`, customer.name).Scan(customer.destination); err != nil {
 			return CampaignDispatchFacts{}, err
 		}
 	}
