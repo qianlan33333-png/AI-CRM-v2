@@ -40,6 +40,18 @@ func TestRuntimeRunDueBindsImmutableContentAndMaterialSnapshotsToEER(t *testing.
 	}
 }
 
+func TestRuntimeRunDueRejectsEmptyReplayAfterAllDueExecutionsExist(t *testing.T) {
+	service, runtime, effects := newRuntimeFixture(t)
+	first, err := service.RunDue(context.Background(), groupopsport.RunDueCommand{PlanID: 91, ActorID: 7, IdempotencyKey: "group-ops-run-due-empty-0001"})
+	if err != nil || first.Accepted != 2 || len(runtime.runs) != 1 || len(runtime.drafts) != 2 {
+		t.Fatalf("first=%+v err=%v runs=%d drafts=%d", first, err, len(runtime.runs), len(runtime.drafts))
+	}
+	_, err = service.RunDue(context.Background(), groupopsport.RunDueCommand{PlanID: 91, ActorID: 7, IdempotencyKey: "group-ops-run-due-empty-0002"})
+	if !errors.Is(err, ErrStateConflict) || len(runtime.runs) != 1 || len(runtime.drafts) != 2 || effects.accepts != 2 {
+		t.Fatalf("err=%v runs=%d drafts=%d accepts=%d", err, len(runtime.runs), len(runtime.drafts), effects.accepts)
+	}
+}
+
 func TestRuntimeBroadcastUsesIdempotencyAndDoesNotQueueProvider(t *testing.T) {
 	service, runtime, effects := newRuntimeFixture(t)
 	command := groupopsport.AcceptPlanCommand{PlanID: 91, Trigger: groupopsport.RunTriggerBroadcast, AcceptedBy: "service:group-broadcast", IdempotencyKey: "group-ops-broadcast-0001"}

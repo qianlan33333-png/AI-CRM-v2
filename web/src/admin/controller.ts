@@ -1248,9 +1248,37 @@ export class AdminController extends PageBase {
     const assetReferences = value('groupOpsAssets').split(/[\s,，]+/).filter(Boolean);
     if (!value('groupOpsName')) return toast('计划名称不能为空', true);
     if (staffIds.some((id) => !Number.isInteger(id) || id < 1)) return toast('成员 staff_id 必须是正整数', true);
-    if (!Array.isArray(nodes) || nodes.some((node) => !Number.isInteger(node.position) || node.position < 1 || !['message', 'delay'].includes(node.kind) || (node.kind === 'message' && !node.messageText) || (node.kind === 'delay' && (!node.delayMinutes || node.delayMinutes < 1)))) return toast('节点 JSON 不符合 GroupOpsNodeRequest', true);
+    if (!Array.isArray(nodes) || nodes.some((node) => {
+      const refs = node.materialPlan?.references || [];
+      return !Number.isInteger(node.position) || node.position < 1 || !['message', 'delay'].includes(node.kind) || Boolean(node.materialReference) || !refs.every((ref) => ['image', 'miniprogram', 'attachment', 'group_invite'].includes(ref.kind) && Number.isSafeInteger(ref.id) && ref.id > 0) || (node.kind === 'message' && !node.messageText && !refs.length) || (node.kind === 'delay' && (!node.delayMinutes || node.delayMinutes < 1 || refs.length));
+    })) return toast('节点 JSON 不符合 GroupOpsNodeRequest；旧 material_reference 不可执行，请使用 typed materialPlan', true);
     const input: GroupOpsWriteInput = { id: this.qs().get('id') || undefined, name: value('groupOpsName'), staffIds, assetReferences, nodes, webhookReference: value('groupOpsWebhook') || undefined };
     void this.api.saveGroupOpsPlan(input).then((detail) => { toast(`群运营计划已保存，revision ${detail.plan.revision}；未触发 Provider`); this.goto('groupopsDetail', '?id=' + detail.plan.id); }).catch((error) => toast(error instanceof Error ? error.message : '群运营计划保存失败', true));
+  }
+
+  private pickGroupOpsMaterial(kind: 'image' | 'miniprogram' | 'attachment'): void {
+    const textarea = document.getElementById('groupOpsNodes') as HTMLTextAreaElement | null;
+    const position = Number((document.getElementById('groupOpsMaterialNodePosition') as HTMLInputElement | null)?.value);
+    let nodes: GroupOpsWriteInput['nodes'];
+    try { nodes = JSON.parse(textarea?.value || '[]') as GroupOpsWriteInput['nodes']; }
+    catch { return toast('节点配置不是有效 JSON', true); }
+    const node = nodes.find((item) => item.position === position);
+    if (!textarea || !node || node.kind !== 'message') return toast('请选择一个已有的消息节点 position', true);
+    const pickerKind: 'image' | 'mp' | 'attach' = kind === 'miniprogram' ? 'mp' : kind === 'attachment' ? 'attach' : 'image';
+    const max = kind === 'image' ? 3 : kind === 'miniprogram' ? 1 : 9;
+    const prior = (node.materialPlan?.references || []).filter((ref) => ref.kind === kind);
+    const page = kind === 'image' ? 'images' : kind === 'miniprogram' ? 'mpLib' : 'attach';
+    void this.api.loadDb({ page }).then((db) => this.pick({ kind: pickerKind, selected: prior.map((ref) => String(ref.id)), max, db })).then((picked) => {
+      if (picked === null) return;
+      const selected = picked.map((item) => Number(item.id));
+      if (selected.some((id) => !Number.isSafeInteger(id) || id < 1)) return toast('素材列表未返回稳定数值 ID，未写入节点', true);
+      const references = [...(node.materialPlan?.references || []).filter((ref) => ref.kind !== kind), ...selected.map((id) => ({ kind, id }))];
+      if (references.length > 9) return toast('单个消息节点最多选择 9 个素材', true);
+      node.materialReference = undefined;
+      node.materialPlan = { references };
+      textarea.value = JSON.stringify(nodes, null, 2);
+      toast(`已写入 ${selected.length} 个${kind === 'image' ? '图片' : kind === 'miniprogram' ? '小程序' : '附件'}素材；保存后以服务端重读为准`);
+    }).catch((error) => toast(error instanceof Error ? error.message : '素材读取失败', true));
   }
 
   /* ================= 模板绑定值 ================= */
@@ -1938,7 +1966,7 @@ export class AdminController extends PageBase {
       groupOpsPage: { rows: groupOpsRows, total: groupOpsRows.length, create: () => this.goto('groupopsDetail'), directoryBlocked: () => this.blocked('当前页面未提供 owner_staff_id，不能安全触发目录同步；计划内使用 asset_reference 精确绑定群') },
       groupOpsDetailPage: {
         item: groupOpsDetail ? { ...groupOpsDetail, staffText: groupOpsDetail.staffIds.join(', '), assetText: groupOpsDetail.assets.map((asset) => asset.reference).join('\n'), nodesJson: JSON.stringify(groupOpsDetail.nodes, null, 2), previewText: groupOpsDetail.previewLines.join('\n') || '暂无可预览内容', issuesText: groupOpsDetail.previewIssues.join('、') || '无' } : { plan: { name: '', revision: 0, status: 'draft', id: '' }, staffText: '', assetText: '', nodesJson: JSON.stringify([{ position: 1, kind: 'message', messageText: '请输入群消息', materialReference: '' }], null, 2), webhookReference: '', previewText: '保存后由 previewGroupOpsPlanContent 返回', issuesText: '尚未校验' },
-        save: () => this.saveGroupOpsForm(), back: () => this.goto('groupops'),
+        save: () => this.saveGroupOpsForm(), back: () => this.goto('groupops'), pickImage: () => this.pickGroupOpsMaterial('image'), pickMiniProgram: () => this.pickGroupOpsMaterial('miniprogram'), pickAttachment: () => this.pickGroupOpsMaterial('attachment'),
       },
       hxcPage: {
         rows: rows.agents.map((item) => ({ ...item, cs: mk(item.tone), edit: () => this.goto('agentEdit', '?id=' + encodeURIComponent(item.code)), archive: () => this.archiveHxcSender(item.code) })),

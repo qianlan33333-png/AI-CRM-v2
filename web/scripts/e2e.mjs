@@ -599,6 +599,34 @@ console.log('admin/questionnaireOps.html?id=1（opaque 本地运营配置）');
   dom.window.close();
 }
 
+console.log('admin/groupops.html（本地计划与目录边界）');
+{
+  const dom = await loadPage('admin/groupops.html');
+  const d = dom.window.document;
+  ok('群运营计划页显示本地计划和本地队列口径', d.body.textContent.includes('群运营计划') && d.body.textContent.includes('本地队列'));
+  ok('成员映射、可管理群目录与目录刷新明确 backend_blocked', ['S06-028', 'S06-031', 'S06-032'].every((id) => d.body.textContent.includes(id)));
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '查看/同步群目录'));
+  await sleep(30);
+  ok('缺少 owner_staff_id 时不触发目录同步或 Provider 成功提示', d.querySelector('#fb-toast')?.textContent.includes('owner_staff_id'));
+  dom.window.close();
+}
+
+console.log('admin/groupopsDetail.html（typed 素材节点）');
+{
+  const dom = await loadPage('admin/groupopsDetail.html');
+  const d = dom.window.document;
+  ok('节点素材选择器仅提供图片、小程序和附件', ['选择图片', '选择小程序', '选择附件'].every((text) => [...d.querySelectorAll('button')].some((b) => b.textContent.trim() === text)));
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '选择图片'));
+  await sleep(160);
+  ok('选择图片打开素材选择器', !!d.querySelector('.pk-mask'));
+  click(dom, d.querySelector('[data-pk-id]'));
+  click(dom, d.querySelector('[data-pk="ok"]'));
+  await sleep(30);
+  const nodes = JSON.parse(d.querySelector('#groupOpsNodes').value);
+  ok('图片选择写入 typed materialPlan 而非旧引用', nodes[0].materialReference === undefined && nodes[0].materialPlan.references[0].kind === 'image' && Number.isInteger(nodes[0].materialPlan.references[0].id));
+  dom.window.close();
+}
+
 console.log('admin/couponData.html?id=0（5 统计卡 + 8 明细行 + 分享组件）');
 {
   const dom = await loadPage('admin/couponData.html', { id: 0 });
