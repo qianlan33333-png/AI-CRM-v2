@@ -47,8 +47,8 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 	pool := openCampaignDispatchPool(t)
 	ctx := context.Background()
 	var migrationsApplied bool
-	if err := pool.QueryRow(ctx, `SELECT count(*)=4 FROM public.goose_db_version WHERE version_id IN (78,92,94,100) AND is_applied`).Scan(&migrationsApplied); err != nil || !migrationsApplied {
-		t.Fatalf("migrations 78/92/94/100 applied=%t err=%v, want true", migrationsApplied, err)
+	if err := pool.QueryRow(ctx, `SELECT count(*)=4 FROM public.goose_db_version WHERE version_id IN (78,92,94,99) AND is_applied`).Scan(&migrationsApplied); err != nil || !migrationsApplied {
+		t.Fatalf("migrations 78/92/94/99 applied=%t err=%v, want true", migrationsApplied, err)
 	}
 	ensureOutboundRiverCatalog(t, ctx, pool)
 	policyTime := time.Now().UTC().Truncate(time.Microsecond)

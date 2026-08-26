@@ -24,9 +24,9 @@ MIGRATION_TEST_DATABASE_URL="$database_url" MIGRATION_TEST_DATABASE_NAME="$tempo
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
 [[ "$(psql "$database_url" -X -q -At -c 'SHOW server_version_num')" = '160014' ]]
 [[ "$(psql "$database_url" -X -q -At -c 'SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id = 78 AND is_applied)')" = 't' ]]
-[[ "$(psql "$database_url" -X -q -At -c 'SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id = 100 AND is_applied)')" = 't' ]]
+[[ "$(psql "$database_url" -X -q -At -c 'SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id = 99 AND is_applied)')" = 't' ]]
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 98 >/dev/null
-[[ "$(psql "$database_url" -X -q -At -c 'SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id = 100 AND is_applied)')" = 'f' ]]
+[[ "$(psql "$database_url" -X -q -At -c 'SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id = 99 AND is_applied)')" = 'f' ]]
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 77 >/dev/null
 [[ "$(psql "$database_url" -X -q -At -c 'SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id = 78 AND is_applied)')" = 'f' ]]
@@ -42,4 +42,4 @@ status=$?
 set -e
 [[ $status -ne 0 ]]
 grep -Fq 'cannot roll back populated audience outbound receipt facts' /tmp/aicrm-c01-dispatch-down.out
-printf 'P4 C01 Outbound dispatch PG16 acceptance: PASS (78/94/100 down/up, controlled provider msgid evidence, unknown/manual reconcile; no delivery proof)\n'
+printf 'P4 C01 Outbound dispatch PG16 acceptance: PASS (78/94/99 down/up, controlled provider msgid evidence, unknown/manual reconcile; no delivery proof)\n'
