@@ -6265,7 +6265,7 @@ paths:
     post:
       tags: [p4-group-ops]
       operationId: previewGroupOpsRunDue
-      summary: Preview due immutable execution intents without EER acceptance or Provider I/O
+      summary: Preview due text executions and material preparation intents without Provider writes
       security: [{ AdminSession: [] }]
       x-legacy-mapping-ids: [LEGACY-API-0177]
       x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
@@ -6278,7 +6278,7 @@ paths:
       x-aicrm-external-effect: none
       parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { $ref: "#/components/parameters/CSRFToken" }]
       responses:
-        "200": { description: "Due preview with Provider disabled safety fields.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRunDuePreview" } } } }
+        "200": { description: "Due preview; material blockers are reported before EER acceptance.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRunDuePreview" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -6287,7 +6287,7 @@ paths:
     post:
       tags: [p4-group-ops]
       operationId: acceptGroupOpsRunDue
-      summary: Accept due immutable snapshots into EER without queueing or Provider I/O
+      summary: Accept provider-ready executions and durable material preparation intents
       security: [{ AdminSession: [] }]
       x-legacy-mapping-ids: [LEGACY-API-0176]
       x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
@@ -6297,10 +6297,10 @@ paths:
       x-aicrm-session-bound-csrf: required
       x-aicrm-data-classification: internal
       x-aicrm-data-source: group_ops.runtime_transaction
-      x-aicrm-external-effect: eer_accepted_provider_disabled
+      x-aicrm-external-effect: group_ops_eer_or_media_preparation_intent
       parameters: [{ $ref: "#/components/parameters/GroupOpsPlanID" }, { $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
       responses:
-        "202": { description: "EER accepted only; provider_accepted and delivery_proven remain separate and false.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRunSummary" } } } }
+        "202": { description: "Provider-ready executions are queued; material nodes remain explicitly pending until their independent Media upload receipts are ready. Provider acceptance and delivery remain separate.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRunSummary" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -6331,8 +6331,8 @@ paths:
     post:
       tags: [p4-group-ops]
       operationId: reconcileGroupOpsExecution
-      summary: Unavailable until a Group Ops outcome writer is configured
-      description: "This fail-closed placeholder always returns provider_disabled. It does not reconcile an EER acceptance into a Provider or delivery outcome."
+      summary: Reconcile an outcome-unknown Group Ops execution from verified Provider evidence
+      description: "Reconciliation requires the exact EER lease and verified WeCom task evidence. It never turns local acceptance into delivery without Provider proof."
       security: [{ AdminSession: [] }]
       x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
       x-aicrm-capability: operations.manage
@@ -6340,18 +6340,20 @@ paths:
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: required
       x-aicrm-data-classification: internal
-      x-aicrm-data-source: group_ops.execution_reconciliation_unavailable
-      x-aicrm-external-effect: none
+      x-aicrm-data-source: group_ops.execution_reconciliation
+      x-aicrm-external-effect: eer_reconciliation
       parameters:
         - { name: execution_id, in: path, required: true, schema: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 } }
         - { $ref: "#/components/parameters/CSRFToken" }
         - { $ref: "#/components/parameters/IdempotencyKey" }
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsReconcileRequest" } } } }
       responses:
+        "200": { description: "Reconciled execution projection; delivery_proven is true only when verified Provider evidence proves delivery.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsExecution" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "503": { description: "No Group Ops outcome writer is configured; Provider and delivery reconciliation are disabled.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { description: "Verified Provider evidence is unavailable.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsError" } } } }
   /api/automation/group-ops/broadcast:
     post:
       tags: [p4-group-ops]
@@ -6365,11 +6367,11 @@ paths:
       x-aicrm-csrf: none
       x-aicrm-data-classification: internal
       x-aicrm-data-source: group_ops.runtime_transaction
-      x-aicrm-external-effect: eer_accepted_provider_disabled
+      x-aicrm-external-effect: group_ops_eer_or_media_preparation_intent
       parameters: [{ $ref: "#/components/parameters/IdempotencyKey" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsBroadcastRequest" } } } }
       responses:
-        "202": { description: "Immutable EER acceptance only; not Provider acceptance or delivery.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRunSummary" } } } }
+        "202": { description: "Immutable executions and/or material preparation intents accepted; not Provider acceptance or delivery.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRunSummary" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "409": { $ref: "#/components/responses/Conflict" }
@@ -6378,7 +6380,7 @@ paths:
     post:
       tags: [p4-group-ops]
       operationId: acceptGroupOpsWebhook
-      summary: Accept a fixed plan snapshot after injected HTTP Message Signature verification
+      summary: Accept a fixed plan snapshot after strict HMAC verification and durable replay reservation
       security: [{ GroupOpsWebhookSignature: [] }]
       x-legacy-mapping-ids: [LEGACY-API-0602]
       x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
@@ -6387,13 +6389,16 @@ paths:
       x-aicrm-csrf: none
       x-aicrm-data-classification: internal
       x-aicrm-data-source: group_ops.runtime_transaction
-      x-aicrm-external-effect: eer_accepted_provider_disabled
+      x-aicrm-external-effect: group_ops_eer_or_media_preparation_intent
       parameters:
         - { name: webhook_key, in: path, required: true, schema: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 } }
-        - { $ref: "#/components/parameters/IdempotencyKey" }
+        - { name: X-AICRM-Client-Id, in: header, required: true, schema: { type: string, enum: [aicrm-webhook-group-ops] } }
+        - { name: X-AICRM-Timestamp, in: header, required: true, schema: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 } }
+        - { name: X-AICRM-Event-Id, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 256 } }
+        - { name: X-AICRM-Signature, in: header, required: true, schema: { type: string, pattern: "^(sha256=)?[0-9a-f]{64}$", maxLength: 71 } }
       requestBody: { required: true, content: { application/json: { schema: { type: object, additionalProperties: true } } } }
       responses:
-        "202": { description: "Immutable EER acceptance only; webhook idempotency is not a Provider receipt.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRunSummary" } } } }
+        "202": { description: "Durable event replay receipt plus immutable executions and/or material preparation intents; not Provider acceptance or delivery.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsRunSummary" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -13246,14 +13251,32 @@ components:
     GroupOpsNode:
       type: object
       additionalProperties: false
-      required: [node_id, position, kind]
+      required: [node_id, position, kind, material_plan]
       properties:
         node_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
         position: { type: integer, minimum: 1, maximum: 1000 }
         kind: { type: string, enum: [message, delay] }
         message_text: { type: string, minLength: 1, maxLength: 1000 }
         delay_minutes: { type: integer, minimum: 1, maximum: 10080 }
-        material_reference: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 }
+        material_reference: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128, deprecated: true, description: "Legacy opaque reference. Non-empty values fail closed at runtime until explicitly converted." }
+        material_plan: { $ref: "#/components/schemas/GroupOpsMaterialPlan" }
+    GroupOpsMaterialReference:
+      type: object
+      additionalProperties: false
+      required: [kind, id]
+      properties:
+        kind: { type: string, enum: [image, miniprogram, attachment, group_invite] }
+        id: { type: integer, format: int64, minimum: 1 }
+    GroupOpsMaterialPlan:
+      type: object
+      additionalProperties: false
+      required: [references]
+      properties:
+        references:
+          type: array
+          maxItems: 9
+          uniqueItems: true
+          items: { $ref: "#/components/schemas/GroupOpsMaterialReference" }
     GroupOpsWebhookDescriptor:
       type: object
       additionalProperties: false
@@ -13289,7 +13312,7 @@ components:
         evaluated_at: { type: string, format: date-time }
         due_execution_count: { type: integer, minimum: 0 }
         next_due_at: { type: string, format: date-time }
-        blockers: { type: array, items: { type: string, enum: [plan_not_active, group_asset_required, member_required, node_required, invalid_node] } }
+        blockers: { type: array, items: { type: string, enum: [plan_not_active, group_asset_required, member_required, node_required, invalid_node, legacy_material_reference_unsupported, material_preparation_pending] } }
         provider_execution_eligible: { type: boolean }
         real_external_call_executed: { type: boolean, enum: [false] }
         provider_accepted: { type: boolean, enum: [false] }
@@ -13333,7 +13356,7 @@ components:
     GroupOpsRunSummary:
       type: object
       additionalProperties: false
-      required: [run, executions, accepted, provider_accepted_count, delivery_proven_count, outcome_unknown, reconciled, final_failed, provider_execution_eligible, real_external_call_executed, provider_accepted, delivery_proven]
+      required: [run, executions, accepted, provider_accepted_count, delivery_proven_count, outcome_unknown, reconciled, final_failed, material_pending_count, pending_intents, provider_execution_eligible, real_external_call_executed, provider_accepted, delivery_proven]
       properties:
         run: { $ref: "#/components/schemas/GroupOpsRun" }
         executions: { type: array, items: { $ref: "#/components/schemas/GroupOpsExecution" } }
@@ -13343,10 +13366,24 @@ components:
         outcome_unknown: { type: integer, minimum: 0 }
         reconciled: { type: integer, minimum: 0 }
         final_failed: { type: integer, minimum: 0 }
+        material_pending_count: { type: integer, minimum: 0 }
+        pending_intents: { type: array, items: { $ref: "#/components/schemas/GroupOpsExecutionIntent" } }
         provider_execution_eligible: { type: boolean }
         real_external_call_executed: { type: boolean, enum: [false] }
         provider_accepted: { type: boolean, enum: [false] }
         delivery_proven: { type: boolean, enum: [false] }
+    GroupOpsExecutionIntent:
+      type: object
+      additionalProperties: false
+      required: [intent_id, node_id, node_position, target_reference, scheduled_for, state, manual_blocker]
+      properties:
+        intent_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+        node_id: { type: string, pattern: "^[1-9][0-9]{0,18}$", maxLength: 19 }
+        node_position: { type: integer, minimum: 1 }
+        target_reference: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 }
+        scheduled_for: { type: string, format: date-time }
+        state: { type: string, enum: [material_pending, ready_to_accept, accepted, final_failed] }
+        manual_blocker: { type: boolean }
     GroupOpsExecutionPage:
       type: object
       additionalProperties: false
@@ -13480,7 +13517,7 @@ components:
       required: [valid, issue_codes, preview_lines, node_count, group_asset_count, provider_execution_eligible, real_external_call_executed]
       properties:
         valid: { type: boolean }
-        issue_codes: { type: array, items: { type: string, enum: [group_asset_required, member_required, node_required, invalid_node] } }
+        issue_codes: { type: array, items: { type: string, enum: [group_asset_required, member_required, node_required, invalid_node, legacy_material_reference_unsupported] } }
         preview_lines: { type: array, items: { type: string, maxLength: 1016 } }
         node_count: { type: integer, minimum: 0 }
         group_asset_count: { type: integer, minimum: 0 }
@@ -13529,7 +13566,8 @@ components:
         kind: { type: string, enum: [message, delay] }
         message_text: { type: string, minLength: 1, maxLength: 1000 }
         delay_minutes: { type: integer, minimum: 1, maximum: 10080 }
-        material_reference: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 }
+        material_reference: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128, deprecated: true }
+        material_plan: { $ref: "#/components/schemas/GroupOpsMaterialPlan" }
     GroupOpsWebhookDescriptorRequest:
       type: object
       additionalProperties: false
