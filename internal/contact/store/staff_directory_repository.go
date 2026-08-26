@@ -122,8 +122,7 @@ func (*StaffDirectoryRepository) LockActiveWeComUserID(ctx context.Context, staf
 	if err != nil {
 		return "", contact.ErrStaffReferenceUnavailable
 	}
-	var userID string
-	err = tx.QueryRow(ctx, `SELECT wecom_userid FROM staff WHERE id = $1 AND is_active AND btrim(wecom_userid) <> '' FOR SHARE`, staffID).Scan(&userID)
+	userID, err := contactdb.New(tx).LockActiveStaffWeComUserID(ctx, staffID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", contact.ErrStaffReferenceNotFound
 	}
@@ -137,8 +136,7 @@ func (r *StaffDirectoryRepository) ReadActiveWeComUserID(ctx context.Context, st
 	if r == nil || r.pool == nil || ctx == nil || staffID < 1 {
 		return "", contact.ErrStaffReferenceUnavailable
 	}
-	var userID string
-	err := r.pool.QueryRow(ctx, `SELECT wecom_userid FROM staff WHERE id = $1 AND is_active AND btrim(wecom_userid) <> ''`, staffID).Scan(&userID)
+	userID, err := contactdb.New(r.pool).GetActiveStaffWeComUserID(ctx, staffID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", contact.ErrStaffReferenceNotFound
 	}

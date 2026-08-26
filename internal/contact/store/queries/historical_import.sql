@@ -200,6 +200,21 @@ FOR UPDATE;
 -- name: IsHistoricalImportActiveStaff :one
 SELECT is_active FROM staff WHERE id = sqlc.arg(staff_id)::bigint FOR SHARE;
 
+-- name: LockActiveStaffWeComUserID :one
+SELECT wecom_userid
+FROM staff
+WHERE id = sqlc.arg(staff_id)::bigint
+  AND is_active
+  AND btrim(wecom_userid) <> ''
+FOR SHARE;
+
+-- name: GetActiveStaffWeComUserID :one
+SELECT wecom_userid
+FROM staff
+WHERE id = sqlc.arg(staff_id)::bigint
+  AND is_active
+  AND btrim(wecom_userid) <> '';
+
 -- name: LockHistoricalImportCustomerRoot :one
 SELECT TRUE AS found
 FROM customers
