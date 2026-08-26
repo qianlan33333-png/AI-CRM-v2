@@ -44,8 +44,11 @@ type GroupOpsMaterialSourceSnapshot struct {
 }
 
 type GroupOpsMaterialSourceReference struct {
-	Reference    GroupOpsMaterialReference `json:"reference"`
-	SourceDigest string                    `json:"source_digest"`
+	Reference             GroupOpsMaterialReference       `json:"reference"`
+	SourceDigest          string                          `json:"source_digest"`
+	ThumbnailImageID      int64                           `json:"thumbnail_image_id,omitempty"`
+	ThumbnailSourceDigest string                          `json:"thumbnail_source_digest,omitempty"`
+	ProviderFields        GroupOpsProviderReadyAttachment `json:"provider_fields,omitempty"`
 }
 
 // GroupOpsProviderReadyAttachment is intentionally the small intersection of
@@ -69,6 +72,13 @@ type GroupOpsProviderReadyAttachment struct {
 // would need to resolve later.
 type GroupOpsMaterialSnapshotFreezer interface {
 	FreezeGroupOpsMaterial(context.Context, GroupOpsMaterialSourceSnapshot, time.Time) (GroupOpsMaterialSnapshot, error)
+}
+
+// GroupOpsMaterialSourceCapturer runs in the Group Ops acceptance UoW. It
+// locks enabled Media facts and produces the immutable source snapshot before
+// any provider preparation is queued.
+type GroupOpsMaterialSourceCapturer interface {
+	CaptureGroupOpsMaterialSources(context.Context, GroupOpsMaterialPlan) (GroupOpsMaterialSourceSnapshot, error)
 }
 
 func ValidateGroupOpsMaterialSnapshot(value GroupOpsMaterialSnapshot) error {
@@ -121,6 +131,22 @@ func ValidateGroupOpsMaterialSourceSnapshot(value GroupOpsMaterialSourceSnapshot
 		plan.References[index] = source.Reference
 		if !validDigest(source.SourceDigest) {
 			return ErrInvalidGroupOpsMaterialSnapshot
+		}
+		switch source.Reference.Kind {
+		case "image", "attachment":
+			if source.ThumbnailImageID != 0 || !emptyAttachmentFields(source.ProviderFields) {
+				return ErrInvalidGroupOpsMaterialSnapshot
+			}
+		case "miniprogram":
+			if source.ThumbnailImageID < 1 || !validDigest(source.ThumbnailSourceDigest) || source.ProviderFields.MsgType != "miniprogram" || source.ProviderFields.MediaID != "" ||
+				!validGroupOpsText(source.ProviderFields.AppID, 128) || !validGroupOpsText(source.ProviderFields.PagePath, 1024) ||
+				!validGroupOpsText(source.ProviderFields.Title, 64) || !emptyAttachmentFields(source.ProviderFields, "AppID", "PagePath", "Title") {
+				return ErrInvalidGroupOpsMaterialSnapshot
+			}
+		case "group_invite":
+			if source.ThumbnailImageID != 0 || source.ProviderFields.MsgType != "link" || ValidateGroupOpsProviderReadyAttachments([]GroupOpsProviderReadyAttachment{source.ProviderFields}) != nil {
+				return ErrInvalidGroupOpsMaterialSnapshot
+			}
 		}
 	}
 	return ValidateGroupOpsMaterialPlan(plan)

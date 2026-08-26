@@ -72,9 +72,9 @@ const digesta = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 func sourceSnapshot() mediaport.GroupOpsMaterialSourceSnapshot {
 	return mediaport.GroupOpsMaterialSourceSnapshot{SchemaVersion: 1, References: []mediaport.GroupOpsMaterialSourceReference{
 		{Reference: mediaport.GroupOpsMaterialReference{Kind: "image", ID: 7}, SourceDigest: digest7},
-		{Reference: mediaport.GroupOpsMaterialReference{Kind: "miniprogram", ID: 8}, SourceDigest: digest8},
+		{Reference: mediaport.GroupOpsMaterialReference{Kind: "miniprogram", ID: 8}, SourceDigest: digest8, ThumbnailImageID: 7, ThumbnailSourceDigest: digest7, ProviderFields: mediaport.GroupOpsProviderReadyAttachment{MsgType: "miniprogram", AppID: "wx-course", PagePath: "pages/today", Title: "今日课程"}},
 		{Reference: mediaport.GroupOpsMaterialReference{Kind: "attachment", ID: 9}, SourceDigest: digest9},
-		{Reference: mediaport.GroupOpsMaterialReference{Kind: "group_invite", ID: 10}, SourceDigest: digesta},
+		{Reference: mediaport.GroupOpsMaterialReference{Kind: "group_invite", ID: 10}, SourceDigest: digesta, ProviderFields: mediaport.GroupOpsProviderReadyAttachment{MsgType: "link", Title: "加入体验群", URL: "https://work.weixin.qq.com/gm/0123456789abcdef0123456789abcdef", Description: "领取资料"}},
 	}}
 }
 

@@ -86,6 +86,12 @@ func matchesSources(sources mediaport.GroupOpsMaterialSourceSnapshot, requiredTh
 		if !requiresLease && (item.ReceiptDigest != "" || !item.ReadyUntil.IsZero()) {
 			return false
 		}
+		if source.Reference.Kind == "miniprogram" && (item.Attachment.AppID != source.ProviderFields.AppID || item.Attachment.PagePath != source.ProviderFields.PagePath || item.Attachment.Title != source.ProviderFields.Title) {
+			return false
+		}
+		if source.Reference.Kind == "group_invite" && item.Attachment != source.ProviderFields {
+			return false
+		}
 		reference := source.Reference
 		want := reference.Kind
 		if want == "attachment" {
