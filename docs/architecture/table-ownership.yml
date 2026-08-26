@@ -406,6 +406,8 @@ owners:
       - cloud_campaign_touch_plan_reviews
       - cloud_campaign_touch_plan_review_receipts
       - cloud_campaign_touch_plan_handoffs
+      - cloud_campaign_touch_plan_recipient_reviews
+      - cloud_campaign_touch_plan_recipient_review_receipts
     constraints:
       cloud_campaigns: local_campaign_control_plane_only
       cloud_campaign_steps: ordered_campaign_content_without_material_reference_or_runtime_execution
@@ -419,6 +421,8 @@ owners:
       cloud_campaign_touch_plan_reviews: campaign_owned_review_sidecar_with_cas_terminal_decision
       cloud_campaign_touch_plan_review_receipts: actor_scoped_durable_review_result_snapshot_receipts
       cloud_campaign_touch_plan_handoffs: approved_review_bound_pending_local_handoff_without_provider_execution
+      cloud_campaign_touch_plan_recipient_reviews: plan_target_scoped_local_message_override_and_review_decision
+      cloud_campaign_touch_plan_recipient_review_receipts: actor_scoped_recipient_review_result_snapshot_receipts
 
   hxc:
     package: internal/hxc

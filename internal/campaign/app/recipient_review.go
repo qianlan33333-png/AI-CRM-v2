@@ -31,6 +31,26 @@ func NewRecipientReviewService(uow campaignport.UnitOfWork, repo campaignport.Re
 	return &RecipientReviewService{uow: uow, repo: repo, events: events, now: time.Now}, nil
 }
 
+func (s *RecipientReviewService) Get(ctx context.Context, campaignCode, planID string, customerID int64) (campaign.TouchPlanRecipientReview, error) {
+	if s == nil || s.repo == nil || ctx == nil || ctx.Err() != nil {
+		return campaign.TouchPlanRecipientReview{}, campaign.ErrUnavailable
+	}
+	if !campaign.ValidCampaignCode(campaignCode) || !campaign.ValidTouchPlanReviewID(planID) || customerID < 1 {
+		return campaign.TouchPlanRecipientReview{}, campaign.ErrInvalidArgument
+	}
+	value, err := s.repo.ReadTouchPlanRecipientReview(ctx, campaignCode, planID, customerID)
+	if err != nil {
+		if errors.Is(err, campaign.ErrNotFound) {
+			return campaign.TouchPlanRecipientReview{}, err
+		}
+		return campaign.TouchPlanRecipientReview{}, campaign.ErrUnavailable
+	}
+	if !campaign.ValidTouchPlanRecipientReview(value) || value.CampaignCode != campaignCode || value.PlanID != planID || value.CustomerID != customerID {
+		return campaign.TouchPlanRecipientReview{}, campaign.ErrUnavailable
+	}
+	return value, nil
+}
+
 func (s *RecipientReviewService) SaveMessageOverride(ctx context.Context, command campaign.SaveTouchPlanRecipientMessageOverrideCommand) (campaign.TouchPlanRecipientReviewResult, error) {
 	if !validRecipientOverride(command) {
 		return campaign.TouchPlanRecipientReviewResult{}, campaign.ErrInvalidArgument

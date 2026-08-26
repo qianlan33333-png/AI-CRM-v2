@@ -197,6 +197,7 @@ type candidateHandler struct {
 	legacyHealth             *legacyhealth.Handler
 	campaignInitiation       http.Handler
 	campaignReview           http.Handler
+	campaignRecipientReview  http.Handler
 	outboundCampaignHandoff  *outboundhttp.CampaignHandoffHandler
 	outboundCampaignDispatch *outboundhttp.CampaignDispatchHandler
 	externalEffectsRuntime   *externaleffectshttp.Handler
@@ -735,12 +736,26 @@ func (handler *candidateHandler) GetCloudCampaignTouchPlanReview(writer http.Res
 func (handler *candidateHandler) MutateCloudCampaignTouchPlanReview(writer http.ResponseWriter, request *http.Request, _ string, _ string, _ string, _ api.MutateCloudCampaignTouchPlanReviewParams) {
 	handler.serveCampaignReview(writer, request)
 }
+func (handler *candidateHandler) GetCloudCampaignTouchPlanRecipientReview(writer http.ResponseWriter, request *http.Request, _ string, _ string, _ int64) {
+	handler.serveCampaignRecipientReview(writer, request)
+}
+func (handler *candidateHandler) MutateCloudCampaignTouchPlanRecipientReview(writer http.ResponseWriter, request *http.Request, _ string, _ string, _ int64, _ string, _ api.MutateCloudCampaignTouchPlanRecipientReviewParams) {
+	handler.serveCampaignRecipientReview(writer, request)
+}
 func (handler *candidateHandler) serveCampaignReview(writer http.ResponseWriter, request *http.Request) {
 	if handler == nil || handler.campaignReview == nil {
 		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
 		return
 	}
 	handler.campaignReview.ServeHTTP(writer, request)
+}
+
+func (handler *candidateHandler) serveCampaignRecipientReview(writer http.ResponseWriter, request *http.Request) {
+	if handler == nil || handler.campaignRecipientReview == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.campaignRecipientReview.ServeHTTP(writer, request)
 }
 
 func (handler *candidateHandler) GetOutboundCampaignHandoffSummary(writer http.ResponseWriter, request *http.Request, campaignCode string, planID string) {
@@ -1329,6 +1344,21 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	campaignRecipientReviewAudit, err := campaignstore.NewRecipientReviewEventLogAdapter(eventstore.NewAppender())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignRecipientReviewService, err := campaignapp.NewRecipientReviewService(uow, campaignRepository, campaignRecipientReviewAudit)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	campaignRecipientReviewFragment, err := campaign.NewRecipientReviewRouteFragment(campaignRecipientReviewService, legacyCampaignAuthorizer{})
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	outboundCampaignSource, err := newOutboundCampaignHandoffSourceAdapter(campaignRepository)
 	if err != nil {
 		pool.Close()
@@ -1806,6 +1836,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		})),
 		campaignInitiation:       campaignInitiationFragment,
 		campaignReview:           campaignReviewFragment,
+		campaignRecipientReview:  campaignRecipientReviewFragment,
 		outboundCampaignHandoff:  outboundCampaignHandler,
 		outboundCampaignDispatch: campaignDispatchHandler,
 		externalEffectsRuntime:   externalEffectsRuntimeHandler,

@@ -41,6 +41,19 @@ type TouchPlanReviewAuditEvent struct {
 	IdempotencyKey string
 }
 
+// TouchPlanRecipientReviewAuditEvent records one recipient-scoped local
+// review decision. It is an audit fact only and never starts delivery.
+type TouchPlanRecipientReviewAuditEvent struct {
+	AuditType        string
+	PlanID           string
+	CampaignCode     string
+	CustomerID       int64
+	RecipientVersion int64
+	ActorID          int64
+	OccurredAt       time.Time
+	IdempotencyKey   string
+}
+
 func NewEventLogAdapter(appender eventport.Appender) (*EventLogAdapter, error) {
 	if appender == nil {
 		return nil, ErrUnavailable
@@ -106,6 +119,25 @@ func (a *EventLogAdapter) AppendTouchPlanReview(ctx context.Context, event Touch
 		return 0, ErrUnavailable
 	}
 	return a.appendCampaignFact(ctx, payload, event.OccurredAt, strings.Join([]string{"campaign.touch_plan.review.v1", event.IdempotencyKey}, "\x00"))
+}
+
+func (a *EventLogAdapter) AppendTouchPlanRecipientReview(ctx context.Context, event TouchPlanRecipientReviewAuditEvent) (eventport.EventID, error) {
+	if a == nil || a.appender == nil || !ValidTouchPlanRecipientReviewAuditType(event.AuditType) || !ValidTouchPlanReviewID(event.PlanID) || !validCode(event.CampaignCode) || event.CustomerID < 1 || event.RecipientVersion < 1 || event.ActorID < 1 ||
+		event.OccurredAt.IsZero() || !event.OccurredAt.Equal(event.OccurredAt.UTC().Truncate(time.Microsecond)) || strings.TrimSpace(event.IdempotencyKey) == "" {
+		return 0, ErrUnavailable
+	}
+	payload, err := json.Marshal(struct {
+		AuditType        string `json:"audit_type"`
+		PlanID           string `json:"plan_id"`
+		CampaignCode     string `json:"campaign_code"`
+		CustomerID       int64  `json:"customer_id"`
+		RecipientVersion int64  `json:"recipient_version"`
+		ActorID          int64  `json:"actor_id"`
+	}{event.AuditType, event.PlanID, event.CampaignCode, event.CustomerID, event.RecipientVersion, event.ActorID})
+	if err != nil {
+		return 0, ErrUnavailable
+	}
+	return a.appendCampaignFact(ctx, payload, event.OccurredAt, strings.Join([]string{"campaign.touch_plan.recipient.review.v1", event.IdempotencyKey}, "\x00"))
 }
 
 func (a *EventLogAdapter) appendCampaignFact(ctx context.Context, payload []byte, occurredAt time.Time, keyMaterial string) (eventport.EventID, error) {

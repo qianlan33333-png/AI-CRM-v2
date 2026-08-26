@@ -48,6 +48,58 @@ func (q *Queries) CompleteCampaignTouchPlanReceipt(ctx context.Context, arg Comp
 	return i, err
 }
 
+const completeCampaignTouchPlanRecipientReviewReceipt = `-- name: CompleteCampaignTouchPlanRecipientReviewReceipt :one
+UPDATE public.cloud_campaign_touch_plan_recipient_review_receipts
+SET state = 'completed', event_id = $1, result_snapshot = $2, completed_at = $3
+WHERE id = $4 AND state = 'reserved'
+RETURNING id, actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, customer_id, event_id, state, result_snapshot
+`
+
+type CompleteCampaignTouchPlanRecipientReviewReceiptParams struct {
+	EventID        pgtype.Int8        `json:"event_id"`
+	ResultSnapshot []byte             `json:"result_snapshot"`
+	CompletedAt    pgtype.Timestamptz `json:"completed_at"`
+	ID             int64              `json:"id"`
+}
+
+type CompleteCampaignTouchPlanRecipientReviewReceiptRow struct {
+	ID             int64       `json:"id"`
+	ActorID        int64       `json:"actor_id"`
+	Operation      string      `json:"operation"`
+	KeyDigest      []byte      `json:"key_digest"`
+	PayloadDigest  []byte      `json:"payload_digest"`
+	PlanID         string      `json:"plan_id"`
+	CampaignCode   string      `json:"campaign_code"`
+	CustomerID     int64       `json:"customer_id"`
+	EventID        pgtype.Int8 `json:"event_id"`
+	State          string      `json:"state"`
+	ResultSnapshot []byte      `json:"result_snapshot"`
+}
+
+func (q *Queries) CompleteCampaignTouchPlanRecipientReviewReceipt(ctx context.Context, arg CompleteCampaignTouchPlanRecipientReviewReceiptParams) (CompleteCampaignTouchPlanRecipientReviewReceiptRow, error) {
+	row := q.db.QueryRow(ctx, completeCampaignTouchPlanRecipientReviewReceipt,
+		arg.EventID,
+		arg.ResultSnapshot,
+		arg.CompletedAt,
+		arg.ID,
+	)
+	var i CompleteCampaignTouchPlanRecipientReviewReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorID,
+		&i.Operation,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.PlanID,
+		&i.CampaignCode,
+		&i.CustomerID,
+		&i.EventID,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
 const completeCampaignTouchPlanReviewReceipt = `-- name: CompleteCampaignTouchPlanReviewReceipt :one
 UPDATE public.cloud_campaign_touch_plan_review_receipts
 SET state = 'completed', event_id = $1, handoff_event_id = $2, result_snapshot = $3,
@@ -245,6 +297,92 @@ func (q *Queries) GetCampaignTouchPlanReceiptForUpdate(ctx context.Context, arg 
 		&i.PlanID,
 		&i.EventID,
 		&i.State,
+	)
+	return i, err
+}
+
+const getCampaignTouchPlanRecipientReview = `-- name: GetCampaignTouchPlanRecipientReview :one
+SELECT review.plan_id, review.campaign_code, review.customer_id, review.message_override,
+       review.status, review.version, review.updated_by_actor_id, review.updated_at
+FROM public.cloud_campaign_touch_plan_recipient_reviews AS review
+JOIN public.cloud_campaign_touch_plans AS plan ON plan.id = review.plan_id
+WHERE plan.campaign_code = $1 AND review.plan_id = $2 AND review.customer_id = $3
+`
+
+type GetCampaignTouchPlanRecipientReviewParams struct {
+	CampaignCode string `json:"campaign_code"`
+	PlanID       string `json:"plan_id"`
+	CustomerID   int64  `json:"customer_id"`
+}
+
+type GetCampaignTouchPlanRecipientReviewRow struct {
+	PlanID           string             `json:"plan_id"`
+	CampaignCode     string             `json:"campaign_code"`
+	CustomerID       int64              `json:"customer_id"`
+	MessageOverride  string             `json:"message_override"`
+	Status           string             `json:"status"`
+	Version          int64              `json:"version"`
+	UpdatedByActorID int64              `json:"updated_by_actor_id"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) GetCampaignTouchPlanRecipientReview(ctx context.Context, arg GetCampaignTouchPlanRecipientReviewParams) (GetCampaignTouchPlanRecipientReviewRow, error) {
+	row := q.db.QueryRow(ctx, getCampaignTouchPlanRecipientReview, arg.CampaignCode, arg.PlanID, arg.CustomerID)
+	var i GetCampaignTouchPlanRecipientReviewRow
+	err := row.Scan(
+		&i.PlanID,
+		&i.CampaignCode,
+		&i.CustomerID,
+		&i.MessageOverride,
+		&i.Status,
+		&i.Version,
+		&i.UpdatedByActorID,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getCampaignTouchPlanRecipientReviewReceiptForUpdate = `-- name: GetCampaignTouchPlanRecipientReviewReceiptForUpdate :one
+SELECT id, actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, customer_id, event_id, state, result_snapshot
+FROM public.cloud_campaign_touch_plan_recipient_review_receipts
+WHERE actor_id = $1 AND key_digest = $2
+FOR UPDATE
+`
+
+type GetCampaignTouchPlanRecipientReviewReceiptForUpdateParams struct {
+	ActorID   int64  `json:"actor_id"`
+	KeyDigest []byte `json:"key_digest"`
+}
+
+type GetCampaignTouchPlanRecipientReviewReceiptForUpdateRow struct {
+	ID             int64       `json:"id"`
+	ActorID        int64       `json:"actor_id"`
+	Operation      string      `json:"operation"`
+	KeyDigest      []byte      `json:"key_digest"`
+	PayloadDigest  []byte      `json:"payload_digest"`
+	PlanID         string      `json:"plan_id"`
+	CampaignCode   string      `json:"campaign_code"`
+	CustomerID     int64       `json:"customer_id"`
+	EventID        pgtype.Int8 `json:"event_id"`
+	State          string      `json:"state"`
+	ResultSnapshot []byte      `json:"result_snapshot"`
+}
+
+func (q *Queries) GetCampaignTouchPlanRecipientReviewReceiptForUpdate(ctx context.Context, arg GetCampaignTouchPlanRecipientReviewReceiptForUpdateParams) (GetCampaignTouchPlanRecipientReviewReceiptForUpdateRow, error) {
+	row := q.db.QueryRow(ctx, getCampaignTouchPlanRecipientReviewReceiptForUpdate, arg.ActorID, arg.KeyDigest)
+	var i GetCampaignTouchPlanRecipientReviewReceiptForUpdateRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorID,
+		&i.Operation,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.PlanID,
+		&i.CampaignCode,
+		&i.CustomerID,
+		&i.EventID,
+		&i.State,
+		&i.ResultSnapshot,
 	)
 	return i, err
 }
@@ -944,6 +1082,48 @@ func (q *Queries) LockCampaignDraftForTouchPlan(ctx context.Context, campaignCod
 	return i, err
 }
 
+const lockCampaignTouchPlanRecipientReview = `-- name: LockCampaignTouchPlanRecipientReview :one
+SELECT review.plan_id, review.campaign_code, review.customer_id, review.message_override,
+       review.status, review.version, review.updated_by_actor_id, review.updated_at
+FROM public.cloud_campaign_touch_plan_recipient_reviews AS review
+JOIN public.cloud_campaign_touch_plans AS plan ON plan.id = review.plan_id
+WHERE plan.campaign_code = $1 AND review.plan_id = $2 AND review.customer_id = $3
+FOR UPDATE OF review
+`
+
+type LockCampaignTouchPlanRecipientReviewParams struct {
+	CampaignCode string `json:"campaign_code"`
+	PlanID       string `json:"plan_id"`
+	CustomerID   int64  `json:"customer_id"`
+}
+
+type LockCampaignTouchPlanRecipientReviewRow struct {
+	PlanID           string             `json:"plan_id"`
+	CampaignCode     string             `json:"campaign_code"`
+	CustomerID       int64              `json:"customer_id"`
+	MessageOverride  string             `json:"message_override"`
+	Status           string             `json:"status"`
+	Version          int64              `json:"version"`
+	UpdatedByActorID int64              `json:"updated_by_actor_id"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) LockCampaignTouchPlanRecipientReview(ctx context.Context, arg LockCampaignTouchPlanRecipientReviewParams) (LockCampaignTouchPlanRecipientReviewRow, error) {
+	row := q.db.QueryRow(ctx, lockCampaignTouchPlanRecipientReview, arg.CampaignCode, arg.PlanID, arg.CustomerID)
+	var i LockCampaignTouchPlanRecipientReviewRow
+	err := row.Scan(
+		&i.PlanID,
+		&i.CampaignCode,
+		&i.CustomerID,
+		&i.MessageOverride,
+		&i.Status,
+		&i.Version,
+		&i.UpdatedByActorID,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const lockCampaignTouchPlanReview = `-- name: LockCampaignTouchPlanReview :one
 SELECT review.plan_id, review.campaign_code, review.status, review.version,
        review.submitted_by_actor_id, review.submitted_at,
@@ -1040,6 +1220,69 @@ func (q *Queries) ReserveCampaignTouchPlanReceipt(ctx context.Context, arg Reser
 	return i, err
 }
 
+const reserveCampaignTouchPlanRecipientReviewReceipt = `-- name: ReserveCampaignTouchPlanRecipientReviewReceipt :one
+INSERT INTO public.cloud_campaign_touch_plan_recipient_review_receipts (
+  actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, customer_id, created_at
+) VALUES (
+  $1, $2, $3, $4, $5, $6, $7, $8
+)
+ON CONFLICT (actor_id, key_digest) DO NOTHING
+RETURNING id, actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, customer_id, event_id, state, result_snapshot
+`
+
+type ReserveCampaignTouchPlanRecipientReviewReceiptParams struct {
+	ActorID       int64              `json:"actor_id"`
+	Operation     string             `json:"operation"`
+	KeyDigest     []byte             `json:"key_digest"`
+	PayloadDigest []byte             `json:"payload_digest"`
+	PlanID        string             `json:"plan_id"`
+	CampaignCode  string             `json:"campaign_code"`
+	CustomerID    int64              `json:"customer_id"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type ReserveCampaignTouchPlanRecipientReviewReceiptRow struct {
+	ID             int64       `json:"id"`
+	ActorID        int64       `json:"actor_id"`
+	Operation      string      `json:"operation"`
+	KeyDigest      []byte      `json:"key_digest"`
+	PayloadDigest  []byte      `json:"payload_digest"`
+	PlanID         string      `json:"plan_id"`
+	CampaignCode   string      `json:"campaign_code"`
+	CustomerID     int64       `json:"customer_id"`
+	EventID        pgtype.Int8 `json:"event_id"`
+	State          string      `json:"state"`
+	ResultSnapshot []byte      `json:"result_snapshot"`
+}
+
+func (q *Queries) ReserveCampaignTouchPlanRecipientReviewReceipt(ctx context.Context, arg ReserveCampaignTouchPlanRecipientReviewReceiptParams) (ReserveCampaignTouchPlanRecipientReviewReceiptRow, error) {
+	row := q.db.QueryRow(ctx, reserveCampaignTouchPlanRecipientReviewReceipt,
+		arg.ActorID,
+		arg.Operation,
+		arg.KeyDigest,
+		arg.PayloadDigest,
+		arg.PlanID,
+		arg.CampaignCode,
+		arg.CustomerID,
+		arg.CreatedAt,
+	)
+	var i ReserveCampaignTouchPlanRecipientReviewReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ActorID,
+		&i.Operation,
+		&i.KeyDigest,
+		&i.PayloadDigest,
+		&i.PlanID,
+		&i.CampaignCode,
+		&i.CustomerID,
+		&i.EventID,
+		&i.State,
+		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
 const reserveCampaignTouchPlanReviewReceipt = `-- name: ReserveCampaignTouchPlanReviewReceipt :one
 INSERT INTO public.cloud_campaign_touch_plan_review_receipts (
   actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, created_at
@@ -1097,6 +1340,71 @@ func (q *Queries) ReserveCampaignTouchPlanReviewReceipt(ctx context.Context, arg
 		&i.HandoffEventID,
 		&i.State,
 		&i.ResultSnapshot,
+	)
+	return i, err
+}
+
+const saveCampaignTouchPlanRecipientReview = `-- name: SaveCampaignTouchPlanRecipientReview :one
+INSERT INTO public.cloud_campaign_touch_plan_recipient_reviews (
+  plan_id, campaign_code, customer_id, message_override, status, version, updated_by_actor_id, updated_at
+) VALUES (
+  $1, $2, $3, $4, $5, $6, $7, $8
+)
+ON CONFLICT (plan_id, customer_id) DO UPDATE SET
+  message_override = EXCLUDED.message_override,
+  status = EXCLUDED.status,
+  version = EXCLUDED.version,
+  updated_by_actor_id = EXCLUDED.updated_by_actor_id,
+  updated_at = EXCLUDED.updated_at
+WHERE public.cloud_campaign_touch_plan_recipient_reviews.version = $9
+RETURNING plan_id, campaign_code, customer_id, message_override, status, version, updated_by_actor_id, updated_at
+`
+
+type SaveCampaignTouchPlanRecipientReviewParams struct {
+	PlanID           string             `json:"plan_id"`
+	CampaignCode     string             `json:"campaign_code"`
+	CustomerID       int64              `json:"customer_id"`
+	MessageOverride  string             `json:"message_override"`
+	Status           string             `json:"status"`
+	Version          int64              `json:"version"`
+	UpdatedByActorID int64              `json:"updated_by_actor_id"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	ExpectedVersion  int64              `json:"expected_version"`
+}
+
+type SaveCampaignTouchPlanRecipientReviewRow struct {
+	PlanID           string             `json:"plan_id"`
+	CampaignCode     string             `json:"campaign_code"`
+	CustomerID       int64              `json:"customer_id"`
+	MessageOverride  string             `json:"message_override"`
+	Status           string             `json:"status"`
+	Version          int64              `json:"version"`
+	UpdatedByActorID int64              `json:"updated_by_actor_id"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) SaveCampaignTouchPlanRecipientReview(ctx context.Context, arg SaveCampaignTouchPlanRecipientReviewParams) (SaveCampaignTouchPlanRecipientReviewRow, error) {
+	row := q.db.QueryRow(ctx, saveCampaignTouchPlanRecipientReview,
+		arg.PlanID,
+		arg.CampaignCode,
+		arg.CustomerID,
+		arg.MessageOverride,
+		arg.Status,
+		arg.Version,
+		arg.UpdatedByActorID,
+		arg.UpdatedAt,
+		arg.ExpectedVersion,
+	)
+	var i SaveCampaignTouchPlanRecipientReviewRow
+	err := row.Scan(
+		&i.PlanID,
+		&i.CampaignCode,
+		&i.CustomerID,
+		&i.MessageOverride,
+		&i.Status,
+		&i.Version,
+		&i.UpdatedByActorID,
+		&i.UpdatedAt,
 	)
 	return i, err
 }

@@ -10,10 +10,13 @@ import (
 
 type Querier interface {
 	CompleteCampaignTouchPlanReceipt(ctx context.Context, arg CompleteCampaignTouchPlanReceiptParams) (CompleteCampaignTouchPlanReceiptRow, error)
+	CompleteCampaignTouchPlanRecipientReviewReceipt(ctx context.Context, arg CompleteCampaignTouchPlanRecipientReviewReceiptParams) (CompleteCampaignTouchPlanRecipientReviewReceiptRow, error)
 	CompleteCampaignTouchPlanReviewReceipt(ctx context.Context, arg CompleteCampaignTouchPlanReviewReceiptParams) (CompleteCampaignTouchPlanReviewReceiptRow, error)
 	GetCampaignTouchPlan(ctx context.Context, arg GetCampaignTouchPlanParams) (GetCampaignTouchPlanRow, error)
 	GetCampaignTouchPlanHandoff(ctx context.Context, arg GetCampaignTouchPlanHandoffParams) (CloudCampaignTouchPlanHandoff, error)
 	GetCampaignTouchPlanReceiptForUpdate(ctx context.Context, arg GetCampaignTouchPlanReceiptForUpdateParams) (GetCampaignTouchPlanReceiptForUpdateRow, error)
+	GetCampaignTouchPlanRecipientReview(ctx context.Context, arg GetCampaignTouchPlanRecipientReviewParams) (GetCampaignTouchPlanRecipientReviewRow, error)
+	GetCampaignTouchPlanRecipientReviewReceiptForUpdate(ctx context.Context, arg GetCampaignTouchPlanRecipientReviewReceiptForUpdateParams) (GetCampaignTouchPlanRecipientReviewReceiptForUpdateRow, error)
 	GetCampaignTouchPlanReview(ctx context.Context, arg GetCampaignTouchPlanReviewParams) (CloudCampaignTouchPlanReview, error)
 	GetCampaignTouchPlanReviewReceiptForUpdate(ctx context.Context, arg GetCampaignTouchPlanReviewReceiptForUpdateParams) (GetCampaignTouchPlanReviewReceiptForUpdateRow, error)
 	GetCampaignTouchPlanReviewRecipient(ctx context.Context, arg GetCampaignTouchPlanReviewRecipientParams) (CloudCampaignTouchPlanTarget, error)
@@ -30,12 +33,15 @@ type Querier interface {
 	ListCampaignTouchPlanTargets(ctx context.Context, planID string) ([]int64, error)
 	LockApprovedCampaignTouchPlanHandoff(ctx context.Context, arg LockApprovedCampaignTouchPlanHandoffParams) (LockApprovedCampaignTouchPlanHandoffRow, error)
 	LockCampaignDraftForTouchPlan(ctx context.Context, campaignCode string) (LockCampaignDraftForTouchPlanRow, error)
+	LockCampaignTouchPlanRecipientReview(ctx context.Context, arg LockCampaignTouchPlanRecipientReviewParams) (LockCampaignTouchPlanRecipientReviewRow, error)
 	LockCampaignTouchPlanReview(ctx context.Context, arg LockCampaignTouchPlanReviewParams) (CloudCampaignTouchPlanReview, error)
 	// The generated query package keeps every initiation read/write attached to
 	// the caller's Campaign UnitOfWork transaction in postgres.go.
 	LockCloudCampaignDeleteReferences(ctx context.Context) error
 	ReserveCampaignTouchPlanReceipt(ctx context.Context, arg ReserveCampaignTouchPlanReceiptParams) (ReserveCampaignTouchPlanReceiptRow, error)
+	ReserveCampaignTouchPlanRecipientReviewReceipt(ctx context.Context, arg ReserveCampaignTouchPlanRecipientReviewReceiptParams) (ReserveCampaignTouchPlanRecipientReviewReceiptRow, error)
 	ReserveCampaignTouchPlanReviewReceipt(ctx context.Context, arg ReserveCampaignTouchPlanReviewReceiptParams) (ReserveCampaignTouchPlanReviewReceiptRow, error)
+	SaveCampaignTouchPlanRecipientReview(ctx context.Context, arg SaveCampaignTouchPlanRecipientReviewParams) (SaveCampaignTouchPlanRecipientReviewRow, error)
 	SaveCampaignTouchPlanReview(ctx context.Context, arg SaveCampaignTouchPlanReviewParams) (CloudCampaignTouchPlanReview, error)
 }
 

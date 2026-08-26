@@ -183,6 +183,57 @@ SELECT plan_id, customer_id
 FROM public.cloud_campaign_touch_plan_targets
 WHERE plan_id = sqlc.arg(plan_id) AND customer_id = sqlc.arg(customer_id) AND EXISTS (SELECT 1 FROM public.cloud_campaign_touch_plans WHERE id = sqlc.arg(plan_id) AND campaign_code = sqlc.arg(campaign_code));
 
+-- name: ReserveCampaignTouchPlanRecipientReviewReceipt :one
+INSERT INTO public.cloud_campaign_touch_plan_recipient_review_receipts (
+  actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, customer_id, created_at
+) VALUES (
+  sqlc.arg(actor_id), sqlc.arg(operation), sqlc.arg(key_digest), sqlc.arg(payload_digest), sqlc.arg(plan_id), sqlc.arg(campaign_code), sqlc.arg(customer_id), sqlc.arg(created_at)
+)
+ON CONFLICT (actor_id, key_digest) DO NOTHING
+RETURNING id, actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, customer_id, event_id, state, result_snapshot;
+
+-- name: GetCampaignTouchPlanRecipientReviewReceiptForUpdate :one
+SELECT id, actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, customer_id, event_id, state, result_snapshot
+FROM public.cloud_campaign_touch_plan_recipient_review_receipts
+WHERE actor_id = sqlc.arg(actor_id) AND key_digest = sqlc.arg(key_digest)
+FOR UPDATE;
+
+-- name: LockCampaignTouchPlanRecipientReview :one
+SELECT review.plan_id, review.campaign_code, review.customer_id, review.message_override,
+       review.status, review.version, review.updated_by_actor_id, review.updated_at
+FROM public.cloud_campaign_touch_plan_recipient_reviews AS review
+JOIN public.cloud_campaign_touch_plans AS plan ON plan.id = review.plan_id
+WHERE plan.campaign_code = sqlc.arg(campaign_code) AND review.plan_id = sqlc.arg(plan_id) AND review.customer_id = sqlc.arg(customer_id)
+FOR UPDATE OF review;
+
+-- name: SaveCampaignTouchPlanRecipientReview :one
+INSERT INTO public.cloud_campaign_touch_plan_recipient_reviews (
+  plan_id, campaign_code, customer_id, message_override, status, version, updated_by_actor_id, updated_at
+) VALUES (
+  sqlc.arg(plan_id), sqlc.arg(campaign_code), sqlc.arg(customer_id), sqlc.arg(message_override), sqlc.arg(status), sqlc.arg(version), sqlc.arg(updated_by_actor_id), sqlc.arg(updated_at)
+)
+ON CONFLICT (plan_id, customer_id) DO UPDATE SET
+  message_override = EXCLUDED.message_override,
+  status = EXCLUDED.status,
+  version = EXCLUDED.version,
+  updated_by_actor_id = EXCLUDED.updated_by_actor_id,
+  updated_at = EXCLUDED.updated_at
+WHERE public.cloud_campaign_touch_plan_recipient_reviews.version = sqlc.arg(expected_version)
+RETURNING plan_id, campaign_code, customer_id, message_override, status, version, updated_by_actor_id, updated_at;
+
+-- name: GetCampaignTouchPlanRecipientReview :one
+SELECT review.plan_id, review.campaign_code, review.customer_id, review.message_override,
+       review.status, review.version, review.updated_by_actor_id, review.updated_at
+FROM public.cloud_campaign_touch_plan_recipient_reviews AS review
+JOIN public.cloud_campaign_touch_plans AS plan ON plan.id = review.plan_id
+WHERE plan.campaign_code = sqlc.arg(campaign_code) AND review.plan_id = sqlc.arg(plan_id) AND review.customer_id = sqlc.arg(customer_id);
+
+-- name: CompleteCampaignTouchPlanRecipientReviewReceipt :one
+UPDATE public.cloud_campaign_touch_plan_recipient_review_receipts
+SET state = 'completed', event_id = sqlc.arg(event_id), result_snapshot = sqlc.arg(result_snapshot), completed_at = sqlc.arg(completed_at)
+WHERE id = sqlc.arg(id) AND state = 'reserved'
+RETURNING id, actor_id, operation, key_digest, payload_digest, plan_id, campaign_code, customer_id, event_id, state, result_snapshot;
+
 -- name: LockApprovedCampaignTouchPlanHandoff :one
 SELECT plan.id, plan.campaign_code, plan.campaign_version, plan.source_kind,
        plan.customer_selection_id, plan.customer_selection_version, plan.segment_id,
