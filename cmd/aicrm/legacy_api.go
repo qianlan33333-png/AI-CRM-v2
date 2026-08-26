@@ -187,6 +187,7 @@ type Handler struct {
 	radar                   http.Handler
 	campaign                http.Handler
 	aiAudience              http.Handler
+	aiAudienceInbound       *aiAudienceInboundRoutes
 	aiAudienceMembers       http.Handler
 	aiAudienceConfiguration http.Handler
 	aiAudienceSendRecords   http.Handler
@@ -238,6 +239,11 @@ type Handler struct {
 	hxcSender               *hxcSenderHandler
 	deliveryLineage         legacyDeliveryLineageReaders
 	externalCustomerRead    *legacyExternalCustomerReadHandler
+}
+
+type aiAudienceInboundRoutes struct {
+	webhook              http.Handler
+	retiredSubscriptions http.Handler
 }
 
 // legacyOperationCycleApplication is the frozen A+B operation surface. Its

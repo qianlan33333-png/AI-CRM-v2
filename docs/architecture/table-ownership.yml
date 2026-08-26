@@ -102,7 +102,7 @@ owners:
 
   segment:
     package: internal/segment
-    tables: [segments, segment_members, segment_refresh_receipts, segment_operation_receipts, ai_audience_package_metadata, ai_audience_package_groups, ai_audience_operation_receipts, ai_audience_package_automation_bindings, ai_audience_package_senders, ai_audience_local_configuration_receipts, ai_audience_package_configuration_versions, ai_audience_operation_member_projection]
+    tables: [segments, segment_members, segment_refresh_receipts, segment_operation_receipts, ai_audience_package_metadata, ai_audience_package_groups, ai_audience_operation_receipts, ai_audience_package_automation_bindings, ai_audience_package_senders, ai_audience_local_configuration_receipts, ai_audience_package_configuration_versions, ai_audience_operation_member_projection, ai_audience_inbound_webhook_receipts, ai_audience_webhook_transport_replays]
     constraints:
       segment_operation_receipts: transaction_scoped_crud_idempotency_receipts
       ai_audience_package_metadata: local_package_lifecycle_and_version_over_authoritative_segment_members
@@ -113,6 +113,8 @@ owners:
       ai_audience_local_configuration_receipts: actor_scoped_transactional_local_configuration_idempotency_receipts
       ai_audience_package_configuration_versions: immutable_typed_canonical_segment_definition_snapshots_with_version_and_digest
       ai_audience_operation_member_projection: audience_owned_last_successful_read_only_directory_projection
+      ai_audience_inbound_webhook_receipts: authenticated_local_inbound_webhook_receipts_without_provider_execution
+      ai_audience_webhook_transport_replays: client_scoped_transport_replay_keys_bound_to_inbound_receipts
 
   automation:
     package: internal/automation

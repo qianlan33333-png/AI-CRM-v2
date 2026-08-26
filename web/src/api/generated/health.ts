@@ -2994,6 +2994,89 @@ export interface AIAudiencePackageSender {
   is_enabled: boolean;
 }
 
+export type AIAudienceInboundWebhookRequestMessage = { [key: string]: unknown };
+
+export type AIAudienceInboundWebhookRequestAction = { [key: string]: unknown };
+
+export interface AIAudienceInboundWebhookRequest {
+  /**
+   * @minLength 1
+   * @maxLength 256
+   * @pattern ^[^\\s\\x00-\\x1f\\x7f]+$
+   */
+  external_event_id: string;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  member_event_id?: number | null;
+  /** @maxLength 64 */
+  status?: string;
+  message?: AIAudienceInboundWebhookRequestMessage;
+  action?: AIAudienceInboundWebhookRequestAction;
+}
+
+export type AIAudienceInboundWebhookReceiptStatus =
+  (typeof AIAudienceInboundWebhookReceiptStatus)[keyof typeof AIAudienceInboundWebhookReceiptStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceInboundWebhookReceiptStatus = {
+  received: "received",
+} as const;
+
+export interface AIAudienceInboundWebhookReceipt {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  package_id: number;
+  status: AIAudienceInboundWebhookReceiptStatus;
+  created_at: string;
+}
+
+/**
+ * @nullable
+ */
+export type AIAudienceInboundWebhookResponseSignal = unknown | null;
+
+/**
+ * @nullable
+ */
+export type AIAudienceInboundWebhookResponseAutomationSendPlan = unknown | null;
+
+/**
+ * @nullable
+ */
+export type AIAudienceInboundWebhookResponseExternalEffectJobId =
+  unknown | null;
+
+export interface AIAudienceInboundWebhookResponse {
+  ok: boolean;
+  accepted: boolean;
+  deduplicated: boolean;
+  recorded: AIAudienceInboundWebhookReceipt;
+  /** @nullable */
+  signal: AIAudienceInboundWebhookResponseSignal;
+  /** @nullable */
+  automation_send_plan: AIAudienceInboundWebhookResponseAutomationSendPlan;
+  /** @nullable */
+  external_effect_job_id: AIAudienceInboundWebhookResponseExternalEffectJobId;
+  record_only: boolean;
+  real_external_call_executed: boolean;
+}
+
+export type AIAudienceRetiredWebhookResponseError =
+  (typeof AIAudienceRetiredWebhookResponseError)[keyof typeof AIAudienceRetiredWebhookResponseError];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AIAudienceRetiredWebhookResponseError = {
+  webhook_configuration_retired: "webhook_configuration_retired",
+} as const;
+
+export interface AIAudienceRetiredWebhookResponse {
+  ok: boolean;
+  error: AIAudienceRetiredWebhookResponseError;
+}
+
 export interface AIAudiencePackageSendersReplaceRequest {
   /** @maxItems 5 */
   items: AIAudiencePackageSender[];
@@ -52197,6 +52280,339 @@ export const listAIAudiencePackageMembers = async (
     status: res.status,
     headers: res.headers,
   } as listAIAudiencePackageMembersResponse;
+};
+
+/**
+ * @summary Verify and record one AI Audience inbound webhook without any outbound execution
+ */
+export type receiveAIAudienceInboundWebhookResponse200 = {
+  data: AIAudienceInboundWebhookResponse;
+  status: 200;
+};
+
+export type receiveAIAudienceInboundWebhookResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type receiveAIAudienceInboundWebhookResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type receiveAIAudienceInboundWebhookResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type receiveAIAudienceInboundWebhookResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type receiveAIAudienceInboundWebhookResponse413 = {
+  data: PayloadTooLargeResponse;
+  status: 413;
+};
+
+export type receiveAIAudienceInboundWebhookResponse415 = {
+  data: UnsupportedMediaTypeResponse;
+  status: 415;
+};
+
+export type receiveAIAudienceInboundWebhookResponse422 = {
+  data: UnprocessableEntityResponse;
+  status: 422;
+};
+
+export type receiveAIAudienceInboundWebhookResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type receiveAIAudienceInboundWebhookResponseSuccess =
+  receiveAIAudienceInboundWebhookResponse200 & {
+    headers: Headers;
+  };
+export type receiveAIAudienceInboundWebhookResponseError = (
+  | receiveAIAudienceInboundWebhookResponse400
+  | receiveAIAudienceInboundWebhookResponse401
+  | receiveAIAudienceInboundWebhookResponse404
+  | receiveAIAudienceInboundWebhookResponse409
+  | receiveAIAudienceInboundWebhookResponse413
+  | receiveAIAudienceInboundWebhookResponse415
+  | receiveAIAudienceInboundWebhookResponse422
+  | receiveAIAudienceInboundWebhookResponse503
+) & {
+  headers: Headers;
+};
+
+export type receiveAIAudienceInboundWebhookResponse =
+  | receiveAIAudienceInboundWebhookResponseSuccess
+  | receiveAIAudienceInboundWebhookResponseError;
+
+export const getReceiveAIAudienceInboundWebhookUrl = (packageId: number) => {
+  return `/api/ai/audience/packages/${packageId}/webhook`;
+};
+
+export const receiveAIAudienceInboundWebhook = async (
+  packageId: number,
+  aIAudienceInboundWebhookRequest: AIAudienceInboundWebhookRequest,
+  options?: RequestInit,
+): Promise<receiveAIAudienceInboundWebhookResponse> => {
+  const res = await fetch(getReceiveAIAudienceInboundWebhookUrl(packageId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aIAudienceInboundWebhookRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: receiveAIAudienceInboundWebhookResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as receiveAIAudienceInboundWebhookResponse;
+};
+
+/**
+ * @summary Retired AI Audience outbound-subscription route
+ */
+export type listRetiredAIAudienceOutboundSubscriptionsResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listRetiredAIAudienceOutboundSubscriptionsResponse410 = {
+  data: AIAudienceRetiredWebhookResponse;
+  status: 410;
+};
+
+export type listRetiredAIAudienceOutboundSubscriptionsResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listRetiredAIAudienceOutboundSubscriptionsResponseError = (
+  | listRetiredAIAudienceOutboundSubscriptionsResponse401
+  | listRetiredAIAudienceOutboundSubscriptionsResponse410
+  | listRetiredAIAudienceOutboundSubscriptionsResponse503
+) & {
+  headers: Headers;
+};
+
+export type listRetiredAIAudienceOutboundSubscriptionsResponse =
+  listRetiredAIAudienceOutboundSubscriptionsResponseError;
+
+export const getListRetiredAIAudienceOutboundSubscriptionsUrl = (
+  packageId: number,
+) => {
+  return `/api/ai/audience/packages/${packageId}/outbound-subscriptions`;
+};
+
+export const listRetiredAIAudienceOutboundSubscriptions = async (
+  packageId: number,
+  options?: RequestInit,
+): Promise<listRetiredAIAudienceOutboundSubscriptionsResponse> => {
+  const res = await fetch(
+    getListRetiredAIAudienceOutboundSubscriptionsUrl(packageId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listRetiredAIAudienceOutboundSubscriptionsResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listRetiredAIAudienceOutboundSubscriptionsResponse;
+};
+
+/**
+ * @summary Retired AI Audience outbound-subscription route
+ */
+export type createRetiredAIAudienceOutboundSubscriptionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type createRetiredAIAudienceOutboundSubscriptionResponse410 = {
+  data: AIAudienceRetiredWebhookResponse;
+  status: 410;
+};
+
+export type createRetiredAIAudienceOutboundSubscriptionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type createRetiredAIAudienceOutboundSubscriptionResponseError = (
+  | createRetiredAIAudienceOutboundSubscriptionResponse401
+  | createRetiredAIAudienceOutboundSubscriptionResponse410
+  | createRetiredAIAudienceOutboundSubscriptionResponse503
+) & {
+  headers: Headers;
+};
+
+export type createRetiredAIAudienceOutboundSubscriptionResponse =
+  createRetiredAIAudienceOutboundSubscriptionResponseError;
+
+export const getCreateRetiredAIAudienceOutboundSubscriptionUrl = (
+  packageId: number,
+) => {
+  return `/api/ai/audience/packages/${packageId}/outbound-subscriptions`;
+};
+
+export const createRetiredAIAudienceOutboundSubscription = async (
+  packageId: number,
+  options?: RequestInit,
+): Promise<createRetiredAIAudienceOutboundSubscriptionResponse> => {
+  const res = await fetch(
+    getCreateRetiredAIAudienceOutboundSubscriptionUrl(packageId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createRetiredAIAudienceOutboundSubscriptionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as createRetiredAIAudienceOutboundSubscriptionResponse;
+};
+
+/**
+ * @summary Retired AI Audience outbound-subscription route
+ */
+export type updateRetiredAIAudienceOutboundSubscriptionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type updateRetiredAIAudienceOutboundSubscriptionResponse410 = {
+  data: AIAudienceRetiredWebhookResponse;
+  status: 410;
+};
+
+export type updateRetiredAIAudienceOutboundSubscriptionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type updateRetiredAIAudienceOutboundSubscriptionResponseError = (
+  | updateRetiredAIAudienceOutboundSubscriptionResponse401
+  | updateRetiredAIAudienceOutboundSubscriptionResponse410
+  | updateRetiredAIAudienceOutboundSubscriptionResponse503
+) & {
+  headers: Headers;
+};
+
+export type updateRetiredAIAudienceOutboundSubscriptionResponse =
+  updateRetiredAIAudienceOutboundSubscriptionResponseError;
+
+export const getUpdateRetiredAIAudienceOutboundSubscriptionUrl = (
+  subscriptionId: number,
+) => {
+  return `/api/ai/audience/outbound-subscriptions/${subscriptionId}`;
+};
+
+export const updateRetiredAIAudienceOutboundSubscription = async (
+  subscriptionId: number,
+  options?: RequestInit,
+): Promise<updateRetiredAIAudienceOutboundSubscriptionResponse> => {
+  const res = await fetch(
+    getUpdateRetiredAIAudienceOutboundSubscriptionUrl(subscriptionId),
+    {
+      ...options,
+      method: "PATCH",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateRetiredAIAudienceOutboundSubscriptionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as updateRetiredAIAudienceOutboundSubscriptionResponse;
+};
+
+/**
+ * @summary Retired AI Audience outbound-subscription route
+ */
+export type pauseRetiredAIAudienceOutboundSubscriptionResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type pauseRetiredAIAudienceOutboundSubscriptionResponse410 = {
+  data: AIAudienceRetiredWebhookResponse;
+  status: 410;
+};
+
+export type pauseRetiredAIAudienceOutboundSubscriptionResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type pauseRetiredAIAudienceOutboundSubscriptionResponseError = (
+  | pauseRetiredAIAudienceOutboundSubscriptionResponse401
+  | pauseRetiredAIAudienceOutboundSubscriptionResponse410
+  | pauseRetiredAIAudienceOutboundSubscriptionResponse503
+) & {
+  headers: Headers;
+};
+
+export type pauseRetiredAIAudienceOutboundSubscriptionResponse =
+  pauseRetiredAIAudienceOutboundSubscriptionResponseError;
+
+export const getPauseRetiredAIAudienceOutboundSubscriptionUrl = (
+  subscriptionId: number,
+) => {
+  return `/api/ai/audience/outbound-subscriptions/${subscriptionId}/pause`;
+};
+
+export const pauseRetiredAIAudienceOutboundSubscription = async (
+  subscriptionId: number,
+  options?: RequestInit,
+): Promise<pauseRetiredAIAudienceOutboundSubscriptionResponse> => {
+  const res = await fetch(
+    getPauseRetiredAIAudienceOutboundSubscriptionUrl(subscriptionId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: pauseRetiredAIAudienceOutboundSubscriptionResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as pauseRetiredAIAudienceOutboundSubscriptionResponse;
 };
 
 /**
