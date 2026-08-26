@@ -21,6 +21,7 @@ import { createLegacyQuestionnaire, deleteLegacyQuestionnaire, disableLegacyQues
 import { createLegacyChannel, updateLegacyChannel, type LegacyChannelWriteRequest } from './generated/health';
 import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, updateAIAudiencePackage, type AIAudiencePackageSender, type SegmentDefinition } from './generated/health';
 import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
+import { deleteCloudCampaign, getCloudCampaign, getCloudCampaignTouchPlan, getCloudCampaignTouchPlanRecipient, getCloudCampaignTouchPlanReview, listCloudCampaigns, listCloudCampaignTouchPlanRecipients, listCloudCampaignTouchPlans, mutateCloudCampaignTouchPlanReview } from './generated/health';
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
 import { getChannelAcquisitionAsset, getChannelAcquisitionPreview, listChannelAcquisitionAssets, listChannelAcquisitionStaff, publishChannelAcquisitionAsset, updateChannelAcquisitionAssignees, type ChannelAcquisitionAssignmentRequest, type ChannelAcquisitionAssetPublishRequest } from './generated/health';
 import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelAcquisitionStaff, ChannelEntrant, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
@@ -32,6 +33,106 @@ const text = (value: unknown, fallback = '—'): string => value == null || valu
 const list = (value: unknown, ...keys: string[]): unknown[] => { const source = obj(value); for (const key of keys) if (Array.isArray(source[key])) return source[key] as unknown[]; return []; };
 const toneFor = (status: unknown): Tone => { const value = text(status, '').toLowerCase(); if (/active|enabled|paid|success|completed|published/.test(value)) return 'ok'; if (/pending|draft|processing/.test(value)) return 'warn'; if (/disabled|archived|failed|cancel|closed/.test(value)) return 'gray'; return 'blue'; };
 const call = async <T>(request: Promise<T>): Promise<unknown> => unwrapGenerated(await request as { status: number; data: unknown }) as unknown;
+
+export type CampaignFilter = {
+  approvalStatus?: 'draft' | 'approved' | 'rejected';
+  runtimeStatus?: 'idle' | 'planned' | 'paused';
+};
+export type CampaignListItem = { code: string; name: string; approvalStatus: string; runtimeStatus: string; version: number; updatedAt: string };
+export type CampaignDetail = CampaignListItem & { steps: Array<{ index: number; delayMinutes: number; content: string }> };
+export type CampaignTouchPlan = { id: string; campaignCode: string; campaignVersion: number; sourceKind: string; targetCount: number; contentStepCount: number; createdAt: string };
+export type CampaignTouchPlanDetail = CampaignTouchPlan & { steps: Array<{ index: number; delayMinutes: number; content: string }> };
+export type CampaignTouchPlanReview = { status: string; version: number; handoffStatus: string | null };
+export type CampaignTouchPlanRecipient = { customerID: number };
+export type CampaignTouchPlanRecipientPage = { items: CampaignTouchPlanRecipient[]; nextCursor: string | null };
+
+const requiredText = (source: Obj, field: string): string => {
+  const value = source[field];
+  if (typeof value !== 'string' || !value) throw new Error(`Campaign 响应缺少 ${field}`);
+  return value;
+};
+const requiredPositive = (source: Obj, field: string): number => {
+  const value = Number(source[field]);
+  if (!Number.isSafeInteger(value) || value < 1) throw new Error(`Campaign 响应缺少有效 ${field}`);
+  return value;
+};
+const requireCampaignLocal = (source: Obj): void => {
+  if (source.local_projection !== true || source.real_external_call_executed !== false || source.real_send !== false || source.runtime_executed !== false) throw new Error('Campaign 响应越过本地执行边界');
+};
+const requireTouchPlanLocal = (source: Obj): void => {
+  if (source.local_only !== true || source.provider_execution_eligible !== false || source.runtime_executed === true || source.real_external_call_executed !== false || source.delivery_proven !== false) throw new Error('Touch plan 响应越过本地执行边界');
+};
+const campaignItemDto = (value: unknown): CampaignListItem => {
+  const source = obj(value);
+  return { code: requiredText(source, 'campaign_code'), name: requiredText(source, 'name'), approvalStatus: requiredText(source, 'approval_status'), runtimeStatus: requiredText(source, 'runtime_status'), version: requiredPositive(source, 'version'), updatedAt: requiredText(source, 'updated_at') };
+};
+const touchPlanDto = (value: unknown): CampaignTouchPlan => {
+  const source = obj(value);
+  return { id: requiredText(source, 'id'), campaignCode: requiredText(source, 'campaign_code'), campaignVersion: requiredPositive(source, 'campaign_version'), sourceKind: requiredText(obj(source.source), 'kind'), targetCount: requiredPositive(source, 'target_count'), contentStepCount: requiredPositive(source, 'content_step_count'), createdAt: requiredText(source, 'created_at') };
+};
+const touchPlanStepsDto = (value: unknown): Array<{ index: number; delayMinutes: number; content: string }> => list(value, 'steps').map((item) => {
+  const source = obj(item);
+  return { index: requiredPositive(source, 'step_index'), delayMinutes: Number(source.delay_minutes), content: requiredText(source, 'content') };
+});
+const mutationOptions = (): RequestInit => {
+  if (typeof globalThis.crypto?.randomUUID !== 'function') throw new Error('浏览器不支持安全幂等键，已拒绝提交 Campaign 本地审核');
+  return apiRequestOptions({ headers: { 'Idempotency-Key': `campaign-review-${globalThis.crypto.randomUUID()}` } });
+};
+
+export async function listCampaignsDto(filter: CampaignFilter = {}): Promise<CampaignListItem[]> {
+  const source = obj(await call(listCloudCampaigns({ approval_status: filter.approvalStatus, runtime_status: filter.runtimeStatus }, apiRequestOptions())));
+  requireCampaignLocal(source);
+  return list(source, 'items').map(campaignItemDto);
+}
+export async function getCampaignDto(campaignCode: string): Promise<CampaignDetail> {
+  const source = obj(await call(getCloudCampaign(campaignCode, apiRequestOptions())));
+  requireCampaignLocal(source);
+  const campaign = campaignItemDto(source.campaign);
+  return { ...campaign, steps: touchPlanStepsDto(source) };
+}
+export async function deleteCampaignDto(campaignCode: string): Promise<void> {
+  const campaign = await getCampaignDto(campaignCode);
+  const source = obj(await call(deleteCloudCampaign(campaignCode, { expected_version: campaign.version }, apiRequestOptions())));
+  requireCampaignLocal(source);
+  if (source.deleted !== true || requiredText(source, 'campaign_code') !== campaignCode) throw new Error('Campaign 删除响应不完整');
+}
+export async function listCampaignTouchPlansDto(campaignCode: string): Promise<CampaignTouchPlan[]> {
+  const source = obj(await call(listCloudCampaignTouchPlans(campaignCode, { limit: 100 }, apiRequestOptions())));
+  requireTouchPlanLocal(source);
+  return list(source, 'items').map(touchPlanDto);
+}
+export async function getCampaignTouchPlanDto(campaignCode: string, planID: string): Promise<CampaignTouchPlanDetail> {
+  const source = obj(await call(getCloudCampaignTouchPlan(campaignCode, planID, apiRequestOptions())));
+  requireTouchPlanLocal(source);
+  return { ...touchPlanDto(source), steps: touchPlanStepsDto(obj(source.content)) };
+}
+export async function getCampaignTouchPlanReviewDto(campaignCode: string, planID: string): Promise<CampaignTouchPlanReview> {
+  const source = obj(await call(getCloudCampaignTouchPlanReview(campaignCode, planID, apiRequestOptions())));
+  requireTouchPlanLocal(source);
+  const review = obj(source.review);
+  const handoff = obj(source.handoff);
+  return { status: requiredText(review, 'status'), version: requiredPositive(review, 'version'), handoffStatus: typeof handoff.status === 'string' ? handoff.status : null };
+}
+export async function decideCampaignTouchPlanReviewDto(campaignCode: string, planID: string, operation: 'approve' | 'reject'): Promise<CampaignTouchPlanReview> {
+  const current = await getCampaignTouchPlanReviewDto(campaignCode, planID);
+  if (current.status !== 'pending_review') throw new Error('当前计划不在待审核状态，已拒绝提交');
+  const source = obj(await call(mutateCloudCampaignTouchPlanReview(campaignCode, planID, operation, { expected_version: current.version, confirmation: `${operation.toUpperCase()} ${planID}` }, mutationOptions())));
+  requireTouchPlanLocal(source);
+  const review = obj(source.review);
+  return { status: requiredText(review, 'status'), version: requiredPositive(review, 'version'), handoffStatus: typeof obj(source.handoff).status === 'string' ? String(obj(source.handoff).status) : null };
+}
+export async function listCampaignTouchPlanRecipientsDto(campaignCode: string, planID: string, cursor?: string): Promise<CampaignTouchPlanRecipientPage> {
+  const source = obj(await call(listCloudCampaignTouchPlanRecipients(campaignCode, planID, { limit: 50, cursor }, apiRequestOptions())));
+  requireTouchPlanLocal(source);
+  return { items: list(source, 'items').map((item) => ({ customerID: requiredPositive(obj(item), 'canonical_customer_id') })), nextCursor: typeof source.next_cursor === 'string' ? source.next_cursor : null };
+}
+export async function getCampaignTouchPlanRecipientDto(campaignCode: string, planID: string, customerID: number): Promise<CampaignTouchPlanRecipient> {
+  const source = obj(await call(getCloudCampaignTouchPlanRecipient(campaignCode, planID, customerID, apiRequestOptions())));
+  requireTouchPlanLocal(source);
+  const returnedID = requiredPositive(source, 'canonical_customer_id');
+  if (returnedID !== customerID) throw new Error('Campaign 收件人范围不匹配');
+  return { customerID: returnedID };
+}
 
 export function customerPageDto(customer: ApiCustomer): Customer { return { id: String(customer.id), name: customer.name, owner: customer.owner_staff_id == null ? '未分配' : String(customer.owner_staff_id), stageId: customer.stage_id }; }
 const requiredContextNumber = (value: unknown, field: string): number => { const number = Number(value); if (!Number.isSafeInteger(number) || number < 1) throw new Error(`客户安全上下文缺少有效 ${field}`); return number; };

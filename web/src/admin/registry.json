@@ -3,6 +3,7 @@
     "automation",
     "cycles",
     "groupops",
+    "campaigns",
     "channels",
     "ai",
     "customers",
@@ -192,6 +193,15 @@
       "label": "群运营计划",
       "level": "一级",
       "nav": "groupops",
+      "isNav": true
+    },
+    {
+      "key": "campaigns",
+      "num": 36,
+      "title": "Campaign 审核（一级）",
+      "label": "Campaign 审核",
+      "level": "一级",
+      "nav": "campaigns",
       "isNav": true
     },
     {

@@ -485,6 +485,7 @@ console.log('admin/audienceEdit.html?id=1（真实配置与发送人 DTO）');
   click(dom, nav3);
   await sleep(30);
   ok('发送人使用 sender_userid 明文 DTO', !!d.querySelector('#aeSenders') && d.body.textContent.includes('最多 5 位'));
+  ok('模板目录缺契约明确标为 backend_blocked', d.querySelector('[data-template-contract="backend_blocked"]')?.textContent.includes('不会把 SegmentDefinition 伪装成可选模板'));
   d.querySelector('#aeSenders').value = 'a\nb\nc\nd\ne\nf';
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '保存发送人白名单'));
   await sleep(30);

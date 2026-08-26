@@ -1,4 +1,4 @@
-import { appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, executeOwnerReassignmentPreviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
+import { appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, executeOwnerReassignmentPreviewDto, getCampaignTouchPlanRecipientDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
@@ -15,6 +15,7 @@ import { getArchiveLegacyHXCSendConfigUrl, getGetLegacyHXCSendConfigUrl, getReor
 import { getGetLegacyAppSettingsResourceUrl, getSaveLegacyAppSettingsResourceUrl } from './generated/health';
 import { getGetAdminOpsPushCapabilitiesUrl, getListAdminOpsReleasesUrl } from './generated/health';
 import { getGetCustomerContextUrl, getListCustomerSurveyAnswersUrl, getListStagesUrl } from './generated/health';
+import { getDeleteCloudCampaignUrl, getGetCloudCampaignTouchPlanRecipientUrl, getGetCloudCampaignTouchPlanReviewUrl, getListCloudCampaignTouchPlanRecipientsUrl, getListCloudCampaignsUrl, getMutateCloudCampaignTouchPlanReviewUrl } from './generated/health';
 
 function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
 const response = (data: unknown, status = 200) => ({ status, data, headers: new Headers() });
@@ -118,6 +119,46 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(getGetAIAudienceConfigurationVersionUrl(6).endsWith('/6/configuration') && getPutAIAudienceConfigurationVersionUrl(6).endsWith('/6/configuration'), 'audience configuration URLs');
   assert(getPreviewAIAudienceConfigurationUrl(6, { configuration_version: 2 }).endsWith('/6/configuration-preview?configuration_version=2') && getMaterializeAIAudienceConfigurationUrl(6).endsWith('/6/configuration-materialize'), 'audience preview/materialize URLs');
   assert(getListAIAudiencePackageMembersUrl(6, { limit: 200, offset: 0 }).endsWith('/6/members?limit=200&offset=0'), 'audience members URL');
+  const campaignCode = 'spring-campaign';
+  const touchPlanID = 'ctp_' + 'a'.repeat(64);
+  assert(getListCloudCampaignsUrl({ approval_status: 'draft', runtime_status: 'idle' }).includes('approval_status=draft') && getDeleteCloudCampaignUrl(campaignCode).endsWith('/campaigns/spring-campaign'), 'Campaign list/delete URLs');
+  assert(getGetCloudCampaignTouchPlanReviewUrl(campaignCode, touchPlanID).endsWith(`/touch-plans/${touchPlanID}/review`) && getMutateCloudCampaignTouchPlanReviewUrl(campaignCode, touchPlanID, 'approve').endsWith('/review/approve'), 'Campaign touch-plan review URLs');
+  assert(getListCloudCampaignTouchPlanRecipientsUrl(campaignCode, touchPlanID, { limit: 50, cursor: 'opaque-cursor' }).endsWith('/recipients?limit=50&cursor=opaque-cursor') && getGetCloudCampaignTouchPlanRecipientUrl(campaignCode, touchPlanID, 7).endsWith('/recipients/7'), 'Campaign recipient URLs');
+  const campaignCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const campaignResponse = { campaign_code: campaignCode, name: '春季激活', approval_status: 'draft', runtime_status: 'idle', version: 3, created_by: 1, updated_by: 1, created_at: '2026-08-27T00:00:00Z', updated_at: '2026-08-27T00:00:00Z' };
+  const localCampaign = { local_projection: true, real_external_call_executed: false, real_send: false, runtime_executed: false };
+  const localTouchPlan = { local_only: true, provider_execution_eligible: false, real_external_call_executed: false, delivery_proven: false };
+  const savedCampaignFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    campaignCalls.push({ input: url, init });
+    if (url.includes('/review')) return new Response(JSON.stringify({ review: { status: init?.method === 'POST' ? 'approved' : 'pending_review', version: init?.method === 'POST' ? 3 : 2 }, ...localTouchPlan }), { status: 200 });
+    if (url.includes('/recipients/7')) return new Response(JSON.stringify({ canonical_customer_id: 7, ...localTouchPlan }), { status: 200 });
+    if (url.endsWith('/recipients?limit=50')) return new Response(JSON.stringify({ items: [{ canonical_customer_id: 7 }], next_cursor: 'opaque-next', ...localTouchPlan }), { status: 200 });
+    if (init?.method === 'DELETE') return new Response(JSON.stringify({ campaign_code: campaignCode, deleted: true, ...localCampaign }), { status: 200 });
+    if (url.endsWith('/campaigns/spring-campaign')) return new Response(JSON.stringify({ campaign: campaignResponse, steps: [], ...localCampaign }), { status: 200 });
+    return new Response(JSON.stringify({ items: [campaignResponse], ...localCampaign }), { status: 200 });
+  };
+  try {
+    const campaigns = await listCampaignsDto({ approvalStatus: 'draft', runtimeStatus: 'idle' });
+    assert(campaigns[0].code === campaignCode && campaignCalls[0].init?.method === 'GET', 'Campaign adapter reads generated list without Seed fallback');
+    await deleteCampaignDto(campaignCode);
+    assert(campaignCalls.some((call) => call.init?.method === 'DELETE' && JSON.parse(String(call.init.body)).expected_version === 3), 'Campaign delete reads current version before CAS delete');
+    const decision = await decideCampaignTouchPlanReviewDto(campaignCode, touchPlanID, 'approve');
+    const decisionCall = campaignCalls.find((call) => call.input.endsWith('/review/approve'));
+    assert(decision.status === 'approved' && decisionCall?.init?.method === 'POST' && JSON.parse(String(decisionCall.init.body)).confirmation === `APPROVE ${touchPlanID}` && Boolean(new Headers(decisionCall.init.headers).get('Idempotency-Key')), 'Campaign approval is local-review CAS with explicit confirmation and idempotency');
+    const recipients = await listCampaignTouchPlanRecipientsDto(campaignCode, touchPlanID);
+    const recipient = await getCampaignTouchPlanRecipientDto(campaignCode, touchPlanID, 7);
+    assert(recipients.items.length === 1 && recipients.nextCursor === 'opaque-next' && recipient.customerID === 7, 'Campaign recipient reads remain touch-plan scoped and preserve opaque pagination');
+  } finally { globalThis.fetch = savedCampaignFetch; }
+  globalThis.fetch = async () => new Response(JSON.stringify({ items: [campaignResponse], local_projection: true, real_external_call_executed: true, real_send: false, runtime_executed: false }), { status: 200 });
+  try { await listCampaignsDto(); assert(false, 'Campaign response with an external effect must fail closed'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'Campaign external-effect response fails closed'); }
+  finally { globalThis.fetch = savedCampaignFetch; }
+  globalThis.fetch = async () => new Response(JSON.stringify({ items: [], local_only: true, provider_execution_eligible: false, runtime_executed: true, real_external_call_executed: false, delivery_proven: false }), { status: 200 });
+  try { await listCampaignTouchPlanRecipientsDto(campaignCode, touchPlanID); assert(false, 'Executed touch plan response must fail closed'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'Campaign executed touch plan response fails closed'); }
+  finally { globalThis.fetch = savedCampaignFetch; }
   assert(getListGroupOpsPlansUrl({ limit: 100, offset: 0 }).endsWith('/group-ops/plans?limit=100&offset=0') && getCreateGroupOpsPlanUrl().endsWith('/group-ops/plans'), 'group ops list/create URLs');
   assert(getGetGroupOpsPlanUrl('9').endsWith('/plans/9') && getUpdateGroupOpsPlanUrl('9').endsWith('/plans/9') && getDeleteGroupOpsPlanUrl('9').endsWith('/plans/9'), 'group ops detail CRUD URLs');
   assert(getAddGroupOpsPlanMemberUrl('9').endsWith('/plans/9/members') && getAddGroupOpsPlanGroupAssetUrl('9').endsWith('/plans/9/group-assets') && getAddGroupOpsPlanNodeUrl('9').endsWith('/plans/9/nodes'), 'group ops member/asset/node URLs');

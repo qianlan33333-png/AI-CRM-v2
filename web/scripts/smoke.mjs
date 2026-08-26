@@ -111,7 +111,7 @@ async function checkPage(name, html, vals) {
 }
 
 /* ---- 后台全屏（富交互页 radar/ai/funnel 由 sections/* 渲染，不走模板，跳过） ---- */
-const RICH = new Set(['radar', 'radarDetail', 'radarForm', 'ai', 'aiDetail', 'funnel', 'spProductData']);
+const RICH = new Set(['radar', 'radarDetail', 'radarForm', 'ai', 'aiDetail', 'funnel', 'spProductData', 'campaigns']);
 const adminRegistry = JSON.parse(fs.readFileSync(path.join(SRC, 'admin/registry.json'), 'utf8'));
 for (const s of adminRegistry.screens) {
   if (RICH.has(s.key)) {
