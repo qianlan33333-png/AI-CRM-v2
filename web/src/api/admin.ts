@@ -1,6 +1,6 @@
 /** Current Go OpenAPI -> Kimi Admin DTO boundary. No page imports generated data. */
 import {
-  addCustomerTag, getCustomer, getCustomerContext, listStages, removeCustomerTag, setCustomerStage, updateCustomer,
+  addCustomerTag, getCustomer, getCustomerContext, listCustomerSurveyAnswers, listStages, removeCustomerTag, setCustomerStage, updateCustomer,
   getLegacyAttachment, getLegacyChannel, getLegacyCoupon, getLegacyCouponShare, getLegacyImage, getLegacyImageFacets,
   getLegacyMiniProgram, getLegacyOrder, getLegacyOrderItems, getLegacyQuestionnaire, getLegacyQuestionnaireResults,
   getAdminOpsCategory, getContactOwnerReassignmentPreview, getLegacyWecomTag, getLegacyWecomTagExecutionGate, getLegacyWecomTagGroup, getProduct,
@@ -22,7 +22,7 @@ import { createLegacyChannel, updateLegacyChannel, type LegacyChannelWriteReques
 import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, updateAIAudiencePackage, type AIAudiencePackageSender, type SegmentDefinition } from './generated/health';
 import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
-import type { AdminDb, AttachItem, Channel, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360TimelineEntry, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
+import type { AdminDb, AttachItem, Channel, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
 import { ApiError, apiRequestOptions, request, unwrapGenerated } from './transport';
 
 type Obj = Record<string, unknown>;
@@ -32,7 +32,7 @@ const list = (value: unknown, ...keys: string[]): unknown[] => { const source = 
 const toneFor = (status: unknown): Tone => { const value = text(status, '').toLowerCase(); if (/active|enabled|paid|success|completed|published/.test(value)) return 'ok'; if (/pending|draft|processing/.test(value)) return 'warn'; if (/disabled|archived|failed|cancel|closed/.test(value)) return 'gray'; return 'blue'; };
 const call = async <T>(request: Promise<T>): Promise<unknown> => unwrapGenerated(await request as { status: number; data: unknown }) as unknown;
 
-export function customerPageDto(customer: ApiCustomer): Customer { return { id: String(customer.id), name: customer.name, owner: customer.owner_staff_id == null ? '未分配' : String(customer.owner_staff_id), mobile: '—', stageId: customer.stage_id }; }
+export function customerPageDto(customer: ApiCustomer): Customer { return { id: String(customer.id), name: customer.name, owner: customer.owner_staff_id == null ? '未分配' : String(customer.owner_staff_id), stageId: customer.stage_id }; }
 const requiredContextNumber = (value: unknown, field: string): number => { const number = Number(value); if (!Number.isSafeInteger(number) || number < 1) throw new Error(`客户安全上下文缺少有效 ${field}`); return number; };
 const requiredContextText = (value: unknown, field: string): string => { if (typeof value !== 'string' || !value.trim()) throw new Error(`客户安全上下文缺少 ${field}`); return value; };
 const optionalContextNumber = (value: unknown): number | null => { if (value == null) return null; const number = Number(value); return Number.isSafeInteger(number) && number >= 1 ? number : null; };
@@ -72,6 +72,28 @@ export function customerContextPageDto(value: unknown): Customer360Context {
     nonAtomicSnapshot: source.non_atomic_snapshot === true,
     realExternalCallExecuted: source.real_external_call_executed === true,
   };
+}
+export function customerSurveyPageDto(value: unknown, expectedCustomerId: number): Customer360SurveyProjection {
+  const source = obj(value);
+  if (requiredContextNumber(source.customer_id, '问卷 OneID') !== expectedCustomerId) throw new Error('客户安全问卷投影 OneID 不匹配');
+  if (source.identity_values_included !== false || source.free_text_included !== false || source.real_external_call_executed !== false) throw new Error('客户安全问卷投影违反禁止字段或外部调用约束');
+  if (source.non_atomic_snapshot !== true || typeof source.scan_truncated !== 'boolean' || typeof source.result_truncated !== 'boolean') throw new Error('客户安全问卷投影缺少完整性边界');
+  const items = list(source, 'items').map((item) => {
+    const submission = obj(item);
+    const score = Number(submission.score);
+    if (!Number.isFinite(score)) throw new Error('客户安全问卷投影缺少有效分数');
+    const choices = list(submission, 'choice_answers').map((choice) => {
+      const answer = obj(choice);
+      const questionType: 'single_choice' | 'multi_choice' | null = answer.question_type === 'single_choice' || answer.question_type === 'multi_choice' ? answer.question_type : null;
+      if (!questionType) throw new Error('客户安全问卷投影包含未知题型');
+      const optionIds = list(answer, 'option_ids').map((id) => requiredContextNumber(id, '选项 ID'));
+      const sortOrder = Number(answer.sort_order);
+      if (!Number.isSafeInteger(sortOrder) || sortOrder < 0) throw new Error('客户安全问卷投影缺少有效题目顺序');
+      return { questionId: requiredContextNumber(answer.question_id, '题目 ID'), questionType, sortOrder, optionIds };
+    });
+    return { submissionId: requiredContextNumber(submission.submission_id, '提交 ID'), questionnaireId: requiredContextNumber(submission.questionnaire_id, '问卷 ID'), submittedAt: requiredContextText(submission.submitted_at, '提交时间'), score, choices };
+  });
+  return { items, scanTruncated: source.scan_truncated === true, resultTruncated: source.result_truncated === true, nonAtomicSnapshot: source.non_atomic_snapshot === true };
 }
 export function questionnairePageDto(questionnaire: LegacyQuestionnaire): Questionnaire { return { resourceId: questionnaire.id, publicPath: questionnaire.public_path, name: questionnaire.title, assess: questionnaire.assessment_enabled, off: questionnaire.is_disabled, action: questionnaire.status, created: questionnaire.created_at, count: String(questionnaire.submission_count), internalName: questionnaire.name, title: questionnaire.title, description: questionnaire.description, answerDisplayMode: questionnaire.answer_display_mode, assessmentEnabled: questionnaire.assessment_enabled, assessmentConfig: questionnaire.assessment_config, slug: questionnaire.slug, questions: questionnaire.questions, scoreRules: questionnaire.score_rules, version: questionnaire.version }; }
 export function channelPageDto(channel: LegacyChannelListItem | LegacyChannel): Channel { const x = obj(channel); return { resourceId: Number(x.id), name: text(x.channel_name), code: text(x.channel_code), type: text(x.channel_type, 'qrcode'), status: text(x.status), tone: toneFor(x.status), mat: list(x, 'welcome_image_library_ids', 'welcome_attachment_library_ids').join('、') || '—', tag: text(x.entry_tag_name, '—'), tagTone: 'gray', users: text(x.channel_contact_count, '0'), qr: text(x.qr_download_url, '后端未返回二维码地址'), channelType: x.channel_type === 'wecom_customer_acquisition' ? 'wecom_customer_acquisition' : 'qrcode', carrierType: x.carrier_type === 'link' ? 'link' : 'qrcode', sceneValue: text(x.scene_value, ''), qrUrl: text(x.qr_url, ''), ownerStaffId: text(x.owner_staff_id, ''), customerChannel: text(x.customer_channel, ''), linkUrl: text(x.link_url, ''), finalUrl: text(x.final_url, ''), welcomeMessage: text(x.welcome_message, ''), welcomeImageLibraryIds: list(x, 'welcome_image_library_ids').map(Number), welcomeMiniprogramLibraryIds: list(x, 'welcome_miniprogram_library_ids').map(Number), welcomeAttachmentLibraryIds: list(x, 'welcome_attachment_library_ids').map(Number), welcomeGroupInviteLibraryIds: list(x, 'welcome_group_invite_library_ids').map(Number), autoAcceptFriend: x.auto_accept_friend === true, entryTagId: text(x.entry_tag_id, ''), entryTagName: text(x.entry_tag_name, ''), entryTagGroupName: text(x.entry_tag_group_name, ''), assignmentMode: x.assignment_mode === 'multi_staff' ? 'multi_staff' : 'single_owner', assignmentStrategy: x.assignment_strategy === 'cap_switch' ? 'cap_switch' : 'ratio', overflowPolicy: text(x.overflow_policy, ''), assignmentConfig: obj(x.assignment_config_json) }; }
@@ -327,7 +349,7 @@ export async function saveTagDto(input: { id?: number; groupId: number; name: st
 export async function archiveTagDto(tagId: number): Promise<void> { await call(archiveLegacyWecomTag(tagId, writeMeta(), apiRequestOptions())); }
 export async function queueTagSyncDto(): Promise<unknown> { return call(queueLegacyWecomTagSync(writeMeta(), apiRequestOptions())); }
 
-export function emptyAdminDb(): AdminDb { return { radarLinks: [], radarEvents: [], aiPlans: [], aiRcs: {}, funnelRows: [], funnelViews: [], audienceGroups: [], audiencePackages: [], audienceMembers: {}, audienceSenders: {}, audienceRecords: {}, groupOpsPlans: [], groupOpsDetail: null, cycleTasks: [], cycleRuns: {}, qOps: {}, tagGroups: [], wecomTags: [], couponClaims: {}, configCategories: [], staff: [], groupChats: [], customerList: { total: 0, totalIsEstimate: false, nextCursor: null }, customerDetail: { status: 'not_found', context: null, error: '' }, rows: { customers: [], tags: [], qa: [], msgs: [], qStats: [], questionnaires: [], qSubs: [], qApply: [], edTools: [], edQs: [], edAssignees: [], chStats: [], channels: [], orders: [], orderKv: [], orderEvents: [], spProducts: [], products: [], coupons: [], images: [], mpItems: [], attachItems: [], agents: [], agentSlots: [], agentDeps: [] } }; }
+export function emptyAdminDb(): AdminDb { return { radarLinks: [], radarEvents: [], aiPlans: [], aiRcs: {}, funnelRows: [], funnelViews: [], audienceGroups: [], audiencePackages: [], audienceMembers: {}, audienceSenders: {}, audienceRecords: {}, groupOpsPlans: [], groupOpsDetail: null, cycleTasks: [], cycleRuns: {}, qOps: {}, tagGroups: [], wecomTags: [], couponClaims: {}, configCategories: [], staff: [], groupChats: [], customerList: { total: 0, totalIsEstimate: false, nextCursor: null }, customerDetail: { status: 'not_found', context: null, survey: null, error: '' }, rows: { customers: [], tags: [], qa: [], msgs: [], qStats: [], questionnaires: [], qSubs: [], qApply: [], edTools: [], edQs: [], edAssignees: [], chStats: [], channels: [], orders: [], orderKv: [], orderEvents: [], spProducts: [], products: [], coupons: [], images: [], mpItems: [], attachItems: [], agents: [], agentSlots: [], agentDeps: [] } }; }
 export interface CustomerListQuery {
   cursor?: string;
   keyword?: string;
@@ -382,19 +404,19 @@ export async function readAdminPage(context: AdminReadContext = {}): Promise<Adm
   const db = await readAdminRows(context.page, context.customerList); const id = context.id || ''; const opt = apiRequestOptions(); const numeric = Number(id);
   if (context.page === 'customerDetail') {
     if (!id || !/^[1-9][0-9]*$/.test(id) || !Number.isSafeInteger(numeric)) {
-      db.customerDetail = { status: 'not_found', context: null, error: '客户档案不存在或 OneID 无效' };
+      db.customerDetail = { status: 'not_found', context: null, survey: null, error: '客户档案不存在或 OneID 无效' };
       return db;
     }
     try {
-      const [rawContext, stages] = await Promise.all([call(getCustomerContext(numeric, { limit: 20 }, opt)), call(listStages(opt))]);
+      const [rawContext, rawSurvey, stages] = await Promise.all([call(getCustomerContext(numeric, { limit: 20 }, opt)), call(listCustomerSurveyAnswers(numeric, { limit: 30 }, opt)), call(listStages(opt))]);
       const customerContext = customerContextPageDto(rawContext);
       if (customerContext.profile.id !== String(numeric)) throw new Error('客户安全上下文 OneID 不匹配');
-      db.customerDetail = { status: 'ready', context: customerContext, error: '' };
+      db.customerDetail = { status: 'ready', context: customerContext, survey: customerSurveyPageDto(rawSurvey, numeric), error: '' };
       db.rows.tags = customerContext.tags;
       db.rows.orderKv = list(stages, 'items').map((x) => ({ k: text(obj(x).name), v: text(obj(x).id), mono: false }));
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
-        db.customerDetail = { status: 'not_found', context: null, error: '客户档案不存在或当前账号不可见' };
+        db.customerDetail = { status: 'not_found', context: null, survey: null, error: '客户档案不存在或当前账号不可见' };
         return db;
       }
       throw error;

@@ -240,7 +240,7 @@ export class MockApi implements AdminApi {
     result.rows.qStats = [];
     result.rows.orderKv = [];
     if (!row) {
-      result.customerDetail = { status: 'not_found', context: null, error: '客户档案不存在或当前账号不可见' };
+      result.customerDetail = { status: 'not_found', context: null, survey: null, error: '客户档案不存在或当前账号不可见' };
       return result;
     }
     const context: Customer360Context = {
@@ -270,14 +270,19 @@ export class MockApi implements AdminApi {
       nonAtomicSnapshot: true,
       realExternalCallExecuted: false,
     };
-    result.customerDetail = { status: 'ready', context, error: '' };
+    result.customerDetail = { status: 'ready', context, survey: {
+      items: [{ submissionId: 7001, questionnaireId: 41, submittedAt: '2026-08-23T10:30:00Z', score: 86, choices: [{ questionId: 5, questionType: 'single_choice', sortOrder: 0, optionIds: [12] }] }],
+      scanTruncated: false,
+      resultTruncated: false,
+      nonAtomicSnapshot: true,
+    }, error: '' };
     return result;
   }
 
   loadDb(context?: AdminReadContext): Promise<AdminDb> {
     this.db = this.restore();
     if (!this.db.customerList) this.db.customerList = { total: this.db.rows.customers.length, totalIsEstimate: false, nextCursor: null };
-    if (!this.db.customerDetail) this.db.customerDetail = { status: 'not_found', context: null, error: '' };
+    if (!this.db.customerDetail) this.db.customerDetail = { status: 'not_found', context: null, survey: null, error: '' };
     if (context?.page === 'customers') return delay(this.readCustomerList(context.customerList), 120);
     if (context?.page === 'customerDetail') return delay(this.readCustomerDetail(context.id), 120);
     return delay(this.db, 120);

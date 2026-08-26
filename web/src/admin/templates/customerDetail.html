@@ -21,7 +21,7 @@
           <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
             <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;padding:16px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
               <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">姓名</div><div style="font-size:14px;font-weight:500">{{ customer.item.name }}</div></div>
-              <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">客户 ID</div><div style="font-size:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">{{ customer.item.id }}</div></div>
+              <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">客户 OneID</div><div style="font-size:14px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace">{{ customer.item.id }}</div></div>
               <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">负责人 ID</div><div style="font-size:14px">{{ customer.item.owner }}</div></div>
               <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">阶段 ID</div><div style="font-size:13px;color:#646A73">{{ customer.item.stageId }}</div></div>
               <div><div style="font-size:12px;color:#8F959E;margin-bottom:4px">渠道 ID</div><div style="font-size:13px;color:#646A73">{{ customerDetail.channelId }}</div></div>
@@ -58,7 +58,20 @@
                       <sc-if value="{{ customerDetail.timelineEmpty }}"><tr><td colspan="2" style="padding:24px;text-align:center;color:#8F959E;font-size:13px">暂无时间线事件</td></tr></sc-if>
                     </tbody>
                   </table>
-                  <div data-customer-answer-policy style="padding:10px 16px;color:#8F959E;font-size:12px;border-top:1px solid #EFF0F1">问卷自由文本答案与评测结果按安全策略不在 Customer360 展示。</div>
+                </div>
+                <div data-customer-survey style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden">
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #EFF0F1"><div><h2 style="margin:0;font-size:14px;font-weight:600">最近匹配的安全问卷提交</h2><p data-customer-answer-policy style="margin:2px 0 0;font-size:12px;color:#8F959E">仅展示提交、问卷、分数及选择题 ID；不展示自由文本、身份值或评测结果。</p></div><span style="font-size:12px;color:#8F959E">{{ customerDetail.surveyCompletenessLabel }}</span></div>
+                  <div style="padding:12px 16px;display:flex;flex-direction:column;gap:8px">
+                    <sc-for list="{{ customerDetail.surveyItems }}" as="s" hint-placeholder-count="3">
+                      <div style="padding:10px 12px;border:1px solid #EFF0F1;border-radius:8px;background:#FAFAFB">
+                        <div style="display:flex;justify-content:space-between;gap:12px;font-size:12px;color:#646A73"><span>提交 {{ s.submissionId }} · 问卷 {{ s.questionnaireId }} · 分数 {{ s.score }}</span><span>{{ s.submittedAt }}</span></div>
+                        <div style="margin-top:5px;font-size:12px;color:#8F959E">{{ s.choices }}</div>
+                      </div>
+                    </sc-for>
+                    <sc-if value="{{ customerDetail.surveyEmpty }}"><div style="padding:18px;text-align:center;color:#8F959E;font-size:13px">当前扫描范围内暂无匹配提交</div></sc-if>
+                    <sc-if value="{{ customerDetail.surveyTruncated }}"><div style="padding:8px 10px;border-radius:6px;background:#FFF7E6;color:#B26A00;font-size:12px">结果不完整：已达到扫描或返回上限。</div></sc-if>
+                    <div style="color:#8F959E;font-size:12px">评测结果：当前 V2 契约不可用。</div>
+                  </div>
                 </div>
               </div>
 

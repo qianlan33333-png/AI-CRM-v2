@@ -360,7 +360,8 @@ export interface Customer {
   name: string;
   id: string;
   owner: string;
-  mobile: string;
+  /** Only present in the explicit browser-test MockApi; the production list DTO does not disclose it. */
+  mobile?: string;
   stageId?: number | null;
 }
 
@@ -401,9 +402,33 @@ export interface Customer360Context {
   realExternalCallExecuted: boolean;
 }
 
+export interface Customer360SurveyChoice {
+  questionId: number;
+  questionType: 'single_choice' | 'multi_choice';
+  sortOrder: number;
+  optionIds: number[];
+}
+
+export interface Customer360SurveySubmission {
+  submissionId: number;
+  questionnaireId: number;
+  submittedAt: string;
+  score: number;
+  choices: Customer360SurveyChoice[];
+}
+
+/** Bounded V2 projection. It deliberately excludes free text, identities, and assessments. */
+export interface Customer360SurveyProjection {
+  items: Customer360SurveySubmission[];
+  scanTruncated: boolean;
+  resultTruncated: boolean;
+  nonAtomicSnapshot: boolean;
+}
+
 export interface CustomerDetailView {
   status: 'ready' | 'not_found';
   context: Customer360Context | null;
+  survey: Customer360SurveyProjection | null;
   error: string;
 }
 

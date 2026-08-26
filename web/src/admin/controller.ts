@@ -1031,6 +1031,7 @@ export class AdminController extends PageBase {
 
     const rows = this.db.rows;
     const customerContext = this.db.customerDetail.context;
+    const customerSurvey = this.db.customerDetail.survey;
     const customerItem = customerContext?.profile || rows.customers[0] || { name: '', id: '', owner: '', stageId: null };
     const customerId = Number(customerItem?.id || 0);
     const customerAction = async (action: () => Promise<unknown>, success: string): Promise<void> => {
@@ -1483,6 +1484,16 @@ export class AdminController extends PageBase {
         addedAt: customerContext?.profile.addedAt || '—',
         lastInteractAt: customerContext?.profile.lastInteractAt || '—',
         channelId: customerContext?.profile.channelId == null ? '—' : String(customerContext.profile.channelId),
+        surveyItems: (customerSurvey?.items || []).map((item) => ({
+          submissionId: String(item.submissionId),
+          questionnaireId: String(item.questionnaireId),
+          submittedAt: item.submittedAt,
+          score: String(item.score),
+          choices: item.choices.map((choice) => `题目 ${choice.questionId}（${choice.questionType}）→ 选项 ${choice.optionIds.join('、') || '无'}`).join('；') || '无选择题答案',
+        })),
+        surveyEmpty: (customerSurvey?.items.length || 0) === 0,
+        surveyTruncated: Boolean(customerSurvey?.scanTruncated || customerSurvey?.resultTruncated),
+        surveyCompletenessLabel: customerSurvey?.scanTruncated || customerSurvey?.resultTruncated ? '结果不完整' : '当前扫描范围内完整',
       },
       productFormPage: {
         title: productFormValue ? '编辑普通商品' : '创建普通商品',
