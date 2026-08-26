@@ -32,13 +32,27 @@ The response deliberately uses `submissions` and `submission_count`, with
 `assessment_status=v2_assessment_unavailable`. Current questionnaire
 definitions are mutable and cannot truthfully reconstruct historical
 question/option text, while V2 has no immutable assessment-result snapshot or
-assessment engine. Therefore this is a useful V2 backend capability but does
-not mark strict `LEGACY-S05-005` complete.
+assessment engine.
+
+On 2026-08-26 the repository owner selected the minimal W1 A path: accept the
+safe V2 customer read flow as the launch replacement, without adding sensitive
+identity fields, an assessment model, or a separate risk-control subsystem.
+Accordingly `LEGACY-S05-001/002/003/005/008/009` are closed as
+`safe_v2_customer_read_replacement`, not as strict legacy 1:1 parity.
+
+PR #544 connects the existing generated APIs to the Admin customer list and
+Customer360 views. The list uses keyword, mobile, owner, tag, and opaque cursor
+parameters; detail navigation uses numeric Customer OneID. The detail view
+renders the safe context and survey projection, has explicit empty/truncated/
+assessment-unavailable states, and maps a real 404 to a returnable missing
+state. Other read failures remain errors and never fall back to Seed/Mock.
 
 Focused and race tests cover identity mismatch, unsupported `user_id`, strict
 mobile normalization, bounded archive reads, PII-closed JSON, deterministic
 submission ordering, and unavailable dependencies. OpenAPI and Orval expose
 the exact V2 distinction for the later concentrated frontend integration.
 
-PR required CI, main merge, exact-main Nightly, deployment, and external
-effects remain separate states and are not claimed here.
+Local evidence for PR #544 is `npm run admin:adapter:contract`, `npm run
+typecheck`, `npm run build --silent`, and `node web/scripts/e2e.mjs` (83/83).
+PR CI, main merge, exact-main Nightly, deployment, and external effects remain
+separate states until their own receipts exist.

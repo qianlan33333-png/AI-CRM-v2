@@ -1,4 +1,4 @@
-import { appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerPageDto, executeOwnerReassignmentPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
+import { appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, executeOwnerReassignmentPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
@@ -14,6 +14,7 @@ import { getQueueSurveyExternalPushTestUrl, getSaveSurveyCompletionOperationsUrl
 import { getArchiveLegacyHXCSendConfigUrl, getGetLegacyHXCSendConfigUrl, getReorderLegacyHXCSendConfigsUrl, getUpsertLegacyHXCSendConfigUrl } from './generated/health';
 import { getGetLegacyAppSettingsResourceUrl, getSaveLegacyAppSettingsResourceUrl } from './generated/health';
 import { getGetAdminOpsPushCapabilitiesUrl, getListAdminOpsReleasesUrl } from './generated/health';
+import { getGetCustomerContextUrl, getListCustomerSurveyAnswersUrl, getListStagesUrl } from './generated/health';
 
 function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
 const response = (data: unknown, status = 200) => ({ status, data, headers: new Headers() });
@@ -21,6 +22,66 @@ const response = (data: unknown, status = 200) => ({ status, data, headers: new 
 export async function runAdminAdapterTests(): Promise<void> {
   // URL factories are generated from api/openapi.yaml; generated callers use GET for every read below.
   assert(getListCustomersUrl({ limit: 50 }) === '/api/v1/customers?limit=50', 'customer list URL/method');
+  const customerListCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const savedCustomerListFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    customerListCalls.push({ input: String(input), init });
+    return new Response(JSON.stringify({ items: [{ id: 7, name: '陈晨', owner_staff_id: 3, stage_id: null, is_deleted: false, extra: {}, created_at: '', updated_at: '' }], next_cursor: 'opaque-next-cursor', total: 51, total_is_estimate: true, watermark: 'wm-1' }), { status: 200 });
+  };
+  try {
+    const customerPage = await readAdminRows('customers', { cursor: 'opaque-cursor', keyword: '陈晨', mobile: '+8613800000000', ownerStaffId: 3, tagId: 9 });
+    const customerUrl = new URL('http://localhost' + customerListCalls[0].input);
+    assert(customerListCalls.length === 1 && customerListCalls[0].init?.method === 'GET', 'customer list adapter uses generated GET');
+    assert(customerUrl.pathname === '/api/v1/customers' && customerUrl.searchParams.get('cursor') === 'opaque-cursor' && !customerUrl.searchParams.has('offset'), 'customer list preserves opaque cursor without offset');
+    assert(customerUrl.searchParams.get('keyword') === '陈晨' && customerUrl.searchParams.get('mobile') === '+8613800000000' && customerUrl.searchParams.get('owner_staff_id') === '3' && customerUrl.searchParams.get('tag_id') === '9', 'customer list filter parameters');
+    assert(customerPage.customerList.total === 51 && customerPage.customerList.totalIsEstimate && customerPage.customerList.nextCursor === 'opaque-next-cursor', 'customer list metadata mapping');
+  } finally { globalThis.fetch = savedCustomerListFetch; }
+  assert(getGetCustomerContextUrl(7, { limit: 20 }) === '/api/v1/customers/7/context?limit=20' && getListCustomerSurveyAnswersUrl(7, { limit: 30 }) === '/api/v1/customers/7/survey-answers?limit=30' && getListStagesUrl() === '/api/v1/stages', 'safe Customer360 generated URLs');
+
+  const safeContext = {
+    customer: { id: 7, name: '陈晨', owner_staff_id: 3, stage_id: 2, channel_id: null, added_at: '2026-08-20T10:00:00Z', last_interact_at: '2026-08-25T09:30:00Z' },
+    tags: [{ id: 11, name: '高意向', group_sort_order: 1, sort_order: 1 }],
+    timeline: [{ id: 101, event_type: 'owner.assigned', occurred_at: '2026-08-21T08:00:00Z' }],
+    timeline_next_cursor: null,
+    chat: { local_archive_available: true, items: [{ chat_type: 'private', message_type: 'text', sent_at: '2026-08-25T09:30:00Z' }], total: 1 },
+    non_atomic_snapshot: true,
+    real_external_call_executed: false,
+  };
+  const safeContextMapped = customerContextPageDto(safeContext);
+  assert(safeContextMapped.profile.id === '7' && safeContextMapped.profile.owner === '3' && !('mobile' in safeContextMapped.profile), 'safe Customer360 profile excludes phone');
+  assert(safeContextMapped.timeline[0].eventType === 'owner.assigned' && safeContextMapped.chat.items[0].messageType === 'text', 'safe Customer360 maps timeline and zero-body chat summary');
+  const safeSurvey = { customer_id: 7, items: [{ submission_id: 81, questionnaire_id: 41, submitted_at: '2026-08-23T10:30:00Z', score: 86, choice_answers: [{ question_id: 5, question_type: 'single_choice', sort_order: 0, option_ids: [12] }] }], limit: 30, scan_limit: 500, scanned_count: 80, matched_count: 1, scan_truncated: false, result_truncated: false, non_atomic_snapshot: true, identity_values_included: false, free_text_included: false, real_external_call_executed: false };
+  const safeSurveyMapped = customerSurveyPageDto(safeSurvey, 7);
+  assert(safeSurveyMapped.items[0].choices[0].optionIds[0] === 12 && !('answer' in safeSurveyMapped.items[0].choices[0]), 'safe survey maps only choice identifiers');
+  try { customerSurveyPageDto({ ...safeSurvey, free_text_included: true }, 7); assert(false, 'unsafe survey projection must fail closed'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('禁止字段'), 'unsafe survey projection fails closed'); }
+
+  const safeContextCalls: string[] = [];
+  const savedSafeContextFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    safeContextCalls.push(String(input));
+    const url = String(input);
+    return new Response(JSON.stringify(url.includes('/context') ? safeContext : url.includes('/survey-answers') ? safeSurvey : { items: [{ id: 2, name: '阶段二', sort_order: 1, config: {} }] }), { status: 200 });
+  };
+  try {
+    const detailPage = await readAdminPage({ page: 'customerDetail', id: '7' });
+    assert(detailPage.customerDetail.status === 'ready' && detailPage.customerDetail.context?.timeline.length === 1 && detailPage.customerDetail.survey?.items.length === 1, 'Customer360 detail consumes safe context and survey projection');
+    assert(detailPage.rows.qa.length === 0 && detailPage.rows.msgs.length === 0, 'Customer360 detail does not expose answers or message bodies');
+    assert(safeContextCalls.length === 3 && safeContextCalls.some((url) => url.includes('/customers/7/context')) && safeContextCalls.some((url) => url.includes('/customers/7/survey-answers')) && safeContextCalls.some((url) => url === '/api/v1/stages'), 'Customer360 detail only calls approved safe read operations');
+  } finally { globalThis.fetch = savedSafeContextFetch; }
+
+  const savedMissingContextFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => new Response(JSON.stringify(String(input).includes('/context') ? { code: 'not_found' } : String(input).includes('/survey-answers') ? safeSurvey : { items: [] }), { status: String(input).includes('/context') ? 404 : 200 });
+  try {
+    const missingPage = await readAdminPage({ page: 'customerDetail', id: '999' });
+    assert(missingPage.customerDetail.status === 'not_found' && missingPage.customerDetail.error.includes('不存在'), 'Customer360 404 becomes explicit not-found state');
+  } finally { globalThis.fetch = savedMissingContextFetch; }
+
+  const savedFailedContextFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => new Response(JSON.stringify({ code: 'unavailable' }), { status: String(input).includes('/context') ? 503 : 200 });
+  try { await readAdminPage({ page: 'customerDetail', id: '7' }); assert(false, 'Customer360 non-404 failures must remain errors'); }
+  catch (error) { assert(error instanceof ApiError && error.status === 503, 'Customer360 non-404 failure remains structured error'); }
+  finally { globalThis.fetch = savedFailedContextFetch; }
   assert(getGetLegacyQuestionnaireUrl(4) === '/api/admin/questionnaires/4', 'questionnaire detail URL/method');
   assert(getCreateLegacyQuestionnaireUrl() === '/api/admin/questionnaires' && getUpdateLegacyQuestionnaireUrl(4) === '/api/admin/questionnaires/4', 'questionnaire create/update URLs');
   assert(getEnableLegacyQuestionnaireUrl(4).endsWith('/4/enable') && getDisableLegacyQuestionnaireUrl(4).endsWith('/4/disable'), 'questionnaire lifecycle URLs');
@@ -85,7 +146,7 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(getDownloadContactOwnerReassignmentResultsUrl('cor_0123456789012345678901').endsWith('/results.csv'), 'owner reassignment result URL');
 
   const customer = customerPageDto({ id: 7, name: '陈晨', is_deleted: false, extra: {}, created_at: '2026-08-25T00:00:00Z', updated_at: '2026-08-25T00:00:00Z', owner_staff_id: 3 });
-  assert(customer.id === '7' && customer.owner === '3' && customer.mobile === '—', 'customer response mapping');
+  assert(customer.id === '7' && customer.owner === '3' && !('mobile' in customer), 'customer response mapping excludes undisclosed phone');
   const questionnaire = questionnairePageDto({ id: 4, name: '诊断', title: '增长诊断', description: '', answer_display_mode: 'all_in_one', slug: 'growth', assessment_enabled: true, is_disabled: false, status: 'active', version: 2, question_count: 1, submission_count: 9, created_at: '2026-08-25T00:00:00Z', updated_at: '2026-08-25T00:00:00Z', public_path: '/q/growth', submitted_path: '/q/growth/submitted', questions: [] } as unknown as LegacyQuestionnaire);
   assert(questionnaire.name === '增长诊断' && questionnaire.count === '9', 'questionnaire response mapping');
   assert(channelPageDto({ id: 1, channel_name: '夏令营', channel_code: 'summer', status: 'active', assignee_count: 0, channel_contact_count: 0, created_at: '', updated_at: '' }).tone === 'ok', 'channel response mapping');

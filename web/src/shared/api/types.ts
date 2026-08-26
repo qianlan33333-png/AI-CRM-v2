@@ -360,8 +360,82 @@ export interface Customer {
   name: string;
   id: string;
   owner: string;
-  mobile: string;
+  /** Only present in the explicit browser-test MockApi; the production list DTO does not disclose it. */
+  mobile?: string;
   stageId?: number | null;
+}
+
+/** 安全 Customer360 档案；不携带手机号或任何外部身份标识。 */
+export interface Customer360Profile {
+  name: string;
+  id: string;
+  owner: string;
+  stageId: number | null;
+  channelId: number | null;
+  addedAt: string | null;
+  lastInteractAt: string | null;
+}
+
+export interface Customer360TimelineEntry {
+  id: number;
+  eventType: string;
+  occurredAt: string;
+}
+
+export interface Customer360ChatEntry {
+  chatType: 'private' | 'group';
+  messageType: string;
+  sentAt: string;
+}
+
+export interface Customer360Context {
+  profile: Customer360Profile;
+  tags: Tag[];
+  timeline: Customer360TimelineEntry[];
+  timelineNextCursor: string | null;
+  chat: {
+    localArchiveAvailable: boolean;
+    items: Customer360ChatEntry[];
+    total: number;
+  };
+  nonAtomicSnapshot: boolean;
+  realExternalCallExecuted: boolean;
+}
+
+export interface Customer360SurveyChoice {
+  questionId: number;
+  questionType: 'single_choice' | 'multi_choice';
+  sortOrder: number;
+  optionIds: number[];
+}
+
+export interface Customer360SurveySubmission {
+  submissionId: number;
+  questionnaireId: number;
+  submittedAt: string;
+  score: number;
+  choices: Customer360SurveyChoice[];
+}
+
+/** Bounded V2 projection. It deliberately excludes free text, identities, and assessments. */
+export interface Customer360SurveyProjection {
+  items: Customer360SurveySubmission[];
+  scanTruncated: boolean;
+  resultTruncated: boolean;
+  nonAtomicSnapshot: boolean;
+}
+
+export interface CustomerDetailView {
+  status: 'ready' | 'not_found';
+  context: Customer360Context | null;
+  survey: Customer360SurveyProjection | null;
+  error: string;
+}
+
+export interface CustomerListMeta {
+  total: number;
+  totalIsEstimate: boolean;
+  nextCursor: string | null;
 }
 
 export interface Tag {
@@ -754,6 +828,8 @@ export interface AdminDb {
   /* ---- 通用选择器数据源（企微员工目录 / 客户群） ---- */
   staff: StaffMember[];
   groupChats: GroupChat[];
+  customerList: CustomerListMeta;
+  customerDetail: CustomerDetailView;
   rows: RowsData;
 }
 

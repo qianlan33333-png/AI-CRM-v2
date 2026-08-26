@@ -501,6 +501,8 @@ export const SEED_DB: AdminDb = {
   configCategories: CONFIG_CATEGORIES,
   staff: STAFF_DIRECTORY,
   groupChats: GROUP_CHATS,
+  customerList: { total: 6, totalIsEstimate: false, nextCursor: null },
+  customerDetail: { status: 'not_found', context: null, survey: null, error: '' },
   rows: {
     customers: [
       { name: '李思远', id: 'wmA8c3DQAA_x91', owner: '张敏', mobile: '138****4021' },
