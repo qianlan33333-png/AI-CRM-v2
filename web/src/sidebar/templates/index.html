@@ -243,6 +243,64 @@
     color: var(--sidebar-muted);
     font-size: 11px;
   }
+  .loading {
+    padding: 18px 8px;
+    color: var(--sidebar-muted);
+    text-align: center;
+    font-size: 12px;
+  }
+  .list {
+    display: grid;
+    gap: 7px;
+  }
+  .list-item {
+    display: grid;
+    gap: 8px;
+    padding: 9px;
+    border: 1px solid var(--sidebar-line);
+    border-radius: 11px;
+    background: #fbfdff;
+  }
+  .item-main {
+    min-width: 0;
+  }
+  .item-title {
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .item-meta,
+  .answer-item {
+    color: var(--sidebar-muted);
+    font-size: 11px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+  .item-meta {
+    margin-top: 3px;
+  }
+  .questionnaire-answers {
+    border-top: 1px solid var(--sidebar-line);
+    padding-top: 7px;
+  }
+  .questionnaire-answers summary {
+    cursor: pointer;
+    list-style-position: inside;
+  }
+  .link-button {
+    color: var(--sidebar-blue);
+    font-size: 11px;
+    font-weight: 800;
+  }
+  .answer-list {
+    display: grid;
+    gap: 5px;
+    margin-top: 7px;
+  }
+  .answer-item {
+    padding: 6px 7px;
+    border-radius: 8px;
+    background: #fff;
+  }
   .summary-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

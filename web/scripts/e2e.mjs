@@ -40,6 +40,40 @@ async function loadPage(rel, { id, q } = {}) {
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
       window.__AICRM_TEST_MOCK__ = true;
+      if (rel !== 'sidebar/index.html') return;
+      const scenario = new URL(window.location.href).searchParams.get('sidebar_case') || 'success';
+      const safety = { local_only: true, provider_execution_eligible: false, real_external_call_executed: false };
+      const profile = {
+        customer_id: 7,
+        name: '侧边栏测试客户',
+        owner_staff_id: 9,
+        source: '企微',
+        industry: '教育',
+        description: '测试画像',
+        needs: '测试需求',
+        pain_points: '测试卡点',
+        updated_at: '2026-08-26T01:00:00Z',
+      };
+      const json = (data, status = 200) => ({ status, headers: new Headers(), text: async () => JSON.stringify(data) });
+      window.fetch = async (input) => {
+        const url = String(input);
+        if (url.includes('/context-token')) {
+          return json({ state: 'ready', context_token: 'sidebar-context-token-' + 'x'.repeat(52), customer_id: 7, owner_staff_id: 9, safety });
+        }
+        if (url.includes('/workbench')) {
+          return json({ profile, questionnaire_count: scenario === 'empty' ? 0 : 1, order_count: 0, periodic_order_count: 0, material_count: 0, safety });
+        }
+        if (url.includes('/questionnaires')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          return json({
+            items: scenario === 'empty' ? [] : [{ submission_id: 11, questionnaire_id: 3, submitted_at: '2026-08-26T01:00:00Z', score: 8.5, choice_answers: [{ question_id: 2, question_type: 'single_choice', sort_order: 0, option_ids: [9] }] }],
+            scan_truncated: false,
+            result_truncated: false,
+            safety,
+          });
+        }
+        return json({ code: 'unexpected_sidebar_request' }, 500);
+      };
     },
   });
   // 等 loadDb（120ms）+ 二级加载（200ms）+ 余量
@@ -462,6 +496,26 @@ console.log('sidebar/index.html');
   const dom = await loadPage('sidebar/index.html');
   const d = dom.window.document;
   ok('侧边栏渲染（含 WX 顶栏）', d.body.textContent.includes('WX'));
+  dom.window.close();
+}
+
+console.log('sidebar/index.html（问卷读取状态）');
+for (const scenario of ['success', 'empty', 'error']) {
+  const dom = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=' + scenario });
+  const d = dom.window.document;
+  const questionnaireTab = d.querySelector('[data-sidebar-tab="questionnaires"]');
+  ok('workbench ready 后问卷 tab 可用', questionnaireTab && !questionnaireTab.disabled);
+  ok('未接入订单与素材 tab 保持关闭', d.querySelector('[data-sidebar-tab="orders"]').disabled && d.querySelector('[data-sidebar-tab="materials"]').disabled);
+  click(dom, questionnaireTab);
+  ok('问卷切换先显示 loading', d.body.textContent.includes('正在读取问卷答案'));
+  await sleep(30);
+  if (scenario === 'success') {
+    ok('问卷真实读取并可展开答案', d.body.textContent.includes('展开答案（1）') && !!d.querySelector('.questionnaire-answers'));
+  } else if (scenario === 'empty') {
+    ok('问卷空结果显示 empty', d.body.textContent.includes('暂无问卷回答记录'));
+  } else {
+    ok('问卷失败显示 error 与重试', d.body.textContent.includes('问卷读取失败') && d.body.textContent.includes('重试读取问卷'));
+  }
   dom.window.close();
 }
 

@@ -9,6 +9,7 @@ import type {
   SidebarAgentConfigSignature,
   SidebarProfileUpdateResponse,
   SidebarProfileUpdateSafety,
+  SidebarQuestionnaireResponse,
   SidebarWorkbenchResponse,
   UpdateSidebarProfileBodyPatch,
 } from "../api/generated/health";
@@ -43,6 +44,7 @@ type BoundSidebarApi = Pick<
   | "oauthCallback"
   | "workbench"
   | "profile"
+  | "questionnaires"
 >;
 
 interface SidebarWx {
@@ -73,6 +75,12 @@ type ReceiptStep = {
   key: "accepted" | "queued" | "outcome_unknown";
   label: string;
 };
+
+type SidebarTab = "profile" | "questionnaires";
+
+function isSidebarTab(value: string | undefined): value is SidebarTab {
+  return value === "profile" || value === "questionnaires";
+}
 
 /**
  * Convert the profile write safety flags into a truthful local receipt sequence.
@@ -187,6 +195,9 @@ export class SidebarController {
   private externalUserId = "";
   private contextToken = "";
   private workbench: SidebarWorkbenchResponse | null = null;
+  private activeTab: SidebarTab = "profile";
+  private questionnaires: SidebarQuestionnaireResponse | null = null;
+  private questionnaireRequestVersion = 0;
 
   constructor(
     private readonly api: BoundSidebarApi = sidebarApi,
@@ -223,7 +234,10 @@ export class SidebarController {
         "[data-sidebar-tab]",
       );
       if (!button || button.disabled) return;
-      if (button.dataset.sidebarTab !== "profile") {
+      const tab = button.dataset.sidebarTab;
+      if (isSidebarTab(tab)) {
+        this.activateTab(tab);
+      } else {
         this.setContextStatus(
           "该板块尚未接入当前 OpenAPI，已安全关闭。",
           "warn",
@@ -251,6 +265,9 @@ export class SidebarController {
       } else if (action === "oauth") {
         button.disabled = true;
         void this.startOAuth(button);
+      } else if (action === "retry-questionnaires") {
+        button.disabled = true;
+        void this.loadQuestionnaires();
       }
     });
   }
@@ -602,12 +619,12 @@ export class SidebarController {
   private renderWorkbench(workbench: SidebarWorkbenchResponse): void {
     this.validateWorkbench(workbench);
     this.workbench = workbench;
+    this.activeTab = "profile";
+    this.questionnaires = null;
+    this.questionnaireRequestVersion += 1;
     this.renderTop();
     this.renderTabs(true);
-    this.content.replaceChildren(
-      this.renderOverview(workbench),
-      this.renderProfile(workbench),
-    );
+    this.renderActiveContent();
     this.setContextStatus(
       "客户范围工作台已就绪：当前数据来自本地 CRM；真实企微外部效果仍需单独回执。",
     );
@@ -676,13 +693,49 @@ export class SidebarController {
         const button = createElement(this.doc, "button", "tab", label);
         button.type = "button";
         button.dataset.sidebarTab = key;
-        button.disabled = !ready || key !== "profile";
-        if (key === "profile") {
+        const supported = key === "profile" || key === "questionnaires";
+        button.disabled = !ready || !supported;
+        if (key === this.activeTab) {
           button.classList.add("active");
+        }
+        if (supported && ready) {
           markBound(button);
         }
         return button;
       }),
+    );
+  }
+
+  private activateTab(tab: SidebarTab): void {
+    if (!this.workbench || !this.contextToken) return;
+    this.activeTab = tab;
+    this.renderTabs(true);
+    if (tab === "profile") {
+      this.renderActiveContent();
+      return;
+    }
+    if (this.questionnaires) {
+      this.renderActiveContent();
+      return;
+    }
+    this.renderQuestionnaireLoading();
+    void this.loadQuestionnaires();
+  }
+
+  private renderActiveContent(): void {
+    const workbench = this.workbench;
+    if (!workbench) return;
+    if (this.activeTab === "questionnaires") {
+      if (this.questionnaires) {
+        this.renderQuestionnaires(this.questionnaires);
+      } else {
+        this.renderQuestionnaireLoading();
+      }
+      return;
+    }
+    this.content.replaceChildren(
+      this.renderOverview(workbench),
+      this.renderProfile(workbench),
     );
   }
 
@@ -769,6 +822,226 @@ export class SidebarController {
     updated.id = "profile-updated-at";
     panel.append(updated);
     return panel;
+  }
+
+  private renderQuestionnaireLoading(): void {
+    const workbench = this.workbench;
+    if (!workbench || this.activeTab !== "questionnaires") return;
+    const panel = createElement(this.doc, "section", "sidebar-panel");
+    panel.dataset.sidebarSection = "questionnaires";
+    const head = createElement(this.doc, "div", "panel-head");
+    head.append(createElement(this.doc, "h2", undefined, "问卷"));
+    head.append(
+      createElement(this.doc, "span", "panel-meta", "本地安全答案投影"),
+    );
+    panel.append(head);
+    const status = createElement(
+      this.doc,
+      "div",
+      "loading",
+      "正在读取问卷答案…",
+    );
+    status.setAttribute("aria-busy", "true");
+    panel.append(status);
+    this.content.replaceChildren(this.renderOverview(workbench), panel);
+  }
+
+  private async loadQuestionnaires(): Promise<void> {
+    if (!this.contextToken || !this.workbench) return;
+    const requestVersion = ++this.questionnaireRequestVersion;
+    try {
+      const response = await this.api.questionnaires(this.contextToken, {
+        limit: 100,
+      });
+      if (requestVersion !== this.questionnaireRequestVersion) return;
+      this.validateQuestionnaires(response);
+      this.questionnaires = response;
+      if (this.activeTab === "questionnaires")
+        this.renderQuestionnaires(response);
+    } catch (error) {
+      if (
+        requestVersion !== this.questionnaireRequestVersion ||
+        this.activeTab !== "questionnaires"
+      )
+        return;
+      this.renderQuestionnaireError(error);
+    }
+  }
+
+  private validateQuestionnaires(response: SidebarQuestionnaireResponse): void {
+    if (
+      !response ||
+      !Array.isArray(response.items) ||
+      typeof response.scan_truncated !== "boolean" ||
+      typeof response.result_truncated !== "boolean" ||
+      !response.safety ||
+      typeof response.safety.local_only !== "boolean" ||
+      typeof response.safety.provider_execution_eligible !== "boolean" ||
+      typeof response.safety.real_external_call_executed !== "boolean"
+    ) {
+      throw new Error("问卷响应不完整，已停止渲染。");
+    }
+    for (const item of response.items) {
+      if (
+        !Number.isInteger(item.submission_id) ||
+        item.submission_id < 1 ||
+        !Number.isInteger(item.questionnaire_id) ||
+        item.questionnaire_id < 1 ||
+        typeof item.submitted_at !== "string" ||
+        !Number.isFinite(item.score) ||
+        !Array.isArray(item.choice_answers)
+      ) {
+        throw new Error("问卷答案响应不完整，已停止渲染。");
+      }
+      for (const answer of item.choice_answers) {
+        if (
+          !Number.isInteger(answer.question_id) ||
+          answer.question_id < 1 ||
+          (answer.question_type !== "single_choice" &&
+            answer.question_type !== "multi_choice") ||
+          !Number.isInteger(answer.sort_order) ||
+          answer.sort_order < 0 ||
+          !Array.isArray(answer.option_ids)
+        ) {
+          throw new Error("问卷选项答案响应不完整，已停止渲染。");
+        }
+      }
+    }
+  }
+
+  private renderQuestionnaires(response: SidebarQuestionnaireResponse): void {
+    const workbench = this.workbench;
+    if (!workbench || this.activeTab !== "questionnaires") return;
+    const panel = createElement(this.doc, "section", "sidebar-panel");
+    panel.dataset.sidebarSection = "questionnaires";
+    const head = createElement(this.doc, "div", "panel-head");
+    head.append(createElement(this.doc, "h2", undefined, "问卷"));
+    head.append(
+      createElement(
+        this.doc,
+        "span",
+        "panel-meta",
+        `${response.items.length} 条 · 本地安全答案投影`,
+      ),
+    );
+    panel.append(head);
+    if (response.scan_truncated || response.result_truncated) {
+      const warning = createElement(
+        this.doc,
+        "div",
+        "sidebar-status warn",
+        "问卷结果已按安全上限截断，页面仅展示当前返回的答案。",
+      );
+      warning.dataset.questionnaireTruncated = "true";
+      panel.append(warning);
+    }
+    if (!response.items.length) {
+      panel.append(createElement(this.doc, "div", "empty", "暂无问卷回答记录"));
+      this.content.replaceChildren(this.renderOverview(workbench), panel);
+      return;
+    }
+    const list = createElement(this.doc, "div", "list");
+    for (const item of response.items)
+      list.append(this.renderQuestionnaireItem(item));
+    panel.append(list);
+    const safety = createElement(
+      this.doc,
+      "div",
+      "panel-meta",
+      response.safety.local_only
+        ? "数据来源：本地 CRM · 未执行企微外部调用"
+        : "数据来源：受控本地投影 · 外部效果未验证",
+    );
+    safety.dataset.sidebarSafety = "local";
+    panel.append(safety);
+    this.content.replaceChildren(this.renderOverview(workbench), panel);
+  }
+
+  private renderQuestionnaireItem(
+    item: SidebarQuestionnaireResponse["items"][number],
+  ): HTMLElement {
+    const card = createElement(this.doc, "article", "list-item");
+    card.dataset.questionnaireSubmissionId = String(item.submission_id);
+    const main = createElement(this.doc, "div", "item-main");
+    main.append(
+      createElement(
+        this.doc,
+        "div",
+        "item-title",
+        `问卷 #${item.questionnaire_id}`,
+      ),
+      createElement(
+        this.doc,
+        "div",
+        "item-meta",
+        `提交时间 ${item.submitted_at} · 得分 ${item.score}`,
+      ),
+    );
+    card.append(main);
+    const details = createElement(this.doc, "details", "questionnaire-answers");
+    const summary = createElement(
+      this.doc,
+      "summary",
+      "link-button",
+      `展开答案（${item.choice_answers.length}）`,
+    );
+    details.append(summary);
+    if (!item.choice_answers.length) {
+      details.append(createElement(this.doc, "div", "empty", "暂无选择题答案"));
+    } else {
+      const answers = createElement(this.doc, "div", "answer-list");
+      for (const answer of item.choice_answers) {
+        const type = answer.question_type === "multi_choice" ? "多选" : "单选";
+        const optionIds = answer.option_ids.length
+          ? answer.option_ids.map((optionId) => `选项 #${optionId}`).join("、")
+          : "未选择选项";
+        answers.append(
+          createElement(
+            this.doc,
+            "div",
+            "answer-item",
+            `第 ${answer.sort_order + 1} 题 · 问题 #${answer.question_id} · ${type} · ${optionIds}`,
+          ),
+        );
+      }
+      details.append(answers);
+    }
+    card.append(details);
+    return card;
+  }
+
+  private renderQuestionnaireError(error: unknown): void {
+    const workbench = this.workbench;
+    if (!workbench || this.activeTab !== "questionnaires") return;
+    const panel = createElement(this.doc, "section", "sidebar-panel");
+    panel.dataset.sidebarSection = "questionnaires";
+    const head = createElement(this.doc, "div", "panel-head");
+    head.append(createElement(this.doc, "h2", undefined, "问卷"));
+    head.append(createElement(this.doc, "span", "panel-meta", "读取失败"));
+    panel.append(head);
+    const status = errorStatus(error);
+    const message =
+      status === 401
+        ? "登录状态已失效，请重新打开 Sidebar 后重试。"
+        : status === 403
+          ? "当前账号无权查看该客户，问卷读取已安全关闭。"
+          : `问卷读取失败：${errorMessage(error, "请稍后重试。")}`;
+    panel.append(
+      createElement(this.doc, "div", "sidebar-status error", message),
+    );
+    const controls = createElement(this.doc, "div", "context-actions");
+    const retry = createElement(
+      this.doc,
+      "button",
+      "btn primary",
+      "重试读取问卷",
+    );
+    retry.type = "button";
+    retry.dataset.sidebarAction = "retry-questionnaires";
+    markBound(retry);
+    controls.append(retry);
+    panel.append(controls);
+    this.content.replaceChildren(this.renderOverview(workbench), panel);
   }
 
   private scheduleProfileSave(): void {

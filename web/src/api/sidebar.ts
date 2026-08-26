@@ -17,6 +17,7 @@ import {
   type SidebarChatActivityResponse,
   type SidebarAgentConfigSignature,
   type SidebarContextResponse,
+  type SidebarQuestionnaireResponse,
   type SidebarProfileUpdateResponse,
   type SidebarTimelineResponse,
   type SidebarWorkbenchResponse,
@@ -114,7 +115,7 @@ export const sidebarApi = {
   ) =>
     unwrapGenerated(
       await listSidebarQuestionnaires(params, scopedOptions(contextToken)),
-    ),
+    ) as SidebarQuestionnaireResponse,
   orders: async (
     contextToken: string,
     params?: Parameters<typeof listSidebarOrders>[0],

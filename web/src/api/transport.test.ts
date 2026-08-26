@@ -52,36 +52,62 @@ export async function runTransportContractTests(): Promise<void> {
   const sidebarRequests: Array<{ input: string; init?: RequestInit }> = [];
   globalThis.fetch = async (input, init) => {
     sidebarRequests.push({ input: String(input), init });
-    const data = String(input).includes("chat-activity")
+    const data = String(input).includes("questionnaires")
       ? {
           items: [
             {
-              chat_type: "private",
-              message_type: "text",
-              sent_at: "2026-08-26T01:00:00Z",
+              submission_id: 11,
+              questionnaire_id: 3,
+              submitted_at: "2026-08-26T01:00:00Z",
+              score: 8.5,
+              choice_answers: [
+                {
+                  question_id: 2,
+                  question_type: "single_choice",
+                  sort_order: 0,
+                  option_ids: [9],
+                },
+              ],
             },
           ],
+          scan_truncated: false,
+          result_truncated: false,
           safety: {
             local_only: true,
             provider_execution_eligible: false,
             real_external_call_executed: false,
           },
         }
-      : {
-          items: [
-            {
-              id: 7,
-              event_type: "survey_submitted",
-              occurred_at: "2026-08-26T00:00:00Z",
+      : String(input).includes("chat-activity")
+        ? {
+            items: [
+              {
+                chat_type: "private",
+                message_type: "text",
+                sent_at: "2026-08-26T01:00:00Z",
+              },
+            ],
+            safety: {
+              local_only: true,
+              provider_execution_eligible: false,
+              real_external_call_executed: false,
             },
-          ],
-          next_cursor: "next-opaque",
-          safety: {
-            local_only: true,
-            provider_execution_eligible: false,
-            real_external_call_executed: false,
-          },
-        };
+          }
+        : {
+            items: [
+              {
+                id: 7,
+                event_type: "survey_submitted",
+                occurred_at: "2026-08-26T00:00:00Z",
+              },
+            ],
+            next_cursor: "next-opaque",
+            safety: {
+              local_only: true,
+              provider_execution_eligible: false,
+              real_external_call_executed: false,
+            },
+          };
     return new Response(JSON.stringify(data), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -95,6 +121,9 @@ export async function runTransportContractTests(): Promise<void> {
       chat_type: "private",
       limit: 10,
     });
+    const questionnaires = await sidebarApi.questionnaires("sidebar-context", {
+      limit: 100,
+    });
     assert(
       timeline.items[0]?.event_type === "survey_submitted" &&
         timeline.next_cursor === "next-opaque",
@@ -105,6 +134,11 @@ export async function runTransportContractTests(): Promise<void> {
       "Sidebar chat activity response must retain safe metadata DTO",
     );
     assert(
+      questionnaires.items[0]?.submission_id === 11 &&
+        questionnaires.items[0]?.choice_answers[0]?.option_ids[0] === 9,
+      "Sidebar questionnaire adapter must retain safe answer DTO",
+    );
+    assert(
       sidebarRequests[0]?.input === "/api/sidebar/v2/timeline?limit=20",
       "Sidebar timeline must use generated GET URL",
     );
@@ -112,6 +146,10 @@ export async function runTransportContractTests(): Promise<void> {
       sidebarRequests[1]?.input ===
         "/api/sidebar/v2/chat-activity?chat_type=private&limit=10",
       "Sidebar chat activity must use generated GET URL",
+    );
+    assert(
+      sidebarRequests[2]?.input === "/api/sidebar/v2/questionnaires?limit=100",
+      "Sidebar questionnaires must use generated GET URL",
     );
     for (const call of sidebarRequests) {
       assert(
