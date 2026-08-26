@@ -2,26 +2,21 @@ package client
 
 import (
 	"context"
-	"errors"
 	"strings"
+
+	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 )
 
-var ErrPrivateMessageTargetRejected = errors.New("WeCom private message target rejected")
+var ErrPrivateMessageTargetRejected = wecomport.ErrPrivateMessageTargetRejected
 
 // PrivateMessageTemplateRequest is the exact single-recipient subset of
 // WeCom's add_msg_template request used by one outbound task. It deliberately
 // excludes batches, media, and any local Customer identity.
-type PrivateMessageTemplateRequest struct {
-	Sender         string
-	ExternalUserID string
-	Text           string
-}
+type PrivateMessageTemplateRequest = wecomport.PrivateMessageTemplateRequest
 
 // PrivateMessageTemplate is the provider acknowledgement for a successfully
 // created message template. It is not delivery confirmation.
-type PrivateMessageTemplate struct {
-	MessageID string
-}
+type PrivateMessageTemplate = wecomport.PrivateMessageTemplate
 
 // CreatePrivateMessageTemplate creates a WeCom external-contact private
 // message template. As with the other CustomerAcquisitionClient writes, any

@@ -9,14 +9,10 @@ import (
 	"strings"
 
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
-	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
+	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 )
 
 var ErrInvalidWeComPrivateMessageProvider = errors.New("invalid WeCom private message provider")
-
-type privateMessageTemplateClient interface {
-	CreatePrivateMessageTemplate(context.Context, wecomclient.PrivateMessageTemplateRequest) (wecomclient.PrivateMessageTemplate, error)
-}
 
 // targetResolver returns the unique verified external WeCom identity and the
 // active owner staff WeCom user ID for one Customer. resolved=false is a
@@ -28,13 +24,13 @@ type targetResolver func(context.Context, int64) (sender, externalUserID string,
 // for one approved text.notice.v1 task. It only uses an explicit payload target
 // or an exact resolver; it never guesses from CustomerID.
 type WeComPrivateMessageProvider struct {
-	client  privateMessageTemplateClient
+	client  wecomport.PrivateMessageTemplateCreator
 	resolve targetResolver
 }
 
 var _ outboundapp.ProviderAdapter = (*WeComPrivateMessageProvider)(nil)
 
-func NewWeComPrivateMessageProvider(client privateMessageTemplateClient, resolve targetResolver) (*WeComPrivateMessageProvider, error) {
+func NewWeComPrivateMessageProvider(client wecomport.PrivateMessageTemplateCreator, resolve targetResolver) (*WeComPrivateMessageProvider, error) {
 	if client == nil {
 		return nil, ErrInvalidWeComPrivateMessageProvider
 	}
@@ -62,7 +58,7 @@ func (provider *WeComPrivateMessageProvider) Send(ctx context.Context, request o
 		}
 		payload.Sender, payload.ExternalUserID = sender, externalUserID
 	}
-	result, err := provider.client.CreatePrivateMessageTemplate(ctx, wecomclient.PrivateMessageTemplateRequest{
+	result, err := provider.client.CreatePrivateMessageTemplate(ctx, wecomport.PrivateMessageTemplateRequest{
 		Sender: payload.Sender, ExternalUserID: payload.ExternalUserID, Text: payload.Text,
 	})
 	if err != nil {
@@ -102,14 +98,14 @@ func validPrivateMessageText(value string, limit int) bool {
 
 func classifyWeComPrivateMessageError(err error) outboundapp.ProviderResult {
 	switch {
-	case errors.Is(err, wecomclient.ErrWriteOutcomeUnknown):
+	case errors.Is(err, wecomport.ErrWriteOutcomeUnknown):
 		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureConnection, Code: "wecom_write_outcome_unknown"}
-	case errors.Is(err, wecomclient.ErrPrivateMessageTargetRejected):
+	case errors.Is(err, wecomport.ErrPrivateMessageTargetRejected):
 		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureRecipientUnavailable, Code: "wecom_private_target_rejected"}
-	case errors.Is(err, wecomclient.ErrBusinessWriteNotDispatched), errors.Is(err, wecomclient.ErrRequestTimeout), errors.Is(err, wecomclient.ErrTransport):
+	case errors.Is(err, wecomport.ErrBusinessWriteNotDispatched), errors.Is(err, wecomport.ErrRequestTimeout), errors.Is(err, wecomport.ErrTransport):
 		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureTemporary, Code: "wecom_not_dispatched"}
-	case errors.Is(err, wecomclient.ErrUpstream):
-		var apiErr *wecomclient.APIError
+	case errors.Is(err, wecomport.ErrUpstream):
+		var apiErr *wecomport.APIError
 		if errors.As(err, &apiErr) {
 			code := fmt.Sprintf("wecom_errcode_%d", apiErr.Code)
 			switch apiErr.Code {
