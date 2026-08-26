@@ -652,6 +652,67 @@ RETURNING package_id, version, schema_version, package_version, definition, enco
 	return stored, nil
 }
 
+func (repository *SQLRepository) ListOperationMembers(ctx context.Context) ([]OperationMember, error) {
+	database, err := repository.reader(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return listOperationMembers(ctx, database)
+}
+
+func (repository *SQLRepository) ReplaceOperationMembers(ctx context.Context, wanted []OperationMember, now time.Time) ([]OperationMember, error) {
+	if err := validateOperationMembers(wanted); err != nil {
+		return nil, err
+	}
+	database, err := repository.transaction(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// A table delete locks no rows for an empty snapshot. This transaction lock
+	// keeps concurrent full replacements serial even in that case.
+	if _, err = database.Exec(ctx, `
+SELECT pg_advisory_xact_lock(hashtextextended('ai_audience.operation_members.v1', 0))`); err != nil {
+		return nil, classifySQLError(err)
+	}
+	if _, err = database.Exec(ctx, `DELETE FROM public.ai_audience_operation_member_projection`); err != nil {
+		return nil, classifySQLError(err)
+	}
+	for _, item := range wanted {
+		if _, err = database.Exec(ctx, `
+INSERT INTO public.ai_audience_operation_member_projection (sender_userid, display_name, synced_at)
+VALUES ($1, $2, $3)`, item.SenderUserID, item.DisplayName, now); err != nil {
+			return nil, classifySQLError(err)
+		}
+	}
+	return listOperationMembers(ctx, database)
+}
+
+func listOperationMembers(ctx context.Context, database SQLExecutor) ([]OperationMember, error) {
+	rows, err := database.Query(ctx, `
+SELECT sender_userid, display_name
+FROM public.ai_audience_operation_member_projection
+ORDER BY sender_userid ASC`)
+	if err != nil {
+		return nil, classifySQLError(err)
+	}
+	defer rows.Close()
+	items := make([]OperationMember, 0, MaximumOperationMemberPageSize)
+	for rows.Next() {
+		var item OperationMember
+		if err = rows.Scan(&item.SenderUserID, &item.DisplayName); err != nil {
+			return nil, classifySQLError(err)
+		}
+		items = append(items, item)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, classifySQLError(err)
+	}
+	if err = validateOperationMembers(items); err != nil {
+		return nil, ErrUnavailable
+	}
+	return items, nil
+}
+
 func listPackageSenders(ctx context.Context, database SQLExecutor, packageID int64, lock bool) ([]PackageSender, error) {
 	query := `
 SELECT sender_userid, sort_order, is_enabled

@@ -12,6 +12,7 @@ import (
 
 type localConfigurationHTTPApplication struct {
 	membersPageSize    int
+	syncInput          OperationMemberSyncInput
 	bindingInput       PutAutomationBindingInput
 	sendersInput       ReplaceSendersInput
 	deleteInput        DeleteAutomationBindingInput
@@ -56,6 +57,10 @@ func (application *groupOpsOperationMemberHTTPApplication) RefreshGroupOpsOperat
 func (application *localConfigurationHTTPApplication) ListOperationMembers(_ context.Context, pageSize int) (OperationMemberListResponse, error) {
 	application.membersPageSize = pageSize
 	return OperationMemberListResponse{Scope: OperationMemberScope, Items: []OperationMember{}, PageSize: pageSize, Projection: localProjection()}, nil
+}
+func (application *localConfigurationHTTPApplication) SyncOperationMembers(_ context.Context, input OperationMemberSyncInput) (OperationMemberListResponse, error) {
+	application.syncInput = input
+	return OperationMemberListResponse{Scope: OperationMemberScope, Items: []OperationMember{}, PageSize: input.PageSize, Projection: localProjection()}, nil
 }
 func (*localConfigurationHTTPApplication) GetAutomationBinding(context.Context, int64) (AutomationBindingResponse, error) {
 	return AutomationBindingResponse{Projection: localProjection()}, nil
@@ -138,6 +143,23 @@ func TestLocalConfigurationHTTPDelegatesGroupOpsOperationMemberReadAndExplicitSy
 	fragment.ServeHTTP(syncResponse, syncRequest)
 	if syncResponse.Code != http.StatusOK || application.refreshedPageSize != 25 || application.refreshActor != 7 || application.refreshKey != "group-ops-members-sync-01" {
 		t.Fatalf("sync status/page/actor/key=%d/%d/%d/%q body=%s", syncResponse.Code, application.refreshedPageSize, application.refreshActor, application.refreshKey, syncResponse.Body.String())
+	}
+	if requirement := security.requirements[len(security.requirements)-1]; requirement.Capability != CapabilityOperationsManage || !requirement.RequireCSRF {
+		t.Fatalf("sync security=%+v", requirement)
+	}
+}
+
+func TestLocalConfigurationHTTPSyncsAudienceOperationMembers(t *testing.T) {
+	application := &localConfigurationHTTPApplication{}
+	security := &localConfigurationHTTPSecurity{}
+	handler := newLocalConfigurationHTTPHandler(t, application, security)
+	response := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, OperationMembersSyncRoute, strings.NewReader(`{"scope":"ai_audience","page_size":25}`))
+	request.Header.Set("Content-Type", "application/json")
+	request.Header.Set("Idempotency-Key", "audience-members-sync-01")
+	handler.ServeHTTP(response, request)
+	if response.Code != http.StatusOK || application.syncInput.PageSize != 25 || application.syncInput.Actor.AdminUserID != 7 || application.syncInput.IdempotencyKey != "audience-members-sync-01" {
+		t.Fatalf("sync response=%d input=%+v body=%s", response.Code, application.syncInput, response.Body.String())
 	}
 	if requirement := security.requirements[len(security.requirements)-1]; requirement.Capability != CapabilityOperationsManage || !requirement.RequireCSRF {
 		t.Fatalf("sync security=%+v", requirement)

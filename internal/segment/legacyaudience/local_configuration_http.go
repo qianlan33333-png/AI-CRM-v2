@@ -131,7 +131,8 @@ func (handler *LocalConfigurationHandler) syncOperationMembers(writer http.Respo
 		writeProblem(writer, request, problem)
 		return
 	}
-	if raw, ok := fields["scope"]; !ok || json.Unmarshal(raw, &body.Scope) != nil || body.Scope != GroupOpsOperationMemberScope {
+	if raw, ok := fields["scope"]; !ok || json.Unmarshal(raw, &body.Scope) != nil ||
+		(body.Scope != OperationMemberScope && body.Scope != GroupOpsOperationMemberScope) {
 		writeProblem(writer, request, validation("scope", "unsupported"))
 		return
 	}
@@ -144,12 +145,19 @@ func (handler *LocalConfigurationHandler) syncOperationMembers(writer http.Respo
 		}
 		body.PageSize = int(value)
 	}
-	extension, ok := handler.application.(GroupOpsOperationMemberApplication)
-	if !ok {
-		writeFailure(writer, request, ErrUnavailable)
-		return
+	var response any
+	if body.Scope == OperationMemberScope {
+		response, err = handler.application.SyncOperationMembers(request.Context(), OperationMemberSyncInput{
+			Actor: actor, IdempotencyKey: key, PageSize: body.PageSize,
+		})
+	} else {
+		extension, ok := handler.application.(GroupOpsOperationMemberApplication)
+		if !ok {
+			writeFailure(writer, request, ErrUnavailable)
+			return
+		}
+		response, err = extension.RefreshGroupOpsOperationMembers(request.Context(), actor.AdminUserID, key, body.PageSize)
 	}
-	response, err := extension.RefreshGroupOpsOperationMembers(request.Context(), actor.AdminUserID, key, body.PageSize)
 	if err != nil {
 		writeFailure(writer, request, err)
 		return

@@ -15,14 +15,15 @@ import (
 )
 
 type localConfigurationWorld struct {
-	base     *memoryWorld
-	bindings map[int64]AutomationBinding
-	senders  map[int64][]PackageSender
-	configs  map[int64]ConfigurationVersion
-	receipts map[string]Receipt
-	entries  []contactport.StaffDirectoryEntry
-	agents   map[int64]AutomationAgent
-	nextID   int64
+	base             *memoryWorld
+	bindings         map[int64]AutomationBinding
+	senders          map[int64][]PackageSender
+	configs          map[int64]ConfigurationVersion
+	receipts         map[string]Receipt
+	entries          []contactport.StaffDirectoryEntry
+	operationMembers []OperationMember
+	agents           map[int64]AutomationAgent
+	nextID           int64
 }
 
 func newLocalConfigurationWorld() *localConfigurationWorld {
@@ -167,6 +168,16 @@ func (world *localConfigurationWorld) InsertConfigurationVersion(ctx context.Con
 	world.configs[value.PackageID] = *cloneConfigurationVersion(&value)
 	return *cloneConfigurationVersion(&value), nil
 }
+func (world *localConfigurationWorld) ListOperationMembers(context.Context) ([]OperationMember, error) {
+	return append([]OperationMember(nil), world.operationMembers...), nil
+}
+func (world *localConfigurationWorld) ReplaceOperationMembers(ctx context.Context, items []OperationMember, _ time.Time) ([]OperationMember, error) {
+	if err := requireTransaction(ctx); err != nil {
+		return nil, err
+	}
+	world.operationMembers = append([]OperationMember(nil), items...)
+	return append([]OperationMember(nil), world.operationMembers...), nil
+}
 func (world *localConfigurationWorld) GetAutomationAgent(ctx context.Context, id int64) (AutomationAgent, error) {
 	if err := requireTransaction(ctx); err != nil {
 		return AutomationAgent{}, err
@@ -287,6 +298,7 @@ func TestLocalConfigurationServiceReplacesOnlyEligibleOrderedSenders(t *testing.
 	if _, err = service.GetSenders(context.Background(), 101); !errors.Is(err, ErrConflict) {
 		t.Fatalf("inactive stored sender error=%v, want conflict", err)
 	}
+	world.operationMembers = []OperationMember{{SenderUserID: "alpha", DisplayName: "Alpha"}}
 	members, err := service.ListOperationMembers(context.Background(), 1)
 	if err != nil || !reflect.DeepEqual(members.Items, []OperationMember{{SenderUserID: "alpha", DisplayName: "Alpha"}}) || members.Scope != OperationMemberScope {
 		t.Fatalf("ListOperationMembers response=%+v err=%v", members, err)

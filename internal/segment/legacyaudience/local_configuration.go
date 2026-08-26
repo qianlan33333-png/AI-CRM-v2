@@ -57,6 +57,23 @@ type OperationMemberListResponse struct {
 	Projection
 }
 
+// OperationMemberSyncInput deliberately contains no provider payload. The
+// service fetches that payload through its narrow source, persists only its
+// normalized Audience projection, and emits a redacted event.
+type OperationMemberSyncInput struct {
+	Actor          Actor
+	IdempotencyKey string
+	PageSize       int
+}
+
+// OperationMemberSource is the only Provider read boundary used by AI
+// Audience operation-member synchronization. Implementations must return a
+// complete bounded snapshot or an error; a partial page is not deletion
+// authority for the local projection.
+type OperationMemberSource interface {
+	ReadOperationMembers(context.Context) ([]OperationMember, error)
+}
+
 type AutomationBindingResponse struct {
 	Binding *AutomationBinding `json:"binding"`
 	Projection
@@ -168,10 +185,13 @@ type LocalConfigurationRepository interface {
 	GetCurrentConfiguration(context.Context, int64) (*ConfigurationVersion, error)
 	GetConfigurationVersion(context.Context, int64, int64) (*ConfigurationVersion, error)
 	InsertConfigurationVersion(context.Context, ConfigurationVersion) (ConfigurationVersion, error)
+	ListOperationMembers(context.Context) ([]OperationMember, error)
+	ReplaceOperationMembers(context.Context, []OperationMember, time.Time) ([]OperationMember, error)
 }
 
 type LocalConfigurationApplication interface {
 	ListOperationMembers(context.Context, int) (OperationMemberListResponse, error)
+	SyncOperationMembers(context.Context, OperationMemberSyncInput) (OperationMemberListResponse, error)
 	GetAutomationBinding(context.Context, int64) (AutomationBindingResponse, error)
 	PutAutomationBinding(context.Context, PutAutomationBindingInput) (AutomationBindingResponse, error)
 	DeleteAutomationBinding(context.Context, DeleteAutomationBindingInput) (AutomationBindingDeleteResponse, error)
