@@ -1,9 +1,11 @@
 # Commerce Refund V2 local closure
 
 This package closes `LEGACY-S07-182` and `LEGACY-S07-183` as V2 backend
-capabilities on `origin/main@f8ee5106eb8b61ae9541936dc52cc31870a56d77`.
-All evidence below is local. It is not deployment, real WeChat Pay/WeChat Shop
-execution, provider acceptance, refund success, or delivery evidence.
+capabilities on exact main
+`bab96ecb7af588a904cf0a666c4be4f118454946`. PRs `#513` and `#534` are
+merged, their required CI passed, and exact-main Nightly run `32937107694`
+passed. This is not deployment, real WeChat Pay/WeChat Shop execution,
+provider acceptance, refund success, or production reconciliation evidence.
 
 ## Route and ownership boundary
 
