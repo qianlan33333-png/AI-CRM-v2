@@ -86,16 +86,17 @@ type GroupOpsDispatchJobArgs struct {
 func (GroupOpsDispatchJobArgs) Kind() string { return "group_ops_dispatch" }
 
 type RuntimeService struct {
-	uow      platformport.UnitOfWork
-	plans    Store
-	runtime  RuntimeStore
-	effects  RuntimeEffects
-	staff    contactport.StaffDirectoryReader
-	groups   groupopsport.GroupDirectorySource
-	senders  groupopsport.ExecutionSenderResolver
-	jobs     DispatchJobInserter
-	evidence groupopsport.ReconciliationEvidenceVerifier
-	now      func() time.Time
+	uow             platformport.UnitOfWork
+	plans           Store
+	runtime         RuntimeStore
+	effects         RuntimeEffects
+	staff           contactport.StaffDirectoryReader
+	groups          groupopsport.GroupDirectorySource
+	senders         groupopsport.ExecutionSenderResolver
+	jobs            DispatchJobInserter
+	evidence        groupopsport.ReconciliationEvidenceVerifier
+	dispatchEnabled bool
+	now             func() time.Time
 }
 
 func NewRuntimeService(uow platformport.UnitOfWork, plans Store, runtime RuntimeStore, effects RuntimeEffects, staff contactport.StaffDirectoryReader, groups groupopsport.GroupDirectorySource, senders groupopsport.ExecutionSenderResolver, jobs DispatchJobInserter, evidence ...groupopsport.ReconciliationEvidenceVerifier) (*RuntimeService, error) {
@@ -105,11 +106,19 @@ func NewRuntimeService(uow platformport.UnitOfWork, plans Store, runtime Runtime
 	if len(evidence) > 1 {
 		return nil, ErrUnavailable
 	}
-	service := &RuntimeService{uow: uow, plans: plans, runtime: runtime, effects: effects, staff: staff, groups: groups, senders: senders, jobs: jobs, now: time.Now}
+	service := &RuntimeService{uow: uow, plans: plans, runtime: runtime, effects: effects, staff: staff, groups: groups, senders: senders, jobs: jobs, dispatchEnabled: true, now: time.Now}
 	if len(evidence) == 1 && !nilRuntimeDependency(evidence[0]) {
 		service.evidence = evidence[0]
 	}
 	return service, nil
+}
+
+// SetDispatchEnabled is composition-only. It prevents request intake from
+// accepting EER work when the independently configured write provider is off.
+func (service *RuntimeService) SetDispatchEnabled(enabled bool) {
+	if service != nil {
+		service.dispatchEnabled = enabled
+	}
 }
 
 func (service *RuntimeService) PreviewRunDue(ctx context.Context, planID int64) (groupopsport.RunDuePreview, error) {
@@ -181,6 +190,9 @@ func (service *RuntimeService) AcceptWebhook(ctx context.Context, reference, ide
 func (service *RuntimeService) acceptPlan(ctx context.Context, command groupopsport.AcceptPlanCommand) (groupopsport.RunSummary, error) {
 	if ctx == nil || service == nil || service.now == nil || command.PlanID < 1 || !validRunTrigger(command.Trigger) || !validAcceptedBy(command.AcceptedBy) || !validKey(command.IdempotencyKey) {
 		return groupopsport.RunSummary{}, ErrInvalid
+	}
+	if !service.dispatchEnabled {
+		return groupopsport.RunSummary{}, ErrProviderDisabled
 	}
 	now := service.nowUTC()
 	var summary groupopsport.RunSummary

@@ -169,10 +169,6 @@ func validGroupMessageText(value string, limit int) bool {
 	return value != "" && len(value) <= limit && strings.TrimSpace(value) == value
 }
 
-type GroupMessageTargetResolver interface {
-	ResolveGroupMessageTarget(context.Context, string) (chatID string, resolved bool, err error)
-}
-
 type groupMessageTaskCreator interface {
 	CreateGroupMessageTask(context.Context, GroupMessageCreateRequest) (GroupMessageCreateResult, error)
 }
@@ -181,20 +177,19 @@ type groupMessageTaskCreator interface {
 // successful response is provider_accepted only, never delivery_proven.
 type WeComGroupMessageProvider struct {
 	client   groupMessageTaskCreator
-	resolve  GroupMessageTargetResolver
 	receipts groupopsport.GroupMessageReceiptWriter
 }
 
 var _ groupopsport.DispatchProvider = (*WeComGroupMessageProvider)(nil)
 
-func NewWeComGroupMessageProvider(client groupMessageTaskCreator, resolve GroupMessageTargetResolver, receipts ...groupopsport.GroupMessageReceiptWriter) (*WeComGroupMessageProvider, error) {
-	if client == nil || resolve == nil {
+func NewWeComGroupMessageProvider(client groupMessageTaskCreator, receipts ...groupopsport.GroupMessageReceiptWriter) (*WeComGroupMessageProvider, error) {
+	if client == nil {
 		return nil, ErrInvalidWeComGroupMessage
 	}
 	if len(receipts) > 1 {
 		return nil, ErrInvalidWeComGroupMessage
 	}
-	provider := &WeComGroupMessageProvider{client: client, resolve: resolve}
+	provider := &WeComGroupMessageProvider{client: client}
 	if len(receipts) == 1 {
 		if receipts[0] == nil {
 			return nil, ErrInvalidWeComGroupMessage
@@ -205,17 +200,14 @@ func NewWeComGroupMessageProvider(client groupMessageTaskCreator, resolve GroupM
 }
 
 func (provider *WeComGroupMessageProvider) Dispatch(ctx context.Context, request groupopsport.DispatchRequest) (groupopsport.DispatchProviderResult, error) {
-	if provider == nil || provider.client == nil || provider.resolve == nil || ctx == nil || !validGroupMessageDispatchRequest(request) {
+	if provider == nil || provider.client == nil || ctx == nil || !validGroupMessageDispatchRequest(request) {
 		return preDispatchGroupMessageResult(request), nil
 	}
 	content, material, valid := groupMessageSnapshots(request)
 	if !valid {
 		return preDispatchGroupMessageResult(request), nil
 	}
-	chatID, resolved, err := provider.resolve.ResolveGroupMessageTarget(ctx, request.TargetReference)
-	if err != nil || !resolved || !validGroupMessageText(chatID, 1024) {
-		return preDispatchGroupMessageResult(request), nil
-	}
+	chatID := request.TargetReference
 	_ = material
 	if !validGroupMessageText(request.SenderUserID, 128) {
 		return preDispatchGroupMessageResult(request), nil

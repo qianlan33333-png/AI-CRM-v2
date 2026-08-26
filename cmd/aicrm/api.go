@@ -1499,8 +1499,8 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	var groupOpsEvidence groupopsport.ReconciliationEvidenceVerifier
-	if config.WeCom.Outbound.Enabled {
-		groupOpsEvidence, err = newGroupOpsEvidenceVerifier(config.WeCom.Outbound, &http.Client{Timeout: 5 * time.Second}, time.Now, groupOpsReceipts)
+	if config.WeCom.DirectorySync.Enabled {
+		groupOpsEvidence, err = newGroupOpsEvidenceVerifier(config.WeCom.OAuth, &http.Client{Timeout: 5 * time.Second}, time.Now, groupOpsReceipts)
 		if err != nil {
 			pool.Close()
 			return nil, err
@@ -1521,6 +1521,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	groupOpsRuntime.SetDispatchEnabled(config.WeCom.Outbound.Enabled)
 	productExternalPushHandler, err := producthttp.NewExternalPushHandler(
 		productapp.NewCommerceExternalPushService(
 			uow,

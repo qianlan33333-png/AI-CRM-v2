@@ -79,7 +79,7 @@ func TestWeComGroupMessageProviderClassifiesCreateTaskWithoutDeliveryClaim(t *te
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			client := &groupMessageCreatorStub{result: test.created, err: test.err}
-			provider, err := NewWeComGroupMessageProvider(client, groupMessageTargetResolver("chat-1"), &groupMessageReceiptWriterStub{})
+			provider, err := NewWeComGroupMessageProvider(client, &groupMessageReceiptWriterStub{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -89,7 +89,7 @@ func TestWeComGroupMessageProviderClassifiesCreateTaskWithoutDeliveryClaim(t *te
 			}
 		})
 	}
-	provider, err := NewWeComGroupMessageProvider(&groupMessageCreatorStub{}, groupMessageTargetResolver("chat-1"))
+	provider, err := NewWeComGroupMessageProvider(&groupMessageCreatorStub{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,12 +115,6 @@ func (stub *groupMessageCreatorStub) CreateGroupMessageTask(_ context.Context, r
 	return stub.result, stub.err
 }
 
-type groupMessageTargetResolver string
-
-func (resolver groupMessageTargetResolver) ResolveGroupMessageTarget(_ context.Context, target string) (string, bool, error) {
-	return string(resolver), target == "asset-1", nil
-}
-
 type groupMessageReceiptWriterStub struct{ calls int }
 
 func (stub *groupMessageReceiptWriterStub) RecordGroupMessageTask(_ context.Context, receipt groupopsport.GroupMessageReceipt) error {
@@ -133,7 +127,7 @@ func (stub *groupMessageReceiptWriterStub) RecordGroupMessageTask(_ context.Cont
 
 func groupMessageDispatchRequest() groupopsport.DispatchRequest {
 	return groupopsport.DispatchRequest{
-		ExecutionID: 11, ExternalEffectID: "eer_41", TargetReference: "asset-1",
+		ExecutionID: 11, ExternalEffectID: "eer_41", TargetReference: "chat-1",
 		ContentSnapshot:  []byte(`{"schema_version":1,"node_kind":"message","message_text":"hello group"}`),
 		MaterialSnapshot: []byte(`{"schema_version":1,"node_kind":"message","reference":""}`),
 		SenderUserID:     "staff-1",

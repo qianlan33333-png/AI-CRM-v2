@@ -149,6 +149,15 @@ func TestRuntimeGroupRefreshIsDisabledByDefault(t *testing.T) {
 	}
 }
 
+func TestAcceptPlanFailsClosedWhenDispatchProviderIsDisabled(t *testing.T) {
+	service, _, effects := newRuntimeFixture(t)
+	service.SetDispatchEnabled(false)
+	_, err := service.AcceptPlan(context.Background(), groupopsport.AcceptPlanCommand{PlanID: 91, Trigger: groupopsport.RunTriggerBroadcast, AcceptedBy: "service:fixture", IdempotencyKey: "group-ops-disabled-0001"})
+	if !errors.Is(err, ErrProviderDisabled) || effects.accepts != 0 {
+		t.Fatalf("err=%v accepts=%d", err, effects.accepts)
+	}
+}
+
 func newRuntimeFixture(t *testing.T, evidence ...groupopsport.ReconciliationEvidenceVerifier) (*RuntimeService, *runtimeStoreFixture, *runtimeEffectsFixture) {
 	t.Helper()
 	anchor := time.Date(2026, 8, 25, 8, 0, 0, 0, time.UTC)
@@ -176,9 +185,13 @@ func newRuntimeFixture(t *testing.T, evidence ...groupopsport.ReconciliationEvid
 type evidenceVerifierStub struct{ delivery bool }
 
 type runtimeSenderFixture struct{}
-func (runtimeSenderFixture) ResolveExecutionSender(_ context.Context, target string) (string, bool, error) { return "staff-" + target[len(target)-1:], true, nil }
+
+func (runtimeSenderFixture) ResolveExecutionSender(_ context.Context, target string) (string, bool, error) {
+	return "staff-" + target[len(target)-1:], true, nil
+}
 
 type runtimeJobFixture struct{}
+
 func (runtimeJobFixture) Insert(_ context.Context, args GroupOpsDispatchJobArgs, generation int64, scheduled time.Time) (eer.RiverJobLink, error) {
 	return eer.RiverJobLink{JobID: 1, Generation: generation, Queue: "outbound", ArgsDigest: runtimeDigest("job", args.EffectID), ScheduledAt: scheduled}, nil
 }

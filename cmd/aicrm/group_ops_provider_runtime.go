@@ -32,7 +32,7 @@ func newGroupOpsTokens(config appconfig.WeComOutbound, httpClient *http.Client, 
 	return tokens, nil
 }
 
-func newGroupOpsDispatchProvider(config appconfig.WeComOutbound, httpClient *http.Client, now func() time.Time, resolver outboundprovider.GroupMessageTargetResolver, receipts groupopsport.GroupMessageReceiptWriter) (groupopsport.DispatchProvider, error) {
+func newGroupOpsDispatchProvider(config appconfig.WeComOutbound, httpClient *http.Client, now func() time.Time, receipts groupopsport.GroupMessageReceiptWriter) (groupopsport.DispatchProvider, error) {
 	tokens, err := newGroupOpsTokens(config, httpClient, now)
 	if err != nil {
 		return nil, err
@@ -41,15 +41,22 @@ func newGroupOpsDispatchProvider(config appconfig.WeComOutbound, httpClient *htt
 	if err != nil {
 		return nil, errors.Join(errInvalidGroupOpsProviderConfig, err)
 	}
-	provider, err := outboundprovider.NewWeComGroupMessageProvider(client, resolver, receipts)
+	provider, err := outboundprovider.NewWeComGroupMessageProvider(client, receipts)
 	if err != nil {
 		return nil, errors.Join(errInvalidGroupOpsProviderConfig, err)
 	}
 	return provider, nil
 }
 
-func newGroupOpsEvidenceVerifier(config appconfig.WeComOutbound, httpClient *http.Client, now func() time.Time, receipts groupopsport.GroupMessageReceiptReader) (groupopsport.ReconciliationEvidenceVerifier, error) {
-	tokens, err := newGroupOpsTokens(config, httpClient, now)
+func newGroupOpsEvidenceVerifier(config appconfig.WeComOAuth, httpClient *http.Client, now func() time.Time, receipts groupopsport.GroupMessageReceiptReader) (groupopsport.ReconciliationEvidenceVerifier, error) {
+	if !config.Enabled || httpClient == nil || now == nil {
+		return nil, errInvalidGroupOpsProviderConfig
+	}
+	credentials, err := wecomclient.NewCredentials(config.CorpID, config.Secret.Value())
+	if err != nil {
+		return nil, errors.Join(errInvalidGroupOpsProviderConfig, err)
+	}
+	tokens, err := wecomclient.NewTokenProvider(wecomclient.TokenProviderConfig{BaseURL: wecomclient.ProductionBaseURL, Credentials: credentials, HTTPClient: httpClient, Now: now})
 	if err != nil {
 		return nil, err
 	}

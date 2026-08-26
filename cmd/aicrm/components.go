@@ -130,14 +130,9 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	groupOpsTargets, err := groupopsstore.NewGroupMessageTargetResolver(pool)
-	if err != nil {
-		pool.Close()
-		return nil, err
-	}
 	var groupOpsProvider groupopsport.DispatchProvider = disabledGroupOpsDispatchProvider{}
 	if config.WeCom.Outbound.Enabled {
-		groupOpsProvider, err = newGroupOpsDispatchProvider(config.WeCom.Outbound, &http.Client{Timeout: 15 * time.Second}, time.Now, groupOpsTargets, groupOpsReceipts)
+		groupOpsProvider, err = newGroupOpsDispatchProvider(config.WeCom.Outbound, &http.Client{Timeout: 15 * time.Second}, time.Now, groupOpsReceipts)
 		if err != nil {
 			pool.Close()
 			return nil, err
