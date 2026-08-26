@@ -1,4 +1,4 @@
-import { appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerPageDto, executeOwnerReassignmentPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
+import { appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, executeOwnerReassignmentPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
@@ -14,6 +14,7 @@ import { getQueueSurveyExternalPushTestUrl, getSaveSurveyCompletionOperationsUrl
 import { getArchiveLegacyHXCSendConfigUrl, getGetLegacyHXCSendConfigUrl, getReorderLegacyHXCSendConfigsUrl, getUpsertLegacyHXCSendConfigUrl } from './generated/health';
 import { getGetLegacyAppSettingsResourceUrl, getSaveLegacyAppSettingsResourceUrl } from './generated/health';
 import { getGetAdminOpsPushCapabilitiesUrl, getListAdminOpsReleasesUrl } from './generated/health';
+import { getGetCustomerContextUrl, getListStagesUrl } from './generated/health';
 
 function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
 const response = (data: unknown, status = 200) => ({ status, data, headers: new Headers() });
@@ -35,6 +36,46 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(customerUrl.searchParams.get('keyword') === '陈晨' && customerUrl.searchParams.get('mobile') === '+8613800000000' && customerUrl.searchParams.get('owner_staff_id') === '3' && customerUrl.searchParams.get('tag_id') === '9', 'customer list filter parameters');
     assert(customerPage.customerList.total === 51 && customerPage.customerList.totalIsEstimate && customerPage.customerList.nextCursor === 'opaque-next-cursor', 'customer list metadata mapping');
   } finally { globalThis.fetch = savedCustomerListFetch; }
+  assert(getGetCustomerContextUrl(7, { limit: 20 }) === '/api/v1/customers/7/context?limit=20' && getListStagesUrl() === '/api/v1/stages', 'safe Customer360 generated URLs');
+
+  const safeContext = {
+    customer: { id: 7, name: '陈晨', owner_staff_id: 3, stage_id: 2, channel_id: null, added_at: '2026-08-20T10:00:00Z', last_interact_at: '2026-08-25T09:30:00Z' },
+    tags: [{ id: 11, name: '高意向', group_sort_order: 1, sort_order: 1 }],
+    timeline: [{ id: 101, event_type: 'owner.assigned', occurred_at: '2026-08-21T08:00:00Z' }],
+    timeline_next_cursor: null,
+    chat: { local_archive_available: true, items: [{ chat_type: 'private', message_type: 'text', sent_at: '2026-08-25T09:30:00Z' }], total: 1 },
+    non_atomic_snapshot: true,
+    real_external_call_executed: false,
+  };
+  const safeContextMapped = customerContextPageDto(safeContext);
+  assert(safeContextMapped.profile.id === '7' && safeContextMapped.profile.owner === '3' && !('mobile' in safeContextMapped.profile), 'safe Customer360 profile excludes phone');
+  assert(safeContextMapped.timeline[0].eventType === 'owner.assigned' && safeContextMapped.chat.items[0].messageType === 'text', 'safe Customer360 maps timeline and zero-body chat summary');
+
+  const safeContextCalls: string[] = [];
+  const savedSafeContextFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    safeContextCalls.push(String(input));
+    return new Response(JSON.stringify(String(input).includes('/context') ? safeContext : { items: [{ id: 2, name: '阶段二', sort_order: 1, config: {} }] }), { status: 200 });
+  };
+  try {
+    const detailPage = await readAdminPage({ page: 'customerDetail', id: '7' });
+    assert(detailPage.customerDetail.status === 'ready' && detailPage.customerDetail.context?.timeline.length === 1, 'Customer360 detail consumes safe context');
+    assert(detailPage.rows.qa.length === 0 && detailPage.rows.msgs.length === 0, 'Customer360 detail does not expose answers or message bodies');
+    assert(safeContextCalls.length === 2 && safeContextCalls.some((url) => url.includes('/customers/7/context')) && safeContextCalls.some((url) => url === '/api/v1/stages'), 'Customer360 detail only calls context and stage operations');
+  } finally { globalThis.fetch = savedSafeContextFetch; }
+
+  const savedMissingContextFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => new Response(JSON.stringify(String(input).includes('/context') ? { code: 'not_found' } : { items: [] }), { status: String(input).includes('/context') ? 404 : 200 });
+  try {
+    const missingPage = await readAdminPage({ page: 'customerDetail', id: '999' });
+    assert(missingPage.customerDetail.status === 'not_found' && missingPage.customerDetail.error.includes('不存在'), 'Customer360 404 becomes explicit not-found state');
+  } finally { globalThis.fetch = savedMissingContextFetch; }
+
+  const savedFailedContextFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => new Response(JSON.stringify({ code: 'unavailable' }), { status: String(input).includes('/context') ? 503 : 200 });
+  try { await readAdminPage({ page: 'customerDetail', id: '7' }); assert(false, 'Customer360 non-404 failures must remain errors'); }
+  catch (error) { assert(error instanceof ApiError && error.status === 503, 'Customer360 non-404 failure remains structured error'); }
+  finally { globalThis.fetch = savedFailedContextFetch; }
   assert(getGetLegacyQuestionnaireUrl(4) === '/api/admin/questionnaires/4', 'questionnaire detail URL/method');
   assert(getCreateLegacyQuestionnaireUrl() === '/api/admin/questionnaires' && getUpdateLegacyQuestionnaireUrl(4) === '/api/admin/questionnaires/4', 'questionnaire create/update URLs');
   assert(getEnableLegacyQuestionnaireUrl(4).endsWith('/4/enable') && getDisableLegacyQuestionnaireUrl(4).endsWith('/4/disable'), 'questionnaire lifecycle URLs');

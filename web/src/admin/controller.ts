@@ -1030,7 +1030,8 @@ export class AdminController extends PageBase {
     });
 
     const rows = this.db.rows;
-    const customerItem = rows.customers[0];
+    const customerContext = this.db.customerDetail.context;
+    const customerItem = customerContext?.profile || rows.customers[0] || { name: '', id: '', owner: '', stageId: null };
     const customerId = Number(customerItem?.id || 0);
     const customerAction = async (action: () => Promise<unknown>, success: string): Promise<void> => {
       try { await action(); toast(success); await this.init(); }
@@ -1439,6 +1440,9 @@ export class AdminController extends PageBase {
       : null;
 
     const customerMeta = this.db.customerList || { total: rows.customers.length, totalIsEstimate: false, nextCursor: null };
+    const customerTimeline = customerContext?.timeline || [];
+    const customerChat = customerContext?.chat.items || [];
+    const customerTags = customerContext?.tags || [];
     const customerStart = rows.customers.length ? this.state.customerPage * 50 + 1 : 0;
     const customerEnd = rows.customers.length ? customerStart + rows.customers.length - 1 : 0;
     const customerEstimate = customerMeta.totalIsEstimate ? '（估算）' : '';
@@ -1463,6 +1467,22 @@ export class AdminController extends PageBase {
         loading: this.state.customerLoading,
         error: this.state.customerError,
         empty: rows.customers.length === 0 && !this.state.customerLoading && !this.state.customerError,
+      },
+      customerDetail: {
+        ready: this.db.customerDetail.status === 'ready' && Boolean(customerContext),
+        notFound: this.db.customerDetail.status === 'not_found',
+        timeline: customerTimeline,
+        timelineEmpty: customerTimeline.length === 0,
+        tags: customerTags,
+        chatItems: customerChat.map((item) => ({ channel: item.chatType === 'private' ? '私聊' : '群聊', type: item.messageType, time: item.sentAt })),
+        chatEmpty: customerChat.length === 0,
+        chatTotalLabel: `共 ${customerContext?.chat.total || 0} 条安全摘要`,
+        archiveLabel: customerContext?.chat.localArchiveAvailable ? '本地摘要可用' : '本地摘要不可用',
+        snapshotLabel: customerContext?.nonAtomicSnapshot ? '非原子本地快照' : '本地安全快照',
+        providerLabel: customerContext?.realExternalCallExecuted ? '发生外部调用' : '未调用外部 Provider',
+        addedAt: customerContext?.profile.addedAt || '—',
+        lastInteractAt: customerContext?.profile.lastInteractAt || '—',
+        channelId: customerContext?.profile.channelId == null ? '—' : String(customerContext.profile.channelId),
       },
       productFormPage: {
         title: productFormValue ? '编辑普通商品' : '创建普通商品',

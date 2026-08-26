@@ -364,6 +364,49 @@ export interface Customer {
   stageId?: number | null;
 }
 
+/** 安全 Customer360 档案；不携带手机号或任何外部身份标识。 */
+export interface Customer360Profile {
+  name: string;
+  id: string;
+  owner: string;
+  stageId: number | null;
+  channelId: number | null;
+  addedAt: string | null;
+  lastInteractAt: string | null;
+}
+
+export interface Customer360TimelineEntry {
+  id: number;
+  eventType: string;
+  occurredAt: string;
+}
+
+export interface Customer360ChatEntry {
+  chatType: 'private' | 'group';
+  messageType: string;
+  sentAt: string;
+}
+
+export interface Customer360Context {
+  profile: Customer360Profile;
+  tags: Tag[];
+  timeline: Customer360TimelineEntry[];
+  timelineNextCursor: string | null;
+  chat: {
+    localArchiveAvailable: boolean;
+    items: Customer360ChatEntry[];
+    total: number;
+  };
+  nonAtomicSnapshot: boolean;
+  realExternalCallExecuted: boolean;
+}
+
+export interface CustomerDetailView {
+  status: 'ready' | 'not_found';
+  context: Customer360Context | null;
+  error: string;
+}
+
 export interface CustomerListMeta {
   total: number;
   totalIsEstimate: boolean;
@@ -761,6 +804,7 @@ export interface AdminDb {
   staff: StaffMember[];
   groupChats: GroupChat[];
   customerList: CustomerListMeta;
+  customerDetail: CustomerDetailView;
   rows: RowsData;
 }
 

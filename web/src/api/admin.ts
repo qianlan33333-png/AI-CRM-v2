@@ -1,6 +1,6 @@
 /** Current Go OpenAPI -> Kimi Admin DTO boundary. No page imports generated data. */
 import {
-  addCustomerTag, getCustomer, getCustomerActivityAnalytics, getCustomerContext, listCustomerChatActivity, listCustomerEvents, listCustomerSurveyAnswers, listStages, removeCustomerTag, setCustomerStage, updateCustomer,
+  addCustomerTag, getCustomer, getCustomerContext, listStages, removeCustomerTag, setCustomerStage, updateCustomer,
   getLegacyAttachment, getLegacyChannel, getLegacyCoupon, getLegacyCouponShare, getLegacyImage, getLegacyImageFacets,
   getLegacyMiniProgram, getLegacyOrder, getLegacyOrderItems, getLegacyQuestionnaire, getLegacyQuestionnaireResults,
   getAdminOpsCategory, getContactOwnerReassignmentPreview, getLegacyWecomTag, getLegacyWecomTagExecutionGate, getLegacyWecomTagGroup, getProduct,
@@ -22,8 +22,8 @@ import { createLegacyChannel, updateLegacyChannel, type LegacyChannelWriteReques
 import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, updateAIAudiencePackage, type AIAudiencePackageSender, type SegmentDefinition } from './generated/health';
 import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
-import type { AdminDb, AttachItem, Channel, ConfigCategory, Coupon, Customer, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
-import { apiRequestOptions, request, unwrapGenerated } from './transport';
+import type { AdminDb, AttachItem, Channel, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360TimelineEntry, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
+import { ApiError, apiRequestOptions, request, unwrapGenerated } from './transport';
 
 type Obj = Record<string, unknown>;
 const obj = (value: unknown): Obj => value && typeof value === 'object' ? value as Obj : {};
@@ -33,6 +33,46 @@ const toneFor = (status: unknown): Tone => { const value = text(status, '').toLo
 const call = async <T>(request: Promise<T>): Promise<unknown> => unwrapGenerated(await request as { status: number; data: unknown }) as unknown;
 
 export function customerPageDto(customer: ApiCustomer): Customer { return { id: String(customer.id), name: customer.name, owner: customer.owner_staff_id == null ? '未分配' : String(customer.owner_staff_id), mobile: '—', stageId: customer.stage_id }; }
+const requiredContextNumber = (value: unknown, field: string): number => { const number = Number(value); if (!Number.isSafeInteger(number) || number < 1) throw new Error(`客户安全上下文缺少有效 ${field}`); return number; };
+const requiredContextText = (value: unknown, field: string): string => { if (typeof value !== 'string' || !value.trim()) throw new Error(`客户安全上下文缺少 ${field}`); return value; };
+const optionalContextNumber = (value: unknown): number | null => { if (value == null) return null; const number = Number(value); return Number.isSafeInteger(number) && number >= 1 ? number : null; };
+const optionalContextText = (value: unknown): string | null => typeof value === 'string' ? value : null;
+export function customerContextPageDto(value: unknown): Customer360Context {
+  const source = obj(value);
+  const customer = obj(source.customer);
+  const profile = {
+    id: String(requiredContextNumber(customer.id, 'OneID')),
+    name: requiredContextText(customer.name, '客户姓名'),
+    owner: customer.owner_staff_id == null ? '未分配' : String(requiredContextNumber(customer.owner_staff_id, '负责人 staff_id')),
+    stageId: optionalContextNumber(customer.stage_id),
+    channelId: optionalContextNumber(customer.channel_id),
+    addedAt: optionalContextText(customer.added_at),
+    lastInteractAt: optionalContextText(customer.last_interact_at),
+  };
+  const tags = list(source, 'tags').map((item) => ({ name: requiredContextText(obj(item).name, '标签名称') }));
+  const timeline: Customer360TimelineEntry[] = list(source, 'timeline').map((item) => {
+    const entry = obj(item);
+    return { id: requiredContextNumber(entry.id, '时间线事件 ID'), eventType: requiredContextText(entry.event_type, '时间线事件类型'), occurredAt: requiredContextText(entry.occurred_at, '时间线事件时间') };
+  });
+  const chatSource = obj(source.chat);
+  const chatItems: Customer360ChatEntry[] = list(chatSource, 'items').map((item) => {
+    const entry = obj(item);
+    const chatType = entry.chat_type === 'private' || entry.chat_type === 'group' ? entry.chat_type : null;
+    if (!chatType) throw new Error('客户安全上下文包含未知聊天类型');
+    return { chatType, messageType: requiredContextText(entry.message_type, '聊天消息类型'), sentAt: requiredContextText(entry.sent_at, '聊天时间') };
+  });
+  const total = Number(chatSource.total);
+  if (!Number.isSafeInteger(total) || total < 0) throw new Error('客户安全上下文缺少有效聊天总数');
+  return {
+    profile,
+    tags,
+    timeline,
+    timelineNextCursor: typeof source.timeline_next_cursor === 'string' ? source.timeline_next_cursor : null,
+    chat: { localArchiveAvailable: chatSource.local_archive_available === true, items: chatItems, total },
+    nonAtomicSnapshot: source.non_atomic_snapshot === true,
+    realExternalCallExecuted: source.real_external_call_executed === true,
+  };
+}
 export function questionnairePageDto(questionnaire: LegacyQuestionnaire): Questionnaire { return { resourceId: questionnaire.id, publicPath: questionnaire.public_path, name: questionnaire.title, assess: questionnaire.assessment_enabled, off: questionnaire.is_disabled, action: questionnaire.status, created: questionnaire.created_at, count: String(questionnaire.submission_count), internalName: questionnaire.name, title: questionnaire.title, description: questionnaire.description, answerDisplayMode: questionnaire.answer_display_mode, assessmentEnabled: questionnaire.assessment_enabled, assessmentConfig: questionnaire.assessment_config, slug: questionnaire.slug, questions: questionnaire.questions, scoreRules: questionnaire.score_rules, version: questionnaire.version }; }
 export function channelPageDto(channel: LegacyChannelListItem | LegacyChannel): Channel { const x = obj(channel); return { resourceId: Number(x.id), name: text(x.channel_name), code: text(x.channel_code), type: text(x.channel_type, 'qrcode'), status: text(x.status), tone: toneFor(x.status), mat: list(x, 'welcome_image_library_ids', 'welcome_attachment_library_ids').join('、') || '—', tag: text(x.entry_tag_name, '—'), tagTone: 'gray', users: text(x.channel_contact_count, '0'), qr: text(x.qr_download_url, '后端未返回二维码地址'), channelType: x.channel_type === 'wecom_customer_acquisition' ? 'wecom_customer_acquisition' : 'qrcode', carrierType: x.carrier_type === 'link' ? 'link' : 'qrcode', sceneValue: text(x.scene_value, ''), qrUrl: text(x.qr_url, ''), ownerStaffId: text(x.owner_staff_id, ''), customerChannel: text(x.customer_channel, ''), linkUrl: text(x.link_url, ''), finalUrl: text(x.final_url, ''), welcomeMessage: text(x.welcome_message, ''), welcomeImageLibraryIds: list(x, 'welcome_image_library_ids').map(Number), welcomeMiniprogramLibraryIds: list(x, 'welcome_miniprogram_library_ids').map(Number), welcomeAttachmentLibraryIds: list(x, 'welcome_attachment_library_ids').map(Number), welcomeGroupInviteLibraryIds: list(x, 'welcome_group_invite_library_ids').map(Number), autoAcceptFriend: x.auto_accept_friend === true, entryTagId: text(x.entry_tag_id, ''), entryTagName: text(x.entry_tag_name, ''), entryTagGroupName: text(x.entry_tag_group_name, ''), assignmentMode: x.assignment_mode === 'multi_staff' ? 'multi_staff' : 'single_owner', assignmentStrategy: x.assignment_strategy === 'cap_switch' ? 'cap_switch' : 'ratio', overflowPolicy: text(x.overflow_policy, ''), assignmentConfig: obj(x.assignment_config_json) }; }
 export const orderPageDto = (value: unknown): Order => { const x = obj(value); return { time: text(x.created_at), no: text(x.merchant_order_no, text(x.order_no)), plat: text(x.provider_label, text(x.provider)), payer: text(x.payer_name), uid: text(x.payer_id), product: text(x.product_name), amount: text(x.amount), status: text(x.status_label, text(x.status)), tone: toneFor(x.status), pay: text(x.currency) }; };
@@ -287,7 +327,7 @@ export async function saveTagDto(input: { id?: number; groupId: number; name: st
 export async function archiveTagDto(tagId: number): Promise<void> { await call(archiveLegacyWecomTag(tagId, writeMeta(), apiRequestOptions())); }
 export async function queueTagSyncDto(): Promise<unknown> { return call(queueLegacyWecomTagSync(writeMeta(), apiRequestOptions())); }
 
-export function emptyAdminDb(): AdminDb { return { radarLinks: [], radarEvents: [], aiPlans: [], aiRcs: {}, funnelRows: [], funnelViews: [], audienceGroups: [], audiencePackages: [], audienceMembers: {}, audienceSenders: {}, audienceRecords: {}, groupOpsPlans: [], groupOpsDetail: null, cycleTasks: [], cycleRuns: {}, qOps: {}, tagGroups: [], wecomTags: [], couponClaims: {}, configCategories: [], staff: [], groupChats: [], customerList: { total: 0, totalIsEstimate: false, nextCursor: null }, rows: { customers: [], tags: [], qa: [], msgs: [], qStats: [], questionnaires: [], qSubs: [], qApply: [], edTools: [], edQs: [], edAssignees: [], chStats: [], channels: [], orders: [], orderKv: [], orderEvents: [], spProducts: [], products: [], coupons: [], images: [], mpItems: [], attachItems: [], agents: [], agentSlots: [], agentDeps: [] } }; }
+export function emptyAdminDb(): AdminDb { return { radarLinks: [], radarEvents: [], aiPlans: [], aiRcs: {}, funnelRows: [], funnelViews: [], audienceGroups: [], audiencePackages: [], audienceMembers: {}, audienceSenders: {}, audienceRecords: {}, groupOpsPlans: [], groupOpsDetail: null, cycleTasks: [], cycleRuns: {}, qOps: {}, tagGroups: [], wecomTags: [], couponClaims: {}, configCategories: [], staff: [], groupChats: [], customerList: { total: 0, totalIsEstimate: false, nextCursor: null }, customerDetail: { status: 'not_found', context: null, error: '' }, rows: { customers: [], tags: [], qa: [], msgs: [], qStats: [], questionnaires: [], qSubs: [], qApply: [], edTools: [], edQs: [], edAssignees: [], chStats: [], channels: [], orders: [], orderKv: [], orderEvents: [], spProducts: [], products: [], coupons: [], images: [], mpItems: [], attachItems: [], agents: [], agentSlots: [], agentDeps: [] } }; }
 export interface CustomerListQuery {
   cursor?: string;
   keyword?: string;
@@ -311,7 +351,7 @@ export async function readAdminRows(page?: string, customerList?: CustomerListQu
     ...(customerList?.tagId == null ? {} : { tag_id: customerList.tagId }),
   };
   const responses = await Promise.all([
-    needs('customers', 'customerDetail') ? call(listCustomers(customerParams, opt)) : skip,
+    needs('customers') ? call(listCustomers(customerParams, opt)) : skip,
     needs('questionnaires', 'questionnaireDetail', 'questionnaireOps') ? call(listLegacyQuestionnaires({ limit: 50, offset: 0 }, opt)) : skip,
     needs('channels', 'channelForm', 'questionnaireOps', 'productForm', 'spProductForm') ? call(listLegacyChannels({ limit: 50, include_archived: true }, opt)) : skip,
     needs('orders', 'orderDetail') ? call(listLegacyOrders(undefined, opt)) : skip,
@@ -339,8 +379,28 @@ export async function readAdminRows(page?: string, customerList?: CustomerListQu
 
 /** Detail page reads are deliberately page-scoped and never synthesize demo records. */
 export async function readAdminPage(context: AdminReadContext = {}): Promise<AdminDb> {
-  const db = await readAdminRows(context.page, context.customerList); const id = context.id || ''; if (!id) return db; const opt = apiRequestOptions(); const numeric = Number(id);
-  if (context.page === 'customerDetail') { const [detail, customerContext, events, answers, chat, analytics, stages] = await Promise.all([call(getCustomer(numeric, opt)), call(getCustomerContext(numeric, undefined, opt)), call(listCustomerEvents(numeric, undefined, opt)), call(listCustomerSurveyAnswers(numeric, undefined, opt)), call(listCustomerChatActivity(numeric, undefined, opt)), call(getCustomerActivityAnalytics(numeric, undefined, opt)), call(listStages(opt))]); const customer = obj(detail).customer || detail; db.rows.customers = [customerPageDto(customer as ApiCustomer)]; db.rows.tags = list(detail, 'tags').map((x) => ({ name: text(obj(x).name) })); db.rows.qa = list(answers, 'items', 'answers').map((x) => ({ q: text(obj(x).question), a: text(obj(x).answer) })); db.rows.msgs = [...list(events, 'items', 'events').map((x) => ({ who: text(obj(x).actor_name), time: text(obj(x).created_at), text: text(obj(x).type), me: false })), ...list(chat, 'items', 'messages').map((x) => ({ who: text(obj(x).sender_name), time: text(obj(x).created_at), text: text(obj(x).content), me: obj(x).is_staff === true }))]; db.rows.qStats = list(analytics, 'items', 'stats').map((x) => ({ label: text(obj(x).label), value: text(obj(x).value), unit: text(obj(x).unit, '') })); db.rows.orderKv = list(stages, 'items').map((x) => ({ k: text(obj(x).name), v: text(obj(x).id), mono: false })); void customerContext; }
+  const db = await readAdminRows(context.page, context.customerList); const id = context.id || ''; const opt = apiRequestOptions(); const numeric = Number(id);
+  if (context.page === 'customerDetail') {
+    if (!id || !/^[1-9][0-9]*$/.test(id) || !Number.isSafeInteger(numeric)) {
+      db.customerDetail = { status: 'not_found', context: null, error: '客户档案不存在或 OneID 无效' };
+      return db;
+    }
+    try {
+      const [rawContext, stages] = await Promise.all([call(getCustomerContext(numeric, { limit: 20 }, opt)), call(listStages(opt))]);
+      const customerContext = customerContextPageDto(rawContext);
+      if (customerContext.profile.id !== String(numeric)) throw new Error('客户安全上下文 OneID 不匹配');
+      db.customerDetail = { status: 'ready', context: customerContext, error: '' };
+      db.rows.tags = customerContext.tags;
+      db.rows.orderKv = list(stages, 'items').map((x) => ({ k: text(obj(x).name), v: text(obj(x).id), mono: false }));
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        db.customerDetail = { status: 'not_found', context: null, error: '客户档案不存在或当前账号不可见' };
+        return db;
+      }
+      throw error;
+    }
+  }
+  if (!id) return db;
   if (context.page === 'questionnaireDetail' || context.page === 'questionnaireOps') { const [detail, results, submissions, analysis, operations, pageData, logs] = await Promise.all([call(getLegacyQuestionnaire(numeric, opt)), call(getLegacyQuestionnaireResults(numeric, opt)), call(listLegacyQuestionnaireSubmissions(numeric, undefined, opt)), call(getSurveySafeSubmissionAnalysis(numeric, undefined, opt)), call(getSurveyOperations(numeric, opt)), call(getSurveyOperationsPageData(numeric, opt)), call(listSurveyQuestionnaireExternalPushLogs(numeric, undefined, opt))]); const q = obj(detail).questionnaire || detail; db.rows.questionnaires = [questionnairePageDto(q as LegacyQuestionnaire)]; db.qOps[numeric] = questionnaireOpsPageDto(operations); db.rows.qSubs = list(submissions, 'items', 'submissions').map((x) => ({ time: text(obj(x).submitted_at), uid: text(obj(x).customer_id), by: text(obj(x).customer_name), score: text(obj(x).score), tags: list(obj(x).tags).map(String) })); db.rows.qApply = list(logs, 'items', 'logs').map((x) => ({ time: text(obj(x).created_at), sid: text(obj(x).submission_id), uid: text(obj(x).external_userid), status: text(obj(x).status), tone: toneFor(obj(x).status), err: text(obj(x).error, '') })); void results; void analysis; void pageData; }
   if (context.page === 'channelForm') { const [detail, entrants] = await Promise.all([call(getLegacyChannel(numeric, opt)), call(listLegacyChannelEntrants(numeric, undefined, opt))]); db.rows.channels = [channelPageDto((obj(detail).channel || detail) as LegacyChannelListItem)]; db.rows.chStats = list(entrants, 'items', 'entrants').map((x) => ({ label: text(obj(x).label), value: text(obj(x).value), unit: text(obj(x).unit, '') })); }
   if (context.page === 'orderDetail') { const [detail, items, refunds, effects] = await Promise.all([call(getLegacyOrder(id, undefined, opt)), call(getLegacyOrderItems(id, undefined, opt)), call(listLegacyRefunds(undefined, opt)), call(listLegacyWechatOrderExternalEffects(id, opt))]); db.rows.orders = [orderPageDto(obj(detail).order || detail)]; db.rows.orderKv = Object.entries(obj(detail)).map(([k, v]) => ({ k, v: text(v), mono: false })); db.rows.orderEvents = [...list(items, 'items').map((x) => ({ time: text(obj(x).created_at), ev: text(obj(x).name), st: text(obj(x).status), tone: toneFor(obj(x).status) })), ...list(refunds, 'items', 'refunds').map((x) => ({ time: text(obj(x).created_at), ev: '退款 ' + text(obj(x).refund_no), st: text(obj(x).status), tone: toneFor(obj(x).status) })), ...list(effects, 'items', 'effects').map((x) => ({ time: text(obj(x).created_at), ev: '外推回执', st: text(obj(x).status), tone: toneFor(obj(x).status) }))]; }

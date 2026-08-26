@@ -281,6 +281,29 @@ console.log('admin/customers.html（筛选、opaque cursor 翻页与详情导航
   dom.window.close();
 }
 
+console.log('admin/customerDetail.html（安全 Customer360）');
+{
+  const dom = await loadPage('admin/customerDetail.html', { id: 1 });
+  const d = dom.window.document;
+  ok('Customer360 渲染安全档案', d.body.textContent.includes('李思远') && d.body.textContent.includes('安全 Customer360') && d.body.textContent.includes('渠道 ID'));
+  ok('Customer360 渲染标签与时间线摘要', d.querySelectorAll('[data-customer-not-found]').length === 0 && d.querySelectorAll('tbody tr').length === 2 && d.body.textContent.includes('owner.assigned'));
+  ok('Customer360 聊天只展示零正文摘要', d.querySelectorAll('[data-customer-not-found]').length === 0 && d.body.textContent.includes('消息类型：text') && d.body.textContent.includes('消息类型：image') && d.body.textContent.includes('仅展示类型和时间，不展示正文'));
+  const rendered = d.querySelector('#stage')?.textContent || '';
+  ok('Customer360 不展示手机号与外部身份', !rendered.includes('手机号') && !rendered.includes('external_userid') && !rendered.includes('unionid') && !rendered.includes('这个周期服务能开发票吗？'));
+  ok('Customer360 明确隐藏问卷自由文本与评测结果', d.querySelector('[data-customer-answer-policy]')?.textContent.includes('不在 Customer360 展示'));
+  dom.window.close();
+}
+
+console.log('admin/customerDetail.html?id=999（404 占位态）');
+{
+  const dom = await loadPage('admin/customerDetail.html', { id: 999 });
+  const d = dom.window.document;
+  const back = d.querySelector('[data-customer-not-found] button');
+  ok('客户不存在显示明确占位', d.querySelector('[data-customer-not-found]')?.textContent.includes('客户档案不存在'));
+  ok('客户不存在提供返回客户列表', back?.textContent.trim() === '返回客户列表' && back?.__dcBound === true && !d.querySelector('#fCustomerName'));
+  dom.window.close();
+}
+
 /* ================= 本轮新增：二级页 + 通用选择器 ================= */
 console.log('admin/automation.html（新增分组弹窗 → 测试 Mock 创建）');
 {

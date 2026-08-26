@@ -17,6 +17,7 @@ import type {
   ConfigCategory,
   Coupon,
   Customer,
+  Customer360Context,
   FunnelGridRow,
   FunnelView,
   GroupOpsPlanDetailItem,
@@ -229,10 +230,56 @@ export class MockApi implements AdminApi {
     return result;
   }
 
+  private readCustomerDetail(id?: string): AdminDb {
+    const result = deepCopy(this.db);
+    const row = this.customerListRows().find((item) => item.id === id);
+    result.rows.customers = [];
+    result.rows.tags = [];
+    result.rows.qa = [];
+    result.rows.msgs = [];
+    result.rows.qStats = [];
+    result.rows.orderKv = [];
+    if (!row) {
+      result.customerDetail = { status: 'not_found', context: null, error: '客户档案不存在或当前账号不可见' };
+      return result;
+    }
+    const context: Customer360Context = {
+      profile: {
+        id: row.id,
+        name: row.name,
+        owner: row.ownerStaffId == null ? '未分配' : String(row.ownerStaffId),
+        stageId: row.stageId ?? null,
+        channelId: null,
+        addedAt: '2026-08-20T10:00:00Z',
+        lastInteractAt: '2026-08-25T09:30:00Z',
+      },
+      tags: [{ name: '高意向' }, { name: '已看直播' }],
+      timeline: [
+        { id: 1001, eventType: 'customer.created', occurredAt: '2026-08-20T10:00:00Z' },
+        { id: 1002, eventType: 'owner.assigned', occurredAt: '2026-08-21T08:00:00Z' },
+      ],
+      timelineNextCursor: null,
+      chat: {
+        localArchiveAvailable: true,
+        items: [
+          { chatType: 'private', messageType: 'text', sentAt: '2026-08-24T12:00:00Z' },
+          { chatType: 'group', messageType: 'image', sentAt: '2026-08-25T09:30:00Z' },
+        ],
+        total: 2,
+      },
+      nonAtomicSnapshot: true,
+      realExternalCallExecuted: false,
+    };
+    result.customerDetail = { status: 'ready', context, error: '' };
+    return result;
+  }
+
   loadDb(context?: AdminReadContext): Promise<AdminDb> {
     this.db = this.restore();
     if (!this.db.customerList) this.db.customerList = { total: this.db.rows.customers.length, totalIsEstimate: false, nextCursor: null };
+    if (!this.db.customerDetail) this.db.customerDetail = { status: 'not_found', context: null, error: '' };
     if (context?.page === 'customers') return delay(this.readCustomerList(context.customerList), 120);
+    if (context?.page === 'customerDetail') return delay(this.readCustomerDetail(context.id), 120);
     return delay(this.db, 120);
   }
 
