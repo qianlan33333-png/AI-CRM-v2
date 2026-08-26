@@ -49,6 +49,7 @@ import (
 	externaleffectsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
 	groupopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/app"
 	groupopshttp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/http"
+	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 	groupopsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/store"
 	hxcapp "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/app"
 	hxcstore "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/store"
@@ -105,6 +106,7 @@ import (
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
+	groupopsdirectory "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/groupopsdirectory"
 	wecomstore "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/store"
 	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 )
@@ -1461,6 +1463,31 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	}
 	groupOpsRepository := groupopsstore.NewRepository()
 	groupOpsStaffDirectory := contactstore.NewStaffDirectoryRepository(pool)
+	var groupOpsDirectorySource groupopsport.GroupDirectorySource
+	if config.WeCom.DirectorySync.Enabled {
+		credentials, credentialErr := wecomclient.NewCredentials(config.WeCom.OAuth.CorpID, config.WeCom.OAuth.Secret.Value())
+		if credentialErr != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		providerHTTP := &http.Client{Timeout: 5 * time.Second}
+		tokens, tokenErr := wecomclient.NewTokenProvider(wecomclient.TokenProviderConfig{
+			BaseURL: wecomclient.ProductionBaseURL, Credentials: credentials, HTTPClient: providerHTTP, Now: time.Now,
+		})
+		if tokenErr != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		groupOpsDirectorySource, err = groupopsdirectory.New(groupopsdirectory.Config{
+			BaseURL: wecomclient.ProductionBaseURL, HTTPClient: providerHTTP, Token: tokens,
+			OwnerStaff:  groupOpsDirectoryOwnerResolver{staff: groupOpsStaffDirectory},
+			ActiveStaff: groupOpsDirectoryActiveStaff{staff: groupOpsStaffDirectory},
+		})
+		if err != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+	}
 	groupOpsJobs, err := groupopsstore.NewDispatchJobInserter(pool)
 	if err != nil {
 		pool.Close()
@@ -1472,7 +1499,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		groupOpsRepository,
 		externalEffectsRuntime,
 		groupOpsStaffDirectory,
-		nil,
+		groupOpsDirectorySource,
 		groupOpsSenderResolver{groups: groupOpsRepository, staff: groupOpsStaffDirectory},
 		groupOpsJobs,
 	)
