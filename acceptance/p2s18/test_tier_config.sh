@@ -146,11 +146,46 @@ docker_log="$test_directory/docker.log"
 printf '%s\n' '#!/usr/bin/env bash' 'printf "%s\n" "$*" >>"$AICRM_DOCKER_LOG"' >"$fake_binary_directory/docker"
 chmod 755 "$fake_binary_directory/docker"
 printf '%s\n' '#!/usr/bin/env bash' 'for argument in "$@"; do case "$argument" in --file=*) snapshot_file="${argument#--file=}" ;; esac; done' ': >"$snapshot_file"' >"$fake_binary_directory/pg_dump"
-printf '%s\n' '#!/usr/bin/env bash' 'exit 0' >"$fake_binary_directory/curl"
+printf '%s\n' '#!/usr/bin/env bash' 'if [[ -n "${AICRM_CURL_LOG:-}" ]]; then printf "%s\\n" "$*" >>"$AICRM_CURL_LOG"; fi' 'exit 0' >"$fake_binary_directory/curl"
+restore_log="$test_directory/restore.log"
+printf '%s\n' '#!/usr/bin/env bash' 'printf "%s\\n" "$*" >>"$AICRM_PG_RESTORE_LOG"' >"$fake_binary_directory/pg_restore"
 real_go="$(command -v go)"
 go_log="$test_directory/go.log"
 printf '%s\n' '#!/usr/bin/env bash' 'if [[ "$1" = "env" && "$2" = "GOVERSION" ]]; then exec "$AICRM_REAL_GO" "$@"; fi' 'if [[ "$*" = *"run ./cmd/aicrm-config"* ]]; then exec "$AICRM_REAL_GO" "$@"; fi' 'printf "%s\n" "$*" >>"$AICRM_GO_LOG"' >"$fake_binary_directory/go"
 chmod 755 "$fake_binary_directory/pg_dump" "$fake_binary_directory/curl" "$fake_binary_directory/go"
+chmod 755 "$fake_binary_directory/pg_restore"
+
+public_smoke="$test_directory/public-smoke.log"
+(
+  cd "$repository_root"
+  AICRM_CURL_LOG="$test_directory/public-curl.log" \
+  PATH="$fake_binary_directory:$PATH" \
+    scripts/staging_smoke.sh --base-url='http://127.0.0.1:8080' >"$public_smoke" 2>&1
+)
+grep -Fq 'authenticated session and core read were NOT EXECUTED' "$public_smoke" ||
+  fail 'public-only staging smoke did not report the missing session blocker'
+
+restore_snapshot="$test_directory/staging-pre-migration.dump"
+printf '%s\n' 'fake custom-format snapshot' >"$restore_snapshot"
+restore_plan="$test_directory/restore-plan.log"
+(
+  cd "$repository_root"
+  scripts/staging_restore_drill.sh --snapshot="$restore_snapshot" --render-only >"$restore_plan"
+)
+grep -Fq 'NOT EXECUTED' "$restore_plan" || fail 'restore drill render-only did not preserve the external gate'
+[[ ! -e "$restore_log" ]] || fail 'restore drill render-only invoked pg_restore'
+
+restore_apply="$test_directory/restore-apply.log"
+(
+  cd "$repository_root"
+  AICRM_ALLOW_STAGING_RESTORE=1 \
+  AICRM_DATABASE_URL='postgres://test-only:test-only@127.0.0.1:5432/aicrm?sslmode=disable' \
+  AICRM_PG_RESTORE_LOG="$restore_log" \
+  PATH="$fake_binary_directory:$PATH" \
+    scripts/staging_restore_drill.sh --snapshot="$restore_snapshot" --apply >"$restore_apply"
+)
+grep -Fq -- '--exit-on-error --clean --if-exists --no-owner' "$restore_log" || fail 'restore drill apply did not execute pg_restore'
+grep -Fq 'pg_restore completed' "$restore_apply" || fail 'restore drill apply did not report completion'
 
 if (
   cd "$repository_root"
@@ -167,7 +202,9 @@ fi
   AICRM_IMAGE='registry.invalid/aicrm:test-only' \
   AICRM_DATABASE_URL='postgres://test-only:test-only@127.0.0.1:5432/aicrm?sslmode=disable' \
   AICRM_POSTGRES_PASSWORD='test-only' \
+  AICRM_STAGING_SESSION_COOKIE='aicrm_session=test-only-session' \
   AICRM_DOCKER_LOG="$docker_log" \
+  AICRM_CURL_LOG="$test_directory/curl.log" \
   AICRM_GO_LOG="$go_log" \
   AICRM_REAL_GO="$real_go" \
   PATH="$fake_binary_directory:$PATH" \
@@ -181,5 +218,10 @@ grep -Fq 'up -d --wait postgres' "$docker_log" || fail 'PostgreSQL was not start
 grep -Fq 'tool -modfile=tools/go.mod goose -dir migrations up' "$go_log" || fail 'Goose migration was not executed'
 grep -Fq 'run ./cmd/aicrm-river-migrate --direction=up' "$go_log" || fail 'River migration was not executed'
 compgen -G "$test_directory/authorized/staging-pre-migration.*.dump" >/dev/null || fail 'pre-migration snapshot was not created'
+grep -Fq '/login' "$test_directory/curl.log" || fail 'login entry smoke was not executed'
+grep -Fq '/healthz' "$test_directory/curl.log" || fail 'API health smoke was not executed'
+grep -Fq '/readyz' "$test_directory/curl.log" || fail 'worker queue readiness smoke was not executed'
+grep -Fq '/api/v1/auth/session' "$test_directory/curl.log" || fail 'authenticated session smoke was not executed'
+grep -Fq '/api/v1/products' "$test_directory/curl.log" || fail 'authenticated core read smoke was not executed'
 
-printf 'p2-s18-acceptance: PASS (render-only; staging deployment NOT EXECUTED)\n'
+printf 'p2-s18-acceptance: PASS (render-only, guarded smoke and restore drill; real Staging deployment and restore drill NOT EXECUTED)\n'

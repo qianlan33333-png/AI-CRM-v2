@@ -76,7 +76,7 @@ fi
 command -v docker >/dev/null 2>&1 || fail 'docker with Compose v2 is required for --apply'
 docker compose version >/dev/null 2>&1 || fail 'docker with Compose v2 is required for --apply'
 command -v pg_dump >/dev/null 2>&1 || fail 'pg_dump is required for the pre-migration snapshot'
-command -v curl >/dev/null 2>&1 || fail 'curl is required for the readiness smoke test'
+command -v curl >/dev/null 2>&1 || fail 'curl is required for the staging smoke test'
 
 swap_target_mib="$(awk -F= '$1 == "AICRM_SWAP_TARGET_MIB" { print $2 }' "$environment_file")"
 swap_policy="$(awk -F= '$1 == "AICRM_SWAP_POLICY" { print $2 }' "$environment_file")"
@@ -114,6 +114,9 @@ chmod 600 "$snapshot_file"
 )
 
 docker compose --env-file "$environment_file" -f "$repository_root/deploy/compose.yml" up -d --wait
-readiness_url="http://127.0.0.1:${AICRM_HTTP_PORT:-8080}/readyz"
-curl --fail --silent --show-error --max-time 10 "$readiness_url" >/dev/null
-printf 'staging-deploy: tier %s snapshot, Goose, River, Compose and /readyz completed; rollback NOT EXECUTED\n' "$tier_value"
+staging_base_url="http://127.0.0.1:${AICRM_HTTP_PORT:-8080}"
+"$script_directory/staging_smoke.sh" --base-url="$staging_base_url"
+printf 'staging-deploy: tier %s snapshot, Goose, River, Compose and staging smoke completed; restore drill NOT EXECUTED (snapshot=%s)\n' \
+  "$tier_value" "$snapshot_file"
+printf 'staging-deploy: restore drill is available with scripts/staging_restore_drill.sh --snapshot="%s" --render-only; --apply requires explicit staging approval\n' \
+  "$snapshot_file"
