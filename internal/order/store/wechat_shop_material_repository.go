@@ -76,7 +76,14 @@ func completeWeChatShopMaterialSyncRequest(ctx context.Context, queries *orderdb
 	if material.Source != orderport.WeChatShopMaterialProvider || !material.ProviderVerified {
 		return nil
 	}
-	_, err := queries.CompleteWeChatShopMaterialSyncRequest(ctx, orderdb.CompleteWeChatShopMaterialSyncRequestParams{
+	exists, err := queries.WeChatShopMaterialSyncRequestTableExists(ctx)
+	if err != nil {
+		return weChatShopMaterialUnavailable(err)
+	}
+	if !exists {
+		return nil
+	}
+	_, err = queries.CompleteWeChatShopMaterialSyncRequest(ctx, orderdb.CompleteWeChatShopMaterialSyncRequestParams{
 		EvidenceDigest: material.EvidenceDigest[:], CompletedAt: optionalTimestamp(material.SyncedAt),
 		ProviderOrderID: material.ProviderOrderID,
 	})
