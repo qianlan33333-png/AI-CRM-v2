@@ -31,7 +31,7 @@ func (r *Repository) List(ctx context.Context, limit, offset int32) ([]groupopsp
 	}
 	plans := make([]groupopsport.Plan, len(rows))
 	for index, row := range rows {
-		plans[index], err = plan(row)
+		plans[index], err = listPlan(row)
 		if err != nil {
 			return nil, err
 		}
@@ -238,6 +238,18 @@ func plan(row groupopsdb.GroupOpsPlan) (groupopsport.Plan, error) {
 		return groupopsport.Plan{}, groupopsapp.ErrUnavailable
 	}
 	return groupopsport.Plan{ID: row.ID, Name: row.Name, Status: groupopsport.PlanStatus(row.Status), Revision: row.Revision, CreatedBy: row.CreatedBy, UpdatedBy: row.UpdatedBy, CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time}, nil
+}
+
+func listPlan(row groupopsdb.ListGroupOpsPlansRow) (groupopsport.Plan, error) {
+	value, err := plan(groupopsdb.GroupOpsPlan{
+		ID: row.ID, Name: row.Name, Status: row.Status, Revision: row.Revision,
+		CreatedBy: row.CreatedBy, UpdatedBy: row.UpdatedBy, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+	})
+	if err != nil || row.QueueCount < 0 {
+		return groupopsport.Plan{}, groupopsapp.ErrUnavailable
+	}
+	value.QueueCount = row.QueueCount
+	return value, nil
 }
 
 func receipt(id int64, operation, actorScope string, keyDigest, payloadDigest []byte, state string, snapshot []byte) groupopsapp.Receipt {

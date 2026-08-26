@@ -52,6 +52,7 @@ type GroupOpsExecution struct {
 	AttemptCount                 int32              `json:"attempt_count"`
 	CreatedAt                    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                    pgtype.Timestamptz `json:"updated_at"`
+	SenderUseridSnapshot         pgtype.Text        `json:"sender_userid_snapshot"`
 }
 
 type GroupOpsPlan struct {

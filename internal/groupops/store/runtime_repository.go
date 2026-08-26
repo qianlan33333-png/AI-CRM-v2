@@ -56,7 +56,7 @@ func (repository *Repository) ReserveRun(ctx context.Context, reservation groupo
 
 func (repository *Repository) InsertExecution(ctx context.Context, draft groupopsapp.ExecutionDraft) (groupopsport.Execution, error) {
 	q, err := queries(ctx)
-	if repository == nil || err != nil || !json.Valid(draft.ContentSnapshot) || !json.Valid(draft.MaterialSnapshot) {
+	if repository == nil || err != nil || !json.Valid(draft.ContentSnapshot) || !json.Valid(draft.MaterialSnapshot) || strings.TrimSpace(draft.SenderUserID) != draft.SenderUserID || draft.SenderUserID == "" {
 		return groupopsport.Execution{}, unavailable(err)
 	}
 	effectID, err := parseExternalEffectID(draft.ExternalEffectID)
@@ -65,13 +65,13 @@ func (repository *Repository) InsertExecution(ctx context.Context, draft groupop
 	}
 	row, err := q.InsertGroupOpsExecution(ctx, groupopsdb.InsertGroupOpsExecutionParams{
 		RunID: draft.RunID, PlanID: draft.PlanID, NodeID: draft.NodeID, PlanRevision: draft.PlanRevision, NodePosition: draft.NodePosition,
-		TargetReference: draft.TargetReference, TargetDigest: draft.TargetDigest, ContentSnapshot: draft.ContentSnapshot, ContentDigest: draft.ContentDigest,
+		TargetReference: draft.TargetReference, SenderUseridSnapshot: text(draft.SenderUserID), TargetDigest: draft.TargetDigest, ContentSnapshot: draft.ContentSnapshot, ContentDigest: draft.ContentDigest,
 		MaterialSnapshot: draft.MaterialSnapshot, MaterialDigest: draft.MaterialDigest, ExecutionKeyDigest: draft.ExecutionKeyDigest[:], ExternalEffectID: effectID, CreatedAt: timestamp(draft.CreatedAt),
 	})
 	if err != nil {
 		return groupopsport.Execution{}, unavailable(err)
 	}
-	if row.RunID != draft.RunID || row.PlanID != draft.PlanID || row.PlanRevision != draft.PlanRevision || row.NodeID != draft.NodeID || row.NodePosition != draft.NodePosition || row.TargetReference != draft.TargetReference || row.TargetDigest != draft.TargetDigest || row.ContentDigest != draft.ContentDigest || row.MaterialDigest != draft.MaterialDigest || subtle.ConstantTimeCompare(row.ExecutionKeyDigest, draft.ExecutionKeyDigest[:]) != 1 || row.ExternalEffectID != effectID || !jsonBytesEqual(row.ContentSnapshot, draft.ContentSnapshot) || !jsonBytesEqual(row.MaterialSnapshot, draft.MaterialSnapshot) {
+	if row.RunID != draft.RunID || row.PlanID != draft.PlanID || row.PlanRevision != draft.PlanRevision || row.NodeID != draft.NodeID || row.NodePosition != draft.NodePosition || row.TargetReference != draft.TargetReference || row.SenderUseridSnapshot.String != draft.SenderUserID || row.SenderUseridSnapshot.Valid != (draft.SenderUserID != "") || row.TargetDigest != draft.TargetDigest || row.ContentDigest != draft.ContentDigest || row.MaterialDigest != draft.MaterialDigest || subtle.ConstantTimeCompare(row.ExecutionKeyDigest, draft.ExecutionKeyDigest[:]) != 1 || row.ExternalEffectID != effectID || !jsonBytesEqual(row.ContentSnapshot, draft.ContentSnapshot) || !jsonBytesEqual(row.MaterialSnapshot, draft.MaterialSnapshot) {
 		return groupopsport.Execution{}, groupopsapp.ErrConflict
 	}
 	return executionFromInsert(row)
@@ -247,14 +247,14 @@ func run(id, planID int64, trigger string, revision int64, scheduled, accepted p
 }
 
 func execution(row groupopsdb.GroupOpsExecution) (groupopsport.Execution, error) {
-	return executionFields(row.ID, row.RunID, row.PlanID, row.PlanRevision, row.NodeID, row.NodePosition, row.TargetReference, row.TargetDigest, row.ContentDigest, row.MaterialDigest, row.ExternalEffectID, row.State, row.ProviderAccepted, row.DeliveryProven, row.ProviderReceiptDigest, row.ReconciliationEvidenceDigest, row.AttemptCount, row.CreatedAt, row.UpdatedAt)
+	return executionFields(row.ID, row.RunID, row.PlanID, row.PlanRevision, row.NodeID, row.NodePosition, row.TargetReference, row.SenderUseridSnapshot, row.TargetDigest, row.ContentDigest, row.MaterialDigest, row.ExternalEffectID, row.State, row.ProviderAccepted, row.DeliveryProven, row.ProviderReceiptDigest, row.ReconciliationEvidenceDigest, row.AttemptCount, row.CreatedAt, row.UpdatedAt)
 }
 
 func executionFromInsert(row groupopsdb.InsertGroupOpsExecutionRow) (groupopsport.Execution, error) {
-	return executionFields(row.ID, row.RunID, row.PlanID, row.PlanRevision, row.NodeID, row.NodePosition, row.TargetReference, row.TargetDigest, row.ContentDigest, row.MaterialDigest, row.ExternalEffectID, row.State, row.ProviderAccepted, row.DeliveryProven, row.ProviderReceiptDigest, row.ReconciliationEvidenceDigest, row.AttemptCount, row.CreatedAt, row.UpdatedAt)
+	return executionFields(row.ID, row.RunID, row.PlanID, row.PlanRevision, row.NodeID, row.NodePosition, row.TargetReference, row.SenderUseridSnapshot, row.TargetDigest, row.ContentDigest, row.MaterialDigest, row.ExternalEffectID, row.State, row.ProviderAccepted, row.DeliveryProven, row.ProviderReceiptDigest, row.ReconciliationEvidenceDigest, row.AttemptCount, row.CreatedAt, row.UpdatedAt)
 }
 
-func executionFields(id, runID, planID, revision, nodeID int64, position int32, target, targetDigest, contentDigest, materialDigest string, effectID int64, state string, providerAccepted, deliveryProven bool, receipt, evidence pgtype.Text, attempts int32, created, updated pgtype.Timestamptz) (groupopsport.Execution, error) {
+func executionFields(id, runID, planID, revision, nodeID int64, position int32, target string, sender pgtype.Text, targetDigest, contentDigest, materialDigest string, effectID int64, state string, providerAccepted, deliveryProven bool, receipt, evidence pgtype.Text, attempts int32, created, updated pgtype.Timestamptz) (groupopsport.Execution, error) {
 	if id < 1 || runID < 1 || planID < 1 || revision < 1 || nodeID < 1 || position < 1 || effectID < 1 || !created.Valid || !updated.Valid {
 		return groupopsport.Execution{}, groupopsapp.ErrUnavailable
 	}

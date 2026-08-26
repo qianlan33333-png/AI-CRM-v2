@@ -176,3 +176,9 @@ type GroupDirectorySource interface {
 	ListOwnedGroups(context.Context, int64, int32) ([]GroupDirectoryItem, error)
 	RefreshOperationMembers(context.Context, int32) ([]OperationMember, error)
 }
+
+// ExecutionSenderResolver freezes the verified active owner of one local
+// group target. It never chooses a plan member or process-wide default.
+type ExecutionSenderResolver interface {
+	ResolveExecutionSender(context.Context, string) (string, bool, error)
+}

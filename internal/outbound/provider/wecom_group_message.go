@@ -1,4 +1,4 @@
-package groupopsprovider
+package provider
 
 import (
 	"bytes"
@@ -94,84 +94,6 @@ func (client *WeComGroupMessageClient) CreateGroupMessageTask(ctx context.Contex
 	return GroupMessageCreateResult{MessageID: response.MessageID, Partial: len(response.FailList) != 0}, nil
 }
 
-type GroupMessageTask struct {
-	UserID string
-	Status int
-}
-
-type GroupMessageTaskPage struct {
-	Items      []GroupMessageTask
-	NextCursor string
-}
-
-func (client *WeComGroupMessageClient) GetGroupMessageTask(ctx context.Context, messageID, cursor string) (GroupMessageTaskPage, error) {
-	if client == nil || ctx == nil || !validGroupMessageText(messageID, 1024) || !validCursor(cursor) {
-		return GroupMessageTaskPage{}, ErrInvalidWeComGroupMessage
-	}
-	var response struct {
-		NextCursor string `json:"next_cursor"`
-		TaskList   []struct {
-			UserID string `json:"userid"`
-			Status int    `json:"status"`
-		} `json:"task_list"`
-	}
-	if err := client.post(ctx, "/cgi-bin/externalcontact/get_groupmsg_task", cursorPayload(messageID, cursor), &response); err != nil {
-		return GroupMessageTaskPage{}, err
-	}
-	if !validCursor(response.NextCursor) {
-		return GroupMessageTaskPage{}, errWeComGroupOutcomeUnknown
-	}
-	items := make([]GroupMessageTask, len(response.TaskList))
-	for index, item := range response.TaskList {
-		if !validGroupMessageText(item.UserID, 128) {
-			return GroupMessageTaskPage{}, errWeComGroupOutcomeUnknown
-		}
-		items[index] = GroupMessageTask{UserID: item.UserID, Status: item.Status}
-	}
-	return GroupMessageTaskPage{Items: items, NextCursor: response.NextCursor}, nil
-}
-
-type GroupMessageSendResult struct {
-	ChatID string
-	UserID string
-	Status int
-}
-
-type GroupMessageSendResultPage struct {
-	Items      []GroupMessageSendResult
-	NextCursor string
-}
-
-func (client *WeComGroupMessageClient) GetGroupMessageSendResult(ctx context.Context, messageID, userID, cursor string) (GroupMessageSendResultPage, error) {
-	if client == nil || ctx == nil || !validGroupMessageText(messageID, 1024) || !validGroupMessageText(userID, 128) || !validCursor(cursor) {
-		return GroupMessageSendResultPage{}, ErrInvalidWeComGroupMessage
-	}
-	payload := cursorPayload(messageID, cursor)
-	payload["userid"] = userID
-	var response struct {
-		NextCursor string `json:"next_cursor"`
-		SendList   []struct {
-			ChatID string `json:"chat_id"`
-			UserID string `json:"userid"`
-			Status int    `json:"status"`
-		} `json:"send_list"`
-	}
-	if err := client.post(ctx, "/cgi-bin/externalcontact/get_groupmsg_send_result", payload, &response); err != nil {
-		return GroupMessageSendResultPage{}, err
-	}
-	if !validCursor(response.NextCursor) {
-		return GroupMessageSendResultPage{}, errWeComGroupOutcomeUnknown
-	}
-	items := make([]GroupMessageSendResult, len(response.SendList))
-	for index, item := range response.SendList {
-		if !validGroupMessageText(item.ChatID, 1024) || !validGroupMessageText(item.UserID, 128) {
-			return GroupMessageSendResultPage{}, errWeComGroupOutcomeUnknown
-		}
-		items[index] = GroupMessageSendResult{ChatID: item.ChatID, UserID: item.UserID, Status: item.Status}
-	}
-	return GroupMessageSendResultPage{Items: items, NextCursor: response.NextCursor}, nil
-}
-
 func (client *WeComGroupMessageClient) post(ctx context.Context, path string, payload any, target any) error {
 	if client == nil || client.httpClient == nil || client.token == nil {
 		return ErrInvalidWeComGroupMessage
@@ -243,15 +165,6 @@ func (err *weComGroupMessageAPIError) Error() string {
 
 func expiredTokenCode(code int) bool { return code == 40014 || code == 42001 }
 
-func cursorPayload(messageID, cursor string) map[string]string {
-	payload := map[string]string{"msgid": messageID}
-	if cursor != "" {
-		payload["cursor"] = cursor
-	}
-	return payload
-}
-
-func validCursor(value string) bool { return len(value) <= 2048 && strings.TrimSpace(value) == value }
 func validGroupMessageText(value string, limit int) bool {
 	return value != "" && len(value) <= limit && strings.TrimSpace(value) == value
 }
@@ -267,24 +180,25 @@ type groupMessageTaskCreator interface {
 // WeComGroupMessageProvider creates a staff-confirmed Group Ops task. A
 // successful response is provider_accepted only, never delivery_proven.
 type WeComGroupMessageProvider struct {
-	client  groupMessageTaskCreator
-	sender  string
-	resolve GroupMessageTargetResolver
+	client   groupMessageTaskCreator
+	resolve  GroupMessageTargetResolver
 	receipts groupopsport.GroupMessageReceiptWriter
 }
 
 var _ groupopsport.DispatchProvider = (*WeComGroupMessageProvider)(nil)
 
-func NewWeComGroupMessageProvider(client groupMessageTaskCreator, sender string, resolve GroupMessageTargetResolver, receipts ...groupopsport.GroupMessageReceiptWriter) (*WeComGroupMessageProvider, error) {
-	if client == nil || !validGroupMessageText(sender, 128) || resolve == nil {
+func NewWeComGroupMessageProvider(client groupMessageTaskCreator, resolve GroupMessageTargetResolver, receipts ...groupopsport.GroupMessageReceiptWriter) (*WeComGroupMessageProvider, error) {
+	if client == nil || resolve == nil {
 		return nil, ErrInvalidWeComGroupMessage
 	}
 	if len(receipts) > 1 {
 		return nil, ErrInvalidWeComGroupMessage
 	}
-	provider := &WeComGroupMessageProvider{client: client, sender: sender, resolve: resolve}
+	provider := &WeComGroupMessageProvider{client: client, resolve: resolve}
 	if len(receipts) == 1 {
-		if receipts[0] == nil { return nil, ErrInvalidWeComGroupMessage }
+		if receipts[0] == nil {
+			return nil, ErrInvalidWeComGroupMessage
+		}
 		provider.receipts = receipts[0]
 	}
 	return provider, nil
@@ -303,17 +217,22 @@ func (provider *WeComGroupMessageProvider) Dispatch(ctx context.Context, request
 		return preDispatchGroupMessageResult(request), nil
 	}
 	_ = material
-	created, err := provider.client.CreateGroupMessageTask(ctx, GroupMessageCreateRequest{Sender: provider.sender, ChatIDs: []string{chatID}, Text: content.MessageText})
+	if !validGroupMessageText(request.SenderUserID, 128) {
+		return preDispatchGroupMessageResult(request), nil
+	}
+	created, err := provider.client.CreateGroupMessageTask(ctx, GroupMessageCreateRequest{Sender: request.SenderUserID, ChatIDs: []string{chatID}, Text: content.MessageText})
 	if err != nil {
-		return classifyGroupMessageCreateError(err, request, provider.sender, chatID), nil
+		return classifyGroupMessageCreateError(err, request, request.SenderUserID, chatID), nil
 	}
 	label := "task"
-	if created.Partial { label = "partial" }
-	digest := groupMessageReceiptDigest(label, created.MessageID, provider.sender, chatID)
+	if created.Partial {
+		label = "partial"
+	}
+	digest := groupMessageReceiptDigest(label, created.MessageID, request.SenderUserID, chatID)
 	// The accepted task is durable before it becomes an EER success. If that
 	// owner receipt cannot be stored, the real Provider call remains unknown
 	// and is never replayed as a fresh create-task request.
-	if provider.receipts == nil || provider.receipts.RecordGroupMessageTask(ctx, groupopsport.GroupMessageReceipt{ExecutionID: request.ExecutionID, ExternalEffectID: request.ExternalEffectID, MessageID: created.MessageID, SenderUserID: provider.sender, ChatID: chatID, UserID: provider.sender, TaskEvidenceDigest: digest}) != nil {
+	if provider.receipts == nil || provider.receipts.RecordGroupMessageTask(ctx, groupopsport.GroupMessageReceipt{ExecutionID: request.ExecutionID, ExternalEffectID: request.ExternalEffectID, MessageID: created.MessageID, SenderUserID: request.SenderUserID, ChatID: chatID, UserID: request.SenderUserID, TaskEvidenceDigest: digest}) != nil {
 		return groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchOutcomeUnknown, ReceiptDigest: groupMessageReceiptDigest("receipt-store-unknown", request.ExternalEffectID, created.MessageID), BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
 	}
 	if created.Partial {
@@ -344,7 +263,7 @@ func groupMessageSnapshots(request groupopsport.DispatchRequest) (groupMessageSn
 }
 
 func validGroupMessageDispatchRequest(request groupopsport.DispatchRequest) bool {
-	return request.ExecutionID > 0 && strings.TrimSpace(request.ExternalEffectID) != "" && validGroupMessageText(request.TargetReference, 1024) &&
+	return request.ExecutionID > 0 && strings.TrimSpace(request.ExternalEffectID) != "" && validGroupMessageText(request.TargetReference, 1024) && validGroupMessageText(request.SenderUserID, 128) &&
 		validDigestValue(request.ContentDigest) && validDigestValue(request.MaterialDigest)
 }
 
@@ -374,77 +293,6 @@ func preDispatchGroupMessageResult(request groupopsport.DispatchRequest) groupop
 func groupMessageReceiptDigest(label string, values ...string) string {
 	sum := sha256.Sum256([]byte("group-ops/wecom-group-message/v1\x00" + label + "\x00" + strings.Join(values, "\x00")))
 	return "sha256:" + hex.EncodeToString(sum[:])
-}
-
-type GroupMessageEvidence = groupopsport.GroupMessageReceipt
-
-func groupMessageEvidenceDigest(evidence GroupMessageEvidence) string { return evidence.TaskEvidenceDigest }
-
-func validGroupMessageEvidence(evidence GroupMessageEvidence) bool {
-	return evidence.ExecutionID > 0 && validGroupMessageText(evidence.MessageID, 1024) && validGroupMessageText(evidence.SenderUserID, 128) && validGroupMessageText(evidence.ChatID, 1024) && validGroupMessageText(evidence.UserID, 128) && validDigestValue(evidence.TaskEvidenceDigest)
-}
-
-type GroupMessageEvidenceSource = groupopsport.GroupMessageReceiptReader
-
-type groupMessageQueryClient interface {
-	GetGroupMessageTask(context.Context, string, string) (GroupMessageTaskPage, error)
-	GetGroupMessageSendResult(context.Context, string, string, string) (GroupMessageSendResultPage, error)
-}
-
-// WeComGroupMessageReconciliationVerifier verifies independently stored task
-// evidence. It never trusts the ManualReconcile delivery_proven request field.
-type WeComGroupMessageReconciliationVerifier struct {
-	client   groupMessageQueryClient
-	evidence GroupMessageEvidenceSource
-}
-
-var _ groupopsport.ReconciliationEvidenceVerifier = (*WeComGroupMessageReconciliationVerifier)(nil)
-
-func NewWeComGroupMessageReconciliationVerifier(client groupMessageQueryClient, evidence GroupMessageEvidenceSource) (*WeComGroupMessageReconciliationVerifier, error) {
-	if client == nil || evidence == nil {
-		return nil, ErrInvalidWeComGroupMessage
-	}
-	return &WeComGroupMessageReconciliationVerifier{client: client, evidence: evidence}, nil
-}
-
-func (verifier *WeComGroupMessageReconciliationVerifier) VerifyReconciliationEvidence(ctx context.Context, request groupopsport.ReconciliationEvidence) (groupopsport.ReconciliationEvidenceResult, error) {
-	if verifier == nil || verifier.client == nil || verifier.evidence == nil || ctx == nil || request.ExecutionID < 1 || strings.TrimSpace(request.ExternalEffectID) == "" || !validDigestValue(request.EvidenceDigest) {
-		return groupopsport.ReconciliationEvidenceResult{}, ErrInvalidWeComGroupMessage
-	}
-	evidence, found, err := verifier.evidence.FindGroupMessageReceipt(ctx, request)
-	if err != nil {
-		return groupopsport.ReconciliationEvidenceResult{}, err
-	}
-	if !found || !validGroupMessageEvidence(evidence) || groupMessageEvidenceDigest(evidence) != request.EvidenceDigest {
-		return groupopsport.ReconciliationEvidenceResult{}, nil
-	}
-	if _, err = verifier.client.GetGroupMessageTask(ctx, evidence.MessageID, ""); err != nil {
-		return groupopsport.ReconciliationEvidenceResult{}, err
-	}
-	seen := map[string]struct{}{}
-	for cursor := ""; ; {
-		if _, duplicate := seen[cursor]; duplicate {
-			return groupopsport.ReconciliationEvidenceResult{}, errWeComGroupOutcomeUnknown
-		}
-		seen[cursor] = struct{}{}
-		page, queryErr := verifier.client.GetGroupMessageSendResult(ctx, evidence.MessageID, evidence.SenderUserID, cursor)
-		if queryErr != nil {
-			return groupopsport.ReconciliationEvidenceResult{}, queryErr
-		}
-		for _, item := range page.Items {
-			if item.ChatID == evidence.ChatID && item.UserID == evidence.UserID && item.Status == 1 {
-				digest := groupMessageReceiptDigest("delivery", evidence.MessageID, evidence.SenderUserID, evidence.ChatID, evidence.UserID, "1")
-				if err = verifier.evidence.RecordGroupMessageDelivery(ctx, evidence, digest); err != nil {
-					return groupopsport.ReconciliationEvidenceResult{}, err
-				}
-				return groupopsport.ReconciliationEvidenceResult{DeliveryProven: true, EvidenceDigest: digest}, nil
-			}
-		}
-		if page.NextCursor == "" {
-			return groupopsport.ReconciliationEvidenceResult{}, nil
-		}
-		cursor = page.NextCursor
-	}
 }
 
 func validDigestValue(value string) bool {

@@ -29,7 +29,7 @@ func NewDispatchAdapter(provider groupopsport.DispatchProvider, execution groupo
 	}
 	return &DispatchAdapter{provider: provider, request: groupopsport.DispatchRequest{
 		ExecutionID: execution.ExecutionID, ExternalEffectID: execution.ExternalEffectID,
-		TargetReference: execution.TargetReference, ContentSnapshot: append(json.RawMessage(nil), execution.ContentSnapshot...),
+		TargetReference: execution.TargetReference, SenderUserID: execution.SenderUserID, ContentSnapshot: append(json.RawMessage(nil), execution.ContentSnapshot...),
 		ContentDigest: execution.ContentDigest, MaterialSnapshot: append(json.RawMessage(nil), execution.MaterialSnapshot...),
 		MaterialDigest: execution.MaterialDigest,
 	}}, nil
@@ -107,13 +107,13 @@ func (adapter *DispatchAdapter) Request() groupopsport.DispatchRequest {
 
 func validExecution(value groupopsport.DispatchExecution) bool {
 	return value.ExecutionID > 0 && value.State == groupopsport.ExecutionAccepted && validRequest(groupopsport.DispatchRequest{
-		ExecutionID: value.ExecutionID, ExternalEffectID: value.ExternalEffectID, TargetReference: value.TargetReference,
+		ExecutionID: value.ExecutionID, ExternalEffectID: value.ExternalEffectID, TargetReference: value.TargetReference, SenderUserID: value.SenderUserID,
 		ContentSnapshot: value.ContentSnapshot, ContentDigest: value.ContentDigest, MaterialSnapshot: value.MaterialSnapshot, MaterialDigest: value.MaterialDigest,
 	})
 }
 
 func validRequest(value groupopsport.DispatchRequest) bool {
-	return value.ExecutionID > 0 && strings.TrimSpace(value.ExternalEffectID) != "" && strings.TrimSpace(value.TargetReference) != "" &&
+	return value.ExecutionID > 0 && strings.TrimSpace(value.ExternalEffectID) != "" && strings.TrimSpace(value.TargetReference) != "" && strings.TrimSpace(value.SenderUserID) == value.SenderUserID && value.SenderUserID != "" &&
 		jsonObject(value.ContentSnapshot) && jsonObject(value.MaterialSnapshot) && validDigest(eer.Digest(value.ContentDigest)) && validDigest(eer.Digest(value.MaterialDigest))
 }
 

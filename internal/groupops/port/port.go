@@ -29,14 +29,15 @@ type Safety struct {
 func LocalSafety() Safety { return Safety{} }
 
 type Plan struct {
-	ID        int64      `json:"plan_id,string"`
-	Name      string     `json:"name"`
-	Status    PlanStatus `json:"status"`
-	Revision  int64      `json:"revision"`
-	CreatedBy int64      `json:"created_by"`
-	UpdatedBy int64      `json:"updated_by"`
-	CreatedAt time.Time  `json:"created_at"`
-	UpdatedAt time.Time  `json:"updated_at"`
+	ID         int64      `json:"plan_id,string"`
+	Name       string     `json:"name"`
+	Status     PlanStatus `json:"status"`
+	Revision   int64      `json:"revision"`
+	QueueCount int64      `json:"queue_count"`
+	CreatedBy  int64      `json:"created_by"`
+	UpdatedBy  int64      `json:"updated_by"`
+	CreatedAt  time.Time  `json:"created_at"`
+	UpdatedAt  time.Time  `json:"updated_at"`
 }
 
 type Member struct {

@@ -208,6 +208,55 @@ func (h *Handler) listDirectoryGroups(w http.ResponseWriter, r *http.Request, ow
 func (h *Handler) SyncGroups(w http.ResponseWriter, r *http.Request)      { h.syncGroups(w, r) }
 func (h *Handler) SyncGroupPicker(w http.ResponseWriter, r *http.Request) { h.syncGroups(w, r) }
 
+func (h *Handler) ListOperationMembers(w http.ResponseWriter, r *http.Request) {
+	setHeaders(w)
+	if !method(w, r, http.MethodGet) || !authorized(r, "admin.read") {
+		authorization(w, r)
+		return
+	}
+	if !runtimeAvailable(h) {
+		unavailable(w)
+		return
+	}
+	if r.URL.RawQuery != "" {
+		writeError(w, http.StatusBadRequest, "invalid_page")
+		return
+	}
+	result, err := h.Runtime.ListOperationMembers(r.Context(), 200)
+	if err != nil {
+		runtimeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (h *Handler) SyncOperationMembers(w http.ResponseWriter, r *http.Request) {
+	setHeaders(w)
+	actor, ok := writeAuthorized(r)
+	if !method(w, r, http.MethodPost) || !ok {
+		authorization(w, r)
+		return
+	}
+	idempotencyKey, keyOK := key(r)
+	var body struct {
+		PageSize int32 `json:"page_size"`
+	}
+	if !keyOK || !decodeBody(r, &body) {
+		writeError(w, http.StatusBadRequest, "invalid_request")
+		return
+	}
+	if !runtimeAvailable(h) {
+		unavailable(w)
+		return
+	}
+	result, err := h.Runtime.RefreshOperationMembers(r.Context(), groupopsport.OperationMemberRefreshCommand{ActorID: actor, PageSize: body.PageSize, IdempotencyKey: idempotencyKey})
+	if err != nil {
+		runtimeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
 func (h *Handler) syncGroups(w http.ResponseWriter, r *http.Request) {
 	setHeaders(w)
 	actor, ok := writeAuthorized(r)

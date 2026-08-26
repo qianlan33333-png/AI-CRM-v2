@@ -44,7 +44,7 @@ func TestRuntimeRepositoryPostgreSQLBindsSnapshotsToEERAtomically(t *testing.T) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	runtime, err := groupopsapp.NewRuntimeService(uow, repository, repository, effects, runtimeDirectory{}, nil)
+	runtime, err := groupopsapp.NewRuntimeService(uow, repository, repository, effects, runtimeDirectory{}, nil, runtimeSender{}, runtimeJobs{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +109,7 @@ func TestRuntimeHTTPPostgreSQLReceiptReplayConflictAndRollback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	runtime, err := groupopsapp.NewRuntimeService(uow, repository, repository, effects, runtimeDirectory{}, nil)
+	runtime, err := groupopsapp.NewRuntimeService(uow, repository, repository, effects, runtimeDirectory{}, nil, runtimeSender{}, runtimeJobs{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,7 +190,7 @@ func TestRuntimeHTTPPostgreSQLReceiptReplayConflictAndRollback(t *testing.T) {
 	expectedEffects := effectsBefore
 
 	failingDetail := createActiveRuntimePlan(t, ctx, planService, key+"-rollback")
-	failingRuntime, err := groupopsapp.NewRuntimeService(uow, repository, repository, runtimeFailingEffects{}, runtimeDirectory{}, nil)
+	failingRuntime, err := groupopsapp.NewRuntimeService(uow, repository, repository, runtimeFailingEffects{}, runtimeDirectory{}, nil, runtimeSender{}, runtimeJobs{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -271,6 +271,10 @@ func (runtimeFailingEffects) Accept(context.Context, eerport.AcceptCommand) (eer
 	return eerport.Projection{}, eerport.OperationReceipt{}, errors.New("local EER test failure")
 }
 
+func (runtimeFailingEffects) Queue(context.Context, eerport.QueueCommand) (eerport.Projection, eerport.OperationReceipt, error) {
+	return eerport.Projection{}, eerport.OperationReceipt{}, errors.New("unexpected queue")
+}
+
 func (runtimeFailingEffects) Reconcile(context.Context, eerport.ReconcileCommand) (eerport.Projection, eerport.OperationReceipt, error) {
 	return eerport.Projection{}, eerport.OperationReceipt{}, errors.New("unexpected reconcile")
 }
@@ -283,6 +287,13 @@ type runtimeDirectory struct{}
 
 func (runtimeDirectory) ListEligibleStaff(context.Context) ([]contactport.StaffDirectoryEntry, error) {
 	return []contactport.StaffDirectoryEntry{}, nil
+}
+
+type runtimeSender struct{}
+func (runtimeSender) ResolveExecutionSender(context.Context, string) (string, bool, error) { return "staff-7", true, nil }
+type runtimeJobs struct{}
+func (runtimeJobs) Insert(_ context.Context, args groupopsapp.GroupOpsDispatchJobArgs, generation int64, scheduled time.Time) (eerport.RiverJobLink, error) {
+	return eerport.RiverJobLink{JobID: 1, Generation: generation, Queue: "outbound", ArgsDigest: eerport.Digest("sha256:0000000000000000000000000000000000000000000000000000000000000000"), ScheduledAt: scheduled}, nil
 }
 
 type runtimeEvents struct{}

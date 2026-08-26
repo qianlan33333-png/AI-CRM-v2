@@ -173,7 +173,7 @@ func (stub *providerStub) Dispatch(_ context.Context, _ groupopsport.DispatchReq
 }
 
 func dispatchExecution(state groupopsport.ExecutionState) groupopsport.DispatchExecution {
-	return groupopsport.DispatchExecution{ExecutionID: 11, ExternalEffectID: "eer_41", State: state, TargetReference: "chat:controlled", ContentSnapshot: []byte(`{"schema_version":1}`), ContentDigest: string(digest("content")), MaterialSnapshot: []byte(`{"schema_version":1}`), MaterialDigest: string(digest("material"))}
+	return groupopsport.DispatchExecution{ExecutionID: 11, ExternalEffectID: "eer_41", State: state, TargetReference: "chat:controlled", SenderUserID: "staff-1", ContentSnapshot: []byte(`{"schema_version":1}`), ContentDigest: string(digest("content")), MaterialSnapshot: []byte(`{"schema_version":1}`), MaterialDigest: string(digest("material"))}
 }
 
 func digest(value string) eer.Digest {

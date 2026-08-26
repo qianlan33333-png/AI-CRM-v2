@@ -43,6 +43,7 @@ type ExecutionDraft struct {
 	NodeID             int64
 	NodePosition       int32
 	TargetReference    string
+	SenderUserID       string
 	TargetDigest       string
 	ContentSnapshot    json.RawMessage
 	ContentDigest      string
@@ -70,8 +71,19 @@ type RuntimeStore interface {
 
 type RuntimeEffects interface {
 	Accept(context.Context, eer.AcceptCommand) (eer.Projection, eer.OperationReceipt, error)
+	Queue(context.Context, eer.QueueCommand) (eer.Projection, eer.OperationReceipt, error)
 	Reconcile(context.Context, eer.ReconcileCommand) (eer.Projection, eer.OperationReceipt, error)
 }
+
+type DispatchJobInserter interface {
+	Insert(context.Context, GroupOpsDispatchJobArgs, int64, time.Time) (eer.RiverJobLink, error)
+}
+
+type GroupOpsDispatchJobArgs struct {
+	EffectID string `json:"effect_id"`
+}
+
+func (GroupOpsDispatchJobArgs) Kind() string { return "group_ops_dispatch" }
 
 type RuntimeService struct {
 	uow      platformport.UnitOfWork
@@ -80,18 +92,20 @@ type RuntimeService struct {
 	effects  RuntimeEffects
 	staff    contactport.StaffDirectoryReader
 	groups   groupopsport.GroupDirectorySource
+	senders  groupopsport.ExecutionSenderResolver
+	jobs     DispatchJobInserter
 	evidence groupopsport.ReconciliationEvidenceVerifier
 	now      func() time.Time
 }
 
-func NewRuntimeService(uow platformport.UnitOfWork, plans Store, runtime RuntimeStore, effects RuntimeEffects, staff contactport.StaffDirectoryReader, groups groupopsport.GroupDirectorySource, evidence ...groupopsport.ReconciliationEvidenceVerifier) (*RuntimeService, error) {
-	if nilRuntimeDependency(uow) || nilRuntimeDependency(plans) || nilRuntimeDependency(runtime) || nilRuntimeDependency(effects) || nilRuntimeDependency(staff) {
+func NewRuntimeService(uow platformport.UnitOfWork, plans Store, runtime RuntimeStore, effects RuntimeEffects, staff contactport.StaffDirectoryReader, groups groupopsport.GroupDirectorySource, senders groupopsport.ExecutionSenderResolver, jobs DispatchJobInserter, evidence ...groupopsport.ReconciliationEvidenceVerifier) (*RuntimeService, error) {
+	if nilRuntimeDependency(uow) || nilRuntimeDependency(plans) || nilRuntimeDependency(runtime) || nilRuntimeDependency(effects) || nilRuntimeDependency(staff) || nilRuntimeDependency(senders) || nilRuntimeDependency(jobs) {
 		return nil, ErrUnavailable
 	}
 	if len(evidence) > 1 {
 		return nil, ErrUnavailable
 	}
-	service := &RuntimeService{uow: uow, plans: plans, runtime: runtime, effects: effects, staff: staff, groups: groups, now: time.Now}
+	service := &RuntimeService{uow: uow, plans: plans, runtime: runtime, effects: effects, staff: staff, groups: groups, senders: senders, jobs: jobs, now: time.Now}
 	if len(evidence) == 1 && !nilRuntimeDependency(evidence[0]) {
 		service.evidence = evidence[0]
 	}
@@ -184,7 +198,7 @@ func (service *RuntimeService) acceptPlan(ctx context.Context, command groupopsp
 			return ErrStateConflict
 		}
 		operation := runtimeReceiptOperation(command.Trigger)
-		payload, digestErr := runtimeReceiptPayload(command, detail.Plan.Revision, allDrafts)
+		payload, digestErr := service.runtimeReceiptPayload(tx, command, detail.Plan.Revision, allDrafts)
 		if digestErr != nil {
 			return digestErr
 		}
@@ -223,16 +237,21 @@ func (service *RuntimeService) acceptPlan(ctx context.Context, command groupopsp
 			return err
 		}
 		for _, draft := range drafts {
-			content, contentDigest, material, materialDigest, executionPayloadDigest, err := snapshots(draft.node)
+			senderUserID, resolved, senderErr := service.senders.ResolveExecutionSender(tx, draft.target)
+			if senderErr != nil || !resolved || !opaque(senderUserID) {
+				return errors.Join(ErrUnavailable, senderErr)
+			}
+			content, contentDigest, material, materialDigest, _, err := snapshots(draft.node)
 			if err != nil {
 				return err
 			}
+			executionPayloadDigest := runtimeDigest("group-ops-payload", string(contentDigest), string(materialDigest), senderUserID)
 			targetDigest := runtimeDigest("group-ops-target", draft.target)
 			envelope, err := eer.NewEnvelope(eer.EnvelopeInput{
 				Owner: eer.OwnerGroupOps, Kind: eer.KindGroupOpsBroadcast,
 				SourceRefDigest: runtimeDigest("group-ops-source", string(sourceKey), strconv.FormatInt(command.PlanID, 10), strconv.FormatInt(detail.Plan.Revision, 10), strconv.FormatInt(draft.node.ID, 10)),
 				TargetRefDigest: targetDigest, PayloadDigest: executionPayloadDigest,
-				PolicyVersionHash: runtimeDigest("group-ops-policy", "v1", "provider-disabled-default"),
+				PolicyVersionHash: runtimeDigest("group-ops-policy", "v2", senderUserID),
 			})
 			if err != nil {
 				return err
@@ -241,12 +260,20 @@ func (service *RuntimeService) acceptPlan(ctx context.Context, command groupopsp
 			if err != nil || projection.State != eer.StateAccepted || projection.Owner != eer.OwnerGroupOps || projection.Kind != eer.KindGroupOpsBroadcast {
 				return errors.Join(ErrUnavailable, err)
 			}
-			executionKey := runtimeDigest("group-ops-execution", string(sourceKey), strconv.FormatInt(draft.node.ID, 10), draft.target)
+			executionKey := runtimeDigest("group-ops-execution", string(sourceKey), strconv.FormatInt(draft.node.ID, 10), draft.target, senderUserID)
 			if dueOnly {
-				executionKey = runtimeDigest("group-ops-run-due-execution", strconv.FormatInt(command.PlanID, 10), strconv.FormatInt(detail.Plan.Revision, 10), strconv.FormatInt(draft.node.ID, 10), draft.target)
+				executionKey = runtimeDigest("group-ops-run-due-execution", strconv.FormatInt(command.PlanID, 10), strconv.FormatInt(detail.Plan.Revision, 10), strconv.FormatInt(draft.node.ID, 10), draft.target, senderUserID)
 			}
-			if _, err = service.runtime.InsertExecution(tx, ExecutionDraft{RunID: run.ID, PlanID: command.PlanID, PlanRevision: detail.Plan.Revision, NodeID: draft.node.ID, NodePosition: draft.node.Position, TargetReference: draft.target, TargetDigest: string(targetDigest), ContentSnapshot: content, ContentDigest: string(contentDigest), MaterialSnapshot: material, MaterialDigest: string(materialDigest), ExecutionKeyDigest: digestBytes(executionKey), ExternalEffectID: projection.ID, CreatedAt: now}); err != nil {
+			if _, err = service.runtime.InsertExecution(tx, ExecutionDraft{RunID: run.ID, PlanID: command.PlanID, PlanRevision: detail.Plan.Revision, NodeID: draft.node.ID, NodePosition: draft.node.Position, TargetReference: draft.target, SenderUserID: senderUserID, TargetDigest: string(targetDigest), ContentSnapshot: content, ContentDigest: string(contentDigest), MaterialSnapshot: material, MaterialDigest: string(materialDigest), ExecutionKeyDigest: digestBytes(executionKey), ExternalEffectID: projection.ID, CreatedAt: now}); err != nil {
 				return err
+			}
+			link, jobErr := service.jobs.Insert(tx, GroupOpsDispatchJobArgs{EffectID: projection.ID}, projection.Generation+1, draft.scheduledFor)
+			if jobErr != nil {
+				return jobErr
+			}
+			queued, _, queueErr := service.effects.Queue(tx, eer.QueueCommand{EffectID: projection.ID, Job: link, ReceiptKeyDigest: runtimeDigest("group-ops-queue", projection.ID, strconv.FormatInt(projection.Generation+1, 10))})
+			if queueErr != nil || queued.ID != projection.ID || queued.Owner != eer.OwnerGroupOps || queued.Kind != eer.KindGroupOpsBroadcast || queued.State != eer.StateQueued || queued.Generation != link.Generation {
+				return errors.Join(ErrUnavailable, queueErr)
 			}
 		}
 		summary, err = service.runtime.ReadRunSummary(tx, run.ID)
@@ -274,6 +301,7 @@ type runtimeReceiptSnapshot struct {
 	NodePosition    int32     `json:"node_position"`
 	NodeKind        string    `json:"node_kind"`
 	TargetReference string    `json:"target_reference"`
+	SenderUserID    string    `json:"sender_userid"`
 	ScheduledFor    time.Time `json:"scheduled_for"`
 	ContentDigest   string    `json:"content_digest"`
 	MaterialDigest  string    `json:"material_digest"`
@@ -291,14 +319,18 @@ func runtimeReceiptOperation(trigger groupopsport.RunTrigger) string {
 	return "runtime_" + string(trigger)
 }
 
-func runtimeReceiptPayload(command groupopsport.AcceptPlanCommand, revision int64, drafts []scheduledExecution) (runtimeReceiptCommand, error) {
+func (service *RuntimeService) runtimeReceiptPayload(ctx context.Context, command groupopsport.AcceptPlanCommand, revision int64, drafts []scheduledExecution) (runtimeReceiptCommand, error) {
 	result := runtimeReceiptCommand{PlanID: command.PlanID, Trigger: command.Trigger, AcceptedBy: command.AcceptedBy, PlanRevision: revision, Snapshot: make([]runtimeReceiptSnapshot, len(drafts))}
 	for index, draft := range drafts {
+		sender, resolved, err := service.senders.ResolveExecutionSender(ctx, draft.target)
+		if err != nil || !resolved || !opaque(sender) {
+			return runtimeReceiptCommand{}, ErrUnavailable
+		}
 		_, content, _, material, _, err := snapshots(draft.node)
 		if err != nil {
 			return runtimeReceiptCommand{}, err
 		}
-		result.Snapshot[index] = runtimeReceiptSnapshot{NodeID: draft.node.ID, NodePosition: draft.node.Position, NodeKind: string(draft.node.Kind), TargetReference: draft.target, ScheduledFor: draft.scheduledFor.UTC(), ContentDigest: string(content), MaterialDigest: string(material)}
+		result.Snapshot[index] = runtimeReceiptSnapshot{NodeID: draft.node.ID, NodePosition: draft.node.Position, NodeKind: string(draft.node.Kind), TargetReference: draft.target, SenderUserID: sender, ScheduledFor: draft.scheduledFor.UTC(), ContentDigest: string(content), MaterialDigest: string(material)}
 	}
 	return result, nil
 }

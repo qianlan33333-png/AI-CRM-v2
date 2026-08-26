@@ -15,6 +15,7 @@ import (
 type StaffDirectoryRepository struct{ pool *pgxpool.Pool }
 
 var _ contact.ActiveStaffReader = (*StaffDirectoryRepository)(nil)
+var _ contact.ActiveStaffSenderReader = (*StaffDirectoryRepository)(nil)
 var _ contact.EligibleStaffReferenceReader = (*StaffDirectoryRepository)(nil)
 var _ contact.HistoricalImportStaffReader = (*StaffDirectoryRepository)(nil)
 var _ contact.StaffDirectoryReader = (*StaffDirectoryRepository)(nil)
@@ -110,4 +111,23 @@ func (*StaffDirectoryRepository) IsActiveStaff(ctx context.Context, staffID int6
 		return false, err
 	}
 	return active, nil
+}
+
+func (*StaffDirectoryRepository) LockActiveWeComUserID(ctx context.Context, staffID int64) (string, error) {
+	if staffID < 1 {
+		return "", contact.ErrStaffReferenceNotFound
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return "", contact.ErrStaffReferenceUnavailable
+	}
+	var userID string
+	err = tx.QueryRow(ctx, `SELECT wecom_userid FROM staff WHERE id = $1 AND is_active AND btrim(wecom_userid) <> '' FOR SHARE`, staffID).Scan(&userID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", contact.ErrStaffReferenceNotFound
+	}
+	if err != nil || strings.TrimSpace(userID) != userID {
+		return "", contact.ErrStaffReferenceUnavailable
+	}
+	return userID, nil
 }

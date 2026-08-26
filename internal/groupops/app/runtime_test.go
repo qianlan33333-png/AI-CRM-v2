@@ -165,7 +165,7 @@ func newRuntimeFixture(t *testing.T, evidence ...groupopsport.ReconciliationEvid
 	}}, receipts: map[string]Receipt{}}
 	runtime := &runtimeStoreFixture{runs: map[string]groupopsport.Run{}, executions: map[int64]groupopsport.Execution{}, webhookPlan: 91}
 	effects := &runtimeEffectsFixture{}
-	service, err := NewRuntimeService(testUOW{}, plans, runtime, effects, runtimeStaffFixture{}, nil, evidence...)
+	service, err := NewRuntimeService(testUOW{}, plans, runtime, effects, runtimeStaffFixture{}, nil, runtimeSenderFixture{}, runtimeJobFixture{}, evidence...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,6 +174,14 @@ func newRuntimeFixture(t *testing.T, evidence ...groupopsport.ReconciliationEvid
 }
 
 type evidenceVerifierStub struct{ delivery bool }
+
+type runtimeSenderFixture struct{}
+func (runtimeSenderFixture) ResolveExecutionSender(_ context.Context, target string) (string, bool, error) { return "staff-" + target[len(target)-1:], true, nil }
+
+type runtimeJobFixture struct{}
+func (runtimeJobFixture) Insert(_ context.Context, args GroupOpsDispatchJobArgs, generation int64, scheduled time.Time) (eer.RiverJobLink, error) {
+	return eer.RiverJobLink{JobID: 1, Generation: generation, Queue: "outbound", ArgsDigest: runtimeDigest("job", args.EffectID), ScheduledAt: scheduled}, nil
+}
 
 func (stub evidenceVerifierStub) VerifyReconciliationEvidence(_ context.Context, evidence groupopsport.ReconciliationEvidence) (groupopsport.ReconciliationEvidenceResult, error) {
 	if evidence.ExecutionID < 1 || evidence.ExternalEffectID == "" || evidence.EvidenceDigest == "" {
@@ -207,6 +215,11 @@ func (fixture *runtimeEffectsFixture) Accept(_ context.Context, command eer.Acce
 	}
 	now := time.Now().UTC()
 	return eer.Projection{ID: id, Owner: eer.OwnerGroupOps, Kind: eer.KindGroupOpsBroadcast, State: eer.StateAccepted, Generation: 1, UpdatedAt: now}, eer.OperationReceipt{ID: "accept", EffectID: id, CommandDigest: command.CommandDigest(), State: eer.StateAccepted, CompletedAt: now}, nil
+}
+
+func (*runtimeEffectsFixture) Queue(_ context.Context, command eer.QueueCommand) (eer.Projection, eer.OperationReceipt, error) {
+	now := time.Now().UTC()
+	return eer.Projection{ID: command.EffectID, Owner: eer.OwnerGroupOps, Kind: eer.KindGroupOpsBroadcast, State: eer.StateQueued, Generation: command.Job.Generation, UpdatedAt: now}, eer.OperationReceipt{ID: "queue", EffectID: command.EffectID, CommandDigest: command.CommandDigest(), State: eer.StateQueued, CompletedAt: now}, nil
 }
 
 func (fixture *runtimeEffectsFixture) Reconcile(_ context.Context, command eer.ReconcileCommand) (eer.Projection, eer.OperationReceipt, error) {

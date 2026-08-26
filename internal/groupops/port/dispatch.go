@@ -16,6 +16,7 @@ type DispatchExecution struct {
 	DeliveryProven   bool
 	AttemptRecovery  *AttemptRecoveryLease
 	TargetReference  string
+	SenderUserID     string
 	ContentSnapshot  json.RawMessage
 	ContentDigest    string
 	MaterialSnapshot json.RawMessage
@@ -66,14 +67,14 @@ type ReconciliationEvidenceResult struct {
 // absent from EER and HTTP contracts; its identifiers are required solely for
 // the independently documented WeCom reconciliation query.
 type GroupMessageReceipt struct {
-	ExecutionID        int64
-	ExternalEffectID   string
-	MessageID          string
-	SenderUserID       string
-	ChatID             string
-	UserID             string
-	TaskEvidenceDigest string
-	DeliveryStatus     *int
+	ExecutionID            int64
+	ExternalEffectID       string
+	MessageID              string
+	SenderUserID           string
+	ChatID                 string
+	UserID                 string
+	TaskEvidenceDigest     string
+	DeliveryStatus         *int
 	DeliveryEvidenceDigest string
 }
 
@@ -109,6 +110,7 @@ type DispatchRequest struct {
 	ExecutionID      int64
 	ExternalEffectID string
 	TargetReference  string
+	SenderUserID     string
 	ContentSnapshot  json.RawMessage
 	ContentDigest    string
 	MaterialSnapshot json.RawMessage

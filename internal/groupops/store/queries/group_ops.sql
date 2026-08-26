@@ -1,7 +1,12 @@
 -- name: ListGroupOpsPlans :many
-SELECT id, name, status, revision, created_by, updated_by, created_at, updated_at
-FROM group_ops_plans
-ORDER BY updated_at DESC, id DESC
+SELECT p.id, p.name, p.status, p.revision,
+       count(e.id) FILTER (WHERE effect.state IN ('accepted', 'queued', 'attempted'))::bigint AS queue_count,
+       p.created_by, p.updated_by, p.created_at, p.updated_at
+FROM group_ops_plans p
+LEFT JOIN group_ops_executions e ON e.plan_id = p.id
+LEFT JOIN external_effects effect ON effect.id = e.external_effect_id
+GROUP BY p.id
+ORDER BY p.updated_at DESC, p.id DESC
 LIMIT sqlc.arg(row_limit) OFFSET sqlc.arg(row_offset);
 
 -- name: CountGroupOpsPlans :one
@@ -134,12 +139,12 @@ FROM group_ops_runs WHERE id = sqlc.arg(run_id);
 WITH inserted AS (
   INSERT INTO group_ops_executions (
     run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest,
-    content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id,
+    content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, sender_userid_snapshot,
     created_at, updated_at
   ) VALUES (
     sqlc.arg(run_id), sqlc.arg(plan_id), sqlc.arg(node_id), sqlc.arg(plan_revision), sqlc.arg(node_position),
     sqlc.arg(target_reference), sqlc.arg(target_digest), sqlc.arg(content_snapshot), sqlc.arg(content_digest),
-    sqlc.arg(material_snapshot), sqlc.arg(material_digest), sqlc.arg(execution_key_digest), sqlc.arg(external_effect_id), sqlc.arg(created_at), sqlc.arg(created_at)
+    sqlc.arg(material_snapshot), sqlc.arg(material_digest), sqlc.arg(execution_key_digest), sqlc.arg(external_effect_id), sqlc.narg(sender_userid_snapshot), sqlc.arg(created_at), sqlc.arg(created_at)
   )
   ON CONFLICT (execution_key_digest) DO NOTHING
   RETURNING *
@@ -172,6 +177,11 @@ SELECT * FROM group_ops_executions WHERE id = sqlc.arg(execution_id) FOR UPDATE;
 SELECT * FROM group_ops_executions
 WHERE external_effect_id = sqlc.arg(external_effect_id)
 FOR UPDATE;
+
+-- name: LockGroupOpsDirectoryGroupOwner :one
+SELECT owner_staff_id FROM group_ops_directory_groups
+WHERE chat_reference = sqlc.arg(chat_reference)
+FOR SHARE;
 
 -- name: GetGroupOpsExternalEffect :one
 SELECT id, owner, kind, state, generation, lease_fence, lease_expires_at, attempt_count

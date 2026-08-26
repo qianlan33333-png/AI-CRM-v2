@@ -256,7 +256,7 @@ func (q *Queries) GetGroupOpsDirectoryRefresh(ctx context.Context, arg GetGroupO
 }
 
 const getGroupOpsExecution = `-- name: GetGroupOpsExecution :one
-SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at FROM group_ops_executions WHERE id = $1 FOR UPDATE
+SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at, sender_userid_snapshot FROM group_ops_executions WHERE id = $1 FOR UPDATE
 `
 
 func (q *Queries) GetGroupOpsExecution(ctx context.Context, executionID int64) (GroupOpsExecution, error) {
@@ -285,12 +285,13 @@ func (q *Queries) GetGroupOpsExecution(ctx context.Context, executionID int64) (
 		&i.AttemptCount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SenderUseridSnapshot,
 	)
 	return i, err
 }
 
 const getGroupOpsExecutionByExternalEffectID = `-- name: GetGroupOpsExecutionByExternalEffectID :one
-SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at FROM group_ops_executions
+SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at, sender_userid_snapshot FROM group_ops_executions
 WHERE external_effect_id = $1
 FOR UPDATE
 `
@@ -321,6 +322,7 @@ func (q *Queries) GetGroupOpsExecutionByExternalEffectID(ctx context.Context, ex
 		&i.AttemptCount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SenderUseridSnapshot,
 	)
 	return i, err
 }
@@ -540,39 +542,40 @@ const insertGroupOpsExecution = `-- name: InsertGroupOpsExecution :one
 WITH inserted AS (
   INSERT INTO group_ops_executions (
     run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest,
-    content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id,
+    content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, sender_userid_snapshot,
     created_at, updated_at
   ) VALUES (
     $1, $2, $3, $4, $5,
     $6, $7, $8, $9,
-    $10, $11, $12, $13, $14, $14
+    $10, $11, $12, $13, $14, $15, $15
   )
   ON CONFLICT (execution_key_digest) DO NOTHING
-  RETURNING id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at
+  RETURNING id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at, sender_userid_snapshot
 )
-SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at FROM inserted
+SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at, sender_userid_snapshot FROM inserted
 UNION ALL
-SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at FROM group_ops_executions
+SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at, sender_userid_snapshot FROM group_ops_executions
 WHERE execution_key_digest = $12
   AND NOT EXISTS (SELECT 1 FROM inserted)
 LIMIT 1
 `
 
 type InsertGroupOpsExecutionParams struct {
-	RunID              int64              `json:"run_id"`
-	PlanID             int64              `json:"plan_id"`
-	NodeID             int64              `json:"node_id"`
-	PlanRevision       int64              `json:"plan_revision"`
-	NodePosition       int32              `json:"node_position"`
-	TargetReference    string             `json:"target_reference"`
-	TargetDigest       string             `json:"target_digest"`
-	ContentSnapshot    []byte             `json:"content_snapshot"`
-	ContentDigest      string             `json:"content_digest"`
-	MaterialSnapshot   []byte             `json:"material_snapshot"`
-	MaterialDigest     string             `json:"material_digest"`
-	ExecutionKeyDigest []byte             `json:"execution_key_digest"`
-	ExternalEffectID   int64              `json:"external_effect_id"`
-	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	RunID                int64              `json:"run_id"`
+	PlanID               int64              `json:"plan_id"`
+	NodeID               int64              `json:"node_id"`
+	PlanRevision         int64              `json:"plan_revision"`
+	NodePosition         int32              `json:"node_position"`
+	TargetReference      string             `json:"target_reference"`
+	TargetDigest         string             `json:"target_digest"`
+	ContentSnapshot      []byte             `json:"content_snapshot"`
+	ContentDigest        string             `json:"content_digest"`
+	MaterialSnapshot     []byte             `json:"material_snapshot"`
+	MaterialDigest       string             `json:"material_digest"`
+	ExecutionKeyDigest   []byte             `json:"execution_key_digest"`
+	ExternalEffectID     int64              `json:"external_effect_id"`
+	SenderUseridSnapshot pgtype.Text        `json:"sender_userid_snapshot"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 }
 
 type InsertGroupOpsExecutionRow struct {
@@ -598,6 +601,7 @@ type InsertGroupOpsExecutionRow struct {
 	AttemptCount                 int32              `json:"attempt_count"`
 	CreatedAt                    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                    pgtype.Timestamptz `json:"updated_at"`
+	SenderUseridSnapshot         pgtype.Text        `json:"sender_userid_snapshot"`
 }
 
 func (q *Queries) InsertGroupOpsExecution(ctx context.Context, arg InsertGroupOpsExecutionParams) (InsertGroupOpsExecutionRow, error) {
@@ -615,6 +619,7 @@ func (q *Queries) InsertGroupOpsExecution(ctx context.Context, arg InsertGroupOp
 		arg.MaterialDigest,
 		arg.ExecutionKeyDigest,
 		arg.ExternalEffectID,
+		arg.SenderUseridSnapshot,
 		arg.CreatedAt,
 	)
 	var i InsertGroupOpsExecutionRow
@@ -641,6 +646,7 @@ func (q *Queries) InsertGroupOpsExecution(ctx context.Context, arg InsertGroupOp
 		&i.AttemptCount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SenderUseridSnapshot,
 	)
 	return i, err
 }
@@ -779,7 +785,7 @@ func (q *Queries) ListGroupOpsExecutionKeys(ctx context.Context, arg ListGroupOp
 }
 
 const listGroupOpsExecutions = `-- name: ListGroupOpsExecutions :many
-SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at FROM group_ops_executions
+SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at, sender_userid_snapshot FROM group_ops_executions
 WHERE plan_id = $1
 ORDER BY created_at DESC, id DESC
 LIMIT $3 OFFSET $2
@@ -823,6 +829,7 @@ func (q *Queries) ListGroupOpsExecutions(ctx context.Context, arg ListGroupOpsEx
 			&i.AttemptCount,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.SenderUseridSnapshot,
 		); err != nil {
 			return nil, err
 		}
@@ -934,9 +941,14 @@ func (q *Queries) ListGroupOpsPlanNodes(ctx context.Context, planID int64) ([]Li
 }
 
 const listGroupOpsPlans = `-- name: ListGroupOpsPlans :many
-SELECT id, name, status, revision, created_by, updated_by, created_at, updated_at
-FROM group_ops_plans
-ORDER BY updated_at DESC, id DESC
+SELECT p.id, p.name, p.status, p.revision,
+       count(e.id) FILTER (WHERE effect.state IN ('accepted', 'queued', 'attempted'))::bigint AS queue_count,
+       p.created_by, p.updated_by, p.created_at, p.updated_at
+FROM group_ops_plans p
+LEFT JOIN group_ops_executions e ON e.plan_id = p.id
+LEFT JOIN external_effects effect ON effect.id = e.external_effect_id
+GROUP BY p.id
+ORDER BY p.updated_at DESC, p.id DESC
 LIMIT $2 OFFSET $1
 `
 
@@ -945,20 +957,33 @@ type ListGroupOpsPlansParams struct {
 	RowLimit  int32 `json:"row_limit"`
 }
 
-func (q *Queries) ListGroupOpsPlans(ctx context.Context, arg ListGroupOpsPlansParams) ([]GroupOpsPlan, error) {
+type ListGroupOpsPlansRow struct {
+	ID         int64              `json:"id"`
+	Name       string             `json:"name"`
+	Status     string             `json:"status"`
+	Revision   int64              `json:"revision"`
+	QueueCount int64              `json:"queue_count"`
+	CreatedBy  int64              `json:"created_by"`
+	UpdatedBy  int64              `json:"updated_by"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt  pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) ListGroupOpsPlans(ctx context.Context, arg ListGroupOpsPlansParams) ([]ListGroupOpsPlansRow, error) {
 	rows, err := q.db.Query(ctx, listGroupOpsPlans, arg.RowOffset, arg.RowLimit)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GroupOpsPlan{}
+	items := []ListGroupOpsPlansRow{}
 	for rows.Next() {
-		var i GroupOpsPlan
+		var i ListGroupOpsPlansRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
 			&i.Status,
 			&i.Revision,
+			&i.QueueCount,
 			&i.CreatedBy,
 			&i.UpdatedBy,
 			&i.CreatedAt,
@@ -975,7 +1000,7 @@ func (q *Queries) ListGroupOpsPlans(ctx context.Context, arg ListGroupOpsPlansPa
 }
 
 const listGroupOpsRunExecutions = `-- name: ListGroupOpsRunExecutions :many
-SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at FROM group_ops_executions
+SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at, sender_userid_snapshot FROM group_ops_executions
 WHERE run_id = $1
 ORDER BY node_position, target_reference, id
 `
@@ -1012,6 +1037,7 @@ func (q *Queries) ListGroupOpsRunExecutions(ctx context.Context, runID int64) ([
 			&i.AttemptCount,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.SenderUseridSnapshot,
 		); err != nil {
 			return nil, err
 		}
@@ -1021,6 +1047,19 @@ func (q *Queries) ListGroupOpsRunExecutions(ctx context.Context, runID int64) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockGroupOpsDirectoryGroupOwner = `-- name: LockGroupOpsDirectoryGroupOwner :one
+SELECT owner_staff_id FROM group_ops_directory_groups
+WHERE chat_reference = $1
+FOR SHARE
+`
+
+func (q *Queries) LockGroupOpsDirectoryGroupOwner(ctx context.Context, chatReference string) (int64, error) {
+	row := q.db.QueryRow(ctx, lockGroupOpsDirectoryGroupOwner, chatReference)
+	var owner_staff_id int64
+	err := row.Scan(&owner_staff_id)
+	return owner_staff_id, err
 }
 
 const lockGroupOpsPlan = `-- name: LockGroupOpsPlan :one
@@ -1051,7 +1090,7 @@ UPDATE group_ops_executions
 SET state = 'reconciled', provider_accepted = $1, delivery_proven = $2,
     reconciliation_evidence_digest = $3, updated_at = $4
 WHERE id = $5 AND state = 'outcome_unknown'
-RETURNING id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at
+RETURNING id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at, sender_userid_snapshot
 `
 
 type ReconcileGroupOpsExecutionParams struct {
@@ -1094,6 +1133,7 @@ func (q *Queries) ReconcileGroupOpsExecution(ctx context.Context, arg ReconcileG
 		&i.AttemptCount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SenderUseridSnapshot,
 	)
 	return i, err
 }
@@ -1103,7 +1143,7 @@ UPDATE group_ops_executions
 SET state = $1, provider_accepted = $2, delivery_proven = $3,
     provider_receipt_digest = $4, attempt_count = $5, updated_at = $6
 WHERE id = $7
-RETURNING id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at
+RETURNING id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, state, provider_accepted, delivery_proven, provider_receipt_digest, reconciliation_evidence_digest, attempt_count, created_at, updated_at, sender_userid_snapshot
 `
 
 type RecordGroupOpsExecutionOutcomeParams struct {
@@ -1150,6 +1190,7 @@ func (q *Queries) RecordGroupOpsExecutionOutcome(ctx context.Context, arg Record
 		&i.AttemptCount,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.SenderUseridSnapshot,
 	)
 	return i, err
 }

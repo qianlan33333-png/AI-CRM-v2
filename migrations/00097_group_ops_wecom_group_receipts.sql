@@ -2,6 +2,39 @@
 -- A WeCom group-message task acceptance is not a delivery receipt. Keep the
 -- exact Provider identifiers in the owner-only evidence ledger, while the
 -- Group Ops execution and EER boundaries retain digests only.
+ALTER TABLE public.group_ops_executions
+  ADD COLUMN sender_userid_snapshot TEXT;
+ALTER TABLE public.group_ops_executions
+  ADD CONSTRAINT group_ops_executions_sender_snapshot CHECK (
+    sender_userid_snapshot IS NULL
+    OR (sender_userid_snapshot ~ '^[^[:space:]]{1,128}$')
+  );
+
+-- 00085's guard predates sender snapshots. Recreate it with the same closed
+-- transition rules plus immutable sender evidence; existing rows remain NULL
+-- and fail closed in the dispatch reader.
+CREATE OR REPLACE FUNCTION public.aicrm_group_ops_runtime_guard()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN RAISE EXCEPTION 'group ops runtime facts cannot be deleted' USING ERRCODE = '55000'; END IF;
+  IF TG_TABLE_NAME = 'group_ops_runs' THEN RAISE EXCEPTION 'group ops run facts are immutable' USING ERRCODE = '55000'; END IF;
+  IF NEW.id IS DISTINCT FROM OLD.id OR NEW.run_id IS DISTINCT FROM OLD.run_id OR NEW.plan_id IS DISTINCT FROM OLD.plan_id OR NEW.node_id IS DISTINCT FROM OLD.node_id
+     OR NEW.plan_revision IS DISTINCT FROM OLD.plan_revision OR NEW.node_position IS DISTINCT FROM OLD.node_position OR NEW.target_reference IS DISTINCT FROM OLD.target_reference
+     OR NEW.target_digest IS DISTINCT FROM OLD.target_digest OR NEW.content_snapshot IS DISTINCT FROM OLD.content_snapshot OR NEW.content_digest IS DISTINCT FROM OLD.content_digest
+     OR NEW.material_snapshot IS DISTINCT FROM OLD.material_snapshot OR NEW.material_digest IS DISTINCT FROM OLD.material_digest OR NEW.execution_key_digest IS DISTINCT FROM OLD.execution_key_digest
+     OR NEW.external_effect_id IS DISTINCT FROM OLD.external_effect_id OR NEW.sender_userid_snapshot IS DISTINCT FROM OLD.sender_userid_snapshot OR NEW.created_at IS DISTINCT FROM OLD.created_at THEN
+    RAISE EXCEPTION 'group ops execution snapshots are immutable' USING ERRCODE = '55000';
+  END IF;
+  IF OLD.state IN ('delivery_proven','reconciled','final_failed') OR (OLD.provider_accepted AND NOT NEW.provider_accepted) OR NEW.attempt_count < OLD.attempt_count
+     OR (OLD.state = 'accepted' AND NEW.state NOT IN ('provider_accepted','delivery_proven','outcome_unknown','final_failed'))
+     OR (OLD.state = 'provider_accepted' AND NEW.state NOT IN ('delivery_proven','outcome_unknown','final_failed'))
+     OR (OLD.state = 'outcome_unknown' AND NEW.state <> 'reconciled') THEN
+    RAISE EXCEPTION 'invalid group ops execution transition' USING ERRCODE = '55000';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
 CREATE TABLE public.group_ops_wecom_group_message_receipts (
   external_effect_id BIGINT PRIMARY KEY REFERENCES public.external_effects(id) ON DELETE RESTRICT,
   execution_id BIGINT NOT NULL UNIQUE REFERENCES public.group_ops_executions(id) ON DELETE RESTRICT,
@@ -40,3 +73,5 @@ END;
 $$;
 -- +goose StatementEnd
 DROP TABLE public.group_ops_wecom_group_message_receipts;
+ALTER TABLE public.group_ops_executions DROP CONSTRAINT group_ops_executions_sender_snapshot;
+ALTER TABLE public.group_ops_executions DROP COLUMN sender_userid_snapshot;

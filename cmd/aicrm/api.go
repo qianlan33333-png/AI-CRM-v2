@@ -1460,13 +1460,21 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	groupOpsRepository := groupopsstore.NewRepository()
+	groupOpsStaffDirectory := contactstore.NewStaffDirectoryRepository(pool)
+	groupOpsJobs, err := groupopsstore.NewDispatchJobInserter(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	groupOpsRuntime, err := groupopsapp.NewRuntimeService(
 		uow,
 		groupOpsRepository,
 		groupOpsRepository,
 		externalEffectsRuntime,
-		channelStaffDirectory,
+		groupOpsStaffDirectory,
 		nil,
+		groupOpsSenderResolver{groups: groupOpsRepository, staff: groupOpsStaffDirectory},
+		groupOpsJobs,
 	)
 	if err != nil {
 		pool.Close()
@@ -2714,6 +2722,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				{http.MethodPost, groupopshttp.GroupsSyncPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.SyncGroups)},
 				{http.MethodGet, groupopshttp.GroupPickerPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListGroupPicker)},
 				{http.MethodPost, groupopshttp.GroupPickerSyncPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.SyncGroupPicker)},
+				{http.MethodGet, groupopshttp.OperationMembersPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListOperationMembers)},
+				{http.MethodPost, groupopshttp.OperationMembersSync, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.SyncOperationMembers)},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
 					return nil, err
