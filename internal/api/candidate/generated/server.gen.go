@@ -7312,6 +7312,48 @@ func (e WechatShopRefundCurrency) Valid() bool {
 	}
 }
 
+// Defines values for WechatShopRefundReasonCode.
+const (
+	N10000000 WechatShopRefundReasonCode = "10000000"
+	N10000001 WechatShopRefundReasonCode = "10000001"
+	N10000002 WechatShopRefundReasonCode = "10000002"
+	N10000006 WechatShopRefundReasonCode = "10000006"
+	N10000007 WechatShopRefundReasonCode = "10000007"
+	N10000008 WechatShopRefundReasonCode = "10000008"
+	N10000014 WechatShopRefundReasonCode = "10000014"
+	N10000015 WechatShopRefundReasonCode = "10000015"
+	N10000017 WechatShopRefundReasonCode = "10000017"
+	N10000021 WechatShopRefundReasonCode = "10000021"
+)
+
+// Valid indicates whether the value is a known member of the WechatShopRefundReasonCode enum.
+func (e WechatShopRefundReasonCode) Valid() bool {
+	switch e {
+	case N10000000:
+		return true
+	case N10000001:
+		return true
+	case N10000002:
+		return true
+	case N10000006:
+		return true
+	case N10000007:
+		return true
+	case N10000008:
+		return true
+	case N10000014:
+		return true
+	case N10000015:
+		return true
+	case N10000017:
+		return true
+	case N10000021:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for WechatShopRefundState.
 const (
 	WechatShopRefundStateAccepted         WechatShopRefundState = "accepted"
@@ -7336,54 +7378,6 @@ func (e WechatShopRefundState) Valid() bool {
 	case WechatShopRefundStateProviderAccepted:
 		return true
 	case WechatShopRefundStateSucceeded:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for WechatShopRefundCallbackEnvelopeEventType.
-const (
-	WechatShopEventRefundClosed  WechatShopRefundCallbackEnvelopeEventType = "REFUND.CLOSED"
-	WechatShopEventRefundSuccess WechatShopRefundCallbackEnvelopeEventType = "REFUND.SUCCESS"
-)
-
-// Valid indicates whether the value is a known member of the WechatShopRefundCallbackEnvelopeEventType enum.
-func (e WechatShopRefundCallbackEnvelopeEventType) Valid() bool {
-	switch e {
-	case WechatShopEventRefundClosed:
-		return true
-	case WechatShopEventRefundSuccess:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for WechatShopRefundCallbackEnvelopeResourceAlgorithm.
-const (
-	WechatShopAlgorithmAEADAES256GCM WechatShopRefundCallbackEnvelopeResourceAlgorithm = "AEAD_AES_256_GCM"
-)
-
-// Valid indicates whether the value is a known member of the WechatShopRefundCallbackEnvelopeResourceAlgorithm enum.
-func (e WechatShopRefundCallbackEnvelopeResourceAlgorithm) Valid() bool {
-	switch e {
-	case WechatShopAlgorithmAEADAES256GCM:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for WechatShopRefundCallbackEnvelopeResourceType.
-const (
-	WechatShopResourceEncrypted WechatShopRefundCallbackEnvelopeResourceType = "encrypt-resource"
-)
-
-// Valid indicates whether the value is a known member of the WechatShopRefundCallbackEnvelopeResourceType enum.
-func (e WechatShopRefundCallbackEnvelopeResourceType) Valid() bool {
-	switch e {
-	case WechatShopResourceEncrypted:
 		return true
 	default:
 		return false
@@ -11976,47 +11970,40 @@ type WechatShopRefund struct {
 	CreatedAt    time.Time                `json:"created_at"`
 	Currency     WechatShopRefundCurrency `json:"currency"`
 
-	// DeliveryProven True only after an independently verified callback or exact manual query evidence.
+	// DeliveryProven True only after an exact getaftersaleorder query proves MERCHANT_REFUND_SUCCESS.
 	DeliveryProven  bool   `json:"delivery_proven"`
 	Id              int64  `json:"id"`
 	MerchantOrderNo string `json:"merchant_order_no"`
 	OrderId         int64  `json:"order_id"`
 	OutRefundNo     string `json:"out_refund_no"`
+	ProductId       string `json:"product_id"`
 
 	// ProviderAccepted True only for provider_accepted; it is never delivery proof.
-	ProviderAccepted bool                  `json:"provider_accepted"`
-	State            WechatShopRefundState `json:"state"`
-	UpdatedAt        time.Time             `json:"updated_at"`
-	Version          int64                 `json:"version"`
+	ProviderAccepted    bool                       `json:"provider_accepted"`
+	ProviderAfterSaleId *string                    `json:"provider_after_sale_id,omitempty"`
+	ProviderOrderId     string                     `json:"provider_order_id"`
+	ReasonCode          WechatShopRefundReasonCode `json:"reason_code"`
+	RefundCount         int64                      `json:"refund_count"`
+	SkuId               string                     `json:"sku_id"`
+	State               WechatShopRefundState      `json:"state"`
+	UpdatedAt           time.Time                  `json:"updated_at"`
+	Version             int64                      `json:"version"`
 }
 
 // WechatShopRefundCurrency defines model for WechatShopRefund.Currency.
 type WechatShopRefundCurrency string
+
+// WechatShopRefundReasonCode defines model for WechatShopRefund.ReasonCode.
+type WechatShopRefundReasonCode string
 
 // WechatShopRefundState defines model for WechatShopRefund.State.
 type WechatShopRefundState string
 
 // WechatShopRefundCallbackEnvelope defines model for WechatShopRefundCallbackEnvelope.
 type WechatShopRefundCallbackEnvelope struct {
-	EventType WechatShopRefundCallbackEnvelopeEventType `json:"event_type"`
-	Id        string                                    `json:"id"`
-	Resource  struct {
-		Algorithm      WechatShopRefundCallbackEnvelopeResourceAlgorithm `json:"algorithm"`
-		AssociatedData string                                            `json:"associated_data"`
-		Ciphertext     string                                            `json:"ciphertext"`
-		Nonce          string                                            `json:"nonce"`
-	} `json:"resource"`
-	ResourceType WechatShopRefundCallbackEnvelopeResourceType `json:"resource_type"`
+	Encrypt    string `json:"Encrypt"`
+	ToUserName string `json:"ToUserName"`
 }
-
-// WechatShopRefundCallbackEnvelopeEventType defines model for WechatShopRefundCallbackEnvelope.EventType.
-type WechatShopRefundCallbackEnvelopeEventType string
-
-// WechatShopRefundCallbackEnvelopeResourceAlgorithm defines model for WechatShopRefundCallbackEnvelope.Resource.Algorithm.
-type WechatShopRefundCallbackEnvelopeResourceAlgorithm string
-
-// WechatShopRefundCallbackEnvelopeResourceType defines model for WechatShopRefundCallbackEnvelope.ResourceType.
-type WechatShopRefundCallbackEnvelopeResourceType string
 
 // AddedAfterFilter defines model for AddedAfterFilter.
 type AddedAfterFilter = time.Time
@@ -12201,11 +12188,14 @@ type WechatpaySignature = string
 // WechatpayTimestamp defines model for WechatpayTimestamp.
 type WechatpayTimestamp = string
 
+// WechatshopEchoStr defines model for WechatshopEchoStr.
+type WechatshopEchoStr = string
+
+// WechatshopMessageSignature defines model for WechatshopMessageSignature.
+type WechatshopMessageSignature = string
+
 // WechatshopNonce defines model for WechatshopNonce.
 type WechatshopNonce = string
-
-// WechatshopSerial defines model for WechatshopSerial.
-type WechatshopSerial = string
 
 // WechatshopSignature defines model for WechatshopSignature.
 type WechatshopSignature = string
@@ -13022,12 +13012,19 @@ type ReceiveWechatPayRefundCallbackParams struct {
 	WechatpaySignature WechatpaySignature `json:"Wechatpay-Signature"`
 }
 
+// VerifyWechatShopRefundCallbackURLParams defines parameters for VerifyWechatShopRefundCallbackURL.
+type VerifyWechatShopRefundCallbackURLParams struct {
+	Signature WechatshopSignature `form:"signature" json:"signature"`
+	Timestamp WechatshopTimestamp `form:"timestamp" json:"timestamp"`
+	Nonce     WechatshopNonce     `form:"nonce" json:"nonce"`
+	Echostr   WechatshopEchoStr   `form:"echostr" json:"echostr"`
+}
+
 // ReceiveWechatShopRefundCallbackParams defines parameters for ReceiveWechatShopRefundCallback.
 type ReceiveWechatShopRefundCallbackParams struct {
-	WechatshopTimestamp WechatshopTimestamp `json:"Wechatshop-Timestamp"`
-	WechatshopNonce     WechatshopNonce     `json:"Wechatshop-Nonce"`
-	WechatshopSerial    WechatshopSerial    `json:"Wechatshop-Serial"`
-	WechatshopSignature WechatshopSignature `json:"Wechatshop-Signature"`
+	MsgSignature WechatshopMessageSignature `form:"msg_signature" json:"msg_signature"`
+	Timestamp    WechatshopTimestamp        `form:"timestamp" json:"timestamp"`
+	Nonce        WechatshopNonce            `form:"nonce" json:"nonce"`
 }
 
 // MintSidebarContextJSONBody defines parameters for MintSidebarContext.
@@ -15503,7 +15500,7 @@ type ServerInterface interface {
 	// Read a closed local share descriptor without claiming a public purchase route
 	// (GET /api/admin/wechat-pay/products/{product_id}/share)
 	GetLegacyWechatPayProductShare(w http.ResponseWriter, r *http.Request, productId ProductID)
-	// Manually query independent WeChat Shop evidence for one unknown refund outcome
+	// Queue an exact WeChat Shop aftersale query for a provider-accepted refund
 	// (POST /api/admin/wechat-shop/refunds/{refund_id}/reconcile)
 	ReconcileWechatShopRefund(w http.ResponseWriter, r *http.Request, refundId int64, params ReconcileWechatShopRefundParams)
 	// Claim one Survey H5 OAuth state and issue a signed canonical identity proof
@@ -15527,7 +15524,10 @@ type ServerInterface interface {
 	// Verify and apply one authoritative WeChat refund callback
 	// (POST /api/public/wechat-pay/callbacks/refund)
 	ReceiveWechatPayRefundCallback(w http.ResponseWriter, r *http.Request, params ReceiveWechatPayRefundCallbackParams)
-	// Verify and apply one authoritative WeChat Shop refund callback through its independent Order-owned provider boundary
+	// Verify the WeChat Shop callback URL using the legacy three-part SHA1 signature
+	// (GET /api/public/wechat-shop/callbacks/refund)
+	VerifyWechatShopRefundCallbackURL(w http.ResponseWriter, r *http.Request, params VerifyWechatShopRefundCallbackURLParams)
+	// Verify one encrypted WeChat Shop aftersale callback and queue an authoritative provider query
 	// (POST /api/public/wechat-shop/callbacks/refund)
 	ReceiveWechatShopRefundCallback(w http.ResponseWriter, r *http.Request, params ReceiveWechatShopRefundCallbackParams)
 	// Resolve one local customer and mint a short-lived owner-scoped sidebar token
@@ -16607,7 +16607,7 @@ func (_ Unimplemented) GetLegacyWechatPayProductShare(w http.ResponseWriter, r *
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Manually query independent WeChat Shop evidence for one unknown refund outcome
+// Queue an exact WeChat Shop aftersale query for a provider-accepted refund
 // (POST /api/admin/wechat-shop/refunds/{refund_id}/reconcile)
 func (_ Unimplemented) ReconcileWechatShopRefund(w http.ResponseWriter, r *http.Request, refundId int64, params ReconcileWechatShopRefundParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -16655,7 +16655,13 @@ func (_ Unimplemented) ReceiveWechatPayRefundCallback(w http.ResponseWriter, r *
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Verify and apply one authoritative WeChat Shop refund callback through its independent Order-owned provider boundary
+// Verify the WeChat Shop callback URL using the legacy three-part SHA1 signature
+// (GET /api/public/wechat-shop/callbacks/refund)
+func (_ Unimplemented) VerifyWechatShopRefundCallbackURL(w http.ResponseWriter, r *http.Request, params VerifyWechatShopRefundCallbackURLParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Verify one encrypted WeChat Shop aftersale callback and queue an authoritative provider query
 // (POST /api/public/wechat-shop/callbacks/refund)
 func (_ Unimplemented) ReceiveWechatShopRefundCallback(w http.ResponseWriter, r *http.Request, params ReceiveWechatShopRefundCallbackParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -25519,6 +25525,85 @@ func (siw *ServerInterfaceWrapper) ReceiveWechatPayRefundCallback(w http.Respons
 	handler.ServeHTTP(w, r)
 }
 
+// VerifyWechatShopRefundCallbackURL operation middleware
+func (siw *ServerInterfaceWrapper) VerifyWechatShopRefundCallbackURL(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params VerifyWechatShopRefundCallbackURLParams
+
+	// ------------- Required query parameter "signature" -------------
+
+	if paramValue := r.URL.Query().Get("signature"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "signature"})
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "signature", r.URL.Query(), &params.Signature, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "signature", Err: err})
+		return
+	}
+
+	// ------------- Required query parameter "timestamp" -------------
+
+	if paramValue := r.URL.Query().Get("timestamp"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "timestamp"})
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "timestamp", r.URL.Query(), &params.Timestamp, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "timestamp", Err: err})
+		return
+	}
+
+	// ------------- Required query parameter "nonce" -------------
+
+	if paramValue := r.URL.Query().Get("nonce"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "nonce"})
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "nonce", r.URL.Query(), &params.Nonce, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "nonce", Err: err})
+		return
+	}
+
+	// ------------- Required query parameter "echostr" -------------
+
+	if paramValue := r.URL.Query().Get("echostr"); paramValue != "" {
+
+	} else {
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "echostr"})
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "echostr", r.URL.Query(), &params.Echostr, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "echostr", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyWechatShopRefundCallbackURL(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ReceiveWechatShopRefundCallback operation middleware
 func (siw *ServerInterfaceWrapper) ReceiveWechatShopRefundCallback(w http.ResponseWriter, r *http.Request) {
 
@@ -25527,97 +25612,48 @@ func (siw *ServerInterfaceWrapper) ReceiveWechatShopRefundCallback(w http.Respon
 	// Parameter object where we will unmarshal all parameters from the context
 	var params ReceiveWechatShopRefundCallbackParams
 
-	headers := r.Header
+	// ------------- Required query parameter "msg_signature" -------------
 
-	// ------------- Required header parameter "Wechatshop-Timestamp" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("Wechatshop-Timestamp")]; found {
-		var WechatshopTimestamp WechatshopTimestamp
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Wechatshop-Timestamp", Count: n})
-			return
-		}
-
-		err = runtime.BindStyledParameterWithOptions("simple", "Wechatshop-Timestamp", valueList[0], &WechatshopTimestamp, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
-		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Wechatshop-Timestamp", Err: err})
-			return
-		}
-
-		params.WechatshopTimestamp = WechatshopTimestamp
+	if paramValue := r.URL.Query().Get("msg_signature"); paramValue != "" {
 
 	} else {
-		err := fmt.Errorf("Header parameter Wechatshop-Timestamp is required, but not found")
-		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Wechatshop-Timestamp", Err: err})
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "msg_signature"})
 		return
 	}
 
-	// ------------- Required header parameter "Wechatshop-Nonce" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("Wechatshop-Nonce")]; found {
-		var WechatshopNonce WechatshopNonce
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Wechatshop-Nonce", Count: n})
-			return
-		}
-
-		err = runtime.BindStyledParameterWithOptions("simple", "Wechatshop-Nonce", valueList[0], &WechatshopNonce, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
-		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Wechatshop-Nonce", Err: err})
-			return
-		}
-
-		params.WechatshopNonce = WechatshopNonce
-
-	} else {
-		err := fmt.Errorf("Header parameter Wechatshop-Nonce is required, but not found")
-		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Wechatshop-Nonce", Err: err})
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "msg_signature", r.URL.Query(), &params.MsgSignature, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "msg_signature", Err: err})
 		return
 	}
 
-	// ------------- Required header parameter "Wechatshop-Serial" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("Wechatshop-Serial")]; found {
-		var WechatshopSerial WechatshopSerial
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Wechatshop-Serial", Count: n})
-			return
-		}
+	// ------------- Required query parameter "timestamp" -------------
 
-		err = runtime.BindStyledParameterWithOptions("simple", "Wechatshop-Serial", valueList[0], &WechatshopSerial, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
-		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Wechatshop-Serial", Err: err})
-			return
-		}
-
-		params.WechatshopSerial = WechatshopSerial
+	if paramValue := r.URL.Query().Get("timestamp"); paramValue != "" {
 
 	} else {
-		err := fmt.Errorf("Header parameter Wechatshop-Serial is required, but not found")
-		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Wechatshop-Serial", Err: err})
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "timestamp"})
 		return
 	}
 
-	// ------------- Required header parameter "Wechatshop-Signature" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("Wechatshop-Signature")]; found {
-		var WechatshopSignature WechatshopSignature
-		n := len(valueList)
-		if n != 1 {
-			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Wechatshop-Signature", Count: n})
-			return
-		}
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "timestamp", r.URL.Query(), &params.Timestamp, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "timestamp", Err: err})
+		return
+	}
 
-		err = runtime.BindStyledParameterWithOptions("simple", "Wechatshop-Signature", valueList[0], &WechatshopSignature, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
-		if err != nil {
-			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Wechatshop-Signature", Err: err})
-			return
-		}
+	// ------------- Required query parameter "nonce" -------------
 
-		params.WechatshopSignature = WechatshopSignature
+	if paramValue := r.URL.Query().Get("nonce"); paramValue != "" {
 
 	} else {
-		err := fmt.Errorf("Header parameter Wechatshop-Signature is required, but not found")
-		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Wechatshop-Signature", Err: err})
+		siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "nonce"})
+		return
+	}
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "nonce", r.URL.Query(), &params.Nonce, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "nonce", Err: err})
 		return
 	}
 
@@ -31841,6 +31877,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/public/wechat-pay/callbacks/refund", wrapper.ReceiveWechatPayRefundCallback)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/public/wechat-shop/callbacks/refund", wrapper.VerifyWechatShopRefundCallbackURL)
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/public/wechat-shop/callbacks/refund", wrapper.ReceiveWechatShopRefundCallback)
@@ -40556,11 +40595,11 @@ type ReconcileWechatShopRefundResponseObject interface {
 	VisitReconcileWechatShopRefundResponse(w http.ResponseWriter) error
 }
 
-type ReconcileWechatShopRefund200JSONResponse WechatShopRefund
+type ReconcileWechatShopRefund202JSONResponse WechatShopRefund
 
-func (response ReconcileWechatShopRefund200JSONResponse) VisitReconcileWechatShopRefundResponse(w http.ResponseWriter) error {
+func (response ReconcileWechatShopRefund202JSONResponse) VisitReconcileWechatShopRefundResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	w.WriteHeader(202)
 
 	return json.NewEncoder(w).Encode(response)
 }
@@ -40995,6 +41034,42 @@ func (response ReceiveWechatPayRefundCallback503JSONResponse) VisitReceiveWechat
 	return json.NewEncoder(w).Encode(response)
 }
 
+type VerifyWechatShopRefundCallbackURLRequestObject struct {
+	Params VerifyWechatShopRefundCallbackURLParams
+}
+
+type VerifyWechatShopRefundCallbackURLResponseObject interface {
+	VisitVerifyWechatShopRefundCallbackURLResponse(w http.ResponseWriter) error
+}
+
+type VerifyWechatShopRefundCallbackURL200TextResponse string
+
+func (response VerifyWechatShopRefundCallbackURL200TextResponse) VisitVerifyWechatShopRefundCallbackURLResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(200)
+
+	_, err := w.Write([]byte(response))
+	return err
+}
+
+type VerifyWechatShopRefundCallbackURL400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response VerifyWechatShopRefundCallbackURL400JSONResponse) VisitVerifyWechatShopRefundCallbackURLResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type VerifyWechatShopRefundCallbackURL503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response VerifyWechatShopRefundCallbackURL503JSONResponse) VisitVerifyWechatShopRefundCallbackURLResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ReceiveWechatShopRefundCallbackRequestObject struct {
 	Params ReceiveWechatShopRefundCallbackParams
 	Body   *ReceiveWechatShopRefundCallbackJSONRequestBody
@@ -41004,13 +41079,14 @@ type ReceiveWechatShopRefundCallbackResponseObject interface {
 	VisitReceiveWechatShopRefundCallbackResponse(w http.ResponseWriter) error
 }
 
-type ReceiveWechatShopRefundCallback200JSONResponse WechatPayCallbackAck
+type ReceiveWechatShopRefundCallback200TextResponse string
 
-func (response ReceiveWechatShopRefundCallback200JSONResponse) VisitReceiveWechatShopRefundCallbackResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
+func (response ReceiveWechatShopRefundCallback200TextResponse) VisitReceiveWechatShopRefundCallbackResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(200)
 
-	return json.NewEncoder(w).Encode(response)
+	_, err := w.Write([]byte(response))
+	return err
 }
 
 type ReceiveWechatShopRefundCallback400JSONResponse struct{ BadRequestJSONResponse }
@@ -47497,7 +47573,7 @@ type StrictServerInterface interface {
 	// Read a closed local share descriptor without claiming a public purchase route
 	// (GET /api/admin/wechat-pay/products/{product_id}/share)
 	GetLegacyWechatPayProductShare(ctx context.Context, request GetLegacyWechatPayProductShareRequestObject) (GetLegacyWechatPayProductShareResponseObject, error)
-	// Manually query independent WeChat Shop evidence for one unknown refund outcome
+	// Queue an exact WeChat Shop aftersale query for a provider-accepted refund
 	// (POST /api/admin/wechat-shop/refunds/{refund_id}/reconcile)
 	ReconcileWechatShopRefund(ctx context.Context, request ReconcileWechatShopRefundRequestObject) (ReconcileWechatShopRefundResponseObject, error)
 	// Claim one Survey H5 OAuth state and issue a signed canonical identity proof
@@ -47521,7 +47597,10 @@ type StrictServerInterface interface {
 	// Verify and apply one authoritative WeChat refund callback
 	// (POST /api/public/wechat-pay/callbacks/refund)
 	ReceiveWechatPayRefundCallback(ctx context.Context, request ReceiveWechatPayRefundCallbackRequestObject) (ReceiveWechatPayRefundCallbackResponseObject, error)
-	// Verify and apply one authoritative WeChat Shop refund callback through its independent Order-owned provider boundary
+	// Verify the WeChat Shop callback URL using the legacy three-part SHA1 signature
+	// (GET /api/public/wechat-shop/callbacks/refund)
+	VerifyWechatShopRefundCallbackURL(ctx context.Context, request VerifyWechatShopRefundCallbackURLRequestObject) (VerifyWechatShopRefundCallbackURLResponseObject, error)
+	// Verify one encrypted WeChat Shop aftersale callback and queue an authoritative provider query
 	// (POST /api/public/wechat-shop/callbacks/refund)
 	ReceiveWechatShopRefundCallback(ctx context.Context, request ReceiveWechatShopRefundCallbackRequestObject) (ReceiveWechatShopRefundCallbackResponseObject, error)
 	// Resolve one local customer and mint a short-lived owner-scoped sidebar token
@@ -51973,6 +52052,32 @@ func (sh *strictHandler) ReceiveWechatPayRefundCallback(w http.ResponseWriter, r
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReceiveWechatPayRefundCallbackResponseObject); ok {
 		if err := validResponse.VisitReceiveWechatPayRefundCallbackResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// VerifyWechatShopRefundCallbackURL operation middleware
+func (sh *strictHandler) VerifyWechatShopRefundCallbackURL(w http.ResponseWriter, r *http.Request, params VerifyWechatShopRefundCallbackURLParams) {
+	var request VerifyWechatShopRefundCallbackURLRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.VerifyWechatShopRefundCallbackURL(ctx, request.(VerifyWechatShopRefundCallbackURLRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "VerifyWechatShopRefundCallbackURL")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(VerifyWechatShopRefundCallbackURLResponseObject); ok {
+		if err := validResponse.VisitVerifyWechatShopRefundCallbackURLResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

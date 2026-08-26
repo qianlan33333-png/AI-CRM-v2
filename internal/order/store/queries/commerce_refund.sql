@@ -33,53 +33,102 @@ FROM (
     AND status IN ('pending_external_gate','outcome_unknown','completed')
 ) AS reserved;
 
+-- name: CountWeChatShopReservedRefundLineCount :one
+SELECT COALESCE(sum(refund_count), 0)::bigint
+FROM public.order_wechat_shop_refunds
+WHERE order_id = sqlc.arg(order_id)::bigint
+  AND contract_version = 'provider/v2'
+  AND product_id = sqlc.arg(product_id)::text
+  AND sku_id = sqlc.arg(sku_id)::text
+  AND state <> 'final_failed';
+
+-- name: GetWeChatShopRefundMaterial :one
+SELECT id, provider_order_id, status_code, deal_recorded, amount_minor, currency,
+  transaction_digest, evidence_digest, source, source_key_digest, readiness,
+  provider_verified, provider_created_at, provider_paid_at, provider_updated_at,
+  synced_at, version, created_at, updated_at
+FROM public.order_wechat_shop_materials
+WHERE provider_order_id = sqlc.arg(provider_order_id);
+
+-- name: ListWeChatShopRefundMaterialLines :many
+SELECT material_id, position, product_id, sku_id, sku_count,
+  on_aftersale_sku_count, finish_aftersale_sku_count, real_price_minor,
+  remaining_sku_count, aftersale_evidence_exact, readiness, created_at
+FROM public.order_wechat_shop_material_lines
+WHERE material_id = sqlc.arg(material_id)
+ORDER BY position;
+
+-- name: ReserveWeChatShopMaterialSync :one
+INSERT INTO public.order_wechat_shop_material_sync_requests (
+  provider_order_id, requested_at
+) VALUES (
+  sqlc.arg(provider_order_id), sqlc.arg(requested_at)
+)
+ON CONFLICT (provider_order_id) DO UPDATE SET
+  generation = order_wechat_shop_material_sync_requests.generation + 1,
+  state = 'reserved', river_job_id = NULL, evidence_digest = NULL,
+  requested_at = EXCLUDED.requested_at, completed_at = NULL
+WHERE order_wechat_shop_material_sync_requests.state = 'completed'
+RETURNING provider_order_id, generation, state, river_job_id,
+  evidence_digest, requested_at, completed_at;
+
+-- name: GetWeChatShopMaterialSync :one
+SELECT provider_order_id, generation, state, river_job_id,
+  evidence_digest, requested_at, completed_at
+FROM public.order_wechat_shop_material_sync_requests
+WHERE provider_order_id = sqlc.arg(provider_order_id);
+
+-- name: MarkWeChatShopMaterialSyncQueued :one
+UPDATE public.order_wechat_shop_material_sync_requests
+SET state = 'queued', river_job_id = sqlc.arg(river_job_id)
+WHERE provider_order_id = sqlc.arg(provider_order_id)
+  AND generation = sqlc.arg(generation) AND state = 'reserved'
+RETURNING provider_order_id, generation, state, river_job_id,
+  evidence_digest, requested_at, completed_at;
+
 -- name: CreateWeChatShopRefund :one
 INSERT INTO public.order_wechat_shop_refunds (
-  order_id, actor_id, merchant_order_no, out_refund_no, amount_minor, currency,
+  order_id, actor_id, contract_version, merchant_order_no, provider_order_id,
+  product_id, sku_id, refund_count, unit_price_minor, reason_code,
+  material_evidence_digest, out_refund_no, amount_minor, currency,
   reason_digest, transaction_digest, command_key_digest, command_payload_digest,
   source_ref_digest, target_ref_digest, payload_digest, policy_version_digest,
   created_at, updated_at
 ) VALUES (
-  sqlc.arg(order_id), sqlc.arg(actor_id), sqlc.arg(merchant_order_no),
-  sqlc.arg(out_refund_no), sqlc.arg(amount_minor), sqlc.arg(currency),
+  sqlc.arg(order_id), sqlc.arg(actor_id), 'provider/v2', sqlc.arg(merchant_order_no),
+  sqlc.arg(provider_order_id), sqlc.arg(product_id), sqlc.arg(sku_id),
+  sqlc.arg(refund_count), sqlc.arg(unit_price_minor), sqlc.arg(reason_code),
+  sqlc.arg(material_evidence_digest), sqlc.arg(out_refund_no),
+  sqlc.arg(amount_minor), sqlc.arg(currency),
   sqlc.arg(reason_digest), sqlc.arg(transaction_digest), sqlc.arg(command_key_digest),
   sqlc.arg(command_payload_digest), sqlc.arg(source_ref_digest), sqlc.arg(target_ref_digest),
   sqlc.arg(payload_digest), sqlc.arg(policy_version_digest), sqlc.arg(created_at), sqlc.arg(created_at)
 )
 ON CONFLICT (actor_id, command_key_digest) DO NOTHING
-RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at;
+RETURNING *;
 
 -- name: GetWeChatShopRefundByCommand :one
-SELECT id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at
+SELECT *
 FROM public.order_wechat_shop_refunds
 WHERE actor_id = sqlc.arg(actor_id) AND command_key_digest = sqlc.arg(command_key_digest);
 
 -- name: LockWeChatShopRefundByID :one
-SELECT id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at
+SELECT *
 FROM public.order_wechat_shop_refunds
 WHERE id = sqlc.arg(refund_id)
 FOR UPDATE;
 
 -- name: LockWeChatShopRefundByOutRefundNo :one
-SELECT id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at
+SELECT *
 FROM public.order_wechat_shop_refunds
 WHERE out_refund_no = sqlc.arg(out_refund_no)
+FOR UPDATE;
+
+-- name: LockWeChatShopRefundByAfterSaleID :one
+SELECT *
+FROM public.order_wechat_shop_refunds
+WHERE provider_aftersale_id = sqlc.arg(provider_aftersale_id)
+  AND contract_version = 'provider/v2'
 FOR UPDATE;
 
 -- name: StartWeChatShopRefundExecution :one
@@ -88,11 +137,16 @@ SET state = 'executing', attempt_count = attempt_count + 1,
   version = version + 1, updated_at = sqlc.arg(started_at)
 WHERE id = sqlc.arg(refund_id) AND state = 'accepted'
   AND version = sqlc.arg(expected_version)
-RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at;
+RETURNING *;
+
+-- name: LockIncompleteWeChatShopRefundAttempt :one
+SELECT id, refund_id, attempt_no, river_job_id, river_attempt, args_digest,
+  request_digest, outcome, evidence_digest, started_at, completed_at
+FROM public.order_wechat_shop_refund_attempts
+WHERE refund_id = sqlc.arg(refund_id) AND outcome IS NULL AND completed_at IS NULL
+ORDER BY attempt_no DESC
+LIMIT 1
+FOR UPDATE;
 
 -- name: InsertWeChatShopRefundAttempt :one
 INSERT INTO public.order_wechat_shop_refund_attempts (
@@ -117,39 +171,35 @@ RETURNING id, refund_id, attempt_no, river_job_id, river_attempt, args_digest,
 -- name: CompleteWeChatShopRefundExecution :one
 UPDATE public.order_wechat_shop_refunds
 SET state = sqlc.arg(state), provider_acceptance_digest = sqlc.narg(provider_acceptance_digest),
+  provider_aftersale_id = sqlc.narg(provider_aftersale_id),
   version = version + 1, updated_at = sqlc.arg(completed_at)
 WHERE id = sqlc.arg(refund_id) AND state = 'executing'
   AND version = sqlc.arg(expected_version)
-RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at;
+RETURNING *;
 
 -- name: ReserveWeChatShopRefundCallback :one
 INSERT INTO public.order_wechat_shop_refund_callbacks (
-  refund_id, provider_event_digest, payload_digest, provider_refund_digest, received_at
+  refund_id, contract_version, provider_event_digest, payload_digest,
+  provider_refund_digest, provider_aftersale_id, provider_status, received_at
 ) VALUES (
-  sqlc.arg(refund_id), sqlc.arg(provider_event_digest), sqlc.arg(payload_digest),
-  sqlc.arg(provider_refund_digest), sqlc.arg(received_at)
+  sqlc.arg(refund_id), 'provider/v2', sqlc.arg(provider_event_digest),
+  sqlc.arg(payload_digest), sqlc.arg(provider_refund_digest),
+  sqlc.arg(provider_aftersale_id), sqlc.arg(provider_status), sqlc.arg(received_at)
 )
 ON CONFLICT (provider_event_digest) DO NOTHING
-RETURNING id, refund_id, provider_event_digest, payload_digest, provider_refund_digest,
-  outcome, result_digest, state, received_at, completed_at;
+RETURNING *;
 
 -- name: GetWeChatShopRefundCallback :one
-SELECT id, refund_id, provider_event_digest, payload_digest, provider_refund_digest,
-  outcome, result_digest, state, received_at, completed_at
+SELECT *
 FROM public.order_wechat_shop_refund_callbacks
 WHERE provider_event_digest = sqlc.arg(provider_event_digest);
 
 -- name: CompleteWeChatShopRefundCallback :one
 UPDATE public.order_wechat_shop_refund_callbacks
 SET outcome = sqlc.arg(outcome), result_digest = sqlc.arg(result_digest),
-  state = 'completed', completed_at = sqlc.arg(completed_at)
+  river_job_id = sqlc.arg(river_job_id), state = 'completed', completed_at = sqlc.arg(completed_at)
 WHERE id = sqlc.arg(callback_id) AND state = 'reserved'
-RETURNING id, refund_id, provider_event_digest, payload_digest, provider_refund_digest,
-  outcome, result_digest, state, received_at, completed_at;
+RETURNING *;
 
 -- name: ApplyWeChatShopRefundSettlement :one
 UPDATE public.order_wechat_shop_refunds
@@ -161,11 +211,7 @@ WHERE id = sqlc.arg(refund_id)
   AND state IN ('executing','provider_accepted','outcome_unknown')
   AND amount_minor = sqlc.arg(amount_minor) AND currency = sqlc.arg(currency)
   AND version = sqlc.arg(expected_version)
-RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at;
+RETURNING *;
 
 -- name: MarkWeChatShopRefundFinalFailed :one
 UPDATE public.order_wechat_shop_refunds
@@ -174,11 +220,7 @@ SET state = 'final_failed', provider_acceptance_digest = NULL,
 WHERE id = sqlc.arg(refund_id)
   AND state IN ('executing','provider_accepted','outcome_unknown')
   AND version = sqlc.arg(expected_version)
-RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at;
+RETURNING *;
 
 -- name: InsertWeChatShopRefundQuery :one
 INSERT INTO public.order_wechat_shop_refund_queries (

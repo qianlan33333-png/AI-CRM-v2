@@ -31,7 +31,11 @@ func NewCommerceRefundHandler(wechatPay orderport.WeChatPayRefundCompatibilityAp
 type commerceRefundInput struct {
 	Provider                  string `json:"provider"`
 	OrderNo                   string `json:"order_no"`
+	ProductID                 string `json:"product_id"`
+	SKUID                     string `json:"sku_id"`
+	RefundCount               *int64 `json:"refund_count"`
 	RefundAmountTotal         *int64 `json:"refund_amount_total"`
+	ReasonCode                string `json:"reason_code"`
 	Reason                    string `json:"reason"`
 	TransactionIDConfirmation string `json:"transaction_id_confirmation"`
 	Checked                   *bool  `json:"checked"`
@@ -69,7 +73,8 @@ func (handler *CommerceRefundHandler) WeChatShopCompatibility(writer http.Respon
 	if err == nil {
 		result, callErr := handler.shop.RequestRefund(request.Context(), orderport.WeChatShopRefundCommand{
 			OrderReference: strings.TrimSpace(input.OrderNo), TransactionIDConfirmation: strings.TrimSpace(input.TransactionIDConfirmation),
-			AmountMinor: *input.RefundAmountTotal, Reason: strings.TrimSpace(input.Reason), Checked: *input.Checked,
+			ProductID: strings.TrimSpace(input.ProductID), SKUID: strings.TrimSpace(input.SKUID), Count: valueOrZero(input.RefundCount),
+			AmountMinor: *input.RefundAmountTotal, ReasonCode: strings.TrimSpace(input.ReasonCode), Reason: strings.TrimSpace(input.Reason), Checked: *input.Checked,
 			Actor: principal.AdminUserID, IdempotencyKey: key,
 		})
 		if callErr == nil {
@@ -82,22 +87,37 @@ func (handler *CommerceRefundHandler) WeChatShopCompatibility(writer http.Respon
 }
 
 func (handler *CommerceRefundHandler) WeChatShopCallback(writer http.ResponseWriter, request *http.Request) {
-	body, headers, err := wechatShopCallbackInput(writer, request)
-	if err == nil {
-		command, verifyErr := handler.callbacks.VerifyRefund(request.Context(), body, headers)
-		if verifyErr == nil {
-			_, applyErr := handler.shop.ApplyRefundCallback(request.Context(), command)
-			if applyErr == nil {
-				writeJSON(writer, http.StatusOK, map[string]string{"code": "SUCCESS"})
-				return
-			}
-			err = applyErr
-		} else {
-			err = verifyErr
-			if !errors.Is(verifyErr, orderport.ErrWeChatShopRefundDisabled) {
-				err = errors.Join(orderport.ErrCommerceRefundInvalid, verifyErr)
+	if request == nil {
+		writeError(writer, request, orderport.ErrCommerceRefundInvalid)
+		return
+	}
+	query, err := wechatShopCallbackQuery(request)
+	if err == nil && request.Method == http.MethodGet {
+		var echo string
+		echo, err = handler.callbacks.VerifyURL(request.Context(), query)
+		if err == nil {
+			writeWeChatShopCallbackText(writer, echo)
+			return
+		}
+	} else if err == nil && request.Method == http.MethodPost {
+		var body []byte
+		body, err = rawCallbackBody(writer, request)
+		if err == nil {
+			var command orderport.WeChatShopRefundCallbackCommand
+			command, err = handler.callbacks.VerifyRefund(request.Context(), body, query)
+			if err == nil {
+				_, err = handler.shop.ApplyRefundCallback(request.Context(), command)
+				if err == nil {
+					writeWeChatShopCallbackText(writer, "success")
+					return
+				}
 			}
 		}
+	} else if err == nil {
+		err = orderport.ErrCommerceRefundInvalid
+	}
+	if err != nil && !errors.Is(err, orderport.ErrWeChatShopRefundDisabled) {
+		err = errors.Join(orderport.ErrCommerceRefundInvalid, err)
 	}
 	writeError(writer, request, err)
 }
@@ -113,9 +133,9 @@ func (handler *CommerceRefundHandler) ReconcileWeChatShopRefund(writer http.Resp
 		err = decode(writer, request, &empty)
 	}
 	if err == nil {
-		result, callErr := handler.shop.ReconcileRefund(request.Context(), refundID)
+		result, callErr := handler.shop.QueueRefundReconciliation(request.Context(), refundID)
 		if callErr == nil {
-			writeJSON(writer, http.StatusOK, mapWeChatShopRefund(result))
+			writeJSON(writer, http.StatusAccepted, mapWeChatShopRefund(result))
 			return
 		}
 		err = callErr
@@ -139,19 +159,34 @@ func commerceRefundRequest(writer http.ResponseWriter, request *http.Request) (a
 	return principal, input, request.Header.Get("Idempotency-Key"), err
 }
 
-func wechatShopCallbackInput(writer http.ResponseWriter, request *http.Request) ([]byte, map[string]string, error) {
-	body, err := rawCallbackBody(writer, request)
-	if err != nil {
-		return nil, nil, err
+func wechatShopCallbackQuery(request *http.Request) (map[string]string, error) {
+	if request == nil || request.URL == nil {
+		return nil, orderport.ErrCommerceRefundInvalid
 	}
-	headers := make(map[string]string, 4)
-	for _, name := range []string{"Wechatshop-Timestamp", "Wechatshop-Nonce", "Wechatshop-Serial", "Wechatshop-Signature"} {
-		if len(request.Header.Values(name)) != 1 || request.Header.Get(name) == "" {
-			return nil, nil, orderport.ErrCommerceRefundInvalid
+	names := []string{"timestamp", "nonce"}
+	if request.Method == http.MethodGet {
+		names = append(names, "signature", "echostr")
+	} else if request.Method == http.MethodPost {
+		names = append(names, "msg_signature")
+	}
+	query := request.URL.Query()
+	result := make(map[string]string, len(names))
+	for _, name := range names {
+		values := query[name]
+		if len(values) != 1 || values[0] == "" || strings.TrimSpace(values[0]) != values[0] {
+			return nil, orderport.ErrCommerceRefundInvalid
 		}
-		headers[name] = request.Header.Get(name)
+		result[name] = values[0]
 	}
-	return body, headers, nil
+	return result, nil
+}
+
+func writeWeChatShopCallbackText(writer http.ResponseWriter, value string) {
+	writer.Header().Set("Cache-Control", "no-store")
+	writer.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
+	writer.WriteHeader(http.StatusOK)
+	_, _ = writer.Write([]byte(value))
 }
 
 func mapRefundV2(refund orderport.RefundV2) map[string]any {
@@ -159,5 +194,16 @@ func mapRefundV2(refund orderport.RefundV2) map[string]any {
 }
 
 func mapWeChatShopRefund(refund orderport.WeChatShopRefund) map[string]any {
-	return map[string]any{"id": refund.ID, "order_id": refund.OrderID, "merchant_order_no": refund.MerchantOrderNo, "out_refund_no": refund.OutRefundNo, "amount_minor": refund.AmountMinor, "currency": refund.Currency, "state": refund.State, "provider_accepted": refund.State == orderport.WeChatShopRefundProviderAccepted, "delivery_proven": refund.State == orderport.WeChatShopRefundSucceeded, "attempt_count": refund.AttemptCount, "version": refund.Version, "created_at": refund.CreatedAt.UTC(), "updated_at": refund.UpdatedAt.UTC()}
+	var afterSaleID any
+	if refund.ProviderAfterSaleID != "" {
+		afterSaleID = refund.ProviderAfterSaleID
+	}
+	return map[string]any{"id": refund.ID, "order_id": refund.OrderID, "merchant_order_no": refund.MerchantOrderNo, "provider_order_id": refund.ProviderOrderID, "product_id": refund.ProductID, "sku_id": refund.SKUID, "refund_count": refund.RefundCount, "reason_code": refund.ReasonCode, "provider_after_sale_id": afterSaleID, "out_refund_no": refund.OutRefundNo, "amount_minor": refund.AmountMinor, "currency": refund.Currency, "state": refund.State, "provider_accepted": refund.State == orderport.WeChatShopRefundProviderAccepted, "delivery_proven": refund.State == orderport.WeChatShopRefundSucceeded, "attempt_count": refund.AttemptCount, "version": refund.Version, "created_at": refund.CreatedAt.UTC(), "updated_at": refund.UpdatedAt.UTC()}
+}
+
+func valueOrZero(value *int64) int64 {
+	if value == nil {
+		return 0
+	}
+	return *value
 }

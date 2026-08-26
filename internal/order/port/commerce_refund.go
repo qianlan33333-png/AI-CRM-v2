@@ -44,7 +44,11 @@ const (
 type WeChatShopRefundCommand struct {
 	OrderReference            string
 	TransactionIDConfirmation string
+	ProductID                 string
+	SKUID                     string
+	Count                     int64
 	AmountMinor               int64
+	ReasonCode                string
 	Reason                    string
 	Checked                   bool
 	Actor                     int64
@@ -54,7 +58,15 @@ type WeChatShopRefundCommand struct {
 type WeChatShopRefund struct {
 	ID                       int64
 	OrderID                  ID
+	ContractVersion          string
 	MerchantOrderNo          string
+	ProviderOrderID          string
+	ProductID                string
+	SKUID                    string
+	RefundCount              int64
+	UnitPriceMinor           int64
+	ReasonCode               string
+	MaterialEvidenceDigest   [32]byte
 	OutRefundNo              string
 	AmountMinor              int64
 	Currency                 string
@@ -65,6 +77,7 @@ type WeChatShopRefund struct {
 	PayloadDigest            [32]byte
 	PolicyDigest             [32]byte
 	ProviderAcceptanceDigest [32]byte
+	ProviderAfterSaleID      string
 	ProviderRefundDigest     [32]byte
 	SettlementDigest         [32]byte
 	State                    WeChatShopRefundState
@@ -84,10 +97,14 @@ type WeChatShopExecutionJob struct {
 }
 
 type WeChatShopRefundRequest struct {
-	MerchantOrderNo string
+	ProviderOrderID string
+	ProductID       string
+	SKUID           string
+	Count           int64
 	OutRefundNo     string
 	AmountMinor     int64
 	Currency        string
+	ReasonCode      string
 	ReasonDigest    [32]byte
 }
 
@@ -102,26 +119,31 @@ const (
 type WeChatShopProviderResult struct {
 	Completion     WeChatShopProviderCompletion
 	EvidenceDigest [32]byte
+	AfterSaleID    string
 }
 
 type WeChatShopRefundQueryResult struct {
-	Confirmed            bool
 	EvidenceDigest       [32]byte
 	ProviderRefundDigest [32]byte
+	AfterSaleID          string
+	ProviderOrderID      string
+	ProductID            string
+	SKUID                string
+	Count                int64
 	AmountMinor          int64
 	Currency             string
+	Type                 string
+	Status               string
 	OccurredAt           time.Time
 }
 
 type WeChatShopRefundCallbackCommand struct {
-	OutRefundNo          string
-	ProviderEventDigest  [32]byte
-	PayloadDigest        [32]byte
-	ProviderRefundDigest [32]byte
-	AmountMinor          int64
-	Currency             string
-	Succeeded            bool
-	OccurredAt           time.Time
+	AfterSaleID         string
+	ProviderOrderID     string
+	ProviderStatus      string
+	ProviderEventDigest [32]byte
+	PayloadDigest       [32]byte
+	OccurredAt          time.Time
 }
 
 // WeChatShopRefundProvider is independent from WeChatPayProvider. Enabled is
@@ -133,6 +155,7 @@ type WeChatShopRefundProvider interface {
 }
 
 type WeChatShopRefundCallbackVerifier interface {
+	VerifyURL(context.Context, map[string]string) (string, error)
 	VerifyRefund(context.Context, []byte, map[string]string) (WeChatShopRefundCallbackCommand, error)
 }
 
@@ -140,5 +163,6 @@ type WeChatShopRefundApplication interface {
 	RequestRefund(context.Context, WeChatShopRefundCommand) (WeChatShopRefund, error)
 	ExecuteRefund(context.Context, WeChatShopExecutionJob) (WeChatShopRefund, error)
 	ApplyRefundCallback(context.Context, WeChatShopRefundCallbackCommand) (WeChatShopRefund, error)
+	QueueRefundReconciliation(context.Context, int64) (WeChatShopRefund, error)
 	ReconcileRefund(context.Context, int64) (WeChatShopRefund, error)
 }

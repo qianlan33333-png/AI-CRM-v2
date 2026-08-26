@@ -23,6 +23,7 @@ import (
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
 	operationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/store"
 	orderapp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/app"
+	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 	orderprovider "github.com/qianlan33333-png/AI-CRM-v2/internal/order/provider"
 	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
 	orderworker "github.com/qianlan33333-png/AI-CRM-v2/internal/order/worker"
@@ -244,14 +245,21 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	if config.Commerce.WeChatShopOrder.Enabled {
-		shopProvider, shopErr := newWeChatShopOrderProviderRuntime(
-			config.Commerce.WeChatShopOrder, &http.Client{Timeout: 5 * time.Second},
-		)
-		if shopErr != nil {
+	var shopProvider *orderprovider.WeChatShopOrder
+	if config.Commerce.WeChatShopRefund.Enabled {
+		shopProvider, err = newWeChatShopRefundProviderRuntime(config.Commerce.WeChatShopRefund, &http.Client{Timeout: 5 * time.Second})
+		if err != nil {
 			pool.Close()
-			return nil, shopErr
+			return nil, err
 		}
+	} else if config.Commerce.WeChatShopOrder.Enabled {
+		shopProvider, err = newWeChatShopOrderProviderRuntime(config.Commerce.WeChatShopOrder, &http.Client{Timeout: 5 * time.Second})
+		if err != nil {
+			pool.Close()
+			return nil, err
+		}
+	}
+	if shopProvider != nil {
 		shopMaterials, shopErr := orderapp.NewWeChatShopMaterialService(
 			uow, orderstore.NewWeChatShopMaterialRepository(), shopProvider, eventstore.NewAppender(),
 		)
@@ -269,7 +277,11 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	wechatShopRefunds, err := orderapp.NewWeChatShopRefundService(uow, commerceRefunds, orderprovider.DisabledWeChatShopRefund{}, eventstore.NewAppender())
+	var wechatShopRefundProvider orderport.WeChatShopRefundProvider = orderprovider.DisabledWeChatShopRefund{}
+	if config.Commerce.WeChatShopRefund.Enabled {
+		wechatShopRefundProvider = shopProvider
+	}
+	wechatShopRefunds, err := orderapp.NewWeChatShopRefundService(uow, commerceRefunds, wechatShopRefundProvider, eventstore.NewAppender())
 	if err != nil {
 		pool.Close()
 		return nil, err

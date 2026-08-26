@@ -21,11 +21,7 @@ WHERE id = $4
   AND state IN ('executing','provider_accepted','outcome_unknown')
   AND amount_minor = $5 AND currency = $6
   AND version = $7
-RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at
+RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor, currency, reason_digest, transaction_digest, command_key_digest, command_payload_digest, source_ref_digest, target_ref_digest, payload_digest, policy_version_digest, provider_acceptance_digest, provider_refund_digest, settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at, contract_version, provider_order_id, product_id, sku_id, refund_count, unit_price_minor, reason_code, material_evidence_digest, provider_aftersale_id
 `
 
 type ApplyWeChatShopRefundSettlementParams struct {
@@ -74,6 +70,15 @@ func (q *Queries) ApplyWeChatShopRefundSettlement(ctx context.Context, arg Apply
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SettledAt,
+		&i.ContractVersion,
+		&i.ProviderOrderID,
+		&i.ProductID,
+		&i.SkuID,
+		&i.RefundCount,
+		&i.UnitPriceMinor,
+		&i.ReasonCode,
+		&i.MaterialEvidenceDigest,
+		&i.ProviderAftersaleID,
 	)
 	return i, err
 }
@@ -121,15 +126,15 @@ func (q *Queries) CompleteWeChatShopRefundAttempt(ctx context.Context, arg Compl
 const completeWeChatShopRefundCallback = `-- name: CompleteWeChatShopRefundCallback :one
 UPDATE public.order_wechat_shop_refund_callbacks
 SET outcome = $1, result_digest = $2,
-  state = 'completed', completed_at = $3
-WHERE id = $4 AND state = 'reserved'
-RETURNING id, refund_id, provider_event_digest, payload_digest, provider_refund_digest,
-  outcome, result_digest, state, received_at, completed_at
+  river_job_id = $3, state = 'completed', completed_at = $4
+WHERE id = $5 AND state = 'reserved'
+RETURNING id, refund_id, provider_event_digest, payload_digest, provider_refund_digest, outcome, result_digest, state, received_at, completed_at, contract_version, provider_aftersale_id, provider_status, river_job_id
 `
 
 type CompleteWeChatShopRefundCallbackParams struct {
 	Outcome      pgtype.Text        `json:"outcome"`
 	ResultDigest []byte             `json:"result_digest"`
+	RiverJobID   pgtype.Int8        `json:"river_job_id"`
 	CompletedAt  pgtype.Timestamptz `json:"completed_at"`
 	CallbackID   int64              `json:"callback_id"`
 }
@@ -138,6 +143,7 @@ func (q *Queries) CompleteWeChatShopRefundCallback(ctx context.Context, arg Comp
 	row := q.db.QueryRow(ctx, completeWeChatShopRefundCallback,
 		arg.Outcome,
 		arg.ResultDigest,
+		arg.RiverJobID,
 		arg.CompletedAt,
 		arg.CallbackID,
 	)
@@ -153,6 +159,10 @@ func (q *Queries) CompleteWeChatShopRefundCallback(ctx context.Context, arg Comp
 		&i.State,
 		&i.ReceivedAt,
 		&i.CompletedAt,
+		&i.ContractVersion,
+		&i.ProviderAftersaleID,
+		&i.ProviderStatus,
+		&i.RiverJobID,
 	)
 	return i, err
 }
@@ -160,19 +170,17 @@ func (q *Queries) CompleteWeChatShopRefundCallback(ctx context.Context, arg Comp
 const completeWeChatShopRefundExecution = `-- name: CompleteWeChatShopRefundExecution :one
 UPDATE public.order_wechat_shop_refunds
 SET state = $1, provider_acceptance_digest = $2,
-  version = version + 1, updated_at = $3
-WHERE id = $4 AND state = 'executing'
-  AND version = $5
-RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at
+  provider_aftersale_id = $3,
+  version = version + 1, updated_at = $4
+WHERE id = $5 AND state = 'executing'
+  AND version = $6
+RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor, currency, reason_digest, transaction_digest, command_key_digest, command_payload_digest, source_ref_digest, target_ref_digest, payload_digest, policy_version_digest, provider_acceptance_digest, provider_refund_digest, settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at, contract_version, provider_order_id, product_id, sku_id, refund_count, unit_price_minor, reason_code, material_evidence_digest, provider_aftersale_id
 `
 
 type CompleteWeChatShopRefundExecutionParams struct {
 	State                    string             `json:"state"`
 	ProviderAcceptanceDigest []byte             `json:"provider_acceptance_digest"`
+	ProviderAftersaleID      pgtype.Text        `json:"provider_aftersale_id"`
 	CompletedAt              pgtype.Timestamptz `json:"completed_at"`
 	RefundID                 int64              `json:"refund_id"`
 	ExpectedVersion          int64              `json:"expected_version"`
@@ -182,6 +190,7 @@ func (q *Queries) CompleteWeChatShopRefundExecution(ctx context.Context, arg Com
 	row := q.db.QueryRow(ctx, completeWeChatShopRefundExecution,
 		arg.State,
 		arg.ProviderAcceptanceDigest,
+		arg.ProviderAftersaleID,
 		arg.CompletedAt,
 		arg.RefundID,
 		arg.ExpectedVersion,
@@ -212,6 +221,15 @@ func (q *Queries) CompleteWeChatShopRefundExecution(ctx context.Context, arg Com
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SettledAt,
+		&i.ContractVersion,
+		&i.ProviderOrderID,
+		&i.ProductID,
+		&i.SkuID,
+		&i.RefundCount,
+		&i.UnitPriceMinor,
+		&i.ReasonCode,
+		&i.MaterialEvidenceDigest,
+		&i.ProviderAftersaleID,
 	)
 	return i, err
 }
@@ -237,43 +255,74 @@ func (q *Queries) CountWeChatShopReservedRefundAmount(ctx context.Context, order
 	return column_1, err
 }
 
+const countWeChatShopReservedRefundLineCount = `-- name: CountWeChatShopReservedRefundLineCount :one
+SELECT COALESCE(sum(refund_count), 0)::bigint
+FROM public.order_wechat_shop_refunds
+WHERE order_id = $1::bigint
+  AND contract_version = 'provider/v2'
+  AND product_id = $2::text
+  AND sku_id = $3::text
+  AND state <> 'final_failed'
+`
+
+type CountWeChatShopReservedRefundLineCountParams struct {
+	OrderID   int64  `json:"order_id"`
+	ProductID string `json:"product_id"`
+	SkuID     string `json:"sku_id"`
+}
+
+func (q *Queries) CountWeChatShopReservedRefundLineCount(ctx context.Context, arg CountWeChatShopReservedRefundLineCountParams) (int64, error) {
+	row := q.db.QueryRow(ctx, countWeChatShopReservedRefundLineCount, arg.OrderID, arg.ProductID, arg.SkuID)
+	var column_1 int64
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const createWeChatShopRefund = `-- name: CreateWeChatShopRefund :one
 INSERT INTO public.order_wechat_shop_refunds (
-  order_id, actor_id, merchant_order_no, out_refund_no, amount_minor, currency,
+  order_id, actor_id, contract_version, merchant_order_no, provider_order_id,
+  product_id, sku_id, refund_count, unit_price_minor, reason_code,
+  material_evidence_digest, out_refund_no, amount_minor, currency,
   reason_digest, transaction_digest, command_key_digest, command_payload_digest,
   source_ref_digest, target_ref_digest, payload_digest, policy_version_digest,
   created_at, updated_at
 ) VALUES (
-  $1, $2, $3,
+  $1, $2, 'provider/v2', $3,
   $4, $5, $6,
   $7, $8, $9,
-  $10, $11, $12,
-  $13, $14, $15, $15
+  $10, $11,
+  $12, $13,
+  $14, $15, $16,
+  $17, $18, $19,
+  $20, $21, $22, $22
 )
 ON CONFLICT (actor_id, command_key_digest) DO NOTHING
-RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at
+RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor, currency, reason_digest, transaction_digest, command_key_digest, command_payload_digest, source_ref_digest, target_ref_digest, payload_digest, policy_version_digest, provider_acceptance_digest, provider_refund_digest, settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at, contract_version, provider_order_id, product_id, sku_id, refund_count, unit_price_minor, reason_code, material_evidence_digest, provider_aftersale_id
 `
 
 type CreateWeChatShopRefundParams struct {
-	OrderID              int64              `json:"order_id"`
-	ActorID              int64              `json:"actor_id"`
-	MerchantOrderNo      string             `json:"merchant_order_no"`
-	OutRefundNo          string             `json:"out_refund_no"`
-	AmountMinor          int64              `json:"amount_minor"`
-	Currency             string             `json:"currency"`
-	ReasonDigest         []byte             `json:"reason_digest"`
-	TransactionDigest    []byte             `json:"transaction_digest"`
-	CommandKeyDigest     []byte             `json:"command_key_digest"`
-	CommandPayloadDigest []byte             `json:"command_payload_digest"`
-	SourceRefDigest      []byte             `json:"source_ref_digest"`
-	TargetRefDigest      []byte             `json:"target_ref_digest"`
-	PayloadDigest        []byte             `json:"payload_digest"`
-	PolicyVersionDigest  []byte             `json:"policy_version_digest"`
-	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	OrderID                int64              `json:"order_id"`
+	ActorID                int64              `json:"actor_id"`
+	MerchantOrderNo        string             `json:"merchant_order_no"`
+	ProviderOrderID        pgtype.Text        `json:"provider_order_id"`
+	ProductID              pgtype.Text        `json:"product_id"`
+	SkuID                  pgtype.Text        `json:"sku_id"`
+	RefundCount            pgtype.Int8        `json:"refund_count"`
+	UnitPriceMinor         pgtype.Int8        `json:"unit_price_minor"`
+	ReasonCode             pgtype.Text        `json:"reason_code"`
+	MaterialEvidenceDigest []byte             `json:"material_evidence_digest"`
+	OutRefundNo            string             `json:"out_refund_no"`
+	AmountMinor            int64              `json:"amount_minor"`
+	Currency               string             `json:"currency"`
+	ReasonDigest           []byte             `json:"reason_digest"`
+	TransactionDigest      []byte             `json:"transaction_digest"`
+	CommandKeyDigest       []byte             `json:"command_key_digest"`
+	CommandPayloadDigest   []byte             `json:"command_payload_digest"`
+	SourceRefDigest        []byte             `json:"source_ref_digest"`
+	TargetRefDigest        []byte             `json:"target_ref_digest"`
+	PayloadDigest          []byte             `json:"payload_digest"`
+	PolicyVersionDigest    []byte             `json:"policy_version_digest"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
 }
 
 func (q *Queries) CreateWeChatShopRefund(ctx context.Context, arg CreateWeChatShopRefundParams) (OrderWechatShopRefund, error) {
@@ -281,6 +330,13 @@ func (q *Queries) CreateWeChatShopRefund(ctx context.Context, arg CreateWeChatSh
 		arg.OrderID,
 		arg.ActorID,
 		arg.MerchantOrderNo,
+		arg.ProviderOrderID,
+		arg.ProductID,
+		arg.SkuID,
+		arg.RefundCount,
+		arg.UnitPriceMinor,
+		arg.ReasonCode,
+		arg.MaterialEvidenceDigest,
 		arg.OutRefundNo,
 		arg.AmountMinor,
 		arg.Currency,
@@ -320,6 +376,15 @@ func (q *Queries) CreateWeChatShopRefund(ctx context.Context, arg CreateWeChatSh
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SettledAt,
+		&i.ContractVersion,
+		&i.ProviderOrderID,
+		&i.ProductID,
+		&i.SkuID,
+		&i.RefundCount,
+		&i.UnitPriceMinor,
+		&i.ReasonCode,
+		&i.MaterialEvidenceDigest,
+		&i.ProviderAftersaleID,
 	)
 	return i, err
 }
@@ -408,12 +473,30 @@ func (q *Queries) FindWeChatShopRefundOrderCandidates(ctx context.Context, order
 	return items, nil
 }
 
+const getWeChatShopMaterialSync = `-- name: GetWeChatShopMaterialSync :one
+SELECT provider_order_id, generation, state, river_job_id,
+  evidence_digest, requested_at, completed_at
+FROM public.order_wechat_shop_material_sync_requests
+WHERE provider_order_id = $1
+`
+
+func (q *Queries) GetWeChatShopMaterialSync(ctx context.Context, providerOrderID string) (OrderWechatShopMaterialSyncRequest, error) {
+	row := q.db.QueryRow(ctx, getWeChatShopMaterialSync, providerOrderID)
+	var i OrderWechatShopMaterialSyncRequest
+	err := row.Scan(
+		&i.ProviderOrderID,
+		&i.Generation,
+		&i.State,
+		&i.RiverJobID,
+		&i.EvidenceDigest,
+		&i.RequestedAt,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
 const getWeChatShopRefundByCommand = `-- name: GetWeChatShopRefundByCommand :one
-SELECT id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at
+SELECT id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor, currency, reason_digest, transaction_digest, command_key_digest, command_payload_digest, source_ref_digest, target_ref_digest, payload_digest, policy_version_digest, provider_acceptance_digest, provider_refund_digest, settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at, contract_version, provider_order_id, product_id, sku_id, refund_count, unit_price_minor, reason_code, material_evidence_digest, provider_aftersale_id
 FROM public.order_wechat_shop_refunds
 WHERE actor_id = $1 AND command_key_digest = $2
 `
@@ -451,13 +534,21 @@ func (q *Queries) GetWeChatShopRefundByCommand(ctx context.Context, arg GetWeCha
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SettledAt,
+		&i.ContractVersion,
+		&i.ProviderOrderID,
+		&i.ProductID,
+		&i.SkuID,
+		&i.RefundCount,
+		&i.UnitPriceMinor,
+		&i.ReasonCode,
+		&i.MaterialEvidenceDigest,
+		&i.ProviderAftersaleID,
 	)
 	return i, err
 }
 
 const getWeChatShopRefundCallback = `-- name: GetWeChatShopRefundCallback :one
-SELECT id, refund_id, provider_event_digest, payload_digest, provider_refund_digest,
-  outcome, result_digest, state, received_at, completed_at
+SELECT id, refund_id, provider_event_digest, payload_digest, provider_refund_digest, outcome, result_digest, state, received_at, completed_at, contract_version, provider_aftersale_id, provider_status, river_job_id
 FROM public.order_wechat_shop_refund_callbacks
 WHERE provider_event_digest = $1
 `
@@ -476,6 +567,46 @@ func (q *Queries) GetWeChatShopRefundCallback(ctx context.Context, providerEvent
 		&i.State,
 		&i.ReceivedAt,
 		&i.CompletedAt,
+		&i.ContractVersion,
+		&i.ProviderAftersaleID,
+		&i.ProviderStatus,
+		&i.RiverJobID,
+	)
+	return i, err
+}
+
+const getWeChatShopRefundMaterial = `-- name: GetWeChatShopRefundMaterial :one
+SELECT id, provider_order_id, status_code, deal_recorded, amount_minor, currency,
+  transaction_digest, evidence_digest, source, source_key_digest, readiness,
+  provider_verified, provider_created_at, provider_paid_at, provider_updated_at,
+  synced_at, version, created_at, updated_at
+FROM public.order_wechat_shop_materials
+WHERE provider_order_id = $1
+`
+
+func (q *Queries) GetWeChatShopRefundMaterial(ctx context.Context, providerOrderID string) (OrderWechatShopMaterial, error) {
+	row := q.db.QueryRow(ctx, getWeChatShopRefundMaterial, providerOrderID)
+	var i OrderWechatShopMaterial
+	err := row.Scan(
+		&i.ID,
+		&i.ProviderOrderID,
+		&i.StatusCode,
+		&i.DealRecorded,
+		&i.AmountMinor,
+		&i.Currency,
+		&i.TransactionDigest,
+		&i.EvidenceDigest,
+		&i.Source,
+		&i.SourceKeyDigest,
+		&i.Readiness,
+		&i.ProviderVerified,
+		&i.ProviderCreatedAt,
+		&i.ProviderPaidAt,
+		&i.ProviderUpdatedAt,
+		&i.SyncedAt,
+		&i.Version,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -605,12 +736,128 @@ func (q *Queries) InsertWeChatShopRefundQuery(ctx context.Context, arg InsertWeC
 	return i, err
 }
 
+const listWeChatShopRefundMaterialLines = `-- name: ListWeChatShopRefundMaterialLines :many
+SELECT material_id, position, product_id, sku_id, sku_count,
+  on_aftersale_sku_count, finish_aftersale_sku_count, real_price_minor,
+  remaining_sku_count, aftersale_evidence_exact, readiness, created_at
+FROM public.order_wechat_shop_material_lines
+WHERE material_id = $1
+ORDER BY position
+`
+
+func (q *Queries) ListWeChatShopRefundMaterialLines(ctx context.Context, materialID int64) ([]OrderWechatShopMaterialLine, error) {
+	rows, err := q.db.Query(ctx, listWeChatShopRefundMaterialLines, materialID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []OrderWechatShopMaterialLine{}
+	for rows.Next() {
+		var i OrderWechatShopMaterialLine
+		if err := rows.Scan(
+			&i.MaterialID,
+			&i.Position,
+			&i.ProductID,
+			&i.SkuID,
+			&i.SkuCount,
+			&i.OnAftersaleSkuCount,
+			&i.FinishAftersaleSkuCount,
+			&i.RealPriceMinor,
+			&i.RemainingSkuCount,
+			&i.AftersaleEvidenceExact,
+			&i.Readiness,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const lockIncompleteWeChatShopRefundAttempt = `-- name: LockIncompleteWeChatShopRefundAttempt :one
+SELECT id, refund_id, attempt_no, river_job_id, river_attempt, args_digest,
+  request_digest, outcome, evidence_digest, started_at, completed_at
+FROM public.order_wechat_shop_refund_attempts
+WHERE refund_id = $1 AND outcome IS NULL AND completed_at IS NULL
+ORDER BY attempt_no DESC
+LIMIT 1
+FOR UPDATE
+`
+
+func (q *Queries) LockIncompleteWeChatShopRefundAttempt(ctx context.Context, refundID int64) (OrderWechatShopRefundAttempt, error) {
+	row := q.db.QueryRow(ctx, lockIncompleteWeChatShopRefundAttempt, refundID)
+	var i OrderWechatShopRefundAttempt
+	err := row.Scan(
+		&i.ID,
+		&i.RefundID,
+		&i.AttemptNo,
+		&i.RiverJobID,
+		&i.RiverAttempt,
+		&i.ArgsDigest,
+		&i.RequestDigest,
+		&i.Outcome,
+		&i.EvidenceDigest,
+		&i.StartedAt,
+		&i.CompletedAt,
+	)
+	return i, err
+}
+
+const lockWeChatShopRefundByAfterSaleID = `-- name: LockWeChatShopRefundByAfterSaleID :one
+SELECT id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor, currency, reason_digest, transaction_digest, command_key_digest, command_payload_digest, source_ref_digest, target_ref_digest, payload_digest, policy_version_digest, provider_acceptance_digest, provider_refund_digest, settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at, contract_version, provider_order_id, product_id, sku_id, refund_count, unit_price_minor, reason_code, material_evidence_digest, provider_aftersale_id
+FROM public.order_wechat_shop_refunds
+WHERE provider_aftersale_id = $1
+  AND contract_version = 'provider/v2'
+FOR UPDATE
+`
+
+func (q *Queries) LockWeChatShopRefundByAfterSaleID(ctx context.Context, providerAftersaleID pgtype.Text) (OrderWechatShopRefund, error) {
+	row := q.db.QueryRow(ctx, lockWeChatShopRefundByAfterSaleID, providerAftersaleID)
+	var i OrderWechatShopRefund
+	err := row.Scan(
+		&i.ID,
+		&i.OrderID,
+		&i.ActorID,
+		&i.MerchantOrderNo,
+		&i.OutRefundNo,
+		&i.AmountMinor,
+		&i.Currency,
+		&i.ReasonDigest,
+		&i.TransactionDigest,
+		&i.CommandKeyDigest,
+		&i.CommandPayloadDigest,
+		&i.SourceRefDigest,
+		&i.TargetRefDigest,
+		&i.PayloadDigest,
+		&i.PolicyVersionDigest,
+		&i.ProviderAcceptanceDigest,
+		&i.ProviderRefundDigest,
+		&i.SettlementReceiptDigest,
+		&i.State,
+		&i.AttemptCount,
+		&i.Version,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.SettledAt,
+		&i.ContractVersion,
+		&i.ProviderOrderID,
+		&i.ProductID,
+		&i.SkuID,
+		&i.RefundCount,
+		&i.UnitPriceMinor,
+		&i.ReasonCode,
+		&i.MaterialEvidenceDigest,
+		&i.ProviderAftersaleID,
+	)
+	return i, err
+}
+
 const lockWeChatShopRefundByID = `-- name: LockWeChatShopRefundByID :one
-SELECT id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at
+SELECT id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor, currency, reason_digest, transaction_digest, command_key_digest, command_payload_digest, source_ref_digest, target_ref_digest, payload_digest, policy_version_digest, provider_acceptance_digest, provider_refund_digest, settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at, contract_version, provider_order_id, product_id, sku_id, refund_count, unit_price_minor, reason_code, material_evidence_digest, provider_aftersale_id
 FROM public.order_wechat_shop_refunds
 WHERE id = $1
 FOR UPDATE
@@ -644,16 +891,21 @@ func (q *Queries) LockWeChatShopRefundByID(ctx context.Context, refundID int64) 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SettledAt,
+		&i.ContractVersion,
+		&i.ProviderOrderID,
+		&i.ProductID,
+		&i.SkuID,
+		&i.RefundCount,
+		&i.UnitPriceMinor,
+		&i.ReasonCode,
+		&i.MaterialEvidenceDigest,
+		&i.ProviderAftersaleID,
 	)
 	return i, err
 }
 
 const lockWeChatShopRefundByOutRefundNo = `-- name: LockWeChatShopRefundByOutRefundNo :one
-SELECT id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at
+SELECT id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor, currency, reason_digest, transaction_digest, command_key_digest, command_payload_digest, source_ref_digest, target_ref_digest, payload_digest, policy_version_digest, provider_acceptance_digest, provider_refund_digest, settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at, contract_version, provider_order_id, product_id, sku_id, refund_count, unit_price_minor, reason_code, material_evidence_digest, provider_aftersale_id
 FROM public.order_wechat_shop_refunds
 WHERE out_refund_no = $1
 FOR UPDATE
@@ -687,6 +939,45 @@ func (q *Queries) LockWeChatShopRefundByOutRefundNo(ctx context.Context, outRefu
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SettledAt,
+		&i.ContractVersion,
+		&i.ProviderOrderID,
+		&i.ProductID,
+		&i.SkuID,
+		&i.RefundCount,
+		&i.UnitPriceMinor,
+		&i.ReasonCode,
+		&i.MaterialEvidenceDigest,
+		&i.ProviderAftersaleID,
+	)
+	return i, err
+}
+
+const markWeChatShopMaterialSyncQueued = `-- name: MarkWeChatShopMaterialSyncQueued :one
+UPDATE public.order_wechat_shop_material_sync_requests
+SET state = 'queued', river_job_id = $1
+WHERE provider_order_id = $2
+  AND generation = $3 AND state = 'reserved'
+RETURNING provider_order_id, generation, state, river_job_id,
+  evidence_digest, requested_at, completed_at
+`
+
+type MarkWeChatShopMaterialSyncQueuedParams struct {
+	RiverJobID      pgtype.Int8 `json:"river_job_id"`
+	ProviderOrderID string      `json:"provider_order_id"`
+	Generation      int64       `json:"generation"`
+}
+
+func (q *Queries) MarkWeChatShopMaterialSyncQueued(ctx context.Context, arg MarkWeChatShopMaterialSyncQueuedParams) (OrderWechatShopMaterialSyncRequest, error) {
+	row := q.db.QueryRow(ctx, markWeChatShopMaterialSyncQueued, arg.RiverJobID, arg.ProviderOrderID, arg.Generation)
+	var i OrderWechatShopMaterialSyncRequest
+	err := row.Scan(
+		&i.ProviderOrderID,
+		&i.Generation,
+		&i.State,
+		&i.RiverJobID,
+		&i.EvidenceDigest,
+		&i.RequestedAt,
+		&i.CompletedAt,
 	)
 	return i, err
 }
@@ -698,11 +989,7 @@ SET state = 'final_failed', provider_acceptance_digest = NULL,
 WHERE id = $2
   AND state IN ('executing','provider_accepted','outcome_unknown')
   AND version = $3
-RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at
+RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor, currency, reason_digest, transaction_digest, command_key_digest, command_payload_digest, source_ref_digest, target_ref_digest, payload_digest, policy_version_digest, provider_acceptance_digest, provider_refund_digest, settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at, contract_version, provider_order_id, product_id, sku_id, refund_count, unit_price_minor, reason_code, material_evidence_digest, provider_aftersale_id
 `
 
 type MarkWeChatShopRefundFinalFailedParams struct {
@@ -739,20 +1026,65 @@ func (q *Queries) MarkWeChatShopRefundFinalFailed(ctx context.Context, arg MarkW
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SettledAt,
+		&i.ContractVersion,
+		&i.ProviderOrderID,
+		&i.ProductID,
+		&i.SkuID,
+		&i.RefundCount,
+		&i.UnitPriceMinor,
+		&i.ReasonCode,
+		&i.MaterialEvidenceDigest,
+		&i.ProviderAftersaleID,
+	)
+	return i, err
+}
+
+const reserveWeChatShopMaterialSync = `-- name: ReserveWeChatShopMaterialSync :one
+INSERT INTO public.order_wechat_shop_material_sync_requests (
+  provider_order_id, requested_at
+) VALUES (
+  $1, $2
+)
+ON CONFLICT (provider_order_id) DO UPDATE SET
+  generation = order_wechat_shop_material_sync_requests.generation + 1,
+  state = 'reserved', river_job_id = NULL, evidence_digest = NULL,
+  requested_at = EXCLUDED.requested_at, completed_at = NULL
+WHERE order_wechat_shop_material_sync_requests.state = 'completed'
+RETURNING provider_order_id, generation, state, river_job_id,
+  evidence_digest, requested_at, completed_at
+`
+
+type ReserveWeChatShopMaterialSyncParams struct {
+	ProviderOrderID string             `json:"provider_order_id"`
+	RequestedAt     pgtype.Timestamptz `json:"requested_at"`
+}
+
+func (q *Queries) ReserveWeChatShopMaterialSync(ctx context.Context, arg ReserveWeChatShopMaterialSyncParams) (OrderWechatShopMaterialSyncRequest, error) {
+	row := q.db.QueryRow(ctx, reserveWeChatShopMaterialSync, arg.ProviderOrderID, arg.RequestedAt)
+	var i OrderWechatShopMaterialSyncRequest
+	err := row.Scan(
+		&i.ProviderOrderID,
+		&i.Generation,
+		&i.State,
+		&i.RiverJobID,
+		&i.EvidenceDigest,
+		&i.RequestedAt,
+		&i.CompletedAt,
 	)
 	return i, err
 }
 
 const reserveWeChatShopRefundCallback = `-- name: ReserveWeChatShopRefundCallback :one
 INSERT INTO public.order_wechat_shop_refund_callbacks (
-  refund_id, provider_event_digest, payload_digest, provider_refund_digest, received_at
+  refund_id, contract_version, provider_event_digest, payload_digest,
+  provider_refund_digest, provider_aftersale_id, provider_status, received_at
 ) VALUES (
-  $1, $2, $3,
-  $4, $5
+  $1, 'provider/v2', $2,
+  $3, $4,
+  $5, $6, $7
 )
 ON CONFLICT (provider_event_digest) DO NOTHING
-RETURNING id, refund_id, provider_event_digest, payload_digest, provider_refund_digest,
-  outcome, result_digest, state, received_at, completed_at
+RETURNING id, refund_id, provider_event_digest, payload_digest, provider_refund_digest, outcome, result_digest, state, received_at, completed_at, contract_version, provider_aftersale_id, provider_status, river_job_id
 `
 
 type ReserveWeChatShopRefundCallbackParams struct {
@@ -760,6 +1092,8 @@ type ReserveWeChatShopRefundCallbackParams struct {
 	ProviderEventDigest  []byte             `json:"provider_event_digest"`
 	PayloadDigest        []byte             `json:"payload_digest"`
 	ProviderRefundDigest []byte             `json:"provider_refund_digest"`
+	ProviderAftersaleID  pgtype.Text        `json:"provider_aftersale_id"`
+	ProviderStatus       pgtype.Text        `json:"provider_status"`
 	ReceivedAt           pgtype.Timestamptz `json:"received_at"`
 }
 
@@ -769,6 +1103,8 @@ func (q *Queries) ReserveWeChatShopRefundCallback(ctx context.Context, arg Reser
 		arg.ProviderEventDigest,
 		arg.PayloadDigest,
 		arg.ProviderRefundDigest,
+		arg.ProviderAftersaleID,
+		arg.ProviderStatus,
 		arg.ReceivedAt,
 	)
 	var i OrderWechatShopRefundCallback
@@ -783,6 +1119,10 @@ func (q *Queries) ReserveWeChatShopRefundCallback(ctx context.Context, arg Reser
 		&i.State,
 		&i.ReceivedAt,
 		&i.CompletedAt,
+		&i.ContractVersion,
+		&i.ProviderAftersaleID,
+		&i.ProviderStatus,
+		&i.RiverJobID,
 	)
 	return i, err
 }
@@ -793,11 +1133,7 @@ SET state = 'executing', attempt_count = attempt_count + 1,
   version = version + 1, updated_at = $1
 WHERE id = $2 AND state = 'accepted'
   AND version = $3
-RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor,
-  currency, reason_digest, transaction_digest, command_key_digest,
-  command_payload_digest, source_ref_digest, target_ref_digest, payload_digest,
-  policy_version_digest, provider_acceptance_digest, provider_refund_digest,
-  settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at
+RETURNING id, order_id, actor_id, merchant_order_no, out_refund_no, amount_minor, currency, reason_digest, transaction_digest, command_key_digest, command_payload_digest, source_ref_digest, target_ref_digest, payload_digest, policy_version_digest, provider_acceptance_digest, provider_refund_digest, settlement_receipt_digest, state, attempt_count, version, created_at, updated_at, settled_at, contract_version, provider_order_id, product_id, sku_id, refund_count, unit_price_minor, reason_code, material_evidence_digest, provider_aftersale_id
 `
 
 type StartWeChatShopRefundExecutionParams struct {
@@ -834,6 +1170,15 @@ func (q *Queries) StartWeChatShopRefundExecution(ctx context.Context, arg StartW
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.SettledAt,
+		&i.ContractVersion,
+		&i.ProviderOrderID,
+		&i.ProductID,
+		&i.SkuID,
+		&i.RefundCount,
+		&i.UnitPriceMinor,
+		&i.ReasonCode,
+		&i.MaterialEvidenceDigest,
+		&i.ProviderAftersaleID,
 	)
 	return i, err
 }

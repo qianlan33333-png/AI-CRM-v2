@@ -303,10 +303,16 @@ export async function runAdminAdapterTests(): Promise<void> {
   catch (error) { assert(error instanceof Error && error.message.includes('后端能力未就绪') && !unsupportedCalled, 'unsupported refund provider must not request'); }
   finally { globalThis.fetch = savedFetch; }
 
-  globalThis.fetch = async () => new Response(JSON.stringify({ code: 'conflict', message: 'duplicate' }), { status: 409 });
-  try { await createRefundIntentDto({ provider: 'wechat_shop', orderNo: 'SHOP-1', amount: '1.00', reason: '客户申请', transactionIdConfirmation: 'SHOP-1', checked: true }); assert(false, 'refund 409 was accepted'); }
+  globalThis.fetch = async () => { throw new Error('incomplete shop refund reached transport'); };
+  try { await createRefundIntentDto({ provider: 'wechat_shop', orderNo: 'SHOP-1', amount: '1.00', reason: '客户申请', transactionIdConfirmation: 'SHOP-1', checked: true }); assert(false, 'incomplete shop refund was accepted'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('商品、SKU'), 'incomplete shop refund must fail closed'); }
+
+  let shopRefundBody: Record<string, unknown> = {};
+  globalThis.fetch = async (_input, init) => { shopRefundBody = JSON.parse(String(init?.body)); return new Response(JSON.stringify({ code: 'conflict', message: 'duplicate' }), { status: 409 }); };
+  try { await createRefundIntentDto({ provider: 'wechat_shop', orderNo: 'SHOP-1', productId: 'PRODUCT-1', skuId: 'SKU-1', refundCount: 1, reasonCode: '10000014', amount: '1.00', reason: '客户申请', transactionIdConfirmation: 'SHOP-1', checked: true }); assert(false, 'refund 409 was accepted'); }
   catch (error) { assert(error instanceof ApiError && error.status === 409, 'refund 409 must stay structured'); }
   finally { globalThis.fetch = savedFetch; }
+  assert(shopRefundBody.product_id === 'PRODUCT-1' && shopRefundBody.sku_id === 'SKU-1' && shopRefundBody.refund_count === 1 && shopRefundBody.reason_code === '10000014', 'wechat shop refund exact material mapping');
 
   globalThis.fetch = async () => new Response(JSON.stringify({ code: 'validation', message: 'bad', request_id: 'r', details: [] }), { status: 422 });
   try { await updateCustomerDto(7, { name: '' }); assert(false, 'customer 422 was accepted'); }

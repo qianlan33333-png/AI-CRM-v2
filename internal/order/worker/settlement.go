@@ -40,6 +40,11 @@ type WeChatShopRefundWorker struct {
 	service orderport.WeChatShopRefundApplication
 }
 
+type WeChatShopRefundReconcileWorker struct {
+	river.WorkerDefaults[orderapp.WeChatShopRefundReconcileArgs]
+	service orderport.WeChatShopRefundApplication
+}
+
 func RegisterSettlementWorkers(registry *platformjobqueue.WorkerRegistry, service *orderapp.EffectExecutionService) error {
 	if registry == nil || service == nil {
 		return ErrInvalidSettlementWorker
@@ -60,7 +65,10 @@ func RegisterWeChatShopRefundWorker(registry *platformjobqueue.WorkerRegistry, s
 	if registry == nil || service == nil {
 		return ErrInvalidSettlementWorker
 	}
-	return platformjobqueue.AddWorker(registry, platformjobqueue.QueueCritical, &WeChatShopRefundWorker{service: service})
+	if err := platformjobqueue.AddWorker(registry, platformjobqueue.QueueCritical, &WeChatShopRefundWorker{service: service}); err != nil {
+		return err
+	}
+	return platformjobqueue.AddWorker(registry, platformjobqueue.QueueCritical, &WeChatShopRefundReconcileWorker{service: service})
 }
 
 func (worker *PaymentEffectWorker) Work(ctx context.Context, job *river.Job[orderapp.PaymentEffectBridgeArgs]) error {
@@ -100,6 +108,14 @@ func (worker *WeChatShopRefundWorker) Work(ctx context.Context, job *river.Job[o
 	return err
 }
 
+func (worker *WeChatShopRefundReconcileWorker) Work(ctx context.Context, job *river.Job[orderapp.WeChatShopRefundReconcileArgs]) error {
+	if worker == nil || worker.service == nil || job == nil || job.JobRow == nil || job.ID < 1 || job.Attempt < 1 || job.Args.RefundID < 1 {
+		return ErrInvalidSettlementWorker
+	}
+	_, err := worker.service.ReconcileRefund(ctx, job.Args.RefundID)
+	return err
+}
+
 func (*PaymentEffectWorker) Timeout(*river.Job[orderapp.PaymentEffectBridgeArgs]) time.Duration {
 	return 30 * time.Second
 }
@@ -113,6 +129,10 @@ func (*RefundReconcileWorker) Timeout(*river.Job[orderapp.RefundReconcileArgs]) 
 	return 30 * time.Second
 }
 func (*WeChatShopRefundWorker) Timeout(*river.Job[orderapp.WeChatShopRefundArgs]) time.Duration {
+	return 30 * time.Second
+}
+
+func (*WeChatShopRefundReconcileWorker) Timeout(*river.Job[orderapp.WeChatShopRefundReconcileArgs]) time.Duration {
 	return 30 * time.Second
 }
 
