@@ -184,6 +184,41 @@ func (r *Repository) ListDraftTouchPlanSummaries(ctx context.Context, campaignCo
 	return result, nil
 }
 
+func (r *Repository) ListTouchPlanIndex(ctx context.Context, reviewStatus campaign.TouchPlanReviewStatus, after *campaignport.DraftTouchPlanKeyset, limit int32) ([]campaign.TouchPlanIndexItem, error) {
+	if limit < 1 || limit > campaignport.MaximumDraftTouchPlanPageLimit+1 || reviewStatus != "" && !reviewStatus.Valid() {
+		return nil, campaign.ErrUnavailable
+	}
+	queries, err := r.initiationQueries(ctx)
+	if err != nil {
+		return nil, err
+	}
+	params := campaigndb.ListCampaignTouchPlanIndexParams{PageLimit: limit}
+	if reviewStatus != "" {
+		params.ReviewStatus = pgtype.Text{String: string(reviewStatus), Valid: true}
+	}
+	if after != nil {
+		if after.CreatedAt.IsZero() || !campaign.ValidDraftTouchPlanID(after.PlanID) {
+			return nil, campaign.ErrUnavailable
+		}
+		params.AfterCreatedAt = pgtype.Timestamptz{Time: after.CreatedAt.UTC(), Valid: true}
+		params.AfterID = pgtype.Text{String: after.PlanID, Valid: true}
+	}
+	rows, err := queries.ListCampaignTouchPlanIndex(ctx, params)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]campaign.TouchPlanIndexItem, len(rows))
+	for index, row := range rows {
+		summary, valid := summaryFromHeader(headerFromIndexRow(row))
+		item := campaign.TouchPlanIndexItem{Plan: summary, ReviewStatus: campaign.TouchPlanReviewStatus(row.ReviewStatus), ReviewVersion: row.ReviewVersion}
+		if !valid || !campaign.ValidTouchPlanIndexItem(item) {
+			return nil, campaign.ErrUnavailable
+		}
+		result[index] = item
+	}
+	return result, nil
+}
+
 func (r *Repository) ReadDraftTouchPlan(ctx context.Context, campaignCode, planID string) (campaign.DraftTouchPlan, error) {
 	queries, err := r.initiationQueries(ctx)
 	if err != nil {
@@ -241,6 +276,21 @@ func headerFromPlanRow(row campaigndb.GetCampaignTouchPlanRow) touchPlanHeader {
 }
 
 func headerFromSummaryRow(row campaigndb.ListCampaignTouchPlanSummariesRow) touchPlanHeader {
+	return touchPlanHeader{
+		id: row.ID, campaignCode: row.CampaignCode, campaignVersion: row.CampaignVersion, sourceKind: row.SourceKind,
+		customerSelectionID: row.CustomerSelectionID, customerSelectionVersion: row.CustomerSelectionVersion,
+		segmentID: row.SegmentID, audiencePackageID: row.AudiencePackageID, audiencePackageVersion: row.AudiencePackageVersion,
+		memberSnapshotWatermark: row.MemberSnapshotWatermark, sourceDigest: row.SourceDigest, targetDigest: row.TargetDigest,
+		contentDigest: row.ContentDigest, targetCount: int64(row.TargetCount), contentStepCount: int64(row.ContentStepCount),
+		candidateCount: int64(row.CandidateCount), activeCustomerCount: int64(row.ActiveCustomerCount),
+		inactiveExcludedCount: int64(row.InactiveExcludedCount), policyExcludedCount: int64(row.PolicyExcludedCount),
+		ownerActorID: row.OwnerActorID, createdAt: row.CreatedAt,
+		localOnly: row.LocalOnly, providerExecutionEligible: row.ProviderExecutionEligible, runtimeExecuted: row.RuntimeExecuted,
+		realExternalCallExecuted: row.RealExternalCallExecuted, deliveryProven: row.DeliveryProven,
+	}
+}
+
+func headerFromIndexRow(row campaigndb.ListCampaignTouchPlanIndexRow) touchPlanHeader {
 	return touchPlanHeader{
 		id: row.ID, campaignCode: row.CampaignCode, campaignVersion: row.CampaignVersion, sourceKind: row.SourceKind,
 		customerSelectionID: row.CustomerSelectionID, customerSelectionVersion: row.CustomerSelectionVersion,

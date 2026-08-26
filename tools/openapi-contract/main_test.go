@@ -353,9 +353,20 @@ func TestCampaignInitiationTouchPlanContractRemainsClosed(t *testing.T) {
 		path   string
 		method string
 	}{
+		"listCloudCampaignPlans":       {"/api/admin/cloud-orchestrator/plans", "GET"},
 		"listCloudCampaignTouchPlans":  {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans", "GET"},
 		"createCloudCampaignTouchPlan": {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans", "POST"},
 		"getCloudCampaignTouchPlan":    {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}", "GET"},
+	}
+	indexItem := doc.Components.Schemas["CloudCampaignTouchPlanIndexItem"].Value
+	var planProperty *openapi3.SchemaRef
+	if indexItem != nil {
+		planProperty = indexItem.Properties["plan"]
+	}
+	if indexItem == nil || indexItem.AdditionalProperties.Has == nil || *indexItem.AdditionalProperties.Has || len(indexItem.Properties) != 3 ||
+		planProperty == nil || planProperty.Ref != "#/components/schemas/CloudCampaignTouchPlanSummary" ||
+		indexItem.Properties["review_status"] == nil || indexItem.Properties["review_version"] == nil {
+		t.Fatal("touch-plan global index item must remain a closed local plan/review projection")
 	}
 	for operationID, want := range operations {
 		item := doc.Paths.Value(want.path)
@@ -569,10 +580,12 @@ func TestCloudCampaignWorkspaceLaunchQueryRegistryRejectsDrift(t *testing.T) {
 func TestCampaignReviewHandoffContractRemainsSeparateFromInitiation(t *testing.T) {
 	doc, inventory := fresh(t)
 	operations := map[string]struct{ path, method string }{
-		"listCloudCampaignTouchPlanRecipients": {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients", "GET"},
-		"getCloudCampaignTouchPlanRecipient":   {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}", "GET"},
-		"getCloudCampaignTouchPlanReview":      {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review", "GET"},
-		"mutateCloudCampaignTouchPlanReview":   {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review/{operation}", "POST"},
+		"listCloudCampaignTouchPlanRecipients":        {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients", "GET"},
+		"getCloudCampaignTouchPlanRecipient":          {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}", "GET"},
+		"getCloudCampaignTouchPlanRecipientReview":    {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}/review", "GET"},
+		"mutateCloudCampaignTouchPlanRecipientReview": {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/recipients/{customer_id}/review/{operation}", "POST"},
+		"getCloudCampaignTouchPlanReview":             {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review", "GET"},
+		"mutateCloudCampaignTouchPlanReview":          {"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans/{plan_id}/review/{operation}", "POST"},
 	}
 	for operationID, want := range operations {
 		item := doc.Paths.Value(want.path)

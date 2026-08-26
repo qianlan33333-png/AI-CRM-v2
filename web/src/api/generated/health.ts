@@ -2869,6 +2869,40 @@ export interface CloudCampaignTouchPlanListResponse {
   delivery_proven: boolean;
 }
 
+export type CloudCampaignTouchPlanIndexItemReviewStatus =
+  (typeof CloudCampaignTouchPlanIndexItemReviewStatus)[keyof typeof CloudCampaignTouchPlanIndexItemReviewStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CloudCampaignTouchPlanIndexItemReviewStatus = {
+  draft: "draft",
+  pending_review: "pending_review",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
+
+export interface CloudCampaignTouchPlanIndexItem {
+  plan: CloudCampaignTouchPlanSummary;
+  review_status: CloudCampaignTouchPlanIndexItemReviewStatus;
+  /** @minimum 1 */
+  review_version: number;
+}
+
+export interface CloudCampaignTouchPlanIndexResponse {
+  /** @maxItems 100 */
+  items: CloudCampaignTouchPlanIndexItem[];
+  /**
+   * @minLength 1
+   * @maxLength 512
+   * @nullable
+   */
+  next_cursor?: string | null;
+  local_only: boolean;
+  provider_execution_eligible: boolean;
+  runtime_executed: boolean;
+  real_external_call_executed: boolean;
+  delivery_proven: boolean;
+}
+
 export interface CloudCampaignTouchPlanReviewMutationRequest {
   /** @minimum 1 */
   expected_version: number;
@@ -18247,6 +18281,31 @@ export type ListAIAudiencePackageSendRecordsParams = {
    */
   offset?: number;
 };
+
+export type ListCloudCampaignPlansParams = {
+  review_status?: ListCloudCampaignPlansReviewStatus;
+  /**
+   * @minLength 1
+   * @maxLength 512
+   */
+  cursor?: string;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+};
+
+export type ListCloudCampaignPlansReviewStatus =
+  (typeof ListCloudCampaignPlansReviewStatus)[keyof typeof ListCloudCampaignPlansReviewStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ListCloudCampaignPlansReviewStatus = {
+  draft: "draft",
+  pending_review: "pending_review",
+  approved: "approved",
+  rejected: "rejected",
+} as const;
 
 export type ListCloudCampaignsParams = {
   approval_status?: ListCloudCampaignsApprovalStatus;
@@ -53711,6 +53770,89 @@ export const activateAIAudiencePackage = async (
     status: res.status,
     headers: res.headers,
   } as activateAIAudiencePackageResponse;
+};
+
+/**
+ * @summary List local Campaign touch plans by review state
+ */
+export type listCloudCampaignPlansResponse200 = {
+  data: CloudCampaignTouchPlanIndexResponse;
+  status: 200;
+};
+
+export type listCloudCampaignPlansResponse400 = {
+  data: CloudCampaignError;
+  status: 400;
+};
+
+export type listCloudCampaignPlansResponse401 = {
+  data: CloudCampaignError;
+  status: 401;
+};
+
+export type listCloudCampaignPlansResponse403 = {
+  data: CloudCampaignError;
+  status: 403;
+};
+
+export type listCloudCampaignPlansResponse503 = {
+  data: CloudCampaignError;
+  status: 503;
+};
+
+export type listCloudCampaignPlansResponseSuccess =
+  listCloudCampaignPlansResponse200 & {
+    headers: Headers;
+  };
+export type listCloudCampaignPlansResponseError = (
+  | listCloudCampaignPlansResponse400
+  | listCloudCampaignPlansResponse401
+  | listCloudCampaignPlansResponse403
+  | listCloudCampaignPlansResponse503
+) & {
+  headers: Headers;
+};
+
+export type listCloudCampaignPlansResponse =
+  listCloudCampaignPlansResponseSuccess | listCloudCampaignPlansResponseError;
+
+export const getListCloudCampaignPlansUrl = (
+  params?: ListCloudCampaignPlansParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/cloud-orchestrator/plans?${stringifiedParams}`
+    : `/api/admin/cloud-orchestrator/plans`;
+};
+
+export const listCloudCampaignPlans = async (
+  params?: ListCloudCampaignPlansParams,
+  options?: RequestInit,
+): Promise<listCloudCampaignPlansResponse> => {
+  const res = await fetch(getListCloudCampaignPlansUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listCloudCampaignPlansResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listCloudCampaignPlansResponse;
 };
 
 export type listCloudCampaignsResponse200 = {

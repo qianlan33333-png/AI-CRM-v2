@@ -9,6 +9,7 @@ import {
   getCampaignTouchPlanRecipientDto,
   getCampaignTouchPlanRecipientReviewDto,
   getCampaignTouchPlanReviewDto,
+  listCampaignPlanIndexDto,
   listCampaignsDto,
   listCampaignTouchPlanRecipientsDto,
   listCampaignTouchPlansDto,
@@ -23,6 +24,8 @@ import {
   type CampaignOutboundHandoffReconciliation,
   type CampaignTouchPlan,
   type CampaignTouchPlanDetail,
+  type CampaignTouchPlanIndexItem,
+  type CampaignTouchPlanIndexPage,
   type CampaignTouchPlanRecipient,
   type CampaignTouchPlanRecipientPage,
   type CampaignTouchPlanRecipientReview,
@@ -86,6 +89,12 @@ function listHtml(rows: CampaignDetail[], filter: CampaignFilter): string {
 
 function planRows(plans: CampaignTouchPlan[]): string {
   return plans.map((plan) => `<tr><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3"><button data-plan="${esc(plan.id)}" style="border:0;background:transparent;color:#1849A9;font-family:ui-monospace,Menlo,monospace;cursor:pointer">${esc(plan.id)}</button></td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${esc(plan.sourceKind)}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${plan.targetCount}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${plan.contentStepCount}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${esc(plan.createdAt)}</td></tr>`).join('') || '<tr><td colspan="5" style="padding:20px;text-align:center;color:#8F959E">暂无已冻结的本地 touch plan</td></tr>';
+}
+
+function planIndexHtml(page: CampaignTouchPlanIndexPage, reviewStatus: CampaignTouchPlanIndexItem['reviewStatus'] | '' = ''): string {
+  const rows = page.items.map((item) => `<tr><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3"><button data-campaign="${esc(item.campaignCode)}" data-plan="${esc(item.id)}" style="border:0;background:transparent;color:#1849A9;font-family:ui-monospace,Menlo,monospace;cursor:pointer">${esc(item.id)}</button><div style="color:#8F959E;font-size:12px">${esc(item.campaignCode)}</div></td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${status(item.reviewStatus)} · v${item.reviewVersion}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${esc(item.sourceKind)}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${item.targetCount}</td><td style="padding:9px 12px;border-bottom:1px solid #EEF0F3">${esc(item.createdAt)}</td></tr>`).join('') || '<tr><td colspan="5" style="padding:20px;text-align:center;color:#8F959E">当前筛选下没有本地 touch plan</td></tr>';
+  const more = page.nextCursor ? `<button id="plan-index-more" style="${button}">加载更多</button>` : '';
+  return shell('运营计划本地审核', `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><label>审核状态 <select id="plan-index-status"><option value="">全部</option>${['draft', 'pending_review', 'approved', 'rejected'].map((value) => `<option value="${value}"${reviewStatus === value ? ' selected' : ''}>${value}</option>`).join('')}</select></label><button id="plan-index-refresh" style="${button}">刷新</button></div><div style="padding:10px;border:1px solid #D6E4FF;border-radius:8px;background:#F5F8FF;color:#1849A9;font-size:13px">这里只展示本地冻结计划与本地审核状态；不代表发送、Provider 执行或送达。</div><div style="border:1px solid #DEE0E3;border-radius:8px;overflow:hidden"><table style="width:100%;border-collapse:collapse"><thead><tr style="color:#667085;text-align:left"><th style="padding:9px 12px">计划 / Campaign</th><th style="padding:9px 12px">审核</th><th style="padding:9px 12px">来源</th><th style="padding:9px 12px">目标数</th><th style="padding:9px 12px">创建时间</th></tr></thead><tbody>${rows}</tbody></table></div>${more}${safety}`);
 }
 
 function campaignHtml(page: CampaignPage): string {
@@ -189,6 +198,24 @@ async function loadList(stage: HTMLElement, filter: CampaignFilter = {}): Promis
   });
 }
 
+function renderPlanIndex(stage: HTMLElement, page: CampaignTouchPlanIndexPage, reviewStatus: CampaignTouchPlanIndexItem['reviewStatus'] | '' = ''): void {
+  stage.innerHTML = planIndexHtml(page, reviewStatus);
+  stage.querySelectorAll<HTMLButtonElement>('[data-plan][data-campaign]').forEach((element) => element.addEventListener('click', () => goto(element.dataset.campaign, element.dataset.plan)));
+  stage.querySelector<HTMLButtonElement>('#plan-index-refresh')?.addEventListener('click', () => {
+    const nextStatus = stage.querySelector<HTMLSelectElement>('#plan-index-status')?.value as CampaignTouchPlanIndexItem['reviewStatus'] | '';
+    void loadPlanIndex(stage, nextStatus || undefined).catch((error) => showError(stage, error));
+  });
+  stage.querySelector<HTMLButtonElement>('#plan-index-more')?.addEventListener('click', () => {
+    void listCampaignPlanIndexDto(reviewStatus || undefined, page.nextCursor || undefined)
+      .then((more) => renderPlanIndex(stage, { items: [...page.items, ...more.items], nextCursor: more.nextCursor }, reviewStatus))
+      .catch((error) => showError(stage, error));
+  });
+}
+
+async function loadPlanIndex(stage: HTMLElement, reviewStatus?: CampaignTouchPlanIndexItem['reviewStatus']): Promise<void> {
+  renderPlanIndex(stage, await listCampaignPlanIndexDto(reviewStatus), reviewStatus || '');
+}
+
 function showError(stage: HTMLElement, error: unknown): void {
   stage.innerHTML = shell('Campaign 本地工作区', `<div style="padding:14px;border:1px solid #F2B8B5;border-radius:8px;background:#FFF1F0;color:#B42318">${esc(error instanceof Error ? error.message : '读取失败')}</div><button id="campaign-retry" style="${button}">返回并重试</button>`);
   stage.querySelector<HTMLButtonElement>('#campaign-retry')?.addEventListener('click', () => goto());
@@ -239,6 +266,7 @@ async function loadCampaign(stage: HTMLElement, campaignCode: string, planID?: s
 
 export async function mountCampaignWorkspace(stage: HTMLElement): Promise<void> {
   const params = query();
+  if (params.get('legacy_admin_path') === '/admin/cloud-orchestrator/plans') return loadPlanIndex(stage);
   if (params.get('view') === 'observability') return mountPushObservability(stage);
   if (params.get('view') === 'external-effects') {
     const rawJobID = params.get('job');

@@ -27,6 +27,7 @@ type Querier interface {
 	ListApprovedCampaignTouchPlanSteps(ctx context.Context, arg ListApprovedCampaignTouchPlanStepsParams) ([]ListApprovedCampaignTouchPlanStepsRow, error)
 	ListApprovedCampaignTouchPlanTargets(ctx context.Context, arg ListApprovedCampaignTouchPlanTargetsParams) ([]int64, error)
 	ListCampaignStepsForTouchPlan(ctx context.Context, campaignCode string) ([]ListCampaignStepsForTouchPlanRow, error)
+	ListCampaignTouchPlanIndex(ctx context.Context, arg ListCampaignTouchPlanIndexParams) ([]ListCampaignTouchPlanIndexRow, error)
 	ListCampaignTouchPlanReviewRecipients(ctx context.Context, arg ListCampaignTouchPlanReviewRecipientsParams) ([]CloudCampaignTouchPlanTarget, error)
 	ListCampaignTouchPlanSteps(ctx context.Context, planID string) ([]ListCampaignTouchPlanStepsRow, error)
 	ListCampaignTouchPlanSummaries(ctx context.Context, arg ListCampaignTouchPlanSummariesParams) ([]ListCampaignTouchPlanSummariesRow, error)

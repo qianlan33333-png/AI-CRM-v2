@@ -136,6 +136,7 @@ type initiationRepositoryStub struct {
 	nextID     int64
 	receipts   map[string]campaignport.CreateReceipt
 	plans      map[string]campaign.DraftTouchPlan
+	reviews    map[string]campaign.TouchPlanReview
 	reserveTx  []int
 	saveTx     []int
 	completeTx []int
@@ -144,7 +145,7 @@ type initiationRepositoryStub struct {
 }
 
 func newInitiationRepository() *initiationRepositoryStub {
-	return &initiationRepositoryStub{receipts: map[string]campaignport.CreateReceipt{}, plans: map[string]campaign.DraftTouchPlan{}}
+	return &initiationRepositoryStub{receipts: map[string]campaignport.CreateReceipt{}, plans: map[string]campaign.DraftTouchPlan{}, reviews: map[string]campaign.TouchPlanReview{}}
 }
 
 func (stub *initiationRepositoryStub) ReserveDraftCreate(ctx context.Context, reservation campaignport.CreateReservation) (campaignport.CreateReceipt, bool, error) {
@@ -182,12 +183,40 @@ func (stub *initiationRepositoryStub) SaveDraftTouchPlan(ctx context.Context, pl
 		return errors.New("duplicate plan")
 	}
 	stub.plans[plan.ID] = campaign.CloneDraftTouchPlan(plan)
+	stub.reviews[plan.ID] = campaign.TouchPlanReview{PlanID: plan.ID, CampaignCode: plan.CampaignCode, Status: campaign.TouchPlanReviewDraft, Version: 1}
 	registerInitiationRollback(ctx, func() {
 		stub.mu.Lock()
 		defer stub.mu.Unlock()
 		delete(stub.plans, plan.ID)
+		delete(stub.reviews, plan.ID)
 	})
 	return nil
+}
+
+func (stub *initiationRepositoryStub) ListTouchPlanIndex(ctx context.Context, reviewStatus campaign.TouchPlanReviewStatus, after *campaignport.DraftTouchPlanKeyset, limit int32) ([]campaign.TouchPlanIndexItem, error) {
+	stub.mu.Lock()
+	defer stub.mu.Unlock()
+	if initiationTransactionID(ctx) < 1 || limit < 1 {
+		return nil, errors.New("index outside transaction")
+	}
+	items := make([]campaign.TouchPlanIndexItem, 0)
+	for id, plan := range stub.plans {
+		review, exists := stub.reviews[id]
+		if !exists || reviewStatus != "" && review.Status != reviewStatus || after != nil && (plan.CreatedAt.After(after.CreatedAt) || plan.CreatedAt.Equal(after.CreatedAt) && plan.ID >= after.PlanID) {
+			continue
+		}
+		items = append(items, campaign.TouchPlanIndexItem{Plan: campaign.DraftTouchPlanSummaryOf(plan), ReviewStatus: review.Status, ReviewVersion: review.Version})
+	}
+	sort.Slice(items, func(left, right int) bool {
+		if items[left].Plan.CreatedAt.Equal(items[right].Plan.CreatedAt) {
+			return items[left].Plan.ID > items[right].Plan.ID
+		}
+		return items[left].Plan.CreatedAt.After(items[right].Plan.CreatedAt)
+	})
+	if len(items) > int(limit) {
+		items = items[:limit]
+	}
+	return append([]campaign.TouchPlanIndexItem(nil), items...), nil
 }
 
 func (stub *initiationRepositoryStub) CompleteDraftCreate(ctx context.Context, receipt campaignport.CreateReceipt, eventID int64) error {
@@ -310,6 +339,35 @@ func TestCreateDraftTouchPlanFreezesCanonicalLocalSnapshot(t *testing.T) {
 	replay, err := service.CreateDraftTouchPlan(context.Background(), command)
 	if err != nil || !reflect.DeepEqual(replay, plan) || deps.draft.calls != 1 || deps.source.calls != 1 || deps.eligibility.calls != 1 || len(deps.events.events) != 1 || len(deps.repository.readTx) != 2 {
 		t.Fatalf("replay=%+v err=%v draft=%d source=%d eligibility=%d events=%d read=%v", replay, err, deps.draft.calls, deps.source.calls, deps.eligibility.calls, len(deps.events.events), deps.repository.readTx)
+	}
+}
+
+func TestListTouchPlanIndexFiltersAndBindsCursorToReviewStatus(t *testing.T) {
+	service, deps, command := testInitiationService(t)
+	base := time.Date(2026, time.August, 23, 2, 3, 4, 0, time.UTC)
+	plans := make([]campaign.DraftTouchPlan, 3)
+	for index := range plans {
+		service.now = func() time.Time { return base.Add(time.Duration(index) * time.Minute) }
+		command.IdempotencyKey = "draft-touch-key-000" + strconv.Itoa(index+1)
+		plan, err := service.CreateDraftTouchPlan(context.Background(), command)
+		if err != nil {
+			t.Fatal(err)
+		}
+		plans[index] = plan
+	}
+	deps.repository.reviews[plans[1].ID] = campaign.TouchPlanReview{PlanID: plans[1].ID, CampaignCode: plans[1].CampaignCode, Status: campaign.TouchPlanReviewPending, Version: 2}
+	deps.repository.reviews[plans[2].ID] = campaign.TouchPlanReview{PlanID: plans[2].ID, CampaignCode: plans[2].CampaignCode, Status: campaign.TouchPlanReviewPending, Version: 3}
+
+	first, err := service.ListTouchPlanIndex(context.Background(), campaign.TouchPlanReviewPending, "", 1)
+	if err != nil || len(first.Items) != 1 || first.Items[0].Plan.ID != plans[2].ID || first.Items[0].ReviewVersion != 3 || first.NextCursor == "" {
+		t.Fatalf("first=%+v err=%v", first, err)
+	}
+	second, err := service.ListTouchPlanIndex(context.Background(), campaign.TouchPlanReviewPending, first.NextCursor, 1)
+	if err != nil || len(second.Items) != 1 || second.Items[0].Plan.ID != plans[1].ID || second.Items[0].ReviewVersion != 2 || second.NextCursor != "" {
+		t.Fatalf("second=%+v err=%v", second, err)
+	}
+	if _, err = service.ListTouchPlanIndex(context.Background(), campaign.TouchPlanReviewDraft, first.NextCursor, 1); !errors.Is(err, ErrInvalidCommand) {
+		t.Fatalf("cross-filter cursor err=%v", err)
 	}
 }
 

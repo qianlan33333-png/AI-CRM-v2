@@ -21,7 +21,7 @@ import { createLegacyQuestionnaire, deleteLegacyQuestionnaire, disableLegacyQues
 import { createLegacyChannel, updateLegacyChannel, type LegacyChannelWriteRequest } from './generated/health';
 import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, updateAIAudiencePackage, type AIAudiencePackageSender, type SegmentDefinition } from './generated/health';
 import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
-import { deleteCloudCampaign, getCloudCampaign, getCloudCampaignTouchPlan, getCloudCampaignTouchPlanRecipient, getCloudCampaignTouchPlanRecipientReview, getCloudCampaignTouchPlanReview, listCloudCampaigns, listCloudCampaignTouchPlanRecipients, listCloudCampaignTouchPlans, mutateCloudCampaignTouchPlanRecipientReview, mutateCloudCampaignTouchPlanReview } from './generated/health';
+import { deleteCloudCampaign, getCloudCampaign, getCloudCampaignTouchPlan, getCloudCampaignTouchPlanRecipient, getCloudCampaignTouchPlanRecipientReview, getCloudCampaignTouchPlanReview, listCloudCampaignPlans, listCloudCampaigns, listCloudCampaignTouchPlanRecipients, listCloudCampaignTouchPlans, mutateCloudCampaignTouchPlanRecipientReview, mutateCloudCampaignTouchPlanReview } from './generated/health';
 import { acceptOutboundCampaignHandoff, dispatchOutboundCampaignHandoff, getOutboundCampaignDispatchReconciliation, getOutboundCampaignHandoffSummary, reconcileOutboundCampaignHandoff } from './generated/health';
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
 import { getChannelAcquisitionAsset, getChannelAcquisitionPreview, listChannelAcquisitionAssets, listChannelAcquisitionStaff, publishChannelAcquisitionAsset, updateChannelAcquisitionAssignees, type ChannelAcquisitionAssignmentRequest, type ChannelAcquisitionAssetPublishRequest } from './generated/health';
@@ -42,6 +42,8 @@ export type CampaignFilter = {
 export type CampaignListItem = { code: string; name: string; approvalStatus: string; runtimeStatus: string; version: number; updatedAt: string };
 export type CampaignDetail = CampaignListItem & { steps: Array<{ index: number; delayMinutes: number; content: string }> };
 export type CampaignTouchPlan = { id: string; campaignCode: string; campaignVersion: number; sourceKind: string; targetCount: number; contentStepCount: number; createdAt: string };
+export type CampaignTouchPlanIndexItem = CampaignTouchPlan & { reviewStatus: 'draft' | 'pending_review' | 'approved' | 'rejected'; reviewVersion: number };
+export type CampaignTouchPlanIndexPage = { items: CampaignTouchPlanIndexItem[]; nextCursor: string | null };
 export type CampaignTouchPlanDetail = CampaignTouchPlan & { steps: Array<{ index: number; delayMinutes: number; content: string }> };
 export type CampaignTouchPlanReview = { status: string; version: number; handoffStatus: string | null };
 export type CampaignTouchPlanRecipient = { customerID: number };
@@ -120,6 +122,21 @@ export async function listCampaignsDto(filter: CampaignFilter = {}): Promise<Cam
   const source = obj(await call(listCloudCampaigns({ approval_status: filter.approvalStatus, runtime_status: filter.runtimeStatus }, apiRequestOptions())));
   requireCampaignLocal(source);
   return list(source, 'items').map(campaignItemDto);
+}
+export async function listCampaignPlanIndexDto(reviewStatus?: CampaignTouchPlanIndexItem['reviewStatus'], cursor?: string): Promise<CampaignTouchPlanIndexPage> {
+  const source = obj(await call(listCloudCampaignPlans({ review_status: reviewStatus, cursor, limit: 100 }, apiRequestOptions())));
+  requireTouchPlanLocal(source);
+  return {
+    items: list(source, 'items').map((item) => {
+      const row = obj(item);
+      const plan = obj(row.plan);
+      const status = row.review_status;
+      requireTouchPlanLocal(plan);
+      if (status !== 'draft' && status !== 'pending_review' && status !== 'approved' && status !== 'rejected') throw new Error('Campaign 计划审核状态无效');
+      return { ...touchPlanDto(plan), reviewStatus: status, reviewVersion: requiredPositive(row, 'review_version') };
+    }),
+    nextCursor: typeof source.next_cursor === 'string' ? source.next_cursor : null,
+  };
 }
 export async function getCampaignDto(campaignCode: string): Promise<CampaignDetail> {
   const source = obj(await call(getCloudCampaign(campaignCode, apiRequestOptions())));

@@ -86,6 +86,26 @@ WHERE campaign_code = sqlc.arg(campaign_code)
 ORDER BY created_at DESC, id DESC
 LIMIT sqlc.arg(page_limit);
 
+-- name: ListCampaignTouchPlanIndex :many
+SELECT plan.id, plan.campaign_code, plan.campaign_version, plan.source_kind,
+       plan.customer_selection_id, plan.customer_selection_version, plan.segment_id,
+       plan.audience_package_id, plan.audience_package_version, plan.member_snapshot_watermark,
+       plan.source_digest, plan.target_digest, plan.content_digest, plan.target_count, plan.content_step_count,
+       plan.candidate_count, plan.active_customer_count, plan.inactive_excluded_count,
+       plan.policy_excluded_count, plan.owner_actor_id, plan.created_at,
+       plan.local_only, plan.provider_execution_eligible, plan.runtime_executed,
+       plan.real_external_call_executed, plan.delivery_proven,
+       review.status AS review_status, review.version AS review_version
+FROM public.cloud_campaign_touch_plans AS plan
+JOIN public.cloud_campaign_touch_plan_reviews AS review ON review.plan_id = plan.id AND review.campaign_code = plan.campaign_code
+WHERE (sqlc.narg(review_status)::text IS NULL OR review.status = sqlc.narg(review_status)::text)
+  AND (
+    sqlc.narg(after_created_at)::timestamptz IS NULL
+    OR (plan.created_at, plan.id) < (sqlc.narg(after_created_at)::timestamptz, sqlc.narg(after_id)::text)
+  )
+ORDER BY plan.created_at DESC, plan.id DESC
+LIMIT sqlc.arg(page_limit);
+
 -- name: GetCampaignTouchPlan :one
 SELECT id, campaign_code, campaign_version, source_kind,
        customer_selection_id, customer_selection_version, segment_id,

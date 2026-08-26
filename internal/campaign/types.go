@@ -7,6 +7,7 @@ import (
 
 const (
 	RoutePrefix                      = "/api/admin/cloud-orchestrator/campaigns"
+	TouchPlanIndexPath               = "/api/admin/cloud-orchestrator/plans"
 	CapabilityAdminRead              = "admin_read"
 	CapabilityOperationsRead         = "operations_read"
 	CapabilityManageAutomation       = "manage_automation"

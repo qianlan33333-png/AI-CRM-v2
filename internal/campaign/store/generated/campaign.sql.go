@@ -741,6 +741,119 @@ func (q *Queries) ListCampaignStepsForTouchPlan(ctx context.Context, campaignCod
 	return items, nil
 }
 
+const listCampaignTouchPlanIndex = `-- name: ListCampaignTouchPlanIndex :many
+SELECT plan.id, plan.campaign_code, plan.campaign_version, plan.source_kind,
+       plan.customer_selection_id, plan.customer_selection_version, plan.segment_id,
+       plan.audience_package_id, plan.audience_package_version, plan.member_snapshot_watermark,
+       plan.source_digest, plan.target_digest, plan.content_digest, plan.target_count, plan.content_step_count,
+       plan.candidate_count, plan.active_customer_count, plan.inactive_excluded_count,
+       plan.policy_excluded_count, plan.owner_actor_id, plan.created_at,
+       plan.local_only, plan.provider_execution_eligible, plan.runtime_executed,
+       plan.real_external_call_executed, plan.delivery_proven,
+       review.status AS review_status, review.version AS review_version
+FROM public.cloud_campaign_touch_plans AS plan
+JOIN public.cloud_campaign_touch_plan_reviews AS review ON review.plan_id = plan.id AND review.campaign_code = plan.campaign_code
+WHERE ($1::text IS NULL OR review.status = $1::text)
+  AND (
+    $2::timestamptz IS NULL
+    OR (plan.created_at, plan.id) < ($2::timestamptz, $3::text)
+  )
+ORDER BY plan.created_at DESC, plan.id DESC
+LIMIT $4
+`
+
+type ListCampaignTouchPlanIndexParams struct {
+	ReviewStatus   pgtype.Text        `json:"review_status"`
+	AfterCreatedAt pgtype.Timestamptz `json:"after_created_at"`
+	AfterID        pgtype.Text        `json:"after_id"`
+	PageLimit      int32              `json:"page_limit"`
+}
+
+type ListCampaignTouchPlanIndexRow struct {
+	ID                        string             `json:"id"`
+	CampaignCode              string             `json:"campaign_code"`
+	CampaignVersion           int64              `json:"campaign_version"`
+	SourceKind                string             `json:"source_kind"`
+	CustomerSelectionID       pgtype.Text        `json:"customer_selection_id"`
+	CustomerSelectionVersion  pgtype.Text        `json:"customer_selection_version"`
+	SegmentID                 pgtype.Int8        `json:"segment_id"`
+	AudiencePackageID         pgtype.Int8        `json:"audience_package_id"`
+	AudiencePackageVersion    pgtype.Int8        `json:"audience_package_version"`
+	MemberSnapshotWatermark   pgtype.Timestamptz `json:"member_snapshot_watermark"`
+	SourceDigest              []byte             `json:"source_digest"`
+	TargetDigest              []byte             `json:"target_digest"`
+	ContentDigest             []byte             `json:"content_digest"`
+	TargetCount               int32              `json:"target_count"`
+	ContentStepCount          int32              `json:"content_step_count"`
+	CandidateCount            int32              `json:"candidate_count"`
+	ActiveCustomerCount       int32              `json:"active_customer_count"`
+	InactiveExcludedCount     int32              `json:"inactive_excluded_count"`
+	PolicyExcludedCount       int32              `json:"policy_excluded_count"`
+	OwnerActorID              int64              `json:"owner_actor_id"`
+	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
+	LocalOnly                 bool               `json:"local_only"`
+	ProviderExecutionEligible bool               `json:"provider_execution_eligible"`
+	RuntimeExecuted           bool               `json:"runtime_executed"`
+	RealExternalCallExecuted  bool               `json:"real_external_call_executed"`
+	DeliveryProven            bool               `json:"delivery_proven"`
+	ReviewStatus              string             `json:"review_status"`
+	ReviewVersion             int64              `json:"review_version"`
+}
+
+func (q *Queries) ListCampaignTouchPlanIndex(ctx context.Context, arg ListCampaignTouchPlanIndexParams) ([]ListCampaignTouchPlanIndexRow, error) {
+	rows, err := q.db.Query(ctx, listCampaignTouchPlanIndex,
+		arg.ReviewStatus,
+		arg.AfterCreatedAt,
+		arg.AfterID,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListCampaignTouchPlanIndexRow{}
+	for rows.Next() {
+		var i ListCampaignTouchPlanIndexRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CampaignCode,
+			&i.CampaignVersion,
+			&i.SourceKind,
+			&i.CustomerSelectionID,
+			&i.CustomerSelectionVersion,
+			&i.SegmentID,
+			&i.AudiencePackageID,
+			&i.AudiencePackageVersion,
+			&i.MemberSnapshotWatermark,
+			&i.SourceDigest,
+			&i.TargetDigest,
+			&i.ContentDigest,
+			&i.TargetCount,
+			&i.ContentStepCount,
+			&i.CandidateCount,
+			&i.ActiveCustomerCount,
+			&i.InactiveExcludedCount,
+			&i.PolicyExcludedCount,
+			&i.OwnerActorID,
+			&i.CreatedAt,
+			&i.LocalOnly,
+			&i.ProviderExecutionEligible,
+			&i.RuntimeExecuted,
+			&i.RealExternalCallExecuted,
+			&i.DeliveryProven,
+			&i.ReviewStatus,
+			&i.ReviewVersion,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCampaignTouchPlanReviewRecipients = `-- name: ListCampaignTouchPlanReviewRecipients :many
 SELECT plan_id, customer_id
 FROM public.cloud_campaign_touch_plan_targets

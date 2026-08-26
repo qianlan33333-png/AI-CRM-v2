@@ -40,6 +40,17 @@ async function loadPage(rel, { id, q } = {}) {
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
       window.__AICRM_TEST_MOCK__ = true;
+      if (rel === 'admin/campaigns.html' && new URL(window.location.href).searchParams.get('legacy_admin_path') === '/admin/cloud-orchestrator/plans') {
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
+        const local = { local_only: true, provider_execution_eligible: false, runtime_executed: false, real_external_call_executed: false, delivery_proven: false };
+        window.__planIndexCalls = [];
+        window.fetch = async (input) => {
+          const url = String(input);
+          window.__planIndexCalls.push(url);
+          return json({ items: [{ plan: { id: 'ctp_' + 'a'.repeat(64), campaign_code: 'spring-campaign', campaign_version: 3, source: { kind: 'customer_selection' }, target_count: 2, content_step_count: 1, created_at: '2026-08-27T00:00:00Z', ...local }, review_status: 'pending_review', review_version: 2 }], ...local });
+        };
+        return;
+      }
       if (rel === 'admin/campaigns.html' && new URL(window.location.href).searchParams.get('view') === 'observability') {
         const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data) });
         window.__observabilityCalls = [];
@@ -840,6 +851,25 @@ console.log('admin/campaigns.html（External Effects / Push Center 本地边界�
     !detailText.includes('customer_id') &&
     !detailText.includes('owner_staff_id'));
   detail.window.close();
+}
+
+console.log('admin/campaigns.html（运营计划全局本地审核列表）');
+{
+  const plans = await loadPage('admin/campaigns.html', { q: 'legacy_admin_path=%2Fadmin%2Fcloud-orchestrator%2Fplans' });
+  await sleep(40);
+  const doc = plans.window.document;
+  let text = doc.querySelector('#stage')?.textContent || '';
+  ok('运营计划入口读取真实全局计划索引并保留本地边界',
+    text.includes('运营计划本地审核') && text.includes('spring-campaign') && text.includes('pending_review') &&
+    text.includes('不代表发送、Provider 执行或送达') && plans.window.__planIndexCalls.some((url) => url.includes('/api/admin/cloud-orchestrator/plans')));
+  input(plans, doc.querySelector('#plan-index-status'), 'pending_review');
+  click(plans, doc.querySelector('#plan-index-refresh'));
+  await sleep(40);
+  text = doc.querySelector('#stage')?.textContent || '';
+  ok('审核状态筛选传给真实计划索引且页面不展示收件人或消息正文',
+    plans.window.__planIndexCalls.some((url) => url.includes('review_status=pending_review')) &&
+    !text.includes('customer_ids') && !text.includes('message_override'));
+  plans.window.close();
 }
 
 console.log('admin/campaigns.html（trace_id 可观察性边界）');

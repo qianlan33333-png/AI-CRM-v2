@@ -704,6 +704,10 @@ func (handler *candidateHandler) GetLegacyHealth(writer http.ResponseWriter, req
 // These generated operations deliberately delegate to Campaign's narrow
 // initiation fragment. The composition root owns authorization and the one
 // CSRF validation; the fragment only consumes the bound auth context.
+func (handler *candidateHandler) ListCloudCampaignPlans(writer http.ResponseWriter, request *http.Request, _ api.ListCloudCampaignPlansParams) {
+	handler.serveCampaignInitiation(writer, request)
+}
+
 func (handler *candidateHandler) ListCloudCampaignTouchPlans(writer http.ResponseWriter, request *http.Request, _ string, _ api.ListCloudCampaignTouchPlansParams) {
 	handler.serveCampaignInitiation(writer, request)
 }
@@ -2717,6 +2721,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodPut, "/api/v1/stages/reorder", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.ReorderStages)},
 		{http.MethodDelete, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.ArchiveStage)},
 		{http.MethodPatch, "/api/v1/stages/{stage_id}", authport.CapabilityStagesWrite, true, http.HandlerFunc(wrapper.RenameStage)},
+		{http.MethodGet, campaign.TouchPlanIndexPath, authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListCloudCampaignPlans)},
 		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.ListCloudCampaignTouchPlans)},
 		{http.MethodPost, campaign.RoutePrefix + "/{campaign_code}/touch-plans", authport.CapabilityOperationsManage, true, http.HandlerFunc(wrapper.CreateCloudCampaignTouchPlan)},
 		{http.MethodGet, campaign.RoutePrefix + "/{campaign_code}/touch-plans/{plan_id}", authport.CapabilityOperationsRead, false, http.HandlerFunc(wrapper.GetCloudCampaignTouchPlan)},

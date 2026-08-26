@@ -255,6 +255,55 @@ func (service *Service) ListDraftTouchPlans(ctx context.Context, campaignCode, c
 	return result, nil
 }
 
+// ListTouchPlanIndex provides the legacy operations list as a bounded local
+// projection. Review state is local workflow state, never send or delivery.
+func (service *Service) ListTouchPlanIndex(ctx context.Context, reviewStatus campaign.TouchPlanReviewStatus, cursor string, limit int32) (campaign.TouchPlanIndexPage, error) {
+	if !ready(service, ctx) {
+		return campaign.TouchPlanIndexPage{}, ErrUnavailable
+	}
+	if reviewStatus != "" && !reviewStatus.Valid() {
+		return campaign.TouchPlanIndexPage{}, ErrInvalidCommand
+	}
+	if limit == 0 {
+		limit = campaignport.DefaultDraftTouchPlanPageLimit
+	}
+	if limit < 1 || limit > campaignport.MaximumDraftTouchPlanPageLimit {
+		return campaign.TouchPlanIndexPage{}, ErrInvalidCommand
+	}
+	after, err := decodeTouchPlanIndexCursor(cursor, reviewStatus)
+	if err != nil {
+		return campaign.TouchPlanIndexPage{}, ErrInvalidCommand
+	}
+	result := campaign.TouchPlanIndexPage{Items: []campaign.TouchPlanIndexItem{}}
+	err = service.uow.Within(ctx, func(tx context.Context) error {
+		items, readErr := service.repository.ListTouchPlanIndex(tx, reviewStatus, after, limit+1)
+		if readErr != nil {
+			return readErr
+		}
+		for _, item := range items {
+			if !campaign.ValidTouchPlanIndexItem(item) || reviewStatus != "" && item.ReviewStatus != reviewStatus {
+				return ErrUnavailable
+			}
+		}
+		if len(items) > int(limit) {
+			page := items[:limit]
+			next, encodeErr := encodeTouchPlanIndexCursor(reviewStatus, page[len(page)-1])
+			if encodeErr != nil {
+				return ErrUnavailable
+			}
+			result.Items = append([]campaign.TouchPlanIndexItem(nil), page...)
+			result.NextCursor = next
+			return nil
+		}
+		result.Items = append([]campaign.TouchPlanIndexItem(nil), items...)
+		return nil
+	})
+	if err != nil {
+		return campaign.TouchPlanIndexPage{}, err
+	}
+	return result, nil
+}
+
 // GetDraftTouchPlan retains the full immutable snapshot for a trusted
 // Campaign transport projection. HTTP deliberately omits Targets.CustomerIDs
 // until the separate recipient-read contract is introduced.
@@ -401,6 +450,49 @@ type draftTouchPlanCursor struct {
 	CampaignCode string `json:"campaign_code"`
 	CreatedAt    string `json:"created_at"`
 	PlanID       string `json:"plan_id"`
+}
+
+type touchPlanIndexCursor struct {
+	Version      int    `json:"v"`
+	Operation    string `json:"op"`
+	ReviewStatus string `json:"review_status"`
+	CreatedAt    string `json:"created_at"`
+	PlanID       string `json:"plan_id"`
+}
+
+func encodeTouchPlanIndexCursor(status campaign.TouchPlanReviewStatus, item campaign.TouchPlanIndexItem) (string, error) {
+	if !campaign.ValidTouchPlanIndexItem(item) || status != "" && item.ReviewStatus != status {
+		return "", ErrInvalidCommand
+	}
+	raw, err := json.Marshal(touchPlanIndexCursor{Version: 1, Operation: "listTouchPlanIndex", ReviewStatus: string(status), CreatedAt: item.Plan.CreatedAt.UTC().Format(time.RFC3339Nano), PlanID: item.Plan.ID})
+	if err != nil {
+		return "", ErrUnavailable
+	}
+	return base64.RawURLEncoding.EncodeToString(raw), nil
+}
+
+func decodeTouchPlanIndexCursor(raw string, status campaign.TouchPlanReviewStatus) (*campaignport.DraftTouchPlanKeyset, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	if len(raw) > draftTouchPlanCursorMaximumBytes || strings.Contains(raw, "=") {
+		return nil, ErrInvalidCommand
+	}
+	decoded, err := base64.RawURLEncoding.Strict().DecodeString(raw)
+	if err != nil || base64.RawURLEncoding.EncodeToString(decoded) != raw {
+		return nil, ErrInvalidCommand
+	}
+	decoder := json.NewDecoder(bytes.NewReader(decoded))
+	decoder.DisallowUnknownFields()
+	var cursor touchPlanIndexCursor
+	if decoder.Decode(&cursor) != nil || decoder.Decode(&struct{}{}) != io.EOF || cursor.Version != 1 || cursor.Operation != "listTouchPlanIndex" || cursor.ReviewStatus != string(status) || !campaign.ValidDraftTouchPlanID(cursor.PlanID) {
+		return nil, ErrInvalidCommand
+	}
+	createdAt, err := time.Parse(time.RFC3339Nano, cursor.CreatedAt)
+	if err != nil || createdAt.IsZero() || createdAt.Location() != time.UTC || createdAt.UTC().Format(time.RFC3339Nano) != cursor.CreatedAt {
+		return nil, ErrInvalidCommand
+	}
+	return &campaignport.DraftTouchPlanKeyset{CreatedAt: createdAt.UTC(), PlanID: cursor.PlanID}, nil
 }
 
 func encodeDraftTouchPlanCursor(campaignCode string, plan campaign.DraftTouchPlanSummary) (string, error) {
