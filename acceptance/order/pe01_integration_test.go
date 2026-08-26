@@ -18,6 +18,7 @@ import (
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	eerfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store/acceptancefixture"
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
+	identityfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store/acceptancefixture"
 	orderapp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/app"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
@@ -157,9 +158,7 @@ func TestPE01FakeWeChatPayOutcomeUnknownReconcilesAndCompensates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = pool.Exec(ctx, `
-INSERT INTO public.identities(customer_id,kind,scope,normalized_value,normalizer_version,assurance,source,review_fingerprint,fingerprint_key_version,bound_at)
-VALUES ($1,'mp_openid','wechat-app:acceptance-app',$2,1,'verified','pe01-acceptance',decode(repeat('22',16),'hex'),1,now())`, customerID, prefix+"-openid"); err != nil {
+	if err = identityfixture.CreatePE01VerifiedMPOpenID(ctx, pool, customerID, "wechat-app:acceptance-app", prefix+"-openid"); err != nil {
 		t.Fatal(err)
 	}
 	materialReader := orderstore.NewProviderMaterialReader()

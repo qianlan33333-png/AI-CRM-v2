@@ -9,10 +9,13 @@ import (
 	"strings"
 
 	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
-	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 )
 
 var ErrInvalidWeComPrivateMessageProvider = errors.New("invalid WeCom private message provider")
+
+type privateMessageTemplateClient interface {
+	CreatePrivateMessageTemplate(context.Context, privateMessageTemplateRequest) (privateMessageTemplateResult, error)
+}
 
 // targetResolver returns the unique verified external WeCom identity and the
 // active owner staff WeCom user ID for one Customer. resolved=false is a
@@ -24,13 +27,13 @@ type targetResolver func(context.Context, int64) (sender, externalUserID string,
 // for one approved text.notice.v1 task. It only uses an explicit payload target
 // or an exact resolver; it never guesses from CustomerID.
 type WeComPrivateMessageProvider struct {
-	client  wecomport.PrivateMessageTemplateCreator
+	client  privateMessageTemplateClient
 	resolve targetResolver
 }
 
 var _ outboundapp.ProviderAdapter = (*WeComPrivateMessageProvider)(nil)
 
-func NewWeComPrivateMessageProvider(client wecomport.PrivateMessageTemplateCreator, resolve targetResolver) (*WeComPrivateMessageProvider, error) {
+func NewWeComPrivateMessageProvider(client privateMessageTemplateClient, resolve targetResolver) (*WeComPrivateMessageProvider, error) {
 	if client == nil {
 		return nil, ErrInvalidWeComPrivateMessageProvider
 	}
@@ -58,7 +61,7 @@ func (provider *WeComPrivateMessageProvider) Send(ctx context.Context, request o
 		}
 		payload.Sender, payload.ExternalUserID = sender, externalUserID
 	}
-	result, err := provider.client.CreatePrivateMessageTemplate(ctx, wecomport.PrivateMessageTemplateRequest{
+	result, err := provider.client.CreatePrivateMessageTemplate(ctx, privateMessageTemplateRequest{
 		Sender: payload.Sender, ExternalUserID: payload.ExternalUserID, Text: payload.Text,
 	})
 	if err != nil {
@@ -98,14 +101,14 @@ func validPrivateMessageText(value string, limit int) bool {
 
 func classifyWeComPrivateMessageError(err error) outboundapp.ProviderResult {
 	switch {
-	case errors.Is(err, wecomport.ErrWriteOutcomeUnknown):
+	case errors.Is(err, errWeComPrivateMessageOutcomeUnknown):
 		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureConnection, Code: "wecom_write_outcome_unknown"}
-	case errors.Is(err, wecomport.ErrPrivateMessageTargetRejected):
+	case errors.Is(err, errWeComPrivateMessageTargetRejected):
 		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureRecipientUnavailable, Code: "wecom_private_target_rejected"}
-	case errors.Is(err, wecomport.ErrBusinessWriteNotDispatched), errors.Is(err, wecomport.ErrRequestTimeout), errors.Is(err, wecomport.ErrTransport):
+	case errors.Is(err, errWeComPrivateMessageNotDispatched):
 		return outboundapp.ProviderResult{FailureKind: outboundapp.ProviderFailureTemporary, Code: "wecom_not_dispatched"}
-	case errors.Is(err, wecomport.ErrUpstream):
-		var apiErr *wecomport.APIError
+	case errors.Is(err, errWeComPrivateMessageUpstream):
+		var apiErr *weComPrivateMessageAPIError
 		if errors.As(err, &apiErr) {
 			code := fmt.Sprintf("wecom_errcode_%d", apiErr.Code)
 			switch apiErr.Code {

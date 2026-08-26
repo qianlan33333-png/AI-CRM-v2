@@ -13,18 +13,16 @@ import (
 	"strings"
 	"sync"
 	"time"
-
-	wecomport "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/port"
 )
 
 const maxResponseBytes = 1 << 20
 
 var (
 	ErrInvalidConfig      = errors.New("invalid WeCom client configuration")
-	ErrRequestTimeout     = wecomport.ErrRequestTimeout
-	ErrTransport          = wecomport.ErrTransport
+	ErrRequestTimeout     = errors.New("WeCom request timed out")
+	ErrTransport          = errors.New("WeCom transport failure")
 	ErrUnexpectedResponse = errors.New("invalid WeCom response")
-	ErrUpstream           = wecomport.ErrUpstream
+	ErrUpstream           = errors.New("WeCom API rejected request")
 )
 
 // CorpID identifies the enterprise and is safe to use as a request parameter.
@@ -243,7 +241,15 @@ func mapRequestError(ctx context.Context, err error) error {
 
 func safeTokenRequestError(ctx context.Context, err error) error { return mapRequestError(ctx, err) }
 
-type APIError = wecomport.APIError
+// APIError exposes WeCom's numeric code without exposing request credentials.
+type APIError struct {
+	Code    int
+	Message string
+}
+
+func (err *APIError) Error() string {
+	return fmt.Sprintf("WeCom API error %d: %s", err.Code, err.Message)
+}
 
 func apiError(code int, message string) error {
 	return fmt.Errorf("%w: %w", ErrUpstream, &APIError{Code: code, Message: message})
