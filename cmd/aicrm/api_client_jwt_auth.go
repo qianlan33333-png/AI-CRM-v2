@@ -56,8 +56,13 @@ type apiClientCredentialPolicy struct {
 	Audience   string `json:"audience"`
 	Purpose    string `json:"purpose"`
 	Capability string `json:"capability"`
+	Scope      string `json:"scope,omitempty"`
 	TTLMinutes int64  `json:"token_ttl_minutes"`
 }
+
+type apiClientJWTExpectation struct{ Audience, Purpose, Capability, Scope string }
+
+var apiClientIdentityExpectation = apiClientJWTExpectation{Audience: apiClientIdentityAudience, Purpose: apiClientIdentityPurpose, Capability: apiClientIdentityCapability}
 
 func newAPIClientJWTAuthenticator(credentials apiClientCredentialReader, key []byte) operationServiceAuthenticator {
 	if nilLegacyDependency(credentials) || len(key) != sha256.Size {
@@ -71,7 +76,11 @@ func (authenticator *apiClientJWTAuthenticator) AuthenticateOperation(ctx contex
 		nilLegacyDependency(authenticator.credentials) || len(authenticator.key) != sha256.Size || authenticator.now == nil {
 		return operationServicePrincipal{}, authport.ErrAuthenticationUnavailable
 	}
-	claims, err := authenticator.verify(request)
+	return authenticator.authenticate(ctx, request, apiClientIdentityExpectation)
+}
+
+func (authenticator *apiClientJWTAuthenticator) authenticate(ctx context.Context, request *http.Request, expected apiClientJWTExpectation) (operationServicePrincipal, error) {
+	claims, err := authenticator.verify(request, expected)
 	if err != nil {
 		return operationServicePrincipal{}, err
 	}
@@ -82,16 +91,15 @@ func (authenticator *apiClientJWTAuthenticator) AuthenticateOperation(ctx contex
 		}
 		return operationServicePrincipal{}, authport.ErrUnauthorized
 	}
-	policy, ok := apiClientPolicy(credential)
+	policy, ok := apiClientPolicy(credential, expected)
 	if !ok || credential.State != "active" || credential.ClientID != claims.Subject || credential.Version != claims.CredentialVersion ||
-		policy.Purpose != purpose || claims.Purpose != policy.Purpose || policy.Audience != apiClientIdentityAudience || claims.Audience != policy.Audience ||
-		policy.Capability != apiClientIdentityCapability || claims.Capability != policy.Capability || claims.ExpiresAt-claims.IssuedAt > policy.TTLMinutes*60 {
+		claims.Purpose != policy.Purpose || claims.Audience != policy.Audience || claims.Capability != policy.Capability || policy.Scope != expected.Scope || claims.ExpiresAt-claims.IssuedAt > policy.TTLMinutes*60 {
 		return operationServicePrincipal{}, authport.ErrUnauthorized
 	}
 	return operationServicePrincipal{ClientID: credential.ClientID, PrincipalID: "api-client:" + credential.ClientID}, nil
 }
 
-func (authenticator *apiClientJWTAuthenticator) verify(request *http.Request) (apiClientJWTClaims, error) {
+func (authenticator *apiClientJWTAuthenticator) verify(request *http.Request, expected apiClientJWTExpectation) (apiClientJWTClaims, error) {
 	values := request.Header.Values("Authorization")
 	if len(values) != 1 || !strings.HasPrefix(values[0], "Bearer ") || strings.TrimSpace(values[0]) != values[0] {
 		return apiClientJWTClaims{}, authport.ErrUnauthorized
@@ -120,22 +128,20 @@ func (authenticator *apiClientJWTAuthenticator) verify(request *http.Request) (a
 	}
 	now := authenticator.now().UTC().Unix()
 	skew := int64(apiClientJWTClockSkew / time.Second)
-	if !validAPIClientID(claims.Subject) || claims.Audience != apiClientIdentityAudience || claims.Purpose != apiClientIdentityPurpose ||
-		claims.Capability != apiClientIdentityCapability || claims.CredentialVersion < 1 || claims.IssuedAt < 1 || claims.NotBefore < 1 || claims.ExpiresAt < 1 ||
+	if !validAPIClientID(claims.Subject) || claims.Audience != expected.Audience || claims.Purpose != expected.Purpose || claims.Capability != expected.Capability || claims.CredentialVersion < 1 || claims.IssuedAt < 1 || claims.NotBefore < 1 || claims.ExpiresAt < 1 ||
 		claims.NotBefore < claims.IssuedAt || claims.ExpiresAt <= claims.NotBefore || claims.IssuedAt > now+skew || claims.NotBefore > now+skew || claims.ExpiresAt <= now-skew {
 		return apiClientJWTClaims{}, authport.ErrUnauthorized
 	}
 	return claims, nil
 }
 
-func apiClientPolicy(credential adminopsport.Credential) (apiClientCredentialPolicy, bool) {
+func apiClientPolicy(credential adminopsport.Credential, expected apiClientJWTExpectation) (apiClientCredentialPolicy, bool) {
 	if credential.Kind != adminopsport.CredentialAPIClient || !validAPIClientID(credential.ClientID) || credential.Version < 1 || len(credential.Metadata) == 0 {
 		return apiClientCredentialPolicy{}, false
 	}
 	var policy apiClientCredentialPolicy
 	decoder := json.NewDecoder(strings.NewReader(string(credential.Metadata)))
-	if decoder.Decode(&policy) != nil || decoder.Decode(&struct{}{}) != io.EOF || policy.Purpose != apiClientIdentityPurpose ||
-		policy.Audience != apiClientIdentityAudience || policy.Capability != apiClientIdentityCapability || policy.TTLMinutes < 1 || policy.TTLMinutes > 1440 {
+	if decoder.Decode(&policy) != nil || decoder.Decode(&struct{}{}) != io.EOF || policy.Purpose != expected.Purpose || policy.Audience != expected.Audience || policy.Capability != expected.Capability || policy.Scope != expected.Scope || policy.TTLMinutes < 1 || policy.TTLMinutes > 1440 {
 		return apiClientCredentialPolicy{}, false
 	}
 	return policy, true
