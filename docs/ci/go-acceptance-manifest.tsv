@@ -73,3 +73,6 @@ p4-ai-audience-local-configuration|0071|P4AIAUDIENCE_TEST_DATABASE_URL|legacy-ma
 p4-group-ops-runtime|0072|P4GROUP_OPS_TEST_DATABASE_URL|legacy-make|p4-group-ops-runtime-acceptance|-
 p4-commerce-external-push|0073|P4EXTERNALPUSH_TEST_DATABASE_URL|legacy-make|p4-commerce-external-push-acceptance|-
 p4-wechat-shop-order-material|0074|P4_WECHAT_SHOP_MATERIAL_TEST_DATABASE_URL|script|acceptance/order/wechat_shop_material_00095_pg16.sh|-
+p4-ai-audience-operation-member|0075|P4AIAUDIENCEOPMEMBER_TEST_DATABASE_URL|legacy-make|p4-ai-audience-operation-member-acceptance|-
+p4-ai-audience-inbound-webhook|0076|P4AIAUDIENCEINBOUNDWEBHOOK_TEST_DATABASE_URL|legacy-make|p4-ai-audience-inbound-webhook-acceptance|-
+p4-b1-wc02-wecom-profile-effect|0077|P4B1WC02_WECOM_PROFILE_EFFECT_TEST_DATABASE_URL|script|acceptance/wecom/b1_wc02_profile_effect_pg16.sh|-
