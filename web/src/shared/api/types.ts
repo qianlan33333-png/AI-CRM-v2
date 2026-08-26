@@ -566,6 +566,57 @@ export interface ChannelEntrant {
   lastInteractAt: string | null;
 }
 
+export type ChannelAcquisitionAssetKind = 'contact_way_qrcode' | 'customer_acquisition_link';
+export type ChannelAcquisitionAssetState = 'accepted' | 'queued' | 'attempted' | 'executed' | 'final_failed' | 'outcome_unknown' | 'reconciled';
+
+/** 本地获客资产回执；assetUrl 只有服务端明确返回时才存在。 */
+export interface ChannelAcquisitionAsset {
+  effectId: string;
+  channelId: number;
+  kind: ChannelAcquisitionAssetKind;
+  assetVersion: number;
+  state: ChannelAcquisitionAssetState;
+  updatedAt: string;
+  createdAt: string;
+  assetUrl?: string;
+  receiptId?: string;
+  entrantReady?: boolean;
+}
+
+export interface ChannelAcquisitionAssignee {
+  staffId: string;
+  name: string;
+  status: string;
+  priority: number;
+  ratioPercent?: number;
+  maxScans24h?: number;
+}
+
+export interface ChannelAcquisitionPreview {
+  channelId: number;
+  channelCode: string;
+  channelName: string;
+  assignees: ChannelAcquisitionAssignee[];
+  lifecycleState: string;
+  blockers: string[];
+  localOnly: boolean;
+  providerExecutionEligible: boolean;
+  realExternalCallExecuted: boolean;
+}
+
+export interface ChannelAcquisitionAssignmentInput {
+  assignmentMode?: 'single_owner' | 'multi_staff';
+  assignmentStrategy?: 'ratio' | 'cap_switch';
+  overflowPolicy?: string;
+  assignees: Array<{
+    staffId: string;
+    status?: 'active';
+    priority?: number;
+    ratioPercent?: number;
+    maxScans24h?: number;
+  }>;
+}
+
 /** 企微员工目录条目（通用选择器 · 选客服人员） */
 export interface StaffMember {
   name: string;

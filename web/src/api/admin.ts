@@ -22,7 +22,8 @@ import { createLegacyChannel, updateLegacyChannel, type LegacyChannelWriteReques
 import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, updateAIAudiencePackage, type AIAudiencePackageSender, type SegmentDefinition } from './generated/health';
 import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
-import type { AdminDb, AttachItem, Channel, ChannelEntrant, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
+import { getChannelAcquisitionAsset, getChannelAcquisitionPreview, listChannelAcquisitionAssets, publishChannelAcquisitionAsset, updateChannelAcquisitionAssignees, type ChannelAcquisitionAssignmentRequest, type ChannelAcquisitionAssetPublishRequest } from './generated/health';
+import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelEntrant, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
 import { ApiError, apiRequestOptions, request, unwrapGenerated } from './transport';
 
 type Obj = Record<string, unknown>;
@@ -121,6 +122,111 @@ export async function listChannelEntrantsDto(channelId: number): Promise<Channel
   const result = await call(listLegacyChannelEntrants(channelId, { limit: 20 }, apiRequestOptions()));
   return list(result, 'items', 'entrants').map(channelEntrantDto);
 }
+
+const channelAssetKinds: ChannelAcquisitionAssetKind[] = ['contact_way_qrcode', 'customer_acquisition_link'];
+const channelAssetStates = ['accepted', 'queued', 'attempted', 'executed', 'final_failed', 'outcome_unknown', 'reconciled'] as const;
+
+function channelAcquisitionAssigneeDto(value: unknown): ChannelAcquisitionAssignee {
+  const x = obj(value);
+  const staffId = text(x.wecom_userid, '');
+  const name = text(x.display_name, '');
+  const priority = Number(x.priority);
+  if (!staffId || !name || !Number.isSafeInteger(priority) || priority < 1) throw new Error('获客渠道客服分配响应不完整');
+  return {
+    staffId,
+    name,
+    status: text(x.status, 'active'),
+    priority,
+    ...(x.ratio_percent == null ? {} : { ratioPercent: Number(x.ratio_percent) }),
+    ...(x.max_scans_24h == null ? {} : { maxScans24h: Number(x.max_scans_24h) }),
+  };
+}
+
+export function channelAcquisitionAssetDto(value: unknown): ChannelAcquisitionAsset {
+  const x = obj(value);
+  const effectId = text(x.effect_id, '');
+  const channelId = Number(x.channel_id);
+  const kind = x.kind;
+  const state = x.state;
+  const assetVersion = Number(x.asset_version);
+  if (!effectId || !Number.isSafeInteger(channelId) || channelId < 1 || !channelAssetKinds.includes(kind as ChannelAcquisitionAssetKind) || !channelAssetStates.includes(state as typeof channelAssetStates[number]) || !Number.isSafeInteger(assetVersion) || assetVersion < 1) throw new Error('获客渠道资产回执不完整');
+  const assetUrl = typeof x.asset_url === 'string' && x.asset_url.trim() ? x.asset_url.trim() : typeof x.assetUrl === 'string' && x.assetUrl.trim() ? x.assetUrl.trim() : undefined;
+  return {
+    effectId,
+    channelId,
+    kind: kind as ChannelAcquisitionAssetKind,
+    assetVersion,
+    state: state as ChannelAcquisitionAsset['state'],
+    updatedAt: text(x.updated_at, ''),
+    createdAt: text(x.created_at, ''),
+    ...(assetUrl ? { assetUrl } : {}),
+    ...(x.queue_receipt_id ? { receiptId: String(x.queue_receipt_id) } : x.accept_receipt_id ? { receiptId: String(x.accept_receipt_id) } : {}),
+    ...(typeof x.entrant_ready === 'boolean' ? { entrantReady: x.entrant_ready } : {}),
+  };
+}
+
+export function channelAcquisitionPreviewDto(value: unknown): ChannelAcquisitionPreview {
+  const x = obj(value);
+  if (x.local_only !== true || x.provider_execution_eligible !== false || x.real_external_call_executed !== false) throw new Error('获客渠道预览违反本地-only执行边界');
+  const channelId = Number(x.channel_id);
+  const channelCode = text(x.channel_code, '');
+  const channelName = text(x.channel_name, '');
+  const lifecycle = obj(x.lifecycle);
+  if (!Number.isSafeInteger(channelId) || channelId < 1 || !channelCode || !channelName) throw new Error('获客渠道预览缺少渠道标识');
+  return {
+    channelId,
+    channelCode,
+    channelName,
+    assignees: list(x, 'assignees').map(channelAcquisitionAssigneeDto),
+    lifecycleState: text(lifecycle.state, ''),
+    blockers: list(lifecycle, 'readiness_blockers').map(String),
+    localOnly: true,
+    providerExecutionEligible: false,
+    realExternalCallExecuted: false,
+  };
+}
+
+export async function getChannelAcquisitionPreviewDto(channelId: number): Promise<ChannelAcquisitionPreview> {
+  return channelAcquisitionPreviewDto(await call(getChannelAcquisitionPreview(channelId, apiRequestOptions())));
+}
+
+export async function updateChannelAcquisitionAssigneesDto(channelId: number, input: ChannelAcquisitionAssignmentInput): Promise<ChannelAcquisitionAssignee[]> {
+  const payload: ChannelAcquisitionAssignmentRequest = {
+    assignment_mode: input.assignmentMode,
+    assignment_strategy: input.assignmentStrategy,
+    overflow_policy: input.overflowPolicy,
+    assignees: input.assignees.map((assignee) => ({
+      staff_id: assignee.staffId,
+      status: assignee.status,
+      priority: assignee.priority,
+      ratio_percent: assignee.ratioPercent,
+      max_scans_24h: assignee.maxScans24h,
+    })),
+  };
+  if (!payload.assignees.length) throw new Error('至少配置 1 位客服');
+  const result = obj(await call(updateChannelAcquisitionAssignees(channelId, payload, apiRequestOptions({ headers: { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() || `web-channel-assignees-${Date.now()}` } }))));
+  if (result.local_only !== true || result.provider_execution_eligible !== false || result.real_external_call_executed !== false) throw new Error('客服分配响应违反本地-only执行边界');
+  return list(result, 'assignees').map(channelAcquisitionAssigneeDto);
+}
+
+export async function listChannelAcquisitionAssetsDto(channelId: number): Promise<ChannelAcquisitionAsset[]> {
+  const result = await call(listChannelAcquisitionAssets(channelId, { limit: 50 }, apiRequestOptions()));
+  return list(result, 'items').map(channelAcquisitionAssetDto);
+}
+
+export async function publishChannelAcquisitionAssetDto(channelId: number, kind: ChannelAcquisitionAssetKind): Promise<ChannelAcquisitionAsset> {
+  const payload: ChannelAcquisitionAssetPublishRequest = { kind };
+  // The generated operation is intentionally 202-only: acceptance is queued, never execution.
+  return channelAcquisitionAssetDto(await call(publishChannelAcquisitionAsset(channelId, payload, apiRequestOptions({ headers: { 'Idempotency-Key': globalThis.crypto?.randomUUID?.() || `web-channel-asset-${Date.now()}` } }))));
+}
+
+export async function getChannelAcquisitionAssetDto(channelId: number, effectId: string): Promise<ChannelAcquisitionAsset> {
+  const result = await call(getChannelAcquisitionAsset(channelId, effectId, apiRequestOptions()));
+  const source = obj(result);
+  return channelAcquisitionAssetDto(source.asset || source);
+}
+
+export const channelAcquisitionAssetReady = (asset: ChannelAcquisitionAsset | null | undefined): boolean => asset?.state === 'executed' && Boolean(asset.assetUrl?.trim());
 
 export function buildChannelFinalUrl(linkUrl: string, customerChannel: string): string {
   const link = linkUrl.trim();
@@ -420,8 +526,8 @@ export async function readAdminRows(page?: string, customerList?: CustomerListQu
     needs('images') ? call(getLegacyImageList(undefined, opt)) : skip,
     needs('attach') ? call(listLegacyAttachments(undefined, opt)) : skip,
     needs('mpLib') ? call(listLegacyMiniPrograms(undefined, opt)) : skip,
-    needs('tags') ? call(listLegacyWecomTagGroups(opt)) : skip,
-    needs('tags') ? call(listLegacyWecomTags(opt)) : skip,
+    needs('tags', 'channelForm') ? call(listLegacyWecomTagGroups(opt)) : skip,
+    needs('tags', 'channelForm') ? call(listLegacyWecomTags(opt)) : skip,
     needs('radar', 'radarDetail', 'radarForm') ? call(listRadarLinks(undefined, opt)) : skip,
     needs('automation', 'audienceEdit') ? call(listAIAudiencePackageGroups(opt)) : skip,
     needs('automation', 'audienceEdit') ? call(listAIAudiencePackages(undefined, opt)) : skip,

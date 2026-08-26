@@ -1,4 +1,4 @@
-import { appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, executeOwnerReassignmentPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
+import { appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, executeOwnerReassignmentPreviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, listChannelAcquisitionAssetsDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
@@ -6,7 +6,7 @@ import { HttpApi } from '../shared/api/client';
 import { getCreateProductUrl, getCreateServicePeriodProductUrl, getUpdateServicePeriodProductUrl } from './generated/health';
 import { getArchiveLegacyCouponUrl, getCopyLegacyCouponUrl, getCreateLegacyCouponUrl, getDeleteLegacyCouponUrl, getGetLegacyImageVariantUrl, getPublishLegacyCouponUrl, getStopLegacyCouponUrl, getUpdateLegacyCouponUrl } from './generated/health';
 import { getCreateLegacyQuestionnaireUrl, getDeleteLegacyQuestionnaireUrl, getDisableLegacyQuestionnaireUrl, getDuplicateLegacyQuestionnaireUrl, getEnableLegacyQuestionnaireUrl, getPublishQuestionnairePublicDefinitionUrl, getUpdateLegacyQuestionnaireUrl } from './generated/health';
-import { getCreateLegacyChannelUrl, getUpdateLegacyChannelUrl } from './generated/health';
+import { getCreateLegacyChannelUrl, getGetChannelAcquisitionAssetUrl, getGetChannelAcquisitionPreviewUrl, getListChannelAcquisitionAssetsUrl, getPublishChannelAcquisitionAssetUrl, getUpdateChannelAcquisitionAssigneesUrl, getUpdateLegacyChannelUrl } from './generated/health';
 import { getDeleteAIAudienceAutomationBindingUrl, getGetAIAudienceAutomationBindingUrl, getGetAIAudienceConfigurationVersionUrl, getGetAIAudiencePackageSendersUrl, getListAIAudiencePackageMembersUrl, getMaterializeAIAudienceConfigurationUrl, getPreviewAIAudienceConfigurationUrl, getPutAIAudienceAutomationBindingUrl, getPutAIAudienceConfigurationVersionUrl, getReplaceAIAudiencePackageSendersUrl, getUpdateAIAudiencePackageUrl } from './generated/health';
 import { getActivateGroupOpsPlanUrl, getAddGroupOpsPlanGroupAssetUrl, getAddGroupOpsPlanMemberUrl, getAddGroupOpsPlanNodeUrl, getArchiveGroupOpsPlanUrl, getCreateGroupOpsPlanUrl, getDeleteGroupOpsPlanUrl, getGetGroupOpsPlanUrl, getListGroupOpsExecutionsUrl, getListGroupOpsPlansUrl, getPauseGroupOpsPlanUrl, getPreviewGroupOpsPlanContentUrl, getUpdateGroupOpsPlanNodeUrl, getUpdateGroupOpsPlanUrl } from './generated/health';
 import { getCreateLegacyRefundIntentUrl, getCreateLegacyWechatRefundIntentUrl } from './generated/health';
@@ -191,6 +191,50 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(saved.resourceId === 51 && saved.channelType === 'wecom_customer_acquisition' && saved.welcomeImageLibraryIds?.[0] === 7, 'channel full response mapping');
     assert(channelRequest?.input === '/api/admin/channels' && channelRequest.init?.method === 'POST' && Boolean(new Headers(channelRequest.init.headers).get('Idempotency-Key')), 'channel create URL/method/idempotency');
     assert(JSON.parse(String(channelRequest.init?.body)).assignment_config_json.staff_ids[0] === 'A', 'channel request DTO mapping');
+  } finally { globalThis.fetch = savedFetch; }
+
+  assert(getGetChannelAcquisitionPreviewUrl(51) === '/api/admin/channels/51/acquisition-preview', 'acquisition preview URL');
+  assert(getUpdateChannelAcquisitionAssigneesUrl(51) === '/api/admin/channels/51/assignees', 'acquisition assignees URL');
+  assert(getListChannelAcquisitionAssetsUrl(51, { limit: 50 }).endsWith('/channels/51/acquisition-assets?limit=50'), 'acquisition assets list URL');
+  assert(getPublishChannelAcquisitionAssetUrl(51) === '/api/admin/channels/51/acquisition-assets', 'acquisition assets publish URL');
+  assert(getGetChannelAcquisitionAssetUrl(51, 'eer_1') === '/api/admin/channels/51/acquisition-assets/eer_1', 'acquisition asset detail URL');
+  const acquisitionCalls: Array<{ input: string; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => {
+    acquisitionCalls.push({ input: String(input), init });
+    const url = String(input);
+    if (url.endsWith('/acquisition-preview')) return new Response(JSON.stringify({ channel_id: 51, channel_code: 'new', channel_name: '新客', assignees: [{ wecom_userid: 'alice', display_name: 'Alice', status: 'active', priority: 1, ratio_percent: 100 }], lifecycle: { state: 'draft', entrant_ready: false, readiness_blockers: ['Provider 未执行'] }, qrcode: { status: 'not_generated', scene_value: '', url: '' }, share: { url: '', copy_text: '' }, local_only: true, provider_execution_eligible: false, real_external_call_executed: false }), { status: 200 });
+    if (url.endsWith('/assignees')) return new Response(JSON.stringify({ channel_id: 51, assignees: [{ wecom_userid: 'alice', display_name: 'Alice', status: 'active', priority: 1, ratio_percent: 60, max_scans_24h: 24 }], local_only: true, provider_execution_eligible: false, real_external_call_executed: false }), { status: 200 });
+    if (init?.method === 'POST') return new Response(JSON.stringify({ effect_id: 'eer_1', channel_id: 51, kind: 'customer_acquisition_link', asset_version: 1, supersedes_version: 0, state: 'queued', accept_receipt_id: 'eerop_1', queue_receipt_id: 'eerop_2', entrant_ready: false }), { status: 202 });
+    if (url.endsWith('/eer_1')) return new Response(JSON.stringify({ effect_id: 'eer_1', channel_id: 51, kind: 'customer_acquisition_link', asset_version: 1, supersedes_version: 0, state: 'executed', accept_receipt_id: 'eerop_1', entrant_ready: true, created_at: '2026-08-27T00:00:00Z', updated_at: '2026-08-27T00:01:00Z', asset_url: 'https://assets.example/eer_1' }), { status: 200 });
+    return new Response(JSON.stringify({ items: [{ effect_id: 'eer_1', channel_id: 51, kind: 'customer_acquisition_link', asset_version: 1, supersedes_version: 0, state: 'executed', accept_receipt_id: 'eerop_1', entrant_ready: true, created_at: '2026-08-27T00:00:00Z', updated_at: '2026-08-27T00:01:00Z', asset_url: 'https://assets.example/eer_1' }], limit: 50, has_more: false, next_cursor: '' }), { status: 200 });
+  };
+  try {
+    const preview = await getChannelAcquisitionPreviewDto(51);
+    assert(preview.assignees[0].staffId === 'alice' && preview.localOnly && !preview.providerExecutionEligible, 'acquisition preview maps local-only assignees');
+    const updated = await updateChannelAcquisitionAssigneesDto(51, { assignmentMode: 'multi_staff', assignmentStrategy: 'ratio', overflowPolicy: 'cap', assignees: [{ staffId: 'alice', priority: 1, ratioPercent: 60, maxScans24h: 24 }] });
+    const updateCall = acquisitionCalls.find((call) => call.input.endsWith('/assignees'));
+    assert(updated[0].ratioPercent === 60 && updateCall?.init?.method === 'PUT' && JSON.parse(String(updateCall.init.body)).assignees[0].ratio_percent === 60 && Boolean(new Headers(updateCall.init.headers).get('Idempotency-Key')), 'typed assignee body and idempotency');
+    const queued = await publishChannelAcquisitionAssetDto(51, 'customer_acquisition_link');
+    assert(queued.state === 'queued' && !channelAcquisitionAssetReady(queued), '202 acceptance remains queued and unavailable');
+    const listed = await listChannelAcquisitionAssetsDto(51);
+    assert(listed[0].state === 'executed' && channelAcquisitionAssetReady(listed[0]) && listed[0].assetUrl === 'https://assets.example/eer_1', 'asset URL only enables executed asset');
+    const detail = await getChannelAcquisitionAssetDto(51, 'eer_1');
+    assert(detail.state === 'executed' && channelAcquisitionAssetReady(detail), 'asset detail maps executed receipt');
+    try { channelAcquisitionPreviewDto({ channel_id: 51, channel_code: 'new', channel_name: '新客', assignees: [], lifecycle: { state: 'draft', readiness_blockers: [] }, local_only: true, provider_execution_eligible: true, real_external_call_executed: false }); assert(false, 'unsafe acquisition preview must fail closed'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('本地-only'), 'unsafe acquisition preview fails closed'); }
+  } finally { globalThis.fetch = savedFetch; }
+
+  const channelFormReadCalls: string[] = [];
+  globalThis.fetch = async (input) => {
+    channelFormReadCalls.push(String(input));
+    const url = String(input);
+    if (url.endsWith('/wecom/tag-groups')) return new Response(JSON.stringify({ items: [{ id: 9, name: '获客标签组' }] }), { status: 200 });
+    if (url.endsWith('/wecom/tags')) return new Response(JSON.stringify({ items: [{ id: 10, group_id: 9, name: '首咨', user_count: 0, updated_at: '' }] }), { status: 200 });
+    return new Response(JSON.stringify({ channels: [] }), { status: 200 });
+  };
+  try {
+    const channelFormDb = await readAdminRows('channelForm');
+    assert(channelFormDb.tagGroups[0]?.name === '获客标签组' && channelFormDb.wecomTags[0]?.name === '首咨' && channelFormReadCalls.includes('/api/admin/wecom/tag-groups') && channelFormReadCalls.includes('/api/admin/wecom/tags'), 'channel form loads real local tag catalogs');
   } finally { globalThis.fetch = savedFetch; }
 
   const audienceCalls: Array<{ input: string; init?: RequestInit }> = [];

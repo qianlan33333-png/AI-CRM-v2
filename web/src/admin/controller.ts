@@ -11,10 +11,10 @@
  */
 import { PageBase, type StyleObj, type Vals } from '../shared/ui/runtime';
 import type { AdminApi } from '../shared/api/client';
-import type { AdminDb, AudienceSender, Channel, ChannelEntrant, OwnerReassignmentPreview, QuestionnaireOps, Tone } from '../shared/api/types';
+import type { AdminDb, AudienceSender, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelEntrant, OwnerReassignmentPreview, QuestionnaireOps, Tone } from '../shared/api/types';
 import { deepCopy } from '../shared/api/mockData';
 import { emptyAdminDb } from '../api/admin';
-import { buildChannelFinalUrl } from '../api/admin';
+import { buildChannelFinalUrl, channelAcquisitionAssetReady } from '../api/admin';
 import type { AdminReadContext, ChannelWriteInput, CouponWriteInput, CustomerListQuery, GroupOpsWriteInput, QuestionnaireWriteInput } from '../api/admin';
 import { toast, confirmBox, busy } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
@@ -81,6 +81,16 @@ type AdminState = {
   channelDrawerError: string;
   channelDrawerChannel: Channel | null;
   channelDrawerEntrants: ChannelEntrant[];
+  channelDrawerPreview: ChannelAcquisitionPreview | null;
+  channelDrawerAssets: ChannelAcquisitionAsset[];
+  channelDrawerPreviewError: string;
+  channelDrawerAssetError: string;
+  channelDrawerAssetBusy: boolean;
+  channelFormPreview: ChannelAcquisitionPreview | null;
+  channelFormAssets: ChannelAcquisitionAsset[];
+  channelFormPreviewError: string;
+  channelFormAssetError: string;
+  channelFormAssetBusy: boolean;
 };
 
 /** 全部屏幕键（go 跳转表） */
@@ -148,6 +158,16 @@ export class AdminController extends PageBase {
     channelDrawerError: '',
     channelDrawerChannel: null,
     channelDrawerEntrants: [],
+    channelDrawerPreview: null,
+    channelDrawerAssets: [],
+    channelDrawerPreviewError: '',
+    channelDrawerAssetError: '',
+    channelDrawerAssetBusy: false,
+    channelFormPreview: null,
+    channelFormAssets: [],
+    channelFormPreviewError: '',
+    channelFormAssetError: '',
+    channelFormAssetBusy: false,
   };
 
   db: AdminDb = emptyAdminDb();
@@ -176,6 +196,15 @@ export class AdminController extends PageBase {
     }
     this.db = await this.api.loadDb(context);
     if (this.page === 'channelForm') this.state.channelFormNotFound = Boolean(resourceId && this.db.rows.channels.length === 0);
+    if (this.page === 'channelForm' && resourceId && !this.state.channelFormNotFound) {
+      const channelId = Number(resourceId);
+      if (Number.isSafeInteger(channelId) && channelId > 0) await this.loadChannelFormAcquisitionData(channelId);
+    } else if (this.page === 'channelForm') {
+      this.state.channelFormPreview = null;
+      this.state.channelFormAssets = [];
+      this.state.channelFormPreviewError = '';
+      this.state.channelFormAssetError = '';
+    }
     if (this.page === 'customers') {
       this.state.customerPage = 0;
       this.state.customerCursors = [];
@@ -548,9 +577,76 @@ export class AdminController extends PageBase {
     this.copyChannelLink(channel);
   }
 
+  private async loadChannelAcquisitionAssets(channelId: number): Promise<ChannelAcquisitionAsset[]> {
+    const items = (await this.api.listChannelAcquisitionAssets(channelId)).slice().sort((a, b) => b.assetVersion - a.assetVersion || b.updatedAt.localeCompare(a.updatedAt));
+    const latest = items[0];
+    if (!latest?.effectId) return items;
+    try {
+      const current = await this.api.getChannelAcquisitionAsset(channelId, latest.effectId);
+      return [current, ...items.filter((item) => item.effectId !== current.effectId)];
+    } catch {
+      return items;
+    }
+  }
+
+  private channelAssetKindLabel(kind: ChannelAcquisitionAsset['kind']): string {
+    return kind === 'contact_way_qrcode' ? '二维码' : '获客链接';
+  }
+
+  private channelAssetStatusLabel(asset: ChannelAcquisitionAsset | null | undefined): string {
+    if (!asset) return '尚未申请';
+    if (asset.state === 'final_failed') return '执行失败';
+    if (asset.state === 'outcome_unknown') return '结果未知，需对账';
+    if (asset.state === 'executed') return asset.assetUrl ? '已执行' : '已执行但未返回资产地址';
+    if (asset.state === 'reconciled') return asset.assetUrl ? '已对账' : '已对账但未返回资产地址';
+    return '已排队';
+  }
+
+  private channelAssetOpen(asset: ChannelAcquisitionAsset | null | undefined): void {
+    if (!channelAcquisitionAssetReady(asset)) return toast('资产尚未执行完成或服务端未返回 asset_url', true);
+    window.open(asset!.assetUrl, '_blank', 'noopener');
+  }
+
+  private channelAssetDownload(asset: ChannelAcquisitionAsset | null | undefined): void {
+    if (!channelAcquisitionAssetReady(asset)) return toast('资产尚未执行完成或服务端未返回 asset_url', true);
+    const anchor = document.createElement('a');
+    anchor.href = asset!.assetUrl!;
+    anchor.download = `${asset!.kind}-${asset!.assetVersion}`;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener';
+    anchor.click();
+  }
+
+  private channelAssetCopy(asset: ChannelAcquisitionAsset | null | undefined): void {
+    if (!channelAcquisitionAssetReady(asset)) return toast('资产尚未执行完成或服务端未返回 asset_url', true);
+    copyText(asset!.assetUrl!, (message, error) => toast(message, error));
+  }
+
+  private requestChannelAsset(channelId: number | undefined, kind: ChannelAcquisitionAsset['kind'], target: 'drawer' | 'form'): void {
+    if (!channelId || !Number.isSafeInteger(channelId) || channelId < 1) return toast('渠道缺少有效服务端 ID', true);
+    const busyKey = target === 'drawer' ? 'channelDrawerAssetBusy' : 'channelFormAssetBusy';
+    const errorKey = target === 'drawer' ? 'channelDrawerAssetError' : 'channelFormAssetError';
+    const assetsKey = target === 'drawer' ? 'channelDrawerAssets' : 'channelFormAssets';
+    this.setState({ [busyKey]: true, [errorKey]: '' });
+    void this.api.publishChannelAcquisitionAsset(channelId, kind).then(async (queued) => {
+      const currentAssets = target === 'drawer' ? this.state.channelDrawerAssets : this.state.channelFormAssets;
+      this.setState({ [assetsKey]: [queued, ...currentAssets.filter((item) => item.effectId !== queued.effectId)], [busyKey]: false });
+      toast(`${this.channelAssetKindLabel(kind)}已排队；未证明 Provider 执行`);
+      try {
+        const assets = await this.loadChannelAcquisitionAssets(channelId);
+        this.setState({ [assetsKey]: assets.some((item) => item.effectId === queued.effectId) ? assets : [queued, ...assets] });
+      } catch (error) {
+        this.setState({ [errorKey]: error instanceof Error ? error.message : '资产状态读取失败' });
+      }
+    }).catch((error) => {
+      this.setState({ [busyKey]: false, [errorKey]: error instanceof Error ? error.message : '资产申请失败' });
+      toast(error instanceof Error ? error.message : '资产申请失败', true);
+    });
+  }
+
   private openChannelDrawer(channelId: number | undefined): void {
     if (!channelId || !Number.isSafeInteger(channelId) || channelId < 1) return toast('渠道缺少有效服务端 ID', true);
-    this.setState({ channelDrawerOpen: true, channelDrawerLoading: true, channelDrawerError: '', channelDrawerChannel: null, channelDrawerEntrants: [] });
+    this.setState({ channelDrawerOpen: true, channelDrawerLoading: true, channelDrawerError: '', channelDrawerChannel: null, channelDrawerEntrants: [], channelDrawerPreview: null, channelDrawerAssets: [], channelDrawerPreviewError: '', channelDrawerAssetError: '' });
     void (async () => {
       let channel: Channel;
       try {
@@ -559,17 +655,44 @@ export class AdminController extends PageBase {
         this.setState({ channelDrawerLoading: false, channelDrawerError: error instanceof Error ? error.message : '渠道详情读取失败' });
         return;
       }
-      try {
-        const entrants = await this.api.listChannelEntrants(channelId);
-        this.setState({ channelDrawerLoading: false, channelDrawerChannel: channel, channelDrawerEntrants: entrants, channelDrawerError: '' });
-      } catch {
-        this.setState({ channelDrawerLoading: false, channelDrawerChannel: channel, channelDrawerEntrants: [], channelDrawerError: '近期进入用户读取失败，当前显示空列表' });
-      }
+      const [entrants, preview, assets] = await Promise.allSettled([
+        this.api.listChannelEntrants(channelId),
+        this.api.getChannelAcquisitionPreview(channelId),
+        this.loadChannelAcquisitionAssets(channelId),
+      ]);
+      this.setState({
+        channelDrawerLoading: false,
+        channelDrawerChannel: channel,
+        channelDrawerEntrants: entrants.status === 'fulfilled' ? entrants.value : [],
+        channelDrawerError: entrants.status === 'rejected' ? '近期进入用户读取失败，当前显示空列表' : '',
+        channelDrawerPreview: preview.status === 'fulfilled' ? preview.value : null,
+        channelDrawerPreviewError: preview.status === 'rejected' ? (preview.reason instanceof Error ? preview.reason.message : '本地分配配置读取失败') : '',
+        channelDrawerAssets: assets.status === 'fulfilled' ? assets.value : [],
+        channelDrawerAssetError: assets.status === 'rejected' ? (assets.reason instanceof Error ? assets.reason.message : '资产状态读取失败') : '',
+      });
     })();
   }
 
   private closeChannelDrawer(): void {
-    this.setState({ channelDrawerOpen: false, channelDrawerLoading: false, channelDrawerError: '', channelDrawerChannel: null, channelDrawerEntrants: [] });
+    this.setState({ channelDrawerOpen: false, channelDrawerLoading: false, channelDrawerError: '', channelDrawerChannel: null, channelDrawerEntrants: [], channelDrawerPreview: null, channelDrawerAssets: [], channelDrawerPreviewError: '', channelDrawerAssetError: '', channelDrawerAssetBusy: false });
+  }
+
+  private async loadChannelFormAcquisitionData(channelId: number): Promise<void> {
+    this.state.channelFormPreview = null;
+    this.state.channelFormAssets = [];
+    this.state.channelFormPreviewError = '';
+    this.state.channelFormAssetError = '';
+    const [preview, assets] = await Promise.allSettled([
+      this.api.getChannelAcquisitionPreview(channelId),
+      this.loadChannelAcquisitionAssets(channelId),
+    ]);
+    this.state.channelFormPreview = preview.status === 'fulfilled' ? preview.value : null;
+    this.state.channelFormPreviewError = preview.status === 'rejected' ? (preview.reason instanceof Error ? preview.reason.message : '本地分配配置读取失败') : '';
+    this.state.channelFormAssets = assets.status === 'fulfilled' ? assets.value : [];
+    this.state.channelFormAssetError = assets.status === 'rejected' ? (assets.reason instanceof Error ? assets.reason.message : '资产状态读取失败') : '';
+    if (this.state.channelFormPreview?.assignees.length && !this.state.cfStaff) {
+      this.state.cfStaff = this.state.channelFormPreview.assignees.map((assignee) => ({ id: assignee.staffId, uid: assignee.staffId, name: assignee.name }));
+    }
   }
 
   private channelFormValue(id: string): string {
@@ -665,6 +788,57 @@ export class AdminController extends PageBase {
       this.setState({ cfTags: r });
       toast(r.length ? '入渠标签已更新（' + r.length + ' 个）' : '已清空入渠标签');
     });
+  }
+
+  private selectChannelTag(): void {
+    const id = this.channelFormValue('channelTagId');
+    const tag = this.db.wecomTags.find((item) => String(item.id) === id);
+    const group = tag ? this.db.tagGroups.find((item) => item.id === tag.groupId) : undefined;
+    const name = document.getElementById('channelTagName') as HTMLInputElement | null;
+    const groupName = document.getElementById('channelTagGroup') as HTMLInputElement | null;
+    if (name) name.value = tag?.name || '';
+    if (groupName) groupName.value = group?.name || '';
+  }
+
+  private clearChannelTag(): void {
+    const select = document.getElementById('channelTagId') as HTMLSelectElement | null;
+    if (select) select.value = '';
+    const name = document.getElementById('channelTagName') as HTMLInputElement | null;
+    const groupName = document.getElementById('channelTagGroup') as HTMLInputElement | null;
+    if (name) name.value = '';
+    if (groupName) groupName.value = '';
+  }
+
+  private channelAssignmentInput(value: (id: string) => string): { input?: ChannelAcquisitionAssignmentInput; error?: string } {
+    const selected = (this.state.cfStaff || []).map((item) => (item.uid || item.id).trim()).filter(Boolean);
+    const owner = value('channelOwner');
+    const staffIds = selected.length ? selected : owner ? [owner] : [];
+    if (!staffIds.length) return {};
+    if (staffIds.length > 5 || new Set(staffIds).size !== staffIds.length) return { error: '客服最多 5 位且不能重复' };
+    const mode = value('channelAssignmentMode') === 'multi_staff' ? 'multi_staff' : 'single_owner';
+    const strategy = value('channelAssignmentStrategy') === 'cap_switch' ? 'cap_switch' : 'ratio';
+    const parseNumbers = (id: string, label: string): { values?: number[]; error?: string } => {
+      const raw = value(id);
+      if (!raw) return {};
+      const values = raw.split(/[\s,，]+/).filter(Boolean).map(Number);
+      if (values.length !== staffIds.length || values.some((item) => !Number.isSafeInteger(item))) return { error: `${label}必须与客服数量一致且为整数` };
+      return { values };
+    };
+    const ratios = parseNumbers('channelAssignmentRatios', '比例');
+    if (ratios.error) return ratios;
+    const caps = parseNumbers('channelAssignmentCaps', '24 小时上限');
+    if (caps.error) return caps;
+    if (ratios.values?.some((item) => item < 1 || item > 100) || (ratios.values && ratios.values.reduce((sum, item) => sum + item, 0) !== 100)) return { error: '比例必须在 1-100 之间且总和为 100' };
+    if (caps.values?.some((item) => item < 1)) return { error: '24 小时上限必须是正整数' };
+    const defaultRatios = ratios.values || staffIds.map((_item, index) => index === 0 ? 100 - Math.floor(100 / staffIds.length) * (staffIds.length - 1) : Math.floor(100 / staffIds.length));
+    return {
+      input: {
+        assignmentMode: mode,
+        assignmentStrategy: strategy,
+        overflowPolicy: value('channelOverflow'),
+        assignees: staffIds.map((staffId, index) => ({ staffId, status: 'active', priority: index + 1, ...(strategy === 'ratio' ? { ratioPercent: defaultRatios[index] } : {}), ...(caps.values ? { maxScans24h: caps.values[index] } : {}) })),
+      },
+    };
   }
 
   /* ---- Agent 固定素材 ---- */
@@ -1048,10 +1222,17 @@ export class AdminController extends PageBase {
     };
     if (!input.channel_name || !input.channel_code) return toast('渠道名称和编码不能为空', true);
     if ([...(input.welcome_image_library_ids || []), ...(input.welcome_miniprogram_library_ids || []), ...(input.welcome_attachment_library_ids || []), ...(input.welcome_group_invite_library_ids || [])].some((id) => !Number.isInteger(id) || id < 1)) return toast('素材引用必须是正整数 ID', true);
-    void this.api.saveChannel(input).then(() => {
-      toast('渠道配置已保存（本地事实，不代表企微执行）');
+    const assignment = input.channel_type === 'wecom_customer_acquisition' ? this.channelAssignmentInput(value) : {};
+    if (assignment.error) return toast(assignment.error, true);
+    void this.api.saveChannel(input).then(async (saved) => {
+      if (assignment.input) {
+        const channelId = saved.resourceId || input.id;
+        if (!channelId) throw new Error('渠道保存未返回服务端 ID，无法保存本地客服分配');
+        await this.api.updateChannelAcquisitionAssignees(channelId, assignment.input);
+      }
+      toast(assignment.input ? '渠道与本地分配配置已保存；未证明企微客服同步' : '渠道配置已保存（本地事实，不代表企微执行）');
       this.goto('channels');
-    }).catch((error) => toast(error instanceof Error ? error.message : '渠道保存失败', true));
+    }).catch((error) => toast(error instanceof Error ? error.message : '渠道或本地分配配置保存失败', true));
   }
 
   private saveGroupOpsForm(): void {
@@ -1479,6 +1660,32 @@ export class AdminController extends PageBase {
     const channelFormValue = this.page === 'channelForm' && Boolean(this.qs().get('id')) ? rows.channels[0] : undefined;
     const channelFinalUrlPreview = channelFormValue?.carrierType === 'link' ? buildChannelFinalUrl(channelFormValue.linkUrl || '', channelFormValue.customerChannel || '') : '';
     const dateInput = (value?: string | null): string => value ? value.slice(0, 16) : '';
+    const channelAssetKind = (channel: Channel | null | undefined): ChannelAcquisitionAsset['kind'] => channel?.carrierType === 'link' ? 'customer_acquisition_link' : 'contact_way_qrcode';
+    const channelAssetView = (asset: ChannelAcquisitionAsset | undefined) => {
+      const ready = channelAcquisitionAssetReady(asset);
+      return {
+        has: Boolean(asset),
+        noAsset: !asset,
+        kind: asset ? this.channelAssetKindLabel(asset.kind) : '',
+        status: this.channelAssetStatusLabel(asset),
+        version: asset?.assetVersion || '—',
+        effectId: asset?.effectId || '—',
+        ready,
+        url: ready ? asset!.assetUrl : '',
+        open: () => this.channelAssetOpen(asset),
+        download: () => this.channelAssetDownload(asset),
+        copy: () => this.channelAssetCopy(asset),
+      };
+    };
+    const latestDrawerAsset = channelAssetView(s.channelDrawerAssets[0]);
+    const latestFormAsset = channelAssetView(s.channelFormAssets[0]);
+    const channelTagOptions = this.db.wecomTags.map((tag) => {
+      const selected = String(tag.id) === (channelFormValue?.entryTagId || '');
+      return { id: String(tag.id), name: tag.name, groupName: this.db.tagGroups.find((group) => group.id === tag.groupId)?.name || `标签组 ${tag.groupId}`, selected, notSelected: !selected };
+    });
+    const formStaffRows = s.cfStaff
+      ? s.cfStaff.map((member) => ({ name: member.name, uid: member.uid || member.id }))
+      : (s.channelFormPreview?.assignees || []).map((member) => ({ name: member.name, uid: member.staffId }));
 
     /* ================= 配置中心 ================= */
     const configRows = this.db.configCategories.map((c) => ({
@@ -1652,6 +1859,8 @@ export class AdminController extends PageBase {
         open: s.channelDrawerOpen,
         loading: s.channelDrawerLoading,
         error: s.channelDrawerError,
+        previewError: s.channelDrawerPreviewError,
+        assetError: s.channelDrawerAssetError,
         ready: Boolean(s.channelDrawerChannel),
         channel: s.channelDrawerChannel ? {
           ...s.channelDrawerChannel,
@@ -1660,6 +1869,17 @@ export class AdminController extends PageBase {
           copy: () => this.copyChannelLink(s.channelDrawerChannel),
           share: () => this.shareChannelLink(s.channelDrawerChannel),
         } : { name: '', code: '', statusLabel: '', link: '', copy: () => undefined, share: () => undefined },
+        preview: s.channelDrawerPreview ? {
+          state: s.channelDrawerPreview.lifecycleState || '—',
+          assignees: s.channelDrawerPreview.assignees.map((item) => ({ name: item.name, staffId: item.staffId, ratio: item.ratioPercent == null ? '—' : `${item.ratioPercent}%`, cap: item.maxScans24h == null ? '—' : String(item.maxScans24h) })),
+          assigneesEmpty: s.channelDrawerPreview.assignees.length === 0,
+          hasAssignees: s.channelDrawerPreview.assignees.length > 0,
+          blockers: s.channelDrawerPreview.blockers.join('、') || '无',
+          localOnly: s.channelDrawerPreview.localOnly,
+        } : { state: '—', assignees: [], assigneesEmpty: true, hasAssignees: false, blockers: '—', localOnly: true },
+        asset: latestDrawerAsset,
+        assetRequest: () => this.requestChannelAsset(s.channelDrawerChannel?.resourceId, channelAssetKind(s.channelDrawerChannel), 'drawer'),
+        assetBusy: s.channelDrawerAssetBusy,
         entrants: s.channelDrawerEntrants.map((item) => ({ ...item, lastInteract: item.lastInteractAt || '—' })),
         entrantsEmpty: s.channelDrawerEntrants.length === 0,
         close: () => this.closeChannelDrawer(),
@@ -1673,13 +1893,37 @@ export class AdminController extends PageBase {
         copyLink: () => this.copyChannelFormLink(),
         shareLink: () => this.shareChannelFormLink(),
         preview: () => this.refreshChannelFinalUrlPreview(),
+        selectTag: () => this.selectChannelTag(),
+        clearTag: () => this.clearChannelTag(),
+        tags: channelTagOptions,
+        staffRows: formStaffRows,
+        staffCount: `${formStaffRows.length} / 5`,
+        hasStaff: formStaffRows.length > 0,
+        noStaff: formStaffRows.length === 0,
+        pickStaff: () => this.cfAddStaff(),
+        previewError: s.channelFormPreviewError,
+        assignmentPreview: s.channelFormPreview ? {
+          state: s.channelFormPreview.lifecycleState || '—',
+          blockers: s.channelFormPreview.blockers.join('、') || '无',
+          assignees: s.channelFormPreview.assignees.map((item) => ({ name: item.name, staffId: item.staffId, ratio: item.ratioPercent == null ? '—' : `${item.ratioPercent}%`, cap: item.maxScans24h == null ? '—' : String(item.maxScans24h) })),
+          hasAssignees: s.channelFormPreview.assignees.length > 0,
+          noAssignees: s.channelFormPreview.assignees.length === 0,
+        } : { state: '—', blockers: '未读取', assignees: [], hasAssignees: false, noAssignees: true },
+        assetError: s.channelFormAssetError,
+        asset: latestFormAsset,
+        assetBusy: s.channelFormAssetBusy,
+        hasResource: Boolean(channelFormValue?.resourceId),
+        noResource: !channelFormValue?.resourceId,
+        assetKindLabel: this.channelAssetKindLabel(channelAssetKind(channelFormValue)),
+        assetRequest: () => this.requestChannelAsset(channelFormValue?.resourceId, channelAssetKind(channelFormValue), 'form'),
         item: channelFormValue ? {
           ...channelFormValue,
           finalUrl: channelFinalUrlPreview || channelFormValue.finalUrl || '',
           imageIds: (channelFormValue.welcomeImageLibraryIds || []).join(', '), miniIds: (channelFormValue.welcomeMiniprogramLibraryIds || []).join(', '), attachmentIds: (channelFormValue.welcomeAttachmentLibraryIds || []).join(', '), groupInviteIds: (channelFormValue.welcomeGroupInviteLibraryIds || []).join(', '), assignmentConfigJson: JSON.stringify(channelFormValue.assignmentConfig || {}, null, 2),
+          noEntryTag: !channelFormValue.entryTagId, hasEntryTag: Boolean(channelFormValue.entryTagId),
           qrcodeType: channelFormValue.channelType !== 'wecom_customer_acquisition', acquisitionType: channelFormValue.channelType === 'wecom_customer_acquisition', qrcodeCarrier: channelFormValue.carrierType !== 'link', linkCarrier: channelFormValue.carrierType === 'link',
           statusActive: channelFormValue.status === 'active', statusInactive: channelFormValue.status === 'inactive', statusArchived: channelFormValue.status === 'archived', singleOwner: channelFormValue.assignmentMode !== 'multi_staff', multiStaff: channelFormValue.assignmentMode === 'multi_staff', ratio: channelFormValue.assignmentStrategy !== 'cap_switch', capSwitch: channelFormValue.assignmentStrategy === 'cap_switch', autoAcceptOff: !channelFormValue.autoAcceptFriend,
-        } : { name: '', code: '', channelType: 'qrcode', carrierType: 'qrcode', status: 'inactive', sceneValue: '', qrUrl: '', ownerStaffId: '', customerChannel: '', linkUrl: '', finalUrl: '', welcomeMessage: '', imageIds: '', miniIds: '', attachmentIds: '', groupInviteIds: '', autoAcceptFriend: false, autoAcceptOff: true, entryTagId: '', entryTagName: '', entryTagGroupName: '', assignmentMode: 'single_owner', assignmentStrategy: 'ratio', overflowPolicy: '', assignmentConfigJson: '{}', qrcodeType: true, acquisitionType: false, qrcodeCarrier: true, linkCarrier: false, statusActive: false, statusInactive: true, statusArchived: false, singleOwner: true, multiStaff: false, ratio: true, capSwitch: false },
+        } : { name: '', code: '', channelType: 'qrcode', carrierType: 'qrcode', status: 'inactive', sceneValue: '', qrUrl: '', ownerStaffId: '', customerChannel: '', linkUrl: '', finalUrl: '', welcomeMessage: '', imageIds: '', miniIds: '', attachmentIds: '', groupInviteIds: '', autoAcceptFriend: false, autoAcceptOff: true, entryTagId: '', entryTagName: '', entryTagGroupName: '', noEntryTag: true, hasEntryTag: false, assignmentMode: 'single_owner', assignmentStrategy: 'ratio', overflowPolicy: '', assignmentConfigJson: '{}', qrcodeType: true, acquisitionType: false, qrcodeCarrier: true, linkCarrier: false, statusActive: false, statusInactive: true, statusArchived: false, singleOwner: true, multiStaff: false, ratio: true, capSwitch: false },
         save: () => this.saveChannelForm(),
       },
       orderDetailPage: {
