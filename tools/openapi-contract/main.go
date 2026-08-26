@@ -99,6 +99,7 @@ const (
 	p4CommerceExternalPushEvidence             = "P4-COMMERCE-EXTERNAL-PUSH-00087-2026-08-25"
 	p4WeComTagEffectEvidence                   = "P4-B1-WC01-2026-08-25"
 	p4ChannelAcquisitionEvidence               = "P4-CH01-2026-08-26"
+	p4ChannelAcquisitionStaffEvidence          = "P4-S06-008-CHANNEL-ACQUISITION-STAFF-2026-08-27"
 	p4ChannelAcquisitionAssetEvidence          = "P4-CH02-2026-08-26"
 	p4ChannelAcquisitionEntrantEvidence        = "P4-CH03-2026-08-26"
 	p4SidebarOAuthEvidence                     = "P4-SB01-SIDEBAR-OAUTH-AGENT-CONFIG-2026-08-26"
@@ -133,6 +134,7 @@ var commerceRefundOperations = map[string]nativePackageOperation{
 var nativePackageOperations = map[string]nativePackageOperation{
 	"getChannelAcquisitionPreview":              {"/api/admin/channels/{channel_id}/acquisition-preview", "GET", p4ChannelAcquisitionEvidence, "channels.read", "human_session", "internal", "contact.local_channel_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"updateChannelAcquisitionAssignees":         {"/api/admin/channels/{channel_id}/assignees", "PUT", p4ChannelAcquisitionEvidence, "channels.write", "human_session", "internal", "contact.local_channel_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"listChannelAcquisitionStaff":               {"/api/admin/channels/{channel_id}/acquisition-staff", "GET", p4ChannelAcquisitionStaffEvidence, "channels.read", "human_session", "internal", "wecom.follow_user_list_intersect_contact.active_staff", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"listChannelAcquisitionAssets":              {"/api/admin/channels/{channel_id}/acquisition-assets", "GET", p4ChannelAcquisitionAssetEvidence, "channels.read", "human_session", "internal", "contact.acquisition_asset_safe_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"publishChannelAcquisitionAsset":            {"/api/admin/channels/{channel_id}/acquisition-assets", "POST", p4ChannelAcquisitionAssetEvidence, "channels.write", "human_session", "internal", "contact.acquisition_asset_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"getChannelAcquisitionAsset":                {"/api/admin/channels/{channel_id}/acquisition-assets/{effect_id}", "GET", p4ChannelAcquisitionAssetEvidence, "channels.read", "human_session", "internal", "contact.acquisition_asset_safe_projection", "none", map[string]string{"admin": "global", "ops": "global"}},

@@ -81,20 +81,22 @@ FOR UPDATE;
 SELECT EXISTS(SELECT 1 FROM channels WHERE id = sqlc.arg(channel_id)::bigint AND status <> 'archived') AS exists;
 
 -- name: GetChannelAcquisitionAsset :one
-SELECT effect_id, channel_id, asset_kind, asset_version, supersedes_version, state,
-       accept_receipt_id, queue_receipt_id, attempt_receipt_digest, reconcile_receipt_id,
-       created_at, updated_at, reconciled_at
-FROM channel_acquisition_asset_bindings
-WHERE channel_id = sqlc.arg(channel_id)::bigint AND effect_id = sqlc.arg(effect_id)::bigint;
+SELECT binding.effect_id, binding.channel_id, binding.asset_kind, binding.asset_version, binding.supersedes_version, binding.state,
+       binding.accept_receipt_id, binding.queue_receipt_id, binding.attempt_receipt_digest, binding.reconcile_receipt_id,
+       binding.created_at, binding.updated_at, binding.reconciled_at, COALESCE(result.asset_url, '')::text AS asset_url
+FROM channel_acquisition_asset_bindings AS binding
+LEFT JOIN channel_acquisition_asset_provider_results AS result USING (effect_id)
+WHERE binding.channel_id = sqlc.arg(channel_id)::bigint AND binding.effect_id = sqlc.arg(effect_id)::bigint;
 
 -- name: ListChannelAcquisitionAssets :many
-SELECT effect_id, channel_id, asset_kind, asset_version, supersedes_version, state,
-       accept_receipt_id, queue_receipt_id, attempt_receipt_digest, reconcile_receipt_id,
-       created_at, updated_at, reconciled_at
-FROM channel_acquisition_asset_bindings
-WHERE channel_id = sqlc.arg(channel_id)::bigint
-  AND (sqlc.arg(after_effect_id)::bigint = 0 OR effect_id < sqlc.arg(after_effect_id)::bigint)
-ORDER BY effect_id DESC
+SELECT binding.effect_id, binding.channel_id, binding.asset_kind, binding.asset_version, binding.supersedes_version, binding.state,
+       binding.accept_receipt_id, binding.queue_receipt_id, binding.attempt_receipt_digest, binding.reconcile_receipt_id,
+       binding.created_at, binding.updated_at, binding.reconciled_at, COALESCE(result.asset_url, '')::text AS asset_url
+FROM channel_acquisition_asset_bindings AS binding
+LEFT JOIN channel_acquisition_asset_provider_results AS result USING (effect_id)
+WHERE binding.channel_id = sqlc.arg(channel_id)::bigint
+  AND (sqlc.arg(after_effect_id)::bigint = 0 OR binding.effect_id < sqlc.arg(after_effect_id)::bigint)
+ORDER BY binding.effect_id DESC
 LIMIT sqlc.arg(result_limit)::int;
 
 -- name: ListExpiredChannelAcquisitionAssetAttempts :many
@@ -127,6 +129,10 @@ SET state = sqlc.arg(state)::text, attempt_receipt_id = sqlc.arg(attempt_receipt
     real_external_call_executed = sqlc.arg(real_external_call_executed)::boolean, updated_at = sqlc.arg(updated_at)::timestamptz
 WHERE effect_id = sqlc.arg(effect_id)::bigint AND state = 'attempted' AND generation = sqlc.arg(generation)::bigint AND fence = sqlc.arg(fence)::bigint
 RETURNING *;
+
+-- name: InsertChannelAcquisitionAssetProviderResult :exec
+INSERT INTO channel_acquisition_asset_provider_results(effect_id, provider_asset_id, asset_url, created_at)
+VALUES (sqlc.arg(effect_id)::bigint, sqlc.arg(provider_asset_id)::text, sqlc.arg(asset_url)::text, sqlc.arg(created_at)::timestamptz);
 
 -- name: InsertChannelAcquisitionAssetReconciliationFact :exec
 INSERT INTO channel_acquisition_asset_reconciliation_facts(effect_id, generation, fence, receipt_id, receipt_digest, evidence_digest, resolution, reconciled_at)

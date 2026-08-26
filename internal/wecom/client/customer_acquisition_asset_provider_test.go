@@ -115,14 +115,17 @@ func TestCustomerAcquisitionAssetProviderPublishesOnlyFrozenContactShapes(t *tes
 	qrcode := acquisitionAssetProviderRequest(contactport.AcquisitionAssetQRCode)
 	result, err := provider.PublishAcquisitionAsset(context.Background(), qrcode)
 	if err != nil || result.Outcome != contactport.AcquisitionAssetProviderExecuted || result.ReceiptDigest == ([32]byte{}) ||
-		result.AssetReferenceDigest == ([32]byte{}) || !result.RealExternalCallExecuted {
+		result.AssetReferenceDigest == ([32]byte{}) || result.ProviderAssetID != "config-safe" ||
+		result.AssetURL != "https://work.weixin.qq.com/q/config-safe" || !result.RealExternalCallExecuted {
 		t.Fatalf("qrcode result=%+v err=%v", result, err)
 	}
 	link := acquisitionAssetProviderRequest(contactport.AcquisitionAssetLink)
 	link.Snapshot.SceneValue = ""
 	result, err = provider.PublishAcquisitionAsset(context.Background(), link)
 	if err != nil || result.Outcome != contactport.AcquisitionAssetProviderExecuted || result.ReceiptDigest == ([32]byte{}) ||
-		result.AssetReferenceDigest == ([32]byte{}) || !result.RealExternalCallExecuted || calls.Load() != 2 {
+		result.AssetReferenceDigest == ([32]byte{}) || result.ProviderAssetID != "link-safe" ||
+		result.AssetURL != "https://work.weixin.qq.com/ca/link-safe?customer_channel="+link.CorrelationKey ||
+		!result.RealExternalCallExecuted || calls.Load() != 2 {
 		t.Fatalf("link result=%+v calls=%d err=%v", result, calls.Load(), err)
 	}
 }

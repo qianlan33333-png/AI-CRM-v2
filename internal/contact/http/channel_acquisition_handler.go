@@ -28,6 +28,10 @@ type channelAcquisitionPreviewApplication interface {
 	Preview(context.Context, int64) (contactapp.ChannelAcquisitionPreview, error)
 }
 
+type channelAcquisitionStaffApplication interface {
+	List(context.Context, int64) (contactapp.ChannelAcquisitionStaffDirectory, error)
+}
+
 type channelAcquisitionCSRFValidator interface {
 	ValidateCSRF(context.Context, authport.SessionRef, authport.CSRFToken) error
 }
@@ -38,6 +42,7 @@ type channelAcquisitionCSRFValidator interface {
 type ChannelAcquisitionHandler struct {
 	mutation channelAcquisitionMutationApplication
 	preview  channelAcquisitionPreviewApplication
+	staff    channelAcquisitionStaffApplication
 	csrf     channelAcquisitionCSRFValidator
 }
 
@@ -50,6 +55,18 @@ func NewChannelAcquisitionHandler(mutation channelAcquisitionMutationApplication
 		return nil, errors.New("channel acquisition dependencies are required")
 	}
 	return &ChannelAcquisitionHandler{mutation: mutation, preview: preview, csrf: csrf}, nil
+}
+
+func NewChannelAcquisitionHandlerWithStaff(mutation channelAcquisitionMutationApplication, preview channelAcquisitionPreviewApplication, staff channelAcquisitionStaffApplication, csrf channelAcquisitionCSRFValidator) (*ChannelAcquisitionHandler, error) {
+	if channelAcquisitionNil(staff) {
+		return nil, errors.New("channel acquisition staff directory is required")
+	}
+	handler, err := NewChannelAcquisitionHandler(mutation, preview, csrf)
+	if err != nil {
+		return nil, err
+	}
+	handler.staff = staff
+	return handler, nil
 }
 
 func NewChannelAcquisitionRouteFragment(handler *ChannelAcquisitionHandler) (http.Handler, error) {
@@ -73,11 +90,45 @@ func (fragment *channelAcquisitionRouteFragment) ServeHTTP(writer http.ResponseW
 	switch segments[4] {
 	case "acquisition-preview":
 		fragment.handler.Preview(writer, request, segments[3])
+	case "acquisition-staff":
+		fragment.handler.ListStaff(writer, request, segments[3])
 	case "assignees":
 		fragment.handler.UpdateAssignees(writer, request, segments[3])
 	default:
 		channelAcquisitionWriteError(writer, request, contactapp.ErrChannelNotFound)
 	}
+}
+
+// ListStaff refreshes the read-only Provider staff list and returns only active
+// local staff. It never creates staff or changes the saved assignment policy.
+func (handler *ChannelAcquisitionHandler) ListStaff(writer http.ResponseWriter, request *http.Request, rawChannelID string) {
+	channelAcquisitionSecurityHeaders(writer)
+	if !channelAcquisitionRequireMethod(writer, request, http.MethodGet) {
+		return
+	}
+	if _, err := handler.authorize(request, authport.CapabilityChannelsRead, false); err != nil {
+		channelAcquisitionWriteError(writer, request, err)
+		return
+	}
+	channelID, err := channelAcquisitionID(rawChannelID)
+	if err != nil {
+		channelAcquisitionWriteValidation(writer, request, "channel_id", err)
+		return
+	}
+	if channelAcquisitionNil(handler.staff) {
+		channelAcquisitionWriteError(writer, request, contactapp.ErrChannelUnavailable)
+		return
+	}
+	result, err := handler.staff.List(request.Context(), channelID)
+	if err != nil {
+		channelAcquisitionWriteError(writer, request, err)
+		return
+	}
+	if result.ChannelID != channelID || !result.ProviderReadSucceeded || result.RealExternalCallExecuted || result.ProviderSource != "wecom_follow_user_list" {
+		channelAcquisitionWriteError(writer, request, contactapp.ErrChannelUnavailable)
+		return
+	}
+	channelAcquisitionWriteJSON(writer, http.StatusOK, result)
 }
 
 // Preview returns a local readiness projection. It never asks a provider to

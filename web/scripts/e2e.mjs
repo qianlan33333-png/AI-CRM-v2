@@ -515,6 +515,9 @@ console.log('admin/tags.html（新建标签测试 Mock 建行）');
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '创建'));
   await sleep(500);
   ok('标签 Mock 创建（行数 +1）', d.querySelectorAll('tbody tr').length === before + 1);
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '同步企微标签'));
+  await sleep(850);
+  ok('标签同步只确认受理，未宣称 Provider 成功', d.querySelector('#fb-toast')?.textContent.includes('已受理') && d.querySelector('#fb-toast')?.textContent.includes('尚未收到 Provider 同步结果'));
   dom.window.close();
 }
 

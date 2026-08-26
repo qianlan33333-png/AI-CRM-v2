@@ -280,6 +280,7 @@ type channelAcquisitionAssetResponse struct {
 	QueueReceiptID       string                           `json:"queue_receipt_id,omitempty"`
 	AttemptReceiptDigest eer.Digest                       `json:"attempt_receipt_digest,omitempty"`
 	ReconcileReceiptID   string                           `json:"reconcile_receipt_id,omitempty"`
+	AssetURL             string                           `json:"asset_url,omitempty"`
 	EntrantReady         bool                             `json:"entrant_ready"`
 	CreatedAt            string                           `json:"created_at"`
 	UpdatedAt            string                           `json:"updated_at"`
@@ -328,7 +329,7 @@ func channelAcquisitionAssetReconciliationResponse(value contactapp.ChannelAcqui
 }
 
 func channelAcquisitionAssetItemResponse(item contactapp.ChannelAcquisitionAssetItem) channelAcquisitionAssetResponse {
-	response := channelAcquisitionAssetResponse{EffectID: item.EffectID, ChannelID: item.ChannelID, Kind: item.Kind, AssetVersion: item.AssetVersion, SupersedesVersion: item.SupersedesVersion, State: item.State, AcceptReceiptID: item.AcceptReceiptID, QueueReceiptID: item.QueueReceiptID, AttemptReceiptDigest: item.AttemptReceiptDigest, ReconcileReceiptID: item.ReconcileReceiptID, EntrantReady: item.EntrantReady, CreatedAt: item.CreatedAt.UTC().Format(time.RFC3339Nano), UpdatedAt: item.UpdatedAt.UTC().Format(time.RFC3339Nano)}
+	response := channelAcquisitionAssetResponse{EffectID: item.EffectID, ChannelID: item.ChannelID, Kind: item.Kind, AssetVersion: item.AssetVersion, SupersedesVersion: item.SupersedesVersion, State: item.State, AcceptReceiptID: item.AcceptReceiptID, QueueReceiptID: item.QueueReceiptID, AttemptReceiptDigest: item.AttemptReceiptDigest, ReconcileReceiptID: item.ReconcileReceiptID, AssetURL: item.AssetURL, EntrantReady: item.EntrantReady, CreatedAt: item.CreatedAt.UTC().Format(time.RFC3339Nano), UpdatedAt: item.UpdatedAt.UTC().Format(time.RFC3339Nano)}
 	if item.ReconciledAt != nil {
 		response.ReconciledAt = item.ReconciledAt.UTC().Format(time.RFC3339Nano)
 	}

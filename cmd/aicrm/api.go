@@ -1103,11 +1103,23 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		surveyAbuseKey,
 	)
 	channelService := contactapp.NewChannelServiceWithReferences(uow, channelRepository, mediaRepository, attachmentRepository, miniProgramRepository, groupInviteRepository, channelTagCatalog, channelStaffDirectory, eventstore.NewAppender())
-	channelAcquisitionHandler, err := contacthttp.NewChannelAcquisitionHandler(
-		channelService,
-		contactapp.NewChannelAcquisitionService(channelService),
-		service,
-	)
+	channelAcquisitionPreview := contactapp.NewChannelAcquisitionService(channelService)
+	var channelAcquisitionHandler *contacthttp.ChannelAcquisitionHandler
+	if config.WeCom.CustomerAcquisition.Enabled {
+		acquisitionClient, acquisitionErr := newChannelAcquisitionClient(config.WeCom.CustomerAcquisition, &http.Client{Timeout: 5 * time.Second}, time.Now)
+		if acquisitionErr != nil {
+			pool.Close()
+			return nil, acquisitionErr
+		}
+		channelAcquisitionHandler, err = contacthttp.NewChannelAcquisitionHandlerWithStaff(
+			channelService,
+			channelAcquisitionPreview,
+			contactapp.NewChannelAcquisitionStaffService(channelService, channelStaffDirectory, acquisitionClient),
+			service,
+		)
+	} else {
+		channelAcquisitionHandler, err = contacthttp.NewChannelAcquisitionHandler(channelService, channelAcquisitionPreview, service)
+	}
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -3134,6 +3146,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				csrf            bool
 			}{
 				{http.MethodGet, "/api/admin/channels/{channel_id}/acquisition-preview", authport.CapabilityChannelsRead, false},
+				{http.MethodGet, "/api/admin/channels/{channel_id}/acquisition-staff", authport.CapabilityChannelsRead, false},
 				{http.MethodPut, "/api/admin/channels/{channel_id}/assignees", authport.CapabilityChannelsWrite, true},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.channelAcquisition); err != nil {

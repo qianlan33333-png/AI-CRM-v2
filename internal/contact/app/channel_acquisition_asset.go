@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"net/url"
 	"reflect"
 	"sort"
 	"strconv"
@@ -252,6 +253,8 @@ type ChannelAcquisitionAssetAttemptCompletion struct {
 	State                        eer.State
 	Receipt                      eer.OperationReceipt
 	ProviderAssetReferenceDigest [32]byte
+	ProviderAssetID              string
+	AssetURL                     string
 	ProviderCallAttempted        bool
 	RealExternalCallExecuted     bool
 	CompletedAt                  time.Time
@@ -451,7 +454,8 @@ func (service *ChannelAcquisitionAssetService) Execute(ctx context.Context, effe
 		}
 		binding, lockErr = service.store.CompleteAttempt(tx, ChannelAcquisitionAssetAttemptCompletion{
 			EffectID: effectID, Lease: lease, State: projection.State, Receipt: attemptReceipt,
-			ProviderAssetReferenceDigest: assetReference, ProviderCallAttempted: providerCalled,
+			ProviderAssetReferenceDigest: assetReference, ProviderAssetID: providerResult.ProviderAssetID, AssetURL: providerResult.AssetURL,
+			ProviderCallAttempted:    providerCalled,
 			RealExternalCallExecuted: providerResult.RealExternalCallExecuted && providerCalled, CompletedAt: projection.UpdatedAt,
 		})
 		return lockErr
@@ -977,14 +981,20 @@ func channelAcquisitionAssetProviderCompletion(result contactport.AcquisitionAss
 	}
 	switch result.Outcome {
 	case contactport.AcquisitionAssetProviderExecuted:
-		return eer.Completion("executed"), result.RealExternalCallExecuted && !allZeroChannelAcquisitionAssetDigest(result.AssetReferenceDigest)
+		return eer.Completion("executed"), result.RealExternalCallExecuted && !allZeroChannelAcquisitionAssetDigest(result.AssetReferenceDigest) &&
+			validChannelAcquisitionAssetText(result.ProviderAssetID, 1, 1024) && validChannelAcquisitionAssetURL(result.AssetURL)
 	case contactport.AcquisitionAssetProviderFinalFailed:
-		return eer.CompletionFinalFailed, result.RealExternalCallExecuted && allZeroChannelAcquisitionAssetDigest(result.AssetReferenceDigest)
+		return eer.CompletionFinalFailed, result.RealExternalCallExecuted && allZeroChannelAcquisitionAssetDigest(result.AssetReferenceDigest) && result.ProviderAssetID == "" && result.AssetURL == ""
 	case contactport.AcquisitionAssetProviderOutcomeUnknown:
-		return eer.Completion("outcome_unknown"), allZeroChannelAcquisitionAssetDigest(result.AssetReferenceDigest)
+		return eer.Completion("outcome_unknown"), allZeroChannelAcquisitionAssetDigest(result.AssetReferenceDigest) && result.ProviderAssetID == "" && result.AssetURL == ""
 	default:
 		return "", false
 	}
+}
+
+func validChannelAcquisitionAssetURL(value string) bool {
+	parsed, err := url.Parse(value)
+	return err == nil && len(value) <= 10000 && parsed.Scheme == "https" && parsed.Host != "" && parsed.User == nil && parsed.Fragment == "" && strings.TrimSpace(value) == value
 }
 
 func channelAcquisitionAssetProviderDigest(value [32]byte) eer.Digest {

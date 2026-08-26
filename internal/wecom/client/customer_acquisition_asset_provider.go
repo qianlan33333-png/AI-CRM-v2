@@ -67,7 +67,8 @@ func acquisitionAssetProviderSuccess(requestDigest [32]byte, providerID, provide
 	receipt := sha256.Sum256([]byte("wecom.customer_acquisition.asset.receipt.v1\x00executed\x00" + hex.EncodeToString(requestDigest[:]) + "\x00" + hex.EncodeToString(reference[:]) + "\x00" + acquisitionAssetTextDigest(providerURL)))
 	return contactport.AcquisitionAssetProviderResult{
 		Outcome: contactport.AcquisitionAssetProviderExecuted, ReceiptDigest: receipt,
-		AssetReferenceDigest: reference, BusinessEndpointDispatched: true, RealExternalCallExecuted: true,
+		AssetReferenceDigest: reference, ProviderAssetID: providerID, AssetURL: providerURL,
+		BusinessEndpointDispatched: true, RealExternalCallExecuted: true,
 	}
 }
 

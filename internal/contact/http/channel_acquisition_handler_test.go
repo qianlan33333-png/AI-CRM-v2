@@ -123,6 +123,22 @@ func TestCH01ChannelAcquisitionPreviewReturnsMissingAssigneeBlocker(t *testing.T
 	}
 }
 
+func TestCH01ChannelAcquisitionStaffReturnsProviderLocalIntersection(t *testing.T) {
+	staff := &channelAcquisitionStaffStub{result: contactapp.ChannelAcquisitionStaffDirectory{
+		ChannelID: 7, ProviderSource: "wecom_follow_user_list", ProviderReadSucceeded: true,
+		Items: []contactapp.ChannelAcquisitionStaff{{WeComUserID: "staff-1", DisplayName: "成员一", Assigned: true, Priority: 1}},
+	}}
+	handler, err := NewChannelAcquisitionHandlerWithStaff(&channelAcquisitionMutationStub{}, &channelAcquisitionPreviewStub{}, staff, &channelAcquisitionCSRFStub{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := httptest.NewRecorder()
+	handler.ListStaff(response, channelAcquisitionRequest(http.MethodGet, "", authport.CapabilityChannelsRead), "7")
+	if response.Code != http.StatusOK || staff.calls != 1 || !strings.Contains(response.Body.String(), `"provider_read_succeeded":true`) || !strings.Contains(response.Body.String(), `"wecom_userid":"staff-1"`) || !strings.Contains(response.Body.String(), `"real_external_call_executed":false`) {
+		t.Fatalf("status/calls/body=%d/%d/%s", response.Code, staff.calls, response.Body.String())
+	}
+}
+
 func TestCH01ChannelAcquisitionMapsAuthorizationCSRFAndDomainErrors(t *testing.T) {
 	validBody := `{"assignees":[{"staff_id":"staff-1","ratio_percent":100}]}`
 	for _, testCase := range []struct {
@@ -169,6 +185,17 @@ type channelAcquisitionPreviewStub struct {
 	result contactapp.ChannelAcquisitionPreview
 	err    error
 	calls  int
+}
+
+type channelAcquisitionStaffStub struct {
+	result contactapp.ChannelAcquisitionStaffDirectory
+	err    error
+	calls  int
+}
+
+func (stub *channelAcquisitionStaffStub) List(_ context.Context, _ int64) (contactapp.ChannelAcquisitionStaffDirectory, error) {
+	stub.calls++
+	return stub.result, stub.err
 }
 
 func (stub *channelAcquisitionPreviewStub) Preview(_ context.Context, _ int64) (contactapp.ChannelAcquisitionPreview, error) {

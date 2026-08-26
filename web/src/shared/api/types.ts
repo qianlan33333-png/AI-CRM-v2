@@ -554,6 +554,76 @@ export interface Channel {
   assignmentStrategy?: 'ratio' | 'cap_switch';
   overflowPolicy?: string;
   assignmentConfig?: Record<string, unknown>;
+  /** 仅由已保存的本地渠道详情提供，复制/分享不触发外部写入。 */
+  shareUrl?: string;
+  copyText?: string;
+}
+
+export interface ChannelEntrant {
+  customerId: number;
+  displayName: string;
+  addedAt: string;
+  lastInteractAt: string | null;
+}
+
+export type ChannelAcquisitionAssetKind = 'contact_way_qrcode' | 'customer_acquisition_link';
+export type ChannelAcquisitionAssetState = 'accepted' | 'queued' | 'attempted' | 'executed' | 'final_failed' | 'outcome_unknown' | 'reconciled';
+
+/** 本地获客资产回执；assetUrl 只有服务端明确返回时才存在。 */
+export interface ChannelAcquisitionAsset {
+  effectId: string;
+  channelId: number;
+  kind: ChannelAcquisitionAssetKind;
+  assetVersion: number;
+  state: ChannelAcquisitionAssetState;
+  updatedAt: string;
+  createdAt: string;
+  assetUrl?: string;
+  receiptId?: string;
+  entrantReady?: boolean;
+}
+
+export interface ChannelAcquisitionAssignee {
+  staffId: string;
+  name: string;
+  status: string;
+  priority: number;
+  ratioPercent?: number;
+  maxScans24h?: number;
+}
+
+export interface ChannelAcquisitionStaff {
+  staffId: string;
+  name: string;
+  assigned: boolean;
+  priority?: number;
+  ratioPercent?: number;
+  maxScans24h?: number;
+}
+
+export interface ChannelAcquisitionPreview {
+  channelId: number;
+  channelCode: string;
+  channelName: string;
+  assignees: ChannelAcquisitionAssignee[];
+  lifecycleState: string;
+  blockers: string[];
+  localOnly: boolean;
+  providerExecutionEligible: boolean;
+  realExternalCallExecuted: boolean;
+}
+
+export interface ChannelAcquisitionAssignmentInput {
+  assignmentMode?: 'single_owner' | 'multi_staff';
+  assignmentStrategy?: 'ratio' | 'cap_switch';
+  overflowPolicy?: string;
+  assignees: Array<{
+    staffId: string;
+    status?: 'active';
+    priority?: number;
+    ratioPercent?: number;
+    maxScans24h?: number;
+  }>;
 }
 
 /** 企微员工目录条目（通用选择器 · 选客服人员） */

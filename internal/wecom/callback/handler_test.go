@@ -81,6 +81,18 @@ func TestOfficialFormatMessageFixtureReturnsEncryptedSuccess(t *testing.T) {
 	}
 }
 
+func TestCallbackHeadAndOptionsReturnEmptyWithoutDispatch(t *testing.T) {
+	for _, method := range []string{http.MethodHead, http.MethodOptions} {
+		t.Run(method, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			(&Handler{}).ServeHTTP(response, httptest.NewRequest(method, ExternalContactCallbackPath, nil))
+			if response.Code != http.StatusNoContent || response.Body.Len() != 0 || response.Header().Get("Allow") != "GET, HEAD, POST, OPTIONS" {
+				t.Fatalf("%s response = %d, %q, allow %q", method, response.Code, response.Body.String(), response.Header().Get("Allow"))
+			}
+		})
+	}
+}
+
 func TestCallbackNegativeCasesAreStableAndNeverAuthenticate(t *testing.T) {
 	fixture := loadFixture(t, "official_url_verification.json")
 	handler := officialHandler(t, fixture)

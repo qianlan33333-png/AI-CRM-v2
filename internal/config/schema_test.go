@@ -307,6 +307,38 @@ func TestLoadWeComCustomerAcquisitionIsIndependentExplicitAndRedacted(t *testing
 	}
 }
 
+func TestLoadWeComTagCatalogRequiresIndependentReadPermission(t *testing.T) {
+	values := map[string]string{
+		databaseURLEnv: "postgres://db/aicrm", workerPoolMaxConnsEnv: "9", criticalWorkersEnv: "2", eventWorkersEnv: "1",
+		outboundWorkersEnv: "1", syncWorkersEnv: "1", heavyWorkersEnv: "1", aiWorkersEnv: "1",
+		weComTagCatalogEnabledEnv: "true", weComTagCatalogCorpIDEnv: "tag-corp",
+		weComTagCatalogSecretEnv: "tag-secret-must-not-leak", weComTagCatalogPermissionConfirmedEnv: "true",
+	}
+	root, err := load(appruntime.RoleWorker, mapLookup(values))
+	if err != nil || !root.WeCom.TagCatalog.Enabled || !root.WeCom.TagCatalog.PermissionConfirmed ||
+		root.WeCom.TagCatalog.CorpID != "tag-corp" || root.WeCom.TagCatalog.Secret.Value() != values[weComTagCatalogSecretEnv] {
+		t.Fatalf("tag catalog=%#v err=%v", root.WeCom.TagCatalog, err)
+	}
+	for _, formatted := range []string{fmt.Sprint(root), fmt.Sprintf("%#v", root)} {
+		if strings.Contains(formatted, values[weComTagCatalogSecretEnv]) {
+			t.Fatalf("Root formatting leaked tag catalog credential: %q", formatted)
+		}
+	}
+	if root.WeCom.CustomerAcquisition.Enabled || root.WeCom.Outbound.Enabled {
+		t.Fatalf("tag catalog unexpectedly enabled unrelated WeCom credentials: %#v", root.WeCom)
+	}
+
+	values[weComTagCatalogPermissionConfirmedEnv] = "false"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.tag_catalog.permission_confirmed must be true when enabled" {
+		t.Fatalf("permission prerequisite error=%v", err)
+	}
+	delete(values, weComTagCatalogSecretEnv)
+	values[weComTagCatalogPermissionConfirmedEnv] = "true"
+	if _, err = load(appruntime.RoleWorker, mapLookup(values)); err == nil || err.Error() != "invalid startup configuration: wecom.tag_catalog requires corp_id, secret, and permission_confirmed together" {
+		t.Fatalf("partial tag catalog credential error=%v", err)
+	}
+}
+
 func TestLoadWeComOutboundIsIndependentExplicitAndRedacted(t *testing.T) {
 	values := map[string]string{
 		databaseURLEnv:                      "postgres://db/aicrm",

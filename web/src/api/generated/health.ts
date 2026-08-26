@@ -7924,6 +7924,47 @@ export interface ChannelAcquisitionAssignmentResponse {
   real_external_call_executed: boolean;
 }
 
+export interface ChannelAcquisitionStaffItem {
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  wecom_userid: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  display_name: string;
+  assigned: boolean;
+  /** @minimum 1 */
+  priority?: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  ratio_percent?: number;
+  /** @minimum 1 */
+  max_scans_24h?: number;
+}
+
+export type ChannelAcquisitionStaffResponseProviderSource =
+  (typeof ChannelAcquisitionStaffResponseProviderSource)[keyof typeof ChannelAcquisitionStaffResponseProviderSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelAcquisitionStaffResponseProviderSource = {
+  wecom_follow_user_list: "wecom_follow_user_list",
+} as const;
+
+export interface ChannelAcquisitionStaffResponse {
+  /** @minimum 1 */
+  channel_id: number;
+  /** @maxItems 100 */
+  items: ChannelAcquisitionStaffItem[];
+  provider_source: ChannelAcquisitionStaffResponseProviderSource;
+  provider_read_succeeded: boolean;
+  real_external_call_executed: boolean;
+}
+
 export type ChannelAcquisitionLifecycleState =
   (typeof ChannelAcquisitionLifecycleState)[keyof typeof ChannelAcquisitionLifecycleState];
 
@@ -8094,6 +8135,12 @@ export interface ChannelAcquisitionAsset {
   attempt_receipt_digest?: string;
   /** @pattern ^eerop_[1-9][0-9]*$ */
   reconcile_receipt_id?: string;
+  /**
+   * Public Provider URL exposed only after an executed result.
+   * @maxLength 10000
+   * @pattern ^https://
+   */
+  asset_url?: string;
   entrant_ready: boolean;
   created_at: string;
   updated_at: string;
@@ -31608,6 +31655,82 @@ export const updateChannelAcquisitionAssignees = async (
     status: res.status,
     headers: res.headers,
   } as updateChannelAcquisitionAssigneesResponse;
+};
+
+/**
+ * @summary Refresh selectable channel staff from WeCom and active local staff
+ */
+export type listChannelAcquisitionStaffResponse200 = {
+  data: ChannelAcquisitionStaffResponse;
+  status: 200;
+};
+
+export type listChannelAcquisitionStaffResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type listChannelAcquisitionStaffResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type listChannelAcquisitionStaffResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type listChannelAcquisitionStaffResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type listChannelAcquisitionStaffResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type listChannelAcquisitionStaffResponseSuccess =
+  listChannelAcquisitionStaffResponse200 & {
+    headers: Headers;
+  };
+export type listChannelAcquisitionStaffResponseError = (
+  | listChannelAcquisitionStaffResponse400
+  | listChannelAcquisitionStaffResponse401
+  | listChannelAcquisitionStaffResponse403
+  | listChannelAcquisitionStaffResponse404
+  | listChannelAcquisitionStaffResponse503
+) & {
+  headers: Headers;
+};
+
+export type listChannelAcquisitionStaffResponse =
+  | listChannelAcquisitionStaffResponseSuccess
+  | listChannelAcquisitionStaffResponseError;
+
+export const getListChannelAcquisitionStaffUrl = (channelId: number) => {
+  return `/api/admin/channels/${channelId}/acquisition-staff`;
+};
+
+export const listChannelAcquisitionStaff = async (
+  channelId: number,
+  options?: RequestInit,
+): Promise<listChannelAcquisitionStaffResponse> => {
+  const res = await fetch(getListChannelAcquisitionStaffUrl(channelId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listChannelAcquisitionStaffResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as listChannelAcquisitionStaffResponse;
 };
 
 /**
