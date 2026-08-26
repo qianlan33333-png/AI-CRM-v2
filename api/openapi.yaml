@@ -10206,7 +10206,7 @@ paths:
         - { name: limit, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, maximum: 100, default: 20 } }
         - { name: offset, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, maximum: 100000, default: 0 } }
       responses:
-        "200": { description: Safe local send-record page without sender, external identity, msgid, or raw provider response., content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceSendRecordListResponse" } } } }
+        "200": { description: "Safe local send-record page without sender, external identity, msgid, or raw provider response.", content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceSendRecordListResponse" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -10230,7 +10230,7 @@ paths:
         - { name: package_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
         - { name: record_id, in: path, required: true, schema: { type: string, pattern: '^campaign:[1-9][0-9]{0,18}$' } }
       responses:
-        "200": { description: Safe local send-record detail without sender, external identity, msgid, or raw provider response., content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceSendRecordDetailResponse" } } } }
+        "200": { description: "Safe local send-record detail without sender, external identity, msgid, or raw provider response.", content: { application/json: { schema: { $ref: "#/components/schemas/AIAudienceSendRecordDetailResponse" } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
