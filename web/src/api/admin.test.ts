@@ -1,6 +1,6 @@
 import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, dispatchCampaignOutboundHandoffDto, executeOwnerReassignmentPreviewDto, getCampaignOutboundDispatchReconciliationDto, getCampaignOutboundHandoffDto, getCampaignOutboundHandoffReconciliationDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, listCampaignPlanIndexDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, tryGetCampaignOutboundDispatchReconciliationDto, tryGetCampaignOutboundHandoffDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
-import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
+import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyAttachmentsUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
 import { HttpApi } from '../shared/api/client';
 import { getCreateProductUrl, getCreateServicePeriodProductUrl, getUpdateServicePeriodProductUrl } from './generated/health';
@@ -39,6 +39,32 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(customerUrl.searchParams.get('keyword') === '陈晨' && customerUrl.searchParams.get('mobile') === '+8613800000000' && customerUrl.searchParams.get('owner_staff_id') === '3' && customerUrl.searchParams.get('tag_id') === '9', 'customer list filter parameters');
     assert(customerPage.customerList.total === 51 && customerPage.customerList.totalIsEstimate && customerPage.customerList.nextCursor === 'opaque-next-cursor', 'customer list metadata mapping');
   } finally { globalThis.fetch = savedCustomerListFetch; }
+
+  assert(getListLegacyAttachmentsUrl() === '/api/admin/attachment-library', 'attachment workspace list URL/method');
+  const attachmentCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const savedAttachmentFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    attachmentCalls.push({ input: String(input), init });
+    return new Response(JSON.stringify({
+      items: [{ id: 12, name: '课程资料', file_name: 'course.pdf', mime_type: 'application/pdf', file_size: 2048, description: '课前阅读', tags: ['课程', 'PDF'], enabled: true, version: 1, created_by: 7, updated_by: 7, created_at: '2026-08-26T08:00:00Z', updated_at: '2026-08-26T08:00:00Z' }],
+      total: 1, limit: 500, offset: 0,
+    }), { status: 200 });
+  };
+  try {
+    const attachmentPage = await new HttpApi({ baseUrl: '' }).loadDb({ page: 'attach' });
+    assert(attachmentCalls.length === 1 && attachmentCalls[0].input === '/api/admin/attachment-library' && attachmentCalls[0].init?.method === 'GET', 'attachment workspace uses only generated HTTP list read');
+    assert(attachmentPage.rows.attachItems.length === 1 && attachmentPage.rows.attachItems[0].resourceId === '12' && attachmentPage.rows.attachItems[0].name === '课程资料' && attachmentPage.rows.attachItems[0].tags === '课程, PDF', 'attachment workspace maps real list data without Seed fallback');
+  } finally { globalThis.fetch = savedAttachmentFetch; }
+
+  const savedAttachmentFailureFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ code: 'unavailable' }), { status: 503 });
+  try {
+    await new HttpApi({ baseUrl: '' }).loadDb({ page: 'attach' });
+    assert(false, 'attachment workspace accepted unavailable response');
+  } catch (error) {
+    assert(error instanceof ApiError && error.status === 503, 'attachment workspace keeps read failures visible instead of falling back');
+  } finally { globalThis.fetch = savedAttachmentFailureFetch; }
+
   assert(getGetCustomerContextUrl(7, { limit: 20 }) === '/api/v1/customers/7/context?limit=20' && getListCustomerSurveyAnswersUrl(7, { limit: 30 }) === '/api/v1/customers/7/survey-answers?limit=30' && getListStagesUrl() === '/api/v1/stages', 'safe Customer360 generated URLs');
 
   const safeContext = {
