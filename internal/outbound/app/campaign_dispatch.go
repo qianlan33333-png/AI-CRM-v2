@@ -6,10 +6,12 @@ import (
 	"encoding/hex"
 	"errors"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/port"
 	outbound "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound"
 	outboundport "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/port"
@@ -49,14 +51,15 @@ type CampaignDispatchService struct {
 	repo     outboundport.CampaignDispatchRepository
 	runtime  CampaignDispatchRuntime
 	enqueuer outboundport.CampaignDispatchEnqueuer
+	contact  contactport.EligibilityChecker
 	now      func() time.Time
 }
 
-func NewCampaignDispatchService(uow platformport.UnitOfWork, repo outboundport.CampaignDispatchRepository, runtime CampaignDispatchRuntime, enqueuer outboundport.CampaignDispatchEnqueuer) (*CampaignDispatchService, error) {
-	if nilCampaignDispatchDependency(uow) || nilCampaignDispatchDependency(repo) || nilCampaignDispatchDependency(runtime) || nilCampaignDispatchDependency(enqueuer) {
+func NewCampaignDispatchService(uow platformport.UnitOfWork, repo outboundport.CampaignDispatchRepository, runtime CampaignDispatchRuntime, enqueuer outboundport.CampaignDispatchEnqueuer, contact contactport.EligibilityChecker) (*CampaignDispatchService, error) {
+	if nilCampaignDispatchDependency(uow) || nilCampaignDispatchDependency(repo) || nilCampaignDispatchDependency(runtime) || nilCampaignDispatchDependency(enqueuer) || nilCampaignDispatchDependency(contact) {
 		return nil, outbound.ErrCampaignDispatchUnavailable
 	}
-	return &CampaignDispatchService{uow: uow, repo: repo, runtime: runtime, enqueuer: enqueuer, now: time.Now}, nil
+	return &CampaignDispatchService{uow: uow, repo: repo, runtime: runtime, enqueuer: enqueuer, contact: contact, now: time.Now}, nil
 }
 
 func (service *CampaignDispatchService) Dispatch(ctx context.Context, command CampaignDispatchCommand) (outbound.CampaignDispatchSummary, error) {
@@ -67,11 +70,30 @@ func (service *CampaignDispatchService) Dispatch(ctx context.Context, command Ca
 	payload := sha256.Sum256([]byte("outbound.campaign_dispatch.command.v1\x00" + command.CampaignCode + "\x00" + command.PlanID + "\x00" + boolText(command.ExternalGate)))
 	var summary outbound.CampaignDispatchSummary
 	err := service.uow.Within(ctx, func(tx context.Context) error {
+		evaluatedAt := service.now().UTC()
+		if evaluatedAt.IsZero() {
+			return outbound.ErrCampaignDispatchUnavailable
+		}
 		handoffID, err := service.repo.LockCampaignHandoffForDispatch(tx, command.CampaignCode, command.PlanID)
 		if err != nil {
 			return err
 		}
+		replayed, present, err := service.repo.LoadCampaignDispatchReceipt(tx, command.ActorID, key)
+		if err != nil {
+			return err
+		}
+		if present {
+			if replayed.HandoffID != handoffID || replayed.PayloadDigest != payload {
+				return outbound.ErrCampaignDispatchConflict
+			}
+			summary = replayed.Result
+			return nil
+		}
 		candidates, err := service.repo.ListCampaignDispatchCandidates(tx, handoffID)
+		if err != nil {
+			return err
+		}
+		eligibility, err := service.dispatchEligibility(tx, candidates, evaluatedAt)
 		if err != nil {
 			return err
 		}
@@ -79,7 +101,22 @@ func (service *CampaignDispatchService) Dispatch(ctx context.Context, command Ca
 			if candidate.CustomerID < 1 || candidate.StepIndex < 1 || strings.TrimSpace(candidate.Content) == "" {
 				return outbound.ErrCampaignDispatchUnavailable
 			}
-			binding := outboundport.CampaignDispatchBinding{HandoffID: handoffID, CustomerID: candidate.CustomerID, StepIndex: candidate.StepIndex, RecipientDigest: outbound.CampaignDispatchRecipientDigest(candidate.CustomerID), PayloadDigest: outbound.CampaignDispatchPayloadDigest(handoffID, candidate.CustomerID, candidate.StepIndex, candidate.Content), CreatedAt: service.now().UTC(), UpdatedAt: service.now().UTC()}
+			binding := outboundport.CampaignDispatchBinding{HandoffID: handoffID, CustomerID: candidate.CustomerID, StepIndex: candidate.StepIndex, RecipientDigest: outbound.CampaignDispatchRecipientDigest(candidate.CustomerID), PayloadDigest: outbound.CampaignDispatchPayloadDigest(handoffID, candidate.CustomerID, candidate.StepIndex, candidate.Content), CreatedAt: evaluatedAt, UpdatedAt: evaluatedAt}
+			decision, present := eligibility[candidate.CustomerID]
+			if !present {
+				return outbound.ErrCampaignDispatchUnavailable
+			}
+			if !decision.Eligible {
+				blockReason, valid := campaignDispatchBlockReason(decision.Exclusion)
+				if !valid {
+					return outbound.ErrCampaignDispatchUnavailable
+				}
+				binding.State, binding.BlockReason = outbound.CampaignDispatchBlocked, blockReason
+				if _, err = service.repo.InsertCampaignDispatchBinding(tx, binding); err != nil {
+					return err
+				}
+				continue
+			}
 			if !command.ExternalGate {
 				binding.State, binding.BlockReason = outbound.CampaignDispatchBlocked, "external_gate_disabled"
 				if _, err = service.repo.InsertCampaignDispatchBinding(tx, binding); err != nil {
@@ -138,6 +175,70 @@ func (service *CampaignDispatchService) Dispatch(ctx context.Context, command Ca
 		return outbound.CampaignDispatchSummary{}, outbound.ErrCampaignDispatchUnavailable
 	}
 	return summary, nil
+}
+
+func (service *CampaignDispatchService) dispatchEligibility(ctx context.Context, candidates []outboundport.CampaignDispatchCandidate, evaluatedAt time.Time) (map[int64]contactport.ContactEligibility, error) {
+	if service == nil || service.contact == nil || ctx == nil || ctx.Err() != nil || len(candidates) == 0 || evaluatedAt.IsZero() {
+		return nil, outbound.ErrCampaignDispatchUnavailable
+	}
+	unique := make(map[int64]struct{}, len(candidates))
+	for _, candidate := range candidates {
+		if candidate.CustomerID < 1 {
+			return nil, outbound.ErrCampaignDispatchUnavailable
+		}
+		unique[candidate.CustomerID] = struct{}{}
+	}
+	if len(unique) > contactport.ContactEligibilityMaximumCustomers {
+		return nil, outbound.ErrCampaignDispatchUnavailable
+	}
+	ids := make([]contactport.CustomerID, 0, len(unique))
+	for customerID := range unique {
+		ids = append(ids, contactport.CustomerID(customerID))
+	}
+	sort.Slice(ids, func(left, right int) bool { return ids[left] < ids[right] })
+	decisions, err := service.contact.CheckContactEligibility(ctx, contactport.ContactEligibilityCheck{
+		Checkpoint: contactport.ContactEligibilityDispatch, CustomerIDs: ids, EvaluatedAt: evaluatedAt,
+	})
+	if err != nil || len(decisions) != len(ids) {
+		return nil, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
+	}
+	result := make(map[int64]contactport.ContactEligibility, len(decisions))
+	for index, decision := range decisions {
+		if decision.CustomerID != ids[index] {
+			return nil, outbound.ErrCampaignDispatchUnavailable
+		}
+		if decision.Eligible {
+			if !decision.CustomerActive || decision.Exclusion != contactport.ContactEligibilityExclusionNone {
+				return nil, outbound.ErrCampaignDispatchUnavailable
+			}
+		} else {
+			switch decision.Exclusion {
+			case contactport.ContactEligibilityExclusionContactPolicy:
+				if !decision.CustomerActive {
+					return nil, outbound.ErrCampaignDispatchUnavailable
+				}
+			case contactport.ContactEligibilityExclusionInactiveCustomer:
+				if decision.CustomerActive {
+					return nil, outbound.ErrCampaignDispatchUnavailable
+				}
+			default:
+				return nil, outbound.ErrCampaignDispatchUnavailable
+			}
+		}
+		result[int64(decision.CustomerID)] = decision
+	}
+	return result, nil
+}
+
+func campaignDispatchBlockReason(exclusion contactport.ContactEligibilityExclusion) (string, bool) {
+	switch exclusion {
+	case contactport.ContactEligibilityExclusionContactPolicy:
+		return "contact_policy", true
+	case contactport.ContactEligibilityExclusionInactiveCustomer:
+		return "inactive_customer", true
+	default:
+		return "", false
+	}
 }
 
 // RunEffect is called only by the dedicated River worker. EER persists the

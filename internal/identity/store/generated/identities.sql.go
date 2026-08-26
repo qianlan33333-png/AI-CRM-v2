@@ -1380,6 +1380,30 @@ func (q *Queries) ResolveMergeReview(ctx context.Context, arg ResolveMergeReview
 	return result.RowsAffected(), nil
 }
 
+const resolveUniqueVerifiedMPOpenID = `-- name: ResolveUniqueVerifiedMPOpenID :one
+SELECT min(i.normalized_value)::text AS openid
+FROM identities AS i
+JOIN customers AS c ON c.id = i.customer_id
+WHERE i.customer_id = $1::bigint
+  AND i.kind = 'mp_openid'
+  AND i.scope = $2::text
+  AND i.assurance = 'verified'
+  AND c.is_deleted = FALSE
+HAVING count(DISTINCT i.normalized_value) = 1
+`
+
+type ResolveUniqueVerifiedMPOpenIDParams struct {
+	CustomerID int64  `json:"customer_id"`
+	Scope      string `json:"scope"`
+}
+
+func (q *Queries) ResolveUniqueVerifiedMPOpenID(ctx context.Context, arg ResolveUniqueVerifiedMPOpenIDParams) (string, error) {
+	row := q.db.QueryRow(ctx, resolveUniqueVerifiedMPOpenID, arg.CustomerID, arg.Scope)
+	var openid string
+	err := row.Scan(&openid)
+	return openid, err
+}
+
 const updateHistoricalScopedWeComIdentityCAS = `-- name: UpdateHistoricalScopedWeComIdentityCAS :execrows
 UPDATE identities
 SET scope = $1::text,

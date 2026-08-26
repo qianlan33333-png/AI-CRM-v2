@@ -3,8 +3,10 @@ package order_acceptance
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -12,17 +14,110 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	contactfixture "github.com/qianlan33333-png/AI-CRM-v2/acceptance/contactfixture"
 	acceptancefixtures "github.com/qianlan33333-png/AI-CRM-v2/acceptance/fixtures"
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	eerfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store/acceptancefixture"
+	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
 	orderapp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/app"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
 	platformriver "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/river"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	productapp "github.com/qianlan33333-png/AI-CRM-v2/internal/product/app"
+	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
 	productstore "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store"
 	productfixture "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/acceptancefixture"
 )
+
+func TestPE01JSAPIHandoffStagesOnAcceptedAndCompletesPrepayReady(t *testing.T) {
+	pool, ctx := openPE01Pool(t)
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	prefix := fmt.Sprintf("pe01-jsapi-%d", now.UnixNano())
+	customerID, err := contactfixture.CreateCustomerRecord(ctx, pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	productID, err := productfixture.CreatePE01Product(ctx, pool, prefix, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	financial, err := orderstore.NewFinancialRepository(pool)
+	if err != nil {
+		t.Fatal(err)
+	}
+	settlement, err := orderapp.NewSettlementService(platformstore.NewUnitOfWork(pool), financial, productstore.NewCatalogRepository(), &pe01BenefitStub{}, eventstore.NewAppender())
+	if err != nil {
+		t.Fatal(err)
+	}
+	identity := sha256.Sum256([]byte(prefix + "/payer"))
+	checkout, err := settlement.Checkout(ctx, orderport.CheckoutCommand{CustomerID: customerID, ProductID: productID, ProductKind: orderport.ProductKindOrdinary, PaymentIdentityDigest: identity, ActorScope: "payment-session:" + hex.EncodeToString(identity[:]), IdempotencyKey: prefix + "/checkout-key"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	handoffAt := time.Now().UTC().Truncate(time.Microsecond)
+	receipt := sha256.Sum256([]byte(prefix + "/provider-receipt"))
+	handoff := orderport.JSAPIHandoff{AppID: "acceptance-app", TimeStamp: fmt.Sprint(handoffAt.Unix()), NonceStr: "acceptance-nonce", Package: "prepay_id=acceptance-prepay", SignType: "RSA", PaySign: base64.StdEncoding.EncodeToString(make([]byte, 256)), ExpiresAt: handoffAt.Add(2 * time.Hour)}
+	if _, invalidErr := pool.Exec(ctx, `UPDATE public.order_payment_commands
+SET state='prepay_ready', provider_prepay_digest=$1,
+    provider_jsapi_contract_version='wechat-jsapi/v1'
+WHERE id=$2`, receipt[:], checkout.PaymentCommandID); invalidErr == nil || !strings.Contains(invalidErr.Error(), "order_payment_commands_jsapi_bundle") {
+		t.Fatalf("incomplete prepay_ready constraint err=%v", invalidErr)
+	}
+	var staged orderport.PaymentCommand
+	if err = platformstore.NewUnitOfWork(pool).Within(ctx, func(tx context.Context) error {
+		current, lockErr := financial.LockPaymentCommand(tx, checkout.PaymentCommandID)
+		if lockErr != nil {
+			return lockErr
+		}
+		staged, lockErr = financial.RecordPaymentHandoff(tx, current, handoff, receipt, handoffAt)
+		return lockErr
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if staged.State != orderport.EffectAccepted || staged.JSAPIHandoff == nil || staged.ProviderPrepayDigest != receipt {
+		t.Fatalf("staged command=%+v", staged)
+	}
+	effectID, err := eerfixture.CreatePE01Effect(ctx, pool, string(orderport.ExternalEffectPaymentPrepay), digestText(staged.SourceRefDigest), digestText(staged.TargetRefDigest), digestText(staged.PayloadDigest), digestText(staged.PolicyVersionDigest), digestText(sha256.Sum256([]byte(prefix+"/effect"))), string(orderport.EffectExecuted))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = platformstore.NewUnitOfWork(pool).Within(ctx, func(tx context.Context) error {
+		current, lockErr := financial.LockPaymentCommand(tx, checkout.PaymentCommandID)
+		if lockErr != nil {
+			return lockErr
+		}
+		current, lockErr = financial.BindPaymentEffect(tx, current, fmt.Sprintf("eer_%d", effectID), handoffAt)
+		if lockErr != nil {
+			return lockErr
+		}
+		current, lockErr = financial.CompletePaymentEffect(tx, current, orderport.EffectExecuted, receipt, handoffAt)
+		if lockErr != nil || current.State != orderport.EffectExecuted {
+			return fmt.Errorf("complete prepay command=%+v: %w", current, lockErr)
+		}
+		order, lockErr := financial.LockOrderByID(tx, checkout.OrderID)
+		if lockErr != nil {
+			return lockErr
+		}
+		_, lockErr = financial.MarkOrderAwaitingPayment(tx, order, handoffAt)
+		return lockErr
+	}); err != nil {
+		t.Fatal(err)
+	}
+	ready, err := settlement.GetSelfScoped(ctx, checkout.MerchantOrderNo, identity)
+	if err != nil || ready.PayParams == nil || ready.PayParams.Package != handoff.Package || ready.PrepayExpiresAt == nil || !ready.PrepayExpiresAt.Equal(handoff.ExpiresAt) {
+		t.Fatalf("ready checkout=%+v err=%v", ready, err)
+	}
+	var databaseState string
+	if err = pool.QueryRow(ctx, `SELECT state FROM public.order_payment_commands WHERE id=$1`, checkout.PaymentCommandID).Scan(&databaseState); err != nil || databaseState != "prepay_ready" {
+		t.Fatalf("database state=%q err=%v", databaseState, err)
+	}
+}
+
+type pe01BenefitStub struct{}
+
+func (*pe01BenefitStub) ApplyPaidSettlement(context.Context, productport.PaidSettlementCommand) (productport.PaidSettlementResult, error) {
+	return productport.PaidSettlementResult{EntitlementID: 1, State: "active", Version: 1}, nil
+}
 
 func TestPE01FakeWeChatPayOutcomeUnknownReconcilesAndCompensates(t *testing.T) {
 	pool, ctx := openPE01Pool(t)
@@ -62,6 +157,25 @@ func TestPE01FakeWeChatPayOutcomeUnknownReconcilesAndCompensates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if _, err = pool.Exec(ctx, `
+INSERT INTO public.identities(customer_id,kind,scope,normalized_value,normalizer_version,assurance,source,review_fingerprint,fingerprint_key_version,bound_at)
+VALUES ($1,'mp_openid','wechat-app:acceptance-app',$2,1,'verified','pe01-acceptance',decode(repeat('22',16),'hex'),1,now())`, customerID, prefix+"-openid"); err != nil {
+		t.Fatal(err)
+	}
+	materialReader := orderstore.NewProviderMaterialReader()
+	if err = platformstore.NewUnitOfWork(pool).Within(ctx, func(tx context.Context) error {
+		material, found, readErr := materialReader.ReadPE01Prepay(tx, checkout.MerchantOrderNo)
+		if readErr != nil || !found || material.CustomerID != customerID || material.AmountMinor != checkout.AmountMinor || material.PaymentIdentityDigest != identity {
+			return fmt.Errorf("prepay provider material=%+v found=%t: %w", material, found, readErr)
+		}
+		openid, found, readErr := identitystore.NewRepository().ResolveUniqueVerifiedMPOpenID(tx, contactCustomerID(customerID), "wechat-app:acceptance-app")
+		if readErr != nil || !found || openid.OpenID != prefix+"-openid" {
+			return fmt.Errorf("payer openid=%+v found=%t: %w", openid, found, readErr)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
 	replayed, err := settlement.Checkout(ctx, checkoutCommand)
 	if err != nil || replayed.OrderID != checkout.OrderID || replayed.PaymentCommandID != checkout.PaymentCommandID {
 		t.Fatalf("checkout replay=%+v error=%v", replayed, err)
@@ -87,6 +201,15 @@ func TestPE01FakeWeChatPayOutcomeUnknownReconcilesAndCompensates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if err = platformstore.NewUnitOfWork(pool).Within(ctx, func(tx context.Context) error {
+		material, found, readErr := materialReader.ReadPE01Refund(tx, refund.OutRefundNo)
+		if readErr != nil || !found || material.MerchantOrderNo != checkout.MerchantOrderNo || material.RefundAmountMinor != refund.AmountMinor || material.Reason != "acceptance full refund" {
+			return fmt.Errorf("refund provider material=%+v found=%t: %w", material, found, readErr)
+		}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
 	refundJob := orderapp.EffectJob{RecordID: refund.ID, RiverJobID: 9002, RiverGeneration: 1, RiverQueue: "critical", RiverArgsDigest: sha256.Sum256([]byte(prefix + "/refund-job")), ScheduledAt: now.Add(2 * time.Second)}
 	if err = execution.ExecuteRefund(ctx, refundJob); err != nil {
 		t.Fatal(err)
@@ -100,7 +223,7 @@ func TestPE01FakeWeChatPayOutcomeUnknownReconcilesAndCompensates(t *testing.T) {
 	err = pool.QueryRow(ctx, `SELECT
       (SELECT status FROM order_list_projections WHERE id=$1),
 	      (SELECT state FROM product_local_entitlements WHERE order_id=$1 AND source='paid_order'),
-	      (SELECT count(*) FROM order_operation_receipts WHERE operation IN ('pe01.checkout','pe01.refund') AND state='completed' AND result_snapshot->>'OrderID'=$1::text),
+	      (SELECT count(*) FROM order_operation_receipts WHERE operation IN ('pe01.checkout','pe01.refund') AND state='completed' AND COALESCE(result_snapshot->>'order_id', result_snapshot->>'OrderID')=$1::text),
       (SELECT count(*) FROM order_provider_callback_receipts WHERE order_id=$1 AND state='completed'),
       (SELECT count(*) FROM event_log WHERE customer_id=$2 AND event_type LIKE 'order.%'),
 	      (SELECT count(*) FROM event_log WHERE customer_id=$2 AND event_type IN ('product.entitlement_granted','product.entitlement_revoked')),
@@ -158,6 +281,8 @@ func (*pe01FakeRuntime) Reconcile(_ context.Context, effectID string, evidence [
 }
 
 func digestText(value [32]byte) string { return "sha256:" + hex.EncodeToString(value[:]) }
+
+func contactCustomerID(value int64) contactport.CustomerID { return contactport.CustomerID(value) }
 
 func openPE01Pool(t *testing.T) (*pgxpool.Pool, context.Context) {
 	t.Helper()

@@ -37,8 +37,25 @@ const (
 )
 
 type ProviderResult struct {
-	Completion    ProviderCompletion
-	ReceiptDigest [32]byte
+	Completion               ProviderCompletion
+	ReceiptDigest            [32]byte
+	JSAPIHandoff             *JSAPIHandoff
+	BusinessCallDispatched   bool
+	RealExternalCallExecuted bool
+}
+
+// JSAPIHandoff is the short-lived, client-facing material required by
+// WeixinJSBridge.getBrandWCPayRequest. It contains neither payer identity nor
+// merchant signing credentials and must only be returned through the
+// payment-identity-scoped checkout read.
+type JSAPIHandoff struct {
+	AppID     string    `json:"appId"`
+	TimeStamp string    `json:"timeStamp"`
+	NonceStr  string    `json:"nonceStr"`
+	Package   string    `json:"package"`
+	SignType  string    `json:"signType"`
+	PaySign   string    `json:"paySign"`
+	ExpiresAt time.Time `json:"-"`
 }
 
 type ExternalEffectResult struct {
@@ -93,9 +110,10 @@ type RefundQueryResult struct {
 }
 
 // WeChatPayProvider is provider-shaped and closed to the two PE01 effects.
-// Implementations return only digests; they never assert that a payment is
-// paid. Paid and refunded financial facts enter through verified callbacks or
-// active-query reconciliation.
+// Implementations return receipt digests plus the short-lived JSAPI prepay
+// handoff; they never assert that a payment is paid. Paid and refunded
+// financial facts enter through verified callbacks or active-query
+// reconciliation.
 type WeChatPayProvider interface {
 	CreatePrepay(context.Context, PrepayRequest) (ProviderResult, error)
 	RequestRefund(context.Context, RefundRequest) (ProviderResult, error)

@@ -16490,6 +16490,7 @@ components:
       type: object
       additionalProperties: false
       required: [order_id, merchant_order_no, state, product_kind, customer_id, product_id, amount_minor, currency, payment_command_id, created_at]
+      description: Actor-bound checkout projection. pay_params is present only while an awaiting_payment JSAPI handoff is unexpired; clients must create a new checkout after prepay_expires_at and must not replay the Provider call.
       properties:
         order_id: {type: integer, format: int64, minimum: 1}
         merchant_order_no: {type: string, pattern: '^pe01_[a-f0-9]{32}$'}
@@ -16506,7 +16507,21 @@ components:
         amount_minor: {type: integer, format: int64, minimum: 1, maximum: 1000000000}
         currency: {type: string, enum: [CNY], x-enum-varnames: [WechatPayCurrencyCNY]}
         payment_command_id: {type: integer, format: int64, minimum: 1}
+        pay_params: {$ref: "#/components/schemas/WechatPayJSAPIHandoff"}
+        prepay_expires_at: {type: string, format: date-time, description: Expiry of the materialized JSAPI handoff; retained after expiry while pay_params is omitted.}
         created_at: {type: string, format: date-time}
+    WechatPayJSAPIHandoff:
+      type: object
+      additionalProperties: false
+      description: Short-lived fields passed unchanged to WeixinJSBridge.getBrandWCPayRequest. Contains no payer identity or merchant private key.
+      required: [appId, timeStamp, nonceStr, package, signType, paySign]
+      properties:
+        appId: {type: string, minLength: 1, maxLength: 128}
+        timeStamp: {type: string, pattern: '^[1-9][0-9]{0,18}$'}
+        nonceStr: {type: string, minLength: 1, maxLength: 128}
+        package: {type: string, pattern: '^prepay_id=.{1,245}$', maxLength: 256}
+        signType: {type: string, enum: [RSA]}
+        paySign: {type: string, minLength: 1, maxLength: 1024}
     WechatPaySettlementRefundRequest:
       type: object
       additionalProperties: false

@@ -112,7 +112,10 @@ func (adapter pe01ProviderAdapter) Execute(ctx context.Context, _ eer.EffectEnve
 	case orderport.ProviderFinalFailed:
 		completion = eer.CompletionFinalFailed
 	}
-	return eer.AdapterResult{Completion: completion, ReceiptDigest: eerDigest(result.ReceiptDigest)}, err
+	return eer.AdapterResult{
+		Completion: completion, ReceiptDigest: eerDigest(result.ReceiptDigest),
+		BusinessCallDispatched: result.BusinessCallDispatched, RealExternalCallExecuted: result.RealExternalCallExecuted,
+	}, err
 }
 
 func orderEffectState(state eer.State) (orderport.EffectState, bool) {

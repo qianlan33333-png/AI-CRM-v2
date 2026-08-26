@@ -2,8 +2,10 @@ package app
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"testing"
 	"time"
 
@@ -53,6 +55,9 @@ func (*settlementTestStore) EnqueuePaymentBridge(context.Context, int64) (int64,
 }
 func (store *settlementTestStore) GetPaymentCommandByOrder(context.Context, orderport.ID) (orderport.PaymentCommand, error) {
 	return store.payment, nil
+}
+func (store *settlementTestStore) GetSelfScoped(context.Context, string, [32]byte) (FinancialOrderRecord, error) {
+	return store.order, nil
 }
 
 type settlementTestProducts struct{ product productport.Product }
@@ -115,5 +120,41 @@ func TestSettlementCheckoutExactReplayMismatchAndReceiptLast(t *testing.T) {
 	failing.now, failing.random = service.now, service.random
 	if _, err = failing.Checkout(context.Background(), command); err == nil || failingStore.completeCalls != 0 {
 		t.Fatalf("event failure err=%v receipt completions=%d", err, failingStore.completeCalls)
+	}
+}
+
+func TestSettlementSelfScopedCheckoutReturnsOnlyUnexpiredJSAPIHandoff(t *testing.T) {
+	now := time.Date(2026, 8, 26, 10, 0, 0, 0, time.UTC)
+	identity := domainDigest("test", "payment-identity")
+	expiresAt := now.Add(2 * time.Hour)
+	handoff := &orderport.JSAPIHandoff{AppID: "wx-app", TimeStamp: strconv.FormatInt(now.Unix(), 10), NonceStr: "nonce-1", Package: "prepay_id=wx-prepay-1", SignType: "RSA", PaySign: base64.StdEncoding.EncodeToString(make([]byte, 256)), ExpiresAt: expiresAt}
+	if !validStoredJSAPIHandoff(*handoff) {
+		t.Fatal("valid fixture handoff rejected")
+	}
+	store := &settlementTestStore{
+		order:   FinancialOrderRecord{ID: 91, MerchantOrderNo: "pe01_0123456789abcdef0123456789abcdef", CustomerID: 41, ProductID: 7, ProductVersion: 3, ProductKind: orderport.ProductKindOrdinary, AmountMinor: 9900, Currency: "CNY", State: orderport.FinancialAwaitingPayment, PaymentIdentityDigest: identity, Version: 2, CreatedAt: now.Add(-time.Minute), UpdatedAt: now},
+		payment: orderport.PaymentCommand{ID: 81, OrderID: 91, State: orderport.EffectExecuted, JSAPIHandoff: handoff, Version: 4, CreatedAt: now.Add(-time.Minute), UpdatedAt: now},
+	}
+	service, err := NewSettlementService(&settlementTestUOW{}, store, settlementTestProducts{}, &settlementTestBenefits{}, &settlementTestEvents{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	service.now = func() time.Time { return now }
+	checkout, err := service.GetSelfScoped(context.Background(), store.order.MerchantOrderNo, identity)
+	if err != nil || checkout.PayParams == nil || checkout.PayParams.Package != handoff.Package || checkout.PrepayExpiresAt == nil || !checkout.PrepayExpiresAt.Equal(expiresAt) {
+		t.Fatalf("ready checkout = %+v err=%v", checkout, err)
+	}
+	service.now = func() time.Time { return expiresAt }
+	expired, err := service.GetSelfScoped(context.Background(), store.order.MerchantOrderNo, identity)
+	if err != nil || expired.PayParams != nil || expired.PrepayExpiresAt == nil || !expired.PrepayExpiresAt.Equal(expiresAt) {
+		t.Fatalf("expired checkout = %+v err=%v", expired, err)
+	}
+}
+
+func TestReplayCheckoutAcceptsPreSnakeCaseReceipt(t *testing.T) {
+	var checkout orderport.Checkout
+	err := replayCheckout(BoardReceipt{State: "completed", ResultSnapshot: json.RawMessage(`{"OrderID":91,"MerchantOrderNo":"pe01_0123456789abcdef0123456789abcdef","State":"awaiting_prepay","ProductKind":"ordinary","CustomerID":41,"ProductID":7,"AmountMinor":9900,"Currency":"CNY","PaymentCommandID":81,"CreatedAt":"2026-08-26T10:00:00Z"}`)}, &checkout)
+	if err != nil || checkout.OrderID != 91 || checkout.PaymentCommandID != 81 || checkout.MerchantOrderNo == "" {
+		t.Fatalf("legacy checkout = %+v err=%v", checkout, err)
 	}
 }

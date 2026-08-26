@@ -41,6 +41,7 @@ type CampaignDispatchRepository interface {
 	LockCampaignHandoffForDispatch(context.Context, string, string) (int64, error)
 	ReadCampaignHandoffForDispatch(context.Context, string, string) (int64, error)
 	ListCampaignDispatchCandidates(context.Context, int64) ([]CampaignDispatchCandidate, error)
+	LoadCampaignDispatchReceipt(context.Context, int64, [32]byte) (CampaignDispatchReceipt, bool, error)
 	ReserveCampaignDispatchReceipt(context.Context, int64, int64, [32]byte, [32]byte, outbound.CampaignDispatchSummary) (CampaignDispatchReceipt, error)
 	InsertCampaignDispatchBinding(context.Context, CampaignDispatchBinding) (CampaignDispatchBinding, error)
 	LoadCampaignDispatchByEffect(context.Context, string) (CampaignDispatchBinding, error)

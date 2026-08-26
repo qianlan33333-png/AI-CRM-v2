@@ -33,5 +33,5 @@ set +e
 status=$?
 set -e
 [[ $status -ne 0 ]]
-grep -Fq 'cannot roll back materialized PE01 financial or entitlement facts' "$down_output"
-printf 'P4 PE01 PG16.14 acceptance: PASS (79 empty down/up, fake-provider query reconciliation, full-refund compensation, populated 55000 guard)\n'
+grep -Fq 'cannot roll back materialized PE01 JSAPI handoffs' "$down_output"
+printf 'P4 PE01 PG16.14 acceptance: PASS (79 empty down/up, JSAPI handoff transition, fake-provider query reconciliation, full-refund compensation, populated 55000 guard)\n'

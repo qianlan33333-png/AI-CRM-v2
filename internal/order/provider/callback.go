@@ -24,9 +24,11 @@ type ResourceDecryptor interface {
 }
 
 type ClosedCallbackVerifier struct {
-	signatures SignatureVerifier
-	resources  ResourceDecryptor
-	now        func() time.Time
+	signatures       SignatureVerifier
+	resources        ResourceDecryptor
+	expectedAppID    string
+	expectedMerchant string
+	now              func() time.Time
 }
 
 func NewClosedCallbackVerifier(signatures SignatureVerifier, resources ResourceDecryptor) (*ClosedCallbackVerifier, error) {
@@ -121,6 +123,15 @@ func (verifier *ClosedCallbackVerifier) verify(ctx context.Context, body []byte,
 	plain, err := verifier.resources.Decrypt(ctx, envelope.Resource.Ciphertext, envelope.Resource.Nonce, envelope.Resource.AssociatedData)
 	if err != nil || len(plain) == 0 || len(plain) > 64<<10 || !json.Valid(plain) {
 		return nil, callbackEnvelope{}, time.Time{}, ErrInvalidWeChatPayCallback
+	}
+	if verifier.expectedAppID != "" || verifier.expectedMerchant != "" {
+		var merchant struct {
+			AppID      string `json:"appid"`
+			MerchantID string `json:"mchid"`
+		}
+		if json.Unmarshal(plain, &merchant) != nil || merchant.AppID != verifier.expectedAppID || merchant.MerchantID != verifier.expectedMerchant {
+			return nil, callbackEnvelope{}, time.Time{}, ErrInvalidWeChatPayCallback
+		}
 	}
 	return plain, envelope, received, nil
 }

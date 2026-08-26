@@ -7252,6 +7252,21 @@ func (e WechatPayEncryptedCallbackResourceType) Valid() bool {
 	}
 }
 
+// Defines values for WechatPayJSAPIHandoffSignType.
+const (
+	RSA WechatPayJSAPIHandoffSignType = "RSA"
+)
+
+// Valid indicates whether the value is a known member of the WechatPayJSAPIHandoffSignType enum.
+func (e WechatPayJSAPIHandoffSignType) Valid() bool {
+	switch e {
+	case RSA:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for WechatPaySettlementRefundCurrency.
 const (
 	WechatPayRefundCurrencyCNY WechatPaySettlementRefundCurrency = "CNY"
@@ -11866,18 +11881,24 @@ type WechatPayCallbackAck struct {
 // WechatPayCallbackAckCode defines model for WechatPayCallbackAck.Code.
 type WechatPayCallbackAckCode string
 
-// WechatPayCheckout defines model for WechatPayCheckout.
+// WechatPayCheckout Actor-bound checkout projection. pay_params is present only while an awaiting_payment JSAPI handoff is unexpired; clients must create a new checkout after prepay_expires_at and must not replay the Provider call.
 type WechatPayCheckout struct {
-	AmountMinor      int64                        `json:"amount_minor"`
-	CreatedAt        time.Time                    `json:"created_at"`
-	Currency         WechatPayCheckoutCurrency    `json:"currency"`
-	CustomerId       int64                        `json:"customer_id"`
-	MerchantOrderNo  string                       `json:"merchant_order_no"`
-	OrderId          int64                        `json:"order_id"`
-	PaymentCommandId int64                        `json:"payment_command_id"`
-	ProductId        int64                        `json:"product_id"`
-	ProductKind      WechatPayCheckoutProductKind `json:"product_kind"`
-	State            WechatPayCheckoutState       `json:"state"`
+	AmountMinor     int64                     `json:"amount_minor"`
+	CreatedAt       time.Time                 `json:"created_at"`
+	Currency        WechatPayCheckoutCurrency `json:"currency"`
+	CustomerId      int64                     `json:"customer_id"`
+	MerchantOrderNo string                    `json:"merchant_order_no"`
+	OrderId         int64                     `json:"order_id"`
+
+	// PayParams Short-lived fields passed unchanged to WeixinJSBridge.getBrandWCPayRequest. Contains no payer identity or merchant private key.
+	PayParams        *WechatPayJSAPIHandoff `json:"pay_params,omitempty"`
+	PaymentCommandId int64                  `json:"payment_command_id"`
+
+	// PrepayExpiresAt Expiry of the materialized JSAPI handoff; retained after expiry while pay_params is omitted.
+	PrepayExpiresAt *time.Time                   `json:"prepay_expires_at,omitempty"`
+	ProductId       int64                        `json:"product_id"`
+	ProductKind     WechatPayCheckoutProductKind `json:"product_kind"`
+	State           WechatPayCheckoutState       `json:"state"`
 }
 
 // WechatPayCheckoutCurrency defines model for WechatPayCheckout.Currency.
@@ -11920,6 +11941,19 @@ type WechatPayEncryptedCallbackResourceAlgorithm string
 
 // WechatPayEncryptedCallbackResourceType defines model for WechatPayEncryptedCallback.ResourceType.
 type WechatPayEncryptedCallbackResourceType string
+
+// WechatPayJSAPIHandoff Short-lived fields passed unchanged to WeixinJSBridge.getBrandWCPayRequest. Contains no payer identity or merchant private key.
+type WechatPayJSAPIHandoff struct {
+	AppId     string                        `json:"appId"`
+	NonceStr  string                        `json:"nonceStr"`
+	Package   string                        `json:"package"`
+	PaySign   string                        `json:"paySign"`
+	SignType  WechatPayJSAPIHandoffSignType `json:"signType"`
+	TimeStamp string                        `json:"timeStamp"`
+}
+
+// WechatPayJSAPIHandoffSignType defines model for WechatPayJSAPIHandoff.SignType.
+type WechatPayJSAPIHandoffSignType string
 
 // WechatPaySettlementRefund defines model for WechatPaySettlementRefund.
 type WechatPaySettlementRefund struct {

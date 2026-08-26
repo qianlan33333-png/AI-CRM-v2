@@ -1517,7 +1517,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	campaignDispatchService, err := outboundapp.NewCampaignDispatchService(uow, campaignDispatchRepository, externalEffectsRuntime, campaignDispatchRepository)
+	campaignDispatchService, err := outboundapp.NewCampaignDispatchService(uow, campaignDispatchRepository, externalEffectsRuntime, campaignDispatchRepository, contactstore.NewContactPolicyRepository())
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -1547,7 +1547,12 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	wechatPaySettlementHandler, err := orderhttp.NewHandler(settlementService, orderprovider.DisabledCallbackVerifier{}, config.Identity.HMACKey.Value())
+	weChatPayVerifier, err := newWeChatPayCallbackRuntime(config.Commerce.WeChatPay)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	wechatPaySettlementHandler, err := orderhttp.NewHandler(settlementService, weChatPayVerifier, config.Identity.HMACKey.Value())
 	if err != nil {
 		pool.Close()
 		return nil, err

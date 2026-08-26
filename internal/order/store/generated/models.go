@@ -52,18 +52,26 @@ type OrderFinancialRefund struct {
 }
 
 type OrderPaymentCommand struct {
-	ID                   int64              `json:"id"`
-	OrderID              int64              `json:"order_id"`
-	ExternalEffectID     pgtype.Int8        `json:"external_effect_id"`
-	SourceRefDigest      []byte             `json:"source_ref_digest"`
-	TargetRefDigest      []byte             `json:"target_ref_digest"`
-	PayloadDigest        []byte             `json:"payload_digest"`
-	PolicyVersionDigest  []byte             `json:"policy_version_digest"`
-	State                string             `json:"state"`
-	ProviderPrepayDigest []byte             `json:"provider_prepay_digest"`
-	Version              int64              `json:"version"`
-	CreatedAt            pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
+	ID                           int64              `json:"id"`
+	OrderID                      int64              `json:"order_id"`
+	ExternalEffectID             pgtype.Int8        `json:"external_effect_id"`
+	SourceRefDigest              []byte             `json:"source_ref_digest"`
+	TargetRefDigest              []byte             `json:"target_ref_digest"`
+	PayloadDigest                []byte             `json:"payload_digest"`
+	PolicyVersionDigest          []byte             `json:"policy_version_digest"`
+	State                        string             `json:"state"`
+	ProviderPrepayDigest         []byte             `json:"provider_prepay_digest"`
+	Version                      int64              `json:"version"`
+	CreatedAt                    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                    pgtype.Timestamptz `json:"updated_at"`
+	ProviderJsapiContractVersion pgtype.Text        `json:"provider_jsapi_contract_version"`
+	ProviderJsapiAppID           pgtype.Text        `json:"provider_jsapi_app_id"`
+	ProviderJsapiTimestamp       pgtype.Int8        `json:"provider_jsapi_timestamp"`
+	ProviderJsapiNonceStr        pgtype.Text        `json:"provider_jsapi_nonce_str"`
+	ProviderJsapiPackage         pgtype.Text        `json:"provider_jsapi_package"`
+	ProviderJsapiSignType        pgtype.Text        `json:"provider_jsapi_sign_type"`
+	ProviderJsapiPaySign         pgtype.Text        `json:"provider_jsapi_pay_sign"`
+	ProviderJsapiExpiresAt       pgtype.Timestamptz `json:"provider_jsapi_expires_at"`
 }
 
 type OrderProviderCallbackReceipt struct {

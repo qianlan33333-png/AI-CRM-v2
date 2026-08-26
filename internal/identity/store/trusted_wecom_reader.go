@@ -2,9 +2,11 @@ package store
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
 	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
@@ -13,6 +15,7 @@ import (
 )
 
 var _ identityport.TrustedWeComIdentityReader = (*Repository)(nil)
+var _ identityport.VerifiedMPOpenIDReader = (*Repository)(nil)
 
 func (repository *Repository) ListPrimaryWeComExternalUserIDs(
 	ctx context.Context,
@@ -60,4 +63,34 @@ func (repository *Repository) ListPrimaryWeComExternalUserIDs(
 		})
 	}
 	return items, nil
+}
+
+func (repository *Repository) ResolveUniqueVerifiedMPOpenID(
+	ctx context.Context,
+	customerID contactport.CustomerID,
+	scope string,
+) (identityport.VerifiedMPOpenID, bool, error) {
+	if repository == nil || ctx == nil || customerID < 1 || !validMPOpenIDScope(scope) {
+		return identityport.VerifiedMPOpenID{}, false, identityapp.ErrInvalidIdentity
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return identityport.VerifiedMPOpenID{}, false, err
+	}
+	row, err := identitydb.New(tx).ResolveUniqueVerifiedMPOpenID(ctx, identitydb.ResolveUniqueVerifiedMPOpenIDParams{CustomerID: int64(customerID), Scope: scope})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return identityport.VerifiedMPOpenID{}, false, nil
+	}
+	if err != nil || strings.TrimSpace(row) != row || row == "" {
+		if err != nil {
+			return identityport.VerifiedMPOpenID{}, false, err
+		}
+		return identityport.VerifiedMPOpenID{}, false, identityapp.ErrInvalidIdentity
+	}
+	return identityport.VerifiedMPOpenID{CustomerID: customerID, OpenID: row}, true, nil
+}
+
+func validMPOpenIDScope(scope string) bool {
+	_, err := identityapp.Normalize(identityport.IDRef{Kind: identityport.KindMPOpenID, Scope: scope, Value: "scope-validation"})
+	return err == nil
 }

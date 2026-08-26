@@ -50,6 +50,21 @@ func TestClosedCallbackVerifierPaymentAndSignatureFailure(t *testing.T) {
 	}
 }
 
+func TestClosedCallbackVerifierBindsMerchant(t *testing.T) {
+	now := time.Date(2026, 8, 25, 10, 0, 0, 0, time.UTC)
+	body := []byte(`{"id":"event-1","event_type":"TRANSACTION.SUCCESS","resource_type":"encrypt-resource","resource":{"algorithm":"AEAD_AES_256_GCM","ciphertext":"cipher","nonce":"nonce","associated_data":"transaction"}}`)
+	plain := []byte(`{"appid":"other-app","mchid":"merchant-1","out_trade_no":"order-1","transaction_id":"transaction-1","trade_state":"SUCCESS","amount":{"total":1,"currency":"CNY"}}`)
+	verifier, err := NewClosedCallbackVerifier(callbackSignatureStub{}, callbackDecryptStub{payload: plain})
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifier.now = func() time.Time { return now }
+	verifier.expectedAppID, verifier.expectedMerchant = "app-1", "merchant-1"
+	if _, err = verifier.VerifyPayment(context.Background(), body, callbackHeaders(now)); !errors.Is(err, ErrInvalidWeChatPayCallback) {
+		t.Fatalf("cross-merchant callback err=%v", err)
+	}
+}
+
 func callbackHeaders(now time.Time) map[string]string {
 	return map[string]string{"Wechatpay-Timestamp": fmt.Sprint(now.Unix()), "Wechatpay-Nonce": "nonce", "Wechatpay-Serial": "serial", "Wechatpay-Signature": "signature"}
 }
