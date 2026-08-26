@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
+	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
 )
 
@@ -58,6 +60,69 @@ func TestWeComGroupMessageClientUsesGroupProtocolAndRefreshesToken(t *testing.T)
 	created, err := client.CreateGroupMessageTask(context.Background(), GroupMessageCreateRequest{Sender: "staff-1", ChatIDs: []string{"chat-1"}, Text: "hello group"})
 	if err != nil || created.MessageID != "msg-1" || created.Partial || grants != 2 || createCalls != 2 {
 		t.Fatalf("created=%+v err=%v grants=%d calls=%d", created, err, grants, createCalls)
+	}
+}
+
+func TestWeComGroupMessageClientSendsTypedMaterialManifestExactJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		switch request.URL.Path {
+		case "/cgi-bin/gettoken":
+			_, _ = writer.Write([]byte(`{"errcode":0,"access_token":"token","expires_in":7200}`))
+		case "/cgi-bin/externalcontact/add_msg_template":
+			var got map[string]any
+			if request.Method != http.MethodPost || json.NewDecoder(request.Body).Decode(&got) != nil {
+				t.Fatalf("request=%s body=%+v", request.Method, got)
+			}
+			want := map[string]any{
+				"chat_type": "group", "chat_id_list": []any{"chat-1"}, "sender": "staff-1", "allow_select": false,
+				"text": map[string]any{"content": "课程提醒"},
+				"attachments": []any{
+					map[string]any{"msgtype": "image", "image": map[string]any{"media_id": "image-1"}},
+					map[string]any{"msgtype": "miniprogram", "miniprogram": map[string]any{"appid": "wx-course", "page": "pages/today", "title": "今日课程", "pic_media_id": "cover-1"}},
+					map[string]any{"msgtype": "file", "file": map[string]any{"media_id": "file-1"}},
+					map[string]any{"msgtype": "link", "link": map[string]any{"title": "加入体验群", "url": "https://work.weixin.qq.com/gm/0123456789abcdef0123456789abcdef", "desc": "领取资料", "picurl": "https://example.com/group.png"}},
+				},
+			}
+			if !jsonEqual(got, want) {
+				t.Fatalf("got=%s want=%s", mustJSON(got), mustJSON(want))
+			}
+			_, _ = writer.Write([]byte(`{"errcode":0,"msgid":"msg-material-1"}`))
+		default:
+			t.Fatalf("unexpected path %s", request.URL.Path)
+		}
+	}))
+	defer server.Close()
+	credentials, err := wecomclient.NewCredentials("corp-1", "secret-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokens, err := wecomclient.NewTokenProvider(wecomclient.TokenProviderConfig{BaseURL: server.URL, Credentials: credentials, HTTPClient: server.Client(), Now: time.Now})
+	if err != nil {
+		t.Fatal(err)
+	}
+	client, err := NewWeComGroupMessageClient(WeComGroupMessageClientConfig{BaseURL: server.URL, HTTPClient: server.Client(), Token: tokens})
+	if err != nil {
+		t.Fatal(err)
+	}
+	attachments := typedMaterialAttachments()
+	created, err := client.CreateGroupMessageTask(context.Background(), GroupMessageCreateRequest{Sender: "staff-1", ChatIDs: []string{"chat-1"}, Text: "课程提醒", Attachments: attachments})
+	if err != nil || created.MessageID != "msg-material-1" {
+		t.Fatalf("created=%+v err=%v", created, err)
+	}
+}
+
+func TestWeComGroupMessageProviderAcceptsMaterialOnlySnapshot(t *testing.T) {
+	request := groupMessageDispatchRequest()
+	request.ContentSnapshot = []byte(`{"schema_version":1,"node_kind":"message","message_text":""}`)
+	request.MaterialSnapshot = materialSnapshot(typedMaterialAttachments())
+	creator := &materialOnlyCreatorStub{}
+	provider, err := NewWeComGroupMessageProvider(creator, &groupMessageReceiptWriterStub{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := provider.Dispatch(context.Background(), request)
+	if err != nil || result.Outcome != groupopsport.DispatchProviderAccepted || creator.calls != 1 {
+		t.Fatalf("result=%+v calls=%d err=%v", result, creator.calls, err)
 	}
 }
 
@@ -134,4 +199,42 @@ func groupMessageDispatchRequest() groupopsport.DispatchRequest {
 		ContentDigest:    groupMessageReceiptDigest("group-content"),
 		MaterialDigest:   groupMessageReceiptDigest("group-material"),
 	}
+}
+
+type materialOnlyCreatorStub struct{ calls int }
+
+func (stub *materialOnlyCreatorStub) CreateGroupMessageTask(_ context.Context, request GroupMessageCreateRequest) (GroupMessageCreateResult, error) {
+	stub.calls++
+	if request.Text != "" || request.Sender != "staff-1" || len(request.Attachments) != 4 {
+		return GroupMessageCreateResult{}, errors.New("unexpected material-only request")
+	}
+	return GroupMessageCreateResult{MessageID: "msg-1"}, nil
+}
+
+func typedMaterialAttachments() []mediaport.GroupOpsProviderReadyAttachment {
+	return []mediaport.GroupOpsProviderReadyAttachment{
+		{MsgType: "image", MediaID: "image-1"},
+		{MsgType: "miniprogram", AppID: "wx-course", PagePath: "pages/today", Title: "今日课程", MediaID: "cover-1"},
+		{MsgType: "file", MediaID: "file-1"},
+		{MsgType: "link", Title: "加入体验群", URL: "https://work.weixin.qq.com/gm/0123456789abcdef0123456789abcdef", Description: "领取资料", PicURL: "https://example.com/group.png"},
+	}
+}
+
+func materialSnapshot(attachments []mediaport.GroupOpsProviderReadyAttachment) []byte {
+	value, err := json.Marshal(mediaport.GroupOpsMaterialSnapshot{SchemaVersion: 2, NodeKind: "message", Attachments: attachments})
+	if err != nil {
+		panic(err)
+	}
+	return value
+}
+
+func jsonEqual(left, right any) bool {
+	leftJSON, _ := json.Marshal(left)
+	rightJSON, _ := json.Marshal(right)
+	return bytes.Equal(leftJSON, rightJSON)
+}
+
+func mustJSON(value any) string {
+	result, _ := json.Marshal(value)
+	return string(result)
 }

@@ -12,8 +12,10 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"unicode/utf8"
 
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
+	mediaport "github.com/qianlan33333-png/AI-CRM-v2/internal/media/port"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
 )
 
@@ -58,9 +60,10 @@ func NewWeComGroupMessageClient(config WeComGroupMessageClientConfig) (*WeComGro
 }
 
 type GroupMessageCreateRequest struct {
-	Sender  string
-	ChatIDs []string
-	Text    string
+	Sender      string
+	ChatIDs     []string
+	Text        string
+	Attachments []mediaport.GroupOpsProviderReadyAttachment
 }
 
 type GroupMessageCreateResult struct {
@@ -69,7 +72,7 @@ type GroupMessageCreateResult struct {
 }
 
 func (client *WeComGroupMessageClient) CreateGroupMessageTask(ctx context.Context, request GroupMessageCreateRequest) (GroupMessageCreateResult, error) {
-	if client == nil || ctx == nil || !validGroupMessageText(request.Sender, 128) || !validGroupMessageText(request.Text, 4000) || len(request.ChatIDs) == 0 || len(request.ChatIDs) > 2000 {
+	if client == nil || ctx == nil || !validGroupMessageText(request.Sender, 128) || !validGroupMessageBody(request.Text, request.Attachments) || len(request.ChatIDs) == 0 || len(request.ChatIDs) > 2000 {
 		return GroupMessageCreateResult{}, ErrInvalidWeComGroupMessage
 	}
 	chatIDs := append([]string(nil), request.ChatIDs...)
@@ -82,16 +85,53 @@ func (client *WeComGroupMessageClient) CreateGroupMessageTask(ctx context.Contex
 		MessageID string   `json:"msgid"`
 		FailList  []string `json:"fail_list"`
 	}
-	if err := client.post(ctx, "/cgi-bin/externalcontact/add_msg_template", map[string]any{
-		"chat_type": "group", "chat_id_list": chatIDs, "sender": request.Sender,
-		"allow_select": false, "text": map[string]string{"content": request.Text},
-	}, &response); err != nil {
+	payload := map[string]any{
+		"chat_type": "group", "chat_id_list": chatIDs, "sender": request.Sender, "allow_select": false,
+	}
+	if request.Text != "" {
+		payload["text"] = map[string]string{"content": request.Text}
+	}
+	if len(request.Attachments) != 0 {
+		payload["attachments"] = weComGroupMessageAttachments(request.Attachments)
+	}
+	if err := client.post(ctx, "/cgi-bin/externalcontact/add_msg_template", payload, &response); err != nil {
 		return GroupMessageCreateResult{}, err
 	}
 	if !validGroupMessageText(response.MessageID, 1024) {
 		return GroupMessageCreateResult{}, errWeComGroupOutcomeUnknown
 	}
 	return GroupMessageCreateResult{MessageID: response.MessageID, Partial: len(response.FailList) != 0}, nil
+}
+
+func validGroupMessageBody(text string, attachments []mediaport.GroupOpsProviderReadyAttachment) bool {
+	if !validOptionalGroupMessageText(text, 4000) || (text == "" && len(attachments) == 0) {
+		return false
+	}
+	return mediaport.ValidateGroupOpsProviderReadyAttachments(attachments) == nil
+}
+
+func weComGroupMessageAttachments(items []mediaport.GroupOpsProviderReadyAttachment) []map[string]any {
+	result := make([]map[string]any, len(items))
+	for index, item := range items {
+		switch item.MsgType {
+		case "image":
+			result[index] = map[string]any{"msgtype": "image", "image": map[string]string{"media_id": item.MediaID}}
+		case "file":
+			result[index] = map[string]any{"msgtype": "file", "file": map[string]string{"media_id": item.MediaID}}
+		case "miniprogram":
+			result[index] = map[string]any{"msgtype": "miniprogram", "miniprogram": map[string]string{"appid": item.AppID, "page": item.PagePath, "title": item.Title, "pic_media_id": item.MediaID}}
+		case "link":
+			link := map[string]string{"title": item.Title, "url": item.URL}
+			if item.Description != "" {
+				link["desc"] = item.Description
+			}
+			if item.PicURL != "" {
+				link["picurl"] = item.PicURL
+			}
+			result[index] = map[string]any{"msgtype": "link", "link": link}
+		}
+	}
+	return result
 }
 
 func (client *WeComGroupMessageClient) post(ctx context.Context, path string, payload any, target any) error {
@@ -166,7 +206,11 @@ func (err *weComGroupMessageAPIError) Error() string {
 func expiredTokenCode(code int) bool { return code == 40014 || code == 42001 }
 
 func validGroupMessageText(value string, limit int) bool {
-	return value != "" && len(value) <= limit && strings.TrimSpace(value) == value
+	return value != "" && validOptionalGroupMessageText(value, limit)
+}
+
+func validOptionalGroupMessageText(value string, limit int) bool {
+	return utf8.ValidString(value) && len(value) <= limit && strings.TrimSpace(value) == value
 }
 
 type groupMessageTaskCreator interface {
@@ -208,11 +252,10 @@ func (provider *WeComGroupMessageProvider) Dispatch(ctx context.Context, request
 		return preDispatchGroupMessageResult(request), nil
 	}
 	chatID := request.TargetReference
-	_ = material
 	if !validGroupMessageText(request.SenderUserID, 128) {
 		return preDispatchGroupMessageResult(request), nil
 	}
-	created, err := provider.client.CreateGroupMessageTask(ctx, GroupMessageCreateRequest{Sender: request.SenderUserID, ChatIDs: []string{chatID}, Text: content.MessageText})
+	created, err := provider.client.CreateGroupMessageTask(ctx, GroupMessageCreateRequest{Sender: request.SenderUserID, ChatIDs: []string{chatID}, Text: content.MessageText, Attachments: append([]mediaport.GroupOpsProviderReadyAttachment(nil), material.Attachments...)})
 	if err != nil {
 		return classifyGroupMessageCreateError(err, request, request.SenderUserID, chatID), nil
 	}
@@ -239,7 +282,9 @@ type groupMessageSnapshot struct {
 	MessageText   string `json:"message_text"`
 }
 
-type groupMessageMaterialSnapshot struct {
+type groupMessageMaterialSnapshot = mediaport.GroupOpsMaterialSnapshot
+
+type legacyGroupMessageMaterialSnapshot struct {
 	SchemaVersion int    `json:"schema_version"`
 	NodeKind      string `json:"node_kind"`
 	Reference     string `json:"reference"`
@@ -248,7 +293,23 @@ type groupMessageMaterialSnapshot struct {
 func groupMessageSnapshots(request groupopsport.DispatchRequest) (groupMessageSnapshot, groupMessageMaterialSnapshot, bool) {
 	var content groupMessageSnapshot
 	var material groupMessageMaterialSnapshot
-	if !strictDecode(request.ContentSnapshot, &content) || !strictDecode(request.MaterialSnapshot, &material) || content.SchemaVersion != 1 || material.SchemaVersion != 1 || content.NodeKind != "message" || material.NodeKind != "message" || !validGroupMessageText(content.MessageText, 4000) || material.Reference != "" {
+	if !strictDecode(request.ContentSnapshot, &content) || content.SchemaVersion != 1 || content.NodeKind != "message" || !validOptionalGroupMessageText(content.MessageText, 4000) {
+		return groupMessageSnapshot{}, groupMessageMaterialSnapshot{}, false
+	}
+	var header struct {
+		SchemaVersion int `json:"schema_version"`
+	}
+	if json.Unmarshal(request.MaterialSnapshot, &header) != nil {
+		return groupMessageSnapshot{}, groupMessageMaterialSnapshot{}, false
+	}
+	if header.SchemaVersion == 1 {
+		var legacy legacyGroupMessageMaterialSnapshot
+		if !strictDecode(request.MaterialSnapshot, &legacy) || legacy.NodeKind != "message" || legacy.Reference != "" || !validGroupMessageText(content.MessageText, 4000) {
+			return groupMessageSnapshot{}, groupMessageMaterialSnapshot{}, false
+		}
+		return content, material, true
+	}
+	if header.SchemaVersion != 2 || !strictDecode(request.MaterialSnapshot, &material) || mediaport.ValidateGroupOpsMaterialSnapshot(material) != nil || (content.MessageText == "" && len(material.Attachments) == 0) {
 		return groupMessageSnapshot{}, groupMessageMaterialSnapshot{}, false
 	}
 	return content, material, true
