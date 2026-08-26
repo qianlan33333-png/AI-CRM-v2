@@ -3,6 +3,7 @@ import { createServicePeriodMemberGridCollaboratorDto, deleteServicePeriodMember
 import { exportWechatOrdersDto } from './admin';
 import { readRadarSharePath } from './admin';
 import { exportRadarEventsCsv, readRadarEvents } from './admin';
+import { listGlobalQuestionnairePushLogsDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyAttachmentsUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
@@ -696,6 +697,14 @@ export async function runAdminAdapterTests(): Promise<void> {
   let pushTestMethod = '';
   globalThis.fetch = async (_input, init) => { pushTestMethod = init?.method || ''; return new Response(JSON.stringify({ test_run_id: 91, questionnaire_id: 4, status: 'queued', attempt_count: 0, real_external_call_executed: false }), { status: 202 }); };
   try { const testRun = await queueQuestionnairePushTestDto(4); assert(testRun.id === 91 && testRun.status === 'queued' && testRun.attemptCount === 0 && pushTestMethod === 'POST', 'questionnaire local push test mapping/method'); }
+  finally { globalThis.fetch = savedFetch; }
+  const globalPushCalls: Array<{ input: string; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => { globalPushCalls.push({ input: String(input), init }); return new Response(JSON.stringify({ items: [{ test_run_id: 92, questionnaire_id: 4, status: 'queued', attempt_count: 0, side_effect_executed: false, provider_result_received: false, unknown_after_dispatch: false, auto_retry_allowed: false, created_at: '2026-08-27T00:00:00Z', updated_at: '2026-08-27T00:00:00Z' }], total: 1, limit: 100, offset: 0, has_more: false, local_only: true }), { status: 200 }); };
+  try { const logs = await listGlobalQuestionnairePushLogsDto(); assert(globalPushCalls.length === 1 && globalPushCalls[0].input === '/admin/questionnaires/external-push-logs?limit=100&offset=0' && globalPushCalls[0].init?.method === 'GET' && logs[0]?.sid === '#92' && logs[0]?.uid === '#4' && logs[0]?.err.includes('未执行外部派发'), 'global questionnaire push logs use local-only generated read'); }
+  finally { globalThis.fetch = savedFetch; }
+  globalThis.fetch = async () => new Response(JSON.stringify({ items: [{ test_run_id: 92, questionnaire_id: 4, status: 'queued', attempt_count: 0, side_effect_executed: true, provider_result_received: false, unknown_after_dispatch: false, auto_retry_allowed: false, created_at: '2026-08-27T00:00:00Z', updated_at: '2026-08-27T00:00:00Z' }], total: 1, limit: 100, offset: 0, has_more: false, local_only: true }), { status: 200 });
+  try { await listGlobalQuestionnairePushLogsDto(); assert(false, 'global push log with external effect was accepted'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('仅本地 queued'), 'global push log with external effect fails closed'); }
   finally { globalThis.fetch = savedFetch; }
 
   const hxcMapped = hxcSenderPageDto({ id: 'cfg-1', sender_userid: 'alice', display_name: 'Alice', priority: 2, is_active: true, created_at: '', updated_at: '' });

@@ -47,6 +47,7 @@ import { deleteProductDto } from '../../api/admin';
 import { archiveCouponDto, copyCouponDto, deleteCouponDto, saveCouponDto, setCouponPublishedDto, type CouponWriteInput } from '../../api/admin';
 import { deleteQuestionnaireDto, duplicateQuestionnaireDto, queueQuestionnairePushTestDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, setQuestionnaireEnabledDto, type QuestionnaireWriteInput } from '../../api/admin';
 import { getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getChannelDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listChannelEntrantsDto, publishChannelAcquisitionAssetDto, saveChannelDto, updateChannelAcquisitionAssigneesDto, type ChannelWriteInput } from '../../api/admin';
+import { listGlobalQuestionnairePushLogsDto } from '../../api/admin';
 import { materializeAudienceConfigurationDto, previewAudienceConfigurationDto, replaceAudienceSendersDto, saveAudiencePackageDto, setAudienceBindingDto, snapshotAudienceConfigurationDto, type AudienceEvaluation, type AudiencePackageWriteInput } from '../../api/admin';
 import type { AIAudiencePackageSender } from '../../api/generated/health';
 import { deleteGroupOpsPlanDto, saveGroupOpsPlanDto, transitionGroupOpsPlanDto, type GroupOpsWriteInput } from '../../api/admin';
@@ -129,6 +130,7 @@ export interface AdminApi {
   /* ---- 问卷 · 运营配置 ---- */
   saveQuestionnaireOps(qid: number, ops: QuestionnaireOps): Promise<void>;
   queueQuestionnairePushTest(qid: number): Promise<{ id: number; status: string; attemptCount: number }>;
+  listGlobalQuestionnairePushLogs(): Promise<AdminDb['rows']['qApply']>;
   saveQuestionnaire(input: QuestionnaireWriteInput, publish: boolean): Promise<Questionnaire>;
   setQuestionnaireEnabled(questionnaireId: number, enabled: boolean): Promise<void>;
   duplicateQuestionnaire(questionnaireId: number): Promise<Questionnaire>;
@@ -641,6 +643,7 @@ export class MockApi implements AdminApi {
     return delay(undefined, 500);
   }
   queueQuestionnairePushTest(qid: number): Promise<{ id: number; status: string; attemptCount: number }> { return delay({ id: qid, status: 'queued', attemptCount: 0 }); }
+  listGlobalQuestionnairePushLogs(): Promise<AdminDb['rows']['qApply']> { return Promise.reject(new Error('backend_blocked：测试/本地模式不使用 Mock 全局外推日志')); }
 
   saveQuestionnaire(input: QuestionnaireWriteInput, publish: boolean): Promise<Questionnaire> {
     const item = input.id == null
@@ -973,6 +976,7 @@ export class HttpApi implements AdminApi {
     return saveQuestionnaireOpsDto(qid, ops);
   }
   queueQuestionnairePushTest(qid: number): Promise<{ id: number; status: string; attemptCount: number }> { return queueQuestionnairePushTestDto(qid); }
+  listGlobalQuestionnairePushLogs(): Promise<AdminDb['rows']['qApply']> { return listGlobalQuestionnairePushLogsDto(); }
   saveQuestionnaire(input: QuestionnaireWriteInput, publish: boolean): Promise<Questionnaire> { return saveQuestionnaireDto(input, publish); }
   setQuestionnaireEnabled(questionnaireId: number, enabled: boolean): Promise<void> { return setQuestionnaireEnabledDto(questionnaireId, enabled); }
   duplicateQuestionnaire(questionnaireId: number): Promise<Questionnaire> { return duplicateQuestionnaireDto(questionnaireId); }
