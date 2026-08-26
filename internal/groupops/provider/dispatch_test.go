@@ -26,10 +26,10 @@ func TestDispatchAdapterClassifiesProviderBoundaryWithoutDeliveryClaim(t *testin
 		real     bool
 	}{
 		{name: "pre dispatch", result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchPreDispatchFailure}, want: eer.CompletionFinalFailed},
-		{name: "accepted", result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: string(digest("accepted"))}, want: eer.CompletionExecuted, business: true, real: true},
-		{name: "unknown", result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchOutcomeUnknown}, want: eer.CompletionOutcomeUnknown, business: true, real: true},
-		{name: "rejected", result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderRejected, ReceiptDigest: string(digest("rejected"))}, want: eer.CompletionFinalFailed, business: true, real: true},
-		{name: "boundary error", err: errors.New("controlled transport interruption"), business: true, real: true},
+		{name: "accepted", result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: string(digest("accepted")), BusinessCallDispatched: true, RealExternalCallExecuted: true}, want: eer.CompletionExecuted, business: true, real: true},
+		{name: "unknown", result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchOutcomeUnknown, BusinessCallDispatched: true, RealExternalCallExecuted: true}, want: eer.CompletionOutcomeUnknown, business: true, real: true},
+		{name: "rejected", result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderRejected, ReceiptDigest: string(digest("rejected")), BusinessCallDispatched: true, RealExternalCallExecuted: true}, want: eer.CompletionFinalFailed, business: true, real: true},
+		{name: "boundary error", result: groupopsport.DispatchProviderResult{BusinessCallDispatched: true, RealExternalCallExecuted: true}, err: errors.New("controlled transport interruption"), business: true, real: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			provider := &providerStub{result: test.result, err: test.err}
@@ -45,6 +45,21 @@ func TestDispatchAdapterClassifiesProviderBoundaryWithoutDeliveryClaim(t *testin
 				t.Fatalf("accepted result missing receipt: %+v", result)
 			}
 		})
+	}
+}
+
+func TestDispatchAdapterRejectsImplicitRealExternalCall(t *testing.T) {
+	adapter, err := NewDispatchAdapter(&providerStub{result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: string(digest("accepted"))}}, testExecution())
+	if err != nil {
+		t.Fatal(err)
+	}
+	envelope, err := eer.NewEnvelope(eer.EnvelopeInput{Owner: eer.OwnerGroupOps, Kind: eer.KindGroupOpsBroadcast, SourceRefDigest: digest("source"), TargetRefDigest: digest("target"), PayloadDigest: digest("payload"), PolicyVersionHash: digest("policy")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := adapter.Execute(context.Background(), envelope, eer.Attempt{Number: 1, Generation: 1, Fence: 1})
+	if !errors.Is(err, ErrInvalidDispatch) || result.BusinessCallDispatched || result.RealExternalCallExecuted {
+		t.Fatalf("result=%+v err=%v", result, err)
 	}
 }
 

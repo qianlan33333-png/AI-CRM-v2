@@ -89,7 +89,7 @@ func TestRuntimeManualReconcilePersistsMatchingEERAndExecutionFacts(t *testing.T
 		ExecutionID: execution.ID, ActorID: 7, IdempotencyKey: "group-ops-reconcile-0001", Generation: 2, Fence: 3,
 		LeaseExpiresAt: time.Date(2026, 8, 25, 9, 0, 0, 0, time.UTC), EvidenceDigest: string(runtimeDigest("evidence", "official-provider-receipt")), DeliveryProven: true,
 	})
-	if err != nil || reconciled.State != groupopsport.ExecutionReconciled || !reconciled.ProviderAccepted || !reconciled.DeliveryProven || !reconciled.ReconciliationEvidencePresent || effects.reconciles != 1 {
+	if err != nil || reconciled.State != groupopsport.ExecutionReconciled || reconciled.ProviderAccepted || reconciled.DeliveryProven || !reconciled.ReconciliationEvidencePresent || effects.reconciles != 1 {
 		t.Fatalf("reconciled=%+v err=%v reconciles=%d", reconciled, err, effects.reconciles)
 	}
 	_, err = service.ManualReconcile(context.Background(), groupopsport.ManualReconcileCommand{
@@ -101,6 +101,22 @@ func TestRuntimeManualReconcilePersistsMatchingEERAndExecutionFacts(t *testing.T
 	}
 	if _, err = service.ManualReconcile(context.Background(), groupopsport.ManualReconcileCommand{ExecutionID: execution.ID}); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("invalid reconcile err=%v", err)
+	}
+}
+
+func TestRuntimeManualReconcileOnlyVerifierCanEstablishDelivery(t *testing.T) {
+	service, _, _ := newRuntimeFixture(t, evidenceVerifierStub{delivery: true})
+	summary, err := service.RunDue(context.Background(), groupopsport.RunDueCommand{PlanID: 91, ActorID: 7, IdempotencyKey: "group-ops-run-due-verified"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	execution, err := service.ProjectExecutionOutcome(context.Background(), groupopsport.ExecutionOutcomeCommand{ExecutionID: summary.Executions[0].ID, State: groupopsport.ExecutionOutcomeUnknown, AttemptCount: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	reconciled, err := service.ManualReconcile(context.Background(), groupopsport.ManualReconcileCommand{ExecutionID: execution.ID, ActorID: 7, IdempotencyKey: "group-ops-reconcile-verified", Generation: 2, Fence: 3, LeaseExpiresAt: time.Date(2026, 8, 25, 9, 0, 0, 0, time.UTC), EvidenceDigest: string(runtimeDigest("evidence", "verified")), DeliveryProven: false})
+	if err != nil || !reconciled.ProviderAccepted || !reconciled.DeliveryProven {
+		t.Fatalf("reconciled=%+v err=%v", reconciled, err)
 	}
 }
 
@@ -133,7 +149,7 @@ func TestRuntimeGroupRefreshIsDisabledByDefault(t *testing.T) {
 	}
 }
 
-func newRuntimeFixture(t *testing.T) (*RuntimeService, *runtimeStoreFixture, *runtimeEffectsFixture) {
+func newRuntimeFixture(t *testing.T, evidence ...groupopsport.ReconciliationEvidenceVerifier) (*RuntimeService, *runtimeStoreFixture, *runtimeEffectsFixture) {
 	t.Helper()
 	anchor := time.Date(2026, 8, 25, 8, 0, 0, 0, time.UTC)
 	plans := &testStore{details: map[int64]groupopsport.Detail{91: {
@@ -149,12 +165,21 @@ func newRuntimeFixture(t *testing.T) (*RuntimeService, *runtimeStoreFixture, *ru
 	}}, receipts: map[string]Receipt{}}
 	runtime := &runtimeStoreFixture{runs: map[string]groupopsport.Run{}, executions: map[int64]groupopsport.Execution{}, webhookPlan: 91}
 	effects := &runtimeEffectsFixture{}
-	service, err := NewRuntimeService(testUOW{}, plans, runtime, effects, runtimeStaffFixture{}, nil)
+	service, err := NewRuntimeService(testUOW{}, plans, runtime, effects, runtimeStaffFixture{}, nil, evidence...)
 	if err != nil {
 		t.Fatal(err)
 	}
 	service.now = func() time.Time { return anchor.Add(10 * time.Minute) }
 	return service, runtime, effects
+}
+
+type evidenceVerifierStub struct{ delivery bool }
+
+func (stub evidenceVerifierStub) VerifyReconciliationEvidence(_ context.Context, evidence groupopsport.ReconciliationEvidence) (groupopsport.ReconciliationEvidenceResult, error) {
+	if evidence.ExecutionID < 1 || evidence.ExternalEffectID == "" || evidence.EvidenceDigest == "" {
+		return groupopsport.ReconciliationEvidenceResult{}, errors.New("invalid evidence")
+	}
+	return groupopsport.ReconciliationEvidenceResult{DeliveryProven: stub.delivery}, nil
 }
 
 type runtimeStaffFixture struct{}

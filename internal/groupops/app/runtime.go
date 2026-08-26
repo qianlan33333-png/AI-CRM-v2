@@ -74,20 +74,28 @@ type RuntimeEffects interface {
 }
 
 type RuntimeService struct {
-	uow     platformport.UnitOfWork
-	plans   Store
-	runtime RuntimeStore
-	effects RuntimeEffects
-	staff   contactport.StaffDirectoryReader
-	groups  groupopsport.GroupDirectorySource
-	now     func() time.Time
+	uow      platformport.UnitOfWork
+	plans    Store
+	runtime  RuntimeStore
+	effects  RuntimeEffects
+	staff    contactport.StaffDirectoryReader
+	groups   groupopsport.GroupDirectorySource
+	evidence groupopsport.ReconciliationEvidenceVerifier
+	now      func() time.Time
 }
 
-func NewRuntimeService(uow platformport.UnitOfWork, plans Store, runtime RuntimeStore, effects RuntimeEffects, staff contactport.StaffDirectoryReader, groups groupopsport.GroupDirectorySource) (*RuntimeService, error) {
+func NewRuntimeService(uow platformport.UnitOfWork, plans Store, runtime RuntimeStore, effects RuntimeEffects, staff contactport.StaffDirectoryReader, groups groupopsport.GroupDirectorySource, evidence ...groupopsport.ReconciliationEvidenceVerifier) (*RuntimeService, error) {
 	if nilRuntimeDependency(uow) || nilRuntimeDependency(plans) || nilRuntimeDependency(runtime) || nilRuntimeDependency(effects) || nilRuntimeDependency(staff) {
 		return nil, ErrUnavailable
 	}
-	return &RuntimeService{uow: uow, plans: plans, runtime: runtime, effects: effects, staff: staff, groups: groups, now: time.Now}, nil
+	if len(evidence) > 1 {
+		return nil, ErrUnavailable
+	}
+	service := &RuntimeService{uow: uow, plans: plans, runtime: runtime, effects: effects, staff: staff, groups: groups, now: time.Now}
+	if len(evidence) == 1 && !nilRuntimeDependency(evidence[0]) {
+		service.evidence = evidence[0]
+	}
+	return service, nil
 }
 
 func (service *RuntimeService) PreviewRunDue(ctx context.Context, planID int64) (groupopsport.RunDuePreview, error) {
@@ -364,6 +372,14 @@ func (service *RuntimeService) ManualReconcile(ctx context.Context, command grou
 		if current.State != groupopsport.ExecutionOutcomeUnknown || current.ExternalEffectID == "" {
 			return ErrStateConflict
 		}
+		deliveryProven := false
+		if service.evidence != nil {
+			verified, verifyErr := service.evidence.VerifyReconciliationEvidence(tx, groupopsport.ReconciliationEvidence{ExecutionID: current.ID, ExternalEffectID: current.ExternalEffectID, EvidenceDigest: command.EvidenceDigest})
+			if verifyErr != nil {
+				return errors.Join(ErrUnavailable, verifyErr)
+			}
+			deliveryProven = verified.DeliveryProven
+		}
 		projection, _, err := service.effects.Reconcile(tx, eer.ReconcileCommand{
 			Lease:            eer.Lease{EffectID: current.ExternalEffectID, Generation: command.Generation, Fence: command.Fence, ExpiresAt: command.LeaseExpiresAt},
 			ReceiptKeyDigest: runtimeDigest("group-ops-manual-reconcile", strconv.FormatInt(command.ExecutionID, 10), strconv.FormatInt(command.ActorID, 10), command.IdempotencyKey),
@@ -372,11 +388,11 @@ func (service *RuntimeService) ManualReconcile(ctx context.Context, command grou
 		if err != nil || projection.ID != current.ExternalEffectID || projection.Owner != eer.OwnerGroupOps || projection.Kind != eer.KindGroupOpsBroadcast || projection.State != eer.StateReconciled {
 			return errors.Join(ErrUnavailable, err)
 		}
-		result, err = service.runtime.ReconcileExecution(tx, command.ExecutionID, command.EvidenceDigest, command.DeliveryProven, service.nowUTC())
+		result, err = service.runtime.ReconcileExecution(tx, command.ExecutionID, command.EvidenceDigest, deliveryProven, service.nowUTC())
 		if err != nil {
 			return err
 		}
-		if result.State != groupopsport.ExecutionReconciled || !result.ReconciliationEvidencePresent || result.DeliveryProven != command.DeliveryProven || (command.DeliveryProven && !result.ProviderAccepted) {
+		if result.State != groupopsport.ExecutionReconciled || !result.ReconciliationEvidencePresent || result.DeliveryProven != deliveryProven || (deliveryProven && !result.ProviderAccepted) {
 			return ErrUnavailable
 		}
 		return nil

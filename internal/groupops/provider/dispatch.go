@@ -46,21 +46,26 @@ func (adapter *DispatchAdapter) Execute(ctx context.Context, envelope eer.Effect
 	}
 	result, err := adapter.provider.Dispatch(ctx, copyRequest(adapter.request))
 	if err != nil {
-		return eer.AdapterResult{BusinessCallDispatched: true, RealExternalCallExecuted: true}, err
+		return eer.AdapterResult{BusinessCallDispatched: result.BusinessCallDispatched, RealExternalCallExecuted: result.RealExternalCallExecuted && result.BusinessCallDispatched}, err
 	}
 	mapped, err := adapterResult(result, adapter.request.ExternalEffectID)
 	if err != nil {
-		// The Provider returned an unclassifiable answer after Dispatch was
-		// invoked. Preserve that boundary fact so EER records outcome_unknown.
-		return eer.AdapterResult{BusinessCallDispatched: true, RealExternalCallExecuted: true}, err
+		// An unclassifiable result cannot create call evidence by inference.
+		return eer.AdapterResult{BusinessCallDispatched: result.BusinessCallDispatched, RealExternalCallExecuted: result.RealExternalCallExecuted && result.BusinessCallDispatched}, err
 	}
 	return mapped, nil
 }
 
 func adapterResult(result groupopsport.DispatchProviderResult, effectID string) (eer.AdapterResult, error) {
 	receipt := eer.Digest(result.ReceiptDigest)
+	if result.RealExternalCallExecuted && !result.BusinessCallDispatched {
+		return eer.AdapterResult{}, ErrInvalidDispatch
+	}
 	switch result.Outcome {
 	case groupopsport.DispatchPreDispatchFailure:
+		if result.BusinessCallDispatched || result.RealExternalCallExecuted {
+			return eer.AdapterResult{}, ErrInvalidDispatch
+		}
 		if receipt == "" {
 			receipt = localReceipt("pre-dispatch", effectID)
 		}
@@ -69,23 +74,26 @@ func adapterResult(result groupopsport.DispatchProviderResult, effectID string) 
 		}
 		return eer.AdapterResult{Completion: eer.CompletionFinalFailed, ReceiptDigest: receipt}, nil
 	case groupopsport.DispatchProviderAccepted:
-		if !validDigest(receipt) {
+		if !validDigest(receipt) || !result.BusinessCallDispatched || !result.RealExternalCallExecuted {
 			return eer.AdapterResult{}, ErrInvalidDispatch
 		}
-		return eer.AdapterResult{Completion: eer.CompletionExecuted, ReceiptDigest: receipt, ResultReferenceDigest: receipt, BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
+		return eer.AdapterResult{Completion: eer.CompletionExecuted, ReceiptDigest: receipt, ResultReferenceDigest: receipt, BusinessCallDispatched: result.BusinessCallDispatched, RealExternalCallExecuted: result.RealExternalCallExecuted}, nil
 	case groupopsport.DispatchOutcomeUnknown:
+		if !result.BusinessCallDispatched || !result.RealExternalCallExecuted {
+			return eer.AdapterResult{}, ErrInvalidDispatch
+		}
 		if receipt == "" {
 			receipt = localReceipt("outcome-unknown", effectID)
 		}
 		if !validDigest(receipt) {
 			return eer.AdapterResult{}, ErrInvalidDispatch
 		}
-		return eer.AdapterResult{Completion: eer.CompletionOutcomeUnknown, ReceiptDigest: receipt, BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
+		return eer.AdapterResult{Completion: eer.CompletionOutcomeUnknown, ReceiptDigest: receipt, BusinessCallDispatched: result.BusinessCallDispatched, RealExternalCallExecuted: result.RealExternalCallExecuted}, nil
 	case groupopsport.DispatchProviderRejected:
-		if !validDigest(receipt) {
+		if !validDigest(receipt) || !result.BusinessCallDispatched || !result.RealExternalCallExecuted {
 			return eer.AdapterResult{}, ErrInvalidDispatch
 		}
-		return eer.AdapterResult{Completion: eer.CompletionFinalFailed, ReceiptDigest: receipt, ResultReferenceDigest: receipt, BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
+		return eer.AdapterResult{Completion: eer.CompletionFinalFailed, ReceiptDigest: receipt, ResultReferenceDigest: receipt, BusinessCallDispatched: result.BusinessCallDispatched, RealExternalCallExecuted: result.RealExternalCallExecuted}, nil
 	default:
 		return eer.AdapterResult{}, ErrInvalidDispatch
 	}

@@ -22,9 +22,9 @@ func TestDispatchWorkerProjectsControlledProviderTerminalStates(t *testing.T) {
 		manual   bool
 	}{
 		{name: "pre dispatch", provider: providerStub{result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchPreDispatchFailure}}, want: groupopsport.ExecutionFinalFailed},
-		{name: "accepted", provider: providerStub{result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: string(digest("accepted"))}}, want: groupopsport.ExecutionProviderAccepted, attempt: true, real: true},
-		{name: "unknown", provider: providerStub{result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchOutcomeUnknown}}, want: groupopsport.ExecutionOutcomeUnknown, attempt: true, real: true, manual: true},
-		{name: "boundary error", provider: providerStub{err: errors.New("controlled transport interruption")}, want: groupopsport.ExecutionOutcomeUnknown, attempt: true, real: true, manual: true},
+		{name: "accepted", provider: providerStub{result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: string(digest("accepted")), BusinessCallDispatched: true, RealExternalCallExecuted: true}}, want: groupopsport.ExecutionProviderAccepted, attempt: true, real: true},
+		{name: "unknown", provider: providerStub{result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchOutcomeUnknown, BusinessCallDispatched: true, RealExternalCallExecuted: true}}, want: groupopsport.ExecutionOutcomeUnknown, attempt: true, real: true, manual: true},
+		{name: "boundary error", provider: providerStub{result: groupopsport.DispatchProviderResult{BusinessCallDispatched: true, RealExternalCallExecuted: true}, err: errors.New("controlled transport interruption")}, want: groupopsport.ExecutionOutcomeUnknown, attempt: true, real: true, manual: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			reader := &readerStub{execution: dispatchExecution(groupopsport.ExecutionAccepted)}
@@ -52,7 +52,7 @@ func TestDispatchWorkerProjectsControlledProviderTerminalStates(t *testing.T) {
 }
 
 func TestDispatchWorkerNeverReplaysOutcomeUnknown(t *testing.T) {
-	provider := &providerStub{result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: string(digest("accepted"))}}
+	provider := &providerStub{result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: string(digest("accepted")), BusinessCallDispatched: true, RealExternalCallExecuted: true}}
 	runtime := &runtimeStub{}
 	worker, err := NewDispatchWorker(&readerStub{execution: dispatchExecution(groupopsport.ExecutionOutcomeUnknown)}, &projectorStub{}, runtime, provider)
 	if err != nil {
@@ -65,7 +65,7 @@ func TestDispatchWorkerNeverReplaysOutcomeUnknown(t *testing.T) {
 }
 
 func TestDispatchWorkerRecoversTerminalEERBeforeCallingProvider(t *testing.T) {
-	provider := &providerStub{result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: string(digest("unexpected"))}}
+	provider := &providerStub{result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: string(digest("unexpected")), BusinessCallDispatched: true, RealExternalCallExecuted: true}}
 	runtime := &runtimeStub{terminal: eer.TerminalOutcome{EffectID: "eer_41", Owner: eer.OwnerGroupOps, Kind: eer.KindGroupOpsBroadcast, State: eer.StateExecuted, ReceiptDigest: digest("accepted")}}
 	projector := &projectorStub{}
 	worker, err := NewDispatchWorker(&readerStub{execution: dispatchExecution(groupopsport.ExecutionAccepted)}, projector, runtime, provider)
@@ -73,8 +73,24 @@ func TestDispatchWorkerRecoversTerminalEERBeforeCallingProvider(t *testing.T) {
 		t.Fatal(err)
 	}
 	result, err := worker.Dispatch(context.Background(), "eer_41", digest("worker"))
-	if err != nil || result.State != groupopsport.ExecutionProviderAccepted || !result.ProviderAccepted || !result.ProviderCallAttempted || !result.RealExternalCallExecuted || provider.calls != 0 || runtime.claims != 0 || runtime.runs != 0 || projector.command.ProviderReceiptDigest != string(digest("accepted")) {
+	if err != nil || result.State != groupopsport.ExecutionProviderAccepted || !result.ProviderAccepted || result.ProviderCallAttempted || result.RealExternalCallExecuted || provider.calls != 0 || runtime.claims != 0 || runtime.runs != 0 || projector.command.ProviderReceiptDigest != string(digest("accepted")) {
 		t.Fatalf("result=%+v err=%v calls=%d claims=%d runs=%d command=%+v", result, err, provider.calls, runtime.claims, runtime.runs, projector.command)
+	}
+}
+
+func TestDispatchWorkerRecoversExpiredAttemptToUnknownWithoutProviderReplay(t *testing.T) {
+	provider := &providerStub{result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: string(digest("unexpected")), BusinessCallDispatched: true, RealExternalCallExecuted: true}}
+	runtime := &runtimeStub{}
+	execution := dispatchExecution(groupopsport.ExecutionAccepted)
+	execution.AttemptRecovery = &groupopsport.AttemptRecoveryLease{Generation: 2, Fence: 3, ExpiresAt: time.Now().UTC().Add(-time.Minute)}
+	projector := &projectorStub{}
+	worker, err := NewDispatchWorker(&readerStub{execution: execution}, projector, runtime, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := worker.Dispatch(context.Background(), "eer_41", digest("worker"))
+	if err != nil || result.State != groupopsport.ExecutionOutcomeUnknown || !result.ManualReconcileRequired || result.ProviderCallAttempted || result.RealExternalCallExecuted || provider.calls != 0 || runtime.recovers != 1 || runtime.claims != 0 || runtime.runs != 0 || projector.command.State != groupopsport.ExecutionOutcomeUnknown {
+		t.Fatalf("result=%+v err=%v calls=%d recovers=%d claims=%d runs=%d command=%+v", result, err, provider.calls, runtime.recovers, runtime.claims, runtime.runs, projector.command)
 	}
 }
 
@@ -101,6 +117,7 @@ func (stub *projectorStub) ProjectExecutionOutcome(_ context.Context, command gr
 type runtimeStub struct {
 	claims   int
 	runs     int
+	recovers int
 	terminal eer.TerminalOutcome
 }
 
@@ -129,6 +146,12 @@ func (stub *runtimeStub) RunAttempt(ctx context.Context, lease eer.Lease, adapte
 	now := time.Now().UTC()
 	projection := eer.Projection{ID: lease.EffectID, Owner: eer.OwnerGroupOps, Kind: eer.KindGroupOpsBroadcast, State: state, AttemptCount: 1, Generation: lease.Generation, UpdatedAt: now}
 	return projection, eer.OperationReceipt{ID: "attempt", EffectID: lease.EffectID, CommandDigest: result.ReceiptDigest, State: state, CompletedAt: now}, adapterErr
+}
+
+func (stub *runtimeStub) RecoverAttemptedToUnknown(_ context.Context, command eer.RecoverAttemptedCommand) (eer.Projection, eer.OperationReceipt, error) {
+	stub.recovers++
+	now := time.Now().UTC()
+	return eer.Projection{ID: command.Lease.EffectID, Owner: eer.OwnerGroupOps, Kind: eer.KindGroupOpsBroadcast, State: eer.StateOutcomeUnknown, AttemptCount: 1, Generation: command.Lease.Generation, UpdatedAt: now}, eer.OperationReceipt{ID: "recover", EffectID: command.Lease.EffectID, CommandDigest: digest("recover"), State: eer.StateOutcomeUnknown, CompletedAt: now}, nil
 }
 
 func (stub *runtimeStub) GetTerminalOutcome(_ context.Context, effectID string) (eer.TerminalOutcome, error) {

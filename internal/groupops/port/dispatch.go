@@ -3,6 +3,7 @@ package port
 import (
 	"context"
 	"encoding/json"
+	"time"
 )
 
 // DispatchExecution is the immutable execution snapshot a Group Ops worker
@@ -13,11 +14,21 @@ type DispatchExecution struct {
 	ExternalEffectID string
 	State            ExecutionState
 	DeliveryProven   bool
+	AttemptRecovery  *AttemptRecoveryLease
 	TargetReference  string
 	ContentSnapshot  json.RawMessage
 	ContentDigest    string
 	MaterialSnapshot json.RawMessage
 	MaterialDigest   string
+}
+
+// AttemptRecoveryLease is populated only when the EER effect is still
+// attempted and its persisted lease has expired. It lets the worker close the
+// attempt as outcome_unknown without calling the Provider again.
+type AttemptRecoveryLease struct {
+	Generation int64
+	Fence      int64
+	ExpiresAt  time.Time
 }
 
 // DispatchExecutionReader must load the immutable 00085 snapshot for one EER
@@ -31,6 +42,23 @@ type DispatchExecutionReader interface {
 // after EER has completed an attempt. RuntimeService implements this boundary.
 type ExecutionOutcomeProjector interface {
 	ProjectExecutionOutcome(context.Context, ExecutionOutcomeCommand) (Execution, error)
+}
+
+// ReconciliationEvidenceVerifier is deliberately protocol-neutral. It alone
+// may establish delivery_proven from independently verified evidence; caller
+// input is never evidence. A nil verifier fails closed to false.
+type ReconciliationEvidenceVerifier interface {
+	VerifyReconciliationEvidence(context.Context, ReconciliationEvidence) (ReconciliationEvidenceResult, error)
+}
+
+type ReconciliationEvidence struct {
+	ExecutionID      int64
+	ExternalEffectID string
+	EvidenceDigest   string
+}
+
+type ReconciliationEvidenceResult struct {
+	DeliveryProven bool
 }
 
 type DispatchOutcome string
@@ -70,10 +98,14 @@ type DispatchProvider interface {
 }
 
 // DispatchProviderResult exposes only a safe digest, never Provider request,
-// response, credential, or delivery evidence.
+// response, credential, or delivery evidence. Call evidence is explicit: test
+// and sandbox Providers must leave both fields false unless they observed the
+// corresponding business boundary crossing.
 type DispatchProviderResult struct {
-	Outcome       DispatchOutcome
-	ReceiptDigest string
+	Outcome                  DispatchOutcome
+	ReceiptDigest            string
+	BusinessCallDispatched   bool
+	RealExternalCallExecuted bool
 }
 
 // DispatchResult is the owner-safe worker projection. Provider acceptance is

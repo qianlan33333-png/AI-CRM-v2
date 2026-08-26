@@ -22,6 +22,7 @@ var (
 type Runtime interface {
 	Claim(context.Context, eer.ClaimCommand) (eer.Lease, eer.Projection, error)
 	RunAttempt(context.Context, eer.Lease, eer.Adapter) (eer.Projection, eer.OperationReceipt, error)
+	RecoverAttemptedToUnknown(context.Context, eer.RecoverAttemptedCommand) (eer.Projection, eer.OperationReceipt, error)
 	GetTerminalOutcome(context.Context, string) (eer.TerminalOutcome, error)
 }
 
@@ -58,6 +59,9 @@ func (worker *DispatchWorker) Dispatch(ctx context.Context, effectID string, wor
 	} else if !errors.Is(terminalErr, eer.ErrNotFound) {
 		return groupopsport.DispatchResult{}, ErrUnavailable
 	}
+	if execution.AttemptRecovery != nil {
+		return worker.recoverAttempted(ctx, execution)
+	}
 	adapter, err := groupopsprovider.NewDispatchAdapter(worker.provider, execution)
 	if err != nil {
 		return groupopsport.DispatchResult{}, ErrUnavailable
@@ -91,6 +95,22 @@ func (worker *DispatchWorker) Dispatch(ctx context.Context, effectID string, wor
 	return result, nil
 }
 
+func (worker *DispatchWorker) recoverAttempted(ctx context.Context, execution groupopsport.DispatchExecution) (groupopsport.DispatchResult, error) {
+	recovery := execution.AttemptRecovery
+	if recovery == nil || recovery.Generation < 1 || recovery.Fence < 1 || recovery.ExpiresAt.IsZero() {
+		return groupopsport.DispatchResult{}, ErrUnavailable
+	}
+	projection, _, err := worker.runtime.RecoverAttemptedToUnknown(ctx, eer.RecoverAttemptedCommand{Lease: eer.Lease{EffectID: execution.ExternalEffectID, Generation: recovery.Generation, Fence: recovery.Fence, ExpiresAt: recovery.ExpiresAt}})
+	if err != nil || projection.ID != execution.ExternalEffectID || projection.Owner != eer.OwnerGroupOps || projection.Kind != eer.KindGroupOpsBroadcast || projection.State != eer.StateOutcomeUnknown || projection.AttemptCount < 1 {
+		return groupopsport.DispatchResult{}, ErrUnavailable
+	}
+	updated, err := worker.projector.ProjectExecutionOutcome(ctx, groupopsport.ExecutionOutcomeCommand{ExecutionID: execution.ExecutionID, State: groupopsport.ExecutionOutcomeUnknown, AttemptCount: projection.AttemptCount})
+	if err != nil || updated.ID != execution.ExecutionID || updated.State != groupopsport.ExecutionOutcomeUnknown || updated.DeliveryProven {
+		return groupopsport.DispatchResult{}, ErrUnavailable
+	}
+	return groupopsport.DispatchResult{ExecutionID: execution.ExecutionID, EffectID: execution.ExternalEffectID, State: updated.State, ProviderAccepted: updated.ProviderAccepted, ManualReconcileRequired: true}, nil
+}
+
 // projectTerminalOutcome closes the crash window between EER completion and
 // the owner-domain projection. It reads only the safe terminal receipt; an
 // unknown outcome still gets no Provider receipt or automatic retry.
@@ -103,7 +123,6 @@ func (worker *DispatchWorker) projectTerminalOutcome(ctx context.Context, execut
 	switch terminal.State {
 	case eer.StateExecuted:
 		command.State, command.ProviderAccepted, command.ProviderReceiptDigest = groupopsport.ExecutionProviderAccepted, true, string(terminal.ReceiptDigest)
-		result.ProviderCallAttempted, result.RealExternalCallExecuted = true, true
 	case eer.StateOutcomeUnknown:
 		command.State, result.ManualReconcileRequired = groupopsport.ExecutionOutcomeUnknown, true
 	case eer.StateFinalFailed:
