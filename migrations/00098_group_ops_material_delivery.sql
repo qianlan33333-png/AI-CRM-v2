@@ -80,6 +80,25 @@ CREATE INDEX media_wecom_upload_preparations_source_idx
     source_kind, source_id, source_digest, provider_scope_digest, upload_kind, created_at DESC
   );
 
+-- +goose StatementBegin
+CREATE FUNCTION public.aicrm_media_wecom_upload_effect_binding()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.external_effects
+    WHERE id = NEW.external_effect_id AND owner = 'media' AND kind = 'media_wecom_upload'
+  ) THEN
+    RAISE EXCEPTION 'media upload preparation must bind a media upload effect' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+-- +goose StatementEnd
+
+CREATE TRIGGER media_wecom_upload_preparations_effect_binding
+BEFORE INSERT OR UPDATE ON public.media_wecom_upload_preparations
+FOR EACH ROW EXECUTE FUNCTION public.aicrm_media_wecom_upload_effect_binding();
+
 CREATE TABLE public.media_wecom_upload_receipts (
   external_effect_id BIGINT PRIMARY KEY REFERENCES public.external_effects(id) ON DELETE RESTRICT,
   preparation_id BIGINT NOT NULL UNIQUE REFERENCES public.media_wecom_upload_preparations(id) ON DELETE RESTRICT,
@@ -90,6 +109,28 @@ CREATE TABLE public.media_wecom_upload_receipts (
   created_at TIMESTAMPTZ NOT NULL,
   CONSTRAINT media_wecom_upload_receipts_expiry CHECK (expires_at > provider_created_at)
 );
+
+-- +goose StatementBegin
+CREATE FUNCTION public.aicrm_media_wecom_upload_receipt_binding()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.media_wecom_upload_preparations p
+    WHERE p.id = NEW.preparation_id AND p.external_effect_id = NEW.external_effect_id
+      AND p.state = 'ready' AND p.provider_media_id = NEW.provider_media_id
+      AND p.provider_created_at = NEW.provider_created_at AND p.expires_at = NEW.expires_at
+      AND p.provider_receipt_digest = NEW.receipt_digest
+  ) THEN
+    RAISE EXCEPTION 'media upload receipt does not match its ready preparation' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+-- +goose StatementEnd
+
+CREATE TRIGGER media_wecom_upload_receipts_binding
+BEFORE INSERT ON public.media_wecom_upload_receipts
+FOR EACH ROW EXECUTE FUNCTION public.aicrm_media_wecom_upload_receipt_binding();
 
 CREATE TABLE public.group_ops_execution_intents (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -165,6 +206,12 @@ BEGIN
      OR NEW.provider_scope_digest IS DISTINCT FROM OLD.provider_scope_digest
      OR NEW.upload_kind IS DISTINCT FROM OLD.upload_kind OR NEW.external_effect_id IS DISTINCT FROM OLD.external_effect_id
      OR NEW.created_at IS DISTINCT FROM OLD.created_at
+     OR (OLD.state IN ('ready','expired') AND (
+       NEW.provider_media_id IS DISTINCT FROM OLD.provider_media_id
+       OR NEW.provider_created_at IS DISTINCT FROM OLD.provider_created_at
+       OR NEW.expires_at IS DISTINCT FROM OLD.expires_at
+       OR NEW.provider_receipt_digest IS DISTINCT FROM OLD.provider_receipt_digest
+     ))
      OR (OLD.state = 'preparing' AND NEW.state NOT IN ('ready','retryable_failed','outcome_unknown','final_failed'))
      OR (OLD.state = 'retryable_failed' AND NEW.state <> 'preparing')
      OR (OLD.state = 'ready' AND NEW.state <> 'expired')
@@ -235,9 +282,13 @@ $$;
 DROP TRIGGER group_ops_execution_intents_guard ON public.group_ops_execution_intents;
 DROP TRIGGER media_wecom_upload_preparations_guard ON public.media_wecom_upload_preparations;
 DROP TRIGGER media_wecom_upload_receipts_append_only ON public.media_wecom_upload_receipts;
+DROP TRIGGER media_wecom_upload_receipts_binding ON public.media_wecom_upload_receipts;
+DROP TRIGGER media_wecom_upload_preparations_effect_binding ON public.media_wecom_upload_preparations;
 DROP TRIGGER group_ops_protocol_replays_append_only ON public.group_ops_protocol_replays;
 DROP FUNCTION public.aicrm_group_ops_execution_intent_guard();
 DROP FUNCTION public.aicrm_media_wecom_upload_preparation_guard();
+DROP FUNCTION public.aicrm_media_wecom_upload_receipt_binding();
+DROP FUNCTION public.aicrm_media_wecom_upload_effect_binding();
 DROP FUNCTION public.aicrm_group_ops_material_append_only();
 DROP TABLE public.group_ops_execution_intents;
 DROP TABLE public.media_wecom_upload_receipts;
