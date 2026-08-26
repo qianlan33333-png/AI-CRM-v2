@@ -53,11 +53,12 @@ type apiClientJWTClaims struct {
 }
 
 type apiClientCredentialPolicy struct {
-	Audience   string `json:"audience"`
-	Purpose    string `json:"purpose"`
-	Capability string `json:"capability"`
-	Scope      string `json:"scope,omitempty"`
-	TTLMinutes int64  `json:"token_ttl_minutes"`
+	Audience           string   `json:"audience"`
+	Purpose            string   `json:"purpose"`
+	Capability         string   `json:"capability"`
+	Scope              string   `json:"scope,omitempty"`
+	AllowedSourceCIDRs []string `json:"allowed_source_cidrs,omitempty"`
+	TTLMinutes         int64    `json:"token_ttl_minutes"`
 }
 
 type apiClientJWTExpectation struct{ Audience, Purpose, Capability, Scope string }
