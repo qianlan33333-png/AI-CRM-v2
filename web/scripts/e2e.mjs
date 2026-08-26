@@ -115,6 +115,11 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
         };
         return;
       }
+      if (rel === 'admin/orders.html') {
+        window.URL.createObjectURL = () => 'blob:wechat-order-export';
+        window.URL.revokeObjectURL = () => {};
+        window.HTMLAnchorElement.prototype.click = function () { window.__orderDownload = { href: this.href, download: this.download }; };
+      }
       if (rel !== 'sidebar/index.html') return;
       window.URL.createObjectURL = () => 'blob:sidebar-thumbnail';
       window.URL.revokeObjectURL = () => {};
@@ -502,6 +507,22 @@ console.log('admin/customers.html（筛选、opaque cursor 翻页与详情导航
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '上一页'));
   await sleep(300);
   ok('上一页沿 cursor 栈返回第 1 页', d.querySelectorAll('tbody tr').length === 50 && d.body.textContent.includes('第 1 页'));
+  dom.window.close();
+}
+
+console.log('admin/orders.html（筛选后微信支付 CSV 导出）');
+{
+  const dom = await loadPage('admin/orders.html');
+  const d = dom.window.document;
+  input(dom, d.querySelector('#orderTransactionId'), 'wx-42');
+  input(dom, d.querySelector('#orderMobile'), '13800000000');
+  input(dom, d.querySelector('#orderProductCode'), 'sku-1');
+  input(dom, d.querySelector('#orderCreatedFrom'), '2026-08-01');
+  input(dom, d.querySelector('#orderCreatedTo'), '2026-08-31');
+  d.querySelector('#orderStatus').value = 'paid';
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.includes('导出微信支付 CSV')));
+  await sleep(350);
+  ok('微信支付交易导出生成 CSV 下载', dom.window.__orderDownload?.href === 'blob:wechat-order-export' && dom.window.__orderDownload?.download === 'wechat-pay-orders.csv');
   dom.window.close();
 }
 
