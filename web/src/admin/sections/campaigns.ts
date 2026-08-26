@@ -1,8 +1,10 @@
 import {
+  acceptCampaignOutboundHandoffDto,
   decideCampaignTouchPlanReviewDto,
   decideCampaignTouchPlanRecipientReviewDto,
   deleteCampaignDto,
   getCampaignDto,
+  getCampaignOutboundHandoffReconciliationDto,
   getCampaignTouchPlanDto,
   getCampaignTouchPlanRecipientDto,
   getCampaignTouchPlanRecipientReviewDto,
@@ -11,8 +13,14 @@ import {
   listCampaignTouchPlanRecipientsDto,
   listCampaignTouchPlansDto,
   saveCampaignTouchPlanRecipientMessageDto,
+  tryGetCampaignOutboundDispatchReconciliationDto,
+  tryGetCampaignOutboundHandoffDto,
+  dispatchCampaignOutboundHandoffDto,
   type CampaignDetail,
   type CampaignFilter,
+  type CampaignOutboundDispatchReconciliation,
+  type CampaignOutboundHandoff,
+  type CampaignOutboundHandoffReconciliation,
   type CampaignTouchPlan,
   type CampaignTouchPlanDetail,
   type CampaignTouchPlanRecipient,
@@ -31,6 +39,9 @@ type CampaignPage = {
   recipientPage?: CampaignTouchPlanRecipientPage;
   recipient?: CampaignTouchPlanRecipient;
   recipientReview?: CampaignTouchPlanRecipientReview | null;
+  handoff?: CampaignOutboundHandoff | null;
+  handoffReconciliation?: CampaignOutboundHandoffReconciliation;
+  dispatchReconciliation?: CampaignOutboundDispatchReconciliation | null;
 };
 
 const button = 'height:30px;padding:0 11px;border:1px solid #D0D5DD;border-radius:6px;background:#fff;color:#344054;cursor:pointer';
@@ -67,6 +78,19 @@ function campaignHtml(page: CampaignPage): string {
   return shell(esc(campaign.name), `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="campaign-back" style="${button}">返回列表</button><span style="font-family:ui-monospace,Menlo,monospace;color:#667085">${esc(campaign.code)}</span>${status(campaign.approvalStatus)}${status(campaign.runtimeStatus)}<span>v${campaign.version}</span><button id="campaign-delete" style="${button};border-color:#F5B7B1;color:#B42318">删除本地 Campaign</button></div><div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1fr);gap:14px"><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">Campaign 详情</h2><ol style="margin:0;padding-left:20px">${steps}</ol>${safety}</section><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">运营计划（已冻结 touch plan）</h2><table style="width:100%;border-collapse:collapse"><thead><tr style="color:#667085;text-align:left"><th>计划</th><th>来源</th><th>目标</th><th>步骤</th><th>创建时间</th></tr></thead><tbody>${planRows(page.plans)}</tbody></table>${safety}</section></div>`);
 }
 
+const count = (label: string, value: number): string => `<div style="display:flex;justify-content:space-between;gap:12px"><span>${label}</span><strong>${value}</strong></div>`;
+function handoffHtml(page: CampaignPage): string {
+  const review = page.review!;
+  if (review.status !== 'approved' || !review.handoffStatus) return `<section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">Outbound handoff（count-only）</h2><p style="margin:0;color:#667085;font-size:13px">须先完成计划本地审核，服务端生成可受理的 handoff 后才会开放下一步。本页不会创建模拟受理或发送结果。</p></section>`;
+  if (!page.handoff) return `<section style="padding:14px;border:1px solid #D6E4FF;border-radius:8px;background:#F5F8FF"><h2 style="margin:0 0 8px;font-size:15px">Outbound handoff（待本地受理）</h2><p style="margin:0 0 10px;color:#1849A9;font-size:13px">计划审核已完成，但尚无受理后的 held 快照。受理只保存本地事实并创建内部事件工作，不会调用 Provider、发送或证明送达。</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button id="handoff-accept" style="${primaryButton}">二次确认并受理 handoff</button><button id="handoff-refresh" style="${button}">刷新真实状态</button></div></section>`;
+  const reconciliation = page.handoffReconciliation!;
+  const dispatch = page.dispatchReconciliation;
+  const handoffCounts = [count('held', reconciliation.heldCount), count('blocked', reconciliation.blockedCount), count('pending', reconciliation.pendingCount), count('not_evaluated', reconciliation.notEvaluatedCount), count('eligible', reconciliation.eligibleCount), count('inactive', reconciliation.inactiveCount), count('contact_policy', reconciliation.contactPolicyCount)].join('');
+  const dispatchCounts = dispatch ? [count('accepted（本地受理）', dispatch.accepted), count('queued（本地 EER 排队）', dispatch.queued), count('attempted（本地记录）', dispatch.attempted), count('executed（本地记录）', dispatch.executed), count('reconciled（本地投影）', dispatch.reconciled), count('retryable_failed', dispatch.retryableFailed), count('final_failed', dispatch.finalFailed)].join('') : '<p style="margin:0;color:#667085;font-size:13px">尚未创建本地 EER 排队工作。</p>';
+  const unknown = dispatch && dispatch.outcomeUnknown > 0 ? `<div style="padding:9px;border:1px solid #F5D6A7;border-radius:6px;background:#FFF9F0;color:#8F5A16;font-size:13px"><strong>outcome_unknown：${dispatch.outcomeUnknown}</strong>。结果未知，需人工复核；不得自动重试或宣称发送/送达。</div>` : '<p style="margin:0;color:#667085;font-size:13px">当前 count-only 投影没有 outcome_unknown。</p>';
+  return `<section style="padding:14px;border:1px solid #D6E4FF;border-radius:8px;background:#F5F8FF;display:grid;gap:10px"><div><h2 style="margin:0 0 5px;font-size:15px">Outbound handoff（count-only）</h2><div style="font-size:13px;color:#1849A9">状态 ${status(page.handoff.status)} · handoff #${page.handoff.id} · 审核版本 v${page.handoff.reviewVersion} · 目标 ${page.handoff.targetCount} · 步骤 ${page.handoff.stepCount}</div></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px"><div style="padding:9px;border:1px solid #D6E4FF;border-radius:6px;background:#fff;display:grid;gap:5px"><strong style="font-size:13px">受理复核</strong>${handoffCounts}</div><div style="padding:9px;border:1px solid #D6E4FF;border-radius:6px;background:#fff;display:grid;gap:5px"><strong style="font-size:13px">EER 本地投影</strong>${dispatchCounts}</div></div>${unknown}<div style="display:flex;gap:8px;flex-wrap:wrap"><button id="handoff-refresh" style="${button}">刷新 count-only 回执</button><button id="handoff-dispatch" style="${primaryButton}">再次确认并排入本地 EER</button></div><p style="margin:0;color:#8F5A16;font-size:12px">accepted/queued 仅表示本地受理或本地排队，不等于发送或送达。逐 effect 证据、人工回执复核与重试控制没有可用的 scoped DTO，保持 backend_blocked。</p></section>`;
+}
+
 function planHtml(page: CampaignPage): string {
   const plan = page.plan!;
   const review = page.review!;
@@ -76,7 +100,7 @@ function planHtml(page: CampaignPage): string {
   const recipientDetail = page.recipient ? `<div style="display:grid;gap:10px;padding:10px;border:1px solid #D6E4FF;border-radius:6px;background:#F5F8FF"><div>已验证当前 plan 范围内 canonical_customer_id：<strong>${page.recipient.customerID}</strong>。当前契约不含昵称、成员状态或消息任务。</div><label style="display:grid;gap:5px">单客户消息覆盖<textarea id="recipient-message" maxlength="4000" rows="4" style="padding:8px;border:1px solid #D0D5DD;border-radius:6px">${esc(page.recipientReview?.messageOverride || '')}</textarea></label><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="recipient-message-save" style="${button}">保存本地消息</button>${page.review?.status === 'pending_review' && (!page.recipientReview || page.recipientReview.status === 'pending_review') ? `<button id="recipient-review-approve" style="${primaryButton}">批准该客户</button><button id="recipient-review-reject" style="${button};border-color:#F5B7B1;color:#B42318">拒绝该客户</button>` : ''}${page.recipientReview ? status(page.recipientReview.status) + `<span style="font-size:12px;color:#667085">v${page.recipientReview.version}</span>` : '<span style="font-size:12px;color:#667085">尚无本地单客户审核记录</span>'}</div><p style="margin:0;color:#8F5A16;font-size:12px">保存、批准、拒绝均只写本地 review，不会创建发送任务或调用 Provider。</p></div>` : '';
   const actions = review.status === 'pending_review' ? `<button id="plan-approve" style="${primaryButton}">批准本地审核</button><button id="plan-reject" style="${button};border-color:#F5B7B1;color:#B42318">拒绝本地审核</button>` : `<span style="color:#8F959E;font-size:13px">当前状态不是 pending_review，不能提交批准/拒绝。</span>`;
   const more = page.recipientPage?.nextCursor ? `<button id="recipient-more" style="${button};margin-top:10px">加载更多目标人员</button>` : '';
-  return shell('Touch plan 本地审核', `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="plan-back" style="${button}">返回 Campaign</button><span style="font-family:ui-monospace,Menlo,monospace;color:#667085">${esc(plan.id)}</span>${status(review.status)}<span>审核版本 v${review.version}</span>${review.handoffStatus ? status(review.handoffStatus) : ''}</div><div style="padding:12px;border:1px solid #D6E4FF;border-radius:8px;background:#F5F8FF;color:#1849A9;font-size:13px">批准只写入本地 touch-plan review；即使生成 handoff 也仍是 pending outbound acceptance，不等于发送或送达。</div><div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1fr);gap:14px"><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">计划详情</h2><p>来源：${esc(plan.sourceKind)} · 目标：${plan.targetCount} · Campaign 版本：v${plan.campaignVersion}</p><ol style="padding-left:20px">${steps}</ol><div style="display:flex;gap:8px;flex-wrap:wrap">${actions}</div></section><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">目标人员（canonical OneID）</h2><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;color:#667085"><th style="padding:8px">OneID</th><th style="padding:8px">范围详情</th></tr></thead><tbody>${recipientRows}</tbody></table>${more}${recipientDetail}</section></div>`);
+  return shell('Touch plan 本地审核', `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button id="plan-back" style="${button}">返回 Campaign</button><span style="font-family:ui-monospace,Menlo,monospace;color:#667085">${esc(plan.id)}</span>${status(review.status)}<span>审核版本 v${review.version}</span>${review.handoffStatus ? status(review.handoffStatus) : ''}</div><div style="padding:12px;border:1px solid #D6E4FF;border-radius:8px;background:#F5F8FF;color:#1849A9;font-size:13px">批准只写入本地 touch-plan review；即使生成 handoff 也仍须二次确认受理，不等于发送或送达。</div>${handoffHtml(page)}<div style="display:grid;grid-template-columns:minmax(280px,1fr) minmax(360px,1fr);gap:14px"><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">计划详情</h2><p>来源：${esc(plan.sourceKind)} · 目标：${plan.targetCount} · Campaign 版本：v${plan.campaignVersion}</p><ol style="padding-left:20px">${steps}</ol><div style="display:flex;gap:8px;flex-wrap:wrap">${actions}</div></section><section style="padding:14px;border:1px solid #DEE0E3;border-radius:8px"><h2 style="margin:0 0 8px;font-size:15px">目标人员（canonical OneID）</h2><table style="width:100%;border-collapse:collapse"><thead><tr style="text-align:left;color:#667085"><th style="padding:8px">OneID</th><th style="padding:8px">范围详情</th></tr></thead><tbody>${recipientRows}</tbody></table>${more}${recipientDetail}</section></div>`);
 }
 
 async function loadList(stage: HTMLElement, filter: CampaignFilter = {}): Promise<void> {
@@ -108,8 +132,10 @@ async function loadCampaign(stage: HTMLElement, campaignCode: string, planID?: s
   }
   const [plan, review, recipientPage] = await Promise.all([getCampaignTouchPlanDto(campaignCode, planID), getCampaignTouchPlanReviewDto(campaignCode, planID), listCampaignTouchPlanRecipientsDto(campaignCode, planID)]);
   const [recipient, recipientReview] = customerID == null ? [undefined, undefined] as const : await Promise.all([getCampaignTouchPlanRecipientDto(campaignCode, planID, customerID), getCampaignTouchPlanRecipientReviewDto(campaignCode, planID, customerID)] as const);
+  const handoff = review.handoffStatus ? await tryGetCampaignOutboundHandoffDto(campaignCode, planID) : null;
+  const [handoffReconciliation, dispatchReconciliation] = handoff ? await Promise.all([getCampaignOutboundHandoffReconciliationDto(campaignCode, planID), tryGetCampaignOutboundDispatchReconciliationDto(campaignCode, planID)]) : [undefined, null] as const;
   const renderPlan = (nextPage: CampaignTouchPlanRecipientPage): void => {
-    stage.innerHTML = planHtml({ campaign, plans, plan, review, recipientPage: nextPage, recipient, recipientReview });
+    stage.innerHTML = planHtml({ campaign, plans, plan, review, recipientPage: nextPage, recipient, recipientReview, handoff, handoffReconciliation, dispatchReconciliation });
     stage.querySelector<HTMLButtonElement>('#plan-back')?.addEventListener('click', () => goto(campaignCode));
     stage.querySelectorAll<HTMLButtonElement>('[data-recipient]').forEach((element) => element.addEventListener('click', () => goto(campaignCode, planID, Number(element.dataset.recipient))));
     stage.querySelector<HTMLButtonElement>('#recipient-more')?.addEventListener('click', () => {
@@ -125,6 +151,13 @@ async function loadCampaign(stage: HTMLElement, campaignCode: string, planID?: s
     (['approve', 'reject'] as const).forEach((operation) => stage.querySelector<HTMLButtonElement>(`#recipient-review-${operation}`)?.addEventListener('click', () => confirmBox(`${operation === 'approve' ? '批准' : '拒绝'}该客户`, '该操作仅写入当前 touch plan 的本地单客户 review，不会发送消息。', `确认${operation === 'approve' ? '批准' : '拒绝'}`, operation === 'reject', () => {
       void decideCampaignTouchPlanRecipientReviewDto(campaignCode, planID, customerID!, operation).then(() => { toast('单客户本地审核已更新'); goto(campaignCode, planID, customerID); }).catch((error) => toast(error instanceof Error ? error.message : '单客户审核失败', true));
     })));
+    stage.querySelector<HTMLButtonElement>('#handoff-refresh')?.addEventListener('click', () => goto(campaignCode, planID, customerID));
+    stage.querySelector<HTMLButtonElement>('#handoff-accept')?.addEventListener('click', () => confirmBox('二次确认受理 handoff', '确认后只保存 held 本地事实并创建内部事件工作；不会调用 Provider、发送消息或证明送达。', '确认受理', false, () => {
+      void acceptCampaignOutboundHandoffDto(campaignCode, planID).then(() => { toast('Campaign handoff 已受理为本地 held 事实；不等于发送或送达'); goto(campaignCode, planID, customerID); }).catch((error) => toast(error instanceof Error ? error.message : 'Campaign handoff 受理失败', true));
+    }));
+    stage.querySelector<HTMLButtonElement>('#handoff-dispatch')?.addEventListener('click', () => confirmBox('确认排入本地 EER', '确认后仅排入 gated 本地 EER 工作。queued/accepted 不等于发送或送达；结果未知必须人工复核。', '确认排入', false, () => {
+      void dispatchCampaignOutboundHandoffDto(campaignCode, planID).then(() => { toast('已排入本地 EER；不等于发送或送达'); goto(campaignCode, planID, customerID); }).catch((error) => toast(error instanceof Error ? error.message : 'Campaign handoff 排队失败', true));
+    }));
   };
   renderPlan(recipientPage);
 }

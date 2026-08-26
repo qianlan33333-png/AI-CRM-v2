@@ -1,4 +1,4 @@
-import { appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, executeOwnerReassignmentPreviewDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
+import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, dispatchCampaignOutboundHandoffDto, executeOwnerReassignmentPreviewDto, getCampaignOutboundDispatchReconciliationDto, getCampaignOutboundHandoffDto, getCampaignOutboundHandoffReconciliationDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, tryGetCampaignOutboundDispatchReconciliationDto, tryGetCampaignOutboundHandoffDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
@@ -17,6 +17,7 @@ import { getGetAdminOpsPushCapabilitiesUrl, getListAdminOpsReleasesUrl } from '.
 import { getGetCustomerContextUrl, getListCustomerSurveyAnswersUrl, getListStagesUrl } from './generated/health';
 import { getDeleteCloudCampaignUrl, getGetCloudCampaignTouchPlanRecipientUrl, getGetCloudCampaignTouchPlanReviewUrl, getListCloudCampaignTouchPlanRecipientsUrl, getListCloudCampaignsUrl, getMutateCloudCampaignTouchPlanReviewUrl } from './generated/health';
 import { getGetCloudCampaignTouchPlanRecipientReviewUrl, getMutateCloudCampaignTouchPlanRecipientReviewUrl } from './generated/health';
+import { getAcceptOutboundCampaignHandoffUrl, getDispatchOutboundCampaignHandoffUrl, getGetOutboundCampaignDispatchReconciliationUrl, getGetOutboundCampaignHandoffSummaryUrl, getReconcileOutboundCampaignHandoffUrl } from './generated/health';
 
 function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new Error(message); }
 const response = (data: unknown, status = 200) => ({ status, data, headers: new Headers() });
@@ -170,6 +171,53 @@ export async function runAdminAdapterTests(): Promise<void> {
   try { await listCampaignTouchPlanRecipientsDto(campaignCode, touchPlanID); assert(false, 'Executed touch plan response must fail closed'); }
   catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'Campaign executed touch plan response fails closed'); }
   finally { globalThis.fetch = savedCampaignFetch; }
+  assert(getGetOutboundCampaignHandoffSummaryUrl(campaignCode, touchPlanID).endsWith(`/campaign-handoffs/${campaignCode}/${touchPlanID}`) && getAcceptOutboundCampaignHandoffUrl(campaignCode, touchPlanID).endsWith('/accept') && getReconcileOutboundCampaignHandoffUrl(campaignCode, touchPlanID).endsWith('/reconciliation') && getDispatchOutboundCampaignHandoffUrl(campaignCode, touchPlanID).endsWith('/dispatch') && getGetOutboundCampaignDispatchReconciliationUrl(campaignCode, touchPlanID).endsWith('/dispatch-reconciliation'), 'Campaign handoff generated URLs remain scoped to campaign and touch plan');
+  const handoffSafety = { local_only: true, provider_execution_eligible: false, real_external_call_executed: false, delivery_proven: false };
+  const handoffSummary = { id: 31, campaign_code: campaignCode, plan_id: touchPlanID, review_version: 3, status: 'held', target_count: 2, step_count: 1, accepted_at: '2026-08-27T00:00:00Z', safety: handoffSafety };
+  const handoffReconciliation = { ...handoffSummary, held_count: 2, blocked_count: 0, pending_count: 0, not_evaluated_count: 0, eligible_count: 2, inactive_count: 0, contact_policy_count: 0 };
+  const dispatchReconciliation = { handoff_id: 31, blocked: 0, accepted: 2, queued: 2, attempted: 0, executed: 0, outcome_unknown: 1, reconciled: 0, retryable_failed: 0, final_failed: 0, provider_execution_eligible: false, business_call_dispatched: false, real_external_call_executed: false, delivery_proven: false };
+  const outboundCalls: Array<{ input: string; init?: RequestInit }> = [];
+  let handoffAccepted = false;
+  let dispatchBound = false;
+  let unsafeHandoff = false;
+  let unsafeDispatch = false;
+  let wrongHandoffScope = false;
+  const savedOutboundFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    outboundCalls.push({ input: url, init });
+    if (url.endsWith('/touch-plans/' + touchPlanID + '/review')) return new Response(JSON.stringify({ review: { status: 'approved', version: 3 }, handoff: { status: 'pending_outbound_acceptance' }, ...localTouchPlan }), { status: 200 });
+    if (url.endsWith('/dispatch-reconciliation')) return dispatchBound ? new Response(JSON.stringify({ ...dispatchReconciliation, ...(unsafeDispatch ? { business_call_dispatched: true } : {}) }), { status: 200 }) : new Response(JSON.stringify({ code: 'not_found' }), { status: 404 });
+    if (url.endsWith('/reconciliation')) return new Response(JSON.stringify(handoffReconciliation), { status: 200 });
+    if (url.endsWith('/accept')) { handoffAccepted = true; return new Response(JSON.stringify(handoffReconciliation), { status: 200 }); }
+    if (url.endsWith('/dispatch')) { dispatchBound = true; return new Response(JSON.stringify(dispatchReconciliation), { status: 200 }); }
+    if (url.includes('/campaign-handoffs/')) return handoffAccepted ? new Response(JSON.stringify({ ...handoffSummary, campaign_code: wrongHandoffScope ? 'other-campaign' : campaignCode, safety: unsafeHandoff ? { ...handoffSafety, delivery_proven: true } : handoffSafety }), { status: 200 }) : new Response(JSON.stringify({ code: 'not_found' }), { status: 404 });
+    return new Response(JSON.stringify({ code: 'unexpected' }), { status: 500 });
+  };
+  try {
+    assert(await tryGetCampaignOutboundHandoffDto(campaignCode, touchPlanID) === null && await tryGetCampaignOutboundDispatchReconciliationDto(campaignCode, touchPlanID) === null, 'Campaign handoff reads preserve not-yet-accepted and not-yet-queued states');
+    const acceptedHandoff = await acceptCampaignOutboundHandoffDto(campaignCode, touchPlanID);
+    const acceptCall = outboundCalls.find((call) => call.input.endsWith('/accept'));
+    assert(acceptedHandoff.heldCount === 2 && acceptCall?.init?.method === 'POST' && JSON.parse(String(acceptCall.init.body)).expected_review_version === 3 && Boolean(new Headers(acceptCall.init.headers).get('Idempotency-Key')), 'Campaign handoff accept re-reads review version and posts CAS plus idempotency key');
+    const [handoff, reconciledHandoff] = await Promise.all([getCampaignOutboundHandoffDto(campaignCode, touchPlanID), getCampaignOutboundHandoffReconciliationDto(campaignCode, touchPlanID)]);
+    assert(handoff.status === 'held' && reconciledHandoff.eligibleCount === 2 && !('customerID' in reconciledHandoff), 'Campaign handoff read/reconciliation remains held and count-only');
+    const queued = await dispatchCampaignOutboundHandoffDto(campaignCode, touchPlanID);
+    const dispatchCall = outboundCalls.find((call) => call.input.endsWith('/dispatch'));
+    assert(queued.queued === 2 && dispatchCall?.init?.method === 'POST' && JSON.parse(String(dispatchCall.init.body)).external_gate === true && Boolean(new Headers(dispatchCall.init.headers).get('Idempotency-Key')), 'Campaign handoff dispatch only creates explicit-gate local EER work');
+    const dispatchRead = await getCampaignOutboundDispatchReconciliationDto(campaignCode, touchPlanID);
+    assert(dispatchRead.accepted === 2 && dispatchRead.queued === 2 && dispatchRead.outcomeUnknown === 1, 'Campaign dispatch reconciliation preserves count-only outcome_unknown without a send claim');
+    unsafeHandoff = true;
+    try { await getCampaignOutboundHandoffDto(campaignCode, touchPlanID); assert(false, 'handoff delivery claim must fail closed'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'handoff delivery claim fails closed'); }
+    unsafeHandoff = false;
+    wrongHandoffScope = true;
+    try { await getCampaignOutboundHandoffDto(campaignCode, touchPlanID); assert(false, 'handoff scope mismatch must fail closed'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('范围不匹配'), 'handoff scope mismatch fails closed'); }
+    wrongHandoffScope = false;
+    unsafeDispatch = true;
+    try { await getCampaignOutboundDispatchReconciliationDto(campaignCode, touchPlanID); assert(false, 'dispatch provider-boundary claim must fail closed'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('本地执行边界'), 'dispatch provider-boundary claim fails closed'); }
+  } finally { globalThis.fetch = savedOutboundFetch; }
   assert(getListGroupOpsPlansUrl({ limit: 100, offset: 0 }).endsWith('/group-ops/plans?limit=100&offset=0') && getCreateGroupOpsPlanUrl().endsWith('/group-ops/plans'), 'group ops list/create URLs');
   assert(getGetGroupOpsPlanUrl('9').endsWith('/plans/9') && getUpdateGroupOpsPlanUrl('9').endsWith('/plans/9') && getDeleteGroupOpsPlanUrl('9').endsWith('/plans/9'), 'group ops detail CRUD URLs');
   assert(getAddGroupOpsPlanMemberUrl('9').endsWith('/plans/9/members') && getAddGroupOpsPlanGroupAssetUrl('9').endsWith('/plans/9/group-assets') && getAddGroupOpsPlanNodeUrl('9').endsWith('/plans/9/nodes'), 'group ops member/asset/node URLs');
