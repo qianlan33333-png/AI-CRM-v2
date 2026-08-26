@@ -331,6 +331,41 @@ func TestOrderBoardProviderFilteredExportIsReceiptBackedAndLocal(t *testing.T) {
 	}
 }
 
+func TestOrderBoardWechatExportUsesSensitiveFiltersWithoutPersistingThem(t *testing.T) {
+	now := time.Date(2026, 8, 23, 9, 30, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	store.record.MobileSnapshot = "13800000000"
+	store.record.IdentityValue = "union-secret"
+	store.record.PlatformTransactionNo = "wx-secret"
+	store.records = []orderport.Record{store.record}
+	service, _ := boardTestService(now, store, events)
+	command := orderport.ExportCommand{
+		Resource: "orders",
+		Format:   "csv",
+		Filter: orderport.ExportFilter{
+			Provider:      "wechat",
+			Mobile:        "1380000",
+			Identity:      "union-secret",
+			TransactionID: "wx-secret",
+			ProductCode:   store.record.ProductCode,
+			Status:        "paid",
+		},
+		Actor: 9, IdempotencyKey: "wechat-filter-key",
+	}
+
+	job, err := service.CreateExport(context.Background(), command)
+	if err != nil || store.orderFilter.Mobile != command.Filter.Mobile || store.orderFilter.Identity != command.Filter.Identity || store.orderFilter.TransactionID != command.Filter.TransactionID || len(store.receipts) != 1 || len(events.rows) != 1 || !strings.Contains(job.ContentText, ",wechat,") {
+		t.Fatalf("job=%#v err=%v filter=%+v receipts=%d events=%d", job, err, store.orderFilter, len(store.receipts), len(events.rows))
+	}
+	for _, receipt := range store.receipts {
+		for _, secret := range []string{command.Filter.Mobile, command.Filter.Identity, command.Filter.TransactionID} {
+			if strings.Contains(string(receipt.ResultSnapshot), secret) || strings.Contains(string(events.rows[0].Payload), secret) || strings.Contains(job.ContentText, secret) {
+				t.Fatalf("durable export state leaked %q: receipt=%s event=%s csv=%s", secret, receipt.ResultSnapshot, events.rows[0].Payload, job.ContentText)
+			}
+		}
+	}
+}
+
 func TestOrderBoardSafeExportOwnerScopeAndPaymentsRedline(t *testing.T) {
 	now := time.Date(2026, 8, 23, 9, 0, 0, 0, time.UTC)
 	store, events := newBoardTestStore(now), &boardTestEvents{}

@@ -4543,15 +4543,27 @@ paths:
     post:
       tags: [p4-order-compat]
       operationId: createLegacyWechatOrderExport
-      summary: Create the local WeChat order CSV export
+      summary: Download a receipt-backed, PII-safe local WeChat order CSV export
       x-legacy-mapping-ids: [LEGACY-API-0518]
-      x-p4-decision-evidence: P4-ORDER-AB-2026-08-15
+      x-p4-decision-evidence: P4-COMMERCE-WXPAY-DIRECT-EXPORT-2026-08-26
       x-aicrm-capability: order.write
       x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: restricted
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      x-aicrm-local-only: true
       parameters: [{$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/EmptyObject" } } } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyWechatOrderExportRequest" } } } }
       responses:
-        "200": { description: Completed local WeChat order CSV export, content: { application/json: { schema: { $ref: "#/components/schemas/LegacyOrderExport" } } } }
+        "200":
+          description: Formula-safe CSV containing only the approved non-PII columns
+          headers:
+            Content-Disposition: { required: true, schema: { type: string, enum: ['attachment; filename="wechat-pay-orders.csv"'] } }
+            Cache-Control: { required: true, schema: { type: string, enum: ["private, no-store"] } }
+            X-Content-Type-Options: { required: true, schema: { type: string, enum: [nosniff] } }
+          content: { text/csv: { schema: { type: string } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -16834,6 +16846,27 @@ components:
         local_id: { type: integer, format: int64, minimum: 1 }
         created_from: { type: string, format: date-time }
         created_to: { type: string, format: date-time }
+    LegacyWechatOrderExportRequest:
+      type: object
+      additionalProperties: false
+      required: [resource, format, filters]
+      properties:
+        resource: { type: string, enum: [orders] }
+        format: { type: string, enum: [csv] }
+        filters: { $ref: "#/components/schemas/LegacyWechatOrderExportFilter" }
+    LegacyWechatOrderExportFilter:
+      type: object
+      additionalProperties: false
+      required: [provider]
+      properties:
+        provider: { type: string, enum: [wechat] }
+        mobile: { type: string, maxLength: 80 }
+        identity: { type: string, maxLength: 200 }
+        transaction_id: { type: string, maxLength: 200 }
+        product_code: { type: string, maxLength: 200 }
+        status: { type: string, maxLength: 64 }
+        created_from: { type: string, maxLength: 64 }
+        created_to: { type: string, maxLength: 64 }
     LegacyOrderExport:
       type: object
       additionalProperties: false

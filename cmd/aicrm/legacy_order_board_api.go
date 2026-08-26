@@ -489,7 +489,20 @@ type legacyOrderExportRequest struct {
 }
 
 type legacyWechatOrderExportRequest struct {
-	Filter orderport.ExportFilter `json:"filter"`
+	Resource string                        `json:"resource"`
+	Format   string                        `json:"format"`
+	Filters  legacyWechatOrderExportFilter `json:"filters"`
+}
+
+type legacyWechatOrderExportFilter struct {
+	Provider      string `json:"provider"`
+	Mobile        string `json:"mobile"`
+	Identity      string `json:"identity"`
+	TransactionID string `json:"transaction_id"`
+	ProductCode   string `json:"product_code"`
+	Status        string `json:"status"`
+	CreatedFrom   string `json:"created_from"`
+	CreatedTo     string `json:"created_to"`
 }
 
 func legacyExportCommand(writer http.ResponseWriter, request *http.Request, actor int64, key string, wechatOnly bool) (orderport.ExportCommand, error) {
@@ -497,11 +510,16 @@ func legacyExportCommand(writer http.ResponseWriter, request *http.Request, acto
 		decoder := json.NewDecoder(http.MaxBytesReader(writer, request.Body, 64<<10))
 		decoder.DisallowUnknownFields()
 		var body legacyWechatOrderExportRequest
-		if decoder.Decode(&body) != nil || !errors.Is(decoder.Decode(&struct{}{}), io.EOF) || strings.TrimSpace(body.Filter.Provider) != "" || body.Filter.LocalID != nil {
+		if decoder.Decode(&body) != nil || !errors.Is(decoder.Decode(&struct{}{}), io.EOF) || strings.TrimSpace(body.Resource) != "orders" || strings.TrimSpace(body.Format) != "csv" || strings.TrimSpace(body.Filters.Provider) != "wechat" {
 			return orderport.ExportCommand{}, orderapp.ErrInvalidBoardCommand
 		}
-		body.Filter.Provider = "wechat"
-		return orderport.ExportCommand{Resource: "orders", Format: "csv", Filter: body.Filter, Actor: actor, IdempotencyKey: key}, nil
+		createdFrom, fromErr := parseLegacyOrderTime(body.Filters.CreatedFrom)
+		createdTo, toErr := parseLegacyOrderTime(body.Filters.CreatedTo)
+		if fromErr != nil || toErr != nil {
+			return orderport.ExportCommand{}, orderapp.ErrInvalidBoardCommand
+		}
+		filter := orderport.ExportFilter{Provider: "wechat", Mobile: body.Filters.Mobile, Identity: body.Filters.Identity, TransactionID: body.Filters.TransactionID, ProductCode: body.Filters.ProductCode, Status: body.Filters.Status, CreatedFrom: createdFrom, CreatedTo: createdTo}
+		return orderport.ExportCommand{Resource: "orders", Format: "csv", Filter: filter, Actor: actor, IdempotencyKey: key}, nil
 	}
 	decoder := json.NewDecoder(http.MaxBytesReader(writer, request.Body, 64<<10))
 	decoder.DisallowUnknownFields()
