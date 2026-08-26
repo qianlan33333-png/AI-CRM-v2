@@ -1618,6 +1618,16 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	audienceSendRecordService, err := outboundapp.NewAudienceSendRecordService(campaignDispatchRepository)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	audienceSendRecordHandler, err := outboundhttp.NewAudienceSendRecordHandler(audienceSendRecordService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	campaignDispatchService, err := outboundapp.NewCampaignDispatchService(uow, campaignDispatchRepository, externalEffectsRuntime, campaignDispatchRepository, contactstore.NewContactPolicyRepository())
 	if err != nil {
 		pool.Close()
@@ -1894,6 +1904,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.aiAudience = legacyAIAudienceFragment
 	legacyHandler.aiAudienceMembers = legacyAIAudienceMembersFragment
 	legacyHandler.aiAudienceConfiguration = legacyAIAudienceConfigurationFragment
+	legacyHandler.aiAudienceSendRecords = audienceSendRecordHandler
 	legacyHandler.channelEntrants = channelEntrantsFragment
 	legacyHandler.channelAcquisition = channelAcquisitionFragment
 	legacyHandler.channelAcquisitionAsset = channelAcquisitionAssetsFragment
@@ -2944,6 +2955,16 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		if legacy.aiAudienceConfiguration != nil {
 			for _, route := range legacyaudience.LocalConfigurationRouteSpecs() {
 				if err = registerLegacy(route.Method, route.Pattern, authport.Capability(route.Capability), route.RequiresCSRF, legacy.aiAudienceConfiguration); err != nil {
+					return nil, err
+				}
+			}
+		}
+		if legacy.aiAudienceSendRecords != nil {
+			for _, pattern := range []string{
+				outboundhttp.AudienceSendRecordsPathPrefix + "{package_id}/send-records",
+				outboundhttp.AudienceSendRecordsPathPrefix + "{package_id}/send-records/{record_id}",
+			} {
+				if err = registerLegacy(http.MethodGet, pattern, authport.CapabilitySegmentsRead, false, legacy.aiAudienceSendRecords); err != nil {
 					return nil, err
 				}
 			}
