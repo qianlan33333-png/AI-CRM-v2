@@ -22,10 +22,10 @@ fresh_database() {
   "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 85 >/dev/null
 }
 
-fresh_latest_database() {
+fresh_material_database() {
   cleanup
   psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "CREATE DATABASE $temporary_database" >/dev/null
-  "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null
+  "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 98 >/dev/null
 }
 
 waterline() {
@@ -88,7 +88,7 @@ psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "DELETE FROM group_ops_director
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 85 >/dev/null
 [[ "$(waterline)" = "85" ]]
 
-fresh_latest_database
+fresh_material_database
 [[ "$(waterline)" = "98" ]]
 AICRM_GROUP_OPS_TEST_DATABASE_URL="$database_url" /usr/bin/env -u BASH_ENV -u ENV \
   GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
@@ -233,7 +233,7 @@ expect_sql_rejected \
 [[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM group_ops_wecom_group_message_receipts WHERE msgid = 'msgid-material-guard' AND sender_userid = 'staff-guard'")" = "1" ]]
 [[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM group_ops_wecom_group_message_receipts WHERE msgid = 'msgid-material-guard' AND send_status = 1 AND delivery_evidence_digest = 'sha256:' || repeat('9', 64)")" = "1" ]]
 expect_material_facts_reject_down
-fresh_latest_database
+fresh_material_database
 [[ "$(waterline)" = "98" ]]
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 96 >/dev/null
 [[ "$(waterline)" = "96" ]]
