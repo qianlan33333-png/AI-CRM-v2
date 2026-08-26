@@ -67,7 +67,11 @@ func (a *groupOpsProtocolAuthenticator) Authenticate(ctx context.Context, r *htt
 	if !hmac.Equal(decoded, mac.Sum(nil)) {
 		return groupopshttp.ProtocolPrincipal{}, errors.New("unauthorized")
 	}
-	payload := sha256.Sum256(append(append([]byte(resource+"\n"), body...), 0))
+	payloadBytes := make([]byte, 0, len(resource)+1+len(body))
+	payloadBytes = append(payloadBytes, resource...)
+	payloadBytes = append(payloadBytes, '\n')
+	payloadBytes = append(payloadBytes, body...)
+	payload := sha256.Sum256(payloadBytes)
 	created, err := a.replay.Reserve(ctx, resource, event, payload)
 	if err != nil || !created {
 		return groupopshttp.ProtocolPrincipal{}, errors.New("unauthorized")
