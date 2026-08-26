@@ -21,6 +21,22 @@ type OAuthStateClaim struct {
 	NextPath string
 }
 
+type AdminAccessMember struct {
+	AdminUserID      int64
+	DisplayName      string
+	Role             string
+	StaffID          *int64
+	StaffWeComUserID string
+	StaffName        string
+	IsActive         bool
+	LoginEnabled     bool
+}
+
+type AdminAccessSaveResult struct {
+	AdminUserID  int64
+	LoginEnabled bool
+}
+
 func NewRepository() *Repository { return &Repository{} }
 
 func (repository *Repository) FindVerifiedLogin(ctx context.Context, login authport.VerifiedLogin) (LoginUser, error) {
@@ -109,6 +125,39 @@ func (repository *Repository) ClaimOAuthState(ctx context.Context, stateHash []b
 		return OAuthStateClaim{}, err
 	}
 	return OAuthStateClaim{NextPath: row}, nil
+}
+
+func (repository *Repository) ListAdminAccessMembers(ctx context.Context) ([]AdminAccessMember, error) {
+	queries, err := queriesFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := queries.ListAdminAccessMembers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]AdminAccessMember, len(rows))
+	for index, row := range rows {
+		result[index] = AdminAccessMember{
+			AdminUserID: row.ID, DisplayName: row.DisplayName, Role: row.Role, StaffID: int64Pointer(row.StaffID),
+			StaffWeComUserID: row.StaffWecomUserid, StaffName: row.StaffName, IsActive: row.IsActive, LoginEnabled: row.LoginEnabled,
+		}
+	}
+	return result, nil
+}
+
+func (repository *Repository) SaveAdminAccessMember(ctx context.Context, adminUserID int64, loginEnabled bool, updatedAt time.Time) (AdminAccessSaveResult, error) {
+	queries, err := queriesFromContext(ctx)
+	if err != nil {
+		return AdminAccessSaveResult{}, err
+	}
+	row, err := queries.SaveAdminAccessMember(ctx, authdb.SaveAdminAccessMemberParams{
+		ID: adminUserID, LoginEnabled: loginEnabled, UpdatedAt: timestamp(updatedAt),
+	})
+	if err != nil {
+		return AdminAccessSaveResult{}, err
+	}
+	return AdminAccessSaveResult{AdminUserID: row.ID, LoginEnabled: row.LoginEnabled}, nil
 }
 
 func queriesFromContext(ctx context.Context) (*authdb.Queries, error) {

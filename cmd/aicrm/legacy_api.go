@@ -223,6 +223,7 @@ type Handler struct {
 	couponBoard             couponBoardApplication
 	settings                legacySettingsApplication
 	setupWizard             http.Handler
+	adminAccess             http.Handler
 	orders                  legacyOrderApplication
 	orderBoard              legacyOrderBoardApplication
 	messageArchive          legacyMessageArchiveApplication

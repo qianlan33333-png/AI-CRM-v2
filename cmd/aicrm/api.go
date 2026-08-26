@@ -1994,6 +1994,16 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	adminAccessService, err := authapp.NewAdminAccessService(uow, authstore.NewRepository(), time.Now)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	adminAccessHandler, err := authhttp.NewAdminAccessHandler(adminAccessService)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
 	settingsService := configapp.NewSettingsCompatibilityService(uow, configRepository, configManager, configapp.SecretConfiguredSnapshot{
 		DatabaseURL: true, WeComSecret: config.WeCom.OAuth.Enabled,
 		WeComCallbackToken: config.WeCom.Callback.Enabled, WeComCallbackAESKey: config.WeCom.Callback.Enabled,
@@ -2041,6 +2051,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	legacyHandler.setupWizard = setupWizardHandler
+	legacyHandler.adminAccess = adminAccessHandler
 	if weComTagEffects != nil {
 		legacyHandler.legacyTagSync = &legacyTagSyncEffectBridge{legacy: legacyTagSyncService, effects: weComTagEffects}
 	}
@@ -3265,6 +3276,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 			{http.MethodPost, "/admin/config/app-settings/save", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAppSettings)},
 			{http.MethodGet, "/api/admin/config/app-settings", authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AppSettingsResource)},
 			{http.MethodPut, "/api/admin/config/app-settings", authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.SaveAppSettingsResource)},
+			{http.MethodGet, authhttp.AdminAccessPath, authport.CapabilityConfigSettingsManage, false, http.HandlerFunc(legacy.AdminAccess)},
+			{http.MethodPut, authhttp.AdminAccessPath, authport.CapabilityConfigSettingsManage, true, http.HandlerFunc(legacy.AdminAccess)},
 			{http.MethodGet, "/admin/config", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodGet, "/admin/config/api-key", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},
 			{http.MethodGet, "/admin/config/api-clients", authport.CapabilityConfigOverviewRead, false, http.HandlerFunc(legacy.AdminOps)},

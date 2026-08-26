@@ -70,3 +70,29 @@ WHERE state_hash = sqlc.arg(state_hash)
   AND auth_provider = sqlc.arg(auth_provider)
   AND expires_at > sqlc.arg(claimed_at)
 RETURNING next_path;
+
+-- name: ListAdminAccessMembers :many
+SELECT u.id, u.display_name, u.role, u.staff_id, u.is_active, u.login_enabled,
+       COALESCE(s.wecom_userid, '') AS staff_wecom_userid,
+       COALESCE(s.name, '') AS staff_name
+FROM admin_users AS u
+LEFT JOIN staff AS s ON s.id = u.staff_id
+ORDER BY lower(u.display_name), u.id;
+
+-- name: SaveAdminAccessMember :one
+WITH updated AS (
+  UPDATE admin_users
+  SET login_enabled = sqlc.arg(login_enabled),
+      session_version = CASE
+        WHEN login_enabled IS DISTINCT FROM sqlc.arg(login_enabled) THEN session_version + 1
+        ELSE session_version
+      END,
+      updated_at = CASE
+        WHEN login_enabled IS DISTINCT FROM sqlc.arg(login_enabled) THEN sqlc.arg(updated_at)
+        ELSE updated_at
+      END
+  WHERE id = sqlc.arg(id)
+    AND is_active
+  RETURNING id, login_enabled
+)
+SELECT id, login_enabled FROM updated;
