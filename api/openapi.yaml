@@ -10255,13 +10255,12 @@ paths:
       tags: [p4-ai-audience]
       operationId: receiveAIAudienceInboundWebhook
       summary: Verify and record one AI Audience inbound webhook without any outbound execution
-      security: []
+      security: [{ AIAudienceWebhookSignature: [] }]
       x-legacy-mapping-ids: [LEGACY-API-0588]
       x-p4-decision-evidence: LEGACY-S06-027-AI-AUDIENCE-INBOUND-WEBHOOK-2026-08-26
       x-aicrm-capability: ai.audience.inbound.webhook
-      x-aicrm-rbac-scopes: { admin: global, ops: global, sales: global }
       x-aicrm-auth-scheme: hmac_sha256
-      x-aicrm-session-bound-csrf: required
+      x-aicrm-csrf: none
       x-aicrm-data-source: ai_audience.inbound_webhook.local_receipt
       x-aicrm-data-classification: restricted
       x-aicrm-external-effect: none
@@ -12224,6 +12223,11 @@ components:
       in: header
       name: Signature
       description: HTTP Message Signature verification is injected at composition; absent verifier fails closed before runtime acceptance.
+    AIAudienceWebhookSignature:
+      type: apiKey
+      in: header
+      name: X-AICRM-Signature
+      description: Audience HMAC-SHA256 verification also requires the declared client, timestamp, and event-id headers; an absent startup key fails closed.
     PaymentIdentitySession:
       type: apiKey
       in: cookie
