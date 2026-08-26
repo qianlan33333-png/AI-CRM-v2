@@ -627,7 +627,7 @@ console.log('admin/groupopsDetail.html（typed 素材节点）');
   dom.window.close();
 }
 
-console.log('admin/couponData.html?id=0（5 统计卡 + 8 明细行 + 分享组件）');
+console.log('admin/couponData.html?id=0（5 统计卡 + 8 明细行 + 分享失败关闭）');
 {
   const dom = await loadPage('admin/couponData.html', { id: 0 });
   const d = dom.window.document;
@@ -638,7 +638,7 @@ console.log('admin/couponData.html?id=0（5 统计卡 + 8 明细行 + 分享组�
   ok('领取明细 8 行', d.querySelectorAll('tbody tr').length === 8);
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '分享'));
   await sleep(30);
-  ok('分享弹窗打开且伪二维码渲染', !!d.querySelector('#shareQrBox svg') && d.body.textContent.includes('分享优惠券'));
+  ok('Mock 不伪造优惠券分享成功', d.body.textContent.includes('测试 Mock 不提供伪成功') && !d.querySelector('#shareQrBox svg'));
   dom.window.close();
 }
 

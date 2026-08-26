@@ -1,10 +1,11 @@
-import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, dispatchCampaignOutboundHandoffDto, executeOwnerReassignmentPreviewDto, getCampaignOutboundDispatchReconciliationDto, getCampaignOutboundHandoffDto, getCampaignOutboundHandoffReconciliationDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getImageThumbnailDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, listCampaignPlanIndexDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, tryGetCampaignOutboundDispatchReconciliationDto, tryGetCampaignOutboundHandoffDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
+import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, dispatchCampaignOutboundHandoffDto, executeOwnerReassignmentPreviewDto, getCampaignOutboundDispatchReconciliationDto, getCampaignOutboundHandoffDto, getCampaignOutboundHandoffReconciliationDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getCouponDto, getImageThumbnailDto, getServicePeriodMemberGridMetaDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, listCampaignPlanIndexDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listCouponClaimsDto, listCouponProductOptionsDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, tryGetCampaignOutboundDispatchReconciliationDto, tryGetCampaignOutboundHandoffDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyAttachmentsUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
 import { HttpApi } from '../shared/api/client';
 import { getCreateProductUrl, getCreateServicePeriodProductUrl, getUpdateServicePeriodProductUrl } from './generated/health';
 import { getArchiveLegacyCouponUrl, getCopyLegacyCouponUrl, getCreateLegacyCouponUrl, getDeleteLegacyCouponUrl, getGetLegacyImageVariantUrl, getPublishLegacyCouponUrl, getStopLegacyCouponUrl, getUpdateLegacyCouponUrl } from './generated/health';
+import { getGetServicePeriodMemberGridAccessUrl, getGetServicePeriodMemberGridSchemaUrl, getGetServicePeriodMemberGridShareSettingsUrl, getListLegacyCouponClaimsUrl, getListLegacyCouponProductOptionsUrl, getListServicePeriodMemberViewsUrl } from './generated/health';
 import { getCreateLegacyQuestionnaireUrl, getDeleteLegacyQuestionnaireUrl, getDisableLegacyQuestionnaireUrl, getDuplicateLegacyQuestionnaireUrl, getEnableLegacyQuestionnaireUrl, getPublishQuestionnairePublicDefinitionUrl, getUpdateLegacyQuestionnaireUrl } from './generated/health';
 import { getCreateLegacyChannelUrl, getGetChannelAcquisitionAssetUrl, getGetChannelAcquisitionPreviewUrl, getListChannelAcquisitionAssetsUrl, getListChannelAcquisitionStaffUrl, getPublishChannelAcquisitionAssetUrl, getUpdateChannelAcquisitionAssigneesUrl, getUpdateLegacyChannelUrl } from './generated/health';
 import { getDeleteAIAudienceAutomationBindingUrl, getGetAIAudienceAutomationBindingUrl, getGetAIAudienceConfigurationVersionUrl, getGetAIAudiencePackageSendersUrl, getListAIAudiencePackageMembersUrl, getMaterializeAIAudienceConfigurationUrl, getPreviewAIAudienceConfigurationUrl, getPutAIAudienceAutomationBindingUrl, getPutAIAudienceConfigurationVersionUrl, getReplaceAIAudiencePackageSendersUrl, getUpdateAIAudiencePackageUrl } from './generated/health';
@@ -135,6 +136,10 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(getUpdateLegacyCouponUrl(3) === '/api/admin/coupons/3', 'coupon update URL');
   assert(getPublishLegacyCouponUrl(3).endsWith('/3/publish') && getStopLegacyCouponUrl(3).endsWith('/3/stop'), 'coupon lifecycle URLs');
   assert(getCopyLegacyCouponUrl(3).endsWith('/3/copy') && getArchiveLegacyCouponUrl(3).endsWith('/3/archive') && getDeleteLegacyCouponUrl(3) === '/api/admin/coupons/3', 'coupon copy/archive/delete URLs');
+  const optionUrl = new URL('http://localhost' + getListLegacyCouponProductOptionsUrl({ q: '增长', product_type: 'standard_product', limit: 20, offset: 40 }));
+  assert(optionUrl.pathname === '/api/admin/coupons/product-options' && optionUrl.searchParams.get('q') === '增长' && optionUrl.searchParams.get('product_type') === 'standard_product' && optionUrl.searchParams.get('limit') === '20' && optionUrl.searchParams.get('offset') === '40', 'coupon option generated URL preserves q/type/page');
+  assert(getListLegacyCouponClaimsUrl(3, { limit: 50, offset: 100 }) === '/api/admin/coupons/3/claims?limit=50&offset=100', 'coupon claims generated URL preserves opaque-safe page');
+  assert(getGetServicePeriodMemberGridAccessUrl(8).endsWith('/8/member-grid/access') && getGetServicePeriodMemberGridSchemaUrl(8).endsWith('/8/member-grid/schema') && getListServicePeriodMemberViewsUrl(8).endsWith('/8/member-views') && getGetServicePeriodMemberGridShareSettingsUrl(8).endsWith('/8/member-grid/share-settings'), 'Member Grid initialization generated URLs');
   assert(getGetLegacyImageUrl('img-1') === '/api/admin/image-library/img-1', 'image detail URL/method');
   assert(getGetLegacyImageVariantUrl('img-1', 'thumb_320') === '/api/admin/image-library/img-1/variants/thumb_320', 'image thumbnail URL/method');
   assert(getGetLegacyAttachmentUrl('att-1') === '/api/admin/attachment-library/att-1', 'attachment detail URL/method');
@@ -285,7 +290,8 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(orderPageDto({ merchant_order_no: 'WX-9', provider: 'wechat_pay', product_name: '营', status: 'paid' }).plat === 'wechat_pay', 'order provider response mapping');
   assert(productPageDto({ id: 1, name: '商品', status: 'active' }).tone === 'ok', 'product response mapping');
   assert(serviceProductPageDto({ id: 2, name: '周期', status: 'disabled' }).tone === 'gray', 'service product response mapping');
-  assert(couponPageDto({ name: '券', code: 'C', status: 'draft' }).tone === 'warn', 'coupon response mapping');
+  const couponProjection = couponPageDto({ name: '券', code: 'C', status: 'published', availability_status: 'active' });
+  assert(couponProjection.status === 'published' && couponProjection.availabilityStatus === 'active' && couponProjection.tone === 'ok', 'coupon response mapping preserves lifecycle and availability separately');
   assert(imagePageDto({ id: 11, file_name: 'a.png', enabled: false }).resourceId === '11', 'image response mapping keeps resource id');
   assert(attachmentPageDto({ id: 12, file_name: 'a.pdf', mime_type: 'application/pdf' }).resourceId === '12', 'attachment response mapping keeps resource id');
   assert(miniProgramPageDto({ id: 13, name: '小程序', thumbnail_status: 'ready' }).resourceId === 13, 'mini-program response mapping keeps resource id');
@@ -312,6 +318,47 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(JSON.parse(String(questionnaireCalls[0].init?.body)).questions[0].type === 'textarea', 'questionnaire request DTO mapping');
     assert(questionnaireCalls[1].input.endsWith('/41/enable') && questionnaireCalls[2].input.endsWith('/41/public-publish'), 'questionnaire enable/public publish sequence');
     assert(JSON.parse(String(questionnaireCalls[2].init?.body)).expected_questionnaire_version === 2, 'questionnaire publish CAS version');
+  } finally { globalThis.fetch = savedFetch; }
+
+  const couponReadCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const couponRead = { id: 31, name: '新客券', discount_amount_total: 10000, total_issue_limit: 1200, issued_count: 0, per_user_issue_limit: 1, claim_starts_at: '2026-08-01T00:00:00Z', claim_ends_at: '2026-08-31T00:00:00Z', validity_mode: 'relative_days', relative_validity_days: 7, instructions: '说明', target_refs: ['standard_product:9'], status: 'draft', version: 1 };
+  globalThis.fetch = async (input, init) => {
+    couponReadCalls.push({ input: String(input), init });
+    const path = new URL('http://localhost' + String(input));
+    const body = path.pathname.endsWith('/product-options')
+      ? { ok: true, items: [{ id: 9, target_ref: 'standard_product:9', name: '增长课', price_minor: 9900, currency: 'CNY' }], total: 21, limit: 20, offset: 20 }
+      : path.pathname.endsWith('/claims')
+        ? { ok: true, items: [{ id: 1, claim_ref: 'cp_abcdefghijklmnop', status: 'claimed', claimed_at: '2026-08-03T08:00:00Z' }], total: 51, limit: 50, offset: 0 }
+        : { ok: true, coupon: couponRead };
+    return new Response(JSON.stringify(body), { status: 200 });
+  };
+  try {
+    const [coupon, options, claims] = await Promise.all([getCouponDto(31), listCouponProductOptionsDto({ q: '增长', productType: 'standard_product', limit: 20, offset: 20 }), listCouponClaimsDto(31, { limit: 50, offset: 0 })]);
+    assert(coupon.resourceId === 31 && options.items[0].targetRef === 'standard_product:9' && options.total === 21 && claims.items[0].claimRef === 'cp_abcdefghijklmnop' && claims.total === 51, 'coupon read adapters map only declared detail/options/opaque claim fields');
+    assert(couponReadCalls.length === 3 && couponReadCalls.every((call) => call.init?.method === 'GET'), 'coupon read adapters use generated GET only');
+  } finally { globalThis.fetch = savedFetch; }
+
+  const gridColumns = ['member_ref', 'service_product_id', 'customer_id', 'state', 'source', 'starts_at', 'expires_at', 'expired_at', 'removed_at', 'version', 'updated_at', 'display_name'].map((key) => ({ key, label: key, type: 'string', nullable: key !== 'member_ref' }));
+  const gridCalls: Array<{ input: string; init?: RequestInit }> = [];
+  let unsafeGridShare = false;
+  globalThis.fetch = async (input, init) => {
+    gridCalls.push({ input: String(input), init });
+    const path = new URL('http://localhost' + String(input)).pathname;
+    const product = { service_product_id: 8, product_code: 'SP-8', name: '季度', description: '说明', price_minor: 398000, currency: 'CNY', stock_quantity: 5, lifecycle: 'draft', enabled: false, archived: false, version: 3, created_at: '', updated_at: '' };
+    const body = path.endsWith('/member-grid/access') ? { product_id: 8, can_view: true, can_query: true, can_manage_views: false, can_share: false }
+      : path.endsWith('/member-grid/schema') ? { service_product_id: 8, columns: gridColumns }
+        : path.endsWith('/member-views') ? { product_id: 8, views: [{ id: 'all-members', name: '全部成员', source: 'built_in', read_only: true }] }
+          : path.endsWith('/member-grid/share-settings') ? { service_product_id: 8, saved_views: [], collaborators: [{ user_id: 5 }], external_share_supported: false, external_share_enabled: false, real_external_call_executed: unsafeGridShare, collaborator_edit_is_local_metadata_only: true, collaborator_edit_grants_central_permission: false }
+            : { ok: true, product };
+    return new Response(JSON.stringify(body), { status: 200 });
+  };
+  try {
+    const grid = await getServicePeriodMemberGridMetaDto(8);
+    assert(grid.product.resourceId === 8 && grid.columns.length === 12 && grid.views[0].readOnly && grid.collaborators === 1 && !grid.externalShareSupported, 'Member Grid initializes only closed local metadata');
+    assert(gridCalls.length === 5 && gridCalls.every((call) => call.init?.method === 'GET'), 'Member Grid initialization uses five generated GET reads');
+    unsafeGridShare = true;
+    try { await getServicePeriodMemberGridMetaDto(8); assert(false, 'Member Grid external effect flag must fail closed'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('本地只读边界'), 'Member Grid external effect flag is rejected'); }
   } finally { globalThis.fetch = savedFetch; }
 
   let channelRequest: { input: string; init?: RequestInit } | undefined;

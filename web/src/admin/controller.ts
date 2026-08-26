@@ -91,6 +91,9 @@ type AdminState = {
   channelFormPreviewError: string;
   channelFormAssetError: string;
   channelFormAssetBusy: boolean;
+  /** 优惠券列表仅对已加载行做本地筛选，不产生新的服务端请求。 */
+  couponQuery: string;
+  couponStatus: string;
 };
 
 /** 全部屏幕键（go 跳转表） */
@@ -168,6 +171,8 @@ export class AdminController extends PageBase {
     channelFormPreviewError: '',
     channelFormAssetError: '',
     channelFormAssetBusy: false,
+    couponQuery: '',
+    couponStatus: '',
   };
 
   db: AdminDb = emptyAdminDb();
@@ -1149,6 +1154,7 @@ export class AdminController extends PageBase {
   }
 
   private saveCouponForm(publish: boolean): void {
+    if (this.api.mode !== 'http') return this.blocked('优惠券规则写入只能由当前 HttpApi / OpenAPI 执行；测试 Mock 不提供伪成功');
     const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null)?.value.trim() || '';
     const validityMode = value('couponValidityMode') === 'fixed_range' ? 'fixed_range' : 'relative_days';
     const input: CouponWriteInput = {
@@ -1651,23 +1657,35 @@ export class AdminController extends PageBase {
       },
       toggleText: p.lifecycle === 'enabled' ? '停用' : '启用',
     }));
-    const couponRows = rows.coupons.map((r, idx) => ({
+    const couponRows = rows.coupons.filter((r) => (!s.couponQuery || r.name.toLowerCase().includes(s.couponQuery.toLowerCase())) && (!s.couponStatus || (r.availabilityStatus || r.status) === s.couponStatus)).map((r, idx) => ({
       ...r,
+      displayStatus: r.availabilityStatus || r.status,
       cs: mk(r.tone),
       edit: () => r.resourceId ? this.goto('couponForm', '?id=' + r.resourceId) : toast('优惠券缺少服务端资源 ID', true),
       data: () => r.resourceId ? this.goto('couponData', '?id=' + r.resourceId) : this.goto('couponData', '?id=' + idx),
-      copyIt: () => r.resourceId && void this.api.copyCoupon(r.resourceId).then(() => { toast('优惠券副本已创建为草稿'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '优惠券复制失败', true)),
+      copyIt: () => {
+        if (this.api.mode !== 'http') return this.blocked('复制优惠券只能由当前 HttpApi / OpenAPI 执行；测试 Mock 不提供伪成功');
+        if (!r.resourceId) return toast('优惠券缺少服务端资源 ID', true);
+        void this.api.copyCoupon(r.resourceId).then((copied) => copied.resourceId ? this.goto('couponForm', '?id=' + copied.resourceId) : toast('优惠券复制响应缺少资源 ID', true)).catch((error) => toast(error instanceof Error ? error.message : '优惠券复制失败', true));
+      },
       toggle: () => {
+        if (this.api.mode !== 'http') return this.blocked('优惠券生命周期只能由当前 HttpApi / OpenAPI 执行；测试 Mock 不提供伪成功');
         if (!r.resourceId) return toast('优惠券缺少服务端资源 ID', true);
         const published = r.status !== 'published' && r.status !== 'active';
         const run = () => void this.api.setCouponPublished(r.resourceId!, published).then(() => { toast(published ? '优惠券已发布' : '优惠券已停用'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '优惠券状态变更失败', true));
-        if (published) run(); else confirmBox('停用优惠券', '停用后不能继续领取，已领取券仍按后端规则处理。确认停用？', '确认停用', true, run);
+        if (published) confirmBox('发布优惠券', '发布后按后端规则开放领取。确认发布？', '确认发布', true, run); else confirmBox('停用优惠券', '停用后不能继续领取，已领取券仍按后端规则处理。确认停用？', '确认停用', true, run);
       },
       toggleText: r.status === 'published' || r.status === 'active' ? '停用' : '发布',
-      archive: () => r.resourceId && confirmBox('归档优惠券', '归档后保留领取和核销记录。确认归档？', '确认归档', true, () => { void this.api.archiveCoupon(r.resourceId!).then(() => { toast('优惠券已归档'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '优惠券归档失败', true)); }),
-      del: () => r.resourceId && confirmBox('删除优惠券草稿', '仅未发布且无领取记录的草稿可删除。确认删除？', '确认删除', true, () => { void this.api.deleteCoupon(r.resourceId!).then(() => { toast('优惠券草稿已删除'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '优惠券删除失败', true)); }),
+      archive: () => {
+        if (this.api.mode !== 'http') return this.blocked('优惠券归档只能由当前 HttpApi / OpenAPI 执行；测试 Mock 不提供伪成功');
+        if (r.resourceId) confirmBox('归档优惠券', '归档后保留领取和核销记录。确认归档？', '确认归档', true, () => { void this.api.archiveCoupon(r.resourceId!).then(() => { toast('优惠券已归档'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '优惠券归档失败', true)); });
+      },
+      del: () => {
+        if (this.api.mode !== 'http') return this.blocked('优惠券删除只能由当前 HttpApi / OpenAPI 执行；测试 Mock 不提供伪成功');
+        if (r.resourceId) confirmBox('删除优惠券草稿', '仅未发布且无领取记录的草稿可删除。确认删除？', '确认删除', true, () => { void this.api.deleteCoupon(r.resourceId!).then(() => { toast('优惠券草稿已删除'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '优惠券删除失败', true)); });
+      },
       shareIt: () => {
-        if (this.api.mode === 'mock') return this.openShare('优惠券', r.name, r.code, `/c/c-${r.resourceId || idx + 1}`);
+        if (this.api.mode !== 'http') return this.blocked('优惠券分享地址只能由当前 HttpApi / OpenAPI 读取；测试 Mock 不提供伪成功');
         if (!r.resourceId) return toast('优惠券缺少服务端资源 ID，无法读取分享地址', true);
         void this.api.getCouponSharePath(r.resourceId).then((path) => this.openShare('优惠券', r.name, r.code, path)).catch((error) => toast(error instanceof Error ? error.message : '分享地址读取失败', true));
       },
@@ -2315,6 +2333,16 @@ export class AdminController extends PageBase {
         editConfig: () => coupon?.resourceId ? this.goto('couponForm', '?id=' + coupon.resourceId) : this.goto('couponForm'),
         back: () => this.goto('coupons'),
         shareIt: () => couponRows[couponIdx]?.shareIt(),
+      },
+      couponPage: {
+        query: s.couponQuery,
+        status: s.couponStatus,
+        statusOptions: [
+          { value: '', label: '全部状态', selected: !s.couponStatus, unselected: Boolean(s.couponStatus) },
+          ...['draft', 'scheduled', 'active', 'sold_out', 'ended', 'stopped', 'archived'].map((value) => ({ value, label: value === 'draft' ? '草稿' : value === 'scheduled' ? '未开始' : value === 'active' ? '进行中' : value === 'sold_out' ? '已领完' : value === 'ended' ? '已结束' : value === 'stopped' ? '已停止' : '已归档', selected: s.couponStatus === value, unselected: s.couponStatus !== value })),
+        ],
+        setQuery: (event: Event) => this.setState({ couponQuery: (event.currentTarget as HTMLInputElement).value }),
+        setStatus: (event: Event) => this.setState({ couponStatus: (event.currentTarget as HTMLSelectElement).value }),
       },
 
       customer: {
