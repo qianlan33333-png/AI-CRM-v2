@@ -65,6 +65,64 @@ CREATE TABLE public.group_ops_wecom_group_message_receipts (
   UNIQUE (msgid, sender_userid, chat_id, userid)
 );
 
+-- +goose StatementBegin
+CREATE FUNCTION public.aicrm_group_ops_wecom_group_message_receipt_guard()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'group ops WeCom group message receipts cannot be deleted' USING ERRCODE = '55000';
+  END IF;
+  IF NEW.external_effect_id IS DISTINCT FROM OLD.external_effect_id
+     OR NEW.execution_id IS DISTINCT FROM OLD.execution_id
+     OR NEW.msgid IS DISTINCT FROM OLD.msgid
+     OR NEW.sender_userid IS DISTINCT FROM OLD.sender_userid
+     OR NEW.chat_id IS DISTINCT FROM OLD.chat_id
+     OR NEW.userid IS DISTINCT FROM OLD.userid
+     OR NEW.task_evidence_digest IS DISTINCT FROM OLD.task_evidence_digest
+     OR NEW.created_at IS DISTINCT FROM OLD.created_at
+     OR NEW.updated_at < OLD.updated_at THEN
+    RAISE EXCEPTION 'group ops WeCom group message task receipt is immutable' USING ERRCODE = '55000';
+  END IF;
+  IF OLD.send_status IS NULL THEN
+    IF NEW.send_status IS DISTINCT FROM 1 OR NEW.delivery_evidence_digest IS NULL THEN
+      RAISE EXCEPTION 'group ops WeCom group message delivery must be set once' USING ERRCODE = '55000';
+    END IF;
+  ELSIF NEW.send_status IS DISTINCT FROM OLD.send_status
+        OR NEW.delivery_evidence_digest IS DISTINCT FROM OLD.delivery_evidence_digest THEN
+    RAISE EXCEPTION 'group ops WeCom group message delivery is immutable' USING ERRCODE = '55000';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+-- +goose StatementEnd
+
+-- +goose StatementBegin
+CREATE FUNCTION public.aicrm_group_ops_wecom_group_message_receipt_binding()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.group_ops_executions execution
+    JOIN public.external_effects effect ON effect.id = execution.external_effect_id
+    WHERE execution.id = NEW.execution_id
+      AND execution.external_effect_id = NEW.external_effect_id
+      AND effect.owner = 'group_ops'
+      AND effect.kind = 'group_ops_broadcast'
+  ) THEN
+    RAISE EXCEPTION 'group ops WeCom group message receipt must bind its exact group ops broadcast effect' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+-- +goose StatementEnd
+
+CREATE TRIGGER group_ops_wecom_group_message_receipts_guard
+BEFORE UPDATE OR DELETE ON public.group_ops_wecom_group_message_receipts
+FOR EACH ROW EXECUTE FUNCTION public.aicrm_group_ops_wecom_group_message_receipt_guard();
+CREATE TRIGGER group_ops_wecom_group_message_receipts_binding
+BEFORE INSERT OR UPDATE ON public.group_ops_wecom_group_message_receipts
+FOR EACH ROW EXECUTE FUNCTION public.aicrm_group_ops_wecom_group_message_receipt_binding();
+
 -- +goose Down
 LOCK TABLE public.group_ops_wecom_group_message_receipts, public.group_ops_executions IN SHARE ROW EXCLUSIVE MODE;
 -- +goose StatementBegin
@@ -77,6 +135,10 @@ BEGIN
 END;
 $$;
 -- +goose StatementEnd
+DROP TRIGGER group_ops_wecom_group_message_receipts_binding ON public.group_ops_wecom_group_message_receipts;
+DROP TRIGGER group_ops_wecom_group_message_receipts_guard ON public.group_ops_wecom_group_message_receipts;
+DROP FUNCTION public.aicrm_group_ops_wecom_group_message_receipt_binding();
+DROP FUNCTION public.aicrm_group_ops_wecom_group_message_receipt_guard();
 DROP TABLE public.group_ops_wecom_group_message_receipts;
 -- Restore 00085's guard before dropping the new column: both runtime triggers
 -- remain installed and must never retain a function body that references a

@@ -54,11 +54,20 @@ expect_material_facts_reject_down() {
   [[ "$(waterline)" = "98" ]]
 }
 
+expect_sql_rejected() {
+  local expected="$1"
+  local statement="$2"
+  local output
+  if output="$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "$statement" 2>&1)"; then
+    printf '%s\n' "$output" >&2
+    echo "expected SQL statement to be rejected" >&2
+    exit 1
+  fi
+  [[ "$output" == *"$expected"* ]]
+}
+
 fresh_database
 [[ "$(waterline)" = "85" ]]
-AICRM_GROUP_OPS_TEST_DATABASE_URL="$database_url" /usr/bin/env -u BASH_ENV -u ENV \
-  GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
-  "$go_command" test -race -count=1 -timeout=180s ./internal/groupops/... ./internal/externaleffects/... ./acceptance/groupops
 
 fresh_database
 [[ "$(waterline)" = "85" ]]
@@ -81,6 +90,9 @@ psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "DELETE FROM group_ops_director
 
 fresh_latest_database
 [[ "$(waterline)" = "98" ]]
+AICRM_GROUP_OPS_TEST_DATABASE_URL="$database_url" /usr/bin/env -u BASH_ENV -u ENV \
+  GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  "$go_command" test -race -count=1 -timeout=180s ./internal/groupops/... ./internal/externaleffects/... ./acceptance/groupops
 psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
   "WITH effect AS (
      INSERT INTO external_effects (owner, kind, source_ref_digest, target_ref_digest, payload_digest, policy_version_hash, envelope_fingerprint, state)
@@ -147,10 +159,79 @@ psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
    INSERT INTO group_ops_wecom_group_message_receipts (external_effect_id, execution_id, msgid, sender_userid, chat_id, userid, task_evidence_digest, created_at, updated_at)
    SELECT external_effect_id, id, 'msgid-material-guard', 'staff-guard', 'chat-material-guard', 'member-material-guard', 'sha256:' || repeat('4', 64), now(), now()
    FROM execution"
+psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
+  "INSERT INTO external_effects (owner, kind, source_ref_digest, target_ref_digest, payload_digest, policy_version_hash, envelope_fingerprint, state)
+   VALUES ('group_ops', 'group_ops_broadcast', 'sha256:' || repeat('6', 64), 'sha256:' || repeat('6', 64), 'sha256:' || repeat('6', 64), 'sha256:' || repeat('6', 64), 'sha256:' || repeat('6', 64), 'accepted')"
+expect_sql_rejected \
+  "group ops WeCom group message receipt must bind its exact group ops broadcast effect" \
+  "INSERT INTO group_ops_wecom_group_message_receipts (external_effect_id, execution_id, msgid, sender_userid, chat_id, userid, task_evidence_digest, created_at, updated_at)
+   SELECT mismatch.id, execution.id, 'msgid-mismatched-effect', 'staff-guard', 'chat-mismatched-effect', 'member-mismatched-effect', 'sha256:' || repeat('5', 64), now(), now()
+   FROM external_effects mismatch
+   CROSS JOIN group_ops_executions execution
+   WHERE mismatch.envelope_fingerprint = 'sha256:' || repeat('6', 64)
+     AND execution.target_reference = 'group:receipt-guard'"
+psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
+  "WITH binding AS (
+     SELECT p.id AS plan_id, n.id AS node_id, r.id AS run_id
+     FROM group_ops_plans p
+     JOIN group_ops_plan_nodes n ON n.plan_id = p.id
+     JOIN group_ops_runs r ON r.plan_id = p.id
+     WHERE p.name = 'Material Delivery Guard'
+   ), effect AS (
+     INSERT INTO external_effects (owner, kind, source_ref_digest, target_ref_digest, payload_digest, policy_version_hash, envelope_fingerprint, state)
+     VALUES ('campaign', 'campaign_dispatch', 'sha256:' || repeat('7', 64), 'sha256:' || repeat('7', 64), 'sha256:' || repeat('7', 64), 'sha256:' || repeat('7', 64), 'sha256:' || repeat('7', 64), 'accepted')
+     RETURNING id
+   )
+   INSERT INTO group_ops_executions (run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, sender_userid_snapshot, created_at, updated_at)
+   SELECT binding.run_id, binding.plan_id, binding.node_id, 1, 1, 'group:wrong-owner', 'sha256:' || repeat('7', 64), '{\"message_text\":\"guard\"}'::jsonb, 'sha256:' || repeat('7', 64), '{\"references\":[]}'::jsonb, 'sha256:' || repeat('7', 64), decode(repeat('7', 64), 'hex'), effect.id, 'staff-guard', now(), now()
+   FROM binding CROSS JOIN effect"
+expect_sql_rejected \
+  "group ops WeCom group message receipt must bind its exact group ops broadcast effect" \
+  "INSERT INTO group_ops_wecom_group_message_receipts (external_effect_id, execution_id, msgid, sender_userid, chat_id, userid, task_evidence_digest, created_at, updated_at)
+   SELECT external_effect_id, id, 'msgid-wrong-owner', 'staff-guard', 'chat-wrong-owner', 'member-wrong-owner', 'sha256:' || repeat('7', 64), now(), now()
+   FROM group_ops_executions WHERE target_reference = 'group:wrong-owner'"
+psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
+  "WITH binding AS (
+     SELECT p.id AS plan_id, n.id AS node_id, r.id AS run_id
+     FROM group_ops_plans p
+     JOIN group_ops_plan_nodes n ON n.plan_id = p.id
+     JOIN group_ops_runs r ON r.plan_id = p.id
+     WHERE p.name = 'Material Delivery Guard'
+   ), effect AS (
+     INSERT INTO external_effects (owner, kind, source_ref_digest, target_ref_digest, payload_digest, policy_version_hash, envelope_fingerprint, state)
+     VALUES ('group_ops', 'campaign_dispatch', 'sha256:' || repeat('8', 64), 'sha256:' || repeat('8', 64), 'sha256:' || repeat('8', 64), 'sha256:' || repeat('8', 64), 'sha256:' || repeat('8', 64), 'accepted')
+     RETURNING id
+   )
+   INSERT INTO group_ops_executions (run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, sender_userid_snapshot, created_at, updated_at)
+   SELECT binding.run_id, binding.plan_id, binding.node_id, 1, 1, 'group:wrong-kind', 'sha256:' || repeat('8', 64), '{\"message_text\":\"guard\"}'::jsonb, 'sha256:' || repeat('8', 64), '{\"references\":[]}'::jsonb, 'sha256:' || repeat('8', 64), decode(repeat('8', 64), 'hex'), effect.id, 'staff-guard', now(), now()
+   FROM binding CROSS JOIN effect"
+expect_sql_rejected \
+  "group ops WeCom group message receipt must bind its exact group ops broadcast effect" \
+  "INSERT INTO group_ops_wecom_group_message_receipts (external_effect_id, execution_id, msgid, sender_userid, chat_id, userid, task_evidence_digest, created_at, updated_at)
+   SELECT external_effect_id, id, 'msgid-wrong-kind', 'staff-guard', 'chat-wrong-kind', 'member-wrong-kind', 'sha256:' || repeat('8', 64), now(), now()
+   FROM group_ops_executions WHERE target_reference = 'group:wrong-kind'"
+expect_sql_rejected \
+  "group ops WeCom group message task receipt is immutable" \
+  "UPDATE group_ops_wecom_group_message_receipts SET msgid = 'msgid-tampered' WHERE msgid = 'msgid-material-guard'"
+expect_sql_rejected \
+  "group ops WeCom group message receipts cannot be deleted" \
+  "DELETE FROM group_ops_wecom_group_message_receipts WHERE msgid = 'msgid-material-guard'"
+psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
+  "UPDATE group_ops_wecom_group_message_receipts
+   SET send_status = 1, delivery_evidence_digest = 'sha256:' || repeat('9', 64), updated_at = now()
+   WHERE msgid = 'msgid-material-guard'"
+psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c \
+  "UPDATE group_ops_wecom_group_message_receipts
+   SET send_status = 1, delivery_evidence_digest = 'sha256:' || repeat('9', 64), updated_at = updated_at + interval '1 microsecond'
+   WHERE msgid = 'msgid-material-guard'"
+expect_sql_rejected \
+  "group ops WeCom group message delivery is immutable" \
+  "UPDATE group_ops_wecom_group_message_receipts SET delivery_evidence_digest = 'sha256:' || repeat('a', 64), updated_at = now() WHERE msgid = 'msgid-material-guard'"
 [[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM media_wecom_upload_preparations p JOIN media_wecom_upload_receipts r ON r.preparation_id = p.id WHERE p.state = 'ready' AND p.provider_media_id = r.provider_media_id")" = "1" ]]
 [[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM group_ops_execution_intents WHERE state = 'material_pending' AND execution_id IS NULL")" = "1" ]]
 [[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM group_ops_protocol_replays WHERE event_id = 'event-material-guard-0001' AND payload_digest = decode(repeat('d', 64), 'hex')")" = "1" ]]
 [[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM group_ops_wecom_group_message_receipts WHERE msgid = 'msgid-material-guard' AND sender_userid = 'staff-guard'")" = "1" ]]
+[[ "$(psql "$database_url" -X -q -v ON_ERROR_STOP=1 -At -c "SELECT count(*) FROM group_ops_wecom_group_message_receipts WHERE msgid = 'msgid-material-guard' AND send_status = 1 AND delivery_evidence_digest = 'sha256:' || repeat('9', 64)")" = "1" ]]
 expect_material_facts_reject_down
 fresh_latest_database
 [[ "$(waterline)" = "98" ]]
