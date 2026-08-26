@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -16,7 +17,7 @@ import (
 func TestCustomerAcquisitionClientUsesFrozenWeComContracts(t *testing.T) {
 	provider := staticTokenProvider{token: AccessToken{value: "token-safe"}}
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method != http.MethodPost || request.URL.Query().Get("access_token") != "token-safe" || request.Header.Get("Content-Type") != "application/json" {
+		if request.URL.Query().Get("access_token") != "token-safe" {
 			t.Fatalf("request=%s query=%q content-type=%q", request.Method, request.URL.RawQuery, request.Header.Get("Content-Type"))
 		}
 		body, err := io.ReadAll(request.Body)
@@ -24,34 +25,57 @@ func TestCustomerAcquisitionClientUsesFrozenWeComContracts(t *testing.T) {
 			t.Fatal(err)
 		}
 		switch request.URL.Path {
+		case "/cgi-bin/externalcontact/get_follow_user_list":
+			if request.Method != http.MethodGet || request.Header.Get("Content-Type") != "" || len(body) != 0 {
+				t.Fatalf("follow users request=%s content-type=%q body=%q", request.Method, request.Header.Get("Content-Type"), body)
+			}
+			_, _ = writer.Write([]byte(`{"errcode":0,"follow_user":["staff-b","staff-a","staff-b"]}`))
 		case "/cgi-bin/externalcontact/add_contact_way":
+			if request.Method != http.MethodPost || request.Header.Get("Content-Type") != "application/json" {
+				t.Fatalf("add request=%s content-type=%q", request.Method, request.Header.Get("Content-Type"))
+			}
 			want := `{"party":[12],"remark":"Summer","scene":2,"skip_verify":true,"state":"channel-a","type":2,"user":["staff-a"]}`
 			if string(body) != want {
 				t.Fatalf("add body=%s want=%s", body, want)
 			}
 			_, _ = writer.Write([]byte(`{"errcode":0,"config_id":"config-1","qr_code":"https://work.weixin.qq.com/q/config-1"}`))
 		case "/cgi-bin/externalcontact/get_contact_way":
+			if request.Method != http.MethodPost || request.Header.Get("Content-Type") != "application/json" {
+				t.Fatalf("get contact way request=%s content-type=%q", request.Method, request.Header.Get("Content-Type"))
+			}
 			if string(body) != `{"config_id":"config-1"}` {
 				t.Fatalf("get contact way body=%s", body)
 			}
 			_, _ = writer.Write([]byte(`{"errcode":0,"contact_way":{"type":2,"scene":2,"qr_code":"https://work.weixin.qq.com/q/config-1","skip_verify":true,"state":"channel-a","user":["staff-a"],"party":[12]}}`))
 		case "/cgi-bin/externalcontact/list_contact_way":
+			if request.Method != http.MethodPost || request.Header.Get("Content-Type") != "application/json" {
+				t.Fatalf("list contact ways request=%s content-type=%q", request.Method, request.Header.Get("Content-Type"))
+			}
 			if string(body) != `{"cursor":"prior","limit":2}` {
 				t.Fatalf("list contact ways body=%s", body)
 			}
 			_, _ = writer.Write([]byte(`{"errcode":0,"contact_way":[{"config_id":"config-1"},{"config_id":"config-2"}],"next_cursor":"next"}`))
 		case "/cgi-bin/externalcontact/customer_acquisition/create_link":
+			if request.Method != http.MethodPost || request.Header.Get("Content-Type") != "application/json" {
+				t.Fatalf("create link request=%s content-type=%q", request.Method, request.Header.Get("Content-Type"))
+			}
 			want := `{"link_name":"CH02 landing","range":{"department_list":[12],"user_list":["staff-a"]},"skip_verify":true}`
 			if string(body) != want {
 				t.Fatalf("create link body=%s want=%s", body, want)
 			}
 			_, _ = writer.Write([]byte(`{"errcode":0,"link_id":"link-1","url":"https://work.weixin.qq.com/ca/link-1"}`))
 		case "/cgi-bin/externalcontact/customer_acquisition/get":
+			if request.Method != http.MethodPost || request.Header.Get("Content-Type") != "application/json" {
+				t.Fatalf("get link request=%s content-type=%q", request.Method, request.Header.Get("Content-Type"))
+			}
 			if string(body) != `{"link_id":"link-1"}` {
 				t.Fatalf("get link body=%s", body)
 			}
 			_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_id":"link-1","link_name":"CH02 landing","url":"https://work.weixin.qq.com/ca/link-1","skip_verify":true,"range":{"user_list":["staff-a"],"department_list":[12]}}}`))
 		case "/cgi-bin/externalcontact/customer_acquisition/list_link":
+			if request.Method != http.MethodPost || request.Header.Get("Content-Type") != "application/json" {
+				t.Fatalf("list links request=%s content-type=%q", request.Method, request.Header.Get("Content-Type"))
+			}
 			if string(body) != `{"cursor":"prior","limit":2}` {
 				t.Fatalf("list links body=%s", body)
 			}
@@ -62,6 +86,10 @@ func TestCustomerAcquisitionClientUsesFrozenWeComContracts(t *testing.T) {
 	}))
 	defer server.Close()
 	client := testCustomerAcquisitionClient(t, server.URL, server.Client(), provider)
+	followers, err := client.ListFollowUsers(context.Background())
+	if err != nil || !reflect.DeepEqual(followers, []string{"staff-a", "staff-b"}) {
+		t.Fatalf("ListFollowUsers()=%#v err=%v", followers, err)
+	}
 
 	contact, err := client.PublishContactWay(context.Background(), ContactWayRequest{Type: 2, Scene: 2, Remark: "Summer", SkipVerify: true, State: "channel-a", UserIDs: []string{"staff-a"}, PartyIDs: []int64{12}})
 	if err != nil || contact.ConfigID != "config-1" || contact.QRCodeURL != "https://work.weixin.qq.com/q/config-1" {
@@ -145,12 +173,15 @@ func TestCustomerAcquisitionReadTokenExpiryRefreshesAtMostOnce(t *testing.T) {
 		if got := request.URL.Query().Get("access_token"); got != "fresh" {
 			t.Fatalf("access_token=%q", got)
 		}
-		_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_id":"link-1","link_name":"known","url":"https://work.weixin.qq.com/ca/link-1","range":{"user_list":["staff-a"],"department_list":[]}}}`))
+		if request.Method != http.MethodGet {
+			t.Fatalf("method=%s", request.Method)
+		}
+		_, _ = writer.Write([]byte(`{"errcode":0,"follow_user":["staff-a"]}`))
 	}))
 	defer server.Close()
 	client := testCustomerAcquisitionClient(t, server.URL, server.Client(), &provider)
-	if _, err := client.GetCustomerAcquisitionLink(context.Background(), "link-1"); err != nil {
-		t.Fatal(err)
+	if users, err := client.ListFollowUsers(context.Background()); err != nil || !reflect.DeepEqual(users, []string{"staff-a"}) {
+		t.Fatalf("ListFollowUsers()=%#v err=%v", users, err)
 	}
 	if calls.Load() != 2 || provider.refreshes.Load() != 1 {
 		t.Fatalf("calls=%d refreshes=%d", calls.Load(), provider.refreshes.Load())
@@ -200,6 +231,39 @@ func TestCustomerAcquisitionReadsFailClosedAndDoNotLeakToken(t *testing.T) {
 	}
 }
 
+func TestCustomerAcquisitionFollowUsersFailClosedForMalformedOrProviderResponses(t *testing.T) {
+	for _, testCase := range []struct {
+		name       string
+		response   string
+		unexpected bool
+	}{
+		{name: "missing follow users", response: `{"errcode":0}`, unexpected: true},
+		{name: "invalid user id", response: `{"errcode":0,"follow_user":["staff-a"," bad"]}`, unexpected: true},
+		{name: "provider rejection", response: `{"errcode":40013,"errmsg":"invalid user"}`},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				if request.Method != http.MethodGet {
+					t.Fatalf("method=%s", request.Method)
+				}
+				_, _ = writer.Write([]byte(testCase.response))
+			}))
+			defer server.Close()
+			client := testCustomerAcquisitionClient(t, server.URL, server.Client(), staticTokenProvider{token: AccessToken{value: "token-safe"}})
+			users, err := client.ListFollowUsers(context.Background())
+			if testCase.unexpected && !errors.Is(err, ErrUnexpectedResponse) {
+				t.Fatalf("ListFollowUsers() users=%#v err=%v", users, err)
+			}
+			if !testCase.unexpected && err == nil {
+				t.Fatalf("ListFollowUsers() accepted provider rejection: users=%#v", users)
+			}
+			if users != nil {
+				t.Fatalf("ListFollowUsers() leaked partial users=%#v", users)
+			}
+		})
+	}
+}
+
 func TestCustomerAcquisitionReadTransportErrorRedactsAccessToken(t *testing.T) {
 	secret := "token-must-not-leak"
 	client := testCustomerAcquisitionClient(t, "https://qyapi.weixin.qq.com", &http.Client{Transport: roundTripperFunc(func(*http.Request) (*http.Response, error) {
@@ -218,6 +282,9 @@ func TestDisabledCustomerAcquisitionClientNeverGetsTokenOrCallsHTTP(t *testing.T
 	}
 	if _, err := disabled.CreateCustomerAcquisitionLink(context.Background(), CustomerAcquisitionLinkRequest{}); !errors.Is(err, ErrCustomerAcquisitionDisabled) {
 		t.Fatalf("CreateCustomerAcquisitionLink() err=%v", err)
+	}
+	if _, err := disabled.ListFollowUsers(context.Background()); !errors.Is(err, ErrCustomerAcquisitionDisabled) {
+		t.Fatalf("ListFollowUsers() err=%v", err)
 	}
 }
 

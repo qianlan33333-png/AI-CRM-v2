@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -163,6 +164,40 @@ func (client *CustomerAcquisitionClient) ReconcileContactWay(ctx context.Context
 	return client.GetContactWay(ctx, configID)
 }
 
+// ListFollowUsers reads the configured application's current external-contact
+// service users. It is a read-only provider boundary: it neither creates local
+// staff nor changes any channel assignment.
+func (client *CustomerAcquisitionClient) ListFollowUsers(ctx context.Context) ([]string, error) {
+	if client == nil {
+		return nil, ErrInvalidConfig
+	}
+	var payload struct {
+		ErrCode    int      `json:"errcode"`
+		ErrMsg     string   `json:"errmsg"`
+		FollowUser []string `json:"follow_user"`
+	}
+	if err := client.get(ctx, "/cgi-bin/externalcontact/get_follow_user_list", &payload); err != nil {
+		return nil, err
+	}
+	if payload.FollowUser == nil {
+		return nil, ErrUnexpectedResponse
+	}
+	seen := make(map[string]struct{}, len(payload.FollowUser))
+	users := make([]string, 0, len(payload.FollowUser))
+	for _, userID := range payload.FollowUser {
+		if !validRequiredText(userID, 128) {
+			return nil, ErrUnexpectedResponse
+		}
+		if _, exists := seen[userID]; exists {
+			continue
+		}
+		seen[userID] = struct{}{}
+		users = append(users, userID)
+	}
+	sort.Strings(users)
+	return users, nil
+}
+
 type CustomerAcquisitionLinkRequest struct {
 	LinkName      string
 	UserIDs       []string
@@ -275,14 +310,18 @@ func (client *CustomerAcquisitionClient) ReconcileCustomerAcquisitionLink(ctx co
 }
 
 func (client *CustomerAcquisitionClient) read(ctx context.Context, path string, requestBody any, target any) error {
-	return client.post(ctx, path, requestBody, target, false)
+	return client.request(ctx, http.MethodPost, path, requestBody, target, false)
 }
 
 func (client *CustomerAcquisitionClient) write(ctx context.Context, path string, requestBody any, target any) error {
-	return client.post(ctx, path, requestBody, target, true)
+	return client.request(ctx, http.MethodPost, path, requestBody, target, true)
 }
 
-func (client *CustomerAcquisitionClient) post(ctx context.Context, path string, requestBody any, target any, write bool) error {
+func (client *CustomerAcquisitionClient) get(ctx context.Context, path string, target any) error {
+	return client.request(ctx, http.MethodGet, path, nil, target, false)
+}
+
+func (client *CustomerAcquisitionClient) request(ctx context.Context, method, path string, requestBody any, target any, write bool) error {
 	if ctx == nil {
 		return ErrInvalidConfig
 	}
@@ -295,7 +334,7 @@ func (client *CustomerAcquisitionClient) post(ctx context.Context, path string, 
 	}
 	retry := false
 	for {
-		code, err := client.postWithToken(ctx, path, requestBody, token, target, write)
+		code, err := client.requestWithToken(ctx, method, path, requestBody, token, target, write)
 		if err != nil {
 			return err
 		}
@@ -325,20 +364,28 @@ func (client *CustomerAcquisitionClient) post(ctx context.Context, path string, 
 	}
 }
 
-func (client *CustomerAcquisitionClient) postWithToken(ctx context.Context, path string, requestBody any, token AccessToken, target any, write bool) (int, error) {
-	body, err := json.Marshal(requestBody)
-	if err != nil {
+func (client *CustomerAcquisitionClient) requestWithToken(ctx context.Context, method, path string, requestBody any, token AccessToken, target any, write bool) (int, error) {
+	var body io.Reader
+	if method == http.MethodPost {
+		encoded, err := json.Marshal(requestBody)
+		if err != nil {
+			return 0, ErrInvalidConfig
+		}
+		body = bytes.NewReader(encoded)
+	} else if method != http.MethodGet || requestBody != nil {
 		return 0, ErrInvalidConfig
 	}
 	endpoint := client.baseURL.ResolveReference(&url.URL{Path: path})
 	query := url.Values{}
 	query.Set("access_token", token.Value())
 	endpoint.RawQuery = query.Encode()
-	request, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint.String(), bytes.NewReader(body))
+	request, err := http.NewRequestWithContext(ctx, method, endpoint.String(), body)
 	if err != nil {
 		return 0, ErrInvalidConfig
 	}
-	request.Header.Set("Content-Type", "application/json")
+	if method == http.MethodPost {
+		request.Header.Set("Content-Type", "application/json")
+	}
 	response, err := client.httpClient.Do(request)
 	if err != nil {
 		if write {
@@ -484,6 +531,9 @@ func (*DisabledCustomerAcquisitionClient) ListContactWays(context.Context, strin
 }
 func (*DisabledCustomerAcquisitionClient) ReconcileContactWay(context.Context, string) (ContactWay, error) {
 	return ContactWay{}, ErrCustomerAcquisitionDisabled
+}
+func (*DisabledCustomerAcquisitionClient) ListFollowUsers(context.Context) ([]string, error) {
+	return nil, ErrCustomerAcquisitionDisabled
 }
 func (*DisabledCustomerAcquisitionClient) CreateCustomerAcquisitionLink(context.Context, CustomerAcquisitionLinkRequest) (CustomerAcquisitionLink, error) {
 	return CustomerAcquisitionLink{}, ErrCustomerAcquisitionDisabled
