@@ -638,7 +638,7 @@ export type ServicePeriodMemberGridPage = { rows: ServicePeriodMemberGridRow[]; 
 export type ServicePeriodMemberDetail = ServicePeriodMemberGridRow & { remark: string | null; alliance: string | null; createdAt: string };
 export type ServicePeriodMemberGridCollaborator = { collaboratorId: number; serviceProductId: number; staffId: number; permission: 'view' | 'edit'; version: number; invitedBy: number; createdAt: string; updatedAt: string };
 export type ServicePeriodMemberGridMeta = { product: SpProduct; columns: Array<{ key: string; label: string; type: string; nullable: boolean }>; views: Array<{ id: string; name: string; readOnly: boolean }>; collaborators: number; collaboratorRows: ServicePeriodMemberGridCollaborator[] };
-const requiredPositive = (value: unknown, field: string): number => { const number = Number(value); if (!Number.isSafeInteger(number) || number < 1) throw new Error(`响应缺少有效 ${field}`); return number; };
+const requiredPositiveValue = (value: unknown, field: string): number => { const number = Number(value); if (!Number.isSafeInteger(number) || number < 1) throw new Error(`响应缺少有效 ${field}`); return number; };
 const requiredNonNegative = (value: unknown, field: string): number => { const number = Number(value); if (!Number.isSafeInteger(number) || number < 0) throw new Error(`响应缺少有效 ${field}`); return number; };
 const requiredString = (value: unknown, field: string): string => { if (typeof value !== 'string' || !value) throw new Error(`响应缺少 ${field}`); return value; };
 const nullableString = (value: unknown, field: string): string | null => value == null ? null : requiredString(value, field);
@@ -647,14 +647,14 @@ const memberSource = (value: unknown, field: string): MemberGridSource => { if (
 const memberRef = (value: unknown): string => { const ref = requiredString(value, 'member_ref'); if (!/^spm_[A-Za-z0-9_-]{22}$/.test(ref)) throw new Error('响应包含无效 member_ref'); return ref; };
 const memberRowDto = (value: unknown, productId: number): ServicePeriodMemberGridRow => {
   const source = obj(value);
-  if (requiredPositive(source.service_product_id, 'service_product_id') !== productId) throw new Error('Member Grid 行商品范围不匹配');
-  return { memberRef: memberRef(source.member_ref), serviceProductId: productId, customerId: requiredPositive(source.customer_id, 'customer_id'), state: memberState(source.state, 'state'), source: memberSource(source.source, 'source'), startsAt: requiredString(source.starts_at, 'starts_at'), expiresAt: nullableString(source.expires_at, 'expires_at'), expiredAt: nullableString(source.expired_at, 'expired_at'), removedAt: nullableString(source.removed_at, 'removed_at'), version: requiredPositive(source.version, 'version'), updatedAt: requiredString(source.updated_at, 'updated_at'), displayName: requiredString(source.display_name, 'display_name') };
+  if (requiredPositiveValue(source.service_product_id, 'service_product_id') !== productId) throw new Error('Member Grid 行商品范围不匹配');
+  return { memberRef: memberRef(source.member_ref), serviceProductId: productId, customerId: requiredPositiveValue(source.customer_id, 'customer_id'), state: memberState(source.state, 'state'), source: memberSource(source.source, 'source'), startsAt: requiredString(source.starts_at, 'starts_at'), expiresAt: nullableString(source.expires_at, 'expires_at'), expiredAt: nullableString(source.expired_at, 'expired_at'), removedAt: nullableString(source.removed_at, 'removed_at'), version: requiredPositiveValue(source.version, 'version'), updatedAt: requiredString(source.updated_at, 'updated_at'), displayName: requiredString(source.display_name, 'display_name') };
 };
 const collaboratorDto = (value: unknown, productId: number): ServicePeriodMemberGridCollaborator => {
   const source = obj(value);
-  if (requiredPositive(source.service_product_id, 'collaborator.service_product_id') !== productId) throw new Error('Member Grid 协作者商品范围不匹配');
+  if (requiredPositiveValue(source.service_product_id, 'collaborator.service_product_id') !== productId) throw new Error('Member Grid 协作者商品范围不匹配');
   if (source.permission !== 'view' && source.permission !== 'edit') throw new Error('Member Grid 协作者权限未知');
-  return { collaboratorId: requiredPositive(source.collaborator_id, 'collaborator_id'), serviceProductId: productId, staffId: requiredPositive(source.staff_id, 'staff_id'), permission: source.permission, version: requiredPositive(source.version, 'collaborator.version'), invitedBy: requiredPositive(source.invited_by, 'invited_by'), createdAt: requiredString(source.created_at, 'collaborator.created_at'), updatedAt: requiredString(source.updated_at, 'collaborator.updated_at') };
+  return { collaboratorId: requiredPositiveValue(source.collaborator_id, 'collaborator_id'), serviceProductId: productId, staffId: requiredPositiveValue(source.staff_id, 'staff_id'), permission: source.permission, version: requiredPositiveValue(source.version, 'collaborator.version'), invitedBy: requiredPositiveValue(source.invited_by, 'invited_by'), createdAt: requiredString(source.created_at, 'collaborator.created_at'), updatedAt: requiredString(source.updated_at, 'collaborator.updated_at') };
 };
 const localCollaboratorResult = (value: unknown, productId: number): ServicePeriodMemberGridCollaborator => {
   const source = obj(value);
@@ -665,12 +665,12 @@ export async function getCouponDto(couponId: number): Promise<Coupon> { const re
 export async function listCouponProductOptionsDto(input: { q?: string; productType?: 'all' | 'standard_product' | 'service_period'; limit?: number; offset?: number } = {}): Promise<CouponProductOptionPage> {
   const page = obj(await call(listLegacyCouponProductOptions({ q: input.q, product_type: input.productType, limit: input.limit, offset: input.offset }, apiRequestOptions())));
   if (page.ok !== true) throw new Error('优惠券商品选项响应不完整');
-  return { items: list(page, 'items').map((item) => { const source = obj(item); return { targetRef: requiredString(source.target_ref, 'target_ref'), name: requiredString(source.name, 'name'), priceMinor: requiredNonNegative(source.price_minor, 'price_minor'), currency: requiredString(source.currency, 'currency') }; }), total: requiredNonNegative(page.total, 'total'), limit: requiredPositive(page.limit, 'limit'), offset: requiredNonNegative(page.offset, 'offset') };
+  return { items: list(page, 'items').map((item) => { const source = obj(item); return { targetRef: requiredString(source.target_ref, 'target_ref'), name: requiredString(source.name, 'name'), priceMinor: requiredNonNegative(source.price_minor, 'price_minor'), currency: requiredString(source.currency, 'currency') }; }), total: requiredNonNegative(page.total, 'total'), limit: requiredPositiveValue(page.limit, 'limit'), offset: requiredNonNegative(page.offset, 'offset') };
 }
 export async function listCouponClaimsDto(couponId: number, input: { limit?: number; offset?: number } = {}): Promise<CouponClaimPage> {
   const page = obj(await call(listLegacyCouponClaims(couponId, { limit: input.limit, offset: input.offset }, apiRequestOptions())));
   if (page.ok !== true) throw new Error('优惠券领取记录响应不完整');
-  return { items: list(page, 'items').map((item) => { const source = obj(item); return { claimRef: requiredString(source.claim_ref, 'claim_ref'), status: requiredString(source.status, 'status'), claimedAt: requiredString(source.claimed_at, 'claimed_at') }; }), total: requiredNonNegative(page.total, 'total'), limit: requiredPositive(page.limit, 'limit'), offset: requiredNonNegative(page.offset, 'offset') };
+  return { items: list(page, 'items').map((item) => { const source = obj(item); return { claimRef: requiredString(source.claim_ref, 'claim_ref'), status: requiredString(source.status, 'status'), claimedAt: requiredString(source.claimed_at, 'claimed_at') }; }), total: requiredNonNegative(page.total, 'total'), limit: requiredPositiveValue(page.limit, 'limit'), offset: requiredNonNegative(page.offset, 'offset') };
 }
 export async function getServicePeriodMemberGridMetaDto(productId: number): Promise<ServicePeriodMemberGridMeta> {
   const options = apiRequestOptions();
@@ -682,7 +682,7 @@ export async function getServicePeriodMemberGridMetaDto(productId: number): Prom
     call(getServicePeriodMemberGridShareSettings(productId, options)),
   ]);
   const productSource = obj(productResult); const access = obj(accessResult); const schema = obj(schemaResult); const views = obj(viewsResult); const share = obj(shareResult);
-  if (requiredPositive(access.product_id, 'access.product_id') !== productId || requiredPositive(schema.service_product_id, 'schema.service_product_id') !== productId || requiredPositive(views.product_id, 'views.product_id') !== productId || requiredPositive(share.service_product_id, 'share.service_product_id') !== productId) throw new Error('Member Grid 响应范围不匹配');
+  if (requiredPositiveValue(access.product_id, 'access.product_id') !== productId || requiredPositiveValue(schema.service_product_id, 'schema.service_product_id') !== productId || requiredPositiveValue(views.product_id, 'views.product_id') !== productId || requiredPositiveValue(share.service_product_id, 'share.service_product_id') !== productId) throw new Error('Member Grid 响应范围不匹配');
   if (access.can_view !== true || access.can_query !== true) throw new Error('当前账号无 Member Grid 读取权限');
   if (access.can_manage_views !== false || access.can_share !== false || share.external_share_supported !== false || share.external_share_enabled !== false || share.real_external_call_executed !== false || share.collaborator_edit_is_local_metadata_only !== true || share.collaborator_edit_grants_central_permission !== false) throw new Error('Member Grid 响应越过本地只读边界');
   const columns = list(schema, 'columns').map((item) => { const column = obj(item); return { key: requiredString(column.key, 'column.key'), label: requiredString(column.label, 'column.label'), type: requiredString(column.type, 'column.type'), nullable: column.nullable === true }; });
@@ -698,7 +698,7 @@ export async function queryServicePeriodMemberGridDto(productId: number, input: 
   const page = obj(await call(queryServicePeriodMemberGrid(productId, { state, source: source || undefined, limit, cursor: input.cursor || '' }, apiRequestOptions())));
   if (!Array.isArray(page.rows) || typeof page.next_cursor !== 'string' || (page.has_more !== true && page.has_more !== false)) throw new Error('Member Grid 查询响应不完整');
   const rows = page.rows.map((item) => memberRowDto(item, productId));
-  const pageLimit = requiredPositive(page.limit, 'limit'); if (pageLimit > 50 || pageLimit !== limit) throw new Error('Member Grid 查询页大小不匹配');
+  const pageLimit = requiredPositiveValue(page.limit, 'limit'); if (pageLimit > 50 || pageLimit !== limit) throw new Error('Member Grid 查询页大小不匹配');
   const nextCursor = page.next_cursor; if (page.has_more && !nextCursor) throw new Error('Member Grid 下一页缺少 cursor');
   return { rows, limit: pageLimit, nextCursor, hasMore: page.has_more };
 }
