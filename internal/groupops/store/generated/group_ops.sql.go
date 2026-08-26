@@ -11,6 +11,49 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const acceptGroupOpsExecutionIntent = `-- name: AcceptGroupOpsExecutionIntent :one
+UPDATE group_ops_execution_intents
+SET state = 'accepted', execution_id = $1, updated_at = $2
+WHERE id = $3 AND state = 'ready_to_accept' AND execution_id IS NULL
+RETURNING id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, sender_userid_snapshot, scheduled_for, content_snapshot, content_digest, material_source_snapshot, material_source_digest, execution_key_digest, state, continuation_job_id, continuation_generation, execution_id, failure_code, created_at, updated_at
+`
+
+type AcceptGroupOpsExecutionIntentParams struct {
+	ExecutionID pgtype.Int8        `json:"execution_id"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	IntentID    int64              `json:"intent_id"`
+}
+
+func (q *Queries) AcceptGroupOpsExecutionIntent(ctx context.Context, arg AcceptGroupOpsExecutionIntentParams) (GroupOpsExecutionIntent, error) {
+	row := q.db.QueryRow(ctx, acceptGroupOpsExecutionIntent, arg.ExecutionID, arg.UpdatedAt, arg.IntentID)
+	var i GroupOpsExecutionIntent
+	err := row.Scan(
+		&i.ID,
+		&i.RunID,
+		&i.PlanID,
+		&i.NodeID,
+		&i.PlanRevision,
+		&i.NodePosition,
+		&i.TargetReference,
+		&i.TargetDigest,
+		&i.SenderUseridSnapshot,
+		&i.ScheduledFor,
+		&i.ContentSnapshot,
+		&i.ContentDigest,
+		&i.MaterialSourceSnapshot,
+		&i.MaterialSourceDigest,
+		&i.ExecutionKeyDigest,
+		&i.State,
+		&i.ContinuationJobID,
+		&i.ContinuationGeneration,
+		&i.ExecutionID,
+		&i.FailureCode,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const completeGroupOpsOperationReceipt = `-- name: CompleteGroupOpsOperationReceipt :one
 UPDATE group_ops_operation_receipts
 SET state = 'completed', result_snapshot = $1, completed_at = $2
@@ -130,8 +173,8 @@ func (q *Queries) CreateGroupOpsPlanMember(ctx context.Context, arg CreateGroupO
 }
 
 const createGroupOpsPlanNode = `-- name: CreateGroupOpsPlanNode :exec
-INSERT INTO group_ops_plan_nodes (plan_id, position, kind, message_text, delay_minutes, material_reference)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO group_ops_plan_nodes (plan_id, position, kind, message_text, delay_minutes, material_reference, material_plan)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 `
 
 type CreateGroupOpsPlanNodeParams struct {
@@ -141,6 +184,7 @@ type CreateGroupOpsPlanNodeParams struct {
 	MessageText       string `json:"message_text"`
 	DelayMinutes      int32  `json:"delay_minutes"`
 	MaterialReference string `json:"material_reference"`
+	MaterialPlan      []byte `json:"material_plan"`
 }
 
 func (q *Queries) CreateGroupOpsPlanNode(ctx context.Context, arg CreateGroupOpsPlanNodeParams) error {
@@ -151,6 +195,7 @@ func (q *Queries) CreateGroupOpsPlanNode(ctx context.Context, arg CreateGroupOps
 		arg.MessageText,
 		arg.DelayMinutes,
 		arg.MaterialReference,
+		arg.MaterialPlan,
 	)
 	return err
 }
@@ -220,6 +265,49 @@ func (q *Queries) DeleteMissingGroupOpsPlanNodes(ctx context.Context, arg Delete
 	return err
 }
 
+const failGroupOpsExecutionIntent = `-- name: FailGroupOpsExecutionIntent :one
+UPDATE group_ops_execution_intents
+SET state = 'final_failed', failure_code = $1, updated_at = $2
+WHERE id = $3 AND state IN ('material_pending','ready_to_accept')
+RETURNING id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, sender_userid_snapshot, scheduled_for, content_snapshot, content_digest, material_source_snapshot, material_source_digest, execution_key_digest, state, continuation_job_id, continuation_generation, execution_id, failure_code, created_at, updated_at
+`
+
+type FailGroupOpsExecutionIntentParams struct {
+	FailureCode pgtype.Text        `json:"failure_code"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	IntentID    int64              `json:"intent_id"`
+}
+
+func (q *Queries) FailGroupOpsExecutionIntent(ctx context.Context, arg FailGroupOpsExecutionIntentParams) (GroupOpsExecutionIntent, error) {
+	row := q.db.QueryRow(ctx, failGroupOpsExecutionIntent, arg.FailureCode, arg.UpdatedAt, arg.IntentID)
+	var i GroupOpsExecutionIntent
+	err := row.Scan(
+		&i.ID,
+		&i.RunID,
+		&i.PlanID,
+		&i.NodeID,
+		&i.PlanRevision,
+		&i.NodePosition,
+		&i.TargetReference,
+		&i.TargetDigest,
+		&i.SenderUseridSnapshot,
+		&i.ScheduledFor,
+		&i.ContentSnapshot,
+		&i.ContentDigest,
+		&i.MaterialSourceSnapshot,
+		&i.MaterialSourceDigest,
+		&i.ExecutionKeyDigest,
+		&i.State,
+		&i.ContinuationJobID,
+		&i.ContinuationGeneration,
+		&i.ExecutionID,
+		&i.FailureCode,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const findGroupOpsPlanByWebhookReference = `-- name: FindGroupOpsPlanByWebhookReference :one
 SELECT p.id
 FROM group_ops_plans p
@@ -232,6 +320,41 @@ func (q *Queries) FindGroupOpsPlanByWebhookReference(ctx context.Context, refere
 	var id int64
 	err := row.Scan(&id)
 	return id, err
+}
+
+const getAcceptedGroupOpsExecutionIntent = `-- name: GetAcceptedGroupOpsExecutionIntent :one
+SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, sender_userid_snapshot, scheduled_for, content_snapshot, content_digest, material_source_snapshot, material_source_digest, execution_key_digest, state, continuation_job_id, continuation_generation, execution_id, failure_code, created_at, updated_at FROM group_ops_execution_intents
+WHERE execution_id = $1 AND state = 'accepted'
+`
+
+func (q *Queries) GetAcceptedGroupOpsExecutionIntent(ctx context.Context, executionID pgtype.Int8) (GroupOpsExecutionIntent, error) {
+	row := q.db.QueryRow(ctx, getAcceptedGroupOpsExecutionIntent, executionID)
+	var i GroupOpsExecutionIntent
+	err := row.Scan(
+		&i.ID,
+		&i.RunID,
+		&i.PlanID,
+		&i.NodeID,
+		&i.PlanRevision,
+		&i.NodePosition,
+		&i.TargetReference,
+		&i.TargetDigest,
+		&i.SenderUseridSnapshot,
+		&i.ScheduledFor,
+		&i.ContentSnapshot,
+		&i.ContentDigest,
+		&i.MaterialSourceSnapshot,
+		&i.MaterialSourceDigest,
+		&i.ExecutionKeyDigest,
+		&i.State,
+		&i.ContinuationJobID,
+		&i.ContinuationGeneration,
+		&i.ExecutionID,
+		&i.FailureCode,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const getGroupOpsDirectoryRefresh = `-- name: GetGroupOpsDirectoryRefresh :one
@@ -632,6 +755,126 @@ func (q *Queries) InsertGroupOpsExecution(ctx context.Context, arg InsertGroupOp
 	return i, err
 }
 
+const insertGroupOpsExecutionIntent = `-- name: InsertGroupOpsExecutionIntent :one
+WITH inserted AS (
+  INSERT INTO group_ops_execution_intents (
+    run_id, plan_id, node_id, plan_revision, node_position, target_reference,
+    target_digest, sender_userid_snapshot, scheduled_for, content_snapshot,
+    content_digest, material_source_snapshot, material_source_digest,
+    execution_key_digest, continuation_job_id, continuation_generation,
+    created_at, updated_at
+  ) VALUES (
+    $1, $2, $3, $4,
+    $5, $6, $7,
+    $8, $9, $10,
+    $11, $12, $13,
+    $14, $15,
+    $16, $17, $17
+  )
+  ON CONFLICT (execution_key_digest) DO NOTHING
+  RETURNING id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, sender_userid_snapshot, scheduled_for, content_snapshot, content_digest, material_source_snapshot, material_source_digest, execution_key_digest, state, continuation_job_id, continuation_generation, execution_id, failure_code, created_at, updated_at
+)
+SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, sender_userid_snapshot, scheduled_for, content_snapshot, content_digest, material_source_snapshot, material_source_digest, execution_key_digest, state, continuation_job_id, continuation_generation, execution_id, failure_code, created_at, updated_at FROM inserted
+UNION ALL
+SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, sender_userid_snapshot, scheduled_for, content_snapshot, content_digest, material_source_snapshot, material_source_digest, execution_key_digest, state, continuation_job_id, continuation_generation, execution_id, failure_code, created_at, updated_at FROM group_ops_execution_intents
+WHERE execution_key_digest = $14
+  AND NOT EXISTS (SELECT 1 FROM inserted)
+LIMIT 1
+`
+
+type InsertGroupOpsExecutionIntentParams struct {
+	RunID                  int64              `json:"run_id"`
+	PlanID                 int64              `json:"plan_id"`
+	NodeID                 int64              `json:"node_id"`
+	PlanRevision           int64              `json:"plan_revision"`
+	NodePosition           int32              `json:"node_position"`
+	TargetReference        string             `json:"target_reference"`
+	TargetDigest           string             `json:"target_digest"`
+	SenderUseridSnapshot   string             `json:"sender_userid_snapshot"`
+	ScheduledFor           pgtype.Timestamptz `json:"scheduled_for"`
+	ContentSnapshot        []byte             `json:"content_snapshot"`
+	ContentDigest          string             `json:"content_digest"`
+	MaterialSourceSnapshot []byte             `json:"material_source_snapshot"`
+	MaterialSourceDigest   string             `json:"material_source_digest"`
+	ExecutionKeyDigest     []byte             `json:"execution_key_digest"`
+	ContinuationJobID      int64              `json:"continuation_job_id"`
+	ContinuationGeneration int64              `json:"continuation_generation"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+}
+
+type InsertGroupOpsExecutionIntentRow struct {
+	ID                     int64              `json:"id"`
+	RunID                  int64              `json:"run_id"`
+	PlanID                 int64              `json:"plan_id"`
+	NodeID                 int64              `json:"node_id"`
+	PlanRevision           int64              `json:"plan_revision"`
+	NodePosition           int32              `json:"node_position"`
+	TargetReference        string             `json:"target_reference"`
+	TargetDigest           string             `json:"target_digest"`
+	SenderUseridSnapshot   string             `json:"sender_userid_snapshot"`
+	ScheduledFor           pgtype.Timestamptz `json:"scheduled_for"`
+	ContentSnapshot        []byte             `json:"content_snapshot"`
+	ContentDigest          string             `json:"content_digest"`
+	MaterialSourceSnapshot []byte             `json:"material_source_snapshot"`
+	MaterialSourceDigest   string             `json:"material_source_digest"`
+	ExecutionKeyDigest     []byte             `json:"execution_key_digest"`
+	State                  string             `json:"state"`
+	ContinuationJobID      int64              `json:"continuation_job_id"`
+	ContinuationGeneration int64              `json:"continuation_generation"`
+	ExecutionID            pgtype.Int8        `json:"execution_id"`
+	FailureCode            pgtype.Text        `json:"failure_code"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
+func (q *Queries) InsertGroupOpsExecutionIntent(ctx context.Context, arg InsertGroupOpsExecutionIntentParams) (InsertGroupOpsExecutionIntentRow, error) {
+	row := q.db.QueryRow(ctx, insertGroupOpsExecutionIntent,
+		arg.RunID,
+		arg.PlanID,
+		arg.NodeID,
+		arg.PlanRevision,
+		arg.NodePosition,
+		arg.TargetReference,
+		arg.TargetDigest,
+		arg.SenderUseridSnapshot,
+		arg.ScheduledFor,
+		arg.ContentSnapshot,
+		arg.ContentDigest,
+		arg.MaterialSourceSnapshot,
+		arg.MaterialSourceDigest,
+		arg.ExecutionKeyDigest,
+		arg.ContinuationJobID,
+		arg.ContinuationGeneration,
+		arg.CreatedAt,
+	)
+	var i InsertGroupOpsExecutionIntentRow
+	err := row.Scan(
+		&i.ID,
+		&i.RunID,
+		&i.PlanID,
+		&i.NodeID,
+		&i.PlanRevision,
+		&i.NodePosition,
+		&i.TargetReference,
+		&i.TargetDigest,
+		&i.SenderUseridSnapshot,
+		&i.ScheduledFor,
+		&i.ContentSnapshot,
+		&i.ContentDigest,
+		&i.MaterialSourceSnapshot,
+		&i.MaterialSourceDigest,
+		&i.ExecutionKeyDigest,
+		&i.State,
+		&i.ContinuationJobID,
+		&i.ContinuationGeneration,
+		&i.ExecutionID,
+		&i.FailureCode,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const insertGroupOpsWeComGroupMessageReceipt = `-- name: InsertGroupOpsWeComGroupMessageReceipt :one
 INSERT INTO group_ops_wecom_group_message_receipts (
   external_effect_id, execution_id, msgid, sender_userid, chat_id, userid,
@@ -732,6 +975,11 @@ SELECT e.node_id, e.target_reference
 FROM group_ops_executions e
 JOIN group_ops_runs r ON r.id = e.run_id
 WHERE e.plan_id = $1 AND e.plan_revision = $2 AND r.trigger_kind = 'run_due'
+UNION
+SELECT intent.node_id, intent.target_reference
+FROM group_ops_execution_intents intent
+JOIN group_ops_runs r ON r.id = intent.run_id
+WHERE intent.plan_id = $1 AND intent.plan_revision = $2 AND r.trigger_kind = 'run_due'
 ORDER BY node_id, target_reference
 `
 
@@ -880,7 +1128,7 @@ func (q *Queries) ListGroupOpsPlanMembers(ctx context.Context, planID int64) ([]
 }
 
 const listGroupOpsPlanNodes = `-- name: ListGroupOpsPlanNodes :many
-SELECT id, position, kind, message_text, delay_minutes, material_reference FROM group_ops_plan_nodes
+SELECT id, position, kind, message_text, delay_minutes, material_reference, material_plan FROM group_ops_plan_nodes
 WHERE plan_id = $1
 ORDER BY position, id
 `
@@ -892,6 +1140,7 @@ type ListGroupOpsPlanNodesRow struct {
 	MessageText       string `json:"message_text"`
 	DelayMinutes      int32  `json:"delay_minutes"`
 	MaterialReference string `json:"material_reference"`
+	MaterialPlan      []byte `json:"material_plan"`
 }
 
 func (q *Queries) ListGroupOpsPlanNodes(ctx context.Context, planID int64) ([]ListGroupOpsPlanNodesRow, error) {
@@ -910,6 +1159,7 @@ func (q *Queries) ListGroupOpsPlanNodes(ctx context.Context, planID int64) ([]Li
 			&i.MessageText,
 			&i.DelayMinutes,
 			&i.MaterialReference,
+			&i.MaterialPlan,
 		); err != nil {
 			return nil, err
 		}
@@ -967,6 +1217,55 @@ func (q *Queries) ListGroupOpsPlans(ctx context.Context, arg ListGroupOpsPlansPa
 			&i.QueueCount,
 			&i.CreatedBy,
 			&i.UpdatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listGroupOpsRunExecutionIntents = `-- name: ListGroupOpsRunExecutionIntents :many
+SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, sender_userid_snapshot, scheduled_for, content_snapshot, content_digest, material_source_snapshot, material_source_digest, execution_key_digest, state, continuation_job_id, continuation_generation, execution_id, failure_code, created_at, updated_at FROM group_ops_execution_intents
+WHERE run_id = $1
+ORDER BY node_position, target_reference, id
+`
+
+func (q *Queries) ListGroupOpsRunExecutionIntents(ctx context.Context, runID int64) ([]GroupOpsExecutionIntent, error) {
+	rows, err := q.db.Query(ctx, listGroupOpsRunExecutionIntents, runID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GroupOpsExecutionIntent{}
+	for rows.Next() {
+		var i GroupOpsExecutionIntent
+		if err := rows.Scan(
+			&i.ID,
+			&i.RunID,
+			&i.PlanID,
+			&i.NodeID,
+			&i.PlanRevision,
+			&i.NodePosition,
+			&i.TargetReference,
+			&i.TargetDigest,
+			&i.SenderUseridSnapshot,
+			&i.ScheduledFor,
+			&i.ContentSnapshot,
+			&i.ContentDigest,
+			&i.MaterialSourceSnapshot,
+			&i.MaterialSourceDigest,
+			&i.ExecutionKeyDigest,
+			&i.State,
+			&i.ContinuationJobID,
+			&i.ContinuationGeneration,
+			&i.ExecutionID,
+			&i.FailureCode,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -1043,6 +1342,42 @@ func (q *Queries) LockGroupOpsDirectoryGroupOwner(ctx context.Context, chatRefer
 	return owner_staff_id, err
 }
 
+const lockGroupOpsExecutionIntentByKey = `-- name: LockGroupOpsExecutionIntentByKey :one
+SELECT id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, sender_userid_snapshot, scheduled_for, content_snapshot, content_digest, material_source_snapshot, material_source_digest, execution_key_digest, state, continuation_job_id, continuation_generation, execution_id, failure_code, created_at, updated_at FROM group_ops_execution_intents
+WHERE execution_key_digest = $1
+FOR UPDATE
+`
+
+func (q *Queries) LockGroupOpsExecutionIntentByKey(ctx context.Context, executionKeyDigest []byte) (GroupOpsExecutionIntent, error) {
+	row := q.db.QueryRow(ctx, lockGroupOpsExecutionIntentByKey, executionKeyDigest)
+	var i GroupOpsExecutionIntent
+	err := row.Scan(
+		&i.ID,
+		&i.RunID,
+		&i.PlanID,
+		&i.NodeID,
+		&i.PlanRevision,
+		&i.NodePosition,
+		&i.TargetReference,
+		&i.TargetDigest,
+		&i.SenderUseridSnapshot,
+		&i.ScheduledFor,
+		&i.ContentSnapshot,
+		&i.ContentDigest,
+		&i.MaterialSourceSnapshot,
+		&i.MaterialSourceDigest,
+		&i.ExecutionKeyDigest,
+		&i.State,
+		&i.ContinuationJobID,
+		&i.ContinuationGeneration,
+		&i.ExecutionID,
+		&i.FailureCode,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const lockGroupOpsPlan = `-- name: LockGroupOpsPlan :one
 SELECT id, name, status, revision, created_by, updated_by, created_at, updated_at
 FROM group_ops_plans
@@ -1060,6 +1395,48 @@ func (q *Queries) LockGroupOpsPlan(ctx context.Context, planID int64) (GroupOpsP
 		&i.Revision,
 		&i.CreatedBy,
 		&i.UpdatedBy,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const markGroupOpsExecutionIntentReady = `-- name: MarkGroupOpsExecutionIntentReady :one
+UPDATE group_ops_execution_intents
+SET state = 'ready_to_accept', updated_at = $1
+WHERE id = $2 AND state = 'material_pending'
+RETURNING id, run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest, sender_userid_snapshot, scheduled_for, content_snapshot, content_digest, material_source_snapshot, material_source_digest, execution_key_digest, state, continuation_job_id, continuation_generation, execution_id, failure_code, created_at, updated_at
+`
+
+type MarkGroupOpsExecutionIntentReadyParams struct {
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	IntentID  int64              `json:"intent_id"`
+}
+
+func (q *Queries) MarkGroupOpsExecutionIntentReady(ctx context.Context, arg MarkGroupOpsExecutionIntentReadyParams) (GroupOpsExecutionIntent, error) {
+	row := q.db.QueryRow(ctx, markGroupOpsExecutionIntentReady, arg.UpdatedAt, arg.IntentID)
+	var i GroupOpsExecutionIntent
+	err := row.Scan(
+		&i.ID,
+		&i.RunID,
+		&i.PlanID,
+		&i.NodeID,
+		&i.PlanRevision,
+		&i.NodePosition,
+		&i.TargetReference,
+		&i.TargetDigest,
+		&i.SenderUseridSnapshot,
+		&i.ScheduledFor,
+		&i.ContentSnapshot,
+		&i.ContentDigest,
+		&i.MaterialSourceSnapshot,
+		&i.MaterialSourceDigest,
+		&i.ExecutionKeyDigest,
+		&i.State,
+		&i.ContinuationJobID,
+		&i.ContinuationGeneration,
+		&i.ExecutionID,
+		&i.FailureCode,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -1470,8 +1847,8 @@ func (q *Queries) SaveGroupOpsPlanWebhookDescriptor(ctx context.Context, arg Sav
 
 const updateGroupOpsPlanNode = `-- name: UpdateGroupOpsPlanNode :execrows
 UPDATE group_ops_plan_nodes
-SET position = $1, kind = $2, message_text = $3, delay_minutes = $4, material_reference = $5
-WHERE plan_id = $6 AND id = $7
+SET position = $1, kind = $2, message_text = $3, delay_minutes = $4, material_reference = $5, material_plan = $6
+WHERE plan_id = $7 AND id = $8
 `
 
 type UpdateGroupOpsPlanNodeParams struct {
@@ -1480,6 +1857,7 @@ type UpdateGroupOpsPlanNodeParams struct {
 	MessageText       string `json:"message_text"`
 	DelayMinutes      int32  `json:"delay_minutes"`
 	MaterialReference string `json:"material_reference"`
+	MaterialPlan      []byte `json:"material_plan"`
 	PlanID            int64  `json:"plan_id"`
 	NodeID            int64  `json:"node_id"`
 }
@@ -1491,6 +1869,7 @@ func (q *Queries) UpdateGroupOpsPlanNode(ctx context.Context, arg UpdateGroupOps
 		arg.MessageText,
 		arg.DelayMinutes,
 		arg.MaterialReference,
+		arg.MaterialPlan,
 		arg.PlanID,
 		arg.NodeID,
 	)

@@ -55,6 +55,31 @@ type GroupOpsExecution struct {
 	SenderUseridSnapshot         pgtype.Text        `json:"sender_userid_snapshot"`
 }
 
+type GroupOpsExecutionIntent struct {
+	ID                     int64              `json:"id"`
+	RunID                  int64              `json:"run_id"`
+	PlanID                 int64              `json:"plan_id"`
+	NodeID                 int64              `json:"node_id"`
+	PlanRevision           int64              `json:"plan_revision"`
+	NodePosition           int32              `json:"node_position"`
+	TargetReference        string             `json:"target_reference"`
+	TargetDigest           string             `json:"target_digest"`
+	SenderUseridSnapshot   string             `json:"sender_userid_snapshot"`
+	ScheduledFor           pgtype.Timestamptz `json:"scheduled_for"`
+	ContentSnapshot        []byte             `json:"content_snapshot"`
+	ContentDigest          string             `json:"content_digest"`
+	MaterialSourceSnapshot []byte             `json:"material_source_snapshot"`
+	MaterialSourceDigest   string             `json:"material_source_digest"`
+	ExecutionKeyDigest     []byte             `json:"execution_key_digest"`
+	State                  string             `json:"state"`
+	ContinuationJobID      int64              `json:"continuation_job_id"`
+	ContinuationGeneration int64              `json:"continuation_generation"`
+	ExecutionID            pgtype.Int8        `json:"execution_id"`
+	FailureCode            pgtype.Text        `json:"failure_code"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
 type GroupOpsPlan struct {
 	ID        int64              `json:"id"`
 	Name      string             `json:"name"`

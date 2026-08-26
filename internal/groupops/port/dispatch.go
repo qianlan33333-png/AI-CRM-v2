@@ -10,17 +10,18 @@ import (
 // may pass to its Provider boundary. It deliberately contains no Provider
 // credentials, protocol fields, or response body.
 type DispatchExecution struct {
-	ExecutionID      int64
-	ExternalEffectID string
-	State            ExecutionState
-	DeliveryProven   bool
-	AttemptRecovery  *AttemptRecoveryLease
-	TargetReference  string
-	SenderUserID     string
-	ContentSnapshot  json.RawMessage
-	ContentDigest    string
-	MaterialSnapshot json.RawMessage
-	MaterialDigest   string
+	ExecutionID            int64
+	ExternalEffectID       string
+	State                  ExecutionState
+	DeliveryProven         bool
+	AttemptRecovery        *AttemptRecoveryLease
+	TargetReference        string
+	SenderUserID           string
+	ContentSnapshot        json.RawMessage
+	ContentDigest          string
+	MaterialSnapshot       json.RawMessage
+	MaterialDigest         string
+	MaterialSourceSnapshot json.RawMessage
 }
 
 // AttemptRecoveryLease is populated only when the EER effect is still
@@ -37,6 +38,10 @@ type AttemptRecoveryLease struct {
 // The Group Ops core intentionally does not guess a Provider request schema.
 type DispatchExecutionReader interface {
 	LoadDispatchExecution(context.Context, string) (DispatchExecution, error)
+}
+
+type MaterialReadinessVerifier interface {
+	VerifyMaterialReady(context.Context, json.RawMessage, json.RawMessage, string, time.Time) error
 }
 
 // ExecutionOutcomeProjector persists the matching Group Ops terminal fact

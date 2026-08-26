@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"testing"
@@ -24,7 +26,7 @@ func TestRuntimeRunDueBindsImmutableContentAndMaterialSnapshotsToEER(t *testing.
 		t.Fatalf("summary=%+v err=%v accepts=%d", summary, err, effects.accepts)
 	}
 	for _, draft := range runtime.drafts {
-		if string(draft.ContentSnapshot) != `{"schema_version":1,"node_kind":"message","message_text":"first"}` || string(draft.MaterialSnapshot) != `{"schema_version":1,"node_kind":"message","reference":"material:first"}` || draft.ExternalEffectID == "" {
+		if string(draft.ContentSnapshot) != `{"schema_version":1,"node_kind":"message","message_text":"first"}` || string(draft.MaterialSnapshot) != `{"schema_version":1,"node_kind":"message","reference":""}` || draft.ExternalEffectID == "" {
 			t.Fatalf("draft=%+v", draft)
 		}
 	}
@@ -162,6 +164,71 @@ func TestAcceptPlanFailsClosedWhenDispatchProviderIsDisabled(t *testing.T) {
 	}
 }
 
+func TestMaterialExecutionWaitsUntilContinuationAndSevenDayDelayDoesNotFreezeEarly(t *testing.T) {
+	service, runtime, effects := newRuntimeFixture(t)
+	plans := service.plans.(*testStore)
+	detail := plans.details[91]
+	detail.Nodes = []groupopsport.Node{
+		{ID: 21, Position: 1, Kind: groupopsport.NodeDelay, DelayMinutes: 10080},
+		{ID: 22, Position: 2, Kind: groupopsport.NodeMessage, MaterialPlan: groupopsport.MaterialPlan{References: []groupopsport.MaterialReference{{Kind: "image", ID: 41}}}},
+	}
+	plans.details[91] = detail
+	materials := &runtimeMaterialBoundary{}
+	continuations := &runtimeContinuationJobFixture{}
+	service.materials, service.continuations = materials, continuations
+
+	command := groupopsport.AcceptPlanCommand{PlanID: 91, Trigger: groupopsport.RunTriggerBroadcast, AcceptedBy: "service:material", IdempotencyKey: "group-ops-material-0001"}
+	summary, err := service.AcceptPlan(context.Background(), command)
+	if err != nil || summary.Accepted != 0 || summary.MaterialPending != 2 || len(summary.PendingIntents) != 2 || effects.accepts != 0 || materials.freezes != 0 || materials.captures != 2 {
+		t.Fatalf("summary=%+v err=%v effects=%d materials=%+v", summary, err, effects.accepts, materials)
+	}
+	var wantContinuation time.Time
+	for _, intent := range runtime.intents {
+		wantContinuation = intent.ScheduledFor.Add(-materialPreparationLead)
+		break
+	}
+	if len(continuations.scheduled) != 2 || !continuations.scheduled[0].Equal(wantContinuation) {
+		t.Fatalf("continuations=%v want=%v", continuations.scheduled, wantContinuation)
+	}
+	replay, err := service.AcceptPlan(context.Background(), command)
+	if err != nil || replay.MaterialPending != 2 || materials.captures != 2 || effects.accepts != 0 {
+		t.Fatalf("replay=%+v err=%v captures=%d effects=%d", replay, err, materials.captures, effects.accepts)
+	}
+
+	for key := range runtime.intents {
+		intent := runtime.intents[key]
+		lateNow := intent.ScheduledFor.Add(2 * time.Hour)
+		service.now = func() time.Time { return lateNow }
+		materials.now = lateNow
+		materials.readyUntil = lateNow.Add(2 * time.Hour)
+		first, continueErr := service.ContinueMaterialIntent(context.Background(), eer.Digest(runtimeDigestFromBytes(key)))
+		if continueErr != nil || first.Execution.ID < 1 || first.Pending || effects.accepts != 1 || !materials.requiredThrough.Equal(lateNow.Add(materialDispatchGrace)) {
+			t.Fatalf("first=%+v err=%v effects=%d required=%v", first, continueErr, effects.accepts, materials.requiredThrough)
+		}
+		second, continueErr := service.ContinueMaterialIntent(context.Background(), eer.Digest(runtimeDigestFromBytes(key)))
+		if continueErr != nil || second.Execution.ID != first.Execution.ID || effects.accepts != 1 {
+			t.Fatalf("second=%+v err=%v effects=%d", second, continueErr, effects.accepts)
+		}
+		break
+	}
+}
+
+func TestLegacyMaterialReferenceIsExplicitPreviewBlockerBeforeEffects(t *testing.T) {
+	service, _, effects := newRuntimeFixture(t)
+	plans := service.plans.(*testStore)
+	detail := plans.details[91]
+	detail.Nodes[0].MaterialRef = "legacy:material"
+	plans.details[91] = detail
+	preview, err := service.PreviewRunDue(context.Background(), 91)
+	if err != nil || len(preview.Blockers) != 1 || preview.Blockers[0] != "legacy_material_reference_unsupported" || effects.accepts != 0 {
+		t.Fatalf("preview=%+v err=%v effects=%d", preview, err, effects.accepts)
+	}
+	_, err = service.AcceptPlan(context.Background(), groupopsport.AcceptPlanCommand{PlanID: 91, Trigger: groupopsport.RunTriggerBroadcast, AcceptedBy: "service:legacy", IdempotencyKey: "group-ops-legacy-0001"})
+	if !errors.Is(err, ErrStateConflict) || effects.accepts != 0 {
+		t.Fatalf("err=%v effects=%d", err, effects.accepts)
+	}
+}
+
 func TestRefreshGroupsRequiresCompleteSnapshotBeforeReplacingOwnerProjection(t *testing.T) {
 	service, runtime, _ := newRuntimeFixture(t)
 	source := &runtimeDirectorySource{snapshot: groupopsport.GroupDirectorySnapshot{Items: []groupopsport.GroupDirectoryItem{{ChatReference: "chat-1", OwnerStaffID: 7, DisplayName: "Group 1"}}, Complete: true}}
@@ -183,13 +250,13 @@ func newRuntimeFixture(t *testing.T, evidence ...groupopsport.ReconciliationEvid
 		Members:     []groupopsport.Member{{StaffID: 7}},
 		GroupAssets: []groupopsport.GroupAsset{{ID: 1, AssetRef: "chat:a"}, {ID: 2, AssetRef: "chat:b"}},
 		Nodes: []groupopsport.Node{
-			{ID: 11, Position: 1, Kind: groupopsport.NodeMessage, MessageText: "first", MaterialRef: "material:first"},
+			{ID: 11, Position: 1, Kind: groupopsport.NodeMessage, MessageText: "first", MaterialPlan: groupopsport.MaterialPlan{References: []groupopsport.MaterialReference{}}},
 			{ID: 12, Position: 2, Kind: groupopsport.NodeDelay, DelayMinutes: 15},
 			{ID: 13, Position: 3, Kind: groupopsport.NodeMessage, MessageText: "second"},
 		},
 		WebhookDescriptor: descriptor("daily-course"), Safety: groupopsport.LocalSafety(),
 	}}, receipts: map[string]Receipt{}}
-	runtime := &runtimeStoreFixture{runs: map[string]groupopsport.Run{}, executions: map[int64]groupopsport.Execution{}, webhookPlan: 91}
+	runtime := &runtimeStoreFixture{runs: map[string]groupopsport.Run{}, executions: map[int64]groupopsport.Execution{}, intents: map[[sha256.Size]byte]ExecutionIntentRecord{}, webhookPlan: 91}
 	effects := &runtimeEffectsFixture{}
 	service, err := NewRuntimeService(testUOW{}, plans, runtime, effects, runtimeStaffFixture{}, nil, runtimeSenderFixture{}, runtimeJobFixture{}, evidence...)
 	if err != nil {
@@ -211,6 +278,35 @@ type runtimeJobFixture struct{}
 
 func (runtimeJobFixture) Insert(_ context.Context, args GroupOpsDispatchJobArgs, generation int64, scheduled time.Time) (eer.RiverJobLink, error) {
 	return eer.RiverJobLink{JobID: 1, Generation: generation, Queue: "outbound", ArgsDigest: runtimeDigest("job", args.EffectID), ScheduledAt: scheduled}, nil
+}
+
+type runtimeContinuationJobFixture struct{ scheduled []time.Time }
+
+func (fixture *runtimeContinuationJobFixture) Insert(_ context.Context, args GroupOpsMaterialContinuationJobArgs, generation int64, scheduled time.Time) (eer.RiverJobLink, error) {
+	fixture.scheduled = append(fixture.scheduled, scheduled)
+	return eer.RiverJobLink{JobID: int64(len(fixture.scheduled)), Generation: generation, Queue: "outbound", ArgsDigest: runtimeDigest("continuation", args.ExecutionKeyDigest), ScheduledAt: scheduled}, nil
+}
+
+type runtimeMaterialBoundary struct {
+	captures, freezes int
+	now, readyUntil   time.Time
+	requiredThrough   time.Time
+}
+
+func (boundary *runtimeMaterialBoundary) CaptureAndPrepare(_ context.Context, plan groupopsport.MaterialPlan, _ time.Time) (groupopsport.MaterialSourceSnapshot, error) {
+	boundary.captures++
+	refs := make([]groupopsport.CapturedMaterialReference, len(plan.References))
+	for index, ref := range plan.References {
+		refs[index] = groupopsport.CapturedMaterialReference{Kind: ref.Kind, ID: ref.ID, SourceDigest: string(runtimeDigest("source", ref.Kind, fmt.Sprint(ref.ID)))}
+	}
+	return groupopsport.MaterialSourceSnapshot{References: refs}, nil
+}
+
+func (boundary *runtimeMaterialBoundary) FreezePrepared(_ context.Context, _ json.RawMessage, requiredThrough time.Time) (groupopsport.PreparedMaterial, error) {
+	boundary.freezes++
+	boundary.requiredThrough = requiredThrough
+	snapshot := json.RawMessage(`{"schema_version":2,"node_kind":"message","attachments":[{"msgtype":"image","media_id":"provider-image"}]}`)
+	return groupopsport.PreparedMaterial{Snapshot: snapshot, Digest: string(runtimeDigest("group-ops-material", string(snapshot))), ReadyUntil: boundary.readyUntil}, nil
 }
 
 type runtimeDirectorySource struct {
@@ -276,9 +372,60 @@ type runtimeStoreFixture struct {
 	runs                  map[string]groupopsport.Run
 	executions            map[int64]groupopsport.Execution
 	drafts                []ExecutionDraft
+	intents               map[[sha256.Size]byte]ExecutionIntentRecord
 	webhookPlan           int64
 	directoryReplacements int
 	directoryItems        []groupopsport.GroupDirectoryItem
+}
+
+func (fixture *runtimeStoreFixture) InsertExecutionIntent(_ context.Context, draft ExecutionIntentDraft) (ExecutionIntentRecord, error) {
+	if value, ok := fixture.intents[draft.ExecutionKeyDigest]; ok {
+		return value, nil
+	}
+	value := ExecutionIntentRecord{ExecutionIntentDraft: draft, ID: int64(len(fixture.intents) + 1), State: groupopsport.ExecutionIntentMaterialPending}
+	fixture.intents[draft.ExecutionKeyDigest] = value
+	return value, nil
+}
+
+func (fixture *runtimeStoreFixture) LockExecutionIntent(_ context.Context, key [sha256.Size]byte) (ExecutionIntentRecord, error) {
+	value, ok := fixture.intents[key]
+	if !ok {
+		return ExecutionIntentRecord{}, ErrNotFound
+	}
+	return value, nil
+}
+
+func (fixture *runtimeStoreFixture) MarkExecutionIntentReady(_ context.Context, id int64, now time.Time) (ExecutionIntentRecord, error) {
+	for key, value := range fixture.intents {
+		if value.ID == id {
+			value.State = groupopsport.ExecutionIntentReadyToAccept
+			fixture.intents[key] = value
+			return value, nil
+		}
+	}
+	return ExecutionIntentRecord{}, ErrNotFound
+}
+
+func (fixture *runtimeStoreFixture) AcceptExecutionIntent(_ context.Context, id, executionID int64, now time.Time) (ExecutionIntentRecord, error) {
+	for key, value := range fixture.intents {
+		if value.ID == id {
+			value.State, value.ExecutionID = groupopsport.ExecutionIntentAccepted, executionID
+			fixture.intents[key] = value
+			return value, nil
+		}
+	}
+	return ExecutionIntentRecord{}, ErrNotFound
+}
+
+func (fixture *runtimeStoreFixture) FailExecutionIntent(_ context.Context, id int64, code string, now time.Time) (ExecutionIntentRecord, error) {
+	for key, value := range fixture.intents {
+		if value.ID == id {
+			value.State, value.FailureCode = groupopsport.ExecutionIntentFinalFailed, code
+			fixture.intents[key] = value
+			return value, nil
+		}
+	}
+	return ExecutionIntentRecord{}, ErrNotFound
 }
 
 func (fixture *runtimeStoreFixture) ListExecutionKeys(_ context.Context, planID, revision int64) ([]ExecutionKey, error) {
@@ -334,6 +481,12 @@ func (fixture *runtimeStoreFixture) ReadRunSummary(_ context.Context, runID int6
 			case groupopsport.ExecutionFinalFailed:
 				result.FinalFailed++
 			}
+		}
+	}
+	for _, intent := range fixture.intents {
+		if intent.RunID == runID && (intent.State == groupopsport.ExecutionIntentMaterialPending || intent.State == groupopsport.ExecutionIntentReadyToAccept) {
+			result.MaterialPending++
+			result.PendingIntents = append(result.PendingIntents, groupopsport.ExecutionIntent{ID: intent.ID, NodeID: intent.NodeID, NodePosition: intent.NodePosition, TargetReference: intent.TargetReference, ScheduledFor: intent.ScheduledFor, State: groupopsport.ExecutionIntentMaterialPending})
 		}
 	}
 	return result, nil
@@ -405,4 +558,8 @@ func executionIDForDraft(values []ExecutionDraft, want ExecutionDraft) int64 {
 		}
 	}
 	return 0
+}
+
+func runtimeDigestFromBytes(value [sha256.Size]byte) string {
+	return "sha256:" + hex.EncodeToString(value[:])
 }

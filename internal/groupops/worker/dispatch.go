@@ -6,8 +6,10 @@ package groupopsworker
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"reflect"
+	"time"
 
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/port"
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
@@ -31,13 +33,24 @@ type DispatchWorker struct {
 	projector groupopsport.ExecutionOutcomeProjector
 	runtime   Runtime
 	provider  groupopsport.DispatchProvider
+	materials groupopsport.MaterialReadinessVerifier
+	now       func() time.Time
 }
 
 func NewDispatchWorker(reader groupopsport.DispatchExecutionReader, projector groupopsport.ExecutionOutcomeProjector, runtime Runtime, provider groupopsport.DispatchProvider) (*DispatchWorker, error) {
 	if nilDependency(reader) || nilDependency(projector) || nilDependency(runtime) || nilDependency(provider) {
 		return nil, ErrInvalid
 	}
-	return &DispatchWorker{reader: reader, projector: projector, runtime: runtime, provider: provider}, nil
+	return &DispatchWorker{reader: reader, projector: projector, runtime: runtime, provider: provider, now: time.Now}, nil
+}
+
+func NewDispatchWorkerWithMaterialVerifier(reader groupopsport.DispatchExecutionReader, projector groupopsport.ExecutionOutcomeProjector, runtime Runtime, provider groupopsport.DispatchProvider, materials groupopsport.MaterialReadinessVerifier) (*DispatchWorker, error) {
+	worker, err := NewDispatchWorker(reader, projector, runtime, provider)
+	if err != nil || nilDependency(materials) {
+		return nil, ErrInvalid
+	}
+	worker.materials = materials
+	return worker, nil
 }
 
 func (worker *DispatchWorker) Dispatch(ctx context.Context, effectID string, workerDigest eer.Digest) (groupopsport.DispatchResult, error) {
@@ -61,6 +74,11 @@ func (worker *DispatchWorker) Dispatch(ctx context.Context, effectID string, wor
 	}
 	if execution.AttemptRecovery != nil {
 		return worker.recoverAttempted(ctx, execution)
+	}
+	if materialVerificationRequired(execution.MaterialSnapshot) {
+		if worker.materials == nil || worker.now == nil || len(execution.MaterialSourceSnapshot) == 0 || worker.materials.VerifyMaterialReady(ctx, execution.MaterialSourceSnapshot, execution.MaterialSnapshot, execution.MaterialDigest, worker.now().UTC()) != nil {
+			return groupopsport.DispatchResult{}, ErrUnavailable
+		}
 	}
 	adapter, err := groupopsprovider.NewDispatchAdapter(worker.provider, execution)
 	if err != nil {
@@ -93,6 +111,13 @@ func (worker *DispatchWorker) Dispatch(ctx context.Context, effectID string, wor
 	result.State = updated.State
 	result.ProviderAccepted = updated.ProviderAccepted
 	return result, nil
+}
+
+func materialVerificationRequired(snapshot json.RawMessage) bool {
+	var header struct {
+		SchemaVersion int `json:"schema_version"`
+	}
+	return json.Unmarshal(snapshot, &header) == nil && header.SchemaVersion == 2
 }
 
 func (worker *DispatchWorker) recoverAttempted(ctx context.Context, execution groupopsport.DispatchExecution) (groupopsport.DispatchResult, error) {

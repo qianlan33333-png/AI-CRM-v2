@@ -82,15 +82,36 @@ type Execution struct {
 	UpdatedAt                     time.Time      `json:"updated_at"`
 }
 
+type ExecutionIntentState string
+
+const (
+	ExecutionIntentMaterialPending ExecutionIntentState = "material_pending"
+	ExecutionIntentReadyToAccept   ExecutionIntentState = "ready_to_accept"
+	ExecutionIntentAccepted        ExecutionIntentState = "accepted"
+	ExecutionIntentFinalFailed     ExecutionIntentState = "final_failed"
+)
+
+type ExecutionIntent struct {
+	ID              int64                `json:"intent_id,string"`
+	NodeID          int64                `json:"node_id,string"`
+	NodePosition    int32                `json:"node_position"`
+	TargetReference string               `json:"target_reference"`
+	ScheduledFor    time.Time            `json:"scheduled_for"`
+	State           ExecutionIntentState `json:"state"`
+	ManualBlocker   bool                 `json:"manual_blocker"`
+}
+
 type RunSummary struct {
-	Run              Run         `json:"run"`
-	Executions       []Execution `json:"executions"`
-	Accepted         int32       `json:"accepted"`
-	ProviderAccepted int32       `json:"provider_accepted_count"`
-	DeliveryProven   int32       `json:"delivery_proven_count"`
-	OutcomeUnknown   int32       `json:"outcome_unknown"`
-	Reconciled       int32       `json:"reconciled"`
-	FinalFailed      int32       `json:"final_failed"`
+	Run              Run               `json:"run"`
+	Executions       []Execution       `json:"executions"`
+	Accepted         int32             `json:"accepted"`
+	ProviderAccepted int32             `json:"provider_accepted_count"`
+	DeliveryProven   int32             `json:"delivery_proven_count"`
+	OutcomeUnknown   int32             `json:"outcome_unknown"`
+	Reconciled       int32             `json:"reconciled"`
+	FinalFailed      int32             `json:"final_failed"`
+	MaterialPending  int32             `json:"material_pending_count"`
+	PendingIntents   []ExecutionIntent `json:"pending_intents"`
 	RuntimeSafety
 }
 

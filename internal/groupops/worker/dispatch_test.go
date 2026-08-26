@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -64,6 +65,29 @@ func TestDispatchWorkerNeverReplaysOutcomeUnknown(t *testing.T) {
 	}
 }
 
+func TestDispatchWorkerRequiresMaterialReadinessBeforeClaim(t *testing.T) {
+	execution := dispatchExecution(groupopsport.ExecutionAccepted)
+	execution.MaterialSnapshot = []byte(`{"schema_version":2,"node_kind":"message","attachments":[{"msgtype":"image","media_id":"provider-image"}]}`)
+	execution.MaterialSourceSnapshot = []byte(`{"references":[{"kind":"image","id":41,"source_digest":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}]}`)
+	provider := &providerStub{result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: string(digest("accepted")), BusinessCallDispatched: true, RealExternalCallExecuted: true}}
+	runtime := &runtimeStub{}
+	worker, err := NewDispatchWorker(&readerStub{execution: execution}, &projectorStub{}, runtime, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = worker.Dispatch(context.Background(), "eer_41", digest("worker")); !errors.Is(err, ErrUnavailable) || runtime.claims != 0 || provider.calls != 0 {
+		t.Fatalf("err=%v claims=%d calls=%d", err, runtime.claims, provider.calls)
+	}
+	verifier := &materialVerifierStub{}
+	worker, err = NewDispatchWorkerWithMaterialVerifier(&readerStub{execution: execution}, &projectorStub{}, runtime, provider, verifier)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = worker.Dispatch(context.Background(), "eer_41", digest("worker")); err != nil || verifier.calls != 1 || runtime.claims != 1 || provider.calls != 1 {
+		t.Fatalf("err=%v verifier=%d claims=%d calls=%d", err, verifier.calls, runtime.claims, provider.calls)
+	}
+}
+
 func TestDispatchWorkerRecoversTerminalEERBeforeCallingProvider(t *testing.T) {
 	provider := &providerStub{result: groupopsport.DispatchProviderResult{Outcome: groupopsport.DispatchProviderAccepted, ReceiptDigest: string(digest("unexpected")), BusinessCallDispatched: true, RealExternalCallExecuted: true}}
 	runtime := &runtimeStub{terminal: eer.TerminalOutcome{EffectID: "eer_41", Owner: eer.OwnerGroupOps, Kind: eer.KindGroupOpsBroadcast, State: eer.StateExecuted, ReceiptDigest: digest("accepted")}}
@@ -96,6 +120,13 @@ func TestDispatchWorkerRecoversExpiredAttemptToUnknownWithoutProviderReplay(t *t
 
 type readerStub struct {
 	execution groupopsport.DispatchExecution
+}
+
+type materialVerifierStub struct{ calls int }
+
+func (stub *materialVerifierStub) VerifyMaterialReady(context.Context, json.RawMessage, json.RawMessage, string, time.Time) error {
+	stub.calls++
+	return nil
 }
 
 func (stub *readerStub) LoadDispatchExecution(_ context.Context, effectID string) (groupopsport.DispatchExecution, error) {

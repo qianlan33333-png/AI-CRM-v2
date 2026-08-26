@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"sort"
 	"strings"
 	"time"
@@ -293,7 +294,7 @@ func (s *Service) UpdateNode(ctx context.Context, command groupopsport.NodeUpdat
 	return s.mutate(ctx, "node_update", command.PlanID, command.ExpectedRevision, command.Actor, command.IdempotencyKey, command, func(_ context.Context, detail *groupopsport.Detail, _ time.Time) error {
 		for i := range detail.Nodes {
 			if detail.Nodes[i].ID == command.NodeID {
-				detail.Nodes[i] = groupopsport.Node{ID: command.NodeID, Position: command.Position, Kind: command.Kind, MessageText: strings.TrimSpace(command.MessageText), DelayMinutes: command.DelayMinutes, MaterialRef: command.MaterialRef}
+				detail.Nodes[i] = groupopsport.Node{ID: command.NodeID, Position: command.Position, Kind: command.Kind, MessageText: strings.TrimSpace(command.MessageText), DelayMinutes: command.DelayMinutes, MaterialRef: command.MaterialRef, MaterialPlan: cloneMaterialPlan(command.MaterialPlan)}
 				return normalizeNodes(detail.Nodes)
 			}
 		}
@@ -477,9 +478,16 @@ func contentValidation(detail groupopsport.Detail) groupopsport.ContentValidatio
 		result.IssueCodes = append(result.IssueCodes, "node_required")
 	}
 	for _, node := range detail.Nodes {
+		if node.MaterialRef != "" {
+			result.IssueCodes = append(result.IssueCodes, "legacy_material_reference_unsupported")
+		}
 		switch node.Kind {
 		case groupopsport.NodeMessage:
-			result.PreviewLines = append(result.PreviewLines, "message: "+node.MessageText)
+			if node.MessageText != "" {
+				result.PreviewLines = append(result.PreviewLines, "message: "+node.MessageText)
+			} else {
+				result.PreviewLines = append(result.PreviewLines, fmt.Sprintf("message: %d materials", len(node.MaterialPlan.References)))
+			}
 		case groupopsport.NodeDelay:
 			result.PreviewLines = append(result.PreviewLines, fmt.Sprintf("delay: %d minutes", node.DelayMinutes))
 		default:
@@ -531,7 +539,7 @@ func normalizeNodes(nodes []groupopsport.Node) error {
 	return nil
 }
 func nodeFromCreate(c groupopsport.NodeCreateCommand) groupopsport.Node {
-	return groupopsport.Node{Position: c.Position, Kind: c.Kind, MessageText: strings.TrimSpace(c.MessageText), DelayMinutes: c.DelayMinutes, MaterialRef: c.MaterialRef}
+	return groupopsport.Node{Position: c.Position, Kind: c.Kind, MessageText: strings.TrimSpace(c.MessageText), DelayMinutes: c.DelayMinutes, MaterialRef: c.MaterialRef, MaterialPlan: cloneMaterialPlan(c.MaterialPlan)}
 }
 func validCreate(c groupopsport.CreatePlanCommand) bool {
 	return c.Actor > 0 && validKey(c.IdempotencyKey) && validName(c.Name)
@@ -549,10 +557,10 @@ func validAssetCommand(c groupopsport.GroupAssetCommand) bool {
 	return validTransition(groupopsport.TransitionCommand{PlanID: c.PlanID, ExpectedRevision: c.ExpectedRevision, Actor: c.Actor, IdempotencyKey: c.IdempotencyKey}) && opaque(c.AssetRef)
 }
 func validNodeCreate(c groupopsport.NodeCreateCommand) bool {
-	return validTransition(groupopsport.TransitionCommand{PlanID: c.PlanID, ExpectedRevision: c.ExpectedRevision, Actor: c.Actor, IdempotencyKey: c.IdempotencyKey}) && c.Position > 0 && validNode(c.Kind, c.MessageText, c.DelayMinutes, c.MaterialRef)
+	return validTransition(groupopsport.TransitionCommand{PlanID: c.PlanID, ExpectedRevision: c.ExpectedRevision, Actor: c.Actor, IdempotencyKey: c.IdempotencyKey}) && c.Position > 0 && validNode(c.Kind, c.MessageText, c.DelayMinutes, c.MaterialRef, c.MaterialPlan)
 }
 func validNodeUpdate(c groupopsport.NodeUpdateCommand) bool {
-	return c.NodeID > 0 && validNodeCreate(groupopsport.NodeCreateCommand{PlanID: c.PlanID, ExpectedRevision: c.ExpectedRevision, Position: c.Position, Kind: c.Kind, MessageText: c.MessageText, DelayMinutes: c.DelayMinutes, MaterialRef: c.MaterialRef, Actor: c.Actor, IdempotencyKey: c.IdempotencyKey})
+	return c.NodeID > 0 && validNodeCreate(groupopsport.NodeCreateCommand{PlanID: c.PlanID, ExpectedRevision: c.ExpectedRevision, Position: c.Position, Kind: c.Kind, MessageText: c.MessageText, DelayMinutes: c.DelayMinutes, MaterialRef: c.MaterialRef, MaterialPlan: c.MaterialPlan, Actor: c.Actor, IdempotencyKey: c.IdempotencyKey})
 }
 func validNodeDelete(c groupopsport.NodeDeleteCommand) bool {
 	return c.NodeID > 0 && validTransition(groupopsport.TransitionCommand{PlanID: c.PlanID, ExpectedRevision: c.ExpectedRevision, Actor: c.Actor, IdempotencyKey: c.IdempotencyKey})
@@ -560,14 +568,49 @@ func validNodeDelete(c groupopsport.NodeDeleteCommand) bool {
 func validWebhookCommand(c groupopsport.WebhookDescriptorCommand) bool {
 	return validTransition(groupopsport.TransitionCommand{PlanID: c.PlanID, ExpectedRevision: c.ExpectedRevision, Actor: c.Actor, IdempotencyKey: c.IdempotencyKey}) && (c.Reference == "" || opaque(c.Reference) && !sensitiveReference(c.Reference))
 }
-func validNode(kind groupopsport.NodeKind, message string, delay int32, material string) bool {
+func validNode(kind groupopsport.NodeKind, message string, delay int32, material string, plan groupopsport.MaterialPlan) bool {
 	if material != "" && !opaque(material) {
 		return false
 	}
 	if kind == groupopsport.NodeMessage {
-		return validMessage(message) && delay == 0
+		return delay == 0 && validMaterialPlan(plan) && (message == "" || validMessage(message)) && (message != "" || len(plan.References) != 0)
 	}
-	return kind == groupopsport.NodeDelay && strings.TrimSpace(message) == "" && material == "" && delay >= 1 && delay <= 10080
+	return kind == groupopsport.NodeDelay && strings.TrimSpace(message) == "" && material == "" && len(plan.References) == 0 && delay >= 1 && delay <= 10080
+}
+
+func validMaterialPlan(plan groupopsport.MaterialPlan) bool {
+	if len(plan.References) > 9 {
+		return false
+	}
+	seen := make(map[string]struct{}, len(plan.References))
+	images, minis, files, invites := 0, 0, 0, 0
+	for _, ref := range plan.References {
+		if ref.ID < 1 {
+			return false
+		}
+		key := ref.Kind + ":" + fmt.Sprint(ref.ID)
+		if _, ok := seen[key]; ok {
+			return false
+		}
+		seen[key] = struct{}{}
+		switch ref.Kind {
+		case "image":
+			images++
+		case "miniprogram":
+			minis++
+		case "attachment":
+			files++
+		case "group_invite":
+			invites++
+		default:
+			return false
+		}
+	}
+	return images <= 3 && minis <= 1 && files <= 9 && invites <= 1
+}
+
+func cloneMaterialPlan(plan groupopsport.MaterialPlan) groupopsport.MaterialPlan {
+	return groupopsport.MaterialPlan{References: append([]groupopsport.MaterialReference{}, plan.References...)}
 }
 func validName(value string) bool    { return validText(value, 128) }
 func validMessage(value string) bool { return validText(value, 1000) }
@@ -632,7 +675,7 @@ func validAssets(items []groupopsport.GroupAsset) bool {
 }
 func validNodes(items []groupopsport.Node) bool {
 	for i, item := range items {
-		if item.ID < 1 || item.Position != int32(i+1) || !validNode(item.Kind, item.MessageText, item.DelayMinutes, item.MaterialRef) {
+		if item.ID < 1 || item.Position != int32(i+1) || !validNode(item.Kind, item.MessageText, item.DelayMinutes, item.MaterialRef, item.MaterialPlan) {
 			return false
 		}
 	}
@@ -653,7 +696,7 @@ func sameSavedDetail(want, got groupopsport.Detail) bool {
 		}
 	}
 	for index := range want.Nodes {
-		if got.Nodes[index].ID < 1 || want.Nodes[index].ID != 0 && want.Nodes[index].ID != got.Nodes[index].ID || want.Nodes[index].Position != got.Nodes[index].Position || want.Nodes[index].Kind != got.Nodes[index].Kind || want.Nodes[index].MessageText != got.Nodes[index].MessageText || want.Nodes[index].DelayMinutes != got.Nodes[index].DelayMinutes || want.Nodes[index].MaterialRef != got.Nodes[index].MaterialRef {
+		if got.Nodes[index].ID < 1 || want.Nodes[index].ID != 0 && want.Nodes[index].ID != got.Nodes[index].ID || want.Nodes[index].Position != got.Nodes[index].Position || want.Nodes[index].Kind != got.Nodes[index].Kind || want.Nodes[index].MessageText != got.Nodes[index].MessageText || want.Nodes[index].DelayMinutes != got.Nodes[index].DelayMinutes || want.Nodes[index].MaterialRef != got.Nodes[index].MaterialRef || !reflect.DeepEqual(want.Nodes[index].MaterialPlan, got.Nodes[index].MaterialPlan) {
 			return false
 		}
 	}
@@ -720,5 +763,8 @@ func cloneDetail(value groupopsport.Detail) groupopsport.Detail {
 	value.Members = append([]groupopsport.Member{}, value.Members...)
 	value.GroupAssets = append([]groupopsport.GroupAsset{}, value.GroupAssets...)
 	value.Nodes = append([]groupopsport.Node{}, value.Nodes...)
+	for index := range value.Nodes {
+		value.Nodes[index].MaterialPlan = cloneMaterialPlan(value.Nodes[index].MaterialPlan)
+	}
 	return value
 }

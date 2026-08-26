@@ -14,6 +14,19 @@ import (
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 )
 
+func TestMessageNodeAcceptsTypedMaterialOnlyAndRejectsInvalidPlans(t *testing.T) {
+	plan := groupopsport.MaterialPlan{References: []groupopsport.MaterialReference{{Kind: "image", ID: 1}, {Kind: "miniprogram", ID: 2}}}
+	if !validNode(groupopsport.NodeMessage, "", 0, "", plan) {
+		t.Fatal("typed material-only message was rejected")
+	}
+	if validNode(groupopsport.NodeMessage, "", 0, "", groupopsport.MaterialPlan{}) {
+		t.Fatal("empty message without materials was accepted")
+	}
+	if validNode(groupopsport.NodeMessage, "", 0, "", groupopsport.MaterialPlan{References: []groupopsport.MaterialReference{{Kind: "image", ID: 1}, {Kind: "image", ID: 1}}}) {
+		t.Fatal("duplicate material reference was accepted")
+	}
+}
+
 func TestLocalPlanLifecycleUsesReceiptsEventsAndStrictDraftBoundary(t *testing.T) {
 	service, store, events := newTestService()
 	ctx := context.Background()

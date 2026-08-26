@@ -34,7 +34,7 @@ WHERE plan_id = sqlc.arg(plan_id)
 ORDER BY asset_reference, id;
 
 -- name: ListGroupOpsPlanNodes :many
-SELECT id, position, kind, message_text, delay_minutes, material_reference FROM group_ops_plan_nodes
+SELECT id, position, kind, message_text, delay_minutes, material_reference, material_plan FROM group_ops_plan_nodes
 WHERE plan_id = sqlc.arg(plan_id)
 ORDER BY position, id;
 
@@ -79,12 +79,12 @@ WHERE plan_id = sqlc.arg(plan_id) AND id <> ALL(sqlc.arg(ids)::bigint[]);
 
 -- name: UpdateGroupOpsPlanNode :execrows
 UPDATE group_ops_plan_nodes
-SET position = sqlc.arg(position), kind = sqlc.arg(kind), message_text = sqlc.arg(message_text), delay_minutes = sqlc.arg(delay_minutes), material_reference = sqlc.arg(material_reference)
+SET position = sqlc.arg(position), kind = sqlc.arg(kind), message_text = sqlc.arg(message_text), delay_minutes = sqlc.arg(delay_minutes), material_reference = sqlc.arg(material_reference), material_plan = sqlc.arg(material_plan)
 WHERE plan_id = sqlc.arg(plan_id) AND id = sqlc.arg(node_id);
 
 -- name: CreateGroupOpsPlanNode :exec
-INSERT INTO group_ops_plan_nodes (plan_id, position, kind, message_text, delay_minutes, material_reference)
-VALUES (sqlc.arg(plan_id), sqlc.arg(position), sqlc.arg(kind), sqlc.arg(message_text), sqlc.arg(delay_minutes), sqlc.arg(material_reference));
+INSERT INTO group_ops_plan_nodes (plan_id, position, kind, message_text, delay_minutes, material_reference, material_plan)
+VALUES (sqlc.arg(plan_id), sqlc.arg(position), sqlc.arg(kind), sqlc.arg(message_text), sqlc.arg(delay_minutes), sqlc.arg(material_reference), sqlc.arg(material_plan));
 
 -- name: SaveGroupOpsPlanWebhookDescriptor :execrows
 UPDATE group_ops_plan_webhook_descriptors
@@ -114,6 +114,11 @@ SELECT e.node_id, e.target_reference
 FROM group_ops_executions e
 JOIN group_ops_runs r ON r.id = e.run_id
 WHERE e.plan_id = sqlc.arg(plan_id) AND e.plan_revision = sqlc.arg(plan_revision) AND r.trigger_kind = 'run_due'
+UNION
+SELECT intent.node_id, intent.target_reference
+FROM group_ops_execution_intents intent
+JOIN group_ops_runs r ON r.id = intent.run_id
+WHERE intent.plan_id = sqlc.arg(plan_id) AND intent.plan_revision = sqlc.arg(plan_revision) AND r.trigger_kind = 'run_due'
 ORDER BY node_id, target_reference;
 
 -- name: ReserveGroupOpsRun :one
@@ -160,6 +165,64 @@ LIMIT 1;
 SELECT * FROM group_ops_executions
 WHERE run_id = sqlc.arg(run_id)
 ORDER BY node_position, target_reference, id;
+
+-- name: InsertGroupOpsExecutionIntent :one
+WITH inserted AS (
+  INSERT INTO group_ops_execution_intents (
+    run_id, plan_id, node_id, plan_revision, node_position, target_reference,
+    target_digest, sender_userid_snapshot, scheduled_for, content_snapshot,
+    content_digest, material_source_snapshot, material_source_digest,
+    execution_key_digest, continuation_job_id, continuation_generation,
+    created_at, updated_at
+  ) VALUES (
+    sqlc.arg(run_id), sqlc.arg(plan_id), sqlc.arg(node_id), sqlc.arg(plan_revision),
+    sqlc.arg(node_position), sqlc.arg(target_reference), sqlc.arg(target_digest),
+    sqlc.arg(sender_userid_snapshot), sqlc.arg(scheduled_for), sqlc.arg(content_snapshot),
+    sqlc.arg(content_digest), sqlc.arg(material_source_snapshot), sqlc.arg(material_source_digest),
+    sqlc.arg(execution_key_digest), sqlc.arg(continuation_job_id),
+    sqlc.arg(continuation_generation), sqlc.arg(created_at), sqlc.arg(created_at)
+  )
+  ON CONFLICT (execution_key_digest) DO NOTHING
+  RETURNING *
+)
+SELECT * FROM inserted
+UNION ALL
+SELECT * FROM group_ops_execution_intents
+WHERE execution_key_digest = sqlc.arg(execution_key_digest)
+  AND NOT EXISTS (SELECT 1 FROM inserted)
+LIMIT 1;
+
+-- name: ListGroupOpsRunExecutionIntents :many
+SELECT * FROM group_ops_execution_intents
+WHERE run_id = sqlc.arg(run_id)
+ORDER BY node_position, target_reference, id;
+
+-- name: LockGroupOpsExecutionIntentByKey :one
+SELECT * FROM group_ops_execution_intents
+WHERE execution_key_digest = sqlc.arg(execution_key_digest)
+FOR UPDATE;
+
+-- name: GetAcceptedGroupOpsExecutionIntent :one
+SELECT * FROM group_ops_execution_intents
+WHERE execution_id = sqlc.arg(execution_id) AND state = 'accepted';
+
+-- name: MarkGroupOpsExecutionIntentReady :one
+UPDATE group_ops_execution_intents
+SET state = 'ready_to_accept', updated_at = sqlc.arg(updated_at)
+WHERE id = sqlc.arg(intent_id) AND state = 'material_pending'
+RETURNING *;
+
+-- name: AcceptGroupOpsExecutionIntent :one
+UPDATE group_ops_execution_intents
+SET state = 'accepted', execution_id = sqlc.arg(execution_id), updated_at = sqlc.arg(updated_at)
+WHERE id = sqlc.arg(intent_id) AND state = 'ready_to_accept' AND execution_id IS NULL
+RETURNING *;
+
+-- name: FailGroupOpsExecutionIntent :one
+UPDATE group_ops_execution_intents
+SET state = 'final_failed', failure_code = sqlc.arg(failure_code), updated_at = sqlc.arg(updated_at)
+WHERE id = sqlc.arg(intent_id) AND state IN ('material_pending','ready_to_accept')
+RETURNING *;
 
 -- name: ListGroupOpsExecutions :many
 SELECT * FROM group_ops_executions

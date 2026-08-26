@@ -1,7 +1,10 @@
 // Package port defines the local-only Group Ops contract.
 package port
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type PlanStatus string
 
@@ -54,12 +57,39 @@ type GroupAsset struct {
 }
 
 type Node struct {
-	ID           int64    `json:"node_id,string"`
-	Position     int32    `json:"position"`
-	Kind         NodeKind `json:"kind"`
-	MessageText  string   `json:"message_text,omitempty"`
-	DelayMinutes int32    `json:"delay_minutes,omitempty"`
-	MaterialRef  string   `json:"material_reference,omitempty"`
+	ID           int64        `json:"node_id,string"`
+	Position     int32        `json:"position"`
+	Kind         NodeKind     `json:"kind"`
+	MessageText  string       `json:"message_text,omitempty"`
+	DelayMinutes int32        `json:"delay_minutes,omitempty"`
+	MaterialRef  string       `json:"material_reference,omitempty"`
+	MaterialPlan MaterialPlan `json:"material_plan"`
+}
+
+type MaterialReference struct {
+	Kind string `json:"kind"`
+	ID   int64  `json:"id"`
+}
+
+type MaterialPlan struct {
+	References []MaterialReference `json:"references"`
+}
+
+type CapturedMaterialReference struct {
+	Kind         string `json:"kind"`
+	ID           int64  `json:"id"`
+	SourceDigest string `json:"source_digest"`
+}
+
+type MaterialSourceSnapshot struct {
+	References []CapturedMaterialReference `json:"references"`
+	Snapshot   json.RawMessage             `json:"-"`
+}
+
+type PreparedMaterial struct {
+	Snapshot   json.RawMessage
+	Digest     string
+	ReadyUntil time.Time
 }
 
 // WebhookDescriptor never contains a URL, credential, token, payload, or
@@ -169,6 +199,7 @@ type NodeCreateCommand struct {
 	MessageText      string
 	DelayMinutes     int32
 	MaterialRef      string
+	MaterialPlan     MaterialPlan
 	Actor            int64
 	IdempotencyKey   string
 }
@@ -182,6 +213,7 @@ type NodeUpdateCommand struct {
 	MessageText      string
 	DelayMinutes     int32
 	MaterialRef      string
+	MaterialPlan     MaterialPlan
 	Actor            int64
 	IdempotencyKey   string
 }
