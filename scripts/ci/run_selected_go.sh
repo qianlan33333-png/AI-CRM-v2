@@ -20,7 +20,7 @@ fail() {
 command -v go >/dev/null 2>&1 || fail "go is required"
 
 if [[ "$selection_mode" = "full" ]]; then
-  make --no-print-directory mod-check generate-check gitless-generate-test fmt-check vet test build
+  make --no-print-directory mod-check generate-check gitless-generate-test fmt-check vet test build ownership-lint ownership-lint-test
   if [[ "$run_vulnerability" = "true" ]]; then
     make --no-print-directory vuln
   fi
@@ -83,6 +83,7 @@ done
 
 (( ${#packages[@]} > 0 )) || fail "selected groups resolved to no packages"
 make --no-print-directory fmt-check
+make --no-print-directory ownership-lint ownership-lint-test
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly go vet "${packages[@]}"
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly go test -race -count=1 -timeout=240s "${packages[@]}"
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly go build ./cmd/aicrm

@@ -18,14 +18,14 @@ seed() {
     "$root/internal/product/store/queries" "$root/internal/hxc/store/queries" \
     "$root/internal/radar/store/queries" "$root/internal/survey/store/queries" \
     "$root/internal/automation/store/queries" "$root/internal/stats/store/queries" \
-    "$root/acceptance/fixtures" "$root/acceptance/contactfixture" \
+    "$root/acceptance/fixtures" "$root/acceptance/contactfixture" "$root/acceptance/campaignfixture" \
     "$root/acceptance/automationfixture" "$root/acceptance/mediafixture" \
     "$root/acceptance/datamigration"
   cp "$script_dir/../docs/architecture/table-ownership.yml" "$root/docs/architecture/"
   printf '%s\n' 'INSERT INTO customers (id) VALUES (1);' >"$root/internal/contact/store/queries/write.sql"
   printf '%s\n' 'INSERT INTO media_image_delete_receipts (id) VALUES (1);' >"$root/internal/media/store/queries/write.sql"
   printf '%s\n' "SELECT 'UPDATE identities'; -- DELETE FROM tags" 'SELECT * FROM customers;' >"$root/internal/segment/store/queries/read.sql"
-  printf '%s\n' 'package worker' 'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/message/send"' >"$root/internal/outbound/worker/client.go"
+  printf '%s\n' 'package worker' 'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/message/send"' 'const contactProfileEndpoint = "https://qyapi.weixin.qq.com/cgi-bin/externalcontact/remark"' >"$root/internal/outbound/worker/client.go"
   printf '%s\n' 'package worker' 'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/media/upload"' >"$root/internal/outbound/worker/media.go"
   printf '%s\n' 'package provider' 'const endpoint = "https://api.weixin.qq.com/cgi-bin/stable_token"' >"$root/internal/order/provider/wechat_shop.go"
   printf '%s\n' 'package store' \
@@ -56,6 +56,10 @@ seed() {
   printf '%s\n' 'package datamigration' \
     'const dml = "INSERT INTO data_migration_runs (id) VALUES ($1)"' \
     >"$root/acceptance/datamigration/harness.go"
+  printf '%s\n' 'package campaignfixture' \
+    'const campaign = "INSERT INTO cloud_campaigns (campaign_code) VALUES ($1)"' \
+    'const step = "INSERT INTO cloud_campaign_steps (campaign_code, step_index) VALUES ($1, 1)"' \
+    >"$root/acceptance/campaignfixture/campaign.go"
   printf '%s\n' \
     'INSERT INTO event_log (event_type) VALUES ($1)' \
     'ON CONFLICT (idempotency_key) DO UPDATE SET idempotency_key = EXCLUDED.idempotency_key;' \
@@ -142,6 +146,8 @@ mutate() {
     outbound-ticket-read) echo 'package worker; const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/ticket/get"' >"$root/internal/outbound/worker/client.go" ;;
     outbound-acquisition-write) echo 'package worker; const endpoint = "/cgi-bin/externalcontact/customer_acquisition/create_link"' >"$root/internal/outbound/worker/client.go" ;;
     wecom-write) echo 'package store; const endpoint = "/cgi-bin/message/send"' >"$root/internal/wecom/store/client.go" ;;
+    wecom-remark) echo 'package store; const endpoint = "/cgi-bin/externalcontact/remark"' >"$root/internal/wecom/store/client.go" ;;
+    outbound-campaign-write) mkdir -p "$root/acceptance/outbound"; echo 'package outbound; const dml = "INSERT INTO cloud_campaigns (campaign_code) VALUES ($1)"' >"$root/acceptance/outbound/campaign.go" ;;
     contact-endpoint) mkdir -p "$root/internal/contact/app"; echo 'package app; const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/message/send"' >"$root/internal/contact/app/client.go" ;;
     contact-sdk) mkdir -p "$root/internal/contact/app"; echo 'package app; import _ "example.com/wecomsdk"' >"$root/internal/contact/app/client.go" ;;
     unknown-operation) echo 'package worker; const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/unknown/write"' >"$root/internal/outbound/worker/client.go" ;;
@@ -164,6 +170,8 @@ reject acceptance-unowned-customer-write 'table write ownership violation'
 reject outbound-read 'WeCom operation ownership violation'; reject wecom-write 'WeCom operation ownership violation'
 reject outbound-ticket-read 'WeCom operation ownership violation'
 reject outbound-acquisition-write 'WeCom operation ownership violation'
+reject wecom-remark 'WeCom operation ownership violation'
+reject outbound-campaign-write 'table write ownership violation'
 reject contact-endpoint 'WeCom operation ownership violation'; reject contact-sdk 'external WeCom client import forbidden'
 reject unknown-operation 'unknown WeCom operation'
 reject fifo 'symlink or special path forbidden'
