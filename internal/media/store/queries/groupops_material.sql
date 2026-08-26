@@ -37,4 +37,27 @@ WHERE preparation.source_kind = sqlc.arg(source_kind)::text
   AND preparation.source_digest = sqlc.arg(source_digest)::text
   AND preparation.provider_scope_digest = sqlc.arg(provider_scope_digest)::text
   AND preparation.state = 'ready'
+  AND receipt.expires_at > sqlc.arg(required_through)::timestamptz
+ORDER BY receipt.expires_at DESC, preparation.id DESC
+LIMIT 1
 FOR KEY SHARE OF preparation, receipt;
+
+-- name: InsertGroupOpsUploadPreparation :one
+INSERT INTO public.media_wecom_upload_preparations (
+  source_kind, source_id, source_digest, provider_scope_digest, upload_kind,
+  external_effect_id, created_at, updated_at
+) VALUES (
+  sqlc.arg(source_kind)::text, sqlc.arg(source_id)::bigint,
+  sqlc.arg(source_digest)::text, sqlc.arg(provider_scope_digest)::text,
+  sqlc.arg(upload_kind)::text, sqlc.arg(external_effect_id)::bigint,
+  sqlc.arg(created_at)::timestamptz, sqlc.arg(created_at)::timestamptz
+)
+ON CONFLICT DO NOTHING
+RETURNING id, source_kind, source_id, source_digest, provider_scope_digest,
+          upload_kind, external_effect_id, state;
+
+-- name: GetGroupOpsUploadPreparation :one
+SELECT id, source_kind, source_id, source_digest, provider_scope_digest,
+       upload_kind, external_effect_id, state
+FROM public.media_wecom_upload_preparations
+WHERE external_effect_id = sqlc.arg(external_effect_id)::bigint;

@@ -11,6 +11,100 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getGroupOpsUploadPreparation = `-- name: GetGroupOpsUploadPreparation :one
+SELECT id, source_kind, source_id, source_digest, provider_scope_digest,
+       upload_kind, external_effect_id, state
+FROM public.media_wecom_upload_preparations
+WHERE external_effect_id = $1::bigint
+`
+
+type GetGroupOpsUploadPreparationRow struct {
+	ID                  int64  `json:"id"`
+	SourceKind          string `json:"source_kind"`
+	SourceID            int64  `json:"source_id"`
+	SourceDigest        string `json:"source_digest"`
+	ProviderScopeDigest string `json:"provider_scope_digest"`
+	UploadKind          string `json:"upload_kind"`
+	ExternalEffectID    int64  `json:"external_effect_id"`
+	State               string `json:"state"`
+}
+
+func (q *Queries) GetGroupOpsUploadPreparation(ctx context.Context, externalEffectID int64) (GetGroupOpsUploadPreparationRow, error) {
+	row := q.db.QueryRow(ctx, getGroupOpsUploadPreparation, externalEffectID)
+	var i GetGroupOpsUploadPreparationRow
+	err := row.Scan(
+		&i.ID,
+		&i.SourceKind,
+		&i.SourceID,
+		&i.SourceDigest,
+		&i.ProviderScopeDigest,
+		&i.UploadKind,
+		&i.ExternalEffectID,
+		&i.State,
+	)
+	return i, err
+}
+
+const insertGroupOpsUploadPreparation = `-- name: InsertGroupOpsUploadPreparation :one
+INSERT INTO public.media_wecom_upload_preparations (
+  source_kind, source_id, source_digest, provider_scope_digest, upload_kind,
+  external_effect_id, created_at, updated_at
+) VALUES (
+  $1::text, $2::bigint,
+  $3::text, $4::text,
+  $5::text, $6::bigint,
+  $7::timestamptz, $7::timestamptz
+)
+ON CONFLICT DO NOTHING
+RETURNING id, source_kind, source_id, source_digest, provider_scope_digest,
+          upload_kind, external_effect_id, state
+`
+
+type InsertGroupOpsUploadPreparationParams struct {
+	SourceKind          string             `json:"source_kind"`
+	SourceID            int64              `json:"source_id"`
+	SourceDigest        string             `json:"source_digest"`
+	ProviderScopeDigest string             `json:"provider_scope_digest"`
+	UploadKind          string             `json:"upload_kind"`
+	ExternalEffectID    int64              `json:"external_effect_id"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+}
+
+type InsertGroupOpsUploadPreparationRow struct {
+	ID                  int64  `json:"id"`
+	SourceKind          string `json:"source_kind"`
+	SourceID            int64  `json:"source_id"`
+	SourceDigest        string `json:"source_digest"`
+	ProviderScopeDigest string `json:"provider_scope_digest"`
+	UploadKind          string `json:"upload_kind"`
+	ExternalEffectID    int64  `json:"external_effect_id"`
+	State               string `json:"state"`
+}
+
+func (q *Queries) InsertGroupOpsUploadPreparation(ctx context.Context, arg InsertGroupOpsUploadPreparationParams) (InsertGroupOpsUploadPreparationRow, error) {
+	row := q.db.QueryRow(ctx, insertGroupOpsUploadPreparation,
+		arg.SourceKind,
+		arg.SourceID,
+		arg.SourceDigest,
+		arg.ProviderScopeDigest,
+		arg.UploadKind,
+		arg.ExternalEffectID,
+		arg.CreatedAt,
+	)
+	var i InsertGroupOpsUploadPreparationRow
+	err := row.Scan(
+		&i.ID,
+		&i.SourceKind,
+		&i.SourceID,
+		&i.SourceDigest,
+		&i.ProviderScopeDigest,
+		&i.UploadKind,
+		&i.ExternalEffectID,
+		&i.State,
+	)
+	return i, err
+}
+
 const lockGroupOpsAttachmentSource = `-- name: LockGroupOpsAttachmentSource :one
 SELECT attachment.id, attachment.file_name, attachment.mime_type, attachment.checksum AS source_checksum,
        blob.checksum AS blob_checksum, blob.content
@@ -140,14 +234,18 @@ WHERE preparation.source_kind = $1::text
   AND preparation.source_digest = $3::text
   AND preparation.provider_scope_digest = $4::text
   AND preparation.state = 'ready'
+  AND receipt.expires_at > $5::timestamptz
+ORDER BY receipt.expires_at DESC, preparation.id DESC
+LIMIT 1
 FOR KEY SHARE OF preparation, receipt
 `
 
 type ReadGroupOpsPreparedUploadParams struct {
-	SourceKind          string `json:"source_kind"`
-	SourceID            int64  `json:"source_id"`
-	SourceDigest        string `json:"source_digest"`
-	ProviderScopeDigest string `json:"provider_scope_digest"`
+	SourceKind          string             `json:"source_kind"`
+	SourceID            int64              `json:"source_id"`
+	SourceDigest        string             `json:"source_digest"`
+	ProviderScopeDigest string             `json:"provider_scope_digest"`
+	RequiredThrough     pgtype.Timestamptz `json:"required_through"`
 }
 
 type ReadGroupOpsPreparedUploadRow struct {
@@ -165,6 +263,7 @@ func (q *Queries) ReadGroupOpsPreparedUpload(ctx context.Context, arg ReadGroupO
 		arg.SourceID,
 		arg.SourceDigest,
 		arg.ProviderScopeDigest,
+		arg.RequiredThrough,
 	)
 	var i ReadGroupOpsPreparedUploadRow
 	err := row.Scan(

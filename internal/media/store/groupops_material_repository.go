@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -19,6 +20,13 @@ import (
 // require the caller's UoW: source rows are locked while acceptance persists
 // the resulting snapshot, and receipt rows are locked while freezing it.
 type GroupOpsMaterialRepository struct{ providerScopeDigest string }
+
+type GroupOpsUploadPreparation struct {
+	ID                                                        int64
+	SourceKind, SourceDigest, ProviderScopeDigest, UploadKind string
+	SourceID, ExternalEffectID                                int64
+	State                                                     string
+}
 
 var _ mediaport.GroupOpsMaterialSourceCapturer = (*GroupOpsMaterialRepository)(nil)
 var _ groupopsmaterial.PreparedPlanReader = (*GroupOpsMaterialRepository)(nil)
@@ -56,7 +64,7 @@ func (repository *GroupOpsMaterialRepository) ReadPreparedGroupOpsPlan(ctx conte
 	}
 	plan := groupopsmaterial.PreparedPlan{Items: make([]groupopsmaterial.PreparedMaterial, 0, len(sources.References))}
 	for _, source := range sources.References {
-		item, readErr := repository.readPreparedSource(ctx, query, source)
+		item, readErr := repository.readPreparedSource(ctx, query, source, requiredThrough)
 		if readErr != nil || (source.Reference.Kind != "group_invite" && !item.ReadyUntil.After(requiredThrough)) {
 			return groupopsmaterial.PreparedPlan{}, groupOpsMaterialUnavailable(readErr)
 		}
@@ -65,7 +73,49 @@ func (repository *GroupOpsMaterialRepository) ReadPreparedGroupOpsPlan(ctx conte
 	return plan, nil
 }
 
-func (repository *GroupOpsMaterialRepository) readPreparedSource(ctx context.Context, query *mediadb.Queries, source mediaport.GroupOpsMaterialSourceReference) (groupopsmaterial.PreparedMaterial, error) {
+// BindGroupOpsUploadPreparation persists the Media-owned typed fact after EER
+// accepted the effect and before it is queued. The same external effect may
+// replay, but it may never be rebound to another source or provider scope.
+func (repository *GroupOpsMaterialRepository) BindGroupOpsUploadPreparation(ctx context.Context, sourceKind string, sourceID int64, sourceDigest, providerScopeDigest, uploadKind, effectID string, now time.Time) (GroupOpsUploadPreparation, bool, error) {
+	query, err := queries(ctx)
+	parsedEffectID, parseErr := parseGroupOpsEffectID(effectID)
+	if repository == nil || err != nil || parseErr != nil || !groupOpsDigest(sourceDigest) || providerScopeDigest != repository.providerScopeDigest || !groupOpsDigest(providerScopeDigest) || sourceID < 1 || (sourceKind != "image" && sourceKind != "attachment") || (uploadKind != "image" && uploadKind != "file") || now.IsZero() {
+		return GroupOpsUploadPreparation{}, false, groupOpsMaterialUnavailable(errors.Join(err, parseErr))
+	}
+	row, insertErr := query.InsertGroupOpsUploadPreparation(ctx, mediadb.InsertGroupOpsUploadPreparationParams{SourceKind: sourceKind, SourceID: sourceID, SourceDigest: sourceDigest, ProviderScopeDigest: providerScopeDigest, UploadKind: uploadKind, ExternalEffectID: parsedEffectID, CreatedAt: stamp(now.UTC())})
+	if insertErr == nil {
+		return groupOpsPreparation(row.ID, row.SourceKind, row.SourceID, row.SourceDigest, row.ProviderScopeDigest, row.UploadKind, row.ExternalEffectID, row.State), true, nil
+	}
+	if !errors.Is(insertErr, pgx.ErrNoRows) {
+		return GroupOpsUploadPreparation{}, false, insertErr
+	}
+	existing, readErr := query.GetGroupOpsUploadPreparation(ctx, parsedEffectID)
+	if readErr != nil {
+		return GroupOpsUploadPreparation{}, false, groupOpsMaterialUnavailable(readErr)
+	}
+	value := groupOpsPreparation(existing.ID, existing.SourceKind, existing.SourceID, existing.SourceDigest, existing.ProviderScopeDigest, existing.UploadKind, existing.ExternalEffectID, existing.State)
+	if value.SourceKind != sourceKind || value.SourceID != sourceID || value.SourceDigest != sourceDigest || value.ProviderScopeDigest != providerScopeDigest || value.UploadKind != uploadKind {
+		return GroupOpsUploadPreparation{}, false, groupopsmaterial.ErrUnavailable
+	}
+	return value, false, nil
+}
+
+func groupOpsPreparation(id int64, sourceKind string, sourceID int64, sourceDigest, scope, uploadKind string, effectID int64, state string) GroupOpsUploadPreparation {
+	return GroupOpsUploadPreparation{ID: id, SourceKind: sourceKind, SourceID: sourceID, SourceDigest: sourceDigest, ProviderScopeDigest: scope, UploadKind: uploadKind, ExternalEffectID: effectID, State: state}
+}
+
+func parseGroupOpsEffectID(value string) (int64, error) {
+	if len(value) < 6 || value[:4] != "eer_" {
+		return 0, groupopsmaterial.ErrUnavailable
+	}
+	parsed, err := strconv.ParseInt(value[4:], 10, 64)
+	if err != nil || parsed < 1 || "eer_"+strconv.FormatInt(parsed, 10) != value {
+		return 0, groupopsmaterial.ErrUnavailable
+	}
+	return parsed, nil
+}
+
+func (repository *GroupOpsMaterialRepository) readPreparedSource(ctx context.Context, query *mediadb.Queries, source mediaport.GroupOpsMaterialSourceReference, requiredThrough time.Time) (groupopsmaterial.PreparedMaterial, error) {
 	if source.Reference.Kind == "group_invite" {
 		return groupopsmaterial.PreparedMaterial{Reference: source.Reference, SourceDigest: source.SourceDigest, Attachment: source.ProviderFields}, nil
 	}
@@ -75,7 +125,7 @@ func (repository *GroupOpsMaterialRepository) readPreparedSource(ctx context.Con
 	} else if source.Reference.Kind == "miniprogram" {
 		kind, id, digest = "image", source.ThumbnailImageID, source.ThumbnailSourceDigest
 	}
-	row, err := query.ReadGroupOpsPreparedUpload(ctx, mediadb.ReadGroupOpsPreparedUploadParams{SourceKind: kind, SourceID: id, SourceDigest: digest, ProviderScopeDigest: repository.providerScopeDigest})
+	row, err := query.ReadGroupOpsPreparedUpload(ctx, mediadb.ReadGroupOpsPreparedUploadParams{SourceKind: kind, SourceID: id, SourceDigest: digest, ProviderScopeDigest: repository.providerScopeDigest, RequiredThrough: stamp(requiredThrough.UTC())})
 	if err != nil || !row.ExpiresAt.Valid || !groupOpsDigest(row.ReceiptDigest) {
 		return groupopsmaterial.PreparedMaterial{}, err
 	}
@@ -164,7 +214,11 @@ func groupOpsSourceDigest(kind string, id int64, fields ...string) (string, erro
 }
 
 func groupOpsDigest(value string) bool {
-	return len(value) == len("sha256:")+64 && len(value) > 7 && value[:7] == "sha256:"
+	if len(value) != len("sha256:")+sha256.Size*2 || value[:7] != "sha256:" {
+		return false
+	}
+	_, err := hex.DecodeString(value[7:])
+	return err == nil && value == "sha256:"+value[7:]
 }
 
 func groupOpsMaterialUnavailable(err error) error {

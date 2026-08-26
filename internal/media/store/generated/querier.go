@@ -28,6 +28,7 @@ type Querier interface {
 	DeleteMediaContentPackageRefs(ctx context.Context, packageID int64) error
 	DeleteMediaImage(ctx context.Context, imageID int64) (int64, error)
 	DeleteMediaMiniProgram(ctx context.Context, id int64) error
+	GetGroupOpsUploadPreparation(ctx context.Context, externalEffectID int64) (GetGroupOpsUploadPreparationRow, error)
 	GetMediaAttachment(ctx context.Context, attachmentID int64) (GetMediaAttachmentRow, error)
 	GetMediaAttachmentMutation(ctx context.Context, arg GetMediaAttachmentMutationParams) (GetMediaAttachmentMutationRow, error)
 	GetMediaAttachmentUploadPart(ctx context.Context, arg GetMediaAttachmentUploadPartParams) (MediaAttachmentUploadPart, error)
@@ -48,6 +49,7 @@ type Querier interface {
 	GetOutboundMediaEffectBinding(ctx context.Context, arg GetOutboundMediaEffectBindingParams) (OutboundMediaEffectBinding, error)
 	GetOutboundMediaReconciliationReceipt(ctx context.Context, effectID int64) (OutboundMediaReconciliationReceipt, error)
 	InitiateMediaAttachmentUpload(ctx context.Context, arg InitiateMediaAttachmentUploadParams) (InitiateMediaAttachmentUploadRow, error)
+	InsertGroupOpsUploadPreparation(ctx context.Context, arg InsertGroupOpsUploadPreparationParams) (InsertGroupOpsUploadPreparationRow, error)
 	InsertMediaAttachment(ctx context.Context, arg InsertMediaAttachmentParams) (InsertMediaAttachmentRow, error)
 	InsertMediaAttachmentBlob(ctx context.Context, arg InsertMediaAttachmentBlobParams) error
 	InsertMediaContentPackageAttachmentRef(ctx context.Context, arg InsertMediaContentPackageAttachmentRefParams) error
