@@ -42,7 +42,7 @@ func (fake *sidebarActivityAPIChatFake) ListCustomerChatActivity(context.Context
 func TestSidebarActivityCandidateAdapterUsesBoundContextAndReturnsSafeFlags(t *testing.T) {
 	owner := int64(7)
 	profiles := &sidebarRouteProfiles{profile: contactport.SidebarProfile{CustomerID: 41, OwnerStaffID: owner, Name: "customer", UpdatedAt: time.Now().UTC()}}
-	sidebarService, err := sidebarapp.NewService(sidebarRouteCorp{}, &sidebarRouteIdentity{status: "found"}, profiles, sidebarRouteSurveys{}, sidebarRouteOrders{}, sidebarRouteMembers{}, sidebarRouteMedia{}, []byte("01234567890123456789012345678901"))
+	sidebarService, err := sidebarapp.NewService(sidebarRouteCorp{}, &sidebarRouteIdentity{status: "found"}, sidebarRoutePhones{}, profiles, sidebarRouteSurveys{}, sidebarRouteOrders{}, sidebarRouteMembers{}, sidebarRouteMedia{}, []byte("01234567890123456789012345678901"))
 	if err != nil {
 		t.Fatal(err)
 	}

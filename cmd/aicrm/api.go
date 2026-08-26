@@ -1396,15 +1396,16 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	identityBinder := identityapp.NewBindServiceWithMergePort(
+		uow,
+		identityRepository,
+		contactstore.NewMergePortRepository(),
+		eventstore.NewAppender(),
+		config.Identity.HMACKey.Value(),
+	)
 	identityConsoleHandler, err := identityhttp.NewConsoleHandler(identityConsoleApplication{
 		resolver: identityResolver,
-		binder: identityapp.NewBindServiceWithMergePort(
-			uow,
-			identityRepository,
-			contactstore.NewMergePortRepository(),
-			eventstore.NewAppender(),
-			config.Identity.HMACKey.Value(),
-		),
+		binder:   identityBinder,
 	})
 	if err != nil {
 		pool.Close()
@@ -1857,6 +1858,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	sidebarService, err := sidebarapp.NewService(
 		sidebarCorpReader{settings: configManager, fallback: sidebarCorpID, fallbackAuthoritative: config.WeCom.Sidebar.Enabled},
 		identityResolver,
+		sidebarPhoneAdapter{source: identityBinder},
 		sidebarProfiles,
 		customerAnswerService,
 		orderapp.NewService(uow, orderstore.NewRepository(), contactstore.NewCustomerDetailRepository(), productstore.NewCatalogRepository()),
@@ -2526,12 +2528,14 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/v1/contact-owner-reassignments/previews/{preview_id}/results.csv", authport.CapabilityContactOwnerReassignment, false, http.HandlerFunc(wrapper.DownloadContactOwnerReassignmentResults)},
 		{http.MethodGet, "/api/sidebar/v2/workbench", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarWorkbench)},
 		{http.MethodPut, "/api/sidebar/v2/profile", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateSidebarProfile)},
+		{http.MethodPost, "/api/sidebar/v2/phone-binding", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.BindSidebarPhone)},
 		{http.MethodGet, "/api/sidebar/v2/questionnaires", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarQuestionnaires)},
 		{http.MethodGet, "/api/sidebar/v2/orders", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarOrders)},
 		{http.MethodGet, "/api/sidebar/v2/periodic-orders", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarPeriodicOrders)},
 		{http.MethodPut, "/api/sidebar/v2/periodic-orders/{service_product_id}/members/{member_ref}/remark", authport.CapabilityCustomersWrite, true, http.HandlerFunc(wrapper.UpdateSidebarPeriodicRemark)},
 		{http.MethodGet, "/api/sidebar/v2/materials", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListSidebarMaterials)},
 		{http.MethodGet, "/api/sidebar/v2/materials/image/{image_id}/thumbnail", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarMaterialThumbnailStatus)},
+		{http.MethodGet, "/api/sidebar/v2/materials/image/{image_id}/preview", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.GetSidebarMaterialThumbnailPreview)},
 		{http.MethodGet, "/api/v1/customers", authport.CapabilityCustomersRead, false, http.HandlerFunc(wrapper.ListCustomers)},
 		{http.MethodGet, "/api/v1/admin/release-candidates", authport.CapabilityReleaseRead, false, http.HandlerFunc(wrapper.ListReleaseCandidates)},
 		{http.MethodPost, "/api/v1/admin/release-candidates", authport.CapabilityReleaseManage, true, http.HandlerFunc(wrapper.RegisterReleaseCandidate)},

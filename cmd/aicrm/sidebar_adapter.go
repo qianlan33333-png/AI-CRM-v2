@@ -4,9 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"strings"
 
 	configport "github.com/qianlan33333-png/AI-CRM-v2/internal/config/port"
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
+	identityport "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/port"
 	memberdomain "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/domain"
 	memberport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/serviceperiodmember/port"
 	sidebarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/sidebar/app"
@@ -48,6 +52,38 @@ func (reader sidebarCorpReader) CorpID(ctx context.Context) (string, error) {
 		return "", configport.ErrInvalidSetting
 	}
 	return value, nil
+}
+
+type sidebarPhoneSource interface {
+	Bind(context.Context, identityport.BindCommand) (identityport.BindResult, error)
+}
+
+type sidebarPhoneAdapter struct{ source sidebarPhoneSource }
+
+func (adapter sidebarPhoneAdapter) BindPhone(ctx context.Context, command sidebarapp.PhoneBindingCommand) (string, error) {
+	if adapter.source == nil {
+		return "", sidebarapp.ErrUnavailable
+	}
+	result, err := adapter.source.Bind(ctx, identityport.BindCommand{
+		CustomerID: contactport.CustomerID(command.CustomerID),
+		Ref:        identityport.IDRef{Kind: identityport.KindPhone, Scope: "phone:e164", Value: command.Mobile, Assurance: identityport.AssuranceDeclared, Source: "sidebar.phone_binding"},
+		Actor:      contactport.Actor("admin:" + sidebarInt64String(command.ActorID)), IdempotencyKey: command.IdempotencyKey,
+	})
+	if err != nil {
+		switch {
+		case errors.Is(err, identityapp.ErrInvalidIdentity):
+			return "", sidebarapp.ErrInvalidInput
+		case errors.Is(err, identityapp.ErrIdentityBindIdempotencyConflict):
+			return "", sidebarapp.ErrConflict
+		default:
+			return "", sidebarapp.ErrUnavailable
+		}
+	}
+	return string(result.Status), nil
+}
+
+func sidebarInt64String(value int64) string {
+	return strconv.FormatInt(value, 10)
 }
 
 type sidebarMemberSource interface {

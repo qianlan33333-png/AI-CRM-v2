@@ -772,6 +772,21 @@ export interface SidebarProfileUpdateResponse {
   safety: SidebarProfileUpdateSafety;
 }
 
+export type SidebarPhoneBindingResponseStatus =
+  (typeof SidebarPhoneBindingResponseStatus)[keyof typeof SidebarPhoneBindingResponseStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SidebarPhoneBindingResponseStatus = {
+  bound: "bound",
+  already_bound: "already_bound",
+  rejected: "rejected",
+} as const;
+
+export interface SidebarPhoneBindingResponse {
+  status: SidebarPhoneBindingResponseStatus;
+  safety: SidebarSafety;
+}
+
 export type SidebarSafeChoiceAnswerQuestionType =
   (typeof SidebarSafeChoiceAnswerQuestionType)[keyof typeof SidebarSafeChoiceAnswerQuestionType];
 
@@ -826,6 +841,11 @@ export interface SidebarOrderItem {
   status_label: string;
   provider: string;
   provider_label: string;
+  /**
+   * @maxLength 2048
+   * @pattern ^/[^/]
+   */
+  detail_url: string;
 }
 
 export interface SidebarOrderResponse {
@@ -16339,6 +16359,11 @@ export type UpdateSidebarProfileBody = {
   patch: UpdateSidebarProfileBodyPatch;
 };
 
+export type BindSidebarPhoneBody = {
+  /** @pattern ^\+[1-9][0-9]{1,14}$ */
+  mobile: string;
+};
+
 export type ListSidebarQuestionnairesParams = {
   /**
    * @minimum 1
@@ -19234,6 +19259,80 @@ export const updateSidebarProfile = async (
 };
 
 /**
+ * @summary Bind a declared E.164 phone to the customer from the live sidebar scope
+ */
+export type bindSidebarPhoneResponse200 = {
+  data: SidebarPhoneBindingResponse;
+  status: 200;
+};
+
+export type bindSidebarPhoneResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type bindSidebarPhoneResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type bindSidebarPhoneResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type bindSidebarPhoneResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type bindSidebarPhoneResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type bindSidebarPhoneResponseSuccess = bindSidebarPhoneResponse200 & {
+  headers: Headers;
+};
+export type bindSidebarPhoneResponseError = (
+  | bindSidebarPhoneResponse400
+  | bindSidebarPhoneResponse401
+  | bindSidebarPhoneResponse403
+  | bindSidebarPhoneResponse409
+  | bindSidebarPhoneResponse503
+) & {
+  headers: Headers;
+};
+
+export type bindSidebarPhoneResponse =
+  bindSidebarPhoneResponseSuccess | bindSidebarPhoneResponseError;
+
+export const getBindSidebarPhoneUrl = () => {
+  return `/api/sidebar/v2/phone-binding`;
+};
+
+export const bindSidebarPhone = async (
+  bindSidebarPhoneBody: BindSidebarPhoneBody,
+  options?: RequestInit,
+): Promise<bindSidebarPhoneResponse> => {
+  const res = await fetch(getBindSidebarPhoneUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(bindSidebarPhoneBody),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: bindSidebarPhoneResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as bindSidebarPhoneResponse;
+};
+
+/**
  * @summary List bounded safe-choice questionnaire answers for one scoped customer
  */
 export type listSidebarQuestionnairesResponse200 = {
@@ -19318,7 +19417,7 @@ export const listSidebarQuestionnaires = async (
 };
 
 /**
- * @summary List customer-scoped local orders without payer or identity fields
+ * @summary List customer-scoped local orders with same-origin detail links and without payer or identity fields
  */
 export type listSidebarOrdersResponse200 = {
   data: SidebarOrderResponse;
@@ -19728,6 +19827,88 @@ export const getSidebarMaterialThumbnailStatus = async (
     status: res.status,
     headers: res.headers,
   } as getSidebarMaterialThumbnailStatusResponse;
+};
+
+/**
+ * @summary Read a real local thumb_320 image variant for the scoped sidebar
+ */
+export type getSidebarMaterialThumbnailPreviewResponse200 = {
+  data: Blob;
+  status: 200;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse304 = {
+  data: void;
+  status: 304;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponseSuccess =
+  getSidebarMaterialThumbnailPreviewResponse200 & {
+    headers: Headers;
+  };
+export type getSidebarMaterialThumbnailPreviewResponseError = (
+  | getSidebarMaterialThumbnailPreviewResponse304
+  | getSidebarMaterialThumbnailPreviewResponse400
+  | getSidebarMaterialThumbnailPreviewResponse401
+  | getSidebarMaterialThumbnailPreviewResponse403
+  | getSidebarMaterialThumbnailPreviewResponse404
+  | getSidebarMaterialThumbnailPreviewResponse503
+) & {
+  headers: Headers;
+};
+
+export type getSidebarMaterialThumbnailPreviewResponse =
+  | getSidebarMaterialThumbnailPreviewResponseSuccess
+  | getSidebarMaterialThumbnailPreviewResponseError;
+
+export const getGetSidebarMaterialThumbnailPreviewUrl = (imageId: number) => {
+  return `/api/sidebar/v2/materials/image/${imageId}/preview`;
+};
+
+export const getSidebarMaterialThumbnailPreview = async (
+  imageId: number,
+  options?: RequestInit,
+): Promise<getSidebarMaterialThumbnailPreviewResponse> => {
+  const res = await fetch(getGetSidebarMaterialThumbnailPreviewUrl(imageId), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getSidebarMaterialThumbnailPreviewResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getSidebarMaterialThumbnailPreviewResponse;
 };
 
 /**

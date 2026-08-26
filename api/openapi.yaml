@@ -299,6 +299,41 @@ paths:
         "404": {$ref: "#/components/responses/NotFound"}
         "409": {$ref: "#/components/responses/Conflict"}
         "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/phone-binding:
+    post:
+      tags: [p4-sidebar-local]
+      operationId: bindSidebarPhone
+      summary: Bind a declared E.164 phone to the customer from the live sidebar scope
+      x-p4-decision-evidence: P4-W2-A-2026-08-26
+      x-aicrm-v2-difference: does not support legacy force-rebind or expose the phone after binding
+      x-aicrm-capability: customers.write
+      x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
+      x-aicrm-auth-scheme: human_session_and_sidebar_context
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-classification: restricted_pii
+      x-aicrm-data-source: identity.bind.declared_phone
+      x-aicrm-external-effect: none
+      parameters:
+        - {$ref: "#/components/parameters/SidebarContextToken"}
+        - {$ref: "#/components/parameters/CSRFToken"}
+        - {$ref: "#/components/parameters/IdempotencyKey"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [mobile]
+              properties:
+                mobile: {type: string, pattern: '^\+[1-9][0-9]{1,14}$'}
+      responses:
+        "200": {description: Durable local identity bind result, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarPhoneBindingResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "409": {$ref: "#/components/responses/Conflict"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
   /api/sidebar/v2/questionnaires:
     get:
       tags: [p4-sidebar-local]
@@ -325,7 +360,7 @@ paths:
     get:
       tags: [p4-sidebar-local]
       operationId: listSidebarOrders
-      summary: List customer-scoped local orders without payer or identity fields
+      summary: List customer-scoped local orders with same-origin detail links and without payer or identity fields
       x-p4-decision-evidence: P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24
       x-aicrm-capability: customers.read
       x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
@@ -451,6 +486,31 @@ paths:
         - {$ref: "#/components/parameters/SidebarContextToken"}
       responses:
         "202": {description: Thumbnail remains pending and no generator ran, headers: {X-Thumbnail-Status: {schema: {type: string, enum: [pending]}}}, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarThumbnailPendingResponse"}}}}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "403": {$ref: "#/components/responses/Forbidden"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "503": {$ref: "#/components/responses/ServiceUnavailable"}
+  /api/sidebar/v2/materials/image/{image_id}/preview:
+    get:
+      tags: [p4-sidebar-local]
+      operationId: getSidebarMaterialThumbnailPreview
+      summary: Read a real local thumb_320 image variant for the scoped sidebar
+      x-p4-decision-evidence: P4-W2-A-2026-08-26
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
+      x-aicrm-auth-scheme: human_session_and_sidebar_context
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-data-source: media.local_image_variant
+      x-aicrm-external-effect: none
+      parameters:
+        - {name: image_id, in: path, required: true, schema: {type: integer, format: int64, minimum: 1}}
+        - {$ref: "#/components/parameters/SidebarContextToken"}
+        - {name: If-None-Match, in: header, required: false, schema: {type: string, maxLength: 256}}
+      responses:
+        "200": {description: Local image thumbnail bytes, headers: {ETag: {schema: {type: string}}}, content: {image/png: {schema: {type: string, format: binary}}, image/jpeg: {schema: {type: string, format: binary}}, image/gif: {schema: {type: string, format: binary}}}}
+        "304": {description: Cached thumbnail remains current}
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
@@ -13051,6 +13111,13 @@ components:
       properties:
         profile: {$ref: "#/components/schemas/SidebarProfile"}
         safety: {$ref: "#/components/schemas/SidebarProfileUpdateSafety"}
+    SidebarPhoneBindingResponse:
+      type: object
+      additionalProperties: false
+      required: [status, safety]
+      properties:
+        status: {type: string, enum: [bound, already_bound, rejected]}
+        safety: {$ref: "#/components/schemas/SidebarSafety"}
     SidebarSafeChoiceAnswer:
       type: object
       additionalProperties: false
@@ -13086,7 +13153,7 @@ components:
     SidebarOrderItem:
       type: object
       additionalProperties: false
-      required: [created_at, merchant_order_no, product_code, product_name, amount_yuan, currency, status, status_label, provider, provider_label]
+      required: [created_at, merchant_order_no, product_code, product_name, amount_yuan, currency, status, status_label, provider, provider_label, detail_url]
       properties:
         created_at: {type: string, format: date-time}
         merchant_order_no: {type: string}
@@ -13098,6 +13165,7 @@ components:
         status_label: {type: string}
         provider: {type: string}
         provider_label: {type: string}
+        detail_url: {type: string, pattern: '^/[^/]', maxLength: 2048}
     SidebarOrderResponse:
       type: object
       additionalProperties: false

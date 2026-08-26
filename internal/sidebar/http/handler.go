@@ -7,6 +7,7 @@ import (
 	"mime"
 	"net/http"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -178,6 +179,30 @@ func (handler *Handler) UpdateProfile(writer http.ResponseWriter, request *http.
 	writeJSON(writer, http.StatusOK, result)
 }
 
+func (handler *Handler) BindPhone(writer http.ResponseWriter, request *http.Request, token, idempotencyKey string) {
+	scope, err := handler.scope(request, token, authport.CapabilityCustomersWrite)
+	if err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	var body struct {
+		Mobile string `json:"mobile"`
+	}
+	if err = decodeBody(writer, request, &body); err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	status, err := handler.service.BindPhone(request.Context(), scope, body.Mobile, idempotencyKey)
+	if err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	writeJSON(writer, http.StatusOK, struct {
+		Status string            `json:"status"`
+		Safety sidebarapp.Safety `json:"safety"`
+	}{status, sidebarapp.Safety{LocalOnly: true}})
+}
+
 func (handler *Handler) Questionnaires(writer http.ResponseWriter, request *http.Request, token string, limit int32) {
 	scope, err := handler.scope(request, token, authport.CapabilityCustomersRead)
 	if err != nil {
@@ -271,6 +296,29 @@ func (handler *Handler) ThumbnailStatus(writer http.ResponseWriter, request *htt
 		Status string            `json:"status"`
 		Safety sidebarapp.Safety `json:"safety"`
 	}{status, sidebarapp.Safety{LocalOnly: true}})
+}
+
+func (handler *Handler) ThumbnailPreview(writer http.ResponseWriter, request *http.Request, token string, imageID int64) {
+	if _, err := handler.scope(request, token, authport.CapabilityCustomersRead); err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	variant, err := handler.service.ThumbnailPreview(request.Context(), imageID)
+	if err != nil {
+		writeError(writer, request, err)
+		return
+	}
+	writer.Header().Set("ETag", variant.ETag)
+	writer.Header().Set("Cache-Control", "private, no-cache")
+	writer.Header().Set("X-Content-Type-Options", "nosniff")
+	if request.Header.Get("If-None-Match") == variant.ETag {
+		writer.WriteHeader(http.StatusNotModified)
+		return
+	}
+	writer.Header().Set("Content-Type", variant.MediaType)
+	writer.Header().Set("Content-Length", strconv.Itoa(len(variant.Content)))
+	writer.WriteHeader(http.StatusOK)
+	_, _ = writer.Write(variant.Content)
 }
 
 func (handler *Handler) scope(request *http.Request, token string, capability authport.Capability) (sidebarapp.Scope, error) {

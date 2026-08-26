@@ -621,13 +621,13 @@ func (e AutomationTriggerRunListResponseVisibility) Valid() bool {
 
 // Defines values for BindIdentityAlreadyBoundStatus.
 const (
-	AlreadyBound BindIdentityAlreadyBoundStatus = "already_bound"
+	BindIdentityAlreadyBoundStatusAlreadyBound BindIdentityAlreadyBoundStatus = "already_bound"
 )
 
 // Valid indicates whether the value is a known member of the BindIdentityAlreadyBoundStatus enum.
 func (e BindIdentityAlreadyBoundStatus) Valid() bool {
 	switch e {
-	case AlreadyBound:
+	case BindIdentityAlreadyBoundStatusAlreadyBound:
 		return true
 	default:
 		return false
@@ -6985,6 +6985,27 @@ func (e SidebarMaterialItemThumbnailStatus) Valid() bool {
 	}
 }
 
+// Defines values for SidebarPhoneBindingResponseStatus.
+const (
+	SidebarPhoneBindingResponseStatusAlreadyBound SidebarPhoneBindingResponseStatus = "already_bound"
+	SidebarPhoneBindingResponseStatusBound        SidebarPhoneBindingResponseStatus = "bound"
+	SidebarPhoneBindingResponseStatusRejected     SidebarPhoneBindingResponseStatus = "rejected"
+)
+
+// Valid indicates whether the value is a known member of the SidebarPhoneBindingResponseStatus enum.
+func (e SidebarPhoneBindingResponseStatus) Valid() bool {
+	switch e {
+	case SidebarPhoneBindingResponseStatusAlreadyBound:
+		return true
+	case SidebarPhoneBindingResponseStatusBound:
+		return true
+	case SidebarPhoneBindingResponseStatusRejected:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SidebarProfileUpdateSafetyRealExternalCallExecuted.
 const (
 	SidebarProfileUpdateSafetyRealExternalCallExecutedFalse SidebarProfileUpdateSafetyRealExternalCallExecuted = false
@@ -11662,6 +11683,7 @@ type SidebarOrderItem struct {
 	AmountYuan      string    `json:"amount_yuan"`
 	CreatedAt       time.Time `json:"created_at"`
 	Currency        string    `json:"currency"`
+	DetailUrl       string    `json:"detail_url"`
 	MerchantOrderNo string    `json:"merchant_order_no"`
 	ProductCode     string    `json:"product_code"`
 	ProductName     string    `json:"product_name"`
@@ -11694,6 +11716,15 @@ type SidebarPeriodicRemarkResponse struct {
 	Member SidebarServicePeriodMember `json:"member"`
 	Safety SidebarSafety              `json:"safety"`
 }
+
+// SidebarPhoneBindingResponse defines model for SidebarPhoneBindingResponse.
+type SidebarPhoneBindingResponse struct {
+	Safety SidebarSafety                     `json:"safety"`
+	Status SidebarPhoneBindingResponseStatus `json:"status"`
+}
+
+// SidebarPhoneBindingResponseStatus defines model for SidebarPhoneBindingResponse.Status.
+type SidebarPhoneBindingResponseStatus string
 
 // SidebarProfile defines model for SidebarProfile.
 type SidebarProfile struct {
@@ -13115,6 +13146,13 @@ type ListSidebarMaterialsParams struct {
 	XSidebarContextToken SidebarContextToken `json:"X-Sidebar-Context-Token"`
 }
 
+// GetSidebarMaterialThumbnailPreviewParams defines parameters for GetSidebarMaterialThumbnailPreview.
+type GetSidebarMaterialThumbnailPreviewParams struct {
+	// XSidebarContextToken Short-lived HMAC-authenticated corp, customer, owner, and viewer scoped token.
+	XSidebarContextToken SidebarContextToken `json:"X-Sidebar-Context-Token"`
+	IfNoneMatch          *string             `json:"If-None-Match,omitempty"`
+}
+
 // GetSidebarMaterialThumbnailStatusParams defines parameters for GetSidebarMaterialThumbnailStatus.
 type GetSidebarMaterialThumbnailStatusParams struct {
 	// XSidebarContextToken Short-lived HMAC-authenticated corp, customer, owner, and viewer scoped token.
@@ -13159,6 +13197,23 @@ type UpdateSidebarPeriodicRemarkJSONBody struct {
 
 // UpdateSidebarPeriodicRemarkParams defines parameters for UpdateSidebarPeriodicRemark.
 type UpdateSidebarPeriodicRemarkParams struct {
+	// XSidebarContextToken Short-lived HMAC-authenticated corp, customer, owner, and viewer scoped token.
+	XSidebarContextToken SidebarContextToken `json:"X-Sidebar-Context-Token"`
+
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// BindSidebarPhoneJSONBody defines parameters for BindSidebarPhone.
+type BindSidebarPhoneJSONBody struct {
+	Mobile string `json:"mobile"`
+}
+
+// BindSidebarPhoneParams defines parameters for BindSidebarPhone.
+type BindSidebarPhoneParams struct {
 	// XSidebarContextToken Short-lived HMAC-authenticated corp, customer, owner, and viewer scoped token.
 	XSidebarContextToken SidebarContextToken `json:"X-Sidebar-Context-Token"`
 
@@ -13937,6 +13992,9 @@ type MintSidebarContextJSONRequestBody MintSidebarContextJSONBody
 
 // UpdateSidebarPeriodicRemarkJSONRequestBody defines body for UpdateSidebarPeriodicRemark for application/json ContentType.
 type UpdateSidebarPeriodicRemarkJSONRequestBody UpdateSidebarPeriodicRemarkJSONBody
+
+// BindSidebarPhoneJSONRequestBody defines body for BindSidebarPhone for application/json ContentType.
+type BindSidebarPhoneJSONRequestBody BindSidebarPhoneJSONBody
 
 // UpdateSidebarProfileJSONRequestBody defines body for UpdateSidebarProfile for application/json ContentType.
 type UpdateSidebarProfileJSONRequestBody UpdateSidebarProfileJSONBody
@@ -15595,6 +15653,9 @@ type ServerInterface interface {
 	// List local enabled image metadata and quick keywords without creating variants
 	// (GET /api/sidebar/v2/materials)
 	ListSidebarMaterials(w http.ResponseWriter, r *http.Request, params ListSidebarMaterialsParams)
+	// Read a real local thumb_320 image variant for the scoped sidebar
+	// (GET /api/sidebar/v2/materials/image/{image_id}/preview)
+	GetSidebarMaterialThumbnailPreview(w http.ResponseWriter, r *http.Request, imageId int64, params GetSidebarMaterialThumbnailPreviewParams)
 	// Return pending for a local image without generating a thumbnail
 	// (GET /api/sidebar/v2/materials/image/{image_id}/thumbnail)
 	GetSidebarMaterialThumbnailStatus(w http.ResponseWriter, r *http.Request, imageId int64, params GetSidebarMaterialThumbnailStatusParams)
@@ -15604,7 +15665,7 @@ type ServerInterface interface {
 	// Start a state-bound Sidebar WeCom OAuth grant for one external contact
 	// (GET /api/sidebar/v2/oauth/start)
 	StartSidebarOAuth(w http.ResponseWriter, r *http.Request, params StartSidebarOAuthParams)
-	// List customer-scoped local orders without payer or identity fields
+	// List customer-scoped local orders with same-origin detail links and without payer or identity fields
 	// (GET /api/sidebar/v2/orders)
 	ListSidebarOrders(w http.ResponseWriter, r *http.Request, params ListSidebarOrdersParams)
 	// List canonical service-period members for one scoped customer
@@ -15613,6 +15674,9 @@ type ServerInterface interface {
 	// Update a scoped service-period member remark by canonical key and CAS version
 	// (PUT /api/sidebar/v2/periodic-orders/{service_product_id}/members/{member_ref}/remark)
 	UpdateSidebarPeriodicRemark(w http.ResponseWriter, r *http.Request, serviceProductId int64, memberRef string, params UpdateSidebarPeriodicRemarkParams)
+	// Bind a declared E.164 phone to the customer from the live sidebar scope
+	// (POST /api/sidebar/v2/phone-binding)
+	BindSidebarPhone(w http.ResponseWriter, r *http.Request, params BindSidebarPhoneParams)
 	// Update Contact-owned sidebar fields and conditionally queue a WeCom profile effect
 	// (PUT /api/sidebar/v2/profile)
 	UpdateSidebarProfile(w http.ResponseWriter, r *http.Request, params UpdateSidebarProfileParams)
@@ -16744,6 +16808,12 @@ func (_ Unimplemented) ListSidebarMaterials(w http.ResponseWriter, r *http.Reque
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// Read a real local thumb_320 image variant for the scoped sidebar
+// (GET /api/sidebar/v2/materials/image/{image_id}/preview)
+func (_ Unimplemented) GetSidebarMaterialThumbnailPreview(w http.ResponseWriter, r *http.Request, imageId int64, params GetSidebarMaterialThumbnailPreviewParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // Return pending for a local image without generating a thumbnail
 // (GET /api/sidebar/v2/materials/image/{image_id}/thumbnail)
 func (_ Unimplemented) GetSidebarMaterialThumbnailStatus(w http.ResponseWriter, r *http.Request, imageId int64, params GetSidebarMaterialThumbnailStatusParams) {
@@ -16762,7 +16832,7 @@ func (_ Unimplemented) StartSidebarOAuth(w http.ResponseWriter, r *http.Request,
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// List customer-scoped local orders without payer or identity fields
+// List customer-scoped local orders with same-origin detail links and without payer or identity fields
 // (GET /api/sidebar/v2/orders)
 func (_ Unimplemented) ListSidebarOrders(w http.ResponseWriter, r *http.Request, params ListSidebarOrdersParams) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -16777,6 +16847,12 @@ func (_ Unimplemented) ListSidebarPeriodicOrders(w http.ResponseWriter, r *http.
 // Update a scoped service-period member remark by canonical key and CAS version
 // (PUT /api/sidebar/v2/periodic-orders/{service_product_id}/members/{member_ref}/remark)
 func (_ Unimplemented) UpdateSidebarPeriodicRemark(w http.ResponseWriter, r *http.Request, serviceProductId int64, memberRef string, params UpdateSidebarPeriodicRemarkParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Bind a declared E.164 phone to the customer from the live sidebar scope
+// (POST /api/sidebar/v2/phone-binding)
+func (_ Unimplemented) BindSidebarPhone(w http.ResponseWriter, r *http.Request, params BindSidebarPhoneParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -25933,6 +26009,84 @@ func (siw *ServerInterfaceWrapper) ListSidebarMaterials(w http.ResponseWriter, r
 	handler.ServeHTTP(w, r)
 }
 
+// GetSidebarMaterialThumbnailPreview operation middleware
+func (siw *ServerInterfaceWrapper) GetSidebarMaterialThumbnailPreview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "image_id" -------------
+	var imageId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "image_id", chi.URLParam(r, "image_id"), &imageId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "image_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetSidebarMaterialThumbnailPreviewParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Sidebar-Context-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Sidebar-Context-Token")]; found {
+		var XSidebarContextToken SidebarContextToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Sidebar-Context-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Sidebar-Context-Token", valueList[0], &XSidebarContextToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Sidebar-Context-Token", Err: err})
+			return
+		}
+
+		params.XSidebarContextToken = XSidebarContextToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Sidebar-Context-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Sidebar-Context-Token", Err: err})
+		return
+	}
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetSidebarMaterialThumbnailPreview(w, r, imageId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetSidebarMaterialThumbnailStatus operation middleware
 func (siw *ServerInterfaceWrapper) GetSidebarMaterialThumbnailStatus(w http.ResponseWriter, r *http.Request) {
 
@@ -26320,6 +26474,102 @@ func (siw *ServerInterfaceWrapper) UpdateSidebarPeriodicRemark(w http.ResponseWr
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateSidebarPeriodicRemark(w, r, serviceProductId, memberRef, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// BindSidebarPhone operation middleware
+func (siw *ServerInterfaceWrapper) BindSidebarPhone(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params BindSidebarPhoneParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-Sidebar-Context-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-Sidebar-Context-Token")]; found {
+		var XSidebarContextToken SidebarContextToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-Sidebar-Context-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-Sidebar-Context-Token", valueList[0], &XSidebarContextToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-Sidebar-Context-Token", Err: err})
+			return
+		}
+
+		params.XSidebarContextToken = XSidebarContextToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-Sidebar-Context-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-Sidebar-Context-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.BindSidebarPhone(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -31950,6 +32200,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/sidebar/v2/materials", wrapper.ListSidebarMaterials)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/sidebar/v2/materials/image/{image_id}/preview", wrapper.GetSidebarMaterialThumbnailPreview)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/sidebar/v2/materials/image/{image_id}/thumbnail", wrapper.GetSidebarMaterialThumbnailStatus)
 	})
 	r.Group(func(r chi.Router) {
@@ -31966,6 +32219,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/api/sidebar/v2/periodic-orders/{service_product_id}/members/{member_ref}/remark", wrapper.UpdateSidebarPeriodicRemark)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/sidebar/v2/phone-binding", wrapper.BindSidebarPhone)
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/api/sidebar/v2/profile", wrapper.UpdateSidebarProfile)
@@ -41372,6 +41628,135 @@ func (response ListSidebarMaterials503JSONResponse) VisitListSidebarMaterialsRes
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetSidebarMaterialThumbnailPreviewRequestObject struct {
+	ImageId int64 `json:"image_id"`
+	Params  GetSidebarMaterialThumbnailPreviewParams
+}
+
+type GetSidebarMaterialThumbnailPreviewResponseObject interface {
+	VisitGetSidebarMaterialThumbnailPreviewResponse(w http.ResponseWriter) error
+}
+
+type GetSidebarMaterialThumbnailPreview200ResponseHeaders struct {
+	ETag string
+}
+
+type GetSidebarMaterialThumbnailPreview200ImagegifResponse struct {
+	Body          io.Reader
+	Headers       GetSidebarMaterialThumbnailPreview200ResponseHeaders
+	ContentLength int64
+}
+
+func (response GetSidebarMaterialThumbnailPreview200ImagegifResponse) VisitGetSidebarMaterialThumbnailPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "image/gif")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.Header().Set("ETag", fmt.Sprint(response.Headers.ETag))
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetSidebarMaterialThumbnailPreview200ImagejpegResponse struct {
+	Body          io.Reader
+	Headers       GetSidebarMaterialThumbnailPreview200ResponseHeaders
+	ContentLength int64
+}
+
+func (response GetSidebarMaterialThumbnailPreview200ImagejpegResponse) VisitGetSidebarMaterialThumbnailPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "image/jpeg")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.Header().Set("ETag", fmt.Sprint(response.Headers.ETag))
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetSidebarMaterialThumbnailPreview200ImagepngResponse struct {
+	Body          io.Reader
+	Headers       GetSidebarMaterialThumbnailPreview200ResponseHeaders
+	ContentLength int64
+}
+
+func (response GetSidebarMaterialThumbnailPreview200ImagepngResponse) VisitGetSidebarMaterialThumbnailPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "image/png")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.Header().Set("ETag", fmt.Sprint(response.Headers.ETag))
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type GetSidebarMaterialThumbnailPreview304Response struct {
+}
+
+func (response GetSidebarMaterialThumbnailPreview304Response) VisitGetSidebarMaterialThumbnailPreviewResponse(w http.ResponseWriter) error {
+	w.WriteHeader(304)
+	return nil
+}
+
+type GetSidebarMaterialThumbnailPreview400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetSidebarMaterialThumbnailPreview400JSONResponse) VisitGetSidebarMaterialThumbnailPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSidebarMaterialThumbnailPreview401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetSidebarMaterialThumbnailPreview401JSONResponse) VisitGetSidebarMaterialThumbnailPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSidebarMaterialThumbnailPreview403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetSidebarMaterialThumbnailPreview403JSONResponse) VisitGetSidebarMaterialThumbnailPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSidebarMaterialThumbnailPreview404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetSidebarMaterialThumbnailPreview404JSONResponse) VisitGetSidebarMaterialThumbnailPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetSidebarMaterialThumbnailPreview503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetSidebarMaterialThumbnailPreview503JSONResponse) VisitGetSidebarMaterialThumbnailPreviewResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetSidebarMaterialThumbnailStatusRequestObject struct {
 	ImageId int64 `json:"image_id"`
 	Params  GetSidebarMaterialThumbnailStatusParams
@@ -41694,6 +42079,69 @@ func (response UpdateSidebarPeriodicRemark409JSONResponse) VisitUpdateSidebarPer
 type UpdateSidebarPeriodicRemark503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response UpdateSidebarPeriodicRemark503JSONResponse) VisitUpdateSidebarPeriodicRemarkResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindSidebarPhoneRequestObject struct {
+	Params BindSidebarPhoneParams
+	Body   *BindSidebarPhoneJSONRequestBody
+}
+
+type BindSidebarPhoneResponseObject interface {
+	VisitBindSidebarPhoneResponse(w http.ResponseWriter) error
+}
+
+type BindSidebarPhone200JSONResponse SidebarPhoneBindingResponse
+
+func (response BindSidebarPhone200JSONResponse) VisitBindSidebarPhoneResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindSidebarPhone400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response BindSidebarPhone400JSONResponse) VisitBindSidebarPhoneResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindSidebarPhone401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response BindSidebarPhone401JSONResponse) VisitBindSidebarPhoneResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindSidebarPhone403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response BindSidebarPhone403JSONResponse) VisitBindSidebarPhoneResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindSidebarPhone409JSONResponse struct{ ConflictJSONResponse }
+
+func (response BindSidebarPhone409JSONResponse) VisitBindSidebarPhoneResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type BindSidebarPhone503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response BindSidebarPhone503JSONResponse) VisitBindSidebarPhoneResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -47668,6 +48116,9 @@ type StrictServerInterface interface {
 	// List local enabled image metadata and quick keywords without creating variants
 	// (GET /api/sidebar/v2/materials)
 	ListSidebarMaterials(ctx context.Context, request ListSidebarMaterialsRequestObject) (ListSidebarMaterialsResponseObject, error)
+	// Read a real local thumb_320 image variant for the scoped sidebar
+	// (GET /api/sidebar/v2/materials/image/{image_id}/preview)
+	GetSidebarMaterialThumbnailPreview(ctx context.Context, request GetSidebarMaterialThumbnailPreviewRequestObject) (GetSidebarMaterialThumbnailPreviewResponseObject, error)
 	// Return pending for a local image without generating a thumbnail
 	// (GET /api/sidebar/v2/materials/image/{image_id}/thumbnail)
 	GetSidebarMaterialThumbnailStatus(ctx context.Context, request GetSidebarMaterialThumbnailStatusRequestObject) (GetSidebarMaterialThumbnailStatusResponseObject, error)
@@ -47677,7 +48128,7 @@ type StrictServerInterface interface {
 	// Start a state-bound Sidebar WeCom OAuth grant for one external contact
 	// (GET /api/sidebar/v2/oauth/start)
 	StartSidebarOAuth(ctx context.Context, request StartSidebarOAuthRequestObject) (StartSidebarOAuthResponseObject, error)
-	// List customer-scoped local orders without payer or identity fields
+	// List customer-scoped local orders with same-origin detail links and without payer or identity fields
 	// (GET /api/sidebar/v2/orders)
 	ListSidebarOrders(ctx context.Context, request ListSidebarOrdersRequestObject) (ListSidebarOrdersResponseObject, error)
 	// List canonical service-period members for one scoped customer
@@ -47686,6 +48137,9 @@ type StrictServerInterface interface {
 	// Update a scoped service-period member remark by canonical key and CAS version
 	// (PUT /api/sidebar/v2/periodic-orders/{service_product_id}/members/{member_ref}/remark)
 	UpdateSidebarPeriodicRemark(ctx context.Context, request UpdateSidebarPeriodicRemarkRequestObject) (UpdateSidebarPeriodicRemarkResponseObject, error)
+	// Bind a declared E.164 phone to the customer from the live sidebar scope
+	// (POST /api/sidebar/v2/phone-binding)
+	BindSidebarPhone(ctx context.Context, request BindSidebarPhoneRequestObject) (BindSidebarPhoneResponseObject, error)
 	// Update Contact-owned sidebar fields and conditionally queue a WeCom profile effect
 	// (PUT /api/sidebar/v2/profile)
 	UpdateSidebarProfile(ctx context.Context, request UpdateSidebarProfileRequestObject) (UpdateSidebarProfileResponseObject, error)
@@ -52280,6 +52734,33 @@ func (sh *strictHandler) ListSidebarMaterials(w http.ResponseWriter, r *http.Req
 	}
 }
 
+// GetSidebarMaterialThumbnailPreview operation middleware
+func (sh *strictHandler) GetSidebarMaterialThumbnailPreview(w http.ResponseWriter, r *http.Request, imageId int64, params GetSidebarMaterialThumbnailPreviewParams) {
+	var request GetSidebarMaterialThumbnailPreviewRequestObject
+
+	request.ImageId = imageId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetSidebarMaterialThumbnailPreview(ctx, request.(GetSidebarMaterialThumbnailPreviewRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetSidebarMaterialThumbnailPreview")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetSidebarMaterialThumbnailPreviewResponseObject); ok {
+		if err := validResponse.VisitGetSidebarMaterialThumbnailPreviewResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetSidebarMaterialThumbnailStatus operation middleware
 func (sh *strictHandler) GetSidebarMaterialThumbnailStatus(w http.ResponseWriter, r *http.Request, imageId int64, params GetSidebarMaterialThumbnailStatusParams) {
 	var request GetSidebarMaterialThumbnailStatusRequestObject
@@ -52439,6 +52920,39 @@ func (sh *strictHandler) UpdateSidebarPeriodicRemark(w http.ResponseWriter, r *h
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(UpdateSidebarPeriodicRemarkResponseObject); ok {
 		if err := validResponse.VisitUpdateSidebarPeriodicRemarkResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// BindSidebarPhone operation middleware
+func (sh *strictHandler) BindSidebarPhone(w http.ResponseWriter, r *http.Request, params BindSidebarPhoneParams) {
+	var request BindSidebarPhoneRequestObject
+
+	request.Params = params
+
+	var body BindSidebarPhoneJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.BindSidebarPhone(ctx, request.(BindSidebarPhoneRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "BindSidebarPhone")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(BindSidebarPhoneResponseObject); ok {
+		if err := validResponse.VisitBindSidebarPhoneResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

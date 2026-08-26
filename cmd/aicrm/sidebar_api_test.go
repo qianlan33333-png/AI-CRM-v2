@@ -53,6 +53,12 @@ type sidebarRouteIdentity struct {
 	calls  int
 }
 
+type sidebarRoutePhones struct{}
+
+func (sidebarRoutePhones) BindPhone(context.Context, sidebarapp.PhoneBindingCommand) (string, error) {
+	return "already_bound", nil
+}
+
 func (resolver *sidebarRouteIdentity) Resolve(context.Context, identityport.IDRef) (identityport.ResolveResult, error) {
 	resolver.calls++
 	if resolver.status == identityport.ResolveFound {
@@ -171,7 +177,7 @@ func TestFinalSidebarContextRouteOptionalSessionRBACAndEnumerationSafety(t *test
 	}
 	identity := &sidebarRouteIdentity{status: identityport.ResolveFound}
 	profiles := &sidebarRouteProfiles{profile: contactport.SidebarProfile{CustomerID: 41, OwnerStaffID: staffID, Name: "customer", UpdatedAt: time.Now().UTC()}}
-	service, err := sidebarapp.NewService(sidebarRouteCorp{}, identity, profiles, sidebarRouteSurveys{}, sidebarRouteOrders{}, sidebarRouteMembers{}, sidebarRouteMedia{}, []byte("01234567890123456789012345678901"))
+	service, err := sidebarapp.NewService(sidebarRouteCorp{}, identity, sidebarRoutePhones{}, profiles, sidebarRouteSurveys{}, sidebarRouteOrders{}, sidebarRouteMembers{}, sidebarRouteMedia{}, []byte("01234567890123456789012345678901"))
 	if err != nil {
 		t.Fatal(err)
 	}

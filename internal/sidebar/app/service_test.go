@@ -27,6 +27,25 @@ func (fake identityFake) Resolve(context.Context, identityport.IDRef) (identityp
 	return fake.result, nil
 }
 
+type phoneFake struct{ status string }
+
+func (fake phoneFake) BindPhone(context.Context, PhoneBindingCommand) (string, error) {
+	if fake.status == "" {
+		return "already_bound", nil
+	}
+	return fake.status, nil
+}
+
+type recordingPhoneFake struct {
+	command PhoneBindingCommand
+	status  string
+}
+
+func (fake *recordingPhoneFake) BindPhone(_ context.Context, command PhoneBindingCommand) (string, error) {
+	fake.command = command
+	return fake.status, nil
+}
+
 type profileFake struct {
 	profile                 contactport.SidebarProfile
 	resolveErr, readErr     error
@@ -292,9 +311,26 @@ func TestQuestionnairesExposeOnlyCustomerScopedSafeChoices(t *testing.T) {
 	}
 }
 
+func TestPhoneBindingUsesScopedCustomerAndLocalReceiptKey(t *testing.T) {
+	service, staff := sidebarTestService(t)
+	phones := &recordingPhoneFake{status: "bound"}
+	service.phones = phones
+	status, err := service.BindPhone(context.Background(), Scope{CustomerID: 41, OwnerStaffID: staff, Principal: authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}}, "+8613800138000", "sidebar-phone-0001")
+	if err != nil || status != "bound" {
+		t.Fatalf("status=%q err=%v", status, err)
+	}
+	if phones.command.CustomerID != 41 || phones.command.ActorID != 9 || phones.command.Mobile != "+8613800138000" || phones.command.IdempotencyKey != "sidebar-phone-0001" {
+		t.Fatalf("unexpected command %#v", phones.command)
+	}
+	phones.status = "manual_review"
+	if _, err = service.BindPhone(context.Background(), Scope{CustomerID: 41, OwnerStaffID: staff, Principal: authport.Principal{AdminUserID: 9, Role: authport.RoleAdmin}}, "+8613800138000", "sidebar-phone-0002"); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("unexpected status error=%v", err)
+	}
+}
+
 func TestOrdersRedactPayerAndIdentityFields(t *testing.T) {
 	service, staff := sidebarTestService(t)
-	service.orders = &orderFake{page: orderport.Page{Items: []orderport.Item{{MerchantOrderNo: "order-41", PayerName: "secret-name", Mobile: "13800000000", UnionID: "secret-union", ProductName: "local product", AmountYuan: "9.90", Currency: "CNY", Status: "paid", Provider: "wechat_pay"}}, Total: 1, Limit: 20}}
+	service.orders = &orderFake{page: orderport.Page{Items: []orderport.Item{{MerchantOrderNo: "order-41", PayerName: "secret-name", Mobile: "13800000000", UnionID: "secret-union", ProductName: "local product", AmountYuan: "9.90", Currency: "CNY", Status: "paid", Provider: "wechat_pay", DetailURL: "/api/admin/orders/order-41"}}, Total: 1, Limit: 20}}
 	result, err := service.Orders(context.Background(), Scope{CustomerID: 41, OwnerStaffID: staff}, 20, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -304,6 +340,9 @@ func TestOrdersRedactPayerAndIdentityFields(t *testing.T) {
 		if stringContains(string(raw), forbidden) {
 			t.Fatalf("unsafe order projection %s", raw)
 		}
+	}
+	if !stringContains(string(raw), `"detail_url":"/api/admin/orders/order-41"`) {
+		t.Fatal("same-origin order detail URL missing")
 	}
 }
 
@@ -370,7 +409,7 @@ func sidebarTestService(t *testing.T) (*Service, int64) {
 	staff := int64(7)
 	profiles := &profileFake{profile: contactport.SidebarProfile{CustomerID: 41, OwnerStaffID: staff, Name: "customer", UpdatedAt: now}}
 	members := &memberFake{member: PeriodicMember{MemberRef: "spm_abcdefghijklmnopqrstuv", ServiceProductID: 71, CustomerID: 41, State: "active", Source: "manual", StartsAt: now.Add(-time.Hour), Version: 3, CreatedAt: now.Add(-time.Hour), UpdatedAt: now}}
-	service, err := NewService(corpFake{"corp-1"}, identityFake{identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: 41}}, profiles, &surveyFake{}, &orderFake{}, members, &mediaFake{exists: true}, []byte("01234567890123456789012345678901"))
+	service, err := NewService(corpFake{"corp-1"}, identityFake{identityport.ResolveResult{Status: identityport.ResolveFound, CustomerID: 41}}, phoneFake{}, profiles, &surveyFake{}, &orderFake{}, members, &mediaFake{exists: true}, []byte("01234567890123456789012345678901"))
 	if err != nil {
 		t.Fatal(err)
 	}
