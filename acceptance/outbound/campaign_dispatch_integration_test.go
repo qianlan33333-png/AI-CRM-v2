@@ -148,7 +148,7 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if len(provider.requests) != 1 || provider.requests[0].CustomerID != 202 || provider.requests[0].TemplateKey != outboundapp.TemplateTextNoticeV1 {
+	if len(provider.requests) != 1 || provider.requests[0].CustomerID != contactFacts.EligibleCustomerID || provider.requests[0].TemplateKey != outboundapp.TemplateTextNoticeV1 {
 		t.Fatalf("controlled WeCom provider requests=%+v", provider.requests)
 	}
 	var providerPayload map[string]string
