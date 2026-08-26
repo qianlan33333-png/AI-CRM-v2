@@ -37,6 +37,18 @@ type CampaignDispatchReceipt struct {
 	Result        outbound.CampaignDispatchSummary
 }
 
+// CampaignDispatchProviderRequest is the minimal private request material
+// resolved by the Outbound-owned worker after EER has durably fenced an
+// attempt. It must never be projected through a read API or into EER.
+type CampaignDispatchProviderRequest struct {
+	DispatchID    int64
+	HandoffID     int64
+	CustomerID    int64
+	StepIndex     int32
+	Content       string
+	PayloadDigest string
+}
+
 type CampaignDispatchRepository interface {
 	LockCampaignHandoffForDispatch(context.Context, string, string) (int64, error)
 	ReadCampaignHandoffForDispatch(context.Context, string, string) (int64, error)
@@ -45,6 +57,7 @@ type CampaignDispatchRepository interface {
 	ReserveCampaignDispatchReceipt(context.Context, int64, int64, [32]byte, [32]byte, outbound.CampaignDispatchSummary) (CampaignDispatchReceipt, error)
 	InsertCampaignDispatchBinding(context.Context, CampaignDispatchBinding) (CampaignDispatchBinding, error)
 	LoadCampaignDispatchByEffect(context.Context, string) (CampaignDispatchBinding, error)
+	LoadCampaignDispatchProviderRequest(context.Context, string) (CampaignDispatchProviderRequest, error)
 	UpdateCampaignDispatchState(context.Context, string, outbound.CampaignDispatchState) error
 	ReadCampaignDispatchSummary(context.Context, int64) (outbound.CampaignDispatchSummary, error)
 	RecordCampaignProviderAttemptReceipt(context.Context, string, int32, string, eer.Digest) error

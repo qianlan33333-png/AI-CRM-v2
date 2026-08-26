@@ -41,6 +41,9 @@ func (fixture *campaignDispatchFixture) LoadCampaignDispatchByEffect(_ context.C
 	}
 	return outboundport.CampaignDispatchBinding{}, errors.New("binding not found")
 }
+func (*campaignDispatchFixture) LoadCampaignDispatchProviderRequest(context.Context, string) (outboundport.CampaignDispatchProviderRequest, error) {
+	return outboundport.CampaignDispatchProviderRequest{}, errors.New("not used")
+}
 func (fixture *campaignDispatchFixture) ListCampaignDispatchCandidates(context.Context, int64) ([]outboundport.CampaignDispatchCandidate, error) {
 	if fixture.candidates != nil {
 		return append([]outboundport.CampaignDispatchCandidate(nil), fixture.candidates...), nil

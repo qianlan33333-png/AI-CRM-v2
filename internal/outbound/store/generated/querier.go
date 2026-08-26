@@ -43,6 +43,7 @@ type Querier interface {
 	LoadLatestOutboundTaskJobLink(ctx context.Context, taskID int64) (LoadLatestOutboundTaskJobLinkRow, error)
 	LoadOutboundAttemptHistory(ctx context.Context, historyID int64) (LoadOutboundAttemptHistoryRow, error)
 	LoadOutboundCampaignDispatchByEffect(ctx context.Context, externalEffectID pgtype.Int8) (OutboundCampaignDispatch, error)
+	LoadOutboundCampaignDispatchProviderRequest(ctx context.Context, payloadDigest string) (LoadOutboundCampaignDispatchProviderRequestRow, error)
 	LoadOutboundCampaignDispatchReceipt(ctx context.Context, arg LoadOutboundCampaignDispatchReceiptParams) (OutboundCampaignDispatchReceipt, error)
 	LoadOutboundSendRequest(ctx context.Context, id int64) (LoadOutboundSendRequestRow, error)
 	LoadOutboundTaskResultFact(ctx context.Context, historyID int64) (LoadOutboundTaskResultFactRow, error)

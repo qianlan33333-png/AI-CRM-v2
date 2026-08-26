@@ -170,6 +170,37 @@ func (q *Queries) LoadOutboundCampaignDispatchByEffect(ctx context.Context, exte
 	return i, err
 }
 
+const loadOutboundCampaignDispatchProviderRequest = `-- name: LoadOutboundCampaignDispatchProviderRequest :one
+SELECT dispatch.id,dispatch.handoff_id,dispatch.customer_id,dispatch.step_index,dispatch.payload_digest,step.content
+FROM public.outbound_campaign_dispatches AS dispatch
+JOIN public.outbound_campaign_handoff_steps AS step
+  ON step.handoff_id = dispatch.handoff_id AND step.step_index = dispatch.step_index
+WHERE dispatch.payload_digest=$1
+`
+
+type LoadOutboundCampaignDispatchProviderRequestRow struct {
+	ID            int64  `json:"id"`
+	HandoffID     int64  `json:"handoff_id"`
+	CustomerID    int64  `json:"customer_id"`
+	StepIndex     int32  `json:"step_index"`
+	PayloadDigest string `json:"payload_digest"`
+	Content       string `json:"content"`
+}
+
+func (q *Queries) LoadOutboundCampaignDispatchProviderRequest(ctx context.Context, payloadDigest string) (LoadOutboundCampaignDispatchProviderRequestRow, error) {
+	row := q.db.QueryRow(ctx, loadOutboundCampaignDispatchProviderRequest, payloadDigest)
+	var i LoadOutboundCampaignDispatchProviderRequestRow
+	err := row.Scan(
+		&i.ID,
+		&i.HandoffID,
+		&i.CustomerID,
+		&i.StepIndex,
+		&i.PayloadDigest,
+		&i.Content,
+	)
+	return i, err
+}
+
 const loadOutboundCampaignDispatchReceipt = `-- name: LoadOutboundCampaignDispatchReceipt :one
 SELECT id,actor_id,handoff_id,key_digest,payload_digest,result_snapshot,created_at
 FROM public.outbound_campaign_dispatch_receipts WHERE actor_id=$1 AND key_digest=$2 FOR UPDATE

@@ -42,6 +42,13 @@ GROUP BY dispatch.state;
 SELECT id,handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,state,block_reason,created_at,updated_at
 FROM public.outbound_campaign_dispatches WHERE external_effect_id=$1;
 
+-- name: LoadOutboundCampaignDispatchProviderRequest :one
+SELECT dispatch.id,dispatch.handoff_id,dispatch.customer_id,dispatch.step_index,dispatch.payload_digest,step.content
+FROM public.outbound_campaign_dispatches AS dispatch
+JOIN public.outbound_campaign_handoff_steps AS step
+  ON step.handoff_id = dispatch.handoff_id AND step.step_index = dispatch.step_index
+WHERE dispatch.payload_digest=$1;
+
 -- name: UpdateOutboundCampaignDispatchState :exec
 UPDATE public.outbound_campaign_dispatches SET state=$2, updated_at=now()
 WHERE external_effect_id=$1 AND state <> 'blocked';

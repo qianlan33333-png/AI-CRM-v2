@@ -24,6 +24,7 @@ import (
 
 type CampaignDispatchRepository struct {
 	client *platformjobqueue.InsertOnlyClient
+	pool   *pgxpool.Pool
 }
 
 var _ outboundport.CampaignDispatchRepository = (*CampaignDispatchRepository)(nil)
@@ -37,7 +38,7 @@ func NewCampaignDispatchRepository(pool *pgxpool.Pool) (*CampaignDispatchReposit
 	if err != nil {
 		return nil, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
 	}
-	return &CampaignDispatchRepository{client: client}, nil
+	return &CampaignDispatchRepository{client: client, pool: pool}, nil
 }
 
 func dispatchQueries(ctx context.Context) (*outbounddb.Queries, error) {
@@ -157,6 +158,26 @@ func (repository *CampaignDispatchRepository) LoadCampaignDispatchByEffect(ctx c
 		return outboundport.CampaignDispatchBinding{}, outbound.ErrCampaignDispatchUnavailable
 	}
 	return result, nil
+}
+
+func (repository *CampaignDispatchRepository) LoadCampaignDispatchProviderRequest(ctx context.Context, payloadDigest string) (outboundport.CampaignDispatchProviderRequest, error) {
+	if repository == nil || !outbound.ValidCampaignDispatchDigest(payloadDigest) {
+		return outboundport.CampaignDispatchProviderRequest{}, outbound.ErrCampaignDispatchInvalid
+	}
+	if repository.pool == nil {
+		return outboundport.CampaignDispatchProviderRequest{}, outbound.ErrCampaignDispatchUnavailable
+	}
+	row, err := outbounddb.New(repository.pool).LoadOutboundCampaignDispatchProviderRequest(ctx, payloadDigest)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outboundport.CampaignDispatchProviderRequest{}, outbound.ErrCampaignHandoffNotFound
+	}
+	if err != nil || row.ID < 1 || row.HandoffID < 1 || row.CustomerID < 1 || row.StepIndex < 1 || strings.TrimSpace(row.Content) == "" || !outbound.ValidCampaignDispatchDigest(row.PayloadDigest) {
+		return outboundport.CampaignDispatchProviderRequest{}, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
+	}
+	if row.PayloadDigest != outbound.CampaignDispatchPayloadDigest(row.HandoffID, row.CustomerID, row.StepIndex, row.Content) {
+		return outboundport.CampaignDispatchProviderRequest{}, outbound.ErrCampaignDispatchUnavailable
+	}
+	return outboundport.CampaignDispatchProviderRequest{DispatchID: row.ID, HandoffID: row.HandoffID, CustomerID: row.CustomerID, StepIndex: row.StepIndex, Content: row.Content, PayloadDigest: row.PayloadDigest}, nil
 }
 
 func (repository *CampaignDispatchRepository) ReserveCampaignDispatchReceipt(ctx context.Context, actorID, handoffID int64, key, payload [32]byte, summary outbound.CampaignDispatchSummary) (outboundport.CampaignDispatchReceipt, error) {

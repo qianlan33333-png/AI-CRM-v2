@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"flag"
 	"strings"
@@ -29,16 +30,17 @@ import (
 
 var outboundCampaignDispatchDatabaseURL = flag.String("campaign-dispatch-database-url", "", "dedicated PostgreSQL 16.14 C01 outbound campaign dispatch database")
 
-type campaignDispatchFakeAdapter struct{}
-
-func (campaignDispatchFakeAdapter) Execute(_ context.Context, envelope eer.EffectEnvelope, attempt eer.Attempt) (eer.AdapterResult, error) {
-	return eer.AdapterResult{Completion: eer.CompletionExecuted, ReceiptDigest: campaignDispatchDigest("fake-receipt", string(envelope.Fingerprint()), string(rune(attempt.Number)))}, nil
-}
-
 type campaignDispatchUnknownAdapter struct{}
 
 func (campaignDispatchUnknownAdapter) Execute(context.Context, eer.EffectEnvelope, eer.Attempt) (eer.AdapterResult, error) {
 	return eer.AdapterResult{}, errors.New("fake transport outcome unknown")
+}
+
+type campaignDispatchWeComProviderFake struct{ requests []outboundapp.SendRequest }
+
+func (fake *campaignDispatchWeComProviderFake) Send(_ context.Context, request outboundapp.SendRequest) (outboundapp.ProviderResult, error) {
+	fake.requests = append(fake.requests, request)
+	return outboundapp.ProviderResult{MessageID: "fake-provider-message-id"}, nil
 }
 
 func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) {
@@ -132,7 +134,12 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 		t.Fatalf("effects=%v, want two", effectIDs)
 	}
 
-	worker, err := outboundworker.NewCampaignDispatchWorker(service, campaignDispatchFakeAdapter{})
+	provider := &campaignDispatchWeComProviderFake{}
+	adapter, err := outboundworker.NewCampaignWeComAdapter(repository, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	worker, err := outboundworker.NewCampaignDispatchWorker(service, adapter)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,6 +147,13 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 		JobRow: &rivertype.JobRow{ID: 901, Attempt: 1, MaxAttempts: 1, State: rivertype.JobStateRunning}, Args: outboundstore.CampaignDispatchArgs{EffectID: effectIDs[0]},
 	}); err != nil {
 		t.Fatal(err)
+	}
+	if len(provider.requests) != 1 || provider.requests[0].CustomerID != 202 || provider.requests[0].TemplateKey != outboundapp.TemplateTextNoticeV1 {
+		t.Fatalf("controlled WeCom provider requests=%+v", provider.requests)
+	}
+	var providerPayload map[string]string
+	if err = json.Unmarshal(provider.requests[0].Payload, &providerPayload); err != nil || len(providerPayload) != 1 || providerPayload["text"] != "approved immutable content" {
+		t.Fatalf("controlled WeCom payload=%s err=%v", provider.requests[0].Payload, err)
 	}
 
 	lease, _, err := runtime.Claim(ctx, eer.ClaimCommand{EffectID: effectIDs[1], WorkerDigest: campaignDispatchDigest("unknown-worker")})
