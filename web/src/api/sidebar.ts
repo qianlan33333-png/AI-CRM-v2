@@ -1,5 +1,7 @@
 import {
+  bindSidebarPhone,
   getSidebarMaterialThumbnailStatus,
+  getGetSidebarMaterialThumbnailPreviewUrl,
   getSidebarAgentConfig,
   getCompleteSidebarOAuthUrl,
   getStartSidebarOAuthUrl,
@@ -20,13 +22,14 @@ import {
   type SidebarOrderResponse,
   type SidebarPeriodicOrderResponse,
   type SidebarPeriodicRemarkResponse,
+  type SidebarPhoneBindingResponse,
   type SidebarQuestionnaireResponse,
   type SidebarProfileUpdateResponse,
   type SidebarThumbnailPendingResponse,
   type SidebarTimelineResponse,
   type SidebarWorkbenchResponse,
 } from "./generated/health";
-import { apiRequestOptions, unwrapGenerated } from "./transport";
+import { apiRequestOptions, request, unwrapGenerated } from "./transport";
 
 function scopedOptions(
   contextToken: string,
@@ -91,6 +94,19 @@ export const sidebarApi = {
         }),
       ),
     ) as SidebarProfileUpdateResponse,
+  bindPhone: async (
+    contextToken: string,
+    body: Parameters<typeof bindSidebarPhone>[0],
+    idempotencyKey = newIdempotencyKey("sidebar-phone"),
+  ) =>
+    unwrapGenerated(
+      await bindSidebarPhone(
+        body,
+        scopedOptions(contextToken, {
+          headers: { "Idempotency-Key": idempotencyKey },
+        }),
+      ),
+    ) as SidebarPhoneBindingResponse,
   questionnaires: async (
     contextToken: string,
     params?: Parameters<typeof listSidebarQuestionnaires>[0],
@@ -143,4 +159,14 @@ export const sidebarApi = {
         scopedOptions(contextToken),
       ),
     ) as SidebarThumbnailPendingResponse,
+  thumbnailPreview: async (contextToken: string, imageId: number) => {
+    // Orval 7.21 currently parses multi-content binary responses as JSON even
+    // though it emits Blob types. Keep the generated URL and shared transport,
+    // then read the successful response as bytes.
+    const response = await request(
+      getGetSidebarMaterialThumbnailPreviewUrl(imageId),
+      scopedOptions(contextToken),
+    );
+    return response.blob();
+  },
 };

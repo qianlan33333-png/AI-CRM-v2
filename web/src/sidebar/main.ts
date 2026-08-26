@@ -12,12 +12,12 @@ import type {
   SidebarOrderResponse,
   SidebarPeriodicOrderResponse,
   SidebarPeriodicRemarkResponse,
+  SidebarPhoneBindingResponse,
   SidebarProfileUpdateResponse,
   SidebarProfileUpdateSafety,
   SidebarQuestionnaireResponse,
   SidebarServicePeriodMember,
   SidebarSafety,
-  SidebarThumbnailPendingResponse,
   SidebarTimelineResponse,
   SidebarWorkbenchResponse,
   UpdateSidebarProfileBodyPatch,
@@ -54,12 +54,13 @@ type BoundSidebarApi = Pick<
   | "timeline"
   | "chatActivity"
   | "profile"
+  | "bindPhone"
   | "questionnaires"
   | "orders"
   | "periodicOrders"
   | "updateRemark"
   | "materials"
-  | "thumbnail"
+  | "thumbnailPreview"
 >;
 
 interface SidebarWx {
@@ -183,7 +184,7 @@ function firstString(
 
 type ChatType = "all" | "private" | "group";
 type MaterialFilter = "q" | "category" | "tags";
-type ThumbnailStatus = "pending" | "not_found" | "error";
+type ThumbnailStatus = "pending" | "ready" | "not_found" | "error";
 
 function validateSidebarSafety(safety: SidebarSafety, label: string): void {
   if (
@@ -272,6 +273,9 @@ export class SidebarController {
   private materialsError: unknown = null;
   private materialsRequestVersion = 0;
   private readonly thumbnailStatuses = new Map<number, ThumbnailStatus>();
+  private readonly thumbnailURLs = new Map<number, string>();
+  private phoneBindingLoading = false;
+  private phoneBindingMessage = "";
 
   constructor(
     private readonly api: BoundSidebarApi = sidebarApi,
@@ -400,6 +404,12 @@ export class SidebarController {
         const response = this.materials;
         if (response)
           void this.loadMaterials(response.offset + response.items.length);
+      } else if (action === "bind-phone") {
+        void this.bindPhone();
+      } else if (action === "open-related-questionnaires") {
+        this.activateTab("questionnaires");
+      } else if (action === "open-related-orders") {
+        this.activateTab("orders");
       }
     });
   }
@@ -751,6 +761,9 @@ export class SidebarController {
     this.materialsLoading = false;
     this.materialsRequestVersion += 1;
     this.thumbnailStatuses.clear();
+    this.clearThumbnailURLs();
+    this.phoneBindingLoading = false;
+    this.phoneBindingMessage = "";
     this.renderTop();
     this.renderTabs(true);
     this.renderActiveContent();
@@ -957,7 +970,92 @@ export class SidebarController {
     );
     updated.id = "profile-updated-at";
     panel.append(updated);
+    const phone = createElement(this.doc, "div", "profile-field");
+    phone.append(
+      createElement(this.doc, "span", undefined, "手机号绑定（本地 Identity）"),
+    );
+    const phoneInput = createElement(this.doc, "input") as HTMLInputElement;
+    phoneInput.id = "sidebar-phone-input";
+    phoneInput.type = "tel";
+    phoneInput.inputMode = "tel";
+    phoneInput.placeholder = "+8613800138000";
+    phoneInput.maxLength = 16;
+    phoneInput.setAttribute("aria-label", "手机号（E.164）");
+    phone.append(phoneInput);
+    const phoneActions = createElement(this.doc, "div", "context-actions");
+    const bindPhone = createElement(
+      this.doc,
+      "button",
+      "btn primary",
+      this.phoneBindingLoading ? "绑定中…" : "绑定手机号",
+    ) as HTMLButtonElement;
+    bindPhone.type = "button";
+    bindPhone.disabled = this.phoneBindingLoading;
+    bindPhone.dataset.sidebarAction = "bind-phone";
+    markBound(bindPhone);
+    phoneActions.append(bindPhone);
+    phone.append(phoneActions);
+    const phoneStatus = createElement(
+      this.doc,
+      "div",
+      "panel-meta",
+      this.phoneBindingMessage ||
+        "仅绑定当前客户；不支持从其他客户强制抢占手机号。",
+    );
+    phoneStatus.id = "sidebar-phone-status";
+    phone.append(phoneStatus);
+    panel.append(phone);
     return panel;
+  }
+
+  private async bindPhone(): Promise<void> {
+    if (!this.contextToken || this.phoneBindingLoading) return;
+    const input = this.doc.getElementById(
+      "sidebar-phone-input",
+    ) as HTMLInputElement | null;
+    const mobile = input?.value.trim() || "";
+    if (!/^\+[1-9][0-9]{1,14}$/.test(mobile)) {
+      this.phoneBindingMessage = "请输入 E.164 手机号，例如 +8613800138000。";
+      this.renderActiveContent();
+      return;
+    }
+    this.phoneBindingLoading = true;
+    this.phoneBindingMessage = "正在写入本地 Identity…";
+    this.renderActiveContent();
+    const rerendered = this.doc.getElementById(
+      "sidebar-phone-input",
+    ) as HTMLInputElement | null;
+    if (rerendered) rerendered.value = mobile;
+    try {
+      const response = await this.api.bindPhone(this.contextToken, { mobile });
+      this.validatePhoneBinding(response);
+      this.phoneBindingMessage =
+        response.status === "bound"
+          ? "手机号已绑定到当前客户（本地事实）。"
+          : response.status === "already_bound"
+            ? "该手机号已绑定到当前客户，无需重复操作。"
+            : "该手机号已属于其他客户，本次未改动。";
+    } catch (error) {
+      this.phoneBindingMessage = `手机号绑定失败：${errorMessage(error, "请稍后重试。")}`;
+    } finally {
+      this.phoneBindingLoading = false;
+      if (this.activeTab === "profile") {
+        this.renderActiveContent();
+        const current = this.doc.getElementById(
+          "sidebar-phone-input",
+        ) as HTMLInputElement | null;
+        if (current) current.value = mobile;
+      }
+    }
+  }
+
+  private validatePhoneBinding(response: SidebarPhoneBindingResponse): void {
+    if (
+      !response ||
+      !["bound", "already_bound", "rejected"].includes(response.status)
+    )
+      throw new Error("手机号绑定响应不完整，已停止更新状态。");
+    validateSidebarSafety(response.safety, "手机号绑定");
   }
 
   private panelShell(
@@ -1255,6 +1353,25 @@ export class SidebarController {
           createElement(this.doc, "div", "item-title", item.event_type),
           createElement(this.doc, "div", "item-meta", `发生时间 ${item.occurred_at}`),
         );
+        const relatedTab = ["survey.submitted", "survey_submitted"].includes(item.event_type)
+          ? "questionnaires"
+          : item.event_type.startsWith("order.")
+            ? "orders"
+            : "";
+        if (relatedTab) {
+          const related = createElement(
+            this.doc,
+            "button",
+            "link-button",
+            relatedTab === "questionnaires" ? "查看相关问卷" : "查看相关订单",
+          ) as HTMLButtonElement;
+          related.type = "button";
+          related.dataset.sidebarAction = relatedTab === "questionnaires"
+            ? "open-related-questionnaires"
+            : "open-related-orders";
+          markBound(related);
+          card.append(related);
+        }
         list.append(card);
       }
       panel.append(list);
@@ -1446,7 +1563,11 @@ export class SidebarController {
         typeof item.status !== "string" ||
         typeof item.status_label !== "string" ||
         typeof item.provider !== "string" ||
-        typeof item.provider_label !== "string"
+        typeof item.provider_label !== "string" ||
+        typeof item.detail_url !== "string" ||
+        !/^\/[^/]/.test(item.detail_url) ||
+        item.detail_url.includes("\\") ||
+        /[\u0000-\u001f\u007f]/.test(item.detail_url)
       )
         throw new Error("订单安全投影响应不完整，已停止渲染。");
     }
@@ -1530,6 +1651,17 @@ export class SidebarController {
             `订单号 ${item.merchant_order_no} · 商品编码 ${item.product_code} · 创建 ${item.created_at}`,
           ),
         );
+        const detail = createElement(
+          this.doc,
+          "a",
+          "link-button",
+          "打开订单详情",
+        ) as HTMLAnchorElement;
+        detail.href = item.detail_url;
+        detail.target = "_blank";
+        detail.rel = "noopener noreferrer";
+        detail.dataset.orderDetail = "local";
+        card.append(detail);
         list.append(card);
       }
       panel.append(list);
@@ -1836,6 +1968,7 @@ export class SidebarController {
     if (!append) {
       this.materials = null;
       this.thumbnailStatuses.clear();
+      this.clearThumbnailURLs();
     }
     if (this.activeTab === "materials") this.renderActiveContent();
     try {
@@ -1863,10 +1996,12 @@ export class SidebarController {
     }
   }
 
-  private validateThumbnail(response: SidebarThumbnailPendingResponse): void {
-    if (!response || response.status !== "pending")
-      throw new Error("缩略图状态响应不完整，已停止渲染。");
-    validateSidebarSafety(response.safety, "缩略图");
+  private clearThumbnailURLs(): void {
+    const revoke = this.doc.defaultView?.URL?.revokeObjectURL;
+    if (typeof revoke === "function") {
+      for (const url of this.thumbnailURLs.values()) revoke.call(this.doc.defaultView?.URL, url);
+    }
+    this.thumbnailURLs.clear();
   }
 
   private queueThumbnailStatus(imageId: number): void {
@@ -1878,9 +2013,16 @@ export class SidebarController {
   private async loadThumbnailStatus(imageId: number): Promise<void> {
     if (!this.contextToken) return;
     try {
-      const response = await this.api.thumbnail(this.contextToken, imageId);
-      this.validateThumbnail(response);
-      this.thumbnailStatuses.set(imageId, "pending");
+      const blob = await this.api.thumbnailPreview(this.contextToken, imageId);
+      if (!blob || blob.size < 1 || !["image/png", "image/jpeg", "image/gif"].includes(blob.type))
+        throw new Error("缩略图二进制响应不完整。");
+      const create = this.doc.defaultView?.URL?.createObjectURL;
+      if (typeof create === "function") {
+        const previous = this.thumbnailURLs.get(imageId);
+        if (previous) this.doc.defaultView?.URL?.revokeObjectURL(previous);
+        this.thumbnailURLs.set(imageId, create.call(this.doc.defaultView?.URL, blob));
+      }
+      this.thumbnailStatuses.set(imageId, "ready");
     } catch (error) {
       this.thumbnailStatuses.set(
         imageId,
@@ -1962,13 +2104,24 @@ export class SidebarController {
         card.dataset.materialId = String(item.id);
         const status = this.thumbnailStatuses.get(item.id) || "pending";
         const statusLabel =
-          status === "not_found"
+          status === "ready"
+            ? "thumbnail: ready"
+            : status === "not_found"
             ? "thumbnail: not_found"
             : status === "error"
               ? "thumbnail: 读取失败"
               : "thumbnail: pending";
         const badge = createElement(this.doc, "span", "thumbnail-status", statusLabel);
         badge.dataset.thumbnailStatus = status;
+        const previewURL = this.thumbnailURLs.get(item.id);
+        if (status === "ready" && previewURL) {
+          const preview = createElement(this.doc, "img") as HTMLImageElement;
+          preview.src = previewURL;
+          preview.alt = item.name || item.file_name;
+          preview.loading = "lazy";
+          preview.dataset.materialPreview = "ready";
+          card.append(preview);
+        }
         card.append(
           createElement(this.doc, "div", "item-title", item.name || item.file_name),
           createElement(

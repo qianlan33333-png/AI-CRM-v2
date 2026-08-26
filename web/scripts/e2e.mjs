@@ -41,6 +41,8 @@ async function loadPage(rel, { id, q } = {}) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
       window.__AICRM_TEST_MOCK__ = true;
       if (rel !== 'sidebar/index.html') return;
+      window.URL.createObjectURL = () => 'blob:sidebar-thumbnail';
+      window.URL.revokeObjectURL = () => {};
       const scenario = new URL(window.location.href).searchParams.get('sidebar_case') || 'success';
       const safety = { local_only: true, provider_execution_eligible: false, real_external_call_executed: false };
       const memberRef = 'spm_' + 'A'.repeat(22);
@@ -55,8 +57,16 @@ async function loadPage(rel, { id, q } = {}) {
         pain_points: '测试卡点',
         updated_at: '2026-08-26T01:00:00Z',
       };
-      const json = (data, status = 200) => ({ status, headers: new Headers(), text: async () => JSON.stringify(data) });
-      window.__sidebarTest = { remarkBody: null, idempotencyKey: null, materialQueries: [] };
+      const json = (data, status = 200) => ({
+        ok: status >= 200 && status < 300,
+        status,
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        text: async () => JSON.stringify(data),
+        json: async () => data,
+        blob: async () => new window.Blob([JSON.stringify(data)], { type: 'application/json' }),
+        clone() { return this; },
+      });
+      window.__sidebarTest = { remarkBody: null, idempotencyKey: null, phoneBody: null, phoneKey: null, materialQueries: [] };
       window.fetch = async (input, init = {}) => {
         const url = String(input);
         if (url.includes('/context-token')) {
@@ -64,6 +74,11 @@ async function loadPage(rel, { id, q } = {}) {
         }
         if (url.includes('/workbench')) {
           return json({ profile, questionnaire_count: scenario === 'empty' ? 0 : 1, order_count: scenario === 'success' ? 1 : 0, periodic_order_count: scenario === 'success' ? 1 : 0, material_count: scenario === 'success' ? 2 : 0, safety });
+        }
+        if (url.includes('/phone-binding')) {
+          window.__sidebarTest.phoneBody = JSON.parse(init.body || '{}');
+          window.__sidebarTest.phoneKey = new Headers(init.headers).get('Idempotency-Key');
+          return json({ status: 'bound', safety });
         }
         if (url.includes('/questionnaires')) {
           if (scenario === 'error') return json({ code: 'unavailable' }, 503);
@@ -114,7 +129,7 @@ async function loadPage(rel, { id, q } = {}) {
         if (url.includes('/orders')) {
           if (scenario === 'error') return json({ code: 'unavailable' }, 503);
           return json({
-            items: scenario === 'empty' ? [] : [{ created_at: '2026-08-26T00:40:00Z', merchant_order_no: 'M20260826001', product_code: 'course-1', product_name: '测试课程', amount_yuan: '99.00', currency: 'CNY', status: 'paid', status_label: '已支付', provider: 'wechat_pay', provider_label: '微信支付' }],
+            items: scenario === 'empty' ? [] : [{ created_at: '2026-08-26T00:40:00Z', merchant_order_no: 'M20260826001', product_code: 'course-1', product_name: '测试课程', amount_yuan: '99.00', currency: 'CNY', status: 'paid', status_label: '已支付', provider: 'wechat_pay', provider_label: '微信支付', detail_url: '/api/admin/orders/M20260826001' }],
             total: scenario === 'empty' ? 0 : 1,
             limit: 20,
             has_more: false,
@@ -124,7 +139,13 @@ async function loadPage(rel, { id, q } = {}) {
         if (url.includes('/materials/image/')) {
           if (scenario === 'error') return json({ code: 'unavailable' }, 503);
           if (url.includes('/image/32/')) return json({ code: 'not_found' }, 404);
-          return json({ status: 'pending', safety }, 202);
+          return {
+            ok: true,
+            status: 200,
+            headers: new Headers({ 'Content-Type': 'image/png', ETag: '"thumb"' }),
+            text: async () => '',
+            blob: async () => new window.Blob(['image-bytes'], { type: 'image/png' }),
+          };
         }
         if (url.includes('/materials')) {
           if (scenario === 'error') return json({ code: 'unavailable' }, 503);
@@ -601,6 +622,14 @@ console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备�
   const dom = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=success' });
   const d = dom.window.document;
 
+  input(dom, d.querySelector('#sidebar-phone-input'), '+8613800138000');
+  click(dom, d.querySelector('[data-sidebar-action="bind-phone"]'));
+  await sleep(30);
+  ok('手机号只绑定当前 Sidebar 客户并携带幂等键',
+    d.querySelector('#sidebar-phone-status')?.textContent.includes('本地事实') &&
+    dom.window.__sidebarTest.phoneBody?.mobile === '+8613800138000' &&
+    dom.window.__sidebarTest.phoneKey?.startsWith('sidebar-phone-'));
+
   click(dom, d.querySelector('[data-sidebar-tab="timeline"]'));
   await sleep(30);
   ok('时间线只展示安全事件元数据',
@@ -608,6 +637,7 @@ console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备�
     d.querySelector('[data-sidebar-section="timeline"]')?.textContent.includes('survey_submitted') &&
     !d.querySelector('[data-sidebar-section="timeline"]')?.textContent.includes('payload') &&
     !d.querySelector('[data-sidebar-section="timeline"]')?.textContent.includes('actor'));
+  ok('问卷来源事件只导航到已加载问卷板块', !!d.querySelector('[data-sidebar-action="open-related-questionnaires"]'));
   click(dom, d.querySelector('[data-sidebar-action="timeline-more"]'));
   await sleep(30);
   ok('时间线使用 opaque cursor 加载更多', d.querySelectorAll('[data-timeline-event-id]').length === 2);
@@ -626,11 +656,16 @@ console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备�
 
   click(dom, d.querySelector('[data-sidebar-tab="orders"]'));
   await sleep(30);
-  ok('普通订单渲染安全订单字段且无详情跳转',
-    d.querySelectorAll('[data-order-no]').length === 1 &&
-    d.body.textContent.includes('测试课程') &&
-    !d.body.textContent.includes('detail_url') &&
-    !d.querySelector('[data-order-no] a'));
+  const orderCard = d.querySelector('[data-order-no="M20260826001"]');
+  ok('普通订单渲染安全订单字段',
+    orderCard?.textContent.includes('测试课程') &&
+    orderCard?.textContent.includes('99.00 CNY') &&
+    !orderCard?.textContent.includes('payer_name'));
+  const orderDetail = d.querySelector('[data-order-detail="local"]');
+  ok('普通订单详情跳转只使用同源路径',
+    orderDetail?.getAttribute('href') === '/api/admin/orders/M20260826001' &&
+    orderDetail?.getAttribute('target') === '_blank' &&
+    orderDetail?.getAttribute('rel') === 'noopener noreferrer');
 
   click(dom, d.querySelector('[data-sidebar-tab="periodic_orders"]'));
   await sleep(30);
@@ -661,10 +696,10 @@ console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备�
   await sleep(30);
   ok('素材筛选请求沿用真实 q/category/tags 参数',
     dom.window.__sidebarTest.materialQueries.some((url) => url.includes('q=%E6%AC%A2%E8%BF%8E') && url.includes('category=%E6%B5%B7%E6%8A%A5') && url.includes('tags=%E6%AC%A2%E8%BF%8E%E8%AF%AD')));
-  ok('缩略图只展示 pending/not_found，不虚构图片',
-    d.querySelector('[data-thumbnail-status="pending"]') &&
+  ok('缩略图展示真实本地图片或明确 not_found',
+    d.querySelector('[data-thumbnail-status="ready"]') &&
     d.querySelector('[data-thumbnail-status="not_found"]') &&
-    !d.querySelector('img'));
+    d.querySelector('[data-material-preview="ready"]')?.getAttribute('src') === 'blob:sidebar-thumbnail');
   dom.window.close();
 }
 

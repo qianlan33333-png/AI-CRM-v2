@@ -243,6 +243,25 @@ export async function runTransportContractTests(): Promise<void> {
         { status: 200 },
       );
     }
+    if (String(input).includes("/phone-binding")) {
+      return new Response(
+        JSON.stringify({
+          status: "bound",
+          safety: {
+            local_only: true,
+            provider_execution_eligible: false,
+            real_external_call_executed: false,
+          },
+        }),
+        { status: 200 },
+      );
+    }
+    if (String(input).includes("/materials/image/31/preview")) {
+      return new Response(new Blob(["image-bytes"], { type: "image/png" }), {
+        status: 200,
+        headers: { "Content-Type": "image/png", ETag: '"thumb"' },
+      });
+    }
     return new Response("", {
       status: 302,
       headers: { Location: "/sidebar/index.html?external_userid=ext-7" },
@@ -267,6 +286,20 @@ export async function runTransportContractTests(): Promise<void> {
     assert(
       profile.profile.source === "新来源",
       "Sidebar profile adapter must retain the real update response",
+    );
+    const phone = await sidebarApi.bindPhone(
+      "sidebar-context",
+      { mobile: "+8613800138000" },
+      "sidebar-phone-test-key",
+    );
+    assert(
+      phone.status === "bound" && phone.safety.local_only,
+      "Sidebar phone adapter must retain the local bind receipt",
+    );
+    const thumbnail = await sidebarApi.thumbnailPreview("sidebar-context", 31);
+    assert(
+      thumbnail.type === "image/png" && thumbnail.size > 0,
+      "Sidebar thumbnail preview must read real binary bytes",
     );
     const oauth = sidebarApi.oauthStartUrl({
       external_userid: "ext-7",
@@ -310,6 +343,26 @@ export async function runTransportContractTests(): Promise<void> {
     assert(
       profileCall?.init?.method === "PUT",
       "Profile writes must use the generated PUT operation",
+    );
+    const phoneCall = sidebarWriteRequests.find((call) =>
+      call.input.includes("/phone-binding"),
+    );
+    const phoneHeaders = new Headers(phoneCall?.init?.headers);
+    assert(
+      phoneCall?.init?.method === "POST" &&
+        phoneHeaders.get("X-Sidebar-Context-Token") === "sidebar-context" &&
+        phoneHeaders.get("Idempotency-Key") === "sidebar-phone-test-key",
+      "Phone binding must use the generated operation with scoped idempotency headers",
+    );
+    const thumbnailCall = sidebarWriteRequests.find((call) =>
+      call.input.includes("/materials/image/31/preview"),
+    );
+    assert(
+      thumbnailCall?.init?.method === undefined &&
+        new Headers(thumbnailCall?.init?.headers).get(
+          "X-Sidebar-Context-Token",
+        ) === "sidebar-context",
+      "Thumbnail preview must use the generated URL with scoped browser transport",
     );
     assert(
       profileReceiptSteps({
