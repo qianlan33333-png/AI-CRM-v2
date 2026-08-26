@@ -39,9 +39,8 @@ type BoundSidebarApi = Pick<
   typeof sidebarApi,
   | "mintContext"
   | "agentConfig"
-  | "oauthStart"
   | "oauthStartUrl"
-  | "oauthCallback"
+  | "oauthCallbackUrl"
   | "workbench"
   | "profile"
   | "questionnaires"
@@ -169,12 +168,6 @@ function withTimeout<T>(
       },
     );
   });
-}
-
-function responseLocation(response: { headers?: Headers }): string {
-  return (
-    response.headers?.get("location") || response.headers?.get("Location") || ""
-  );
 }
 
 export class SidebarController {
@@ -536,22 +529,12 @@ export class SidebarController {
     }
     this.setContextStatus("正在接收 OAuth 回调并建立员工会话…");
     try {
-      const response = await this.api.oauthCallback({ code, state });
-      if (response.status >= 300 && response.status < 400) {
-        const location = responseLocation(response);
-        if (location) {
-          this.setContextStatus(
-            "OAuth 回调已受理，正在重新读取 Sidebar 上下文…",
-          );
-          this.navigate(location);
-          return true;
-        }
-        throw new Error("OAuth 回调缺少重定向地址。");
-      }
-      if (response.status < 200 || response.status >= 300) {
-        throw new Error(`OAuth 回调失败（HTTP ${response.status}）。`);
-      }
-      return false;
+      const route = this.api.oauthCallbackUrl({ code, state });
+      this.setContextStatus(
+        "OAuth 回调正在由服务端验证，尚未确认员工会话…",
+      );
+      this.navigate(route);
+      return true;
     } catch (error) {
       this.renderContextError(
         `OAuth 回调失败：${errorMessage(error, "未建立员工会话。")}`,
@@ -567,34 +550,14 @@ export class SidebarController {
     }
     this.setContextStatus("正在发起 OAuth 回退；尚未确认员工会话…");
     try {
-      const response = await this.api.oauthStart({
+      const route = this.api.oauthStartUrl({
         external_userid: this.externalUserId,
         next: this.nextPath(),
       });
-      const responseStatus = response.status as number;
-      if (responseStatus === 0) {
-        // Cross-origin provider redirects are opaque to fetch in browsers. In
-        // that case navigate to the exact generated route so the server can
-        // return the provider redirect without exposing it to JavaScript.
-        const route = this.api.oauthStartUrl({
-          external_userid: this.externalUserId,
-          next: this.nextPath(),
-        });
-        this.setContextStatus(
-          "OAuth 已发起，等待企微回调；未将受理状态视为授权成功。",
-        );
-        this.navigate(route);
-        return;
-      }
-      if (responseStatus < 300 || responseStatus >= 400) {
-        throw new Error(`OAuth 发起失败（HTTP ${responseStatus}）。`);
-      }
-      const location = responseLocation(response);
-      if (!location) throw new Error("OAuth 发起响应缺少重定向地址。");
       this.setContextStatus(
         "OAuth 已发起，等待企微回调；未将受理状态视为授权成功。",
       );
-      this.navigate(location);
+      this.navigate(route);
     } catch (error) {
       button.disabled = false;
       this.renderContextError(

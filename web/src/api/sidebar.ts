@@ -1,10 +1,9 @@
 import {
   getSidebarMaterialThumbnailStatus,
   getSidebarAgentConfig,
+  getCompleteSidebarOAuthUrl,
   getStartSidebarOAuthUrl,
   getSidebarWorkbench,
-  startSidebarOAuth,
-  completeSidebarOAuth,
   listSidebarChatActivity,
   listSidebarMaterials,
   listSidebarOrders,
@@ -41,13 +40,6 @@ function newIdempotencyKey(): string {
     : `sidebar-profile-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-export type SidebarOAuthStartResponse = Awaited<
-  ReturnType<typeof startSidebarOAuth>
->;
-export type SidebarOAuthCallbackResponse = Awaited<
-  ReturnType<typeof completeSidebarOAuth>
->;
-
 export const sidebarApi = {
   mintContext: async (body: Parameters<typeof mintSidebarContext>[0]) =>
     unwrapGenerated(
@@ -57,27 +49,12 @@ export const sidebarApi = {
     unwrapGenerated(
       await getSidebarAgentConfig({ url }, apiRequestOptions()),
     ) as SidebarAgentConfigSignature,
-  // OAuth endpoints intentionally return redirects. Keep their generated response
-  // metadata so the browser can navigate to the provider without treating a 302 as
-  // a successful local login.
-  oauthStart: async (
-    params: Parameters<typeof startSidebarOAuth>[0],
-    init: RequestInit = {},
-  ) =>
-    startSidebarOAuth(
-      params,
-      apiRequestOptions({ ...init, redirect: "manual" }),
-    ),
-  oauthStartUrl: (params: Parameters<typeof startSidebarOAuth>[0]) =>
+  // OAuth is a browser navigation protocol. Building the generated URL without
+  // prefetching avoids creating duplicate state/binding records before redirect.
+  oauthStartUrl: (params: Parameters<typeof getStartSidebarOAuthUrl>[0]) =>
     getStartSidebarOAuthUrl(params),
-  oauthCallback: async (
-    params: Parameters<typeof completeSidebarOAuth>[0],
-    init: RequestInit = {},
-  ) =>
-    completeSidebarOAuth(
-      params,
-      apiRequestOptions({ ...init, redirect: "manual" }),
-    ),
+  oauthCallbackUrl: (params: Parameters<typeof getCompleteSidebarOAuthUrl>[0]) =>
+    getCompleteSidebarOAuthUrl(params),
   workbench: async (contextToken: string) =>
     unwrapGenerated(
       await getSidebarWorkbench(scopedOptions(contextToken)),

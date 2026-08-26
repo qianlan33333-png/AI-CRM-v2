@@ -14,7 +14,7 @@ function assert(ok: unknown, message: string): asserts ok {
 export async function runTransportContractTests(): Promise<void> {
   const options = apiRequestOptions(
     { method: "POST", headers: { "X-Request-ID": "test" } },
-    "csrf_token=token%201; session=x",
+    "csrf_token=legacy; aicrm_csrf=token%201; session=x",
   );
   const headers = new Headers(options.headers);
   assert(
@@ -27,7 +27,7 @@ export async function runTransportContractTests(): Promise<void> {
   );
   assert(
     headers.get("X-CSRF-Token") === "token 1",
-    "CSRF cookie must become X-CSRF-Token",
+    "OAuth session CSRF cookie must become X-CSRF-Token",
   );
   assert(
     headers.get("X-Request-ID") === "test",
@@ -268,21 +268,21 @@ export async function runTransportContractTests(): Promise<void> {
       profile.profile.source === "新来源",
       "Sidebar profile adapter must retain the real update response",
     );
-    const oauth = await sidebarApi.oauthStart({
+    const oauth = sidebarApi.oauthStartUrl({
       external_userid: "ext-7",
       next: "/sidebar/index.html",
     });
     assert(
-      oauth.status === 302,
-      "Sidebar OAuth adapter must preserve the generated redirect response",
+      oauth.startsWith("/api/sidebar/v2/oauth/start?"),
+      "Sidebar OAuth start must use the generated navigation URL",
     );
-    const callback = await sidebarApi.oauthCallback({
+    const callback = sidebarApi.oauthCallbackUrl({
       code: "oauth-code",
       state: "state_abcdefghijklmnopqrstuvwxyz0123456789_",
     });
     assert(
-      callback.status === 302,
-      "Sidebar OAuth callback adapter must preserve the generated redirect response",
+      callback.startsWith("/api/sidebar/v2/oauth/callback?"),
+      "Sidebar OAuth callback must use the generated navigation URL",
     );
     const agentCall = sidebarWriteRequests.find((call) =>
       call.input.includes("agent-config"),

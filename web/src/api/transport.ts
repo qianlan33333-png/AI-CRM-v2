@@ -24,8 +24,13 @@ export class ApiError extends Error {
 }
 
 function csrfToken(cookie: string): string | undefined {
-  const item = cookie.split(';').map((part) => part.trim()).find((part) => part.startsWith('csrf_token='));
-  return item ? decodeURIComponent(item.slice('csrf_token='.length)) : undefined;
+  const items = cookie.split(';').map((part) => part.trim());
+  for (const name of ['aicrm_csrf', 'csrf_token']) {
+    const prefix = `${name}=`;
+    const item = items.find((part) => part.startsWith(prefix));
+    if (item) return decodeURIComponent(item.slice(prefix.length));
+  }
+  return undefined;
 }
 
 /** 返回传给 Orval operation 的 RequestInit；所有页面共享同一个入口。 */
