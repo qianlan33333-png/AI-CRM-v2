@@ -8,20 +8,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type OutboundCampaignDispatch struct {
-	ID               int64              `json:"id"`
-	HandoffID        int64              `json:"handoff_id"`
-	CustomerID       int64              `json:"customer_id"`
-	StepIndex        int32              `json:"step_index"`
-	ExternalEffectID pgtype.Int8        `json:"external_effect_id"`
-	RecipientDigest  string             `json:"recipient_digest"`
-	PayloadDigest    string             `json:"payload_digest"`
-	State            string             `json:"state"`
-	BlockReason      pgtype.Text        `json:"block_reason"`
-	CreatedAt        pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
-}
-
 type OutboundCampaignDispatchReceipt struct {
 	ID             int64              `json:"id"`
 	ActorID        int64              `json:"actor_id"`

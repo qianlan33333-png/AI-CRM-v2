@@ -27,16 +27,6 @@ type CampaignDispatchRepository struct {
 	pool   *pgxpool.Pool
 }
 
-const insertCampaignDispatchWithAudienceSnapshot = `
-INSERT INTO public.outbound_campaign_dispatches(
-  handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,state,block_reason,
-  sender_userid_snapshot,external_userid_snapshot
-) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
-ON CONFLICT(handoff_id,customer_id,step_index) DO UPDATE
-SET updated_at=public.outbound_campaign_dispatches.updated_at
-RETURNING id,handoff_id,customer_id,step_index,external_effect_id,recipient_digest,payload_digest,state,block_reason,
-          sender_userid_snapshot,external_userid_snapshot,created_at,updated_at`
-
 var _ outboundport.CampaignDispatchRepository = (*CampaignDispatchRepository)(nil)
 var _ outboundport.CampaignDispatchEnqueuer = (*CampaignDispatchRepository)(nil)
 
@@ -118,7 +108,7 @@ func (repository *CampaignDispatchRepository) InsertCampaignDispatchBinding(ctx 
 	if repository == nil || binding.HandoffID < 1 || binding.CustomerID < 1 || binding.StepIndex < 1 || !outbound.ValidCampaignDispatchDigest(binding.RecipientDigest) || !outbound.ValidCampaignDispatchDigest(binding.PayloadDigest) || !validCampaignTargetSnapshot(binding.SenderUserIDSnapshot, binding.ExternalUserIDSnapshot) {
 		return outboundport.CampaignDispatchBinding{}, outbound.ErrCampaignDispatchInvalid
 	}
-	tx, err := platformstore.TxFromContext(ctx)
+	queries, err := dispatchQueries(ctx)
 	if err != nil {
 		return outboundport.CampaignDispatchBinding{}, err
 	}
@@ -137,14 +127,20 @@ func (repository *CampaignDispatchRepository) InsertCampaignDispatchBinding(ctx 
 	if binding.SenderUserIDSnapshot != "" {
 		sender, external = pgtype.Text{String: binding.SenderUserIDSnapshot, Valid: true}, pgtype.Text{String: binding.ExternalUserIDSnapshot, Valid: true}
 	}
-	var row campaignDispatchBindingRow
-	err = tx.QueryRow(ctx, insertCampaignDispatchWithAudienceSnapshot, binding.HandoffID, binding.CustomerID, binding.StepIndex, effectID, binding.RecipientDigest, binding.PayloadDigest, string(binding.State), blockReason, sender, external).Scan(
-		&row.ID, &row.HandoffID, &row.CustomerID, &row.StepIndex, &row.ExternalEffectID, &row.RecipientDigest, &row.PayloadDigest, &row.State, &row.BlockReason, &row.SenderUserIDSnapshot, &row.ExternalUserIDSnapshot, &row.CreatedAt, &row.UpdatedAt,
-	)
+	row, err := queries.InsertOutboundCampaignDispatchWithAudienceSnapshot(ctx, outbounddb.InsertOutboundCampaignDispatchWithAudienceSnapshotParams{
+		HandoffID: binding.HandoffID, CustomerID: binding.CustomerID, StepIndex: binding.StepIndex, ExternalEffectID: effectID,
+		RecipientDigest: binding.RecipientDigest, PayloadDigest: binding.PayloadDigest, State: string(binding.State), BlockReason: blockReason,
+		SenderUseridSnapshot: sender, ExternalUseridSnapshot: external,
+	})
 	if err != nil {
 		return outboundport.CampaignDispatchBinding{}, err
 	}
-	stored, valid := dispatchBindingFromAudienceRow(row)
+	stored, valid := dispatchBindingFromAudienceRow(campaignDispatchBindingRow{
+		ID: row.ID, HandoffID: row.HandoffID, CustomerID: row.CustomerID, StepIndex: row.StepIndex,
+		ExternalEffectID: row.ExternalEffectID, RecipientDigest: row.RecipientDigest, PayloadDigest: row.PayloadDigest,
+		State: row.State, BlockReason: row.BlockReason, SenderUserIDSnapshot: row.SenderUseridSnapshot,
+		ExternalUserIDSnapshot: row.ExternalUseridSnapshot, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+	})
 	if !valid {
 		return outboundport.CampaignDispatchBinding{}, outbound.ErrCampaignDispatchUnavailable
 	}
@@ -200,7 +196,11 @@ func (repository *CampaignDispatchRepository) LoadCampaignDispatchByEffect(ctx c
 	if err != nil {
 		return outboundport.CampaignDispatchBinding{}, err
 	}
-	result, valid := dispatchBindingFromRow(row)
+	result, valid := dispatchBindingFromRow(campaignDispatchBindingRow{
+		ID: row.ID, HandoffID: row.HandoffID, CustomerID: row.CustomerID, StepIndex: row.StepIndex,
+		ExternalEffectID: row.ExternalEffectID, RecipientDigest: row.RecipientDigest, PayloadDigest: row.PayloadDigest,
+		State: row.State, BlockReason: row.BlockReason, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+	})
 	if !valid || result.ExternalEffectID != effectID {
 		return outboundport.CampaignDispatchBinding{}, outbound.ErrCampaignDispatchUnavailable
 	}
@@ -214,29 +214,14 @@ func (repository *CampaignDispatchRepository) LoadCampaignDispatchProviderReques
 	if repository.pool == nil {
 		return outboundport.CampaignDispatchProviderRequest{}, outbound.ErrCampaignDispatchUnavailable
 	}
-	const query = `
-SELECT dispatch.id,dispatch.handoff_id,dispatch.customer_id,dispatch.step_index,dispatch.payload_digest,step.content,
-       COALESCE(plan.source_kind,''),plan.audience_package_id,dispatch.sender_userid_snapshot,dispatch.external_userid_snapshot
-FROM public.outbound_campaign_dispatches AS dispatch
-JOIN public.outbound_campaign_handoffs AS handoff ON handoff.id=dispatch.handoff_id
-LEFT JOIN public.cloud_campaign_touch_plans AS plan ON plan.id=handoff.plan_id
-JOIN public.outbound_campaign_handoff_steps AS step ON step.handoff_id=dispatch.handoff_id AND step.step_index=dispatch.step_index
-WHERE dispatch.payload_digest=$1`
-	var row struct {
-		ID, HandoffID, CustomerID                    int64
-		StepIndex                                    int32
-		PayloadDigest, Content, SourceKind           string
-		AudiencePackageID                            pgtype.Int8
-		SenderUserIDSnapshot, ExternalUserIDSnapshot pgtype.Text
-	}
-	err := repository.pool.QueryRow(ctx, query, payloadDigest).Scan(&row.ID, &row.HandoffID, &row.CustomerID, &row.StepIndex, &row.PayloadDigest, &row.Content, &row.SourceKind, &row.AudiencePackageID, &row.SenderUserIDSnapshot, &row.ExternalUserIDSnapshot)
+	row, err := outbounddb.New(repository.pool).LoadOutboundCampaignDispatchProviderRequest(ctx, payloadDigest)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return outboundport.CampaignDispatchProviderRequest{}, outbound.ErrCampaignHandoffNotFound
 	}
 	if err != nil || row.ID < 1 || row.HandoffID < 1 || row.CustomerID < 1 || row.StepIndex < 1 || strings.TrimSpace(row.Content) == "" || !outbound.ValidCampaignDispatchDigest(row.PayloadDigest) || (row.SourceKind != "" && row.SourceKind != "ai_audience_package_members" && row.SourceKind != "customer_selection" && row.SourceKind != "segment_members") {
 		return outboundport.CampaignDispatchProviderRequest{}, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
 	}
-	sender, external := textOrEmpty(row.SenderUserIDSnapshot), textOrEmpty(row.ExternalUserIDSnapshot)
+	sender, external := textOrEmpty(row.SenderUseridSnapshot), textOrEmpty(row.ExternalUseridSnapshot)
 	if !validCampaignTargetSnapshot(sender, external) {
 		return outboundport.CampaignDispatchProviderRequest{}, outbound.ErrCampaignDispatchUnavailable
 	}
@@ -254,26 +239,21 @@ func (repository *CampaignDispatchRepository) AudiencePackageForCampaignHandoff(
 	if repository == nil || handoffID < 1 {
 		return 0, false, outbound.ErrCampaignDispatchInvalid
 	}
-	tx, err := platformstore.TxFromContext(ctx)
+	queries, err := dispatchQueries(ctx)
 	if err != nil {
 		return 0, false, err
 	}
-	const query = `SELECT COALESCE(plan.source_kind,''),plan.audience_package_id
-FROM public.outbound_campaign_handoffs AS handoff
-LEFT JOIN public.cloud_campaign_touch_plans AS plan ON plan.id=handoff.plan_id
-WHERE handoff.id=$1 FOR KEY SHARE OF handoff`
-	var sourceKind string
-	var packageID pgtype.Int8
-	if err = tx.QueryRow(ctx, query, handoffID).Scan(&sourceKind, &packageID); errors.Is(err, pgx.ErrNoRows) {
+	row, err := queries.ReadOutboundCampaignAudiencePackage(ctx, handoffID)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return 0, false, outbound.ErrCampaignHandoffNotFound
 	} else if err != nil {
 		return 0, false, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
 	}
-	if sourceKind == "ai_audience_package_members" {
-		if !packageID.Valid || packageID.Int64 < 1 {
+	if row.SourceKind == "ai_audience_package_members" {
+		if !row.AudiencePackageID.Valid || row.AudiencePackageID.Int64 < 1 {
 			return 0, false, outbound.ErrCampaignDispatchUnavailable
 		}
-		return packageID.Int64, true, nil
+		return row.AudiencePackageID.Int64, true, nil
 	}
 	return 0, false, nil
 }
@@ -388,16 +368,8 @@ func (repository *CampaignDispatchRepository) ReadCampaignDispatchSummary(ctx co
 	}
 	result.BusinessCallDispatched = evidence.BusinessCallDispatched
 	result.RealExternalCallExecuted = evidence.RealExternalCallExecuted
-	const deliveryQuery = `
-SELECT COALESCE(bool_or(receipt.delivery_proven), FALSE)::boolean
-FROM public.outbound_campaign_dispatches AS dispatch
-JOIN public.outbound_campaign_provider_attempt_receipts AS receipt ON receipt.external_effect_id=dispatch.external_effect_id
-WHERE dispatch.handoff_id=$1`
-	tx, txErr := platformstore.TxFromContext(ctx)
-	if txErr != nil {
-		return outbound.CampaignDispatchSummary{}, txErr
-	}
-	if err = tx.QueryRow(ctx, deliveryQuery, handoffID).Scan(&result.DeliveryProven); err != nil {
+	result.DeliveryProven, err = queries.ReadOutboundCampaignDispatchDeliveryEvidence(ctx, handoffID)
+	if err != nil {
 		return outbound.CampaignDispatchSummary{}, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
 	}
 	if result.DeliveryProven && (!result.BusinessCallDispatched || !result.RealExternalCallExecuted) {
@@ -411,16 +383,10 @@ func (repository *CampaignDispatchRepository) RecordCampaignProviderAttemptRecei
 	if repository == nil || err != nil || id < 1 || attempt < 1 || !validCampaignDispatchCompletion(evidence.Completion) || !outbound.ValidCampaignDispatchDigest(string(evidence.ReceiptDigest)) || (evidence.RealExternalCallExecuted && !evidence.BusinessCallDispatched) || !validCampaignProviderReceipt(evidence) {
 		return outbound.ErrCampaignDispatchInvalid
 	}
-	tx, err := platformstore.TxFromContext(ctx)
+	queries, err := dispatchQueries(ctx)
 	if err != nil {
 		return err
 	}
-	const query = `
-INSERT INTO public.outbound_campaign_provider_attempt_receipts(
- external_effect_id,attempt_number,completion,provider_receipt_digest,business_call_dispatched,real_external_call_executed,
- provider_message_id,provider_code,provider_result_received,delivery_proven,reconciliation_evidence_digest
-) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-ON CONFLICT(external_effect_id,attempt_number,completion) DO NOTHING`
 	var messageID, providerCode, reconciliation pgtype.Text
 	if evidence.ProviderMessageID != "" {
 		messageID = pgtype.Text{String: evidence.ProviderMessageID, Valid: true}
@@ -431,8 +397,12 @@ ON CONFLICT(external_effect_id,attempt_number,completion) DO NOTHING`
 	if evidence.ReconciliationEvidenceDigest != "" {
 		reconciliation = pgtype.Text{String: string(evidence.ReconciliationEvidenceDigest), Valid: true}
 	}
-	_, err = tx.Exec(ctx, query, id, attempt, evidence.Completion, string(evidence.ReceiptDigest), evidence.BusinessCallDispatched, evidence.RealExternalCallExecuted, messageID, providerCode, evidence.ProviderResultReceived, evidence.DeliveryProven, reconciliation)
-	return err
+	return queries.InsertOutboundCampaignProviderAttemptReceipt(ctx, outbounddb.InsertOutboundCampaignProviderAttemptReceiptParams{
+		ExternalEffectID: id, AttemptNumber: attempt, Completion: evidence.Completion, ProviderReceiptDigest: string(evidence.ReceiptDigest),
+		BusinessCallDispatched: evidence.BusinessCallDispatched, RealExternalCallExecuted: evidence.RealExternalCallExecuted,
+		ProviderMessageID: messageID, ProviderCode: providerCode, ProviderResultReceived: evidence.ProviderResultReceived,
+		DeliveryProven: evidence.DeliveryProven, ReconciliationEvidenceDigest: reconciliation,
+	})
 }
 
 func (repository *CampaignDispatchRepository) LoadAudienceCampaignDispatchReconciliationEvidence(ctx context.Context, effectID string) (outboundport.CampaignDispatchReconciliationEvidence, bool, error) {
@@ -440,18 +410,12 @@ func (repository *CampaignDispatchRepository) LoadAudienceCampaignDispatchReconc
 	if repository == nil || err != nil || id < 1 {
 		return outboundport.CampaignDispatchReconciliationEvidence{}, false, outbound.ErrCampaignDispatchInvalid
 	}
-	tx, err := platformstore.TxFromContext(ctx)
+	queries, err := dispatchQueries(ctx)
 	if err != nil {
 		return outboundport.CampaignDispatchReconciliationEvidence{}, false, err
 	}
-	const sourceQuery = `
-SELECT COALESCE(plan.source_kind,'')
-FROM public.outbound_campaign_dispatches AS dispatch
-JOIN public.outbound_campaign_handoffs AS handoff ON handoff.id=dispatch.handoff_id
-LEFT JOIN public.cloud_campaign_touch_plans AS plan ON plan.id=handoff.plan_id
-WHERE dispatch.external_effect_id=$1 FOR KEY SHARE OF dispatch`
-	var sourceKind string
-	if err = tx.QueryRow(ctx, sourceQuery, id).Scan(&sourceKind); errors.Is(err, pgx.ErrNoRows) {
+	sourceKind, err := queries.ReadOutboundCampaignDispatchSourceKind(ctx, pgtype.Int8{Int64: id, Valid: true})
+	if errors.Is(err, pgx.ErrNoRows) {
 		return outboundport.CampaignDispatchReconciliationEvidence{}, false, outbound.ErrCampaignHandoffNotFound
 	} else if err != nil {
 		return outboundport.CampaignDispatchReconciliationEvidence{}, false, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
@@ -459,27 +423,15 @@ WHERE dispatch.external_effect_id=$1 FOR KEY SHARE OF dispatch`
 	if sourceKind != "ai_audience_package_members" {
 		return outboundport.CampaignDispatchReconciliationEvidence{}, false, nil
 	}
-	const query = `
-SELECT receipt.provider_message_id,dispatch.sender_userid_snapshot,dispatch.external_userid_snapshot,receipt.provider_receipt_digest,
-       receipt.business_call_dispatched,receipt.real_external_call_executed
-FROM public.outbound_campaign_dispatches AS dispatch
-JOIN public.outbound_campaign_handoffs AS handoff ON handoff.id=dispatch.handoff_id
-JOIN public.cloud_campaign_touch_plans AS plan ON plan.id=handoff.plan_id
-JOIN public.outbound_campaign_provider_attempt_receipts AS receipt ON receipt.external_effect_id=dispatch.external_effect_id
-WHERE dispatch.external_effect_id=$1 AND plan.source_kind='ai_audience_package_members'
-  AND receipt.provider_result_received AND receipt.provider_message_id IS NOT NULL
-ORDER BY receipt.created_at DESC, receipt.id DESC
-LIMIT 1 FOR KEY SHARE OF dispatch,receipt`
-	var messageID, sender, external, digest string
-	var businessCallDispatched, realExternalCallExecuted bool
-	err = tx.QueryRow(ctx, query, id).Scan(&messageID, &sender, &external, &digest, &businessCallDispatched, &realExternalCallExecuted)
+	row, err := queries.LoadOutboundAudienceCampaignDispatchReconciliationEvidence(ctx, pgtype.Int8{Int64: id, Valid: true})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return outboundport.CampaignDispatchReconciliationEvidence{}, true, nil
 	}
-	if err != nil || !validCampaignTargetSnapshot(sender, external) || !validCampaignProviderText(messageID, 1024) || !outbound.ValidCampaignDispatchDigest(digest) || !businessCallDispatched || !realExternalCallExecuted {
+	messageID, sender, external := textOrEmpty(row.ProviderMessageID), textOrEmpty(row.SenderUseridSnapshot), textOrEmpty(row.ExternalUseridSnapshot)
+	if err != nil || !validCampaignTargetSnapshot(sender, external) || !validCampaignProviderText(messageID, 1024) || !outbound.ValidCampaignDispatchDigest(row.ProviderReceiptDigest) || !row.BusinessCallDispatched || !row.RealExternalCallExecuted {
 		return outboundport.CampaignDispatchReconciliationEvidence{}, false, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
 	}
-	return outboundport.CampaignDispatchReconciliationEvidence{ExternalEffectID: effectID, ProviderMessageID: messageID, SenderUserID: sender, ExternalUserID: external, ProviderReceiptDigest: eer.Digest(digest), BusinessCallDispatched: businessCallDispatched, RealExternalCallExecuted: realExternalCallExecuted}, true, nil
+	return outboundport.CampaignDispatchReconciliationEvidence{ExternalEffectID: effectID, ProviderMessageID: messageID, SenderUserID: sender, ExternalUserID: external, ProviderReceiptDigest: eer.Digest(row.ProviderReceiptDigest), BusinessCallDispatched: row.BusinessCallDispatched, RealExternalCallExecuted: row.RealExternalCallExecuted}, true, nil
 }
 
 func validCampaignTargetSnapshot(sender, external string) bool {
@@ -541,7 +493,7 @@ func validCampaignDispatchCompletion(value string) bool {
 	}
 }
 
-func dispatchBindingFromRow(row outbounddb.OutboundCampaignDispatch) (outboundport.CampaignDispatchBinding, bool) {
+func dispatchBindingFromRow(row campaignDispatchBindingRow) (outboundport.CampaignDispatchBinding, bool) {
 	if row.ID < 1 || row.HandoffID < 1 || row.CustomerID < 1 || row.StepIndex < 1 || !outbound.ValidCampaignDispatchDigest(row.RecipientDigest) || !outbound.ValidCampaignDispatchDigest(row.PayloadDigest) || !row.CreatedAt.Valid || !row.UpdatedAt.Valid {
 		return outboundport.CampaignDispatchBinding{}, false
 	}
