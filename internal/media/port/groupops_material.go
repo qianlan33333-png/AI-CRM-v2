@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -34,6 +35,19 @@ type GroupOpsMaterialReference struct {
 	ID   int64  `json:"id"`
 }
 
+// GroupOpsMaterialSourceSnapshot is captured under the Media transaction that
+// accepts a Group Ops execution. It binds the ordered local references to the
+// exact source digests that a later preparation reader must prove ready.
+type GroupOpsMaterialSourceSnapshot struct {
+	SchemaVersion int                               `json:"schema_version"`
+	References    []GroupOpsMaterialSourceReference `json:"references"`
+}
+
+type GroupOpsMaterialSourceReference struct {
+	Reference    GroupOpsMaterialReference `json:"reference"`
+	SourceDigest string                    `json:"source_digest"`
+}
+
 // GroupOpsProviderReadyAttachment is intentionally the small intersection of
 // the WeCom group-message template contract and the legacy P4 content package.
 // It contains no local media record IDs, credentials, or mutable URLs that a
@@ -54,7 +68,7 @@ type GroupOpsProviderReadyAttachment struct {
 // error as a local acceptance failure rather than queue work that a worker
 // would need to resolve later.
 type GroupOpsMaterialSnapshotFreezer interface {
-	FreezeGroupOpsMaterial(context.Context, GroupOpsMaterialPlan) (GroupOpsMaterialSnapshot, error)
+	FreezeGroupOpsMaterial(context.Context, GroupOpsMaterialSourceSnapshot, time.Time) (GroupOpsMaterialSnapshot, error)
 }
 
 func ValidateGroupOpsMaterialSnapshot(value GroupOpsMaterialSnapshot) error {
@@ -98,6 +112,20 @@ func ValidateGroupOpsMaterialPlan(value GroupOpsMaterialPlan) error {
 	return nil
 }
 
+func ValidateGroupOpsMaterialSourceSnapshot(value GroupOpsMaterialSourceSnapshot) error {
+	if value.SchemaVersion != 1 || len(value.References) == 0 {
+		return ErrInvalidGroupOpsMaterialSnapshot
+	}
+	plan := GroupOpsMaterialPlan{References: make([]GroupOpsMaterialReference, len(value.References))}
+	for index, source := range value.References {
+		plan.References[index] = source.Reference
+		if !validDigest(source.SourceDigest) {
+			return ErrInvalidGroupOpsMaterialSnapshot
+		}
+	}
+	return ValidateGroupOpsMaterialPlan(plan)
+}
+
 func ValidateGroupOpsProviderReadyAttachments(attachments []GroupOpsProviderReadyAttachment) error {
 	if len(attachments) > 9 {
 		return ErrInvalidGroupOpsMaterialSnapshot
@@ -118,7 +146,7 @@ func ValidateGroupOpsProviderReadyAttachments(attachments []GroupOpsProviderRead
 		case "miniprogram":
 			minis++
 			if !validGroupOpsText(attachment.AppID, 128) || !validGroupOpsText(attachment.PagePath, 1024) ||
-				!validGroupOpsText(attachment.Title, 128) || !validGroupOpsText(attachment.MediaID, 1024) ||
+				!validGroupOpsText(attachment.Title, 64) || !validGroupOpsText(attachment.MediaID, 1024) ||
 				!emptyAttachmentFields(attachment, "MediaID", "AppID", "PagePath", "Title") {
 				return ErrInvalidGroupOpsMaterialSnapshot
 			}
@@ -138,6 +166,18 @@ func ValidateGroupOpsProviderReadyAttachments(attachments []GroupOpsProviderRead
 		return ErrInvalidGroupOpsMaterialSnapshot
 	}
 	return nil
+}
+
+func validDigest(value string) bool {
+	if len(value) != len("sha256:")+64 || !strings.HasPrefix(value, "sha256:") {
+		return false
+	}
+	for _, char := range value[len("sha256:"):] {
+		if !(char >= '0' && char <= '9') && !(char >= 'a' && char <= 'f') {
+			return false
+		}
+	}
+	return true
 }
 
 func validGroupOpsText(value string, limit int) bool {

@@ -8,8 +8,10 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"mime"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
 	"net/url"
 	"strings"
 	"time"
@@ -49,7 +51,7 @@ func (u *TemporaryMediaUploader) Upload(ctx context.Context, in TemporaryMediaUp
 	}
 	var body bytes.Buffer
 	form := multipart.NewWriter(&body)
-	part, e := form.CreateFormFile("media", in.Filename)
+	part, e := form.CreatePart(textprotoMIMEHeader(in.Filename, in.MIME))
 	if e != nil {
 		return TemporaryMediaResult{}, e
 	}
@@ -92,6 +94,13 @@ func (u *TemporaryMediaUploader) Upload(ctx context.Context, in TemporaryMediaUp
 	}
 	created := time.Unix(out.CreatedAt, 0).UTC()
 	return TemporaryMediaResult{MediaID: out.MediaID, CreatedAt: created, ExpiresAt: created.Add(71 * time.Hour), BusinessCallDispatched: true}, nil
+}
+
+func textprotoMIMEHeader(filename, mediaType string) textproto.MIMEHeader {
+	header := make(textproto.MIMEHeader)
+	header.Set("Content-Disposition", mime.FormatMediaType("form-data", map[string]string{"name": "media", "filename": filename}))
+	header.Set("Content-Type", mediaType)
+	return header
 }
 func validUpload(in TemporaryMediaUpload) bool {
 	if (in.Kind != "image" && in.Kind != "file") || in.Filename == "" || in.MIME == "" || len(in.Bytes) == 0 || !strings.HasPrefix(in.Checksum, "sha256:") {
