@@ -300,6 +300,7 @@ console.log('admin/radar.html（列表）');
   click(dom, shareBtn);
   await sleep(30);
   ok('分享浮窗打开且二维码缺口明确阻塞', d.querySelector('#shareMask').classList.contains('open') && d.querySelector('#shareQr').textContent.includes('backend_blocked') && !d.querySelector('#shareQr svg'));
+  ok('本地/Mock 模式不启用链接复制', d.querySelector('#shareUrl').disabled && d.querySelector('#shareCopy').disabled);
   click(dom, d.querySelector('#shareMask .modal-x'));
   await sleep(30);
   ok('关闭分享浮窗', !d.querySelector('#shareMask').classList.contains('open'));
