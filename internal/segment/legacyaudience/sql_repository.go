@@ -37,17 +37,27 @@ type SQLProvider interface {
 	IsNoRows(error) bool
 }
 
+type OperationMemberProjectionStore interface {
+	ListOperationMembers(context.Context) ([]OperationMember, error)
+	ReplaceOperationMembers(context.Context, []OperationMember, time.Time) ([]OperationMember, error)
+}
+
 var _ Repository = (*SQLRepository)(nil)
 
 type SQLRepository struct {
-	provider SQLProvider
+	provider         SQLProvider
+	operationMembers OperationMemberProjectionStore
 }
 
-func NewSQLRepository(provider SQLProvider) (*SQLRepository, error) {
-	if nilInterface(provider) {
+func NewSQLRepository(provider SQLProvider, operationMembers ...OperationMemberProjectionStore) (*SQLRepository, error) {
+	if nilInterface(provider) || len(operationMembers) > 1 || len(operationMembers) == 1 && nilInterface(operationMembers[0]) {
 		return nil, ErrUnavailable
 	}
-	return &SQLRepository{provider: provider}, nil
+	repository := &SQLRepository{provider: provider}
+	if len(operationMembers) == 1 {
+		repository.operationMembers = operationMembers[0]
+	}
+	return repository, nil
 }
 
 const groupColumns = `id, name, sort_order, version, created_by, created_at, updated_at`
@@ -650,6 +660,23 @@ RETURNING package_id, version, schema_version, package_version, definition, enco
 		return ConfigurationVersion{}, classifySQLError(err)
 	}
 	return stored, nil
+}
+
+func (repository *SQLRepository) ListOperationMembers(ctx context.Context) ([]OperationMember, error) {
+	if repository == nil || nilInterface(repository.operationMembers) {
+		return nil, ErrUnavailable
+	}
+	return repository.operationMembers.ListOperationMembers(ctx)
+}
+
+func (repository *SQLRepository) ReplaceOperationMembers(ctx context.Context, wanted []OperationMember, now time.Time) ([]OperationMember, error) {
+	if err := validateOperationMembers(wanted); err != nil {
+		return nil, err
+	}
+	if repository == nil || nilInterface(repository.operationMembers) {
+		return nil, ErrUnavailable
+	}
+	return repository.operationMembers.ReplaceOperationMembers(ctx, wanted, now)
 }
 
 func listPackageSenders(ctx context.Context, database SQLExecutor, packageID int64, lock bool) ([]PackageSender, error) {

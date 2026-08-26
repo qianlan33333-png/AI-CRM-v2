@@ -9735,21 +9735,21 @@ paths:
     get:
       tags: [p4-ai-audience, p4-group-ops]
       operationId: listAIAudienceOperationMembers
-      summary: List the active local staff projection for AI Audience or Group Ops sender selection
+      summary: List the last durable operation-member projection for AI Audience or Group Ops sender selection
       x-legacy-mapping-ids: [LEGACY-API-0240]
       x-p4-decision-evidence: P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22
       x-aicrm-capability: segments.read
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: none
-      x-aicrm-data-source: staff.local_read_model
+      x-aicrm-data-source: scope_routed.operation_member_projection
       x-aicrm-data-classification: internal
       x-aicrm-external-effect: none
       parameters:
         - { name: scope, in: query, required: true, schema: { type: string, enum: [ai_audience, group_ops] } }
         - { name: page_size, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 100 } }
       responses:
-        "200": { description: "Active local staff selector; it does not synchronize any external directory.", content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/AIAudienceOperationMemberListResponse" }, { $ref: "#/components/schemas/GroupOpsOperationMemberPage" }] } } } }
+        "200": { description: "Last durable scope-owned selector projection; GET never calls the Provider.", content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/AIAudienceOperationMemberListResponse" }, { $ref: "#/components/schemas/GroupOpsOperationMemberPage" }] } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -9757,26 +9757,28 @@ paths:
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/common/operation-members/sync:
     post:
-      tags: [p4-group-ops]
+      tags: [p4-ai-audience, p4-group-ops]
       operationId: syncGroupOpsOperationMembers
-      summary: Explicitly request the injected read-only member-directory refresh boundary
+      summary: Explicitly refresh the scope-owned operation-member projection from the injected read-only directory boundary
       security: [{ AdminSession: [] }]
       x-legacy-mapping-ids: [LEGACY-API-0241]
-      x-p4-decision-evidence: P4-GROUP-OPS-RUNTIME-2026-08-25
+      x-p4-decision-evidence: P4-AI-AUDIENCE-OPERATION-MEMBER-SYNC-00100-2026-08-26
       x-aicrm-capability: operations.manage
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: required
-      x-aicrm-data-source: group_ops.directory_refresh
+      x-aicrm-data-source: scope_routed.wecom_directory_refresh
       x-aicrm-data-classification: internal
       x-aicrm-external-effect: none
       parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsOperationMemberSyncRequest" } } } }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OperationMemberSyncRequest" } } } }
       responses:
-        "200": { description: "Refreshed selector projection; this is not a send or delivery fact.", content: { application/json: { schema: { $ref: "#/components/schemas/GroupOpsOperationMemberPage" } } } }
+        "200": { description: "Durable scope-owned selector projection after a successful Provider read; this is not a send or delivery fact.", content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/AIAudienceOperationMemberListResponse" }, { $ref: "#/components/schemas/GroupOpsOperationMemberPage" }] } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/UnprocessableEntity" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/ai-audience/package-groups:
     get:
@@ -13704,12 +13706,12 @@ components:
       properties:
         owner_staff_id: { type: integer, format: int64, minimum: 1 }
         limit: { type: integer, minimum: 1, maximum: 200 }
-    GroupOpsOperationMemberSyncRequest:
+    OperationMemberSyncRequest:
       type: object
       additionalProperties: false
       required: [scope]
       properties:
-        scope: { type: string, enum: [group_ops] }
+        scope: { type: string, enum: [ai_audience, group_ops] }
         page_size: { type: integer, minimum: 1, maximum: 100, default: 100 }
     GroupOpsBroadcastRequest:
       type: object
@@ -14120,11 +14122,12 @@ components:
     AIAudienceOperationMemberListResponse:
       type: object
       additionalProperties: false
-      required: [scope, items, page_size, local_projection, real_external_call_executed]
+      required: [scope, items, page_size, provider_read_executed, local_projection, real_external_call_executed]
       properties:
         scope: { type: string, enum: [ai_audience] }
         items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/AIAudienceOperationMember" } }
         page_size: { type: integer, minimum: 1, maximum: 100 }
+        provider_read_executed: { type: boolean, description: "False for GET; true when this response was produced by a successful sync Provider read." }
         local_projection: { type: boolean, enum: [true] }
         real_external_call_executed: { type: boolean, enum: [false] }
     AIAudienceAutomationBinding:

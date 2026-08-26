@@ -16,17 +16,21 @@ type Querier interface {
 	CompleteSegmentOperationReceipt(ctx context.Context, arg CompleteSegmentOperationReceiptParams) (CompleteSegmentOperationReceiptRow, error)
 	CompleteSegmentRefresh(ctx context.Context, arg CompleteSegmentRefreshParams) (int64, error)
 	CreateSegment(ctx context.Context, arg CreateSegmentParams) (CreateSegmentRow, error)
+	DeleteAIAudienceOperationMembers(ctx context.Context) error
 	DeleteSegmentMembersForRefresh(ctx context.Context, segmentID int64) error
 	EnsureSegmentRefreshable(ctx context.Context, segmentID int64) (int64, error)
 	GetSegment(ctx context.Context, segmentID int64) (GetSegmentRow, error)
 	GetSegmentOperationReceipt(ctx context.Context, arg GetSegmentOperationReceiptParams) (GetSegmentOperationReceiptRow, error)
+	InsertAIAudienceOperationMember(ctx context.Context, arg InsertAIAudienceOperationMemberParams) error
 	InsertSegmentMembersForRefresh(ctx context.Context, arg InsertSegmentMembersForRefreshParams) error
 	LegacyAudiencePackageExists(ctx context.Context, packageID int64) (bool, error)
+	ListAIAudienceOperationMembers(ctx context.Context) ([]ListAIAudienceOperationMembersRow, error)
 	ListLegacyAudienceMembers(ctx context.Context, arg ListLegacyAudienceMembersParams) ([]ListLegacyAudienceMembersRow, error)
 	ListScheduledSegmentRefreshes(ctx context.Context) ([]ListScheduledSegmentRefreshesRow, error)
 	ListSegmentMemberRecords(ctx context.Context, arg ListSegmentMemberRecordsParams) ([]Customer, error)
 	ListSegments(ctx context.Context, arg ListSegmentsParams) ([]ListSegmentsRow, error)
 	ListTouchPlanSnapshotMembers(ctx context.Context, segmentID int64) ([]int64, error)
+	LockAIAudienceOperationMemberProjection(ctx context.Context) error
 	LockAudiencePackageTouchPlanSnapshot(ctx context.Context, packageID int64) (LockAudiencePackageTouchPlanSnapshotRow, error)
 	LockSegmentDefinitionForRefresh(ctx context.Context, segmentID int64) ([]byte, error)
 	LockSegmentForUpdate(ctx context.Context, segmentID int64) (LockSegmentForUpdateRow, error)

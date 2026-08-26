@@ -231,6 +231,40 @@ func TestSQLRepositoryReceiptReservationIsScopedAndLocked(t *testing.T) {
 	}
 }
 
+func TestSQLRepositoryOperationMemberReplacementIsSerializedAndAudienceOwned(t *testing.T) {
+	store := &operationMemberProjectionStoreStub{}
+	repository, err := NewSQLRepository(scriptedProvider{executor: &scriptedExecutor{}}, store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	items := []OperationMember{{SenderUserID: "alpha", DisplayName: "Alpha"}, {SenderUserID: "beta", DisplayName: "Beta"}}
+	stored, err := repository.ReplaceOperationMembers(context.Background(), items, time.Date(2026, 8, 26, 1, 2, 3, 0, time.UTC))
+	if err != nil || len(stored) != 2 || store.replacements != 1 {
+		t.Fatal(err)
+	}
+	listed, err := repository.ListOperationMembers(context.Background())
+	if err != nil || len(listed) != 2 || store.lists != 1 {
+		t.Fatalf("listed=%+v err=%v", listed, err)
+	}
+}
+
+type operationMemberProjectionStoreStub struct {
+	items        []OperationMember
+	lists        int
+	replacements int
+}
+
+func (stub *operationMemberProjectionStoreStub) ListOperationMembers(context.Context) ([]OperationMember, error) {
+	stub.lists++
+	return append([]OperationMember(nil), stub.items...), nil
+}
+
+func (stub *operationMemberProjectionStoreStub) ReplaceOperationMembers(_ context.Context, items []OperationMember, _ time.Time) ([]OperationMember, error) {
+	stub.replacements++
+	stub.items = append([]OperationMember(nil), items...)
+	return append([]OperationMember(nil), stub.items...), nil
+}
+
 func TestScriptedExecutorJSONDefinitionIsValid(t *testing.T) {
 	if !json.Valid([]byte(`{"field":"stage_id","op":"eq","value":1}`)) {
 		t.Fatal("test fixture definition must be valid JSON")

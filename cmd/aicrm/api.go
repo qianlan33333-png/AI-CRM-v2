@@ -991,7 +991,10 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	legacyAIAudienceRepository, err := legacyaudience.NewSQLRepository(legacyAIAudienceSQLProvider{pool: pool})
+	legacyAIAudienceRepository, err := legacyaudience.NewSQLRepository(
+		legacyAIAudienceSQLProvider{pool: pool},
+		legacyAIAudienceOperationMemberProjectionStore{pool: pool},
+	)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -1507,6 +1510,15 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			ActiveStaff: groupOpsDirectoryActiveStaff{staff: groupOpsStaffDirectory},
 		})
 		if err != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		audienceDirectorySource, sourceErr := legacyaudience.NewGroupOpsDirectoryOperationMemberSource(groupOpsDirectorySource)
+		if sourceErr != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		if sourceErr = legacyAIAudienceConfigurationService.SetOperationMemberSource(audienceDirectorySource); sourceErr != nil {
 			pool.Close()
 			return nil, errInvalidAPIComponent
 		}

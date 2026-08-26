@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -19,14 +18,15 @@ import (
 var _ LocalConfigurationApplication = (*LocalConfigurationService)(nil)
 
 type LocalConfigurationService struct {
-	uow     UnitOfWork
-	repo    LocalConfigurationRepository
-	agents  AutomationAgentReader
-	members contactport.StaffDirectoryReader
-	staff   contactport.EligibleStaffReferenceReader
-	engine  segmentport.AudienceDefinitionEngine
-	events  EventAppender
-	now     func() time.Time
+	uow                   UnitOfWork
+	repo                  LocalConfigurationRepository
+	agents                AutomationAgentReader
+	members               contactport.StaffDirectoryReader
+	staff                 contactport.EligibleStaffReferenceReader
+	engine                segmentport.AudienceDefinitionEngine
+	events                EventAppender
+	operationMemberSource OperationMemberSource
+	now                   func() time.Time
 }
 
 func NewLocalConfigurationService(
@@ -44,37 +44,38 @@ func NewLocalConfigurationService(
 	return &LocalConfigurationService{uow: uow, repo: repository, agents: agents, members: members, staff: staff, engine: engine, events: events, now: time.Now}, nil
 }
 
+// SetOperationMemberSource is called once during root composition, after the
+// shared WeCom directory source has been constructed. It is intentionally
+// separate from Group Ops runtime wiring.
+func (service *LocalConfigurationService) SetOperationMemberSource(source OperationMemberSource) error {
+	if service == nil || nilInterface(source) {
+		return ErrUnavailable
+	}
+	service.operationMemberSource = source
+	return nil
+}
+
 func (service *LocalConfigurationService) ListOperationMembers(ctx context.Context, pageSize int) (OperationMemberListResponse, error) {
-	if ctx == nil || service == nil || nilInterface(service.members) {
+	if ctx == nil || service == nil || nilInterface(service.repo) {
 		return OperationMemberListResponse{}, ErrUnavailable
 	}
 	if pageSize < 1 || pageSize > MaximumOperationMemberPageSize {
 		return OperationMemberListResponse{}, ErrInvalidInput
 	}
-	entries, err := service.members.ListEligibleStaff(ctx)
+	items, err := service.repo.ListOperationMembers(ctx)
 	if err != nil {
 		return OperationMemberListResponse{}, errors.Join(ErrUnavailable, err)
 	}
-	items := make([]OperationMember, 0, len(entries))
-	seen := make(map[string]struct{}, len(entries))
-	for _, entry := range entries {
-		userid := strings.TrimSpace(entry.WeComUserID)
-		if userid == "" {
-			return OperationMemberListResponse{}, ErrUnavailable
-		}
-		if _, duplicate := seen[userid]; duplicate {
-			return OperationMemberListResponse{}, ErrUnavailable
-		}
-		seen[userid] = struct{}{}
-		items = append(items, OperationMember{SenderUserID: userid, DisplayName: strings.TrimSpace(entry.DisplayName)})
+	if err := validateOperationMembers(items); err != nil {
+		return OperationMemberListResponse{}, err
 	}
-	sort.Slice(items, func(left, right int) bool { return items[left].SenderUserID < items[right].SenderUserID })
+	sortOperationMembers(items)
 	if len(items) > pageSize {
 		items = items[:pageSize]
 	}
-	return OperationMemberListResponse{
-		Scope: OperationMemberScope, Items: items, PageSize: pageSize, Projection: localProjection(),
-	}, nil
+	response := operationMemberResponse(items, pageSize)
+	response.ProviderReadExecuted = false
+	return response, nil
 }
 
 func (service *LocalConfigurationService) GetAutomationBinding(ctx context.Context, packageID int64) (AutomationBindingResponse, error) {

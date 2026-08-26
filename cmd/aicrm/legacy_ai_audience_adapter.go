@@ -4,15 +4,18 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	automationport "github.com/qianlan33333-png/AI-CRM-v2/internal/automation/port"
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/segment/legacyaudience"
+	segmentdb "github.com/qianlan33333-png/AI-CRM-v2/internal/segment/store/generated"
 )
 
 type legacyAIAudienceSecurity struct{}
@@ -29,16 +32,66 @@ func (legacyAIAudienceSecurity) Authorize(request *http.Request, requirement leg
 	if !authorizationOK || authorization.Scope != authport.ScopeGlobal || string(authorization.Capability) != requirement.Capability {
 		return legacyaudience.Actor{}, legacyaudience.ErrForbidden
 	}
-	if requirement.Capability != legacyaudience.CapabilitySegmentsRead && requirement.Capability != legacyaudience.CapabilitySegmentsWrite {
+	if requirement.Capability != legacyaudience.CapabilitySegmentsRead && requirement.Capability != legacyaudience.CapabilitySegmentsWrite &&
+		requirement.Capability != legacyaudience.CapabilityOperationsManage {
 		return legacyaudience.Actor{}, legacyaudience.ErrForbidden
 	}
-	if requirement.RequireCSRF && authorization.Capability != authport.CapabilitySegmentsWrite {
+	if requirement.RequireCSRF && authorization.Capability != authport.CapabilitySegmentsWrite && authorization.Capability != authport.CapabilityOperationsManage {
 		return legacyaudience.Actor{}, errors.Join(legacyaudience.ErrCSRFInvalid, legacyaudience.ErrForbidden)
 	}
 	return legacyaudience.Actor{AdminUserID: principal.AdminUserID}, nil
 }
 
 type legacyAIAudienceSQLProvider struct{ pool *pgxpool.Pool }
+
+type legacyAIAudienceOperationMemberProjectionStore struct{ pool *pgxpool.Pool }
+
+func (store legacyAIAudienceOperationMemberProjectionStore) ListOperationMembers(ctx context.Context) ([]legacyaudience.OperationMember, error) {
+	if store.pool == nil {
+		return nil, legacyaudience.ErrUnavailable
+	}
+	rows, err := segmentdb.New(store.pool).ListAIAudienceOperationMembers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	items := make([]legacyaudience.OperationMember, len(rows))
+	for index, row := range rows {
+		items[index] = legacyaudience.OperationMember{SenderUserID: row.SenderUserid, DisplayName: row.DisplayName}
+	}
+	return items, nil
+}
+
+func (store legacyAIAudienceOperationMemberProjectionStore) ReplaceOperationMembers(ctx context.Context, items []legacyaudience.OperationMember, syncedAt time.Time) ([]legacyaudience.OperationMember, error) {
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	queries := segmentdb.New(tx)
+	if err = queries.LockAIAudienceOperationMemberProjection(ctx); err != nil {
+		return nil, err
+	}
+	if err = queries.DeleteAIAudienceOperationMembers(ctx); err != nil {
+		return nil, err
+	}
+	for _, item := range items {
+		if err = queries.InsertAIAudienceOperationMember(ctx, segmentdb.InsertAIAudienceOperationMemberParams{
+			SenderUserid: item.SenderUserID,
+			DisplayName:  item.DisplayName,
+			SyncedAt:     pgtype.Timestamptz{Time: syncedAt, Valid: true},
+		}); err != nil {
+			return nil, err
+		}
+	}
+	rows, err := queries.ListAIAudienceOperationMembers(ctx)
+	if err != nil {
+		return nil, err
+	}
+	stored := make([]legacyaudience.OperationMember, len(rows))
+	for index, row := range rows {
+		stored[index] = legacyaudience.OperationMember{SenderUserID: row.SenderUserid, DisplayName: row.DisplayName}
+	}
+	return stored, nil
+}
 
 func (provider legacyAIAudienceSQLProvider) Reader(context.Context) (legacyaudience.SQLExecutor, error) {
 	if provider.pool == nil {
