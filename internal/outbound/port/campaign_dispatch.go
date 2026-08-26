@@ -24,8 +24,13 @@ type CampaignDispatchBinding struct {
 	PayloadDigest    string
 	State            outbound.CampaignDispatchState
 	BlockReason      string
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	// SenderUserIDSnapshot and ExternalUserIDSnapshot are private runtime
+	// facts. They are populated together only for audience-package dispatches
+	// and must never be exposed from a read API.
+	SenderUserIDSnapshot   string
+	ExternalUserIDSnapshot string
+	CreatedAt              time.Time
+	UpdatedAt              time.Time
 }
 
 type CampaignDispatchReceipt struct {
@@ -41,19 +46,47 @@ type CampaignDispatchReceipt struct {
 // resolved by the Outbound-owned worker after EER has durably fenced an
 // attempt. It must never be projected through a read API or into EER.
 type CampaignDispatchProviderRequest struct {
-	DispatchID    int64
-	HandoffID     int64
-	CustomerID    int64
-	StepIndex     int32
-	Content       string
-	PayloadDigest string
+	DispatchID             int64
+	HandoffID              int64
+	CustomerID             int64
+	StepIndex              int32
+	Content                string
+	PayloadDigest          string
+	AudiencePackageID      int64
+	SenderUserIDSnapshot   string
+	ExternalUserIDSnapshot string
 }
 
 type CampaignDispatchProviderAttemptReceipt struct {
-	Completion               string
-	ReceiptDigest            eer.Digest
-	BusinessCallDispatched   bool
-	RealExternalCallExecuted bool
+	Completion                   string
+	ReceiptDigest                eer.Digest
+	BusinessCallDispatched       bool
+	RealExternalCallExecuted     bool
+	ProviderMessageID            string
+	ProviderCode                 string
+	ProviderResultReceived       bool
+	DeliveryProven               bool
+	ReconciliationEvidenceDigest eer.Digest
+}
+
+// AudienceDispatchTargetQualification is the exact relationship-owner target
+// selected during the Dispatch UoW. Eligible=false is a business exclusion;
+// an adapter error remains an unavailable transaction and must not create a
+// permanent blocked dispatch.
+type AudienceDispatchTargetQualification struct {
+	CustomerID     int64
+	Eligible       bool
+	SenderUserID   string
+	ExternalUserID string
+	Exclusion      string
+}
+
+type AudienceDispatchTargetQualifier interface {
+	QualifyAudienceDispatchTargets(context.Context, int64, []int64) ([]AudienceDispatchTargetQualification, error)
+}
+
+type AudienceCampaignDispatchSourceReader interface {
+	AudiencePackageForCampaignHandoff(context.Context, int64) (int64, bool, error)
 }
 
 type CampaignDispatchRepository interface {
@@ -68,6 +101,26 @@ type CampaignDispatchRepository interface {
 	UpdateCampaignDispatchState(context.Context, string, outbound.CampaignDispatchState) error
 	ReadCampaignDispatchSummary(context.Context, int64) (outbound.CampaignDispatchSummary, error)
 	RecordCampaignProviderAttemptReceipt(context.Context, string, int32, CampaignDispatchProviderAttemptReceipt) error
+}
+
+// CampaignDispatchReconciliationEvidence contains only the private facts a
+// protocol verifier needs. A caller-supplied digest is never evidence.
+type CampaignDispatchReconciliationEvidence struct {
+	ExternalEffectID         string
+	ProviderMessageID        string
+	SenderUserID             string
+	ExternalUserID           string
+	ProviderReceiptDigest    eer.Digest
+	BusinessCallDispatched   bool
+	RealExternalCallExecuted bool
+}
+
+type CampaignDispatchReconciliationEvidenceReader interface {
+	LoadAudienceCampaignDispatchReconciliationEvidence(context.Context, string) (CampaignDispatchReconciliationEvidence, bool, error)
+}
+
+type CampaignDispatchReconciliationEvidenceVerifier interface {
+	VerifyAudienceCampaignDispatch(context.Context, CampaignDispatchReconciliationEvidence) (deliveryProven bool, evidenceDigest eer.Digest, error error)
 }
 
 type CampaignDispatchEnqueuer interface {

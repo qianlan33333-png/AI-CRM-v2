@@ -66,6 +66,9 @@ type ProviderResult struct {
 	MessageID   string
 	FailureKind ProviderFailureKind
 	Code        string
+	// ProviderResultReceived distinguishes a decoded upstream response from a
+	// request that crossed the boundary but became outcome_unknown.
+	ProviderResultReceived bool
 	// BusinessCallDispatched and RealExternalCallExecuted are attempt
 	// evidence, not delivery proof. A provider must leave both false for
 	// pre-dispatch validation, target resolution, or configuration failures.

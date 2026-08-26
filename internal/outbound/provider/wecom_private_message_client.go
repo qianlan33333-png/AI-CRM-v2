@@ -18,6 +18,7 @@ var (
 	errWeComPrivateMessageInvalid        = errors.New("invalid WeCom private message client")
 	errWeComPrivateMessageNotDispatched  = errors.New("WeCom private message not dispatched")
 	errWeComPrivateMessageOutcomeUnknown = errors.New("WeCom private message outcome unknown")
+	errWeComPrivateMessageInvalidResult  = errors.New("WeCom private message invalid result")
 	errWeComPrivateMessageTargetRejected = errors.New("WeCom private message target rejected")
 	errWeComPrivateMessageUpstream       = errors.New("WeCom private message API rejected request")
 )
@@ -114,7 +115,7 @@ func (client *weComPrivateMessageClient) CreatePrivateMessageTemplate(ctx contex
 		return privateMessageTemplateResult{}, errWeComPrivateMessageTargetRejected
 	}
 	if !validPrivateMessageText(payload.Message, 1024) {
-		return privateMessageTemplateResult{}, errWeComPrivateMessageOutcomeUnknown
+		return privateMessageTemplateResult{}, errWeComPrivateMessageInvalidResult
 	}
 	return privateMessageTemplateResult{MessageID: payload.Message}, nil
 }

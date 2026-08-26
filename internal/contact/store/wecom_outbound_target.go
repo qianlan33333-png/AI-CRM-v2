@@ -7,7 +7,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
+	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
 var ErrWeComOutboundTargetUnavailable = errors.New("WeCom outbound target unavailable")
@@ -22,14 +24,22 @@ type weComOutboundTargetQuerier interface {
 // retryable infrastructure errors for the caller.
 type WeComOutboundTargetResolver struct {
 	queries weComOutboundTargetQuerier
+	pool    *pgxpool.Pool
 	corpID  string
 }
+
+var _ contactport.WeComOutboundTargetResolver = (*WeComOutboundTargetResolver)(nil)
 
 func NewWeComOutboundTargetResolver(pool *pgxpool.Pool, corpID string) (*WeComOutboundTargetResolver, error) {
 	if pool == nil {
 		return nil, ErrWeComOutboundTargetUnavailable
 	}
-	return newWeComOutboundTargetResolver(contactdb.New(pool), corpID)
+	resolver, err := newWeComOutboundTargetResolver(contactdb.New(pool), corpID)
+	if err != nil {
+		return nil, err
+	}
+	resolver.pool = pool
+	return resolver, nil
 }
 
 func newWeComOutboundTargetResolver(queries weComOutboundTargetQuerier, corpID string) (*WeComOutboundTargetResolver, error) {
@@ -43,7 +53,11 @@ func (resolver *WeComOutboundTargetResolver) Resolve(ctx context.Context, custom
 	if resolver == nil || resolver.queries == nil || ctx == nil || ctx.Err() != nil || customerID < 1 {
 		return "", "", false, ErrWeComOutboundTargetUnavailable
 	}
-	row, err := resolver.queries.ResolveVerifiedWeComOutboundTarget(ctx, contactdb.ResolveVerifiedWeComOutboundTargetParams{CustomerID: customerID, CorpID: resolver.corpID})
+	queries := resolver.queries
+	if tx, txErr := platformstore.TxFromContext(ctx); txErr == nil {
+		queries = contactdb.New(tx)
+	}
+	row, err := queries.ResolveVerifiedWeComOutboundTarget(ctx, contactdb.ResolveVerifiedWeComOutboundTargetParams{CustomerID: customerID, CorpID: resolver.corpID})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", "", false, nil
 	}

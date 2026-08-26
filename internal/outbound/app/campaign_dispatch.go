@@ -52,17 +52,33 @@ type CampaignDispatchService struct {
 	runtime  CampaignDispatchRuntime
 	enqueuer outboundport.CampaignDispatchEnqueuer
 	contact  contactport.EligibilityChecker
+	audience outboundport.AudienceDispatchTargetQualifier
+	evidence outboundport.CampaignDispatchReconciliationEvidenceVerifier
 	now      func() time.Time
 }
 
 type campaignDispatchEvidenceAdapter struct {
-	adapter   eer.Adapter
-	result    eer.AdapterResult
-	completed bool
+	adapter                 eer.Adapter
+	result                  eer.AdapterResult
+	completed               bool
+	providerEvidence        outboundport.CampaignDispatchProviderAttemptReceipt
+	providerEvidencePresent bool
+}
+
+type campaignDispatchProviderEvidenceAdapter interface {
+	ExecuteWithCampaignDispatchProviderEvidence(context.Context, eer.EffectEnvelope, eer.Attempt, func(outboundport.CampaignDispatchProviderAttemptReceipt)) (eer.AdapterResult, error)
 }
 
 func (adapter *campaignDispatchEvidenceAdapter) Execute(ctx context.Context, envelope eer.EffectEnvelope, attempt eer.Attempt) (eer.AdapterResult, error) {
-	result, err := adapter.adapter.Execute(ctx, envelope, attempt)
+	var result eer.AdapterResult
+	var err error
+	if provider, ok := adapter.adapter.(campaignDispatchProviderEvidenceAdapter); ok {
+		result, err = provider.ExecuteWithCampaignDispatchProviderEvidence(ctx, envelope, attempt, func(evidence outboundport.CampaignDispatchProviderAttemptReceipt) {
+			adapter.providerEvidence, adapter.providerEvidencePresent = evidence, true
+		})
+	} else {
+		result, err = adapter.adapter.Execute(ctx, envelope, attempt)
+	}
 	if err == nil {
 		adapter.result, adapter.completed = result, true
 	}
@@ -74,6 +90,19 @@ func NewCampaignDispatchService(uow platformport.UnitOfWork, repo outboundport.C
 		return nil, outbound.ErrCampaignDispatchUnavailable
 	}
 	return &CampaignDispatchService{uow: uow, repo: repo, runtime: runtime, enqueuer: enqueuer, contact: contact, now: time.Now}, nil
+}
+
+// WithAudienceQualification adds the only accepted bridge for legacy
+// Audience package dispatches. The qualifier must run in Dispatch's UoW and
+// return the target's active relationship owner only when that owner is in the
+// package whitelist.
+func (service *CampaignDispatchService) WithAudienceQualification(qualifier outboundport.AudienceDispatchTargetQualifier, verifier outboundport.CampaignDispatchReconciliationEvidenceVerifier) (*CampaignDispatchService, error) {
+	if service == nil || qualifier == nil {
+		return nil, outbound.ErrCampaignDispatchUnavailable
+	}
+	clone := *service
+	clone.audience, clone.evidence = qualifier, verifier
+	return &clone, nil
 }
 
 func (service *CampaignDispatchService) Dispatch(ctx context.Context, command CampaignDispatchCommand) (outbound.CampaignDispatchSummary, error) {
@@ -111,6 +140,17 @@ func (service *CampaignDispatchService) Dispatch(ctx context.Context, command Ca
 		if err != nil {
 			return err
 		}
+		audiencePackageID, audience, err := service.audiencePackage(tx, handoffID)
+		if err != nil {
+			return err
+		}
+		qualifications := map[int64]outboundport.AudienceDispatchTargetQualification(nil)
+		if audience {
+			qualifications, err = service.audienceQualification(tx, audiencePackageID, candidates)
+			if err != nil {
+				return err
+			}
+		}
 		for _, candidate := range candidates {
 			if candidate.CustomerID < 1 || candidate.StepIndex < 1 || strings.TrimSpace(candidate.Content) == "" {
 				return outbound.ErrCampaignDispatchUnavailable
@@ -131,6 +171,22 @@ func (service *CampaignDispatchService) Dispatch(ctx context.Context, command Ca
 				}
 				continue
 			}
+			if audience {
+				qualification, present := qualifications[candidate.CustomerID]
+				if !present {
+					return outbound.ErrCampaignDispatchUnavailable
+				}
+				if !qualification.Eligible {
+					binding.State, binding.BlockReason = outbound.CampaignDispatchBlocked, qualification.Exclusion
+					if _, err = service.repo.InsertCampaignDispatchBinding(tx, binding); err != nil {
+						return err
+					}
+					continue
+				}
+				binding.SenderUserIDSnapshot, binding.ExternalUserIDSnapshot = qualification.SenderUserID, qualification.ExternalUserID
+				binding.RecipientDigest = outbound.AudienceCampaignDispatchRecipientDigest(candidate.CustomerID, qualification.SenderUserID, qualification.ExternalUserID)
+				binding.PayloadDigest = outbound.AudienceCampaignDispatchPayloadDigest(handoffID, candidate.CustomerID, candidate.StepIndex, candidate.Content, qualification.SenderUserID, qualification.ExternalUserID)
+			}
 			if !command.ExternalGate {
 				binding.State, binding.BlockReason = outbound.CampaignDispatchBlocked, "external_gate_disabled"
 				if _, err = service.repo.InsertCampaignDispatchBinding(tx, binding); err != nil {
@@ -138,7 +194,11 @@ func (service *CampaignDispatchService) Dispatch(ctx context.Context, command Ca
 				}
 				continue
 			}
-			envelope, envelopeErr := eer.NewEnvelope(eer.EnvelopeInput{Owner: eer.OwnerOutbound, Kind: eer.KindOutboundMessage, SourceRefDigest: digest("source", command.CampaignCode, command.PlanID), TargetRefDigest: eer.Digest(binding.RecipientDigest), PayloadDigest: eer.Digest(binding.PayloadDigest), PolicyVersionHash: digest("policy", "c01-v1")})
+			policy := digest("policy", "c01-v1")
+			if audience {
+				policy = digest("policy", "c01-audience-v2", strconv.FormatInt(audiencePackageID, 10), binding.SenderUserIDSnapshot)
+			}
+			envelope, envelopeErr := eer.NewEnvelope(eer.EnvelopeInput{Owner: eer.OwnerOutbound, Kind: eer.KindOutboundMessage, SourceRefDigest: digest("source", command.CampaignCode, command.PlanID), TargetRefDigest: eer.Digest(binding.RecipientDigest), PayloadDigest: eer.Digest(binding.PayloadDigest), PolicyVersionHash: policy})
 			if envelopeErr != nil {
 				return envelopeErr
 			}
@@ -282,6 +342,11 @@ func (service *CampaignDispatchService) RunEffect(ctx context.Context, effectID 
 			evidence.BusinessCallDispatched = captured.result.BusinessCallDispatched
 			evidence.RealExternalCallExecuted = captured.result.RealExternalCallExecuted
 		}
+		if captured.providerEvidencePresent {
+			evidence.ProviderMessageID = captured.providerEvidence.ProviderMessageID
+			evidence.ProviderCode = captured.providerEvidence.ProviderCode
+			evidence.ProviderResultReceived = captured.providerEvidence.ProviderResultReceived
+		}
 		return service.repo.RecordCampaignProviderAttemptReceipt(tx, effectID, projection.AttemptCount, evidence)
 	})
 	if writeErr != nil {
@@ -354,9 +419,30 @@ func (service *CampaignDispatchService) ManualReconcile(ctx context.Context, com
 		if err != nil || binding.HandoffID != handoffID {
 			return outbound.ErrCampaignHandoffNotFound
 		}
+		evidence := outboundport.CampaignDispatchProviderAttemptReceipt{Completion: string(eer.StateReconciled)}
+		reconcileEvidenceDigest := eer.Digest(command.EvidenceDigest)
+		if audienceEvidence, audience, evidenceErr := service.audienceReconciliationEvidence(tx, command.EffectID); evidenceErr != nil {
+			return evidenceErr
+		} else if audience {
+			if service.evidence == nil {
+				return outbound.ErrCampaignDispatchUnavailable
+			}
+			deliveryProven, evidenceDigest, verifyErr := service.evidence.VerifyAudienceCampaignDispatch(tx, audienceEvidence)
+			if verifyErr != nil || !outbound.ValidCampaignDispatchDigest(string(evidenceDigest)) {
+				return errors.Join(outbound.ErrCampaignDispatchUnavailable, verifyErr)
+			}
+			evidence.DeliveryProven, evidence.ReconciliationEvidenceDigest = deliveryProven, evidenceDigest
+			evidence.ProviderMessageID, evidence.ProviderResultReceived = audienceEvidence.ProviderMessageID, true
+			evidence.BusinessCallDispatched = audienceEvidence.BusinessCallDispatched
+			evidence.RealExternalCallExecuted = audienceEvidence.RealExternalCallExecuted
+			reconcileEvidenceDigest = evidenceDigest
+		}
+		if evidence.ReconciliationEvidenceDigest == "" {
+			evidence.ReconciliationEvidenceDigest = eer.Digest(command.EvidenceDigest)
+		}
 		projection, receipt, err := service.runtime.Reconcile(tx, eer.ReconcileCommand{
 			Lease:            eer.Lease{EffectID: command.EffectID, Generation: command.Generation, Fence: command.Fence, ExpiresAt: command.LeaseExpiresAt},
-			ReceiptKeyDigest: digest("manual-reconcile", strconv.FormatInt(command.ActorID, 10), command.IdempotencyKey), EvidenceDigest: eer.Digest(command.EvidenceDigest),
+			ReceiptKeyDigest: digest("manual-reconcile", strconv.FormatInt(command.ActorID, 10), command.IdempotencyKey), EvidenceDigest: reconcileEvidenceDigest,
 		})
 		if err != nil {
 			return err
@@ -367,7 +453,8 @@ func (service *CampaignDispatchService) ManualReconcile(ctx context.Context, com
 		if err = service.repo.UpdateCampaignDispatchState(tx, command.EffectID, outbound.CampaignDispatchReconciled); err != nil {
 			return err
 		}
-		if err = service.repo.RecordCampaignProviderAttemptReceipt(tx, command.EffectID, projection.AttemptCount, outboundport.CampaignDispatchProviderAttemptReceipt{Completion: string(eer.StateReconciled), ReceiptDigest: receipt.CommandDigest}); err != nil {
+		evidence.ReceiptDigest = receipt.CommandDigest
+		if err = service.repo.RecordCampaignProviderAttemptReceipt(tx, command.EffectID, projection.AttemptCount, evidence); err != nil {
 			return err
 		}
 		summary, err = service.repo.ReadCampaignDispatchSummary(tx, handoffID)
@@ -380,6 +467,67 @@ func (service *CampaignDispatchService) ManualReconcile(ctx context.Context, com
 		return outbound.CampaignDispatchSummary{}, outbound.ErrCampaignDispatchUnavailable
 	}
 	return summary, nil
+}
+
+func (service *CampaignDispatchService) audiencePackage(ctx context.Context, handoffID int64) (int64, bool, error) {
+	reader, ok := service.repo.(outboundport.AudienceCampaignDispatchSourceReader)
+	if !ok {
+		return 0, false, nil
+	}
+	packageID, audience, err := reader.AudiencePackageForCampaignHandoff(ctx, handoffID)
+	if err != nil || (audience && packageID < 1) {
+		return 0, false, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
+	}
+	return packageID, audience, nil
+}
+
+func (service *CampaignDispatchService) audienceQualification(ctx context.Context, packageID int64, candidates []outboundport.CampaignDispatchCandidate) (map[int64]outboundport.AudienceDispatchTargetQualification, error) {
+	if service == nil || service.audience == nil || packageID < 1 || len(candidates) == 0 {
+		return nil, outbound.ErrCampaignDispatchUnavailable
+	}
+	ids := make([]int64, 0, len(candidates))
+	seen := make(map[int64]struct{}, len(candidates))
+	for _, candidate := range candidates {
+		if candidate.CustomerID < 1 {
+			return nil, outbound.ErrCampaignDispatchUnavailable
+		}
+		if _, duplicate := seen[candidate.CustomerID]; !duplicate {
+			seen[candidate.CustomerID] = struct{}{}
+			ids = append(ids, candidate.CustomerID)
+		}
+	}
+	sort.Slice(ids, func(left, right int) bool { return ids[left] < ids[right] })
+	values, err := service.audience.QualifyAudienceDispatchTargets(ctx, packageID, ids)
+	if err != nil || len(values) != len(ids) {
+		return nil, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
+	}
+	result := make(map[int64]outboundport.AudienceDispatchTargetQualification, len(values))
+	for index, value := range values {
+		if value.CustomerID != ids[index] || result[value.CustomerID].CustomerID != 0 {
+			return nil, outbound.ErrCampaignDispatchUnavailable
+		}
+		if value.Eligible {
+			if !validAudienceTargetText(value.SenderUserID, 128) || !validAudienceTargetText(value.ExternalUserID, 1024) || value.Exclusion != "" {
+				return nil, outbound.ErrCampaignDispatchUnavailable
+			}
+		} else if value.SenderUserID != "" || value.ExternalUserID != "" || (value.Exclusion != "sender_not_allowed" && value.Exclusion != "target_unresolved") {
+			return nil, outbound.ErrCampaignDispatchUnavailable
+		}
+		result[value.CustomerID] = value
+	}
+	return result, nil
+}
+
+func (service *CampaignDispatchService) audienceReconciliationEvidence(ctx context.Context, effectID string) (outboundport.CampaignDispatchReconciliationEvidence, bool, error) {
+	reader, ok := service.repo.(outboundport.CampaignDispatchReconciliationEvidenceReader)
+	if !ok {
+		return outboundport.CampaignDispatchReconciliationEvidence{}, false, nil
+	}
+	return reader.LoadAudienceCampaignDispatchReconciliationEvidence(ctx, effectID)
+}
+
+func validAudienceTargetText(value string, maximum int) bool {
+	return value != "" && len(value) <= maximum && strings.TrimSpace(value) == value
 }
 
 func validCampaignDispatchCommand(command CampaignDispatchCommand) bool {

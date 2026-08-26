@@ -47,8 +47,8 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 	pool := openCampaignDispatchPool(t)
 	ctx := context.Background()
 	var migrationsApplied bool
-	if err := pool.QueryRow(ctx, `SELECT count(*)=3 FROM public.goose_db_version WHERE version_id IN (78,92,94) AND is_applied`).Scan(&migrationsApplied); err != nil || !migrationsApplied {
-		t.Fatalf("migrations 78/92/94 applied=%t err=%v, want true", migrationsApplied, err)
+	if err := pool.QueryRow(ctx, `SELECT count(*)=4 FROM public.goose_db_version WHERE version_id IN (78,92,94,100) AND is_applied`).Scan(&migrationsApplied); err != nil || !migrationsApplied {
+		t.Fatalf("migrations 78/92/94/100 applied=%t err=%v, want true", migrationsApplied, err)
 	}
 	ensureOutboundRiverCatalog(t, ctx, pool)
 	policyTime := time.Now().UTC().Truncate(time.Microsecond)
@@ -175,9 +175,9 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 		t.Fatalf("terminal summary=%+v err=%v", summary, err)
 	}
 	var receiptCount int
-	var businessCallDispatched, realExternalCallExecuted, proven bool
-	if err = pool.QueryRow(ctx, `SELECT count(*), bool_or(business_call_dispatched), bool_or(real_external_call_executed), bool_or(delivery_proven) FROM public.outbound_campaign_provider_attempt_receipts`).Scan(&receiptCount, &businessCallDispatched, &realExternalCallExecuted, &proven); err != nil || receiptCount != 2 || !businessCallDispatched || !realExternalCallExecuted || proven {
-		t.Fatalf("provider attempt receipts=%d business=%t real=%t proven=%t err=%v, want 2/true/true/false", receiptCount, businessCallDispatched, realExternalCallExecuted, proven, err)
+	var businessCallDispatched, realExternalCallExecuted, resultReceived, messageIDStored, proven bool
+	if err = pool.QueryRow(ctx, `SELECT count(*), bool_or(business_call_dispatched), bool_or(real_external_call_executed), bool_or(provider_result_received), bool_or(provider_message_id='fake-provider-message-id'), bool_or(delivery_proven) FROM public.outbound_campaign_provider_attempt_receipts`).Scan(&receiptCount, &businessCallDispatched, &realExternalCallExecuted, &resultReceived, &messageIDStored, &proven); err != nil || receiptCount != 2 || !businessCallDispatched || !realExternalCallExecuted || !resultReceived || !messageIDStored || proven {
+		t.Fatalf("provider attempt receipts=%d business=%t real=%t received=%t msgid=%t proven=%t err=%v, want 2/true/true/true/true/false", receiptCount, businessCallDispatched, realExternalCallExecuted, resultReceived, messageIDStored, proven, err)
 	}
 }
 

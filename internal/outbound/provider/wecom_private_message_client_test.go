@@ -49,6 +49,18 @@ func TestWeComPrivateMessageClientUnknownOutcomeIsNotRetried(t *testing.T) {
 	}
 }
 
+func TestWeComPrivateMessageClientMissingMessageIDIsReceivedInvalidResult(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+		_, _ = writer.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
+	}))
+	defer server.Close()
+	client := testWeComPrivateMessageClient(t, server, func(context.Context) (string, error) { return "token-safe", nil })
+	_, err := client.CreatePrivateMessageTemplate(context.Background(), privateMessageTemplateRequest{Sender: "staff-1", ExternalUserID: "external-1", Text: "hello"})
+	if !errors.Is(err, errWeComPrivateMessageInvalidResult) {
+		t.Fatalf("err=%v", err)
+	}
+}
+
 func TestWeComPrivateMessageClientFailsBeforeDispatchWithoutToken(t *testing.T) {
 	var calls atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) { calls.Add(1) }))

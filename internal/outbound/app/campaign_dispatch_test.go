@@ -22,6 +22,9 @@ type campaignDispatchFixture struct {
 	checkedIDs                                  []contactport.CustomerID
 	candidates                                  []outboundport.CampaignDispatchCandidate
 	receipt                                     *outboundport.CampaignDispatchReceipt
+	audiencePackageID                           int64
+	audienceSource                              bool
+	lastEnvelope                                eer.EffectEnvelope
 }
 
 func (*campaignDispatchFixture) Within(ctx context.Context, callback func(context.Context) error) error {
@@ -43,6 +46,9 @@ func (fixture *campaignDispatchFixture) LoadCampaignDispatchByEffect(_ context.C
 }
 func (*campaignDispatchFixture) LoadCampaignDispatchProviderRequest(context.Context, string) (outboundport.CampaignDispatchProviderRequest, error) {
 	return outboundport.CampaignDispatchProviderRequest{}, errors.New("not used")
+}
+func (fixture *campaignDispatchFixture) AudiencePackageForCampaignHandoff(context.Context, int64) (int64, bool, error) {
+	return fixture.audiencePackageID, fixture.audienceSource, nil
 }
 func (fixture *campaignDispatchFixture) ListCampaignDispatchCandidates(context.Context, int64) ([]outboundport.CampaignDispatchCandidate, error) {
 	if fixture.candidates != nil {
@@ -121,6 +127,7 @@ func (fixture *campaignDispatchFixture) EnqueueCampaignDispatch(_ context.Contex
 	return eer.RiverJobLink{JobID: int64(100 + fixture.enqueueCalls), Generation: 1, Queue: "outbound", ArgsDigest: campaignDispatchTestDigest("args", effectID), ScheduledAt: time.Now().UTC()}, nil
 }
 func (fixture *campaignDispatchFixture) Accept(_ context.Context, command eer.AcceptCommand) (eer.Projection, eer.OperationReceipt, error) {
+	fixture.lastEnvelope = command.Envelope
 	if fixture.effects == nil {
 		fixture.effects = make(map[string]string)
 	}
@@ -132,6 +139,20 @@ func (fixture *campaignDispatchFixture) Accept(_ context.Context, command eer.Ac
 		fixture.effects[payloadDigest] = effectID
 	}
 	return eer.Projection{ID: effectID, Owner: eer.OwnerOutbound, Kind: eer.KindOutboundMessage, State: eer.StateAccepted, Generation: 1, UpdatedAt: time.Now().UTC()}, eer.OperationReceipt{ID: "a", EffectID: effectID, CommandDigest: command.CommandDigest(), State: eer.StateAccepted, CompletedAt: time.Now().UTC()}, nil
+}
+
+type audienceQualificationFixture struct {
+	values []outboundport.AudienceDispatchTargetQualification
+	err    error
+	called bool
+}
+
+func (fixture *audienceQualificationFixture) QualifyAudienceDispatchTargets(_ context.Context, packageID int64, customerIDs []int64) ([]outboundport.AudienceDispatchTargetQualification, error) {
+	fixture.called = true
+	if packageID != 77 || len(customerIDs) != 2 || customerIDs[0] != 2 || customerIDs[1] != 7 {
+		return nil, errors.New("unexpected audience qualification")
+	}
+	return fixture.values, fixture.err
 }
 func (fixture *campaignDispatchFixture) Queue(_ context.Context, command eer.QueueCommand) (eer.Projection, eer.OperationReceipt, error) {
 	fixture.runtimeQueues++
@@ -168,6 +189,45 @@ func TestCampaignDispatchGatedQueueUsesEERAndNeverClaimsDelivery(t *testing.T) {
 	summary, err := service.Dispatch(context.Background(), campaignDispatchTestCommand(true))
 	if err != nil || summary.Queued != 2 || summary.DeliveryProven || summary.RealExternalCallExecuted || fixture.runtimeAccepts != 2 || fixture.runtimeQueues != 2 || fixture.enqueueCalls != 2 {
 		t.Fatalf("summary=%+v err=%v accepts/queues/enqueues=%d/%d/%d", summary, err, fixture.runtimeAccepts, fixture.runtimeQueues, fixture.enqueueCalls)
+	}
+}
+
+func TestCampaignDispatchAudienceFreezesOnlyQualifiedRelationshipOwner(t *testing.T) {
+	serviceFixture := &campaignDispatchFixture{audienceSource: true, audiencePackageID: 77}
+	service, err := NewCampaignDispatchService(serviceFixture, serviceFixture, serviceFixture, serviceFixture, serviceFixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	qualifier := &audienceQualificationFixture{values: []outboundport.AudienceDispatchTargetQualification{
+		{CustomerID: 2, Eligible: true, SenderUserID: "owner-2", ExternalUserID: "external-2"},
+		{CustomerID: 7, Eligible: false, Exclusion: "sender_not_allowed"},
+	}}
+	service, err = service.WithAudienceQualification(qualifier, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	summary, err := service.Dispatch(context.Background(), campaignDispatchTestCommand(true))
+	if err != nil || !qualifier.called || summary.Queued != 1 || summary.Blocked != 1 || serviceFixture.runtimeAccepts != 1 || serviceFixture.enqueueCalls != 1 {
+		t.Fatalf("summary=%+v err=%v qualifier=%t accepts=%d enqueues=%d", summary, err, qualifier.called, serviceFixture.runtimeAccepts, serviceFixture.enqueueCalls)
+	}
+	queued := serviceFixture.bindings[0]
+	if queued.CustomerID != 2 || queued.SenderUserIDSnapshot != "owner-2" || queued.ExternalUserIDSnapshot != "external-2" || queued.PayloadDigest != outbound.AudienceCampaignDispatchPayloadDigest(19, 2, 1, "hello", "owner-2", "external-2") || string(serviceFixture.lastEnvelope.TargetRefDigest()) != outbound.AudienceCampaignDispatchRecipientDigest(2, "owner-2", "external-2") {
+		t.Fatalf("queued=%+v envelope=%+v", queued, serviceFixture.lastEnvelope)
+	}
+	blocked := serviceFixture.bindings[1]
+	if blocked.CustomerID != 7 || blocked.BlockReason != "sender_not_allowed" || blocked.ExternalEffectID != "" || blocked.SenderUserIDSnapshot != "" {
+		t.Fatalf("blocked=%+v", blocked)
+	}
+}
+
+func TestCampaignDispatchAudienceFailsClosedWithoutQualificationWiring(t *testing.T) {
+	fixture := &campaignDispatchFixture{audienceSource: true, audiencePackageID: 77}
+	service, err := NewCampaignDispatchService(fixture, fixture, fixture, fixture, fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = service.Dispatch(context.Background(), campaignDispatchTestCommand(true)); !errors.Is(err, outbound.ErrCampaignDispatchUnavailable) || len(fixture.bindings) != 0 || fixture.runtimeAccepts != 0 {
+		t.Fatalf("err=%v bindings=%+v accepts=%d", err, fixture.bindings, fixture.runtimeAccepts)
 	}
 }
 
