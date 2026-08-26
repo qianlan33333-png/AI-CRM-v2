@@ -32,10 +32,10 @@ func TestCommerceRefundHandlersUseTypedCanonicalCommands(t *testing.T) {
 		t.Fatalf("body=%v error=%v", payBody, err)
 	}
 
-	shopRequest := authenticatedRefundRequest(t, "/api/admin/refunds", `{"provider":"wechat_shop","order_no":"S-1","refund_amount_total":880,"reason":"return","transaction_id_confirmation":"STX-1","checked":true}`)
+	shopRequest := authenticatedRefundRequest(t, "/api/admin/refunds", `{"provider":"wechat_shop","order_no":"S-1","product_id":"P-1","sku_id":"SKU-1","refund_count":1,"refund_amount_total":880,"reason_code":"10000000","reason":"return","transaction_id_confirmation":"STX-1","checked":true}`)
 	shopResponse := httptest.NewRecorder()
 	handler.WeChatShopCompatibility(shopResponse, shopRequest)
-	if shopResponse.Code != http.StatusAccepted || shop.command.OrderReference != "S-1" || shop.command.TransactionIDConfirmation != "STX-1" {
+	if shopResponse.Code != http.StatusAccepted || shop.command.OrderReference != "S-1" || shop.command.TransactionIDConfirmation != "STX-1" || shop.command.ProductID != "P-1" || shop.command.SKUID != "SKU-1" || shop.command.Count != 1 || shop.command.ReasonCode != "10000000" {
 		t.Fatalf("status=%d command=%+v body=%s", shopResponse.Code, shop.command, shopResponse.Body.String())
 	}
 	var shopBody map[string]any
@@ -51,7 +51,7 @@ func TestCommerceRefundHandlersUseTypedCanonicalCommands(t *testing.T) {
 
 func TestWeChatShopCompatibilityRejectsWeChatPayProvider(t *testing.T) {
 	handler, _ := NewCommerceRefundHandler(&fakePayCompatibility{}, &fakeShopRefundApplication{}, fakeShopCallbackVerifier{})
-	request := authenticatedRefundRequest(t, "/api/admin/refunds", `{"provider":"wechat","order_no":"M-1","refund_amount_total":1,"reason":"x","transaction_id_confirmation":"TX-1","checked":true}`)
+	request := authenticatedRefundRequest(t, "/api/admin/refunds", `{"provider":"wechat","order_no":"M-1","product_id":"P-1","sku_id":"SKU-1","refund_count":1,"refund_amount_total":1,"reason_code":"10000000","reason":"x","transaction_id_confirmation":"TX-1","checked":true}`)
 	response := httptest.NewRecorder()
 	handler.WeChatShopCompatibility(response, request)
 	if response.Code != http.StatusBadRequest {
@@ -61,7 +61,7 @@ func TestWeChatShopCompatibilityRejectsWeChatPayProvider(t *testing.T) {
 
 func TestCommerceRefundCompatibilityRejectsUnknownFields(t *testing.T) {
 	handler, _ := NewCommerceRefundHandler(&fakePayCompatibility{}, &fakeShopRefundApplication{}, fakeShopCallbackVerifier{})
-	request := authenticatedRefundRequest(t, "/api/admin/refunds", `{"provider":"wechat_shop","order_no":"M-1","refund_amount_total":1,"reason":"x","transaction_id_confirmation":"TX-1","checked":true,"unapproved_field":"no"}`)
+	request := authenticatedRefundRequest(t, "/api/admin/refunds", `{"provider":"wechat_shop","order_no":"M-1","product_id":"P-1","sku_id":"SKU-1","refund_count":1,"refund_amount_total":1,"reason_code":"10000000","reason":"x","transaction_id_confirmation":"TX-1","checked":true,"unapproved_field":"no"}`)
 	response := httptest.NewRecorder()
 	handler.WeChatShopCompatibility(response, request)
 	if response.Code != http.StatusBadRequest {
@@ -71,16 +71,38 @@ func TestCommerceRefundCompatibilityRejectsUnknownFields(t *testing.T) {
 
 func TestWeChatShopDisabledCallbackFailsUnavailable(t *testing.T) {
 	handler, _ := NewCommerceRefundHandler(&fakePayCompatibility{}, &fakeShopRefundApplication{}, fakeShopCallbackVerifier{})
-	request := httptest.NewRequest(http.MethodPost, WeChatShopCallbackPath, strings.NewReader(`{}`))
+	request := httptest.NewRequest(http.MethodPost, WeChatShopCallbackPath+"?msg_signature=signature&timestamp=1756100000&nonce=nonce", strings.NewReader(`{}`))
 	request.Header.Set("Content-Type", "application/json")
-	request.Header.Set("Wechatshop-Timestamp", "1756100000")
-	request.Header.Set("Wechatshop-Nonce", "nonce")
-	request.Header.Set("Wechatshop-Serial", "serial")
-	request.Header.Set("Wechatshop-Signature", "signature")
 	response := httptest.NewRecorder()
 	handler.WeChatShopCallback(response, request)
 	if response.Code != http.StatusServiceUnavailable {
 		t.Fatalf("status=%d body=%s", response.Code, response.Body.String())
+	}
+}
+
+func TestWeChatShopCallbackUsesPlaintextOfficialTransport(t *testing.T) {
+	shop := &fakeShopRefundApplication{}
+	verifier := fakeShopCallbackVerifier{
+		echo: "plain-echo",
+		command: orderport.WeChatShopRefundCallbackCommand{
+			AfterSaleID: "9001", ProviderOrderID: "S-1", ProviderStatus: "MERCHANT_REFUND_SUCCESS",
+			ProviderEventDigest: [32]byte{1}, PayloadDigest: [32]byte{2}, OccurredAt: time.Now(),
+		},
+	}
+	handler, _ := NewCommerceRefundHandler(&fakePayCompatibility{}, shop, verifier)
+	getRequest := httptest.NewRequest(http.MethodGet, WeChatShopCallbackPath+"?signature=sig&timestamp=1756100000&nonce=nonce&echostr=plain-echo", nil)
+	getResponse := httptest.NewRecorder()
+	handler.WeChatShopCallback(getResponse, getRequest)
+	if getResponse.Code != http.StatusOK || getResponse.Body.String() != "plain-echo" || getResponse.Header().Get("Content-Type") != "text/plain; charset=utf-8" || getResponse.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("GET status=%d headers=%v body=%q", getResponse.Code, getResponse.Header(), getResponse.Body.String())
+	}
+
+	postRequest := httptest.NewRequest(http.MethodPost, WeChatShopCallbackPath+"?msg_signature=sig&timestamp=1756100000&nonce=nonce", strings.NewReader(`{"ToUserName":"app","Encrypt":"ciphertext"}`))
+	postRequest.Header.Set("Content-Type", "application/json")
+	postResponse := httptest.NewRecorder()
+	handler.WeChatShopCallback(postResponse, postRequest)
+	if postResponse.Code != http.StatusOK || postResponse.Body.String() != "success" || postResponse.Header().Get("Content-Type") != "text/plain; charset=utf-8" || postResponse.Header().Get("Cache-Control") != "no-store" || shop.callback.AfterSaleID != "9001" {
+		t.Fatalf("POST status=%d headers=%v body=%q callback=%+v", postResponse.Code, postResponse.Header(), postResponse.Body.String(), shop.callback)
 	}
 }
 
@@ -107,26 +129,44 @@ func (fake *fakePayCompatibility) RequestWeChatPayRefundV2(_ context.Context, co
 }
 
 type fakeShopRefundApplication struct {
-	command orderport.WeChatShopRefundCommand
+	command  orderport.WeChatShopRefundCommand
+	callback orderport.WeChatShopRefundCallbackCommand
 }
 
 func (fake *fakeShopRefundApplication) RequestRefund(_ context.Context, command orderport.WeChatShopRefundCommand) (orderport.WeChatShopRefund, error) {
 	fake.command = command
 	now := time.Now()
-	return orderport.WeChatShopRefund{ID: 4, OrderID: 12, MerchantOrderNo: command.OrderReference, OutRefundNo: "wsr_1234567890abcdef1234567890abcdef", AmountMinor: command.AmountMinor, Currency: "CNY", State: orderport.WeChatShopRefundAccepted, Version: 1, CreatedAt: now, UpdatedAt: now}, nil
+	return orderport.WeChatShopRefund{ID: 4, OrderID: 12, MerchantOrderNo: command.OrderReference, ProviderOrderID: command.OrderReference, ProductID: command.ProductID, SKUID: command.SKUID, RefundCount: command.Count, ReasonCode: command.ReasonCode, OutRefundNo: "wsr_1234567890abcdef1234567890abcdef", AmountMinor: command.AmountMinor, Currency: "CNY", State: orderport.WeChatShopRefundAccepted, Version: 1, CreatedAt: now, UpdatedAt: now}, nil
 }
 func (*fakeShopRefundApplication) ExecuteRefund(context.Context, orderport.WeChatShopExecutionJob) (orderport.WeChatShopRefund, error) {
 	return orderport.WeChatShopRefund{}, nil
 }
-func (*fakeShopRefundApplication) ApplyRefundCallback(context.Context, orderport.WeChatShopRefundCallbackCommand) (orderport.WeChatShopRefund, error) {
+func (fake *fakeShopRefundApplication) ApplyRefundCallback(_ context.Context, command orderport.WeChatShopRefundCallbackCommand) (orderport.WeChatShopRefund, error) {
+	fake.callback = command
+	return orderport.WeChatShopRefund{}, nil
+}
+func (*fakeShopRefundApplication) QueueRefundReconciliation(context.Context, int64) (orderport.WeChatShopRefund, error) {
 	return orderport.WeChatShopRefund{}, nil
 }
 func (*fakeShopRefundApplication) ReconcileRefund(context.Context, int64) (orderport.WeChatShopRefund, error) {
 	return orderport.WeChatShopRefund{}, nil
 }
 
-type fakeShopCallbackVerifier struct{}
+type fakeShopCallbackVerifier struct {
+	echo    string
+	command orderport.WeChatShopRefundCallbackCommand
+}
 
-func (fakeShopCallbackVerifier) VerifyRefund(context.Context, []byte, map[string]string) (orderport.WeChatShopRefundCallbackCommand, error) {
-	return orderport.WeChatShopRefundCallbackCommand{}, orderport.ErrWeChatShopRefundDisabled
+func (fake fakeShopCallbackVerifier) VerifyURL(context.Context, map[string]string) (string, error) {
+	if fake.echo == "" {
+		return "", orderport.ErrWeChatShopRefundDisabled
+	}
+	return fake.echo, nil
+}
+
+func (fake fakeShopCallbackVerifier) VerifyRefund(context.Context, []byte, map[string]string) (orderport.WeChatShopRefundCallbackCommand, error) {
+	if fake.command.AfterSaleID == "" {
+		return orderport.WeChatShopRefundCallbackCommand{}, orderport.ErrWeChatShopRefundDisabled
+	}
+	return fake.command, nil
 }

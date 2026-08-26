@@ -51,7 +51,7 @@ const (
 	C01CampaignDispatchDatabaseName     = "aicrm_test_p4_outbound_00078"
 	PE01DatabaseName                    = "aicrm_test_pe01_00079"
 	AutomationRulesDatabaseName         = "aicrm_test_p4_a01_00080"
-	CommerceRefundV2DatabaseName        = "aicrm_test_commerce_refund_v2_00086"
+	CommerceRefundV2DatabaseName        = "aicrm_test_commerce_refund_v2_00096"
 	StatsL01DatabaseName                = "aicrm_test_p4_w0_l01_stats"
 	AuthA01DatabaseName                 = "aicrm_test_p4_auth_a01"
 	AuthSI00BDatabaseName               = "aicrm_test_p4_auth_si00b"

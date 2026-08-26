@@ -98,3 +98,10 @@ FROM public.order_wechat_shop_material_quarantines
 WHERE source_table = sqlc.arg(source_table)
   AND source_key_digest = sqlc.arg(source_key_digest)
   AND payload_digest = sqlc.arg(payload_digest);
+
+-- name: CompleteWeChatShopMaterialSyncRequest :execrows
+UPDATE public.order_wechat_shop_material_sync_requests
+SET state = 'completed', evidence_digest = sqlc.arg(evidence_digest),
+  completed_at = sqlc.arg(completed_at)
+WHERE provider_order_id = sqlc.arg(provider_order_id)
+  AND state = 'queued';

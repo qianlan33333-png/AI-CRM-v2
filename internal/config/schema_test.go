@@ -689,6 +689,73 @@ func TestLoadWeChatShopOrderSyncCredentialIsNotReadByAPI(t *testing.T) {
 	}
 }
 
+func TestLoadWeChatShopRefundProviderIsRoleScopedAndRedacted(t *testing.T) {
+	workerValues := map[string]string{
+		databaseURLEnv:                "postgres://db/aicrm",
+		workerPoolMaxConnsEnv:         "9",
+		criticalWorkersEnv:            "2",
+		eventWorkersEnv:               "1",
+		outboundWorkersEnv:            "1",
+		syncWorkersEnv:                "1",
+		heavyWorkersEnv:               "1",
+		aiWorkersEnv:                  "1",
+		weChatShopRefundEnabledEnv:    "true",
+		weChatShopAppIDEnv:            "wx-shop-app-1",
+		weChatShopAppSecretEnv:        "refund-app-secret-sentinel",
+		weChatShopRefundPermissionEnv: "true",
+		weChatShopCallbackTokenEnv:    "must-not-enter-worker-config",
+		weChatShopCallbackAESKeyEnv:   "not-a-valid-worker-value",
+	}
+	worker, err := load(appruntime.RoleWorker, mapLookup(workerValues))
+	if err != nil || !worker.Commerce.WeChatShopRefund.Enabled || !worker.Commerce.WeChatShopRefund.PermissionConfirmed || worker.Commerce.WeChatShopRefund.AppID != "wx-shop-app-1" || worker.Commerce.WeChatShopRefund.CallbackToken.Value() != "" || worker.Commerce.WeChatShopRefund.CallbackAESKey.Value() != "" {
+		t.Fatalf("worker refund config = %#v, %v", worker.Commerce.WeChatShopRefund, err)
+	}
+	if formatted := fmt.Sprintf("%#v", worker); strings.Contains(formatted, workerValues[weChatShopAppSecretEnv]) || strings.Contains(formatted, workerValues[weChatShopCallbackTokenEnv]) {
+		t.Fatalf("worker config leaked or read wrong-role refund credential: %q", formatted)
+	}
+
+	apiValues := map[string]string{
+		databaseURLEnv:                "postgres://db/aicrm",
+		apiListenAddressEnv:           "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:            "1",
+		identityHMACKeyEnv:            strings.Repeat("A", 43),
+		weChatShopRefundEnabledEnv:    "true",
+		weChatShopAppIDEnv:            "wx-shop-app-1",
+		weChatShopCallbackTokenEnv:    "refund-callback-token-sentinel",
+		weChatShopCallbackAESKeyEnv:   strings.Repeat("A", 43),
+		weChatShopAppSecretEnv:        "must-not-enter-api-config",
+		weChatShopRefundPermissionEnv: "must-not-be-read-by-api",
+	}
+	api, err := load(appruntime.RoleAPI, mapLookup(apiValues))
+	if err != nil || !api.Commerce.WeChatShopRefund.Enabled || api.Commerce.WeChatShopRefund.AppSecret.Value() != "" || api.Commerce.WeChatShopRefund.PermissionConfirmed || api.Commerce.WeChatShopRefund.CallbackToken.Value() == "" || api.Commerce.WeChatShopRefund.CallbackAESKey.Value() == "" {
+		t.Fatalf("API refund config = %#v, %v", api.Commerce.WeChatShopRefund, err)
+	}
+	formatted := fmt.Sprintf("%#v", api)
+	for _, forbidden := range []string{apiValues[weChatShopCallbackTokenEnv], apiValues[weChatShopCallbackAESKeyEnv], apiValues[weChatShopAppSecretEnv], apiValues[weChatShopRefundPermissionEnv]} {
+		if strings.Contains(formatted, forbidden) {
+			t.Fatalf("API config leaked or read wrong-role refund credential %q", forbidden)
+		}
+	}
+}
+
+func TestLoadWeChatShopRefundRequiresExplicitPermissionAndCallbackMaterial(t *testing.T) {
+	workerValues := map[string]string{
+		databaseURLEnv: "postgres://db/aicrm", workerPoolMaxConnsEnv: "9", criticalWorkersEnv: "2", eventWorkersEnv: "1",
+		outboundWorkersEnv: "1", syncWorkersEnv: "1", heavyWorkersEnv: "1", aiWorkersEnv: "1",
+		weChatShopRefundEnabledEnv: "true", weChatShopAppIDEnv: "wx-shop-app-1", weChatShopAppSecretEnv: "refund-secret", weChatShopRefundPermissionEnv: "false",
+	}
+	if _, err := load(appruntime.RoleWorker, mapLookup(workerValues)); err == nil || err.Error() != "invalid startup configuration: wechat_shop.refund.permission_confirmed must be true when enabled" {
+		t.Fatalf("unconfirmed refund config error = %v", err)
+	}
+	apiValues := map[string]string{
+		databaseURLEnv: "postgres://db/aicrm", apiListenAddressEnv: "127.0.0.1:8080", apiPoolMaxConnsEnv: "1", identityHMACKeyEnv: strings.Repeat("A", 43),
+		weChatShopRefundEnabledEnv: "true", weChatShopAppIDEnv: "wx-shop-app-1", weChatShopCallbackTokenEnv: "token",
+	}
+	if _, err := load(appruntime.RoleAPI, mapLookup(apiValues)); err == nil || err.Error() != "invalid startup configuration: wechat_shop.refund callback requires token and aes_key" {
+		t.Fatalf("incomplete callback config error = %v", err)
+	}
+}
+
 func mapLookup(values map[string]string) environmentLookup {
 	return func(key string) (string, bool) {
 		value, ok := values[key]

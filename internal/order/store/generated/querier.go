@@ -6,6 +6,8 @@ package orderdb
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
@@ -18,6 +20,7 @@ type Querier interface {
 	CompleteOrderOperationReceipt(ctx context.Context, arg CompleteOrderOperationReceiptParams) (CompleteOrderOperationReceiptRow, error)
 	CompletePE01CallbackReceipt(ctx context.Context, arg CompletePE01CallbackReceiptParams) (OrderProviderCallbackReceipt, error)
 	CompletePE01Prepay(ctx context.Context, arg CompletePE01PrepayParams) (OrderPaymentCommand, error)
+	CompleteWeChatShopMaterialSyncRequest(ctx context.Context, arg CompleteWeChatShopMaterialSyncRequestParams) (int64, error)
 	CompleteWeChatShopRefundAttempt(ctx context.Context, arg CompleteWeChatShopRefundAttemptParams) (OrderWechatShopRefundAttempt, error)
 	CompleteWeChatShopRefundCallback(ctx context.Context, arg CompleteWeChatShopRefundCallbackParams) (OrderWechatShopRefundCallback, error)
 	CompleteWeChatShopRefundExecution(ctx context.Context, arg CompleteWeChatShopRefundExecutionParams) (OrderWechatShopRefund, error)
@@ -29,6 +32,7 @@ type Querier interface {
 	CountOrderRefunds(ctx context.Context, arg CountOrderRefundsParams) (int64, error)
 	CountPE01ReservedRefundAmount(ctx context.Context, orderID int64) (int64, error)
 	CountWeChatShopReservedRefundAmount(ctx context.Context, orderID int64) (int64, error)
+	CountWeChatShopReservedRefundLineCount(ctx context.Context, arg CountWeChatShopReservedRefundLineCountParams) (int64, error)
 	CreateOrderExportJob(ctx context.Context, arg CreateOrderExportJobParams) (CreateOrderExportJobRow, error)
 	CreateOrderExternalEffect(ctx context.Context, arg CreateOrderExternalEffectParams) (OrderExternalEffect, error)
 	CreateOrderRefund(ctx context.Context, arg CreateOrderRefundParams) (OrderRefund, error)
@@ -52,9 +56,11 @@ type Querier interface {
 	GetPE01PaymentCommandByOrder(ctx context.Context, orderID int64) (OrderPaymentCommand, error)
 	GetPaidOrderProjection(ctx context.Context, orderID int64) (GetPaidOrderProjectionRow, error)
 	GetWeChatShopLegacyQuarantine(ctx context.Context, arg GetWeChatShopLegacyQuarantineParams) (OrderWechatShopMaterialQuarantine, error)
+	GetWeChatShopMaterialSync(ctx context.Context, providerOrderID string) (OrderWechatShopMaterialSyncRequest, error)
 	GetWeChatShopOrderMaterial(ctx context.Context, providerOrderID string) (OrderWechatShopMaterial, error)
 	GetWeChatShopRefundByCommand(ctx context.Context, arg GetWeChatShopRefundByCommandParams) (OrderWechatShopRefund, error)
 	GetWeChatShopRefundCallback(ctx context.Context, providerEventDigest []byte) (OrderWechatShopRefundCallback, error)
+	GetWeChatShopRefundMaterial(ctx context.Context, providerOrderID string) (OrderWechatShopMaterial, error)
 	GetWeChatShopRefundQuery(ctx context.Context, arg GetWeChatShopRefundQueryParams) (OrderWechatShopRefundQuery, error)
 	InsertPE01FinancialReconciliation(ctx context.Context, arg InsertPE01FinancialReconciliationParams) (OrderFinancialReconciliation, error)
 	InsertWeChatShopOrderMaterialLine(ctx context.Context, arg InsertWeChatShopOrderMaterialLineParams) error
@@ -65,6 +71,8 @@ type Querier interface {
 	ListOrderProjections(ctx context.Context, arg ListOrderProjectionsParams) ([]ListOrderProjectionsRow, error)
 	ListOrderRefunds(ctx context.Context, arg ListOrderRefundsParams) ([]ListOrderRefundsRow, error)
 	ListWeChatShopOrderMaterialLines(ctx context.Context, materialID int64) ([]OrderWechatShopMaterialLine, error)
+	ListWeChatShopRefundMaterialLines(ctx context.Context, materialID int64) ([]OrderWechatShopMaterialLine, error)
+	LockIncompleteWeChatShopRefundAttempt(ctx context.Context, refundID int64) (OrderWechatShopRefundAttempt, error)
 	LockPE01OrderByID(ctx context.Context, orderID int64) (LockPE01OrderByIDRow, error)
 	LockPE01OrderByMerchantNo(ctx context.Context, merchantOrderNo string) (LockPE01OrderByMerchantNoRow, error)
 	LockPE01PaymentCommandByID(ctx context.Context, commandID int64) (OrderPaymentCommand, error)
@@ -72,11 +80,13 @@ type Querier interface {
 	LockPE01RefundByID(ctx context.Context, refundID int64) (OrderFinancialRefund, error)
 	LockPE01RefundByOutRefundNo(ctx context.Context, outRefundNo string) (OrderFinancialRefund, error)
 	LockPE01RefundBySourceDigest(ctx context.Context, sourceRefDigest []byte) (OrderFinancialRefund, error)
+	LockWeChatShopRefundByAfterSaleID(ctx context.Context, providerAftersaleID pgtype.Text) (OrderWechatShopRefund, error)
 	LockWeChatShopRefundByID(ctx context.Context, refundID int64) (OrderWechatShopRefund, error)
 	LockWeChatShopRefundByOutRefundNo(ctx context.Context, outRefundNo string) (OrderWechatShopRefund, error)
 	MarkOrderExternalEffectManualReview(ctx context.Context, arg MarkOrderExternalEffectManualReviewParams) (OrderExternalEffect, error)
 	MarkPE01OrderAwaitingPayment(ctx context.Context, arg MarkPE01OrderAwaitingPaymentParams) (MarkPE01OrderAwaitingPaymentRow, error)
 	MarkPE01RefundEffectResult(ctx context.Context, arg MarkPE01RefundEffectResultParams) (OrderFinancialRefund, error)
+	MarkWeChatShopMaterialSyncQueued(ctx context.Context, arg MarkWeChatShopMaterialSyncQueuedParams) (OrderWechatShopMaterialSyncRequest, error)
 	MarkWeChatShopRefundFinalFailed(ctx context.Context, arg MarkWeChatShopRefundFinalFailedParams) (OrderWechatShopRefund, error)
 	ReadPE01PrepayProviderMaterial(ctx context.Context, merchantOrderNo string) (ReadPE01PrepayProviderMaterialRow, error)
 	ReadPE01RefundProviderMaterial(ctx context.Context, outRefundNo string) (ReadPE01RefundProviderMaterialRow, error)
@@ -84,6 +94,7 @@ type Querier interface {
 	RecordWeChatShopLegacyQuarantine(ctx context.Context, arg RecordWeChatShopLegacyQuarantineParams) (int64, error)
 	ReserveOrderOperationReceipt(ctx context.Context, arg ReserveOrderOperationReceiptParams) (ReserveOrderOperationReceiptRow, error)
 	ReservePE01CallbackReceipt(ctx context.Context, arg ReservePE01CallbackReceiptParams) (OrderProviderCallbackReceipt, error)
+	ReserveWeChatShopMaterialSync(ctx context.Context, arg ReserveWeChatShopMaterialSyncParams) (OrderWechatShopMaterialSyncRequest, error)
 	ReserveWeChatShopRefundCallback(ctx context.Context, arg ReserveWeChatShopRefundCallbackParams) (OrderWechatShopRefundCallback, error)
 	StartWeChatShopRefundExecution(ctx context.Context, arg StartWeChatShopRefundExecutionParams) (OrderWechatShopRefund, error)
 	UpsertWeChatShopOrderMaterial(ctx context.Context, arg UpsertWeChatShopOrderMaterialParams) (UpsertWeChatShopOrderMaterialRow, error)

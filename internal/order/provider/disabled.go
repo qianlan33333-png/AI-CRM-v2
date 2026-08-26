@@ -52,6 +52,10 @@ func (DisabledWeChatShopRefund) QueryRefund(context.Context, string) (orderport.
 
 type DisabledWeChatShopCallbackVerifier struct{}
 
+func (DisabledWeChatShopCallbackVerifier) VerifyURL(context.Context, map[string]string) (string, error) {
+	return "", orderport.ErrWeChatShopRefundDisabled
+}
+
 func (DisabledWeChatShopCallbackVerifier) VerifyRefund(context.Context, []byte, map[string]string) (orderport.WeChatShopRefundCallbackCommand, error) {
 	return orderport.WeChatShopRefundCallbackCommand{}, orderport.ErrWeChatShopRefundDisabled
 }

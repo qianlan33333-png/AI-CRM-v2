@@ -148,6 +148,16 @@ type OrderWechatShopMaterialQuarantine struct {
 	RecordedAt      pgtype.Timestamptz `json:"recorded_at"`
 }
 
+type OrderWechatShopMaterialSyncRequest struct {
+	ProviderOrderID string             `json:"provider_order_id"`
+	Generation      int64              `json:"generation"`
+	State           string             `json:"state"`
+	RiverJobID      pgtype.Int8        `json:"river_job_id"`
+	EvidenceDigest  []byte             `json:"evidence_digest"`
+	RequestedAt     pgtype.Timestamptz `json:"requested_at"`
+	CompletedAt     pgtype.Timestamptz `json:"completed_at"`
+}
+
 type OrderWechatShopRefund struct {
 	ID                       int64              `json:"id"`
 	OrderID                  int64              `json:"order_id"`
@@ -173,6 +183,15 @@ type OrderWechatShopRefund struct {
 	CreatedAt                pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
 	SettledAt                pgtype.Timestamptz `json:"settled_at"`
+	ContractVersion          string             `json:"contract_version"`
+	ProviderOrderID          pgtype.Text        `json:"provider_order_id"`
+	ProductID                pgtype.Text        `json:"product_id"`
+	SkuID                    pgtype.Text        `json:"sku_id"`
+	RefundCount              pgtype.Int8        `json:"refund_count"`
+	UnitPriceMinor           pgtype.Int8        `json:"unit_price_minor"`
+	ReasonCode               pgtype.Text        `json:"reason_code"`
+	MaterialEvidenceDigest   []byte             `json:"material_evidence_digest"`
+	ProviderAftersaleID      pgtype.Text        `json:"provider_aftersale_id"`
 }
 
 type OrderWechatShopRefundAttempt struct {
@@ -200,6 +219,10 @@ type OrderWechatShopRefundCallback struct {
 	State                string             `json:"state"`
 	ReceivedAt           pgtype.Timestamptz `json:"received_at"`
 	CompletedAt          pgtype.Timestamptz `json:"completed_at"`
+	ContractVersion      string             `json:"contract_version"`
+	ProviderAftersaleID  pgtype.Text        `json:"provider_aftersale_id"`
+	ProviderStatus       pgtype.Text        `json:"provider_status"`
+	RiverJobID           pgtype.Int8        `json:"river_job_id"`
 }
 
 type OrderWechatShopRefundQuery struct {

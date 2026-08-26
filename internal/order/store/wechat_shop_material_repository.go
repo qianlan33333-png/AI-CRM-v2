@@ -40,6 +40,9 @@ func (repository *WeChatShopMaterialRepository) UpsertWeChatShopOrderMaterial(ct
 		return false, weChatShopMaterialUnavailable(err)
 	}
 	if !row.Changed {
+		if err = completeWeChatShopMaterialSyncRequest(ctx, queries, material); err != nil {
+			return false, err
+		}
 		return false, nil
 	}
 	if err = queries.DeleteWeChatShopOrderMaterialLines(ctx, row.ID); err != nil {
@@ -63,7 +66,24 @@ func (repository *WeChatShopMaterialRepository) UpsertWeChatShopOrderMaterial(ct
 			return false, weChatShopMaterialUnavailable(err)
 		}
 	}
+	if err = completeWeChatShopMaterialSyncRequest(ctx, queries, material); err != nil {
+		return false, err
+	}
 	return true, nil
+}
+
+func completeWeChatShopMaterialSyncRequest(ctx context.Context, queries *orderdb.Queries, material orderport.WeChatShopOrderMaterial) error {
+	if material.Source != orderport.WeChatShopMaterialProvider || !material.ProviderVerified {
+		return nil
+	}
+	_, err := queries.CompleteWeChatShopMaterialSyncRequest(ctx, orderdb.CompleteWeChatShopMaterialSyncRequestParams{
+		EvidenceDigest: material.EvidenceDigest[:], CompletedAt: optionalTimestamp(material.SyncedAt),
+		ProviderOrderID: material.ProviderOrderID,
+	})
+	if err != nil {
+		return weChatShopMaterialUnavailable(err)
+	}
+	return nil
 }
 
 func (repository *WeChatShopMaterialRepository) GetWeChatShopOrderMaterial(ctx context.Context, providerOrderID string) (orderport.WeChatShopOrderMaterial, bool, error) {

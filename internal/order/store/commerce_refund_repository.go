@@ -3,6 +3,7 @@ package store
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"errors"
 	"time"
 
@@ -66,12 +67,75 @@ func (*CommerceRefundRepository) FindWeChatShopRefundOrder(ctx context.Context, 
 	return orderapp.WeChatShopOrderRecord{ID: orderport.ID(row.ID), MerchantOrderNo: row.MerchantOrderNo, PlatformTransactionNo: row.PlatformTransactionNo, AmountMinor: row.AmountMinor, Currency: row.Currency, State: row.Status}, nil
 }
 
+func (*CommerceRefundRepository) GetWeChatShopRefundMaterial(ctx context.Context, providerOrderID string) (orderport.WeChatShopOrderMaterial, bool, error) {
+	q, err := commerceRefundQueries(ctx)
+	if err != nil {
+		return orderport.WeChatShopOrderMaterial{}, false, err
+	}
+	row, err := q.GetWeChatShopRefundMaterial(ctx, providerOrderID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return orderport.WeChatShopOrderMaterial{}, false, nil
+	}
+	if err != nil {
+		return orderport.WeChatShopOrderMaterial{}, false, commerceRefundStoreError(err)
+	}
+	lines, err := q.ListWeChatShopRefundMaterialLines(ctx, row.ID)
+	if err != nil {
+		return orderport.WeChatShopOrderMaterial{}, false, commerceRefundStoreError(err)
+	}
+	material, err := mapWeChatShopOrderMaterial(row, lines)
+	if err != nil {
+		return orderport.WeChatShopOrderMaterial{}, false, commerceRefundStoreError(err)
+	}
+	return material, true, nil
+}
+
+func (repository *CommerceRefundRepository) EnqueueWeChatShopMaterialSync(ctx context.Context, providerOrderID string, at time.Time) (int64, error) {
+	q, err := commerceRefundQueries(ctx)
+	if repository == nil || repository.client == nil || err != nil {
+		return 0, commerceRefundStoreError(err)
+	}
+	request, err := q.ReserveWeChatShopMaterialSync(ctx, orderdb.ReserveWeChatShopMaterialSyncParams{ProviderOrderID: providerOrderID, RequestedAt: pgTime(at)})
+	if errors.Is(err, pgx.ErrNoRows) {
+		request, err = q.GetWeChatShopMaterialSync(ctx, providerOrderID)
+		if err != nil || request.State != "queued" || !request.RiverJobID.Valid || request.RiverJobID.Int64 < 1 {
+			return 0, commerceRefundStoreError(err)
+		}
+		return request.RiverJobID.Int64, nil
+	}
+	if err != nil || request.State != "reserved" || request.Generation < 1 {
+		return 0, commerceRefundStoreError(err)
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	jobID, err := repository.client.InsertTx(ctx, tx, orderapp.WeChatShopMaterialSyncArgs{ProviderOrderID: providerOrderID}, string(platformjobqueue.QueueSync))
+	if err != nil || jobID < 1 {
+		return 0, errors.Join(orderport.ErrWeChatShopMaterialUnavailable, err)
+	}
+	queued, err := q.MarkWeChatShopMaterialSyncQueued(ctx, orderdb.MarkWeChatShopMaterialSyncQueuedParams{RiverJobID: pgtype.Int8{Int64: jobID, Valid: true}, ProviderOrderID: providerOrderID, Generation: request.Generation})
+	if err != nil || queued.State != "queued" || !queued.RiverJobID.Valid || queued.RiverJobID.Int64 != jobID {
+		return 0, commerceRefundConflictError(err)
+	}
+	return jobID, nil
+}
+
 func (*CommerceRefundRepository) CountWeChatShopReservedRefundAmount(ctx context.Context, orderID orderport.ID) (int64, error) {
 	q, err := commerceRefundQueries(ctx)
 	if err != nil {
 		return 0, err
 	}
 	value, err := q.CountWeChatShopReservedRefundAmount(ctx, int64(orderID))
+	return value, commerceRefundStoreError(err)
+}
+
+func (*CommerceRefundRepository) CountWeChatShopReservedRefundLineCount(ctx context.Context, orderID orderport.ID, productID, skuID string) (int64, error) {
+	q, err := commerceRefundQueries(ctx)
+	if err != nil {
+		return 0, err
+	}
+	value, err := q.CountWeChatShopReservedRefundLineCount(ctx, orderdb.CountWeChatShopReservedRefundLineCountParams{OrderID: int64(orderID), ProductID: productID, SkuID: skuID})
 	return value, commerceRefundStoreError(err)
 }
 
@@ -95,7 +159,14 @@ func (*CommerceRefundRepository) CreateWeChatShopRefund(ctx context.Context, res
 	params := orderdb.CreateWeChatShopRefundParams{
 		OrderID: int64(reservation.Order.ID), ActorID: reservation.Command.Actor,
 		MerchantOrderNo: reservation.Order.MerchantOrderNo, OutRefundNo: reservation.OutRefundNo,
-		AmountMinor: reservation.Command.AmountMinor, Currency: reservation.Order.Currency,
+		ProviderOrderID:        pgtype.Text{String: reservation.Material.ProviderOrderID, Valid: true},
+		ProductID:              pgtype.Text{String: reservation.Command.ProductID, Valid: true},
+		SkuID:                  pgtype.Text{String: reservation.Command.SKUID, Valid: true},
+		RefundCount:            pgtype.Int8{Int64: reservation.Command.Count, Valid: true},
+		UnitPriceMinor:         pgtype.Int8{Int64: reservation.Line.RealPriceMinor, Valid: true},
+		ReasonCode:             pgtype.Text{String: reservation.Command.ReasonCode, Valid: true},
+		MaterialEvidenceDigest: reservation.Material.EvidenceDigest[:],
+		AmountMinor:            reservation.Command.AmountMinor, Currency: reservation.Order.Currency,
 		ReasonDigest: reservation.ReasonDigest[:], TransactionDigest: reservation.TransactionDigest[:],
 		CommandKeyDigest: reservation.CommandKeyDigest[:], CommandPayloadDigest: reservation.CommandPayloadDigest[:],
 		SourceRefDigest: reservation.SourceRefDigest[:], TargetRefDigest: reservation.TargetRefDigest[:],
@@ -143,12 +214,12 @@ func (*CommerceRefundRepository) LockWeChatShopRefundByID(ctx context.Context, r
 	return mapWeChatShopRefund(row), commerceRefundStoreError(err)
 }
 
-func (*CommerceRefundRepository) LockWeChatShopRefundByOutRefundNo(ctx context.Context, number string) (orderport.WeChatShopRefund, error) {
+func (*CommerceRefundRepository) LockWeChatShopRefundByAfterSaleID(ctx context.Context, number string) (orderport.WeChatShopRefund, error) {
 	q, err := commerceRefundQueries(ctx)
 	if err != nil {
 		return orderport.WeChatShopRefund{}, err
 	}
-	row, err := q.LockWeChatShopRefundByOutRefundNo(ctx, number)
+	row, err := q.LockWeChatShopRefundByAfterSaleID(ctx, pgtype.Text{String: number, Valid: true})
 	return mapWeChatShopRefund(row), commerceRefundStoreError(err)
 }
 
@@ -169,7 +240,19 @@ func (*CommerceRefundRepository) StartWeChatShopRefundExecution(ctx context.Cont
 	return updated, mapWeChatShopAttempt(attemptRow), nil
 }
 
-func (*CommerceRefundRepository) CompleteWeChatShopRefundExecution(ctx context.Context, refund orderport.WeChatShopRefund, attempt orderapp.WeChatShopRefundAttempt, outcome orderport.WeChatShopProviderCompletion, evidence [32]byte, at time.Time) (orderport.WeChatShopRefund, error) {
+func (repository *CommerceRefundRepository) RecoverWeChatShopRefundExecution(ctx context.Context, refund orderport.WeChatShopRefund, at time.Time) (orderport.WeChatShopRefund, error) {
+	q, err := commerceRefundQueries(ctx)
+	if err != nil {
+		return orderport.WeChatShopRefund{}, err
+	}
+	row, err := q.LockIncompleteWeChatShopRefundAttempt(ctx, refund.ID)
+	if err != nil {
+		return orderport.WeChatShopRefund{}, commerceRefundConflictError(err)
+	}
+	return repository.CompleteWeChatShopRefundExecution(ctx, refund, mapWeChatShopAttempt(row), orderport.WeChatShopProviderOutcomeUnknown, [32]byte{}, "", at)
+}
+
+func (*CommerceRefundRepository) CompleteWeChatShopRefundExecution(ctx context.Context, refund orderport.WeChatShopRefund, attempt orderapp.WeChatShopRefundAttempt, outcome orderport.WeChatShopProviderCompletion, evidence [32]byte, afterSaleID string, at time.Time) (orderport.WeChatShopRefund, error) {
 	q, err := commerceRefundQueries(ctx)
 	if err != nil {
 		return orderport.WeChatShopRefund{}, err
@@ -184,9 +267,25 @@ func (*CommerceRefundRepository) CompleteWeChatShopRefundExecution(ctx context.C
 	params := orderdb.CompleteWeChatShopRefundExecutionParams{State: string(shopStateForOutcome(outcome)), CompletedAt: pgTime(at), RefundID: refund.ID, ExpectedVersion: refund.Version}
 	if outcome == orderport.WeChatShopProviderAccepted {
 		params.ProviderAcceptanceDigest = evidence[:]
+		params.ProviderAftersaleID = pgtype.Text{String: afterSaleID, Valid: true}
 	}
 	row, err := q.CompleteWeChatShopRefundExecution(ctx, params)
 	return mapWeChatShopRefund(row), commerceRefundConflictError(err)
+}
+
+func (repository *CommerceRefundRepository) EnqueueWeChatShopRefundReconciliation(ctx context.Context, refundID int64) (int64, error) {
+	if repository == nil || repository.client == nil || refundID < 1 {
+		return 0, orderport.ErrCommerceRefundUnavailable
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return 0, err
+	}
+	jobID, err := repository.client.InsertTx(ctx, tx, orderapp.WeChatShopRefundReconcileArgs{RefundID: refundID}, string(platformjobqueue.QueueCritical))
+	if err != nil || jobID < 1 {
+		return 0, errors.Join(orderport.ErrCommerceRefundUnavailable, err)
+	}
+	return jobID, nil
 }
 
 func (*CommerceRefundRepository) ReserveWeChatShopRefundCallback(ctx context.Context, refund orderport.WeChatShopRefund, command orderport.WeChatShopRefundCallbackCommand) (orderapp.WeChatShopCallbackReceipt, bool, error) {
@@ -194,7 +293,8 @@ func (*CommerceRefundRepository) ReserveWeChatShopRefundCallback(ctx context.Con
 	if err != nil {
 		return orderapp.WeChatShopCallbackReceipt{}, false, err
 	}
-	row, err := q.ReserveWeChatShopRefundCallback(ctx, orderdb.ReserveWeChatShopRefundCallbackParams{RefundID: refund.ID, ProviderEventDigest: command.ProviderEventDigest[:], PayloadDigest: command.PayloadDigest[:], ProviderRefundDigest: command.ProviderRefundDigest[:], ReceivedAt: pgTime(command.OccurredAt)})
+	afterSaleDigest := digestString("wechat-shop/aftersale-id/v1", command.AfterSaleID)
+	row, err := q.ReserveWeChatShopRefundCallback(ctx, orderdb.ReserveWeChatShopRefundCallbackParams{RefundID: refund.ID, ProviderEventDigest: command.ProviderEventDigest[:], PayloadDigest: command.PayloadDigest[:], ProviderRefundDigest: afterSaleDigest[:], ProviderAftersaleID: pgtype.Text{String: command.AfterSaleID, Valid: true}, ProviderStatus: pgtype.Text{String: command.ProviderStatus, Valid: true}, ReceivedAt: pgTime(command.OccurredAt)})
 	if err == nil {
 		return mapWeChatShopCallback(row), true, nil
 	}
@@ -205,12 +305,12 @@ func (*CommerceRefundRepository) ReserveWeChatShopRefundCallback(ctx context.Con
 	return mapWeChatShopCallback(existing), false, commerceRefundStoreError(getErr)
 }
 
-func (*CommerceRefundRepository) CompleteWeChatShopRefundCallback(ctx context.Context, receipt orderapp.WeChatShopCallbackReceipt, outcome string, digest [32]byte, at time.Time) (orderapp.WeChatShopCallbackReceipt, error) {
+func (*CommerceRefundRepository) CompleteWeChatShopRefundCallback(ctx context.Context, receipt orderapp.WeChatShopCallbackReceipt, outcome string, digest [32]byte, riverJobID int64, at time.Time) (orderapp.WeChatShopCallbackReceipt, error) {
 	q, err := commerceRefundQueries(ctx)
 	if err != nil {
 		return orderapp.WeChatShopCallbackReceipt{}, err
 	}
-	row, err := q.CompleteWeChatShopRefundCallback(ctx, orderdb.CompleteWeChatShopRefundCallbackParams{Outcome: pgtype.Text{String: outcome, Valid: true}, ResultDigest: digest[:], CompletedAt: pgTime(at), CallbackID: receipt.ID})
+	row, err := q.CompleteWeChatShopRefundCallback(ctx, orderdb.CompleteWeChatShopRefundCallbackParams{Outcome: pgtype.Text{String: outcome, Valid: true}, ResultDigest: digest[:], RiverJobID: pgtype.Int8{Int64: riverJobID, Valid: true}, CompletedAt: pgTime(at), CallbackID: receipt.ID})
 	return mapWeChatShopCallback(row), commerceRefundConflictError(err)
 }
 
@@ -267,7 +367,10 @@ func commerceRefundQueries(ctx context.Context) (*orderdb.Queries, error) {
 
 func mapWeChatShopRefund(row orderdb.OrderWechatShopRefund) orderport.WeChatShopRefund {
 	return orderport.WeChatShopRefund{
-		ID: row.ID, OrderID: orderport.ID(row.OrderID), MerchantOrderNo: row.MerchantOrderNo,
+		ID: row.ID, OrderID: orderport.ID(row.OrderID), ContractVersion: row.ContractVersion, MerchantOrderNo: row.MerchantOrderNo,
+		ProviderOrderID: row.ProviderOrderID.String, ProductID: row.ProductID.String, SKUID: row.SkuID.String,
+		RefundCount: row.RefundCount.Int64, UnitPriceMinor: row.UnitPriceMinor.Int64, ReasonCode: row.ReasonCode.String,
+		MaterialEvidenceDigest: digestValue(row.MaterialEvidenceDigest), ProviderAfterSaleID: row.ProviderAftersaleID.String,
 		OutRefundNo: row.OutRefundNo, AmountMinor: row.AmountMinor, Currency: row.Currency,
 		ReasonDigest: digestValue(row.ReasonDigest), TransactionDigest: digestValue(row.TransactionDigest),
 		SourceRefDigest: digestValue(row.SourceRefDigest), TargetRefDigest: digestValue(row.TargetRefDigest),
@@ -284,7 +387,11 @@ func mapWeChatShopAttempt(row orderdb.OrderWechatShopRefundAttempt) orderapp.WeC
 }
 
 func mapWeChatShopCallback(row orderdb.OrderWechatShopRefundCallback) orderapp.WeChatShopCallbackReceipt {
-	return orderapp.WeChatShopCallbackReceipt{ID: row.ID, RefundID: row.RefundID, ProviderEventDigest: digestValue(row.ProviderEventDigest), PayloadDigest: digestValue(row.PayloadDigest), ProviderRefundDigest: digestValue(row.ProviderRefundDigest), Outcome: row.Outcome.String, ResultDigest: digestValue(row.ResultDigest), State: row.State}
+	return orderapp.WeChatShopCallbackReceipt{ID: row.ID, RefundID: row.RefundID, ProviderEventDigest: digestValue(row.ProviderEventDigest), PayloadDigest: digestValue(row.PayloadDigest), ProviderRefundDigest: digestValue(row.ProviderRefundDigest), ProviderAfterSaleID: row.ProviderAftersaleID.String, ProviderStatus: row.ProviderStatus.String, RiverJobID: row.RiverJobID.Int64, Outcome: row.Outcome.String, ResultDigest: digestValue(row.ResultDigest), State: row.State}
+}
+
+func digestString(domain, value string) [32]byte {
+	return sha256.Sum256([]byte(domain + "\x00" + value))
 }
 
 func shopStateForOutcome(outcome orderport.WeChatShopProviderCompletion) orderport.WeChatShopRefundState {

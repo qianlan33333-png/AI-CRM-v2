@@ -93,6 +93,7 @@ const (
 	p4AutomationRulesRuntimeEvidence           = "P4-A01-AUTOMATION-RULES-RUNTIME-2026-08-25"
 	p4MediaContentDeliveryEvidence             = "P4-MEDIA-CONTENT-DELIVERY-00083-2026-08-25"
 	p4CommerceRefundV2Evidence                 = "P4-COMMERCE-REFUND-V2-2026-08-25"
+	p4WeChatShopRefundProviderEvidence         = "P4-COMMERCE-REFUND-PROVIDER-V2-2026-08-26"
 	p4CommerceExternalPushEvidence             = "P4-COMMERCE-EXTERNAL-PUSH-00087-2026-08-25"
 	p4WeComTagEffectEvidence                   = "P4-B1-WC01-2026-08-25"
 	p4ChannelAcquisitionEvidence               = "P4-CH01-2026-08-26"
@@ -118,8 +119,9 @@ var pe01Operations = map[string]nativePackageOperation{
 }
 
 var commerceRefundOperations = map[string]nativePackageOperation{
-	"receiveWechatShopRefundCallback": {"/api/public/wechat-shop/callbacks/refund", "POST", p4CommerceRefundV2Evidence, "", "wechat_shop_signature", "financial", "order.wechat_shop_verified_callback", "none", nil},
-	"reconcileWechatShopRefund":       {"/api/admin/wechat-shop/refunds/{refund_id}/reconcile", "POST", p4CommerceRefundV2Evidence, "order.write", "human_session", "financial", "order.wechat_shop_refund_query", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"verifyWechatShopRefundCallbackURL": {"/api/public/wechat-shop/callbacks/refund", "GET", p4WeChatShopRefundProviderEvidence, "", "wechat_shop_signature", "internal", "order.wechat_shop_callback_verification", "none", nil},
+	"receiveWechatShopRefundCallback":   {"/api/public/wechat-shop/callbacks/refund", "POST", p4WeChatShopRefundProviderEvidence, "", "wechat_shop_signature", "financial", "order.wechat_shop_verified_callback", "none", nil},
+	"reconcileWechatShopRefund":         {"/api/admin/wechat-shop/refunds/{refund_id}/reconcile", "POST", p4WeChatShopRefundProviderEvidence, "order.write", "human_session", "financial", "order.wechat_shop_refund_query_queue", "required", map[string]string{"admin": "global", "ops": "global"}},
 }
 
 var nativePackageOperations = map[string]nativePackageOperation{
@@ -1389,7 +1391,11 @@ func validateCommerceRefundOperation(path string, item *openapi3.PathItem, op *o
 		return fmt.Errorf("%s independent Commerce Refund V2 route must not claim a legacy mapping", op.OperationID)
 	}
 	if contract.authScheme == "wechat_shop_signature" {
-		if op.Security == nil || len(*op.Security) != 0 || op.Extensions["x-aicrm-external-effect"] != "provider_callback" {
+		wantEffect := "provider_callback"
+		if contract.method == "GET" {
+			wantEffect = "none"
+		}
+		if op.Security == nil || len(*op.Security) != 0 || op.Extensions["x-aicrm-external-effect"] != wantEffect {
 			return fmt.Errorf("%s WeChat Shop callback boundary drifted", op.OperationID)
 		}
 		if _, ok := op.Extensions["x-aicrm-capability"]; ok {
@@ -1397,7 +1403,7 @@ func validateCommerceRefundOperation(path string, item *openapi3.PathItem, op *o
 		}
 		return nil
 	}
-	if op.Extensions["x-aicrm-capability"] != contract.capability || op.Extensions["x-aicrm-external-effect"] != "required" {
+	if op.Extensions["x-aicrm-capability"] != contract.capability || op.Extensions["x-aicrm-external-effect"] != "accepted_only" {
 		return fmt.Errorf("%s manual reconcile boundary drifted", op.OperationID)
 	}
 	scopes, err := stringMap(op.Extensions["x-aicrm-rbac-scopes"])
@@ -2234,8 +2240,10 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 			} else if p4OrderOperations[op.OperationID] {
 				seenP4Order[op.OperationID] = true
 				expectedEvidence := p4OrderDecisionEvidence
-				if op.OperationID == "createLegacyRefundIntent" || op.OperationID == "createLegacyWechatRefundIntent" {
+				if op.OperationID == "createLegacyWechatRefundIntent" {
 					expectedEvidence = p4CommerceRefundV2Evidence
+				} else if op.OperationID == "createLegacyRefundIntent" {
+					expectedEvidence = p4WeChatShopRefundProviderEvidence
 				}
 				evidence, ok := op.Extensions["x-p4-decision-evidence"].(string)
 				if !ok || evidence != expectedEvidence {

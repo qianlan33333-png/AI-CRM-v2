@@ -58,6 +58,10 @@ const (
 	weChatShopAppIDEnv                = "AICRM_WECHAT_SHOP_APP_ID"
 	weChatShopAppSecretEnv            = "AICRM_WECHAT_SHOP_APP_SECRET"
 	weChatShopPermissionConfirmedEnv  = "AICRM_WECHAT_SHOP_ORDER_SYNC_PERMISSION_CONFIRMED"
+	weChatShopRefundEnabledEnv        = "AICRM_WECHAT_SHOP_REFUND_ENABLED"
+	weChatShopRefundPermissionEnv     = "AICRM_WECHAT_SHOP_REFUND_PERMISSION_CONFIRMED"
+	weChatShopCallbackTokenEnv        = "AICRM_WECHAT_SHOP_CALLBACK_TOKEN"
+	weChatShopCallbackAESKeyEnv       = "AICRM_WECHAT_SHOP_CALLBACK_AES_KEY"
 
 	legacySecretKeyEnv                        = "SECRET_KEY"
 	legacyWeChatShopCallbackTokenEnv          = "WECHAT_SHOP_CALLBACK_TOKEN"
@@ -265,9 +269,22 @@ type WeChatShopOrderProvider struct {
 	PermissionConfirmed bool
 }
 
+// WeChatShopRefundProvider is role-scoped. The Worker receives only the
+// outbound app secret and explicit permission assertion; the API receives only
+// callback verification material. Both roles share the non-secret AppID.
+type WeChatShopRefundProvider struct {
+	Enabled             bool
+	AppID               string
+	AppSecret           WeChatShopOrderSecret
+	CallbackToken       CallbackSecret
+	CallbackAESKey      CallbackSecret
+	PermissionConfirmed bool
+}
+
 type CommerceProviders struct {
-	WeChatPay       WeChatPayProvider
-	WeChatShopOrder WeChatShopOrderProvider
+	WeChatPay        WeChatPayProvider
+	WeChatShopOrder  WeChatShopOrderProvider
+	WeChatShopRefund WeChatShopRefundProvider
 }
 
 type IdentityHMACKey struct{ value [32]byte }
@@ -380,6 +397,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 	}
 	if needAPI || needWorker {
 		root.Commerce.WeChatPay = parseWeChatPayProvider(lookup, needAPI, needWorker, &problems)
+		root.Commerce.WeChatShopRefund = parseWeChatShopRefundProvider(lookup, needAPI, needWorker, &problems)
 	}
 	if needAPI {
 		listenAddress, present := lookup(apiListenAddressEnv)
@@ -712,7 +730,7 @@ func parseWeChatShopOrderProvider(lookup environmentLookup, problems *[]string) 
 	appID, appIDPresent := lookup(weChatShopAppIDEnv)
 	secret, secretPresent := lookup(weChatShopAppSecretEnv)
 	permission, permissionPresent := lookup(weChatShopPermissionConfirmedEnv)
-	if !enabledPresent && !appIDPresent && !secretPresent && !permissionPresent {
+	if !enabledPresent && !permissionPresent {
 		return WeChatShopOrderProvider{}
 	}
 	if !enabledPresent || enabled != "true" && enabled != "false" {
@@ -720,7 +738,7 @@ func parseWeChatShopOrderProvider(lookup environmentLookup, problems *[]string) 
 		return WeChatShopOrderProvider{}
 	}
 	if enabled == "false" {
-		if appIDPresent || secretPresent || permissionPresent {
+		if permissionPresent {
 			*problems = append(*problems, "wechat_shop.order_sync credentials require enabled=true")
 		}
 		return WeChatShopOrderProvider{}
@@ -737,6 +755,58 @@ func parseWeChatShopOrderProvider(lookup environmentLookup, problems *[]string) 
 	}
 	return WeChatShopOrderProvider{
 		Enabled: true, AppID: appID, AppSecret: WeChatShopOrderSecret{value: secret},
+		PermissionConfirmed: permission == "true",
+	}
+}
+
+func parseWeChatShopRefundProvider(lookup environmentLookup, needAPI, needWorker bool, problems *[]string) WeChatShopRefundProvider {
+	enabled, enabledPresent := lookup(weChatShopRefundEnabledEnv)
+	appID, appIDPresent := lookup(weChatShopAppIDEnv)
+	var appSecret, permission, callbackToken, callbackAESKey string
+	var appSecretPresent, permissionPresent, callbackTokenPresent, callbackAESKeyPresent bool
+	if needWorker {
+		appSecret, appSecretPresent = lookup(weChatShopAppSecretEnv)
+		permission, permissionPresent = lookup(weChatShopRefundPermissionEnv)
+	}
+	if needAPI {
+		callbackToken, callbackTokenPresent = lookup(weChatShopCallbackTokenEnv)
+		callbackAESKey, callbackAESKeyPresent = lookup(weChatShopCallbackAESKeyEnv)
+	}
+	refundSpecificPresent := enabledPresent || permissionPresent || callbackTokenPresent || callbackAESKeyPresent
+	if !refundSpecificPresent {
+		return WeChatShopRefundProvider{}
+	}
+	if !enabledPresent || enabled != "true" && enabled != "false" {
+		*problems = append(*problems, "wechat_shop.refund.enabled must be true or false")
+		return WeChatShopRefundProvider{}
+	}
+	if enabled == "false" {
+		if permissionPresent || callbackTokenPresent || callbackAESKeyPresent {
+			*problems = append(*problems, "wechat_shop.refund credentials require enabled=true")
+		}
+		return WeChatShopRefundProvider{}
+	}
+	if !appIDPresent || appID == "" {
+		*problems = append(*problems, "wechat_shop.refund requires app_id")
+		return WeChatShopRefundProvider{}
+	}
+	if needWorker && (!appSecretPresent || !permissionPresent || appSecret == "") {
+		*problems = append(*problems, "wechat_shop.refund worker requires app_secret and permission_confirmed")
+		return WeChatShopRefundProvider{}
+	}
+	if needAPI && (!callbackTokenPresent || !callbackAESKeyPresent || callbackToken == "" || callbackAESKey == "") {
+		*problems = append(*problems, "wechat_shop.refund callback requires token and aes_key")
+		return WeChatShopRefundProvider{}
+	}
+	if !validProviderIdentifier(appID) || needWorker && !validOpaqueProviderSecret(appSecret) || needAPI && (!validCallbackToken(callbackToken) || !validEncodingAESKey(callbackAESKey)) {
+		*problems = append(*problems, "wechat_shop.refund credentials are invalid")
+	}
+	if needWorker && permission != "true" {
+		*problems = append(*problems, "wechat_shop.refund.permission_confirmed must be true when enabled")
+	}
+	return WeChatShopRefundProvider{
+		Enabled: true, AppID: appID, AppSecret: WeChatShopOrderSecret{value: appSecret},
+		CallbackToken: CallbackSecret{value: callbackToken}, CallbackAESKey: CallbackSecret{value: callbackAESKey},
 		PermissionConfirmed: permission == "true",
 	}
 }

@@ -11,6 +11,28 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const completeWeChatShopMaterialSyncRequest = `-- name: CompleteWeChatShopMaterialSyncRequest :execrows
+UPDATE public.order_wechat_shop_material_sync_requests
+SET state = 'completed', evidence_digest = $1,
+  completed_at = $2
+WHERE provider_order_id = $3
+  AND state = 'queued'
+`
+
+type CompleteWeChatShopMaterialSyncRequestParams struct {
+	EvidenceDigest  []byte             `json:"evidence_digest"`
+	CompletedAt     pgtype.Timestamptz `json:"completed_at"`
+	ProviderOrderID string             `json:"provider_order_id"`
+}
+
+func (q *Queries) CompleteWeChatShopMaterialSyncRequest(ctx context.Context, arg CompleteWeChatShopMaterialSyncRequestParams) (int64, error) {
+	result, err := q.db.Exec(ctx, completeWeChatShopMaterialSyncRequest, arg.EvidenceDigest, arg.CompletedAt, arg.ProviderOrderID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const deleteWeChatShopOrderMaterialLines = `-- name: DeleteWeChatShopOrderMaterialLines :exec
 DELETE FROM public.order_wechat_shop_material_lines
 WHERE material_id = $1

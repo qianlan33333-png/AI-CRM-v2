@@ -1,11 +1,12 @@
 package app
 
 const (
-	PaymentEffectBridgeJobKind = "pe01_wechat_payment_effect"
-	RefundEffectBridgeJobKind  = "pe01_wechat_refund_effect"
-	PaymentReconcileJobKind    = "pe01_wechat_payment_reconcile"
-	RefundReconcileJobKind     = "pe01_wechat_refund_reconcile"
-	WeChatShopRefundJobKind    = "order_wechat_shop_refund"
+	PaymentEffectBridgeJobKind       = "pe01_wechat_payment_effect"
+	RefundEffectBridgeJobKind        = "pe01_wechat_refund_effect"
+	PaymentReconcileJobKind          = "pe01_wechat_payment_reconcile"
+	RefundReconcileJobKind           = "pe01_wechat_refund_reconcile"
+	WeChatShopRefundJobKind          = "order_wechat_shop_refund"
+	WeChatShopRefundReconcileJobKind = "order_wechat_shop_refund_reconcile"
 )
 
 type PaymentEffectBridgeArgs struct {
@@ -37,3 +38,9 @@ type WeChatShopRefundArgs struct {
 }
 
 func (WeChatShopRefundArgs) Kind() string { return WeChatShopRefundJobKind }
+
+type WeChatShopRefundReconcileArgs struct {
+	RefundID int64 `json:"refund_id"`
+}
+
+func (WeChatShopRefundReconcileArgs) Kind() string { return WeChatShopRefundReconcileJobKind }

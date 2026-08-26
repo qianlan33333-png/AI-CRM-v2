@@ -8594,6 +8594,23 @@ export const WechatShopRefundRequestProvider = {
   WechatShopRefundProvider: "wechat_shop",
 } as const;
 
+export type WechatShopRefundRequestReasonCode =
+  (typeof WechatShopRefundRequestReasonCode)[keyof typeof WechatShopRefundRequestReasonCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatShopRefundRequestReasonCode = {
+  NUMBER_10000000: "10000000",
+  NUMBER_10000001: "10000001",
+  NUMBER_10000002: "10000002",
+  NUMBER_10000006: "10000006",
+  NUMBER_10000007: "10000007",
+  NUMBER_10000008: "10000008",
+  NUMBER_10000014: "10000014",
+  NUMBER_10000015: "10000015",
+  NUMBER_10000017: "10000017",
+  NUMBER_10000021: "10000021",
+} as const;
+
 export interface WechatShopRefundRequest {
   provider: WechatShopRefundRequestProvider;
   /**
@@ -8602,10 +8619,26 @@ export interface WechatShopRefundRequest {
    */
   order_no: string;
   /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  product_id: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  sku_id: string;
+  /**
+   * @minimum 1
+   * @maximum 1000000
+   */
+  refund_count: number;
+  /**
    * @minimum 1
    * @maximum 1000000000
    */
   refund_amount_total: number;
+  reason_code: WechatShopRefundRequestReasonCode;
   /**
    * @minLength 1
    * @maxLength 500
@@ -8623,6 +8656,23 @@ export interface WechatShopRefundRequest {
    */
   operator?: string;
 }
+
+export type WechatShopRefundReasonCode =
+  (typeof WechatShopRefundReasonCode)[keyof typeof WechatShopRefundReasonCode];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const WechatShopRefundReasonCode = {
+  NUMBER_10000000: "10000000",
+  NUMBER_10000001: "10000001",
+  NUMBER_10000002: "10000002",
+  NUMBER_10000006: "10000006",
+  NUMBER_10000007: "10000007",
+  NUMBER_10000008: "10000008",
+  NUMBER_10000014: "10000014",
+  NUMBER_10000015: "10000015",
+  NUMBER_10000017: "10000017",
+  NUMBER_10000021: "10000021",
+} as const;
 
 export type WechatShopRefundCurrency =
   (typeof WechatShopRefundCurrency)[keyof typeof WechatShopRefundCurrency];
@@ -8655,6 +8705,33 @@ export interface WechatShopRefund {
    * @maxLength 200
    */
   merchant_order_no: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  provider_order_id: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  product_id: string;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  sku_id: string;
+  /**
+   * @minimum 1
+   * @maximum 1000000
+   */
+  refund_count: number;
+  reason_code: WechatShopRefundReasonCode;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   * @nullable
+   */
+  provider_after_sale_id?: string | null;
   /** @pattern ^wsr_[a-f0-9]{32}$ */
   out_refund_no: string;
   /**
@@ -8666,7 +8743,7 @@ export interface WechatShopRefund {
   state: WechatShopRefundState;
   /** True only for provider_accepted; it is never delivery proof. */
   provider_accepted: boolean;
-  /** True only after an independently verified callback or exact manual query evidence. */
+  /** True only after an exact getaftersaleorder query proves MERCHANT_REFUND_SUCCESS. */
   delivery_proven: boolean;
   /** @minimum 0 */
   attempt_count: number;
@@ -8676,56 +8753,17 @@ export interface WechatShopRefund {
   updated_at: string;
 }
 
-export type WechatShopRefundCallbackEnvelopeEventType =
-  (typeof WechatShopRefundCallbackEnvelopeEventType)[keyof typeof WechatShopRefundCallbackEnvelopeEventType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const WechatShopRefundCallbackEnvelopeEventType = {
-  WechatShopEventRefundSuccess: "REFUND.SUCCESS",
-  WechatShopEventRefundClosed: "REFUND.CLOSED",
-} as const;
-
-export type WechatShopRefundCallbackEnvelopeResourceType =
-  (typeof WechatShopRefundCallbackEnvelopeResourceType)[keyof typeof WechatShopRefundCallbackEnvelopeResourceType];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const WechatShopRefundCallbackEnvelopeResourceType = {
-  WechatShopResourceEncrypted: "encrypt-resource",
-} as const;
-
-export type WechatShopRefundCallbackEnvelopeResourceAlgorithm =
-  (typeof WechatShopRefundCallbackEnvelopeResourceAlgorithm)[keyof typeof WechatShopRefundCallbackEnvelopeResourceAlgorithm];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const WechatShopRefundCallbackEnvelopeResourceAlgorithm = {
-  WechatShopAlgorithmAEADAES256GCM: "AEAD_AES_256_GCM",
-} as const;
-
-export type WechatShopRefundCallbackEnvelopeResource = {
-  algorithm: WechatShopRefundCallbackEnvelopeResourceAlgorithm;
-  /**
-   * @minLength 1
-   * @maxLength 131072
-   */
-  ciphertext: string;
-  /**
-   * @minLength 1
-   * @maxLength 64
-   */
-  nonce: string;
-  /** @maxLength 1024 */
-  associated_data: string;
-};
-
 export interface WechatShopRefundCallbackEnvelope {
   /**
    * @minLength 1
    * @maxLength 128
    */
-  id: string;
-  event_type: WechatShopRefundCallbackEnvelopeEventType;
-  resource_type: WechatShopRefundCallbackEnvelopeResourceType;
-  resource: WechatShopRefundCallbackEnvelopeResource;
+  ToUserName: string;
+  /**
+   * @minLength 1
+   * @maxLength 131072
+   */
+  Encrypt: string;
 }
 
 export type LegacyOrderListItemProvider =
@@ -15642,9 +15680,11 @@ export type WechatshopTimestampParameter = string;
 
 export type WechatshopNonceParameter = string;
 
-export type WechatshopSerialParameter = string;
-
 export type WechatshopSignatureParameter = string;
+
+export type WechatshopMessageSignatureParameter = string;
+
+export type WechatshopEchoStrParameter = string;
 
 /**
  * Stable local-only setup-wizard request key; exact retries replay and mismatches conflict.
@@ -16356,6 +16396,51 @@ export type ListUnassignedChannelAcquisitionEntrantReceiptsParams = {
    */
   cursor?: string;
 };
+
+export type VerifyWechatShopRefundCallbackURLParams = {
+  /**
+   * @pattern ^[0-9a-fA-F]{40}$
+   */
+  signature: WechatshopSignatureParameter;
+  /**
+   * @pattern ^[0-9]{10}$
+   */
+  timestamp: WechatshopTimestampParameter;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  nonce: WechatshopNonceParameter;
+  /**
+   * @minLength 1
+   * @maxLength 65536
+   */
+  echostr: WechatshopEchoStrParameter;
+};
+
+export type ReceiveWechatShopRefundCallbackParams = {
+  /**
+   * @pattern ^[0-9a-fA-F]{40}$
+   */
+  msg_signature: WechatshopMessageSignatureParameter;
+  /**
+   * @pattern ^[0-9]{10}$
+   */
+  timestamp: WechatshopTimestampParameter;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  nonce: WechatshopNonceParameter;
+};
+
+export type ReceiveWechatShopRefundCallback200 =
+  (typeof ReceiveWechatShopRefundCallback200)[keyof typeof ReceiveWechatShopRefundCallback200];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ReceiveWechatShopRefundCallback200 = {
+  success: "success",
+} as const;
 
 export type ListLegacyOrdersParams = {
   provider?: ListLegacyOrdersProvider;
@@ -31728,10 +31813,82 @@ export const receiveWechatPayRefundCallback = async (
 };
 
 /**
- * @summary Verify and apply one authoritative WeChat Shop refund callback through its independent Order-owned provider boundary
+ * @summary Verify the WeChat Shop callback URL using the legacy three-part SHA1 signature
+ */
+export type verifyWechatShopRefundCallbackURLResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type verifyWechatShopRefundCallbackURLResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type verifyWechatShopRefundCallbackURLResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type verifyWechatShopRefundCallbackURLResponseSuccess =
+  verifyWechatShopRefundCallbackURLResponse200 & {
+    headers: Headers;
+  };
+export type verifyWechatShopRefundCallbackURLResponseError = (
+  | verifyWechatShopRefundCallbackURLResponse400
+  | verifyWechatShopRefundCallbackURLResponse503
+) & {
+  headers: Headers;
+};
+
+export type verifyWechatShopRefundCallbackURLResponse =
+  | verifyWechatShopRefundCallbackURLResponseSuccess
+  | verifyWechatShopRefundCallbackURLResponseError;
+
+export const getVerifyWechatShopRefundCallbackURLUrl = (
+  params: VerifyWechatShopRefundCallbackURLParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/public/wechat-shop/callbacks/refund?${stringifiedParams}`
+    : `/api/public/wechat-shop/callbacks/refund`;
+};
+
+export const verifyWechatShopRefundCallbackURL = async (
+  params: VerifyWechatShopRefundCallbackURLParams,
+  options?: RequestInit,
+): Promise<verifyWechatShopRefundCallbackURLResponse> => {
+  const res = await fetch(getVerifyWechatShopRefundCallbackURLUrl(params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: verifyWechatShopRefundCallbackURLResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as verifyWechatShopRefundCallbackURLResponse;
+};
+
+/**
+ * @summary Verify one encrypted WeChat Shop aftersale callback and queue an authoritative provider query
  */
 export type receiveWechatShopRefundCallbackResponse200 = {
-  data: WechatPayCallbackAck;
+  data: ReceiveWechatShopRefundCallback200;
   status: 200;
 };
 
@@ -31766,15 +31923,30 @@ export type receiveWechatShopRefundCallbackResponse =
   | receiveWechatShopRefundCallbackResponseSuccess
   | receiveWechatShopRefundCallbackResponseError;
 
-export const getReceiveWechatShopRefundCallbackUrl = () => {
-  return `/api/public/wechat-shop/callbacks/refund`;
+export const getReceiveWechatShopRefundCallbackUrl = (
+  params: ReceiveWechatShopRefundCallbackParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/public/wechat-shop/callbacks/refund?${stringifiedParams}`
+    : `/api/public/wechat-shop/callbacks/refund`;
 };
 
 export const receiveWechatShopRefundCallback = async (
   wechatShopRefundCallbackEnvelope: WechatShopRefundCallbackEnvelope,
+  params: ReceiveWechatShopRefundCallbackParams,
   options?: RequestInit,
 ): Promise<receiveWechatShopRefundCallbackResponse> => {
-  const res = await fetch(getReceiveWechatShopRefundCallbackUrl(), {
+  const res = await fetch(getReceiveWechatShopRefundCallbackUrl(params), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
@@ -33143,11 +33315,11 @@ export const createLegacyWechatRefundIntent = async (
 };
 
 /**
- * @summary Manually query independent WeChat Shop evidence for one unknown refund outcome
+ * @summary Queue an exact WeChat Shop aftersale query for a provider-accepted refund
  */
-export type reconcileWechatShopRefundResponse200 = {
+export type reconcileWechatShopRefundResponse202 = {
   data: WechatShopRefund;
-  status: 200;
+  status: 202;
 };
 
 export type reconcileWechatShopRefundResponse400 = {
@@ -33181,7 +33353,7 @@ export type reconcileWechatShopRefundResponse503 = {
 };
 
 export type reconcileWechatShopRefundResponseSuccess =
-  reconcileWechatShopRefundResponse200 & {
+  reconcileWechatShopRefundResponse202 & {
     headers: Headers;
   };
 export type reconcileWechatShopRefundResponseError = (

@@ -427,6 +427,14 @@ func (handler *candidateHandler) ReceiveWechatShopRefundCallback(writer http.Res
 	handler.commerceRefunds.WeChatShopCallback(writer, request)
 }
 
+func (handler *candidateHandler) VerifyWechatShopRefundCallbackURL(writer http.ResponseWriter, request *http.Request, _ api.VerifyWechatShopRefundCallbackURLParams) {
+	if handler == nil || handler.commerceRefunds == nil {
+		platformhttp.WriteError(writer, request, platformhttp.NewError(platformhttp.CodeDependencyUnavailable, nil))
+		return
+	}
+	handler.commerceRefunds.WeChatShopCallback(writer, request)
+}
+
 func (handler *candidateHandler) CreateProduct(writer http.ResponseWriter, request *http.Request, params api.CreateProductParams) {
 	handler.products.CreateProduct(writer, request, params)
 }
@@ -1567,12 +1575,17 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	wechatShopRefunds, err := orderapp.NewWeChatShopRefundService(uow, commerceRefundRepository, orderprovider.DisabledWeChatShopRefund{}, eventstore.NewAppender())
+	wechatShopRefunds, err := orderapp.NewWeChatShopRefundService(uow, commerceRefundRepository, orderprovider.DisabledWeChatShopRefund{}, eventstore.NewAppender(), orderapp.WithWeChatShopRefundDispatch(config.Commerce.WeChatShopRefund.Enabled))
 	if err != nil {
 		pool.Close()
 		return nil, err
 	}
-	commerceRefundHandler, err := orderhttp.NewCommerceRefundHandler(wechatPayRefundCompatibility, wechatShopRefunds, orderprovider.DisabledWeChatShopCallbackVerifier{})
+	wechatShopRefundCallbacks, err := newWeChatShopRefundCallbackRuntime(config.Commerce.WeChatShopRefund)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	commerceRefundHandler, err := orderhttp.NewCommerceRefundHandler(wechatPayRefundCompatibility, wechatShopRefunds, wechatShopRefundCallbacks)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -2252,7 +2265,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		router.Method(http.MethodPost, pattern, tail)
 		return nil
 	}
-	registerPublic := func(pattern string, endpoint http.Handler) error {
+	registerPublic := func(method, pattern string, endpoint http.Handler) error {
 		tail, wrapErr := recovery(endpoint)
 		if wrapErr != nil {
 			return wrapErr
@@ -2265,19 +2278,22 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		if wrapErr != nil {
 			return wrapErr
 		}
-		router.Method(http.MethodPost, pattern, tail)
+		router.Method(method, pattern, tail)
 		return nil
 	}
 	if err = registerOptionalSidebar("/api/sidebar/context-token", http.HandlerFunc(wrapper.MintSidebarContext)); err != nil {
 		return nil, err
 	}
-	if err = registerPublic(orderhttp.PaymentCallbackPath, http.HandlerFunc(wrapper.ReceiveWechatPayPaymentCallback)); err != nil {
+	if err = registerPublic(http.MethodPost, orderhttp.PaymentCallbackPath, http.HandlerFunc(wrapper.ReceiveWechatPayPaymentCallback)); err != nil {
 		return nil, err
 	}
-	if err = registerPublic(orderhttp.RefundCallbackPath, http.HandlerFunc(wrapper.ReceiveWechatPayRefundCallback)); err != nil {
+	if err = registerPublic(http.MethodPost, orderhttp.RefundCallbackPath, http.HandlerFunc(wrapper.ReceiveWechatPayRefundCallback)); err != nil {
 		return nil, err
 	}
-	if err = registerPublic(orderhttp.WeChatShopCallbackPath, http.HandlerFunc(wrapper.ReceiveWechatShopRefundCallback)); err != nil {
+	if err = registerPublic(http.MethodGet, orderhttp.WeChatShopCallbackPath, http.HandlerFunc(wrapper.VerifyWechatShopRefundCallbackURL)); err != nil {
+		return nil, err
+	}
+	if err = registerPublic(http.MethodPost, orderhttp.WeChatShopCallbackPath, http.HandlerFunc(wrapper.ReceiveWechatShopRefundCallback)); err != nil {
 		return nil, err
 	}
 	if err = registerSidebarActivityRead("/api/sidebar/v2/timeline", http.HandlerFunc(wrapper.ListSidebarTimeline)); err != nil {
