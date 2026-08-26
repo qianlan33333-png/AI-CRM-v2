@@ -577,7 +577,7 @@ export async function downloadOwnerReassignmentTemplateDto(): Promise<Blob> {
 export async function createOwnerReassignmentPreviewDto(csv: string): Promise<OwnerReassignmentPreview> {
   if (!csv.trim()) throw new Error('请选择非空 CSV 文件');
   if (new Blob([csv]).size > 1024 * 1024) throw new Error('CSV 文件不能超过 1 MiB');
-  const response = await request(getCreateContactOwnerReassignmentPreviewUrl(), { method: 'POST', headers: { 'Content-Type': 'text/csv' }, body: csv });
+  const response = await request(getCreateContactOwnerReassignmentPreviewUrl(), { method: 'POST', headers: { 'Content-Type': 'text/csv', 'Idempotency-Key': globalThis.crypto?.randomUUID?.() || `web-${Date.now()}` }, body: csv });
   return ownerReassignmentPreviewDto(await response.json() as ApiOwnerReassignmentPreview);
 }
 
