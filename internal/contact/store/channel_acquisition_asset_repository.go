@@ -192,7 +192,7 @@ func (r *ChannelAcquisitionAssetRepository) GetChannelAcquisitionAsset(ctx conte
 		return contactapp.ChannelAcquisitionAssetItem{}, channelAcquisitionStoreError(err)
 	}
 	return channelAcquisitionAssetItem(row.EffectID, row.ChannelID, row.AssetKind, row.AssetVersion, row.SupersedesVersion, row.State,
-		row.AcceptReceiptID, row.QueueReceiptID, row.AttemptReceiptDigest, row.ReconcileReceiptID, row.CreatedAt, row.UpdatedAt, row.ReconciledAt), nil
+		row.AcceptReceiptID, row.QueueReceiptID, row.AttemptReceiptDigest, row.ReconcileReceiptID, row.AssetUrl, row.CreatedAt, row.UpdatedAt, row.ReconciledAt), nil
 }
 
 func (r *ChannelAcquisitionAssetRepository) ListChannelAcquisitionAssets(ctx context.Context, channelID, afterEffectID int64, limit int) ([]contactapp.ChannelAcquisitionAssetItem, error) {
@@ -207,7 +207,7 @@ func (r *ChannelAcquisitionAssetRepository) ListChannelAcquisitionAssets(ctx con
 	items := make([]contactapp.ChannelAcquisitionAssetItem, len(rows))
 	for index, row := range rows {
 		items[index] = channelAcquisitionAssetItem(row.EffectID, row.ChannelID, row.AssetKind, row.AssetVersion, row.SupersedesVersion, row.State,
-			row.AcceptReceiptID, row.QueueReceiptID, row.AttemptReceiptDigest, row.ReconcileReceiptID, row.CreatedAt, row.UpdatedAt, row.ReconciledAt)
+			row.AcceptReceiptID, row.QueueReceiptID, row.AttemptReceiptDigest, row.ReconcileReceiptID, row.AssetUrl, row.CreatedAt, row.UpdatedAt, row.ReconciledAt)
 	}
 	return items, nil
 }
@@ -261,6 +261,13 @@ func (r *ChannelAcquisitionAssetRepository) CompleteAttempt(ctx context.Context,
 		return contactapp.ChannelAcquisitionAssetBinding{}, channelAcquisitionStoreError(err)
 	}
 	reference := channelAcquisitionOptionalDigest(completion.ProviderAssetReferenceDigest)
+	if completion.State == eer.StateExecuted && completion.ProviderAssetID != "" && completion.AssetURL != "" {
+		if err := q.InsertChannelAcquisitionAssetProviderResult(ctx, contactdb.InsertChannelAcquisitionAssetProviderResultParams{
+			EffectID: id, ProviderAssetID: completion.ProviderAssetID, AssetUrl: completion.AssetURL, CreatedAt: completedAt,
+		}); err != nil {
+			return contactapp.ChannelAcquisitionAssetBinding{}, channelAcquisitionStoreError(err)
+		}
+	}
 	if err := q.InsertChannelAcquisitionAssetObservedResult(ctx, contactdb.InsertChannelAcquisitionAssetObservedResultParams{AttemptFactID: factID, EffectID: id, Outcome: string(completion.State), AssetReferenceDigest: reference, ObservedAt: completedAt}); err != nil {
 		return contactapp.ChannelAcquisitionAssetBinding{}, channelAcquisitionStoreError(err)
 	}
@@ -341,11 +348,11 @@ func channelAcquisitionBinding(row contactdb.ChannelAcquisitionAssetBinding) con
 	return result
 }
 
-func channelAcquisitionAssetItem(effectID, channelID int64, kind string, version, supersedes int64, state string, acceptID int64, queueID pgtype.Int8, attemptDigest pgtype.Text, reconcileID pgtype.Int8, createdAt, updatedAt, reconciledAt pgtype.Timestamptz) contactapp.ChannelAcquisitionAssetItem {
+func channelAcquisitionAssetItem(effectID, channelID int64, kind string, version, supersedes int64, state string, acceptID int64, queueID pgtype.Int8, attemptDigest pgtype.Text, reconcileID pgtype.Int8, assetURL string, createdAt, updatedAt, reconciledAt pgtype.Timestamptz) contactapp.ChannelAcquisitionAssetItem {
 	item := contactapp.ChannelAcquisitionAssetItem{
 		EffectID: channelAcquisitionFormatEffectID(effectID), ChannelID: channelID, Kind: contactport.AcquisitionAssetKind(kind), AssetVersion: version,
 		SupersedesVersion: supersedes, State: eer.State(state), AcceptReceiptID: channelAcquisitionFormatReceiptID(acceptID),
-		CreatedAt: createdAt.Time.UTC(), UpdatedAt: updatedAt.Time.UTC(), EntrantReady: false,
+		AssetURL: assetURL, CreatedAt: createdAt.Time.UTC(), UpdatedAt: updatedAt.Time.UTC(), EntrantReady: false,
 	}
 	if queueID.Valid {
 		item.QueueReceiptID = channelAcquisitionFormatReceiptID(queueID.Int64)

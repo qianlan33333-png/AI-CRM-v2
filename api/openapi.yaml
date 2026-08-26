@@ -16777,6 +16777,7 @@ components:
         queue_receipt_id: { type: string, pattern: '^eerop_[1-9][0-9]*$' }
         attempt_receipt_digest: { type: string, pattern: '^sha256:[a-f0-9]{64}$' }
         reconcile_receipt_id: { type: string, pattern: '^eerop_[1-9][0-9]*$' }
+        asset_url: { type: string, format: uri, pattern: '^https://', maxLength: 10000, description: Public Provider URL exposed only after an executed result. }
         entrant_ready: { type: boolean, enum: [false] }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }

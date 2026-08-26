@@ -48,12 +48,15 @@ const (
 	AcquisitionAssetProviderOutcomeUnknown AcquisitionAssetProviderOutcome = "outcome_unknown"
 )
 
-// AcquisitionAssetProviderResult contains only durable safe evidence. A raw
-// provider response, URL, token, or credential must remain inside the adapter.
+// AcquisitionAssetProviderResult contains the bounded public result required
+// for the administrator's QR download/link-copy flow. Raw payloads, tokens and
+// credentials remain inside the adapter.
 type AcquisitionAssetProviderResult struct {
 	Outcome                    AcquisitionAssetProviderOutcome
 	ReceiptDigest              [32]byte
 	AssetReferenceDigest       [32]byte
+	ProviderAssetID            string
+	AssetURL                   string
 	BusinessEndpointDispatched bool
 	RealExternalCallExecuted   bool
 }

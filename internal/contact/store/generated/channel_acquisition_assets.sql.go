@@ -202,11 +202,12 @@ func (q *Queries) CompleteChannelAcquisitionAssetReconcile(ctx context.Context, 
 }
 
 const getChannelAcquisitionAsset = `-- name: GetChannelAcquisitionAsset :one
-SELECT effect_id, channel_id, asset_kind, asset_version, supersedes_version, state,
-       accept_receipt_id, queue_receipt_id, attempt_receipt_digest, reconcile_receipt_id,
-       created_at, updated_at, reconciled_at
-FROM channel_acquisition_asset_bindings
-WHERE channel_id = $1::bigint AND effect_id = $2::bigint
+SELECT binding.effect_id, binding.channel_id, binding.asset_kind, binding.asset_version, binding.supersedes_version, binding.state,
+       binding.accept_receipt_id, binding.queue_receipt_id, binding.attempt_receipt_digest, binding.reconcile_receipt_id,
+       binding.created_at, binding.updated_at, binding.reconciled_at, COALESCE(result.asset_url, '')::text AS asset_url
+FROM channel_acquisition_asset_bindings AS binding
+LEFT JOIN channel_acquisition_asset_provider_results AS result USING (effect_id)
+WHERE binding.channel_id = $1::bigint AND binding.effect_id = $2::bigint
 `
 
 type GetChannelAcquisitionAssetParams struct {
@@ -228,6 +229,7 @@ type GetChannelAcquisitionAssetRow struct {
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	ReconciledAt         pgtype.Timestamptz `json:"reconciled_at"`
+	AssetUrl             string             `json:"asset_url"`
 }
 
 func (q *Queries) GetChannelAcquisitionAsset(ctx context.Context, arg GetChannelAcquisitionAssetParams) (GetChannelAcquisitionAssetRow, error) {
@@ -247,6 +249,7 @@ func (q *Queries) GetChannelAcquisitionAsset(ctx context.Context, arg GetChannel
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ReconciledAt,
+		&i.AssetUrl,
 	)
 	return i, err
 }
@@ -410,6 +413,28 @@ func (q *Queries) InsertChannelAcquisitionAssetObservedResult(ctx context.Contex
 	return err
 }
 
+const insertChannelAcquisitionAssetProviderResult = `-- name: InsertChannelAcquisitionAssetProviderResult :exec
+INSERT INTO channel_acquisition_asset_provider_results(effect_id, provider_asset_id, asset_url, created_at)
+VALUES ($1::bigint, $2::text, $3::text, $4::timestamptz)
+`
+
+type InsertChannelAcquisitionAssetProviderResultParams struct {
+	EffectID        int64              `json:"effect_id"`
+	ProviderAssetID string             `json:"provider_asset_id"`
+	AssetUrl        string             `json:"asset_url"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) InsertChannelAcquisitionAssetProviderResult(ctx context.Context, arg InsertChannelAcquisitionAssetProviderResultParams) error {
+	_, err := q.db.Exec(ctx, insertChannelAcquisitionAssetProviderResult,
+		arg.EffectID,
+		arg.ProviderAssetID,
+		arg.AssetUrl,
+		arg.CreatedAt,
+	)
+	return err
+}
+
 const insertChannelAcquisitionAssetReconciliationFact = `-- name: InsertChannelAcquisitionAssetReconciliationFact :exec
 INSERT INTO channel_acquisition_asset_reconciliation_facts(effect_id, generation, fence, receipt_id, receipt_digest, evidence_digest, resolution, reconciled_at)
 VALUES ($1::bigint, $2::bigint, $3::bigint, $4::bigint, $5::text, $6::text, $7::text, $8::timestamptz)
@@ -441,13 +466,14 @@ func (q *Queries) InsertChannelAcquisitionAssetReconciliationFact(ctx context.Co
 }
 
 const listChannelAcquisitionAssets = `-- name: ListChannelAcquisitionAssets :many
-SELECT effect_id, channel_id, asset_kind, asset_version, supersedes_version, state,
-       accept_receipt_id, queue_receipt_id, attempt_receipt_digest, reconcile_receipt_id,
-       created_at, updated_at, reconciled_at
-FROM channel_acquisition_asset_bindings
-WHERE channel_id = $1::bigint
-  AND ($2::bigint = 0 OR effect_id < $2::bigint)
-ORDER BY effect_id DESC
+SELECT binding.effect_id, binding.channel_id, binding.asset_kind, binding.asset_version, binding.supersedes_version, binding.state,
+       binding.accept_receipt_id, binding.queue_receipt_id, binding.attempt_receipt_digest, binding.reconcile_receipt_id,
+       binding.created_at, binding.updated_at, binding.reconciled_at, COALESCE(result.asset_url, '')::text AS asset_url
+FROM channel_acquisition_asset_bindings AS binding
+LEFT JOIN channel_acquisition_asset_provider_results AS result USING (effect_id)
+WHERE binding.channel_id = $1::bigint
+  AND ($2::bigint = 0 OR binding.effect_id < $2::bigint)
+ORDER BY binding.effect_id DESC
 LIMIT $3::int
 `
 
@@ -471,6 +497,7 @@ type ListChannelAcquisitionAssetsRow struct {
 	CreatedAt            pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 	ReconciledAt         pgtype.Timestamptz `json:"reconciled_at"`
+	AssetUrl             string             `json:"asset_url"`
 }
 
 func (q *Queries) ListChannelAcquisitionAssets(ctx context.Context, arg ListChannelAcquisitionAssetsParams) ([]ListChannelAcquisitionAssetsRow, error) {
@@ -496,6 +523,7 @@ func (q *Queries) ListChannelAcquisitionAssets(ctx context.Context, arg ListChan
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.ReconciledAt,
+			&i.AssetUrl,
 		); err != nil {
 			return nil, err
 		}

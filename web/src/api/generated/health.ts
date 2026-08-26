@@ -8094,6 +8094,12 @@ export interface ChannelAcquisitionAsset {
   attempt_receipt_digest?: string;
   /** @pattern ^eerop_[1-9][0-9]*$ */
   reconcile_receipt_id?: string;
+  /**
+   * Public Provider URL exposed only after an executed result.
+   * @maxLength 10000
+   * @pattern ^https://
+   */
+  asset_url?: string;
   entrant_ready: boolean;
   created_at: string;
   updated_at: string;

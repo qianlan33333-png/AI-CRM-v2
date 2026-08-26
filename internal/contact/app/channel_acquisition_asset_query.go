@@ -26,6 +26,7 @@ type ChannelAcquisitionAssetItem struct {
 	QueueReceiptID       string
 	AttemptReceiptDigest eer.Digest
 	ReconcileReceiptID   string
+	AssetURL             string
 	EntrantReady         bool
 	CreatedAt            time.Time
 	UpdatedAt            time.Time
@@ -171,8 +172,11 @@ func validChannelAcquisitionAssetItem(item ChannelAcquisitionAssetItem, channelI
 	}
 	switch item.State {
 	case eer.StateAccepted, eer.StateQueued, channelAcquisitionAssetStateAttempted, eer.StateExecuted, eer.StateFinalFailed, eer.StateOutcomeUnknown, eer.StateReconciled:
-		return true
 	default:
 		return false
 	}
+	if item.AssetURL != "" && (item.State != eer.StateExecuted || !validChannelAcquisitionAssetURL(item.AssetURL)) {
+		return false
+	}
+	return true
 }

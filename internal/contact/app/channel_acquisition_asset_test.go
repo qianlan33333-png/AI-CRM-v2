@@ -145,7 +145,8 @@ func TestCH02TerminalEERConvergesContactWithoutSecondProviderCall(t *testing.T) 
 	t.Run("attempted executed", func(t *testing.T) {
 		provider := &acquisitionAssetProvider{result: contactport.AcquisitionAssetProviderResult{
 			Outcome: contactport.AcquisitionAssetProviderExecuted, ReceiptDigest: sha256.Sum256([]byte("terminal-receipt")),
-			AssetReferenceDigest: sha256.Sum256([]byte("terminal-reference")), BusinessEndpointDispatched: true, RealExternalCallExecuted: true,
+			AssetReferenceDigest: sha256.Sum256([]byte("terminal-reference")), ProviderAssetID: "config-terminal",
+			AssetURL: "https://work.weixin.qq.com/q/config-terminal", BusinessEndpointDispatched: true, RealExternalCallExecuted: true,
 		}}
 		service, store, _, _ := newAcquisitionAssetServiceFixture(t, provider)
 		accepted, err := service.Publish(context.Background(), PublishChannelAcquisitionAssetCommand{ChannelID: 41, Actor: 7, IdempotencyKey: acquisitionAssetTestKey("terminal-attempted"), Kind: contactport.AcquisitionAssetQRCode})
@@ -449,6 +450,10 @@ func TestCH02ExecutePersistsClosedProviderTerminalStates(t *testing.T) {
 				Outcome: test.outcome, ReceiptDigest: sha256.Sum256([]byte("provider-receipt-" + test.name)),
 				AssetReferenceDigest: test.asset, BusinessEndpointDispatched: true, RealExternalCallExecuted: true,
 			}}
+			if test.outcome == contactport.AcquisitionAssetProviderExecuted {
+				provider.result.ProviderAssetID = "config-" + test.name
+				provider.result.AssetURL = "https://work.weixin.qq.com/q/config-" + test.name
+			}
 			service, store, runtime, _ := newAcquisitionAssetServiceFixture(t, provider)
 			accepted, err := service.Publish(context.Background(), PublishChannelAcquisitionAssetCommand{ChannelID: 41, Actor: 7, IdempotencyKey: acquisitionAssetTestKey("terminal-" + test.name), Kind: contactport.AcquisitionAssetQRCode})
 			if err != nil {

@@ -48,6 +48,7 @@ owners:
       - channel_acquisition_asset_actor_receipts
       - channel_acquisition_asset_attempt_facts
       - channel_acquisition_asset_observed_results
+      - channel_acquisition_asset_provider_results
       - channel_acquisition_asset_reconciliation_facts
       - channel_acquisition_legacy_archives
       - channel_acquisition_entrant_receipts
@@ -83,6 +84,7 @@ owners:
       channel_acquisition_asset_actor_receipts: actor_scoped_transactional_contact_acquisition_publish_and_reconciliation_idempotency_receipts
       channel_acquisition_asset_attempt_facts: immutable_typed_EER_attempt_outcome_facts
       channel_acquisition_asset_observed_results: immutable_digest_only_observed_provider_outcomes_bound_to_their_attempt
+      channel_acquisition_asset_provider_results: effect_bound_public_provider_asset_id_and_https_url_for_admin_download_or_copy
       channel_acquisition_asset_reconciliation_facts: immutable_digest_only_manual_reconciliation_facts_bound_to_their_EER_fence
       channel_acquisition_legacy_archives: legacy_unverified_channel_config_digest_only_archive_without_provider_effect
       channel_acquisition_entrant_receipts: corp_scoped_typed_callback_disposition_and_actor_idempotent_manual_attribution_receipt_without_provider_payload

@@ -77,6 +77,7 @@ type Querier interface {
 	InsertChannelAcquisitionAssetAttemptFact(ctx context.Context, arg InsertChannelAcquisitionAssetAttemptFactParams) (int64, error)
 	InsertChannelAcquisitionAssetBinding(ctx context.Context, arg InsertChannelAcquisitionAssetBindingParams) (ChannelAcquisitionAssetBinding, error)
 	InsertChannelAcquisitionAssetObservedResult(ctx context.Context, arg InsertChannelAcquisitionAssetObservedResultParams) error
+	InsertChannelAcquisitionAssetProviderResult(ctx context.Context, arg InsertChannelAcquisitionAssetProviderResultParams) error
 	InsertChannelAcquisitionAssetReconciliationFact(ctx context.Context, arg InsertChannelAcquisitionAssetReconciliationFactParams) error
 	InsertChannelAcquisitionEntrantReceipt(ctx context.Context, arg InsertChannelAcquisitionEntrantReceiptParams) (InsertChannelAcquisitionEntrantReceiptRow, error)
 	InsertCustomerContactPolicy(ctx context.Context, arg InsertCustomerContactPolicyParams) (CustomerContactPolicy, error)

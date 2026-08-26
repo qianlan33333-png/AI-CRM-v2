@@ -47,7 +47,10 @@ func TestCH02AcquisitionAssetQueryUsesChannelBoundOpaqueCursorAndSafeProjection(
 	item := func(id int64) ChannelAcquisitionAssetItem {
 		return ChannelAcquisitionAssetItem{EffectID: "eer_" + strconv.FormatInt(id, 10), ChannelID: 41, Kind: contactport.AcquisitionAssetQRCode, AssetVersion: id, SupersedesVersion: id - 1, State: eer.StateQueued, AcceptReceiptID: "eerop_1", QueueReceiptID: "eerop_2", CreatedAt: now, UpdatedAt: now}
 	}
-	store := &acquisitionAssetReadStore{exists: true, items: []ChannelAcquisitionAssetItem{item(3), item(2), item(1)}}
+	executed := item(3)
+	executed.State = eer.StateExecuted
+	executed.AssetURL = "https://work.weixin.qq.com/q/config-safe"
+	store := &acquisitionAssetReadStore{exists: true, items: []ChannelAcquisitionAssetItem{executed, item(2), item(1)}}
 	codec, err := NewChannelAcquisitionAssetCursorCodec([]byte(strings.Repeat("k", 32)))
 	if err != nil {
 		t.Fatal(err)
@@ -65,7 +68,7 @@ func TestCH02AcquisitionAssetQueryUsesChannelBoundOpaqueCursorAndSafeProjection(
 		t.Fatalf("cross-channel cursor err=%v", err)
 	}
 	got, err := service.Get(context.Background(), 41, "eer_3")
-	if err != nil || got.EffectID != "eer_3" || got.EntrantReady {
+	if err != nil || got.EffectID != "eer_3" || got.AssetURL != executed.AssetURL || got.EntrantReady {
 		t.Fatalf("got=%+v err=%v", got, err)
 	}
 }

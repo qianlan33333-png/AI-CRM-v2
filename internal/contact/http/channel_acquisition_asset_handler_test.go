@@ -86,6 +86,13 @@ func TestCH02AcquisitionAssetReadMasksUnknownAndNeverLeaksSensitiveFields(t *tes
 			t.Fatalf("unsafe field %q in %s", forbidden, response.Body.String())
 		}
 	}
+	queries.item.State = eer.StateExecuted
+	queries.item.AssetURL = "https://work.weixin.qq.com/ca/link-safe"
+	executed := httptest.NewRecorder()
+	handler.ServeHTTP(executed, acquisitionAssetRequest(http.MethodGet, "/api/admin/channels/41/acquisition-assets/eer_7", "", authport.CapabilityChannelsRead))
+	if executed.Code != http.StatusOK || !strings.Contains(executed.Body.String(), `"asset_url":"https://work.weixin.qq.com/ca/link-safe"`) {
+		t.Fatalf("executed status/body=%d/%s", executed.Code, executed.Body.String())
+	}
 	queries.err = contactapp.ErrChannelAcquisitionAssetNotFound
 	notFound := httptest.NewRecorder()
 	handler.ServeHTTP(notFound, acquisitionAssetRequest(http.MethodGet, "/api/admin/channels/99/acquisition-assets/eer_7", "", authport.CapabilityChannelsRead))
