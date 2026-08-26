@@ -171,7 +171,7 @@ func TestLegacyCustomerProfileMessagesRejectsUnsupportedAndMalformedQueriesBefor
 		{"limit is not accepted", "unionid=union-44&limit=30", "invalid_identity_hint"},
 		{"fetch all without identity", "fetch_all=true", "invalid_identity_hint"},
 		{"empty fetch all", "unionid=union-44&fetch_all=", "invalid_fetch_all"},
-		{"numeric fetch all", "unionid=union-44&fetch_all=1", "invalid_fetch_all"},
+		{"unsupported numeric fetch all", "unionid=union-44&fetch_all=2", "invalid_fetch_all"},
 		{"uppercase fetch all", "unionid=union-44&fetch_all=TRUE", "invalid_fetch_all"},
 		{"trimmed fetch all is rejected", "unionid=union-44&fetch_all=%20true", "invalid_fetch_all"},
 		{"fetch all control", "unionid=union-44&fetch_all=true%0A", "invalid_fetch_all"},
@@ -215,7 +215,9 @@ func TestLegacyCustomerProfileMessagesFetchAllUsesOnlyExistingArchiveBounds(t *t
 	}{
 		{"default first page", "external_userid=external-44", legacyCustomerProfileMessagesDefaultLimit},
 		{"explicit first page", "external_userid=external-44&fetch_all=false", legacyCustomerProfileMessagesDefaultLimit},
+		{"legacy numeric first page", "external_userid=external-44&fetch_all=0", legacyCustomerProfileMessagesDefaultLimit},
 		{"bounded fetch all", "external_userid=external-44&fetch_all=true", legacyCustomerProfileMessagesFetchAllLimit},
+		{"legacy numeric fetch all", "external_userid=external-44&fetch_all=1", legacyCustomerProfileMessagesFetchAllLimit},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			items := make([]wecomport.CustomerChatSummary, test.wantLimit)

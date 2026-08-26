@@ -185,9 +185,9 @@ func parseLegacyCustomerProfileMessagesQuery(rawQuery string) (legacyCustomerPro
 	}
 	if fetchAll, exists := values["fetch_all"]; exists {
 		switch fetchAll[0] {
-		case "false":
+		case "false", "0":
 			query.FetchAll = false
-		case "true":
+		case "true", "1":
 			query.FetchAll = true
 		default:
 			return legacyCustomerProfileMessagesQuery{}, errInvalidLegacyCustomerProfileMessagesFetchAll

@@ -28,8 +28,11 @@ var (
 )
 
 // legacyCustomerProfileQuestionnaireAnswersHandler adapts the existing local
-// Survey read model. The current Survey domain has no assessment engine, so
-// latest_assessment_result is explicitly null rather than a derived score.
+// Survey read model. The stored safe projection has submission-scoped choice
+// IDs, but no immutable question/option labels. Current questionnaire
+// definitions can be replaced after a submission, so they cannot truthfully
+// backfill legacy per-question answer text. The response therefore uses an
+// explicit V2 submissions field rather than pretending it is legacy answers.
 type legacyCustomerProfileQuestionnaireAnswersHandler struct {
 	customerDetail customerDetailApplication
 	identity       identityResolveApplication
@@ -51,7 +54,7 @@ type legacyCustomerProfileQuestionnaireChoiceAnswer struct {
 	OptionIDs    []int64 `json:"option_ids"`
 }
 
-type legacyCustomerProfileQuestionnaireAnswer struct {
+type legacyCustomerProfileQuestionnaireSubmission struct {
 	SubmissionID    int64                                            `json:"submission_id"`
 	QuestionnaireID int64                                            `json:"questionnaire_id"`
 	SubmittedAt     string                                           `json:"submitted_at"`
@@ -60,14 +63,15 @@ type legacyCustomerProfileQuestionnaireAnswer struct {
 }
 
 type legacyCustomerProfileQuestionnaireAnswersSuccess struct {
-	OK                       bool                                       `json:"ok"`
-	Answers                  []legacyCustomerProfileQuestionnaireAnswer `json:"answers"`
-	Count                    int                                        `json:"count"`
-	LatestAssessmentResult   any                                        `json:"latest_assessment_result"`
-	AssessmentStatus         string                                     `json:"assessment_status"`
-	SourceStatus             string                                     `json:"source_status"`
-	RouteOwner               string                                     `json:"route_owner"`
-	RealExternalCallExecuted bool                                       `json:"real_external_call_executed"`
+	OK                       bool                                           `json:"ok"`
+	Submissions              []legacyCustomerProfileQuestionnaireSubmission `json:"submissions"`
+	SubmissionCount          int                                            `json:"submission_count"`
+	LegacyParityStatus       string                                         `json:"legacy_parity_status"`
+	LatestAssessmentResult   any                                            `json:"latest_assessment_result"`
+	AssessmentStatus         string                                         `json:"assessment_status"`
+	SourceStatus             string                                         `json:"source_status"`
+	RouteOwner               string                                         `json:"route_owner"`
+	RealExternalCallExecuted bool                                           `json:"real_external_call_executed"`
 }
 
 type legacyCustomerProfileQuestionnaireAnswersError struct {
@@ -141,13 +145,14 @@ func (handler *legacyCustomerProfileQuestionnaireAnswersHandler) Get(writer http
 		writeLegacyCustomerProfileQuestionnaireAnswersUnavailable(writer)
 		return
 	}
-	answers, ok := legacyCustomerProfileQuestionnaireAnswers(page)
+	submissions, ok := legacyCustomerProfileQuestionnaireSubmissions(page)
 	if !ok {
 		writeLegacyCustomerProfileQuestionnaireAnswersUnavailable(writer)
 		return
 	}
 	writeLegacyCustomerProfileQuestionnaireAnswersJSON(writer, http.StatusOK, legacyCustomerProfileQuestionnaireAnswersSuccess{
-		OK: true, Answers: answers, Count: len(answers), LatestAssessmentResult: nil, AssessmentStatus: "v2_assessment_unavailable",
+		OK: true, Submissions: submissions, SubmissionCount: len(submissions), LegacyParityStatus: "v2_submission_projection_not_legacy_answers",
+		LatestAssessmentResult: nil, AssessmentStatus: "v2_assessment_unavailable",
 		SourceStatus: "survey_customer_answer_read_model", RouteOwner: "ai_crm_v2", RealExternalCallExecuted: false,
 	})
 }
@@ -236,12 +241,12 @@ func (handler *legacyCustomerProfileQuestionnaireAnswersHandler) resolveCustomer
 	return customerID, 0
 }
 
-func legacyCustomerProfileQuestionnaireAnswers(page surveyport.CustomerSurveyAnswerPage) ([]legacyCustomerProfileQuestionnaireAnswer, bool) {
+func legacyCustomerProfileQuestionnaireSubmissions(page surveyport.CustomerSurveyAnswerPage) ([]legacyCustomerProfileQuestionnaireSubmission, bool) {
 	if page.CustomerID <= 0 || page.Limit != surveyapp.CustomerAnswerMaximumLimit || page.ScanLimit != surveyapp.CustomerAnswerScanLimit ||
 		page.ScannedCount < 0 || page.MatchedCount != int32(len(page.Items)) || len(page.Items) > int(page.Limit) {
 		return nil, false
 	}
-	answers := make([]legacyCustomerProfileQuestionnaireAnswer, len(page.Items))
+	submissions := make([]legacyCustomerProfileQuestionnaireSubmission, len(page.Items))
 	seenSubmissions := make(map[int64]struct{}, len(page.Items))
 	var previous time.Time
 	for index, item := range page.Items {
@@ -276,10 +281,10 @@ func legacyCustomerProfileQuestionnaireAnswers(page surveyport.CustomerSurveyAns
 			}
 			choiceAnswers[answerIndex] = legacyCustomerProfileQuestionnaireChoiceAnswer{QuestionID: answer.QuestionID, QuestionType: string(answer.QuestionType), SortOrder: answer.SortOrder, OptionIDs: append([]int64(nil), answer.OptionIDs...)}
 		}
-		answers[index] = legacyCustomerProfileQuestionnaireAnswer{SubmissionID: item.SubmissionID, QuestionnaireID: int64(item.QuestionnaireID),
+		submissions[index] = legacyCustomerProfileQuestionnaireSubmission{SubmissionID: item.SubmissionID, QuestionnaireID: int64(item.QuestionnaireID),
 			SubmittedAt: item.SubmittedAt.UTC().Format(time.RFC3339), Score: item.Score, ChoiceAnswers: choiceAnswers}
 	}
-	return answers, true
+	return submissions, true
 }
 
 func writeLegacyCustomerProfileQuestionnaireAnswersError(writer http.ResponseWriter, status int, code string) {

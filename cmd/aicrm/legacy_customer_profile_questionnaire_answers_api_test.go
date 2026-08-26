@@ -34,9 +34,13 @@ func TestLegacyCustomerProfileQuestionnaireAnswersReturnsSafeReadModelAndExplici
 	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
 		t.Fatal(err)
 	}
-	if !body.OK || body.Count != 1 || body.LatestAssessmentResult != nil || body.AssessmentStatus != "v2_assessment_unavailable" ||
-		len(body.Answers) != 1 || body.Answers[0].SubmittedAt != sentAt.Format(time.RFC3339) || body.Answers[0].ChoiceAnswers[0].OptionIDs[0] != 9 {
+	if !body.OK || body.SubmissionCount != 1 || body.LegacyParityStatus != "v2_submission_projection_not_legacy_answers" ||
+		body.LatestAssessmentResult != nil || body.AssessmentStatus != "v2_assessment_unavailable" ||
+		len(body.Submissions) != 1 || body.Submissions[0].SubmittedAt != sentAt.Format(time.RFC3339) || body.Submissions[0].ChoiceAnswers[0].OptionIDs[0] != 9 {
 		t.Fatalf("body=%+v", body)
+	}
+	if strings.Contains(response.Body.String(), `"answers"`) || strings.Contains(response.Body.String(), `"count"`) {
+		t.Fatalf("submission projection must not masquerade as legacy answers: %s", response.Body.String())
 	}
 	assertLegacyCustomerProfileQuestionnaireAnswersNoSensitiveFields(t, response.Body.String(), "union-secret", "external-secret")
 }
