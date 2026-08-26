@@ -19,8 +19,14 @@ import (
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
 	externaleffectsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
+	groupopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/app"
+	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
+	groupopsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/store"
+	groupopsworker "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/worker"
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
+	mediaapp "github.com/qianlan33333-png/AI-CRM-v2/internal/media/app"
+	mediaworker "github.com/qianlan33333-png/AI-CRM-v2/internal/media/worker"
 	operationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/store"
 	orderapp "github.com/qianlan33333-png/AI-CRM-v2/internal/order/app"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
@@ -100,6 +106,88 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	if err != nil {
 		pool.Close()
 		return nil, err
+	}
+	groupOpsRepository := groupopsstore.NewRepository()
+	groupOpsStaffDirectory := contactstore.NewStaffDirectoryRepository(pool)
+	groupOpsJobs, err := groupopsstore.NewDispatchJobInserter(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	var groupOpsProjector *groupopsapp.RuntimeService
+	var groupOpsMaterials *groupOpsMaterialBoundary
+	var groupOpsMaterialPreparations *mediaapp.GroupOpsMaterialPreparationService
+	if config.WeCom.Outbound.Enabled {
+		var preparationService *mediaapp.GroupOpsMaterialPreparationService
+		groupOpsMaterials, preparationService, err = newGroupOpsMaterialRuntime(pool, uow, externalEffectsRuntime, config.WeCom.Outbound.CorpID)
+		if err == nil {
+			err = bindGroupOpsMaterialUploader(preparationService, uow, groupOpsMaterials.repository, config.WeCom.Outbound)
+		}
+		var continuations *groupopsstore.MaterialContinuationJobInserter
+		if err == nil {
+			continuations, err = groupopsstore.NewMaterialContinuationJobInserter(pool)
+		}
+		if err == nil {
+			groupOpsProjector, err = groupopsapp.NewRuntimeServiceWithMaterials(
+				uow, groupOpsRepository, groupOpsRepository, externalEffectsRuntime, groupOpsStaffDirectory, nil,
+				groupOpsSenderResolver{groups: groupOpsRepository, staff: groupOpsStaffDirectory}, groupOpsJobs, groupOpsMaterials, continuations,
+			)
+		}
+		groupOpsMaterialPreparations = preparationService
+	} else {
+		groupOpsProjector, err = groupopsapp.NewRuntimeService(
+			uow, groupOpsRepository, groupOpsRepository, externalEffectsRuntime, groupOpsStaffDirectory, nil,
+			groupOpsSenderResolver{groups: groupOpsRepository, staff: groupOpsStaffDirectory}, groupOpsJobs,
+		)
+	}
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	groupOpsReader, err := groupopsstore.NewDispatchExecutionReader(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	groupOpsReceipts, err := groupopsstore.NewGroupMessageReceiptStore(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	var groupOpsProvider groupopsport.DispatchProvider = disabledGroupOpsDispatchProvider{}
+	if config.WeCom.Outbound.Enabled {
+		groupOpsProvider, err = newGroupOpsDispatchProvider(config.WeCom.Outbound, &http.Client{Timeout: 15 * time.Second}, time.Now, groupOpsReceipts)
+		if err != nil {
+			pool.Close()
+			return nil, err
+		}
+	}
+	var groupOpsDispatchWorker *groupopsworker.DispatchWorker
+	if groupOpsMaterials != nil {
+		groupOpsDispatchWorker, err = groupopsworker.NewDispatchWorkerWithMaterialVerifier(
+			groupOpsReader, groupOpsProjector, groupOpsEffectRuntime{runtime: externalEffectsRuntime, terminal: externalEffectsRuntimeRepository}, groupOpsProvider, groupOpsMaterials,
+		)
+	} else {
+		groupOpsDispatchWorker, err = groupopsworker.NewDispatchWorker(
+			groupOpsReader, groupOpsProjector, groupOpsEffectRuntime{runtime: externalEffectsRuntime, terminal: externalEffectsRuntimeRepository}, groupOpsProvider,
+		)
+	}
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	if err = groupopsworker.RegisterDispatchWorker(workers, groupOpsDispatchWorker); err != nil {
+		pool.Close()
+		return nil, err
+	}
+	if groupOpsMaterials != nil {
+		if err = groupopsworker.RegisterMaterialContinuationWorker(workers, groupOpsProjector); err == nil {
+			err = mediaworker.RegisterGroupOpsMaterialPreparationWorker(workers, groupOpsMaterialPreparations)
+		}
+		if err != nil {
+			pool.Close()
+			return nil, err
+		}
 	}
 	if config.WeCom.CustomerAcquisition.Enabled {
 		acquisitionEffects, acquisitionErr := contactapp.NewChannelAcquisitionAssetEERRuntime(externalEffectsRuntime, externalEffectsRuntimeRepository)

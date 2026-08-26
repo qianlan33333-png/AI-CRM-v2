@@ -55,6 +55,8 @@ var _ RuntimeApplication = (*groupopsapp.RuntimeService)(nil)
 
 type ProtocolPrincipal struct{ ID string }
 
+var ErrProtocolUnavailable = errors.New("group ops protocol authentication unavailable")
+
 // ProtocolAuthenticator is intentionally an injected boundary. The Group Ops
 // package neither invents API-client JWT nor webhook-HMAC credential policy,
 // and a nil implementation fails closed in production.
@@ -208,6 +210,55 @@ func (h *Handler) listDirectoryGroups(w http.ResponseWriter, r *http.Request, ow
 func (h *Handler) SyncGroups(w http.ResponseWriter, r *http.Request)      { h.syncGroups(w, r) }
 func (h *Handler) SyncGroupPicker(w http.ResponseWriter, r *http.Request) { h.syncGroups(w, r) }
 
+func (h *Handler) ListOperationMembers(w http.ResponseWriter, r *http.Request) {
+	setHeaders(w)
+	if !method(w, r, http.MethodGet) || !authorized(r, "admin.read") {
+		authorization(w, r)
+		return
+	}
+	if !runtimeAvailable(h) {
+		unavailable(w)
+		return
+	}
+	if r.URL.RawQuery != "" {
+		writeError(w, http.StatusBadRequest, "invalid_page")
+		return
+	}
+	result, err := h.Runtime.ListOperationMembers(r.Context(), 100)
+	if err != nil {
+		runtimeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (h *Handler) SyncOperationMembers(w http.ResponseWriter, r *http.Request) {
+	setHeaders(w)
+	actor, ok := writeAuthorized(r)
+	if !method(w, r, http.MethodPost) || !ok {
+		authorization(w, r)
+		return
+	}
+	idempotencyKey, keyOK := key(r)
+	var body struct {
+		PageSize int32 `json:"page_size"`
+	}
+	if !keyOK || !decodeBody(r, &body) {
+		writeError(w, http.StatusBadRequest, "invalid_request")
+		return
+	}
+	if !runtimeAvailable(h) {
+		unavailable(w)
+		return
+	}
+	result, err := h.Runtime.RefreshOperationMembers(r.Context(), groupopsport.OperationMemberRefreshCommand{ActorID: actor, PageSize: body.PageSize, IdempotencyKey: idempotencyKey})
+	if err != nil {
+		runtimeError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
 func (h *Handler) syncGroups(w http.ResponseWriter, r *http.Request) {
 	setHeaders(w)
 	actor, ok := writeAuthorized(r)
@@ -267,16 +318,16 @@ func (h *Handler) Webhook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	reference, ok := templateOpaque(r, WebhookPath, "{webhook_key}")
-	idempotencyKey, keyOK := key(r)
 	body, bodyOK := jsonObjectBody(r)
-	if !ok || !keyOK || !bodyOK {
+	if !ok || !bodyOK {
 		writeError(w, http.StatusBadRequest, "invalid_request")
 		return
 	}
-	if _, ok = h.protocolPrincipal(w, r, "group_ops_webhook", reference, body); !ok {
+	principal, ok := h.protocolPrincipal(w, r, "group_ops_webhook", reference, body)
+	if !ok {
 		return
 	}
-	result, err := h.Runtime.AcceptWebhook(r.Context(), reference, idempotencyKey)
+	result, err := h.Runtime.AcceptWebhook(r.Context(), reference, principal.ID)
 	if err != nil {
 		runtimeError(w, err)
 		return
@@ -290,6 +341,10 @@ func (h *Handler) protocolPrincipal(w http.ResponseWriter, r *http.Request, purp
 		return ProtocolPrincipal{}, false
 	}
 	principal, err := h.Protocols.Authenticate(r.Context(), r, purpose, resource, body)
+	if errors.Is(err, ErrProtocolUnavailable) {
+		writeError(w, http.StatusServiceUnavailable, "protocol_auth_unavailable")
+		return ProtocolPrincipal{}, false
+	}
 	if err != nil || !opaqueHTTP(principal.ID) {
 		writeError(w, http.StatusUnauthorized, "protocol_authentication_failed")
 		return ProtocolPrincipal{}, false

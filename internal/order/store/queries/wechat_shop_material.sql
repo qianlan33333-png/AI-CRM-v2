@@ -105,3 +105,13 @@ SET state = 'completed', evidence_digest = sqlc.arg(evidence_digest),
   completed_at = sqlc.arg(completed_at)
 WHERE provider_order_id = sqlc.arg(provider_order_id)
   AND state = 'queued';
+
+-- name: WeChatShopMaterialSyncRequestTableExists :one
+SELECT EXISTS (
+  SELECT 1
+  FROM pg_catalog.pg_class AS relation
+  JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = relation.relnamespace
+  WHERE namespace.nspname = 'public'
+    AND relation.relname = 'order_wechat_shop_material_sync_requests'
+    AND relation.relkind IN ('r', 'p')
+);

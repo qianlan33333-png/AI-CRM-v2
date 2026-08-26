@@ -40,6 +40,8 @@ type groupOpsHTTP interface {
 	SyncGroups(http.ResponseWriter, *http.Request)
 	ListGroupPicker(http.ResponseWriter, *http.Request)
 	SyncGroupPicker(http.ResponseWriter, *http.Request)
+	ListOperationMembers(http.ResponseWriter, *http.Request)
+	SyncOperationMembers(http.ResponseWriter, *http.Request)
 	Broadcast(http.ResponseWriter, *http.Request)
 	Webhook(http.ResponseWriter, *http.Request)
 }

@@ -324,3 +324,21 @@ func (q *Queries) UpsertWeChatShopOrderMaterial(ctx context.Context, arg UpsertW
 	err := row.Scan(&i.ID, &i.Version, &i.Changed)
 	return i, err
 }
+
+const weChatShopMaterialSyncRequestTableExists = `-- name: WeChatShopMaterialSyncRequestTableExists :one
+SELECT EXISTS (
+  SELECT 1
+  FROM pg_catalog.pg_class AS relation
+  JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = relation.relnamespace
+  WHERE namespace.nspname = 'public'
+    AND relation.relname = 'order_wechat_shop_material_sync_requests'
+    AND relation.relkind IN ('r', 'p')
+)
+`
+
+func (q *Queries) WeChatShopMaterialSyncRequestTableExists(ctx context.Context) (bool, error) {
+	row := q.db.QueryRow(ctx, weChatShopMaterialSyncRequestTableExists)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}

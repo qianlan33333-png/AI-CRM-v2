@@ -1947,17 +1947,22 @@ func (e CustomerSurveyChoiceAnswerQuestionType) Valid() bool {
 
 // Defines values for ExternalEffectRuntimeKind.
 const (
-	AudienceWebhook           ExternalEffectRuntimeKind = "audience_webhook"
-	CampaignDispatch          ExternalEffectRuntimeKind = "campaign_dispatch"
-	CampaignGroupAnnouncement ExternalEffectRuntimeKind = "campaign_group_announcement"
-	ContactTouch              ExternalEffectRuntimeKind = "contact_touch"
-	OrderPaymentCapture       ExternalEffectRuntimeKind = "order_payment_capture"
-	OrderRefund               ExternalEffectRuntimeKind = "order_refund"
-	OutboundMedia             ExternalEffectRuntimeKind = "outbound_media"
-	OutboundMessage           ExternalEffectRuntimeKind = "outbound_message"
-	SurveyWebhook             ExternalEffectRuntimeKind = "survey_webhook"
-	WecomProfileSync          ExternalEffectRuntimeKind = "wecom_profile_sync"
-	WecomTagSync              ExternalEffectRuntimeKind = "wecom_tag_sync"
+	AudienceWebhook                ExternalEffectRuntimeKind = "audience_webhook"
+	CampaignDispatch               ExternalEffectRuntimeKind = "campaign_dispatch"
+	CampaignGroupAnnouncement      ExternalEffectRuntimeKind = "campaign_group_announcement"
+	ContactAcquisitionAssetPublish ExternalEffectRuntimeKind = "contact_acquisition_asset_publish"
+	ContactTouch                   ExternalEffectRuntimeKind = "contact_touch"
+	GroupOpsBroadcast              ExternalEffectRuntimeKind = "group_ops_broadcast"
+	MediaWecomUpload               ExternalEffectRuntimeKind = "media_wecom_upload"
+	OrderPaymentCapture            ExternalEffectRuntimeKind = "order_payment_capture"
+	OrderPaymentPrepay             ExternalEffectRuntimeKind = "order_payment_prepay"
+	OrderRefund                    ExternalEffectRuntimeKind = "order_refund"
+	OutboundMedia                  ExternalEffectRuntimeKind = "outbound_media"
+	OutboundMessage                ExternalEffectRuntimeKind = "outbound_message"
+	ProductExternalPushTest        ExternalEffectRuntimeKind = "product_external_push_test"
+	SurveyWebhook                  ExternalEffectRuntimeKind = "survey_webhook"
+	WecomProfileSync               ExternalEffectRuntimeKind = "wecom_profile_sync"
+	WecomTagSync                   ExternalEffectRuntimeKind = "wecom_tag_sync"
 )
 
 // Valid indicates whether the value is a known member of the ExternalEffectRuntimeKind enum.
@@ -1969,15 +1974,25 @@ func (e ExternalEffectRuntimeKind) Valid() bool {
 		return true
 	case CampaignGroupAnnouncement:
 		return true
+	case ContactAcquisitionAssetPublish:
+		return true
 	case ContactTouch:
 		return true
+	case GroupOpsBroadcast:
+		return true
+	case MediaWecomUpload:
+		return true
 	case OrderPaymentCapture:
+		return true
+	case OrderPaymentPrepay:
 		return true
 	case OrderRefund:
 		return true
 	case OutboundMedia:
 		return true
 	case OutboundMessage:
+		return true
+	case ProductExternalPushTest:
 		return true
 	case SurveyWebhook:
 		return true
@@ -1995,8 +2010,11 @@ const (
 	ExternalEffectRuntimeOwnerAudience ExternalEffectRuntimeOwner = "audience"
 	ExternalEffectRuntimeOwnerCampaign ExternalEffectRuntimeOwner = "campaign"
 	ExternalEffectRuntimeOwnerContact  ExternalEffectRuntimeOwner = "contact"
+	ExternalEffectRuntimeOwnerGroupOps ExternalEffectRuntimeOwner = "group_ops"
+	ExternalEffectRuntimeOwnerMedia    ExternalEffectRuntimeOwner = "media"
 	ExternalEffectRuntimeOwnerOrder    ExternalEffectRuntimeOwner = "order"
 	ExternalEffectRuntimeOwnerOutbound ExternalEffectRuntimeOwner = "outbound"
+	ExternalEffectRuntimeOwnerProduct  ExternalEffectRuntimeOwner = "product"
 	ExternalEffectRuntimeOwnerSurvey   ExternalEffectRuntimeOwner = "survey"
 	ExternalEffectRuntimeOwnerWecom    ExternalEffectRuntimeOwner = "wecom"
 )
@@ -2010,9 +2028,15 @@ func (e ExternalEffectRuntimeOwner) Valid() bool {
 		return true
 	case ExternalEffectRuntimeOwnerContact:
 		return true
+	case ExternalEffectRuntimeOwnerGroupOps:
+		return true
+	case ExternalEffectRuntimeOwnerMedia:
+		return true
 	case ExternalEffectRuntimeOwnerOrder:
 		return true
 	case ExternalEffectRuntimeOwnerOutbound:
+		return true
+	case ExternalEffectRuntimeOwnerProduct:
 		return true
 	case ExternalEffectRuntimeOwnerSurvey:
 		return true

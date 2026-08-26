@@ -52,6 +52,32 @@ type GroupOpsExecution struct {
 	AttemptCount                 int32              `json:"attempt_count"`
 	CreatedAt                    pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                    pgtype.Timestamptz `json:"updated_at"`
+	SenderUseridSnapshot         pgtype.Text        `json:"sender_userid_snapshot"`
+}
+
+type GroupOpsExecutionIntent struct {
+	ID                     int64              `json:"id"`
+	RunID                  int64              `json:"run_id"`
+	PlanID                 int64              `json:"plan_id"`
+	NodeID                 int64              `json:"node_id"`
+	PlanRevision           int64              `json:"plan_revision"`
+	NodePosition           int32              `json:"node_position"`
+	TargetReference        string             `json:"target_reference"`
+	TargetDigest           string             `json:"target_digest"`
+	SenderUseridSnapshot   string             `json:"sender_userid_snapshot"`
+	ScheduledFor           pgtype.Timestamptz `json:"scheduled_for"`
+	ContentSnapshot        []byte             `json:"content_snapshot"`
+	ContentDigest          string             `json:"content_digest"`
+	MaterialSourceSnapshot []byte             `json:"material_source_snapshot"`
+	MaterialSourceDigest   string             `json:"material_source_digest"`
+	ExecutionKeyDigest     []byte             `json:"execution_key_digest"`
+	State                  string             `json:"state"`
+	ContinuationJobID      int64              `json:"continuation_job_id"`
+	ContinuationGeneration int64              `json:"continuation_generation"`
+	ExecutionID            pgtype.Int8        `json:"execution_id"`
+	FailureCode            pgtype.Text        `json:"failure_code"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }
 
 type GroupOpsPlan struct {
@@ -74,4 +100,18 @@ type GroupOpsRun struct {
 	ScheduledFor    pgtype.Timestamptz `json:"scheduled_for"`
 	AcceptedAt      pgtype.Timestamptz `json:"accepted_at"`
 	AcceptedBy      string             `json:"accepted_by"`
+}
+
+type GroupOpsWecomGroupMessageReceipt struct {
+	ExternalEffectID       int64              `json:"external_effect_id"`
+	ExecutionID            int64              `json:"execution_id"`
+	Msgid                  string             `json:"msgid"`
+	SenderUserid           string             `json:"sender_userid"`
+	ChatID                 string             `json:"chat_id"`
+	Userid                 string             `json:"userid"`
+	SendStatus             pgtype.Int4        `json:"send_status"`
+	TaskEvidenceDigest     string             `json:"task_evidence_digest"`
+	DeliveryEvidenceDigest pgtype.Text        `json:"delivery_evidence_digest"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
 }

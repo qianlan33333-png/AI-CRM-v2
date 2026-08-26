@@ -109,6 +109,8 @@ func typedDomainControlRequired(owner eer.Owner, kind eer.Kind) bool {
 		return kind == eer.KindOrderPaymentPrepay || kind == eer.KindOrderRefund
 	case eer.OwnerGroupOps:
 		return kind == eer.KindGroupOpsBroadcast
+	case eer.OwnerMedia:
+		return kind == eer.KindMediaWeComUpload
 	case eer.OwnerProduct:
 		return kind == eer.KindProductExternalPushTest
 	default:

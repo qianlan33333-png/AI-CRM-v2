@@ -28,6 +28,7 @@ type Querier interface {
 	DeleteMediaContentPackageRefs(ctx context.Context, packageID int64) error
 	DeleteMediaImage(ctx context.Context, imageID int64) (int64, error)
 	DeleteMediaMiniProgram(ctx context.Context, id int64) error
+	GetGroupOpsUploadPreparation(ctx context.Context, externalEffectID int64) (GetGroupOpsUploadPreparationRow, error)
 	GetMediaAttachment(ctx context.Context, attachmentID int64) (GetMediaAttachmentRow, error)
 	GetMediaAttachmentMutation(ctx context.Context, arg GetMediaAttachmentMutationParams) (GetMediaAttachmentMutationRow, error)
 	GetMediaAttachmentUploadPart(ctx context.Context, arg GetMediaAttachmentUploadPartParams) (MediaAttachmentUploadPart, error)
@@ -47,7 +48,10 @@ type Querier interface {
 	GetOutboundMediaAcceptance(ctx context.Context, arg GetOutboundMediaAcceptanceParams) (GetOutboundMediaAcceptanceRow, error)
 	GetOutboundMediaEffectBinding(ctx context.Context, arg GetOutboundMediaEffectBindingParams) (OutboundMediaEffectBinding, error)
 	GetOutboundMediaReconciliationReceipt(ctx context.Context, effectID int64) (OutboundMediaReconciliationReceipt, error)
+	HasSufficientGroupOpsUploadLease(ctx context.Context, arg HasSufficientGroupOpsUploadLeaseParams) (bool, error)
 	InitiateMediaAttachmentUpload(ctx context.Context, arg InitiateMediaAttachmentUploadParams) (InitiateMediaAttachmentUploadRow, error)
+	InsertGroupOpsUploadPreparation(ctx context.Context, arg InsertGroupOpsUploadPreparationParams) (InsertGroupOpsUploadPreparationRow, error)
+	InsertGroupOpsUploadReceipt(ctx context.Context, arg InsertGroupOpsUploadReceiptParams) (MediaWecomUploadReceipt, error)
 	InsertMediaAttachment(ctx context.Context, arg InsertMediaAttachmentParams) (InsertMediaAttachmentRow, error)
 	InsertMediaAttachmentBlob(ctx context.Context, arg InsertMediaAttachmentBlobParams) error
 	InsertMediaContentPackageAttachmentRef(ctx context.Context, arg InsertMediaContentPackageAttachmentRefParams) error
@@ -73,6 +77,11 @@ type Querier interface {
 	ListMediaImageFacetRows(ctx context.Context) ([]ListMediaImageFacetRowsRow, error)
 	ListMediaImagePage(ctx context.Context, arg ListMediaImagePageParams) ([]ListMediaImagePageRow, error)
 	ListMediaMiniPrograms(ctx context.Context, arg ListMediaMiniProgramsParams) ([]ListMediaMiniProgramsRow, error)
+	LockGroupOpsAttachmentSource(ctx context.Context, attachmentID int64) (LockGroupOpsAttachmentSourceRow, error)
+	LockGroupOpsGroupInviteSource(ctx context.Context, groupInviteID int64) (LockGroupOpsGroupInviteSourceRow, error)
+	LockGroupOpsImageSource(ctx context.Context, imageID int64) (LockGroupOpsImageSourceRow, error)
+	LockGroupOpsMiniProgramSource(ctx context.Context, miniprogramID int64) (LockGroupOpsMiniProgramSourceRow, error)
+	LockGroupOpsUploadPreparationGeneration(ctx context.Context, lockKey int64) error
 	LockMediaAttachmentForUpdate(ctx context.Context, attachmentID int64) (LockMediaAttachmentForUpdateRow, error)
 	LockMediaAttachmentReference(ctx context.Context, attachmentID int64) (int64, error)
 	LockMediaGroupInvite(ctx context.Context, id int64) (int64, error)
@@ -81,7 +90,14 @@ type Querier interface {
 	LockMediaImageReference(ctx context.Context, id int64) (int64, error)
 	LockMediaMiniProgram(ctx context.Context, id int64) (int64, error)
 	LockOutboundMediaEffectForReconcile(ctx context.Context, arg LockOutboundMediaEffectForReconcileParams) (LockOutboundMediaEffectForReconcileRow, error)
+	MarkGroupOpsUploadPreparationFinalFailed(ctx context.Context, arg MarkGroupOpsUploadPreparationFinalFailedParams) error
+	MarkGroupOpsUploadPreparationOutcomeUnknown(ctx context.Context, arg MarkGroupOpsUploadPreparationOutcomeUnknownParams) error
+	MarkGroupOpsUploadPreparationReady(ctx context.Context, arg MarkGroupOpsUploadPreparationReadyParams) error
+	NextGroupOpsUploadPreparationGeneration(ctx context.Context, arg NextGroupOpsUploadPreparationGenerationParams) (int32, error)
 	PutMediaAttachmentUploadPart(ctx context.Context, arg PutMediaAttachmentUploadPartParams) (int64, error)
+	ReadGroupOpsPreparedUpload(ctx context.Context, arg ReadGroupOpsPreparedUploadParams) (ReadGroupOpsPreparedUploadRow, error)
+	ReadGroupOpsUploadPreparationAttempt(ctx context.Context, externalEffectID int64) (ReadGroupOpsUploadPreparationAttemptRow, error)
+	ReadLatestGroupOpsUploadPreparationState(ctx context.Context, arg ReadLatestGroupOpsUploadPreparationStateParams) (string, error)
 	ReadMediaAttachment(ctx context.Context, attachmentID int64) (ReadMediaAttachmentRow, error)
 	ReadMediaAttachmentUploadForCompletion(ctx context.Context, uploadID int64) (ReadMediaAttachmentUploadForCompletionRow, error)
 	ReadOutboundMediaEffectDetail(ctx context.Context, arg ReadOutboundMediaEffectDetailParams) (ReadOutboundMediaEffectDetailRow, error)

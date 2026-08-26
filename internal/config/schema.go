@@ -39,6 +39,7 @@ const (
 	weComSidebarHostsEnv              = "AICRM_WECOM_SIDEBAR_ALLOWED_HOSTS"
 	identityHMACKeyEnv                = "AICRM_IDENTITY_HMAC_KEY"
 	apiClientJWTSecretEnv             = "AICRM_API_CLIENT_JWT_SECRET"
+	groupOpsWebhookSecretEnv          = "AICRM_AUTH_GROUP_OPS_WEBHOOK_SECRET"
 	surveyPublicKeyEnv                = "AICRM_SURVEY_PUBLIC_TOKEN_KEY"
 	domainVerificationDirEnv          = "AICRM_DOMAIN_VERIFICATION_DIR"
 	applicationEnvironmentEnv         = "AICRM_ENV"
@@ -313,6 +314,20 @@ type APIClient struct {
 	JWTSecret APIClientJWTSecret
 }
 
+// GroupOpsWebhookSecret is optional startup-only HMAC key material. Without
+// it the public Group Ops webhook remains fail-closed.
+type GroupOpsWebhookSecret struct {
+	value      [32]byte
+	configured bool
+}
+
+func (key GroupOpsWebhookSecret) Value() []byte    { return append([]byte(nil), key.value[:]...) }
+func (key GroupOpsWebhookSecret) Configured() bool { return key.configured }
+func (GroupOpsWebhookSecret) String() string       { return "[REDACTED]" }
+func (GroupOpsWebhookSecret) GoString() string     { return "[REDACTED]" }
+
+type GroupOps struct{ WebhookSecret GroupOpsWebhookSecret }
+
 // SurveyPublicKey is optional as a whole. A missing key leaves every public
 // Survey operation fail-closed with 503, while an invalid configured value
 // rejects process startup. Generic formatting can never reveal the key.
@@ -359,6 +374,7 @@ type Root struct {
 	Commerce           CommerceProviders
 	Identity           Identity
 	APIClient          APIClient
+	GroupOps           GroupOps
 	Survey             Survey
 	DomainVerification DomainVerification
 	Release            Release
@@ -418,6 +434,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		root.WeCom.Sidebar = parseWeComSidebar(lookup, &problems)
 		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
 		root.APIClient.JWTSecret = parseOptionalAPIClientJWTSecret(lookup, &problems)
+		root.GroupOps.WebhookSecret = parseOptionalGroupOpsWebhookSecret(lookup, &problems)
 		root.Survey.PublicKey = parseOptionalSurveyPublicKey(lookup, &problems)
 		root.DomainVerification.Directory, _ = lookup(domainVerificationDirEnv)
 		root.Release.Environment, _ = lookup(applicationEnvironmentEnv)
@@ -503,6 +520,22 @@ func parseOptionalAPIClientJWTSecret(lookup environmentLookup, problems *[]strin
 		return APIClientJWTSecret{}
 	}
 	var key APIClientJWTSecret
+	copy(key.value[:], decoded)
+	key.configured = true
+	return key
+}
+
+func parseOptionalGroupOpsWebhookSecret(lookup environmentLookup, problems *[]string) GroupOpsWebhookSecret {
+	value, present := lookup(groupOpsWebhookSecretEnv)
+	if !present || value == "" {
+		return GroupOpsWebhookSecret{}
+	}
+	decoded, err := base64.RawURLEncoding.Strict().DecodeString(value)
+	if err != nil || len(decoded) != 32 || base64.RawURLEncoding.EncodeToString(decoded) != value {
+		*problems = append(*problems, "group_ops.webhook_secret must be 32-byte canonical base64url")
+		return GroupOpsWebhookSecret{}
+	}
+	var key GroupOpsWebhookSecret
 	copy(key.value[:], decoded)
 	key.configured = true
 	return key

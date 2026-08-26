@@ -301,13 +301,14 @@ func checkWeCom(text, source, rel string) error {
 	if cut := strings.IndexAny(operation, "?# \t\r\n\""); cut >= 0 {
 		operation = operation[:cut]
 	}
-	outboundWrite := map[string]bool{"message/send": true, "externalcontact/add_msg_template": true, "externalcontact/remind_groupmsg_send": true, "externalcontact/add_contact_way": true, "externalcontact/update_contact_way": true, "externalcontact/del_contact_way": true, "externalcontact/mark_tag": true}
+	outboundWrite := map[string]bool{"message/send": true, "media/upload": true, "externalcontact/add_msg_template": true, "externalcontact/remind_groupmsg_send": true, "externalcontact/add_contact_way": true, "externalcontact/update_contact_way": true, "externalcontact/del_contact_way": true, "externalcontact/mark_tag": true}
+	wechatShopWrite := map[string]bool{"stable_token": true}
 	wecomWrite := map[string]bool{"externalcontact/add_contact_way": true, "externalcontact/customer_acquisition/create_link": true}
-	wecomRead := map[string]bool{"gettoken": true, "auth/getuserinfo": true, "ticket/get": true, "externalcontact/get": true, "externalcontact/list": true, "externalcontact/batch/get_by_user": true, "externalcontact/get_follow_user_list": true, "externalcontact/groupchat/get": true, "externalcontact/groupchat/list": true, "externalcontact/get_corp_tag_list": true, "externalcontact/get_contact_way": true, "externalcontact/list_contact_way": true, "externalcontact/customer_acquisition/get": true, "externalcontact/customer_acquisition/list_link": true}
-	if outboundWrite[operation] && source == "outbound" || wecomWrite[operation] && source == "wecom" || wecomRead[operation] && source == "wecom" {
+	wecomRead := map[string]bool{"gettoken": true, "auth/getuserinfo": true, "ticket/get": true, "externalcontact/get": true, "externalcontact/list": true, "externalcontact/batch/get_by_user": true, "externalcontact/get_follow_user_list": true, "externalcontact/groupchat/get": true, "externalcontact/groupchat/list": true, "externalcontact/get_corp_tag_list": true, "externalcontact/get_contact_way": true, "externalcontact/list_contact_way": true, "externalcontact/customer_acquisition/get": true, "externalcontact/customer_acquisition/list_link": true, "externalcontact/get_groupmsg_task": true, "externalcontact/get_groupmsg_send_result": true}
+	if outboundWrite[operation] && source == "outbound" || wechatShopWrite[operation] && source == "order" || wecomWrite[operation] && source == "wecom" || wecomRead[operation] && source == "wecom" {
 		return nil
 	}
-	if !outboundWrite[operation] && !wecomWrite[operation] && !wecomRead[operation] {
+	if !outboundWrite[operation] && !wechatShopWrite[operation] && !wecomWrite[operation] && !wecomRead[operation] {
 		return fmt.Errorf("unknown WeCom operation in %s: %s", rel, operation)
 	}
 	return fmt.Errorf("WeCom operation ownership violation in %s: %s", rel, operation)

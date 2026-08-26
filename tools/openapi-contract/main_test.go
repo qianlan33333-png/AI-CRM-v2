@@ -323,6 +323,15 @@ func TestExternalEffectsRuntimeNativePackageRegistryRemainsClosed(t *testing.T) 
 	}
 }
 
+func TestExternalEffectsRuntimeEnumsRemainComplete(t *testing.T) {
+	doc, inventory := fresh(t)
+	if err := validateExternalEffectRuntimeEnumContract(doc); err != nil {
+		t.Fatal(err)
+	}
+	doc.Components.Schemas["ExternalEffectRuntimeOwner"].Value.Enum = []any{"campaign"}
+	reject(t, doc, inventory)
+}
+
 func TestCampaignInitiationTouchPlanContractRemainsClosed(t *testing.T) {
 	doc, inventory := fresh(t)
 	operations := map[string]struct {

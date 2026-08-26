@@ -11,6 +11,7 @@ seed() {
   local root="$1"
   mkdir -p "$root/docs/architecture" "$root/internal/contact/store/queries" \
     "$root/internal/segment/store/queries" "$root/internal/outbound/worker" \
+    "$root/internal/order/provider" \
     "$root/internal/wecom/store" "$root/internal/platform/store" \
     "$root/internal/events/store/queries" \
     "$root/internal/media/store/queries" \
@@ -25,6 +26,8 @@ seed() {
   printf '%s\n' 'INSERT INTO media_image_delete_receipts (id) VALUES (1);' >"$root/internal/media/store/queries/write.sql"
   printf '%s\n' "SELECT 'UPDATE identities'; -- DELETE FROM tags" 'SELECT * FROM customers;' >"$root/internal/segment/store/queries/read.sql"
   printf '%s\n' 'package worker' 'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/message/send"' >"$root/internal/outbound/worker/client.go"
+  printf '%s\n' 'package worker' 'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/media/upload"' >"$root/internal/outbound/worker/media.go"
+  printf '%s\n' 'package provider' 'const endpoint = "https://api.weixin.qq.com/cgi-bin/stable_token"' >"$root/internal/order/provider/wechat_shop.go"
   printf '%s\n' 'package store' \
     'const endpoint = "https://qyapi.weixin.qq.com/cgi-bin/externalcontact/get"' \
     'const agentConfigTicket = "/cgi-bin/ticket/get"' \
@@ -34,6 +37,8 @@ seed() {
     'const createAcquisitionLink = "/cgi-bin/externalcontact/customer_acquisition/create_link"' \
     'const getAcquisitionLink = "/cgi-bin/externalcontact/customer_acquisition/get"' \
     'const listAcquisitionLinks = "/cgi-bin/externalcontact/customer_acquisition/list_link"' \
+    'const getGroupMessageTask = "/cgi-bin/externalcontact/get_groupmsg_task"' \
+    'const getGroupMessageSendResult = "/cgi-bin/externalcontact/get_groupmsg_send_result"' \
     >"$root/internal/wecom/store/client.go"
   printf '%s\n' 'package fixtures' \
     'const ddl = "CREATE TABLE acceptance_fixtures.fixture_probe (id bigint PRIMARY KEY)"' \

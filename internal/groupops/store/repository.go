@@ -20,7 +20,7 @@ var _ groupopsapp.Store = (*Repository)(nil)
 
 func NewRepository() *Repository { return &Repository{} }
 
-func (r *Repository) List(ctx context.Context, limit, offset int32) ([]groupopsport.Plan, error) {
+func (r *Repository) List(ctx context.Context, limit, offset int32) ([]groupopsport.PlanListItem, error) {
 	q, err := queries(ctx)
 	if r == nil || err != nil {
 		return nil, unavailable(err)
@@ -29,9 +29,9 @@ func (r *Repository) List(ctx context.Context, limit, offset int32) ([]groupopsp
 	if err != nil {
 		return nil, unavailable(err)
 	}
-	plans := make([]groupopsport.Plan, len(rows))
+	plans := make([]groupopsport.PlanListItem, len(rows))
 	for index, row := range rows {
-		plans[index], err = plan(row)
+		plans[index], err = listPlan(row)
 		if err != nil {
 			return nil, err
 		}
@@ -130,11 +130,19 @@ func (r *Repository) Save(ctx context.Context, value groupopsport.Detail) error 
 		return unavailable(err)
 	}
 	for _, node := range value.Nodes {
+		materialPlanValue := node.MaterialPlan
+		if materialPlanValue.References == nil {
+			materialPlanValue.References = []groupopsport.MaterialReference{}
+		}
+		materialPlan, marshalErr := json.Marshal(materialPlanValue)
+		if marshalErr != nil {
+			return groupopsapp.ErrInvalid
+		}
 		if node.ID == 0 {
-			err = q.CreateGroupOpsPlanNode(ctx, groupopsdb.CreateGroupOpsPlanNodeParams{PlanID: value.Plan.ID, Position: node.Position, Kind: string(node.Kind), MessageText: node.MessageText, DelayMinutes: node.DelayMinutes, MaterialReference: node.MaterialRef})
+			err = q.CreateGroupOpsPlanNode(ctx, groupopsdb.CreateGroupOpsPlanNodeParams{PlanID: value.Plan.ID, Position: node.Position, Kind: string(node.Kind), MessageText: node.MessageText, DelayMinutes: node.DelayMinutes, MaterialReference: node.MaterialRef, MaterialPlan: materialPlan})
 		} else {
 			var updated int64
-			updated, err = q.UpdateGroupOpsPlanNode(ctx, groupopsdb.UpdateGroupOpsPlanNodeParams{PlanID: value.Plan.ID, NodeID: node.ID, Position: node.Position, Kind: string(node.Kind), MessageText: node.MessageText, DelayMinutes: node.DelayMinutes, MaterialReference: node.MaterialRef})
+			updated, err = q.UpdateGroupOpsPlanNode(ctx, groupopsdb.UpdateGroupOpsPlanNodeParams{PlanID: value.Plan.ID, NodeID: node.ID, Position: node.Position, Kind: string(node.Kind), MessageText: node.MessageText, DelayMinutes: node.DelayMinutes, MaterialReference: node.MaterialRef, MaterialPlan: materialPlan})
 			if err == nil && updated != 1 {
 				return groupopsapp.ErrConflict
 			}
@@ -223,7 +231,11 @@ func detail(ctx context.Context, q *groupopsdb.Queries, row groupopsdb.GroupOpsP
 		result.GroupAssets[index] = groupopsport.GroupAsset{ID: asset.ID, AssetRef: asset.AssetReference}
 	}
 	for index, node := range nodes {
-		result.Nodes[index] = groupopsport.Node{ID: node.ID, Position: node.Position, Kind: groupopsport.NodeKind(node.Kind), MessageText: node.MessageText, DelayMinutes: node.DelayMinutes, MaterialRef: node.MaterialReference}
+		var materialPlan groupopsport.MaterialPlan
+		if err := json.Unmarshal(node.MaterialPlan, &materialPlan); err != nil || materialPlan.References == nil {
+			return groupopsport.Detail{}, groupopsapp.ErrUnavailable
+		}
+		result.Nodes[index] = groupopsport.Node{ID: node.ID, Position: node.Position, Kind: groupopsport.NodeKind(node.Kind), MessageText: node.MessageText, DelayMinutes: node.DelayMinutes, MaterialRef: node.MaterialReference, MaterialPlan: materialPlan}
 	}
 	if reference == "" {
 		result.WebhookDescriptor = groupopsport.WebhookDescriptor{Description: "not configured"}
@@ -238,6 +250,17 @@ func plan(row groupopsdb.GroupOpsPlan) (groupopsport.Plan, error) {
 		return groupopsport.Plan{}, groupopsapp.ErrUnavailable
 	}
 	return groupopsport.Plan{ID: row.ID, Name: row.Name, Status: groupopsport.PlanStatus(row.Status), Revision: row.Revision, CreatedBy: row.CreatedBy, UpdatedBy: row.UpdatedBy, CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time}, nil
+}
+
+func listPlan(row groupopsdb.ListGroupOpsPlansRow) (groupopsport.PlanListItem, error) {
+	value, err := plan(groupopsdb.GroupOpsPlan{
+		ID: row.ID, Name: row.Name, Status: row.Status, Revision: row.Revision,
+		CreatedBy: row.CreatedBy, UpdatedBy: row.UpdatedBy, CreatedAt: row.CreatedAt, UpdatedAt: row.UpdatedAt,
+	})
+	if err != nil || row.QueueCount < 0 {
+		return groupopsport.PlanListItem{}, groupopsapp.ErrUnavailable
+	}
+	return groupopsport.PlanListItem{Plan: value, QueueCount: row.QueueCount}, nil
 }
 
 func receipt(id int64, operation, actorScope string, keyDigest, payloadDigest []byte, state string, snapshot []byte) groupopsapp.Receipt {

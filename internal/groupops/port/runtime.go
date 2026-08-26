@@ -33,6 +33,12 @@ type RuntimeSafety struct {
 
 func DisabledRuntimeSafety() RuntimeSafety { return RuntimeSafety{} }
 
+// DispatchEnabledRuntimeSafety describes only whether this runtime can accept
+// a new dispatch intent. It never asserts that a Provider call occurred.
+func DispatchEnabledRuntimeSafety() RuntimeSafety {
+	return RuntimeSafety{ProviderExecutionEligible: true}
+}
+
 type RunDuePreview struct {
 	PlanID            int64      `json:"plan_id,string"`
 	PlanStatus        PlanStatus `json:"plan_status"`
@@ -76,15 +82,36 @@ type Execution struct {
 	UpdatedAt                     time.Time      `json:"updated_at"`
 }
 
+type ExecutionIntentState string
+
+const (
+	ExecutionIntentMaterialPending ExecutionIntentState = "material_pending"
+	ExecutionIntentReadyToAccept   ExecutionIntentState = "ready_to_accept"
+	ExecutionIntentAccepted        ExecutionIntentState = "accepted"
+	ExecutionIntentFinalFailed     ExecutionIntentState = "final_failed"
+)
+
+type ExecutionIntent struct {
+	ID              int64                `json:"intent_id,string"`
+	NodeID          int64                `json:"node_id,string"`
+	NodePosition    int32                `json:"node_position"`
+	TargetReference string               `json:"target_reference"`
+	ScheduledFor    time.Time            `json:"scheduled_for"`
+	State           ExecutionIntentState `json:"state"`
+	ManualBlocker   bool                 `json:"manual_blocker"`
+}
+
 type RunSummary struct {
-	Run              Run         `json:"run"`
-	Executions       []Execution `json:"executions"`
-	Accepted         int32       `json:"accepted"`
-	ProviderAccepted int32       `json:"provider_accepted_count"`
-	DeliveryProven   int32       `json:"delivery_proven_count"`
-	OutcomeUnknown   int32       `json:"outcome_unknown"`
-	Reconciled       int32       `json:"reconciled"`
-	FinalFailed      int32       `json:"final_failed"`
+	Run              Run               `json:"run"`
+	Executions       []Execution       `json:"executions"`
+	Accepted         int32             `json:"accepted"`
+	ProviderAccepted int32             `json:"provider_accepted_count"`
+	DeliveryProven   int32             `json:"delivery_proven_count"`
+	OutcomeUnknown   int32             `json:"outcome_unknown"`
+	Reconciled       int32             `json:"reconciled"`
+	FinalFailed      int32             `json:"final_failed"`
+	MaterialPending  int32             `json:"material_pending_count"`
+	PendingIntents   []ExecutionIntent `json:"pending_intents"`
 	RuntimeSafety
 }
 
@@ -173,6 +200,19 @@ type OperationMemberRefreshCommand struct {
 }
 
 type GroupDirectorySource interface {
-	ListOwnedGroups(context.Context, int64, int32) ([]GroupDirectoryItem, error)
+	ListOwnedGroups(context.Context, int64, int32) (GroupDirectorySnapshot, error)
 	RefreshOperationMembers(context.Context, int32) ([]OperationMember, error)
+}
+
+// GroupDirectorySnapshot may replace a local owner projection only when
+// Complete is true. A partial provider page is never a deletion authority.
+type GroupDirectorySnapshot struct {
+	Items    []GroupDirectoryItem
+	Complete bool
+}
+
+// ExecutionSenderResolver freezes the verified active owner of one local
+// group target. It never chooses a plan member or process-wide default.
+type ExecutionSenderResolver interface {
+	ResolveExecutionSender(context.Context, string) (string, bool, error)
 }

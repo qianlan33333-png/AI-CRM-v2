@@ -49,6 +49,7 @@ import (
 	externaleffectsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
 	groupopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/app"
 	groupopshttp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/http"
+	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 	groupopsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/store"
 	hxcapp "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/app"
 	hxcstore "github.com/qianlan33333-png/AI-CRM-v2/internal/hxc/store"
@@ -105,6 +106,7 @@ import (
 	wecomapp "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/app"
 	wecomcallback "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/callback"
 	wecomclient "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/client"
+	groupopsdirectory "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/groupopsdirectory"
 	wecomstore "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/store"
 	wecomtag "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/tag"
 )
@@ -1459,19 +1461,110 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	groupOpsRepository := groupopsstore.NewRepository()
-	groupOpsRuntime, err := groupopsapp.NewRuntimeService(
-		uow,
-		groupOpsRepository,
-		groupOpsRepository,
-		externalEffectsRuntime,
-		channelStaffDirectory,
-		nil,
-	)
+	adminOpsService := adminopsapp.NewService(uow, adminopsstore.NewRepository())
+	var serviceAuthenticator operationServiceAuthenticator
+	var apiClientJWT *apiClientJWTAuthenticator
+	if config.APIClient.JWTSecret.Configured() {
+		serviceAuthenticator = newAPIClientJWTAuthenticator(adminOpsService, config.APIClient.JWTSecret.Value())
+		apiClientJWT, _ = serviceAuthenticator.(*apiClientJWTAuthenticator)
+	}
+	groupOpsProtocolReplay, err := groupopsstore.NewProtocolReplayStore(pool)
 	if err != nil {
 		pool.Close()
 		return nil, err
 	}
+	groupOpsProtocols := &groupOpsProtocolAuthenticator{jwt: apiClientJWT, replay: groupOpsProtocolReplay, now: time.Now}
+	if config.GroupOps.WebhookSecret.Configured() {
+		groupOpsProtocols.webhookKey = config.GroupOps.WebhookSecret.Value()
+	}
+	groupOpsRepository := groupopsstore.NewRepository()
+	groupOpsStaffDirectory := contactstore.NewStaffDirectoryRepository(pool)
+	var groupOpsDirectorySource groupopsport.GroupDirectorySource
+	if config.WeCom.DirectorySync.Enabled {
+		credentials, credentialErr := wecomclient.NewCredentials(config.WeCom.OAuth.CorpID, config.WeCom.OAuth.Secret.Value())
+		if credentialErr != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		providerHTTP := &http.Client{Timeout: 5 * time.Second}
+		tokens, tokenErr := wecomclient.NewTokenProvider(wecomclient.TokenProviderConfig{
+			BaseURL: wecomclient.ProductionBaseURL, Credentials: credentials, HTTPClient: providerHTTP, Now: time.Now,
+		})
+		if tokenErr != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+		groupOpsDirectorySource, err = groupopsdirectory.New(groupopsdirectory.Config{
+			BaseURL: wecomclient.ProductionBaseURL, HTTPClient: providerHTTP, Token: tokens,
+			OwnerStaff:  groupOpsDirectoryOwnerResolver{staff: groupOpsStaffDirectory},
+			ActiveStaff: groupOpsDirectoryActiveStaff{staff: groupOpsStaffDirectory},
+		})
+		if err != nil {
+			pool.Close()
+			return nil, errInvalidAPIComponent
+		}
+	}
+	groupOpsJobs, err := groupopsstore.NewDispatchJobInserter(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	groupOpsReceipts, err := groupopsstore.NewGroupMessageReceiptStore(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	var groupOpsEvidence groupopsport.ReconciliationEvidenceVerifier
+	if config.WeCom.Outbound.Enabled {
+		groupOpsEvidence, err = newGroupOpsEvidenceVerifier(config.WeCom.Outbound, &http.Client{Timeout: 5 * time.Second}, time.Now, groupOpsReceipts)
+		if err != nil {
+			pool.Close()
+			return nil, err
+		}
+	}
+	var groupOpsRuntime *groupopsapp.RuntimeService
+	if config.WeCom.Outbound.Enabled {
+		groupOpsMaterials, _, materialErr := newGroupOpsMaterialRuntime(pool, uow, externalEffectsRuntime, config.WeCom.Outbound.CorpID)
+		if materialErr != nil {
+			pool.Close()
+			return nil, materialErr
+		}
+		continuations, continuationErr := groupopsstore.NewMaterialContinuationJobInserter(pool)
+		if continuationErr != nil {
+			pool.Close()
+			return nil, continuationErr
+		}
+		groupOpsRuntime, err = groupopsapp.NewRuntimeServiceWithMaterials(
+			uow,
+			groupOpsRepository,
+			groupOpsRepository,
+			externalEffectsRuntime,
+			groupOpsStaffDirectory,
+			groupOpsDirectorySource,
+			groupOpsSenderResolver{groups: groupOpsRepository, staff: groupOpsStaffDirectory},
+			groupOpsJobs,
+			groupOpsMaterials,
+			continuations,
+			groupOpsEvidence,
+		)
+	} else {
+		groupOpsRuntime, err = groupopsapp.NewRuntimeService(
+			uow,
+			groupOpsRepository,
+			groupOpsRepository,
+			externalEffectsRuntime,
+			groupOpsStaffDirectory,
+			groupOpsDirectorySource,
+			groupOpsSenderResolver{groups: groupOpsRepository, staff: groupOpsStaffDirectory},
+			groupOpsJobs,
+			groupOpsEvidence,
+		)
+	}
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	groupOpsRuntime.SetDispatchEnabled(config.WeCom.Outbound.Enabled)
 	productExternalPushHandler, err := producthttp.NewExternalPushHandler(
 		productapp.NewCommerceExternalPushService(
 			uow,
@@ -1488,7 +1581,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	groupOpsHandler := groupopshttp.NewWithRuntime(
 		groupopsapp.NewService(uow, groupOpsRepository, channelStaffDirectory, eventstore.NewAppender()),
 		groupOpsRuntime,
-		nil,
+		groupOpsProtocols,
 	)
 	legacyAIAudienceConfigurationHandler, err := legacyaudience.NewLocalConfigurationHandler(
 		groupOpsOperationMemberApplication{LocalConfigurationApplication: legacyAIAudienceConfigurationService, runtime: groupOpsRuntime},
@@ -1731,7 +1824,6 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		WeComCallbackToken: config.WeCom.Callback.Enabled, WeComCallbackAESKey: config.WeCom.Callback.Enabled,
 		AuthJWTSecret: config.APIClient.JWTSecret.Configured(),
 	})
-	adminOpsService := adminopsapp.NewService(uow, adminopsstore.NewRepository())
 	var externalCustomerRead *legacyExternalCustomerReadHandler
 	weComIdentityCorpID := config.WeCom.OAuth.CorpID
 	if weComIdentityCorpID == "" {
@@ -1751,10 +1843,6 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 			pool.Close()
 			return nil, tagErr
 		}
-	}
-	var serviceAuthenticator operationServiceAuthenticator
-	if config.APIClient.JWTSecret.Configured() {
-		serviceAuthenticator = newAPIClientJWTAuthenticator(adminOpsService, config.APIClient.JWTSecret.Value())
 	}
 	externalCustomerRead, err = newLegacyExternalCustomerReadHandler(
 		customerService, customerDetailService, customerEventService, customerContextService,
@@ -2714,6 +2802,8 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				{http.MethodPost, groupopshttp.GroupsSyncPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.SyncGroups)},
 				{http.MethodGet, groupopshttp.GroupPickerPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListGroupPicker)},
 				{http.MethodPost, groupopshttp.GroupPickerSyncPath, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.SyncGroupPicker)},
+				{http.MethodGet, groupopshttp.OperationMembersPath, authport.CapabilityAdminRead, false, http.HandlerFunc(legacy.groupOps.ListOperationMembers)},
+				{http.MethodPost, groupopshttp.OperationMembersSync, authport.CapabilityOperationsManage, true, http.HandlerFunc(legacy.groupOps.SyncOperationMembers)},
 			} {
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, route.endpoint); err != nil {
 					return nil, err

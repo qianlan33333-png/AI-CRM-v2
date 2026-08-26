@@ -268,7 +268,7 @@ var nativePackageOperations = map[string]nativePackageOperation{
 	"putGroupOpsWebhookDescriptor": {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/webhook-descriptor", "PUT", p4GroupOpsLocalEvidence, "operations.manage", "human_session", "internal", "group_ops.local_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"previewGroupOpsPlanContent":   {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/content/preview", "POST", p4GroupOpsLocalEvidence, "admin.read", "human_session", "internal", "group_ops.local_read_model", "required", map[string]string{"admin": "global"}},
 	"listGroupOpsExecutions":       {"/api/admin/automation-conversion/group-ops/plans/{plan_id}/executions", "GET", p4GroupOpsRuntimeEvidence, "admin.read", "human_session", "internal", "group_ops.execution_projection", "none", map[string]string{"admin": "global"}},
-	"reconcileGroupOpsExecution":   {"/api/admin/automation-conversion/group-ops/plans/executions/{execution_id}/reconcile", "POST", p4GroupOpsRuntimeEvidence, "operations.manage", "human_session", "internal", "group_ops.execution_reconciliation_unavailable", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"reconcileGroupOpsExecution":   {"/api/admin/automation-conversion/group-ops/plans/executions/{execution_id}/reconcile", "POST", p4GroupOpsRuntimeEvidence, "operations.manage", "human_session", "internal", "group_ops.execution_reconciliation", "required", map[string]string{"admin": "global", "ops": "global"}},
 
 	"getCloudOrchestratorWorkspace":              {"/admin/cloud-orchestrator", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
 	"getCloudOrchestratorPlansWorkspace":         {"/admin/cloud-orchestrator/plans", "GET", p4CloudOrchestratorEvidence, "admin.read", "human_session", "internal", "static", "none", map[string]string{"admin": "global"}},
@@ -328,10 +328,10 @@ var nativePackageExternalEffects = map[string]string{
 }
 
 var groupOpsCanonicalExternalEffects = map[string]string{
-	"acceptGroupOpsRunDue":       "eer_accepted_provider_disabled",
-	"acceptGroupOpsBroadcast":    "eer_accepted_provider_disabled",
-	"acceptGroupOpsWebhook":      "eer_accepted_provider_disabled",
-	"reconcileGroupOpsExecution": "none",
+	"acceptGroupOpsRunDue":       "group_ops_eer_or_media_preparation_intent",
+	"acceptGroupOpsBroadcast":    "group_ops_eer_or_media_preparation_intent",
+	"acceptGroupOpsWebhook":      "group_ops_eer_or_media_preparation_intent",
+	"reconcileGroupOpsExecution": "eer_reconciliation",
 }
 
 var groupOpsCanonicalProtocolAuth = map[string]string{
@@ -2757,6 +2757,35 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	}
 	if err := validateLegacyHealthContract(doc); err != nil {
 		return err
+	}
+	if err := validateExternalEffectRuntimeEnumContract(doc); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateExternalEffectRuntimeEnumContract(doc *openapi3.T) error {
+	want := map[string][]string{
+		"ExternalEffectRuntimeOwner": {"audience", "campaign", "contact", "group_ops", "media", "order", "outbound", "product", "survey", "wecom"},
+		"ExternalEffectRuntimeKind": {
+			"audience_webhook", "campaign_dispatch", "campaign_group_announcement", "contact_acquisition_asset_publish", "contact_touch",
+			"group_ops_broadcast", "media_wecom_upload", "order_payment_capture", "order_payment_prepay", "order_refund", "outbound_media",
+			"outbound_message", "product_external_push_test", "survey_webhook", "wecom_profile_sync", "wecom_tag_sync",
+		},
+	}
+	for name, expected := range want {
+		schema := doc.Components.Schemas[name]
+		if schema == nil || schema.Value == nil {
+			return fmt.Errorf("%s schema missing", name)
+		}
+		actual, err := stringList(schema.Value.Enum)
+		if err != nil {
+			return fmt.Errorf("%s enum invalid", name)
+		}
+		sort.Strings(actual)
+		if !reflect.DeepEqual(actual, expected) {
+			return fmt.Errorf("%s enum=%v", name, actual)
+		}
 	}
 	return nil
 }

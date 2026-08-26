@@ -3,6 +3,7 @@ package jobqueue
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -28,10 +29,20 @@ func NewInsertOnlyClient(pool *pgxpool.Pool) (*InsertOnlyClient, error) {
 }
 
 func (client *InsertOnlyClient) InsertTx(ctx context.Context, tx pgx.Tx, args queueriver.JobArgs, queue string) (int64, error) {
+	return client.InsertTxScheduled(ctx, tx, args, queue, time.Time{})
+}
+
+// InsertTxScheduled is the same transaction-bound insert with an explicit
+// future schedule. A zero time preserves River's immediate scheduling.
+func (client *InsertOnlyClient) InsertTxScheduled(ctx context.Context, tx pgx.Tx, args queueriver.JobArgs, queue string, scheduledAt time.Time) (int64, error) {
 	if client == nil || client.client == nil || tx == nil || args == nil || queue == "" {
 		return 0, ErrClientUnavailable
 	}
-	result, err := client.client.InsertTx(ctx, tx, args, &queueriver.InsertOpts{Queue: queue})
+	options := &queueriver.InsertOpts{Queue: queue}
+	if !scheduledAt.IsZero() {
+		options.ScheduledAt = scheduledAt.UTC()
+	}
+	result, err := client.client.InsertTx(ctx, tx, args, options)
 	if err != nil || result == nil || result.Job == nil || result.Job.ID <= 0 || result.Job.Queue != queue || result.Job.Kind != args.Kind() {
 		return 0, errors.Join(ErrClientUnavailable, err)
 	}

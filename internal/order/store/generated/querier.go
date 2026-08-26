@@ -98,6 +98,7 @@ type Querier interface {
 	ReserveWeChatShopRefundCallback(ctx context.Context, arg ReserveWeChatShopRefundCallbackParams) (OrderWechatShopRefundCallback, error)
 	StartWeChatShopRefundExecution(ctx context.Context, arg StartWeChatShopRefundExecutionParams) (OrderWechatShopRefund, error)
 	UpsertWeChatShopOrderMaterial(ctx context.Context, arg UpsertWeChatShopOrderMaterialParams) (UpsertWeChatShopOrderMaterialRow, error)
+	WeChatShopMaterialSyncRequestTableExists(ctx context.Context) (bool, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -1,7 +1,12 @@
 -- name: ListGroupOpsPlans :many
-SELECT id, name, status, revision, created_by, updated_by, created_at, updated_at
-FROM group_ops_plans
-ORDER BY updated_at DESC, id DESC
+SELECT p.id, p.name, p.status, p.revision,
+       count(e.id) FILTER (WHERE effect.state IN ('accepted', 'queued', 'attempted'))::bigint AS queue_count,
+       p.created_by, p.updated_by, p.created_at, p.updated_at
+FROM group_ops_plans p
+LEFT JOIN group_ops_executions e ON e.plan_id = p.id
+LEFT JOIN external_effects effect ON effect.id = e.external_effect_id
+GROUP BY p.id
+ORDER BY p.updated_at DESC, p.id DESC
 LIMIT sqlc.arg(row_limit) OFFSET sqlc.arg(row_offset);
 
 -- name: CountGroupOpsPlans :one
@@ -29,7 +34,7 @@ WHERE plan_id = sqlc.arg(plan_id)
 ORDER BY asset_reference, id;
 
 -- name: ListGroupOpsPlanNodes :many
-SELECT id, position, kind, message_text, delay_minutes, material_reference FROM group_ops_plan_nodes
+SELECT id, position, kind, message_text, delay_minutes, material_reference, material_plan FROM group_ops_plan_nodes
 WHERE plan_id = sqlc.arg(plan_id)
 ORDER BY position, id;
 
@@ -74,12 +79,12 @@ WHERE plan_id = sqlc.arg(plan_id) AND id <> ALL(sqlc.arg(ids)::bigint[]);
 
 -- name: UpdateGroupOpsPlanNode :execrows
 UPDATE group_ops_plan_nodes
-SET position = sqlc.arg(position), kind = sqlc.arg(kind), message_text = sqlc.arg(message_text), delay_minutes = sqlc.arg(delay_minutes), material_reference = sqlc.arg(material_reference)
+SET position = sqlc.arg(position), kind = sqlc.arg(kind), message_text = sqlc.arg(message_text), delay_minutes = sqlc.arg(delay_minutes), material_reference = sqlc.arg(material_reference), material_plan = sqlc.arg(material_plan)
 WHERE plan_id = sqlc.arg(plan_id) AND id = sqlc.arg(node_id);
 
 -- name: CreateGroupOpsPlanNode :exec
-INSERT INTO group_ops_plan_nodes (plan_id, position, kind, message_text, delay_minutes, material_reference)
-VALUES (sqlc.arg(plan_id), sqlc.arg(position), sqlc.arg(kind), sqlc.arg(message_text), sqlc.arg(delay_minutes), sqlc.arg(material_reference));
+INSERT INTO group_ops_plan_nodes (plan_id, position, kind, message_text, delay_minutes, material_reference, material_plan)
+VALUES (sqlc.arg(plan_id), sqlc.arg(position), sqlc.arg(kind), sqlc.arg(message_text), sqlc.arg(delay_minutes), sqlc.arg(material_reference), sqlc.arg(material_plan));
 
 -- name: SaveGroupOpsPlanWebhookDescriptor :execrows
 UPDATE group_ops_plan_webhook_descriptors
@@ -109,6 +114,11 @@ SELECT e.node_id, e.target_reference
 FROM group_ops_executions e
 JOIN group_ops_runs r ON r.id = e.run_id
 WHERE e.plan_id = sqlc.arg(plan_id) AND e.plan_revision = sqlc.arg(plan_revision) AND r.trigger_kind = 'run_due'
+UNION
+SELECT intent.node_id, intent.target_reference
+FROM group_ops_execution_intents intent
+JOIN group_ops_runs r ON r.id = intent.run_id
+WHERE intent.plan_id = sqlc.arg(plan_id) AND intent.plan_revision = sqlc.arg(plan_revision) AND r.trigger_kind = 'run_due'
 ORDER BY node_id, target_reference;
 
 -- name: ReserveGroupOpsRun :one
@@ -134,12 +144,12 @@ FROM group_ops_runs WHERE id = sqlc.arg(run_id);
 WITH inserted AS (
   INSERT INTO group_ops_executions (
     run_id, plan_id, node_id, plan_revision, node_position, target_reference, target_digest,
-    content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id,
+    content_snapshot, content_digest, material_snapshot, material_digest, execution_key_digest, external_effect_id, sender_userid_snapshot,
     created_at, updated_at
   ) VALUES (
     sqlc.arg(run_id), sqlc.arg(plan_id), sqlc.arg(node_id), sqlc.arg(plan_revision), sqlc.arg(node_position),
     sqlc.arg(target_reference), sqlc.arg(target_digest), sqlc.arg(content_snapshot), sqlc.arg(content_digest),
-    sqlc.arg(material_snapshot), sqlc.arg(material_digest), sqlc.arg(execution_key_digest), sqlc.arg(external_effect_id), sqlc.arg(created_at), sqlc.arg(created_at)
+    sqlc.arg(material_snapshot), sqlc.arg(material_digest), sqlc.arg(execution_key_digest), sqlc.arg(external_effect_id), sqlc.narg(sender_userid_snapshot), sqlc.arg(created_at), sqlc.arg(created_at)
   )
   ON CONFLICT (execution_key_digest) DO NOTHING
   RETURNING *
@@ -156,6 +166,64 @@ SELECT * FROM group_ops_executions
 WHERE run_id = sqlc.arg(run_id)
 ORDER BY node_position, target_reference, id;
 
+-- name: InsertGroupOpsExecutionIntent :one
+WITH inserted AS (
+  INSERT INTO group_ops_execution_intents (
+    run_id, plan_id, node_id, plan_revision, node_position, target_reference,
+    target_digest, sender_userid_snapshot, scheduled_for, content_snapshot,
+    content_digest, material_source_snapshot, material_source_digest,
+    execution_key_digest, continuation_job_id, continuation_generation,
+    created_at, updated_at
+  ) VALUES (
+    sqlc.arg(run_id), sqlc.arg(plan_id), sqlc.arg(node_id), sqlc.arg(plan_revision),
+    sqlc.arg(node_position), sqlc.arg(target_reference), sqlc.arg(target_digest),
+    sqlc.arg(sender_userid_snapshot), sqlc.arg(scheduled_for), sqlc.arg(content_snapshot),
+    sqlc.arg(content_digest), sqlc.arg(material_source_snapshot), sqlc.arg(material_source_digest),
+    sqlc.arg(execution_key_digest), sqlc.arg(continuation_job_id),
+    sqlc.arg(continuation_generation), sqlc.arg(created_at), sqlc.arg(created_at)
+  )
+  ON CONFLICT (execution_key_digest) DO NOTHING
+  RETURNING *
+)
+SELECT * FROM inserted
+UNION ALL
+SELECT * FROM group_ops_execution_intents
+WHERE execution_key_digest = sqlc.arg(execution_key_digest)
+  AND NOT EXISTS (SELECT 1 FROM inserted)
+LIMIT 1;
+
+-- name: ListGroupOpsRunExecutionIntents :many
+SELECT * FROM group_ops_execution_intents
+WHERE run_id = sqlc.arg(run_id)
+ORDER BY node_position, target_reference, id;
+
+-- name: LockGroupOpsExecutionIntentByKey :one
+SELECT * FROM group_ops_execution_intents
+WHERE execution_key_digest = sqlc.arg(execution_key_digest)
+FOR UPDATE;
+
+-- name: GetAcceptedGroupOpsExecutionIntent :one
+SELECT * FROM group_ops_execution_intents
+WHERE execution_id = sqlc.arg(execution_id) AND state = 'accepted';
+
+-- name: MarkGroupOpsExecutionIntentReady :one
+UPDATE group_ops_execution_intents
+SET state = 'ready_to_accept', updated_at = sqlc.arg(updated_at)
+WHERE id = sqlc.arg(intent_id) AND state = 'material_pending'
+RETURNING *;
+
+-- name: AcceptGroupOpsExecutionIntent :one
+UPDATE group_ops_execution_intents
+SET state = 'accepted', execution_id = sqlc.arg(execution_id), updated_at = sqlc.arg(updated_at)
+WHERE id = sqlc.arg(intent_id) AND state = 'ready_to_accept' AND execution_id IS NULL
+RETURNING *;
+
+-- name: FailGroupOpsExecutionIntent :one
+UPDATE group_ops_execution_intents
+SET state = 'final_failed', failure_code = sqlc.arg(failure_code), updated_at = sqlc.arg(updated_at)
+WHERE id = sqlc.arg(intent_id) AND state IN ('material_pending','ready_to_accept')
+RETURNING *;
+
 -- name: ListGroupOpsExecutions :many
 SELECT * FROM group_ops_executions
 WHERE plan_id = sqlc.arg(plan_id)
@@ -167,6 +235,55 @@ SELECT count(*) FROM group_ops_executions WHERE plan_id = sqlc.arg(plan_id);
 
 -- name: GetGroupOpsExecution :one
 SELECT * FROM group_ops_executions WHERE id = sqlc.arg(execution_id) FOR UPDATE;
+
+-- name: GetGroupOpsExecutionByExternalEffectID :one
+SELECT * FROM group_ops_executions
+WHERE external_effect_id = sqlc.arg(external_effect_id)
+FOR UPDATE;
+
+-- name: LockGroupOpsDirectoryGroupOwner :one
+SELECT owner_staff_id FROM group_ops_directory_groups
+WHERE chat_reference = sqlc.arg(chat_reference)
+FOR SHARE;
+
+-- name: GetGroupOpsExternalEffect :one
+SELECT id, owner, kind, state, generation, lease_fence, lease_expires_at, attempt_count
+FROM external_effects
+WHERE id = sqlc.arg(external_effect_id);
+
+-- name: GetGroupOpsExternalEffectAttempt :one
+SELECT effect_id, number, generation, fence, completion, receipt_digest, started_at, completed_at
+FROM external_effect_attempts
+WHERE effect_id = sqlc.arg(external_effect_id)
+ORDER BY number DESC
+LIMIT 1;
+
+-- name: GetGroupOpsWeComGroupMessageReceipt :one
+SELECT * FROM group_ops_wecom_group_message_receipts
+WHERE external_effect_id = sqlc.arg(external_effect_id);
+
+-- name: InsertGroupOpsWeComGroupMessageReceipt :one
+INSERT INTO group_ops_wecom_group_message_receipts (
+  external_effect_id, execution_id, msgid, sender_userid, chat_id, userid,
+  task_evidence_digest, created_at, updated_at
+) VALUES (
+  sqlc.arg(external_effect_id), sqlc.arg(execution_id), sqlc.arg(msgid),
+  sqlc.arg(sender_userid), sqlc.arg(chat_id), sqlc.arg(userid),
+  sqlc.arg(task_evidence_digest), sqlc.arg(created_at), sqlc.arg(updated_at)
+)
+ON CONFLICT (external_effect_id) DO NOTHING
+RETURNING *;
+
+-- name: RecordGroupOpsWeComGroupMessageDelivery :one
+UPDATE group_ops_wecom_group_message_receipts
+SET send_status = 1, delivery_evidence_digest = sqlc.arg(delivery_evidence_digest), updated_at = sqlc.arg(updated_at)
+WHERE external_effect_id = sqlc.arg(external_effect_id)
+  AND msgid = sqlc.arg(msgid)
+  AND sender_userid = sqlc.arg(sender_userid)
+  AND chat_id = sqlc.arg(chat_id)
+  AND userid = sqlc.arg(userid)
+  AND task_evidence_digest = sqlc.arg(task_evidence_digest)
+RETURNING *;
 
 -- name: RecordGroupOpsExecutionOutcome :one
 UPDATE group_ops_executions
@@ -199,12 +316,20 @@ LIMIT sqlc.arg(row_limit) OFFSET sqlc.arg(row_offset);
 SELECT count(*) FROM group_ops_directory_groups
 WHERE sqlc.arg(owner_staff_id)::bigint = 0 OR owner_staff_id = sqlc.arg(owner_staff_id);
 
--- name: DeleteGroupOpsDirectoryGroups :exec
-DELETE FROM group_ops_directory_groups WHERE owner_staff_id = sqlc.arg(owner_staff_id);
+-- name: DeleteMissingGroupOpsDirectoryGroups :exec
+DELETE FROM group_ops_directory_groups
+WHERE owner_staff_id = sqlc.arg(owner_staff_id)
+  AND NOT (chat_reference = ANY(sqlc.arg(chat_references)::text[]));
 
--- name: InsertGroupOpsDirectoryGroup :exec
+-- name: UpsertGroupOpsDirectoryGroup :exec
 INSERT INTO group_ops_directory_groups (chat_reference, owner_staff_id, display_name, member_count, source_digest, refreshed_at)
-VALUES (sqlc.arg(chat_reference), sqlc.arg(owner_staff_id), sqlc.arg(display_name), sqlc.arg(member_count), sqlc.arg(source_digest), sqlc.arg(refreshed_at));
+VALUES (sqlc.arg(chat_reference), sqlc.arg(owner_staff_id), sqlc.arg(display_name), sqlc.arg(member_count), sqlc.arg(source_digest), sqlc.arg(refreshed_at))
+ON CONFLICT (chat_reference) DO UPDATE SET
+  owner_staff_id = EXCLUDED.owner_staff_id,
+  display_name = EXCLUDED.display_name,
+  member_count = EXCLUDED.member_count,
+  source_digest = EXCLUDED.source_digest,
+  refreshed_at = EXCLUDED.refreshed_at;
 
 -- name: ReserveGroupOpsDirectoryRefresh :one
 INSERT INTO group_ops_directory_refresh_receipts (
@@ -219,3 +344,14 @@ RETURNING *;
 -- name: GetGroupOpsDirectoryRefresh :one
 SELECT * FROM group_ops_directory_refresh_receipts
 WHERE refresh_kind = sqlc.arg(refresh_kind) AND actor_id = sqlc.arg(actor_id) AND key_digest = sqlc.arg(key_digest);
+
+-- name: ReserveGroupOpsProtocolReplay :one
+INSERT INTO group_ops_protocol_replays (
+  client_id, resource_reference, event_id, event_id_digest, payload_digest, created_at
+) VALUES (
+  sqlc.arg(client_id)::text, sqlc.arg(resource_reference)::text,
+  sqlc.arg(event_id)::text, sqlc.arg(event_id_digest)::bytea,
+  sqlc.arg(payload_digest)::bytea, sqlc.arg(created_at)::timestamptz
+)
+ON CONFLICT (client_id, event_id_digest) DO NOTHING
+RETURNING event_id_digest;

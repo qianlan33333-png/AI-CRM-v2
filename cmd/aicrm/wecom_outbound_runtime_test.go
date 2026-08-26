@@ -9,6 +9,7 @@ import (
 	"time"
 
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
+	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 )
 
@@ -54,4 +55,58 @@ func TestWeComOutboundProviderConstructionIsExplicitAndNetworkInert(t *testing.T
 	if formatted := strings.TrimSpace(config.WeCom.Outbound.Secret.String()); formatted != "[REDACTED]" {
 		t.Fatalf("secret format=%q", formatted)
 	}
+}
+
+func TestGroupOpsEvidenceVerifierUsesOutboundCapabilityWithoutDirectorySync(t *testing.T) {
+	for key, value := range map[string]string{
+		"AICRM_DATABASE_URL":                        "postgres://db/aicrm",
+		"AICRM_WORKER_PGX_MAX_CONNS":                "9",
+		"AICRM_RIVER_CRITICAL_MAX_WORKERS":          "2",
+		"AICRM_RIVER_EVENT_MAX_WORKERS":             "1",
+		"AICRM_RIVER_OUTBOUND_MAX_WORKERS":          "1",
+		"AICRM_RIVER_SYNC_MAX_WORKERS":              "1",
+		"AICRM_RIVER_HEAVY_MAX_WORKERS":             "1",
+		"AICRM_RIVER_AI_MAX_WORKERS":                "1",
+		"AICRM_WECOM_OUTBOUND_ENABLED":              "true",
+		"AICRM_WECOM_OUTBOUND_CORP_ID":              "outbound-corp",
+		"AICRM_WECOM_OUTBOUND_SECRET":               "outbound-secret-must-not-leak",
+		"AICRM_WECOM_OUTBOUND_PERMISSION_CONFIRMED": "true",
+	} {
+		t.Setenv(key, value)
+	}
+	config, err := appconfig.Load(appruntime.RoleWorker)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.WeCom.DirectorySync.Enabled {
+		t.Fatal("directory sync unexpectedly enabled")
+	}
+
+	var networkCalls atomic.Int32
+	verifier, err := newGroupOpsEvidenceVerifier(
+		config.WeCom.Outbound,
+		&http.Client{Transport: roundTripCounter{calls: &networkCalls}},
+		time.Now,
+		groupOpsEvidenceReceiptStub{},
+	)
+	if err != nil || verifier == nil || networkCalls.Load() != 0 {
+		t.Fatalf("verifier=%v calls=%d err=%v", verifier, networkCalls.Load(), err)
+	}
+}
+
+func TestGroupOpsEvidenceVerifierFailsClosedWithoutOutboundCapability(t *testing.T) {
+	verifier, err := newGroupOpsEvidenceVerifier(appconfig.WeComOutbound{}, http.DefaultClient, time.Now, groupOpsEvidenceReceiptStub{})
+	if verifier != nil || err == nil {
+		t.Fatalf("verifier=%v err=%v", verifier, err)
+	}
+}
+
+type groupOpsEvidenceReceiptStub struct{}
+
+func (groupOpsEvidenceReceiptStub) FindGroupMessageReceipt(context.Context, groupopsport.ReconciliationEvidence) (groupopsport.GroupMessageReceipt, bool, error) {
+	return groupopsport.GroupMessageReceipt{}, false, nil
+}
+
+func (groupOpsEvidenceReceiptStub) RecordGroupMessageDelivery(context.Context, groupopsport.GroupMessageReceipt, string) error {
+	return nil
 }

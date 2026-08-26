@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +13,19 @@ import (
 	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
 	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
 )
+
+func TestMessageNodeAcceptsTypedMaterialOnlyAndRejectsInvalidPlans(t *testing.T) {
+	plan := groupopsport.MaterialPlan{References: []groupopsport.MaterialReference{{Kind: "image", ID: 1}, {Kind: "miniprogram", ID: 2}}}
+	if !validNode(groupopsport.NodeMessage, "", 0, "", plan) {
+		t.Fatal("typed material-only message was rejected")
+	}
+	if validNode(groupopsport.NodeMessage, "", 0, "", groupopsport.MaterialPlan{}) {
+		t.Fatal("empty message without materials was accepted")
+	}
+	if validNode(groupopsport.NodeMessage, "", 0, "", groupopsport.MaterialPlan{References: []groupopsport.MaterialReference{{Kind: "image", ID: 1}, {Kind: "image", ID: 1}}}) {
+		t.Fatal("duplicate material reference was accepted")
+	}
+}
 
 func TestLocalPlanLifecycleUsesReceiptsEventsAndStrictDraftBoundary(t *testing.T) {
 	service, store, events := newTestService()
@@ -109,6 +123,10 @@ func TestListsAreDeterministicAndBounded(t *testing.T) {
 	if err != nil || page.Total != 3 || len(page.Items) != 2 || !page.HasMore || page.Items[0].ID <= page.Items[1].ID || page.ProviderExecutionEligible || page.RealExternalCallExecuted {
 		t.Fatalf("page=%#v err=%v", page, err)
 	}
+	encoded, err := json.Marshal(page)
+	if err != nil || !strings.Contains(string(encoded), `"queue_count":0`) {
+		t.Fatalf("encoded=%s err=%v", encoded, err)
+	}
 	if _, err := service.List(context.Background(), 101, 0); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("bounds err=%v", err)
 	}
@@ -184,22 +202,22 @@ func newTestService() (*Service, *testStore, *testEvents) {
 	return service, store, events
 }
 
-func (s *testStore) List(_ context.Context, limit, offset int32) ([]groupopsport.Plan, error) {
-	items := make([]groupopsport.Plan, 0, len(s.details))
+func (s *testStore) List(_ context.Context, limit, offset int32) ([]groupopsport.PlanListItem, error) {
+	items := make([]groupopsport.PlanListItem, 0, len(s.details))
 	for _, detail := range s.details {
-		items = append(items, detail.Plan)
+		items = append(items, groupopsport.PlanListItem{Plan: detail.Plan})
 	}
 	sort.Slice(items, func(i, j int) bool {
 		return items[i].UpdatedAt.After(items[j].UpdatedAt) || items[i].UpdatedAt.Equal(items[j].UpdatedAt) && items[i].ID > items[j].ID
 	})
 	if int(offset) >= len(items) {
-		return []groupopsport.Plan{}, nil
+		return []groupopsport.PlanListItem{}, nil
 	}
 	end := int(offset + limit)
 	if end > len(items) {
 		end = len(items)
 	}
-	return append([]groupopsport.Plan{}, items[offset:end]...), nil
+	return append([]groupopsport.PlanListItem{}, items[offset:end]...), nil
 }
 func (s *testStore) Count(context.Context) (int64, error) { return int64(len(s.details)), nil }
 func (s *testStore) Get(_ context.Context, id int64) (groupopsport.Detail, error) {

@@ -67,6 +67,16 @@ type MediaGroupInvite struct {
 	ArchivedAt   pgtype.Timestamptz `json:"archived_at"`
 }
 
+type MediaWecomUploadReceipt struct {
+	ExternalEffectID  int64              `json:"external_effect_id"`
+	PreparationID     int64              `json:"preparation_id"`
+	ProviderMediaID   string             `json:"provider_media_id"`
+	ProviderCreatedAt pgtype.Timestamptz `json:"provider_created_at"`
+	ExpiresAt         pgtype.Timestamptz `json:"expires_at"`
+	ReceiptDigest     string             `json:"receipt_digest"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+}
+
 type OutboundMediaEffectBinding struct {
 	ID               int64              `json:"id"`
 	ContentPackageID int64              `json:"content_package_id"`

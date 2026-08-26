@@ -278,7 +278,7 @@ owners:
 
   order:
     package: internal/order
-    tables: [order_list_projections, order_list_projection_counters, order_operation_receipts, order_export_jobs, order_external_effects, order_refunds, order_payment_commands, order_financial_refunds, order_provider_callback_receipts, order_financial_reconciliations, order_wechat_shop_refunds, order_wechat_shop_refund_attempts, order_wechat_shop_refund_callbacks, order_wechat_shop_refund_queries]
+    tables: [order_list_projections, order_list_projection_counters, order_operation_receipts, order_export_jobs, order_external_effects, order_refunds, order_payment_commands, order_financial_refunds, order_provider_callback_receipts, order_financial_reconciliations, order_wechat_shop_materials, order_wechat_shop_material_lines, order_wechat_shop_material_quarantines, order_wechat_shop_material_sync_requests, order_wechat_shop_refunds, order_wechat_shop_refund_attempts, order_wechat_shop_refund_callbacks, order_wechat_shop_refund_queries]
     constraints:
       order_list_projections: read_only_unified_order_projection_without_payment_or_provider_execution
       order_list_projection_counters: exact_unfiltered_order_total_without_projection_scan
@@ -290,6 +290,10 @@ owners:
       order_financial_refunds: wechat_refund_amount_reservation_and_authoritative_settlement_lineage
       order_provider_callback_receipts: immutable_digest_only_signed_callback_receipts_completed_in_the_financial_transaction
       order_financial_reconciliations: immutable_provider_query_evidence_without_plaintext_provider_payload
+      order_wechat_shop_materials: provider_verified_order_material_snapshots_with_digest_only_sensitive_identifiers
+      order_wechat_shop_material_lines: exact_product_line_material_and_after_sale_readiness_facts
+      order_wechat_shop_material_quarantines: immutable_rejected_material_evidence_without_raw_provider_payload
+      order_wechat_shop_material_sync_requests: idempotent_provider_sync_commands_bound_to_order_material_evidence
       order_wechat_shop_refunds: local_wechat_shop_refund_command_and_settlement_facts_without_wechat_pay_provider_reuse
       order_wechat_shop_refund_attempts: immutable_local_refund_attempt_evidence_without_provider_execution_claim
       order_wechat_shop_refund_callbacks: verified_wechat_shop_callback_receipts_completed_in_refund_transaction
@@ -297,7 +301,7 @@ owners:
 
   media:
     package: internal/media
-    tables: [media_images, media_image_blobs, media_image_upload_receipts, media_image_delete_receipts, media_group_invites, media_group_invite_operation_receipts, media_thumbnail_cache_entries, media_miniprograms, media_miniprogram_import_preflights, media_miniprogram_import_ledger, media_miniprogram_operation_receipts, media_attachments, media_attachment_blobs, media_attachment_mutation_receipts, media_content_packages, media_content_package_refs, media_content_package_mutation_receipts, media_attachment_uploads, media_attachment_upload_parts, media_campaign_delivery_bindings, outbound_media_acceptances, outbound_media_effect_bindings, outbound_media_reconciliation_receipts]
+    tables: [media_images, media_image_blobs, media_image_upload_receipts, media_image_delete_receipts, media_group_invites, media_group_invite_operation_receipts, media_thumbnail_cache_entries, media_miniprograms, media_miniprogram_import_preflights, media_miniprogram_import_ledger, media_miniprogram_operation_receipts, media_attachments, media_attachment_blobs, media_attachment_mutation_receipts, media_content_packages, media_content_package_refs, media_content_package_mutation_receipts, media_attachment_uploads, media_attachment_upload_parts, media_campaign_delivery_bindings, media_wecom_upload_preparations, media_wecom_upload_receipts, outbound_media_acceptances, outbound_media_effect_bindings, outbound_media_reconciliation_receipts]
     constraints:
       media_images: validated_single_instance_image_metadata
       media_image_blobs: exact_validated_image_bytes_owned_by_media
@@ -319,6 +323,8 @@ owners:
       media_attachment_uploads: actor_owned_local_private_PDF_multipart_upload_state
       media_attachment_upload_parts: digest_bound_local_private_PDF_parts_with_conflicting_replacement_rejected
       media_campaign_delivery_bindings: versioned_local_campaign_plan_package_and_group_invite_composition_without_send_fact
+      media_wecom_upload_preparations: exact_source_and_provider_scope_bound_temporary_media_upload_state
+      media_wecom_upload_receipts: immutable_provider_media_lease_receipts_bound_to_one_upload_effect
       outbound_media_acceptances: immutable_digest_only_local_EER_acceptance_snapshot_without_provider_or_delivery_fact
       outbound_media_effect_bindings: immutable_package_target_snapshot_to_EER_lineage
       outbound_media_reconciliation_receipts: immutable_human_verified_digest_only_reconciliation_fact
@@ -358,7 +364,7 @@ owners:
 
   groupops:
     package: internal/groupops
-    tables: [group_ops_plans, group_ops_plan_members, group_ops_plan_group_assets, group_ops_plan_nodes, group_ops_plan_webhook_descriptors, group_ops_operation_receipts, group_ops_directory_groups, group_ops_directory_refresh_receipts, group_ops_runs, group_ops_executions]
+    tables: [group_ops_plans, group_ops_plan_members, group_ops_plan_group_assets, group_ops_plan_nodes, group_ops_plan_webhook_descriptors, group_ops_operation_receipts, group_ops_protocol_replays, group_ops_directory_groups, group_ops_directory_refresh_receipts, group_ops_runs, group_ops_execution_intents, group_ops_executions, group_ops_wecom_group_message_receipts]
     constraints:
       group_ops_plans: local_only_draft_active_paused_archived_plan_control_plane
       group_ops_plan_members: local_operator_member_bindings_with_contact_staff_projection_only
@@ -366,10 +372,13 @@ owners:
       group_ops_plan_nodes: local_standard_content_and_material_references_snapshotted_before_external_effect_acceptance
       group_ops_plan_webhook_descriptors: opaque_safe_descriptors_without_url_or_credential_storage
       group_ops_operation_receipts: transaction_scoped_actor_idempotency_receipts
+      group_ops_protocol_replays: authenticated_webhook_event_replay_receipts_without_raw_secret_storage
       group_ops_directory_groups: provider_read_projection_without_credentials_or_send_state
       group_ops_directory_refresh_receipts: immutable_refresh_evidence_separate_from_provider_send_effects
       group_ops_runs: immutable_plan_revision_and_trigger_acceptance_facts
+      group_ops_execution_intents: material_preparation_pending_to_exact_execution_acceptance_state_machine
       group_ops_executions: immutable_content_material_target_snapshots_bound_to_external_effect_registry
+      group_ops_wecom_group_message_receipts: provider_task_receipts_separate_from_verified_delivery_evidence
 
   campaign:
     package: internal/campaign

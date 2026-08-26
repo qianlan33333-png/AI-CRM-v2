@@ -1525,6 +1525,13 @@ export interface GroupOpsPlan {
   updated_at: string;
 }
 
+export type GroupOpsPlanListItemAllOf = {
+  /** @minimum 0 */
+  queue_count: number;
+};
+
+export type GroupOpsPlanListItem = GroupOpsPlan & GroupOpsPlanListItemAllOf;
+
 export interface GroupOpsMember {
   /** @minimum 1 */
   staff_id: number;
@@ -1575,10 +1582,35 @@ export interface GroupOpsNode {
    */
   delay_minutes?: number;
   /**
+   * Legacy opaque reference. Non-empty values fail closed at runtime until explicitly converted.
+   * @deprecated
    * @maxLength 128
    * @pattern ^[A-Za-z0-9._:-]{1,128}$
    */
   material_reference?: string;
+  material_plan: GroupOpsMaterialPlan;
+}
+
+export type GroupOpsMaterialReferenceKind =
+  (typeof GroupOpsMaterialReferenceKind)[keyof typeof GroupOpsMaterialReferenceKind];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsMaterialReferenceKind = {
+  image: "image",
+  miniprogram: "miniprogram",
+  attachment: "attachment",
+  group_invite: "group_invite",
+} as const;
+
+export interface GroupOpsMaterialReference {
+  kind: GroupOpsMaterialReferenceKind;
+  /** @minimum 1 */
+  id: number;
+}
+
+export interface GroupOpsMaterialPlan {
+  /** @maxItems 9 */
+  references: GroupOpsMaterialReference[];
 }
 
 export type GroupOpsWebhookDescriptorDescription =
@@ -1633,6 +1665,9 @@ export const GroupOpsRunDuePreviewBlockersItem = {
   member_required: "member_required",
   node_required: "node_required",
   invalid_node: "invalid_node",
+  legacy_material_reference_unsupported:
+    "legacy_material_reference_unsupported",
+  material_preparation_pending: "material_preparation_pending",
 } as const;
 
 export interface GroupOpsRunDuePreview {
@@ -1765,10 +1800,47 @@ export interface GroupOpsRunSummary {
   reconciled: number;
   /** @minimum 0 */
   final_failed: number;
+  /** @minimum 0 */
+  material_pending_count: number;
+  pending_intents: GroupOpsExecutionIntent[];
   provider_execution_eligible: boolean;
   real_external_call_executed: boolean;
   provider_accepted: boolean;
   delivery_proven: boolean;
+}
+
+export type GroupOpsExecutionIntentState =
+  (typeof GroupOpsExecutionIntentState)[keyof typeof GroupOpsExecutionIntentState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsExecutionIntentState = {
+  material_pending: "material_pending",
+  ready_to_accept: "ready_to_accept",
+  accepted: "accepted",
+  final_failed: "final_failed",
+} as const;
+
+export interface GroupOpsExecutionIntent {
+  /**
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  intent_id: string;
+  /**
+   * @maxLength 19
+   * @pattern ^[1-9][0-9]{0,18}$
+   */
+  node_id: string;
+  /** @minimum 1 */
+  node_position: number;
+  /**
+   * @maxLength 128
+   * @pattern ^[A-Za-z0-9._:-]{1,128}$
+   */
+  target_reference: string;
+  scheduled_for: string;
+  state: GroupOpsExecutionIntentState;
+  manual_blocker: boolean;
 }
 
 export interface GroupOpsExecutionPage {
@@ -1879,7 +1951,7 @@ export interface GroupOpsPlanDetail {
 }
 
 export interface GroupOpsPlanPage {
-  items: GroupOpsPlan[];
+  items: GroupOpsPlanListItem[];
   /** @minimum 0 */
   total: number;
   /**
@@ -1984,6 +2056,8 @@ export const GroupOpsContentValidationIssueCodesItem = {
   member_required: "member_required",
   node_required: "node_required",
   invalid_node: "invalid_node",
+  legacy_material_reference_unsupported:
+    "legacy_material_reference_unsupported",
 } as const;
 
 export interface GroupOpsContentValidation {
@@ -2069,10 +2143,12 @@ export interface GroupOpsNodeRequest {
    */
   delay_minutes?: number;
   /**
+   * @deprecated
    * @maxLength 128
    * @pattern ^[A-Za-z0-9._:-]{1,128}$
    */
   material_reference?: string;
+  material_plan?: GroupOpsMaterialPlan;
 }
 
 export interface GroupOpsWebhookDescriptorRequest {
@@ -4680,6 +4756,9 @@ export const ExternalEffectRuntimeOwner = {
   survey: "survey",
   audience: "audience",
   order: "order",
+  group_ops: "group_ops",
+  product: "product",
+  media: "media",
 } as const;
 
 export type ExternalEffectRuntimeKind =
@@ -4690,14 +4769,19 @@ export const ExternalEffectRuntimeKind = {
   campaign_dispatch: "campaign_dispatch",
   campaign_group_announcement: "campaign_group_announcement",
   contact_touch: "contact_touch",
+  contact_acquisition_asset_publish: "contact_acquisition_asset_publish",
   outbound_message: "outbound_message",
   outbound_media: "outbound_media",
   wecom_tag_sync: "wecom_tag_sync",
   wecom_profile_sync: "wecom_profile_sync",
   survey_webhook: "survey_webhook",
   audience_webhook: "audience_webhook",
+  order_payment_prepay: "order_payment_prepay",
   order_payment_capture: "order_payment_capture",
   order_refund: "order_refund",
+  group_ops_broadcast: "group_ops_broadcast",
+  product_external_push_test: "product_external_push_test",
+  media_wecom_upload: "media_wecom_upload",
 } as const;
 
 export type ExternalEffectRuntimeState =
@@ -39524,7 +39608,7 @@ export const syncGroupOpsGroupPicker = async (
 };
 
 /**
- * @summary Preview due immutable execution intents without EER acceptance or Provider I/O
+ * @summary Preview due text executions and material preparation intents without Provider writes
  */
 export type previewGroupOpsRunDueResponse200 = {
   data: GroupOpsRunDuePreview;
@@ -39593,7 +39677,7 @@ export const previewGroupOpsRunDue = async (
 };
 
 /**
- * @summary Accept due immutable snapshots into EER without queueing or Provider I/O
+ * @summary Accept provider-ready executions and durable material preparation intents
  */
 export type acceptGroupOpsRunDueResponse202 = {
   data: GroupOpsRunSummary;
@@ -39753,9 +39837,14 @@ export const listGroupOpsExecutions = async (
 };
 
 /**
- * This fail-closed placeholder always returns provider_disabled. It does not reconcile an EER acceptance into a Provider or delivery outcome.
- * @summary Unavailable until a Group Ops outcome writer is configured
+ * Reconciliation requires the exact EER lease and verified WeCom task evidence. It never turns local acceptance into delivery without Provider proof.
+ * @summary Reconcile an outcome-unknown Group Ops execution from verified Provider evidence
  */
+export type reconcileGroupOpsExecutionResponse200 = {
+  data: GroupOpsExecution;
+  status: 200;
+};
+
 export type reconcileGroupOpsExecutionResponse400 = {
   data: BadRequestResponse;
   status: 400;
@@ -39771,22 +39860,33 @@ export type reconcileGroupOpsExecutionResponse403 = {
   status: 403;
 };
 
+export type reconcileGroupOpsExecutionResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
 export type reconcileGroupOpsExecutionResponse503 = {
   data: GroupOpsError;
   status: 503;
 };
 
+export type reconcileGroupOpsExecutionResponseSuccess =
+  reconcileGroupOpsExecutionResponse200 & {
+    headers: Headers;
+  };
 export type reconcileGroupOpsExecutionResponseError = (
   | reconcileGroupOpsExecutionResponse400
   | reconcileGroupOpsExecutionResponse401
   | reconcileGroupOpsExecutionResponse403
+  | reconcileGroupOpsExecutionResponse409
   | reconcileGroupOpsExecutionResponse503
 ) & {
   headers: Headers;
 };
 
 export type reconcileGroupOpsExecutionResponse =
-  reconcileGroupOpsExecutionResponseError;
+  | reconcileGroupOpsExecutionResponseSuccess
+  | reconcileGroupOpsExecutionResponseError;
 
 export const getReconcileGroupOpsExecutionUrl = (executionId: string) => {
   return `/api/admin/automation-conversion/group-ops/plans/executions/${executionId}/reconcile`;
@@ -39888,7 +39988,7 @@ export const acceptGroupOpsBroadcast = async (
 };
 
 /**
- * @summary Accept a fixed plan snapshot after injected HTTP Message Signature verification
+ * @summary Accept a fixed plan snapshot after strict HMAC verification and durable replay reservation
  */
 export type acceptGroupOpsWebhookResponse202 = {
   data: GroupOpsRunSummary;

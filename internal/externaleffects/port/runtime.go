@@ -9,24 +9,25 @@ import (
 )
 
 type (
-	Digest                  = eer.Digest
-	EffectEnvelope          = eer.EffectEnvelope
-	EnvelopeInput           = eer.EnvelopeInput
-	AcceptCommand           = eer.AcceptCommand
-	QueueCommand            = eer.QueueCommand
-	ClaimCommand            = eer.ClaimCommand
-	ReconcileCommand        = eer.ReconcileCommand
-	RecoverAttemptedCommand = eer.RecoverAttemptedCommand
-	Lease                   = eer.Lease
-	Projection              = eer.Projection
-	OperationReceipt        = eer.OperationReceipt
-	RiverJobLink            = eer.RiverJobLink
-	Adapter                 = eer.Adapter
-	AdapterResult           = eer.AdapterResult
-	Attempt                 = eer.Attempt
-	State                   = eer.State
-	Completion              = eer.Completion
-	TerminalOutcome         = eer.TerminalOutcome
+	Digest                         = eer.Digest
+	EffectEnvelope                 = eer.EffectEnvelope
+	EnvelopeInput                  = eer.EnvelopeInput
+	AcceptCommand                  = eer.AcceptCommand
+	QueueCommand                   = eer.QueueCommand
+	ClaimCommand                   = eer.ClaimCommand
+	ReconcileCommand               = eer.ReconcileCommand
+	RecoverAttemptedCommand        = eer.RecoverAttemptedCommand
+	CompleteRecordedAttemptCommand = eer.CompleteRecordedAttemptCommand
+	Lease                          = eer.Lease
+	Projection                     = eer.Projection
+	OperationReceipt               = eer.OperationReceipt
+	RiverJobLink                   = eer.RiverJobLink
+	Adapter                        = eer.Adapter
+	AdapterResult                  = eer.AdapterResult
+	Attempt                        = eer.Attempt
+	State                          = eer.State
+	Completion                     = eer.Completion
+	TerminalOutcome                = eer.TerminalOutcome
 )
 
 const (
@@ -36,6 +37,7 @@ const (
 	OwnerSurvey                        = eer.OwnerSurvey
 	OwnerGroupOps                      = eer.OwnerGroupOps
 	OwnerWeCom                         = eer.OwnerWeCom
+	OwnerMedia                         = eer.OwnerMedia
 	KindOutboundMessage                = eer.KindOutboundMessage
 	KindContactAcquisitionAssetPublish = eer.KindContactAcquisitionAssetPublish
 	KindProductExternalPushTest        = eer.KindProductExternalPushTest
@@ -43,6 +45,7 @@ const (
 	KindOutboundMedia                  = eer.KindOutboundMedia
 	KindGroupOpsBroadcast              = eer.KindGroupOpsBroadcast
 	KindWeComTagSync                   = eer.KindWeComTagSync
+	KindMediaWeComUpload               = eer.KindMediaWeComUpload
 	StateAccepted                      = eer.StateAccepted
 	StateQueued                        = eer.StateQueued
 	StateAttempted                     = eer.StateAttempted
@@ -79,6 +82,7 @@ type Runtime interface {
 // execution surface. Owner-domain adapters opt in explicitly.
 type RecoveryRuntime interface {
 	RecoverAttemptedToUnknown(context.Context, RecoverAttemptedCommand) (Projection, OperationReceipt, error)
+	CompleteRecordedAttempt(context.Context, CompleteRecordedAttemptCommand) (Projection, OperationReceipt, error)
 }
 
 type TerminalReader interface {

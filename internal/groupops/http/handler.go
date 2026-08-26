@@ -570,7 +570,7 @@ func (h *Handler) UpdateNode(w http.ResponseWriter, r *http.Request) {
 		unavailable(w)
 		return
 	}
-	result, err := h.Application.UpdateNode(r.Context(), groupopsport.NodeUpdateCommand{PlanID: id, NodeID: node, ExpectedRevision: created.ExpectedRevision, Position: created.Position, Kind: created.Kind, MessageText: created.MessageText, DelayMinutes: created.DelayMinutes, MaterialRef: created.MaterialRef, Actor: actor, IdempotencyKey: key})
+	result, err := h.Application.UpdateNode(r.Context(), groupopsport.NodeUpdateCommand{PlanID: id, NodeID: node, ExpectedRevision: created.ExpectedRevision, Position: created.Position, Kind: created.Kind, MessageText: created.MessageText, DelayMinutes: created.DelayMinutes, MaterialRef: created.MaterialRef, MaterialPlan: created.MaterialPlan, Actor: actor, IdempotencyKey: key})
 	if err != nil {
 		applicationError(w, err)
 		return
@@ -714,17 +714,18 @@ func (h *Handler) Preview(w http.ResponseWriter, r *http.Request) {
 
 func nodeCreateBody(r *http.Request, id, actor int64, key string) (groupopsport.NodeCreateCommand, bool) {
 	var body struct {
-		ExpectedRevision int64                 `json:"expected_revision"`
-		Position         int32                 `json:"position"`
-		Kind             groupopsport.NodeKind `json:"kind"`
-		MessageText      string                `json:"message_text"`
-		DelayMinutes     int32                 `json:"delay_minutes"`
-		MaterialRef      string                `json:"material_reference"`
+		ExpectedRevision int64                     `json:"expected_revision"`
+		Position         int32                     `json:"position"`
+		Kind             groupopsport.NodeKind     `json:"kind"`
+		MessageText      string                    `json:"message_text"`
+		DelayMinutes     int32                     `json:"delay_minutes"`
+		MaterialRef      string                    `json:"material_reference"`
+		MaterialPlan     groupopsport.MaterialPlan `json:"material_plan"`
 	}
 	if !decodeBody(r, &body) {
 		return groupopsport.NodeCreateCommand{}, false
 	}
-	return groupopsport.NodeCreateCommand{PlanID: id, ExpectedRevision: body.ExpectedRevision, Position: body.Position, Kind: body.Kind, MessageText: body.MessageText, DelayMinutes: body.DelayMinutes, MaterialRef: body.MaterialRef, Actor: actor, IdempotencyKey: key}, true
+	return groupopsport.NodeCreateCommand{PlanID: id, ExpectedRevision: body.ExpectedRevision, Position: body.Position, Kind: body.Kind, MessageText: body.MessageText, DelayMinutes: body.DelayMinutes, MaterialRef: body.MaterialRef, MaterialPlan: body.MaterialPlan, Actor: actor, IdempotencyKey: key}, true
 }
 
 func method(w http.ResponseWriter, r *http.Request, want string) bool {

@@ -142,6 +142,19 @@ type ActiveStaffReader interface {
 	IsActiveStaff(context.Context, int64) (bool, error)
 }
 
+// ActiveStaffSenderReader is the one-record, transaction-bound bridge needed
+// when an owning Group Ops group already names a local staff owner.
+type ActiveStaffSenderReader interface {
+	LockActiveWeComUserID(context.Context, int64) (string, error)
+}
+
+// ActiveStaffWeComUserIDReader is the non-mutating lookup used before a
+// read-only WeCom directory request. Dispatch still uses the locked variant
+// above inside its accepting UnitOfWork.
+type ActiveStaffWeComUserIDReader interface {
+	ReadActiveWeComUserID(context.Context, int64) (string, error)
+}
+
 type StaffDirectoryEntry struct {
 	WeComUserID string
 	DisplayName string

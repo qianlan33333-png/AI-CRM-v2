@@ -24,7 +24,7 @@ func TestEnvelopeClosedOwnersAndDigestOnlyPayload(t *testing.T) {
 		{OwnerCampaign, KindCampaignDispatch}, {OwnerCampaign, KindCampaignGroupAnnouncement},
 		{OwnerSurvey, KindSurveyWebhook}, {OwnerAudience, KindAudienceWebhook},
 		{OwnerOrder, KindOrderPaymentPrepay}, {OwnerOrder, KindOrderPaymentCapture}, {OwnerOrder, KindOrderRefund},
-		{OwnerGroupOps, KindGroupOpsBroadcast}, {OwnerProduct, KindProductExternalPushTest},
+		{OwnerGroupOps, KindGroupOpsBroadcast}, {OwnerProduct, KindProductExternalPushTest}, {OwnerMedia, KindMediaWeComUpload},
 	} {
 		value, err := NewEnvelope(EnvelopeInput{Owner: family.owner, Kind: family.kind, SourceRefDigest: digest("source"), TargetRefDigest: digest("target"), PayloadDigest: digest("payload"), PolicyVersionHash: digest("policy")})
 		if err != nil || value.Fingerprint() == "" {
@@ -288,6 +288,41 @@ func TestRecoverAttemptedToUnknownAfterTerminalWriteFailureDoesNotCallAdapterAga
 	}
 	if _, _, err := service.RunAttempt(context.Background(), lease, adapter); !errors.Is(err, ErrLeaseFence) || calls != 1 {
 		t.Fatalf("recovered effect ran adapter again: err=%v calls=%d", err, calls)
+	}
+}
+
+func TestCompleteRecordedAttemptAfterReceiptCrashDoesNotCallAdapterAgain(t *testing.T) {
+	t.Parallel()
+	store := newMemoryStore(t)
+	service := mustService(t, store)
+	queued := acceptQueued(t, service, digest("recorded completion accept"))
+	lease, _, err := service.Claim(context.Background(), ClaimCommand{EffectID: queued.ID, WorkerDigest: digest("recorded completion worker")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	store.completeErr = errors.New("terminal write unavailable")
+	calls := 0
+	var attempt Attempt
+	providerReceipt := digest("durable owner provider receipt")
+	if _, _, err = service.RunAttempt(context.Background(), lease, adapterFunc(func(_ context.Context, _ EffectEnvelope, current Attempt) (AdapterResult, error) {
+		calls++
+		attempt = current
+		return AdapterResult{Completion: CompletionExecuted, ReceiptDigest: providerReceipt, BusinessCallDispatched: true, RealExternalCallExecuted: true}, nil
+	})); err == nil || calls != 1 {
+		t.Fatalf("terminal write failure=%v calls=%d", err, calls)
+	}
+	result := AdapterResult{Completion: CompletionExecuted, ReceiptDigest: providerReceipt, BusinessCallDispatched: true, RealExternalCallExecuted: true}
+	if _, _, err = service.CompleteRecordedAttempt(context.Background(), CompleteRecordedAttemptCommand{Lease: lease, Attempt: attempt, Result: result}); !errors.Is(err, ErrInvalidCommand) {
+		t.Fatalf("live lease recorded completion=%v", err)
+	}
+	store.expireLease(queued.ID)
+	expired := store.leaseFor(queued.ID)
+	completed, receipt, err := service.CompleteRecordedAttempt(context.Background(), CompleteRecordedAttemptCommand{
+		Lease: expired, Attempt: attempt,
+		Result: result,
+	})
+	if err != nil || completed.State != StateExecuted || receipt.CommandDigest != providerReceipt || calls != 1 {
+		t.Fatalf("completion=%+v receipt=%+v err=%v calls=%d", completed, receipt, err, calls)
 	}
 }
 
