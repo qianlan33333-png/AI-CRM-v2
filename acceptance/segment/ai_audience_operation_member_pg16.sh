@@ -35,9 +35,13 @@ goose=("$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "
 CI_TEST_DATABASE_URL="$database_url" /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" test -race -count=1 -timeout=240s -run '^TestAIAudienceOperationMemberSyncPG16$' ./acceptance/segment
 
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE $database_name WITH (FORCE)" >/dev/null
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "CREATE DATABASE $database_name" >/dev/null
+"${goose[@]}" up-to 100 >/dev/null
 psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "
-  DELETE FROM public.event_log WHERE event_type = 'ai_audience.operation_members.synced';
-  DELETE FROM public.ai_audience_local_configuration_receipts WHERE operation = 'operation_members_sync'"
+  INSERT INTO public.ai_audience_operation_member_projection
+    (sender_userid, display_name, synced_at)
+  VALUES ('guard-user', 'Guard User', now())"
 if "${goose[@]}" down-to 99 >"$guard_output" 2>&1; then
   printf 'expected populated Audience operation-member projection guard to fail\n' >&2
   exit 1
@@ -45,8 +49,8 @@ fi
 grep -Fq 'cannot roll back populated AI Audience operation-member projection facts' "$guard_output"
 grep -Fq 'SQLSTATE 55000' "$guard_output"
 
-psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "DELETE FROM public.ai_audience_operation_member_projection"
-"${goose[@]}" down-to 99 >/dev/null
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE $database_name WITH (FORCE)" >/dev/null
+psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "CREATE DATABASE $database_name" >/dev/null
 "${goose[@]}" up-to 100 >/dev/null
 psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "
   INSERT INTO public.ai_audience_local_configuration_receipts
@@ -60,9 +64,5 @@ if "${goose[@]}" down-to 99 >"$guard_output" 2>&1; then
 fi
 grep -Fq 'cannot roll back populated AI Audience operation-member projection facts' "$guard_output"
 grep -Fq 'SQLSTATE 55000' "$guard_output"
-
-psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "DELETE FROM public.ai_audience_local_configuration_receipts WHERE operation = 'operation_members_sync'"
-"${goose[@]}" down-to 99 >/dev/null
-"${goose[@]}" up-to 100 >/dev/null
 
 printf 'P4 AI Audience operation-member PG16.14: PASS (exact 100, Provider-stub sync, SQLC projection, receipt/event replay, populated projection and receipt down guards)\n'
