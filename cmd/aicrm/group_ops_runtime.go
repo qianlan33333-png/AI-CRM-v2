@@ -4,6 +4,7 @@ import (
 	"context"
 
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
 	groupopsdirectory "github.com/qianlan33333-png/AI-CRM-v2/internal/wecom/groupopsdirectory"
 )
 
@@ -15,6 +16,26 @@ type groupOpsSenderResolver struct {
 		LockDirectoryGroupOwner(context.Context, string) (int64, error)
 	}
 	staff contactport.ActiveStaffSenderReader
+}
+
+type groupOpsEffectRuntime struct {
+	runtime  *eer.Service
+	terminal interface {
+		GetTerminalOutcome(context.Context, string) (eer.TerminalOutcome, error)
+	}
+}
+
+func (runtime groupOpsEffectRuntime) Claim(ctx context.Context, command eer.ClaimCommand) (eer.Lease, eer.Projection, error) {
+	return runtime.runtime.Claim(ctx, command)
+}
+func (runtime groupOpsEffectRuntime) RunAttempt(ctx context.Context, lease eer.Lease, adapter eer.Adapter) (eer.Projection, eer.OperationReceipt, error) {
+	return runtime.runtime.RunAttempt(ctx, lease, adapter)
+}
+func (runtime groupOpsEffectRuntime) RecoverAttemptedToUnknown(ctx context.Context, command eer.RecoverAttemptedCommand) (eer.Projection, eer.OperationReceipt, error) {
+	return runtime.runtime.RecoverAttemptedToUnknown(ctx, command)
+}
+func (runtime groupOpsEffectRuntime) GetTerminalOutcome(ctx context.Context, effectID string) (eer.TerminalOutcome, error) {
+	return runtime.terminal.GetTerminalOutcome(ctx, effectID)
 }
 
 type groupOpsDirectoryOwnerResolver struct {

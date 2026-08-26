@@ -19,6 +19,10 @@ import (
 	eventstore "github.com/qianlan33333-png/AI-CRM-v2/internal/events/store"
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects"
 	externaleffectsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/store"
+	groupopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/app"
+	groupopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/port"
+	groupopsstore "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/store"
+	groupopsworker "github.com/qianlan33333-png/AI-CRM-v2/internal/groupops/worker"
 	identityapp "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/app"
 	identitystore "github.com/qianlan33333-png/AI-CRM-v2/internal/identity/store"
 	operationstore "github.com/qianlan33333-png/AI-CRM-v2/internal/operationcycle/store"
@@ -98,6 +102,55 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 	externalEffectsRuntimeRepository := externaleffectsstore.NewRepository(pool, uow)
 	externalEffectsRuntime, err := eer.NewService(externalEffectsRuntimeRepository)
 	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	groupOpsRepository := groupopsstore.NewRepository()
+	groupOpsStaffDirectory := contactstore.NewStaffDirectoryRepository(pool)
+	groupOpsJobs, err := groupopsstore.NewDispatchJobInserter(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	groupOpsProjector, err := groupopsapp.NewRuntimeService(
+		uow, groupOpsRepository, groupOpsRepository, externalEffectsRuntime, groupOpsStaffDirectory, nil,
+		groupOpsSenderResolver{groups: groupOpsRepository, staff: groupOpsStaffDirectory}, groupOpsJobs,
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	groupOpsReader, err := groupopsstore.NewDispatchExecutionReader(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	groupOpsReceipts, err := groupopsstore.NewGroupMessageReceiptStore(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	groupOpsTargets, err := groupopsstore.NewGroupMessageTargetResolver(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	var groupOpsProvider groupopsport.DispatchProvider = disabledGroupOpsDispatchProvider{}
+	if config.WeCom.Outbound.Enabled {
+		groupOpsProvider, err = newGroupOpsDispatchProvider(config.WeCom.Outbound, &http.Client{Timeout: 15 * time.Second}, time.Now, groupOpsTargets, groupOpsReceipts)
+		if err != nil {
+			pool.Close()
+			return nil, err
+		}
+	}
+	groupOpsDispatchWorker, err := groupopsworker.NewDispatchWorker(
+		groupOpsReader, groupOpsProjector, groupOpsEffectRuntime{runtime: externalEffectsRuntime, terminal: externalEffectsRuntimeRepository}, groupOpsProvider,
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	if err = groupopsworker.RegisterDispatchWorker(workers, groupOpsDispatchWorker); err != nil {
 		pool.Close()
 		return nil, err
 	}

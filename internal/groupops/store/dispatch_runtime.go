@@ -36,6 +36,33 @@ type DispatchJobInserter struct {
 	client *platformjobqueue.InsertOnlyClient
 }
 
+// GroupMessageTargetResolver proves that a frozen execution target remains a
+// Group Ops directory chat reference. It exposes no provider identifiers other
+// than the exact already-frozen chat reference.
+type GroupMessageTargetResolver struct{ pool *pgxpool.Pool }
+
+func NewGroupMessageTargetResolver(pool *pgxpool.Pool) (*GroupMessageTargetResolver, error) {
+	if pool == nil {
+		return nil, groupopsapp.ErrUnavailable
+	}
+	return &GroupMessageTargetResolver{pool: pool}, nil
+}
+
+func (resolver *GroupMessageTargetResolver) ResolveGroupMessageTarget(ctx context.Context, target string) (string, bool, error) {
+	if resolver == nil || resolver.pool == nil || ctx == nil || target == "" {
+		return "", false, groupopsapp.ErrInvalid
+	}
+	var chatID string
+	err := resolver.pool.QueryRow(ctx, `SELECT chat_reference FROM group_ops_directory_groups WHERE chat_reference = $1`, target).Scan(&chatID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", false, nil
+	}
+	if err != nil || chatID != target {
+		return "", false, unavailable(err)
+	}
+	return chatID, true, nil
+}
+
 func NewDispatchJobInserter(pool *pgxpool.Pool) (*DispatchJobInserter, error) {
 	client, err := platformjobqueue.NewInsertOnlyClient(pool)
 	if err != nil {

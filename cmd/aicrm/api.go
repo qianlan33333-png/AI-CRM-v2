@@ -1493,6 +1493,19 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
+	groupOpsReceipts, err := groupopsstore.NewGroupMessageReceiptStore(pool)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	var groupOpsEvidence groupopsport.ReconciliationEvidenceVerifier
+	if config.WeCom.Outbound.Enabled {
+		groupOpsEvidence, err = newGroupOpsEvidenceVerifier(config.WeCom.Outbound, &http.Client{Timeout: 5 * time.Second}, time.Now, groupOpsReceipts)
+		if err != nil {
+			pool.Close()
+			return nil, err
+		}
+	}
 	groupOpsRuntime, err := groupopsapp.NewRuntimeService(
 		uow,
 		groupOpsRepository,
@@ -1502,6 +1515,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		groupOpsDirectorySource,
 		groupOpsSenderResolver{groups: groupOpsRepository, staff: groupOpsStaffDirectory},
 		groupOpsJobs,
+		groupOpsEvidence,
 	)
 	if err != nil {
 		pool.Close()
