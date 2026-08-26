@@ -6,7 +6,7 @@ digest columns are exactly 32 bytes; business-event replay is unique per
 package and transport replay is unique per client. The down migration stops
 with SQLSTATE `55000` whenever either table contains a fact.
 
-`POST /api/ai/audience/packages/{package_id}/webhook` is public only in the
+`POST /api/ai/audience/packages/{package_key}/webhook` is public only in the
 transport sense: it requires the four `X-AICRM-*` HMAC headers, validates the
 exact raw body, and fails closed with `503` when the optional configured
 webhook secret is absent. The accepted `200` is record-only. It creates no

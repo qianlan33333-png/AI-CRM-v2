@@ -52365,16 +52365,16 @@ export type receiveAIAudienceInboundWebhookResponse =
   | receiveAIAudienceInboundWebhookResponseSuccess
   | receiveAIAudienceInboundWebhookResponseError;
 
-export const getReceiveAIAudienceInboundWebhookUrl = (packageId: number) => {
-  return `/api/ai/audience/packages/${packageId}/webhook`;
+export const getReceiveAIAudienceInboundWebhookUrl = (packageKey: number) => {
+  return `/api/ai/audience/packages/${packageKey}/webhook`;
 };
 
 export const receiveAIAudienceInboundWebhook = async (
-  packageId: number,
+  packageKey: number,
   aIAudienceInboundWebhookRequest: AIAudienceInboundWebhookRequest,
   options?: RequestInit,
 ): Promise<receiveAIAudienceInboundWebhookResponse> => {
-  const res = await fetch(getReceiveAIAudienceInboundWebhookUrl(packageId), {
+  const res = await fetch(getReceiveAIAudienceInboundWebhookUrl(packageKey), {
     ...options,
     method: "POST",
     headers: { "Content-Type": "application/json", ...options?.headers },
