@@ -595,7 +595,17 @@ export async function downloadOwnerReassignmentReportDto(previewId: string, kind
 }
 export async function setRadarEnabled(linkId: number, enabled: boolean): Promise<void> { const current = obj(await call(getRadarLink(linkId, apiRequestOptions()))).link as ApiRadarLink; const request = { expected_version: current.version }; await call(enabled ? enableRadarLink(linkId, request, apiRequestOptions()) : disableRadarLink(linkId, request, apiRequestOptions())); }
 export async function readRadarEvents(linkId: number): Promise<AdminDb['radarEvents']> { const page = await call(listRadarLinkEvents(linkId, undefined, apiRequestOptions())); return list(page, 'items').map((item) => ({ unionid_masked: text(obj(item).unionid_masked), external_userid: text(obj(item).external_userid), created_at: text(obj(item).occurred_at, text(obj(item).created_at)) })); }
-export async function readRadarSharePath(linkId: number): Promise<string> { const projection = obj(await call(getRadarLinkShareProjection(linkId, apiRequestOptions()))); if (projection.available !== true || typeof projection.share_path !== 'string') throw new Error('后端尚未提供可用的 Radar 公开分享路径'); return projection.share_path; }
+export async function readRadarSharePath(linkId: number): Promise<string> {
+  if (!Number.isSafeInteger(linkId) || linkId < 1) throw new Error('Radar 链接 ID 无效');
+  const projection = obj(await call(getRadarLinkShareProjection(linkId, apiRequestOptions())));
+  const publicCode = typeof projection.public_code === 'string' ? projection.public_code : '';
+  const sharePath = typeof projection.share_path === 'string' ? projection.share_path : '';
+  const qrPayload = typeof projection.qr_payload === 'string' ? projection.qr_payload : '';
+  const responseLinkId = Number(projection.link_id);
+  if (!Number.isSafeInteger(responseLinkId) || responseLinkId < 1 || responseLinkId !== linkId || !/^rd_[A-Za-z0-9_-]{22}$/.test(publicCode) || !/^\/r\/rd_[A-Za-z0-9_-]{22}$/.test(sharePath) || sharePath !== `/r/${publicCode}` || !/^\/r\/rd_[A-Za-z0-9_-]{22}$/.test(qrPayload) || projection.local_projection !== true || projection.public_route_ready !== true || projection.real_external_call_executed !== false) throw new Error('Radar 分享投影响应不完整或越过本地边界');
+  if (projection.available !== true) throw new Error('后端尚未提供可用的 Radar 公开分享路径');
+  return sharePath;
+}
 export async function readCouponSharePath(couponId: number): Promise<string> { const projection = obj(await call(getLegacyCouponShare(couponId, apiRequestOptions()))); if (typeof projection.url !== 'string') throw new Error('后端尚未提供可用的优惠券分享路径'); return projection.url; }
 export async function updateCustomerDto(customerId: number, input: { name?: string; stageId?: number | null }): Promise<Customer> {
   const opt = apiRequestOptions(); let customer: ApiCustomer | undefined;

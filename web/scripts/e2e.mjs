@@ -299,7 +299,7 @@ console.log('admin/radar.html（列表）');
   const shareBtn = d.querySelector('[data-share]');
   click(dom, shareBtn);
   await sleep(30);
-  ok('分享浮窗打开且伪二维码渲染', d.querySelector('#shareMask').classList.contains('open') && !!d.querySelector('#shareQr svg'));
+  ok('分享浮窗打开且二维码缺口明确阻塞', d.querySelector('#shareMask').classList.contains('open') && d.querySelector('#shareQr').textContent.includes('backend_blocked') && !d.querySelector('#shareQr svg'));
   click(dom, d.querySelector('#shareMask .modal-x'));
   await sleep(30);
   ok('关闭分享浮窗', !d.querySelector('#shareMask').classList.contains('open'));
