@@ -200,9 +200,9 @@ func (secret WeComOutboundSecret) Value() string { return secret.value }
 func (WeComOutboundSecret) String() string       { return "[REDACTED]" }
 func (WeComOutboundSecret) GoString() string     { return "[REDACTED]" }
 
-// WeComOutbound is an independent, worker-only opt-in for creating external-
-// contact message templates. It cannot inherit OAuth, Sidebar, callback, or
-// customer-acquisition credentials.
+// WeComOutbound is an independent opt-in for WeCom external-contact writes.
+// API processes receive only the enablement/corp/permission projection needed
+// to enqueue effects; provider credentials remain worker-only.
 type WeComOutbound struct {
 	Enabled             bool
 	CorpID              string
@@ -448,6 +448,9 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 			problems = append(problems, "wecom.directory_sync requires configured oauth credentials")
 		}
 		root.WeCom.Sidebar = parseWeComSidebar(lookup, &problems)
+		if !needWorker {
+			root.WeCom.Outbound = parseWeComOutboundAPI(lookup, &problems)
+		}
 		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
 		root.APIClient.JWTSecret = parseOptionalAPIClientJWTSecret(lookup, &problems)
 		root.GroupOps.WebhookSecret = parseOptionalGroupOpsWebhookSecret(lookup, &problems)
@@ -728,6 +731,36 @@ func parseWeComOutbound(lookup environmentLookup, problems *[]string) WeComOutbo
 		*problems = append(*problems, "wecom.outbound.permission_confirmed must be true when enabled")
 	}
 	return WeComOutbound{Enabled: true, CorpID: corpID, Secret: WeComOutboundSecret{value: secret}, PermissionConfirmed: permission == "true"}
+}
+
+func parseWeComOutboundAPI(lookup environmentLookup, problems *[]string) WeComOutbound {
+	enabled, enabledPresent := lookup(weComOutboundEnabledEnv)
+	corpID, corpIDPresent := lookup(weComOutboundCorpIDEnv)
+	permission, permissionPresent := lookup(weComOutboundPermissionConfirmedEnv)
+	if !enabledPresent && !corpIDPresent && !permissionPresent {
+		return WeComOutbound{}
+	}
+	if !enabledPresent || enabled != "true" && enabled != "false" {
+		*problems = append(*problems, "wecom.outbound.enabled must be true or false")
+		return WeComOutbound{}
+	}
+	if enabled == "false" {
+		if corpIDPresent || permissionPresent {
+			*problems = append(*problems, "wecom.outbound API projection requires no corp_id or permission when enabled=false")
+		}
+		return WeComOutbound{}
+	}
+	if !corpIDPresent || !permissionPresent || corpID == "" {
+		*problems = append(*problems, "wecom.outbound API projection requires corp_id and permission_confirmed")
+		return WeComOutbound{}
+	}
+	if !validWeComCorpID(corpID) {
+		*problems = append(*problems, "wecom.outbound.corp_id is invalid")
+	}
+	if permission != "true" {
+		*problems = append(*problems, "wecom.outbound.permission_confirmed must be true when enabled")
+	}
+	return WeComOutbound{Enabled: true, CorpID: corpID, PermissionConfirmed: permission == "true"}
 }
 
 func parseWeChatPayProvider(lookup environmentLookup, needAPI, needWorker bool, problems *[]string) WeChatPayProvider {

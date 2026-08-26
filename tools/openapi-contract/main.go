@@ -325,6 +325,7 @@ var nativePackageOperations = map[string]nativePackageOperation{
 var nativePackageExternalEffects = map[string]string{
 	"startSurveyH5OAuth":               "external_protocol",
 	"callbackSurveyH5OAuth":            "external_protocol",
+	"updateSidebarProfile":             "accepted_only",
 	"reconcileWecomTagEffect":          "reconciliation_only",
 	"publishChannelAcquisitionAsset":   "accepted_only",
 	"reconcileChannelAcquisitionAsset": "reconciliation_only",

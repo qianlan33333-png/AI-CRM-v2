@@ -261,7 +261,7 @@ paths:
     put:
       tags: [p4-sidebar-local]
       operationId: updateSidebarProfile
-      summary: Update Contact-owned sidebar fields with CAS and a durable receipt
+      summary: Update Contact-owned sidebar fields and conditionally queue a WeCom profile effect
       x-p4-decision-evidence: P4-S05-SIDEBAR-LOCAL-CORE-2026-08-24
       x-aicrm-capability: customers.write
       x-aicrm-rbac-scopes: {admin: global, ops: global, sales: owner_staff}
@@ -269,7 +269,7 @@ paths:
       x-aicrm-session-bound-csrf: required
       x-aicrm-data-classification: internal_pii
       x-aicrm-data-source: contact.local_command
-      x-aicrm-external-effect: none
+      x-aicrm-external-effect: accepted_only
       parameters: [{$ref: "#/components/parameters/SidebarContextToken"}, {$ref: "#/components/parameters/CSRFToken"}, {$ref: "#/components/parameters/IdempotencyKey"}]
       requestBody:
         required: true
@@ -292,7 +292,7 @@ paths:
                     needs: {type: string, maxLength: 2000}
                     pain_points: {type: string, maxLength: 2000}
       responses:
-        "200": {description: Updated local profile, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarProfileResponse"}}}}
+        "200": {description: Updated profile with truthful local-only or queued-provider-eligible safety; no provider call has executed in-request, content: {application/json: {schema: {$ref: "#/components/schemas/SidebarProfileUpdateResponse"}}}}
         "400": {$ref: "#/components/responses/BadRequest"}
         "401": {$ref: "#/components/responses/Unauthorized"}
         "403": {$ref: "#/components/responses/Forbidden"}
@@ -13035,6 +13035,22 @@ components:
       properties:
         profile: {$ref: "#/components/schemas/SidebarProfile"}
         safety: {$ref: "#/components/schemas/SidebarSafety"}
+    SidebarProfileUpdateSafety:
+      type: object
+      additionalProperties: false
+      required: [local_only, effect_queued, provider_execution_eligible, real_external_call_executed]
+      properties:
+        local_only: {type: boolean}
+        effect_queued: {type: boolean, description: True only after the effect and River job commit with the profile receipt.}
+        provider_execution_eligible: {type: boolean, description: True only for a queued effect created under enabled WeCom outbound configuration.}
+        real_external_call_executed: {type: boolean, enum: [false], x-enum-varnames: [SidebarProfileUpdateSafetyRealExternalCallExecutedFalse]}
+    SidebarProfileUpdateResponse:
+      type: object
+      additionalProperties: false
+      required: [profile, safety]
+      properties:
+        profile: {$ref: "#/components/schemas/SidebarProfile"}
+        safety: {$ref: "#/components/schemas/SidebarProfileUpdateSafety"}
     SidebarSafeChoiceAnswer:
       type: object
       additionalProperties: false

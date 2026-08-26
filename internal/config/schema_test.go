@@ -361,6 +361,29 @@ func TestLoadWeComOutboundIsIndependentExplicitAndRedacted(t *testing.T) {
 	}
 }
 
+func TestLoadAPIReceivesOnlyWeComOutboundQueueProjection(t *testing.T) {
+	const secret = "worker-secret-must-not-enter-api-config"
+	values := map[string]string{
+		databaseURLEnv:                      "postgres://db/aicrm",
+		apiListenAddressEnv:                 "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:                  "10",
+		identityHMACKeyEnv:                  strings.Repeat("A", 43),
+		weComOutboundEnabledEnv:             "true",
+		weComOutboundCorpIDEnv:              "outbound-corp",
+		weComOutboundSecretEnv:              secret,
+		weComOutboundPermissionConfirmedEnv: "true",
+	}
+	root, err := load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil || !root.WeCom.Outbound.Enabled || !root.WeCom.Outbound.PermissionConfirmed || root.WeCom.Outbound.CorpID != "outbound-corp" || root.WeCom.Outbound.Secret.Value() != "" {
+		t.Fatalf("api outbound=%#v err=%v", root.WeCom.Outbound, err)
+	}
+	for _, formatted := range []string{fmt.Sprint(root), fmt.Sprintf("%#v", root)} {
+		if strings.Contains(formatted, secret) {
+			t.Fatalf("API config leaked worker credential: %q", formatted)
+		}
+	}
+}
+
 func TestLoadWeComSidebarIsAtomicAndUsesIndependentCallback(t *testing.T) {
 	values := map[string]string{
 		databaseURLEnv:          "postgres://db/aicrm",

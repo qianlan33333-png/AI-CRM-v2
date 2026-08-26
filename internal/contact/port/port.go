@@ -87,6 +87,18 @@ type SidebarProfileService interface {
 	UpdateSidebarProfile(context.Context, SidebarProfileUpdateCommand) (SidebarProfile, error)
 }
 
+type SidebarProfileUpdateResult struct {
+	Profile                   SidebarProfile
+	EffectQueued              bool
+	ProviderExecutionEligible bool
+}
+
+// SidebarProfileEffectService is the optional enriched write contract used
+// only when the composition root enables the WeCom outbound effect runtime.
+type SidebarProfileEffectService interface {
+	UpdateSidebarProfileWithEffect(context.Context, SidebarProfileUpdateCommand) (SidebarProfileUpdateResult, error)
+}
+
 // ImageReferenceReader is the Contact-owned read-only answer to whether a
 // channel welcome projection references one Media image. It returns only local
 // channel IDs in ascending order.

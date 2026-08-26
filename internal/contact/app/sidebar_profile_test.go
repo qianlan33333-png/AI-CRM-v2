@@ -31,6 +31,22 @@ type sidebarProfileStoreFake struct {
 	updates int
 }
 
+type sidebarProfileEffectFake struct {
+	store    *sidebarProfileStoreFake
+	commands []SidebarProfileEffectCommand
+	states   []string
+	err      error
+}
+
+func (effect *sidebarProfileEffectFake) QueueInTransaction(_ context.Context, command SidebarProfileEffectCommand) (SidebarProfileEffectAcceptance, error) {
+	effect.commands = append(effect.commands, command)
+	effect.states = append(effect.states, effect.store.receipt.State)
+	if effect.err != nil {
+		return SidebarProfileEffectAcceptance{}, effect.err
+	}
+	return SidebarProfileEffectAcceptance{Queued: true, ProviderExecutionEligible: true}, nil
+}
+
 func (store *sidebarProfileStoreFake) ReadSidebarProfile(context.Context, int64, int64) (SidebarProfileRecord, error) {
 	return store.record, nil
 }
@@ -108,5 +124,42 @@ func TestSidebarProfileUpdateRejectsStaleVersionBeforeSideEffects(t *testing.T) 
 	_, err := service.UpdateSidebarProfile(context.Background(), contactport.SidebarProfileUpdateCommand{CustomerID: 41, OwnerStaffID: 7, ExpectedUpdatedAt: now.Add(-time.Second), Patch: contactport.SidebarProfilePatch{Needs: &needs}, Actor: "admin:9", IdempotencyKey: "sidebar-profile-0002"})
 	if !errors.Is(err, contactport.ErrSidebarProfileConflict) || store.updates != 0 || len(events.values) != 0 {
 		t.Fatalf("stale update err=%v updates=%d events=%d", err, store.updates, len(events.values))
+	}
+}
+
+func TestSidebarProfileUpdateQueuesEnabledEffectWithSameReceiptAndReplays(t *testing.T) {
+	now := time.Date(2026, 8, 26, 12, 0, 0, 0, time.UTC)
+	store := &sidebarProfileStoreFake{record: SidebarProfileRecord{CustomerID: 41, OwnerStaffID: 7, Name: "customer", Extra: json.RawMessage(`{}`), UpdatedAt: now.Add(-time.Minute)}}
+	events := &sidebarProfileEvents{}
+	effect := &sidebarProfileEffectFake{store: store}
+	service := NewSidebarProfileServiceWithEffect(sidebarProfileUOW{}, store, events, effect)
+	service.now = func() time.Time { return now }
+	description := "renewal follow-up"
+	command := contactport.SidebarProfileUpdateCommand{CustomerID: 41, OwnerStaffID: 7, ExpectedUpdatedAt: store.record.UpdatedAt, Patch: contactport.SidebarProfilePatch{Description: &description}, Actor: "admin:9", IdempotencyKey: "sidebar-profile-queued-0001"}
+
+	first, err := service.UpdateSidebarProfileWithEffect(context.Background(), command)
+	if err != nil || !first.EffectQueued || !first.ProviderExecutionEligible || first.Profile.Description != description || len(effect.commands) != 1 || effect.states[0] != "reserved" {
+		t.Fatalf("first=%+v commands=%+v states=%v err=%v", first, effect.commands, effect.states, err)
+	}
+	queued := effect.commands[0]
+	if queued.ReceiptID != store.receipt.ID || queued.ActorID != 9 || queued.CustomerID != 41 || queued.IdempotencyKey != command.IdempotencyKey || queued.Profile.Name != "customer" || queued.Profile.Description != description {
+		t.Fatalf("queued=%+v receipt=%+v", queued, store.receipt)
+	}
+	replay, err := service.UpdateSidebarProfileWithEffect(context.Background(), command)
+	if err != nil || replay != first || len(effect.commands) != 2 || effect.commands[1] != queued || effect.states[1] != "completed" || store.updates != 1 || len(events.values) != 1 {
+		t.Fatalf("replay=%+v commands=%+v states=%v updates=%d events=%d err=%v", replay, effect.commands, effect.states, store.updates, len(events.values), err)
+	}
+}
+
+func TestSidebarProfileEffectFailureLeavesReceiptIncomplete(t *testing.T) {
+	now := time.Date(2026, 8, 26, 12, 0, 0, 0, time.UTC)
+	store := &sidebarProfileStoreFake{record: SidebarProfileRecord{CustomerID: 41, OwnerStaffID: 7, Name: "customer", Extra: json.RawMessage(`{}`), UpdatedAt: now.Add(-time.Minute)}}
+	effect := &sidebarProfileEffectFake{store: store, err: errors.New("target unavailable")}
+	service := NewSidebarProfileServiceWithEffect(sidebarProfileUOW{}, store, &sidebarProfileEvents{}, effect)
+	service.now = func() time.Time { return now }
+	description := "follow-up"
+	_, err := service.UpdateSidebarProfileWithEffect(context.Background(), contactport.SidebarProfileUpdateCommand{CustomerID: 41, OwnerStaffID: 7, ExpectedUpdatedAt: store.record.UpdatedAt, Patch: contactport.SidebarProfilePatch{Description: &description}, Actor: "admin:9", IdempotencyKey: "sidebar-profile-queued-0002"})
+	if !errors.Is(err, contactport.ErrSidebarProfileUnavailable) || store.receipt.State != "reserved" || len(effect.commands) != 1 {
+		t.Fatalf("err=%v receipt=%+v commands=%+v", err, store.receipt, effect.commands)
 	}
 }
