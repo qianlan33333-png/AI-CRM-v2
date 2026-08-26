@@ -593,7 +593,10 @@ class WorkflowWiringTests(unittest.TestCase):
             source = (REPO_ROOT / relative_name).read_text(encoding="utf-8")
             self.assertRegex(source, r"(?m)^permissions:\n  contents: read\n")
             permission_entries = re.findall(r"(?m)^  [a-z-]+: (?:read|write|write-all)$", source)
-            self.assertEqual(permission_entries, ["  contents: read"])
+            expected_permissions = ["  contents: read"]
+            if relative_name == ".github/workflows/nightly.yml":
+                expected_permissions.append("  statuses: write")
+            self.assertEqual(permission_entries, expected_permissions)
             self.assertNotIn("pull_request_target", source)
             self.assertNotRegex(source, r"(?m)^\s+paths(?:-ignore)?:")
             for action_ref in re.findall(r"(?m)^\s+(?:- )?uses: ([^\s#]+)", source):
@@ -626,6 +629,9 @@ class WorkflowWiringTests(unittest.TestCase):
         self.assertIn("schedule:", source)
         self.assertIn("workflow_dispatch:", source)
         self.assertNotIn("ci / merge-gate", source)
+        self.assertIn("statuses: write", source)
+        self.assertIn("name: Publish block compatibility status\n        if: ${{ always() }}", source)
+        self.assertIn('"context": "ci / block compatibility"', source)
 
     def test_workflow_script_references_exist(self) -> None:
         references: set[str] = set()

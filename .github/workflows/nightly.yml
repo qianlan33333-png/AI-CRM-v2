@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  statuses: write
 
 concurrency:
   group: ci-nightly
@@ -87,3 +88,31 @@ jobs:
           DM01_TARGET_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/aicrm_test_dm01_target?sslmode=disable
           POSTGRES_CONTAINER_ID: ${{ job.services.postgres.id }}
         run: QUERY_PLAN_BASE_SHA="$(git rev-parse HEAD^)" QUERY_PLAN_HEAD_SHA="$(git rev-parse HEAD)" scripts/ci/run_full_regression.sh
+      - name: Publish block compatibility status
+        if: ${{ always() }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          case "$JOB_STATUS" in
+            success)
+              state="success"
+              description="Full Nightly passed for this commit"
+              ;;
+            failure|cancelled)
+              state="failure"
+              description="Full Nightly did not pass for this commit"
+              ;;
+            *)
+              state="error"
+              description="Full Nightly ended without a conclusive result"
+              ;;
+          esac
+          payload="$(STATE="$state" DESCRIPTION="$description" python3 -c 'import json, os; print(json.dumps({"state": os.environ["STATE"], "context": "ci / block compatibility", "description": os.environ["DESCRIPTION"], "target_url": "{}/{}/actions/runs/{}".format(os.environ["GITHUB_SERVER_URL"], os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_RUN_ID"])}))')"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer $GITHUB_TOKEN" \
+            --header "Accept: application/vnd.github+json" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            --data "$payload"
