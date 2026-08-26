@@ -278,7 +278,7 @@ owners:
 
   order:
     package: internal/order
-    tables: [order_list_projections, order_list_projection_counters, order_operation_receipts, order_export_jobs, order_external_effects, order_refunds, order_payment_commands, order_financial_refunds, order_provider_callback_receipts, order_financial_reconciliations, order_wechat_shop_refunds, order_wechat_shop_refund_attempts, order_wechat_shop_refund_callbacks, order_wechat_shop_refund_queries]
+    tables: [order_list_projections, order_list_projection_counters, order_operation_receipts, order_export_jobs, order_external_effects, order_refunds, order_payment_commands, order_financial_refunds, order_provider_callback_receipts, order_financial_reconciliations, order_wechat_shop_materials, order_wechat_shop_material_lines, order_wechat_shop_material_quarantines, order_wechat_shop_material_sync_requests, order_wechat_shop_refunds, order_wechat_shop_refund_attempts, order_wechat_shop_refund_callbacks, order_wechat_shop_refund_queries]
     constraints:
       order_list_projections: read_only_unified_order_projection_without_payment_or_provider_execution
       order_list_projection_counters: exact_unfiltered_order_total_without_projection_scan
@@ -290,6 +290,10 @@ owners:
       order_financial_refunds: wechat_refund_amount_reservation_and_authoritative_settlement_lineage
       order_provider_callback_receipts: immutable_digest_only_signed_callback_receipts_completed_in_the_financial_transaction
       order_financial_reconciliations: immutable_provider_query_evidence_without_plaintext_provider_payload
+      order_wechat_shop_materials: provider_verified_order_material_snapshots_with_digest_only_sensitive_identifiers
+      order_wechat_shop_material_lines: exact_product_line_material_and_after_sale_readiness_facts
+      order_wechat_shop_material_quarantines: immutable_rejected_material_evidence_without_raw_provider_payload
+      order_wechat_shop_material_sync_requests: idempotent_provider_sync_commands_bound_to_order_material_evidence
       order_wechat_shop_refunds: local_wechat_shop_refund_command_and_settlement_facts_without_wechat_pay_provider_reuse
       order_wechat_shop_refund_attempts: immutable_local_refund_attempt_evidence_without_provider_execution_claim
       order_wechat_shop_refund_callbacks: verified_wechat_shop_callback_receipts_completed_in_refund_transaction
