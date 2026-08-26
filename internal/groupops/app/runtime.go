@@ -355,10 +355,36 @@ func (service *RuntimeService) ManualReconcile(ctx context.Context, command grou
 	if ctx == nil || service == nil || command.ExecutionID < 1 || command.ActorID < 1 || !validKey(command.IdempotencyKey) || command.Generation < 1 || command.Fence < 1 || command.LeaseExpiresAt.IsZero() || !validRuntimeDigest(command.EvidenceDigest) {
 		return groupopsport.Execution{}, ErrInvalid
 	}
-	// No adapter writes provider outcome evidence in this package. Reconciliation
-	// is therefore intentionally unavailable instead of claiming a local-only
-	// EER transition as a completed external outcome.
-	return groupopsport.Execution{}, ErrProviderDisabled
+	var result groupopsport.Execution
+	err := service.uow.Within(ctx, func(tx context.Context) error {
+		current, err := service.runtime.GetExecution(tx, command.ExecutionID)
+		if err != nil {
+			return err
+		}
+		if current.State != groupopsport.ExecutionOutcomeUnknown || current.ExternalEffectID == "" {
+			return ErrStateConflict
+		}
+		projection, _, err := service.effects.Reconcile(tx, eer.ReconcileCommand{
+			Lease:            eer.Lease{EffectID: current.ExternalEffectID, Generation: command.Generation, Fence: command.Fence, ExpiresAt: command.LeaseExpiresAt},
+			ReceiptKeyDigest: runtimeDigest("group-ops-manual-reconcile", strconv.FormatInt(command.ExecutionID, 10), strconv.FormatInt(command.ActorID, 10), command.IdempotencyKey),
+			EvidenceDigest:   eer.Digest(command.EvidenceDigest),
+		})
+		if err != nil || projection.ID != current.ExternalEffectID || projection.Owner != eer.OwnerGroupOps || projection.Kind != eer.KindGroupOpsBroadcast || projection.State != eer.StateReconciled {
+			return errors.Join(ErrUnavailable, err)
+		}
+		result, err = service.runtime.ReconcileExecution(tx, command.ExecutionID, command.EvidenceDigest, command.DeliveryProven, service.nowUTC())
+		if err != nil {
+			return err
+		}
+		if result.State != groupopsport.ExecutionReconciled || !result.ReconciliationEvidencePresent || result.DeliveryProven != command.DeliveryProven || (command.DeliveryProven && !result.ProviderAccepted) {
+			return ErrUnavailable
+		}
+		return nil
+	})
+	if err != nil {
+		return groupopsport.Execution{}, classifyRuntime(err)
+	}
+	return result, nil
 }
 
 func (service *RuntimeService) ListOperationMembers(ctx context.Context, pageSize int32) (groupopsport.OperationMemberPage, error) {

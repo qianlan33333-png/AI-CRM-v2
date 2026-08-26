@@ -74,7 +74,7 @@ func TestRuntimeReceiptRejectsChangedPlanSnapshotWithoutNewRunOrEffect(t *testin
 	}
 }
 
-func TestRuntimeManualReconcileIsExplicitlyUnavailableWithoutAnOutcomeWriter(t *testing.T) {
+func TestRuntimeManualReconcilePersistsMatchingEERAndExecutionFacts(t *testing.T) {
 	service, _, effects := newRuntimeFixture(t)
 	summary, err := service.RunDue(context.Background(), groupopsport.RunDueCommand{PlanID: 91, ActorID: 7, IdempotencyKey: "group-ops-run-due-0002"})
 	if err != nil {
@@ -85,12 +85,19 @@ func TestRuntimeManualReconcileIsExplicitlyUnavailableWithoutAnOutcomeWriter(t *
 	if err != nil || execution.State != groupopsport.ExecutionOutcomeUnknown || execution.ProviderAccepted || execution.ProviderReceiptPresent {
 		t.Fatalf("unknown=%+v err=%v", execution, err)
 	}
-	_, err = service.ManualReconcile(context.Background(), groupopsport.ManualReconcileCommand{
+	reconciled, err := service.ManualReconcile(context.Background(), groupopsport.ManualReconcileCommand{
 		ExecutionID: execution.ID, ActorID: 7, IdempotencyKey: "group-ops-reconcile-0001", Generation: 2, Fence: 3,
 		LeaseExpiresAt: time.Date(2026, 8, 25, 9, 0, 0, 0, time.UTC), EvidenceDigest: string(runtimeDigest("evidence", "official-provider-receipt")), DeliveryProven: true,
 	})
-	if !errors.Is(err, ErrProviderDisabled) || effects.reconciles != 0 {
-		t.Fatalf("err=%v reconciles=%d", err, effects.reconciles)
+	if err != nil || reconciled.State != groupopsport.ExecutionReconciled || !reconciled.ProviderAccepted || !reconciled.DeliveryProven || !reconciled.ReconciliationEvidencePresent || effects.reconciles != 1 {
+		t.Fatalf("reconciled=%+v err=%v reconciles=%d", reconciled, err, effects.reconciles)
+	}
+	_, err = service.ManualReconcile(context.Background(), groupopsport.ManualReconcileCommand{
+		ExecutionID: execution.ID, ActorID: 7, IdempotencyKey: "group-ops-reconcile-0002", Generation: 2, Fence: 3,
+		LeaseExpiresAt: time.Date(2026, 8, 25, 9, 0, 0, 0, time.UTC), EvidenceDigest: string(runtimeDigest("evidence", "official-provider-receipt")), DeliveryProven: false,
+	})
+	if !errors.Is(err, ErrStateConflict) || effects.reconciles != 1 {
+		t.Fatalf("second reconcile err=%v reconciles=%d", err, effects.reconciles)
 	}
 	if _, err = service.ManualReconcile(context.Background(), groupopsport.ManualReconcileCommand{ExecutionID: execution.ID}); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("invalid reconcile err=%v", err)
