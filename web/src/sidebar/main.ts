@@ -7,9 +7,18 @@
 import { sidebarApi } from "../api/sidebar";
 import type {
   SidebarAgentConfigSignature,
+  SidebarChatActivityResponse,
+  SidebarMaterialResponse,
+  SidebarOrderResponse,
+  SidebarPeriodicOrderResponse,
+  SidebarPeriodicRemarkResponse,
   SidebarProfileUpdateResponse,
   SidebarProfileUpdateSafety,
   SidebarQuestionnaireResponse,
+  SidebarServicePeriodMember,
+  SidebarSafety,
+  SidebarThumbnailPendingResponse,
+  SidebarTimelineResponse,
   SidebarWorkbenchResponse,
   UpdateSidebarProfileBodyPatch,
 } from "../api/generated/health";
@@ -42,8 +51,15 @@ type BoundSidebarApi = Pick<
   | "oauthStartUrl"
   | "oauthCallbackUrl"
   | "workbench"
+  | "timeline"
+  | "chatActivity"
   | "profile"
   | "questionnaires"
+  | "orders"
+  | "periodicOrders"
+  | "updateRemark"
+  | "materials"
+  | "thumbnail"
 >;
 
 interface SidebarWx {
@@ -75,10 +91,25 @@ type ReceiptStep = {
   label: string;
 };
 
-type SidebarTab = "profile" | "questionnaires";
+type SidebarTab =
+  | "profile"
+  | "questionnaires"
+  | "timeline"
+  | "chat_activity"
+  | "orders"
+  | "periodic_orders"
+  | "materials";
 
 function isSidebarTab(value: string | undefined): value is SidebarTab {
-  return value === "profile" || value === "questionnaires";
+  return (
+    value === "profile" ||
+    value === "questionnaires" ||
+    value === "timeline" ||
+    value === "chat_activity" ||
+    value === "orders" ||
+    value === "periodic_orders" ||
+    value === "materials"
+  );
 }
 
 /**
@@ -150,6 +181,21 @@ function firstString(
   return "";
 }
 
+type ChatType = "all" | "private" | "group";
+type MaterialFilter = "q" | "category" | "tags";
+type ThumbnailStatus = "pending" | "not_found" | "error";
+
+function validateSidebarSafety(safety: SidebarSafety, label: string): void {
+  if (
+    !safety ||
+    safety.local_only !== true ||
+    safety.provider_execution_eligible !== false ||
+    safety.real_external_call_executed !== false
+  ) {
+    throw new Error(`${label}安全声明不完整，已停止渲染。`);
+  }
+}
+
 function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
@@ -190,7 +236,42 @@ export class SidebarController {
   private workbench: SidebarWorkbenchResponse | null = null;
   private activeTab: SidebarTab = "profile";
   private questionnaires: SidebarQuestionnaireResponse | null = null;
+  private questionnaireLoading = false;
+  private questionnaireError: unknown = null;
   private questionnaireRequestVersion = 0;
+  private timeline: SidebarTimelineResponse | null = null;
+  private timelineLoading = false;
+  private timelineError: unknown = null;
+  private timelineRequestVersion = 0;
+  private chatActivity: SidebarChatActivityResponse | null = null;
+  private chatActivityType: ChatType = "all";
+  private chatActivityLoading = false;
+  private chatActivityError: unknown = null;
+  private chatActivityRequestVersion = 0;
+  private orders: SidebarOrderResponse | null = null;
+  private ordersLoading = false;
+  private ordersError: unknown = null;
+  private ordersRequestVersion = 0;
+  private periodicOrders: SidebarPeriodicOrderResponse | null = null;
+  private periodicOrdersLoading = false;
+  private periodicOrdersError: unknown = null;
+  private periodicOrdersRequestVersion = 0;
+  private readonly periodicRemarkDrafts = new Map<string, string>();
+  private readonly periodicRemarkStatuses = new Map<
+    string,
+    { message: string; failed: boolean }
+  >();
+  private readonly periodicRemarkSaving = new Set<string>();
+  private materials: SidebarMaterialResponse | null = null;
+  private materialFilters: Record<MaterialFilter, string> = {
+    q: "",
+    category: "",
+    tags: "",
+  };
+  private materialsLoading = false;
+  private materialsError: unknown = null;
+  private materialsRequestVersion = 0;
+  private readonly thumbnailStatuses = new Map<number, ThumbnailStatus>();
 
   constructor(
     private readonly api: BoundSidebarApi = sidebarApi,
@@ -238,19 +319,46 @@ export class SidebarController {
       }
     });
     this.content.addEventListener("input", (event) => {
-      const target = event.target as HTMLTextAreaElement;
+      const target = event.target as HTMLInputElement | HTMLTextAreaElement;
       const field = target.dataset.profileField;
-      if (!isProfileField(field) || !this.workbench) return;
-      this.workbench.profile[field] = target.value;
-      this.pendingProfileFields.add(field);
-      this.setProfileSaveStatus("待保存：停止编辑 520ms 后自动保存。");
-      this.scheduleProfileSave();
+      if (isProfileField(field) && this.workbench) {
+        this.workbench.profile[field] = target.value;
+        this.pendingProfileFields.add(field);
+        this.setProfileSaveStatus("待保存：停止编辑 520ms 后自动保存。");
+        this.scheduleProfileSave();
+        return;
+      }
+      const materialFilter = target.dataset.materialFilter as
+        | MaterialFilter
+        | undefined;
+      if (materialFilter && materialFilter in this.materialFilters)
+        this.materialFilters[materialFilter] = target.value;
+      const memberRef = target.dataset.periodicRemark;
+      if (memberRef) this.periodicRemarkDrafts.set(memberRef, target.value);
+    });
+    this.content.addEventListener("change", (event) => {
+      const target = event.target as HTMLSelectElement;
+      if (target.dataset.chatFilter !== "chat_type") return;
+      const value = target.value;
+      this.chatActivityType =
+        value === "private" || value === "group" ? value : "all";
+      this.chatActivity = null;
+      this.chatActivityError = null;
+      this.renderActiveContent();
+      void this.loadChatActivity();
     });
     this.content.addEventListener("click", (event) => {
       const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
-        "[data-sidebar-action]",
+        "[data-sidebar-action], [data-material-keyword]",
       );
       if (!button || button.disabled) return;
+      const keyword = button.dataset.materialKeyword;
+      if (keyword !== undefined) {
+        this.materialFilters.q = keyword;
+        this.renderActiveContent();
+        void this.loadMaterials();
+        return;
+      }
       const action = button.dataset.sidebarAction;
       if (action === "retry-context") {
         button.disabled = true;
@@ -261,6 +369,37 @@ export class SidebarController {
       } else if (action === "retry-questionnaires") {
         button.disabled = true;
         void this.loadQuestionnaires();
+      } else if (action === "retry-timeline") {
+        button.disabled = true;
+        void this.loadTimeline();
+      } else if (action === "timeline-more") {
+        void this.loadTimeline(this.timeline?.next_cursor);
+      } else if (action === "retry-chat-activity") {
+        button.disabled = true;
+        void this.loadChatActivity();
+      } else if (action === "chat-activity-more") {
+        void this.loadChatActivity(this.chatActivity?.next_cursor);
+      } else if (action === "retry-orders") {
+        button.disabled = true;
+        void this.loadOrders(this.orders?.items.length || 0);
+      } else if (action === "orders-more") {
+        void this.loadOrders(this.orders?.items.length || 0);
+      } else if (action === "retry-periodic-orders") {
+        button.disabled = true;
+        void this.loadPeriodicOrders(this.periodicOrders?.items.length || 0);
+      } else if (action === "periodic-orders-more") {
+        void this.loadPeriodicOrders(this.periodicOrders?.items.length || 0);
+      } else if (action === "periodic-remark-save") {
+        void this.savePeriodicRemark(button);
+      } else if (action === "retry-materials") {
+        button.disabled = true;
+        void this.loadMaterials();
+      } else if (action === "materials-search") {
+        void this.loadMaterials();
+      } else if (action === "materials-more") {
+        const response = this.materials;
+        if (response)
+          void this.loadMaterials(response.offset + response.items.length);
       }
     });
   }
@@ -584,7 +723,34 @@ export class SidebarController {
     this.workbench = workbench;
     this.activeTab = "profile";
     this.questionnaires = null;
+    this.questionnaireLoading = false;
+    this.questionnaireError = null;
     this.questionnaireRequestVersion += 1;
+    this.timeline = null;
+    this.timelineError = null;
+    this.timelineLoading = false;
+    this.timelineRequestVersion += 1;
+    this.chatActivity = null;
+    this.chatActivityType = "all";
+    this.chatActivityError = null;
+    this.chatActivityLoading = false;
+    this.chatActivityRequestVersion += 1;
+    this.orders = null;
+    this.ordersError = null;
+    this.ordersLoading = false;
+    this.ordersRequestVersion += 1;
+    this.periodicOrders = null;
+    this.periodicOrdersError = null;
+    this.periodicOrdersLoading = false;
+    this.periodicOrdersRequestVersion += 1;
+    this.periodicRemarkDrafts.clear();
+    this.periodicRemarkStatuses.clear();
+    this.periodicRemarkSaving.clear();
+    this.materials = null;
+    this.materialsError = null;
+    this.materialsLoading = false;
+    this.materialsRequestVersion += 1;
+    this.thumbnailStatuses.clear();
     this.renderTop();
     this.renderTabs(true);
     this.renderActiveContent();
@@ -597,6 +763,7 @@ export class SidebarController {
     const profile = workbench?.profile;
     if (!profile || !profile.updated_at || !workbench.safety)
       throw new Error("工作台响应不完整，已停止渲染。");
+    validateSidebarSafety(workbench.safety, "工作台");
     if (
       !profile.name ||
       !Number.isInteger(profile.customer_id) ||
@@ -645,8 +812,11 @@ export class SidebarController {
     const definitions = [
       ["profile", "核心画像"],
       ["questionnaires", `问卷 ${wb?.questionnaire_count ?? ""}`],
+      ["timeline", "时间线"],
+      ["chat_activity", "聊天活动 · V2 补充"],
       ["products", "商品"],
       ["orders", `订单 ${wb?.order_count ?? ""}`],
+      ["periodic_orders", `周期订单 ${wb?.periodic_order_count ?? ""}`],
       ["coupons", "优惠券"],
       ["materials", `素材 ${wb?.material_count ?? ""}`],
       ["other_staff_messages", "其他客服聊天"],
@@ -656,7 +826,7 @@ export class SidebarController {
         const button = createElement(this.doc, "button", "tab", label);
         button.type = "button";
         button.dataset.sidebarTab = key;
-        const supported = key === "profile" || key === "questionnaires";
+        const supported = isSidebarTab(key);
         button.disabled = !ready || !supported;
         if (key === this.activeTab) {
           button.classList.add("active");
@@ -673,33 +843,36 @@ export class SidebarController {
     if (!this.workbench || !this.contextToken) return;
     this.activeTab = tab;
     this.renderTabs(true);
-    if (tab === "profile") {
-      this.renderActiveContent();
-      return;
-    }
-    if (this.questionnaires) {
-      this.renderActiveContent();
-      return;
-    }
-    this.renderQuestionnaireLoading();
-    void this.loadQuestionnaires();
+    this.renderActiveContent();
+    if (tab === "questionnaires" && !this.questionnaires)
+      void this.loadQuestionnaires();
+    else if (tab === "timeline" && !this.timeline) void this.loadTimeline();
+    else if (tab === "chat_activity" && !this.chatActivity)
+      void this.loadChatActivity();
+    else if (tab === "orders" && !this.orders) void this.loadOrders();
+    else if (tab === "periodic_orders" && !this.periodicOrders)
+      void this.loadPeriodicOrders();
+    else if (tab === "materials" && !this.materials) void this.loadMaterials();
   }
 
   private renderActiveContent(): void {
     const workbench = this.workbench;
     if (!workbench) return;
-    if (this.activeTab === "questionnaires") {
-      if (this.questionnaires) {
-        this.renderQuestionnaires(this.questionnaires);
-      } else {
-        this.renderQuestionnaireLoading();
-      }
-      return;
-    }
-    this.content.replaceChildren(
-      this.renderOverview(workbench),
-      this.renderProfile(workbench),
-    );
+    const panel =
+      this.activeTab === "profile"
+        ? this.renderProfile(workbench)
+        : this.activeTab === "questionnaires"
+          ? this.renderQuestionnairesPanel()
+          : this.activeTab === "timeline"
+            ? this.renderTimelinePanel()
+            : this.activeTab === "chat_activity"
+              ? this.renderChatActivityPanel()
+              : this.activeTab === "orders"
+                ? this.renderOrdersPanel()
+                : this.activeTab === "periodic_orders"
+                  ? this.renderPeriodicOrdersPanel()
+                  : this.renderMaterialsPanel();
+    this.content.replaceChildren(this.renderOverview(workbench), panel);
   }
 
   private renderOverview(workbench: SidebarWorkbenchResponse): HTMLElement {
@@ -787,31 +960,60 @@ export class SidebarController {
     return panel;
   }
 
-  private renderQuestionnaireLoading(): void {
-    const workbench = this.workbench;
-    if (!workbench || this.activeTab !== "questionnaires") return;
+  private panelShell(
+    section: string,
+    title: string,
+    meta: string,
+  ): HTMLElement {
     const panel = createElement(this.doc, "section", "sidebar-panel");
-    panel.dataset.sidebarSection = "questionnaires";
+    panel.dataset.sidebarSection = section;
     const head = createElement(this.doc, "div", "panel-head");
-    head.append(createElement(this.doc, "h2", undefined, "问卷"));
-    head.append(
-      createElement(this.doc, "span", "panel-meta", "本地安全答案投影"),
-    );
+    head.append(createElement(this.doc, "h2", undefined, title));
+    head.append(createElement(this.doc, "span", "panel-meta", meta));
     panel.append(head);
-    const status = createElement(
+    return panel;
+  }
+
+  private appendSafety(panel: HTMLElement, safety: SidebarSafety): void {
+    const note = createElement(
       this.doc,
       "div",
-      "loading",
-      "正在读取问卷答案…",
+      "panel-meta",
+      "数据来源：本地 CRM · 未执行企微外部调用",
     );
+    note.dataset.sidebarSafety = "local";
+    panel.append(note);
+    if (safety.local_only !== true) note.textContent = "安全声明异常，未执行外部调用。";
+  }
+
+  private appendRetry(
+    panel: HTMLElement,
+    message: string,
+    action: string,
+    label: string,
+  ): void {
+    panel.append(createElement(this.doc, "div", "sidebar-status error", message));
+    const controls = createElement(this.doc, "div", "context-actions");
+    const retry = createElement(this.doc, "button", "btn primary", label);
+    retry.type = "button";
+    retry.dataset.sidebarAction = action;
+    markBound(retry);
+    controls.append(retry);
+    panel.append(controls);
+  }
+
+  private appendLoading(panel: HTMLElement, message: string): void {
+    const status = createElement(this.doc, "div", "loading", message);
     status.setAttribute("aria-busy", "true");
     panel.append(status);
-    this.content.replaceChildren(this.renderOverview(workbench), panel);
   }
 
   private async loadQuestionnaires(): Promise<void> {
     if (!this.contextToken || !this.workbench) return;
     const requestVersion = ++this.questionnaireRequestVersion;
+    this.questionnaireLoading = true;
+    this.questionnaireError = null;
+    this.renderActiveContent();
     try {
       const response = await this.api.questionnaires(this.contextToken, {
         limit: 100,
@@ -819,15 +1021,14 @@ export class SidebarController {
       if (requestVersion !== this.questionnaireRequestVersion) return;
       this.validateQuestionnaires(response);
       this.questionnaires = response;
-      if (this.activeTab === "questionnaires")
-        this.renderQuestionnaires(response);
     } catch (error) {
-      if (
-        requestVersion !== this.questionnaireRequestVersion ||
-        this.activeTab !== "questionnaires"
-      )
-        return;
-      this.renderQuestionnaireError(error);
+      if (requestVersion !== this.questionnaireRequestVersion) return;
+      this.questionnaireError = error;
+    } finally {
+      if (requestVersion === this.questionnaireRequestVersion) {
+        this.questionnaireLoading = false;
+        if (this.activeTab === "questionnaires") this.renderActiveContent();
+      }
     }
   }
 
@@ -836,14 +1037,11 @@ export class SidebarController {
       !response ||
       !Array.isArray(response.items) ||
       typeof response.scan_truncated !== "boolean" ||
-      typeof response.result_truncated !== "boolean" ||
-      !response.safety ||
-      typeof response.safety.local_only !== "boolean" ||
-      typeof response.safety.provider_execution_eligible !== "boolean" ||
-      typeof response.safety.real_external_call_executed !== "boolean"
+      typeof response.result_truncated !== "boolean"
     ) {
       throw new Error("问卷响应不完整，已停止渲染。");
     }
+    validateSidebarSafety(response.safety, "问卷");
     for (const item of response.items) {
       if (
         !Number.isInteger(item.submission_id) ||
@@ -872,22 +1070,30 @@ export class SidebarController {
     }
   }
 
-  private renderQuestionnaires(response: SidebarQuestionnaireResponse): void {
-    const workbench = this.workbench;
-    if (!workbench || this.activeTab !== "questionnaires") return;
-    const panel = createElement(this.doc, "section", "sidebar-panel");
-    panel.dataset.sidebarSection = "questionnaires";
-    const head = createElement(this.doc, "div", "panel-head");
-    head.append(createElement(this.doc, "h2", undefined, "问卷"));
-    head.append(
-      createElement(
-        this.doc,
-        "span",
-        "panel-meta",
-        `${response.items.length} 条 · 本地安全答案投影`,
-      ),
+  private renderQuestionnairesPanel(): HTMLElement {
+    const panel = this.panelShell(
+      "questionnaires",
+      "问卷",
+      this.questionnaires
+        ? `${this.questionnaires.items.length} 条 · 本地安全答案投影`
+        : "本地安全答案投影",
     );
-    panel.append(head);
+    if (!this.questionnaires) {
+      if (this.questionnaireError) {
+        const status = errorStatus(this.questionnaireError);
+        const message =
+          status === 401
+            ? "登录状态已失效，请重新打开 Sidebar 后重试。"
+            : status === 403
+              ? "当前账号无权查看该客户，问卷读取已安全关闭。"
+              : `问卷读取失败：${errorMessage(this.questionnaireError, "请稍后重试。")}`;
+        this.appendRetry(panel, message, "retry-questionnaires", "重试读取问卷");
+      } else {
+        this.appendLoading(panel, "正在读取问卷答案…");
+      }
+      return panel;
+    }
+    const response = this.questionnaires;
     if (response.scan_truncated || response.result_truncated) {
       const warning = createElement(
         this.doc,
@@ -898,26 +1104,16 @@ export class SidebarController {
       warning.dataset.questionnaireTruncated = "true";
       panel.append(warning);
     }
-    if (!response.items.length) {
+    if (!response.items.length)
       panel.append(createElement(this.doc, "div", "empty", "暂无问卷回答记录"));
-      this.content.replaceChildren(this.renderOverview(workbench), panel);
-      return;
+    else {
+      const list = createElement(this.doc, "div", "list");
+      for (const item of response.items)
+        list.append(this.renderQuestionnaireItem(item));
+      panel.append(list);
     }
-    const list = createElement(this.doc, "div", "list");
-    for (const item of response.items)
-      list.append(this.renderQuestionnaireItem(item));
-    panel.append(list);
-    const safety = createElement(
-      this.doc,
-      "div",
-      "panel-meta",
-      response.safety.local_only
-        ? "数据来源：本地 CRM · 未执行企微外部调用"
-        : "数据来源：受控本地投影 · 外部效果未验证",
-    );
-    safety.dataset.sidebarSafety = "local";
-    panel.append(safety);
-    this.content.replaceChildren(this.renderOverview(workbench), panel);
+    this.appendSafety(panel, response.safety);
+    return panel;
   }
 
   private renderQuestionnaireItem(
@@ -973,38 +1169,845 @@ export class SidebarController {
     return card;
   }
 
-  private renderQuestionnaireError(error: unknown): void {
-    const workbench = this.workbench;
-    if (!workbench || this.activeTab !== "questionnaires") return;
-    const panel = createElement(this.doc, "section", "sidebar-panel");
-    panel.dataset.sidebarSection = "questionnaires";
-    const head = createElement(this.doc, "div", "panel-head");
-    head.append(createElement(this.doc, "h2", undefined, "问卷"));
-    head.append(createElement(this.doc, "span", "panel-meta", "读取失败"));
-    panel.append(head);
-    const status = errorStatus(error);
-    const message =
-      status === 401
-        ? "登录状态已失效，请重新打开 Sidebar 后重试。"
-        : status === 403
-          ? "当前账号无权查看该客户，问卷读取已安全关闭。"
-          : `问卷读取失败：${errorMessage(error, "请稍后重试。")}`;
+  private validateTimeline(response: SidebarTimelineResponse): void {
+    if (!response || !Array.isArray(response.items))
+      throw new Error("时间线响应不完整，已停止渲染。");
+    validateSidebarSafety(response.safety, "时间线");
+    if (response.next_cursor !== undefined && !response.next_cursor)
+      throw new Error("时间线游标响应不完整，已停止渲染。");
+    for (const item of response.items) {
+      if (
+        !Number.isInteger(item.id) ||
+        item.id < 1 ||
+        typeof item.event_type !== "string" ||
+        !item.event_type ||
+        typeof item.occurred_at !== "string" ||
+        !item.occurred_at
+      )
+        throw new Error("时间线安全元数据响应不完整，已停止渲染。");
+    }
+  }
+
+  private async loadTimeline(cursor?: string): Promise<void> {
+    if (!this.contextToken || !this.workbench) return;
+    const append = Boolean(cursor && this.timeline);
+    const requestVersion = ++this.timelineRequestVersion;
+    this.timelineLoading = true;
+    this.timelineError = null;
+    if (!append) this.timeline = null;
+    if (this.activeTab === "timeline") this.renderActiveContent();
+    try {
+      const response = await this.api.timeline(this.contextToken, {
+        cursor,
+        limit: 20,
+      });
+      if (requestVersion !== this.timelineRequestVersion) return;
+      this.validateTimeline(response);
+      this.timeline = append && this.timeline
+        ? { ...response, items: [...this.timeline.items, ...response.items] }
+        : response;
+    } catch (error) {
+      if (requestVersion !== this.timelineRequestVersion) return;
+      this.timelineError = error;
+    } finally {
+      if (requestVersion === this.timelineRequestVersion) {
+        this.timelineLoading = false;
+        if (this.activeTab === "timeline") this.renderActiveContent();
+      }
+    }
+  }
+
+  private renderTimelinePanel(): HTMLElement {
+    const response = this.timeline;
+    const panel = this.panelShell(
+      "timeline",
+      "时间线",
+      response ? `${response.items.length} 条 · 安全元数据` : "安全元数据",
+    );
+    if (!response) {
+      if (this.timelineError)
+        this.appendRetry(
+          panel,
+          `时间线读取失败：${errorMessage(this.timelineError, "请稍后重试。")}`,
+          "retry-timeline",
+          "重试读取时间线",
+        );
+      else this.appendLoading(panel, "正在读取安全时间线…");
+      return panel;
+    }
+    if (this.timelineError)
+      panel.append(
+        createElement(
+          this.doc,
+          "div",
+          "sidebar-status error",
+          `加载更多失败：${errorMessage(this.timelineError, "请稍后重试。")}`,
+        ),
+      );
+    if (!response.items.length)
+      panel.append(createElement(this.doc, "div", "empty", "暂无时间线记录"));
+    else {
+      const list = createElement(this.doc, "div", "list");
+      for (const item of response.items) {
+        const card = createElement(this.doc, "article", "list-item");
+        card.dataset.timelineEventId = String(item.id);
+        card.append(
+          createElement(this.doc, "div", "item-title", item.event_type),
+          createElement(this.doc, "div", "item-meta", `发生时间 ${item.occurred_at}`),
+        );
+        list.append(card);
+      }
+      panel.append(list);
+    }
+    if (response.next_cursor) {
+      const controls = createElement(this.doc, "div", "context-actions");
+      const more = createElement(
+        this.doc,
+        "button",
+        "btn ghost",
+        this.timelineLoading ? "正在加载…" : "加载更多时间线",
+      );
+      more.type = "button";
+      more.disabled = this.timelineLoading;
+      more.dataset.sidebarAction = "timeline-more";
+      markBound(more);
+      controls.append(more);
+      panel.append(controls);
+    }
+    this.appendSafety(panel, response.safety);
+    return panel;
+  }
+
+  private validateChatActivity(response: SidebarChatActivityResponse): void {
+    if (!response || !Array.isArray(response.items))
+      throw new Error("聊天活动响应不完整，已停止渲染。");
+    validateSidebarSafety(response.safety, "聊天活动");
+    for (const cursor of [response.next_cursor, response.previous_cursor]) {
+      if (cursor !== undefined && !cursor)
+        throw new Error("聊天活动游标响应不完整，已停止渲染。");
+    }
+    for (const item of response.items) {
+      if (
+        (item.chat_type !== "private" && item.chat_type !== "group") ||
+        typeof item.message_type !== "string" ||
+        !item.message_type ||
+        typeof item.sent_at !== "string" ||
+        !item.sent_at
+      )
+        throw new Error("聊天活动安全元数据响应不完整，已停止渲染。");
+    }
+  }
+
+  private async loadChatActivity(cursor?: string): Promise<void> {
+    if (!this.contextToken || !this.workbench) return;
+    const append = Boolean(cursor && this.chatActivity);
+    const requestVersion = ++this.chatActivityRequestVersion;
+    this.chatActivityLoading = true;
+    this.chatActivityError = null;
+    if (!append) this.chatActivity = null;
+    if (this.activeTab === "chat_activity") this.renderActiveContent();
+    try {
+      const response = await this.api.chatActivity(this.contextToken, {
+        chat_type:
+          this.chatActivityType === "all" ? undefined : this.chatActivityType,
+        cursor,
+        limit: 50,
+      });
+      if (requestVersion !== this.chatActivityRequestVersion) return;
+      this.validateChatActivity(response);
+      this.chatActivity = append && this.chatActivity
+        ? { ...response, items: [...this.chatActivity.items, ...response.items] }
+        : response;
+    } catch (error) {
+      if (requestVersion !== this.chatActivityRequestVersion) return;
+      this.chatActivityError = error;
+    } finally {
+      if (requestVersion === this.chatActivityRequestVersion) {
+        this.chatActivityLoading = false;
+        if (this.activeTab === "chat_activity") this.renderActiveContent();
+      }
+    }
+  }
+
+  private renderChatActivityPanel(): HTMLElement {
+    const response = this.chatActivity;
+    const panel = this.panelShell(
+      "chat-activity",
+      "聊天活动",
+      response ? `${response.items.length} 条 · V2 补充能力` : "V2 补充能力",
+    );
+    panel.dataset.sidebarCapability = "v2-supplement";
     panel.append(
-      createElement(this.doc, "div", "sidebar-status error", message),
+      createElement(
+        this.doc,
+        "div",
+        "sidebar-status warn",
+        "V2 补充能力 · 不计 LEGACY-S05-028 销项；仅展示聊天类型和时间，不展示正文、参与者或外部回执。",
+      ),
     );
-    const controls = createElement(this.doc, "div", "context-actions");
-    const retry = createElement(
-      this.doc,
-      "button",
-      "btn primary",
-      "重试读取问卷",
-    );
-    retry.type = "button";
-    retry.dataset.sidebarAction = "retry-questionnaires";
-    markBound(retry);
-    controls.append(retry);
+    const controls = createElement(this.doc, "div", "filter-row");
+    const label = createElement(this.doc, "label", "filter-control");
+    label.append(createElement(this.doc, "span", undefined, "会话类型"));
+    const select = createElement(this.doc, "select");
+    select.dataset.chatFilter = "chat_type";
+    select.setAttribute("aria-label", "聊天活动会话类型");
+    for (const [value, text] of [
+      ["all", "全部"],
+      ["private", "私聊"],
+      ["group", "群聊"],
+    ] as const) {
+      const option = createElement(this.doc, "option", undefined, text);
+      option.value = value;
+      option.selected = this.chatActivityType === value;
+      select.append(option);
+    }
+    label.append(select);
+    controls.append(label);
     panel.append(controls);
-    this.content.replaceChildren(this.renderOverview(workbench), panel);
+    if (!response) {
+      if (this.chatActivityError)
+        this.appendRetry(
+          panel,
+          `聊天活动读取失败：${errorMessage(this.chatActivityError, "请稍后重试。")}`,
+          "retry-chat-activity",
+          "重试读取聊天活动",
+        );
+      else this.appendLoading(panel, "正在读取聊天活动元数据…");
+      return panel;
+    }
+    if (this.chatActivityError)
+      panel.append(
+        createElement(
+          this.doc,
+          "div",
+          "sidebar-status error",
+          `加载更多失败：${errorMessage(this.chatActivityError, "请稍后重试。")}`,
+        ),
+      );
+    if (!response.items.length)
+      panel.append(createElement(this.doc, "div", "empty", "暂无聊天活动记录"));
+    else {
+      const list = createElement(this.doc, "div", "list");
+      for (const item of response.items) {
+        const card = createElement(this.doc, "article", "list-item");
+        card.dataset.chatActivityAt = item.sent_at;
+        card.append(
+          createElement(
+            this.doc,
+            "div",
+            "item-title",
+            `${item.chat_type === "private" ? "私聊" : "群聊"} · ${item.message_type}`,
+          ),
+          createElement(this.doc, "div", "item-meta", `发送时间 ${item.sent_at}`),
+        );
+        list.append(card);
+      }
+      panel.append(list);
+    }
+    if (response.next_cursor) {
+      const controlsMore = createElement(this.doc, "div", "context-actions");
+      const more = createElement(
+        this.doc,
+        "button",
+        "btn ghost",
+        this.chatActivityLoading ? "正在加载…" : "加载更多聊天活动",
+      );
+      more.type = "button";
+      more.disabled = this.chatActivityLoading;
+      more.dataset.sidebarAction = "chat-activity-more";
+      markBound(more);
+      controlsMore.append(more);
+      panel.append(controlsMore);
+    }
+    this.appendSafety(panel, response.safety);
+    return panel;
+  }
+
+  private validateOrderResponse(response: SidebarOrderResponse): void {
+    if (
+      !response ||
+      !Array.isArray(response.items) ||
+      !Number.isInteger(response.total) ||
+      response.total < 0 ||
+      !Number.isInteger(response.limit) ||
+      response.limit < 1 ||
+      typeof response.has_more !== "boolean"
+    )
+      throw new Error("订单响应不完整，已停止渲染。");
+    validateSidebarSafety(response.safety, "订单");
+    for (const item of response.items) {
+      if (
+        typeof item.created_at !== "string" ||
+        typeof item.merchant_order_no !== "string" ||
+        typeof item.product_code !== "string" ||
+        typeof item.product_name !== "string" ||
+        typeof item.amount_yuan !== "string" ||
+        typeof item.currency !== "string" ||
+        typeof item.status !== "string" ||
+        typeof item.status_label !== "string" ||
+        typeof item.provider !== "string" ||
+        typeof item.provider_label !== "string"
+      )
+        throw new Error("订单安全投影响应不完整，已停止渲染。");
+    }
+  }
+
+  private async loadOrders(offset = 0): Promise<void> {
+    if (!this.contextToken || !this.workbench) return;
+    const append = Boolean(offset && this.orders);
+    const requestVersion = ++this.ordersRequestVersion;
+    this.ordersLoading = true;
+    this.ordersError = null;
+    if (!append) this.orders = null;
+    if (this.activeTab === "orders") this.renderActiveContent();
+    try {
+      const response = await this.api.orders(this.contextToken, {
+        limit: 20,
+        offset,
+      });
+      if (requestVersion !== this.ordersRequestVersion) return;
+      this.validateOrderResponse(response);
+      this.orders = append && this.orders
+        ? { ...response, items: [...this.orders.items, ...response.items] }
+        : response;
+    } catch (error) {
+      if (requestVersion !== this.ordersRequestVersion) return;
+      this.ordersError = error;
+    } finally {
+      if (requestVersion === this.ordersRequestVersion) {
+        this.ordersLoading = false;
+        if (this.activeTab === "orders") this.renderActiveContent();
+      }
+    }
+  }
+
+  private renderOrdersPanel(): HTMLElement {
+    const response = this.orders;
+    const panel = this.panelShell(
+      "orders",
+      "订单",
+      response ? `${response.total} 条 · 安全本地投影` : "安全本地投影",
+    );
+    if (!response) {
+      if (this.ordersError)
+        this.appendRetry(
+          panel,
+          `订单读取失败：${errorMessage(this.ordersError, "请稍后重试。")}`,
+          "retry-orders",
+          "重试读取订单",
+        );
+      else this.appendLoading(panel, "正在读取订单…");
+      return panel;
+    }
+    if (this.ordersError)
+      panel.append(
+        createElement(
+          this.doc,
+          "div",
+          "sidebar-status error",
+          `加载更多失败：${errorMessage(this.ordersError, "请稍后重试。")}`,
+        ),
+      );
+    if (!response.items.length)
+      panel.append(createElement(this.doc, "div", "empty", "暂无普通订单记录"));
+    else {
+      const list = createElement(this.doc, "div", "list");
+      for (const item of response.items) {
+        const card = createElement(this.doc, "article", "list-item");
+        card.dataset.orderNo = item.merchant_order_no;
+        card.append(
+          createElement(this.doc, "div", "item-title", item.product_name),
+          createElement(
+            this.doc,
+            "div",
+            "item-meta",
+            `${item.amount_yuan} ${item.currency} · ${item.status_label || item.status} · ${item.provider_label || item.provider}`,
+          ),
+          createElement(
+            this.doc,
+            "div",
+            "item-meta",
+            `订单号 ${item.merchant_order_no} · 商品编码 ${item.product_code} · 创建 ${item.created_at}`,
+          ),
+        );
+        list.append(card);
+      }
+      panel.append(list);
+    }
+    if (response.has_more) {
+      const controls = createElement(this.doc, "div", "context-actions");
+      const more = createElement(
+        this.doc,
+        "button",
+        "btn ghost",
+        this.ordersLoading ? "正在加载…" : "加载更多订单",
+      );
+      more.type = "button";
+      more.disabled = this.ordersLoading;
+      more.dataset.sidebarAction = "orders-more";
+      markBound(more);
+      controls.append(more);
+      panel.append(controls);
+    }
+    this.appendSafety(panel, response.safety);
+    return panel;
+  }
+
+  private validatePeriodicMember(member: SidebarServicePeriodMember): void {
+    if (
+      !member ||
+      !/^spm_[A-Za-z0-9_-]{22}$/.test(member.member_ref) ||
+      !Number.isInteger(member.service_product_id) ||
+      member.service_product_id < 1 ||
+      !Number.isInteger(member.customer_id) ||
+      member.customer_id < 1 ||
+      !["active", "expired", "removed"].includes(member.state) ||
+      !["manual", "paid_order"].includes(member.source) ||
+      typeof member.starts_at !== "string" ||
+      !Number.isInteger(member.version) ||
+      member.version < 1 ||
+      typeof member.created_at !== "string" ||
+      typeof member.updated_at !== "string" ||
+      (member.remark !== undefined && typeof member.remark !== "string") ||
+      (member.alliance !== undefined && typeof member.alliance !== "string")
+    )
+      throw new Error("周期订单安全投影响应不完整，已停止渲染。");
+  }
+
+  private validatePeriodicOrders(response: SidebarPeriodicOrderResponse): void {
+    if (
+      !response ||
+      !Array.isArray(response.items) ||
+      !Number.isInteger(response.limit) ||
+      response.limit < 1 ||
+      !Number.isInteger(response.offset) ||
+      response.offset < 0 ||
+      typeof response.has_more !== "boolean"
+    )
+      throw new Error("周期订单响应不完整，已停止渲染。");
+    validateSidebarSafety(response.safety, "周期订单");
+    for (const member of response.items) this.validatePeriodicMember(member);
+  }
+
+  private async loadPeriodicOrders(offset = 0): Promise<void> {
+    if (!this.contextToken || !this.workbench) return;
+    const append = Boolean(offset && this.periodicOrders);
+    const requestVersion = ++this.periodicOrdersRequestVersion;
+    this.periodicOrdersLoading = true;
+    this.periodicOrdersError = null;
+    if (!append) this.periodicOrders = null;
+    if (this.activeTab === "periodic_orders") this.renderActiveContent();
+    try {
+      const response = await this.api.periodicOrders(this.contextToken, {
+        limit: 20,
+        offset,
+      });
+      if (requestVersion !== this.periodicOrdersRequestVersion) return;
+      this.validatePeriodicOrders(response);
+      this.periodicOrders = append && this.periodicOrders
+        ? { ...response, items: [...this.periodicOrders.items, ...response.items] }
+        : response;
+    } catch (error) {
+      if (requestVersion !== this.periodicOrdersRequestVersion) return;
+      this.periodicOrdersError = error;
+    } finally {
+      if (requestVersion === this.periodicOrdersRequestVersion) {
+        this.periodicOrdersLoading = false;
+        if (this.activeTab === "periodic_orders") this.renderActiveContent();
+      }
+    }
+  }
+
+  private renderPeriodicOrdersPanel(): HTMLElement {
+    const response = this.periodicOrders;
+    const panel = this.panelShell(
+      "periodic-orders",
+      "周期订单",
+      response ? `${response.items.length} 条 · canonical member 投影` : "canonical member 投影",
+    );
+    if (!response) {
+      if (this.periodicOrdersError)
+        this.appendRetry(
+          panel,
+          `周期订单读取失败：${errorMessage(this.periodicOrdersError, "请稍后重试。")}`,
+          "retry-periodic-orders",
+          "重试读取周期订单",
+        );
+      else this.appendLoading(panel, "正在读取周期订单…");
+      return panel;
+    }
+    if (this.periodicOrdersError)
+      panel.append(
+        createElement(
+          this.doc,
+          "div",
+          "sidebar-status error",
+          `加载更多失败：${errorMessage(this.periodicOrdersError, "请稍后重试。")}`,
+        ),
+      );
+    if (!response.items.length)
+      panel.append(createElement(this.doc, "div", "empty", "暂无周期订单记录"));
+    else {
+      const list = createElement(this.doc, "div", "list");
+      for (const member of response.items) list.append(this.renderPeriodicMember(member));
+      panel.append(list);
+    }
+    if (response.has_more) {
+      const controls = createElement(this.doc, "div", "context-actions");
+      const more = createElement(
+        this.doc,
+        "button",
+        "btn ghost",
+        this.periodicOrdersLoading ? "正在加载…" : "加载更多周期订单",
+      );
+      more.type = "button";
+      more.disabled = this.periodicOrdersLoading;
+      more.dataset.sidebarAction = "periodic-orders-more";
+      markBound(more);
+      controls.append(more);
+      panel.append(controls);
+    }
+    this.appendSafety(panel, response.safety);
+    return panel;
+  }
+
+  private renderPeriodicMember(member: SidebarServicePeriodMember): HTMLElement {
+    const card = createElement(this.doc, "article", "list-item");
+    card.dataset.periodicMemberRef = member.member_ref;
+    card.append(
+      createElement(
+        this.doc,
+        "div",
+        "item-title",
+        `${member.state} · 服务商品 #${member.service_product_id}`,
+      ),
+      createElement(
+        this.doc,
+        "div",
+        "item-meta",
+        `${member.source === "paid_order" ? "付费订单" : "人工登记"} · ${member.starts_at}${member.expires_at ? ` 至 ${member.expires_at}` : ""} · version ${member.version}`,
+      ),
+      createElement(
+        this.doc,
+        "div",
+        "item-meta",
+        `member_ref ${member.member_ref}${member.alliance ? ` · 联盟 ${member.alliance}` : ""}`,
+      ),
+    );
+    const label = createElement(this.doc, "label", "remark-editor");
+    label.append(createElement(this.doc, "span", undefined, "周期订单备注"));
+    const textarea = createElement(this.doc, "textarea");
+    textarea.dataset.periodicRemark = member.member_ref;
+    textarea.rows = 2;
+    textarea.maxLength = 500;
+    textarea.value = this.periodicRemarkDrafts.get(member.member_ref) ?? member.remark ?? "";
+    textarea.setAttribute("aria-label", `周期订单 ${member.member_ref} 备注`);
+    label.append(textarea);
+    card.append(label);
+    const controls = createElement(this.doc, "div", "context-actions");
+    const save = createElement(this.doc, "button", "btn primary", "保存备注");
+    save.type = "button";
+    save.dataset.sidebarAction = "periodic-remark-save";
+    save.dataset.memberRef = member.member_ref;
+    save.dataset.serviceProductId = String(member.service_product_id);
+    save.disabled = this.periodicRemarkSaving.has(member.member_ref);
+    markBound(save);
+    controls.append(save);
+    card.append(controls);
+    const status = this.periodicRemarkStatuses.get(member.member_ref);
+    if (status) {
+      const receipt = createElement(
+        this.doc,
+        "div",
+        `remark-status${status.failed ? " error" : ""}`,
+        status.message,
+      );
+      receipt.dataset.periodicRemarkReceipt = status.failed ? "failed" : "accepted";
+      card.append(receipt);
+    }
+    return card;
+  }
+
+  private validatePeriodicRemark(response: SidebarPeriodicRemarkResponse): void {
+    if (!response?.member) throw new Error("备注保存响应不完整，未显示成功。");
+    this.validatePeriodicMember(response.member);
+    validateSidebarSafety(response.safety, "周期订单备注");
+  }
+
+  private async savePeriodicRemark(button: HTMLButtonElement): Promise<void> {
+    const memberRef = button.dataset.memberRef || "";
+    const serviceProductId = Number(button.dataset.serviceProductId);
+    const current = this.periodicOrders?.items.find(
+      (item) => item.member_ref === memberRef,
+    );
+    if (!current || !Number.isInteger(serviceProductId) || serviceProductId < 1)
+      return;
+    const remark = (this.periodicRemarkDrafts.get(memberRef) ?? current.remark ?? "").trim();
+    if (!remark) {
+      this.periodicRemarkStatuses.set(memberRef, {
+        message: "备注不能为空，未发起写入。",
+        failed: true,
+      });
+      this.renderActiveContent();
+      return;
+    }
+    if (this.periodicRemarkSaving.has(memberRef)) return;
+    this.periodicRemarkSaving.add(memberRef);
+    this.periodicRemarkStatuses.delete(memberRef);
+    this.renderActiveContent();
+    try {
+      const response = await this.api.updateRemark(
+        this.contextToken,
+        serviceProductId,
+        memberRef,
+        { expected_version: current.version, remark },
+      );
+      this.validatePeriodicRemark(response);
+      const index = this.periodicOrders?.items.findIndex(
+        (item) => item.member_ref === memberRef,
+      );
+      if (index !== undefined && index >= 0 && this.periodicOrders) {
+        this.periodicOrders.items[index] = response.member;
+        this.periodicRemarkDrafts.delete(memberRef);
+      }
+      this.periodicRemarkStatuses.set(memberRef, {
+        message: `备注已保存：accepted · 本地提交成功（CAS version ${response.member.version}）。`,
+        failed: false,
+      });
+    } catch (error) {
+      this.periodicRemarkStatuses.set(memberRef, {
+        message:
+          errorStatus(error) === 409
+            ? "备注保存冲突：版本已变化，请刷新周期订单后重试。"
+            : `备注保存失败：${errorMessage(error, "请稍后重试。")}`,
+        failed: true,
+      });
+    } finally {
+      this.periodicRemarkSaving.delete(memberRef);
+      if (this.activeTab === "periodic_orders") this.renderActiveContent();
+    }
+  }
+
+  private validateMaterials(response: SidebarMaterialResponse): void {
+    if (
+      !response ||
+      !Array.isArray(response.items) ||
+      !Number.isInteger(response.total) ||
+      response.total < 0 ||
+      !Number.isInteger(response.limit) ||
+      response.limit < 1 ||
+      !Number.isInteger(response.offset) ||
+      response.offset < 0 ||
+      !Array.isArray(response.quick_keywords)
+    )
+      throw new Error("素材响应不完整，已停止渲染。");
+    validateSidebarSafety(response.safety, "素材");
+    for (const item of response.items) {
+      if (
+        !Number.isInteger(item.id) ||
+        item.id < 1 ||
+        typeof item.name !== "string" ||
+        typeof item.file_name !== "string" ||
+        !item.file_name ||
+        typeof item.mime_type !== "string" ||
+        !item.mime_type ||
+        !Number.isInteger(item.file_size) ||
+        item.file_size < 1 ||
+        typeof item.description !== "string" ||
+        !Array.isArray(item.tags) ||
+        typeof item.category !== "string" ||
+        !Number.isInteger(item.width) ||
+        item.width < 1 ||
+        !Number.isInteger(item.height) ||
+        item.height < 1 ||
+        typeof item.updated_at !== "string" ||
+        item.thumbnail_status !== "pending"
+      )
+        throw new Error("素材元数据响应不完整，已停止渲染。");
+    }
+  }
+
+  private async loadMaterials(offset = 0): Promise<void> {
+    if (!this.contextToken || !this.workbench) return;
+    const append = Boolean(offset && this.materials);
+    const requestVersion = ++this.materialsRequestVersion;
+    this.materialsLoading = true;
+    this.materialsError = null;
+    if (!append) {
+      this.materials = null;
+      this.thumbnailStatuses.clear();
+    }
+    if (this.activeTab === "materials") this.renderActiveContent();
+    try {
+      const params = {
+        q: this.materialFilters.q.trim() || undefined,
+        category: this.materialFilters.category.trim() || undefined,
+        tags: this.materialFilters.tags.trim() || undefined,
+        limit: 20,
+        offset,
+      };
+      const response = await this.api.materials(this.contextToken, params);
+      if (requestVersion !== this.materialsRequestVersion) return;
+      this.validateMaterials(response);
+      this.materials = append && this.materials
+        ? { ...response, items: [...this.materials.items, ...response.items] }
+        : response;
+    } catch (error) {
+      if (requestVersion !== this.materialsRequestVersion) return;
+      this.materialsError = error;
+    } finally {
+      if (requestVersion === this.materialsRequestVersion) {
+        this.materialsLoading = false;
+        if (this.activeTab === "materials") this.renderActiveContent();
+      }
+    }
+  }
+
+  private validateThumbnail(response: SidebarThumbnailPendingResponse): void {
+    if (!response || response.status !== "pending")
+      throw new Error("缩略图状态响应不完整，已停止渲染。");
+    validateSidebarSafety(response.safety, "缩略图");
+  }
+
+  private queueThumbnailStatus(imageId: number): void {
+    if (this.thumbnailStatuses.has(imageId)) return;
+    this.thumbnailStatuses.set(imageId, "pending");
+    void this.loadThumbnailStatus(imageId);
+  }
+
+  private async loadThumbnailStatus(imageId: number): Promise<void> {
+    if (!this.contextToken) return;
+    try {
+      const response = await this.api.thumbnail(this.contextToken, imageId);
+      this.validateThumbnail(response);
+      this.thumbnailStatuses.set(imageId, "pending");
+    } catch (error) {
+      this.thumbnailStatuses.set(
+        imageId,
+        errorStatus(error) === 404 ? "not_found" : "error",
+      );
+    }
+    if (this.activeTab === "materials") this.renderActiveContent();
+  }
+
+  private renderMaterialsPanel(): HTMLElement {
+    const response = this.materials;
+    const panel = this.panelShell(
+      "materials",
+      "素材",
+      response ? `${response.total} 条 · 本地图片元数据` : "本地图片元数据",
+    );
+    const filters = createElement(this.doc, "div", "material-filters");
+    for (const [key, labelText, placeholder] of [
+      ["q", "搜索", "名称、文件名或描述"],
+      ["category", "分类", "分类"],
+      ["tags", "标签", "逗号分隔标签"],
+    ] as const) {
+      const label = createElement(this.doc, "label", "filter-control");
+      label.append(createElement(this.doc, "span", undefined, labelText));
+      const input = createElement(this.doc, "input");
+      input.id = `material-${key}`;
+      input.dataset.materialFilter = key;
+      input.value = this.materialFilters[key];
+      input.placeholder = placeholder;
+      input.maxLength = key === "tags" ? 500 : 200;
+      label.append(input);
+      filters.append(label);
+    }
+    const search = createElement(this.doc, "button", "btn primary", "搜索素材");
+    search.type = "button";
+    search.dataset.sidebarAction = "materials-search";
+    markBound(search);
+    filters.append(search);
+    panel.append(filters);
+    if (response?.quick_keywords?.length) {
+      const quick = createElement(this.doc, "div", "quick-keywords");
+      quick.append(createElement(this.doc, "span", "panel-meta", "快捷关键词"));
+      for (const keyword of response.quick_keywords) {
+        const button = createElement(this.doc, "button", "link-button", keyword);
+        button.type = "button";
+        button.dataset.materialKeyword = keyword;
+        markBound(button);
+        quick.append(button);
+      }
+      panel.append(quick);
+    }
+    if (!response) {
+      if (this.materialsError)
+        this.appendRetry(
+          panel,
+          `素材读取失败：${errorMessage(this.materialsError, "请稍后重试。")}`,
+          "retry-materials",
+          "重试读取素材",
+        );
+      else this.appendLoading(panel, "正在读取素材元数据…");
+      return panel;
+    }
+    if (this.materialsError)
+      panel.append(
+        createElement(
+          this.doc,
+          "div",
+          "sidebar-status error",
+          `加载更多失败：${errorMessage(this.materialsError, "请稍后重试。")}`,
+        ),
+      );
+    if (!response.items.length)
+      panel.append(createElement(this.doc, "div", "empty", "暂无匹配素材"));
+    else {
+      const list = createElement(this.doc, "div", "list");
+      for (const item of response.items) {
+        this.queueThumbnailStatus(item.id);
+        const card = createElement(this.doc, "article", "list-item");
+        card.dataset.materialId = String(item.id);
+        const status = this.thumbnailStatuses.get(item.id) || "pending";
+        const statusLabel =
+          status === "not_found"
+            ? "thumbnail: not_found"
+            : status === "error"
+              ? "thumbnail: 读取失败"
+              : "thumbnail: pending";
+        const badge = createElement(this.doc, "span", "thumbnail-status", statusLabel);
+        badge.dataset.thumbnailStatus = status;
+        card.append(
+          createElement(this.doc, "div", "item-title", item.name || item.file_name),
+          createElement(
+            this.doc,
+            "div",
+            "item-meta",
+            `${item.file_name} · ${item.mime_type} · ${item.file_size} bytes · ${item.width}×${item.height}`,
+          ),
+          createElement(
+            this.doc,
+            "div",
+            "item-meta",
+            `分类 ${item.category || "未分类"}${item.tags.length ? ` · 标签 ${item.tags.join("、")}` : ""} · 更新 ${item.updated_at}`,
+          ),
+          badge,
+        );
+        if (item.description)
+          card.append(createElement(this.doc, "div", "item-meta", item.description));
+        list.append(card);
+      }
+      panel.append(list);
+    }
+    if (response.offset + response.items.length < response.total) {
+      const controls = createElement(this.doc, "div", "context-actions");
+      const more = createElement(
+        this.doc,
+        "button",
+        "btn ghost",
+        this.materialsLoading ? "正在加载…" : "加载更多素材",
+      );
+      more.type = "button";
+      more.disabled = this.materialsLoading;
+      more.dataset.sidebarAction = "materials-more";
+      markBound(more);
+      controls.append(more);
+      panel.append(controls);
+    }
+    this.appendSafety(panel, response.safety);
+    return panel;
   }
 
   private scheduleProfileSave(): void {

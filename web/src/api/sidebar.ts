@@ -16,8 +16,13 @@ import {
   type SidebarChatActivityResponse,
   type SidebarAgentConfigSignature,
   type SidebarContextResponse,
+  type SidebarMaterialResponse,
+  type SidebarOrderResponse,
+  type SidebarPeriodicOrderResponse,
+  type SidebarPeriodicRemarkResponse,
   type SidebarQuestionnaireResponse,
   type SidebarProfileUpdateResponse,
+  type SidebarThumbnailPendingResponse,
   type SidebarTimelineResponse,
   type SidebarWorkbenchResponse,
 } from "./generated/health";
@@ -33,11 +38,11 @@ function scopedOptions(
   });
 }
 
-function newIdempotencyKey(): string {
+function newIdempotencyKey(scope: string): string {
   const randomUUID = globalThis.crypto?.randomUUID?.();
   return randomUUID
-    ? `sidebar-profile-${randomUUID}`
-    : `sidebar-profile-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    ? `${scope}-${randomUUID}`
+    : `${scope}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
 export const sidebarApi = {
@@ -76,7 +81,7 @@ export const sidebarApi = {
   profile: async (
     contextToken: string,
     body: Parameters<typeof updateSidebarProfile>[0],
-    idempotencyKey = newIdempotencyKey(),
+    idempotencyKey = newIdempotencyKey("sidebar-profile"),
   ) =>
     unwrapGenerated(
       await updateSidebarProfile(
@@ -99,38 +104,43 @@ export const sidebarApi = {
   ) =>
     unwrapGenerated(
       await listSidebarOrders(params, scopedOptions(contextToken)),
-    ),
+    ) as SidebarOrderResponse,
   periodicOrders: async (
     contextToken: string,
     params?: Parameters<typeof listSidebarPeriodicOrders>[0],
   ) =>
     unwrapGenerated(
       await listSidebarPeriodicOrders(params, scopedOptions(contextToken)),
-    ),
+    ) as SidebarPeriodicOrderResponse,
   updateRemark: async (
     contextToken: string,
-    ...args: Parameters<typeof updateSidebarPeriodicRemark>
+    serviceProductId: number,
+    memberRef: string,
+    body: Parameters<typeof updateSidebarPeriodicRemark>[2],
+    idempotencyKey = newIdempotencyKey("sidebar-periodic-remark"),
   ) =>
     unwrapGenerated(
       await updateSidebarPeriodicRemark(
-        args[0],
-        args[1],
-        args[2],
-        scopedOptions(contextToken),
+        serviceProductId,
+        memberRef,
+        body,
+        scopedOptions(contextToken, {
+          headers: { "Idempotency-Key": idempotencyKey },
+        }),
       ),
-    ),
+    ) as SidebarPeriodicRemarkResponse,
   materials: async (
     contextToken: string,
     params?: Parameters<typeof listSidebarMaterials>[0],
   ) =>
     unwrapGenerated(
       await listSidebarMaterials(params, scopedOptions(contextToken)),
-    ),
+    ) as SidebarMaterialResponse,
   thumbnail: async (contextToken: string, imageId: number) =>
     unwrapGenerated(
       await getSidebarMaterialThumbnailStatus(
         imageId,
         scopedOptions(contextToken),
       ),
-    ),
+    ) as SidebarThumbnailPendingResponse,
 };

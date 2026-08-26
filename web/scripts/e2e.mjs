@@ -43,6 +43,7 @@ async function loadPage(rel, { id, q } = {}) {
       if (rel !== 'sidebar/index.html') return;
       const scenario = new URL(window.location.href).searchParams.get('sidebar_case') || 'success';
       const safety = { local_only: true, provider_execution_eligible: false, real_external_call_executed: false };
+      const memberRef = 'spm_' + 'A'.repeat(22);
       const profile = {
         customer_id: 7,
         name: '侧边栏测试客户',
@@ -55,13 +56,14 @@ async function loadPage(rel, { id, q } = {}) {
         updated_at: '2026-08-26T01:00:00Z',
       };
       const json = (data, status = 200) => ({ status, headers: new Headers(), text: async () => JSON.stringify(data) });
-      window.fetch = async (input) => {
+      window.__sidebarTest = { remarkBody: null, idempotencyKey: null, materialQueries: [] };
+      window.fetch = async (input, init = {}) => {
         const url = String(input);
         if (url.includes('/context-token')) {
           return json({ state: 'ready', context_token: 'sidebar-context-token-' + 'x'.repeat(52), customer_id: 7, owner_staff_id: 9, safety });
         }
         if (url.includes('/workbench')) {
-          return json({ profile, questionnaire_count: scenario === 'empty' ? 0 : 1, order_count: 0, periodic_order_count: 0, material_count: 0, safety });
+          return json({ profile, questionnaire_count: scenario === 'empty' ? 0 : 1, order_count: scenario === 'success' ? 1 : 0, periodic_order_count: scenario === 'success' ? 1 : 0, material_count: scenario === 'success' ? 2 : 0, safety });
         }
         if (url.includes('/questionnaires')) {
           if (scenario === 'error') return json({ code: 'unavailable' }, 503);
@@ -69,6 +71,73 @@ async function loadPage(rel, { id, q } = {}) {
             items: scenario === 'empty' ? [] : [{ submission_id: 11, questionnaire_id: 3, submitted_at: '2026-08-26T01:00:00Z', score: 8.5, choice_answers: [{ question_id: 2, question_type: 'single_choice', sort_order: 0, option_ids: [9] }] }],
             scan_truncated: false,
             result_truncated: false,
+            safety,
+          });
+        }
+        if (url.includes('/timeline')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          return json({
+            items: scenario === 'empty' ? [] : [{ id: 7, event_type: 'survey_submitted', occurred_at: '2026-08-26T00:00:00Z' }],
+            next_cursor: scenario === 'success' ? 'timeline-next' : undefined,
+            safety,
+          });
+        }
+        if (url.includes('/chat-activity')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          const chatType = url.includes('chat_type=group') ? 'group' : 'private';
+          return json({
+            items: scenario === 'empty' ? [] : [{ chat_type: chatType, message_type: 'text', sent_at: '2026-08-26T00:30:00Z' }],
+            next_cursor: undefined,
+            previous_cursor: undefined,
+            safety,
+          });
+        }
+        if (url.includes('/periodic-orders/') && url.includes('/remark')) {
+          if (scenario === 'error') return json({ code: 'conflict' }, 409);
+          window.__sidebarTest.remarkBody = JSON.parse(init.body || '{}');
+          window.__sidebarTest.idempotencyKey = new Headers(init.headers).get('Idempotency-Key');
+          return json({
+            member: { member_ref: memberRef, service_product_id: 3, customer_id: 7, state: 'active', source: 'paid_order', starts_at: '2026-08-01T00:00:00Z', expires_at: '2026-09-01T00:00:00Z', remark: window.__sidebarTest.remarkBody.remark, alliance: '测试联盟', version: 2, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T02:00:00Z' },
+            safety,
+          });
+        }
+        if (url.includes('/periodic-orders')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          return json({
+            items: scenario === 'empty' ? [] : [{ member_ref: memberRef, service_product_id: 3, customer_id: 7, state: 'active', source: 'paid_order', starts_at: '2026-08-01T00:00:00Z', expires_at: '2026-09-01T00:00:00Z', remark: '首期备注', alliance: '测试联盟', version: 1, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-01T00:00:00Z' }],
+            limit: 20,
+            offset: 0,
+            has_more: false,
+            safety,
+          });
+        }
+        if (url.includes('/orders')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          return json({
+            items: scenario === 'empty' ? [] : [{ created_at: '2026-08-26T00:40:00Z', merchant_order_no: 'M20260826001', product_code: 'course-1', product_name: '测试课程', amount_yuan: '99.00', currency: 'CNY', status: 'paid', status_label: '已支付', provider: 'wechat_pay', provider_label: '微信支付' }],
+            total: scenario === 'empty' ? 0 : 1,
+            limit: 20,
+            has_more: false,
+            safety,
+          });
+        }
+        if (url.includes('/materials/image/')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          if (url.includes('/image/32/')) return json({ code: 'not_found' }, 404);
+          return json({ status: 'pending', safety }, 202);
+        }
+        if (url.includes('/materials')) {
+          if (scenario === 'error') return json({ code: 'unavailable' }, 503);
+          window.__sidebarTest.materialQueries.push(url);
+          return json({
+            items: scenario === 'empty' ? [] : [
+              { id: 31, name: '欢迎海报', file_name: 'welcome.png', mime_type: 'image/png', file_size: 1024, description: '测试素材', tags: ['欢迎语'], category: '海报', width: 800, height: 600, updated_at: '2026-08-26T00:50:00Z', thumbnail_status: 'pending' },
+              { id: 32, name: '课程卡片', file_name: 'course.png', mime_type: 'image/png', file_size: 2048, description: '', tags: ['课程'], category: '课程', width: 600, height: 400, updated_at: '2026-08-26T00:51:00Z', thumbnail_status: 'pending' },
+            ],
+            total: scenario === 'empty' ? 0 : 2,
+            limit: 20,
+            offset: 0,
+            quick_keywords: ['欢迎语', '课程卡片'],
             safety,
           });
         }
@@ -505,7 +574,15 @@ for (const scenario of ['success', 'empty', 'error']) {
   const d = dom.window.document;
   const questionnaireTab = d.querySelector('[data-sidebar-tab="questionnaires"]');
   ok('workbench ready 后问卷 tab 可用', questionnaireTab && !questionnaireTab.disabled);
-  ok('未接入订单与素材 tab 保持关闭', d.querySelector('[data-sidebar-tab="orders"]').disabled && d.querySelector('[data-sidebar-tab="materials"]').disabled);
+  ok('真实 Sidebar tabs 可用、未接入能力仍关闭',
+    !d.querySelector('[data-sidebar-tab="timeline"]').disabled &&
+    !d.querySelector('[data-sidebar-tab="chat_activity"]').disabled &&
+    !d.querySelector('[data-sidebar-tab="orders"]').disabled &&
+    !d.querySelector('[data-sidebar-tab="periodic_orders"]').disabled &&
+    !d.querySelector('[data-sidebar-tab="materials"]').disabled &&
+    d.querySelector('[data-sidebar-tab="products"]').disabled &&
+    d.querySelector('[data-sidebar-tab="coupons"]').disabled &&
+    d.querySelector('[data-sidebar-tab="other_staff_messages"]').disabled);
   click(dom, questionnaireTab);
   ok('问卷切换先显示 loading', d.body.textContent.includes('正在读取问卷答案'));
   await sleep(30);
@@ -517,6 +594,100 @@ for (const scenario of ['success', 'empty', 'error']) {
     ok('问卷失败显示 error 与重试', d.body.textContent.includes('问卷读取失败') && d.body.textContent.includes('重试读取问卷'));
   }
   dom.window.close();
+}
+
+console.log('sidebar/index.html（V2 安全活动、订单、素材与周期备注）');
+{
+  const dom = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=success' });
+  const d = dom.window.document;
+
+  click(dom, d.querySelector('[data-sidebar-tab="timeline"]'));
+  await sleep(30);
+  ok('时间线只展示安全事件元数据',
+    d.querySelectorAll('[data-timeline-event-id]').length === 1 &&
+    d.querySelector('[data-sidebar-section="timeline"]')?.textContent.includes('survey_submitted') &&
+    !d.querySelector('[data-sidebar-section="timeline"]')?.textContent.includes('payload') &&
+    !d.querySelector('[data-sidebar-section="timeline"]')?.textContent.includes('actor'));
+  click(dom, d.querySelector('[data-sidebar-action="timeline-more"]'));
+  await sleep(30);
+  ok('时间线使用 opaque cursor 加载更多', d.querySelectorAll('[data-timeline-event-id]').length === 2);
+
+  click(dom, d.querySelector('[data-sidebar-tab="chat_activity"]'));
+  await sleep(30);
+  ok('聊天活动独立标注 V2 补充能力且不展示正文',
+    d.querySelector('[data-sidebar-capability="v2-supplement"]')?.textContent.includes('不计 LEGACY-S05-028 销项') &&
+    d.querySelectorAll('[data-chat-activity-at]').length === 1 &&
+    !d.body.textContent.includes('消息正文'));
+  const chatFilter = d.querySelector('[data-chat-filter="chat_type"]');
+  chatFilter.value = 'group';
+  chatFilter.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  await sleep(30);
+  ok('聊天活动支持私聊/群聊筛选', d.body.textContent.includes('群聊 · text'));
+
+  click(dom, d.querySelector('[data-sidebar-tab="orders"]'));
+  await sleep(30);
+  ok('普通订单渲染安全订单字段且无详情跳转',
+    d.querySelectorAll('[data-order-no]').length === 1 &&
+    d.body.textContent.includes('测试课程') &&
+    !d.body.textContent.includes('detail_url') &&
+    !d.querySelector('[data-order-no] a'));
+
+  click(dom, d.querySelector('[data-sidebar-tab="periodic_orders"]'));
+  await sleep(30);
+  ok('周期订单渲染 canonical member 与版本',
+    d.querySelectorAll('[data-periodic-member-ref]').length === 1 &&
+    d.body.textContent.includes('member_ref spm_') &&
+    d.body.textContent.includes('version 1'));
+  input(dom, d.querySelector('[data-periodic-remark]'), '更新后的备注');
+  click(dom, d.querySelector('[data-sidebar-action="periodic-remark-save"]'));
+  await sleep(30);
+  ok('周期备注写入回执含 accepted 与新 CAS 版本',
+    d.querySelector('[data-periodic-remark-receipt="accepted"]')?.textContent.includes('version 2') &&
+    dom.window.__sidebarTest.remarkBody?.expected_version === 1 &&
+    dom.window.__sidebarTest.remarkBody?.remark === '更新后的备注' &&
+    typeof dom.window.__sidebarTest.idempotencyKey === 'string' &&
+    dom.window.__sidebarTest.idempotencyKey.startsWith('sidebar-periodic-remark-'));
+
+  click(dom, d.querySelector('[data-sidebar-tab="materials"]'));
+  await sleep(30);
+  ok('素材支持搜索/分类/标签筛选与元数据',
+    !!d.querySelector('#material-q') && !!d.querySelector('#material-category') && !!d.querySelector('#material-tags') &&
+    d.querySelectorAll('[data-material-id]').length === 2 &&
+    d.body.textContent.includes('welcome.png') && d.body.textContent.includes('800×600'));
+  input(dom, d.querySelector('#material-q'), '欢迎');
+  input(dom, d.querySelector('#material-category'), '海报');
+  input(dom, d.querySelector('#material-tags'), '欢迎语');
+  click(dom, d.querySelector('[data-sidebar-action="materials-search"]'));
+  await sleep(30);
+  ok('素材筛选请求沿用真实 q/category/tags 参数',
+    dom.window.__sidebarTest.materialQueries.some((url) => url.includes('q=%E6%AC%A2%E8%BF%8E') && url.includes('category=%E6%B5%B7%E6%8A%A5') && url.includes('tags=%E6%AC%A2%E8%BF%8E%E8%AF%AD')));
+  ok('缩略图只展示 pending/not_found，不虚构图片',
+    d.querySelector('[data-thumbnail-status="pending"]') &&
+    d.querySelector('[data-thumbnail-status="not_found"]') &&
+    !d.querySelector('img'));
+  dom.window.close();
+}
+
+console.log('sidebar/index.html（新增能力空态与失败态）');
+{
+  const empty = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=empty' });
+  const emptyDoc = empty.window.document;
+  for (const tab of ['timeline', 'chat_activity', 'orders', 'periodic_orders', 'materials']) {
+    click(empty, emptyDoc.querySelector(`[data-sidebar-tab="${tab}"]`));
+    await sleep(30);
+    ok(`${tab} 空态清晰`, emptyDoc.body.textContent.includes(tab === 'timeline' ? '暂无时间线记录' : tab === 'chat_activity' ? '暂无聊天活动记录' : tab === 'orders' ? '暂无普通订单记录' : tab === 'periodic_orders' ? '暂无周期订单记录' : '暂无匹配素材'));
+  }
+  empty.window.close();
+
+  const failed = await loadPage('sidebar/index.html', { q: 'external_userid=ext-7&sidebar_case=error' });
+  const failedDoc = failed.window.document;
+  click(failed, failedDoc.querySelector('[data-sidebar-tab="timeline"]'));
+  await sleep(30);
+  ok('时间线失败态提供重试', failedDoc.body.textContent.includes('时间线读取失败') && !!failedDoc.querySelector('[data-sidebar-action="retry-timeline"]'));
+  click(failed, failedDoc.querySelector('[data-sidebar-tab="periodic_orders"]'));
+  await sleep(30);
+  ok('周期订单失败态提供重试', failedDoc.body.textContent.includes('周期订单读取失败') && !!failedDoc.querySelector('[data-sidebar-action="retry-periodic-orders"]'));
+  failed.window.close();
 }
 
 console.log(`\n${pass} 通过 / ${fail} 失败`);
