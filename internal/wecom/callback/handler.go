@@ -77,6 +77,11 @@ func NewHandler(config Config, options Options) (*Handler, error) {
 }
 
 func (handler *Handler) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+	if request != nil && (request.Method == http.MethodHead || request.Method == http.MethodOptions) {
+		writer.Header().Set("Allow", "GET, HEAD, POST, OPTIONS")
+		writer.WriteHeader(http.StatusNoContent)
+		return
+	}
 	if handler == nil || !handler.enabled {
 		writeBoundaryError(writer, http.StatusServiceUnavailable, "callback unavailable")
 		return
