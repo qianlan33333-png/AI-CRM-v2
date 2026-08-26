@@ -20,7 +20,7 @@ import { archiveLegacyCoupon, copyLegacyCoupon, createLegacyCoupon, deleteLegacy
 import { createLegacyQuestionnaire, deleteLegacyQuestionnaire, disableLegacyQuestionnaire, duplicateLegacyQuestionnaire, enableLegacyQuestionnaire, publishQuestionnairePublicDefinition, updateLegacyQuestionnaire, type LegacyQuestionnaireCreateRequest } from './generated/health';
 import { createLegacyChannel, updateLegacyChannel, type LegacyChannelWriteRequest } from './generated/health';
 import { deleteAIAudienceAutomationBinding, getAIAudienceAutomationBinding, getAIAudienceConfigurationVersion, getAIAudiencePackageSenders, listAIAudiencePackageMembers, materializeAIAudienceConfiguration, previewAIAudienceConfiguration, putAIAudienceAutomationBinding, putAIAudienceConfigurationVersion, replaceAIAudiencePackageSenders, updateAIAudiencePackage, type AIAudiencePackageSender, type SegmentDefinition } from './generated/health';
-import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
+import { activateGroupOpsPlan, addGroupOpsPlanGroupAsset, addGroupOpsPlanMember, addGroupOpsPlanNode, archiveGroupOpsPlan, createGroupOpsPlan, deleteGroupOpsPlan, getGroupOpsPlan, getGroupOpsWebhookDescriptor, listGroupOpsExecutions, listGroupOpsPlans, pauseGroupOpsPlan, previewGroupOpsPlanContent, previewGroupOpsRunDue, putGroupOpsWebhookDescriptor, removeGroupOpsPlanGroupAsset, removeGroupOpsPlanMember, removeGroupOpsPlanNode, updateGroupOpsPlan, updateGroupOpsPlanNode, type GroupOpsNodeRequest } from './generated/health';
 import { deleteCloudCampaign, getCloudCampaign, getCloudCampaignTouchPlan, getCloudCampaignTouchPlanRecipient, getCloudCampaignTouchPlanRecipientReview, getCloudCampaignTouchPlanReview, listCloudCampaignPlans, listCloudCampaigns, listCloudCampaignTouchPlanRecipients, listCloudCampaignTouchPlans, mutateCloudCampaignTouchPlanRecipientReview, mutateCloudCampaignTouchPlanReview } from './generated/health';
 import { acceptOutboundCampaignHandoff, dispatchOutboundCampaignHandoff, getOutboundCampaignDispatchReconciliation, getOutboundCampaignHandoffSummary, reconcileOutboundCampaignHandoff } from './generated/health';
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
@@ -502,8 +502,48 @@ export const questionnaireOpsPageDto = (value: unknown): QuestionnaireOps => { c
 export const hxcSenderPageDto = (item: LegacyHXCSenderConfig): AdminDb['rows']['agents'][number] => ({ senderId: item.id, priority: item.priority, isActive: item.is_active, name: item.display_name || item.sender_userid, code: item.sender_userid, type: 'HXC 本地发送人', material: `优先级 ${item.priority}`, status: item.is_active ? '启用中' : '已停用', tone: item.is_active ? 'ok' : 'gray' });
 export const audienceGroupPageDto = (value: unknown): AdminDb['audienceGroups'][number] => ({ id: Number(obj(value).group_id), name: text(obj(value).name) });
 export const audiencePackagePageDto = (value: unknown): AdminDb['audiencePackages'][number] => { const x = obj(value); const packageVersion = Number(x.version || 0); return { id: Number(x.package_id), name: text(x.name), groupId: Number(x.group_id || 0), count: Number(x.member_count || 0), lastRefresh: text(x.refreshed_at), refreshMode: text(x.refresh_mode), running: x.lifecycle === 'active', version: 'v' + text(x.version), packageVersion, refreshCron: typeof x.refresh_cron === 'string' ? x.refresh_cron : null, definition: x.definition ? JSON.stringify(x.definition, null, 2) : '', incremental: x.refresh_mode === 'scheduled' ? 'scheduled' : 'manual', daily: text(x.refresh_cron, ''), boundAutomation: '' }; };
-export const groupOpsPlanDto = (value: unknown): AdminDb['groupOpsPlans'][number] => { const x = obj(value); return { id: text(x.plan_id), name: text(x.name), status: ['active', 'paused', 'archived'].includes(text(x.status)) ? text(x.status) as 'active' | 'paused' | 'archived' : 'draft', revision: Number(x.revision), updatedAt: text(x.updated_at) }; };
+export const groupOpsPlanDto = (value: unknown): AdminDb['groupOpsPlans'][number] => { const x = obj(value); const queueCount = Number(x.queue_count || 0); if (!Number.isSafeInteger(queueCount) || queueCount < 0) throw new Error('Group Ops queue_count 无效'); return { id: text(x.plan_id), name: text(x.name), status: ['active', 'paused', 'archived'].includes(text(x.status)) ? text(x.status) as 'active' | 'paused' | 'archived' : 'draft', revision: Number(x.revision), queueCount, updatedAt: text(x.updated_at) }; };
 export const groupOpsDetailDto = (value: unknown, preview?: unknown): NonNullable<AdminDb['groupOpsDetail']> => { const x = obj(value); const validation = obj(preview); return { plan: groupOpsPlanDto(x.plan), staffIds: list(x, 'members').map((item) => Number(obj(item).staff_id)), assets: list(x, 'group_assets').map((item) => ({ id: text(obj(item).group_asset_id), reference: text(obj(item).asset_reference) })), nodes: list(x, 'nodes').map((item) => ({ id: text(obj(item).node_id), position: Number(obj(item).position), kind: obj(item).kind === 'delay' ? 'delay' : 'message', messageText: text(obj(item).message_text, ''), delayMinutes: obj(item).delay_minutes == null ? undefined : Number(obj(item).delay_minutes), materialReference: text(obj(item).material_reference, '') })), webhookReference: text(obj(x.webhook_descriptor).reference, ''), previewLines: list(validation, 'preview_lines').map(String), previewIssues: list(validation, 'issue_codes').map(String) }; };
+const groupOpsPreviewDto = (planId: string, value: unknown): AdminDb['rows']['orderKv'] => {
+  const source = obj(value);
+  if (text(source.plan_id) !== planId || source.real_external_call_executed !== false || source.provider_accepted !== false || source.delivery_proven !== false) throw new Error('Group Ops run-due 预览越过本地读取边界');
+  const due = Number(source.due_execution_count);
+  const revision = Number(source.snapshot_revision);
+  if (!Number.isSafeInteger(due) || due < 0 || !Number.isSafeInteger(revision) || revision < 1 || typeof source.provider_execution_eligible !== 'boolean') throw new Error('Group Ops run-due 预览响应不完整');
+  return [
+    { k: 'run-due 预览 · 快照 revision', v: String(revision), mono: false },
+    { k: '到期执行候选', v: String(due), mono: false },
+    { k: '下一次到期', v: text(source.next_due_at, '—'), mono: false },
+    { k: '阻断原因', v: list(source, 'blockers').map(String).join('、') || '无', mono: false },
+    { k: '本地执行资格', v: source.provider_execution_eligible ? 'eligible（仅预览，未调用 Provider）' : 'not eligible', mono: false },
+  ];
+};
+const groupOpsWebhookDescriptorDto = (value: unknown): AdminDb['rows']['orderKv'] => {
+  const source = obj(value);
+  if (source.real_external_call_executed !== false || typeof source.provider_execution_eligible !== 'boolean') throw new Error('Group Ops webhook 描述符越过本地读取边界');
+  return [
+    { k: 'Webhook 描述符', v: source.configured === true ? text(source.description, 'local opaque reference only') : 'not configured', mono: false },
+    { k: 'Webhook opaque reference', v: typeof source.reference === 'string' ? source.reference : '—', mono: true },
+  ];
+};
+const groupOpsExecutionRows = (planId: string, value: unknown): AdminDb['rows']['orderEvents'] => {
+  const source = obj(value);
+  const stateHint: Record<string, string> = {
+    accepted: '已接受内部执行；不等于 Provider 调用或送达',
+    provider_accepted: 'Provider 已受理；仍不等于送达',
+    delivery_proven: '已由已验证 Provider 回执证明送达',
+    outcome_unknown: '结果未知，需人工对账；禁止自动重试',
+    reconciled: '已基于证据完成本地对账',
+    final_failed: '最终失败',
+  };
+  return list(source, 'items').map((item) => {
+    const execution = obj(item);
+    const state = text(execution.state);
+    if (text(execution.plan_id) !== planId || !stateHint[state]) throw new Error('Group Ops execution 返回范围或状态不匹配');
+    if (execution.delivery_proven === true && (state !== 'delivery_proven' || execution.provider_receipt_present !== true)) throw new Error('Group Ops execution 缺少可验证送达回执');
+    return { time: text(execution.updated_at), ev: `execution ${text(execution.execution_id)} · attempts ${text(execution.attempt_count, '0')}`, st: stateHint[state], tone: toneFor(state) };
+  });
+};
 export const configCategoryPageDto = (value: unknown): ConfigCategory => { const x = obj(value); return { key: text(x.key), label: text(x.key), group: '本地安全配置', on: x.enabled === true, toggleable: true, checkSupported: true, blocks: [] }; };
 export const appSettingsPageDto = (value: unknown): ConfigCategory => { const source = obj(value); const config = obj(source.config); return { key: 'app-settings', label: '应用设置', group: '本地安全配置', on: true, toggleable: false, checkSupported: false, actionToken: text(source.admin_action_token, ''), blocks: [{ title: '非敏感应用设置', fields: list(config, 'rows').map((entry) => { const row = obj(entry); const masked = row.mode === 'masked'; return { key: text(row.key), label: text(row.label, text(row.key)), kind: masked ? 'secret' as const : row.input_type === 'number' ? 'number' as const : 'text' as const, value: masked ? '' : text(row.value, ''), configured: masked ? row.configured === true : undefined }; }) }] }; };
 export const readOnlyConfigPageDto = (key: 'push-capabilities' | 'releases', value: unknown): ConfigCategory => { const source = obj(value); const rows = key === 'releases' ? list(source, 'releases').map((item) => { const release = obj(item); return { key: `release.${text(release.id)}`, label: `Release ${text(release.id)} · ${text(release.state)}`, value: text(release.checksum), kind: 'readonly' as const }; }) : Object.entries(obj(source.capabilities)).map(([name, setting]) => ({ key: name, label: name, value: typeof setting === 'object' ? JSON.stringify(setting) : text(setting), kind: 'readonly' as const })); return { key, label: key === 'releases' ? '配置发布记录' : 'Push 能力', group: '本地安全配置', on: true, toggleable: false, checkSupported: false, blocks: [{ title: key === 'releases' ? '本地发布记录' : '当前能力安全投影', fields: rows }] }; };
@@ -836,7 +876,19 @@ export async function readAdminPage(context: AdminReadContext = {}): Promise<Adm
   if (context.page === 'mpLib') { const detail = await call(getLegacyMiniProgram(numeric, opt)); db.rows.mpItems = [miniProgramPageDto(obj(detail).item || detail)]; }
   if (context.page === 'tags') { const [group, tag, gate] = await Promise.all([call(getLegacyWecomTagGroup(numeric, opt)), call(getLegacyWecomTag(numeric, opt)), call(getLegacyWecomTagExecutionGate(opt))]); db.tagGroups = [tagGroupPageDto(obj(group).group || group)]; db.wecomTags = [tagPageDto(obj(tag).tag || tag)]; db.rows.orderKv = [{ k: 'live-gate', v: text(obj(gate).status), mono: false }]; }
   if (context.page === 'audienceEdit') { const [detail, bindingResult, senderResult, configResult, memberResult] = await Promise.all([call(getAIAudiencePackage(numeric, opt)), call(getAIAudienceAutomationBinding(numeric, opt)), call(getAIAudiencePackageSenders(numeric, opt)), call(getAIAudienceConfigurationVersion(numeric, opt)), call(listAIAudiencePackageMembers(numeric, { limit: 200, offset: 0 }, opt))]); const pkg = audiencePackagePageDto(obj(detail).package); const binding = obj(obj(bindingResult).binding); const configVersion = obj(obj(configResult).configuration); pkg.bindingAgentId = Number(binding.automation_agent_id || 0) || undefined; pkg.bindingVersion = Number(binding.version || 0); pkg.boundAutomation = pkg.bindingAgentId ? String(pkg.bindingAgentId) : ''; pkg.configurationVersion = Number(configVersion.version || 0) || undefined; db.audiencePackages = [pkg]; db.audienceSenders[numeric] = list(senderResult, 'items').map((item) => ({ priority: Number(obj(item).sort_order), userid: text(obj(item).sender_userid), rule: '服务端顺序', status: obj(item).is_enabled === false ? '停用' : '启用' })); db.audienceMembers[numeric] = list(memberResult, 'items').map((item) => ({ name: text(obj(item).nickname), external_userid: text(obj(item).external_userid), joinedAt: text(obj(item).entered_at) })); }
-  if (context.page === 'groupopsDetail') { const [detail, preview, executions] = await Promise.all([call(getGroupOpsPlan(id, opt)), call(previewGroupOpsPlanContent(id, opt)), call(listGroupOpsExecutions(id, { limit: 100, offset: 0 }, opt))]); db.groupOpsDetail = groupOpsDetailDto(detail, preview); db.groupOpsPlans = [db.groupOpsDetail.plan]; db.rows.orderEvents = list(executions, 'items').map((item) => ({ time: text(obj(item).updated_at), ev: text(obj(item).execution_id), st: text(obj(item).state), tone: toneFor(obj(item).state) })); }
+  if (context.page === 'groupopsDetail') {
+    const [detail, preview, runDue, executions, webhook] = await Promise.all([
+      call(getGroupOpsPlan(id, opt)),
+      call(previewGroupOpsPlanContent(id, opt)),
+      call(previewGroupOpsRunDue(id, opt)),
+      call(listGroupOpsExecutions(id, { limit: 100, offset: 0 }, opt)),
+      call(getGroupOpsWebhookDescriptor(id, opt)),
+    ]);
+    db.groupOpsDetail = groupOpsDetailDto(detail, preview);
+    db.groupOpsPlans = [db.groupOpsDetail.plan];
+    db.rows.orderKv = [...groupOpsPreviewDto(id, runDue), ...groupOpsWebhookDescriptorDto(webhook)];
+    db.rows.orderEvents = groupOpsExecutionRows(id, executions);
+  }
   if (context.page === 'configDetail' && !['app-settings', 'push-capabilities', 'releases'].includes(id)) { const detail = obj(await call(getAdminOpsCategory(id, opt))); const category = detail.category; if (category) db.configCategories = [configCategoryPageDto(category)]; }
   return db;
 }

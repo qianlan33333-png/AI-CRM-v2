@@ -197,6 +197,7 @@ export interface GroupOpsPlanItem {
   name: string;
   status: 'draft' | 'active' | 'paused' | 'archived';
   revision: number;
+  queueCount?: number;
   updatedAt: string;
 }
 

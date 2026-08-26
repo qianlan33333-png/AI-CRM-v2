@@ -8,7 +8,7 @@ import { getArchiveLegacyCouponUrl, getCopyLegacyCouponUrl, getCreateLegacyCoupo
 import { getCreateLegacyQuestionnaireUrl, getDeleteLegacyQuestionnaireUrl, getDisableLegacyQuestionnaireUrl, getDuplicateLegacyQuestionnaireUrl, getEnableLegacyQuestionnaireUrl, getPublishQuestionnairePublicDefinitionUrl, getUpdateLegacyQuestionnaireUrl } from './generated/health';
 import { getCreateLegacyChannelUrl, getGetChannelAcquisitionAssetUrl, getGetChannelAcquisitionPreviewUrl, getListChannelAcquisitionAssetsUrl, getListChannelAcquisitionStaffUrl, getPublishChannelAcquisitionAssetUrl, getUpdateChannelAcquisitionAssigneesUrl, getUpdateLegacyChannelUrl } from './generated/health';
 import { getDeleteAIAudienceAutomationBindingUrl, getGetAIAudienceAutomationBindingUrl, getGetAIAudienceConfigurationVersionUrl, getGetAIAudiencePackageSendersUrl, getListAIAudiencePackageMembersUrl, getMaterializeAIAudienceConfigurationUrl, getPreviewAIAudienceConfigurationUrl, getPutAIAudienceAutomationBindingUrl, getPutAIAudienceConfigurationVersionUrl, getReplaceAIAudiencePackageSendersUrl, getUpdateAIAudiencePackageUrl } from './generated/health';
-import { getActivateGroupOpsPlanUrl, getAddGroupOpsPlanGroupAssetUrl, getAddGroupOpsPlanMemberUrl, getAddGroupOpsPlanNodeUrl, getArchiveGroupOpsPlanUrl, getCreateGroupOpsPlanUrl, getDeleteGroupOpsPlanUrl, getGetGroupOpsPlanUrl, getListGroupOpsExecutionsUrl, getListGroupOpsPlansUrl, getPauseGroupOpsPlanUrl, getPreviewGroupOpsPlanContentUrl, getUpdateGroupOpsPlanNodeUrl, getUpdateGroupOpsPlanUrl } from './generated/health';
+import { getActivateGroupOpsPlanUrl, getAddGroupOpsPlanGroupAssetUrl, getAddGroupOpsPlanMemberUrl, getAddGroupOpsPlanNodeUrl, getArchiveGroupOpsPlanUrl, getCreateGroupOpsPlanUrl, getDeleteGroupOpsPlanUrl, getGetGroupOpsPlanUrl, getGetGroupOpsWebhookDescriptorUrl, getListGroupOpsExecutionsUrl, getListGroupOpsPlansUrl, getPauseGroupOpsPlanUrl, getPreviewGroupOpsPlanContentUrl, getPreviewGroupOpsRunDueUrl, getUpdateGroupOpsPlanNodeUrl, getUpdateGroupOpsPlanUrl } from './generated/health';
 import { getCreateLegacyRefundIntentUrl, getCreateLegacyWechatRefundIntentUrl } from './generated/health';
 import { getQueueSurveyExternalPushTestUrl, getSaveSurveyCompletionOperationsUrl, getSaveSurveyExternalPushOperationsUrl } from './generated/health';
 import { getArchiveLegacyHXCSendConfigUrl, getGetLegacyHXCSendConfigUrl, getReorderLegacyHXCSendConfigsUrl, getUpsertLegacyHXCSendConfigUrl } from './generated/health';
@@ -382,7 +382,7 @@ export async function runAdminAdapterTests(): Promise<void> {
   } finally { globalThis.fetch = savedFetch; }
 
   const groupOpsCalls: Array<{ input: string; init?: RequestInit }> = [];
-  const groupOpsDetail = { plan: { plan_id: '9', name: '欢迎计划', status: 'draft', revision: 1, created_by: 1, updated_by: 1, created_at: '', updated_at: '' }, members: [], group_assets: [], nodes: [], webhook_descriptor: { configured: false, description: 'not configured' }, provider_execution_eligible: false, real_external_call_executed: false };
+  const groupOpsDetail = { plan: { plan_id: '9', name: '欢迎计划', status: 'draft', revision: 1, queue_count: 2, created_by: 1, updated_by: 1, created_at: '', updated_at: '' }, members: [], group_assets: [], nodes: [], webhook_descriptor: { configured: false, description: 'not configured' }, provider_execution_eligible: false, real_external_call_executed: false };
   globalThis.fetch = async (input, init) => { groupOpsCalls.push({ input: String(input), init }); const body = String(input).endsWith('/content/preview') ? { valid: false, issue_codes: ['member_required'], preview_lines: [], node_count: 0, group_asset_count: 0, provider_execution_eligible: false, real_external_call_executed: false } : groupOpsDetail; return new Response(JSON.stringify(body), { status: init?.method === 'POST' && String(input).endsWith('/plans') ? 201 : 200 }); };
   try {
     const saved = await saveGroupOpsPlanDto({ name: '欢迎计划', staffIds: [], assetReferences: [], nodes: [] });
@@ -390,7 +390,41 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(groupOpsCalls[0].input.endsWith('/group-ops/plans') && groupOpsCalls[0].init?.method === 'POST', 'group ops create URL/method');
     assert(JSON.parse(String(groupOpsCalls[0].init?.body)).name === '欢迎计划', 'group ops create DTO mapping');
     assert(groupOpsCalls[1].input.endsWith('/plans/9/content/preview') && groupOpsCalls[1].init?.method === 'POST' && groupOpsCalls[2].init?.method === 'GET', 'group ops preview/detail methods');
-    assert(groupOpsDetailDto(groupOpsDetail).plan.revision === 1, 'group ops direct response mapping');
+    assert(groupOpsDetailDto(groupOpsDetail).plan.revision === 1 && groupOpsDetailDto(groupOpsDetail).plan.queueCount === 2, 'group ops direct response mapping preserves local queue count');
+  } finally { globalThis.fetch = savedFetch; }
+  assert(getPreviewGroupOpsRunDueUrl('9').endsWith('/plans/9/run-due/preview') && getGetGroupOpsWebhookDescriptorUrl('9').endsWith('/plans/9/webhook-descriptor'), 'group ops run-due preview and webhook descriptor URLs');
+  const groupOpsContentPreview = { valid: true, issue_codes: [], preview_lines: ['欢迎加入'], node_count: 1, group_asset_count: 1, provider_execution_eligible: false, real_external_call_executed: false };
+  const groupOpsRunDue = { plan_id: '9', plan_status: 'active', snapshot_revision: 1, evaluated_at: '2026-08-27T00:00:00Z', due_execution_count: 2, next_due_at: '2026-08-27T08:00:00Z', blockers: [], provider_execution_eligible: true, real_external_call_executed: false, provider_accepted: false, delivery_proven: false };
+  const groupOpsWebhook = { configured: true, reference: 'hook-local-9', description: 'local opaque reference only', provider_execution_eligible: false, real_external_call_executed: false };
+  const groupOpsExecution = { execution_id: '71', run_id: '61', plan_id: '9', plan_revision: 1, node_id: '51', node_position: 1, target_reference: 'group-opaque-1', target_digest: 'sha256:' + 'a'.repeat(64), content_digest: 'sha256:' + 'b'.repeat(64), material_digest: 'sha256:' + 'c'.repeat(64), external_effect_id: 'eer_71', state: 'outcome_unknown', provider_accepted: false, delivery_proven: false, attempt_count: 1, provider_receipt_present: false, reconciliation_evidence_present: false, created_at: '2026-08-27T00:00:00Z', updated_at: '2026-08-27T00:01:00Z' };
+  const groupOpsRuntimeCalls: Array<{ input: string; init?: RequestInit }> = [];
+  let unsafeGroupOpsPreview = false;
+  const savedGroupOpsRuntimeFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    groupOpsRuntimeCalls.push({ input: url, init });
+    if (url.endsWith('/run-due/preview')) return new Response(JSON.stringify({ ...groupOpsRunDue, ...(unsafeGroupOpsPreview ? { delivery_proven: true } : {}) }), { status: 200 });
+    if (url.endsWith('/webhook-descriptor')) return new Response(JSON.stringify(groupOpsWebhook), { status: 200 });
+    if (url.endsWith('/content/preview')) return new Response(JSON.stringify(groupOpsContentPreview), { status: 200 });
+    if (url.endsWith('/executions?limit=100&offset=0')) return new Response(JSON.stringify({ items: [groupOpsExecution], total: 1, limit: 100, offset: 0, has_more: false, provider_execution_eligible: true, real_external_call_executed: false, provider_accepted: false, delivery_proven: false }), { status: 200 });
+    if (url.endsWith('/plans/9')) return new Response(JSON.stringify(groupOpsDetail), { status: 200 });
+    if (url.includes('/group-ops/plans?')) return new Response(JSON.stringify({ items: [groupOpsDetail.plan], total: 1, limit: 100, offset: 0, has_more: false, provider_execution_eligible: false, real_external_call_executed: false }), { status: 200 });
+    return new Response(JSON.stringify({ code: 'unexpected' }), { status: 500 });
+  };
+  try {
+    const runtimePage = await readAdminPage({ page: 'groupopsDetail', id: '9' });
+    assert(runtimePage.rows.orderKv.some((item) => item.k === '到期执行候选' && item.v === '2') && runtimePage.rows.orderKv.some((item) => item.k === 'Webhook opaque reference' && item.v === 'hook-local-9'), 'group ops runtime preview and opaque webhook descriptor stay local-only');
+    assert(runtimePage.rows.orderEvents[0].st.includes('结果未知') && runtimePage.rows.orderEvents[0].st.includes('禁止自动重试'), 'group ops outcome_unknown remains manual reconciliation only');
+    assert(groupOpsRuntimeCalls.some((call) => call.input.endsWith('/run-due/preview') && call.init?.method === 'POST') && groupOpsRuntimeCalls.some((call) => call.input.endsWith('/webhook-descriptor') && call.init?.method === 'GET') && groupOpsRuntimeCalls.some((call) => call.input.endsWith('/executions?limit=100&offset=0') && call.init?.method === 'GET'), 'group ops detail uses generated preview, descriptor and execution reads without run acceptance');
+    unsafeGroupOpsPreview = true;
+    try { await readAdminPage({ page: 'groupopsDetail', id: '9' }); assert(false, 'run-due delivery claim must fail closed'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('本地读取边界'), 'run-due delivery claim fails closed'); }
+  } finally { globalThis.fetch = savedGroupOpsRuntimeFetch; }
+  const attachmentReadCalls: Array<{ input: string; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => { attachmentReadCalls.push({ input: String(input), init }); return new Response(JSON.stringify({ items: [{ id: 'att-9', file_name: '运营素材.pdf', mime_type: 'application/pdf', file_size: 1024, tags: ['group-ops'], created_at: '2026-08-27T00:00:00Z', enabled: true }] }), { status: 200 }); };
+  try {
+    const attachments = await readAdminRows('attach');
+    assert(attachmentReadCalls[0].input === '/api/admin/attachment-library' && attachmentReadCalls[0].init?.method === 'GET' && attachments.rows.attachItems[0].name === '运营素材.pdf', 'attachment workspace reads the real current media list without Seed fallback');
   } finally { globalThis.fetch = savedFetch; }
 
   let productWrite: RequestInit | undefined;
