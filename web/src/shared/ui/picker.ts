@@ -11,6 +11,7 @@
  *   r === null → 用户取消；否则为选中的 PickerItem[]（channel 单选返回 0 或 1 项）。
  */
 import type { AdminApi } from '../api/client';
+import type { AdminDb } from '../api/types';
 import { toast } from './feedback';
 
 export type PickerKind = 'tags' | 'channel' | 'members' | 'image' | 'mp' | 'attach' | 'group';
@@ -42,6 +43,8 @@ export interface PickerOpts {
   selected?: string[];
   /** channel 专用：首项「不配置引流渠道码」文案；传入后点该项返回 [] */
   noneOption?: string;
+  /** 已按页面范围读取的真实数据；提供时不再触发无范围全量读取。 */
+  db?: AdminDb;
 }
 
 const ACCENT = '#3370ff';
@@ -65,7 +68,7 @@ interface SideGroup {
 }
 
 export async function openPicker(api: AdminApi, opts: PickerOpts): Promise<PickerItem[] | null> {
-  const db = await api.loadDb();
+  const db = opts.db || await api.loadDb();
   const kind = opts.kind;
   const multi = opts.multi ?? kind !== 'channel';
   const max = opts.max ?? (kind === 'members' ? 5 : kind === 'tags' || kind === 'channel' ? 0 : 9);
@@ -95,7 +98,7 @@ export async function openPicker(api: AdminApi, opts: PickerOpts): Promise<Picke
   } else if (kind === 'mp') {
     items = db.rows.mpItems
       .filter((m) => m.enabled)
-      .map((m) => ({ id: m.name, name: m.name, sub: '小程序 · ' + m.cardTitle, bg: m.bg }));
+      .map((m) => ({ id: String(m.resourceId), name: m.name, sub: '小程序 · ' + m.cardTitle, bg: m.bg }));
   } else if (kind === 'attach') {
     items = db.rows.attachItems
       .filter((a) => a.enabled)

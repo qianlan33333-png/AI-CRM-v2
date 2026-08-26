@@ -392,6 +392,21 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(groupOpsCalls[1].input.endsWith('/plans/9/content/preview') && groupOpsCalls[1].init?.method === 'POST' && groupOpsCalls[2].init?.method === 'GET', 'group ops preview/detail methods');
     assert(groupOpsDetailDto(groupOpsDetail).plan.revision === 1 && groupOpsDetailDto(groupOpsDetail).plan.queueCount === 2, 'group ops direct response mapping preserves local queue count');
   } finally { globalThis.fetch = savedFetch; }
+  const typedGroupOpsCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const typedGroupOpsDetail = { plan: { plan_id: '9', name: '欢迎计划', status: 'draft', revision: 2, queue_count: 2, created_by: 1, updated_by: 1, created_at: '', updated_at: '' }, members: [], group_assets: [], nodes: [{ node_id: '51', position: 1, kind: 'message', message_text: '素材消息', material_plan: { references: [{ kind: 'image', id: 7 }, { kind: 'miniprogram', id: 8 }, { kind: 'attachment', id: 9 }] } }], webhook_descriptor: { configured: false, description: 'not configured' }, provider_execution_eligible: false, real_external_call_executed: false };
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    typedGroupOpsCalls.push({ input: url, init });
+    const body = url.endsWith('/content/preview') ? { valid: true, issue_codes: [], preview_lines: ['message: 素材消息'], node_count: 1, group_asset_count: 0, provider_execution_eligible: false, real_external_call_executed: false } : typedGroupOpsDetail;
+    return new Response(JSON.stringify(body), { status: 200 });
+  };
+  try {
+    const saved = await saveGroupOpsPlanDto({ id: '9', name: '欢迎计划', staffIds: [], assetReferences: [], nodes: [{ id: '51', position: 1, kind: 'message', messageText: '素材消息', materialPlan: { references: [{ kind: 'image', id: 7 }, { kind: 'miniprogram', id: 8 }, { kind: 'attachment', id: 9 }] } }] });
+    const nodeUpdate = typedGroupOpsCalls.find((call) => call.input.endsWith('/plans/9/nodes/51'));
+    const payload = JSON.parse(String(nodeUpdate?.init?.body));
+    assert(nodeUpdate?.init?.method === 'PATCH' && payload.material_reference === undefined && payload.material_plan.references[1].kind === 'miniprogram' && payload.material_plan.references[2].id === 9, 'group ops material node uses typed numeric references without legacy material_reference');
+    assert(saved.nodes[0].materialPlan?.references.map((ref) => `${ref.kind}:${ref.id}`).join(',') === 'image:7,miniprogram:8,attachment:9' && typedGroupOpsCalls.filter((call) => call.input.endsWith('/plans/9') && call.init?.method === 'GET').length >= 2, 'group ops typed material plan persists and is re-read from the server');
+  } finally { globalThis.fetch = savedFetch; }
   assert(getPreviewGroupOpsRunDueUrl('9').endsWith('/plans/9/run-due/preview') && getGetGroupOpsWebhookDescriptorUrl('9').endsWith('/plans/9/webhook-descriptor'), 'group ops run-due preview and webhook descriptor URLs');
   const groupOpsContentPreview = { valid: true, issue_codes: [], preview_lines: ['欢迎加入'], node_count: 1, group_asset_count: 1, provider_execution_eligible: false, real_external_call_executed: false };
   const groupOpsRunDue = { plan_id: '9', plan_status: 'active', snapshot_revision: 1, evaluated_at: '2026-08-27T00:00:00Z', due_execution_count: 2, next_due_at: '2026-08-27T08:00:00Z', blockers: [], provider_execution_eligible: true, real_external_call_executed: false, provider_accepted: false, delivery_proven: false };
@@ -425,6 +440,16 @@ export async function runAdminAdapterTests(): Promise<void> {
   try {
     const attachments = await readAdminRows('attach');
     assert(attachmentReadCalls[0].input === '/api/admin/attachment-library' && attachmentReadCalls[0].init?.method === 'GET' && attachments.rows.attachItems[0].name === '运营素材.pdf', 'attachment workspace reads the real current media list without Seed fallback');
+  } finally { globalThis.fetch = savedFetch; }
+  const groupOpsMaterialReadCalls: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = String(input); groupOpsMaterialReadCalls.push(url);
+    const body = url === '/api/admin/image-library' ? { items: [{ id: 7, name: '欢迎图', mime_type: 'image/png', file_size: 1024, enabled: true, created_at: '' }] } : url === '/api/admin/miniprogram-library' ? { items: [{ id: 8, name: '课程卡', appid: 'wx-app', pagepath: 'pages/course', title: '课程', thumbnail_status: 'ready', enabled: true }] } : { items: [{ id: 9, file_name: '资料.pdf', mime_type: 'application/pdf', file_size: 2048, enabled: true, created_at: '' }] };
+    return new Response(JSON.stringify(body), { status: 200 });
+  };
+  try {
+    const [images, minis, attachments] = await Promise.all([readAdminRows('images'), readAdminRows('mpLib'), readAdminRows('attach')]);
+    assert(groupOpsMaterialReadCalls.length === 3 && groupOpsMaterialReadCalls.includes('/api/admin/image-library') && groupOpsMaterialReadCalls.includes('/api/admin/miniprogram-library') && groupOpsMaterialReadCalls.includes('/api/admin/attachment-library') && images.rows.images[0].resourceId === '7' && minis.rows.mpItems[0].resourceId === 8 && attachments.rows.attachItems[0].resourceId === '9', 'group ops material picker scopes image, Mini Program and attachment reads to their real APIs');
   } finally { globalThis.fetch = savedFetch; }
 
   let productWrite: RequestInit | undefined;

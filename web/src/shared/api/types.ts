@@ -201,6 +201,12 @@ export interface GroupOpsPlanItem {
   updatedAt: string;
 }
 
+export type GroupOpsMaterialKind = 'image' | 'miniprogram' | 'attachment' | 'group_invite';
+
+export interface GroupOpsMaterialPlan {
+  references: Array<{ kind: GroupOpsMaterialKind; id: number }>;
+}
+
 export interface GroupOpsNodeItem {
   id?: string;
   position: number;
@@ -208,6 +214,7 @@ export interface GroupOpsNodeItem {
   messageText?: string;
   delayMinutes?: number;
   materialReference?: string;
+  materialPlan?: GroupOpsMaterialPlan;
 }
 
 export interface GroupOpsPlanDetailItem {
