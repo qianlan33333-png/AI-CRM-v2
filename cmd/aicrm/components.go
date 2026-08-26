@@ -252,7 +252,10 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 			return nil, profileErr
 		}
 	}
-	weComTagCorpID := config.WeCom.OAuth.CorpID
+	weComTagCorpID := config.WeCom.TagCatalog.CorpID
+	if weComTagCorpID == "" {
+		weComTagCorpID = config.WeCom.OAuth.CorpID
+	}
 	if weComTagCorpID == "" {
 		weComTagCorpID = config.WeCom.Callback.CorpID
 	}
@@ -269,7 +272,14 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 			pool.Close()
 			return nil, tagErr
 		}
-		if tagErr = wecomtag.RegisterDisabledWorker(workers, weComTagEffects); tagErr != nil {
+		var tagProvider wecomtag.Provider = wecomtag.DisabledProvider{}
+		if config.WeCom.TagCatalog.Enabled {
+			tagProvider, tagErr = newWeComTagCatalogProvider(config.WeCom.TagCatalog, &http.Client{Timeout: 5 * time.Second}, time.Now)
+		}
+		if tagErr == nil {
+			tagErr = wecomtag.RegisterWorker(workers, weComTagEffects, tagProvider)
+		}
+		if tagErr != nil {
 			pool.Close()
 			return nil, tagErr
 		}

@@ -75,6 +75,10 @@ const (
 	weComCustomerAcquisitionCorpIDEnv              = "AICRM_WECOM_CUSTOMER_ACQUISITION_CORP_ID"
 	weComCustomerAcquisitionSecretEnv              = "AICRM_WECOM_CUSTOMER_ACQUISITION_SECRET"
 	weComCustomerAcquisitionPermissionConfirmedEnv = "AICRM_WECOM_CUSTOMER_ACQUISITION_PERMISSION_CONFIRMED"
+	weComTagCatalogEnabledEnv                      = "AICRM_WECOM_TAG_CATALOG_ENABLED"
+	weComTagCatalogCorpIDEnv                       = "AICRM_WECOM_TAG_CATALOG_CORP_ID"
+	weComTagCatalogSecretEnv                       = "AICRM_WECOM_TAG_CATALOG_SECRET"
+	weComTagCatalogPermissionConfirmedEnv          = "AICRM_WECOM_TAG_CATALOG_PERMISSION_CONFIRMED"
 	weComOutboundEnabledEnv                        = "AICRM_WECOM_OUTBOUND_ENABLED"
 	weComOutboundCorpIDEnv                         = "AICRM_WECOM_OUTBOUND_CORP_ID"
 	weComOutboundSecretEnv                         = "AICRM_WECOM_OUTBOUND_SECRET"
@@ -194,6 +198,21 @@ type WeComCustomerAcquisition struct {
 	PermissionConfirmed bool
 }
 
+type WeComTagCatalogSecret struct{ value string }
+
+func (secret WeComTagCatalogSecret) Value() string { return secret.value }
+func (WeComTagCatalogSecret) String() string       { return "[REDACTED]" }
+func (WeComTagCatalogSecret) GoString() string     { return "[REDACTED]" }
+
+// WeComTagCatalog is the independent, read-only credential used by the tag
+// catalog sync worker. It never enables local Contact tag mutations.
+type WeComTagCatalog struct {
+	Enabled             bool
+	CorpID              string
+	Secret              WeComTagCatalogSecret
+	PermissionConfirmed bool
+}
+
 type WeComOutboundSecret struct{ value string }
 
 func (secret WeComOutboundSecret) Value() string { return secret.value }
@@ -228,6 +247,7 @@ type WeCom struct {
 	DirectorySync       WeComDirectorySync
 	Sidebar             WeComSidebar
 	CustomerAcquisition WeComCustomerAcquisition
+	TagCatalog          WeComTagCatalog
 	Outbound            WeComOutbound
 }
 
@@ -480,6 +500,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 			problems = append(problems, "worker.pool_max_conns must be at least queue concurrency total + 2")
 		}
 		root.WeCom.CustomerAcquisition = parseWeComCustomerAcquisition(lookup, &problems)
+		root.WeCom.TagCatalog = parseWeComTagCatalog(lookup, &problems)
 		root.WeCom.Outbound = parseWeComOutbound(lookup, &problems)
 		if !needAPI {
 			root.WeCom.DirectorySync = parseWeComDirectorySync(lookup, &problems)
@@ -697,6 +718,40 @@ func parseWeComCustomerAcquisition(lookup environmentLookup, problems *[]string)
 	return WeComCustomerAcquisition{
 		Enabled: true, CorpID: corpID, Secret: CustomerAcquisitionSecret{value: secret}, PermissionConfirmed: permission == "true",
 	}
+}
+
+func parseWeComTagCatalog(lookup environmentLookup, problems *[]string) WeComTagCatalog {
+	enabled, enabledPresent := lookup(weComTagCatalogEnabledEnv)
+	corpID, corpIDPresent := lookup(weComTagCatalogCorpIDEnv)
+	secret, secretPresent := lookup(weComTagCatalogSecretEnv)
+	permission, permissionPresent := lookup(weComTagCatalogPermissionConfirmedEnv)
+	if !enabledPresent && !corpIDPresent && !secretPresent && !permissionPresent {
+		return WeComTagCatalog{}
+	}
+	if !enabledPresent || enabled != "true" && enabled != "false" {
+		*problems = append(*problems, "wecom.tag_catalog.enabled must be true or false")
+		return WeComTagCatalog{}
+	}
+	if enabled == "false" {
+		if corpIDPresent || secretPresent || permissionPresent {
+			*problems = append(*problems, "wecom.tag_catalog credentials require enabled=true")
+		}
+		return WeComTagCatalog{}
+	}
+	if !corpIDPresent || !secretPresent || !permissionPresent || corpID == "" || secret == "" {
+		*problems = append(*problems, "wecom.tag_catalog requires corp_id, secret, and permission_confirmed together")
+		return WeComTagCatalog{}
+	}
+	if !validWeComCorpID(corpID) {
+		*problems = append(*problems, "wecom.tag_catalog.corp_id is invalid")
+	}
+	if len(secret) > 256 || strings.TrimSpace(secret) != secret {
+		*problems = append(*problems, "wecom.tag_catalog.secret is invalid")
+	}
+	if permission != "true" {
+		*problems = append(*problems, "wecom.tag_catalog.permission_confirmed must be true when enabled")
+	}
+	return WeComTagCatalog{Enabled: true, CorpID: corpID, Secret: WeComTagCatalogSecret{value: secret}, PermissionConfirmed: permission == "true"}
 }
 
 func parseWeComOutbound(lookup environmentLookup, problems *[]string) WeComOutbound {
