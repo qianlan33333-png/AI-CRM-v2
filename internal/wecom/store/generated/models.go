@@ -8,6 +8,38 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type WecomContactProfileEffect struct {
+	EffectID                 int64              `json:"effect_id"`
+	LegacyReceiptID          int64              `json:"legacy_receipt_id"`
+	ActorID                  int64              `json:"actor_id"`
+	CorpID                   string             `json:"corp_id"`
+	StaffUserid              string             `json:"staff_userid"`
+	ExternalUserid           string             `json:"external_userid"`
+	Remark                   string             `json:"remark"`
+	Description              string             `json:"description"`
+	IdempotencyDigest        string             `json:"idempotency_digest"`
+	EnvelopeFingerprint      string             `json:"envelope_fingerprint"`
+	State                    string             `json:"state"`
+	AcceptReceiptID          int64              `json:"accept_receipt_id"`
+	QueueReceiptID           pgtype.Int8        `json:"queue_receipt_id"`
+	RiverJobID               pgtype.Int8        `json:"river_job_id"`
+	Generation               int64              `json:"generation"`
+	Fence                    int64              `json:"fence"`
+	LeaseExpiresAt           pgtype.Timestamptz `json:"lease_expires_at"`
+	AttemptReceiptID         pgtype.Int8        `json:"attempt_receipt_id"`
+	AttemptReceiptDigest     pgtype.Text        `json:"attempt_receipt_digest"`
+	AttemptCompletedAt       pgtype.Timestamptz `json:"attempt_completed_at"`
+	ProviderCallAttempted    bool               `json:"provider_call_attempted"`
+	RealExternalCallExecuted bool               `json:"real_external_call_executed"`
+	ReconcileReceiptID       pgtype.Int8        `json:"reconcile_receipt_id"`
+	ReconcileReceiptDigest   pgtype.Text        `json:"reconcile_receipt_digest"`
+	ReconcileEvidenceDigest  pgtype.Text        `json:"reconcile_evidence_digest"`
+	ReconcileResolution      pgtype.Text        `json:"reconcile_resolution"`
+	ReconciledAt             pgtype.Timestamptz `json:"reconciled_at"`
+	CreatedAt                pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                pgtype.Timestamptz `json:"updated_at"`
+}
+
 type WecomTagEffect struct {
 	EffectID                int64              `json:"effect_id"`
 	LegacyReceiptID         int64              `json:"legacy_receipt_id"`

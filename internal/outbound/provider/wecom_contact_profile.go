@@ -68,7 +68,7 @@ func (c *WeComContactProfileClient) WriteContactProfile(ctx context.Context, r w
 func (c *WeComContactProfileClient) writeWithToken(ctx context.Context, token string, r wecomport.ContactProfileWriteRequest) (eer.AdapterResult, bool) {
 	body, _ := json.Marshal(map[string]string{"userid": r.StaffUserID, "external_userid": r.ExternalUserID, "remark": r.Remark, "description": r.Description})
 	u := c.baseURL.ResolveReference(&url.URL{Path: "/cgi-bin/externalcontact/remark"})
-	q := u.Query()
+	q := url.Values{}
 	q.Set("access_token", token)
 	u.RawQuery = q.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), bytes.NewReader(body))
