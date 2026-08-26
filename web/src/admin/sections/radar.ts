@@ -179,7 +179,7 @@ async function renderDetail(root: HTMLElement, api: AdminApi, links: RadarLink[]
     root.innerHTML = '<div class="card" style="padding:40px;text-align:center;color:#8F959E">雷达链接不存在</div>';
     return;
   }
-  const events = await api.listRadarEvents(it.id);
+  let events = await api.listRadarEvents(it.id);
   let url = '';
   try { url = new URL(await api.getRadarSharePath(it.id), location.origin).toString(); }
   catch (error) { root.innerHTML = `<div class="card" style="padding:40px;text-align:center;color:#C33">${esc(error instanceof Error ? error.message : '分享路径读取失败')}</div>`; return; }
@@ -250,8 +250,15 @@ async function renderDetail(root: HTMLElement, api: AdminApi, links: RadarLink[]
 
   ['#dKeyword', '#dStart', '#dEnd'].forEach((s) => $(s).addEventListener('input', paintRows));
   $('#dRefresh').addEventListener('click', () => {
-    paintRows();
-    toast('已刷新');
+    const button = $('#dRefresh') as HTMLButtonElement;
+    button.disabled = true;
+    void api.listRadarEvents(it.id).then((next) => {
+      events = next;
+      paintRows();
+      toast('已按当前时间条件刷新');
+    }).catch((error) => toast(error instanceof Error ? error.message : '雷达事件刷新失败', true)).finally(() => {
+      button.disabled = false;
+    });
   });
   $('#dBack').addEventListener('click', () => {
     location.href = 'radar.html';

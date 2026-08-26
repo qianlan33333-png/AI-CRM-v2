@@ -13,6 +13,7 @@ import {
   listServicePeriodProducts, listSurveyQuestionnaireExternalPushLogs,
   activateAIAudiencePackage, archiveLegacyWecomTag, archiveLegacyWecomTagGroup, archiveAIAudiencePackage, archiveServicePeriodProduct, copyAIAudiencePackage, copyLegacyWechatPayProduct, copyServicePeriodProduct, createAIAudiencePackageGroup, createLegacyMiniProgram, createLegacyWecomTag, createLegacyWecomTagGroup, createProduct, createRadarLink, createServicePeriodProduct, createServicePeriodMemberGridCollaborator, deleteAIAudiencePackageGroup, deleteLegacyAttachment, deleteLegacyImage, deleteLegacyMiniProgram, deleteServicePeriodMemberGridCollaborator, disableLegacyWechatPayProduct, disableRadarLink, disableServicePeriodProduct, enableLegacyWechatPayProduct, enableRadarLink, enableServicePeriodProduct, executeContactOwnerReassignmentPreview, getAIAudiencePackage, getCreateContactOwnerReassignmentPreviewUrl, getDownloadContactOwnerReassignmentErrorsUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getDownloadLegacyAttachmentUrl, getGetLegacyImageVariantUrl, getRadarLink, getRadarLinkShareProjection, listAIAudiencePackageGroups, listAIAudiencePackages, listRadarLinkEvents, listRadarLinks, pauseAIAudiencePackage, queueLegacyWecomTagSync, updateAIAudiencePackageGroup, updateLegacyAttachment, updateLegacyImage, updateLegacyMiniProgram, updateLegacyWecomTagGroupPatch, updateLegacyWecomTagPatch, updateProduct, updateRadarLink, updateServicePeriodMemberFields, updateServicePeriodMemberGridCollaborator, updateServicePeriodProduct, uploadLegacyAttachment, uploadLegacyImage, type ContactOwnerReassignmentPreview as ApiOwnerReassignmentPreview, type Customer as ApiCustomer, type LegacyChannel, type LegacyChannelListItem, type LegacyQuestionnaire, type RadarLink as ApiRadarLink,
 } from './generated/health';
+import { completeMediaAttachmentMultipartUpload, initiateMediaAttachmentMultipartUpload, putMediaAttachmentMultipartPart } from './generated/health';
 import { archiveLegacyHXCSendConfig, getLegacyHXCSendConfig, reorderLegacyHXCSendConfigs, upsertLegacyHXCSendConfig, type LegacyHXCSenderConfig } from './generated/health';
 import { getLegacyAppSettingsResource, saveLegacyAppSettingsResource } from './generated/health';
 import { getAdminOpsPushCapabilities, listAdminOpsReleases } from './generated/health';
@@ -790,7 +791,25 @@ export async function saveRadarLinkDto(input: RadarLinkInput): Promise<AdminDb['
   return radarPageDto(updated.link as ApiRadarLink);
 }
 export async function uploadRadarImageDto(file: File): Promise<RadarMedia> { const result = obj(await call(uploadLegacyImage({ image: file, name: file.name }, apiRequestOptions()))); const item = obj(result.item); return { id: Number(item.id), name: text(item.name, file.name), meta: `${text(item.mime_type, file.type)} · ${text(item.file_size, String(file.size))} bytes` }; }
-export async function uploadRadarPdfDto(file: File): Promise<RadarMedia> { const item = obj(await call(uploadLegacyAttachment({ attachment: file, name: file.name }, apiRequestOptions()))); return { id: Number(item.id), name: text(item.name, file.name), meta: `${text(item.mime_type, file.type)} · ${text(item.file_size, String(file.size))} bytes` }; }
+const sha256 = async (bytes: ArrayBuffer): Promise<string> => `sha256:${Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), (value) => value.toString(16).padStart(2, '0')).join('')}`;
+const base64 = (bytes: Uint8Array): string => { let binary = ''; for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000)); return btoa(binary); };
+const idempotency = (scope: string): RequestInit => apiRequestOptions({ headers: { 'Idempotency-Key': `${scope}-${crypto.randomUUID()}` } });
+export async function uploadRadarPdfDto(file: File): Promise<RadarMedia> {
+  if (file.size <= 1 << 20) { const item = obj(await call(uploadLegacyAttachment({ attachment: file, name: file.name }, apiRequestOptions()))); return { id: Number(item.id), name: text(item.name, file.name), meta: `${text(item.mime_type, file.type)} · ${text(item.file_size, String(file.size))} bytes` }; }
+  if (file.type !== 'application/pdf' || file.size > 10 << 20) throw new Error('PDF 必须为 10MB 以内的 application/pdf 文件');
+  const content = await file.arrayBuffer();
+  const initiated = obj(await call(initiateMediaAttachmentMultipartUpload({ file_name: file.name, name: file.name, size: file.size, sha256: await sha256(content), enabled: true }, idempotency('radar-pdf-init'))));
+  const uploadId = Number(initiated.upload_id);
+  if (!Number.isSafeInteger(uploadId) || uploadId < 1) throw new Error('后端未返回有效的 PDF 上传 ID');
+  for (let offset = 0, part = 1; offset < content.byteLength; offset += 1 << 20, part += 1) {
+    const chunk = content.slice(offset, Math.min(offset + (1 << 20), content.byteLength));
+    await call(putMediaAttachmentMultipartPart(uploadId, part, { sha256: await sha256(chunk), content: base64(new Uint8Array(chunk)) }, idempotency(`radar-pdf-part-${part}`)));
+  }
+  const completed = obj(await call(completeMediaAttachmentMultipartUpload(uploadId, idempotency('radar-pdf-complete'))));
+  const attachmentId = Number(completed.attachment_id);
+  if (!Number.isSafeInteger(attachmentId) || attachmentId < 1) throw new Error('后端未返回有效的 PDF 素材 ID');
+  return { id: attachmentId, name: file.name, meta: `${file.type} · ${file.size} bytes · 分片上传` };
+}
 const splitTags = (value: string | undefined): string[] => (value || '').split(/[,，]/).map((tag) => tag.trim()).filter(Boolean);
 async function uniqueMediaId(kind: 'image' | 'attachment' | 'mini', name: string): Promise<string | number> {
   const opt = apiRequestOptions();

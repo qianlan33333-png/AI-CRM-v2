@@ -791,5 +791,15 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(media.id === 16 && uploadInit?.method === 'POST' && uploadInit.body instanceof FormData, 'attachment upload multipart mapping');
     assert((uploadInit.body as FormData).get('attachment') instanceof Blob, 'attachment multipart field');
   } finally { globalThis.fetch = savedFetch; }
+  const chunkCalls: Array<{ input: string; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => { const url = String(input); chunkCalls.push({ input: url, init }); if (url.endsWith('/uploads')) return new Response(JSON.stringify({ upload_id: 31 }), { status: 201 }); if (url.endsWith('/complete')) return new Response(JSON.stringify({ attachment_id: 32 }), { status: 200 }); return new Response(null, { status: 204 }); };
+  try {
+    const media = await uploadRadarPdfDto(new File([new Uint8Array((1 << 20) + 1)], '大文件.pdf', { type: 'application/pdf' }));
+    assert(media.id === 32 && media.meta.includes('分片上传'), 'large radar PDF returns canonical multipart attachment');
+    assert(chunkCalls.length === 4 && chunkCalls[0].input.endsWith('/uploads') && chunkCalls[3].input.endsWith('/complete'), 'large radar PDF initiate/two-parts/complete sequence');
+    assert(chunkCalls.every((item) => String(new Headers(item.init?.headers).get('Idempotency-Key') || '').startsWith('radar-pdf-')), 'large radar PDF mutations carry idempotency keys');
+    const secondPart = JSON.parse(String(chunkCalls[2].init?.body));
+    assert(secondPart.content === 'AA==' && /^sha256:[0-9a-f]{64}$/.test(secondPart.sha256), 'large radar PDF part is base64 encoded and digest checked');
+  } finally { globalThis.fetch = savedFetch; }
   void response;
 }
