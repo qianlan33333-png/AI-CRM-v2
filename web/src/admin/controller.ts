@@ -2147,10 +2147,10 @@ export class AdminController extends PageBase {
           const btn = ev.currentTarget as FbEl;
           void this.api.syncWecomTags().then(() =>
             busy(btn, 0, () => {
-              toast('已与企微同步，共 ' + tagCapacity + ' 个标签');
+              toast('标签同步已受理；尚未收到 Provider 同步结果');
               void this.init();
             }),
-          );
+          ).catch((error) => toast(error instanceof Error ? error.message : '标签同步受理失败', true));
         },
         search: (ev: Event) => this.setState({ tagQ: (ev.target as HTMLInputElement).value }),
       },
