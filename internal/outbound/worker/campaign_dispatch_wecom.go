@@ -41,11 +41,11 @@ func (adapter *CampaignWeComAdapter) Execute(ctx context.Context, envelope eer.E
 	return adapter.execute(ctx, envelope, attempt, nil)
 }
 
-func (adapter *CampaignWeComAdapter) ExecuteWithCampaignDispatchProviderEvidence(ctx context.Context, envelope eer.EffectEnvelope, attempt eer.Attempt, record func(outboundport.CampaignDispatchProviderAttemptReceipt)) (eer.AdapterResult, error) {
+func (adapter *CampaignWeComAdapter) ExecuteWithCampaignDispatchProviderEvidence(ctx context.Context, envelope eer.EffectEnvelope, attempt eer.Attempt, record func(outboundport.CampaignDispatchProviderAttemptReceipt) error) (eer.AdapterResult, error) {
 	return adapter.execute(ctx, envelope, attempt, record)
 }
 
-func (adapter *CampaignWeComAdapter) execute(ctx context.Context, envelope eer.EffectEnvelope, attempt eer.Attempt, record func(outboundport.CampaignDispatchProviderAttemptReceipt)) (eer.AdapterResult, error) {
+func (adapter *CampaignWeComAdapter) execute(ctx context.Context, envelope eer.EffectEnvelope, attempt eer.Attempt, record func(outboundport.CampaignDispatchProviderAttemptReceipt) error) (eer.AdapterResult, error) {
 	if ctx == nil || adapter == nil || adapter.loader == nil || adapter.provider == nil || envelope.Owner() != eer.OwnerOutbound || envelope.Kind() != eer.KindOutboundMessage || attempt.Number < 1 {
 		return eer.AdapterResult{}, ErrCampaignWeComAdapter
 	}
@@ -74,15 +74,22 @@ func (adapter *CampaignWeComAdapter) execute(ctx context.Context, envelope eer.E
 	if err != nil {
 		return eer.AdapterResult{}, err
 	}
+	adapterResult := campaignWeComResult(envelope, attempt, result)
 	if record != nil {
 		received := result.ProviderResultReceived || result.MessageID != ""
-		evidence := outboundport.CampaignDispatchProviderAttemptReceipt{ProviderResultReceived: received}
+		evidence := outboundport.CampaignDispatchProviderAttemptReceipt{
+			Completion: string(adapterResult.Completion), ReceiptDigest: adapterResult.ReceiptDigest,
+			BusinessCallDispatched: adapterResult.BusinessCallDispatched, RealExternalCallExecuted: adapterResult.RealExternalCallExecuted,
+			ProviderResultReceived: received,
+		}
 		if received {
 			evidence.ProviderMessageID, evidence.ProviderCode = result.MessageID, result.Code
 		}
-		record(evidence)
+		if err = record(evidence); err != nil {
+			return adapterResult, errors.Join(ErrCampaignWeComAdapter, err)
+		}
 	}
-	return campaignWeComResult(envelope, attempt, result), nil
+	return adapterResult, nil
 }
 
 func validCampaignSnapshotText(value string, maximum int) bool {

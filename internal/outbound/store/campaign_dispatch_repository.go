@@ -12,10 +12,12 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	eer "github.com/qianlan33333-png/AI-CRM-v2/internal/externaleffects/port"
 	outbound "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound"
+	outboundapp "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/app"
 	outboundport "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/port"
 	outbounddb "github.com/qianlan33333-png/AI-CRM-v2/internal/outbound/store/generated"
 	platformjobqueue "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/jobqueue"
@@ -383,9 +385,12 @@ func (repository *CampaignDispatchRepository) RecordCampaignProviderAttemptRecei
 	if repository == nil || err != nil || id < 1 || attempt < 1 || !validCampaignDispatchCompletion(evidence.Completion) || !outbound.ValidCampaignDispatchDigest(string(evidence.ReceiptDigest)) || (evidence.RealExternalCallExecuted && !evidence.BusinessCallDispatched) || !validCampaignProviderReceipt(evidence) {
 		return outbound.ErrCampaignDispatchInvalid
 	}
-	queries, err := dispatchQueries(ctx)
-	if err != nil {
-		return err
+	if repository.pool == nil {
+		return outbound.ErrCampaignDispatchUnavailable
+	}
+	queries := outbounddb.New(repository.pool)
+	if tx, txErr := platformstore.TxFromContext(ctx); txErr == nil {
+		queries = outbounddb.New(tx)
 	}
 	var messageID, providerCode, reconciliation pgtype.Text
 	if evidence.ProviderMessageID != "" {
@@ -397,12 +402,67 @@ func (repository *CampaignDispatchRepository) RecordCampaignProviderAttemptRecei
 	if evidence.ReconciliationEvidenceDigest != "" {
 		reconciliation = pgtype.Text{String: string(evidence.ReconciliationEvidenceDigest), Valid: true}
 	}
-	return queries.InsertOutboundCampaignProviderAttemptReceipt(ctx, outbounddb.InsertOutboundCampaignProviderAttemptReceiptParams{
+	row, err := queries.InsertOutboundCampaignProviderAttemptReceipt(ctx, outbounddb.InsertOutboundCampaignProviderAttemptReceiptParams{
 		ExternalEffectID: id, AttemptNumber: attempt, Completion: evidence.Completion, ProviderReceiptDigest: string(evidence.ReceiptDigest),
 		BusinessCallDispatched: evidence.BusinessCallDispatched, RealExternalCallExecuted: evidence.RealExternalCallExecuted,
 		ProviderMessageID: messageID, ProviderCode: providerCode, ProviderResultReceived: evidence.ProviderResultReceived,
 		DeliveryProven: evidence.DeliveryProven, ReconciliationEvidenceDigest: reconciliation,
 	})
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+		return outbound.ErrCampaignDispatchConflict
+	}
+	if err != nil {
+		return errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
+	}
+	if row.ExternalEffectID != id || row.AttemptNumber != attempt || row.Completion != evidence.Completion ||
+		row.ProviderReceiptDigest != string(evidence.ReceiptDigest) || row.BusinessCallDispatched != evidence.BusinessCallDispatched ||
+		row.RealExternalCallExecuted != evidence.RealExternalCallExecuted || textOrEmpty(row.ProviderMessageID) != evidence.ProviderMessageID ||
+		textOrEmpty(row.ProviderCode) != evidence.ProviderCode || row.ProviderResultReceived != evidence.ProviderResultReceived ||
+		row.DeliveryProven != evidence.DeliveryProven || textOrEmpty(row.ReconciliationEvidenceDigest) != string(evidence.ReconciliationEvidenceDigest) {
+		return outbound.ErrCampaignDispatchConflict
+	}
+	return nil
+}
+
+func (repository *CampaignDispatchRepository) LoadCampaignDispatchAttemptRecovery(ctx context.Context, effectID string) (outboundapp.CampaignDispatchAttemptRecovery, error) {
+	id, err := parseCampaignExternalEffectID(effectID)
+	if repository == nil || err != nil || id < 1 {
+		return outboundapp.CampaignDispatchAttemptRecovery{}, outbound.ErrCampaignDispatchInvalid
+	}
+	if repository.pool == nil {
+		return outboundapp.CampaignDispatchAttemptRecovery{}, outbound.ErrCampaignDispatchUnavailable
+	}
+	row, err := outbounddb.New(repository.pool).LoadOutboundCampaignDispatchAttemptRecovery(ctx, pgtype.Int8{Int64: id, Valid: true})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return outboundapp.CampaignDispatchAttemptRecovery{}, outbound.ErrCampaignHandoffNotFound
+	}
+	if err != nil || row.AttemptCount < 0 || row.Generation < 1 {
+		return outboundapp.CampaignDispatchAttemptRecovery{}, errors.Join(outbound.ErrCampaignDispatchUnavailable, err)
+	}
+	result := outboundapp.CampaignDispatchAttemptRecovery{EffectID: effectID, EffectState: eer.State(row.EffectState), AttemptCount: row.AttemptCount}
+	if result.EffectState == eer.StateAttempted {
+		if !row.LeaseExpiresAt.Valid || !row.AttemptNumber.Valid || !row.AttemptGeneration.Valid || !row.AttemptFence.Valid || !row.StartedAt.Valid ||
+			row.AttemptNumber.Int32 != row.AttemptCount || row.AttemptGeneration.Int64 != row.Generation || row.AttemptFence.Int64 != row.LeaseFence {
+			return outboundapp.CampaignDispatchAttemptRecovery{}, outbound.ErrCampaignDispatchUnavailable
+		}
+		result.Lease = eer.Lease{EffectID: effectID, Generation: row.Generation, Fence: row.LeaseFence, ExpiresAt: row.LeaseExpiresAt.Time.UTC()}
+		result.Attempt = eer.Attempt{Number: row.AttemptNumber.Int32, Generation: row.AttemptGeneration.Int64, Fence: row.AttemptFence.Int64, StartedAt: row.StartedAt.Time.UTC()}
+	}
+	if row.Completion.Valid {
+		receipt := outboundport.CampaignDispatchProviderAttemptReceipt{
+			Completion: row.Completion.String, ReceiptDigest: eer.Digest(row.ProviderReceiptDigest.String),
+			BusinessCallDispatched: row.BusinessCallDispatched.Bool, RealExternalCallExecuted: row.RealExternalCallExecuted.Bool,
+			ProviderMessageID: textOrEmpty(row.ProviderMessageID), ProviderCode: textOrEmpty(row.ProviderCode),
+			ProviderResultReceived: row.ProviderResultReceived.Bool, DeliveryProven: row.DeliveryProven.Bool,
+			ReconciliationEvidenceDigest: eer.Digest(textOrEmpty(row.ReconciliationEvidenceDigest)),
+		}
+		if !validCampaignDispatchCompletion(receipt.Completion) || !outbound.ValidCampaignDispatchDigest(string(receipt.ReceiptDigest)) || !validCampaignProviderReceipt(receipt) {
+			return outboundapp.CampaignDispatchAttemptRecovery{}, outbound.ErrCampaignDispatchUnavailable
+		}
+		result.Receipt, result.ReceiptExists = receipt, true
+	}
+	return result, nil
 }
 
 func (repository *CampaignDispatchRepository) LoadAudienceCampaignDispatchReconciliationEvidence(ctx context.Context, effectID string) (outboundport.CampaignDispatchReconciliationEvidence, bool, error) {

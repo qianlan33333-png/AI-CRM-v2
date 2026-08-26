@@ -131,13 +131,32 @@ func TestCampaignWeComAdapterUsesFrozenAudienceTargetAndCapturesProviderResult(t
 		t.Fatal(err)
 	}
 	var evidence outboundport.CampaignDispatchProviderAttemptReceipt
-	result, err := adapter.ExecuteWithCampaignDispatchProviderEvidence(context.Background(), envelope, eer.Attempt{Number: 1}, func(value outboundport.CampaignDispatchProviderAttemptReceipt) { evidence = value })
-	if err != nil || result.Completion != eer.CompletionExecuted || evidence.ProviderMessageID != "provider-message-id" || !evidence.ProviderResultReceived {
+	result, err := adapter.ExecuteWithCampaignDispatchProviderEvidence(context.Background(), envelope, eer.Attempt{Number: 1}, func(value outboundport.CampaignDispatchProviderAttemptReceipt) error { evidence = value; return nil })
+	if err != nil || result.Completion != eer.CompletionExecuted || evidence.Completion != string(eer.CompletionExecuted) || evidence.ReceiptDigest != result.ReceiptDigest || evidence.ProviderMessageID != "provider-message-id" || !evidence.ProviderResultReceived {
 		t.Fatalf("result=%+v evidence=%+v err=%v", result, evidence, err)
 	}
 	var payload map[string]string
 	if err = json.Unmarshal(provider.request.Payload, &payload); err != nil || payload["sender"] != "frozen-owner" || payload["external_userid"] != "frozen-external" || payload["text"] != "hello" {
 		t.Fatalf("payload=%s err=%v", provider.request.Payload, err)
+	}
+}
+
+func TestCampaignWeComAdapterReturnsReceiptPersistenceConflictAfterSingleProviderCall(t *testing.T) {
+	envelope, err := eer.NewEnvelope(eer.EnvelopeInput{Owner: eer.OwnerOutbound, Kind: eer.KindOutboundMessage, SourceRefDigest: workerDigest("source"), TargetRefDigest: workerDigest("target"), PayloadDigest: workerDigest("payload"), PolicyVersionHash: workerDigest("policy")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	loader := &campaignWeComLoaderSpy{request: outboundport.CampaignDispatchProviderRequest{DispatchID: 41, HandoffID: 19, CustomerID: 7, StepIndex: 2, Content: "hello", PayloadDigest: string(envelope.PayloadDigest()), AudiencePackageID: 33, SenderUserIDSnapshot: "frozen-owner", ExternalUserIDSnapshot: "frozen-external"}}
+	provider := &campaignWeComProviderSpy{result: outboundapp.ProviderResult{MessageID: "provider-message-id", ProviderResultReceived: true, BusinessCallDispatched: true, RealExternalCallExecuted: true}}
+	adapter, err := NewCampaignWeComAdapter(loader, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := adapter.ExecuteWithCampaignDispatchProviderEvidence(context.Background(), envelope, eer.Attempt{Number: 1}, func(outboundport.CampaignDispatchProviderAttemptReceipt) error {
+		return errors.New("receipt conflict")
+	})
+	if err == nil || !errors.Is(err, ErrCampaignWeComAdapter) || result.Completion != eer.CompletionExecuted || provider.calls != 1 {
+		t.Fatalf("result=%+v err=%v provider calls=%d", result, err, provider.calls)
 	}
 }
 

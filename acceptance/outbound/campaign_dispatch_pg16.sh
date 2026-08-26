@@ -25,6 +25,25 @@ MIGRATION_TEST_DATABASE_URL="$database_url" MIGRATION_TEST_DATABASE_NAME="$tempo
 [[ "$(psql "$database_url" -X -q -At -c 'SHOW server_version_num')" = '160014' ]]
 [[ "$(psql "$database_url" -X -q -At -c 'SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id = 78 AND is_applied)')" = 't' ]]
 [[ "$(psql "$database_url" -X -q -At -c 'SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id = 99 AND is_applied)')" = 't' ]]
+psql "$database_url" -X -q -v ON_ERROR_STOP=1 <<'SQL'
+BEGIN;
+WITH handoff AS (
+  INSERT INTO public.outbound_campaign_handoffs(
+    campaign_code,plan_id,review_version,source_digest,target_digest,content_digest,
+    target_count,step_count,status,accepted_by_actor_id,accepted_at
+  ) VALUES(
+    'audience-block-reasons','ctp_' || repeat('a',64),3,decode(repeat('11',32),'hex'),
+    decode(repeat('22',32),'hex'),decode(repeat('33',32),'hex'),2,1,'held',1,now()
+  ) RETURNING id
+)
+INSERT INTO public.outbound_campaign_dispatches(
+  handoff_id,customer_id,step_index,recipient_digest,payload_digest,state,block_reason
+)
+SELECT id,customer_id,1,'sha256:' || repeat('1',64),'sha256:' || repeat('2',64),'blocked',reason
+FROM handoff
+CROSS JOIN (VALUES (1::bigint,'sender_not_allowed'),(2::bigint,'target_unresolved')) AS blocked(customer_id,reason);
+ROLLBACK;
+SQL
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 98 >/dev/null
 [[ "$(psql "$database_url" -X -q -At -c 'SELECT EXISTS (SELECT 1 FROM goose_db_version WHERE version_id = 99 AND is_applied)')" = 'f' ]]
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up >/dev/null

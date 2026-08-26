@@ -32,7 +32,7 @@ type Querier interface {
 	InsertOutboundCampaignHandoff(ctx context.Context, arg InsertOutboundCampaignHandoffParams) (int64, error)
 	InsertOutboundCampaignHandoffCustomerLinks(ctx context.Context, arg InsertOutboundCampaignHandoffCustomerLinksParams) error
 	InsertOutboundCampaignHandoffStep(ctx context.Context, arg InsertOutboundCampaignHandoffStepParams) error
-	InsertOutboundCampaignProviderAttemptReceipt(ctx context.Context, arg InsertOutboundCampaignProviderAttemptReceiptParams) error
+	InsertOutboundCampaignProviderAttemptReceipt(ctx context.Context, arg InsertOutboundCampaignProviderAttemptReceiptParams) (InsertOutboundCampaignProviderAttemptReceiptRow, error)
 	ListOutboundAttemptReadModels(ctx context.Context, taskID int64) ([]ListOutboundAttemptReadModelsRow, error)
 	ListOutboundCampaignDispatchCandidates(ctx context.Context, handoffID int64) ([]ListOutboundCampaignDispatchCandidatesRow, error)
 	ListOutboundCampaignDispatchReconciliation(ctx context.Context, handoffID int64) ([]ListOutboundCampaignDispatchReconciliationRow, error)
@@ -44,6 +44,7 @@ type Querier interface {
 	LoadLatestOutboundTaskJobLink(ctx context.Context, taskID int64) (LoadLatestOutboundTaskJobLinkRow, error)
 	LoadOutboundAttemptHistory(ctx context.Context, historyID int64) (LoadOutboundAttemptHistoryRow, error)
 	LoadOutboundAudienceCampaignDispatchReconciliationEvidence(ctx context.Context, externalEffectID pgtype.Int8) (LoadOutboundAudienceCampaignDispatchReconciliationEvidenceRow, error)
+	LoadOutboundCampaignDispatchAttemptRecovery(ctx context.Context, externalEffectID pgtype.Int8) (LoadOutboundCampaignDispatchAttemptRecoveryRow, error)
 	LoadOutboundCampaignDispatchByEffect(ctx context.Context, externalEffectID pgtype.Int8) (LoadOutboundCampaignDispatchByEffectRow, error)
 	LoadOutboundCampaignDispatchProviderRequest(ctx context.Context, payloadDigest string) (LoadOutboundCampaignDispatchProviderRequestRow, error)
 	LoadOutboundCampaignDispatchReceipt(ctx context.Context, arg LoadOutboundCampaignDispatchReceiptParams) (OutboundCampaignDispatchReceipt, error)

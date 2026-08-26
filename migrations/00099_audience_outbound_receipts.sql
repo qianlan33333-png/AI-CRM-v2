@@ -6,6 +6,13 @@
 ALTER TABLE public.outbound_campaign_dispatches
   ADD COLUMN sender_userid_snapshot TEXT,
   ADD COLUMN external_userid_snapshot TEXT,
+  DROP CONSTRAINT outbound_campaign_dispatches_block_reason_check,
+  ADD CONSTRAINT outbound_campaign_dispatches_block_reason_check CHECK (
+    block_reason IN (
+      'external_gate_disabled','identity_unresolved','contact_policy','inactive_customer',
+      'provider_preflight_failed','sender_not_allowed','target_unresolved'
+    )
+  ),
   ADD CONSTRAINT outbound_campaign_dispatches_target_snapshot_shape CHECK (
     (sender_userid_snapshot IS NULL AND external_userid_snapshot IS NULL)
     OR (
@@ -15,6 +22,12 @@ ALTER TABLE public.outbound_campaign_dispatches
       AND length(external_userid_snapshot) BETWEEN 1 AND 1024
     )
   );
+
+-- One Provider attempt has exactly one pre-reconciliation outcome. The later
+-- reconciliation row remains distinct and append-only.
+CREATE UNIQUE INDEX outbound_campaign_provider_attempt_receipts_attempt_once
+  ON public.outbound_campaign_provider_attempt_receipts(external_effect_id, attempt_number)
+  WHERE completion <> 'reconciled';
 
 ALTER TABLE public.outbound_campaign_provider_attempt_receipts
   DROP CONSTRAINT outbound_campaign_provider_attempt_receip_delivery_proven_check,
@@ -62,6 +75,7 @@ BEGIN
   IF EXISTS (
     SELECT 1 FROM public.outbound_campaign_dispatches
     WHERE sender_userid_snapshot IS NOT NULL OR external_userid_snapshot IS NOT NULL
+       OR block_reason IN ('sender_not_allowed','target_unresolved')
   ) OR EXISTS (
     SELECT 1 FROM public.outbound_campaign_provider_attempt_receipts
     WHERE provider_message_id IS NOT NULL OR provider_code IS NOT NULL OR provider_result_received
@@ -72,6 +86,8 @@ BEGIN
 END;
 $$;
 -- +goose StatementEnd
+
+DROP INDEX public.outbound_campaign_provider_attempt_receipts_attempt_once;
 
 -- Restore the exact 00078 guard before dropping the immutable snapshots.
 -- +goose StatementBegin
@@ -101,5 +117,9 @@ ALTER TABLE public.outbound_campaign_provider_attempt_receipts
   ADD CONSTRAINT outbound_campaign_provider_attempt_receip_delivery_proven_check CHECK (NOT delivery_proven);
 ALTER TABLE public.outbound_campaign_dispatches
   DROP CONSTRAINT outbound_campaign_dispatches_target_snapshot_shape,
+  DROP CONSTRAINT outbound_campaign_dispatches_block_reason_check,
+  ADD CONSTRAINT outbound_campaign_dispatches_block_reason_check CHECK (
+    block_reason IN ('external_gate_disabled','identity_unresolved','contact_policy','inactive_customer','provider_preflight_failed')
+  ),
   DROP COLUMN external_userid_snapshot,
   DROP COLUMN sender_userid_snapshot;

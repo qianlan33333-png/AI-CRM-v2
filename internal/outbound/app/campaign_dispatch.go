@@ -44,6 +44,24 @@ type CampaignDispatchRuntime interface {
 	Claim(context.Context, eer.ClaimCommand) (eer.Lease, eer.Projection, error)
 	RunAttempt(context.Context, eer.Lease, eer.Adapter) (eer.Projection, eer.OperationReceipt, error)
 	Reconcile(context.Context, eer.ReconcileCommand) (eer.Projection, eer.OperationReceipt, error)
+	RecoverAttemptedToUnknown(context.Context, eer.RecoverAttemptedCommand) (eer.Projection, eer.OperationReceipt, error)
+	CompleteRecordedAttempt(context.Context, eer.CompleteRecordedAttemptCommand) (eer.Projection, eer.OperationReceipt, error)
+}
+
+// CampaignDispatchAttemptRecovery is the private owner-domain control needed
+// to close a persisted attempted fence without calling Provider again.
+type CampaignDispatchAttemptRecovery struct {
+	EffectID      string
+	EffectState   eer.State
+	AttemptCount  int32
+	Lease         eer.Lease
+	Attempt       eer.Attempt
+	Receipt       outboundport.CampaignDispatchProviderAttemptReceipt
+	ReceiptExists bool
+}
+
+type campaignDispatchAttemptRecoveryReader interface {
+	LoadCampaignDispatchAttemptRecovery(context.Context, string) (CampaignDispatchAttemptRecovery, error)
 }
 
 type CampaignDispatchService struct {
@@ -63,18 +81,28 @@ type campaignDispatchEvidenceAdapter struct {
 	completed               bool
 	providerEvidence        outboundport.CampaignDispatchProviderAttemptReceipt
 	providerEvidencePresent bool
+	providerEvidenceSaved   bool
+	providerEvidenceErr     error
+	persist                 func(context.Context, eer.Attempt, outboundport.CampaignDispatchProviderAttemptReceipt) error
 }
 
 type campaignDispatchProviderEvidenceAdapter interface {
-	ExecuteWithCampaignDispatchProviderEvidence(context.Context, eer.EffectEnvelope, eer.Attempt, func(outboundport.CampaignDispatchProviderAttemptReceipt)) (eer.AdapterResult, error)
+	ExecuteWithCampaignDispatchProviderEvidence(context.Context, eer.EffectEnvelope, eer.Attempt, func(outboundport.CampaignDispatchProviderAttemptReceipt) error) (eer.AdapterResult, error)
 }
 
 func (adapter *campaignDispatchEvidenceAdapter) Execute(ctx context.Context, envelope eer.EffectEnvelope, attempt eer.Attempt) (eer.AdapterResult, error) {
 	var result eer.AdapterResult
 	var err error
 	if provider, ok := adapter.adapter.(campaignDispatchProviderEvidenceAdapter); ok {
-		result, err = provider.ExecuteWithCampaignDispatchProviderEvidence(ctx, envelope, attempt, func(evidence outboundport.CampaignDispatchProviderAttemptReceipt) {
+		result, err = provider.ExecuteWithCampaignDispatchProviderEvidence(ctx, envelope, attempt, func(evidence outboundport.CampaignDispatchProviderAttemptReceipt) error {
 			adapter.providerEvidence, adapter.providerEvidencePresent = evidence, true
+			if adapter.persist == nil {
+				adapter.providerEvidenceErr = outbound.ErrCampaignDispatchUnavailable
+				return adapter.providerEvidenceErr
+			}
+			adapter.providerEvidenceErr = adapter.persist(ctx, attempt, evidence)
+			adapter.providerEvidenceSaved = adapter.providerEvidenceErr == nil
+			return adapter.providerEvidenceErr
 		})
 	} else {
 		result, err = adapter.adapter.Execute(ctx, envelope, attempt)
@@ -322,11 +350,16 @@ func (service *CampaignDispatchService) RunEffect(ctx context.Context, effectID 
 	if ctx == nil || service == nil || adapter == nil || effectID == "" {
 		return outbound.ErrCampaignDispatchInvalid
 	}
+	if handled, recoveryErr := service.recoverCampaignDispatchAttempt(ctx, effectID); handled {
+		return recoveryErr
+	}
 	lease, _, err := service.runtime.Claim(ctx, eer.ClaimCommand{EffectID: effectID, WorkerDigest: workerDigest})
 	if err != nil {
 		return campaignDispatchError(err)
 	}
-	captured := &campaignDispatchEvidenceAdapter{adapter: adapter}
+	captured := &campaignDispatchEvidenceAdapter{adapter: adapter, persist: func(recordCtx context.Context, attempt eer.Attempt, evidence outboundport.CampaignDispatchProviderAttemptReceipt) error {
+		return service.repo.RecordCampaignProviderAttemptReceipt(recordCtx, effectID, attempt.Number, evidence)
+	}}
 	projection, receipt, runErr := service.runtime.RunAttempt(ctx, lease, captured)
 	state, valid := campaignDispatchState(projection.State)
 	if !valid {
@@ -347,10 +380,16 @@ func (service *CampaignDispatchService) RunEffect(ctx context.Context, effectID 
 			evidence.ProviderCode = captured.providerEvidence.ProviderCode
 			evidence.ProviderResultReceived = captured.providerEvidence.ProviderResultReceived
 		}
+		if captured.providerEvidenceSaved {
+			return nil
+		}
 		return service.repo.RecordCampaignProviderAttemptReceipt(tx, effectID, projection.AttemptCount, evidence)
 	})
 	if writeErr != nil {
 		return campaignDispatchError(writeErr)
+	}
+	if captured.providerEvidenceErr != nil {
+		return campaignDispatchError(captured.providerEvidenceErr)
 	}
 	// A transport ambiguity has already become an EER outcome_unknown fact.
 	// Returning nil prevents River from invoking the adapter again; only manual
@@ -362,6 +401,74 @@ func (service *CampaignDispatchService) RunEffect(ctx context.Context, effectID 
 		return campaignDispatchError(runErr)
 	}
 	return nil
+}
+
+func (service *CampaignDispatchService) recoverCampaignDispatchAttempt(ctx context.Context, effectID string) (bool, error) {
+	reader, ok := service.repo.(campaignDispatchAttemptRecoveryReader)
+	if !ok {
+		return false, nil
+	}
+	recovery, err := reader.LoadCampaignDispatchAttemptRecovery(ctx, effectID)
+	if err != nil || recovery.EffectID != effectID {
+		return true, campaignDispatchError(err)
+	}
+	switch recovery.EffectState {
+	case eer.StateQueued:
+		return false, nil
+	case eer.StateAttempted:
+		if recovery.Lease.EffectID != effectID || recovery.Attempt.Number < 1 || recovery.AttemptCount != recovery.Attempt.Number {
+			return true, outbound.ErrCampaignDispatchUnavailable
+		}
+		if recovery.Lease.ExpiresAt.After(service.now().UTC()) {
+			return true, outbound.ErrCampaignDispatchUnavailable
+		}
+		var projection eer.Projection
+		if recovery.ReceiptExists {
+			if recovery.Receipt.Completion != string(eer.StateExecuted) || !recovery.Receipt.BusinessCallDispatched || !recovery.Receipt.RealExternalCallExecuted {
+				return true, outbound.ErrCampaignDispatchUnavailable
+			}
+			projection, _, err = service.runtime.CompleteRecordedAttempt(ctx, eer.CompleteRecordedAttemptCommand{
+				Lease: recovery.Lease, Attempt: recovery.Attempt,
+				Result: eer.AdapterResult{Completion: eer.CompletionExecuted, ReceiptDigest: recovery.Receipt.ReceiptDigest,
+					BusinessCallDispatched: recovery.Receipt.BusinessCallDispatched, RealExternalCallExecuted: recovery.Receipt.RealExternalCallExecuted},
+			})
+		} else {
+			projection, _, err = service.runtime.RecoverAttemptedToUnknown(ctx, eer.RecoverAttemptedCommand{Lease: recovery.Lease})
+		}
+		if err != nil {
+			return true, campaignDispatchError(err)
+		}
+		state, valid := campaignDispatchState(projection.State)
+		if !valid || projection.ID != effectID {
+			return true, outbound.ErrCampaignDispatchUnavailable
+		}
+		if err = service.uow.Within(ctx, func(tx context.Context) error {
+			return service.repo.UpdateCampaignDispatchState(tx, effectID, state)
+		}); err != nil {
+			return true, campaignDispatchError(err)
+		}
+		return true, nil
+	case eer.StateExecuted, eer.StateOutcomeUnknown, eer.StateRetryableFailed, eer.StateFinalFailed:
+		state, valid := campaignDispatchState(recovery.EffectState)
+		if !valid {
+			return true, outbound.ErrCampaignDispatchUnavailable
+		}
+		if err = service.uow.Within(ctx, func(tx context.Context) error {
+			return service.repo.UpdateCampaignDispatchState(tx, effectID, state)
+		}); err != nil {
+			return true, campaignDispatchError(err)
+		}
+		return true, nil
+	case eer.StateReconciled:
+		if err = service.uow.Within(ctx, func(tx context.Context) error {
+			return service.repo.UpdateCampaignDispatchState(tx, effectID, outbound.CampaignDispatchReconciled)
+		}); err != nil {
+			return true, campaignDispatchError(err)
+		}
+		return true, nil
+	default:
+		return true, outbound.ErrCampaignDispatchUnavailable
+	}
 }
 
 func (service *CampaignDispatchService) ReconcileEffect(ctx context.Context, command eer.ReconcileCommand) error {
@@ -409,56 +516,89 @@ func (service *CampaignDispatchService) ManualReconcile(ctx context.Context, com
 	if ctx == nil || service == nil || !validCampaignDispatchReconcileCommand(command) {
 		return outbound.CampaignDispatchSummary{}, outbound.ErrCampaignDispatchInvalid
 	}
-	var summary outbound.CampaignDispatchSummary
+	var handoffID int64
+	var binding outboundport.CampaignDispatchBinding
+	var audienceEvidence outboundport.CampaignDispatchReconciliationEvidence
+	var audience bool
 	err := service.uow.Within(ctx, func(tx context.Context) error {
-		handoffID, err := service.repo.LockCampaignHandoffForDispatch(tx, command.CampaignCode, command.PlanID)
-		if err != nil {
-			return err
+		var readErr error
+		handoffID, readErr = service.repo.ReadCampaignHandoffForDispatch(tx, command.CampaignCode, command.PlanID)
+		if readErr != nil {
+			return readErr
 		}
-		binding, err := service.repo.LoadCampaignDispatchByEffect(tx, command.EffectID)
-		if err != nil || binding.HandoffID != handoffID {
+		binding, readErr = service.repo.LoadCampaignDispatchByEffect(tx, command.EffectID)
+		if readErr != nil || binding.HandoffID != handoffID {
 			return outbound.ErrCampaignHandoffNotFound
 		}
-		evidence := outboundport.CampaignDispatchProviderAttemptReceipt{Completion: string(eer.StateReconciled)}
-		reconcileEvidenceDigest := eer.Digest(command.EvidenceDigest)
-		if audienceEvidence, audience, evidenceErr := service.audienceReconciliationEvidence(tx, command.EffectID); evidenceErr != nil {
-			return evidenceErr
-		} else if audience {
-			if service.evidence == nil {
-				return outbound.ErrCampaignDispatchUnavailable
-			}
-			deliveryProven, evidenceDigest, verifyErr := service.evidence.VerifyAudienceCampaignDispatch(tx, audienceEvidence)
-			if verifyErr != nil || !outbound.ValidCampaignDispatchDigest(string(evidenceDigest)) {
-				return errors.Join(outbound.ErrCampaignDispatchUnavailable, verifyErr)
-			}
-			evidence.DeliveryProven, evidence.ReconciliationEvidenceDigest = deliveryProven, evidenceDigest
-			evidence.ProviderMessageID, evidence.ProviderResultReceived = audienceEvidence.ProviderMessageID, true
-			evidence.BusinessCallDispatched = audienceEvidence.BusinessCallDispatched
-			evidence.RealExternalCallExecuted = audienceEvidence.RealExternalCallExecuted
-			reconcileEvidenceDigest = evidenceDigest
+		audienceEvidence, audience, readErr = service.audienceReconciliationEvidence(tx, command.EffectID)
+		return readErr
+	})
+	if err != nil {
+		return outbound.CampaignDispatchSummary{}, campaignDispatchError(err)
+	}
+
+	evidence := outboundport.CampaignDispatchProviderAttemptReceipt{Completion: string(eer.StateReconciled), ReconciliationEvidenceDigest: eer.Digest(command.EvidenceDigest)}
+	reconcileEvidenceDigest := eer.Digest(command.EvidenceDigest)
+	if audience {
+		if service.evidence == nil || audienceEvidence.ProviderMessageID == "" {
+			return outbound.CampaignDispatchSummary{}, outbound.ErrCampaignDispatchUnavailable
 		}
-		if evidence.ReconciliationEvidenceDigest == "" {
-			evidence.ReconciliationEvidenceDigest = eer.Digest(command.EvidenceDigest)
+		// The protocol query is intentionally outside every database UoW. The
+		// immutable Provider receipt supplies its exact lookup coordinates.
+		deliveryProven, evidenceDigest, verifyErr := service.evidence.VerifyAudienceCampaignDispatch(ctx, audienceEvidence)
+		if verifyErr != nil || !outbound.ValidCampaignDispatchDigest(string(evidenceDigest)) {
+			return outbound.CampaignDispatchSummary{}, errors.Join(outbound.ErrCampaignDispatchUnavailable, verifyErr)
 		}
-		projection, receipt, err := service.runtime.Reconcile(tx, eer.ReconcileCommand{
+		evidence.DeliveryProven, evidence.ReconciliationEvidenceDigest = deliveryProven, evidenceDigest
+		evidence.ProviderMessageID, evidence.ProviderResultReceived = audienceEvidence.ProviderMessageID, true
+		evidence.BusinessCallDispatched, evidence.RealExternalCallExecuted = audienceEvidence.BusinessCallDispatched, audienceEvidence.RealExternalCallExecuted
+		reconcileEvidenceDigest = evidenceDigest
+	}
+
+	reader, ok := service.repo.(campaignDispatchAttemptRecoveryReader)
+	if !ok {
+		return outbound.CampaignDispatchSummary{}, outbound.ErrCampaignDispatchUnavailable
+	}
+	recovery, err := reader.LoadCampaignDispatchAttemptRecovery(ctx, command.EffectID)
+	if err != nil || recovery.AttemptCount < 1 {
+		return outbound.CampaignDispatchSummary{}, campaignDispatchError(err)
+	}
+	attemptNumber := recovery.AttemptCount
+	switch recovery.EffectState {
+	case eer.StateExecuted:
+		if !audience || !evidence.DeliveryProven {
+			return outbound.CampaignDispatchSummary{}, outbound.ErrCampaignDispatchUnavailable
+		}
+		// Delivery verification after executed records protocol proof only; it
+		// must not rewrite EER executed into reconciled.
+		evidence.ReceiptDigest = audienceEvidence.ProviderReceiptDigest
+	case eer.StateOutcomeUnknown:
+		projection, receipt, reconcileErr := service.runtime.Reconcile(ctx, eer.ReconcileCommand{
 			Lease:            eer.Lease{EffectID: command.EffectID, Generation: command.Generation, Fence: command.Fence, ExpiresAt: command.LeaseExpiresAt},
 			ReceiptKeyDigest: digest("manual-reconcile", strconv.FormatInt(command.ActorID, 10), command.IdempotencyKey), EvidenceDigest: reconcileEvidenceDigest,
 		})
-		if err != nil {
-			return err
-		}
-		if projection.State != eer.StateReconciled {
-			return outbound.ErrCampaignDispatchUnavailable
-		}
-		if err = service.repo.UpdateCampaignDispatchState(tx, command.EffectID, outbound.CampaignDispatchReconciled); err != nil {
-			return err
+		if reconcileErr != nil || projection.State != eer.StateReconciled || projection.AttemptCount != attemptNumber {
+			return outbound.CampaignDispatchSummary{}, campaignDispatchError(reconcileErr)
 		}
 		evidence.ReceiptDigest = receipt.CommandDigest
-		if err = service.repo.RecordCampaignProviderAttemptReceipt(tx, command.EffectID, projection.AttemptCount, evidence); err != nil {
-			return err
+		binding.State = outbound.CampaignDispatchReconciled
+	default:
+		return outbound.CampaignDispatchSummary{}, outbound.ErrCampaignDispatchUnavailable
+	}
+
+	var summary outbound.CampaignDispatchSummary
+	err = service.uow.Within(ctx, func(tx context.Context) error {
+		if binding.State == outbound.CampaignDispatchReconciled {
+			if updateErr := service.repo.UpdateCampaignDispatchState(tx, command.EffectID, outbound.CampaignDispatchReconciled); updateErr != nil {
+				return updateErr
+			}
 		}
-		summary, err = service.repo.ReadCampaignDispatchSummary(tx, handoffID)
-		return err
+		if recordErr := service.repo.RecordCampaignProviderAttemptReceipt(tx, command.EffectID, attemptNumber, evidence); recordErr != nil {
+			return recordErr
+		}
+		var readErr error
+		summary, readErr = service.repo.ReadCampaignDispatchSummary(tx, handoffID)
+		return readErr
 	})
 	if err != nil {
 		return outbound.CampaignDispatchSummary{}, campaignDispatchError(err)

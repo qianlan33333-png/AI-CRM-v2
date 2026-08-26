@@ -88,13 +88,34 @@ FOR KEY SHARE OF handoff;
 UPDATE public.outbound_campaign_dispatches SET state=$2, updated_at=now()
 WHERE external_effect_id=$1 AND state <> 'blocked';
 
--- name: InsertOutboundCampaignProviderAttemptReceipt :exec
+-- name: InsertOutboundCampaignProviderAttemptReceipt :one
 INSERT INTO public.outbound_campaign_provider_attempt_receipts(
   external_effect_id,attempt_number,completion,provider_receipt_digest,business_call_dispatched,real_external_call_executed,
   provider_message_id,provider_code,provider_result_received,delivery_proven,reconciliation_evidence_digest
 )
 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-ON CONFLICT(external_effect_id,attempt_number,completion) DO NOTHING;
+ON CONFLICT(external_effect_id,attempt_number,completion) DO UPDATE
+SET external_effect_id=public.outbound_campaign_provider_attempt_receipts.external_effect_id
+RETURNING id,external_effect_id,attempt_number,completion,provider_receipt_digest,
+          business_call_dispatched,real_external_call_executed,provider_message_id,provider_code,
+          provider_result_received,delivery_proven,reconciliation_evidence_digest,created_at;
+
+-- name: LoadOutboundCampaignDispatchAttemptRecovery :one
+SELECT effect.state AS effect_state,effect.attempt_count,effect.generation,effect.lease_fence,effect.lease_expires_at,
+       attempt.number AS attempt_number,attempt.generation AS attempt_generation,attempt.fence AS attempt_fence,
+       attempt.started_at,
+       receipt.completion,receipt.provider_receipt_digest,receipt.business_call_dispatched,
+       receipt.real_external_call_executed,receipt.provider_message_id,receipt.provider_code,
+       receipt.provider_result_received,receipt.delivery_proven,receipt.reconciliation_evidence_digest
+FROM public.outbound_campaign_dispatches AS dispatch
+JOIN public.external_effects AS effect ON effect.id=dispatch.external_effect_id
+LEFT JOIN public.external_effect_attempts AS attempt
+  ON attempt.effect_id=effect.id AND attempt.number=effect.attempt_count
+LEFT JOIN public.outbound_campaign_provider_attempt_receipts AS receipt
+  ON receipt.external_effect_id=effect.id AND receipt.attempt_number=effect.attempt_count
+ AND receipt.completion <> 'reconciled'
+WHERE dispatch.external_effect_id=$1
+LIMIT 1;
 
 -- name: ReadOutboundCampaignDispatchSourceKind :one
 SELECT COALESCE(plan.source_kind,'') AS source_kind
@@ -112,6 +133,7 @@ JOIN public.outbound_campaign_handoffs AS handoff ON handoff.id=dispatch.handoff
 JOIN public.cloud_campaign_touch_plans AS plan ON plan.id=handoff.plan_id
 JOIN public.outbound_campaign_provider_attempt_receipts AS receipt ON receipt.external_effect_id=dispatch.external_effect_id
 WHERE dispatch.external_effect_id=$1 AND plan.source_kind='ai_audience_package_members'
+  AND receipt.completion <> 'reconciled'
   AND receipt.provider_result_received AND receipt.provider_message_id IS NOT NULL
 ORDER BY receipt.created_at DESC, receipt.id DESC
 LIMIT 1

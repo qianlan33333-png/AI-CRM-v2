@@ -143,13 +143,17 @@ func (q *Queries) InsertOutboundCampaignDispatchWithAudienceSnapshot(ctx context
 	return i, err
 }
 
-const insertOutboundCampaignProviderAttemptReceipt = `-- name: InsertOutboundCampaignProviderAttemptReceipt :exec
+const insertOutboundCampaignProviderAttemptReceipt = `-- name: InsertOutboundCampaignProviderAttemptReceipt :one
 INSERT INTO public.outbound_campaign_provider_attempt_receipts(
   external_effect_id,attempt_number,completion,provider_receipt_digest,business_call_dispatched,real_external_call_executed,
   provider_message_id,provider_code,provider_result_received,delivery_proven,reconciliation_evidence_digest
 )
 VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-ON CONFLICT(external_effect_id,attempt_number,completion) DO NOTHING
+ON CONFLICT(external_effect_id,attempt_number,completion) DO UPDATE
+SET external_effect_id=public.outbound_campaign_provider_attempt_receipts.external_effect_id
+RETURNING id,external_effect_id,attempt_number,completion,provider_receipt_digest,
+          business_call_dispatched,real_external_call_executed,provider_message_id,provider_code,
+          provider_result_received,delivery_proven,reconciliation_evidence_digest,created_at
 `
 
 type InsertOutboundCampaignProviderAttemptReceiptParams struct {
@@ -166,8 +170,24 @@ type InsertOutboundCampaignProviderAttemptReceiptParams struct {
 	ReconciliationEvidenceDigest pgtype.Text `json:"reconciliation_evidence_digest"`
 }
 
-func (q *Queries) InsertOutboundCampaignProviderAttemptReceipt(ctx context.Context, arg InsertOutboundCampaignProviderAttemptReceiptParams) error {
-	_, err := q.db.Exec(ctx, insertOutboundCampaignProviderAttemptReceipt,
+type InsertOutboundCampaignProviderAttemptReceiptRow struct {
+	ID                           int64              `json:"id"`
+	ExternalEffectID             int64              `json:"external_effect_id"`
+	AttemptNumber                int32              `json:"attempt_number"`
+	Completion                   string             `json:"completion"`
+	ProviderReceiptDigest        string             `json:"provider_receipt_digest"`
+	BusinessCallDispatched       bool               `json:"business_call_dispatched"`
+	RealExternalCallExecuted     bool               `json:"real_external_call_executed"`
+	ProviderMessageID            pgtype.Text        `json:"provider_message_id"`
+	ProviderCode                 pgtype.Text        `json:"provider_code"`
+	ProviderResultReceived       bool               `json:"provider_result_received"`
+	DeliveryProven               bool               `json:"delivery_proven"`
+	ReconciliationEvidenceDigest pgtype.Text        `json:"reconciliation_evidence_digest"`
+	CreatedAt                    pgtype.Timestamptz `json:"created_at"`
+}
+
+func (q *Queries) InsertOutboundCampaignProviderAttemptReceipt(ctx context.Context, arg InsertOutboundCampaignProviderAttemptReceiptParams) (InsertOutboundCampaignProviderAttemptReceiptRow, error) {
+	row := q.db.QueryRow(ctx, insertOutboundCampaignProviderAttemptReceipt,
 		arg.ExternalEffectID,
 		arg.AttemptNumber,
 		arg.Completion,
@@ -180,7 +200,23 @@ func (q *Queries) InsertOutboundCampaignProviderAttemptReceipt(ctx context.Conte
 		arg.DeliveryProven,
 		arg.ReconciliationEvidenceDigest,
 	)
-	return err
+	var i InsertOutboundCampaignProviderAttemptReceiptRow
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalEffectID,
+		&i.AttemptNumber,
+		&i.Completion,
+		&i.ProviderReceiptDigest,
+		&i.BusinessCallDispatched,
+		&i.RealExternalCallExecuted,
+		&i.ProviderMessageID,
+		&i.ProviderCode,
+		&i.ProviderResultReceived,
+		&i.DeliveryProven,
+		&i.ReconciliationEvidenceDigest,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const listOutboundCampaignDispatchCandidates = `-- name: ListOutboundCampaignDispatchCandidates :many
@@ -257,6 +293,7 @@ JOIN public.outbound_campaign_handoffs AS handoff ON handoff.id=dispatch.handoff
 JOIN public.cloud_campaign_touch_plans AS plan ON plan.id=handoff.plan_id
 JOIN public.outbound_campaign_provider_attempt_receipts AS receipt ON receipt.external_effect_id=dispatch.external_effect_id
 WHERE dispatch.external_effect_id=$1 AND plan.source_kind='ai_audience_package_members'
+  AND receipt.completion <> 'reconciled'
   AND receipt.provider_result_received AND receipt.provider_message_id IS NOT NULL
 ORDER BY receipt.created_at DESC, receipt.id DESC
 LIMIT 1
@@ -282,6 +319,71 @@ func (q *Queries) LoadOutboundAudienceCampaignDispatchReconciliationEvidence(ctx
 		&i.ProviderReceiptDigest,
 		&i.BusinessCallDispatched,
 		&i.RealExternalCallExecuted,
+	)
+	return i, err
+}
+
+const loadOutboundCampaignDispatchAttemptRecovery = `-- name: LoadOutboundCampaignDispatchAttemptRecovery :one
+SELECT effect.state AS effect_state,effect.attempt_count,effect.generation,effect.lease_fence,effect.lease_expires_at,
+       attempt.number AS attempt_number,attempt.generation AS attempt_generation,attempt.fence AS attempt_fence,
+       attempt.started_at,
+       receipt.completion,receipt.provider_receipt_digest,receipt.business_call_dispatched,
+       receipt.real_external_call_executed,receipt.provider_message_id,receipt.provider_code,
+       receipt.provider_result_received,receipt.delivery_proven,receipt.reconciliation_evidence_digest
+FROM public.outbound_campaign_dispatches AS dispatch
+JOIN public.external_effects AS effect ON effect.id=dispatch.external_effect_id
+LEFT JOIN public.external_effect_attempts AS attempt
+  ON attempt.effect_id=effect.id AND attempt.number=effect.attempt_count
+LEFT JOIN public.outbound_campaign_provider_attempt_receipts AS receipt
+  ON receipt.external_effect_id=effect.id AND receipt.attempt_number=effect.attempt_count
+ AND receipt.completion <> 'reconciled'
+WHERE dispatch.external_effect_id=$1
+LIMIT 1
+`
+
+type LoadOutboundCampaignDispatchAttemptRecoveryRow struct {
+	EffectState                  string             `json:"effect_state"`
+	AttemptCount                 int32              `json:"attempt_count"`
+	Generation                   int64              `json:"generation"`
+	LeaseFence                   int64              `json:"lease_fence"`
+	LeaseExpiresAt               pgtype.Timestamptz `json:"lease_expires_at"`
+	AttemptNumber                pgtype.Int4        `json:"attempt_number"`
+	AttemptGeneration            pgtype.Int8        `json:"attempt_generation"`
+	AttemptFence                 pgtype.Int8        `json:"attempt_fence"`
+	StartedAt                    pgtype.Timestamptz `json:"started_at"`
+	Completion                   pgtype.Text        `json:"completion"`
+	ProviderReceiptDigest        pgtype.Text        `json:"provider_receipt_digest"`
+	BusinessCallDispatched       pgtype.Bool        `json:"business_call_dispatched"`
+	RealExternalCallExecuted     pgtype.Bool        `json:"real_external_call_executed"`
+	ProviderMessageID            pgtype.Text        `json:"provider_message_id"`
+	ProviderCode                 pgtype.Text        `json:"provider_code"`
+	ProviderResultReceived       pgtype.Bool        `json:"provider_result_received"`
+	DeliveryProven               pgtype.Bool        `json:"delivery_proven"`
+	ReconciliationEvidenceDigest pgtype.Text        `json:"reconciliation_evidence_digest"`
+}
+
+func (q *Queries) LoadOutboundCampaignDispatchAttemptRecovery(ctx context.Context, externalEffectID pgtype.Int8) (LoadOutboundCampaignDispatchAttemptRecoveryRow, error) {
+	row := q.db.QueryRow(ctx, loadOutboundCampaignDispatchAttemptRecovery, externalEffectID)
+	var i LoadOutboundCampaignDispatchAttemptRecoveryRow
+	err := row.Scan(
+		&i.EffectState,
+		&i.AttemptCount,
+		&i.Generation,
+		&i.LeaseFence,
+		&i.LeaseExpiresAt,
+		&i.AttemptNumber,
+		&i.AttemptGeneration,
+		&i.AttemptFence,
+		&i.StartedAt,
+		&i.Completion,
+		&i.ProviderReceiptDigest,
+		&i.BusinessCallDispatched,
+		&i.RealExternalCallExecuted,
+		&i.ProviderMessageID,
+		&i.ProviderCode,
+		&i.ProviderResultReceived,
+		&i.DeliveryProven,
+		&i.ReconciliationEvidenceDigest,
 	)
 	return i, err
 }

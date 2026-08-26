@@ -151,6 +151,19 @@ func TestCampaignDispatchPG16FakeReceiptUnknownAndManualReconcile(t *testing.T) 
 	if len(provider.requests) != 1 || provider.requests[0].CustomerID != contactFacts.EligibleCustomerID || provider.requests[0].TemplateKey != outboundapp.TemplateTextNoticeV1 {
 		t.Fatalf("controlled WeCom provider requests=%+v", provider.requests)
 	}
+	var exactReceiptDigest string
+	if err = pool.QueryRow(ctx, `SELECT provider_receipt_digest FROM public.outbound_campaign_provider_attempt_receipts WHERE external_effect_id=substring($1 from 5)::bigint AND attempt_number=1 AND completion='executed'`, effectIDs[0]).Scan(&exactReceiptDigest); err != nil {
+		t.Fatal(err)
+	}
+	exactReceipt := outboundport.CampaignDispatchProviderAttemptReceipt{Completion: string(eer.CompletionExecuted), ReceiptDigest: eer.Digest(exactReceiptDigest), BusinessCallDispatched: true, RealExternalCallExecuted: true, ProviderMessageID: "fake-provider-message-id", ProviderResultReceived: true}
+	if err = repository.RecordCampaignProviderAttemptReceipt(ctx, effectIDs[0], 1, exactReceipt); err != nil {
+		t.Fatalf("exact provider receipt replay: %v", err)
+	}
+	conflictingReceipt := exactReceipt
+	conflictingReceipt.ProviderMessageID = "conflicting-provider-message-id"
+	if err = repository.RecordCampaignProviderAttemptReceipt(ctx, effectIDs[0], 1, conflictingReceipt); !errors.Is(err, outbound.ErrCampaignDispatchConflict) {
+		t.Fatalf("conflicting provider receipt error=%v, want conflict", err)
+	}
 	var providerPayload map[string]string
 	if err = json.Unmarshal(provider.requests[0].Payload, &providerPayload); err != nil || len(providerPayload) != 1 || providerPayload["text"] != "approved immutable content" {
 		t.Fatalf("controlled WeCom payload=%s err=%v", provider.requests[0].Payload, err)
