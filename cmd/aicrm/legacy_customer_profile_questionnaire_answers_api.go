@@ -321,6 +321,12 @@ func setLegacyCustomerProfileQuestionnaireAnswersSecurityHeaders(writer http.Res
 	writer.Header().Set("X-Content-Type-Options", "nosniff")
 }
 
+func legacyCustomerProfileQuestionnaireAnswersSecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		next.ServeHTTP(legacyCustomerProfileQuestionnaireAnswersHeaderWriter{ResponseWriter: writer}, request)
+	})
+}
+
 func writeLegacyCustomerProfileQuestionnaireAnswersJSON(writer http.ResponseWriter, status int, value any) {
 	writeJSON(legacyCustomerProfileQuestionnaireAnswersHeaderWriter{ResponseWriter: writer}, status, value)
 }

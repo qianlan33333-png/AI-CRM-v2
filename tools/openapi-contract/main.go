@@ -103,6 +103,7 @@ const (
 	p4ChannelAcquisitionEntrantEvidence        = "P4-CH03-2026-08-26"
 	p4SidebarOAuthEvidence                     = "P4-SB01-SIDEBAR-OAUTH-AGENT-CONFIG-2026-08-26"
 	p4SidebarSafeActivityEvidence              = "P4-SB02-SIDEBAR-SAFE-ACTIVITY-2026-08-26"
+	p4CustomerProfileReadEvidence              = "P4-CUSTOMER-PROFILE-READ-V2-2026-08-26"
 	p4ServicePeriodMemberGridCanonicalEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24"
 	c01DispatchOperationID                     = "dispatchOutboundCampaignHandoff"
 	c01DispatchReadOperationID                 = "getOutboundCampaignDispatchReconciliation"
@@ -831,6 +832,7 @@ var p4CustomerCompatOperations = map[string]bool{
 	"listLegacyCustomerTimeline": true, "getLegacyUser": true,
 	"listLegacyUserRecentMessages": true, "listLegacyUserTimeline": true,
 	"listLegacyExternalUserRecentMessages": true, "resolveLegacyIdentity": true,
+	"listLegacyCustomerProfileMessages": true, "listCustomerProfileSurveySubmissions": true,
 }
 
 var p4CustomerCompatLegacyMappings = map[string][]string{
@@ -842,6 +844,8 @@ var p4CustomerCompatLegacyMappings = map[string][]string{
 	"getLegacyUser":                        {"LEGACY-API-0743"},
 	"listLegacyUserRecentMessages":         {"LEGACY-API-0744"},
 	"listLegacyUserTimeline":               {"LEGACY-API-0745"},
+	"listLegacyCustomerProfileMessages":    {"LEGACY-API-0299"},
+	"listCustomerProfileSurveySubmissions": {"LEGACY-API-0300"},
 }
 
 var p4CustomerCompatEvidence = map[string]string{
@@ -849,6 +853,7 @@ var p4CustomerCompatEvidence = map[string]string{
 	"listLegacyCustomerTimeline": p4CI01DecisionEvidence, "getLegacyUser": p4CI01DecisionEvidence,
 	"listLegacyUserRecentMessages": p4CI01DecisionEvidence, "listLegacyUserTimeline": p4CI01DecisionEvidence,
 	"listLegacyExternalUserRecentMessages": p4CI01DecisionEvidence, "resolveLegacyIdentity": p4CI01DecisionEvidence,
+	"listLegacyCustomerProfileMessages": p4CustomerProfileReadEvidence, "listCustomerProfileSurveySubmissions": p4CustomerProfileReadEvidence,
 }
 
 var p4ConfigSettingsOperations = map[string]bool{
@@ -1229,6 +1234,8 @@ var authorizationContracts = map[string]authorizationContract{
 	"listLegacyUserRecentMessages":               {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"listLegacyUserTimeline":                     {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
 	"listLegacyExternalUserRecentMessages":       {"customers.read", map[string]string{"admin": "global", "ops": "global", "sales": "owner_staff"}},
+	"listLegacyCustomerProfileMessages":          {"admin.read", map[string]string{"admin": "global"}},
+	"listCustomerProfileSurveySubmissions":       {"admin.read", map[string]string{"admin": "global"}},
 	"resolveLegacyIdentity":                      {"identity.resolve", map[string]string{"api_client": "identity"}},
 	"getLegacyAppSettingsPage":                   {"config.settings.manage", map[string]string{"admin": "global"}},
 	"saveLegacyAppSettingsPage":                  {"config.settings.manage", map[string]string{"admin": "global"}},
