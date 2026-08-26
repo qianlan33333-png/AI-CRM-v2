@@ -249,6 +249,38 @@ func (q *Queries) CompletePendingReplay(ctx context.Context, arg CompletePending
 	return result.RowsAffected(), nil
 }
 
+const createVerifiedIdentityFixture = `-- name: CreateVerifiedIdentityFixture :exec
+INSERT INTO identities (
+  customer_id, kind, scope, normalized_value, normalizer_version,
+  assurance, source, review_fingerprint, fingerprint_key_version, bound_at
+) VALUES (
+  $1::bigint, $2::text, $3::text,
+  $4::text, 1, 'verified', $5::text,
+  $6::bytea, 1, now()
+)
+`
+
+type CreateVerifiedIdentityFixtureParams struct {
+	CustomerID        int64  `json:"customer_id"`
+	Kind              string `json:"kind"`
+	Scope             string `json:"scope"`
+	NormalizedValue   string `json:"normalized_value"`
+	Source            string `json:"source"`
+	ReviewFingerprint []byte `json:"review_fingerprint"`
+}
+
+func (q *Queries) CreateVerifiedIdentityFixture(ctx context.Context, arg CreateVerifiedIdentityFixtureParams) error {
+	_, err := q.db.Exec(ctx, createVerifiedIdentityFixture,
+		arg.CustomerID,
+		arg.Kind,
+		arg.Scope,
+		arg.NormalizedValue,
+		arg.Source,
+		arg.ReviewFingerprint,
+	)
+	return err
+}
+
 const deferPendingReplay = `-- name: DeferPendingReplay :execrows
 UPDATE pending_events
 SET version = version + 1
