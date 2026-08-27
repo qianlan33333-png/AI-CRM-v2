@@ -21,11 +21,12 @@ func TestParseCampaignStepTargetRejectsInvalid(t *testing.T) {
 }
 
 func TestReconciledTableSetIsClosed(t *testing.T) {
-	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3 {
+	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(servicePeriodReconciledTables) != 3 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3+len(servicePeriodReconciledTables) {
 		t.Fatalf("unexpected reconciled table set")
 	}
 	seen := map[string]bool{}
 	all := append(append(append([]string(nil), reconciledTables...), staticReconciledTables...), financeReconciledTables...)
+	all = append(all, servicePeriodReconciledTables...)
 	for _, table := range all {
 		if seen[table] {
 			t.Fatalf("duplicate source table %s", table)

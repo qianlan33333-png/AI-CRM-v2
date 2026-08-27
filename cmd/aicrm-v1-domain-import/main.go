@@ -59,8 +59,8 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	if *mode == "import" && len(environment.ArchiveKey) != 32 {
 		return fmt.Errorf("32-byte archive key is required for import")
 	}
-	if *mode == "reconcile" && *domain != "all" && *domain != "static" && *domain != "finance" && *domain != "channel" {
-		return fmt.Errorf("reconcile requires domain=all, static, finance or channel")
+	if *mode == "reconcile" && *domain != "all" && *domain != "static" && *domain != "finance" && *domain != "channel" && *domain != "service-period" {
+		return fmt.Errorf("reconcile requires domain=all, static, finance, channel or service-period")
 	}
 	var actors v1candidate.ActorIDs
 	var err error
@@ -93,6 +93,13 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 				return err
 			}
 			return json.NewEncoder(os.Stdout).Encode(map[string]any{"channel_reconciliation": result})
+		}
+		if *domain == "service-period" {
+			result, err := v1domain.ReconcileServicePeriod(ctx, pool, servicePeriodImportVersion, *archiveRunID)
+			if err != nil {
+				return err
+			}
+			return json.NewEncoder(os.Stdout).Encode(map[string]any{"service_period_reconciliation": result})
 		}
 		if *domain == "static" {
 			result, err := v1domain.ReconcileStatic(ctx, pool, staticImportVersion, *archiveRunID)
