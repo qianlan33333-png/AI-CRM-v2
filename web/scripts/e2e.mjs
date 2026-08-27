@@ -3,6 +3,7 @@
  * 加载 dist/ 生成页，执行真实 bundle，断言渲染结果与关键交互。
  */
 import { JSDOM } from 'jsdom';
+import { build } from 'esbuild';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +24,40 @@ const ok = (name, cond) => {
 };
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const memberGridShareBundle = (await build({
+  entryPoints: [path.join(ROOT, 'src/public/memberGridShare.ts')],
+  bundle: true,
+  format: 'iife',
+  globalName: 'MemberGridShare',
+  write: false,
+})).outputFiles[0].text;
+
+async function loadMemberGridShare({ token, response, status = 200 } = {}) {
+  const trace = [];
+  const json = (body, resultStatus) => ({
+    ok: resultStatus >= 200 && resultStatus < 300,
+    status: resultStatus,
+    json: async () => body,
+  });
+  const dom = new JSDOM(`<div id="stage"></div><script>${memberGridShareBundle}</script>`, {
+    url: 'http://localhost/member-grid-share/index.html#' + (token || ''),
+    runScripts: 'dangerously',
+    beforeParse(window) {
+      const replaceState = window.history.replaceState.bind(window.history);
+      window.history.replaceState = (...args) => {
+        trace.push({ kind: 'replace', url: String(args[2] || '') });
+        return replaceState(...args);
+      };
+      window.fetch = async (input, init = {}) => {
+        trace.push({ kind: 'fetch', url: String(input), init });
+        return json(response, status);
+      };
+    },
+  });
+  await dom.window.MemberGridShare.mountMemberGridShare(dom.window.document.querySelector('#stage'));
+  return { dom, trace };
+}
 
 async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false } = {}) {
   const file = path.join(DIST, rel);
@@ -1299,6 +1334,48 @@ console.log('admin/campaigns.html（trace_id 可观察性边界）');
   ok('session_id 缺契约时 fail closed 且不降级为全局查询',
     sessionText.includes('backend_blocked') && sessionText.includes('session_id') && session.window.__observabilityCalls.length === 0);
   session.window.close();
+}
+
+console.log('member-grid-share/index.html（公开汇总 token fragment）');
+{
+  const token = 't'.repeat(43);
+  const shared = await loadMemberGridShare({
+    token,
+    response: {
+      buckets: [
+        { state: 'removed', count: 1 },
+        { state: 'active', count: 8 },
+        { state: 'expired', count: 2 },
+      ],
+      as_of: '2026-08-27T10:00:00Z',
+      customer_id: 7,
+      display_name: '不应公开的客户',
+      member_ref: 'spm_abcdefghijklmnopqrstuv',
+      source: 'paid_order',
+    },
+  });
+  const text = shared.dom.window.document.querySelector('#stage')?.textContent || '';
+  const call = shared.trace.find((entry) => entry.kind === 'fetch');
+  const request = call?.init || {};
+  ok('公开汇总在首次请求前清除 fragment，并只以 JSON body 传 token',
+    shared.trace[0]?.kind === 'replace' && shared.trace[0]?.url === '/member-grid-share/index.html' &&
+    shared.dom.window.location.hash === '' && call?.url === '/api/public/member-grid-shares/summary' &&
+    request.method === 'POST' && JSON.stringify(JSON.parse(String(request.body))) === JSON.stringify({ token }));
+  ok('公开汇总请求不带凭据且禁止缓存', request.credentials === 'omit' && request.cache === 'no-store' && new Headers(request.headers).get('Content-Type') === 'application/json');
+  ok('公开页只展示固定 bucket 与 as_of，不渲染成员、客户或商品字段',
+    text.includes('有效') && text.includes('8') && text.includes('已过期') && text.includes('2') && text.includes('已移除') && text.includes('1') && text.includes('汇总截至：2026-08-27T10:00:00Z') &&
+    !text.includes('不应公开的客户') && !text.includes('customer_id') && !text.includes('member_ref') && !text.includes('paid_order') && !text.includes('spm_'));
+  shared.dom.window.close();
+
+  const failed = await loadMemberGridShare({ token, response: { message: 'internal detail must not appear' }, status: 503 });
+  const invalid = await loadMemberGridShare({ token: 'bad', response: {} });
+  ok('公开页失败统一收敛且不回退 Mock/本地数据',
+    failed.dom.window.document.querySelector('#stage')?.textContent === 'Member Grid 公开汇总暂时无法读取分享汇总。' &&
+    invalid.dom.window.document.querySelector('#stage')?.textContent === 'Member Grid 公开汇总暂时无法读取分享汇总。' &&
+    failed.trace.filter((entry) => entry.kind === 'fetch').length === 1 && invalid.trace.filter((entry) => entry.kind === 'fetch').length === 0 &&
+    failed.trace[0]?.kind === 'replace' && invalid.trace[0]?.kind === 'replace');
+  failed.dom.window.close();
+  invalid.dom.window.close();
 }
 
 console.log(`\n${pass} 通过 / ${fail} 失败`);
