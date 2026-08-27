@@ -35,6 +35,8 @@ seed() {
     'const getContactWay = "/cgi-bin/externalcontact/get_contact_way"' \
     'const listContactWay = "/cgi-bin/externalcontact/list_contact_way"' \
     'const createAcquisitionLink = "/cgi-bin/externalcontact/customer_acquisition/create_link"' \
+    'const updateAcquisitionLink = "/cgi-bin/externalcontact/customer_acquisition/update_link"' \
+    'const deleteAcquisitionLink = "/cgi-bin/externalcontact/customer_acquisition/delete_link"' \
     'const getAcquisitionLink = "/cgi-bin/externalcontact/customer_acquisition/get"' \
     'const listAcquisitionLinks = "/cgi-bin/externalcontact/customer_acquisition/list_link"' \
     'const getGroupMessageTask = "/cgi-bin/externalcontact/get_groupmsg_task"' \
