@@ -236,7 +236,7 @@ func TestServicePeriodHistoryPostgresRoundTripAndRollback(t *testing.T) {
 
 func servicePeriodHistoryTemporaryProduct(ctx context.Context) (productport.Product, error) {
 	now := time.Now().UTC().Truncate(time.Microsecond)
-	projection, err := json.Marshal(map[string]any{"status": "disabled", "enabled": false})
+	projection, err := json.Marshal(map[string]any{"schema_version": 1, "status": "disabled", "enabled": false})
 	if err != nil {
 		return productport.Product{}, err
 	}
