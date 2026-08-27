@@ -29,6 +29,11 @@ var reconciledTables = []string{
 	"public/wechat_shop_orders",
 }
 
+var staticReconciledTables = []string{
+	"public/wecom_corp_tag_groups", "public/wecom_corp_tags", "public/contact_tags",
+	"public/image_library", "public/attachment_library", "public/wechat_pay_products",
+}
+
 var targetBySourceTable = map[string]struct {
 	domain string
 	table  string
@@ -43,6 +48,12 @@ var targetBySourceTable = map[string]struct {
 	"public/miniprogram_library":              {"media", "media_miniprograms"},
 	"public/radar_links":                      {"radar", "radar_links"},
 	"public/wechat_shop_orders":               {"order", "order_wechat_shop_materials"},
+	"public/wecom_corp_tag_groups":            {"contact", "tag_groups"},
+	"public/wecom_corp_tags":                  {"contact", "tags"},
+	"public/contact_tags":                     {"contact", "customer_tags"},
+	"public/image_library":                    {"media", "media_images"},
+	"public/attachment_library":               {"media", "media_attachments"},
+	"public/wechat_pay_products":              {"product", "products"},
 }
 
 type ReconciliationResult struct {
@@ -74,6 +85,16 @@ type reconciliationRow struct {
 // has a verified terminal receipt and each imported target still exists in its
 // deliberately non-executing V2 state.
 func ReconcileAll(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string) (ReconciliationResult, error) {
+	return reconcileTables(ctx, pool, importVersion, archiveRunID, reconciledTables)
+}
+
+// ReconcileStatic seals only the following static package. The earlier ten
+// tables retain their own immutable import version and reconciliation.
+func ReconcileStatic(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string) (ReconciliationResult, error) {
+	return reconcileTables(ctx, pool, importVersion, archiveRunID, staticReconciledTables)
+}
+
+func reconcileTables(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string, tables []string) (ReconciliationResult, error) {
 	if pool == nil || !validVersion(importVersion) || !validToken(archiveRunID, 128) {
 		return ReconciliationResult{}, ErrInvalidScope
 	}
@@ -97,7 +118,7 @@ WHERE migration.run_id=$1`, archiveRunID).Scan(&phase, &adapterID); err != nil |
 	}
 
 	var result ReconciliationResult
-	for _, tableID := range reconciledTables {
+	for _, tableID := range tables {
 		var selectedCount, sourceCount, receiptCount int64
 		if err = tx.QueryRow(ctx, `SELECT row_count FROM public.v1_archive_tables WHERE run_id=$1 AND table_id=$2`, archiveRunID, tableID).Scan(&selectedCount); err != nil {
 			return ReconciliationResult{}, fmt.Errorf("required archive table %s is missing: %w", tableID, err)
@@ -349,9 +370,101 @@ FROM public.order_wechat_shop_materials material WHERE material.provider_order_i
 		}
 		proof = source + ":" + readiness + ":unverified:no_external_work"
 	default:
-		return "", fmt.Errorf("unsupported target table %s", expected.table)
+		staticProof, staticErr := verifyStaticTarget(ctx, tx, row, importedTargets)
+		if staticErr != nil {
+			return "", staticErr
+		}
+		proof = staticProof
 	}
 	return expected.table + ":" + *row.TargetID + ":" + proof, nil
+}
+
+func verifyStaticTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow, targets map[string]map[string]struct{}) (string, error) {
+	id, err := positiveID(*row.TargetID)
+	if err != nil {
+		return "", err
+	}
+	var metadata map[string]string
+	switch *row.TargetTable {
+	case "tag_groups":
+		var name string
+		err = tx.QueryRow(ctx, `SELECT name FROM public.tag_groups WHERE id=$1 FOR SHARE`, id).Scan(&name)
+		if err != nil || strings.TrimSpace(name) == "" {
+			return "", targetVerificationError(*row.TargetTable, *row.TargetID, err)
+		}
+		return "local_tag_group", nil
+	case "tags":
+		var groupID, providerID string
+		err = tx.QueryRow(ctx, `SELECT group_id::text,wecom_tag_id FROM public.tags WHERE id=$1 FOR SHARE`, id).Scan(&groupID, &providerID)
+		if err != nil || providerID == "" || !containsTarget(targets, "tag_groups", groupID) {
+			return "", targetVerificationError(*row.TargetTable, *row.TargetID, err)
+		}
+		return "local_tag:" + groupID, nil
+	case "customer_tags":
+		if json.Unmarshal(row.Metadata, &metadata) != nil {
+			return "", ErrConflict
+		}
+		customerID, err := positiveID(metadata["customer_id"])
+		if err != nil || !containsTarget(targets, "tags", *row.TargetID) {
+			return "", ErrConflict
+		}
+		expectedDigest := sha256.Sum256([]byte("v1.contact_tags\x00" + metadata["customer_id"] + "\x00" + *row.TargetID))
+		var taggedBy string
+		err = tx.QueryRow(ctx, `SELECT tagged_by FROM public.customer_tags WHERE customer_id=$1 AND tag_id=$2 FOR SHARE`, customerID, id).Scan(&taggedBy)
+		if err != nil || taggedBy != "migration:v1-contact-tags" || !equalBytes(expectedDigest[:], row.TargetDigest) {
+			return "", targetVerificationError(*row.TargetTable, *row.TargetID, err)
+		}
+		return "local_customer_tag:" + metadata["customer_id"], nil
+	case "media_images", "media_attachments":
+		var checksumMetadata struct {
+			Checksum string `json:"checksum"`
+		}
+		if json.Unmarshal(row.Metadata, &checksumMetadata) != nil {
+			return "", ErrConflict
+		}
+		var checksum []byte
+		var safe bool
+		if *row.TargetTable == "media_images" {
+			err = tx.QueryRow(ctx, `SELECT image.checksum,NOT image.enabled AND image.file_size=octet_length(blob.content)
+AND image.checksum=blob.checksum AND blob.checksum=sha256(blob.content)
+FROM public.media_images image JOIN public.media_image_blobs blob ON blob.image_id=image.id
+WHERE image.id=$1 FOR SHARE OF image,blob`, id).Scan(&checksum, &safe)
+		} else {
+			err = tx.QueryRow(ctx, `SELECT attachment.checksum,NOT attachment.enabled AND attachment.version=1
+AND attachment.mime_type='application/pdf' AND attachment.file_size=octet_length(blob.content)
+AND attachment.checksum=blob.checksum AND blob.checksum=sha256(blob.content)
+FROM public.media_attachments attachment JOIN public.media_attachment_blobs blob ON blob.attachment_id=attachment.id
+WHERE attachment.id=$1 FOR SHARE OF attachment,blob`, id).Scan(&checksum, &safe)
+		}
+		if err != nil || !safe || len(checksum) != sha256.Size || hex.EncodeToString(checksum) != checksumMetadata.Checksum {
+			return "", targetVerificationError(*row.TargetTable, *row.TargetID, err)
+		}
+		return "disabled:blob:" + checksumMetadata.Checksum, nil
+	case "products":
+		var expected struct {
+			Code      string `json:"target_product_code"`
+			Name      string `json:"target_product_name"`
+			Price     string `json:"price_minor"`
+			Currency  string `json:"currency"`
+			CreatedBy string `json:"created_by"`
+		}
+		if json.Unmarshal(row.Metadata, &expected) != nil {
+			return "", ErrConflict
+		}
+		var code, name, price, currency, actor string
+		var safe bool
+		err = tx.QueryRow(ctx, `SELECT product_code,name,price_minor::text,currency,created_by::text,
+local_lifecycle='disabled' AND version=1 AND stock_quantity=0 AND description=''
+AND legacy_admin_projection->>'enabled'='false'
+AND NOT EXISTS(SELECT 1 FROM public.product_images WHERE product_id=products.id)
+FROM public.products WHERE id=$1 FOR SHARE`, id).Scan(&code, &name, &price, &currency, &actor, &safe)
+		if err != nil || !safe || code != expected.Code || name != expected.Name || price != expected.Price || currency != "CNY" || currency != expected.Currency || actor != expected.CreatedBy {
+			return "", targetVerificationError(*row.TargetTable, *row.TargetID, err)
+		}
+		return "disabled:" + code + ":" + price + ":" + currency, nil
+	default:
+		return "", fmt.Errorf("unsupported target table %s", *row.TargetTable)
+	}
 }
 
 func parseCampaignStepTarget(value string) (string, int64, error) {

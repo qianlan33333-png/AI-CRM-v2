@@ -311,6 +311,12 @@ type NonActiveTarget interface {
 	AppendNonActiveReceipt(context.Context, NonActiveLeaseFence, NonActiveSource, HistoricalImportSourceFact, NonActiveDisposition) error
 }
 
+// HistoricalImportRunReader checks the frozen DM01 run before dependent imports.
+// It requires a UnitOfWork transaction and does not mutate the run.
+type HistoricalImportRunReader interface {
+	ReadHistoricalImportRun(context.Context, int64) (mode, state string, err error)
+}
+
 // HistoricalImportTarget is the closed Contact-owned target boundary for
 // DM01. Every method requires the transaction context supplied by UnitOfWork.
 // It has no event, merge, Provider, role, or arbitrary SQL capability.

@@ -30,6 +30,7 @@ import (
 )
 
 const domainImportVersion = "v1-domain-a1"
+const staticImportVersion = "v1-static-a1"
 
 func main() {
 	environment := appconfig.LoadV1ArchiveRuntimeEnvironment()
@@ -42,10 +43,11 @@ func main() {
 func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	flags := flag.NewFlagSet("aicrm-v1-domain-import", flag.ContinueOnError)
 	mode := flags.String("mode", "import", "import|reconcile")
-	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all")
+	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all (first package)|static (Contact/Product/media blobs)")
 	archiveRunID := flags.String("archive-run-id", "", "reconciled V1 archive run")
 	actorValues := flags.String("campaign-actors", "", "explicit owner_userid=V2_actor_id pairs")
 	migrationActor := flags.Int64("migration-actor", 0, "explicit V2 actor for local historical definitions")
+	dm01RunID := flags.Int64("dm01-run-id", 0, "verified DM01 full-import run for static Contact tags")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -55,8 +57,8 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	if *mode == "import" && len(environment.ArchiveKey) != 32 {
 		return fmt.Errorf("32-byte archive key is required for import")
 	}
-	if *mode == "reconcile" && *domain != "all" {
-		return fmt.Errorf("reconcile requires domain=all")
+	if *mode == "reconcile" && *domain != "all" && *domain != "static" {
+		return fmt.Errorf("reconcile requires domain=all or static")
 	}
 	var actors v1candidate.ActorIDs
 	var err error
@@ -66,8 +68,15 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 			return err
 		}
 	}
-	if *mode == "import" && (*domain == "survey" || *domain == "media" || *domain == "radar" || *domain == "all") && *migrationActor < 1 {
+	if *mode == "import" && (*domain == "survey" || *domain == "media" || *domain == "radar" || *domain == "all" || *domain == "static") && *migrationActor < 1 {
 		return fmt.Errorf("migration-actor is required")
+	}
+	var dm01HMACKey []byte
+	if *mode == "import" && *domain == "static" {
+		dm01HMACKey = []byte(appconfig.LoadDM01RuntimeEnvironment().SourceHMACKey)
+		if *dm01RunID < 1 || len(dm01HMACKey) < 32 {
+			return fmt.Errorf("static import requires dm01-run-id and the frozen DM01 source HMAC key")
+		}
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, environment.TargetDatabaseURL)
@@ -76,6 +85,13 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	}
 	defer pool.Close()
 	if *mode == "reconcile" {
+		if *domain == "static" {
+			result, err := v1domain.ReconcileStatic(ctx, pool, staticImportVersion, *archiveRunID)
+			if err != nil {
+				return err
+			}
+			return json.NewEncoder(os.Stdout).Encode(map[string]any{"static_reconciliation": result})
+		}
 		result, err := v1domain.ReconcileAll(ctx, pool, domainImportVersion, *archiveRunID)
 		if err != nil {
 			return err
@@ -88,6 +104,13 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	}
 	defer archive.Close()
 	uow := platformstore.NewUnitOfWork(pool)
+	if *domain == "static" {
+		result, err := importStatic(ctx, archive, uow, *archiveRunID, *migrationActor, *dm01RunID, dm01HMACKey)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(result)
+	}
 	result := map[string]any{}
 	if *domain == "campaign" || *domain == "all" {
 		value, err := importCampaign(ctx, archive, uow, *archiveRunID, actors)
@@ -128,7 +151,7 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 }
 
 func validDomain(value string) bool {
-	return value == "campaign" || value == "survey" || value == "media" || value == "radar" || value == "shop" || value == "all"
+	return value == "campaign" || value == "survey" || value == "media" || value == "radar" || value == "shop" || value == "all" || value == "static"
 }
 
 func newJournal(runID, tableID, domain, targetTable string) (*v1domain.Journal, error) {
