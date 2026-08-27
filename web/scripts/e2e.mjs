@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '' } = {}) {
+async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHistoryHttp, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http, serviceHistoryHttp = false, serviceHistoryEmpty = false, serviceHistoryFailure = '' } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,29 @@ async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = 
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(channelHttp || couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp);
+      window.__AICRM_TEST_MOCK__ = !(channelHttp || couponHistoryHttp || couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http || serviceHistoryHttp);
+      if (couponHistoryHttp) {
+        window.Headers = Headers;
+        const test = window.__couponHistoryHttpTest = { calls: [], fail: couponHistoryHttp.fail || false };
+        const at = '2026-08-28T00:00:00.000000Z';
+        const before = '2025-01-01T00:00:00Z';
+        const definitions = Array.from({ length: 21 }, (_, i) => ({ id: 31 + i, source_coupon_id: 7 + i, name: `历史券 ${i + 1}`, discount_amount_total: 9, currency: 'CNY', status: 'archived', availability_status: 'archived', history_only: true, original_status: 'expired', total_issue_limit: 100, per_user_issue_limit: 2, issued_count: 26, claim_starts_at: before, claim_ends_at: at, validity_mode: 'relative_days', use_starts_at: null, use_ends_at: null, relative_validity_days: 7, instructions: '<img src=x onerror=alert(1)>', target_refs: ['standard_product:8', 'standard_product:2'], first_claim_at: null, created_by: 2, updated_by: 2, version: 1, created_at: before, updated_at: at }));
+        const claims = Array.from({ length: 21 }, (_, i) => ({ id: 41 + i, source_claim_id: 9 + i, source_coupon_id: 7, coupon_id: 31, customer_id: i ? 71 : null, claim_no: `claim-${i + 1}`, status: i ? 'consumed' : '', discount_amount_total: 0, currency: 'CNY', valid_from: at, valid_until: before, claimed_at: at, reserved_at: null, consumed_at: before, expired_at: null, created_at: at, updated_at: before }));
+        const redemptions = [{ id: 51, source_redemption_id: 10, source_claim_id: 9, source_order_id: 11, claim_history_id: 41, order_id: null, out_trade_no: '', status: 'released', original_amount_total: 5, discount_amount_total: 9, payable_amount_total: 17, currency: 'CNY', reserved_until: before, release_reason: '<b>原始原因</b>', reserved_at: at, consumed_at: null, released_at: before, created_at: at, updated_at: before }];
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          test.calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', credentials: init.credentials });
+          if (test.fail === true || test.fail === url.pathname) return json({ code: 'unavailable' }, 503);
+          const rows = url.pathname === '/api/admin/coupon-history' ? definitions : url.pathname === '/api/admin/coupon-history/31/claims' ? claims : url.pathname === '/api/admin/coupon-history/31/redemptions' ? redemptions : undefined;
+          if (!rows) return json({ code: 'unexpected_coupon_history_request' }, 500);
+          const limit = Number(url.searchParams.get('limit'));
+          const offset = Number(url.searchParams.get('offset'));
+          const total = couponHistoryHttp.empty ? 0 : rows.length;
+          return json({ source: 'v1_history', read_only: true, real_external_call_executed: false, items: total ? rows.slice(offset, offset + limit) : [], total, limit, offset, ...(url.pathname.endsWith('/coupon-history') ? {} : { coupon_id: 31 }) });
+        };
+        return;
+      }
       if (h5Http) {
         const calls = [];
         let submissionAttempt = 0;
@@ -1200,6 +1222,61 @@ console.log('admin/couponData.html?id=0（5 统计卡 + 8 明细行 + 分享失�
   await sleep(30);
   ok('Mock 不伪造优惠券分享成功', d.body.textContent.includes('测试 Mock 不提供伪成功') && !d.querySelector('#shareQrBox svg'));
   dom.window.close();
+}
+
+console.log('admin/coupons.html?history=1（真实历史定义只读分页）');
+{
+  const regular = await loadPage('admin/coupons.html');
+  ok('原优惠券管理保留新建并提供独立历史入口', regular.window.document.querySelector('a[href="coupons.html?history=1"]')?.textContent.includes('只读') && [...regular.window.document.querySelectorAll('button')].some((button) => button.textContent.includes('新建优惠券')));
+  regular.window.close();
+  const dom = await loadPage('admin/coupons.html', { q: 'history=1', couponHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__couponHistoryHttpTest;
+  const section = d.querySelector('#coupon-history-definitions');
+  ok('历史定义显示真实20行、原状态金额和未产生外部效果说明', section.querySelectorAll('tbody tr').length === 20 && section.textContent.includes('expired') && section.textContent.includes('9 分') && d.body.textContent.includes('不代表当前可用权益') && d.body.textContent.includes('未触发发券'));
+  ok('历史定义只链接历史领取核销并转义源说明', d.querySelector('[data-history-coupon="31"]')?.getAttribute('href') === 'couponData.html?history=1&id=31' && section.textContent.includes('<img src=x onerror=alert(1)>') && !section.querySelector('img'));
+  click(dom, section.querySelector('[data-history-next]'));
+  await sleep(30);
+  ok('历史定义下一页实际GET offset20且不全量拉取', section.querySelectorAll('tbody tr').length === 1 && section.textContent.includes('历史券 21') && test.calls.at(-1)?.query === '?limit=20&offset=20' && section.querySelector('[data-history-next]').disabled);
+  click(dom, section.querySelector('[data-history-previous]'));
+  await sleep(30);
+  ok('历史定义上一页恢复真实第一页，全部请求仅GET', section.querySelectorAll('tbody tr').length === 20 && test.calls.every((call) => call.path === '/api/admin/coupon-history' && call.method === 'GET' && call.credentials === 'include'));
+  dom.window.close();
+}
+
+console.log('admin/couponData.html?history=1&id=31（真实领取核销独立分页）');
+{
+  const dom = await loadPage('admin/couponData.html', { q: 'history=1&id=31', couponHistoryHttp: {} });
+  const d = dom.window.document;
+  const test = dom.window.__couponHistoryHttpTest;
+  const claims = d.querySelector('#coupon-history-claims');
+  const redemptions = d.querySelector('#coupon-history-redemptions');
+  ok('历史明细只请求所选券的两个真实GET', test.calls.length === 2 && test.calls.every((call) => ['/api/admin/coupon-history/31/claims', '/api/admin/coupon-history/31/redemptions'].includes(call.path) && call.method === 'GET' && call.query === '?limit=20&offset=0'));
+  ok('领取展示NULL客户、空原状态和不重写的倒置日期', claims.textContent.includes('未关联客户') && claims.textContent.includes('原状态：（空）') && claims.textContent.includes('2026-08-28T00:00:00.000000Z → 2025-01-01T00:00:00Z'));
+  ok('核销保留NULL订单及原金额、不按公式重算且源原因转义', redemptions.textContent.includes('未关联订单') && ['5 分', '9 分', '17 分', '<b>原始原因</b>'].every((text) => redemptions.textContent.includes(text)) && !redemptions.querySelector('b'));
+  ok('历史页面没有编辑、复制、分享、领取或核销按钮', [...d.querySelectorAll('#coupon-history-claims button, #coupon-history-redemptions button')].every((button) => ['上一页', '下一页'].includes(button.textContent.trim())));
+  test.fail = '/api/admin/coupon-history/31/claims';
+  click(dom, claims.querySelector('[data-history-next]'));
+  await sleep(30);
+  ok('领取第二页503清空旧记录，不影响核销且不回退Mock', claims.textContent.includes('HTTP 503') && claims.querySelectorAll('tbody tr').length === 0 && redemptions.querySelectorAll('tbody tr').length === 1);
+  test.fail = false;
+  click(dom, claims.querySelector('[data-history-retry]'));
+  await sleep(30);
+  ok('失败重读沿用同一offset，独立返回第21条且不触发写操作', claims.querySelectorAll('tbody tr').length === 1 && claims.textContent.includes('claim-21') && test.calls.at(-1)?.query === '?limit=20&offset=20' && test.calls.filter((call) => call.path.endsWith('/redemptions')).length === 1 && test.calls.every((call) => call.method === 'GET'));
+  dom.window.close();
+}
+
+console.log('优惠券历史（空态、失败态、无效ID）');
+{
+  const empty = await loadPage('admin/coupons.html', { q: 'history=1', couponHistoryHttp: { empty: true } });
+  ok('历史空集明确显示空态且不填入演示券', empty.window.document.body.textContent.includes('暂无 V1 历史记录') && !empty.window.document.querySelector('[data-history-coupon]'));
+  empty.window.close();
+  const failed = await loadPage('admin/coupons.html', { q: 'history=1', couponHistoryHttp: { fail: true } });
+  ok('历史定义503明确失败，不伪装为空或回退演示数据', failed.window.document.body.textContent.includes('HTTP 503') && !failed.window.document.body.textContent.includes('暂无 V1 历史记录') && !failed.window.document.querySelector('[data-history-coupon]'));
+  failed.window.close();
+  const invalid = await loadPage('admin/couponData.html', { q: 'history=1&id=0', couponHistoryHttp: {} });
+  ok('无效历史券ID在请求前失败，不转为当前券或Mock', invalid.window.document.body.textContent.includes('V1 历史优惠券 ID 无效') && invalid.window.__couponHistoryHttpTest.calls.length === 0);
+  invalid.window.close();
 }
 
 console.log('admin/couponForm.html?id=31（HTTP 表单与商品选项）');

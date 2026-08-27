@@ -17,6 +17,7 @@ import { mountSetupWizard } from './sections/setupWizard';
 import { esc } from './sections/util';
 import { mountCouponData, mountCouponForm, mountServicePeriodMemberGrid } from './sections/commerce';
 import { mountServicePeriodHistory } from './sections/servicePeriodHistory';
+import { mountCouponHistory } from './sections/couponHistory';
 
 function showLoadError(stage: HTMLElement, error: unknown): void {
   stage.innerHTML = `<div style="margin:32px;padding:24px;border:1px solid #F2B8B5;border-radius:8px;color:#D83931;background:#FFF1F0">${error instanceof Error ? error.message : '页面数据读取失败'}</div>`;
@@ -29,6 +30,12 @@ function boot(): void {
 
   const rawId = Number(new URLSearchParams(location.search).get('id') || '');
   const id = rawId || undefined;
+
+  if (['coupons', 'couponData'].includes(page) && new URLSearchParams(location.search).get('history') === '1') {
+    const historyID = page === 'couponData' ? new URLSearchParams(location.search).get('id') || '' : undefined;
+    void mountCouponHistory(stage, historyID).catch((error) => showLoadError(stage, error));
+    return;
+  }
 
   /* ---- 富交互页：模块自管理反馈（toast/confirmBox 均引自 feedback.ts） ---- */
   switch (page) {
