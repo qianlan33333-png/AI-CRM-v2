@@ -32,6 +32,7 @@ type Coupon struct {
 	CreatedBy            int64        `json:"created_by"`
 	UpdatedBy            int64        `json:"updated_by"`
 	Version              int64        `json:"version"`
+	HistoryOnly          bool         `json:"history_only,omitempty"`
 	CreatedAt            time.Time    `json:"created_at"`
 	UpdatedAt            time.Time    `json:"updated_at"`
 }
