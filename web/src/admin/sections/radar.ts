@@ -13,6 +13,7 @@ import { toast } from '../../shared/ui/feedback';
 import { openPicker } from '../../shared/ui/picker';
 import { downloadCsv } from '../../shared/ui/download';
 import { esc, copyText } from './util';
+import { downloadRadarQr, radarShareUrl, renderRadarQr } from './qr';
 
 export interface RadarMountOpts {
   view: 'list' | 'detail' | 'form';
@@ -66,7 +67,8 @@ function renderList(root: HTMLElement, api: AdminApi, links: RadarLink[]): void 
           <div><div style="font-size:12px;color:#646A73;margin-bottom:8px;font-weight:500">雷达链接</div>
             <div style="display:flex;gap:8px"><input class="input" id="shareUrl" readonly disabled style="flex:1"><button class="btn" id="shareCopy" disabled>复制链接</button></div></div>
           <div><div style="font-size:12px;color:#646A73;margin-bottom:8px;font-weight:500">二维码</div>
-            <div class="qr" id="shareQr" role="status" style="display:grid;place-items:center;padding:16px;text-align:center;line-height:20px;color:#8F5A16">等待服务端分享投影</div></div>
+            <div class="qr" id="shareQr" role="status" style="display:grid;place-items:center;padding:16px;text-align:center;line-height:20px;color:#8F5A16">等待服务端分享投影</div>
+            <button class="btn" id="shareQrDownload" disabled style="margin-top:10px;width:100%">下载二维码</button></div>
         </div>
       </div>
     </div>`;
@@ -81,6 +83,7 @@ function renderList(root: HTMLElement, api: AdminApi, links: RadarLink[]): void 
     ($('#shareUrl') as HTMLInputElement).value = '';
     ($('#shareUrl') as HTMLInputElement).disabled = true;
     ($('#shareCopy') as HTMLButtonElement).disabled = true;
+    ($('#shareQrDownload') as HTMLButtonElement).disabled = true;
     $('#shareQr').textContent = '正在读取服务端分享投影…';
     $('#shareMask').classList.add('open');
     if (api.mode !== 'http') {
@@ -89,11 +92,12 @@ function renderList(root: HTMLElement, api: AdminApi, links: RadarLink[]): void 
     }
     try {
       const path = await api.getRadarSharePath(id);
-      shareLink = new URL(path, location.origin).toString();
+      shareLink = radarShareUrl(path);
       ($('#shareUrl') as HTMLInputElement).value = shareLink;
       ($('#shareUrl') as HTMLInputElement).disabled = false;
       ($('#shareCopy') as HTMLButtonElement).disabled = false;
-      $('#shareQr').innerHTML = '<strong>backend_blocked</strong>：服务端仅返回 `qr_payload` 路径，未提供二维码图片或 data URI；不在浏览器生成二维码。';
+      renderRadarQr($('#shareQr'), shareLink);
+      ($('#shareQrDownload') as HTMLButtonElement).disabled = false;
     } catch (error) {
       $('#shareQr').innerHTML = `<strong>backend_blocked</strong>：${esc(error instanceof Error ? error.message : '服务端分享投影不可用')}`;
       throw error;
@@ -150,6 +154,15 @@ function renderList(root: HTMLElement, api: AdminApi, links: RadarLink[]): void 
     location.href = 'radarForm.html';
   });
   $('#shareCopy').addEventListener('click', () => { if (shareLink) copyText(shareLink, toast); });
+  $('#shareQrDownload').addEventListener('click', () => {
+    if (!shareLink) return;
+    try {
+      downloadRadarQr(shareLink);
+      toast('二维码已下载');
+    } catch (error) {
+      toast(error instanceof Error ? error.message : '二维码下载失败', true);
+    }
+  });
   root.querySelectorAll('[data-close]').forEach((b) =>
     b.addEventListener('click', () => (b as HTMLElement).closest('.mask')!.classList.remove('open')),
   );
@@ -196,7 +209,7 @@ async function renderDetail(root: HTMLElement, api: AdminApi, links: RadarLink[]
   let url = '';
   let shareError = '';
   if (api.mode === 'http') {
-    try { url = new URL(await api.getRadarSharePath(it.id), location.origin).toString(); }
+    try { url = radarShareUrl(await api.getRadarSharePath(it.id)); }
     catch (error) { shareError = error instanceof Error ? error.message : '分享路径读取失败'; }
   } else {
     shareError = '测试/本地模式不使用 Mock 分享路径';

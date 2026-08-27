@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false } = {}) {
+async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, radarHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,7 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(couponHttp || audienceHttp);
+      window.__AICRM_TEST_MOCK__ = !(couponHttp || audienceHttp || radarHttp);
       if (couponHttp) {
         const calls = [];
         const coupon = { id: 31, name: '新客券', discount_amount_total: 10000, total_issue_limit: 1200, issued_count: 0, per_user_issue_limit: 1, claim_starts_at: '2026-08-01T00:00:00Z', claim_ends_at: '2026-08-31T00:00:00Z', validity_mode: 'relative_days', relative_validity_days: 7, instructions: '说明', target_refs: ['standard_product:8'], status: 'draft', version: 1 };
@@ -128,6 +128,26 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
           }
           if (url.pathname.endsWith('/members')) return json({ items: [], local_projection: true, real_external_call_executed: false });
           return json({ code: 'unexpected_audience_request' }, 500);
+        };
+        return;
+      }
+      if (radarHttp) {
+        const calls = [];
+        const downloads = [];
+        const publicCode = 'rd_1234567890123456789012';
+        const link = { link_id: 2, public_code: publicCode, name: '真实分享雷达', title: '真实分享雷达', destination_url: 'https://example.test/radar', cover_image_id: null, attachment_id: null, status: 'enabled', version: 1, created_by: 9, updated_by: 9, created_at: '2026-08-27T00:00:00Z', updated_at: '2026-08-27T00:00:00Z' };
+        const projection = { link_id: 2, public_code: publicCode, status: 'enabled', available: true, share_path: '/r/' + publicCode, qr_payload: '/r/' + publicCode, local_projection: true, public_route_ready: true, real_external_call_executed: false };
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data, clone() { return this; } });
+        window.__radarHttpTest = { calls, downloads, lastBlob: null };
+        window.URL.createObjectURL = (blob) => { window.__radarHttpTest.lastBlob = blob; return 'blob:radar-qr'; };
+        window.URL.revokeObjectURL = () => {};
+        window.HTMLAnchorElement.prototype.click = function () { downloads.push({ href: this.href, download: this.download }); };
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          if (url.pathname === '/api/admin/radar-links') return json({ items: [link], total: 1, limit: 50, offset: 0 });
+          if (url.pathname === '/api/admin/radar-links/2/share') return json(projection);
+          return json({ code: 'unexpected_radar_request' }, 500);
         };
         return;
       }
@@ -448,7 +468,7 @@ console.log('admin/radar.html（列表）');
   const shareBtn = d.querySelector('[data-share]');
   click(dom, shareBtn);
   await sleep(30);
-  ok('分享浮窗打开且二维码缺口明确阻塞', d.querySelector('#shareMask').classList.contains('open') && d.querySelector('#shareQr').textContent.includes('backend_blocked') && !d.querySelector('#shareQr svg'));
+  ok('分享浮窗打开且二维码缺口明确阻塞', d.querySelector('#shareMask').classList.contains('open') && d.querySelector('#shareQr').textContent.includes('backend_blocked') && !d.querySelector('#shareQr svg') && d.querySelector('#shareQrDownload').disabled);
   ok('本地/Mock 模式不启用链接复制', d.querySelector('#shareUrl').disabled && d.querySelector('#shareCopy').disabled);
   click(dom, d.querySelector('#shareMask .modal-x'));
   await sleep(30);
@@ -458,6 +478,30 @@ console.log('admin/radar.html（列表）');
   click(dom, toggleBtn);
   await sleep(500);
   ok('停用后 toast 反馈且按钮变「启用」', d.body.textContent.includes('已停用'));
+  dom.window.close();
+}
+
+console.log('admin/radar.html（真实分享投影与二维码）');
+{
+  const dom = await loadPage('admin/radar.html', { radarHttp: true });
+  const d = dom.window.document;
+  const expected = 'http://localhost/r/rd_1234567890123456789012';
+  click(dom, d.querySelector('[data-share]'));
+  await sleep(40);
+  const test = dom.window.__radarHttpTest;
+  const svg = d.querySelector('#shareQr svg');
+  ok('HTTP 模式读取真实 Radar 分享投影', test.calls.some((call) => call.path === '/api/admin/radar-links/2/share'));
+  ok('二维码内容是当前 origin 的公开 /r/{code} 绝对 URL', d.querySelector('#shareUrl').value === expected && svg?.getAttribute('data-qr-payload') === expected && svg?.getAttribute('aria-label')?.includes(expected));
+  ok('浏览器生成真实 QR SVG 而非占位图', Boolean(svg && svg.querySelector('path') && d.querySelector('#shareQr').dataset.qrPayload === expected));
+  click(dom, d.querySelector('#shareQrDownload'));
+  await sleep(30);
+  const qrBlob = test.lastBlob;
+  let downloadedSvg = '';
+  if (qrBlob) {
+    const reader = new dom.window.FileReader();
+    downloadedSvg = await new Promise((resolve) => { reader.addEventListener('load', () => resolve(String(reader.result))); reader.readAsText(qrBlob); });
+  }
+  ok('二维码可下载为真实 SVG 文件', test.downloads[0]?.download === 'radar-share-qr.svg' && qrBlob?.type.includes('image/svg+xml') && downloadedSvg.startsWith('<svg'));
   dom.window.close();
 }
 
