@@ -7,17 +7,17 @@
           </div>
           <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px;display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start">
             <div style="max-width:1000px;padding:12px 16px;border:1px solid #B7D3FF;border-radius:8px;background:#F5F9FF;color:#245BDB;font-size:12px;line-height:19px">
-              当前后端仅支持可审计的本地负责人迁移事务：CSV 中逐行提供客户 ID、预期原负责人 ID、客户更新时间与目标负责人 ID。此流程不会发起企微转接，也不接受欢迎语或 Excel 文件。
+              当前后端仅支持可审计的本地负责人迁移事务：CSV 或 XLSX 第一张工作表中逐行提供客户 ID、预期原负责人 ID、客户更新时间与目标负责人 ID。XLSX 会在浏览器严格校验固定四列后转为 CSV；此流程不会发起企微转接，也不接受欢迎语。
             </div>
 
             <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px;overflow:hidden;max-width:1000px">
-              <div style="padding:12px 16px;border-bottom:1px solid #EFF0F1"><h2 style="margin:0;font-size:14px;font-weight:600">① 上传并校验 CSV</h2></div>
+              <div style="padding:12px 16px;border-bottom:1px solid #EFF0F1"><h2 style="margin:0;font-size:14px;font-weight:600">① 上传并校验 CSV / XLSX</h2></div>
               <div style="padding:16px;display:grid;gap:10px">
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-                  <input id="ownerMigCsv" type="file" accept=".csv,text/csv" style="font-size:13px;max-width:420px">
+                  <input id="ownerMigCsv" type="file" accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="font-size:13px;max-width:420px">
                   <button onClick="{{ mig.parseCsv }}" style="height:32px;padding:0 14px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">{{ mig.savingText }}</button>
                 </div>
-                <div style="font-size:12px;color:#8F959E">仅 CSV，最大 1 MiB。解析后生成有过期时间、哈希与单次执行约束的服务端持久预览。</div>
+                <div style="font-size:12px;color:#8F959E">仅 CSV 或 XLSX，最大 1 MiB。XLSX 只读取第一张工作表，第一行必须且只能是固定四列；解析后以 CSV 生成有过期时间、哈希与单次执行约束的服务端持久预览。</div>
               </div>
             </div>
 

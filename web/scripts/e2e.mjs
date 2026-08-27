@@ -1059,12 +1059,12 @@ console.log('admin/channelForm.html（完整 OpenAPI 渠道 DTO）');
   dom.window.close();
 }
 
-console.log('admin/ownerMig.html（本地安全 CSV 迁移边界）');
+console.log('admin/ownerMig.html（本地安全 CSV/XLSX 迁移边界）');
 {
   const dom = await loadPage('admin/ownerMig.html');
   const d = dom.window.document;
   const csv = d.querySelector('#ownerMigCsv');
-  ok('仅接受 CSV 且不再显示企微转接/欢迎语控件', csv?.getAttribute('accept')?.includes('.csv') && !d.body.textContent.includes('同时发起企微转接') && !d.body.textContent.includes('转接欢迎语'));
+  ok('接受 CSV/XLSX 且不再显示企微转接/欢迎语控件', csv?.getAttribute('accept')?.includes('.csv') && csv?.getAttribute('accept')?.includes('.xlsx') && !d.body.textContent.includes('同时发起企微转接') && !d.body.textContent.includes('转接欢迎语'));
   ok('初始明确为空且真实动作均已绑定', d.body.textContent.includes('尚未生成迁移预览，不会发送执行请求') && [...d.querySelectorAll('button')].filter((b) => b.__dcBound).length >= 2);
 
   dom.window.__aicrmDownload = null;
@@ -1079,12 +1079,17 @@ console.log('admin/ownerMig.html（本地安全 CSV 迁移边界）');
 
   Object.defineProperty(csv, 'files', {
     configurable: true,
-    value: [new dom.window.File(['customer_id,expected_owner_staff_id,expected_updated_at,target_owner_staff_id\n7,3,2026-08-25T00:00:00Z,9\n'], 'owners.csv', { type: 'text/csv' })],
+    value: [(() => {
+      const bytes = fs.readFileSync(path.join(ROOT, 'src/admin/fixtures/owner-reassignment-valid.xlsx'));
+      const file = new dom.window.File([bytes], 'owners.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      Object.defineProperty(file, 'arrayBuffer', { value: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) });
+      return file;
+    })()],
   });
   const parseButton = [...d.querySelectorAll('button')].find((b) => b.textContent.includes('上传并生成预览'));
   click(dom, parseButton);
-  await sleep(250);
-  ok('上传 CSV 生成服务端持久预览投影', d.body.textContent.includes('服务端持久预览') && d.body.textContent.includes('preview_id: cor_0123456789012345678901') && d.body.textContent.includes('预览已生成'));
+  await sleep(500);
+  ok('上传真实 XLSX 第一张表后生成服务端持久预览投影', d.body.textContent.includes('服务端持久预览') && d.body.textContent.includes('preview_id: cor_0123456789012345678901') && d.body.textContent.includes('预览已生成'));
   dom.window.close();
 }
 
