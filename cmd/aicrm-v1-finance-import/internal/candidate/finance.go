@@ -36,6 +36,11 @@ type OrderFact struct {
 	PaidAt        *time.Time
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
+
+	// Unverified source values, preserved exactly for caller-side mapping.
+	UnionID           string
+	ProductName       string
+	PayerNameSnapshot string
 }
 
 type RefundFact struct {
@@ -85,6 +90,10 @@ type orderJSON struct {
 	CreatedAt      time.Time  `json:"created_at"`
 	UpdatedAt      time.Time  `json:"updated_at"`
 	RefundedAmount int64      `json:"refunded_amount_total"`
+
+	UnionID           string `json:"unionid"`
+	ProductName       string `json:"product_name"`
+	PayerNameSnapshot string `json:"payer_name_snapshot"`
 }
 
 type refundJSON struct {
@@ -150,6 +159,7 @@ func AdaptOrder(value json.RawMessage) OrderResult {
 	return OrderResult{Disposition: DispositionCandidate, Fact: &OrderFact{
 		SourceID: source.ID, OrderNumber: source.OutTradeNo, TransactionID: source.TransactionID, Status: source.Status, TradeState: source.TradeState, RefundStatus: source.RefundStatus,
 		AmountMinor: source.AmountTotal, RefundedMinor: source.RefundedAmount, Currency: source.Currency,
+		UnionID: source.UnionID, ProductName: source.ProductName, PayerNameSnapshot: source.PayerNameSnapshot,
 		Product: ProductSourceRef{Kind: "code", Value: source.ProductCode}, PaidAt: source.PaidAt, CreatedAt: source.CreatedAt, UpdatedAt: source.UpdatedAt,
 	}}
 }

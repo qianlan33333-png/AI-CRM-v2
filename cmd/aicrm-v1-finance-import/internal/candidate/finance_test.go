@@ -8,6 +8,35 @@ import (
 
 var candidateTime = time.Date(2026, 8, 27, 9, 0, 0, 0, time.UTC)
 
+func TestAdaptOrderPreservesIdentityAndDisplaySourceFields(t *testing.T) {
+	for _, tc := range []struct {
+		name, unionID, productName, payerNameSnapshot string
+	}{
+		{"exact", "union-11", "历史商品", "付款人"},
+		{"untrimmed", "\t union-11 \n", " 商品名称 \t", "\n 付款人快照 "},
+		{"empty_unionid", "", "历史商品", "付款人"},
+		{"empty_fields", "", "", ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			result := AdaptOrder(candidateJSON(t, map[string]any{
+				"id": 11, "out_trade_no": "order-11", "product_code": "product-code-11",
+				"unionid": tc.unionID, "product_name": tc.productName, "payer_name_snapshot": tc.payerNameSnapshot,
+				"amount_total": 1999, "currency": "CNY", "status": "created", "trade_state": "NOTPAY",
+				"created_at": candidateTime, "updated_at": candidateTime,
+			}))
+			if result.Disposition != DispositionCandidate || result.Fact == nil {
+				t.Fatalf("order result=%#v", result)
+			}
+			if result.Fact.UnionID != tc.unionID || result.Fact.ProductName != tc.productName || result.Fact.PayerNameSnapshot != tc.payerNameSnapshot {
+				t.Fatalf("source fields not preserved: %#v", result.Fact)
+			}
+			if result.Fact.Status != "created" || result.Fact.TradeState != "NOTPAY" || result.Fact.AmountMinor != 1999 || result.Fact.PaidAt != nil {
+				t.Fatalf("historical order semantics changed: %#v", result.Fact)
+			}
+		})
+	}
+}
+
 func TestAdaptHistoryPreservesPendingOrderAndRefundStatuses(t *testing.T) {
 	orders := []json.RawMessage{candidateJSON(t, map[string]any{
 		"id": 11, "out_trade_no": "order-11", "product_code": "product-code-11", "amount_total": 1999, "currency": "CNY",
