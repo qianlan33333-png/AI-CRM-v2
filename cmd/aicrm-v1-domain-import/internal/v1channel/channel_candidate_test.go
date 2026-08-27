@@ -17,7 +17,7 @@ func TestConvertAutomationChannelProducesOnlyInactiveLocalWhitelist(t *testing.T
 	if got.SourceKey != "automation_channel:49" || got.Code != "v1-course" || got.Name != "课程渠道" ||
 		got.CreatedAt != channelCandidateTime || got.UpdatedAt != channelCandidateTime.Add(time.Hour) || got.MigrationActorID != 17 ||
 		got.Config != (LocalInactiveConfig{SchemaVersion: 1, ChannelType: "qrcode", CarrierType: "qrcode", ChannelCode: "v1-course", ChannelName: "课程渠道", Status: "inactive"}) ||
-		got.ArchiveConfigDigest != "sha256:020b37fc2bb77634c50387ca5d9af57e6feccca79204575ff70177707d0dce38" || !got.ArchivePayloadNeeded {
+		got.SourcePayloadDigest != "sha256:fadc54909aa2056ce414c90c5fa38e45dfcf85456f55f37e9879d700c5d5671b" || !got.SourceArchiveRetained {
 		t.Fatalf("candidate = %#v", got)
 	}
 	encoded, err := json.Marshal(got.Config)
@@ -43,9 +43,10 @@ func TestConvertAutomationChannelFailsClosed(t *testing.T) {
 		disposition  Disposition
 	}{
 		{name: "missing actor", reason: ReasonInvalidChannelDefinition, row: validChannelRowForTest(), disposition: Quarantine},
-		{name: "missing archive payload", reason: ReasonMissingEncryptedArchivePayload, row: AutomationChannelRow{SourceID: 49, ChannelCode: "v1-course", ChannelName: "课程渠道", ChannelType: "qrcode", CarrierType: "qrcode", CreatedAt: channelCandidateTime, UpdatedAt: channelCandidateTime.Add(time.Hour)}, actor: 17, disposition: Quarantine},
-		{name: "provider kind", reason: ReasonUnsupportedChannelKind, row: AutomationChannelRow{SourceID: 49, ChannelCode: "v1-course", ChannelName: "课程渠道", ChannelType: "qrcode", CarrierType: "provider_custom", CreatedAt: channelCandidateTime, UpdatedAt: channelCandidateTime.Add(time.Hour), ArchivePayload: []byte("encrypted-source-payload")}, actor: 17, disposition: Archive},
-		{name: "bad timestamps", reason: ReasonInvalidChannelDefinition, row: AutomationChannelRow{SourceID: 49, ChannelCode: "v1-course", ChannelName: "课程渠道", ChannelType: "qrcode", CarrierType: "qrcode", CreatedAt: channelCandidateTime, UpdatedAt: channelCandidateTime.Add(-time.Hour), ArchivePayload: []byte("encrypted-source-payload")}, actor: 17, disposition: Quarantine},
+		{name: "missing source payload", reason: ReasonMissingSourcePayload, row: AutomationChannelRow{SourceID: 49, ChannelCode: "v1-course", ChannelName: "课程渠道", ChannelType: "qrcode", CarrierType: "qrcode", CreatedAt: channelCandidateTime, UpdatedAt: channelCandidateTime.Add(time.Hour)}, actor: 17, disposition: Quarantine},
+		{name: "invalid source payload", reason: ReasonInvalidSourcePayload, row: AutomationChannelRow{SourceID: 49, ChannelCode: "v1-course", ChannelName: "课程渠道", ChannelType: "qrcode", CarrierType: "qrcode", CreatedAt: channelCandidateTime, UpdatedAt: channelCandidateTime.Add(time.Hour), SourcePayload: []byte("not-json")}, actor: 17, disposition: Quarantine},
+		{name: "provider kind", reason: ReasonUnsupportedChannelKind, row: AutomationChannelRow{SourceID: 49, ChannelCode: "v1-course", ChannelName: "课程渠道", ChannelType: "qrcode", CarrierType: "provider_custom", CreatedAt: channelCandidateTime, UpdatedAt: channelCandidateTime.Add(time.Hour), SourcePayload: []byte(`{"channel_name":"渠道"}`)}, actor: 17, disposition: Archive},
+		{name: "bad timestamps", reason: ReasonInvalidChannelDefinition, row: AutomationChannelRow{SourceID: 49, ChannelCode: "v1-course", ChannelName: "课程渠道", ChannelType: "qrcode", CarrierType: "qrcode", CreatedAt: channelCandidateTime, UpdatedAt: channelCandidateTime.Add(-time.Hour), SourcePayload: []byte(`{"channel_name":"渠道"}`)}, actor: 17, disposition: Quarantine},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -84,13 +85,13 @@ func TestClassifyAuxiliaryTableNeverCreatesCandidate(t *testing.T) {
 
 func validChannelRowForTest() AutomationChannelRow {
 	return AutomationChannelRow{
-		SourceID:       49,
-		ChannelCode:    "v1-course",
-		ChannelName:    "课程渠道",
-		ChannelType:    "qrcode",
-		CarrierType:    "qrcode",
-		CreatedAt:      channelCandidateTime,
-		UpdatedAt:      channelCandidateTime.Add(time.Hour),
-		ArchivePayload: []byte("encrypted-source-payload"),
+		SourceID:      49,
+		ChannelCode:   "v1-course",
+		ChannelName:   "课程渠道",
+		ChannelType:   "qrcode",
+		CarrierType:   "qrcode",
+		CreatedAt:     channelCandidateTime,
+		UpdatedAt:     channelCandidateTime.Add(time.Hour),
+		SourcePayload: []byte(`{"scene_value":"old","qr_url":"old","welcome_message":"old"}`),
 	}
 }

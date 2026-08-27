@@ -6,6 +6,7 @@ package v1channel
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"strconv"
 	"strings"
 	"time"
@@ -23,7 +24,8 @@ const (
 
 const (
 	ReasonInvalidChannelDefinition        = "invalid_channel_definition"
-	ReasonMissingEncryptedArchivePayload  = "missing_encrypted_archive_payload"
+	ReasonMissingSourcePayload            = "missing_source_payload"
+	ReasonInvalidSourcePayload            = "invalid_source_payload"
 	ReasonUnsupportedChannelKind          = "unsupported_channel_kind"
 	ReasonStaffMappingRequired            = "staff_mapping_required"
 	ReasonHistoricalEntryProjectionNeeded = "historical_entry_projection_required"
@@ -36,18 +38,18 @@ const (
 	ReasonUnknownChannelSourceTable       = "unknown_channel_source_table"
 )
 
-// AutomationChannelRow is the non-secret V1 definition plus the already
-// encrypted archive payload. ArchivePayload is never copied into a candidate;
-// it is accepted only to produce an integrity digest.
+// AutomationChannelRow contains selected V1 definition fields plus source JSON
+// decrypted from an already verified encrypted archive. SourcePayload is never
+// copied into a candidate; it is accepted only to produce an integrity digest.
 type AutomationChannelRow struct {
-	SourceID       int64
-	ChannelCode    string
-	ChannelName    string
-	ChannelType    string
-	CarrierType    string
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	ArchivePayload []byte
+	SourceID      int64
+	ChannelCode   string
+	ChannelName   string
+	ChannelType   string
+	CarrierType   string
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
+	SourcePayload json.RawMessage
 }
 
 // LocalInactiveConfig is the complete source-derived configuration whitelist.
@@ -66,15 +68,15 @@ type LocalInactiveConfig struct {
 // command, receipt, event, callback, or Provider asset. SourceKey is retained
 // solely for an importer journal/archive association.
 type CandidateChannel struct {
-	SourceKey            string
-	Code                 string
-	Name                 string
-	Config               LocalInactiveConfig
-	CreatedAt            time.Time
-	UpdatedAt            time.Time
-	MigrationActorID     int64
-	ArchiveConfigDigest  string
-	ArchivePayloadNeeded bool
+	SourceKey             string
+	Code                  string
+	Name                  string
+	Config                LocalInactiveConfig
+	CreatedAt             time.Time
+	UpdatedAt             time.Time
+	MigrationActorID      int64
+	SourcePayloadDigest   string
+	SourceArchiveRetained bool
 }
 
 type Decision[T any] struct {
@@ -89,22 +91,25 @@ func ConvertAutomationChannel(row AutomationChannelRow, migrationActorID int64) 
 	if !validChannelRow(row) || migrationActorID < 1 {
 		return quarantine[CandidateChannel](ReasonInvalidChannelDefinition)
 	}
-	if len(row.ArchivePayload) == 0 {
-		return quarantine[CandidateChannel](ReasonMissingEncryptedArchivePayload)
+	if len(row.SourcePayload) == 0 {
+		return quarantine[CandidateChannel](ReasonMissingSourcePayload)
+	}
+	if !json.Valid(row.SourcePayload) {
+		return quarantine[CandidateChannel](ReasonInvalidSourcePayload)
 	}
 	if !supportedKind(row.ChannelType) || !supportedKind(row.CarrierType) {
 		return archive[CandidateChannel](ReasonUnsupportedChannelKind)
 	}
-	digest := sha256.Sum256(row.ArchivePayload)
+	digest := sha256.Sum256(row.SourcePayload)
 	candidate := CandidateChannel{
-		SourceKey:            "automation_channel:" + decimal(row.SourceID),
-		Code:                 row.ChannelCode,
-		Name:                 row.ChannelName,
-		CreatedAt:            row.CreatedAt.UTC(),
-		UpdatedAt:            row.UpdatedAt.UTC(),
-		MigrationActorID:     migrationActorID,
-		ArchiveConfigDigest:  "sha256:" + hex.EncodeToString(digest[:]),
-		ArchivePayloadNeeded: true,
+		SourceKey:             "automation_channel:" + decimal(row.SourceID),
+		Code:                  row.ChannelCode,
+		Name:                  row.ChannelName,
+		CreatedAt:             row.CreatedAt.UTC(),
+		UpdatedAt:             row.UpdatedAt.UTC(),
+		MigrationActorID:      migrationActorID,
+		SourcePayloadDigest:   "sha256:" + hex.EncodeToString(digest[:]),
+		SourceArchiveRetained: true,
 		Config: LocalInactiveConfig{
 			SchemaVersion: 1,
 			ChannelType:   row.ChannelType,
