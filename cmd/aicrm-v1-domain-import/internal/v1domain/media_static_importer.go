@@ -2,6 +2,7 @@ package v1domain
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"time"
@@ -9,6 +10,8 @@ import (
 	media "github.com/qianlan33333-png/AI-CRM-v2/internal/media"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 )
+
+var errInvalidMediaStaticSource = errors.New("invalid archived static media definition")
 
 type MediaStaticImporter struct {
 	archive ArchiveSource
@@ -47,13 +50,17 @@ type mediaStaticJSON struct {
 }
 
 func (importer *MediaStaticImporter) Import(ctx context.Context, archiveRunID string) (StaticImportResult, error) {
-	if importer == nil || archiveRunID != importer.journal.scope.ArchiveRunID {
+	if importer == nil || ctx == nil || importer.archive == nil || importer.uow == nil || importer.writer == nil || importer.actorID < 1 ||
+		!importer.journal.validMediaStaticScope(importer.kind) || archiveRunID != importer.journal.scope.ArchiveRunID {
 		return StaticImportResult{}, ErrInvalidScope
 	}
 	result := StaticImportResult{}
 	err := importer.archive.EachTableRow(ctx, archiveRunID, importer.journal.scope.TableID, func(row v1archive.ArchivedRow) error {
 		if row.TableID != importer.journal.scope.TableID || row.AdapterID != importer.journal.scope.AdapterID {
 			return ErrInvalidScope
+		}
+		if row.SourceOrdinal < 1 || row.SourceKeyHMAC == [sha256.Size]byte{} || row.PayloadHMAC == [sha256.Size]byte{} {
+			return ErrConflict
 		}
 		var receipt media.HistoricalStaticReceipt
 		invalid := false
@@ -62,15 +69,23 @@ func (importer *MediaStaticImporter) Import(ctx context.Context, archiveRunID st
 			receipt, invalid = media.HistoricalStaticReceipt{}, false
 			var source mediaStaticJSON
 			var err error
-			if json.Unmarshal(row.Payload, &source) != nil {
-				err = media.ErrHistoricalStaticInvalid
+			if json.Unmarshal(row.Payload, &source) != nil || redactedMediaStaticDefinition(row.RedactedFields) {
+				err = errInvalidMediaStaticSource
 			} else {
 				receipt, err = importer.importSource(tx, source, row)
 			}
-			if errors.Is(err, media.ErrHistoricalStaticInvalid) {
+			// Only decoding/adapter failures are quarantine decisions. Any writer
+			// error must roll back, because target writes may already have happened.
+			if errors.Is(err, errInvalidMediaStaticSource) {
 				invalid = true
-				return importer.journal.Record(tx, TerminalReceipt{SourceKeyDigest: row.SourceKeyHMAC, PayloadDigest: row.PayloadHMAC,
+				_, found, loadErr := importer.journal.LoadTerminal(tx, SourceIdentifier(row.SourceKeyHMAC))
+				if loadErr != nil {
+					return loadErr
+				}
+				recordErr := importer.journal.Record(tx, TerminalReceipt{SourceKeyDigest: row.SourceKeyHMAC, PayloadDigest: row.PayloadHMAC,
 					Disposition: "quarantine", Reason: "invalid_static_media_definition"})
+				receipt.Replayed = found
+				return recordErr
 			}
 			return err
 		}); err != nil {
@@ -80,9 +95,9 @@ func (importer *MediaStaticImporter) Import(ctx context.Context, archiveRunID st
 			result.Quarantined++
 		} else {
 			result.Imported++
-			if receipt.Replayed {
-				result.Replayed++
-			}
+		}
+		if receipt.Replayed {
+			result.Replayed++
 		}
 		return nil
 	})
@@ -99,7 +114,7 @@ func (importer *MediaStaticImporter) importSource(ctx context.Context, source me
 			Enabled: source.Enabled, CreatedAt: source.CreatedAt, UpdatedAt: source.UpdatedAt,
 		}, origin, importer.actorID)
 		if err != nil {
-			return media.HistoricalStaticReceipt{}, err
+			return media.HistoricalStaticReceipt{}, errInvalidMediaStaticSource
 		}
 		return importer.writer.ImportImage(ctx, definition)
 	}
@@ -110,7 +125,17 @@ func (importer *MediaStaticImporter) importSource(ctx context.Context, source me
 		CreatedAt: source.CreatedAt, UpdatedAt: source.UpdatedAt,
 	}, origin, importer.actorID)
 	if err != nil {
-		return media.HistoricalStaticReceipt{}, err
+		return media.HistoricalStaticReceipt{}, errInvalidMediaStaticSource
 	}
 	return importer.writer.ImportAttachment(ctx, definition)
+}
+
+func redactedMediaStaticDefinition(fields []string) bool {
+	for _, field := range fields {
+		switch field {
+		case "id", "name", "file_name", "mime_type", "file_size", "data_base64", "description", "tags", "category", "created_at", "updated_at":
+			return true
+		}
+	}
+	return false
 }
