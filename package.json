@@ -27,9 +27,6 @@
     "audit": "npm audit --audit-level=high",
     "ci": "npm run version:check && npm run orval:check && npm run orval:contract && npm run lint && npm run typecheck && npm test && npm run build && npm run audit"
   },
-  "dependencies": {
-    "qrcode-generator": "1.5.2"
-  },
   "devDependencies": {
     "esbuild": "0.24.0",
     "jsdom": "30.0.1",
@@ -40,5 +37,9 @@
   "overrides": {
     "js-yaml": "4.3.1",
     "lodash": "4.18.1"
+  },
+  "dependencies": {
+    "qrcode-generator": "1.5.2",
+    "read-excel-file": "9.3.10"
   }
 }

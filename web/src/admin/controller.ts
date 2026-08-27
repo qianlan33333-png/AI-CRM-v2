@@ -19,6 +19,7 @@ import type { AdminReadContext, ChannelWriteInput, CouponWriteInput, CustomerLis
 import { toast, confirmBox, busy } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
 import { copyText, renderFakeQr } from './sections/util';
+import { ownerReassignmentCsvFromFile } from './ownerReassignmentFile';
 
 const ACCENT = '#3370ff';
 
@@ -975,11 +976,9 @@ export class AdminController extends PageBase {
   private migParseCsv(): void {
     const input = document.getElementById('ownerMigCsv') as HTMLInputElement | null;
     const file = input?.files?.[0];
-    if (!file) { toast('请先选择 CSV 文件', true); return; }
-    if (!file.name.toLowerCase().endsWith('.csv')) { toast('当前安全契约只接受 CSV 文件', true); return; }
-    if (file.size > 1024 * 1024) { toast('CSV 文件不能超过 1 MiB', true); return; }
+    if (!file) { toast('请先选择 CSV 或 Excel 文件', true); return; }
     this.setState({ saving: true, migFileName: file.name });
-    void file.text()
+    void ownerReassignmentCsvFromFile(file)
       .then((csv) => this.api.createOwnerReassignmentPreview(csv))
       .then((preview) => {
         this.setState({ saving: false, migPreview: preview, migConfirmed: false });
