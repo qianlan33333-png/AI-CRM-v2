@@ -72,6 +72,23 @@ func TestContactTagImporterQuarantinesWhitespaceOnlyGroup(t *testing.T) {
 	}
 }
 
+func TestContactTagImporterDoesNotResolveTagsThroughQuarantinedGroup(t *testing.T) {
+	archive := &contactArchive{rows: map[string][]v1archive.ArchivedRow{
+		contactTagGroupsTable: {contactArchivedRow(contactTagGroupsTable, 1, map[string]any{"group_id": "group-1", "group_name": " \t "})},
+		contactTagsTable:      {contactArchivedRow(contactTagsTable, 2, map[string]any{"tag_id": "tag-1", "tag_name": "Paid", "group_id": "group-1"})},
+	}}
+	journal := newContactMemoryJournal()
+	importer, err := NewContactTagImporter(archive, contactMemoryUOW{}, newContactMemoryStore(), journal, &contactDM01Verifier{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := importer.Import(context.Background(), "run")
+	if err != nil || result.ImportedGroups != 0 || result.ImportedTags != 0 || result.QuarantinedRows != 2 || len(journal.terminal) != 2 ||
+		journal.terminal[0].Reason != "invalid_tag_group" || journal.terminal[1].Reason != "tag_group_unresolved" {
+		t.Fatalf("result=%+v err=%v terminals=%+v", result, err, journal.terminal)
+	}
+}
+
 func TestContactTagImporterStopsForTransientDM01ResolverFailure(t *testing.T) {
 	stamp := time.Date(2026, 8, 28, 3, 0, 0, 0, time.UTC)
 	archive := &contactArchive{rows: map[string][]v1archive.ArchivedRow{

@@ -113,7 +113,6 @@ func (importer *ContactTagImporter) Import(ctx context.Context, archiveRunID str
 		if prior, exists := groupSourceKeys[source.GroupID]; exists && prior != row.SourceKeyHMAC {
 			return ErrConflict
 		}
-		groupSourceKeys[source.GroupID] = row.SourceKeyHMAC
 		write, err := importer.writer.ImportGroup(ctx, contactport.HistoricalTagGroupRecord{Fact: contactTagFact(row), Name: source.GroupName})
 		if errors.Is(err, contactport.ErrHistoricalTagInput) {
 			return importer.recordContactTerminal(ctx, &result, contactport.HistoricalTagGroupSource, row, "quarantine", "invalid_tag_group")
@@ -121,6 +120,7 @@ func (importer *ContactTagImporter) Import(ctx context.Context, archiveRunID str
 		if err != nil {
 			return classifyContactWriteError(err)
 		}
+		groupSourceKeys[source.GroupID] = row.SourceKeyHMAC
 		result.ImportedGroups++
 		if write.Replayed {
 			result.ReplayedRows++
