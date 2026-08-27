@@ -141,6 +141,9 @@ func (service *HistoricalTagImportService) withLineage(ctx context.Context, sour
 	}
 	result := HistoricalTagImportResult{LocalProjection: true}
 	err := service.uow.Within(ctx, func(tx context.Context) error {
+		// UnitOfWork may rerun this callback after a serialization or deadlock
+		// failure. Only the last committed attempt may determine the result.
+		result = HistoricalTagImportResult{LocalProjection: true}
 		lineage, found, err := service.journal.FindHistoricalTagLineage(tx, source, fact.SourceKeyDigest)
 		if err != nil {
 			return err

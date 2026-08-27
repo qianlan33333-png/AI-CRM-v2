@@ -92,9 +92,42 @@ func TestHistoricalTagImportFailsClosedForLineageAndCustomerCrosswalk(t *testing
 	}
 }
 
+func TestHistoricalTagImportReportsFinalAttemptAfterTransactionRetry(t *testing.T) {
+	store := newHistoricalTagMemoryStore()
+	journal := newHistoricalTagMemoryJournal()
+	group := historicalTagGroupRecord(21, "Retry", 0)
+	initial := NewHistoricalTagImportService(historicalTagMemoryUOW{}, store, journal, nil)
+	prior, err := initial.ImportGroup(context.Background(), group)
+	if err != nil || prior.Replayed {
+		t.Fatalf("initial=%+v err=%v", prior, err)
+	}
+
+	retry := historicalTagRetryUOW{afterFirst: func() {
+		delete(journal.values, historicalTagJournalKey(contactport.HistoricalTagGroupSource, group.Fact.SourceKeyDigest))
+		delete(store.groups, prior.TargetID)
+	}}
+	service := NewHistoricalTagImportService(retry, store, journal, nil)
+	result, err := service.ImportGroup(context.Background(), group)
+	if err != nil || result.Replayed || result.TargetID == prior.TargetID || !result.LocalProjection {
+		t.Fatalf("result=%+v prior=%+v err=%v", result, prior, err)
+	}
+}
+
 type historicalTagMemoryUOW struct{}
 
 func (historicalTagMemoryUOW) Within(ctx context.Context, run func(context.Context) error) error {
+	return run(ctx)
+}
+
+// historicalTagRetryUOW models a retryable transaction whose first callback
+// view is rolled back before the second callback observes the durable state.
+type historicalTagRetryUOW struct{ afterFirst func() }
+
+func (uow historicalTagRetryUOW) Within(ctx context.Context, run func(context.Context) error) error {
+	if err := run(ctx); err != nil {
+		return err
+	}
+	uow.afterFirst()
 	return run(ctx)
 }
 
