@@ -12,7 +12,8 @@ SELECT CASE WHEN sqlc.arg(search)::text = '' AND sqlc.arg(status_filter)::text =
   ELSE (SELECT count(*) FROM coupons WHERE (sqlc.arg(search)::text = '' OR name ILIKE '%' || sqlc.arg(search)::text || '%') AND (sqlc.arg(status_filter)::text = '' OR status=sqlc.arg(status_filter)::text)) END::bigint;
 
 -- name: GetCoupon :one
-SELECT c.*, COALESCE(t.refs, '[]'::jsonb) AS target_refs
+SELECT c.*, COALESCE(t.refs, '[]'::jsonb) AS target_refs,
+  EXISTS(SELECT 1 FROM coupon_v1_history_definitions h WHERE h.coupon_id=c.id) AS history_only
 FROM coupons c
 LEFT JOIN LATERAL (SELECT jsonb_agg(target_ref ORDER BY position) refs FROM coupon_targets WHERE coupon_id=c.id) t ON true
 WHERE c.id=sqlc.arg(coupon_id)::bigint;

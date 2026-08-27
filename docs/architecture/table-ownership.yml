@@ -286,9 +286,12 @@ owners:
 
   coupon:
     package: internal/coupon
-    tables: [coupons, coupon_targets, coupon_catalog_counters, coupon_operation_receipts, coupon_claims, coupon_payment_identity_sessions, coupon_sidebar_grants]
+    tables: [coupons, coupon_targets, coupon_catalog_counters, coupon_operation_receipts, coupon_claims, coupon_payment_identity_sessions, coupon_sidebar_grants, coupon_v1_history_definitions, coupon_v1_history_claims, coupon_v1_history_redemptions]
     constraints:
       coupons: single_instance_coupon_rule_and_lifecycle_facts
+      coupon_v1_history_definitions: source_marker_for_read_only_archived_coupons
+      coupon_v1_history_claims: historical_claim_facts_without_current_claim_authority
+      coupon_v1_history_redemptions: historical_redemption_facts_without_payment_or_refund_effects
       coupon_targets: typed_standard_product_references_validated_through_product_read_port
       coupon_catalog_counters: exact_unfiltered_legacy_total_without_coupon_scan
       coupon_operation_receipts: transaction_scoped_mutation_receipts_without_create_replay_claim
