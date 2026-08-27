@@ -1,5 +1,5 @@
 -- name: ListOrderProjections :many
-SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+SELECT id, record_origin, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
        status, status_label, detail_url, created_at, updated_at
@@ -23,6 +23,7 @@ SELECT id, product_id, customer_id
 FROM order_list_projections
 WHERE id = sqlc.arg(order_id)::bigint
   AND status = 'paid'
+  AND record_origin = 'native'
   AND product_id IS NOT NULL
   AND customer_id IS NOT NULL
 FOR UPDATE;
@@ -40,7 +41,7 @@ WHERE (sqlc.narg(provider)::text IS NULL OR provider = sqlc.narg(provider)::text
   AND (sqlc.narg(created_to)::timestamptz IS NULL OR created_at <= sqlc.narg(created_to)::timestamptz);
 
 -- name: ListBoardOrders :many
-SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+SELECT id, record_origin, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
        status, status_label, detail_url, created_at, updated_at
@@ -71,7 +72,7 @@ WHERE (sqlc.narg(provider)::text IS NULL OR provider = sqlc.narg(provider)::text
   AND (sqlc.narg(created_to)::timestamptz IS NULL OR created_at <= sqlc.narg(created_to)::timestamptz);
 
 -- name: GetBoardOrder :one
-SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+SELECT id, record_origin, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
        status, status_label, detail_url, created_at, updated_at
@@ -83,7 +84,7 @@ WHERE (sqlc.arg(provider)::text = 'auto' OR provider = sqlc.arg(provider)::text)
 ORDER BY id DESC LIMIT 1;
 
 -- name: GetBoardOrderByID :one
-SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+SELECT id, record_origin, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
        status, status_label, detail_url, created_at, updated_at
@@ -91,7 +92,7 @@ FROM order_list_projections
 WHERE id = sqlc.arg(id)::bigint;
 
 -- name: GetBoardOrderForUpdate :one
-SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+SELECT id, record_origin, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
        status, status_label, detail_url, created_at, updated_at
@@ -100,6 +101,7 @@ WHERE (sqlc.arg(provider)::text = 'auto' OR provider = sqlc.arg(provider)::text)
   AND (merchant_order_no = sqlc.arg(order_reference)::text
        OR platform_transaction_no = sqlc.arg(order_reference)::text
        OR id::text = sqlc.arg(order_reference)::text)
+  AND record_origin = 'native'
 ORDER BY id DESC LIMIT 1 FOR UPDATE;
 
 -- name: CountActiveRefundAmount :one
