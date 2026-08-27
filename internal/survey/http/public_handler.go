@@ -190,9 +190,8 @@ func (h *PublicHandler) Page(w http.ResponseWriter, r *http.Request, slug string
 		h.reply(w, nil, surveyapp.ErrInvalidPublicInput)
 		return
 	}
-	// The actual web bundle is mounted by the existing SPA. Never manufacture a
-	// second asset path here (or expose result tokens in a carrier document).
-	w.Header().Set("Location", "/?public_survey_slug="+slug)
+	// Use the deployed H5 form, carrying only the validated slug, never a token.
+	w.Header().Set("Location", "/h5/all.html?slug="+slug)
 	w.WriteHeader(http.StatusFound)
 }
 func (h *PublicHandler) headers(w http.ResponseWriter) {

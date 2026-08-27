@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false } = {}) {
+async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,27 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp);
+      window.__AICRM_TEST_MOCK__ = !(couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http);
+      if (h5Http) {
+        const calls = [];
+        let submissionAttempt = 0;
+        window.Headers = Headers;
+        window.__h5HttpTest = { calls };
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data });
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', body: init.body ? JSON.parse(String(init.body)) : null });
+          if (url.pathname === '/api/public/questionnaires/uat-survey') return json(h5Http.definition, h5Http.definitionStatus || 200);
+          if (url.pathname === '/api/public/questionnaires/uat-survey/submissions') {
+            const status = h5Http.submissionStatuses?.[submissionAttempt++] ?? 202;
+            if (status === 'network') throw new Error('network outcome unknown');
+            return json(status === 202 ? { result_token: 'r'.repeat(43), receipt: { questionnaire_id: 7, definition_version: 3, submission_id: 901 } } : { code: 'unavailable' }, status);
+          }
+          if (url.pathname === '/api/public/survey-submission-results/query') return json(h5Http.result, h5Http.resultStatus || 200);
+          return json({ code: 'unexpected_h5_request' }, 500);
+        };
+        return;
+      }
       if (orderHistoryHttp) {
         const calls = [];
         const order = { id: 12, record_origin: 'v1_history', created_at: '2026-08-28T00:00:00Z', merchant_order_no: 'V1-H-12', out_trade_no: 'V1-H-12', order_no: 'V1-H-12', platform_transaction_no: 'TX-H-12', transaction_id: 'TX-H-12', payer_name: '历史客户', mobile: '', product_code: 'course-history', product_name: '历史课程', amount_yuan: '99.00', currency: 'CNY', status: 'paid', status_label: '已支付', provider: 'wechat', provider_label: '微信支付', detail_url: '/api/admin/orders/V1-H-12', refundable_amount_total: 0, historical_refunds: [{ id: 31, order_id: 12, source_refund_id: 801, refund_number: 'R-801', provider_refund_id: '', transaction_id: 'TX-H-12', status: 'refunded', amount_minor: 1990, order_amount_minor: 9900, currency: 'CNY', reason: '历史退款', created_at: '2026-08-28T00:00:00Z', updated_at: '2026-08-28T00:00:00Z' }] };
@@ -1195,28 +1215,95 @@ console.log('admin/ownerMig.html（本地安全 CSV/XLSX 迁移边界）');
 }
 
 /* ================= H5 ================= */
-console.log('h5/all.html');
+const h5Definition = {
+  id: 7, slug: 'uat-survey', title: '真实问卷标题 <script>不执行</script>', description: '服务端说明', version: 3, answer_display_mode: 'all_in_one',
+  questions: [
+    { id: 101, type: 'single_choice', title: '真实单选一', required: true, sort_order: 0, minimum_selections: 1, maximum_selections: 1, options: [{ id: 11, option_text: '选项 A', sort_order: 0 }, { id: 12, option_text: '选项 B', sort_order: 1 }] },
+    { id: 102, type: 'single_choice', title: '真实单选二', required: true, sort_order: 1, minimum_selections: 1, maximum_selections: 1, options: [{ id: 21, option_text: '选项 C', sort_order: 0 }, { id: 22, option_text: '选项 D', sort_order: 1 }] },
+    { id: 103, type: 'multi_choice', title: '真实多选', required: true, sort_order: 2, minimum_selections: 2, maximum_selections: 2, options: [{ id: 31, option_text: '渠道甲', sort_order: 0 }, { id: 32, option_text: '渠道乙', sort_order: 1 }, { id: 33, option_text: '渠道丙', sort_order: 2 }] },
+    { id: 104, type: 'single_choice', title: '真实选答题', required: false, sort_order: 3, minimum_selections: 1, maximum_selections: 1, options: [{ id: 41, option_text: '可跳过', sort_order: 0 }] },
+  ],
+};
+const h5Result = { submission_id: 901, definition_version: 3, submitted_at: '2026-08-28T09:30:00Z', local_only: true, external_executed: false };
+console.log('h5/all.html（真实定义、答案与幂等重试）');
 {
-  const dom = await loadPage('h5/all.html');
+  const dom = await loadPage('h5/all.html', { q: 'slug=uat-survey', h5Http: { definition: h5Definition, submissionStatuses: ['network', 503, 202] } });
   const d = dom.window.document;
-  const opts = [...d.querySelectorAll('label')].filter((l) => l.__dcBound);
-  ok('单选+多选选项均已绑定点击', opts.length >= 9);
-  const before = d.body.innerHTML;
-  opts[1].dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  const calls = dom.window.__h5HttpTest.calls;
+  const submissions = () => calls.filter((call) => call.path.endsWith('/submissions'));
+  ok('H5 渲染服务端题目/选项，不显示 Seed 题目且文本不执行 HTML', d.querySelectorAll('[data-question-id]').length === 4 && d.body.textContent.includes(h5Definition.title) && d.body.textContent.includes('真实多选') && !d.body.textContent.includes('你目前最想解决') && !d.querySelector('#screen script'));
+  ok('H5 无默认作答', d.querySelectorAll('[aria-pressed="true"]').length === 0);
+  click(dom, d.querySelector('[data-h5-submit]'));
+  await sleep(20);
+  ok('H5 未答必答题不发送提交请求', submissions().length === 0 && d.querySelector('[data-h5-error]')?.textContent.includes('真实单选一'));
+  for (const id of [12, 21, 31, 32, 33]) click(dom, d.querySelector(`[data-option-id="${id}"]`));
+  click(dom, d.querySelector('[data-h5-submit]'));
+  await sleep(20);
+  ok('H5 校验多选数量上限', submissions().length === 0 && d.querySelector('[data-h5-error]')?.textContent.includes('真实多选'));
+  click(dom, d.querySelector('[data-option-id="33"]'));
+  click(dom, d.querySelector('[data-h5-submit]'));
   await sleep(30);
-  ok('点击单选切换选中态（重渲染）', d.body.innerHTML !== before);
+  ok('H5 按 question ID 独立提交答案、选答空题省略', JSON.stringify(submissions()[0]?.body.answers) === JSON.stringify([{ question_id: 101, option_ids: [12] }, { question_id: 102, option_ids: [21] }, { question_id: 103, option_ids: [31, 32] }]) && submissions()[0]?.body.version === 3);
+  const firstKey = submissions()[0]?.body.submission_key;
+  ok('H5 32字节 base64url key 严格43字符', /^[A-Za-z0-9_-]{43}$/.test(firstKey || ''));
+  click(dom, d.querySelector('[data-h5-submit]'));
+  await sleep(30);
+  ok('H5 未知网络结果/HTTP失败保持同一答案同一key，未显示成功', submissions().length === 2 && submissions()[1].body.submission_key === firstKey && !d.querySelector('[data-h5-receipt]') && !!d.querySelector('[data-h5-error]'));
+  click(dom, d.querySelector('[data-option-id="11"]'));
+  click(dom, d.querySelector('[data-h5-submit]'));
+  await sleep(30);
+  ok('H5 改答案使用新key并只按真实回执显示受理', submissions().length === 3 && submissions()[2].body.submission_key !== firstKey && submissions()[2].body.answers[0].option_ids[0] === 11 && !!d.querySelector('[data-h5-receipt]') && !d.querySelector('[data-h5-submit]'));
+  ok('H5 结果凭据放fragment，不加入API查询串', d.querySelector('[data-h5-result-link]')?.getAttribute('href') === 'result.html#result_token=' + 'r'.repeat(43));
   dom.window.close();
 }
 
-console.log('h5/one.html');
+console.log('h5/one.html（真实逐题模式）');
 {
-  const dom = await loadPage('h5/one.html');
+  const dom = await loadPage('h5/one.html', { q: 'slug=uat-survey', h5Http: { definition: { ...h5Definition, answer_display_mode: 'one_by_one', questions: h5Definition.questions.slice(0, 2) } } });
   const d = dom.window.document;
-  ok('显示第 3 / 12 题', d.body.textContent.includes('第 3 / 12 题'));
-  const next = [...d.querySelectorAll('button')].find((b) => b.textContent === '下一题');
-  next.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+  ok('逐题从真实第1/2题开始，不显示固定12题', d.querySelector('[data-h5-progress]')?.textContent.includes('第 1 / 2 题') && d.querySelectorAll('[data-question-id]').length === 1);
+  click(dom, d.querySelector('[data-h5-next]'));
+  ok('逐题未答不能跳过必答题', d.querySelector('[data-h5-error]')?.textContent.includes('真实单选一'));
+  click(dom, d.querySelector('[data-option-id="12"]'));
+  click(dom, d.querySelector('[data-h5-next]'));
+  click(dom, d.querySelector('[data-option-id="21"]'));
+  click(dom, d.querySelector('[data-h5-previous]'));
+  ok('逐题往返保留各自答案', d.querySelector('[data-option-id="12"]')?.getAttribute('aria-pressed') === 'true');
+  click(dom, d.querySelector('[data-h5-next]'));
+  click(dom, d.querySelector('[data-h5-submit]'));
   await sleep(30);
-  ok('下一题 → 第 4 题', d.body.textContent.includes('第 4 / 12 题'));
+  const submitted = dom.window.__h5HttpTest.calls.find((call) => call.path.endsWith('/submissions'));
+  ok('逐题只提交已选择的真实 option IDs', JSON.stringify(submitted?.body.answers) === JSON.stringify([{ question_id: 101, option_ids: [12] }, { question_id: 102, option_ids: [21] }]));
+  dom.window.close();
+}
+
+console.log('h5/result.html（真实结果与失败关闭）');
+{
+  const dom = await loadPage('h5/result.html', { q: '#result_token=' + 'r'.repeat(43), h5Http: { result: h5Result } });
+  const d = dom.window.document;
+  const call = dom.window.__h5HttpTest.calls[0];
+  ok('结果token通过POST body查询真实结果', call?.path === '/api/public/survey-submission-results/query' && call.method === 'POST' && call.query === '' && call.body.result_token === 'r'.repeat(43));
+  ok('结果只显示真实编号/版本/时间/本地效果，不伪造82分报告', !!d.querySelector('[data-h5-result]') && d.body.textContent.includes('901') && d.body.textContent.includes(h5Result.submitted_at) && !d.body.textContent.includes('你的增长基本盘不错') && !d.body.textContent.includes('总分 / 100'));
+  dom.window.close();
+}
+for (const scenario of [
+  { page: 'all', q: '', definition: h5Definition, noRequest: true },
+  { page: 'all', q: 'slug=uat-survey', definition: h5Definition, definitionStatus: 503 },
+  { page: 'all', q: 'slug=uat-survey', definition: { ...h5Definition, questions: [] } },
+  { page: 'all', q: 'slug=uat-survey', definition: { ...h5Definition, questions: [{ ...h5Definition.questions[0], type: 'free_text' }] } },
+  { page: 'result', q: '', result: h5Result, noRequest: true },
+  { page: 'result', q: 'result_token=' + 'r'.repeat(43), result: h5Result, resultStatus: 503 },
+  { page: 'result', q: 'result_token=' + 'r'.repeat(43), result: { ...h5Result, external_executed: true } },
+]) {
+  const dom = await loadPage(`h5/${scenario.page}.html`, { q: scenario.q, h5Http: scenario });
+  const d = dom.window.document;
+  ok(`H5 ${scenario.page} 缺上下文/HTTP失败/非法契约均无Seed回退`, !!d.querySelector('[data-h5-error]') && !d.querySelector('[data-question-id]') && !d.querySelector('[data-h5-result]') && !d.querySelector('[data-h5-receipt]') && (!scenario.noRequest || dom.window.__h5HttpTest.calls.length === 0));
+  dom.window.close();
+}
+for (const page of ['auth', 'loading', 'error', 'done', 'signup', 'active', 'expired', 'pay', 'qr']) {
+  const dom = await loadPage(`h5/${page}.html`, { h5Http: {} });
+  const d = dom.window.document;
+  ok(`H5 ${page} 明确blocked，不显示假成功或调用Provider`, !!d.querySelector('[data-h5-blocked]') && d.body.textContent.includes('后端能力未就绪') && !d.querySelector('#screen button') && dom.window.__h5HttpTest.calls.length === 0 && !d.body.textContent.includes('诊断报告已生成'));
   dom.window.close();
 }
 

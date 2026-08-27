@@ -13,5 +13,7 @@ export function runCapabilityTests(): void {
   assert(memberGridPublicShare.length === 1 && memberGridPublicShare[0]?.action === '周期商品分享读取、二维码与链接预览', 'Only Member Grid QR and link-preview gaps may stay backend_blocked');
   assert(CAPABILITIES.some((cap) => cap.screen === 'spProductData' && cap.action === '成员网格公开只读分享、撤销与一次性链接' && cap.state === 'real'), 'Member Grid public read-only share must be classified as real');
   assert(ADMIN_SCREENS.length === 40, 'Admin screen denominator changed without capability review');
+  assert(!CAPABILITIES.some((cap) => cap.surface === 'h5' && cap.state === 'real' && /OAuth|授权/.test(cap.action)), 'Disabled H5 OAuth cannot be classified as real');
+  assert(CAPABILITIES.some((cap) => cap.surface === 'sidebar' && cap.state === 'real' && /JSSDK/.test(cap.action) && /真实外部效果/.test(cap.reason || '')), 'Sidebar client-side sending needs an explicit external-effect boundary');
   for (const screen of ADMIN_SCREENS) assert(CAPABILITIES.some((cap) => cap.surface === 'admin' && cap.screen.split('/').includes(screen)), `Admin screen has no capability classification: ${screen}`);
 }

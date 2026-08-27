@@ -112,7 +112,7 @@ func TestPublicCarrierRejectsUnsafeSlugWithoutRedirectBody(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 	h.Page(w, httptest.NewRequest(http.MethodGet, "/q/public-1", nil), "public-1")
-	if w.Code != http.StatusFound || w.Header().Get("Location") != "/?public_survey_slug=public-1" || w.Body.Len() != 0 {
+	if w.Code != http.StatusFound || w.Header().Get("Location") != "/h5/all.html?slug=public-1" || w.Body.Len() != 0 {
 		t.Fatalf("status=%d location=%q body=%q", w.Code, w.Header().Get("Location"), w.Body.String())
 	}
 }
