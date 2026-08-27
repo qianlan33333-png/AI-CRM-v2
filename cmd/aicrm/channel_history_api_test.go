@@ -56,7 +56,7 @@ func TestChannelHistoryUsesAuthenticatedReadOnlyRoute(t *testing.T) {
 			t.Fatalf("missing %s", want)
 		}
 	}
-	if response.Header().Get("Cache-Control") != "private, no-store" {
+	if response.Header().Get("Cache-Control") != "no-store" {
 		t.Fatal("missing no-store")
 	}
 	if seen := service.capabilities(); len(seen) != 1 || seen[0] != authport.CapabilityCustomersRead {

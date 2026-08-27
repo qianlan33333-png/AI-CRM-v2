@@ -67,6 +67,8 @@ var targetBySourceTable = map[string]struct {
 	"public/wechat_pay_orders":                {"order", "order_list_projections"},
 	"public/wechat_pay_refunds":               {"order", "order_historical_refunds"},
 	"public/automation_channel":               {"contact", "channels"},
+	"public/automation_channel_contact":       {"contact", "channel_historical_contacts"},
+	"public/automation_channel_assignee":      {"contact", "channel_historical_assignees"},
 }
 
 type ReconciliationResult struct {
@@ -270,6 +272,39 @@ func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow,
 	switch expected.table {
 	case "order_list_projections", "order_historical_refunds":
 		return verifyFinanceTarget(ctx, tx, row, importedTargets)
+	case "channel_historical_contacts":
+		id, err := positiveID(*row.TargetID)
+		if err != nil {
+			return "", err
+		}
+		var target contactport.HistoricalChannelContact
+		err = tx.QueryRow(ctx, `SELECT id,channel_id,source_contact_id,customer_id,owner_reference,first_entered_at,last_entered_at,enter_count,created_at,updated_at
+FROM public.channel_historical_contacts WHERE id=$1 FOR SHARE`, id).Scan(&target.ID, &target.ChannelID, &target.SourceContactID, &target.CustomerID, &target.OwnerReference,
+			&target.FirstEnteredAt, &target.LastEnteredAt, &target.EnterCount, &target.CreatedAt, &target.UpdatedAt)
+		target.FirstEnteredAt, target.LastEnteredAt = target.FirstEnteredAt.UTC(), target.LastEnteredAt.UTC()
+		target.CreatedAt, target.UpdatedAt = target.CreatedAt.UTC(), target.UpdatedAt.UTC()
+		digest, digestErr := contactapp.HistoricalChannelContactTargetDigest(target)
+		_, sameBatch := importedTargets["channels"][strconv.FormatInt(target.ChannelID, 10)]
+		if err != nil || digestErr != nil || !sameBatch || !equalBytes(digest[:], row.TargetDigest) {
+			return "", targetVerificationError(expected.table, *row.TargetID, err)
+		}
+		proof = "history_only:" + hex.EncodeToString(digest[:])
+	case "channel_historical_assignees":
+		id, err := positiveID(*row.TargetID)
+		if err != nil {
+			return "", err
+		}
+		var target contactport.HistoricalChannelAssignee
+		err = tx.QueryRow(ctx, `SELECT id,channel_id,source_assignee_id,staff_reference,display_name_snapshot,priority,ratio_percent,max_scans_24h,status,
+to_char(source_created_at,'YYYY-MM-DD"T"HH24:MI:SS.US'),to_char(source_updated_at,'YYYY-MM-DD"T"HH24:MI:SS.US')
+FROM public.channel_historical_assignees WHERE id=$1 FOR SHARE`, id).Scan(&target.ID, &target.ChannelID, &target.SourceAssigneeID, &target.StaffReference, &target.DisplayNameSnapshot,
+			&target.Priority, &target.RatioPercent, &target.MaxScans24h, &target.Status, &target.SourceCreatedAt, &target.SourceUpdatedAt)
+		digest, digestErr := contactapp.HistoricalChannelAssigneeTargetDigest(target)
+		_, sameBatch := importedTargets["channels"][strconv.FormatInt(target.ChannelID, 10)]
+		if err != nil || digestErr != nil || !sameBatch || !equalBytes(digest[:], row.TargetDigest) {
+			return "", targetVerificationError(expected.table, *row.TargetID, err)
+		}
+		proof = "history_only:" + hex.EncodeToString(digest[:])
 	case "channels":
 		id, err := positiveID(*row.TargetID)
 		if err != nil {

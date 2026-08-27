@@ -21,7 +21,7 @@ func TestParseCampaignStepTargetRejectsInvalid(t *testing.T) {
 }
 
 func TestReconciledTableSetIsClosed(t *testing.T) {
-	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+1 {
+	if len(reconciledTables) != 10 || len(staticReconciledTables) != 6 || len(financeReconciledTables) != 2 || len(channelReconciledTables) != 9 || len(targetBySourceTable) != len(reconciledTables)+len(staticReconciledTables)+len(financeReconciledTables)+3 {
 		t.Fatalf("unexpected reconciled table set")
 	}
 	seen := map[string]bool{}
@@ -41,8 +41,8 @@ func TestReconciledTableSetIsClosed(t *testing.T) {
 		}
 		seen[table] = true
 		_, mapped := targetBySourceTable[table]
-		if mapped != (table == "public/automation_channel") {
-			t.Fatalf("only channel definitions may have a canonical import target: %s", table)
+		if mapped != (table == "public/automation_channel" || table == "public/automation_channel_contact" || table == "public/automation_channel_assignee") {
+			t.Fatalf("only channel definitions and readonly relations may have a canonical import target: %s", table)
 		}
 	}
 }

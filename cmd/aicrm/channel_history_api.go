@@ -12,7 +12,7 @@ import (
 // GetChannelHistory reads immutable historical facts. These are not the
 // current channel attribution, staff permissions or Provider execution state.
 func (handler *Handler) GetChannelHistory(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", "private, no-store")
+	w.Header().Set("Cache-Control", "no-store")
 	if handler == nil || r == nil || nilLegacyDependency(handler.channels) || nilLegacyDependency(handler.channelHistory) {
 		writeLegacyChannelError(w, contactapp.ErrChannelUnavailable)
 		return
