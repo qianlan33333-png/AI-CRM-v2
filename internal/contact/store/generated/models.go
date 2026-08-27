@@ -87,6 +87,13 @@ type CustomerContactPolicy struct {
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 }
 
+type CustomerTag struct {
+	CustomerID int64              `json:"customer_id"`
+	TagID      int64              `json:"tag_id"`
+	TaggedAt   pgtype.Timestamptz `json:"tagged_at"`
+	TaggedBy   string             `json:"tagged_by"`
+}
+
 type TagGroup struct {
 	ID        int64  `json:"id"`
 	Name      string `json:"name"`

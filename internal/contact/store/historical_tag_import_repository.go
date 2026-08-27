@@ -5,7 +5,9 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -36,15 +38,14 @@ func (*HistoricalTagImportRepository) GetHistoricalTagGroup(ctx context.Context,
 	if err != nil {
 		return contactport.HistoricalTagGroup{}, err
 	}
-	var value contactport.HistoricalTagGroup
-	err = tx.QueryRow(ctx, `SELECT id, name, sort_order FROM public.tag_groups WHERE id=$1 FOR KEY SHARE`, id).Scan(&value.ID, &value.Name, &value.SortOrder)
+	value, err := contactdb.New(tx).LockHistoricalTagImportGroup(ctx, id)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return contactport.HistoricalTagGroup{}, contactport.ErrHistoricalTagBlocked
 	}
 	if err != nil {
 		return contactport.HistoricalTagGroup{}, contactport.ErrHistoricalTagUnavailable
 	}
-	return value, nil
+	return contactport.HistoricalTagGroup{ID: value.ID, Name: value.Name, SortOrder: value.SortOrder}, nil
 }
 
 func (*HistoricalTagImportRepository) CreateHistoricalTagGroup(ctx context.Context, value contactport.HistoricalTagGroup) (contactport.HistoricalTagGroup, error) {
@@ -55,11 +56,11 @@ func (*HistoricalTagImportRepository) CreateHistoricalTagGroup(ctx context.Conte
 	if err != nil {
 		return contactport.HistoricalTagGroup{}, err
 	}
-	err = tx.QueryRow(ctx, `INSERT INTO public.tag_groups (name, sort_order) VALUES ($1, $2) RETURNING id, name, sort_order`, value.Name, value.SortOrder).Scan(&value.ID, &value.Name, &value.SortOrder)
+	row, err := contactdb.New(tx).CreateHistoricalTagImportGroup(ctx, contactdb.CreateHistoricalTagImportGroupParams{Name: value.Name, SortOrder: value.SortOrder})
 	if err != nil {
 		return contactport.HistoricalTagGroup{}, contactport.ErrHistoricalTagUnavailable
 	}
-	return value, nil
+	return contactport.HistoricalTagGroup{ID: row.ID, Name: row.Name, SortOrder: row.SortOrder}, nil
 }
 
 func (*HistoricalTagImportRepository) GetHistoricalTag(ctx context.Context, id int64) (contactport.HistoricalTag, error) {
@@ -70,7 +71,8 @@ func (*HistoricalTagImportRepository) GetHistoricalTag(ctx context.Context, id i
 	if err != nil {
 		return contactport.HistoricalTag{}, err
 	}
-	return scanHistoricalTag(tx.QueryRow(ctx, `SELECT id, group_id, wecom_tag_id, name, sort_order FROM public.tags WHERE id=$1 FOR KEY SHARE`, id))
+	row, err := contactdb.New(tx).LockHistoricalTagImport(ctx, id)
+	return historicalTagFromRow(row.ID, row.GroupID, row.WecomTagID, row.Name, row.SortOrder, err)
 }
 
 func (*HistoricalTagImportRepository) FindHistoricalTagByProviderID(ctx context.Context, providerTagID string) (contactport.HistoricalTag, bool, error) {
@@ -81,7 +83,8 @@ func (*HistoricalTagImportRepository) FindHistoricalTagByProviderID(ctx context.
 	if err != nil {
 		return contactport.HistoricalTag{}, false, err
 	}
-	value, err := scanHistoricalTag(tx.QueryRow(ctx, `SELECT id, group_id, wecom_tag_id, name, sort_order FROM public.tags WHERE wecom_tag_id=$1 FOR KEY SHARE`, providerTagID))
+	row, err := contactdb.New(tx).LockHistoricalTagImportByProviderID(ctx, providerTagID)
+	value, err := historicalTagFromRow(row.ID, row.GroupID, row.WecomTagID, row.Name, row.SortOrder, err)
 	if errors.Is(err, contactport.ErrHistoricalTagBlocked) {
 		return contactport.HistoricalTag{}, false, nil
 	}
@@ -99,9 +102,13 @@ func (*HistoricalTagImportRepository) CreateHistoricalTag(ctx context.Context, v
 	if err != nil {
 		return contactport.HistoricalTag{}, false, err
 	}
-	err = tx.QueryRow(ctx, `INSERT INTO public.tags (group_id, wecom_tag_id, name, sort_order) VALUES ($1, $2, $3, $4) ON CONFLICT (wecom_tag_id) DO NOTHING RETURNING id, group_id, wecom_tag_id, name, sort_order`, value.GroupID, value.ProviderTagID, value.Name, value.SortOrder).Scan(&value.ID, &value.GroupID, &value.ProviderTagID, &value.Name, &value.SortOrder)
+	row, err := contactdb.New(tx).CreateHistoricalTagImport(ctx, contactdb.CreateHistoricalTagImportParams{GroupID: value.GroupID, ProviderTagID: value.ProviderTagID, Name: value.Name, SortOrder: value.SortOrder})
 	if err == nil {
-		return value, true, nil
+		created, mapErr := historicalTagFromRow(row.ID, row.GroupID, row.WecomTagID, row.Name, row.SortOrder, nil)
+		if mapErr != nil {
+			return contactport.HistoricalTag{}, false, mapErr
+		}
+		return created, true, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return contactport.HistoricalTag{}, false, contactport.ErrHistoricalTagUnavailable
@@ -121,13 +128,16 @@ func (*HistoricalTagImportRepository) GetHistoricalCustomerTag(ctx context.Conte
 	if err != nil {
 		return contactport.HistoricalCustomerTag{}, false, err
 	}
-	var value contactport.HistoricalCustomerTag
-	err = tx.QueryRow(ctx, `SELECT customer_id, tag_id, tagged_at, tagged_by FROM public.customer_tags WHERE customer_id=$1 AND tag_id=$2 FOR KEY SHARE`, customerID, tagID).Scan(&value.CustomerID, &value.TagID, &value.TaggedAt, &value.TaggedBy)
+	row, err := contactdb.New(tx).LockHistoricalCustomerTagImport(ctx, contactdb.LockHistoricalCustomerTagImportParams{CustomerID: int64(customerID), TagID: tagID})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return contactport.HistoricalCustomerTag{}, false, nil
 	}
 	if err != nil {
 		return contactport.HistoricalCustomerTag{}, false, contactport.ErrHistoricalTagUnavailable
+	}
+	value, err := historicalCustomerTagFromRow(row.CustomerID, row.TagID, row.TaggedAt, row.TaggedBy)
+	if err != nil {
+		return contactport.HistoricalCustomerTag{}, false, err
 	}
 	return value, true, nil
 }
@@ -140,9 +150,13 @@ func (*HistoricalTagImportRepository) BindHistoricalCustomerTag(ctx context.Cont
 	if err != nil {
 		return contactport.HistoricalCustomerTag{}, false, err
 	}
-	err = tx.QueryRow(ctx, `INSERT INTO public.customer_tags (customer_id, tag_id, tagged_at, tagged_by) VALUES ($1, $2, $3, $4) ON CONFLICT (customer_id, tag_id) DO NOTHING RETURNING customer_id, tag_id, tagged_at, tagged_by`, value.CustomerID, value.TagID, value.TaggedAt.UTC(), value.TaggedBy).Scan(&value.CustomerID, &value.TagID, &value.TaggedAt, &value.TaggedBy)
+	row, err := contactdb.New(tx).BindHistoricalCustomerTagImport(ctx, contactdb.BindHistoricalCustomerTagImportParams{CustomerID: int64(value.CustomerID), TagID: value.TagID, TaggedAt: pgtype.Timestamptz{Time: value.TaggedAt.UTC(), Valid: true}, TaggedBy: value.TaggedBy})
 	if err == nil {
-		return value, true, nil
+		bound, mapErr := historicalCustomerTagFromRow(row.CustomerID, row.TagID, row.TaggedAt, row.TaggedBy)
+		if mapErr != nil {
+			return contactport.HistoricalCustomerTag{}, false, mapErr
+		}
+		return bound, true, nil
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return contactport.HistoricalCustomerTag{}, false, contactport.ErrHistoricalTagUnavailable
@@ -154,12 +168,19 @@ func (*HistoricalTagImportRepository) BindHistoricalCustomerTag(ctx context.Cont
 	return value, false, nil
 }
 
-func scanHistoricalTag(row pgx.Row) (contactport.HistoricalTag, error) {
-	var value contactport.HistoricalTag
-	if err := row.Scan(&value.ID, &value.GroupID, &value.ProviderTagID, &value.Name, &value.SortOrder); errors.Is(err, pgx.ErrNoRows) {
+func historicalTagFromRow(id int64, groupID pgtype.Int8, providerTagID pgtype.Text, name string, sortOrder int32, err error) (contactport.HistoricalTag, error) {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return contactport.HistoricalTag{}, contactport.ErrHistoricalTagBlocked
-	} else if err != nil {
+	}
+	if err != nil || id < 1 || !groupID.Valid || groupID.Int64 < 1 || !providerTagID.Valid || providerTagID.String == "" {
 		return contactport.HistoricalTag{}, contactport.ErrHistoricalTagUnavailable
 	}
-	return value, nil
+	return contactport.HistoricalTag{ID: id, GroupID: groupID.Int64, ProviderTagID: providerTagID.String, Name: name, SortOrder: sortOrder}, nil
+}
+
+func historicalCustomerTagFromRow(customerID, tagID int64, taggedAt pgtype.Timestamptz, taggedBy string) (contactport.HistoricalCustomerTag, error) {
+	if customerID < 1 || tagID < 1 || !taggedAt.Valid || taggedBy == "" {
+		return contactport.HistoricalCustomerTag{}, contactport.ErrHistoricalTagUnavailable
+	}
+	return contactport.HistoricalCustomerTag{CustomerID: contactport.CustomerID(customerID), TagID: tagID, TaggedAt: taggedAt.Time.UTC(), TaggedBy: taggedBy}, nil
 }
