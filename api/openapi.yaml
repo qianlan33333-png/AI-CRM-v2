@@ -9511,7 +9511,7 @@ paths:
     get:
       tags: [p4-service-period-member-grid]
       operationId: getServicePeriodMemberGridShareSettings
-      summary: Read local views and collaborators; external sharing is unsupported
+      summary: Read local views, collaborators, and revocable read-only share state
       x-legacy-mapping-ids: [LEGACY-API-0483]
       x-p4-decision-evidence: P4-SERVICE-PERIOD-MEMBER-GRID-MANAGEMENT-2026-08-22
       x-aicrm-capability: products.read
@@ -9528,6 +9528,50 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+    put:
+      tags: [p4-service-period-member-grid]
+      operationId: setServicePeriodMemberGridExternalShare
+      summary: Enable or disable one revocable read-only Member Grid share
+      x-p4-decision-evidence: P4-MEMBER-GRID-READONLY-SHARE-2026-08-27
+      x-aicrm-capability: products.write
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: required
+      x-aicrm-data-source: local_command
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { $ref: "#/components/parameters/CSRFToken" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberGridExternalShareSetRequest" } } } }
+      responses:
+        "200": { description: Current revocable state; a fragment-only public path is returned only when a token is issued, content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodMemberGridExternalShareSetResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/public/member-grid-shares/summary:
+    post:
+      tags: [p4-service-period-member-grid]
+      operationId: queryPublicServicePeriodMemberGridSummary
+      summary: Read a revocable allowlisted member grid with an opaque bearer token
+      security: []
+      x-p4-decision-evidence: P4-MEMBER-GRID-READONLY-SHARE-2026-08-27
+      x-aicrm-capability: member_grid.public.read
+      x-aicrm-auth-scheme: public_token_body
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-source: local_member_grid_projection
+      x-aicrm-data-classification: public_allowlisted_member_projection
+      x-aicrm-external-effect: none
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/PublicServicePeriodMemberGridSummaryRequest" } } } }
+      responses:
+        "200": { description: Aggregate counts and paged allowlisted member rows, content: { application/json: { schema: { $ref: "#/components/schemas/PublicServicePeriodMemberGridSummary" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "404": { $ref: "#/components/responses/NotFound" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/service-period-products/{service_product_id}/member-grid/collaborators:
@@ -15550,16 +15594,71 @@ components:
     ServicePeriodMemberGridShareSettings:
       type: object
       additionalProperties: false
-      required: [service_product_id, saved_views, collaborators, external_share_supported, external_share_enabled, real_external_call_executed, collaborator_edit_is_local_metadata_only, collaborator_edit_grants_central_permission]
+      required: [service_product_id, saved_views, collaborators, external_share_supported, external_share_enabled, external_share_version, real_external_call_executed, collaborator_edit_is_local_metadata_only, collaborator_edit_grants_central_permission]
       properties:
         service_product_id: { type: integer, format: int64, minimum: 1 }
         saved_views: { type: array, items: { $ref: "#/components/schemas/ServicePeriodMemberView" } }
         collaborators: { type: array, items: { $ref: "#/components/schemas/ServicePeriodMemberGridCollaborator" } }
-        external_share_supported: { type: boolean, enum: [false] }
-        external_share_enabled: { type: boolean, enum: [false] }
+        external_share_supported: { type: boolean, enum: [true] }
+        external_share_enabled: { type: boolean }
+        external_share_version: { type: integer, format: int64, minimum: 0 }
         real_external_call_executed: { type: boolean, enum: [false] }
         collaborator_edit_is_local_metadata_only: { type: boolean, enum: [true] }
         collaborator_edit_grants_central_permission: { type: boolean, enum: [false] }
+    ServicePeriodMemberGridExternalShareSetRequest:
+      type: object
+      additionalProperties: false
+      required: [enabled, expected_version]
+      properties:
+        enabled: { type: boolean }
+        expected_version: { type: integer, format: int64, minimum: 0 }
+    ServicePeriodMemberGridExternalShareSetResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, external_share_enabled, external_share_version, token_issued, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        external_share_enabled: { type: boolean }
+        external_share_version: { type: integer, format: int64, minimum: 1 }
+        token_issued: { type: boolean }
+        public_path: { type: string, pattern: '^/member-grid-share/index\.html#mgshare1\.[A-Za-z0-9_-]{16,128}\.[A-Za-z0-9_-]{43}$' }
+        real_external_call_executed: { type: boolean, enum: [false] }
+    PublicServicePeriodMemberGridSummaryRequest:
+      type: object
+      additionalProperties: false
+      required: [token]
+      properties:
+        token: { type: string, minLength: 72, maxLength: 181, pattern: '^mgshare1\.[A-Za-z0-9_-]{16,128}\.[A-Za-z0-9_-]{43}$' }
+        cursor: { type: string, nullable: true, maxLength: 256 }
+    PublicServicePeriodMemberGridSummaryBucket:
+      type: object
+      additionalProperties: false
+      required: [state, count]
+      properties:
+        state: { type: string, enum: [active, expired, removed] }
+        count: { type: integer, format: int64, minimum: 0 }
+    PublicServicePeriodMemberGridSummary:
+      type: object
+      additionalProperties: false
+      required: [buckets, rows, limit, next_cursor, has_more, as_of]
+      properties:
+        buckets: { type: array, minItems: 3, maxItems: 3, items: { $ref: "#/components/schemas/PublicServicePeriodMemberGridSummaryBucket" } }
+        rows: { type: array, maxItems: 50, items: { $ref: "#/components/schemas/PublicServicePeriodMemberGridPublicMember" } }
+        limit: { type: integer, enum: [50] }
+        next_cursor: { type: string, maxLength: 256 }
+        has_more: { type: boolean }
+        as_of: { type: string, format: date-time }
+    PublicServicePeriodMemberGridPublicMember:
+      type: object
+      additionalProperties: false
+      required: [display_name, state, source, starts_at, expires_at, updated_at]
+      properties:
+        display_name: { type: string }
+        state: { $ref: "#/components/schemas/ServicePeriodMemberState" }
+        source: { $ref: "#/components/schemas/ServicePeriodMemberSource" }
+        starts_at: { type: string, format: date-time }
+        expires_at: { type: string, format: date-time, nullable: true }
+        updated_at: { type: string, format: date-time }
     ExternalEffectStatus:
       type: string
       enum: [pending, sending, sent, retryable_failed, final_failed, outcome_unknown, cancelled]

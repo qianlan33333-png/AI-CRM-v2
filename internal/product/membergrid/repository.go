@@ -7,6 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
+	productdb "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/generated"
 )
 
 const productExistsSQL = `SELECT EXISTS (
@@ -76,12 +77,32 @@ type sqlExecutor interface {
 
 type executorProvider func(context.Context) (sqlExecutor, error)
 
+type shareQueries interface {
+	CurrentMemberGridExternalShare(context.Context, int64) (productdb.CurrentMemberGridExternalShareRow, error)
+	SetMemberGridExternalShare(context.Context, productdb.SetMemberGridExternalShareParams) (productdb.SetMemberGridExternalShareRow, error)
+	LookupEnabledMemberGridExternalShare(context.Context, string) (productdb.LookupEnabledMemberGridExternalShareRow, error)
+	SummarizePublicServicePeriodMembers(context.Context, int64) ([]productdb.SummarizePublicServicePeriodMembersRow, error)
+	ListPublicServicePeriodMembersFirstPage(context.Context, productdb.ListPublicServicePeriodMembersFirstPageParams) ([]productdb.ListPublicServicePeriodMembersFirstPageRow, error)
+	ListPublicServicePeriodMembersAfter(context.Context, productdb.ListPublicServicePeriodMembersAfterParams) ([]productdb.ListPublicServicePeriodMembersAfterRow, error)
+}
+
+type shareQueriesProvider func(context.Context) (shareQueries, error)
+
 type Repository struct {
-	executor executorProvider
+	executor     executorProvider
+	shareQueries shareQueriesProvider
 }
 
 func NewRepository() *Repository {
-	return &Repository{executor: transactionExecutor}
+	return &Repository{executor: transactionExecutor, shareQueries: transactionShareQueries}
+}
+
+func transactionShareQueries(ctx context.Context) (shareQueries, error) {
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return productdb.New(tx), nil
 }
 
 func transactionExecutor(ctx context.Context) (sqlExecutor, error) {

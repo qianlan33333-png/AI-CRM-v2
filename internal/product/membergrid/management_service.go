@@ -28,13 +28,17 @@ const (
 	snapshotCollaboratorCreated = "member_grid_collaborator.created"
 	snapshotCollaboratorUpdated = "member_grid_collaborator.updated"
 	snapshotCollaboratorDeleted = "member_grid_collaborator.deleted"
+	snapshotExternalShareSet    = "member_grid.external_share.set"
 )
 
 type ManagementService struct {
-	uow    platformport.UnitOfWork
-	store  ManagementStore
-	events eventport.Appender
-	now    func() time.Time
+	uow            platformport.UnitOfWork
+	store          ManagementStore
+	events         eventport.Appender
+	externalShares ExternalShareStore
+	shareIDs       ExternalShareIDFactory
+	shareTokens    *ExternalShareTokenCodec
+	now            func() time.Time
 }
 
 var _ ManagementApplication = (*ManagementService)(nil)
@@ -44,6 +48,20 @@ func NewManagementService(uow platformport.UnitOfWork, store ManagementStore, ev
 		return nil, errors.New("member grid management dependencies are required")
 	}
 	return &ManagementService{uow: uow, store: store, events: events, now: time.Now}, nil
+}
+
+// NewManagementServiceWithExternalShares keeps external sharing opt-in. The
+// legacy constructor deliberately remains fail-closed until the caller has
+// supplied the state store, fresh-ID factory, and token codec together.
+func NewManagementServiceWithExternalShares(uow platformport.UnitOfWork, store ManagementStore, events eventport.Appender, externalShares ExternalShareStore, shareIDs ExternalShareIDFactory, shareTokens *ExternalShareTokenCodec) (*ManagementService, error) {
+	service, err := NewManagementService(uow, store, events)
+	if err != nil || nilDependency(externalShares) || nilDependency(shareIDs) || shareTokens == nil {
+		return nil, errors.New("member grid external share dependencies are required")
+	}
+	service.externalShares = externalShares
+	service.shareIDs = shareIDs
+	service.shareTokens = shareTokens
+	return service, nil
 }
 
 func (service *ManagementService) ShareSettings(ctx context.Context, serviceProductID int64) (ShareSettingsResponse, error) {
@@ -63,6 +81,7 @@ func (service *ManagementService) ShareSettings(ctx context.Context, serviceProd
 		Collaborators:                           make([]Collaborator, 0),
 		ExternalShareSupported:                  false,
 		ExternalShareEnabled:                    false,
+		ExternalShareVersion:                    0,
 		RealExternalCallExecuted:                false,
 		CollaboratorEditIsLocalMetadataOnly:     true,
 		CollaboratorEditGrantsCentralPermission: false,
@@ -79,7 +98,17 @@ func (service *ManagementService) ShareSettings(ctx context.Context, serviceProd
 			return storeErr
 		}
 		response.Collaborators, storeErr = service.store.ListCollaborators(txCtx, serviceProductID)
-		return storeErr
+		if storeErr != nil || !externalShareManagementReady(service) {
+			return storeErr
+		}
+		share, shareErr := service.externalShares.CurrentExternalShare(txCtx, serviceProductID)
+		if shareErr != nil || !validExternalShare(share) || share.ServiceProductID != serviceProductID {
+			return errors.Join(ErrUnavailable, shareErr)
+		}
+		response.ExternalShareSupported = true
+		response.ExternalShareEnabled = share.Enabled
+		response.ExternalShareVersion = share.Version
+		return nil
 	})
 	if err != nil {
 		return ShareSettingsResponse{}, classifyManagementError(err)
@@ -97,6 +126,80 @@ func (service *ManagementService) ShareSettings(ctx context.Context, serviceProd
 		response.Collaborators[index] = cloneCollaborator(response.Collaborators[index])
 	}
 	return response, nil
+}
+
+// SetExternalShare persists only revocable share state. The raw token is
+// derived after the non-secret mutation snapshot has been committed, allowing
+// an idempotency replay of an enable transition without storing a bearer token
+// in product_operation_receipts.
+func (service *ManagementService) SetExternalShare(ctx context.Context, command SetExternalShareCommand) (SetExternalShareResult, error) {
+	if !externalShareManagementReady(service) {
+		return SetExternalShareResult{}, ErrUnavailable
+	}
+	normalized, payload, err := normalizeSetExternalShare(command)
+	if err != nil {
+		return SetExternalShareResult{}, err
+	}
+	snapshot, err := service.executeMutation(ctx, snapshotExternalShareSet, mutationOperationUpdate, normalized.ActorID, normalized.IdempotencyKey, payload, func(txCtx context.Context, _ time.Time) (mutationSnapshot, error) {
+		if err := service.requireManagedProduct(txCtx, normalized.ServiceProductID); err != nil {
+			return mutationSnapshot{}, err
+		}
+		current, currentErr := service.externalShares.CurrentExternalShare(txCtx, normalized.ServiceProductID)
+		if currentErr != nil {
+			return mutationSnapshot{}, currentErr
+		}
+		if !validExternalShare(current) || current.ServiceProductID != normalized.ServiceProductID {
+			return mutationSnapshot{}, ErrUnavailable
+		}
+		if current.Version != normalized.ExpectedVersion {
+			return mutationSnapshot{}, ErrConflict
+		}
+		if current.Enabled == normalized.Enabled {
+			stable := cloneExternalShare(current)
+			return mutationSnapshot{Kind: snapshotExternalShareSet, Status: http.StatusOK, ExternalShare: &stable}, nil
+		}
+
+		record := SetExternalShareRecord{
+			ServiceProductID: normalized.ServiceProductID,
+			Enabled:          normalized.Enabled,
+			ExpectedVersion:  normalized.ExpectedVersion,
+			ActorID:          normalized.ActorID,
+			IdempotencyKey:   normalized.IdempotencyKey,
+		}
+		if normalized.Enabled {
+			record.ShareID, currentErr = service.shareIDs.NewExternalShareID(txCtx)
+			if currentErr != nil {
+				return mutationSnapshot{}, currentErr
+			}
+			if !validExternalShareID(record.ShareID) {
+				return mutationSnapshot{}, ErrUnavailable
+			}
+		}
+		next, setErr := service.externalShares.SetExternalShare(txCtx, record)
+		if setErr != nil {
+			return mutationSnapshot{}, setErr
+		}
+		if !validExternalShare(next) || next.ServiceProductID != normalized.ServiceProductID || next.Enabled != normalized.Enabled ||
+			next.ShareID != record.ShareID || next.Version != current.Version+1 {
+			return mutationSnapshot{}, ErrUnavailable
+		}
+		next = cloneExternalShare(next)
+		return mutationSnapshot{Kind: snapshotExternalShareSet, Status: http.StatusOK, ExternalShare: &next, TokenIssued: normalized.Enabled}, nil
+	})
+	if err != nil {
+		return SetExternalShareResult{}, err
+	}
+	if snapshot.ExternalShare == nil || !validExternalShare(*snapshot.ExternalShare) {
+		return SetExternalShareResult{}, ErrUnavailable
+	}
+	result := SetExternalShareResult{Share: cloneExternalShare(*snapshot.ExternalShare), TokenIssued: snapshot.TokenIssued}
+	if result.TokenIssued {
+		result.PublicToken, err = service.shareTokens.Issue(result.Share.ShareID)
+		if err != nil {
+			return SetExternalShareResult{}, ErrUnavailable
+		}
+	}
+	return result, nil
 }
 
 func (service *ManagementService) CreateSavedView(ctx context.Context, command CreateSavedViewCommand) (SavedViewResponse, error) {
@@ -621,6 +724,22 @@ func normalizeDeleteCollaborator(command DeleteCollaboratorCommand) (DeleteColla
 	return command, payload, nil
 }
 
+func normalizeSetExternalShare(command SetExternalShareCommand) (SetExternalShareCommand, []byte, error) {
+	if !validSetExternalShareCommand(command) {
+		return SetExternalShareCommand{}, nil, ErrInvalidManagementInput
+	}
+	payload, err := json.Marshal(struct {
+		Action           string `json:"action"`
+		ServiceProductID int64  `json:"service_product_id"`
+		Enabled          bool   `json:"enabled"`
+		ExpectedVersion  int64  `json:"expected_version"`
+	}{"set_external_share", command.ServiceProductID, command.Enabled, command.ExpectedVersion})
+	if err != nil {
+		return SetExternalShareCommand{}, nil, ErrUnavailable
+	}
+	return command, payload, nil
+}
+
 func validSavedView(view SavedView) bool {
 	if view.ID < 1 || view.ServiceProductID < 1 || !validViewName(view.Name) || !view.State.validLegacySavedViewState() || !view.Sort.valid() ||
 		!validColumnSelection(view.Columns) || view.Version < 1 || view.CreatedBy < 1 || view.CreatedAt.IsZero() ||
@@ -675,17 +794,20 @@ func validMutationSnapshot(snapshot mutationSnapshot, kind string) bool {
 	}
 	switch kind {
 	case snapshotViewCreated:
-		return snapshot.Status == http.StatusCreated && snapshot.View != nil && snapshot.Collaborator == nil && !snapshot.Deleted && validSavedView(*snapshot.View)
+		return snapshot.Status == http.StatusCreated && snapshot.View != nil && snapshot.Collaborator == nil && snapshot.ExternalShare == nil && !snapshot.TokenIssued && !snapshot.Deleted && validSavedView(*snapshot.View)
 	case snapshotViewUpdated:
-		return snapshot.Status == http.StatusOK && snapshot.View != nil && snapshot.Collaborator == nil && !snapshot.Deleted && validSavedView(*snapshot.View)
+		return snapshot.Status == http.StatusOK && snapshot.View != nil && snapshot.Collaborator == nil && snapshot.ExternalShare == nil && !snapshot.TokenIssued && !snapshot.Deleted && validSavedView(*snapshot.View)
 	case snapshotViewDeleted:
-		return snapshot.Status == http.StatusOK && snapshot.View != nil && snapshot.Collaborator == nil && snapshot.Deleted && validSavedView(*snapshot.View)
+		return snapshot.Status == http.StatusOK && snapshot.View != nil && snapshot.Collaborator == nil && snapshot.ExternalShare == nil && !snapshot.TokenIssued && snapshot.Deleted && validSavedView(*snapshot.View)
 	case snapshotCollaboratorCreated:
-		return snapshot.Status == http.StatusCreated && snapshot.Collaborator != nil && snapshot.View == nil && !snapshot.Deleted && validCollaborator(*snapshot.Collaborator)
+		return snapshot.Status == http.StatusCreated && snapshot.Collaborator != nil && snapshot.View == nil && snapshot.ExternalShare == nil && !snapshot.TokenIssued && !snapshot.Deleted && validCollaborator(*snapshot.Collaborator)
 	case snapshotCollaboratorUpdated:
-		return snapshot.Status == http.StatusOK && snapshot.Collaborator != nil && snapshot.View == nil && !snapshot.Deleted && validCollaborator(*snapshot.Collaborator)
+		return snapshot.Status == http.StatusOK && snapshot.Collaborator != nil && snapshot.View == nil && snapshot.ExternalShare == nil && !snapshot.TokenIssued && !snapshot.Deleted && validCollaborator(*snapshot.Collaborator)
 	case snapshotCollaboratorDeleted:
-		return snapshot.Status == http.StatusOK && snapshot.Collaborator != nil && snapshot.View == nil && snapshot.Deleted && validCollaborator(*snapshot.Collaborator)
+		return snapshot.Status == http.StatusOK && snapshot.Collaborator != nil && snapshot.View == nil && snapshot.ExternalShare == nil && !snapshot.TokenIssued && snapshot.Deleted && validCollaborator(*snapshot.Collaborator)
+	case snapshotExternalShareSet:
+		return snapshot.Status == http.StatusOK && snapshot.View == nil && snapshot.Collaborator == nil && snapshot.ExternalShare != nil && !snapshot.Deleted &&
+			validExternalShare(*snapshot.ExternalShare) && (!snapshot.TokenIssued || snapshot.ExternalShare.Enabled)
 	default:
 		return false
 	}
@@ -759,6 +881,10 @@ func cloneMutationSnapshot(snapshot mutationSnapshot) mutationSnapshot {
 		collaborator := cloneCollaborator(*snapshot.Collaborator)
 		snapshot.Collaborator = &collaborator
 	}
+	if snapshot.ExternalShare != nil {
+		share := cloneExternalShare(*snapshot.ExternalShare)
+		snapshot.ExternalShare = &share
+	}
 	return snapshot
 }
 
@@ -797,4 +923,8 @@ func classifyManagementError(err error) error {
 
 func managementReady(service *ManagementService) bool {
 	return service != nil && !nilDependency(service.uow) && !nilDependency(service.store) && !nilDependency(service.events) && service.now != nil
+}
+
+func externalShareManagementReady(service *ManagementService) bool {
+	return managementReady(service) && !nilDependency(service.externalShares) && !nilDependency(service.shareIDs) && service.shareTokens != nil
 }

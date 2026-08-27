@@ -184,6 +184,7 @@ type Handler struct {
 	servicePeriod           http.Handler
 	memberGrid              http.Handler
 	memberGridManagement    http.Handler
+	memberGridExternalShare http.Handler
 	radar                   http.Handler
 	campaign                http.Handler
 	aiAudience              http.Handler

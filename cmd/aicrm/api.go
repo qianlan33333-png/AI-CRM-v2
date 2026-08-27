@@ -179,6 +179,8 @@ type candidateHandler struct {
 	sidebarOAuth              *sidebarhttp.OAuthHandler
 	sidebarJSSDK              *sidebarhttp.JSSDKHandler
 	surveyPublic              *surveyhttp.PublicHandler
+	memberGridPublic          *membergrid.PublicShareHandler
+	memberGridExternalShare   *membergrid.ExternalShareManagementHandler
 	radarPublic               *radarthttp.PublicHandler
 	surveyH5OAuth             *surveyhttp.H5OAuthHandler
 	surveyExternalPushDetail  *surveyhttp.ExternalPushDetailHandler
@@ -1259,7 +1261,41 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		pool.Close()
 		return nil, err
 	}
-	memberGridManagementService, err := membergrid.NewManagementService(uow, membergrid.NewRepository(), eventstore.NewAppender())
+	memberGridShareTokens, err := membergrid.NewExternalShareTokenCodec(config.Identity.HMACKey.Value())
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	memberGridExternalShares := membergrid.NewRepository()
+	memberGridManagementService, err := membergrid.NewManagementServiceWithExternalShares(
+		uow,
+		membergrid.NewRepository(),
+		eventstore.NewAppender(),
+		memberGridExternalShares,
+		membergrid.NewRandomExternalShareIDFactory(),
+		memberGridShareTokens,
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	memberGridExternalShareHandler, err := membergrid.NewExternalShareManagementHandler(
+		memberGridManagementService,
+		legacyMemberGridManagementAuthorizer{},
+		legacyMemberGridManagementCSRF{},
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	memberGridPublicService, err := membergrid.NewPublicShareService(
+		uow, memberGridExternalShares, memberGridExternalShares, memberGridExternalShares, memberGridShareTokens, memberGridCursor,
+	)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	memberGridPublicHandler, err := membergrid.NewPublicShareHandler(memberGridPublicService)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -1386,6 +1422,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		return nil, err
 	}
 	memberGridManagementFragment, err := membergrid.NewManagementRouteFragment(memberGridManagementHandler)
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	memberGridExternalShareFragment, err := membergrid.NewExternalShareManagementRouteFragment(memberGridExternalShareHandler)
 	if err != nil {
 		pool.Close()
 		return nil, err
@@ -1814,23 +1855,25 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		customerMergeHistory: customerMergeHistoryHandler,
 		mutations:            mutationHandler, ownerReassignments: ownerReassignmentHandler, contactPolicy: contactPolicyHandler, customerSafeExports: customerSafeExportHandler, internalEventSafeExports: internalEventSafeExportHandler,
 		tags: tagCatalogHandler, localTags: localTagCatalogHandler, stages: stageHandler,
-		segments:             segmentCRUDHandler,
-		products:             productHandler,
-		productLocal:         productLocalHandler,
-		productLifecycle:     productLifecycleHandler,
-		productExternalPush:  productExternalPushHandler,
-		servicePeriodMembers: servicePeriodMemberHandler,
-		wechatPaySettlement:  wechatPaySettlementHandler,
-		commerceRefunds:      commerceRefundHandler,
-		surveyPublic:         surveyPublicHandler,
-		radarPublic:          radarPublicHandler,
-		surveyH5OAuth:        surveyH5OAuthHandler,
-		segmentRefresh:       segmentRefreshHandler,
-		identityReviews:      identityReviewHandler,
-		identityConsole:      identityConsoleHandler,
-		identityIngest:       identityIngestHandler,
-		automationRuns:       automationstore.NewRepository(pool),
-		domainVerification:   domainVerification,
+		segments:                segmentCRUDHandler,
+		products:                productHandler,
+		productLocal:            productLocalHandler,
+		productLifecycle:        productLifecycleHandler,
+		productExternalPush:     productExternalPushHandler,
+		servicePeriodMembers:    servicePeriodMemberHandler,
+		wechatPaySettlement:     wechatPaySettlementHandler,
+		commerceRefunds:         commerceRefundHandler,
+		surveyPublic:            surveyPublicHandler,
+		memberGridPublic:        memberGridPublicHandler,
+		memberGridExternalShare: memberGridExternalShareHandler,
+		radarPublic:             radarPublicHandler,
+		surveyH5OAuth:           surveyH5OAuthHandler,
+		segmentRefresh:          segmentRefreshHandler,
+		identityReviews:         identityReviewHandler,
+		identityConsole:         identityConsoleHandler,
+		identityIngest:          identityIngestHandler,
+		automationRuns:          automationstore.NewRepository(pool),
+		domainVerification:      domainVerification,
 		legacyHealth: legacyhealth.NewHandler(legacyhealth.NewQuery(legacyhealth.RuntimeSnapshot{
 			DatabaseIsPostgres:                  config.LegacyHealth.DatabaseIsPostgres,
 			ProductionEnvironment:               config.LegacyHealth.ProductionEnvironment,
@@ -2058,6 +2101,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.servicePeriod = servicePeriodHandler
 	legacyHandler.memberGrid = memberGridFragment
 	legacyHandler.memberGridManagement = memberGridManagementFragment
+	legacyHandler.memberGridExternalShare = memberGridExternalShareFragment
 	legacyHandler.radar = radarFragment
 	legacyHandler.campaign = campaignFragment
 	legacyHandler.aiAudience = legacyAIAudienceFragment
@@ -2437,6 +2481,11 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		if err = registerPublicProtocol(http.MethodGet, "/p/{kind}/{product_id}", http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 			concrete.sidebar.PublicProductDetailByPath(writer, request, chi.URLParam(request, "kind"), chi.URLParam(request, "product_id"))
 		})); err != nil {
+			return nil, err
+		}
+	}
+	if concrete, ok := candidate.(*candidateHandler); ok && concrete.memberGridPublic != nil {
+		if err = registerPublicProtocol(http.MethodPost, membergrid.PublicShareSummaryPath, concrete.memberGridPublic); err != nil {
 			return nil, err
 		}
 	}
@@ -3082,6 +3131,17 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				if err = registerLegacy(route.method, route.pattern, route.capability, route.csrf, legacy.memberGridManagement); err != nil {
 					return nil, err
 				}
+			}
+		}
+		if legacy.memberGridExternalShare != nil {
+			if err = registerLegacy(
+				http.MethodPut,
+				membergrid.RoutePrefix+"/{service_product_id}/member-grid/share-settings",
+				authport.CapabilityProductsWrite,
+				true,
+				legacy.memberGridExternalShare,
+			); err != nil {
+				return nil, err
 			}
 		}
 		if legacy.radar != nil {

@@ -24,6 +24,36 @@ const ok = (name, cond) => {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+async function loadMemberGridShare({ token, response, responses, status = 200 } = {}) {
+  const trace = [];
+  let fetchIndex = 0;
+  const json = (body, resultStatus) => ({
+    ok: resultStatus >= 200 && resultStatus < 300,
+    status: resultStatus,
+    json: async () => body,
+  });
+  const file = path.join(DIST, 'member-grid-share/index.html');
+  let html = fs.readFileSync(file, 'utf8');
+  html = html.replace(/<script src="\.\.\/assets\/memberGridShare\.js"><\/script>/, () => `<script>${fs.readFileSync(path.join(DIST, 'assets/memberGridShare.js'), 'utf8')}</script>`);
+  const dom = new JSDOM(html, {
+    url: 'http://localhost/member-grid-share/index.html#' + (token || ''),
+    runScripts: 'dangerously',
+    beforeParse(window) {
+      const replaceState = window.history.replaceState.bind(window.history);
+      window.history.replaceState = (...args) => {
+        trace.push({ kind: 'replace', url: String(args[2] || '') });
+        return replaceState(...args);
+      };
+      window.fetch = async (input, init = {}) => {
+        trace.push({ kind: 'fetch', url: String(input), init });
+        return json(responses?.[fetchIndex++] ?? response, status);
+      };
+    },
+  });
+  await sleep(20);
+  return { dom, trace };
+}
+
 async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
@@ -1299,6 +1329,66 @@ console.log('admin/campaigns.html（trace_id 可观察性边界）');
   ok('session_id 缺契约时 fail closed 且不降级为全局查询',
     sessionText.includes('backend_blocked') && sessionText.includes('session_id') && session.window.__observabilityCalls.length === 0);
   session.window.close();
+}
+
+console.log('member-grid-share/index.html（公开会员网格 token fragment）');
+{
+  const token = `mgshare1.share_abcdefghijklmnopqrstuv.${'t'.repeat(43)}`;
+  const shared = await loadMemberGridShare({
+    token,
+    response: {
+      buckets: [
+        { state: 'removed', count: 1 },
+        { state: 'active', count: 8 },
+        { state: 'expired', count: 2 },
+      ],
+      rows: [{ display_name: '李同学', state: 'active', source: 'manual', starts_at: '2026-08-01T00:00:00Z', expires_at: null, updated_at: '2026-08-27T09:00:00Z' }],
+      limit: 50,
+      next_cursor: '',
+      has_more: false,
+      as_of: '2026-08-27T10:00:00Z',
+    },
+  });
+  const text = shared.dom.window.document.querySelector('#stage')?.textContent || '';
+  const call = shared.trace.find((entry) => entry.kind === 'fetch');
+  const request = call?.init || {};
+  ok('公开汇总在首次请求前清除 fragment，并只以 JSON body 传 token',
+    shared.trace[0]?.kind === 'replace' && shared.trace[0]?.url === '/member-grid-share/index.html' &&
+    shared.dom.window.location.hash === '' && call?.url === '/api/public/member-grid-shares/summary' &&
+    request.method === 'POST' && JSON.stringify(JSON.parse(String(request.body))) === JSON.stringify({ token }));
+  ok('公开汇总请求不带凭据且禁止缓存', request.credentials === 'omit' && request.cache === 'no-store' && new Headers(request.headers).get('Content-Type') === 'application/json');
+  ok('公开页只展示固定汇总与成员字段白名单', text.includes('有效') && text.includes('8') && text.includes('已过期') && text.includes('2') && text.includes('已移除') && text.includes('1') && text.includes('李同学') && text.includes('手工') && text.includes('汇总截至：2026-08-27T10:00:00Z'));
+  shared.dom.window.close();
+
+  const page = (name, hasMore, nextCursor) => ({
+    buckets: [{ state: 'active', count: 2 }, { state: 'expired', count: 0 }, { state: 'removed', count: 0 }],
+    rows: [{ display_name: name, state: 'active', source: 'paid_order', starts_at: '2026-08-01T00:00:00Z', expires_at: '2026-09-01T00:00:00Z', updated_at: '2026-08-27T09:00:00Z' }],
+    limit: 50,
+    next_cursor: nextCursor,
+    has_more: hasMore,
+    as_of: '2026-08-27T10:00:00Z',
+  });
+  const paged = await loadMemberGridShare({ token, responses: [page('第一位成员', true, 'mg2.opaque'), page('第二位成员', false, '')] });
+  paged.dom.window.document.querySelector('button')?.click();
+  await sleep(20);
+  const pageCalls = paged.trace.filter((entry) => entry.kind === 'fetch');
+  const pagedText = paged.dom.window.document.querySelector('#stage')?.textContent || '';
+  ok('公开成员网格用 opaque cursor 加载后续页',
+    pageCalls.length === 2 && JSON.parse(String(pageCalls[1].init.body)).cursor === 'mg2.opaque' && pagedText.includes('第一位成员') && pagedText.includes('第二位成员'));
+  paged.dom.window.close();
+
+  const failed = await loadMemberGridShare({ token, response: { message: 'internal detail must not appear' }, status: 503 });
+  const leaked = await loadMemberGridShare({ token, response: { buckets: [{ state: 'active', count: 8 }, { state: 'expired', count: 2 }, { state: 'removed', count: 1 }], rows: [], limit: 50, next_cursor: '', has_more: false, as_of: '2026-08-27T10:00:00Z', customer_id: 7 } });
+  const invalid = await loadMemberGridShare({ token: 'bad', response: {} });
+  ok('公开页拒绝额外字段，失败统一收敛且不回退 Mock/本地数据',
+    failed.dom.window.document.querySelector('#stage')?.textContent === 'Member Grid 公开会员网格暂时无法读取分享网格。' &&
+    leaked.dom.window.document.querySelector('#stage')?.textContent === 'Member Grid 公开会员网格暂时无法读取分享网格。' &&
+    invalid.dom.window.document.querySelector('#stage')?.textContent === 'Member Grid 公开会员网格暂时无法读取分享网格。' &&
+    failed.trace.filter((entry) => entry.kind === 'fetch').length === 1 && leaked.trace.filter((entry) => entry.kind === 'fetch').length === 1 && invalid.trace.filter((entry) => entry.kind === 'fetch').length === 0 &&
+    failed.trace[0]?.kind === 'replace' && leaked.trace[0]?.kind === 'replace' && invalid.trace[0]?.kind === 'replace');
+  failed.dom.window.close();
+  leaked.dom.window.close();
+  invalid.dom.window.close();
 }
 
 console.log(`\n${pass} 通过 / ${fail} 失败`);

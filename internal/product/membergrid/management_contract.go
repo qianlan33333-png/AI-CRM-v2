@@ -78,6 +78,7 @@ type ShareSettingsResponse struct {
 	Collaborators                           []Collaborator `json:"collaborators"`
 	ExternalShareSupported                  bool           `json:"external_share_supported"`
 	ExternalShareEnabled                    bool           `json:"external_share_enabled"`
+	ExternalShareVersion                    int64          `json:"external_share_version"`
 	RealExternalCallExecuted                bool           `json:"real_external_call_executed"`
 	CollaboratorEditIsLocalMetadataOnly     bool           `json:"collaborator_edit_is_local_metadata_only"`
 	CollaboratorEditGrantsCentralPermission bool           `json:"collaborator_edit_grants_central_permission"`
@@ -224,11 +225,13 @@ type MutationReceipt struct {
 }
 
 type mutationSnapshot struct {
-	Kind         string        `json:"kind"`
-	Status       int           `json:"status"`
-	View         *SavedView    `json:"view,omitempty"`
-	Collaborator *Collaborator `json:"collaborator,omitempty"`
-	Deleted      bool          `json:"deleted,omitempty"`
+	Kind          string         `json:"kind"`
+	Status        int            `json:"status"`
+	View          *SavedView     `json:"view,omitempty"`
+	Collaborator  *Collaborator  `json:"collaborator,omitempty"`
+	ExternalShare *ExternalShare `json:"external_share,omitempty"`
+	TokenIssued   bool           `json:"token_issued,omitempty"`
+	Deleted       bool           `json:"deleted,omitempty"`
 }
 
 type ManagementStore interface {

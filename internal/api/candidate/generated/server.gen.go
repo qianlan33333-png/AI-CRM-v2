@@ -5644,6 +5644,42 @@ func (e OutboundCampaignHandoffSummaryStatus) Valid() bool {
 	}
 }
 
+// Defines values for PublicServicePeriodMemberGridSummaryLimit.
+const (
+	N50 PublicServicePeriodMemberGridSummaryLimit = 50
+)
+
+// Valid indicates whether the value is a known member of the PublicServicePeriodMemberGridSummaryLimit enum.
+func (e PublicServicePeriodMemberGridSummaryLimit) Valid() bool {
+	switch e {
+	case N50:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for PublicServicePeriodMemberGridSummaryBucketState.
+const (
+	PublicServicePeriodMemberGridSummaryBucketStateActive  PublicServicePeriodMemberGridSummaryBucketState = "active"
+	PublicServicePeriodMemberGridSummaryBucketStateExpired PublicServicePeriodMemberGridSummaryBucketState = "expired"
+	PublicServicePeriodMemberGridSummaryBucketStateRemoved PublicServicePeriodMemberGridSummaryBucketState = "removed"
+)
+
+// Valid indicates whether the value is a known member of the PublicServicePeriodMemberGridSummaryBucketState enum.
+func (e PublicServicePeriodMemberGridSummaryBucketState) Valid() bool {
+	switch e {
+	case PublicServicePeriodMemberGridSummaryBucketStateActive:
+		return true
+	case PublicServicePeriodMemberGridSummaryBucketStateExpired:
+		return true
+	case PublicServicePeriodMemberGridSummaryBucketStateRemoved:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for PublicSurveyAnalyticsState.
 const (
 	PublicSurveyAnalyticsStateDisabled PublicSurveyAnalyticsState = "disabled"
@@ -6445,6 +6481,36 @@ func (e ServicePeriodMemberGridColumnType) Valid() bool {
 	}
 }
 
+// Defines values for ServicePeriodMemberGridExternalShareSetResponseOk.
+const (
+	ServicePeriodMemberGridExternalShareSetResponseOkTrue ServicePeriodMemberGridExternalShareSetResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridExternalShareSetResponseOk enum.
+func (e ServicePeriodMemberGridExternalShareSetResponseOk) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridExternalShareSetResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodMemberGridExternalShareSetResponseRealExternalCallExecuted.
+const (
+	ServicePeriodMemberGridExternalShareSetResponseRealExternalCallExecutedFalse ServicePeriodMemberGridExternalShareSetResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodMemberGridExternalShareSetResponseRealExternalCallExecuted enum.
+func (e ServicePeriodMemberGridExternalShareSetResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ServicePeriodMemberGridExternalShareSetResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ServicePeriodMemberGridQueryRequestState.
 const (
 	ServicePeriodMemberGridQueryRequestStateActive  ServicePeriodMemberGridQueryRequestState = "active"
@@ -6499,30 +6565,15 @@ func (e ServicePeriodMemberGridShareSettingsCollaboratorEditIsLocalMetadataOnly)
 	}
 }
 
-// Defines values for ServicePeriodMemberGridShareSettingsExternalShareEnabled.
-const (
-	ServicePeriodMemberGridShareSettingsExternalShareEnabledFalse ServicePeriodMemberGridShareSettingsExternalShareEnabled = false
-)
-
-// Valid indicates whether the value is a known member of the ServicePeriodMemberGridShareSettingsExternalShareEnabled enum.
-func (e ServicePeriodMemberGridShareSettingsExternalShareEnabled) Valid() bool {
-	switch e {
-	case ServicePeriodMemberGridShareSettingsExternalShareEnabledFalse:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for ServicePeriodMemberGridShareSettingsExternalShareSupported.
 const (
-	ServicePeriodMemberGridShareSettingsExternalShareSupportedFalse ServicePeriodMemberGridShareSettingsExternalShareSupported = false
+	ServicePeriodMemberGridShareSettingsExternalShareSupportedTrue ServicePeriodMemberGridShareSettingsExternalShareSupported = true
 )
 
 // Valid indicates whether the value is a known member of the ServicePeriodMemberGridShareSettingsExternalShareSupported enum.
 func (e ServicePeriodMemberGridShareSettingsExternalShareSupported) Valid() bool {
 	switch e {
-	case ServicePeriodMemberGridShareSettingsExternalShareSupportedFalse:
+	case ServicePeriodMemberGridShareSettingsExternalShareSupportedTrue:
 		return true
 	default:
 		return false
@@ -7395,13 +7446,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	False SidebarSafetyRealExternalCallExecuted = false
+	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case False:
+	case SidebarSafetyRealExternalCallExecutedFalse:
 		return true
 	default:
 		return false
@@ -7854,19 +7905,19 @@ func (e ListAutomationTriggerRunsParamsVisibility) Valid() bool {
 
 // Defines values for ListLegacyChannelsParamsStatus.
 const (
-	Active   ListLegacyChannelsParamsStatus = "active"
-	Archived ListLegacyChannelsParamsStatus = "archived"
-	Inactive ListLegacyChannelsParamsStatus = "inactive"
+	ListLegacyChannelsParamsStatusActive   ListLegacyChannelsParamsStatus = "active"
+	ListLegacyChannelsParamsStatusArchived ListLegacyChannelsParamsStatus = "archived"
+	ListLegacyChannelsParamsStatusInactive ListLegacyChannelsParamsStatus = "inactive"
 )
 
 // Valid indicates whether the value is a known member of the ListLegacyChannelsParamsStatus enum.
 func (e ListLegacyChannelsParamsStatus) Valid() bool {
 	switch e {
-	case Active:
+	case ListLegacyChannelsParamsStatusActive:
 		return true
-	case Archived:
+	case ListLegacyChannelsParamsStatusArchived:
 		return true
-	case Inactive:
+	case ListLegacyChannelsParamsStatusInactive:
 		return true
 	default:
 		return false
@@ -11128,6 +11179,46 @@ type ProductPage struct {
 	NextCursor *string   `json:"next_cursor,omitempty"`
 }
 
+// PublicServicePeriodMemberGridPublicMember defines model for PublicServicePeriodMemberGridPublicMember.
+type PublicServicePeriodMemberGridPublicMember struct {
+	DisplayName string     `json:"display_name"`
+	ExpiresAt   *time.Time `json:"expires_at"`
+
+	// Source paid_order is output-compatible only until an authoritative internal order owner is established; the manual add API cannot accept it.
+	Source    ServicePeriodMemberSource `json:"source"`
+	StartsAt  time.Time                 `json:"starts_at"`
+	State     ServicePeriodMemberState  `json:"state"`
+	UpdatedAt time.Time                 `json:"updated_at"`
+}
+
+// PublicServicePeriodMemberGridSummary defines model for PublicServicePeriodMemberGridSummary.
+type PublicServicePeriodMemberGridSummary struct {
+	AsOf       time.Time                                    `json:"as_of"`
+	Buckets    []PublicServicePeriodMemberGridSummaryBucket `json:"buckets"`
+	HasMore    bool                                         `json:"has_more"`
+	Limit      PublicServicePeriodMemberGridSummaryLimit    `json:"limit"`
+	NextCursor string                                       `json:"next_cursor"`
+	Rows       []PublicServicePeriodMemberGridPublicMember  `json:"rows"`
+}
+
+// PublicServicePeriodMemberGridSummaryLimit defines model for PublicServicePeriodMemberGridSummary.Limit.
+type PublicServicePeriodMemberGridSummaryLimit int
+
+// PublicServicePeriodMemberGridSummaryBucket defines model for PublicServicePeriodMemberGridSummaryBucket.
+type PublicServicePeriodMemberGridSummaryBucket struct {
+	Count int64                                           `json:"count"`
+	State PublicServicePeriodMemberGridSummaryBucketState `json:"state"`
+}
+
+// PublicServicePeriodMemberGridSummaryBucketState defines model for PublicServicePeriodMemberGridSummaryBucket.State.
+type PublicServicePeriodMemberGridSummaryBucketState string
+
+// PublicServicePeriodMemberGridSummaryRequest defines model for PublicServicePeriodMemberGridSummaryRequest.
+type PublicServicePeriodMemberGridSummaryRequest struct {
+	Cursor *string `json:"cursor,omitempty"`
+	Token  string  `json:"token"`
+}
+
 // PublicSurveyAnalytics defines model for PublicSurveyAnalytics.
 type PublicSurveyAnalytics struct {
 	DefinitionVersion int64                           `json:"definition_version"`
@@ -11727,6 +11818,28 @@ type ServicePeriodMemberGridColumnKey string
 // ServicePeriodMemberGridColumnType defines model for ServicePeriodMemberGridColumn.Type.
 type ServicePeriodMemberGridColumnType string
 
+// ServicePeriodMemberGridExternalShareSetRequest defines model for ServicePeriodMemberGridExternalShareSetRequest.
+type ServicePeriodMemberGridExternalShareSetRequest struct {
+	Enabled         bool  `json:"enabled"`
+	ExpectedVersion int64 `json:"expected_version"`
+}
+
+// ServicePeriodMemberGridExternalShareSetResponse defines model for ServicePeriodMemberGridExternalShareSetResponse.
+type ServicePeriodMemberGridExternalShareSetResponse struct {
+	ExternalShareEnabled     bool                                                                    `json:"external_share_enabled"`
+	ExternalShareVersion     int64                                                                   `json:"external_share_version"`
+	Ok                       ServicePeriodMemberGridExternalShareSetResponseOk                       `json:"ok"`
+	PublicPath               *string                                                                 `json:"public_path,omitempty"`
+	RealExternalCallExecuted ServicePeriodMemberGridExternalShareSetResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	TokenIssued              bool                                                                    `json:"token_issued"`
+}
+
+// ServicePeriodMemberGridExternalShareSetResponseOk defines model for ServicePeriodMemberGridExternalShareSetResponse.Ok.
+type ServicePeriodMemberGridExternalShareSetResponseOk bool
+
+// ServicePeriodMemberGridExternalShareSetResponseRealExternalCallExecuted defines model for ServicePeriodMemberGridExternalShareSetResponse.RealExternalCallExecuted.
+type ServicePeriodMemberGridExternalShareSetResponseRealExternalCallExecuted bool
+
 // ServicePeriodMemberGridMember defines model for ServicePeriodMemberGridMember.
 type ServicePeriodMemberGridMember struct {
 	CustomerId       int64      `json:"customer_id"`
@@ -11777,8 +11890,9 @@ type ServicePeriodMemberGridShareSettings struct {
 	CollaboratorEditGrantsCentralPermission ServicePeriodMemberGridShareSettingsCollaboratorEditGrantsCentralPermission `json:"collaborator_edit_grants_central_permission"`
 	CollaboratorEditIsLocalMetadataOnly     ServicePeriodMemberGridShareSettingsCollaboratorEditIsLocalMetadataOnly     `json:"collaborator_edit_is_local_metadata_only"`
 	Collaborators                           []ServicePeriodMemberGridCollaborator                                       `json:"collaborators"`
-	ExternalShareEnabled                    ServicePeriodMemberGridShareSettingsExternalShareEnabled                    `json:"external_share_enabled"`
+	ExternalShareEnabled                    bool                                                                        `json:"external_share_enabled"`
 	ExternalShareSupported                  ServicePeriodMemberGridShareSettingsExternalShareSupported                  `json:"external_share_supported"`
+	ExternalShareVersion                    int64                                                                       `json:"external_share_version"`
 	RealExternalCallExecuted                ServicePeriodMemberGridShareSettingsRealExternalCallExecuted                `json:"real_external_call_executed"`
 	SavedViews                              []ServicePeriodMemberView                                                   `json:"saved_views"`
 	ServiceProductId                        int64                                                                       `json:"service_product_id"`
@@ -11789,9 +11903,6 @@ type ServicePeriodMemberGridShareSettingsCollaboratorEditGrantsCentralPermission
 
 // ServicePeriodMemberGridShareSettingsCollaboratorEditIsLocalMetadataOnly defines model for ServicePeriodMemberGridShareSettings.CollaboratorEditIsLocalMetadataOnly.
 type ServicePeriodMemberGridShareSettingsCollaboratorEditIsLocalMetadataOnly bool
-
-// ServicePeriodMemberGridShareSettingsExternalShareEnabled defines model for ServicePeriodMemberGridShareSettings.ExternalShareEnabled.
-type ServicePeriodMemberGridShareSettingsExternalShareEnabled bool
 
 // ServicePeriodMemberGridShareSettingsExternalShareSupported defines model for ServicePeriodMemberGridShareSettings.ExternalShareSupported.
 type ServicePeriodMemberGridShareSettingsExternalShareSupported bool
@@ -13578,6 +13689,15 @@ type UpdateServicePeriodMemberGridCollaboratorParams struct {
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
 }
 
+// SetServicePeriodMemberGridExternalShareParams defines parameters for SetServicePeriodMemberGridExternalShare.
+type SetServicePeriodMemberGridExternalShareParams struct {
+	// XCSRFToken CSRF token bound to the server-side browser session.
+	XCSRFToken CSRFToken `json:"X-CSRF-Token"`
+
+	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
+	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
 // CreateServicePeriodMemberViewParams defines parameters for CreateServicePeriodMemberView.
 type CreateServicePeriodMemberViewParams struct {
 	// XCSRFToken CSRF token bound to the server-side browser session.
@@ -14614,6 +14734,9 @@ type UpdateServicePeriodMemberGridCollaboratorJSONRequestBody = ServicePeriodMem
 // QueryServicePeriodMemberGridJSONRequestBody defines body for QueryServicePeriodMemberGrid for application/json ContentType.
 type QueryServicePeriodMemberGridJSONRequestBody = ServicePeriodMemberGridQueryRequest
 
+// SetServicePeriodMemberGridExternalShareJSONRequestBody defines body for SetServicePeriodMemberGridExternalShare for application/json ContentType.
+type SetServicePeriodMemberGridExternalShareJSONRequestBody = ServicePeriodMemberGridExternalShareSetRequest
+
 // CreateServicePeriodMemberViewJSONRequestBody defines body for CreateServicePeriodMemberView for application/json ContentType.
 type CreateServicePeriodMemberViewJSONRequestBody = ServicePeriodMemberViewCreateRequest
 
@@ -14658,6 +14781,9 @@ type SaveWechatPayProductExternalPushJSONRequestBody = CommerceExternalPushConfi
 
 // ReconcileWechatShopRefundJSONRequestBody defines body for ReconcileWechatShopRefund for application/json ContentType.
 type ReconcileWechatShopRefundJSONRequestBody = EmptyObject
+
+// QueryPublicServicePeriodMemberGridSummaryJSONRequestBody defines body for QueryPublicServicePeriodMemberGridSummary for application/json ContentType.
+type QueryPublicServicePeriodMemberGridSummaryJSONRequestBody = PublicServicePeriodMemberGridSummaryRequest
 
 // SubmitPublicSurveyJSONRequestBody defines body for SubmitPublicSurvey for application/json ContentType.
 type SubmitPublicSurveyJSONRequestBody = PublicSurveySubmissionRequest
@@ -16247,9 +16373,12 @@ type ServerInterface interface {
 	// Read the closed local member-grid schema
 	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/schema)
 	GetServicePeriodMemberGridSchema(w http.ResponseWriter, r *http.Request, serviceProductId int64)
-	// Read local views and collaborators; external sharing is unsupported
+	// Read local views, collaborators, and revocable read-only share state
 	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/share-settings)
 	GetServicePeriodMemberGridShareSettings(w http.ResponseWriter, r *http.Request, serviceProductId int64)
+	// Enable or disable one revocable read-only Member Grid share
+	// (PUT /api/admin/service-period-products/{service_product_id}/member-grid/share-settings)
+	SetServicePeriodMemberGridExternalShare(w http.ResponseWriter, r *http.Request, serviceProductId int64, params SetServicePeriodMemberGridExternalShareParams)
 	// List closed built-in member-grid views
 	// (GET /api/admin/service-period-products/{service_product_id}/member-views)
 	ListServicePeriodMemberViews(w http.ResponseWriter, r *http.Request, serviceProductId int64)
@@ -16322,6 +16451,9 @@ type ServerInterface interface {
 	// Start a one-time, fail-closed Survey H5 identity gate
 	// (GET /api/h5/surveys/oauth/start)
 	StartSurveyH5OAuth(w http.ResponseWriter, r *http.Request, params StartSurveyH5OAuthParams)
+	// Read a revocable allowlisted member grid with an opaque bearer token
+	// (POST /api/public/member-grid-shares/summary)
+	QueryPublicServicePeriodMemberGridSummary(w http.ResponseWriter, r *http.Request)
 	// Read one immutable anonymous public survey definition
 	// (GET /api/public/questionnaires/{slug})
 	GetPublicSurveyDefinition(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug)
@@ -17333,9 +17465,15 @@ func (_ Unimplemented) GetServicePeriodMemberGridSchema(w http.ResponseWriter, r
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Read local views and collaborators; external sharing is unsupported
+// Read local views, collaborators, and revocable read-only share state
 // (GET /api/admin/service-period-products/{service_product_id}/member-grid/share-settings)
 func (_ Unimplemented) GetServicePeriodMemberGridShareSettings(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Enable or disable one revocable read-only Member Grid share
+// (PUT /api/admin/service-period-products/{service_product_id}/member-grid/share-settings)
+func (_ Unimplemented) SetServicePeriodMemberGridExternalShare(w http.ResponseWriter, r *http.Request, serviceProductId int64, params SetServicePeriodMemberGridExternalShareParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -17480,6 +17618,12 @@ func (_ Unimplemented) CallbackSurveyH5OAuth(w http.ResponseWriter, r *http.Requ
 // Start a one-time, fail-closed Survey H5 identity gate
 // (GET /api/h5/surveys/oauth/start)
 func (_ Unimplemented) StartSurveyH5OAuth(w http.ResponseWriter, r *http.Request, params StartSurveyH5OAuthParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read a revocable allowlisted member grid with an opaque bearer token
+// (POST /api/public/member-grid-shares/summary)
+func (_ Unimplemented) QueryPublicServicePeriodMemberGridSummary(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -24819,6 +24963,88 @@ func (siw *ServerInterfaceWrapper) GetServicePeriodMemberGridShareSettings(w htt
 	handler.ServeHTTP(w, r)
 }
 
+// SetServicePeriodMemberGridExternalShare operation middleware
+func (siw *ServerInterfaceWrapper) SetServicePeriodMemberGridExternalShare(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SetServicePeriodMemberGridExternalShareParams
+
+	headers := r.Header
+
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CSRFToken
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "X-CSRF-Token", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "X-CSRF-Token", Err: err})
+			return
+		}
+
+		params.XCSRFToken = XCSRFToken
+
+	} else {
+		err := fmt.Errorf("Header parameter X-CSRF-Token is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "X-CSRF-Token", Err: err})
+		return
+	}
+
+	// ------------- Required header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKey
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = IdempotencyKey
+
+	} else {
+		err := fmt.Errorf("Header parameter Idempotency-Key is required, but not found")
+		siw.ErrorHandlerFunc(w, r, &RequiredHeaderError{ParamName: "Idempotency-Key", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetServicePeriodMemberGridExternalShare(w, r, serviceProductId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // ListServicePeriodMemberViews operation middleware
 func (siw *ServerInterfaceWrapper) ListServicePeriodMemberViews(w http.ResponseWriter, r *http.Request) {
 
@@ -26414,6 +26640,20 @@ func (siw *ServerInterfaceWrapper) StartSurveyH5OAuth(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.StartSurveyH5OAuth(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// QueryPublicServicePeriodMemberGridSummary operation middleware
+func (siw *ServerInterfaceWrapper) QueryPublicServicePeriodMemberGridSummary(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.QueryPublicServicePeriodMemberGridSummary(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -33382,6 +33622,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-grid/share-settings", wrapper.GetServicePeriodMemberGridShareSettings)
 	})
 	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-grid/share-settings", wrapper.SetServicePeriodMemberGridExternalShare)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/member-views", wrapper.ListServicePeriodMemberViews)
 	})
 	r.Group(func(r chi.Router) {
@@ -33452,6 +33695,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/h5/surveys/oauth/start", wrapper.StartSurveyH5OAuth)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/public/member-grid-shares/summary", wrapper.QueryPublicServicePeriodMemberGridSummary)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/public/questionnaires/{slug}", wrapper.GetPublicSurveyDefinition)
@@ -40895,6 +41141,79 @@ func (response GetServicePeriodMemberGridShareSettings503JSONResponse) VisitGetS
 	return json.NewEncoder(w).Encode(response)
 }
 
+type SetServicePeriodMemberGridExternalShareRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+	Params           SetServicePeriodMemberGridExternalShareParams
+	Body             *SetServicePeriodMemberGridExternalShareJSONRequestBody
+}
+
+type SetServicePeriodMemberGridExternalShareResponseObject interface {
+	VisitSetServicePeriodMemberGridExternalShareResponse(w http.ResponseWriter) error
+}
+
+type SetServicePeriodMemberGridExternalShare200JSONResponse ServicePeriodMemberGridExternalShareSetResponse
+
+func (response SetServicePeriodMemberGridExternalShare200JSONResponse) VisitSetServicePeriodMemberGridExternalShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetServicePeriodMemberGridExternalShare400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response SetServicePeriodMemberGridExternalShare400JSONResponse) VisitSetServicePeriodMemberGridExternalShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetServicePeriodMemberGridExternalShare401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SetServicePeriodMemberGridExternalShare401JSONResponse) VisitSetServicePeriodMemberGridExternalShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetServicePeriodMemberGridExternalShare403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SetServicePeriodMemberGridExternalShare403JSONResponse) VisitSetServicePeriodMemberGridExternalShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetServicePeriodMemberGridExternalShare404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response SetServicePeriodMemberGridExternalShare404JSONResponse) VisitSetServicePeriodMemberGridExternalShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetServicePeriodMemberGridExternalShare409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SetServicePeriodMemberGridExternalShare409JSONResponse) VisitSetServicePeriodMemberGridExternalShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type SetServicePeriodMemberGridExternalShare503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response SetServicePeriodMemberGridExternalShare503JSONResponse) VisitSetServicePeriodMemberGridExternalShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type ListServicePeriodMemberViewsRequestObject struct {
 	ServiceProductId int64 `json:"service_product_id"`
 }
@@ -42633,6 +42952,50 @@ func (response StartSurveyH5OAuth400JSONResponse) VisitStartSurveyH5OAuthRespons
 type StartSurveyH5OAuth503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response StartSurveyH5OAuth503JSONResponse) VisitStartSurveyH5OAuthResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryPublicServicePeriodMemberGridSummaryRequestObject struct {
+	Body *QueryPublicServicePeriodMemberGridSummaryJSONRequestBody
+}
+
+type QueryPublicServicePeriodMemberGridSummaryResponseObject interface {
+	VisitQueryPublicServicePeriodMemberGridSummaryResponse(w http.ResponseWriter) error
+}
+
+type QueryPublicServicePeriodMemberGridSummary200JSONResponse PublicServicePeriodMemberGridSummary
+
+func (response QueryPublicServicePeriodMemberGridSummary200JSONResponse) VisitQueryPublicServicePeriodMemberGridSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryPublicServicePeriodMemberGridSummary400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response QueryPublicServicePeriodMemberGridSummary400JSONResponse) VisitQueryPublicServicePeriodMemberGridSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryPublicServicePeriodMemberGridSummary404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response QueryPublicServicePeriodMemberGridSummary404JSONResponse) VisitQueryPublicServicePeriodMemberGridSummaryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type QueryPublicServicePeriodMemberGridSummary503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response QueryPublicServicePeriodMemberGridSummary503JSONResponse) VisitQueryPublicServicePeriodMemberGridSummaryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -49805,9 +50168,12 @@ type StrictServerInterface interface {
 	// Read the closed local member-grid schema
 	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/schema)
 	GetServicePeriodMemberGridSchema(ctx context.Context, request GetServicePeriodMemberGridSchemaRequestObject) (GetServicePeriodMemberGridSchemaResponseObject, error)
-	// Read local views and collaborators; external sharing is unsupported
+	// Read local views, collaborators, and revocable read-only share state
 	// (GET /api/admin/service-period-products/{service_product_id}/member-grid/share-settings)
 	GetServicePeriodMemberGridShareSettings(ctx context.Context, request GetServicePeriodMemberGridShareSettingsRequestObject) (GetServicePeriodMemberGridShareSettingsResponseObject, error)
+	// Enable or disable one revocable read-only Member Grid share
+	// (PUT /api/admin/service-period-products/{service_product_id}/member-grid/share-settings)
+	SetServicePeriodMemberGridExternalShare(ctx context.Context, request SetServicePeriodMemberGridExternalShareRequestObject) (SetServicePeriodMemberGridExternalShareResponseObject, error)
 	// List closed built-in member-grid views
 	// (GET /api/admin/service-period-products/{service_product_id}/member-views)
 	ListServicePeriodMemberViews(ctx context.Context, request ListServicePeriodMemberViewsRequestObject) (ListServicePeriodMemberViewsResponseObject, error)
@@ -49880,6 +50246,9 @@ type StrictServerInterface interface {
 	// Start a one-time, fail-closed Survey H5 identity gate
 	// (GET /api/h5/surveys/oauth/start)
 	StartSurveyH5OAuth(ctx context.Context, request StartSurveyH5OAuthRequestObject) (StartSurveyH5OAuthResponseObject, error)
+	// Read a revocable allowlisted member grid with an opaque bearer token
+	// (POST /api/public/member-grid-shares/summary)
+	QueryPublicServicePeriodMemberGridSummary(ctx context.Context, request QueryPublicServicePeriodMemberGridSummaryRequestObject) (QueryPublicServicePeriodMemberGridSummaryResponseObject, error)
 	// Read one immutable anonymous public survey definition
 	// (GET /api/public/questionnaires/{slug})
 	GetPublicSurveyDefinition(ctx context.Context, request GetPublicSurveyDefinitionRequestObject) (GetPublicSurveyDefinitionResponseObject, error)
@@ -53615,6 +53984,40 @@ func (sh *strictHandler) GetServicePeriodMemberGridShareSettings(w http.Response
 	}
 }
 
+// SetServicePeriodMemberGridExternalShare operation middleware
+func (sh *strictHandler) SetServicePeriodMemberGridExternalShare(w http.ResponseWriter, r *http.Request, serviceProductId int64, params SetServicePeriodMemberGridExternalShareParams) {
+	var request SetServicePeriodMemberGridExternalShareRequestObject
+
+	request.ServiceProductId = serviceProductId
+	request.Params = params
+
+	var body SetServicePeriodMemberGridExternalShareJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.SetServicePeriodMemberGridExternalShare(ctx, request.(SetServicePeriodMemberGridExternalShareRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SetServicePeriodMemberGridExternalShare")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SetServicePeriodMemberGridExternalShareResponseObject); ok {
+		if err := validResponse.VisitSetServicePeriodMemberGridExternalShareResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // ListServicePeriodMemberViews operation middleware
 func (sh *strictHandler) ListServicePeriodMemberViews(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
 	var request ListServicePeriodMemberViewsRequestObject
@@ -54357,6 +54760,37 @@ func (sh *strictHandler) StartSurveyH5OAuth(w http.ResponseWriter, r *http.Reque
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(StartSurveyH5OAuthResponseObject); ok {
 		if err := validResponse.VisitStartSurveyH5OAuthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// QueryPublicServicePeriodMemberGridSummary operation middleware
+func (sh *strictHandler) QueryPublicServicePeriodMemberGridSummary(w http.ResponseWriter, r *http.Request) {
+	var request QueryPublicServicePeriodMemberGridSummaryRequestObject
+
+	var body QueryPublicServicePeriodMemberGridSummaryJSONRequestBody
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.QueryPublicServicePeriodMemberGridSummary(ctx, request.(QueryPublicServicePeriodMemberGridSummaryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "QueryPublicServicePeriodMemberGridSummary")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(QueryPublicServicePeriodMemberGridSummaryResponseObject); ok {
+		if err := validResponse.VisitQueryPublicServicePeriodMemberGridSummaryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

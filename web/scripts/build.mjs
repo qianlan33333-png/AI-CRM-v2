@@ -157,6 +157,21 @@ ${tpl}
 `;
 }
 
+function memberGridSharePage() {
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Member Grid 公开会员网格</title>
+<link rel="stylesheet" href="../assets/tokens.css">
+</head>
+<body><div id="stage" class="ix-wrap"></div><script src="../assets/memberGridShare.js"></script></body>
+</html>
+`;
+}
+
 /* ---------- 索引页 ---------- */
 function topIndex() {
   const adminLinks = registry.screens
@@ -252,6 +267,9 @@ async function main() {
   // 侧边栏
   write(path.join(DIST, 'sidebar/index.html'), sidebarPage());
 
+  // Member Grid 公开只读分享
+  write(path.join(DIST, 'member-grid-share/index.html'), memberGridSharePage());
+
   // 总索引
   write(path.join(DIST, 'index.html'), topIndex());
 
@@ -265,6 +283,7 @@ async function main() {
       admin: path.join(SRC, 'admin/main.ts'),
       h5: path.join(SRC, 'h5/main.ts'),
       sidebar: path.join(SRC, 'sidebar/main.ts'),
+      memberGridShare: path.join(SRC, 'public/main.ts'),
     },
     bundle: true,
     format: 'iife',
@@ -274,8 +293,8 @@ async function main() {
     logLevel: 'warning',
   });
 
-  const count = registry.screens.length + h5Registry.length + 3;
-  console.log(`✓ build done: ${count} pages + 3 bundles → dist/`);
+  const count = registry.screens.length + h5Registry.length + 4;
+  console.log(`✓ build done: ${count} pages + 4 bundles → dist/`);
 }
 
 main().catch((e) => {

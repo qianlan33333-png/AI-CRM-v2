@@ -111,6 +111,7 @@ const (
 	p4SidebarPhoneAndPreviewEvidence           = "P4-W2-A-2026-08-26"
 	p4CustomerProfileReadEvidence              = "P4-CUSTOMER-PROFILE-READ-V2-2026-08-26"
 	p4ServicePeriodMemberGridCanonicalEvidence = "P4-SERVICE-PERIOD-MEMBER-GRID-CANONICAL-LOCAL-CORE-2026-08-24"
+	p4MemberGridReadonlyShareEvidence          = "P4-MEMBER-GRID-READONLY-SHARE-2026-08-27"
 	c01DispatchOperationID                     = "dispatchOutboundCampaignHandoff"
 	c01DispatchReadOperationID                 = "getOutboundCampaignDispatchReconciliation"
 	c01DispatchReconcileOperationID            = "reconcileOutboundCampaignDispatch"
@@ -136,6 +137,8 @@ var commerceRefundOperations = map[string]nativePackageOperation{
 }
 
 var nativePackageOperations = map[string]nativePackageOperation{
+	"setServicePeriodMemberGridExternalShare":   {"/api/admin/service-period-products/{service_product_id}/member-grid/share-settings", "PUT", p4MemberGridReadonlyShareEvidence, "products.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
+	"queryPublicServicePeriodMemberGridSummary": {"/api/public/member-grid-shares/summary", "POST", p4MemberGridReadonlyShareEvidence, "member_grid.public.read", "public_token_body", "public_allowlisted_member_projection", "local_member_grid_projection", "none", nil},
 	"getChannelAcquisitionPreview":              {"/api/admin/channels/{channel_id}/acquisition-preview", "GET", p4ChannelAcquisitionEvidence, "channels.read", "human_session", "internal", "contact.local_channel_projection", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"updateChannelAcquisitionAssignees":         {"/api/admin/channels/{channel_id}/assignees", "PUT", p4ChannelAcquisitionEvidence, "channels.write", "human_session", "internal", "contact.local_channel_transaction", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"listChannelAcquisitionStaff":               {"/api/admin/channels/{channel_id}/acquisition-staff", "GET", p4ChannelAcquisitionStaffEvidence, "channels.read", "human_session", "internal", "wecom.follow_user_list_intersect_contact.active_staff", "none", map[string]string{"admin": "global", "ops": "global"}},
@@ -1635,6 +1638,15 @@ func validateNativePackageOperationWithCanonicalMapping(path string, item *opena
 		}
 		if _, declared := op.Extensions["x-aicrm-rbac-scopes"]; declared {
 			return fmt.Errorf("%s public native package operation must not declare RBAC scopes", op.OperationID)
+		}
+		return nil
+	}
+	if contract.authScheme == "public_token_body" {
+		if op.Security == nil || len(*op.Security) != 0 || op.Extensions["x-aicrm-session-bound-csrf"] != contract.csrf {
+			return fmt.Errorf("%s public token authorization drifted", op.OperationID)
+		}
+		if _, declared := op.Extensions["x-aicrm-rbac-scopes"]; declared {
+			return fmt.Errorf("%s public token operation must not declare RBAC scopes", op.OperationID)
 		}
 		return nil
 	}
