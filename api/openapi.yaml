@@ -10016,7 +10016,7 @@ paths:
       parameters: [{ $ref: "#/components/parameters/CSRFToken" }, { $ref: "#/components/parameters/IdempotencyKey" }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/OperationMemberSyncRequest" } } } }
       responses:
-        "200": { description: "Durable scope-owned selector projection after a successful Provider read; this is not a send or delivery fact.", content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/AIAudienceOperationMemberListResponse" }, { $ref: "#/components/schemas/GroupOpsOperationMemberPage" }] } } } }
+        "200": { description: "Durable scope-owned selector projection after a successful Provider read; this is not a send or delivery fact.", content: { application/json: { schema: { oneOf: [{ $ref: "#/components/schemas/AIAudienceOperationMemberListResponse" }, { $ref: "#/components/schemas/GroupOpsOperationMemberSyncPage" }] } } } }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -14060,6 +14060,26 @@ components:
       properties:
         scope: { type: string, enum: [group_ops] }
         items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/GroupOpsOperationMember" } }
+        page_size: { type: integer, minimum: 1, maximum: 100 }
+        provider_execution_eligible: { type: boolean }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        provider_accepted: { type: boolean, enum: [false] }
+        delivery_proven: { type: boolean, enum: [false] }
+    GroupOpsOperationMemberSyncItem:
+      type: object
+      additionalProperties: false
+      required: [sender_userid, display_name]
+      properties:
+        staff_id: { type: integer, format: int64, minimum: 1 }
+        sender_userid: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 }
+        display_name: { type: string, minLength: 1, maxLength: 128 }
+    GroupOpsOperationMemberSyncPage:
+      type: object
+      additionalProperties: false
+      required: [scope, items, page_size, provider_execution_eligible, real_external_call_executed, provider_accepted, delivery_proven]
+      properties:
+        scope: { type: string, enum: [group_ops] }
+        items: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/GroupOpsOperationMemberSyncItem" } }
         page_size: { type: integer, minimum: 1, maximum: 100 }
         provider_execution_eligible: { type: boolean }
         real_external_call_executed: { type: boolean, enum: [false] }
