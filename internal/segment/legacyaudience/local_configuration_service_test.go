@@ -322,6 +322,9 @@ func TestLocalConfigurationServiceRejectsConflictingIdempotencyPayload(t *testin
 
 func TestLocalConfigurationServiceVersionsPreviewsAndMaterializesTypedSnapshot(t *testing.T) {
 	world := newLocalConfigurationWorld()
+	paused := world.base.packages[101]
+	paused.Metadata.Lifecycle = PackagePaused
+	world.base.packages[101] = paused
 	service := newLocalConfigurationService(t, world)
 	input := PutConfigurationInput{
 		PackageID: 101, ExpectedVersion: 0, ExpectedPackageVersion: 1,
@@ -363,5 +366,41 @@ func TestLocalConfigurationServiceVersionsPreviewsAndMaterializesTypedSnapshot(t
 	}
 	if len(world.receipts) != 3 || len(world.base.events) != 3 {
 		t.Fatalf("actor-bound config receipts=%d events=%d, want 3 each", len(world.receipts), len(world.base.events))
+	}
+}
+
+func TestLocalConfigurationServiceRejectsActivePackageConfigurationActions(t *testing.T) {
+	world := newLocalConfigurationWorld()
+	paused := world.base.packages[101]
+	paused.Metadata.Lifecycle = PackagePaused
+	world.base.packages[101] = paused
+	service := newLocalConfigurationService(t, world)
+	if _, err := service.PutConfiguration(context.Background(), PutConfigurationInput{
+		PackageID: 101, ExpectedVersion: 0, ExpectedPackageVersion: 1,
+		Actor: Actor{AdminUserID: 9}, IdempotencyKey: "configuration-paused-before-active",
+	}); err != nil {
+		t.Fatalf("initial paused configuration: %v", err)
+	}
+	active := world.base.packages[101]
+	active.Metadata.Lifecycle = PackageActive
+	world.base.packages[101] = active
+
+	if _, err := service.PutConfiguration(context.Background(), PutConfigurationInput{
+		PackageID: 101, ExpectedVersion: 1, ExpectedPackageVersion: 1,
+		Actor: Actor{AdminUserID: 9}, IdempotencyKey: "configuration-active-put",
+	}); !errors.Is(err, ErrConflict) {
+		t.Fatalf("active put error=%v, want conflict", err)
+	}
+	if _, err := service.PreviewConfiguration(context.Background(), PreviewConfigurationInput{PackageID: 101, ConfigurationVersion: 1}); !errors.Is(err, ErrConflict) {
+		t.Fatalf("active preview error=%v, want conflict", err)
+	}
+	if _, err := service.MaterializeConfiguration(context.Background(), MaterializeConfigurationInput{
+		PackageID: 101, ConfigurationVersion: 1, ExpectedPackageVersion: 1,
+		Actor: Actor{AdminUserID: 9}, IdempotencyKey: "configuration-active-materialize",
+	}); !errors.Is(err, ErrConflict) {
+		t.Fatalf("active materialize error=%v, want conflict", err)
+	}
+	if current := world.configs[101]; current.Version != 1 || len(world.base.events) != 1 {
+		t.Fatalf("active configuration changed snapshot=%+v events=%d", current, len(world.base.events))
 	}
 }

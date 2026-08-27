@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, radarHttp = false, serviceProductHttp = false } = {}) {
+async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -93,7 +93,7 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
           package_id: 6,
           name: '待唤醒客户',
           group_id: 2,
-          lifecycle: 'paused',
+          lifecycle: audienceActive ? 'active' : 'paused',
           version: packageVersion,
           refresh_mode: 'manual',
           refresh_cron: null,
@@ -858,7 +858,7 @@ console.log('admin/audienceEdit.html（HTTP 保存→配置快照→预览）');
   const d = dom.window.document;
   await sleep(40);
   input(dom, d.querySelector('#aeName'), '已保存的待唤醒客户');
-  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存并预览'));
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存新版本并预览'));
   await sleep(80);
   const calls = dom.window.__audienceHttpTest.calls;
   const patch = calls.findIndex((call) => call.path === '/api/admin/ai-audience/packages/6' && call.method === 'PATCH');
@@ -878,7 +878,7 @@ console.log('admin/audienceEdit.html（HTTP 空人群显式确认）');
   const dom = await loadPage('admin/audienceEdit.html', { id: 6, audienceHttp: true, audienceEmpty: true });
   const d = dom.window.document;
   await sleep(40);
-  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存并预览'));
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存新版本并预览'));
   await sleep(80);
   ok('空人群预览要求明确确认且物化尚未执行',
     d.querySelector('[data-audience-preview="empty_pending"]')?.textContent.includes('物化已拒绝') &&
@@ -892,6 +892,19 @@ console.log('admin/audienceEdit.html（HTTP 空人群显式确认）');
     d.querySelector('[data-audience-preview="empty_confirmed"]')?.textContent.includes('仍需单独确认物化') &&
     d.querySelector('#fb-body')?.textContent.includes('当前已确认空人群') &&
     !dom.window.__audienceHttpTest.calls.some((call) => call.path.includes('materialize')));
+  dom.window.close();
+}
+
+console.log('admin/audienceEdit.html（active 人群包拒绝配置保存与预览）');
+{
+  const dom = await loadPage('admin/audienceEdit.html', { id: 6, audienceHttp: true, audienceActive: true });
+  const d = dom.window.document;
+  await sleep(40);
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存新版本并预览'));
+  await sleep(30);
+  ok('active 人群包在详情页发请求前被拒绝，且不触发外发或启用',
+    d.body.textContent.includes('请先停止后再保存或预览本地配置') &&
+    !dom.window.__audienceHttpTest.calls.some((call) => call.method !== 'GET' || call.path.includes('activate') || call.path.includes('materialize')));
   dom.window.close();
 }
 
