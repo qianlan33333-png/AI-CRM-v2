@@ -49,7 +49,8 @@ func (journal *Journal) RecordHistoricalStaticProduct(ctx context.Context, recei
 func productTerminalFromReceipt(receipt product.HistoricalStaticProductReceipt) (TerminalReceipt, error) {
 	sourceKey, err := ParseSourceIdentifier(receipt.SourceIdentifier)
 	if err != nil || sourceKey == [sha256.Size]byte{} || receipt.PayloadDigest == [sha256.Size]byte{} || receipt.Replayed || receipt.SourceID < 1 ||
-		receipt.TargetProductID < 1 || !productReceiptText(receipt.OriginalStatus, 128) || !productReceiptText(receipt.TargetProductCode, 200) {
+		receipt.TargetProductID < 1 || !productReceiptText(receipt.OriginalStatus, 128) || !productReceiptText(receipt.TargetProductCode, 200) ||
+		!productReceiptText(receipt.TargetProductName, 200) || receipt.PriceMinor < 0 || receipt.Currency != "CNY" || receipt.CreatedBy < 1 {
 		return TerminalReceipt{}, ErrInvalidScope
 	}
 	targetID := strconv.FormatInt(int64(receipt.TargetProductID), 10)
@@ -57,27 +58,38 @@ func productTerminalFromReceipt(receipt product.HistoricalStaticProductReceipt) 
 		TargetDigest: productTargetDigest(targetID, receipt.PayloadDigest), Metadata: map[string]any{
 			"source_id": strconv.FormatInt(receipt.SourceID, 10), "original_status": receipt.OriginalStatus,
 			"original_enabled": receipt.OriginalEnabled, "target_product_code": receipt.TargetProductCode,
+			"target_product_name": receipt.TargetProductName, "price_minor": strconv.FormatInt(receipt.PriceMinor, 10),
+			"currency": receipt.Currency, "created_by": strconv.FormatInt(receipt.CreatedBy, 10),
 		}}, nil
 }
 
 func productReceiptFromTerminal(sourceIdentifier string, terminal TerminalReceipt) (product.HistoricalStaticProductReceipt, error) {
 	sourceKey, err := ParseSourceIdentifier(sourceIdentifier)
 	if err != nil || sourceKey == [sha256.Size]byte{} || terminal.SourceKeyDigest != sourceKey || terminal.PayloadDigest == [sha256.Size]byte{} ||
-		terminal.Disposition != "import" || terminal.Reason != "" || terminal.TargetDigest != productTargetDigest(terminal.TargetID, terminal.PayloadDigest) || len(terminal.Metadata) != 4 {
+		terminal.Disposition != "import" || terminal.Reason != "" || terminal.TargetDigest != productTargetDigest(terminal.TargetID, terminal.PayloadDigest) || len(terminal.Metadata) != 8 {
 		return product.HistoricalStaticProductReceipt{}, ErrConflict
 	}
 	sourceText, sourceOK := terminal.Metadata["source_id"].(string)
 	status, statusOK := terminal.Metadata["original_status"].(string)
 	enabled, enabledOK := terminal.Metadata["original_enabled"].(bool)
 	code, codeOK := terminal.Metadata["target_product_code"].(string)
+	name, nameOK := terminal.Metadata["target_product_name"].(string)
+	priceText, priceOK := terminal.Metadata["price_minor"].(string)
+	currency, currencyOK := terminal.Metadata["currency"].(string)
+	actorText, actorOK := terminal.Metadata["created_by"].(string)
 	sourceID, sourceErr := strconv.ParseInt(sourceText, 10, 64)
 	targetID, targetErr := strconv.ParseInt(terminal.TargetID, 10, 64)
-	if !sourceOK || !statusOK || !enabledOK || !codeOK || sourceErr != nil || targetErr != nil || sourceID < 1 || targetID < 1 ||
-		strconv.FormatInt(sourceID, 10) != sourceText || strconv.FormatInt(targetID, 10) != terminal.TargetID || !productReceiptText(status, 128) || !productReceiptText(code, 200) {
+	priceMinor, priceErr := strconv.ParseInt(priceText, 10, 64)
+	createdBy, actorErr := strconv.ParseInt(actorText, 10, 64)
+	if !sourceOK || !statusOK || !enabledOK || !codeOK || !nameOK || !priceOK || !currencyOK || !actorOK || sourceErr != nil || targetErr != nil || priceErr != nil || actorErr != nil ||
+		sourceID < 1 || targetID < 1 || priceMinor < 0 || createdBy < 1 || strconv.FormatInt(sourceID, 10) != sourceText || strconv.FormatInt(targetID, 10) != terminal.TargetID ||
+		strconv.FormatInt(priceMinor, 10) != priceText || strconv.FormatInt(createdBy, 10) != actorText || !productReceiptText(status, 128) || !productReceiptText(code, 200) ||
+		!productReceiptText(name, 200) || currency != "CNY" {
 		return product.HistoricalStaticProductReceipt{}, ErrConflict
 	}
 	return product.HistoricalStaticProductReceipt{SourceIdentifier: sourceIdentifier, SourceID: sourceID, PayloadDigest: terminal.PayloadDigest,
-		OriginalStatus: status, OriginalEnabled: enabled, TargetProductID: productport.ID(targetID), TargetProductCode: code}, nil
+		OriginalStatus: status, OriginalEnabled: enabled, TargetProductID: productport.ID(targetID), TargetProductCode: code,
+		TargetProductName: name, PriceMinor: priceMinor, Currency: currency, CreatedBy: createdBy}, nil
 }
 
 func productTargetDigest(targetID string, payload [sha256.Size]byte) [sha256.Size]byte {

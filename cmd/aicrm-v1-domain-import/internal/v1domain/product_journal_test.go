@@ -22,7 +22,8 @@ func productScopeFixture() Scope {
 func productReceiptFixture() product.HistoricalStaticProductReceipt {
 	return product.HistoricalStaticProductReceipt{SourceIdentifier: SourceIdentifier(sha256.Sum256([]byte("source-key"))),
 		SourceID: 9007199254740993, PayloadDigest: sha256.Sum256([]byte("authenticated-source-payload")),
-		OriginalStatus: "active", OriginalEnabled: false, TargetProductID: 703, TargetProductCode: "legacy-code"}
+		OriginalStatus: "active", OriginalEnabled: false, TargetProductID: 703, TargetProductCode: "legacy-code",
+		TargetProductName: "Legacy product", PriceMinor: 990, Currency: "CNY", CreatedBy: 17}
 }
 
 func TestProductJournalMetadataRoundTripDoesNotLoseSourceID(t *testing.T) {
@@ -31,7 +32,8 @@ func TestProductJournalMetadataRoundTripDoesNotLoseSourceID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if terminal.TargetID != "703" || terminal.Metadata["source_id"] != "9007199254740993" || terminal.Disposition != "import" || terminal.Reason != "" {
+	if terminal.TargetID != "703" || terminal.Metadata["source_id"] != "9007199254740993" || terminal.Metadata["price_minor"] != "990" ||
+		terminal.Metadata["created_by"] != "17" || terminal.Disposition != "import" || terminal.Reason != "" {
 		t.Fatalf("terminal=%+v", terminal)
 	}
 	// JSONB may reorder keys and add whitespace; the Journal supplies a decoded
@@ -66,6 +68,14 @@ func TestProductJournalRejectsInvalidOrNonimportReceipts(t *testing.T) {
 		"missing-enabled": func(r *TerminalReceipt) { delete(r.Metadata, "original_enabled") },
 		"enabled-string":  func(r *TerminalReceipt) { r.Metadata["original_enabled"] = "false" },
 		"empty-code":      func(r *TerminalReceipt) { r.Metadata["target_product_code"] = "" },
+		"empty-name":      func(r *TerminalReceipt) { r.Metadata["target_product_name"] = "" },
+		"price-float":     func(r *TerminalReceipt) { r.Metadata["price_minor"] = float64(990) },
+		"price-negative":  func(r *TerminalReceipt) { r.Metadata["price_minor"] = "-1" },
+		"price-leading-0": func(r *TerminalReceipt) { r.Metadata["price_minor"] = "0990" },
+		"currency":        func(r *TerminalReceipt) { r.Metadata["currency"] = "USD" },
+		"actor-float":     func(r *TerminalReceipt) { r.Metadata["created_by"] = float64(17) },
+		"actor-zero":      func(r *TerminalReceipt) { r.Metadata["created_by"] = "0" },
+		"actor-leading-0": func(r *TerminalReceipt) { r.Metadata["created_by"] = "017" },
 		"unknown-field":   func(r *TerminalReceipt) { r.Metadata["provider_verified"] = true },
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -93,13 +103,17 @@ func TestProductJournalRejectsInvalidOrNonimportReceipts(t *testing.T) {
 
 func TestProductJournalRejectsUnsafeRecordsBeforePersistence(t *testing.T) {
 	for name, mutate := range map[string]func(*product.HistoricalStaticProductReceipt){
-		"replayed":      func(r *product.HistoricalStaticProductReceipt) { r.Replayed = true },
-		"source-id":     func(r *product.HistoricalStaticProductReceipt) { r.SourceID = 0 },
-		"target-id":     func(r *product.HistoricalStaticProductReceipt) { r.TargetProductID = 0 },
-		"source-key":    func(r *product.HistoricalStaticProductReceipt) { r.SourceIdentifier = "not-a-digest" },
-		"empty-payload": func(r *product.HistoricalStaticProductReceipt) { r.PayloadDigest = [32]byte{} },
-		"empty-code":    func(r *product.HistoricalStaticProductReceipt) { r.TargetProductCode = "" },
-		"nul-code":      func(r *product.HistoricalStaticProductReceipt) { r.TargetProductCode = "a\x00b" },
+		"replayed":       func(r *product.HistoricalStaticProductReceipt) { r.Replayed = true },
+		"source-id":      func(r *product.HistoricalStaticProductReceipt) { r.SourceID = 0 },
+		"target-id":      func(r *product.HistoricalStaticProductReceipt) { r.TargetProductID = 0 },
+		"source-key":     func(r *product.HistoricalStaticProductReceipt) { r.SourceIdentifier = "not-a-digest" },
+		"empty-payload":  func(r *product.HistoricalStaticProductReceipt) { r.PayloadDigest = [32]byte{} },
+		"empty-code":     func(r *product.HistoricalStaticProductReceipt) { r.TargetProductCode = "" },
+		"nul-code":       func(r *product.HistoricalStaticProductReceipt) { r.TargetProductCode = "a\x00b" },
+		"empty-name":     func(r *product.HistoricalStaticProductReceipt) { r.TargetProductName = "" },
+		"negative-price": func(r *product.HistoricalStaticProductReceipt) { r.PriceMinor = -1 },
+		"currency":       func(r *product.HistoricalStaticProductReceipt) { r.Currency = "USD" },
+		"zero-actor":     func(r *product.HistoricalStaticProductReceipt) { r.CreatedBy = 0 },
 	} {
 		t.Run(name, func(t *testing.T) {
 			receipt := productReceiptFixture()

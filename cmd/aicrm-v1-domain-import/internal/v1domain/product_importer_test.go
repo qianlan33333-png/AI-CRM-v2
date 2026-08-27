@@ -194,6 +194,10 @@ func TestProductImporterUsesMinorUnitsAndOneTerminalPerRow(t *testing.T) {
 		if terminal.PayloadDigest != row.PayloadHMAC || terminal.SourceKeyDigest != row.SourceKeyHMAC || sha256.Sum256(row.Payload) != row.PayloadHMAC {
 			t.Fatal("source provenance changed")
 		}
+		if terminal.Disposition == "import" && (terminal.Metadata["target_product_name"] != "Historical product" || terminal.Metadata["currency"] != "CNY" ||
+			terminal.Metadata["created_by"] != "7") {
+			t.Fatalf("incomplete static product receipt: %+v", terminal.Metadata)
+		}
 	}
 	result, err = importer.Import(context.Background(), "archive-run")
 	if err != nil || result != (StaticImportResult{Imported: 2, Quarantined: 2, Replayed: 4}) || fake.insertCalls != 2 || fake.recordCalls != 4 {

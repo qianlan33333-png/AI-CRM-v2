@@ -21,7 +21,8 @@ func TestHistoricalStaticProductWriterImportsDisabledDefinitionAndReplays(t *tes
 	if err != nil {
 		t.Fatal(err)
 	}
-	if receipt.Replayed || receipt.OriginalStatus != "published" || !receipt.OriginalEnabled || receipt.TargetProductID != 41 || receipt.TargetProductCode != "hxc-annual" {
+	if receipt.Replayed || receipt.OriginalStatus != "published" || !receipt.OriginalEnabled || receipt.TargetProductID != 41 || receipt.TargetProductCode != "hxc-annual" ||
+		receipt.TargetProductName != "HXC 年度服务" || receipt.PriceMinor != 19900 || receipt.Currency != "CNY" || receipt.CreatedBy != 9 {
 		t.Fatalf("receipt = %#v", receipt)
 	}
 	if len(store.definitions) != 1 || store.definitions[0].Product.PriceMinor != 19900 || store.definitions[0].Product.Currency != "CNY" || store.definitions[0].Product.LocalLifecycle != productport.LocalProductDisabled {
@@ -151,6 +152,10 @@ func historicalStaticProductReceipt(definition HistoricalStaticProductDefinition
 		OriginalEnabled:   definition.OriginalEnabled,
 		TargetProductID:   41,
 		TargetProductCode: definition.Product.ProductCode,
+		TargetProductName: definition.Product.Name,
+		PriceMinor:        definition.Product.PriceMinor,
+		Currency:          definition.Product.Currency,
+		CreatedBy:         definition.Product.CreatedBy,
 	}
 }
 
