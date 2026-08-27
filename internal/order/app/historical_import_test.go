@@ -72,6 +72,45 @@ func TestHistoricalImportOrderRollsBackOnReceiptFailure(t *testing.T) {
 	}
 }
 
+func TestHistoricalImportResetsResultForTransactionRetry(t *testing.T) {
+	t.Run("order replay then create", func(t *testing.T) {
+		service, store, journal, uow := newHistoricalImportTestService()
+		input := historicalOrderInput()
+		stored := input.Order
+		stored.ID = 77
+		store.orders[stored.ID], store.nextOrder = stored, 77
+		journal.receipts[historicalReceiptKey(historicalOrderKind, input.Fact.SourceKeyDigest)] = orderport.HistoricalImportReceipt{HistoricalFact: input.Fact, TargetID: 77, TargetDigest: HistoricalOrderTargetDigest(input.Order)}
+		uow.retryAfterFirst = func() {
+			store.orders, store.nextOrder = map[orderport.ID]orderport.Record{}, 0
+			journal.receipts = map[string]orderport.HistoricalImportReceipt{}
+		}
+		result, err := service.ImportOrder(context.Background(), input)
+		if err != nil || result != (HistoricalImportResult{TargetID: 1}) {
+			t.Fatalf("result/error = %#v/%v", result, err)
+		}
+	})
+
+	t.Run("refund replay then create", func(t *testing.T) {
+		service, store, journal, uow := newHistoricalImportTestService()
+		order := historicalOrderInput().Order
+		order.ID = 1
+		store.orders[order.ID], store.nextOrder = order, 1
+		input := historicalRefundInput(1)
+		stored := input.Refund
+		stored.ID = 77
+		store.refunds[stored.ID], store.nextRefund = stored, 77
+		journal.receipts[historicalReceiptKey(historicalRefundKind, input.Fact.SourceKeyDigest)] = orderport.HistoricalImportReceipt{HistoricalFact: input.Fact, TargetID: 77, TargetDigest: HistoricalRefundTargetDigest(input.Refund)}
+		uow.retryAfterFirst = func() {
+			store.refunds, store.nextRefund = map[int64]orderport.HistoricalRefund{}, 0
+			journal.receipts = map[string]orderport.HistoricalImportReceipt{}
+		}
+		result, err := service.ImportRefund(context.Background(), input)
+		if err != nil || result != (HistoricalImportResult{TargetID: 1}) {
+			t.Fatalf("result/error = %#v/%v", result, err)
+		}
+	})
+}
+
 func TestHistoricalImportOrderDoesNotOverwriteStoreConflict(t *testing.T) {
 	service, store, journal, _ := newHistoricalImportTestService()
 	store.createOrderErr = orderport.ErrHistoricalConflict
@@ -207,9 +246,10 @@ func (journal *historicalImportMemoryJournal) AppendHistoricalOrderReceipt(_ con
 }
 
 type historicalImportMemoryUOW struct {
-	store   *historicalImportMemoryStore
-	journal *historicalImportMemoryJournal
-	calls   int
+	store           *historicalImportMemoryStore
+	journal         *historicalImportMemoryJournal
+	calls           int
+	retryAfterFirst func()
 }
 
 func (uow *historicalImportMemoryUOW) Within(ctx context.Context, callback func(context.Context) error) error {
@@ -220,6 +260,12 @@ func (uow *historicalImportMemoryUOW) Within(ctx context.Context, callback func(
 		uow.store.orders, uow.store.refunds, uow.journal.receipts = orders, refunds, receipts
 		uow.store.nextOrder, uow.store.nextRefund = nextOrder, nextRefund
 		return err
+	}
+	if uow.retryAfterFirst != nil {
+		retry := uow.retryAfterFirst
+		uow.retryAfterFirst = nil
+		retry()
+		return callback(ctx)
 	}
 	return nil
 }

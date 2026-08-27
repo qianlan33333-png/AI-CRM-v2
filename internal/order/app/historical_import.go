@@ -46,6 +46,7 @@ func (service *HistoricalImportService) ImportOrder(ctx context.Context, input o
 	}
 	wantDigest := HistoricalOrderTargetDigest(input.Order)
 	err = service.uow.Within(ctx, func(tx context.Context) error {
+		result = HistoricalImportResult{}
 		receipt, found, findErr := service.journal.FindHistoricalOrderReceipt(tx, historicalOrderKind, input.Fact.SourceKeyDigest)
 		if findErr != nil {
 			return historicalImportError(findErr)
@@ -92,6 +93,7 @@ func (service *HistoricalImportService) ImportRefund(ctx context.Context, input 
 	}
 	wantDigest := HistoricalRefundTargetDigest(input.Refund)
 	err = service.uow.Within(ctx, func(tx context.Context) error {
+		result = HistoricalImportResult{}
 		receipt, found, findErr := service.journal.FindHistoricalOrderReceipt(tx, historicalRefundKind, input.Fact.SourceKeyDigest)
 		if findErr != nil {
 			return historicalImportError(findErr)
