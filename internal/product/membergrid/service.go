@@ -120,6 +120,83 @@ func (service *Service) Query(ctx context.Context, input QueryInput) (QueryRespo
 	return response, nil
 }
 
+// querySelected serves the closed native V2 selection grammar. It intentionally
+// uses a distinct store method and cursor version so the established mg2
+// query/public-share contract stays byte-for-byte compatible.
+func (service *Service) querySelected(ctx context.Context, input QueryInput, selection querySelection) (QueryResponse, error) {
+	if service == nil || nilDependency(service.uow) || nilDependency(service.store) || service.codec == nil {
+		return QueryResponse{}, ErrUnavailable
+	}
+	if ctx == nil || input.ProductID < 1 || !input.State.validCanonicalGridState() || !input.Source.valid() || input.Limit < 1 || input.Limit > MaximumLimit {
+		return QueryResponse{}, ErrInvalidQuery
+	}
+	selection, err := normalizeQuerySelection(selection, input)
+	if err != nil {
+		return QueryResponse{}, err
+	}
+	store, ok := service.store.(selectedStore)
+	if !ok || nilDependency(store) {
+		return QueryResponse{}, ErrUnavailable
+	}
+	if err = ctx.Err(); err != nil {
+		return QueryResponse{}, errors.Join(ErrUnavailable, err)
+	}
+
+	var after *selectedPosition
+	if input.Cursor != "" {
+		decoded, decodeErr := service.codec.decodeSelected(input.Cursor, input.ProductID, input.State, input.Source, input.Limit, selection)
+		if decodeErr != nil {
+			return QueryResponse{}, ErrInvalidCursor
+		}
+		after = &decoded
+	}
+
+	var exists bool
+	var records []MemberRecord
+	err = service.uow.Within(ctx, func(txCtx context.Context) error {
+		var storeErr error
+		exists, storeErr = service.store.ProductExists(txCtx, input.ProductID)
+		if storeErr != nil || !exists {
+			return storeErr
+		}
+		records, storeErr = store.QuerySelectedMembers(txCtx, selectedStoreQuery{
+			ProductID: input.ProductID,
+			State:     input.State,
+			Source:    input.Source,
+			Limit:     input.Limit + 1,
+			Selection: selection,
+			After:     cloneSelectedPosition(after),
+		})
+		return storeErr
+	})
+	if err != nil {
+		return QueryResponse{}, errors.Join(ErrUnavailable, err)
+	}
+	if !exists {
+		return QueryResponse{}, ErrNotFound
+	}
+	if len(records) > input.Limit+1 || !validSelectedRecords(records, input, selection, after) {
+		return QueryResponse{}, ErrUnavailable
+	}
+
+	hasMore := len(records) > input.Limit
+	visible := records
+	if hasMore {
+		visible = records[:input.Limit]
+	}
+	response := QueryResponse{Rows: make([]MemberRow, len(visible)), Limit: input.Limit, HasMore: hasMore}
+	for index, record := range visible {
+		response.Rows[index] = mapMember(record)
+	}
+	if hasMore && len(visible) > 0 {
+		response.NextCursor, err = service.codec.encodeSelected(input.ProductID, input.State, input.Source, input.Limit, selection, selectedPositionFor(visible[len(visible)-1], selection))
+		if err != nil {
+			return QueryResponse{}, errors.Join(ErrUnavailable, err)
+		}
+	}
+	return response, nil
+}
+
 func (service *Service) requireProduct(ctx context.Context, productID int64) error {
 	if service == nil || nilDependency(service.uow) || nilDependency(service.store) {
 		return ErrUnavailable
@@ -150,28 +227,13 @@ func validRecords(records []MemberRecord, input QueryInput, after *Position) boo
 	var previous *MemberRecord
 	for index := range records {
 		record := records[index]
-		if !validMemberRef(record.MemberRef) || record.ServiceProductID != input.ProductID || record.CustomerID < 1 || record.Version < 1 ||
-			record.StartsAt.IsZero() || record.UpdatedAt.IsZero() || !record.State.validCanonicalGridState() || record.State == StateAll ||
-			!record.Source.valid() || record.Source == SourceAny ||
-			(input.State != StateAll && record.State != input.State) || (input.Source != SourceAny && record.Source != input.Source) || !utf8.ValidString(record.DisplayName) {
+		if !validMemberRecord(record, input) {
 			return false
 		}
 		if _, duplicate := seen[record.MemberRef]; duplicate {
 			return false
 		}
 		seen[record.MemberRef] = struct{}{}
-		if record.ExpiresAt != nil && (record.ExpiresAt.IsZero() || record.ExpiresAt.Before(record.StartsAt)) {
-			return false
-		}
-		if record.State == StateActive && (record.ExpiredAt != nil || record.RemovedAt != nil) {
-			return false
-		}
-		if record.State == StateExpired && (record.ExpiredAt == nil || record.ExpiredAt.IsZero() || record.ExpiredAt.Before(record.StartsAt) || record.RemovedAt != nil) {
-			return false
-		}
-		if record.State == StateRemoved && (record.RemovedAt == nil || record.RemovedAt.IsZero() || record.RemovedAt.Before(record.StartsAt)) {
-			return false
-		}
 		if index == 0 && after != nil && !positionBefore(record, *after) {
 			return false
 		}
@@ -181,6 +243,51 @@ func validRecords(records []MemberRecord, input QueryInput, after *Position) boo
 		previous = &records[index]
 	}
 	return true
+}
+
+func validSelectedRecords(records []MemberRecord, input QueryInput, selection querySelection, after *selectedPosition) bool {
+	if !selection.Sort.valid() || !selection.GroupBy.valid() {
+		return false
+	}
+	seen := make(map[string]struct{}, len(records))
+	var previous *MemberRecord
+	for index := range records {
+		record := records[index]
+		if !validMemberRecord(record, input) {
+			return false
+		}
+		if _, duplicate := seen[record.MemberRef]; duplicate {
+			return false
+		}
+		seen[record.MemberRef] = struct{}{}
+		if index == 0 && after != nil && !recordAfterSelection(record, *after, selection) {
+			return false
+		}
+		if previous != nil && !recordBeforeSelection(record, *previous, selection) {
+			return false
+		}
+		previous = &records[index]
+	}
+	return true
+}
+
+func validMemberRecord(record MemberRecord, input QueryInput) bool {
+	if !validMemberRef(record.MemberRef) || record.ServiceProductID != input.ProductID || record.CustomerID < 1 || record.Version < 1 ||
+		record.StartsAt.IsZero() || record.UpdatedAt.IsZero() || !record.State.validCanonicalGridState() || record.State == StateAll ||
+		!record.Source.valid() || record.Source == SourceAny ||
+		(input.State != StateAll && record.State != input.State) || (input.Source != SourceAny && record.Source != input.Source) || !utf8.ValidString(record.DisplayName) {
+		return false
+	}
+	if record.ExpiresAt != nil && (record.ExpiresAt.IsZero() || record.ExpiresAt.Before(record.StartsAt)) {
+		return false
+	}
+	if record.State == StateActive && (record.ExpiredAt != nil || record.RemovedAt != nil) {
+		return false
+	}
+	if record.State == StateExpired && (record.ExpiredAt == nil || record.ExpiredAt.IsZero() || record.ExpiredAt.Before(record.StartsAt) || record.RemovedAt != nil) {
+		return false
+	}
+	return record.State != StateRemoved || (record.RemovedAt != nil && !record.RemovedAt.IsZero() && !record.RemovedAt.Before(record.StartsAt))
 }
 
 func recordBefore(current, previous MemberRecord) bool {
@@ -223,6 +330,15 @@ func clonePosition(position *Position) *Position {
 		return nil
 	}
 	cloned := *position
+	return &cloned
+}
+
+func cloneSelectedPosition(position *selectedPosition) *selectedPosition {
+	if position == nil {
+		return nil
+	}
+	cloned := *position
+	cloned.SortAt = cloned.SortAt.UTC()
 	return &cloned
 }
 

@@ -164,6 +164,32 @@ func TestRepositoryUsesUpdatedAtMemberRefKeyset(t *testing.T) {
 		t.Fatalf("sql/args=%q/%v want=%q/%v", executor.querySQL, executor.queryArgs, afterPageSQL, want)
 	}
 }
+
+func TestRepositorySelectedQueryUsesClosedSortGroupSQLAndBoundPosition(t *testing.T) {
+	stamp := time.Date(2026, 8, 27, 8, 0, 0, 0, time.UTC)
+	executor := &fakeSQLExecutor{rows: &fakeSQLRows{rows: [][]any{
+		canonicalScanRow("spm_0000000000000000000004", 3, 2, "expired", "paid_order", stamp, "已过期"),
+	}}}
+	repository := repositoryForExecutor(executor)
+	position := selectedPosition{SortAt: stamp.Add(time.Hour), MemberRef: "spm_0000000000000000000005", GroupState: StateActive}
+	members, err := repository.QuerySelectedMembers(context.Background(), selectedStoreQuery{
+		ProductID: 3, State: StateAll, Source: SourceAny, Limit: 2,
+		Selection: querySelection{Sort: querySortStartsAtDesc, GroupBy: queryGroupState}, After: &position,
+	})
+	if err != nil || len(members) != 1 || members[0].MemberRef != "spm_0000000000000000000004" {
+		t.Fatalf("members=%+v error=%v", members, err)
+	}
+	want := []any{int64(3), "all", "", 1, stamp.Add(time.Hour), "spm_0000000000000000000005", 2}
+	if executor.querySQL != afterPageStateGroupedStartsAtSQL || !reflect.DeepEqual(executor.queryArgs, want) || !executor.rows.closed {
+		t.Fatalf("sql/args/closed=%q/%v/%v want=%q/%v", executor.querySQL, executor.queryArgs, executor.rows.closed, afterPageStateGroupedStartsAtSQL, want)
+	}
+
+	if _, err = repository.QuerySelectedMembers(context.Background(), selectedStoreQuery{
+		ProductID: 3, State: StateAll, Source: SourceAny, Limit: 2, Selection: querySelection{Sort: "display_name_asc"},
+	}); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("unsafe sort error=%v", err)
+	}
+}
 func TestRepositoryMapsDatabaseFailures(t *testing.T) {
 	databaseError := errors.New("database failed")
 	cases := map[string]*fakeSQLExecutor{"exists scan": {row: fakeSQLRow{err: databaseError}}, "query": {queryErr: databaseError}, "row scan": {rows: &fakeSQLRows{rows: [][]any{{}}, scanErr: databaseError}}, "rows": {rows: &fakeSQLRows{rowsErr: databaseError}}}
