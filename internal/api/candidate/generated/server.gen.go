@@ -6211,6 +6211,141 @@ func (e SegmentRefreshAcceptedStatus) Valid() bool {
 	}
 }
 
+// Defines values for ServicePeriodHistoryDefinitionPageReadOnly.
+const (
+	ServicePeriodHistoryDefinitionPageReadOnlyTrue ServicePeriodHistoryDefinitionPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodHistoryDefinitionPageReadOnly enum.
+func (e ServicePeriodHistoryDefinitionPageReadOnly) Valid() bool {
+	switch e {
+	case ServicePeriodHistoryDefinitionPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodHistoryDefinitionPageRealExternalCallExecuted.
+const (
+	ServicePeriodHistoryDefinitionPageRealExternalCallExecutedFalse ServicePeriodHistoryDefinitionPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodHistoryDefinitionPageRealExternalCallExecuted enum.
+func (e ServicePeriodHistoryDefinitionPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ServicePeriodHistoryDefinitionPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodHistoryDefinitionPageSource.
+const (
+	ServicePeriodHistoryDefinitionPageSourceV1History ServicePeriodHistoryDefinitionPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodHistoryDefinitionPageSource enum.
+func (e ServicePeriodHistoryDefinitionPageSource) Valid() bool {
+	switch e {
+	case ServicePeriodHistoryDefinitionPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodHistoryEntitlementPageReadOnly.
+const (
+	ServicePeriodHistoryEntitlementPageReadOnlyTrue ServicePeriodHistoryEntitlementPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodHistoryEntitlementPageReadOnly enum.
+func (e ServicePeriodHistoryEntitlementPageReadOnly) Valid() bool {
+	switch e {
+	case ServicePeriodHistoryEntitlementPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodHistoryEntitlementPageRealExternalCallExecuted.
+const (
+	ServicePeriodHistoryEntitlementPageRealExternalCallExecutedFalse ServicePeriodHistoryEntitlementPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodHistoryEntitlementPageRealExternalCallExecuted enum.
+func (e ServicePeriodHistoryEntitlementPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ServicePeriodHistoryEntitlementPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodHistoryEntitlementPageSource.
+const (
+	ServicePeriodHistoryEntitlementPageSourceV1History ServicePeriodHistoryEntitlementPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodHistoryEntitlementPageSource enum.
+func (e ServicePeriodHistoryEntitlementPageSource) Valid() bool {
+	switch e {
+	case ServicePeriodHistoryEntitlementPageSourceV1History:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodHistoryEventPageReadOnly.
+const (
+	ServicePeriodHistoryEventPageReadOnlyTrue ServicePeriodHistoryEventPageReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodHistoryEventPageReadOnly enum.
+func (e ServicePeriodHistoryEventPageReadOnly) Valid() bool {
+	switch e {
+	case ServicePeriodHistoryEventPageReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodHistoryEventPageRealExternalCallExecuted.
+const (
+	ServicePeriodHistoryEventPageRealExternalCallExecutedFalse ServicePeriodHistoryEventPageRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodHistoryEventPageRealExternalCallExecuted enum.
+func (e ServicePeriodHistoryEventPageRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ServicePeriodHistoryEventPageRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodHistoryEventPageSource.
+const (
+	V1History ServicePeriodHistoryEventPageSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodHistoryEventPageSource enum.
+func (e ServicePeriodHistoryEventPageSource) Valid() bool {
+	switch e {
+	case V1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ServicePeriodMemberAddSource.
 const (
 	ServicePeriodMemberAddSourceManual ServicePeriodMemberAddSource = "manual"
@@ -7551,13 +7686,13 @@ func (e SidebarSafeChoiceAnswerQuestionType) Valid() bool {
 
 // Defines values for SidebarSafetyLocalOnly.
 const (
-	SidebarSafetyLocalOnlyTrue SidebarSafetyLocalOnly = true
+	True SidebarSafetyLocalOnly = true
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyLocalOnly enum.
 func (e SidebarSafetyLocalOnly) Valid() bool {
 	switch e {
-	case SidebarSafetyLocalOnlyTrue:
+	case True:
 		return true
 	default:
 		return false
@@ -11870,6 +12005,121 @@ type SegmentRefreshAccepted struct {
 // SegmentRefreshAcceptedStatus defines model for SegmentRefreshAccepted.Status.
 type SegmentRefreshAcceptedStatus string
 
+// ServicePeriodHistoryDefinition defines model for ServicePeriodHistoryDefinition.
+type ServicePeriodHistoryDefinition struct {
+	CreatedAt            time.Time `json:"created_at"`
+	Currency             string    `json:"currency"`
+	Deleted              bool      `json:"deleted"`
+	DurationDays         int32     `json:"duration_days"`
+	Id                   int64     `json:"id"`
+	MembershipConfigId   string    `json:"membership_config_id"`
+	MembershipConfigName string    `json:"membership_config_name"`
+	PriceMinor           int64     `json:"price_minor"`
+	ProductCode          string    `json:"product_code"`
+	ProductId            int64     `json:"product_id"`
+	ProductName          string    `json:"product_name"`
+	SourceDefinitionId   int64     `json:"source_definition_id"`
+	UpdatedAt            time.Time `json:"updated_at"`
+}
+
+// ServicePeriodHistoryDefinitionPage defines model for ServicePeriodHistoryDefinitionPage.
+type ServicePeriodHistoryDefinitionPage struct {
+	Items                    []ServicePeriodHistoryDefinition                           `json:"items"`
+	Limit                    int                                                        `json:"limit"`
+	Offset                   int                                                        `json:"offset"`
+	ReadOnly                 ServicePeriodHistoryDefinitionPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted ServicePeriodHistoryDefinitionPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   ServicePeriodHistoryDefinitionPageSource                   `json:"source"`
+	Total                    int64                                                      `json:"total"`
+}
+
+// ServicePeriodHistoryDefinitionPageReadOnly defines model for ServicePeriodHistoryDefinitionPage.ReadOnly.
+type ServicePeriodHistoryDefinitionPageReadOnly bool
+
+// ServicePeriodHistoryDefinitionPageRealExternalCallExecuted defines model for ServicePeriodHistoryDefinitionPage.RealExternalCallExecuted.
+type ServicePeriodHistoryDefinitionPageRealExternalCallExecuted bool
+
+// ServicePeriodHistoryDefinitionPageSource defines model for ServicePeriodHistoryDefinitionPage.Source.
+type ServicePeriodHistoryDefinitionPageSource string
+
+// ServicePeriodHistoryEntitlement defines model for ServicePeriodHistoryEntitlement.
+type ServicePeriodHistoryEntitlement struct {
+	CreatedAt           time.Time `json:"created_at"`
+	CustomerId          *int64    `json:"customer_id"`
+	DefinitionId        int64     `json:"definition_id"`
+	EndAt               time.Time `json:"end_at"`
+	Id                  int64     `json:"id"`
+	LastOrderId         *int64    `json:"last_order_id"`
+	LastOutTradeNo      string    `json:"last_out_trade_no"`
+	MembershipConfigId  string    `json:"membership_config_id"`
+	RenewalCount        int32     `json:"renewal_count"`
+	SourceEntitlementId int64     `json:"source_entitlement_id"`
+	StartAt             time.Time `json:"start_at"`
+	Status              string    `json:"status"`
+	UpdatedAt           time.Time `json:"updated_at"`
+}
+
+// ServicePeriodHistoryEntitlementPage defines model for ServicePeriodHistoryEntitlementPage.
+type ServicePeriodHistoryEntitlementPage struct {
+	DefinitionId             int64                                                       `json:"definition_id"`
+	Items                    []ServicePeriodHistoryEntitlement                           `json:"items"`
+	Limit                    int                                                         `json:"limit"`
+	Offset                   int                                                         `json:"offset"`
+	ReadOnly                 ServicePeriodHistoryEntitlementPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted ServicePeriodHistoryEntitlementPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   ServicePeriodHistoryEntitlementPageSource                   `json:"source"`
+	Total                    int64                                                       `json:"total"`
+}
+
+// ServicePeriodHistoryEntitlementPageReadOnly defines model for ServicePeriodHistoryEntitlementPage.ReadOnly.
+type ServicePeriodHistoryEntitlementPageReadOnly bool
+
+// ServicePeriodHistoryEntitlementPageRealExternalCallExecuted defines model for ServicePeriodHistoryEntitlementPage.RealExternalCallExecuted.
+type ServicePeriodHistoryEntitlementPageRealExternalCallExecuted bool
+
+// ServicePeriodHistoryEntitlementPageSource defines model for ServicePeriodHistoryEntitlementPage.Source.
+type ServicePeriodHistoryEntitlementPageSource string
+
+// ServicePeriodHistoryEvent defines model for ServicePeriodHistoryEvent.
+type ServicePeriodHistoryEvent struct {
+	AfterEndAt    *time.Time `json:"after_end_at"`
+	AfterStartAt  *time.Time `json:"after_start_at"`
+	BeforeEndAt   *time.Time `json:"before_end_at"`
+	BeforeStartAt *time.Time `json:"before_start_at"`
+	CreatedAt     time.Time  `json:"created_at"`
+	CustomerId    *int64     `json:"customer_id"`
+	DefinitionId  int64      `json:"definition_id"`
+	DurationDays  int32      `json:"duration_days"`
+	EntitlementId *int64     `json:"entitlement_id"`
+	EventId       string     `json:"event_id"`
+	EventType     string     `json:"event_type"`
+	Id            int64      `json:"id"`
+	OrderId       *int64     `json:"order_id"`
+	OutTradeNo    string     `json:"out_trade_no"`
+	SourceEventId int64      `json:"source_event_id"`
+}
+
+// ServicePeriodHistoryEventPage defines model for ServicePeriodHistoryEventPage.
+type ServicePeriodHistoryEventPage struct {
+	DefinitionId             int64                                                 `json:"definition_id"`
+	Items                    []ServicePeriodHistoryEvent                           `json:"items"`
+	Limit                    int                                                   `json:"limit"`
+	Offset                   int                                                   `json:"offset"`
+	ReadOnly                 ServicePeriodHistoryEventPageReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted ServicePeriodHistoryEventPageRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   ServicePeriodHistoryEventPageSource                   `json:"source"`
+	Total                    int64                                                 `json:"total"`
+}
+
+// ServicePeriodHistoryEventPageReadOnly defines model for ServicePeriodHistoryEventPage.ReadOnly.
+type ServicePeriodHistoryEventPageReadOnly bool
+
+// ServicePeriodHistoryEventPageRealExternalCallExecuted defines model for ServicePeriodHistoryEventPage.RealExternalCallExecuted.
+type ServicePeriodHistoryEventPageRealExternalCallExecuted bool
+
+// ServicePeriodHistoryEventPageSource defines model for ServicePeriodHistoryEventPage.Source.
+type ServicePeriodHistoryEventPageSource string
+
 // ServicePeriodMember defines model for ServicePeriodMember.
 type ServicePeriodMember struct {
 	// Alliance Bounded local text excluded from every member export.
@@ -13827,6 +14077,24 @@ type ReconcileSurveyExternalPushParams struct {
 
 	// IdempotencyKey Stable caller key; reusing it with a different normalized command is a conflict.
 	IdempotencyKey IdempotencyKey `json:"Idempotency-Key"`
+}
+
+// ListServicePeriodHistoryDefinitionsParams defines parameters for ListServicePeriodHistoryDefinitions.
+type ListServicePeriodHistoryDefinitionsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListServicePeriodHistoryEntitlementsParams defines parameters for ListServicePeriodHistoryEntitlements.
+type ListServicePeriodHistoryEntitlementsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// ListServicePeriodHistoryEventsParams defines parameters for ListServicePeriodHistoryEvents.
+type ListServicePeriodHistoryEventsParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
 // ListServicePeriodProductsParams defines parameters for ListServicePeriodProducts.
@@ -16573,6 +16841,15 @@ type ServerInterface interface {
 	// Manually reconcile only an outcome-unknown verified Survey external-push binding
 	// (POST /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile)
 	ReconcileSurveyExternalPush(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, submissionId SurveySubmissionID, params ReconcileSurveyExternalPushParams)
+	// Read historical service-period definitions attached to existing Products
+	// (GET /api/admin/service-period-history)
+	ListServicePeriodHistoryDefinitions(w http.ResponseWriter, r *http.Request, params ListServicePeriodHistoryDefinitionsParams)
+	// Read V1 snapshot entitlement facts without granting current membership
+	// (GET /api/admin/service-period-history/{definition_id}/entitlements)
+	ListServicePeriodHistoryEntitlements(w http.ResponseWriter, r *http.Request, definitionId int64, params ListServicePeriodHistoryEntitlementsParams)
+	// Read non-executable historical entitlement events
+	// (GET /api/admin/service-period-history/{definition_id}/events)
+	ListServicePeriodHistoryEvents(w http.ResponseWriter, r *http.Request, definitionId int64, params ListServicePeriodHistoryEventsParams)
 	// List local service-period products without payment, entitlement, or provider effects
 	// (GET /api/admin/service-period-products)
 	ListServicePeriodProducts(w http.ResponseWriter, r *http.Request, params ListServicePeriodProductsParams)
@@ -17623,6 +17900,24 @@ func (_ Unimplemented) GetSurveyExternalPushDetail(w http.ResponseWriter, r *htt
 // Manually reconcile only an outcome-unknown verified Survey external-push binding
 // (POST /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile)
 func (_ Unimplemented) ReconcileSurveyExternalPush(w http.ResponseWriter, r *http.Request, questionnaireId QuestionnaireID, submissionId SurveySubmissionID, params ReconcileSurveyExternalPushParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read historical service-period definitions attached to existing Products
+// (GET /api/admin/service-period-history)
+func (_ Unimplemented) ListServicePeriodHistoryDefinitions(w http.ResponseWriter, r *http.Request, params ListServicePeriodHistoryDefinitionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read V1 snapshot entitlement facts without granting current membership
+// (GET /api/admin/service-period-history/{definition_id}/entitlements)
+func (_ Unimplemented) ListServicePeriodHistoryEntitlements(w http.ResponseWriter, r *http.Request, definitionId int64, params ListServicePeriodHistoryEntitlementsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read non-executable historical entitlement events
+// (GET /api/admin/service-period-history/{definition_id}/events)
+func (_ Unimplemented) ListServicePeriodHistoryEvents(w http.ResponseWriter, r *http.Request, definitionId int64, params ListServicePeriodHistoryEventsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -24141,6 +24436,147 @@ func (siw *ServerInterfaceWrapper) ReconcileSurveyExternalPush(w http.ResponseWr
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ReconcileSurveyExternalPush(w, r, questionnaireId, submissionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListServicePeriodHistoryDefinitions operation middleware
+func (siw *ServerInterfaceWrapper) ListServicePeriodHistoryDefinitions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListServicePeriodHistoryDefinitionsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListServicePeriodHistoryDefinitions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListServicePeriodHistoryEntitlements operation middleware
+func (siw *ServerInterfaceWrapper) ListServicePeriodHistoryEntitlements(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "definition_id" -------------
+	var definitionId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "definition_id", chi.URLParam(r, "definition_id"), &definitionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "definition_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListServicePeriodHistoryEntitlementsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListServicePeriodHistoryEntitlements(w, r, definitionId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListServicePeriodHistoryEvents operation middleware
+func (siw *ServerInterfaceWrapper) ListServicePeriodHistoryEvents(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "definition_id" -------------
+	var definitionId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "definition_id", chi.URLParam(r, "definition_id"), &definitionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "definition_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListServicePeriodHistoryEventsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListServicePeriodHistoryEvents(w, r, definitionId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -33941,6 +34377,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile", wrapper.ReconcileSurveyExternalPush)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/service-period-history", wrapper.ListServicePeriodHistoryDefinitions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/service-period-history/{definition_id}/entitlements", wrapper.ListServicePeriodHistoryEntitlements)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/service-period-history/{definition_id}/events", wrapper.ListServicePeriodHistoryEvents)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/service-period-products", wrapper.ListServicePeriodProducts)
 	})
 	r.Group(func(r chi.Router) {
@@ -40357,6 +40802,167 @@ func (response ReconcileSurveyExternalPush409JSONResponse) VisitReconcileSurveyE
 type ReconcileSurveyExternalPush503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ReconcileSurveyExternalPush503JSONResponse) VisitReconcileSurveyExternalPushResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryDefinitionsRequestObject struct {
+	Params ListServicePeriodHistoryDefinitionsParams
+}
+
+type ListServicePeriodHistoryDefinitionsResponseObject interface {
+	VisitListServicePeriodHistoryDefinitionsResponse(w http.ResponseWriter) error
+}
+
+type ListServicePeriodHistoryDefinitions200JSONResponse ServicePeriodHistoryDefinitionPage
+
+func (response ListServicePeriodHistoryDefinitions200JSONResponse) VisitListServicePeriodHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryDefinitions400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListServicePeriodHistoryDefinitions400JSONResponse) VisitListServicePeriodHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryDefinitions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListServicePeriodHistoryDefinitions401JSONResponse) VisitListServicePeriodHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryDefinitions403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListServicePeriodHistoryDefinitions403JSONResponse) VisitListServicePeriodHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryDefinitions503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListServicePeriodHistoryDefinitions503JSONResponse) VisitListServicePeriodHistoryDefinitionsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryEntitlementsRequestObject struct {
+	DefinitionId int64 `json:"definition_id"`
+	Params       ListServicePeriodHistoryEntitlementsParams
+}
+
+type ListServicePeriodHistoryEntitlementsResponseObject interface {
+	VisitListServicePeriodHistoryEntitlementsResponse(w http.ResponseWriter) error
+}
+
+type ListServicePeriodHistoryEntitlements200JSONResponse ServicePeriodHistoryEntitlementPage
+
+func (response ListServicePeriodHistoryEntitlements200JSONResponse) VisitListServicePeriodHistoryEntitlementsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryEntitlements400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListServicePeriodHistoryEntitlements400JSONResponse) VisitListServicePeriodHistoryEntitlementsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryEntitlements401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListServicePeriodHistoryEntitlements401JSONResponse) VisitListServicePeriodHistoryEntitlementsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryEntitlements403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListServicePeriodHistoryEntitlements403JSONResponse) VisitListServicePeriodHistoryEntitlementsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryEntitlements503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListServicePeriodHistoryEntitlements503JSONResponse) VisitListServicePeriodHistoryEntitlementsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryEventsRequestObject struct {
+	DefinitionId int64 `json:"definition_id"`
+	Params       ListServicePeriodHistoryEventsParams
+}
+
+type ListServicePeriodHistoryEventsResponseObject interface {
+	VisitListServicePeriodHistoryEventsResponse(w http.ResponseWriter) error
+}
+
+type ListServicePeriodHistoryEvents200JSONResponse ServicePeriodHistoryEventPage
+
+func (response ListServicePeriodHistoryEvents200JSONResponse) VisitListServicePeriodHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryEvents400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListServicePeriodHistoryEvents400JSONResponse) VisitListServicePeriodHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryEvents401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListServicePeriodHistoryEvents401JSONResponse) VisitListServicePeriodHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryEvents403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response ListServicePeriodHistoryEvents403JSONResponse) VisitListServicePeriodHistoryEventsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type ListServicePeriodHistoryEvents503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response ListServicePeriodHistoryEvents503JSONResponse) VisitListServicePeriodHistoryEventsResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -50703,6 +51309,15 @@ type StrictServerInterface interface {
 	// Manually reconcile only an outcome-unknown verified Survey external-push binding
 	// (POST /api/admin/questionnaires/{questionnaire_id}/submissions/{submission_id}/external-push/reconcile)
 	ReconcileSurveyExternalPush(ctx context.Context, request ReconcileSurveyExternalPushRequestObject) (ReconcileSurveyExternalPushResponseObject, error)
+	// Read historical service-period definitions attached to existing Products
+	// (GET /api/admin/service-period-history)
+	ListServicePeriodHistoryDefinitions(ctx context.Context, request ListServicePeriodHistoryDefinitionsRequestObject) (ListServicePeriodHistoryDefinitionsResponseObject, error)
+	// Read V1 snapshot entitlement facts without granting current membership
+	// (GET /api/admin/service-period-history/{definition_id}/entitlements)
+	ListServicePeriodHistoryEntitlements(ctx context.Context, request ListServicePeriodHistoryEntitlementsRequestObject) (ListServicePeriodHistoryEntitlementsResponseObject, error)
+	// Read non-executable historical entitlement events
+	// (GET /api/admin/service-period-history/{definition_id}/events)
+	ListServicePeriodHistoryEvents(ctx context.Context, request ListServicePeriodHistoryEventsRequestObject) (ListServicePeriodHistoryEventsResponseObject, error)
 	// List local service-period products without payment, entitlement, or provider effects
 	// (GET /api/admin/service-period-products)
 	ListServicePeriodProducts(ctx context.Context, request ListServicePeriodProductsRequestObject) (ListServicePeriodProductsResponseObject, error)
@@ -54039,6 +54654,86 @@ func (sh *strictHandler) ReconcileSurveyExternalPush(w http.ResponseWriter, r *h
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ReconcileSurveyExternalPushResponseObject); ok {
 		if err := validResponse.VisitReconcileSurveyExternalPushResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListServicePeriodHistoryDefinitions operation middleware
+func (sh *strictHandler) ListServicePeriodHistoryDefinitions(w http.ResponseWriter, r *http.Request, params ListServicePeriodHistoryDefinitionsParams) {
+	var request ListServicePeriodHistoryDefinitionsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListServicePeriodHistoryDefinitions(ctx, request.(ListServicePeriodHistoryDefinitionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListServicePeriodHistoryDefinitions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListServicePeriodHistoryDefinitionsResponseObject); ok {
+		if err := validResponse.VisitListServicePeriodHistoryDefinitionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListServicePeriodHistoryEntitlements operation middleware
+func (sh *strictHandler) ListServicePeriodHistoryEntitlements(w http.ResponseWriter, r *http.Request, definitionId int64, params ListServicePeriodHistoryEntitlementsParams) {
+	var request ListServicePeriodHistoryEntitlementsRequestObject
+
+	request.DefinitionId = definitionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListServicePeriodHistoryEntitlements(ctx, request.(ListServicePeriodHistoryEntitlementsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListServicePeriodHistoryEntitlements")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListServicePeriodHistoryEntitlementsResponseObject); ok {
+		if err := validResponse.VisitListServicePeriodHistoryEntitlementsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListServicePeriodHistoryEvents operation middleware
+func (sh *strictHandler) ListServicePeriodHistoryEvents(w http.ResponseWriter, r *http.Request, definitionId int64, params ListServicePeriodHistoryEventsParams) {
+	var request ListServicePeriodHistoryEventsRequestObject
+
+	request.DefinitionId = definitionId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.ListServicePeriodHistoryEvents(ctx, request.(ListServicePeriodHistoryEventsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListServicePeriodHistoryEvents")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListServicePeriodHistoryEventsResponseObject); ok {
+		if err := validResponse.VisitListServicePeriodHistoryEventsResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
