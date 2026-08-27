@@ -77,9 +77,9 @@ if [[ -n "${AICRM_STAGING_SESSION_COOKIE:-}" ]]; then
   # The value is the complete cookie pair, for example
   # aicrm_session=<opaque-value>; it is never printed by this script.
   get 'authenticated session' '/api/v1/auth/session' \
-    --header "Cookie: ${AICRM_STAGING_SESSION_COOKIE}"
+    --cookie "$AICRM_STAGING_SESSION_COOKIE"
   get 'authenticated core read' "$core_read_path" \
-    --header "Cookie: ${AICRM_STAGING_SESSION_COOKIE}"
+    --cookie "$AICRM_STAGING_SESSION_COOKIE"
   printf 'staging-smoke: authenticated session and core read passed\n'
 else
   blocker='AICRM_STAGING_SESSION_COOKIE is not set; authenticated session and core read were NOT EXECUTED'
