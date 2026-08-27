@@ -6,6 +6,24 @@ fail() {
   exit 2
 }
 
+sha256_text() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    printf '%s' "$1" | sha256sum | awk '{ print $1 }'
+  else
+    command -v shasum >/dev/null 2>&1 || fail 'sha256sum or shasum is required for the snapshot receipt'
+    printf '%s' "$1" | shasum -a 256 | awk '{ print $1 }'
+  fi
+}
+
+sha256_file() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{ print $1 }'
+  else
+    command -v shasum >/dev/null 2>&1 || fail 'sha256sum or shasum is required for the snapshot receipt'
+    shasum -a 256 "$1" | awk '{ print $1 }'
+  fi
+}
+
 usage='Usage: staging_deploy.sh --tier=<s|m|l> --output-dir=<directory> [--edge-base-url=<http://host:port>] [--render-only|--apply]'
 script_directory="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)"
 repository_root="$(CDPATH= cd -- "$script_directory/.." && pwd -P)"
@@ -84,10 +102,15 @@ fi
 [[ -n "${AICRM_IDENTITY_HMAC_KEY:-}" ]] || fail 'AICRM_IDENTITY_HMAC_KEY must be injected by the process environment for --apply'
 [[ "${AICRM_RELEASE_SHA:-}" =~ ^[a-f0-9]{40}$ ]] || fail 'AICRM_RELEASE_SHA must be a 40-character lowercase commit SHA for --apply'
 [[ "$(git -C "$repository_root" rev-parse HEAD)" = "$AICRM_RELEASE_SHA" ]] || fail 'AICRM_RELEASE_SHA must equal the current checkout HEAD for --apply'
+[[ "${AICRM_ROLLBACK_RELEASE_SHA:-}" =~ ^[a-f0-9]{40}$ ]] || fail 'AICRM_ROLLBACK_RELEASE_SHA must identify the approved rollback release for --apply'
+[[ "$AICRM_ROLLBACK_RELEASE_SHA" != "$AICRM_RELEASE_SHA" ]] || fail 'approved rollback release must differ from the current release'
+[[ "${AICRM_ROLLBACK_IMAGE:-}" =~ @sha256:[a-f0-9]{64}$ ]] || fail 'AICRM_ROLLBACK_IMAGE must be pinned with @sha256:<64 lowercase hex> for --apply'
+[[ "${AICRM_STAGING_TARGET_ID:-}" =~ ^[A-Za-z0-9._-]{1,128}$ ]] || fail 'AICRM_STAGING_TARGET_ID must be a stable staging target identifier for --apply'
 [[ -z "$(git -C "$repository_root" status --porcelain --untracked-files=normal)" ]] || fail 'the release checkout must be clean for --apply'
 [[ "${AICRM_ENV:-}" = 'staging' ]] || fail 'AICRM_ENV=staging is required for --apply'
 [[ -n "${AICRM_STAGING_SESSION_COOKIE:-}" ]] || fail 'AICRM_STAGING_SESSION_COOKIE is required for authenticated staging smoke'
 [[ "$edge_base_url_seen" -eq 1 && -n "$edge_base_url" ]] || fail '--edge-base-url is required for --apply'
+edge_base_url="${edge_base_url%/}"
 [[ "${AICRM_STAGING_PROVIDER_MODE:-}" = 'disabled' ]] ||
   fail 'AICRM_STAGING_PROVIDER_MODE=disabled is required until a real fake Provider runtime exists'
 for provider_flag in AICRM_WECOM_OUTBOUND_ENABLED AICRM_WECOM_CUSTOMER_ACQUISITION_ENABLED AICRM_WECHAT_PAY_ENABLED AICRM_WECHAT_SHOP_ORDER_SYNC_ENABLED AICRM_WECHAT_SHOP_REFUND_ENABLED; do
@@ -100,6 +123,9 @@ command -v curl >/dev/null 2>&1 || fail 'curl is required for the staging smoke 
 docker pull "$AICRM_IMAGE" >/dev/null
 image_release_sha="$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$AICRM_IMAGE")"
 [[ "$image_release_sha" = "$AICRM_RELEASE_SHA" ]] || fail 'AICRM_IMAGE revision label must equal AICRM_RELEASE_SHA for --apply'
+docker pull "$AICRM_ROLLBACK_IMAGE" >/dev/null
+rollback_image_release_sha="$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$AICRM_ROLLBACK_IMAGE")"
+[[ "$rollback_image_release_sha" = "$AICRM_ROLLBACK_RELEASE_SHA" ]] || fail 'AICRM_ROLLBACK_IMAGE revision label must equal AICRM_ROLLBACK_RELEASE_SHA for --apply'
 
 swap_target_mib="$(awk -F= '$1 == "AICRM_SWAP_TARGET_MIB" { print $2 }' "$environment_file")"
 swap_policy="$(awk -F= '$1 == "AICRM_SWAP_POLICY" { print $2 }' "$environment_file")"
@@ -126,6 +152,20 @@ docker compose --env-file "$environment_file" -f "$repository_root/deploy/compos
 snapshot_file="$(mktemp "$resolved_output_directory/staging-pre-migration.XXXXXX.dump")"
 pg_dump --format=custom --file="$snapshot_file" "$AICRM_DATABASE_URL"
 chmod 600 "$snapshot_file"
+snapshot_receipt_file="${snapshot_file}.receipt"
+snapshot_receipt_tmp="$(mktemp "$resolved_output_directory/staging-pre-migration.XXXXXX.receipt.tmp")"
+{
+  printf 'format_version=1\n'
+  printf 'staging_target_id=%s\n' "$AICRM_STAGING_TARGET_ID"
+  printf 'snapshot_sha256=%s\n' "$(sha256_file "$snapshot_file")"
+  printf 'database_fingerprint=%s\n' "$(sha256_text "$AICRM_DATABASE_URL")"
+  printf 'edge_fingerprint=%s\n' "$(sha256_text "$edge_base_url")"
+  printf 'current_release_sha=%s\n' "$AICRM_RELEASE_SHA"
+  printf 'rollback_release_sha=%s\n' "$AICRM_ROLLBACK_RELEASE_SHA"
+  printf 'rollback_image=%s\n' "$AICRM_ROLLBACK_IMAGE"
+} >"$snapshot_receipt_tmp"
+chmod 600 "$snapshot_receipt_tmp"
+mv "$snapshot_receipt_tmp" "$snapshot_receipt_file"
 
 (
   cd "$repository_root"
@@ -138,7 +178,7 @@ chmod 600 "$snapshot_file"
 
 docker compose --env-file "$environment_file" -f "$repository_root/deploy/compose.yml" up -d --wait
 AICRM_STAGING_REQUIRE_AUTH_SMOKE=1 "$script_directory/staging_smoke.sh" --base-url="$edge_base_url"
-printf 'staging-deploy: tier %s snapshot, Goose, River, Compose and staging smoke completed; restore drill NOT EXECUTED (snapshot=%s)\n' \
-  "$tier_value" "$snapshot_file"
+printf 'staging-deploy: tier %s snapshot, receipt, Goose, River, Compose and staging smoke completed; restore drill NOT EXECUTED (snapshot=%s receipt=%s)\n' \
+  "$tier_value" "$snapshot_file" "$snapshot_receipt_file"
 printf 'staging-deploy: restore drill is available with scripts/staging_restore_drill.sh --snapshot="%s" --render-only; --apply requires explicit staging approval\n' \
   "$snapshot_file"
