@@ -284,7 +284,7 @@ func (s *PublicService) Publish(ctx context.Context, command surveyport.PublishP
 			return ErrPublicUnavailable
 		}
 		completed, err := s.store.CompletePublicManagement(tx, reserved.ID, snapshot, now)
-		if err != nil || completed.ID != reserved.ID || completed.Operation != "publish" || completed.ActorScope != reserved.ActorScope || completed.KeyDigest != keyDigest || completed.PayloadDigest != payloadDigest || completed.State != "completed" || string(completed.ResultSnapshot) != string(snapshot) {
+		if err != nil || completed.ID != reserved.ID || completed.Operation != "publish" || completed.ActorScope != reserved.ActorScope || completed.KeyDigest != keyDigest || completed.PayloadDigest != payloadDigest || completed.State != "completed" || !jsonEquivalent(completed.ResultSnapshot, snapshot) {
 			return ErrPublicUnavailable
 		}
 		eventPayload, err := json.Marshal(struct {
@@ -346,7 +346,7 @@ func (s *PublicService) Disable(ctx context.Context, command surveyport.DisableP
 			return ErrPublicUnavailable
 		}
 		completed, err := s.store.CompletePublicManagement(tx, reserved.ID, snapshot, now)
-		if err != nil || completed.ID != reserved.ID || completed.Operation != "disable" || completed.ActorScope != reserved.ActorScope || completed.KeyDigest != keyDigest || completed.PayloadDigest != payloadDigest || completed.State != "completed" || string(completed.ResultSnapshot) != string(snapshot) {
+		if err != nil || completed.ID != reserved.ID || completed.Operation != "disable" || completed.ActorScope != reserved.ActorScope || completed.KeyDigest != keyDigest || completed.PayloadDigest != payloadDigest || completed.State != "completed" || !jsonEquivalent(completed.ResultSnapshot, snapshot) {
 			return ErrPublicUnavailable
 		}
 		eventPayload, err := json.Marshal(struct {
