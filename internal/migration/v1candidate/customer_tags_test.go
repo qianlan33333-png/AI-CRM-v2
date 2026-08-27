@@ -42,7 +42,7 @@ func TestSegmentAlwaysArchivesLegacySQLWithoutParsing(t *testing.T) {
 	assertDecision(t, decision, Archive, ReasonLegacySQLRequiresArchive)
 }
 
-func assertDecision(t *testing.T, got Decision, disposition Disposition, reason string) {
+func assertDecision[T any](t *testing.T, got Decision[T], disposition Disposition, reason string) {
 	t.Helper()
 	if got.Disposition != disposition || got.Reason != reason {
 		t.Fatalf("decision = %#v, want disposition=%q reason=%q", got, disposition, reason)

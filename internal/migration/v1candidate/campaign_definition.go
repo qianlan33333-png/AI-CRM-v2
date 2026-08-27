@@ -11,16 +11,7 @@ import (
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 )
 
-type Disposition string
-
 const (
-	CanonicalCandidate Disposition = "canonical_candidate"
-	Quarantine         Disposition = "quarantine"
-	Archive            Disposition = "archive"
-)
-
-const (
-	ReasonInvalidSource               = "invalid_source"
 	ReasonActorUnresolved             = "campaign_actor_unresolved"
 	ReasonRuntimeRequiresArchive      = "campaign_runtime_requires_archive"
 	ReasonStepCampaignUnresolved      = "campaign_step_campaign_fk_unresolved"
@@ -29,12 +20,6 @@ const (
 	ReasonScheduleRequiresArchive     = "campaign_step_schedule_requires_archive"
 	ReasonRuntimeTableRequiresArchive = "campaign_runtime_table_requires_archive"
 )
-
-type Decision[T any] struct {
-	Disposition Disposition
-	Reason      string
-	Candidate   *T
-}
 
 // ActorIDs is the approved V1 owner_userid -> V2 actor mapping. No source
 // actor is created or guessed by this package.
@@ -187,16 +172,4 @@ func twoDigits(value string) (int, bool) {
 		return 0, false
 	}
 	return int(value[0]-'0')*10 + int(value[1]-'0'), true
-}
-
-func canonical[T any](candidate T) Decision[T] {
-	return Decision[T]{Disposition: CanonicalCandidate, Candidate: &candidate}
-}
-
-func quarantine[T any](reason string) Decision[T] {
-	return Decision[T]{Disposition: Quarantine, Reason: reason}
-}
-
-func archive[T any](reason string) Decision[T] {
-	return Decision[T]{Disposition: Archive, Reason: reason}
 }

@@ -9,27 +9,12 @@ import (
 	"time"
 )
 
-type Disposition string
-
 const (
-	Quarantine Disposition = "quarantine"
-	Archive    Disposition = "archive"
-)
-
-const (
-	ReasonInvalidSource             = "invalid_source"
 	ReasonProfileRequiresArchive    = "profile_requires_approved_target_schema"
 	ReasonTagCatalogRequiresArchive = "wecom_tag_catalog_requires_target_crosswalk"
 	ReasonContactTagRequiresArchive = "contact_tag_tagged_by_requires_target_crosswalk"
 	ReasonLegacySQLRequiresArchive  = "legacy_sql_requires_archive"
 )
-
-// Decision intentionally has no canonical payload: this slice only decides
-// whether a row stays encrypted archive history or must be quarantined.
-type Decision struct {
-	Disposition Disposition
-	Reason      string
-}
 
 // V1 profile fields have no created_at and there is no approved V2 profile
 // target schema, so every valid row is archive-only.
@@ -43,11 +28,11 @@ type ProfileFieldsRow struct {
 	UpdatedAt             time.Time
 }
 
-func ConvertProfile(row ProfileFieldsRow) Decision {
+func ConvertProfile(row ProfileFieldsRow) Decision[struct{}] {
 	if !validRequiredText(row.UnionID) || !validText(row.Source) || !validText(row.Industry) || !validText(row.IndustryDescription) || !validText(row.UpdatedBy) || row.UpdatedAt.IsZero() {
-		return quarantine(ReasonInvalidSource)
+		return quarantine[struct{}](ReasonInvalidSource)
 	}
-	return archive(ReasonProfileRequiresArchive)
+	return archive[struct{}](ReasonProfileRequiresArchive)
 }
 
 // V1 WeCom group/tag catalogs are retained for future approved crosswalks;
@@ -62,11 +47,11 @@ type TagGroupRow struct {
 	UpdatedAt  time.Time
 }
 
-func ConvertTagGroup(row TagGroupRow) Decision {
+func ConvertTagGroup(row TagGroupRow) Decision[struct{}] {
 	if !validRequiredText(row.GroupID) || !validRequiredText(row.GroupName) || !validText(row.GroupKey) || row.TagCount < 0 || row.UpdatedAt.IsZero() || (row.SyncedAt != nil && row.SyncedAt.IsZero()) || !validJSON(row.RawPayload) {
-		return quarantine(ReasonInvalidSource)
+		return quarantine[struct{}](ReasonInvalidSource)
 	}
-	return archive(ReasonTagCatalogRequiresArchive)
+	return archive[struct{}](ReasonTagCatalogRequiresArchive)
 }
 
 type TagRow struct {
@@ -81,11 +66,11 @@ type TagRow struct {
 	UpdatedAt  time.Time
 }
 
-func ConvertTag(row TagRow) Decision {
+func ConvertTag(row TagRow) Decision[struct{}] {
 	if !validRequiredText(row.TagID) || !validRequiredText(row.TagName) || !validRequiredText(row.GroupID) || !validText(row.GroupName) || row.OrderIndex < 0 || row.UpdatedAt.IsZero() || (row.DeletedAt != nil && row.DeletedAt.IsZero()) || (row.SyncedAt != nil && row.SyncedAt.IsZero()) || !validJSON(row.RawPayload) {
-		return quarantine(ReasonInvalidSource)
+		return quarantine[struct{}](ReasonInvalidSource)
 	}
-	return archive(ReasonTagCatalogRequiresArchive)
+	return archive[struct{}](ReasonTagCatalogRequiresArchive)
 }
 
 // V2 customer_tags.tagged_by is text while V1 records a staff ID. Until an
@@ -105,11 +90,11 @@ type ContactTagRow struct {
 	UpdatedAt       time.Time
 }
 
-func ConvertContactTag(row ContactTagRow) Decision {
+func ConvertContactTag(row ContactTagRow) Decision[struct{}] {
 	if row.ID < 1 || !validRequiredText(row.UnionID) || !validRequiredText(row.UserID) || !validRequiredText(row.TagID) || !validText(row.TagName) || !validText(row.Source) || !validText(row.QuestionnaireID) || !validText(row.SubmissionID) || !validText(row.IdempotencyKey) || row.CreatedAt.IsZero() || row.UpdatedAt.IsZero() || row.UpdatedAt.Before(row.CreatedAt) || !validJSON(row.RawPayload) {
-		return quarantine(ReasonInvalidSource)
+		return quarantine[struct{}](ReasonInvalidSource)
 	}
-	return archive(ReasonContactTagRequiresArchive)
+	return archive[struct{}](ReasonContactTagRequiresArchive)
 }
 
 // V1 segment SQL is never parsed or executed. The complete source record is
@@ -125,11 +110,9 @@ type SegmentRow struct {
 	UpdatedAt     time.Time
 }
 
-func ConvertSegment(SegmentRow) Decision { return archive(ReasonLegacySQLRequiresArchive) }
-
-func quarantine(reason string) Decision { return Decision{Disposition: Quarantine, Reason: reason} }
-
-func archive(reason string) Decision { return Decision{Disposition: Archive, Reason: reason} }
+func ConvertSegment(SegmentRow) Decision[struct{}] {
+	return archive[struct{}](ReasonLegacySQLRequiresArchive)
+}
 
 func validText(value string) bool { return value == strings.TrimSpace(value) }
 
