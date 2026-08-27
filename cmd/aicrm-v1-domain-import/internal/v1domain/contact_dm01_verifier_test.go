@@ -9,6 +9,7 @@ import (
 	contactmigration "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/migration"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
+	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 )
 
 func TestDM01CustomerTagVerifierResolveAndVerifySameTransaction(t *testing.T) {
@@ -71,6 +72,46 @@ func TestDM01CustomerTagVerifierPropagatesUnexpectedTargetError(t *testing.T) {
 	}
 }
 
+func TestDM01CustomerTagVerifierPreflightRequiresImportedFullRunAndWitness(t *testing.T) {
+	verifier, target, uow, key := newDM01CustomerTagVerifierFixture(t)
+	archive := contactTagBindingArchive("union-1", "union-missing")
+	if err := verifier.PreflightContactTagBindings(context.Background(), archive, "archive-run"); err != nil {
+		t.Fatal(err)
+	}
+	if uow.calls != 1 || target.runReads != 1 || target.sourceLocks != 1 || target.lineageLocks != 1 || target.receiptReads != 1 || target.customerLocks != 1 || target.rootValidations != 1 {
+		t.Fatalf("preflight calls uow=%d target=%+v", uow.calls, target)
+	}
+	target.mode = "incremental"
+	if err := verifier.PreflightContactTagBindings(context.Background(), archive, "archive-run"); !errors.Is(err, contactport.ErrHistoricalTagBlocked) {
+		t.Fatalf("non-full run err=%v, want blocked", err)
+	}
+	target.mode = "full"
+	target.state = "running"
+	if err := verifier.PreflightContactTagBindings(context.Background(), archive, "archive-run"); !errors.Is(err, contactport.ErrHistoricalTagBlocked) {
+		t.Fatalf("non-imported run err=%v, want blocked", err)
+	}
+	target.state = "imported"
+	wrongKeyVerifier, err := NewDM01CustomerTagVerifier(uow, target, bytes.Repeat([]byte{9}, len(key)), 7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = wrongKeyVerifier.PreflightContactTagBindings(context.Background(), archive, "archive-run"); !errors.Is(err, contactport.ErrHistoricalTagBlocked) {
+		t.Fatalf("wrong key preflight err=%v, want blocked", err)
+	}
+	if err = verifier.PreflightContactTagBindings(context.Background(), contactTagBindingArchive("union-missing"), "archive-run"); !errors.Is(err, contactport.ErrHistoricalTagBlocked) {
+		t.Fatalf("missing witness err=%v, want blocked", err)
+	}
+}
+
+func TestDM01CustomerTagVerifierPreflightPreservesRunReadError(t *testing.T) {
+	verifier, target, _, _ := newDM01CustomerTagVerifierFixture(t)
+	errDatabase := errors.New("temporary run read failure")
+	target.runErr = errDatabase
+	if err := verifier.PreflightContactTagBindings(context.Background(), contactTagBindingArchive("union-1"), "archive-run"); !errors.Is(err, errDatabase) || errors.Is(err, contactport.ErrHistoricalTagBlocked) {
+		t.Fatalf("run read error=%v", err)
+	}
+}
+
 type dm01VerifierTransactionKey struct{}
 
 func withDM01VerifierTransaction(ctx context.Context) context.Context {
@@ -90,10 +131,11 @@ type dm01VerifierTarget struct {
 	lineage     contactport.HistoricalImportLineage
 	receipt     contactport.HistoricalImportRowReceipt
 
-	lineageFound, receiptFound                              bool
-	sourceErr, lineageErr, receiptErr, customerErr, rootErr error
-	sourceLocks, lineageLocks, receiptReads                 int
-	customerLocks, rootValidations                          int
+	lineageFound, receiptFound                                      bool
+	mode, state                                                     string
+	sourceErr, lineageErr, receiptErr, customerErr, rootErr, runErr error
+	sourceLocks, lineageLocks, receiptReads, runReads               int
+	customerLocks, rootValidations                                  int
 }
 
 func (target *dm01VerifierTarget) LockHistoricalImportSource(ctx context.Context, _ contactport.HistoricalImportSource, _ []byte) error {
@@ -160,6 +202,20 @@ func (target *dm01VerifierTarget) ValidateHistoricalImportCustomerRoot(ctx conte
 	return nil
 }
 
+func (target *dm01VerifierTarget) ReadHistoricalImportRun(ctx context.Context, runID int64) (string, string, error) {
+	if err := dm01VerifierTransaction(ctx); err != nil {
+		return "", "", err
+	}
+	target.runReads++
+	if target.runErr != nil {
+		return "", "", target.runErr
+	}
+	if runID != target.lineage.LastRunID {
+		return "", "", contactstore.ErrHistoricalImportTargetDrift
+	}
+	return target.mode, target.state, nil
+}
+
 func dm01VerifierTransaction(ctx context.Context) error {
 	if active, _ := ctx.Value(dm01VerifierTransactionKey{}).(bool); !active {
 		return errors.New("DM01 verifier target requires caller transaction")
@@ -177,7 +233,7 @@ func newDM01CustomerTagVerifierFixture(t *testing.T) (*DM01CustomerTagVerifier, 
 	var source [32]byte
 	copy(source[:], sourceKey)
 	payload, field := dm01VerifierDigest(1), dm01VerifierDigest(2)
-	target := &dm01VerifierTarget{expectedKey: source, lineageFound: true, receiptFound: true,
+	target := &dm01VerifierTarget{expectedKey: source, lineageFound: true, receiptFound: true, mode: "full", state: "imported",
 		lineage: contactport.HistoricalImportLineage{TargetID: 19, PayloadHMAC: payload, FieldDigest: field, LastRunID: 7},
 		receipt: contactport.HistoricalImportRowReceipt{PayloadHMAC: payload, FieldDigest: field, Disposition: contactport.HistoricalImportImported}}
 	uow := &dm01VerifierUOW{}
@@ -189,3 +245,11 @@ func newDM01CustomerTagVerifierFixture(t *testing.T) (*DM01CustomerTagVerifier, 
 }
 
 func dm01VerifierDigest(seed byte) []byte { return bytes.Repeat([]byte{seed}, 32) }
+
+func contactTagBindingArchive(unionIDs ...string) *contactArchive {
+	rows := make([]v1archive.ArchivedRow, 0, len(unionIDs))
+	for index, unionID := range unionIDs {
+		rows = append(rows, contactArchivedRow(contactBindingsTable, byte(index+1), map[string]any{"unionid": unionID}))
+	}
+	return &contactArchive{rows: map[string][]v1archive.ArchivedRow{contactBindingsTable: rows}}
+}

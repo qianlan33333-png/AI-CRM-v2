@@ -4,11 +4,14 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
+	"strings"
 
 	contactmigration "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/migration"
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	contactstore "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"
+	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 )
 
 const dm01CustomerIdentitySourceTable = "crm_user_identity"
@@ -18,6 +21,7 @@ const dm01CustomerIdentitySourceTable = "crm_user_identity"
 type DM01CustomerTagVerifier struct {
 	uow           UnitOfWork
 	contacts      contactport.HistoricalImportTarget
+	runs          contactport.HistoricalImportRunReader
 	sourceHMACKey []byte
 	expectedRunID int64
 }
@@ -28,9 +32,51 @@ func NewDM01CustomerTagVerifier(uow UnitOfWork, contacts contactport.HistoricalI
 	if uow == nil || contacts == nil || len(sourceHMACKey) < sha256.Size || expectedRunID < 1 {
 		return nil, ErrInvalidScope
 	}
+	runs, ok := contacts.(contactport.HistoricalImportRunReader)
+	if !ok || runs == nil {
+		return nil, ErrInvalidScope
+	}
 	return &DM01CustomerTagVerifier{
-		uow: uow, contacts: contacts, sourceHMACKey: append([]byte(nil), sourceHMACKey...), expectedRunID: expectedRunID,
+		uow: uow, contacts: contacts, runs: runs, sourceHMACKey: append([]byte(nil), sourceHMACKey...), expectedRunID: expectedRunID,
 	}, nil
+}
+
+// PreflightContactTagBindings stops the complete static-tag import before its
+// first receipt or domain write unless the frozen DM01 full run is imported
+// and this archive has at least one exact customer-root witness. Other
+// bindings remain independently fail-closed during the later row import.
+func (verifier *DM01CustomerTagVerifier) PreflightContactTagBindings(ctx context.Context, archive ArchiveSource, archiveRunID string) error {
+	if verifier == nil || archive == nil || archiveRunID == "" {
+		return ErrInvalidScope
+	}
+	unionIDs, err := contactTagBindingUnionIDs(ctx, archive, archiveRunID)
+	if err != nil {
+		return err
+	}
+	return verifier.uow.Within(ctx, func(tx context.Context) error {
+		mode, state, err := verifier.runs.ReadHistoricalImportRun(tx, verifier.expectedRunID)
+		if err != nil {
+			return dm01CustomerTagVerificationError(err)
+		}
+		if mode != "full" || state != "imported" {
+			return contactport.ErrHistoricalTagBlocked
+		}
+		for _, unionID := range unionIDs {
+			key, keyErr := verifier.sourceKey(unionID)
+			if keyErr != nil {
+				if errors.Is(keyErr, contactport.ErrHistoricalTagBlocked) {
+					continue
+				}
+				return keyErr
+			}
+			if _, verifyErr := verifier.verify(tx, key); verifyErr == nil {
+				return nil
+			} else if !errors.Is(verifyErr, contactport.ErrHistoricalTagBlocked) {
+				return verifyErr
+			}
+		}
+		return contactport.ErrHistoricalTagBlocked
+	})
 }
 
 func (verifier *DM01CustomerTagVerifier) ResolveVerifiedDM01Customer(ctx context.Context, unionID string) (contactport.CustomerID, error) {
@@ -70,7 +116,7 @@ func (verifier *DM01CustomerTagVerifier) VerifyHistoricalTagCustomer(ctx context
 }
 
 func (verifier *DM01CustomerTagVerifier) sourceKey(unionID string) ([]byte, error) {
-	if verifier == nil || verifier.uow == nil || verifier.contacts == nil || len(verifier.sourceHMACKey) < sha256.Size || verifier.expectedRunID < 1 {
+	if verifier == nil || verifier.uow == nil || verifier.contacts == nil || verifier.runs == nil || len(verifier.sourceHMACKey) < sha256.Size || verifier.expectedRunID < 1 {
 		return nil, contactport.ErrHistoricalTagUnavailable
 	}
 	key, err := contactmigration.SourceKeyHMAC(verifier.sourceHMACKey, dm01CustomerIdentitySourceTable, unionID)
@@ -119,4 +165,23 @@ func validDM01Digest(value []byte) bool { return len(value) == sha256.Size }
 
 func sameDM01Digest(left, right []byte) bool {
 	return validDM01Digest(left) && validDM01Digest(right) && hmac.Equal(left, right)
+}
+
+func contactTagBindingUnionIDs(ctx context.Context, archive ArchiveSource, archiveRunID string) ([]string, error) {
+	unionIDs, seen := make([]string, 0), map[string]bool{}
+	err := archive.EachTableRow(ctx, archiveRunID, contactBindingsTable, func(row v1archive.ArchivedRow) error {
+		if !validContactArchivedRow(row, contactBindingsTable) {
+			return ErrInvalidScope
+		}
+		var binding contactTagBindingJSON
+		if json.Unmarshal(row.Payload, &binding) != nil || binding.UnionID == "" || strings.TrimSpace(binding.UnionID) != binding.UnionID {
+			return nil
+		}
+		if !seen[binding.UnionID] {
+			seen[binding.UnionID] = true
+			unionIDs = append(unionIDs, binding.UnionID)
+		}
+		return nil
+	})
+	return unionIDs, err
 }
