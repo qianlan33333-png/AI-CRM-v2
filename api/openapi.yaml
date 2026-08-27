@@ -14048,7 +14048,7 @@ components:
     GroupOpsOperationMember:
       type: object
       additionalProperties: false
-      required: [sender_userid, display_name]
+      required: [staff_id, sender_userid, display_name]
       properties:
         staff_id: { type: integer, format: int64, minimum: 1 }
         sender_userid: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 }

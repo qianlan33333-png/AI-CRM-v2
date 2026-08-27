@@ -220,11 +220,12 @@ func (h *Handler) ListOperationMembers(w http.ResponseWriter, r *http.Request) {
 		unavailable(w)
 		return
 	}
-	if r.URL.RawQuery != "" {
+	pageSize, ok := operationMemberQuery(r.URL.Query())
+	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_page")
 		return
 	}
-	result, err := h.Runtime.ListOperationMembers(r.Context(), 100)
+	result, err := h.Runtime.ListOperationMembers(r.Context(), pageSize)
 	if err != nil {
 		runtimeError(w, err)
 		return
@@ -389,6 +390,26 @@ func directoryQuery(values url.Values, ownerRequired bool) (int64, int32, int32,
 		}
 	}
 	return owner, limit, offset, limit >= 1 && limit <= 200 && offset >= 0 && offset <= groupopsapp.MaximumOffset
+}
+
+func operationMemberQuery(values url.Values) (int32, bool) {
+	for name, entries := range values {
+		if name != "scope" && name != "page_size" || len(entries) != 1 || entries[0] == "" {
+			return 0, false
+		}
+	}
+	if values.Get("scope") != "group_ops" {
+		return 0, false
+	}
+	pageSize := int32(100)
+	if raw := values.Get("page_size"); raw != "" {
+		parsed, err := strconv.ParseInt(raw, 10, 32)
+		if err != nil || parsed < 1 || parsed > 100 {
+			return 0, false
+		}
+		pageSize = int32(parsed)
+	}
+	return pageSize, true
 }
 
 func templateID(r *http.Request, pattern, placeholder string) (int64, bool) {
