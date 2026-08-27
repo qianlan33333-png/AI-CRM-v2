@@ -492,6 +492,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		}
 		root.WeCom.Sidebar = parseWeComSidebar(lookup, &problems)
 		if !needWorker {
+			root.WeCom.TagCatalog = parseWeComTagCatalogAPI(lookup, &problems)
 			root.WeCom.Outbound = parseWeComOutboundAPI(lookup, &problems)
 		}
 		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
@@ -805,6 +806,36 @@ func parseWeComTagCatalog(lookup environmentLookup, problems *[]string) WeComTag
 		*problems = append(*problems, "wecom.tag_catalog.permission_confirmed must be true when enabled")
 	}
 	return WeComTagCatalog{Enabled: true, CorpID: corpID, Secret: WeComTagCatalogSecret{value: secret}, PermissionConfirmed: permission == "true"}
+}
+
+func parseWeComTagCatalogAPI(lookup environmentLookup, problems *[]string) WeComTagCatalog {
+	enabled, enabledPresent := lookup(weComTagCatalogEnabledEnv)
+	corpID, corpIDPresent := lookup(weComTagCatalogCorpIDEnv)
+	permission, permissionPresent := lookup(weComTagCatalogPermissionConfirmedEnv)
+	if !enabledPresent && !corpIDPresent && !permissionPresent {
+		return WeComTagCatalog{}
+	}
+	if !enabledPresent || enabled != "true" && enabled != "false" {
+		*problems = append(*problems, "wecom.tag_catalog.enabled must be true or false")
+		return WeComTagCatalog{}
+	}
+	if enabled == "false" {
+		if corpIDPresent || permissionPresent {
+			*problems = append(*problems, "wecom.tag_catalog API projection requires no corp_id or permission when enabled=false")
+		}
+		return WeComTagCatalog{}
+	}
+	if !corpIDPresent || !permissionPresent || corpID == "" {
+		*problems = append(*problems, "wecom.tag_catalog API projection requires corp_id and permission_confirmed")
+		return WeComTagCatalog{}
+	}
+	if !validWeComCorpID(corpID) {
+		*problems = append(*problems, "wecom.tag_catalog.corp_id is invalid")
+	}
+	if permission != "true" {
+		*problems = append(*problems, "wecom.tag_catalog.permission_confirmed must be true when enabled")
+	}
+	return WeComTagCatalog{Enabled: true, CorpID: corpID, PermissionConfirmed: permission == "true"}
 }
 
 func parseWeComOutbound(lookup environmentLookup, problems *[]string) WeComOutbound {

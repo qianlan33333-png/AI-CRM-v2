@@ -252,13 +252,7 @@ func newWorkerComponent(config appconfig.Root) (appruntime.Component, error) {
 			return nil, profileErr
 		}
 	}
-	weComTagCorpID := config.WeCom.TagCatalog.CorpID
-	if weComTagCorpID == "" {
-		weComTagCorpID = config.WeCom.OAuth.CorpID
-	}
-	if weComTagCorpID == "" {
-		weComTagCorpID = config.WeCom.Callback.CorpID
-	}
+	weComTagCorpID := weComTagEffectCorpID(config)
 	if weComTagCorpID != "" {
 		weComTagJobs, tagErr := wecomtag.NewRiverJobInserter(pool)
 		if tagErr != nil {
