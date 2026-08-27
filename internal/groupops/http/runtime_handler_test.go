@@ -90,6 +90,33 @@ func TestGroupRefreshReturnsExplicitProviderDisabled(t *testing.T) {
 	}
 }
 
+func TestListOperationMembersAcceptsOnlyGroupOpsContractQuery(t *testing.T) {
+	called := 0
+	runtime := runtimeApplicationStub{listOperationMembers: func(_ context.Context, pageSize int32) (groupopsport.OperationMemberPage, error) {
+		called++
+		if pageSize != 50 {
+			t.Fatalf("page_size=%d", pageSize)
+		}
+		return groupopsport.OperationMemberPage{Scope: "group_ops", PageSize: pageSize}, nil
+	}}
+	handler := NewWithRuntime(applicationStub{}, runtime, nil)
+
+	request := groupOpsRequest(http.MethodGet, OperationMembersPath+"?scope=group_ops&page_size=50", nil, authport.RoleOps, authport.CapabilityAdminRead)
+	response := httptest.NewRecorder()
+	handler.ListOperationMembers(response, request)
+	if response.Code != http.StatusOK || called != 1 || !strings.Contains(response.Body.String(), `"scope":"group_ops"`) {
+		t.Fatalf("status/body/called=%d/%s/%d", response.Code, response.Body.String(), called)
+	}
+
+	for _, query := range []string{"", "?scope=ai_audience", "?scope=group_ops&page_size=0", "?scope=group_ops&unknown=1"} {
+		response = httptest.NewRecorder()
+		handler.ListOperationMembers(response, groupOpsRequest(http.MethodGet, OperationMembersPath+query, nil, authport.RoleOps, authport.CapabilityAdminRead))
+		if response.Code != http.StatusBadRequest || called != 1 {
+			t.Fatalf("query/status/called=%q/%d/%d", query, response.Code, called)
+		}
+	}
+}
+
 type protocolAuthenticatorStub struct {
 	principal         ProtocolPrincipal
 	err               error
@@ -103,10 +130,11 @@ func (stub *protocolAuthenticatorStub) Authenticate(_ context.Context, _ *http.R
 }
 
 type runtimeApplicationStub struct {
-	runDue        func(context.Context, groupopsport.RunDueCommand) (groupopsport.RunSummary, error)
-	acceptPlan    func(context.Context, groupopsport.AcceptPlanCommand) (groupopsport.RunSummary, error)
-	acceptWebhook func(context.Context, string, string) (groupopsport.RunSummary, error)
-	refreshGroups func(context.Context, groupopsport.GroupRefreshCommand) (groupopsport.GroupDirectoryPage, error)
+	runDue               func(context.Context, groupopsport.RunDueCommand) (groupopsport.RunSummary, error)
+	acceptPlan           func(context.Context, groupopsport.AcceptPlanCommand) (groupopsport.RunSummary, error)
+	acceptWebhook        func(context.Context, string, string) (groupopsport.RunSummary, error)
+	refreshGroups        func(context.Context, groupopsport.GroupRefreshCommand) (groupopsport.GroupDirectoryPage, error)
+	listOperationMembers func(context.Context, int32) (groupopsport.OperationMemberPage, error)
 }
 
 func (stub runtimeApplicationStub) PreviewRunDue(context.Context, int64) (groupopsport.RunDuePreview, error) {
@@ -136,8 +164,11 @@ func (runtimeApplicationStub) ListExecutions(context.Context, int64, int32, int3
 func (runtimeApplicationStub) ManualReconcile(context.Context, groupopsport.ManualReconcileCommand) (groupopsport.Execution, error) {
 	return groupopsport.Execution{}, errors.New("unexpected")
 }
-func (runtimeApplicationStub) ListOperationMembers(context.Context, int32) (groupopsport.OperationMemberPage, error) {
-	return groupopsport.OperationMemberPage{}, errors.New("unexpected")
+func (stub runtimeApplicationStub) ListOperationMembers(ctx context.Context, pageSize int32) (groupopsport.OperationMemberPage, error) {
+	if stub.listOperationMembers == nil {
+		return groupopsport.OperationMemberPage{}, errors.New("unexpected")
+	}
+	return stub.listOperationMembers(ctx, pageSize)
 }
 func (runtimeApplicationStub) RefreshOperationMembers(context.Context, groupopsport.OperationMemberRefreshCommand) (groupopsport.OperationMemberPage, error) {
 	return groupopsport.OperationMemberPage{}, errors.New("unexpected")

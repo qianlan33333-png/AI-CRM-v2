@@ -704,17 +704,22 @@ func (service *RuntimeService) ListOperationMembers(ctx context.Context, pageSiz
 	}
 	items := make([]groupopsport.OperationMember, 0, min(len(entries), int(pageSize)))
 	seen := map[string]struct{}{}
+	seenStaff := map[int64]struct{}{}
 	for _, entry := range entries {
 		id, name := strings.TrimSpace(entry.WeComUserID), strings.TrimSpace(entry.DisplayName)
-		if !opaque(id) || name == "" {
+		if entry.StaffID < 1 || !opaque(id) || name == "" {
 			return groupopsport.OperationMemberPage{}, ErrUnavailable
 		}
 		if _, exists := seen[id]; exists {
 			return groupopsport.OperationMemberPage{}, ErrUnavailable
 		}
+		if _, exists := seenStaff[entry.StaffID]; exists {
+			return groupopsport.OperationMemberPage{}, ErrUnavailable
+		}
 		seen[id] = struct{}{}
+		seenStaff[entry.StaffID] = struct{}{}
 		if len(items) < int(pageSize) {
-			items = append(items, groupopsport.OperationMember{SenderUserID: id, DisplayName: name})
+			items = append(items, groupopsport.OperationMember{StaffID: entry.StaffID, SenderUserID: id, DisplayName: name})
 		}
 	}
 	return groupopsport.OperationMemberPage{Scope: "group_ops", Items: items, PageSize: pageSize, RuntimeSafety: service.runtimeSafety()}, nil
@@ -969,14 +974,21 @@ func validOperationMembers(items []groupopsport.OperationMember, limit int32) bo
 		return false
 	}
 	seen := map[string]struct{}{}
+	seenStaff := map[int64]struct{}{}
 	for _, item := range items {
-		if !opaque(item.SenderUserID) || strings.TrimSpace(item.DisplayName) != item.DisplayName || item.DisplayName == "" || len([]rune(item.DisplayName)) > 128 {
+		if item.StaffID < 0 || !opaque(item.SenderUserID) || strings.TrimSpace(item.DisplayName) != item.DisplayName || item.DisplayName == "" || len([]rune(item.DisplayName)) > 128 {
 			return false
 		}
 		if _, exists := seen[item.SenderUserID]; exists {
 			return false
 		}
 		seen[item.SenderUserID] = struct{}{}
+		if item.StaffID > 0 {
+			if _, exists := seenStaff[item.StaffID]; exists {
+				return false
+			}
+			seenStaff[item.StaffID] = struct{}{}
+		}
 	}
 	return true
 }

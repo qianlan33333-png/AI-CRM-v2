@@ -103,6 +103,7 @@ type Querier interface {
 	ListCustomerEvents(ctx context.Context, arg ListCustomerEventsParams) ([]ListCustomerEventsRow, error)
 	ListCustomerSafeExportSnapshotRows(ctx context.Context, arg ListCustomerSafeExportSnapshotRowsParams) ([]ListCustomerSafeExportSnapshotRowsRow, error)
 	ListCustomers(ctx context.Context, arg ListCustomersParams) ([]Customer, error)
+	ListEligibleStaffDirectory(ctx context.Context) ([]ListEligibleStaffDirectoryRow, error)
 	ListExpiredChannelAcquisitionAssetAttempts(ctx context.Context, arg ListExpiredChannelAcquisitionAssetAttemptsParams) ([]ListExpiredChannelAcquisitionAssetAttemptsRow, error)
 	ListHistoricalReconcileReceiptsPage(ctx context.Context, arg ListHistoricalReconcileReceiptsPageParams) ([]ListHistoricalReconcileReceiptsPageRow, error)
 	ListLegacyTagGroups(ctx context.Context) ([]TagGroup, error)
@@ -114,6 +115,7 @@ type Querier interface {
 	LockActiveCustomerContactPolicies(ctx context.Context, customerIds []int64) ([]LockActiveCustomerContactPoliciesRow, error)
 	LockActiveCustomerForContactPolicy(ctx context.Context, customerID int64) (int64, error)
 	LockActiveCustomerForMutation(ctx context.Context, arg LockActiveCustomerForMutationParams) (Customer, error)
+	LockActiveStaffExists(ctx context.Context, id int64) (bool, error)
 	LockActiveStaffWeComUserID(ctx context.Context, staffID int64) (string, error)
 	LockActiveTagGroupReference(ctx context.Context, groupID int64) (LockActiveTagGroupReferenceRow, error)
 	LockActiveTagReference(ctx context.Context, tagID int64) (LockActiveTagReferenceRow, error)
@@ -132,6 +134,7 @@ type Querier interface {
 	LockCustomerContactPolicyKey(ctx context.Context, customerID int64) error
 	LockCustomerContactPolicyKeys(ctx context.Context, customerIds []int64) error
 	LockCustomersForMerge(ctx context.Context, customerIds []int64) ([]LockCustomersForMergeRow, error)
+	LockEligibleStaffDirectoryByWeComUserID(ctx context.Context, wecomUserid string) ([]LockEligibleStaffDirectoryByWeComUserIDRow, error)
 	LockExternalEventIdempotencyKey(ctx context.Context, idempotencyKey string) error
 	LockHistoricalImportCustomerForMatch(ctx context.Context, customerID int64) (LockHistoricalImportCustomerForMatchRow, error)
 	LockHistoricalImportCustomerRoot(ctx context.Context, customerID int64) (bool, error)

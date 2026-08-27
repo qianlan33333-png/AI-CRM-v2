@@ -2050,6 +2050,8 @@ export interface GroupOpsDirectoryPage {
 }
 
 export interface GroupOpsOperationMember {
+  /** @minimum 1 */
+  staff_id: number;
   /**
    * @maxLength 128
    * @pattern ^[A-Za-z0-9._:-]{1,128}$
@@ -2074,6 +2076,44 @@ export interface GroupOpsOperationMemberPage {
   scope: GroupOpsOperationMemberPageScope;
   /** @maxItems 100 */
   items: GroupOpsOperationMember[];
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  page_size: number;
+  provider_execution_eligible: boolean;
+  real_external_call_executed: boolean;
+  provider_accepted: boolean;
+  delivery_proven: boolean;
+}
+
+export interface GroupOpsOperationMemberSyncItem {
+  /** @minimum 1 */
+  staff_id?: number;
+  /**
+   * @maxLength 128
+   * @pattern ^[A-Za-z0-9._:-]{1,128}$
+   */
+  sender_userid: string;
+  /**
+   * @minLength 1
+   * @maxLength 128
+   */
+  display_name: string;
+}
+
+export type GroupOpsOperationMemberSyncPageScope =
+  (typeof GroupOpsOperationMemberSyncPageScope)[keyof typeof GroupOpsOperationMemberSyncPageScope];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const GroupOpsOperationMemberSyncPageScope = {
+  group_ops: "group_ops",
+} as const;
+
+export interface GroupOpsOperationMemberSyncPage {
+  scope: GroupOpsOperationMemberSyncPageScope;
+  /** @maxItems 100 */
+  items: GroupOpsOperationMemberSyncItem[];
   /**
    * @minimum 1
    * @maximum 100
@@ -18392,7 +18432,7 @@ export type ListAIAudienceOperationMembers200 =
   AIAudienceOperationMemberListResponse | GroupOpsOperationMemberPage;
 
 export type SyncGroupOpsOperationMembers200 =
-  AIAudienceOperationMemberListResponse | GroupOpsOperationMemberPage;
+  AIAudienceOperationMemberListResponse | GroupOpsOperationMemberSyncPage;
 
 export type ListAIAudiencePackagesParams = {
   /**

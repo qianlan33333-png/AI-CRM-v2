@@ -29,6 +29,7 @@ func TestHXCSenderReadPostgreSQLMergeAndUnavailable(t *testing.T) {
 	orphanUserID := marker + "-orphan"
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	whitespaceUserID := strings.Repeat(" ", 64+int(now.UnixNano()%31))
+	var activeStaffID int64
 
 	fixtureTx, err := pool.Begin(ctx)
 	if err != nil {
@@ -45,13 +46,30 @@ func TestHXCSenderReadPostgreSQLMergeAndUnavailable(t *testing.T) {
 		{inactiveUserID, "excluded", false, now.Add(time.Second)},
 		{whitespaceUserID, "excluded whitespace", true, now.Add(2 * time.Second)},
 	} {
-		if _, err := contactfixture.CreateStaffWithDetails(ctx, fixtureTx, staff.userID, staff.name, staff.active, staff.updatedAt); err != nil {
+		staffID, err := contactfixture.CreateStaffWithDetails(ctx, fixtureTx, staff.userID, staff.name, staff.active, staff.updatedAt)
+		if err != nil {
 			_ = fixtureTx.Rollback(ctx)
 			t.Fatal(err)
+		}
+		if staff.userID == activeUserID {
+			activeStaffID = staffID
 		}
 	}
 	if err := fixtureTx.Commit(ctx); err != nil {
 		t.Fatal(err)
+	}
+	directory, err := contactstore.NewStaffDirectoryRepository(pool).ListEligibleStaff(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	foundActiveStaffID := int64(0)
+	for _, entry := range directory {
+		if entry.WeComUserID == activeUserID {
+			foundActiveStaffID = entry.StaffID
+		}
+	}
+	if activeStaffID < 1 || foundActiveStaffID != activeStaffID {
+		t.Fatalf("active staff id=%d directory id=%d", activeStaffID, foundActiveStaffID)
 	}
 	for _, config := range []struct {
 		id       string

@@ -80,6 +80,7 @@ sql:
       - internal/contact/store/queries/order_read_port.sql
       - internal/contact/store/queries/outbound_targets.sql
       - internal/contact/store/queries/stages.sql
+      - internal/contact/store/queries/staff_directory.sql
       - internal/contact/store/queries/tags.sql
     gen:
       go:

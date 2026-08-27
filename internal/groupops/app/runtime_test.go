@@ -158,8 +158,27 @@ func TestRuntimeGroupRefreshIsDisabledByDefault(t *testing.T) {
 		t.Fatalf("err=%v", err)
 	}
 	members, err := service.ListOperationMembers(context.Background(), 100)
-	if err != nil || members.Scope != "group_ops" || len(members.Items) != 1 || members.Items[0].SenderUserID != "staff-7" || !members.ProviderExecutionEligible || members.RealExternalCallExecuted {
+	if err != nil || members.Scope != "group_ops" || len(members.Items) != 1 || members.Items[0].StaffID != 7 || members.Items[0].SenderUserID != "staff-7" || !members.ProviderExecutionEligible || members.RealExternalCallExecuted {
 		t.Fatalf("members=%+v err=%v", members, err)
+	}
+}
+
+func TestRuntimeOperationMemberReadRejectsMissingOrAmbiguousStaffID(t *testing.T) {
+	tests := []struct {
+		name    string
+		entries []contactport.StaffDirectoryEntry
+	}{
+		{name: "missing staff id", entries: []contactport.StaffDirectoryEntry{{WeComUserID: "staff-7", DisplayName: "Staff 7"}}},
+		{name: "duplicate staff id", entries: []contactport.StaffDirectoryEntry{{StaffID: 7, WeComUserID: "staff-7", DisplayName: "Staff 7"}, {StaffID: 7, WeComUserID: "staff-other", DisplayName: "Staff Other"}}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			service, _, _ := newRuntimeFixture(t)
+			service.staff = runtimeStaffListFixture{entries: test.entries}
+			if _, err := service.ListOperationMembers(context.Background(), 100); !errors.Is(err, ErrUnavailable) {
+				t.Fatalf("err=%v", err)
+			}
+		})
 	}
 }
 
@@ -345,7 +364,15 @@ func (stub evidenceVerifierStub) VerifyReconciliationEvidence(_ context.Context,
 type runtimeStaffFixture struct{}
 
 func (runtimeStaffFixture) ListEligibleStaff(context.Context) ([]contactport.StaffDirectoryEntry, error) {
-	return []contactport.StaffDirectoryEntry{{WeComUserID: "staff-7", DisplayName: "Staff 7", UpdatedAt: time.Now()}}, nil
+	return []contactport.StaffDirectoryEntry{{StaffID: 7, WeComUserID: "staff-7", DisplayName: "Staff 7", UpdatedAt: time.Now()}}, nil
+}
+
+type runtimeStaffListFixture struct {
+	entries []contactport.StaffDirectoryEntry
+}
+
+func (fixture runtimeStaffListFixture) ListEligibleStaff(context.Context) ([]contactport.StaffDirectoryEntry, error) {
+	return fixture.entries, nil
 }
 
 type runtimeEffectsFixture struct {

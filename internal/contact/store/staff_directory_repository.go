@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	contact "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
@@ -29,22 +30,21 @@ func (r *StaffDirectoryRepository) ListEligibleStaff(ctx context.Context) ([]con
 	if r == nil || r.pool == nil || ctx == nil {
 		return nil, contact.ErrStaffReferenceUnavailable
 	}
-	rows, err := r.pool.Query(ctx, `SELECT wecom_userid, name, updated_at FROM staff WHERE is_active AND btrim(wecom_userid) <> '' ORDER BY btrim(wecom_userid), wecom_userid`)
+	rows, err := contactdb.New(r.pool).ListEligibleStaffDirectory(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
-	result := []contact.StaffDirectoryEntry{}
-	for rows.Next() {
-		var entry contact.StaffDirectoryEntry
-		if err := rows.Scan(&entry.WeComUserID, &entry.DisplayName, &entry.UpdatedAt); err != nil {
-			return nil, err
+	result := make([]contact.StaffDirectoryEntry, len(rows))
+	for index, row := range rows {
+		if !finiteStaffTimestamp(row.UpdatedAt) {
+			return nil, contact.ErrStaffReferenceUnavailable
 		}
-		entry.WeComUserID = strings.TrimSpace(entry.WeComUserID)
-		entry.DisplayName = strings.TrimSpace(entry.DisplayName)
-		result = append(result, entry)
+		result[index] = contact.StaffDirectoryEntry{
+			StaffID: row.ID, WeComUserID: strings.TrimSpace(row.WecomUserid),
+			DisplayName: strings.TrimSpace(row.Name), UpdatedAt: row.UpdatedAt.Time.UTC(),
+		}
 	}
-	return result, rows.Err()
+	return result, nil
 }
 func (*StaffDirectoryRepository) LockEligibleStaffByWeComUserID(ctx context.Context, weComUserID string) (contact.StaffDirectoryEntry, error) {
 	if ctx == nil || strings.TrimSpace(weComUserID) != weComUserID || weComUserID == "" {
@@ -54,24 +54,24 @@ func (*StaffDirectoryRepository) LockEligibleStaffByWeComUserID(ctx context.Cont
 	if err != nil {
 		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceUnavailable
 	}
-	rows, err := tx.Query(ctx, `SELECT wecom_userid, name, updated_at FROM staff WHERE wecom_userid = $1 AND is_active FOR SHARE`, weComUserID)
+	rows, err := contactdb.New(tx).LockEligibleStaffDirectoryByWeComUserID(ctx, weComUserID)
 	if err != nil {
 		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceUnavailable
 	}
-	defer rows.Close()
-	var result contact.StaffDirectoryEntry
-	for rows.Next() {
-		if result.WeComUserID != "" || rows.Scan(&result.WeComUserID, &result.DisplayName, &result.UpdatedAt) != nil {
-			return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceUnavailable
-		}
-	}
-	if rows.Err() != nil {
-		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceUnavailable
-	}
-	if result.WeComUserID == "" {
+	if len(rows) == 0 {
 		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceNotFound
 	}
-	return result, nil
+	if len(rows) != 1 || !finiteStaffTimestamp(rows[0].UpdatedAt) {
+		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceUnavailable
+	}
+	return contact.StaffDirectoryEntry{
+		StaffID: rows[0].ID, WeComUserID: rows[0].WecomUserid,
+		DisplayName: rows[0].Name, UpdatedAt: rows[0].UpdatedAt.Time.UTC(),
+	}, nil
+}
+
+func finiteStaffTimestamp(value pgtype.Timestamptz) bool {
+	return value.Valid && value.InfinityModifier == pgtype.Finite
 }
 
 func (*StaffDirectoryRepository) LockUniqueActiveStaffForHistoricalImport(ctx context.Context, weComUserID string) (contact.HistoricalImportStaff, error) {
@@ -103,8 +103,7 @@ func (*StaffDirectoryRepository) IsActiveStaff(ctx context.Context, staffID int6
 	if err != nil {
 		return false, err
 	}
-	var active bool
-	err = tx.QueryRow(ctx, `SELECT TRUE FROM staff WHERE id = $1 AND is_active FOR SHARE`, staffID).Scan(&active)
+	active, err := contactdb.New(tx).LockActiveStaffExists(ctx, staffID)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return false, nil
 	}
