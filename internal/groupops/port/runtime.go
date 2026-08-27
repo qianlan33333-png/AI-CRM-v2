@@ -142,6 +142,7 @@ type GroupDirectoryPage struct {
 }
 
 type OperationMember struct {
+	StaffID      int64  `json:"staff_id,omitempty"`
 	SenderUserID string `json:"sender_userid"`
 	DisplayName  string `json:"display_name"`
 }

@@ -1339,10 +1339,11 @@ export class AdminController extends PageBase {
     let nodes: GroupOpsWriteInput['nodes'];
     try { nodes = JSON.parse(value('groupOpsNodes') || '[]') as GroupOpsWriteInput['nodes']; }
     catch { return toast('节点配置不是有效 JSON', true); }
-    const staffIds = value('groupOpsStaff').split(/[\s,，]+/).filter(Boolean).map(Number);
+    const staffSelect = document.getElementById('groupOpsStaff') as HTMLSelectElement | null;
+    const staffIds = Array.from(staffSelect?.selectedOptions || []).map((option) => Number(option.value));
     const assetReferences = value('groupOpsAssets').split(/[\s,，]+/).filter(Boolean);
     if (!value('groupOpsName')) return toast('计划名称不能为空', true);
-    if (staffIds.some((id) => !Number.isInteger(id) || id < 1)) return toast('成员 staff_id 必须是正整数', true);
+    if (staffIds.length > 5 || staffIds.some((id) => !Number.isSafeInteger(id) || id < 1) || new Set(staffIds).size !== staffIds.length) return toast('运营成员必须来自可信目录，且最多选择 5 位', true);
     if (!Array.isArray(nodes) || nodes.some((node) => {
       const refs = node.materialPlan?.references || [];
       return !Number.isInteger(node.position) || node.position < 1 || !['message', 'delay'].includes(node.kind) || Boolean(node.materialReference) || !refs.every((ref) => ['image', 'miniprogram', 'attachment', 'group_invite'].includes(ref.kind) && Number.isSafeInteger(ref.id) && ref.id > 0) || (node.kind === 'message' && !node.messageText && !refs.length) || (node.kind === 'delay' && (!node.delayMinutes || node.delayMinutes < 1 || refs.length));
@@ -1571,6 +1572,12 @@ export class AdminController extends PageBase {
       del: () => { if (plan.status !== 'draft') return toast('仅草稿计划可删除；其他状态请归档', true); confirmBox('删除草稿', '确认删除该草稿计划？', '确认删除', true, () => { void this.api.deleteGroupOpsPlan(plan.id).then(() => { toast('草稿计划已删除'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '计划删除失败', true)); }); },
     }));
     const groupOpsDetail = this.db.groupOpsDetail;
+    const selectedGroupOpsStaff = new Set(groupOpsDetail?.staffIds || []);
+    const visibleGroupOpsStaff = new Set(this.db.staff.map((member) => Number(member.uid)));
+    const groupOpsMemberOptions = [
+      ...this.db.staff.map((member) => ({ ...member, selected: selectedGroupOpsStaff.has(Number(member.uid)), unselected: !selectedGroupOpsStaff.has(Number(member.uid)) })),
+      ...[...selectedGroupOpsStaff].filter((staffID) => !visibleGroupOpsStaff.has(staffID)).map((staffID) => ({ uid: String(staffID), name: `已绑定 staff ${staffID}`, dept: '目录当前不可见', selected: true, unselected: false })),
+    ];
     const hxcEditId = this.qs().get('id') || '';
     const hxcEdit = rows.agents.find((item) => item.code === hxcEditId || item.senderId === hxcEditId);
     const runVals = run
@@ -2081,9 +2088,10 @@ export class AdminController extends PageBase {
         statusStyle: mk(rows.orders[0]?.tone || 'gray'),
         submitRefund: () => this.submitRefundIntent(),
       },
-      groupOpsPage: { rows: groupOpsRows, total: groupOpsRows.length, create: () => this.goto('groupopsDetail'), directoryBlocked: () => this.blocked('当前页面未提供 owner_staff_id，不能安全触发目录同步；计划内使用 asset_reference 精确绑定群') },
+      groupOpsPage: { rows: groupOpsRows, total: groupOpsRows.length, members: this.db.staff, memberCount: this.db.staff.length, create: () => this.goto('groupopsDetail'), directoryBlocked: () => this.blocked('当前页面未提供 owner_staff_id，不能安全触发目录同步；计划内使用 asset_reference 精确绑定群') },
       groupOpsDetailPage: {
-        item: groupOpsDetail ? { ...groupOpsDetail, staffText: groupOpsDetail.staffIds.join(', '), assetText: groupOpsDetail.assets.map((asset) => asset.reference).join('\n'), nodesJson: JSON.stringify(groupOpsDetail.nodes, null, 2), previewText: groupOpsDetail.previewLines.join('\n') || '暂无可预览内容', issuesText: groupOpsDetail.previewIssues.join('、') || '无' } : { plan: { name: '', revision: 0, status: 'draft', id: '' }, staffText: '', assetText: '', nodesJson: JSON.stringify([{ position: 1, kind: 'message', messageText: '请输入群消息', materialReference: '' }], null, 2), webhookReference: '', previewText: '保存后由 previewGroupOpsPlanContent 返回', issuesText: '尚未校验' },
+        item: groupOpsDetail ? { ...groupOpsDetail, assetText: groupOpsDetail.assets.map((asset) => asset.reference).join('\n'), nodesJson: JSON.stringify(groupOpsDetail.nodes, null, 2), previewText: groupOpsDetail.previewLines.join('\n') || '暂无可预览内容', issuesText: groupOpsDetail.previewIssues.join('、') || '无' } : { plan: { name: '', revision: 0, status: 'draft', id: '' }, assetText: '', nodesJson: JSON.stringify([{ position: 1, kind: 'message', messageText: '请输入群消息', materialReference: '' }], null, 2), webhookReference: '', previewText: '保存后由 previewGroupOpsPlanContent 返回', issuesText: '尚未校验' },
+        members: groupOpsMemberOptions,
         save: () => this.saveGroupOpsForm(), back: () => this.goto('groupops'), pickImage: () => this.pickGroupOpsMaterial('image'), pickMiniProgram: () => this.pickGroupOpsMaterial('miniprogram'), pickAttachment: () => this.pickGroupOpsMaterial('attachment'),
       },
       hxcPage: {

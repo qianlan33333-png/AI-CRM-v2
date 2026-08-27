@@ -2050,6 +2050,8 @@ export interface GroupOpsDirectoryPage {
 }
 
 export interface GroupOpsOperationMember {
+  /** @minimum 1 */
+  staff_id?: number;
   /**
    * @maxLength 128
    * @pattern ^[A-Za-z0-9._:-]{1,128}$

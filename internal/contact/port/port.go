@@ -168,6 +168,7 @@ type ActiveStaffWeComUserIDReader interface {
 }
 
 type StaffDirectoryEntry struct {
+	StaffID     int64
 	WeComUserID string
 	DisplayName string
 	UpdatedAt   time.Time

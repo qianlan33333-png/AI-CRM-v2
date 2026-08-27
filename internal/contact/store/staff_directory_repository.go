@@ -29,7 +29,7 @@ func (r *StaffDirectoryRepository) ListEligibleStaff(ctx context.Context) ([]con
 	if r == nil || r.pool == nil || ctx == nil {
 		return nil, contact.ErrStaffReferenceUnavailable
 	}
-	rows, err := r.pool.Query(ctx, `SELECT wecom_userid, name, updated_at FROM staff WHERE is_active AND btrim(wecom_userid) <> '' ORDER BY btrim(wecom_userid), wecom_userid`)
+	rows, err := r.pool.Query(ctx, `SELECT id, wecom_userid, name, updated_at FROM staff WHERE is_active AND btrim(wecom_userid) <> '' ORDER BY btrim(wecom_userid), wecom_userid`)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (r *StaffDirectoryRepository) ListEligibleStaff(ctx context.Context) ([]con
 	result := []contact.StaffDirectoryEntry{}
 	for rows.Next() {
 		var entry contact.StaffDirectoryEntry
-		if err := rows.Scan(&entry.WeComUserID, &entry.DisplayName, &entry.UpdatedAt); err != nil {
+		if err := rows.Scan(&entry.StaffID, &entry.WeComUserID, &entry.DisplayName, &entry.UpdatedAt); err != nil {
 			return nil, err
 		}
 		entry.WeComUserID = strings.TrimSpace(entry.WeComUserID)
@@ -54,14 +54,14 @@ func (*StaffDirectoryRepository) LockEligibleStaffByWeComUserID(ctx context.Cont
 	if err != nil {
 		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceUnavailable
 	}
-	rows, err := tx.Query(ctx, `SELECT wecom_userid, name, updated_at FROM staff WHERE wecom_userid = $1 AND is_active FOR SHARE`, weComUserID)
+	rows, err := tx.Query(ctx, `SELECT id, wecom_userid, name, updated_at FROM staff WHERE wecom_userid = $1 AND is_active FOR SHARE`, weComUserID)
 	if err != nil {
 		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceUnavailable
 	}
 	defer rows.Close()
 	var result contact.StaffDirectoryEntry
 	for rows.Next() {
-		if result.WeComUserID != "" || rows.Scan(&result.WeComUserID, &result.DisplayName, &result.UpdatedAt) != nil {
+		if result.WeComUserID != "" || rows.Scan(&result.StaffID, &result.WeComUserID, &result.DisplayName, &result.UpdatedAt) != nil {
 			return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceUnavailable
 		}
 	}

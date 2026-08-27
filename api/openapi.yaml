@@ -14050,6 +14050,7 @@ components:
       additionalProperties: false
       required: [sender_userid, display_name]
       properties:
+        staff_id: { type: integer, format: int64, minimum: 1 }
         sender_userid: { type: string, pattern: "^[A-Za-z0-9._:-]{1,128}$", maxLength: 128 }
         display_name: { type: string, minLength: 1, maxLength: 128 }
     GroupOpsOperationMemberPage:
