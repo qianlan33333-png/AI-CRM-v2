@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
-	"strings"
 	"testing"
 	"time"
 )
@@ -54,35 +53,6 @@ func TestCursorRejectsTamperingAndAmbiguousInputs(t *testing.T) {
 		if _, err = codec.Decode(candidate, 7, StateAll, SourceAny, 50); !errors.Is(err, ErrInvalidCursor) {
 			t.Errorf("Decode(%q) error=%v", candidate, err)
 		}
-	}
-}
-
-func TestSelectedCursorBindsSortGroupAndCanonicalPosition(t *testing.T) {
-	codec, err := newCursorCodec(bytes.Repeat([]byte("v"), 32), &incrementingReader{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	selection := querySelection{Sort: querySortStartsAtDesc, GroupBy: queryGroupState}
-	position := selectedPosition{
-		SortAt: time.Date(2026, 8, 27, 9, 10, 11, 123000000, time.UTC), MemberRef: "spm_0000000000000000000001", GroupState: StateExpired,
-	}
-	token, err := codec.encodeSelected(42, StateAll, SourceManual, 17, selection, position)
-	if err != nil || !strings.HasPrefix(token, selectedCursorPrefix) {
-		t.Fatalf("token=%q error=%v", token, err)
-	}
-	decoded, err := codec.decodeSelected(token, 42, StateAll, SourceManual, 17, selection)
-	if err != nil || decoded.MemberRef != position.MemberRef || decoded.GroupState != StateExpired || !decoded.SortAt.Equal(position.SortAt) {
-		t.Fatalf("decoded=%+v error=%v", decoded, err)
-	}
-	for _, mismatch := range []querySelection{
-		{Sort: querySortUpdatedAtDesc, GroupBy: queryGroupState}, {Sort: querySortStartsAtDesc},
-	} {
-		if _, err = codec.decodeSelected(token, 42, StateAll, SourceManual, 17, mismatch); !errors.Is(err, ErrInvalidCursor) {
-			t.Fatalf("selection=%+v error=%v", mismatch, err)
-		}
-	}
-	if _, err = codec.decodeSelected("mg2."+token[len(selectedCursorPrefix):], 42, StateAll, SourceManual, 17, selection); !errors.Is(err, ErrInvalidCursor) {
-		t.Fatalf("old prefix error=%v", err)
 	}
 }
 
