@@ -58,27 +58,6 @@ func (e AdminAccessErrorOk) Valid() bool {
 	}
 }
 
-// Defines values for AdminAccessMemberRole.
-const (
-	AdminAccessMemberRoleAdmin AdminAccessMemberRole = "admin"
-	AdminAccessMemberRoleOps   AdminAccessMemberRole = "ops"
-	AdminAccessMemberRoleSales AdminAccessMemberRole = "sales"
-)
-
-// Valid indicates whether the value is a known member of the AdminAccessMemberRole enum.
-func (e AdminAccessMemberRole) Valid() bool {
-	switch e {
-	case AdminAccessMemberRoleAdmin:
-		return true
-	case AdminAccessMemberRoleOps:
-		return true
-	case AdminAccessMemberRoleSales:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for AdminAccessReadResponseExternal.
 const (
 	AdminAccessReadResponseExternalFalse AdminAccessReadResponseExternal = false
@@ -672,19 +651,19 @@ func (e AdminOpsReleaseComparisonExternalCalls) Valid() bool {
 
 // Defines values for AuthSessionResponseRole.
 const (
-	AuthSessionResponseRoleAdmin AuthSessionResponseRole = "admin"
-	AuthSessionResponseRoleOps   AuthSessionResponseRole = "ops"
-	AuthSessionResponseRoleSales AuthSessionResponseRole = "sales"
+	Admin AuthSessionResponseRole = "admin"
+	Ops   AuthSessionResponseRole = "ops"
+	Sales AuthSessionResponseRole = "sales"
 )
 
 // Valid indicates whether the value is a known member of the AuthSessionResponseRole enum.
 func (e AuthSessionResponseRole) Valid() bool {
 	switch e {
-	case AuthSessionResponseRoleAdmin:
+	case Admin:
 		return true
-	case AuthSessionResponseRoleOps:
+	case Ops:
 		return true
-	case AuthSessionResponseRoleSales:
+	case Sales:
 		return true
 	default:
 		return false
@@ -8043,18 +8022,15 @@ type AdminAccessErrorOk bool
 
 // AdminAccessMember defines model for AdminAccessMember.
 type AdminAccessMember struct {
-	AdminUserId      int64                 `json:"admin_user_id"`
-	DisplayName      string                `json:"display_name"`
-	IsActive         bool                  `json:"is_active"`
-	LoginEnabled     bool                  `json:"login_enabled"`
-	Role             AdminAccessMemberRole `json:"role"`
-	StaffId          *int64                `json:"staff_id"`
-	StaffName        string                `json:"staff_name"`
-	StaffWecomUserid string                `json:"staff_wecom_userid"`
+	AdminUserId      int64  `json:"admin_user_id"`
+	DisplayName      string `json:"display_name"`
+	IsActive         bool   `json:"is_active"`
+	LoginEnabled     bool   `json:"login_enabled"`
+	Role             string `json:"role"`
+	StaffId          *int64 `json:"staff_id"`
+	StaffName        string `json:"staff_name"`
+	StaffWecomUserid string `json:"staff_wecom_userid"`
 }
-
-// AdminAccessMemberRole defines model for AdminAccessMember.Role.
-type AdminAccessMemberRole string
 
 // AdminAccessReadResponse defines model for AdminAccessReadResponse.
 type AdminAccessReadResponse struct {

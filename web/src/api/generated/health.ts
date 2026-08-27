@@ -15677,16 +15677,6 @@ export interface SetupWizardError {
   error: SetupWizardErrorError;
 }
 
-export type AdminAccessMemberRole =
-  (typeof AdminAccessMemberRole)[keyof typeof AdminAccessMemberRole];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const AdminAccessMemberRole = {
-  admin: "admin",
-  ops: "ops",
-  sales: "sales",
-} as const;
-
 export interface AdminAccessMember {
   /** @minimum 1 */
   admin_user_id: number;
@@ -15695,7 +15685,7 @@ export interface AdminAccessMember {
    * @maxLength 200
    */
   display_name: string;
-  role: AdminAccessMemberRole;
+  role: string;
   /**
    * @minimum 1
    * @nullable
