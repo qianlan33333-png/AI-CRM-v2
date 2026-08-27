@@ -11,7 +11,7 @@ export function radarShareUrl(path: string, origin = location.origin): string {
 }
 
 /** Generate a real QR SVG from the absolute URL, not a visual placeholder. */
-export function radarQrSvg(payload: string): string {
+export function qrSvg(payload: string): string {
   const url = new URL(payload);
   if (!/^https?:$/.test(url.protocol)) throw new Error('二维码内容必须是绝对 HTTP(S) URL');
   const qr = qrcode(0, 'M');
@@ -20,21 +20,21 @@ export function radarQrSvg(payload: string): string {
   return qr.createSvgTag({ scalable: true, margin: 4 });
 }
 
-export function renderRadarQr(el: HTMLElement, payload: string): void {
-  const svg = radarQrSvg(payload);
+export function renderQr(el: HTMLElement, payload: string, label = '分享'): void {
+  const svg = qrSvg(payload);
   el.innerHTML = svg;
   const node = el.querySelector('svg');
   if (!node) throw new Error('二维码 SVG 生成失败');
   node.setAttribute('width', '100%');
   node.setAttribute('height', '100%');
   node.setAttribute('role', 'img');
-  node.setAttribute('aria-label', `Radar 分享二维码：${payload}`);
+  node.setAttribute('aria-label', `${label}二维码：${payload}`);
   node.setAttribute('data-qr-payload', payload);
   el.dataset.qrPayload = payload;
 }
 
-export function downloadRadarQr(payload: string, filename = 'radar-share-qr.svg'): void {
-  const blob = new Blob([radarQrSvg(payload)], { type: 'image/svg+xml;charset=utf-8' });
+export function downloadQr(payload: string, filename: string): void {
+  const blob = new Blob([qrSvg(payload)], { type: 'image/svg+xml;charset=utf-8' });
   const objectUrl = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = objectUrl;
@@ -42,3 +42,7 @@ export function downloadRadarQr(payload: string, filename = 'radar-share-qr.svg'
   link.click();
   setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
 }
+
+export const radarQrSvg = qrSvg;
+export function renderRadarQr(el: HTMLElement, payload: string): void { renderQr(el, payload, 'Radar 分享'); }
+export function downloadRadarQr(payload: string, filename = 'radar-share-qr.svg'): void { downloadQr(payload, filename); }

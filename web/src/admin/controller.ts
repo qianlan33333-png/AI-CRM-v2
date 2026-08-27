@@ -18,7 +18,8 @@ import { buildChannelFinalUrl, channelAcquisitionAssetReady } from '../api/admin
 import type { AdminReadContext, ChannelWriteInput, CouponWriteInput, CustomerListQuery, GroupOpsWriteInput, QuestionnaireWriteInput } from '../api/admin';
 import { toast, confirmBox, busy } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
-import { copyText, renderFakeQr } from './sections/util';
+import { copyText } from './sections/util';
+import { downloadQr, renderQr } from './sections/qr';
 import { ownerReassignmentCsvFromFile } from './ownerReassignmentFile';
 
 const ACCENT = '#3370ff';
@@ -410,11 +411,15 @@ export class AdminController extends PageBase {
       shareUrl: path ? new URL(path, location.origin).toString() : 'https://mock.invalid/s/' + code,
     });
     const el = document.getElementById('shareQrBox');
-    if (el) renderFakeQr(el, code);
+    if (el) renderQr(el, this.state.shareUrl, `${kind}分享`);
   }
 
   copyShareLink(): void {
     copyText(this.state.shareUrl, toast);
+  }
+
+  previewShareLink(): void {
+    window.open(this.state.shareUrl, '_blank', 'noopener,noreferrer');
   }
 
   /* ================= 自动化运营 · 人群包 ================= */
@@ -1681,7 +1686,8 @@ export class AdminController extends PageBase {
       title: s.shareTitle,
       url: s.shareUrl,
       copyLink: () => this.copyShareLink(),
-      saveQr: () => this.blocked('当前分享投影只返回链接，没有可下载二维码文件 operation'),
+      preview: () => this.previewShareLink(),
+      saveQr: () => downloadQr(s.shareUrl, `${s.shareCode || 'share'}-qr.svg`),
       close: () => this.closeModal(),
     };
 
@@ -1753,7 +1759,10 @@ export class AdminController extends PageBase {
       cs: mk(p.tone),
       edit: () => p.resourceId ? this.goto('spProductForm', '?id=' + p.resourceId) : toast('周期商品缺少服务端 ID', true),
       data: () => p.resourceId ? this.goto('spProductData', '?id=' + p.resourceId) : toast('周期商品缺少服务端 ID', true),
-      shareIt: () => this.blocked('当前周期商品没有公开购买/分享契约'),
+      shareIt: () => {
+        if (!p.resourceId) return toast('周期商品缺少服务端 ID', true);
+        void this.api.getServiceProductSharePath(p.resourceId).then((path) => this.openShare('周期商品', p.name, p.code, path)).catch((error) => toast(error instanceof Error ? error.message : '分享地址读取失败', true));
+      },
       copyIt: () => p.resourceId && void this.api.copyServiceProduct(p.resourceId).then(() => { toast('周期商品副本已创建为草稿'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '周期商品复制失败', true)),
       archive: () => p.resourceId && confirmBox('归档周期商品', '归档会保留成员历史，确认继续？', '确认归档', true, () => { void this.api.archiveServiceProduct(p.resourceId!).then(() => { toast('周期商品已归档'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '周期商品归档失败', true)); }),
       toggle: () => {

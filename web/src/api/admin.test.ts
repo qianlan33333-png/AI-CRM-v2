@@ -1,11 +1,11 @@
 import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, dispatchCampaignOutboundHandoffDto, executeOwnerReassignmentPreviewDto, getCampaignOutboundDispatchReconciliationDto, getCampaignOutboundHandoffDto, getCampaignOutboundHandoffReconciliationDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getCouponDto, getImageThumbnailDto, getServicePeriodMemberGridMetaDto, groupOpsDetailDto, groupOpsOperationMembersDto, hxcSenderPageDto, imagePageDto, listCampaignPlanIndexDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listCouponClaimsDto, listCouponProductOptionsDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, setMemberGridExternalShareDto, tagPageDto, tryGetCampaignOutboundDispatchReconciliationDto, tryGetCampaignOutboundHandoffDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import { createServicePeriodMemberGridCollaboratorDto, deleteServicePeriodMemberGridCollaboratorDto, getServicePeriodMemberDto, queryServicePeriodMemberGridDto, updateServicePeriodMemberFieldsDto, updateServicePeriodMemberGridCollaboratorDto } from './admin';
 import { exportWechatOrdersDto } from './admin';
-import { readRadarSharePath } from './admin';
+import { readRadarSharePath, readServiceProductSharePath } from './admin';
 import { exportRadarEventsCsv, readRadarEvents } from './admin';
 import { listGlobalQuestionnairePushLogsDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
-import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyAttachmentsUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
+import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductShareUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyAttachmentsUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
 import { HttpApi } from '../shared/api/client';
 import { mountFunnelGrid } from '../admin/sections/funnelGrid';
@@ -135,6 +135,7 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(getCreateProductUrl() === '/api/v1/products', 'product create URL');
   assert(getListServicePeriodProductsUrl() === '/api/admin/service-period-products', 'service product list URL/method');
   assert(getGetServicePeriodProductUrl(8) === '/api/admin/service-period-products/8', 'service product detail URL/method');
+  assert(getGetServicePeriodProductShareUrl(8) === '/api/admin/service-period-products/8/share', 'service product share URL/method');
   assert(getCreateServicePeriodProductUrl() === '/api/admin/service-period-products', 'service product create URL');
   assert(getUpdateServicePeriodProductUrl(8) === '/api/admin/service-period-products/8', 'service product update URL');
   assert(getQueryServicePeriodMemberGridUrl(8) === '/api/admin/service-period-products/8/member-grid/query' && getGetServicePeriodMemberGridAccessUrl(8) === '/api/admin/service-period-products/8/member-grid/access' && getGetServicePeriodMemberGridSchemaUrl(8) === '/api/admin/service-period-products/8/member-grid/schema' && getListServicePeriodMemberViewsUrl(8) === '/api/admin/service-period-products/8/member-views' && getGetServicePeriodMemberGridShareSettingsUrl(8) === '/api/admin/service-period-products/8/member-grid/share-settings' && getSetServicePeriodMemberGridExternalShareUrl(8) === '/api/admin/service-period-products/8/member-grid/share-settings', 'service member grid generated URLs');
@@ -360,6 +361,21 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(questionnaireCalls[1].input.endsWith('/41/enable') && questionnaireCalls[2].input.endsWith('/41/public-publish'), 'questionnaire enable/public publish sequence');
     assert(JSON.parse(String(questionnaireCalls[2].init?.body)).expected_questionnaire_version === 2, 'questionnaire publish CAS version');
   } finally { globalThis.fetch = savedFetch; }
+
+  let serviceShareCall: { input: string; init?: RequestInit } | undefined;
+  globalThis.fetch = async (input, init) => {
+    serviceShareCall = { input: String(input), init };
+    return new Response(JSON.stringify({ ok: true, service_product_id: 8, public_path: '/p/service_period/8', local_only: true, real_external_call_executed: false }), { status: 200 });
+  };
+  try {
+    const publicPath = await readServiceProductSharePath(8);
+    assert(publicPath === '/p/service_period/8' && serviceShareCall?.input === '/api/admin/service-period-products/8/share' && serviceShareCall.init?.method === 'GET', 'service product share adapter uses the generated local read');
+  } finally { globalThis.fetch = savedFetch; }
+
+  globalThis.fetch = async () => new Response(JSON.stringify({ ok: true, service_product_id: 8, public_path: 'https://other.example.test/p/service_period/8', local_only: true, real_external_call_executed: false }), { status: 200 });
+  try { await readServiceProductSharePath(8); assert(false, 'service product share accepted a cross-origin path'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('分享响应'), 'service product share rejects a non-contract path'); }
+  finally { globalThis.fetch = savedFetch; }
 
   const couponReadCalls: Array<{ input: string; init?: RequestInit }> = [];
   const couponRead = { id: 31, name: '新客券', discount_amount_total: 10000, total_issue_limit: 1200, issued_count: 0, per_user_issue_limit: 1, claim_starts_at: '2026-08-01T00:00:00Z', claim_ends_at: '2026-08-31T00:00:00Z', validity_mode: 'relative_days', relative_validity_days: 7, instructions: '说明', target_refs: ['standard_product:9'], status: 'draft', version: 1 };

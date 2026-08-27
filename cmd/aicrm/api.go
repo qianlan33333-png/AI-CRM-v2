@@ -3088,6 +3088,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 				{http.MethodGet, serviceperiodhttp.BasePath, authport.CapabilityProductsRead, false},
 				{http.MethodPost, serviceperiodhttp.BasePath, authport.CapabilityProductsWrite, true},
 				{http.MethodGet, serviceperiodhttp.BasePath + "/{service_product_id}", authport.CapabilityProductsRead, false},
+				{http.MethodGet, serviceperiodhttp.BasePath + "/{service_product_id}/share", authport.CapabilityProductsRead, false},
 				{http.MethodPut, serviceperiodhttp.BasePath + "/{service_product_id}", authport.CapabilityProductsWrite, true},
 				{http.MethodPost, serviceperiodhttp.BasePath + "/{service_product_id}/enable", authport.CapabilityProductsWrite, true},
 				{http.MethodPost, serviceperiodhttp.BasePath + "/{service_product_id}/disable", authport.CapabilityProductsWrite, true},

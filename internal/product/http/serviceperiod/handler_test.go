@@ -44,6 +44,9 @@ func TestHandlerRejectsMalformedIDsMethodsQueriesBodiesAndHeaders(t *testing.T) 
 		{name: "unknown_action", method: http.MethodPost, path: BasePath + "/1/publish", body: `{"expected_version":1}`, key: testKey, wantStatus: http.StatusNotFound},
 		{name: "unknown_action_wrong_method_is_still_not_found", method: http.MethodGet, path: BasePath + "/1/publish", wantStatus: http.StatusNotFound},
 		{name: "wrong_action_method", method: http.MethodGet, path: BasePath + "/1/enable", wantStatus: http.StatusMethodNotAllowed},
+		{name: "wrong_share_method", method: http.MethodPost, path: BasePath + "/1/share", wantStatus: http.StatusMethodNotAllowed},
+		{name: "share_query", method: http.MethodGet, path: BasePath + "/1/share?x=1", wantStatus: http.StatusBadRequest},
+		{name: "share_body", method: http.MethodGet, path: BasePath + "/1/share", body: `{}`, wantStatus: http.StatusBadRequest},
 		{name: "wrong_collection_method", method: http.MethodPatch, path: BasePath, body: `{}`, key: testKey, wantStatus: http.StatusMethodNotAllowed},
 		{name: "unknown_query", method: http.MethodGet, path: BasePath + "?enabled=true", wantStatus: http.StatusBadRequest},
 		{name: "duplicate_query", method: http.MethodGet, path: BasePath + "?limit=1&limit=2", wantStatus: http.StatusBadRequest},
@@ -87,6 +90,26 @@ func TestHandlerRejectsMalformedIDsMethodsQueriesBodiesAndHeaders(t *testing.T) 
 	}
 	if application.totalCalls() != 0 {
 		t.Fatalf("malformed transport reached application: calls=%d", application.totalCalls())
+	}
+}
+
+func TestHandlerReturnsExistingSameOriginServicePeriodShareOnlyWhenEnabled(t *testing.T) {
+	application := newHTTPTestApplication()
+	application.product.Lifecycle = productport.ServicePeriodEnabled
+	application.product.Enabled = true
+	handler := mustHandler(t, application)
+
+	response := serveServicePeriodRequest(handler, http.MethodGet, BasePath+"/7/share", "", "")
+	if response.Code != http.StatusOK || response.Header().Get("Content-Type") != "application/json" ||
+		response.Body.String() != "{\"ok\":true,\"service_product_id\":7,\"public_path\":\"/p/service_period/7\",\"local_only\":true,\"real_external_call_executed\":false}\n" || application.getCalls != 1 {
+		t.Fatalf("enabled share status/body/calls=%d/%q/%d", response.Code, response.Body.String(), application.getCalls)
+	}
+
+	application.product.Enabled = false
+	application.product.Lifecycle = productport.ServicePeriodDisabled
+	response = serveServicePeriodRequest(handler, http.MethodGet, BasePath+"/7/share", "", "")
+	if response.Code != http.StatusNotFound || application.getCalls != 2 {
+		t.Fatalf("disabled share status/body/calls=%d/%q/%d", response.Code, response.Body.String(), application.getCalls)
 	}
 }
 

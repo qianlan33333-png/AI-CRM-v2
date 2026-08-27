@@ -53,7 +53,7 @@ import type { AIAudiencePackageSender } from '../../api/generated/health';
 import { deleteGroupOpsPlanDto, saveGroupOpsPlanDto, transitionGroupOpsPlanDto, type GroupOpsWriteInput } from '../../api/admin';
 import { archiveHxcSenderDto, reorderHxcSendersDto, saveHxcSenderDto, type HxcSenderWriteInput } from '../../api/admin';
 import { saveAppSettingsDto } from '../../api/admin';
-import { archiveAudiencePackage, archiveServiceProductDto, archiveTagDto, copyAudiencePackageDto, copyProductDto, copyServiceProductDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, exportWechatOrdersDto, getImageThumbnailDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setProductEnabledDto, setRadarEnabled, setServiceProductEnabledDto, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext, type CustomerListQuery, type ProductWriteInput, type RefundIntentInput, type RefundIntentResult, type WechatOrderExportInput } from '../../api/admin';
+import { archiveAudiencePackage, archiveServiceProductDto, archiveTagDto, copyAudiencePackageDto, copyProductDto, copyServiceProductDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, deleteAttachmentItemDto, deleteAudienceGroup as deleteAudienceGroupDto, deleteImageItemDto, deleteMiniProgramItemDto, downloadAttachmentItemDto, downloadOwnerReassignmentReportDto, downloadOwnerReassignmentTemplateDto, executeOwnerReassignmentPreviewDto, exportWechatOrdersDto, getImageThumbnailDto, getOwnerReassignmentPreviewDto, queueTagSyncDto, readAdminPage, readCouponSharePath, readRadarEvents, readRadarSharePath, readServiceProductSharePath, saveAttachmentItemDto, saveAudienceGroup as saveAudienceGroupDto, saveImageItemDto, saveMiniProgramItemDto, saveProductDto, saveRadarLinkDto, saveServiceProductDto, saveTagDto, saveTagGroupDto, setAudiencePackageRunning, setCustomerTagDto, setProductEnabledDto, setRadarEnabled, setServiceProductEnabledDto, updateCustomerDto, uploadRadarImageDto, uploadRadarPdfDto, type AdminReadContext, type CustomerListQuery, type ProductWriteInput, type RefundIntentInput, type RefundIntentResult, type WechatOrderExportInput } from '../../api/admin';
 
 /* ================= 接口定义 ================= */
 
@@ -85,6 +85,7 @@ export interface AdminApi {
   listRadarEvents(linkId: number): Promise<RadarEvent[]>;
   getRadarSharePath(linkId: number): Promise<string>;
   getCouponSharePath(couponId: number): Promise<string>;
+  getServiceProductSharePath(serviceProductId: number): Promise<string>;
   /** 上传雷达图片素材（multipart），返回可引用的素材描述 */
   uploadRadarImage(file: File): Promise<RadarMedia>;
   /** 上传雷达 PDF 素材 */
@@ -408,6 +409,11 @@ export class MockApi implements AdminApi {
 
   getCouponSharePath(couponId: number): Promise<string> {
     return delay(`/c/c-${couponId}`);
+  }
+
+  getServiceProductSharePath(serviceProductId: number): Promise<string> {
+    const product = this.db.rows.spProducts.find((item) => item.resourceId === serviceProductId && item.lifecycle === 'enabled');
+    return product ? delay(`/p/service_period/${serviceProductId}`) : Promise.reject(new Error('周期商品尚未启用'));
   }
 
   uploadRadarImage(file: File): Promise<RadarMedia> {
@@ -863,6 +869,10 @@ export class HttpApi implements AdminApi {
 
   getCouponSharePath(couponId: number): Promise<string> {
     return readCouponSharePath(couponId);
+  }
+
+  getServiceProductSharePath(serviceProductId: number): Promise<string> {
+    return readServiceProductSharePath(serviceProductId);
   }
 
   uploadRadarImage(file: File): Promise<RadarMedia> {

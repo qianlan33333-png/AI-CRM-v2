@@ -5,7 +5,7 @@ import {
   getLegacyMiniProgram, getLegacyOrder, getLegacyOrderItems, getLegacyQuestionnaire, getLegacyQuestionnaireResults,
   getAdminOpsCategory, getContactOwnerReassignmentPreview, getLegacyWecomTag, getLegacyWecomTagExecutionGate, getLegacyWecomTagGroup, getProduct,
   getServicePeriodMember, getServicePeriodMemberGridAccess, getServicePeriodMemberGridSchema, getServicePeriodMemberGridShareSettings,
-  getServicePeriodProduct, getSurveyOperations, getSurveyOperationsPageData, getSurveySafeSubmissionAnalysis,
+  getServicePeriodProduct, getServicePeriodProductShare, getSurveyOperations, getSurveyOperationsPageData, getSurveySafeSubmissionAnalysis,
   listAdminOpsCategories, listCustomers, listLegacyAttachments, listLegacyChannelEntrants, listLegacyChannels, listLegacyCouponClaims,
   listLegacyCouponProductOptions, listLegacyCoupons, getLegacyImageList, listLegacyMiniPrograms, listLegacyOrders, listLegacyRefunds, listLegacyWechatOrderExternalEffects,
   listLegacyQuestionnaireSubmissions, listLegacyQuestionnaires, listLegacyWecomTagGroups, listLegacyWecomTags,
@@ -669,6 +669,14 @@ export async function readRadarSharePath(linkId: number): Promise<string> {
   return sharePath;
 }
 export async function readCouponSharePath(couponId: number): Promise<string> { const projection = obj(await call(getLegacyCouponShare(couponId, apiRequestOptions()))); if (typeof projection.url !== 'string') throw new Error('后端尚未提供可用的优惠券分享路径'); return projection.url; }
+export async function readServiceProductSharePath(serviceProductId: number): Promise<string> {
+  if (!Number.isSafeInteger(serviceProductId) || serviceProductId < 1) throw new Error('周期商品 ID 无效');
+  const projection = obj(await call(getServicePeriodProductShare(serviceProductId, apiRequestOptions())));
+  const responseId = Number(projection.service_product_id);
+  const publicPath = typeof projection.public_path === 'string' ? projection.public_path : '';
+  if (projection.ok !== true || responseId !== serviceProductId || publicPath !== `/p/service_period/${serviceProductId}` || projection.local_only !== true || projection.real_external_call_executed !== false) throw new Error('周期商品分享响应不完整或越过本地边界');
+  return publicPath;
+}
 export async function updateCustomerDto(customerId: number, input: { name?: string; stageId?: number | null }): Promise<Customer> {
   const opt = apiRequestOptions(); let customer: ApiCustomer | undefined;
   if (input.name != null) customer = await call(updateCustomer(customerId, { name: input.name }, opt)) as ApiCustomer;
