@@ -61,6 +61,33 @@ type ChannelAcquisitionAssetBinding struct {
 	CorrelationKey               pgtype.Text        `json:"correlation_key"`
 }
 
+type ChannelHistoricalAssignee struct {
+	ID                  int64            `json:"id"`
+	ChannelID           int64            `json:"channel_id"`
+	SourceAssigneeID    int64            `json:"source_assignee_id"`
+	StaffReference      string           `json:"staff_reference"`
+	DisplayNameSnapshot string           `json:"display_name_snapshot"`
+	Priority            int32            `json:"priority"`
+	RatioPercent        pgtype.Int4      `json:"ratio_percent"`
+	MaxScans24h         pgtype.Int4      `json:"max_scans_24h"`
+	Status              string           `json:"status"`
+	SourceCreatedAt     pgtype.Timestamp `json:"source_created_at"`
+	SourceUpdatedAt     pgtype.Timestamp `json:"source_updated_at"`
+}
+
+type ChannelHistoricalContact struct {
+	ID              int64              `json:"id"`
+	ChannelID       int64              `json:"channel_id"`
+	SourceContactID int64              `json:"source_contact_id"`
+	CustomerID      pgtype.Int8        `json:"customer_id"`
+	OwnerReference  string             `json:"owner_reference"`
+	FirstEnteredAt  pgtype.Timestamptz `json:"first_entered_at"`
+	LastEnteredAt   pgtype.Timestamptz `json:"last_entered_at"`
+	EnterCount      int32              `json:"enter_count"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Customer struct {
 	ID             int64              `json:"id"`
 	Name           string             `json:"name"`

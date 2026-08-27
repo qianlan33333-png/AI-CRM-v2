@@ -38,6 +38,7 @@ type Querier interface {
 	CompleteSidebarCustomerProfileReceipt(ctx context.Context, arg CompleteSidebarCustomerProfileReceiptParams) (CompleteSidebarCustomerProfileReceiptRow, error)
 	CopyCustomerTagsForMerge(ctx context.Context, arg CopyCustomerTagsForMergeParams) (int64, error)
 	CountCustomerIDsBounded(ctx context.Context, arg CountCustomerIDsBoundedParams) (int64, error)
+	CountHistoricalChannelContacts(ctx context.Context, channelID int64) (int64, error)
 	CountHistoricalReconcileCompanions(ctx context.Context, arg CountHistoricalReconcileCompanionsParams) (CountHistoricalReconcileCompanionsRow, error)
 	CreateChannel(ctx context.Context, arg CreateChannelParams) (CreateChannelRow, error)
 	CreateCustomerForIdentity(ctx context.Context, arg CreateCustomerForIdentityParams) (int64, error)
@@ -46,6 +47,12 @@ type Querier interface {
 	// Contact-only, non-executing V1 channel definitions. No operation receipt,
 	// asset binding, event or current customer attribution is created.
 	CreateHistoricalChannel(ctx context.Context, arg CreateHistoricalChannelParams) (CreateHistoricalChannelRow, error)
+	// V1 assignee timestamps have no timezone. Timestamp (not timestamptz) keeps
+	// those civil values without silently assigning a timezone during migration.
+	CreateHistoricalChannelAssignee(ctx context.Context, arg CreateHistoricalChannelAssigneeParams) (ChannelHistoricalAssignee, error)
+	// Import is bound to a non-executing historical channel. It never writes the
+	// current customer attribution, staff directory or Provider asset bindings.
+	CreateHistoricalChannelContact(ctx context.Context, arg CreateHistoricalChannelContactParams) (ChannelHistoricalContact, error)
 	CreateHistoricalImportCustomer(ctx context.Context, arg CreateHistoricalImportCustomerParams) (int64, error)
 	CreateHistoricalTagImport(ctx context.Context, arg CreateHistoricalTagImportParams) (CreateHistoricalTagImportRow, error)
 	CreateHistoricalTagImportGroup(ctx context.Context, arg CreateHistoricalTagImportGroupParams) (TagGroup, error)
@@ -76,6 +83,8 @@ type Querier interface {
 	GetDM01TargetDatabaseIdentity(ctx context.Context) (GetDM01TargetDatabaseIdentityRow, error)
 	GetExternalEventIdempotency(ctx context.Context, idempotencyKey string) (GetExternalEventIdempotencyRow, error)
 	GetHistoricalChannel(ctx context.Context, channelID int64) (GetHistoricalChannelRow, error)
+	GetHistoricalChannelAssignee(ctx context.Context, id int64) (ChannelHistoricalAssignee, error)
+	GetHistoricalChannelContact(ctx context.Context, id int64) (ChannelHistoricalContact, error)
 	GetLegacyTagExecutionStatus(ctx context.Context) (GetLegacyTagExecutionStatusRow, error)
 	GetLegacyTagLiveMutationReceipt(ctx context.Context, arg GetLegacyTagLiveMutationReceiptParams) (GetLegacyTagLiveMutationReceiptRow, error)
 	GetLegacyTagSyncReceipt(ctx context.Context, arg GetLegacyTagSyncReceiptParams) (GetLegacyTagSyncReceiptRow, error)
@@ -112,6 +121,8 @@ type Querier interface {
 	ListCustomers(ctx context.Context, arg ListCustomersParams) ([]Customer, error)
 	ListEligibleStaffDirectory(ctx context.Context) ([]ListEligibleStaffDirectoryRow, error)
 	ListExpiredChannelAcquisitionAssetAttempts(ctx context.Context, arg ListExpiredChannelAcquisitionAssetAttemptsParams) ([]ListExpiredChannelAcquisitionAssetAttemptsRow, error)
+	ListHistoricalChannelAssignees(ctx context.Context, channelID int64) ([]ChannelHistoricalAssignee, error)
+	ListHistoricalChannelContacts(ctx context.Context, arg ListHistoricalChannelContactsParams) ([]ChannelHistoricalContact, error)
 	ListHistoricalReconcileReceiptsPage(ctx context.Context, arg ListHistoricalReconcileReceiptsPageParams) ([]ListHistoricalReconcileReceiptsPageRow, error)
 	ListLegacyTagGroups(ctx context.Context) ([]TagGroup, error)
 	ListLegacyTags(ctx context.Context) ([]ListLegacyTagsRow, error)
