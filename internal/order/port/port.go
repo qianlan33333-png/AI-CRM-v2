@@ -110,8 +110,9 @@ type BoardFilter struct {
 
 type Detail struct {
 	Item
-	ID                    ID    `json:"id"`
-	RefundableAmountMinor int64 `json:"refundable_amount_total"`
+	ID                    ID                 `json:"id"`
+	RefundableAmountMinor int64              `json:"refundable_amount_total"`
+	HistoricalRefunds     []HistoricalRefund `json:"historical_refunds,omitempty"`
 }
 
 type RefundFilter struct {

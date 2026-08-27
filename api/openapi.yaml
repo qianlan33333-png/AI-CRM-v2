@@ -17667,6 +17667,25 @@ components:
         provider_label: { type: string, minLength: 1, maxLength: 80 }
         detail_url: { type: string, minLength: 1, maxLength: 2048 }
         refundable_amount_total: { type: integer, format: int64, minimum: 0 }
+        historical_refunds: { type: array, description: "Read-only V1 facts; no V2 refund command or Provider confirmation is implied.", items: { $ref: "#/components/schemas/LegacyHistoricalRefund" } }
+    LegacyHistoricalRefund:
+      type: object
+      additionalProperties: false
+      required: [id, order_id, source_refund_id, refund_number, provider_refund_id, transaction_id, status, amount_minor, order_amount_minor, currency, reason, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        order_id: { type: integer, format: int64, minimum: 1 }
+        source_refund_id: { type: integer, format: int64, minimum: 1 }
+        refund_number: { type: string, minLength: 1, maxLength: 200 }
+        provider_refund_id: { type: string }
+        transaction_id: { type: string }
+        status: { type: string, minLength: 1, maxLength: 80 }
+        amount_minor: { type: integer, format: int64, minimum: 1 }
+        order_amount_minor: { type: integer, format: int64, minimum: 1 }
+        currency: { type: string, enum: [CNY] }
+        reason: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
     LegacyOrderItemsResponse:
       type: object
       additionalProperties: false
