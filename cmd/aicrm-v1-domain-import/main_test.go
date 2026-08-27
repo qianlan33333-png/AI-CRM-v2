@@ -19,15 +19,20 @@ func TestParseActorIDs(t *testing.T) {
 	}
 }
 
-func TestStaticPackageRequiresExplicitDM01BeforeConnecting(t *testing.T) {
+func TestStaticAndChannelPackagesRequireExplicitDM01BeforeConnecting(t *testing.T) {
 	t.Setenv("AICRM_DM01_SOURCE_HMAC_KEY", "")
-	err := run([]string{"--domain=static", "--archive-run-id=archive", "--migration-actor=1"}, appconfig.V1ArchiveRuntime{
-		TargetDatabaseURL: "postgres:///must-not-connect", ArchiveKey: strings.Repeat("k", 32),
-	})
-	if err == nil || !strings.Contains(err.Error(), "dm01-run-id") {
-		t.Fatalf("missing DM01 binding must fail before database access: %v", err)
+	for _, domain := range []string{"static", "channel"} {
+		err := run([]string{"--domain=" + domain, "--archive-run-id=archive", "--migration-actor=1"}, appconfig.V1ArchiveRuntime{
+			TargetDatabaseURL: "postgres:///must-not-connect", ArchiveKey: strings.Repeat("k", 32),
+		})
+		if err == nil || !strings.Contains(err.Error(), "dm01-run-id") {
+			t.Fatalf("missing DM01 binding must fail before database access: %v", err)
+		}
+		if !validDomain(domain) {
+			t.Fatal("package must be explicitly selectable")
+		}
 	}
-	if !validDomain("static") || staticImportVersion == domainImportVersion {
-		t.Fatal("static package must use a separate, explicit immutable import version")
+	if staticImportVersion == domainImportVersion || channelImportVersion == staticImportVersion || channelImportVersion == domainImportVersion {
+		t.Fatal("packages must use separate immutable import versions")
 	}
 }

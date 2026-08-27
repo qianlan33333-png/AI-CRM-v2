@@ -13,6 +13,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
+	contactapp "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"
+	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 )
@@ -36,6 +38,12 @@ var staticReconciledTables = []string{
 }
 var financeReconciledTables = []string{"public/wechat_pay_orders", "public/wechat_pay_refunds"}
 
+var channelReconciledTables = []string{
+	"public/automation_channel", "public/automation_channel_assignee", "public/automation_channel_contact",
+	"public/automation_channel_entry_effect_log", "public/automation_channel_entry_runtime", "public/automation_channel_qrcode_asset",
+	"public/automation_channel_scene_alias", "public/channel_welcome_effect_dependency", "public/channel_welcome_effect_graph",
+}
+
 var targetBySourceTable = map[string]struct {
 	domain string
 	table  string
@@ -58,6 +66,9 @@ var targetBySourceTable = map[string]struct {
 	"public/wechat_pay_products":              {"product", "products"},
 	"public/wechat_pay_orders":                {"order", "order_list_projections"},
 	"public/wechat_pay_refunds":               {"order", "order_historical_refunds"},
+	"public/automation_channel":               {"contact", "channels"},
+	"public/automation_channel_contact":       {"contact", "channel_historical_contacts"},
+	"public/automation_channel_assignee":      {"contact", "channel_historical_assignees"},
 }
 
 type ReconciliationResult struct {
@@ -100,6 +111,10 @@ func ReconcileStatic(ctx context.Context, pool *pgxpool.Pool, importVersion, arc
 
 func ReconcileFinance(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string) (ReconciliationResult, error) {
 	return reconcileTables(ctx, pool, importVersion, archiveRunID, financeReconciledTables)
+}
+
+func ReconcileChannel(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string) (ReconciliationResult, error) {
+	return reconcileTables(ctx, pool, importVersion, archiveRunID, channelReconciledTables)
 }
 
 func reconcileTables(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string, tables []string) (ReconciliationResult, error) {
@@ -257,6 +272,57 @@ func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow,
 	switch expected.table {
 	case "order_list_projections", "order_historical_refunds":
 		return verifyFinanceTarget(ctx, tx, row, importedTargets)
+	case "channel_historical_contacts":
+		id, err := positiveID(*row.TargetID)
+		if err != nil {
+			return "", err
+		}
+		var target contactport.HistoricalChannelContact
+		err = tx.QueryRow(ctx, `SELECT id,channel_id,source_contact_id,customer_id,owner_reference,first_entered_at,last_entered_at,enter_count,created_at,updated_at
+FROM public.channel_historical_contacts WHERE id=$1 FOR SHARE`, id).Scan(&target.ID, &target.ChannelID, &target.SourceContactID, &target.CustomerID, &target.OwnerReference,
+			&target.FirstEnteredAt, &target.LastEnteredAt, &target.EnterCount, &target.CreatedAt, &target.UpdatedAt)
+		target.FirstEnteredAt, target.LastEnteredAt = target.FirstEnteredAt.UTC(), target.LastEnteredAt.UTC()
+		target.CreatedAt, target.UpdatedAt = target.CreatedAt.UTC(), target.UpdatedAt.UTC()
+		digest, digestErr := contactapp.HistoricalChannelContactTargetDigest(target)
+		_, sameBatch := importedTargets["channels"][strconv.FormatInt(target.ChannelID, 10)]
+		if err != nil || digestErr != nil || !sameBatch || !equalBytes(digest[:], row.TargetDigest) {
+			return "", targetVerificationError(expected.table, *row.TargetID, err)
+		}
+		proof = "history_only:" + hex.EncodeToString(digest[:])
+	case "channel_historical_assignees":
+		id, err := positiveID(*row.TargetID)
+		if err != nil {
+			return "", err
+		}
+		var target contactport.HistoricalChannelAssignee
+		err = tx.QueryRow(ctx, `SELECT id,channel_id,source_assignee_id,staff_reference,display_name_snapshot,priority,ratio_percent,max_scans_24h,status,
+to_char(source_created_at,'YYYY-MM-DD"T"HH24:MI:SS.US'),to_char(source_updated_at,'YYYY-MM-DD"T"HH24:MI:SS.US')
+FROM public.channel_historical_assignees WHERE id=$1 FOR SHARE`, id).Scan(&target.ID, &target.ChannelID, &target.SourceAssigneeID, &target.StaffReference, &target.DisplayNameSnapshot,
+			&target.Priority, &target.RatioPercent, &target.MaxScans24h, &target.Status, &target.SourceCreatedAt, &target.SourceUpdatedAt)
+		digest, digestErr := contactapp.HistoricalChannelAssigneeTargetDigest(target)
+		_, sameBatch := importedTargets["channels"][strconv.FormatInt(target.ChannelID, 10)]
+		if err != nil || digestErr != nil || !sameBatch || !equalBytes(digest[:], row.TargetDigest) {
+			return "", targetVerificationError(expected.table, *row.TargetID, err)
+		}
+		proof = "history_only:" + hex.EncodeToString(digest[:])
+	case "channels":
+		id, err := positiveID(*row.TargetID)
+		if err != nil {
+			return "", err
+		}
+		var target contactport.HistoricalChannelRecord
+		var noAssets bool
+		err = tx.QueryRow(ctx, `SELECT c.id,c.code,c.name,c.status,c.config,c.created_by,c.updated_by,c.created_at,c.updated_at,a.config_digest,
+NOT EXISTS(SELECT 1 FROM public.channel_acquisition_asset_bindings b WHERE b.channel_id=c.id)
+FROM public.channels c JOIN public.channel_acquisition_legacy_archives a ON a.channel_id=c.id
+WHERE c.id=$1 AND a.status='legacy_unverified' FOR SHARE OF c,a`, id).
+			Scan(&target.ID, &target.Code, &target.Name, &target.Status, &target.Projection, &target.CreatedBy, &target.UpdatedBy,
+				&target.CreatedAt, &target.UpdatedAt, &target.LegacyConfigDigest, &noAssets)
+		digest, digestErr := contactapp.HistoricalChannelTargetDigest(target)
+		if err != nil || digestErr != nil || !noAssets || !equalBytes(digest[:], row.TargetDigest) {
+			return "", targetVerificationError(expected.table, *row.TargetID, err)
+		}
+		proof = "inactive:" + hex.EncodeToString(digest[:])
 	case "cloud_campaigns":
 		var approval, runtime string
 		var version, plans, commands, touchPlans, handoffs, mediaBindings int64

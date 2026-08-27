@@ -850,6 +850,66 @@ func (e BindIdentityRejectedStatus) Valid() bool {
 	}
 }
 
+// Defines values for ChannelHistoryResponseOk.
+const (
+	ChannelHistoryResponseOkTrue ChannelHistoryResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the ChannelHistoryResponseOk enum.
+func (e ChannelHistoryResponseOk) Valid() bool {
+	switch e {
+	case ChannelHistoryResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChannelHistoryResponseReadOnly.
+const (
+	ChannelHistoryResponseReadOnlyTrue ChannelHistoryResponseReadOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ChannelHistoryResponseReadOnly enum.
+func (e ChannelHistoryResponseReadOnly) Valid() bool {
+	switch e {
+	case ChannelHistoryResponseReadOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChannelHistoryResponseRealExternalCallExecuted.
+const (
+	ChannelHistoryResponseRealExternalCallExecutedFalse ChannelHistoryResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ChannelHistoryResponseRealExternalCallExecuted enum.
+func (e ChannelHistoryResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ChannelHistoryResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ChannelHistoryResponseSource.
+const (
+	V1History ChannelHistoryResponseSource = "v1_history"
+)
+
+// Valid indicates whether the value is a known member of the ChannelHistoryResponseSource enum.
+func (e ChannelHistoryResponseSource) Valid() bool {
+	switch e {
+	case V1History:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CloudCampaignTouchPlanAudiencePackageMembersRequestKind.
 const (
 	CloudCampaignTouchPlanAudiencePackageMembersRequestKindAiAudiencePackageMembers CloudCampaignTouchPlanAudiencePackageMembersRequestKind = "ai_audience_package_members"
@@ -7521,13 +7581,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	False SidebarSafetyRealExternalCallExecuted = false
+	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case False:
+	case SidebarSafetyRealExternalCallExecutedFalse:
 		return true
 	default:
 		return false
@@ -8651,6 +8711,69 @@ type BindIdentityRequest struct {
 type BindIdentityResponse struct {
 	union json.RawMessage
 }
+
+// ChannelHistoryAssignee defines model for ChannelHistoryAssignee.
+type ChannelHistoryAssignee struct {
+	ChannelId           int64  `json:"channel_id"`
+	DisplayNameSnapshot string `json:"display_name_snapshot"`
+	Id                  int64  `json:"id"`
+	MaxScans24h         *int   `json:"max_scans_24h"`
+	Priority            int    `json:"priority"`
+	RatioPercent        *int   `json:"ratio_percent"`
+	SourceAssigneeId    int64  `json:"source_assignee_id"`
+
+	// SourceCreatedAt V1 civil timestamp without timezone.
+	SourceCreatedAt string `json:"source_created_at"`
+
+	// SourceUpdatedAt V1 civil timestamp without timezone.
+	SourceUpdatedAt string `json:"source_updated_at"`
+
+	// StaffReference Historical source reference, not a current permission.
+	StaffReference string `json:"staff_reference"`
+	Status         string `json:"status"`
+}
+
+// ChannelHistoryContact defines model for ChannelHistoryContact.
+type ChannelHistoryContact struct {
+	ChannelId      int64     `json:"channel_id"`
+	CreatedAt      time.Time `json:"created_at"`
+	CustomerId     *int64    `json:"customer_id"`
+	EnterCount     int       `json:"enter_count"`
+	FirstEnteredAt time.Time `json:"first_entered_at"`
+	Id             int64     `json:"id"`
+	LastEnteredAt  time.Time `json:"last_entered_at"`
+
+	// OwnerReference Historical source reference, not current ownership.
+	OwnerReference  string    `json:"owner_reference"`
+	SourceContactId int64     `json:"source_contact_id"`
+	UpdatedAt       time.Time `json:"updated_at"`
+}
+
+// ChannelHistoryResponse defines model for ChannelHistoryResponse.
+type ChannelHistoryResponse struct {
+	Assignees                []ChannelHistoryAssignee                       `json:"assignees"`
+	ChannelId                int64                                          `json:"channel_id"`
+	Contacts                 []ChannelHistoryContact                        `json:"contacts"`
+	Limit                    int                                            `json:"limit"`
+	Offset                   int                                            `json:"offset"`
+	Ok                       ChannelHistoryResponseOk                       `json:"ok"`
+	ReadOnly                 ChannelHistoryResponseReadOnly                 `json:"read_only"`
+	RealExternalCallExecuted ChannelHistoryResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	Source                   ChannelHistoryResponseSource                   `json:"source"`
+	Total                    int64                                          `json:"total"`
+}
+
+// ChannelHistoryResponseOk defines model for ChannelHistoryResponse.Ok.
+type ChannelHistoryResponseOk bool
+
+// ChannelHistoryResponseReadOnly defines model for ChannelHistoryResponse.ReadOnly.
+type ChannelHistoryResponseReadOnly bool
+
+// ChannelHistoryResponseRealExternalCallExecuted defines model for ChannelHistoryResponse.RealExternalCallExecuted.
+type ChannelHistoryResponseRealExternalCallExecuted bool
+
+// ChannelHistoryResponseSource defines model for ChannelHistoryResponse.Source.
+type ChannelHistoryResponseSource string
 
 // ClearCustomerContactPolicyRequest defines model for ClearCustomerContactPolicyRequest.
 type ClearCustomerContactPolicyRequest struct {
@@ -13341,6 +13464,12 @@ type ListLegacyChannelEntrantsParams struct {
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
 }
 
+// GetChannelHistoryParams defines parameters for GetChannelHistory.
+type GetChannelHistoryParams struct {
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
 // ListCloudCampaignTouchPlansParams defines parameters for ListCloudCampaignTouchPlans.
 type ListCloudCampaignTouchPlansParams struct {
 	Cursor *string `form:"cursor,omitempty" json:"cursor,omitempty"`
@@ -16234,6 +16363,9 @@ type ServerInterface interface {
 	// List a channel's recent entrants from the closed local Contact projection
 	// (GET /api/admin/channels/{channel_id}/contacts)
 	ListLegacyChannelEntrants(w http.ResponseWriter, r *http.Request, channelId int64, params ListLegacyChannelEntrantsParams)
+	// Read V1 channel entry and assignment facts without current attribution or permissions
+	// (GET /api/admin/channels/{channel_id}/history)
+	GetChannelHistory(w http.ResponseWriter, r *http.Request, channelId int64, params GetChannelHistoryParams)
 	// List recipient-safe immutable local Campaign touch-plan snapshots
 	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans)
 	ListCloudCampaignTouchPlans(w http.ResponseWriter, r *http.Request, campaignCode string, params ListCloudCampaignTouchPlansParams)
@@ -17071,6 +17203,12 @@ func (_ Unimplemented) UpdateLegacyChannel(w http.ResponseWriter, r *http.Reques
 // List a channel's recent entrants from the closed local Contact projection
 // (GET /api/admin/channels/{channel_id}/contacts)
 func (_ Unimplemented) ListLegacyChannelEntrants(w http.ResponseWriter, r *http.Request, channelId int64, params ListLegacyChannelEntrantsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read V1 channel entry and assignment facts without current attribution or permissions
+// (GET /api/admin/channels/{channel_id}/history)
+func (_ Unimplemented) GetChannelHistory(w http.ResponseWriter, r *http.Request, channelId int64, params GetChannelHistoryParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -19946,6 +20084,56 @@ func (siw *ServerInterfaceWrapper) ListLegacyChannelEntrants(w http.ResponseWrit
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ListLegacyChannelEntrants(w, r, channelId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetChannelHistory operation middleware
+func (siw *ServerInterfaceWrapper) GetChannelHistory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "channel_id" -------------
+	var channelId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "channel_id", chi.URLParam(r, "channel_id"), &channelId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "channel_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetChannelHistoryParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "offset", r.URL.Query(), &params.Offset, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetChannelHistory(w, r, channelId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -33543,6 +33731,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/api/admin/channels/{channel_id}/contacts", wrapper.ListLegacyChannelEntrants)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/channels/{channel_id}/history", wrapper.GetChannelHistory)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans", wrapper.ListCloudCampaignTouchPlans)
 	})
 	r.Group(func(r chi.Router) {
@@ -35902,6 +36093,69 @@ func (response ListLegacyChannelEntrants422JSONResponse) VisitListLegacyChannelE
 type ListLegacyChannelEntrants503JSONResponse struct{ ServiceUnavailableJSONResponse }
 
 func (response ListLegacyChannelEntrants503JSONResponse) VisitListLegacyChannelEntrantsResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetChannelHistoryRequestObject struct {
+	ChannelId int64 `json:"channel_id"`
+	Params    GetChannelHistoryParams
+}
+
+type GetChannelHistoryResponseObject interface {
+	VisitGetChannelHistoryResponse(w http.ResponseWriter) error
+}
+
+type GetChannelHistory200JSONResponse ChannelHistoryResponse
+
+func (response GetChannelHistory200JSONResponse) VisitGetChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetChannelHistory400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetChannelHistory400JSONResponse) VisitGetChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetChannelHistory401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetChannelHistory401JSONResponse) VisitGetChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetChannelHistory403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetChannelHistory403JSONResponse) VisitGetChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetChannelHistory404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetChannelHistory404JSONResponse) VisitGetChannelHistoryResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetChannelHistory503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetChannelHistory503JSONResponse) VisitGetChannelHistoryResponse(w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(503)
 
@@ -50239,6 +50493,9 @@ type StrictServerInterface interface {
 	// List a channel's recent entrants from the closed local Contact projection
 	// (GET /api/admin/channels/{channel_id}/contacts)
 	ListLegacyChannelEntrants(ctx context.Context, request ListLegacyChannelEntrantsRequestObject) (ListLegacyChannelEntrantsResponseObject, error)
+	// Read V1 channel entry and assignment facts without current attribution or permissions
+	// (GET /api/admin/channels/{channel_id}/history)
+	GetChannelHistory(ctx context.Context, request GetChannelHistoryRequestObject) (GetChannelHistoryResponseObject, error)
 	// List recipient-safe immutable local Campaign touch-plan snapshots
 	// (GET /api/admin/cloud-orchestrator/campaigns/{campaign_code}/touch-plans)
 	ListCloudCampaignTouchPlans(ctx context.Context, request ListCloudCampaignTouchPlansRequestObject) (ListCloudCampaignTouchPlansResponseObject, error)
@@ -51737,6 +51994,33 @@ func (sh *strictHandler) ListLegacyChannelEntrants(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(ListLegacyChannelEntrantsResponseObject); ok {
 		if err := validResponse.VisitListLegacyChannelEntrantsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetChannelHistory operation middleware
+func (sh *strictHandler) GetChannelHistory(w http.ResponseWriter, r *http.Request, channelId int64, params GetChannelHistoryParams) {
+	var request GetChannelHistoryRequestObject
+
+	request.ChannelId = channelId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetChannelHistory(ctx, request.(GetChannelHistoryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetChannelHistory")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetChannelHistoryResponseObject); ok {
+		if err := validResponse.VisitGetChannelHistoryResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

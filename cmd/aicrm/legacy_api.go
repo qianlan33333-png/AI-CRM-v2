@@ -211,6 +211,7 @@ type Handler struct {
 	surveyOperations        surveyOperationsHTTP
 	groupOps                groupOpsHTTP
 	channels                legacyChannelApplication
+	channelHistory          contactport.HistoricalChannelHistoryReader
 	legacyTags              legacyTagApplication
 	automationAgents        automationport.AgentService
 	automationRules         automationport.RuleService

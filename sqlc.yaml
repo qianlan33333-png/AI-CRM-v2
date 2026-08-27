@@ -77,6 +77,8 @@ sql:
       - internal/contact/store/queries/external_events.sql
       - internal/contact/store/queries/historical_import.sql
       - internal/contact/store/queries/historical_tag_import.sql
+      - internal/contact/store/queries/historical_channel.sql
+      - internal/contact/store/queries/historical_channel_relations.sql
       - internal/contact/store/queries/dm01_acceptance.sql
       - internal/contact/store/queries/order_read_port.sql
       - internal/contact/store/queries/outbound_targets.sql

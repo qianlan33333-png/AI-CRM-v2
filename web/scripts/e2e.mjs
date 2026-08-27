@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http } = {}) {
+async function loadPage(rel, { id, q, channelHttp = false, channelHttpFailure = false, channelHistoryHttpFailure = false, channelHistoryEmpty = false, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false, orderHistoryHttp = false, h5Http } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,7 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http);
+      window.__AICRM_TEST_MOCK__ = !(channelHttp || couponHttp || audienceHttp || radarHttp || serviceProductHttp || orderHistoryHttp || h5Http);
       if (h5Http) {
         const calls = [];
         let submissionAttempt = 0;
@@ -104,6 +104,42 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
           if (url.pathname === '/api/admin/refunds') return json({ items: [], total: 0, limit: 20, has_more: false });
           if (url.pathname === '/api/admin/wechat-pay/orders/V1-H-12/external-push-deliveries') return json({ items: [], total: 0 });
           return json({ code: 'unexpected_order_history_request' }, 500);
+        };
+        return;
+      }
+      if (channelHttp) {
+        const calls = [];
+        const channel = { id: 49, channel_type: 'qrcode', carrier_type: 'qrcode', channel_name: 'V1 历史渠道', channel_code: 'v1-history-49', status: 'inactive', scene_value: '', qr_url: '', owner_staff_id: '', customer_channel: '', link_url: '', final_url: '', welcome_message: '', welcome_image_library_ids: [], welcome_miniprogram_library_ids: [], welcome_attachment_library_ids: [], welcome_group_invite_library_ids: [], auto_accept_friend: false, entry_tag_id: '', entry_tag_name: '', entry_tag_group_name: '', assignment_mode: 'single_owner', assignment_strategy: 'ratio', overflow_policy: '', assignment_config_json: {}, assignees: [], assignee_count: 0, channel_contact_count: 0 };
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data, clone() { return this; } });
+        window.__channelHttpTest = { calls };
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          if (channelHttpFailure && url.pathname === '/api/admin/channels') return json({ code: 'unavailable' }, 503);
+          if (url.pathname === '/api/admin/channels') return json({ channels: [channel], total: 1, limit: 50, offset: 0 });
+          if (url.pathname === '/api/admin/channels/49') return json({ channel });
+          if (url.pathname === '/api/admin/channels/49/history') {
+            if (channelHistoryHttpFailure) return json({ code: 'unavailable' }, 503);
+            const limit = Number(url.searchParams.get('limit'));
+            const offset = Number(url.searchParams.get('offset'));
+            const sourceContactId = 801 + offset;
+            return json({
+              ok: true,
+              source: 'v1_history',
+              read_only: true,
+              real_external_call_executed: false,
+              channel_id: 49,
+              contacts: channelHistoryEmpty ? [] : [{ id: 901 + offset, channel_id: 49, source_contact_id: sourceContactId, customer_id: offset === 0 ? 21 : null, owner_reference: 'legacy-owner-7', first_entered_at: '2026-08-01T10:00:00Z', last_entered_at: '2026-08-02T11:00:00Z', enter_count: 2, created_at: '2026-08-03T00:00:00Z', updated_at: '2026-08-03T00:00:00Z' }],
+              total: channelHistoryEmpty ? 0 : 51,
+              limit,
+              offset,
+              assignees: channelHistoryEmpty ? [] : [{ id: 701, channel_id: 49, source_assignee_id: 51, staff_reference: 'legacy-staff-9', display_name_snapshot: '历史客服', priority: 0, ratio_percent: null, max_scans_24h: null, status: 'inactive', source_created_at: '2026-08-01T08:00:00.000000', source_updated_at: '2026-08-02T08:00:00.000000' }],
+            });
+          }
+          if (url.pathname === '/api/admin/wecom/tags') return json({ items: [] });
+          if (url.pathname === '/api/admin/wecom/tag-groups') return json({ items: [] });
+          if (url.pathname.startsWith('/api/admin/channels/49/')) return json({ code: 'unavailable' }, 503);
+          return json({ code: 'unexpected_channel_request' }, 500);
         };
         return;
       }
@@ -1177,6 +1213,76 @@ console.log('admin/channelForm.html（完整 OpenAPI 渠道 DTO）');
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '保存渠道'));
   await sleep(30);
   ok('无效素材引用在发请求前被阻止', d.body.textContent.includes('素材引用必须是正整数 ID'));
+  dom.window.close();
+}
+
+console.log('admin/channels.html（HTTP 历史停用渠道列表）');
+{
+  const dom = await loadPage('admin/channels.html', { channelHttp: true });
+  await sleep(50);
+  const d = dom.window.document;
+  const calls = dom.window.__channelHttpTest.calls;
+  ok('历史渠道列表经真实 OpenAPI GET 显示停用定义', d.body.textContent.includes('V1 历史渠道') && d.body.textContent.includes('inactive') && calls.some((call) => call.path === '/api/admin/channels' && call.query.includes('limit=50') && call.query.includes('include_archived=true') && call.method === 'GET'));
+  ok('空旧二维码不伪造渠道资产或外部成功', d.body.textContent.includes('后端未返回二维码地址') && !d.body.textContent.includes('已执行') && !d.body.textContent.includes('Provider 已执行') && calls.every((call) => call.method === 'GET'));
+  dom.window.close();
+}
+
+console.log('admin/channelForm.html?id=49（HTTP 历史停用渠道安全默认）');
+{
+  const dom = await loadPage('admin/channelForm.html', { id: 49, channelHttp: true });
+  await sleep(80);
+  const d = dom.window.document;
+  const calls = dom.window.__channelHttpTest.calls;
+  const empty = (id) => d.querySelector(id)?.value === '';
+  ok('编辑页经真实列表和详情 GET 显示停用定义', d.querySelector('#channelName')?.value === 'V1 历史渠道' && d.querySelector('#channelCode')?.value === 'v1-history-49' && d.querySelector('#channelStatus')?.value === 'inactive' && calls.some((call) => call.path === '/api/admin/channels' && call.method === 'GET') && calls.some((call) => call.path === '/api/admin/channels/49' && call.method === 'GET'));
+  ok('空 QR、场景、欢迎语、素材、标签与客服保持空且不伪造资产', ['#channelScene', '#channelQrUrl', '#channelLinkUrl', '#channelFinalUrl', '#channelOwner', '#channelTagName', '#channelTagGroup', '#channelWelcome', '#channelImageIds', '#channelMiniIds', '#channelAttachmentIds', '#channelGroupInviteIds'].every(empty) && !d.querySelector('#channelAutoAccept')?.checked && d.querySelector('#channelFinalUrlPreview')?.textContent.includes('二维码载体不生成本地链接预览') && d.body.textContent.includes('尚未申请资产') && ![...d.querySelectorAll('button')].some((button) => ['打开', '下载', '复制'].includes(button.textContent.trim())) && calls.every((call) => call.method === 'GET'));
+  dom.window.close();
+}
+
+console.log('admin/channelForm.html?id=49（V1 归档历史只读分页）');
+{
+  const dom = await loadPage('admin/channelForm.html', { id: 49, channelHttp: true });
+  await sleep(80);
+  const d = dom.window.document;
+  const calls = dom.window.__channelHttpTest.calls;
+  ok('V1 历史仅手动加载，不在渠道详情初始化时请求', !!d.querySelector('#channelHistoryLoad') && calls.every((call) => call.path !== '/api/admin/channels/49/history'));
+  click(dom, d.querySelector('#channelHistoryLoad'));
+  await sleep(50);
+  ok('V1 历史使用真实生成 GET，展示归档联系人、未核验客户与客服快照', d.body.textContent.includes('801') && d.body.textContent.includes('21') && d.body.textContent.includes('legacy-owner-7') && d.body.textContent.includes('历史客服') && d.body.textContent.includes('不代表当前客户归属、员工权限') && calls.some((call) => call.path === '/api/admin/channels/49/history' && call.query.includes('limit=50') && call.query.includes('offset=0') && call.method === 'GET'));
+  ok('V1 历史总数和下一页按 offset 准确呈现', d.querySelector('#channelHistoryRange')?.textContent.includes('共 51 条') && !!d.querySelector('#channelHistoryNext'));
+  click(dom, d.querySelector('#channelHistoryNext'));
+  await sleep(50);
+  ok('V1 历史联系人按 50 条翻页，并保留 customer 未核验语义', d.body.textContent.includes('851') && d.body.textContent.includes('未核验') && calls.some((call) => call.path === '/api/admin/channels/49/history' && call.query.includes('offset=50') && call.method === 'GET'));
+  dom.window.close();
+}
+
+console.log('admin/channelForm.html?id=49（V1 归档历史读取失败关闭）');
+{
+  const dom = await loadPage('admin/channelForm.html', { id: 49, channelHttp: true, channelHistoryHttpFailure: true });
+  await sleep(80);
+  const d = dom.window.document;
+  click(dom, d.querySelector('#channelHistoryLoad'));
+  await sleep(50);
+  ok('V1 历史 HTTP 失败明确显示且不回退 Mock/Seed', d.querySelector('#channelHistoryError')?.textContent.includes('请求失败（HTTP 503）') && !d.body.textContent.includes('legacy-owner-7') && dom.window.__channelHttpTest.calls.some((call) => call.path === '/api/admin/channels/49/history' && call.method === 'GET'));
+  dom.window.close();
+}
+
+console.log('admin/channelForm.html?id=49（V1 归档历史空态）');
+{
+  const dom = await loadPage('admin/channelForm.html', { id: 49, channelHttp: true, channelHistoryEmpty: true });
+  await sleep(80);
+  const d = dom.window.document;
+  click(dom, d.querySelector('#channelHistoryLoad'));
+  await sleep(50);
+  ok('V1 历史空结果明确显示，不以渠道 Seed 或当前关系补全', d.querySelector('#channelHistoryEmpty')?.textContent.includes('没有可展示') && d.body.textContent.includes('没有可展示的 V1 历史客服快照') && d.querySelector('#channelHistoryRange')?.textContent.includes('暂无归档联系人') && !d.body.textContent.includes('legacy-owner-7'));
+  dom.window.close();
+}
+
+console.log('admin/channelForm.html?id=49（HTTP 历史渠道读取失败关闭）');
+{
+  const dom = await loadPage('admin/channelForm.html', { id: 49, channelHttp: true, channelHttpFailure: true });
+  await sleep(50);
+  ok('历史渠道读取失败显示错误态且不回退 Mock/Seed', dom.window.document.body.textContent.includes('请求失败（HTTP 503）') && !dom.window.document.body.textContent.includes('V1 历史渠道') && dom.window.__channelHttpTest.calls.some((call) => call.path === '/api/admin/channels' && call.method === 'GET'));
   dom.window.close();
 }
 

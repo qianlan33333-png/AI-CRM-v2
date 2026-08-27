@@ -4,6 +4,7 @@ import { exportWechatOrdersDto } from './admin';
 import { readRadarSharePath, readServiceProductSharePath } from './admin';
 import { exportRadarEventsCsv, readRadarEvents } from './admin';
 import { listGlobalQuestionnairePushLogsDto } from './admin';
+import { getChannelHistoryDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductShareUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyAttachmentsUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
@@ -15,6 +16,7 @@ import { getArchiveLegacyCouponUrl, getCopyLegacyCouponUrl, getCreateLegacyCoupo
 import { getCreateServicePeriodMemberGridCollaboratorUrl, getDeleteServicePeriodMemberGridCollaboratorUrl, getGetServicePeriodMemberGridAccessUrl, getGetServicePeriodMemberGridSchemaUrl, getGetServicePeriodMemberGridShareSettingsUrl, getGetServicePeriodMemberUrl, getListLegacyCouponClaimsUrl, getListLegacyCouponProductOptionsUrl, getListServicePeriodMemberViewsUrl, getQueryServicePeriodMemberGridUrl, getSetServicePeriodMemberGridExternalShareUrl, getUpdateServicePeriodMemberFieldsUrl, getUpdateServicePeriodMemberGridCollaboratorUrl } from './generated/health';
 import { getCreateLegacyQuestionnaireUrl, getDeleteLegacyQuestionnaireUrl, getDisableLegacyQuestionnaireUrl, getDuplicateLegacyQuestionnaireUrl, getEnableLegacyQuestionnaireUrl, getPublishQuestionnairePublicDefinitionUrl, getUpdateLegacyQuestionnaireUrl } from './generated/health';
 import { getCreateLegacyChannelUrl, getGetChannelAcquisitionAssetUrl, getGetChannelAcquisitionPreviewUrl, getListChannelAcquisitionAssetsUrl, getListChannelAcquisitionStaffUrl, getPublishChannelAcquisitionAssetUrl, getUpdateChannelAcquisitionAssigneesUrl, getUpdateLegacyChannelUrl } from './generated/health';
+import { getGetChannelHistoryUrl } from './generated/health';
 import { getDeleteAIAudienceAutomationBindingUrl, getGetAIAudienceAutomationBindingUrl, getGetAIAudienceConfigurationVersionUrl, getGetAIAudiencePackageSendersUrl, getListAIAudiencePackageMembersUrl, getMaterializeAIAudienceConfigurationUrl, getPreviewAIAudienceConfigurationUrl, getPutAIAudienceAutomationBindingUrl, getPutAIAudienceConfigurationVersionUrl, getReplaceAIAudiencePackageSendersUrl, getUpdateAIAudiencePackageUrl } from './generated/health';
 import { getActivateGroupOpsPlanUrl, getAddGroupOpsPlanGroupAssetUrl, getAddGroupOpsPlanMemberUrl, getAddGroupOpsPlanNodeUrl, getArchiveGroupOpsPlanUrl, getCreateGroupOpsPlanUrl, getDeleteGroupOpsPlanUrl, getGetGroupOpsPlanUrl, getGetGroupOpsWebhookDescriptorUrl, getListGroupOpsExecutionsUrl, getListGroupOpsPlansUrl, getPauseGroupOpsPlanUrl, getPreviewGroupOpsPlanContentUrl, getPreviewGroupOpsRunDueUrl, getUpdateGroupOpsPlanNodeUrl, getUpdateGroupOpsPlanUrl } from './generated/health';
 import { getCreateLegacyRefundIntentUrl, getCreateLegacyWechatRefundIntentUrl } from './generated/health';
@@ -488,6 +490,33 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(saved.resourceId === 51 && saved.channelType === 'wecom_customer_acquisition' && saved.welcomeImageLibraryIds?.[0] === 7, 'channel full response mapping');
     assert(channelRequest?.input === '/api/admin/channels' && channelRequest.init?.method === 'POST' && Boolean(new Headers(channelRequest.init.headers).get('Idempotency-Key')), 'channel create URL/method/idempotency');
     assert(JSON.parse(String(channelRequest.init?.body)).assignment_config_json.staff_ids[0] === 'A', 'channel request DTO mapping');
+  } finally { globalThis.fetch = savedFetch; }
+
+  assert(getGetChannelHistoryUrl(51, { limit: 50, offset: 0 }) === '/api/admin/channels/51/history?limit=50&offset=0', 'V1 channel history generated URL preserves bounded offset page');
+  const channelHistoryCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const channelHistoryResponse = {
+    ok: true,
+    source: 'v1_history',
+    read_only: true,
+    real_external_call_executed: false,
+    channel_id: 51,
+    contacts: [{ id: 301, channel_id: 51, source_contact_id: 41, customer_id: null, owner_reference: 'legacy-owner', first_entered_at: '2026-08-01T00:00:00Z', last_entered_at: '2026-08-02T00:00:00Z', enter_count: 2, created_at: '2026-08-03T00:00:00Z', updated_at: '2026-08-03T00:00:00Z' }],
+    total: 51,
+    limit: 50,
+    offset: 0,
+    assignees: [{ id: 401, channel_id: 51, source_assignee_id: 9, staff_reference: 'legacy-staff', display_name_snapshot: '历史客服', priority: 0, ratio_percent: null, max_scans_24h: null, status: 'inactive', source_created_at: '2026-08-01T08:00:00.000000', source_updated_at: '2026-08-02T08:00:00.000000' }],
+  };
+  globalThis.fetch = async (input, init) => { channelHistoryCalls.push({ input: String(input), init }); return new Response(JSON.stringify(channelHistoryResponse), { status: 200 }); };
+  try {
+    const history = await getChannelHistoryDto(51, 50, 0);
+    assert(history.total === 51 && history.contacts[0]?.customerId === null && history.contacts[0]?.ownerReference === 'legacy-owner' && history.assignees[0]?.sourceCreatedAt.endsWith('.000000'), 'V1 channel history maps archive-only contact and civil-time assignee fields');
+    assert(channelHistoryCalls.length === 1 && channelHistoryCalls[0]?.input === '/api/admin/channels/51/history?limit=50&offset=0' && channelHistoryCalls[0]?.init?.method === 'GET', 'V1 channel history uses generated HTTP GET without write effect');
+    globalThis.fetch = async () => new Response(JSON.stringify({ ...channelHistoryResponse, real_external_call_executed: true }), { status: 200 });
+    try { await getChannelHistoryDto(51, 50, 0); assert(false, 'history response with Provider effect must fail closed'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('只读边界'), 'history rejects any claimed Provider effect'); }
+    globalThis.fetch = async () => new Response(JSON.stringify({ code: 'unavailable' }), { status: 503 });
+    try { await getChannelHistoryDto(51, 50, 0); assert(false, 'history accepted unavailable response'); }
+    catch (error) { assert(error instanceof ApiError && error.status === 503, 'history read failure remains structured without Mock fallback'); }
   } finally { globalThis.fetch = savedFetch; }
 
   assert(getGetChannelAcquisitionPreviewUrl(51) === '/api/admin/channels/51/acquisition-preview', 'acquisition preview URL');
