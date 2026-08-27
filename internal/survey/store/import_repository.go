@@ -25,21 +25,17 @@ func (r *QuestionnaireRepository) CreateImportedQuestionnaire(ctx context.Contex
 	if len(assessmentConfig) == 0 {
 		assessmentConfig = json.RawMessage(`{}`)
 	}
-	var id int64
-	err = tx.QueryRow(ctx, `
-		INSERT INTO public.questionnaires (
-			slug, name, title, description, answer_display_mode,
-			assessment_enabled, assessment_config, is_disabled, created_by,
-			version, submission_count, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, $10, $11, $12, $13)
-		RETURNING id
-	`, value.Slug, value.Name, value.Title, value.Description, string(value.AnswerDisplayMode),
-		value.AssessmentEnabled, assessmentConfig, value.IsDisabled, actor, value.Version,
-		value.SubmissionCount, value.CreatedAt, value.UpdatedAt).Scan(&id)
+	q := surveydbForTx(tx)
+	id, err := q.InsertHistoricalQuestionnaire(ctx, surveydb.InsertHistoricalQuestionnaireParams{
+		Slug: value.Slug, Name: value.Name, Title: value.Title, Description: value.Description,
+		AnswerDisplayMode: string(value.AnswerDisplayMode), AssessmentEnabled: value.AssessmentEnabled,
+		AssessmentConfig: assessmentConfig, IsDisabled: value.IsDisabled, CreatedBy: actor,
+		Version: int32(value.Version), SubmissionCount: int32(value.SubmissionCount),
+		CreatedAt: timestamp(value.CreatedAt), UpdatedAt: timestamp(value.UpdatedAt),
+	})
 	if err != nil {
 		return 0, unavailable(err)
 	}
-	q := surveydbForTx(tx)
 	if _, err = q.FinalizeQuestionnaireSlug(ctx, id); err != nil {
 		return 0, unavailable(err)
 	}
@@ -59,17 +55,12 @@ func (r *QuestionnaireRepository) CreateImportedQuestion(ctx context.Context, qu
 	if len(validation) == 0 {
 		validation = json.RawMessage(`{}`)
 	}
-	var id int64
-	err = tx.QueryRow(ctx, `
-		INSERT INTO public.questionnaire_questions (
-			questionnaire_id, type, title, required, sort_order, placeholder_text,
-			assessment_dimension_key, sidebar_profile_field, validation,
-			created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb, $10, $11)
-		RETURNING id
-	`, questionnaireID, string(value.Type), value.Title, value.Required, value.SortOrder,
-		value.PlaceholderText, value.AssessmentDimensionKey, value.SidebarProfileField,
-		validation, value.CreatedAt, value.UpdatedAt).Scan(&id)
+	id, err := surveydbForTx(tx).InsertHistoricalQuestion(ctx, surveydb.InsertHistoricalQuestionParams{
+		QuestionnaireID: questionnaireID, QuestionType: string(value.Type), Title: value.Title,
+		Required: value.Required, SortOrder: int32(value.SortOrder), PlaceholderText: value.PlaceholderText,
+		AssessmentDimensionKey: value.AssessmentDimensionKey, SidebarProfileField: value.SidebarProfileField,
+		Validation: validation, CreatedAt: timestamp(value.CreatedAt), UpdatedAt: timestamp(value.UpdatedAt),
+	})
 	if err != nil {
 		return 0, unavailable(err)
 	}
@@ -85,17 +76,12 @@ func (r *QuestionnaireRepository) CreateImportedOption(ctx context.Context, ques
 	if len(tags) == 0 {
 		tags = json.RawMessage(`[]`)
 	}
-	var id int64
-	err = tx.QueryRow(ctx, `
-		INSERT INTO public.questionnaire_options (
-			question_id, option_text, score, assessment_type_key, tag_codes,
-			is_other, other_placeholder, other_max_length, sort_order,
-			created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9, $10, $11)
-		RETURNING id
-	`, questionID, value.OptionText, value.Score, value.AssessmentTypeKey, tags,
-		value.IsOther, value.OtherPlaceholder, value.OtherMaxLength, value.SortOrder,
-		value.CreatedAt, value.UpdatedAt).Scan(&id)
+	id, err := surveydbForTx(tx).InsertHistoricalOption(ctx, surveydb.InsertHistoricalOptionParams{
+		QuestionID: questionID, OptionText: value.OptionText, Score: value.Score,
+		AssessmentTypeKey: value.AssessmentTypeKey, TagCodes: tags, IsOther: value.IsOther,
+		OtherPlaceholder: value.OtherPlaceholder, OtherMaxLength: int32(value.OtherMaxLength),
+		SortOrder: int32(value.SortOrder), CreatedAt: timestamp(value.CreatedAt), UpdatedAt: timestamp(value.UpdatedAt),
+	})
 	if err != nil {
 		return 0, unavailable(err)
 	}
@@ -111,18 +97,13 @@ func (r *QuestionnaireRepository) CreateImportedSubmission(ctx context.Context, 
 	if len(tags) == 0 {
 		tags = json.RawMessage(`[]`)
 	}
-	var id int64
-	err = tx.QueryRow(ctx, `
-		INSERT INTO public.questionnaire_submissions (
-			questionnaire_id, respondent_key, openid, unionid, external_userid,
-			customer_name, follow_user_userid, matched_by, mobile, source_channel,
-			campaign_id, staff_id, total_score, final_tags, result_token,
-			redirect_url_snapshot, submitted_at, created_at
-		) VALUES ($1, '', '', $2, '', '', $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11, $12, $13, $14)
-		RETURNING id
-	`, questionnaireID, value.UnionID, value.FollowUserUserID, value.MatchedBy, value.Mobile,
-		value.SourceChannel, value.CampaignID, value.StaffID, value.TotalScore, tags,
-		value.ResultToken, value.RedirectURLSnapshot, value.SubmittedAt, value.CreatedAt).Scan(&id)
+	id, err := surveydbForTx(tx).InsertHistoricalSubmission(ctx, surveydb.InsertHistoricalSubmissionParams{
+		QuestionnaireID: questionnaireID, Unionid: value.UnionID, FollowUserUserid: value.FollowUserUserID,
+		MatchedBy: value.MatchedBy, Mobile: value.Mobile, SourceChannel: value.SourceChannel,
+		CampaignID: value.CampaignID, StaffID: value.StaffID, TotalScore: value.TotalScore,
+		FinalTags: tags, ResultToken: value.ResultToken, RedirectUrlSnapshot: value.RedirectURLSnapshot,
+		SubmittedAt: timestamp(value.SubmittedAt), CreatedAt: timestamp(value.CreatedAt),
+	})
 	if err != nil {
 		return 0, unavailable(err)
 	}
@@ -137,15 +118,11 @@ func (r *QuestionnaireRepository) CreateImportedAnswer(ctx context.Context, subm
 	if len(selectedOptions) == 0 {
 		selectedOptions = json.RawMessage(`[]`)
 	}
-	var id int64
-	err = tx.QueryRow(ctx, `
-		INSERT INTO public.questionnaire_submission_answers (
-			submission_id, question_id, question_type, question_title, sort_order,
-			selected_options, text_value, created_at
-		) VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, $8)
-		RETURNING id
-	`, submissionID, questionID, string(value.QuestionType), value.QuestionTitle, value.SortOrder,
-		selectedOptions, value.TextValue, value.CreatedAt).Scan(&id)
+	id, err := surveydbForTx(tx).InsertHistoricalAnswer(ctx, surveydb.InsertHistoricalAnswerParams{
+		SubmissionID: submissionID, QuestionID: questionID, QuestionType: string(value.QuestionType),
+		QuestionTitle: value.QuestionTitle, SortOrder: int32(value.SortOrder), SelectedOptions: selectedOptions,
+		TextValue: value.TextValue, CreatedAt: timestamp(value.CreatedAt),
+	})
 	if err != nil {
 		return 0, unavailable(err)
 	}
