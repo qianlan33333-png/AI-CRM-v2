@@ -24,14 +24,13 @@ const (
 )
 
 // apiClientSecretVerifier is deliberately local to the composition root.
-// Admin Ops persists a secret reference, not secret material or a hash, so a
-// production route must inject the approved secret-store verifier.
+// Admin Ops persists a secret reference, not secret material or a hash, so the
+// production route injects the configured verifier without exposing secrets.
 type apiClientSecretVerifier interface {
 	VerifyAPIClientSecret(context.Context, string, string) (bool, error)
 }
 
-// apiClientTokenHandler is an unregistered client-credentials endpoint. Route
-// registration and the public protocol contract remain separately owned.
+// apiClientTokenHandler serves the registered client-credentials endpoint.
 type apiClientTokenHandler struct {
 	credentials apiClientCredentialReader
 	secrets     apiClientSecretVerifier
