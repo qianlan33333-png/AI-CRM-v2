@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
+	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 )
 
 var reconciledTables = []string{
@@ -33,6 +34,7 @@ var staticReconciledTables = []string{
 	"public/wecom_corp_tag_groups", "public/wecom_corp_tags", "public/contact_tags",
 	"public/image_library", "public/attachment_library", "public/wechat_pay_products",
 }
+var financeReconciledTables = []string{"public/wechat_pay_orders", "public/wechat_pay_refunds"}
 
 var targetBySourceTable = map[string]struct {
 	domain string
@@ -54,6 +56,8 @@ var targetBySourceTable = map[string]struct {
 	"public/image_library":                    {"media", "media_images"},
 	"public/attachment_library":               {"media", "media_attachments"},
 	"public/wechat_pay_products":              {"product", "products"},
+	"public/wechat_pay_orders":                {"order", "order_list_projections"},
+	"public/wechat_pay_refunds":               {"order", "order_historical_refunds"},
 }
 
 type ReconciliationResult struct {
@@ -92,6 +96,10 @@ func ReconcileAll(ctx context.Context, pool *pgxpool.Pool, importVersion, archiv
 // tables retain their own immutable import version and reconciliation.
 func ReconcileStatic(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string) (ReconciliationResult, error) {
 	return reconcileTables(ctx, pool, importVersion, archiveRunID, staticReconciledTables)
+}
+
+func ReconcileFinance(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string) (ReconciliationResult, error) {
+	return reconcileTables(ctx, pool, importVersion, archiveRunID, financeReconciledTables)
 }
 
 func reconcileTables(ctx context.Context, pool *pgxpool.Pool, importVersion, archiveRunID string, tables []string) (ReconciliationResult, error) {
@@ -175,6 +183,17 @@ ORDER BY table_id,source_key_digest`, importVersion, archiveRunID)
 			return ReconciliationResult{}, fmt.Errorf("unverified receipt for %s", row.TableID)
 		}
 		result.VerifiedCount++
+		if row.TableID == "public/wechat_pay_orders" || row.TableID == "public/wechat_pay_refunds" {
+			var sourceMatches bool
+			if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.v1_archive_records
+WHERE run_id=$1 AND adapter_id=$2 AND table_id=$3 AND source_key_digest=$4 AND payload_digest=$5)`,
+				archiveRunID, v1archive.DefaultAdapterID, row.TableID, row.SourceKeyDigest, row.PayloadDigest).Scan(&sourceMatches); err != nil {
+				return ReconciliationResult{}, err
+			}
+			if !sourceMatches {
+				return ReconciliationResult{}, ErrConflict
+			}
+		}
 		proof := "terminal:" + row.Disposition
 		switch row.Disposition {
 		case "import":
@@ -236,6 +255,8 @@ func verifyImportedTarget(ctx context.Context, tx pgx.Tx, row reconciliationRow,
 	}
 	var proof string
 	switch expected.table {
+	case "order_list_projections", "order_historical_refunds":
+		return verifyFinanceTarget(ctx, tx, row, importedTargets)
 	case "cloud_campaigns":
 		var approval, runtime string
 		var version, plans, commands, touchPlans, handoffs, mediaBindings int64
@@ -465,6 +486,30 @@ FROM public.products WHERE id=$1 FOR SHARE`, id).Scan(&code, &name, &price, &cur
 	default:
 		return "", fmt.Errorf("unsupported target table %s", *row.TargetTable)
 	}
+}
+
+func readFinanceOrder(ctx context.Context, tx pgx.Tx, id int64) (orderport.Record, error) {
+	var order orderport.Record
+	err := tx.QueryRow(ctx, `SELECT id,record_origin,provider,provider_label,merchant_order_no,platform_transaction_no,
+customer_id,payer_name_snapshot,mobile_snapshot,identity_kind,identity_value,
+product_id,product_code,product_name_snapshot,amount_minor,currency,status,status_label,detail_url,created_at,updated_at
+FROM public.order_list_projections WHERE id=$1 AND pe01_contract_version IS NULL FOR SHARE`, id).
+		Scan(&order.ID, &order.RecordOrigin, &order.Provider, &order.ProviderLabel, &order.MerchantOrderNo, &order.PlatformTransactionNo,
+			&order.CustomerID, &order.PayerNameSnapshot, &order.MobileSnapshot, &order.IdentityKind, &order.IdentityValue,
+			&order.ProductID, &order.ProductCode, &order.ProductNameSnapshot, &order.AmountMinor, &order.Currency,
+			&order.Status, &order.StatusLabel, &order.DetailURL, &order.CreatedAt, &order.UpdatedAt)
+	return order, err
+}
+
+func readFinanceRefund(ctx context.Context, tx pgx.Tx, id int64) (orderport.HistoricalRefund, error) {
+	var refund orderport.HistoricalRefund
+	err := tx.QueryRow(ctx, `SELECT id,order_id,source_refund_id,refund_number,provider_refund_id,transaction_id,status,
+amount_minor,order_amount_minor,currency,reason,created_at,updated_at
+FROM public.order_historical_refunds WHERE id=$1 FOR SHARE`, id).
+		Scan(&refund.ID, &refund.OrderID, &refund.SourceRefundID, &refund.RefundNumber, &refund.ProviderRefundID,
+			&refund.TransactionID, &refund.Status, &refund.AmountMinor, &refund.OrderAmountMinor, &refund.Currency,
+			&refund.Reason, &refund.CreatedAt, &refund.UpdatedAt)
+	return refund, err
 }
 
 func parseCampaignStepTarget(value string) (string, int64, error) {
