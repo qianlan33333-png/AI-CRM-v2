@@ -857,15 +857,33 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert((uploadInit.body as FormData).get('attachment') instanceof Blob, 'attachment multipart field');
   } finally { globalThis.fetch = savedFetch; }
   const chunkCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const largePdf = new Uint8Array((1 << 20) + 1);
+  largePdf.set(new TextEncoder().encode('%PDF-1.7\n'));
   globalThis.fetch = async (input, init) => { const url = String(input); chunkCalls.push({ input: url, init }); if (url.endsWith('/uploads')) return new Response(JSON.stringify({ upload_id: 31 }), { status: 201 }); if (url.endsWith('/complete')) return new Response(JSON.stringify({ attachment_id: 32 }), { status: 200 }); return new Response(null, { status: 204 }); };
   try {
-    const media = await uploadRadarPdfDto(new File([new Uint8Array((1 << 20) + 1)], '大文件.pdf', { type: 'application/pdf' }));
+    const media = await uploadRadarPdfDto(new File([largePdf], '大文件.pdf', { type: 'application/pdf' }));
     assert(media.id === 32 && media.meta.includes('分片上传'), 'large radar PDF returns canonical multipart attachment');
     assert(chunkCalls.length === 4 && chunkCalls[0].input.endsWith('/uploads') && chunkCalls[3].input.endsWith('/complete'), 'large radar PDF initiate/two-parts/complete sequence');
-    assert(chunkCalls.every((item) => String(new Headers(item.init?.headers).get('Idempotency-Key') || '').startsWith('radar-pdf-')), 'large radar PDF mutations carry idempotency keys');
+    const initiated = JSON.parse(String(chunkCalls[0].init?.body));
+    assert(initiated.file_name === '大文件.pdf' && initiated.size === largePdf.byteLength && /^sha256:[0-9a-f]{64}$/.test(initiated.sha256), 'large radar PDF initiate carries canonical full-file checksum');
+    const idempotencyKeys = chunkCalls.map((item) => String(new Headers(item.init?.headers).get('Idempotency-Key') || ''));
+    assert(idempotencyKeys[0].startsWith('radar-pdf-init-') && idempotencyKeys[1].startsWith('radar-pdf-part-1-') && idempotencyKeys[2].startsWith('radar-pdf-part-2-') && idempotencyKeys[3].startsWith('radar-pdf-complete-') && new Set(idempotencyKeys).size === 4, 'large radar PDF mutations use separate idempotency keys');
     const secondPart = JSON.parse(String(chunkCalls[2].init?.body));
     assert(secondPart.content === 'AA==' && /^sha256:[0-9a-f]{64}$/.test(secondPart.sha256), 'large radar PDF part is base64 encoded and digest checked');
   } finally { globalThis.fetch = savedFetch; }
+
+  const failedChunkCalls: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    failedChunkCalls.push(url);
+    if (url.endsWith('/uploads')) return new Response(JSON.stringify({ upload_id: 33 }), { status: 201 });
+    if (url.endsWith('/parts/2')) return new Response(JSON.stringify({ code: 'invalid_part_digest' }), { status: 422 });
+    if (url.endsWith('/complete')) return new Response(JSON.stringify({ attachment_id: 34 }), { status: 200 });
+    return new Response(null, { status: 204 });
+  };
+  try { await uploadRadarPdfDto(new File([largePdf], '失败大文件.pdf', { type: 'application/pdf' })); assert(false, 'multipart part rejection was accepted'); }
+  catch (error) { assert(error instanceof ApiError && error.status === 422 && failedChunkCalls.length === 3 && !failedChunkCalls.some((url) => url.endsWith('/complete')), 'multipart rejection fails closed without a mock or complete fallback'); }
+  finally { globalThis.fetch = savedFetch; }
 
   let oversizedPdfRequested = false;
   globalThis.fetch = async () => { oversizedPdfRequested = true; return new Response('{}', { status: 200 }); };

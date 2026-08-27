@@ -1,6 +1,7 @@
 package media_acceptance
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -82,7 +83,8 @@ func TestP4MediaContentDelivery00083BusinessClosure(t *testing.T) {
 		t.Fatalf("update payload conflict err=%v", err)
 	}
 
-	uploadContent := []byte("%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nendobj\n%%EOF\n")
+	uploadContent := append([]byte("%PDF-1.7\n1 0 obj\n<< /Type /Catalog >>\nstream\n"), bytes.Repeat([]byte("x"), (1<<20)+64)...)
+	uploadContent = append(uploadContent, []byte("\nendstream\nendobj\n%%EOF\n")...)
 	uploadDigest := sha256.Sum256(uploadContent)
 	initiate := mediaport.AttachmentUploadInitiateCommand{FileName: "multipart.pdf", Name: "multipart", SHA256: "sha256:" + hex.EncodeToString(uploadDigest[:]), Size: int64(len(uploadContent)), Actor: 8301, Enabled: true, IdempotencyKey: "media83-upload-init-key-0001"}
 	uploadID, err := content.InitiatePDF(ctx, initiate)
@@ -98,14 +100,26 @@ func TestP4MediaContentDelivery00083BusinessClosure(t *testing.T) {
 	if _, err = content.InitiatePDF(ctx, changedInitiate); !errors.Is(err, mediaapp.ErrContentDeliveryConflict) {
 		t.Fatalf("initiate payload conflict err=%v", err)
 	}
-	part := mediaport.AttachmentUploadPartCommand{UploadID: uploadID, PartNumber: 1, SHA256: initiate.SHA256, Content: uploadContent, Actor: 8301, IdempotencyKey: "media83-upload-part-key-0001"}
+	firstPart, secondPart := uploadContent[:1<<20], uploadContent[1<<20:]
+	if len(secondPart) == 0 {
+		t.Fatal("multipart fixture did not cross the 1MiB boundary")
+	}
+	firstDigest := sha256.Sum256(firstPart)
+	secondDigest := sha256.Sum256(secondPart)
+	part := mediaport.AttachmentUploadPartCommand{UploadID: uploadID, PartNumber: 1, SHA256: "sha256:" + hex.EncodeToString(firstDigest[:]), Content: firstPart, Actor: 8301, IdempotencyKey: "media83-upload-part-key-0001"}
+	tamperedPart := part
+	tamperedPart.SHA256 = initiate.SHA256
+	tamperedPart.IdempotencyKey = "media83-upload-part-tampered-key-0001"
+	if err = content.PutPDFPart(ctx, tamperedPart); !errors.Is(err, mediaapp.ErrContentDeliveryInvalid) {
+		t.Fatalf("tampered part digest err=%v", err)
+	}
 	if err = content.PutPDFPart(ctx, part); err != nil {
 		t.Fatal(err)
 	}
 	if err = content.PutPDFPart(ctx, part); err != nil {
 		t.Fatalf("part replay err=%v", err)
 	}
-	differentContent := append([]byte(nil), uploadContent...)
+	differentContent := append([]byte(nil), firstPart...)
 	differentContent[len(differentContent)-2] = 'X'
 	differentDigest := sha256.Sum256(differentContent)
 	conflictingPart := part
@@ -115,6 +129,27 @@ func TestP4MediaContentDelivery00083BusinessClosure(t *testing.T) {
 	if err = content.PutPDFPart(ctx, conflictingPart); !errors.Is(err, mediaapp.ErrContentDeliveryConflict) {
 		t.Fatalf("part content conflict err=%v", err)
 	}
+	if err = content.PutPDFPart(ctx, mediaport.AttachmentUploadPartCommand{UploadID: uploadID, PartNumber: 2, SHA256: "sha256:" + hex.EncodeToString(secondDigest[:]), Content: secondPart, Actor: 8301, IdempotencyKey: "media83-upload-part-key-0003"}); err != nil {
+		t.Fatalf("second part err=%v", err)
+	}
+	incomplete := initiate
+	incomplete.FileName = "multipart-incomplete.pdf"
+	incomplete.Name = "multipart incomplete"
+	incomplete.IdempotencyKey = "media83-upload-init-key-0002"
+	incompleteUploadID, err := content.InitiatePDF(ctx, incomplete)
+	if err != nil || incompleteUploadID < 1 {
+		t.Fatalf("incomplete initiate id=%d err=%v", incompleteUploadID, err)
+	}
+	if err = content.PutPDFPart(ctx, mediaport.AttachmentUploadPartCommand{UploadID: incompleteUploadID, PartNumber: 2, SHA256: "sha256:" + hex.EncodeToString(secondDigest[:]), Content: secondPart, Actor: 8301, IdempotencyKey: "media83-upload-part-key-0004"}); err != nil {
+		t.Fatalf("out-of-order part err=%v", err)
+	}
+	if _, err = content.CompletePDF(ctx, mediaport.AttachmentUploadCompleteCommand{UploadID: incompleteUploadID, Actor: 8301, IdempotencyKey: "media83-upload-complete-key-0002"}); !errors.Is(err, mediaapp.ErrContentDeliveryUnavailable) {
+		t.Fatalf("out-of-order completion err=%v", err)
+	}
+	var incompleteAttachments int
+	if err = pool.QueryRow(ctx, "SELECT count(*) FROM media_attachments WHERE file_name='multipart-incomplete.pdf'").Scan(&incompleteAttachments); err != nil || incompleteAttachments != 0 {
+		t.Fatalf("out-of-order completion wrote attachment count=%d err=%v", incompleteAttachments, err)
+	}
 	complete := mediaport.AttachmentUploadCompleteCommand{UploadID: uploadID, Actor: 8301, IdempotencyKey: "media83-upload-complete-key-0001"}
 	attachmentID, err := content.CompletePDF(ctx, complete)
 	if err != nil || attachmentID < 1 {
@@ -123,6 +158,18 @@ func TestP4MediaContentDelivery00083BusinessClosure(t *testing.T) {
 	replayedAttachmentID, err := content.CompletePDF(ctx, complete)
 	if err != nil || replayedAttachmentID != attachmentID {
 		t.Fatalf("complete replay id=%d err=%v", replayedAttachmentID, err)
+	}
+	downloaded, err := attachments.Download(ctx, attachmentID)
+	if err != nil || downloaded.Attachment.ID != attachmentID || !bytes.Equal(downloaded.Content, uploadContent) {
+		t.Fatalf("multipart download=%+v bytes=%d err=%v", downloaded.Attachment, len(downloaded.Content), err)
+	}
+	downloadDigest := sha256.Sum256(downloaded.Content)
+	if downloadDigest != uploadDigest {
+		t.Fatalf("multipart download checksum=%x want=%x", downloadDigest, uploadDigest)
+	}
+	var attachmentChecksum, blobChecksum []byte
+	if err = pool.QueryRow(ctx, "SELECT attachment.checksum, blob.checksum FROM media_attachments AS attachment JOIN media_attachment_blobs AS blob ON blob.attachment_id=attachment.id WHERE attachment.id=$1", attachmentID).Scan(&attachmentChecksum, &blobChecksum); err != nil || !bytes.Equal(attachmentChecksum, uploadDigest[:]) || !bytes.Equal(blobChecksum, uploadDigest[:]) {
+		t.Fatalf("multipart persisted checksums attachment=%x blob=%x err=%v", attachmentChecksum, blobChecksum, err)
 	}
 
 	campaignCode, planID, firstInvite, secondInvite := seedContentDeliveryBindingPrerequisites(t, ctx, pool)
