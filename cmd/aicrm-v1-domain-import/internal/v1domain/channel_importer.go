@@ -30,6 +30,15 @@ type HistoricalChannelWriter interface {
 	Import(context.Context, contactport.HistoricalChannelDefinition) (contactport.HistoricalChannelReceipt, error)
 }
 
+type ChannelRelationsWriter interface {
+	ImportContact(context.Context, contactport.HistoricalChannelContactDefinition) (contactport.HistoricalChannelReceipt, error)
+	ImportAssignee(context.Context, contactport.HistoricalChannelAssigneeDefinition) (contactport.HistoricalChannelReceipt, error)
+}
+
+type ChannelCustomerResolver interface {
+	ResolveHistoricalChannelCustomer(context.Context, string) (*int64, error)
+}
+
 type ChannelImportResult struct {
 	Imported    int
 	Archived    int
@@ -38,29 +47,32 @@ type ChannelImportResult struct {
 }
 
 type ChannelImporter struct {
-	archive  ArchiveSource
-	uow      UnitOfWork
-	writer   HistoricalChannelWriter
-	journals map[string]*Journal
-	actorID  int64
+	archive   ArchiveSource
+	uow       UnitOfWork
+	writer    HistoricalChannelWriter
+	relations ChannelRelationsWriter
+	resolver  ChannelCustomerResolver
+	journals  map[string]*Journal
+	actorID   int64
 }
 
 // NewChannelImporter accepts exactly the nine frozen channel source tables.
-// Every journal belongs to the same import/archive scope and uses Contact's
-// channels target, even where a row's terminal outcome is archive/quarantine.
-func NewChannelImporter(archive ArchiveSource, uow UnitOfWork, writer HistoricalChannelWriter, journals map[string]*Journal, actorID int64) (*ChannelImporter, error) {
-	if archive == nil || uow == nil || writer == nil || actorID < 1 || !validChannelJournals(journals) {
+// All journals share one import/archive scope; definitions and readonly
+// relations retain their separate Contact-owned target tables.
+func NewChannelImporter(archive ArchiveSource, uow UnitOfWork, writer HistoricalChannelWriter, relations ChannelRelationsWriter, resolver ChannelCustomerResolver, journals map[string]*Journal, actorID int64) (*ChannelImporter, error) {
+	if archive == nil || uow == nil || writer == nil || relations == nil || resolver == nil || actorID < 1 || !validChannelJournals(journals) {
 		return nil, ErrInvalidScope
 	}
-	return &ChannelImporter{archive: archive, uow: uow, writer: writer, journals: journals, actorID: actorID}, nil
+	return &ChannelImporter{archive: archive, uow: uow, writer: writer, relations: relations, resolver: resolver, journals: journals, actorID: actorID}, nil
 }
 
 func (importer *ChannelImporter) Import(ctx context.Context, archiveRunID string) (ChannelImportResult, error) {
-	if importer == nil || ctx == nil || importer.archive == nil || importer.uow == nil || importer.writer == nil || importer.actorID < 1 ||
+	if importer == nil || ctx == nil || importer.archive == nil || importer.uow == nil || importer.writer == nil || importer.relations == nil || importer.resolver == nil || importer.actorID < 1 ||
 		!validChannelJournals(importer.journals) || archiveRunID == "" || archiveRunID != importer.journals[channelDefinitionTableID].scope.ArchiveRunID {
 		return ChannelImportResult{}, ErrInvalidScope
 	}
 	result := ChannelImportResult{}
+	channels := map[int64]int64{}
 	for _, tableID := range channelTableIDs {
 		journal := importer.journals[tableID]
 		err := importer.archive.EachTableRow(ctx, archiveRunID, tableID, func(row v1archive.ArchivedRow) error {
@@ -68,9 +80,14 @@ func (importer *ChannelImporter) Import(ctx context.Context, archiveRunID string
 				return ErrConflict
 			}
 			var outcome channelRowOutcome
-			if tableID == channelDefinitionTableID {
-				outcome = importer.importDefinition(ctx, journal, row)
-			} else {
+			switch tableID {
+			case channelDefinitionTableID:
+				outcome = importer.importDefinition(ctx, journal, row, channels)
+			case "public/automation_channel_contact":
+				outcome = importer.importContact(ctx, journal, row, channels)
+			case "public/automation_channel_assignee":
+				outcome = importer.importAssignee(ctx, journal, row, channels)
+			default:
 				outcome = importer.recordAuxiliary(ctx, journal, row)
 			}
 			if outcome.err != nil {
@@ -107,44 +124,34 @@ type channelDefinitionJSON struct {
 	UpdatedAt   *time.Time `json:"updated_at"`
 }
 
-func (importer *ChannelImporter) importDefinition(ctx context.Context, journal *Journal, row v1archive.ArchivedRow) channelRowOutcome {
-	definition, disposition, reason := channelDefinition(row, importer.actorID)
+func (importer *ChannelImporter) importDefinition(ctx context.Context, journal *Journal, row v1archive.ArchivedRow, channels map[int64]int64) channelRowOutcome {
+	definition, sourceID, disposition, reason := channelDefinition(row, importer.actorID)
 	replayed := false
+	targetID := int64(0)
 	err := importer.uow.Within(ctx, func(tx context.Context) error {
-		replayed = false
+		replayed, targetID = false, 0
 		if definition == nil {
 			value, err := recordChannelTerminal(tx, journal, row, disposition, reason)
 			replayed = value
 			return err
 		}
-		sourceIdentifier := SourceIdentifier(row.SourceKeyHMAC)
-		existing, found, err := journal.LoadTerminal(tx, sourceIdentifier)
-		if err != nil {
-			return err
-		}
-		if found {
-			if !sameImportedChannelTerminal(existing, row) {
-				return ErrConflict
-			}
-			replayed = true
-			return nil
-		}
 		receipt, err := importer.writer.Import(tx, *definition)
 		if err != nil {
 			return err
 		}
-		if receipt.Replayed || !sameHistoricalChannelReceipt(receipt, *definition) {
+		if !sameHistoricalChannelReceipt(receipt, *definition) {
 			return ErrConflict
 		}
 		// The Contact writer owns the actual target and its receipt. Re-read it
 		// under the source lock so a writer that omitted provenance fails closed.
-		recorded, recordedFound, err := journal.LoadTerminal(tx, sourceIdentifier)
+		recorded, recordedFound, err := journal.LoadTerminal(tx, definition.SourceIdentifier)
 		if err != nil {
 			return err
 		}
 		if !recordedFound || !sameHistoricalChannelTerminal(recorded, receipt) {
 			return ErrConflict
 		}
+		replayed, targetID = receipt.Replayed, receipt.TargetID
 		return nil
 	})
 	if err != nil {
@@ -156,6 +163,13 @@ func (importer *ChannelImporter) importDefinition(ctx context.Context, journal *
 		}
 		return channelRowOutcome{quarantined: 1, replayed: replayed}
 	}
+	if sourceID < 1 || targetID < 1 {
+		return channelRowOutcome{err: ErrConflict}
+	}
+	if previous, found := channels[sourceID]; found && previous != targetID {
+		return channelRowOutcome{err: ErrConflict}
+	}
+	channels[sourceID] = targetID
 	return channelRowOutcome{imported: 1, replayed: replayed}
 }
 
@@ -187,14 +201,14 @@ func (importer *ChannelImporter) recordAuxiliary(ctx context.Context, journal *J
 	return channelRowOutcome{quarantined: 1, replayed: replayed}
 }
 
-func channelDefinition(row v1archive.ArchivedRow, actorID int64) (*contactport.HistoricalChannelDefinition, string, string) {
+func channelDefinition(row v1archive.ArchivedRow, actorID int64) (*contactport.HistoricalChannelDefinition, int64, string, string) {
 	if redactedChannelDefinition(row.RedactedFields) {
-		return nil, "quarantine", "redacted_channel_definition"
+		return nil, 0, "quarantine", "redacted_channel_definition"
 	}
 	var source channelDefinitionJSON
 	if json.Unmarshal(row.Payload, &source) != nil || source.ID == nil || source.ChannelCode == nil || source.ChannelName == nil ||
 		source.ChannelType == nil || source.CarrierType == nil || source.CreatedAt == nil || source.UpdatedAt == nil {
-		return nil, "quarantine", "invalid_channel_definition"
+		return nil, 0, "quarantine", "invalid_channel_definition"
 	}
 	decision := v1channel.ConvertAutomationChannel(v1channel.AutomationChannelRow{
 		SourceID: *source.ID, ChannelCode: *source.ChannelCode, ChannelName: *source.ChannelName,
@@ -204,7 +218,7 @@ func channelDefinition(row v1archive.ArchivedRow, actorID int64) (*contactport.H
 	switch decision.Disposition {
 	case v1channel.Candidate:
 		if decision.Candidate == nil {
-			return nil, "quarantine", "invalid_channel_definition"
+			return nil, 0, "quarantine", "invalid_channel_definition"
 		}
 		candidate := decision.Candidate
 		return &contactport.HistoricalChannelDefinition{
@@ -212,13 +226,13 @@ func channelDefinition(row v1archive.ArchivedRow, actorID int64) (*contactport.H
 			Code: candidate.Code, Name: candidate.Name, ChannelType: candidate.Config.ChannelType,
 			CarrierType: candidate.Config.CarrierType, LegacyConfigDigest: candidate.SourcePayloadDigest,
 			Actor: candidate.MigrationActorID, CreatedAt: candidate.CreatedAt, UpdatedAt: candidate.UpdatedAt,
-		}, "", ""
+		}, *source.ID, "", ""
 	case v1channel.Archive:
-		return nil, "archive", decision.Reason
+		return nil, 0, "archive", decision.Reason
 	case v1channel.Quarantine:
-		return nil, "quarantine", decision.Reason
+		return nil, 0, "quarantine", decision.Reason
 	default:
-		return nil, "quarantine", "invalid_channel_definition"
+		return nil, 0, "quarantine", "invalid_channel_definition"
 	}
 }
 
@@ -238,15 +252,6 @@ func recordChannelTerminal(ctx context.Context, journal *Journal, row v1archive.
 		return true, nil
 	}
 	return false, journal.Record(ctx, TerminalReceipt{SourceKeyDigest: row.SourceKeyHMAC, PayloadDigest: row.PayloadHMAC, Disposition: disposition, Reason: reason})
-}
-
-func sameImportedChannelTerminal(terminal TerminalReceipt, row v1archive.ArchivedRow) bool {
-	if terminal.SourceKeyDigest != row.SourceKeyHMAC || terminal.PayloadDigest != row.PayloadHMAC || terminal.Disposition != "import" ||
-		terminal.Reason != "" || terminal.TargetDigest == [sha256.Size]byte{} {
-		return false
-	}
-	targetID, err := strconv.ParseInt(terminal.TargetID, 10, 64)
-	return err == nil && targetID > 0 && strconv.FormatInt(targetID, 10) == terminal.TargetID
 }
 
 func sameHistoricalChannelReceipt(receipt contactport.HistoricalChannelReceipt, definition contactport.HistoricalChannelDefinition) bool {
@@ -271,7 +276,7 @@ func redactedChannelDefinition(fields []string) bool {
 
 func validChannelArchiveRow(row v1archive.ArchivedRow, tableID string) bool {
 	return row.TableID == tableID && row.AdapterID == v1archive.DefaultAdapterID && row.SourceOrdinal > 0 &&
-		row.SourceKeyHMAC != [sha256.Size]byte{} && row.PayloadHMAC != [sha256.Size]byte{} && row.FieldHMAC != [sha256.Size]byte{}
+		row.SourceKeyHMAC != [sha256.Size]byte{} && row.PayloadHMAC != [sha256.Size]byte{}
 }
 
 func validChannelJournals(journals map[string]*Journal) bool {
@@ -282,7 +287,7 @@ func validChannelJournals(journals map[string]*Journal) bool {
 	for index, tableID := range channelTableIDs {
 		journal := journals[tableID]
 		if journal == nil || journal.tx == nil || !journal.scope.valid() || journal.scope.TableID != tableID ||
-			journal.scope.AdapterID != v1archive.DefaultAdapterID || journal.scope.TargetDomain != "contact" || journal.scope.TargetTable != "channels" {
+			journal.scope.AdapterID != v1archive.DefaultAdapterID || !validChannelJournalTarget(tableID, journal.scope.TargetDomain, journal.scope.TargetTable) {
 			return false
 		}
 		if index == 0 {
@@ -292,6 +297,20 @@ func validChannelJournals(journals map[string]*Journal) bool {
 		}
 	}
 	return true
+}
+
+func validChannelJournalTarget(tableID, domain, target string) bool {
+	if domain != "contact" {
+		return false
+	}
+	switch tableID {
+	case "public/automation_channel_contact":
+		return target == "channel_historical_contacts"
+	case "public/automation_channel_assignee":
+		return target == "channel_historical_assignees"
+	default:
+		return target == "channels"
+	}
 }
 
 func channelTableName(tableID string) string {
