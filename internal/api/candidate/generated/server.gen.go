@@ -22,6 +22,36 @@ const (
 	AdminSessionScopes = "AdminSession.Scopes"
 )
 
+// Defines values for APIClientTokenRequestGrantType.
+const (
+	ClientCredentials APIClientTokenRequestGrantType = "client_credentials"
+)
+
+// Valid indicates whether the value is a known member of the APIClientTokenRequestGrantType enum.
+func (e APIClientTokenRequestGrantType) Valid() bool {
+	switch e {
+	case ClientCredentials:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for APIClientTokenResponseTokenType.
+const (
+	Bearer APIClientTokenResponseTokenType = "Bearer"
+)
+
+// Valid indicates whether the value is a known member of the APIClientTokenResponseTokenType enum.
+func (e APIClientTokenResponseTokenType) Valid() bool {
+	switch e {
+	case Bearer:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AdminAccessErrorError.
 const (
 	AdminAccessErrorErrorAdminAccessUnavailable AdminAccessErrorError = "admin_access_unavailable"
@@ -8104,6 +8134,29 @@ func (e ListIdentityMergeReviewsParamsStatus) Valid() bool {
 	}
 }
 
+// APIClientTokenRequest Client authentication is exactly one HTTP Basic credential pair or the client_id and client_secret form fields; it is never a query parameter.
+type APIClientTokenRequest struct {
+	Audience     string                         `json:"audience"`
+	ClientId     *string                        `json:"client_id,omitempty"`
+	ClientSecret *string                        `json:"client_secret,omitempty"`
+	GrantType    APIClientTokenRequestGrantType `json:"grant_type"`
+	Scope        *string                        `json:"scope,omitempty"`
+}
+
+// APIClientTokenRequestGrantType defines model for APIClientTokenRequest.GrantType.
+type APIClientTokenRequestGrantType string
+
+// APIClientTokenResponse defines model for APIClientTokenResponse.
+type APIClientTokenResponse struct {
+	AccessToken string                          `json:"access_token"`
+	ExpiresIn   int64                           `json:"expires_in"`
+	Scope       string                          `json:"scope"`
+	TokenType   APIClientTokenResponseTokenType `json:"token_type"`
+}
+
+// APIClientTokenResponseTokenType defines model for APIClientTokenResponse.TokenType.
+type APIClientTokenResponseTokenType string
+
 // AdminAccessError defines model for AdminAccessError.
 type AdminAccessError struct {
 	Error AdminAccessErrorError `json:"error"`
@@ -14977,6 +15030,9 @@ type CreateWechatPayCheckoutJSONRequestBody = WechatPayCheckoutRequest
 // CreateWechatPaySettlementRefundJSONRequestBody defines body for CreateWechatPaySettlementRefund for application/json ContentType.
 type CreateWechatPaySettlementRefundJSONRequestBody = WechatPaySettlementRefundRequest
 
+// IssueAPIClientTokenFormdataRequestBody defines body for IssueAPIClientToken for application/x-www-form-urlencoded ContentType.
+type IssueAPIClientTokenFormdataRequestBody = APIClientTokenRequest
+
 // AsAdminOpsCategoryPersisted returns the union data inside the AdminOpsCategoryRead as a AdminOpsCategoryPersisted
 func (t AdminOpsCategoryRead) AsAdminOpsCategoryPersisted() (AdminOpsCategoryPersisted, error) {
 	var body AdminOpsCategoryPersisted
@@ -16835,6 +16891,9 @@ type ServerInterface interface {
 	// Read the public legacy configuration-derived runtime-mode snapshot
 	// (GET /health)
 	GetLegacyHealth(w http.ResponseWriter, r *http.Request)
+	// Issue one short-lived API-client JWT through client credentials
+	// (POST /oauth/token)
+	IssueAPIClientToken(w http.ResponseWriter, r *http.Request)
 	// Carry a public survey slug into the same-origin SPA without token parameters
 	// (GET /q/{slug})
 	GetPublicSurveyPage(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug)
@@ -18326,6 +18385,12 @@ func (_ Unimplemented) CreateWechatPaySettlementRefund(w http.ResponseWriter, r 
 // Read the public legacy configuration-derived runtime-mode snapshot
 // (GET /health)
 func (_ Unimplemented) GetLegacyHealth(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Issue one short-lived API-client JWT through client credentials
+// (POST /oauth/token)
+func (_ Unimplemented) IssueAPIClientToken(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -33216,6 +33281,20 @@ func (siw *ServerInterfaceWrapper) GetLegacyHealth(w http.ResponseWriter, r *htt
 	handler.ServeHTTP(w, r)
 }
 
+// IssueAPIClientToken operation middleware
+func (siw *ServerInterfaceWrapper) IssueAPIClientToken(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.IssueAPIClientToken(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetPublicSurveyPage operation middleware
 func (siw *ServerInterfaceWrapper) GetPublicSurveyPage(w http.ResponseWriter, r *http.Request) {
 
@@ -34119,6 +34198,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.GetLegacyHealth)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/oauth/token", wrapper.IssueAPIClientToken)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/q/{slug}", wrapper.GetPublicSurveyPage)
@@ -49912,6 +49994,85 @@ func (response GetLegacyHealth405JSONResponse) VisitGetLegacyHealthResponse(w ht
 	return json.NewEncoder(w).Encode(response.Body)
 }
 
+type IssueAPIClientTokenRequestObject struct {
+	Body *IssueAPIClientTokenFormdataRequestBody
+}
+
+type IssueAPIClientTokenResponseObject interface {
+	VisitIssueAPIClientTokenResponse(w http.ResponseWriter) error
+}
+
+type IssueAPIClientToken200ResponseHeaders struct {
+	CacheControl string
+	Pragma       string
+}
+
+type IssueAPIClientToken200JSONResponse struct {
+	Body    APIClientTokenResponse
+	Headers IssueAPIClientToken200ResponseHeaders
+}
+
+func (response IssueAPIClientToken200JSONResponse) VisitIssueAPIClientTokenResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", fmt.Sprint(response.Headers.CacheControl))
+	w.Header().Set("Pragma", fmt.Sprint(response.Headers.Pragma))
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response.Body)
+}
+
+type IssueAPIClientToken400Response struct {
+}
+
+func (response IssueAPIClientToken400Response) VisitIssueAPIClientTokenResponse(w http.ResponseWriter) error {
+	w.WriteHeader(400)
+	return nil
+}
+
+type IssueAPIClientToken401ResponseHeaders struct {
+	WWWAuthenticate string
+}
+
+type IssueAPIClientToken401Response struct {
+	Headers IssueAPIClientToken401ResponseHeaders
+}
+
+func (response IssueAPIClientToken401Response) VisitIssueAPIClientTokenResponse(w http.ResponseWriter) error {
+	w.Header().Set("WWW-Authenticate", fmt.Sprint(response.Headers.WWWAuthenticate))
+	w.WriteHeader(401)
+	return nil
+}
+
+type IssueAPIClientToken403Response struct {
+}
+
+func (response IssueAPIClientToken403Response) VisitIssueAPIClientTokenResponse(w http.ResponseWriter) error {
+	w.WriteHeader(403)
+	return nil
+}
+
+type IssueAPIClientToken405ResponseHeaders struct {
+	Allow string
+}
+
+type IssueAPIClientToken405Response struct {
+	Headers IssueAPIClientToken405ResponseHeaders
+}
+
+func (response IssueAPIClientToken405Response) VisitIssueAPIClientTokenResponse(w http.ResponseWriter) error {
+	w.Header().Set("Allow", fmt.Sprint(response.Headers.Allow))
+	w.WriteHeader(405)
+	return nil
+}
+
+type IssueAPIClientToken503Response struct {
+}
+
+func (response IssueAPIClientToken503Response) VisitIssueAPIClientTokenResponse(w http.ResponseWriter) error {
+	w.WriteHeader(503)
+	return nil
+}
+
 type GetPublicSurveyPageRequestObject struct {
 	Slug PublicSurveySlug `json:"slug"`
 }
@@ -50735,6 +50896,9 @@ type StrictServerInterface interface {
 	// Read the public legacy configuration-derived runtime-mode snapshot
 	// (GET /health)
 	GetLegacyHealth(ctx context.Context, request GetLegacyHealthRequestObject) (GetLegacyHealthResponseObject, error)
+	// Issue one short-lived API-client JWT through client credentials
+	// (POST /oauth/token)
+	IssueAPIClientToken(ctx context.Context, request IssueAPIClientTokenRequestObject) (IssueAPIClientTokenResponseObject, error)
 	// Carry a public survey slug into the same-origin SPA without token parameters
 	// (GET /q/{slug})
 	GetPublicSurveyPage(ctx context.Context, request GetPublicSurveyPageRequestObject) (GetPublicSurveyPageResponseObject, error)
@@ -58048,6 +58212,41 @@ func (sh *strictHandler) GetLegacyHealth(w http.ResponseWriter, r *http.Request)
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(GetLegacyHealthResponseObject); ok {
 		if err := validResponse.VisitGetLegacyHealthResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// IssueAPIClientToken operation middleware
+func (sh *strictHandler) IssueAPIClientToken(w http.ResponseWriter, r *http.Request) {
+	var request IssueAPIClientTokenRequestObject
+
+	if err := r.ParseForm(); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode formdata: %w", err))
+		return
+	}
+	var body IssueAPIClientTokenFormdataRequestBody
+	if err := runtime.BindForm(&body, r.Form, nil, nil); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't bind formdata: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.IssueAPIClientToken(ctx, request.(IssueAPIClientTokenRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "IssueAPIClientToken")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(IssueAPIClientTokenResponseObject); ok {
+		if err := validResponse.VisitIssueAPIClientTokenResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

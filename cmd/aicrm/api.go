@@ -181,6 +181,7 @@ type candidateHandler struct {
 	surveyPublic              *surveyhttp.PublicHandler
 	memberGridPublic          *membergrid.PublicShareHandler
 	memberGridExternalShare   *membergrid.ExternalShareManagementHandler
+	apiClientToken            http.Handler
 	radarPublic               *radarthttp.PublicHandler
 	surveyH5OAuth             *surveyhttp.H5OAuthHandler
 	surveyExternalPushDetail  *surveyhttp.ExternalPushDetailHandler
@@ -1592,9 +1593,16 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	adminOpsService := adminopsapp.NewService(uow, adminopsstore.NewRepository())
 	var serviceAuthenticator operationServiceAuthenticator
 	var apiClientJWT *apiClientJWTAuthenticator
+	var apiClientToken http.Handler
 	if config.APIClient.JWTSecret.Configured() {
 		serviceAuthenticator = newAPIClientJWTAuthenticator(adminOpsService, config.APIClient.JWTSecret.Value())
 		apiClientJWT, _ = serviceAuthenticator.(*apiClientJWTAuthenticator)
+		apiClientToken = newAPIClientTokenHandler(
+			adminOpsService,
+			unavailableAPIClientSecretVerifier{},
+			config.APIClient.JWTSecret.Value(),
+			strings.EqualFold(strings.TrimSpace(config.Release.Environment), "production"),
+		)
 	}
 	groupOpsProtocolReplay, err := groupopsstore.NewProtocolReplayStore(pool)
 	if err != nil {
@@ -1866,6 +1874,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 		surveyPublic:            surveyPublicHandler,
 		memberGridPublic:        memberGridPublicHandler,
 		memberGridExternalShare: memberGridExternalShareHandler,
+		apiClientToken:          apiClientToken,
 		radarPublic:             radarPublicHandler,
 		surveyH5OAuth:           surveyH5OAuthHandler,
 		segmentRefresh:          segmentRefreshHandler,
@@ -2470,6 +2479,7 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 		{http.MethodGet, "/api/sidebar/v2/oauth/start", http.HandlerFunc(wrapper.StartSidebarOAuth)},
 		{http.MethodGet, "/api/sidebar/v2/oauth/callback", http.HandlerFunc(wrapper.CompleteSidebarOAuth)},
 		{http.MethodGet, "/api/sidebar/v2/jssdk/agent-config", http.HandlerFunc(wrapper.GetSidebarAgentConfig)},
+		{http.MethodPost, "/oauth/token", http.HandlerFunc(wrapper.IssueAPIClientToken)},
 	} {
 		if err = registerPublicProtocol(route.method, route.pattern, route.endpoint); err != nil {
 			return nil, err

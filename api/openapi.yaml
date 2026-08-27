@@ -6,6 +6,45 @@ info:
 security:
   - AdminSession: []
 paths:
+  /oauth/token:
+    post:
+      tags: [p4-api-client-oauth]
+      operationId: issueAPIClientToken
+      summary: Issue one short-lived API-client JWT through client credentials
+      security: []
+      x-p4-decision-evidence: W9-S05-062-2026-08-27
+      x-aicrm-capability: api_client.token.issue
+      x-aicrm-auth-scheme: oauth2_client_credentials
+      x-aicrm-csrf: none
+      x-aicrm-data-classification: secret
+      x-aicrm-data-source: admin_ops_credential_and_approved_secret_store
+      x-aicrm-external-effect: none
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/APIClientTokenRequest"
+      responses:
+        "200":
+          description: Short-lived API-client JWT. The response is never cacheable.
+          headers:
+            Cache-Control: {required: true, schema: {type: string, enum: [no-store]}}
+            Pragma: {required: true, schema: {type: string, enum: [no-cache]}}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/APIClientTokenResponse"}
+        "400": {description: "Invalid token request, target, scope, or transport."}
+        "401":
+          description: Invalid client credential.
+          headers:
+            WWW-Authenticate: {required: true, schema: {type: string, enum: ['Basic realm="oauth2/client"']}}
+        "403": {description: Authenticated client source is not allowed.}
+        "405":
+          description: The token endpoint only accepts POST.
+          headers:
+            Allow: {required: true, schema: {type: string, enum: [POST]}}
+        "503": {description: Token signing or approved secret verification is unavailable.}
   /api/v1/contact-owner-reassignments/template:
     get:
       tags: [p4-contact-owner-reassignment]
@@ -19563,6 +19602,26 @@ components:
         details:
           type: array
           items: { $ref: "#/components/schemas/FieldError" }
+    APIClientTokenRequest:
+      type: object
+      additionalProperties: false
+      required: [grant_type, audience]
+      properties:
+        grant_type: {type: string, enum: [client_credentials]}
+        audience: {type: string, minLength: 1, maxLength: 120}
+        scope: {type: string, maxLength: 500}
+        client_id: {type: string, minLength: 1, maxLength: 120}
+        client_secret: {type: string, minLength: 1, maxLength: 1024, writeOnly: true}
+      description: Client authentication is exactly one HTTP Basic credential pair or the client_id and client_secret form fields; it is never a query parameter.
+    APIClientTokenResponse:
+      type: object
+      additionalProperties: false
+      required: [access_token, token_type, expires_in, scope]
+      properties:
+        access_token: {type: string, minLength: 1}
+        token_type: {type: string, enum: [Bearer]}
+        expires_in: {type: integer, format: int64, minimum: 60, maximum: 86400}
+        scope: {type: string, maxLength: 500}
     FieldError:
       type: object
       additionalProperties: false

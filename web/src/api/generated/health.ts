@@ -13886,6 +13886,59 @@ export interface ErrorResponse {
   details?: FieldError[];
 }
 
+export type APIClientTokenRequestGrantType =
+  (typeof APIClientTokenRequestGrantType)[keyof typeof APIClientTokenRequestGrantType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const APIClientTokenRequestGrantType = {
+  client_credentials: "client_credentials",
+} as const;
+
+/**
+ * Client authentication is exactly one HTTP Basic credential pair or the client_id and client_secret form fields; it is never a query parameter.
+ */
+export interface APIClientTokenRequest {
+  grant_type: APIClientTokenRequestGrantType;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  audience: string;
+  /** @maxLength 500 */
+  scope?: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  client_id?: string;
+  /**
+   * @minLength 1
+   * @maxLength 1024
+   */
+  client_secret?: string;
+}
+
+export type APIClientTokenResponseTokenType =
+  (typeof APIClientTokenResponseTokenType)[keyof typeof APIClientTokenResponseTokenType];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const APIClientTokenResponseTokenType = {
+  Bearer: "Bearer",
+} as const;
+
+export interface APIClientTokenResponse {
+  /** @minLength 1 */
+  access_token: string;
+  token_type: APIClientTokenResponseTokenType;
+  /**
+   * @minimum 60
+   * @maximum 86400
+   */
+  expires_in: number;
+  /** @maxLength 500 */
+  scope: string;
+}
+
 export interface FieldError {
   /** @minLength 1 */
   field: string;
@@ -18653,6 +18706,99 @@ export type InitiateMediaAttachmentMultipartUpload201 = {
 
 export type CompleteMediaAttachmentMultipartUpload200 = {
   attachment_id: number;
+};
+
+/**
+ * @summary Issue one short-lived API-client JWT through client credentials
+ */
+export type issueAPIClientTokenResponse200 = {
+  data: APIClientTokenResponse;
+  status: 200;
+};
+
+export type issueAPIClientTokenResponse400 = {
+  data: void;
+  status: 400;
+};
+
+export type issueAPIClientTokenResponse401 = {
+  data: void;
+  status: 401;
+};
+
+export type issueAPIClientTokenResponse403 = {
+  data: void;
+  status: 403;
+};
+
+export type issueAPIClientTokenResponse405 = {
+  data: void;
+  status: 405;
+};
+
+export type issueAPIClientTokenResponse503 = {
+  data: void;
+  status: 503;
+};
+
+export type issueAPIClientTokenResponseSuccess =
+  issueAPIClientTokenResponse200 & {
+    headers: Headers;
+  };
+export type issueAPIClientTokenResponseError = (
+  | issueAPIClientTokenResponse400
+  | issueAPIClientTokenResponse401
+  | issueAPIClientTokenResponse403
+  | issueAPIClientTokenResponse405
+  | issueAPIClientTokenResponse503
+) & {
+  headers: Headers;
+};
+
+export type issueAPIClientTokenResponse =
+  issueAPIClientTokenResponseSuccess | issueAPIClientTokenResponseError;
+
+export const getIssueAPIClientTokenUrl = () => {
+  return `/oauth/token`;
+};
+
+export const issueAPIClientToken = async (
+  aPIClientTokenRequest: APIClientTokenRequest,
+  options?: RequestInit,
+): Promise<issueAPIClientTokenResponse> => {
+  const formUrlEncoded = new URLSearchParams();
+  formUrlEncoded.append(`grant_type`, aPIClientTokenRequest.grant_type);
+  formUrlEncoded.append(`audience`, aPIClientTokenRequest.audience);
+  if (aPIClientTokenRequest.scope !== undefined) {
+    formUrlEncoded.append(`scope`, aPIClientTokenRequest.scope);
+  }
+  if (aPIClientTokenRequest.client_id !== undefined) {
+    formUrlEncoded.append(`client_id`, aPIClientTokenRequest.client_id);
+  }
+  if (aPIClientTokenRequest.client_secret !== undefined) {
+    formUrlEncoded.append(`client_secret`, aPIClientTokenRequest.client_secret);
+  }
+
+  const res = await fetch(getIssueAPIClientTokenUrl(), {
+    ...options,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      ...options?.headers,
+    },
+    body: formUrlEncoded,
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: issueAPIClientTokenResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as issueAPIClientTokenResponse;
 };
 
 /**
