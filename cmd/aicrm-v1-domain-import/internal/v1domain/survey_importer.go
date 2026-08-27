@@ -15,7 +15,7 @@ import (
 	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
 )
 
-const surveyImportRunID = "v1-domain-a1"
+const surveyImportRunID = "v1-domain-a1-survey"
 
 type SurveyImportResult struct {
 	ImportedQuestionnaires int

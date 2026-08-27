@@ -1,11 +1,15 @@
 package v1domain
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
+	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
+	surveyport "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/port"
 )
 
 func TestBuildSurveyAggregateResolvesSourceRelationsAndDropsRedactedToken(t *testing.T) {
@@ -44,6 +48,14 @@ func TestBuildSurveyAggregateResolvesSourceRelationsAndDropsRedactedToken(t *tes
 	answer := aggregate.Answers[0]
 	if answer.SortOrder != 0 || len(answer.SelectedOptions) != 1 || answer.SelectedOptions[0].SourceOptionID != 3 || answer.SelectedOptions[0].OptionText != "A" {
 		t.Fatalf("answer = %#v", answer)
+	}
+	service := surveyapp.NewImportService(surveyValidationOnlyUOW{}, &unreachableSurveyStore{})
+	_, err := service.Import(context.Background(), surveyport.ImportRequest{
+		MigrationActor: 1, RunID: surveyImportRunID,
+		IdempotencyKey: SourceIdentifier(questionnaire.archive.SourceKeyHMAC), Aggregate: aggregate,
+	})
+	if !errors.Is(err, errSurveyValidated) {
+		t.Fatalf("adapter request rejected before entering the owner transaction: %v", err)
 	}
 }
 
