@@ -54,6 +54,10 @@ type HistoricalStaticProductReceipt struct {
 	OriginalEnabled   bool
 	TargetProductID   productport.ID
 	TargetProductCode string
+	TargetProductName string
+	PriceMinor        int64
+	Currency          string
+	CreatedBy         int64
 	Replayed          bool
 }
 
@@ -151,6 +155,10 @@ func (writer *HistoricalStaticProductWriter) Import(ctx context.Context, definit
 		OriginalEnabled:   definition.OriginalEnabled,
 		TargetProductID:   stored.ID,
 		TargetProductCode: stored.ProductCode,
+		TargetProductName: stored.Name,
+		PriceMinor:        stored.PriceMinor,
+		Currency:          stored.Currency,
+		CreatedBy:         stored.CreatedBy,
 	}
 	if err = writer.journal.RecordHistoricalStaticProduct(ctx, receipt); err != nil {
 		return HistoricalStaticProductReceipt{}, err
@@ -176,7 +184,9 @@ func sameHistoricalStaticProduct(receipt HistoricalStaticProductReceipt, definit
 	return receipt.SourceIdentifier == definition.SourceIdentifier && receipt.SourceID == definition.SourceID &&
 		subtle.ConstantTimeCompare(receipt.PayloadDigest[:], definition.PayloadDigest[:]) == 1 &&
 		receipt.OriginalStatus == definition.OriginalStatus && receipt.OriginalEnabled == definition.OriginalEnabled &&
-		receipt.TargetProductID > 0 && receipt.TargetProductCode == definition.Product.ProductCode
+		receipt.TargetProductID > 0 && receipt.TargetProductCode == definition.Product.ProductCode &&
+		receipt.TargetProductName == definition.Product.Name && receipt.PriceMinor == definition.Product.PriceMinor &&
+		receipt.Currency == definition.Product.Currency && receipt.CreatedBy == definition.Product.CreatedBy
 }
 
 func sameStoredHistoricalStaticProduct(stored, expected productport.Product) bool {
