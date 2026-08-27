@@ -92,7 +92,7 @@ func TestSurveyPublicRoutesStayOutsideAuthenticationAndKeepExactMethodGuard(t *t
 		if response.Header().Get("Cache-Control") != "no-store" || response.Header().Get("X-Content-Type-Options") != "nosniff" || response.Header().Get("Referrer-Policy") != "no-referrer" {
 			t.Fatalf("unsafe public headers=%v", response.Header())
 		}
-		if test.path == "/q/public" && (response.Header().Get("Location") != "/?public_survey_slug=public" || response.Body.Len() != 0) {
+		if test.path == "/q/public" && (response.Header().Get("Location") != "/h5/all.html?slug=public" || response.Body.Len() != 0) {
 			t.Fatalf("carrier location/body=%q/%q", response.Header().Get("Location"), response.Body.String())
 		}
 	}

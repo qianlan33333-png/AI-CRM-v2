@@ -56,4 +56,10 @@ sed -i.bak 's/CapabilityBoundingSet=CAP_NET_BIND_SERVICE/CapabilityBoundingSet=C
 rm -f -- "$fixture_directory/deploy/aicrm-edge.service.bak"
 expect_failure "$fixture_directory" 'broad service capability'
 
+fixture_directory="$(new_fixture)"
+cleanup_directories+=("$fixture_directory")
+sed -i.bak 's# /q/\*##' "$fixture_directory/deploy/Caddyfile"
+rm -f -- "$fixture_directory/deploy/Caddyfile.bak"
+expect_failure "$fixture_directory" 'missing public survey backend route'
+
 printf 'test-g2-web-edge: PASS\n'

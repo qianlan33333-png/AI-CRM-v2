@@ -5448,7 +5448,7 @@ paths:
     get:
       tags: [p4-survey]
       operationId: getPublicSurveyPage
-      summary: Carry a public survey slug into the same-origin SPA without token parameters
+      summary: Carry a public survey slug into the deployed same-origin H5 form without token parameters
       security: []
       x-p4-decision-evidence: P4-SURVEY-PUBLIC-ANONYMOUS-2026-08-20
       x-aicrm-capability: survey.public.page
@@ -5461,9 +5461,9 @@ paths:
       parameters: [{$ref: "#/components/parameters/PublicSurveySlug"}]
       responses:
         "302":
-          description: Same-origin SPA carrier; the Location contains only the encoded survey slug and never a result token or external target.
+          description: Same-origin H5 carrier; the Location contains only the validated survey slug and never a result token or external target.
           headers:
-            Location: { required: true, schema: { type: string, pattern: '^/\\?public_survey_slug=[a-z0-9][a-z0-9-]{0,119}$' } }
+            Location: { required: true, schema: { type: string, pattern: '^/h5/all[.]html[?]slug=[a-z0-9][a-z0-9-]{0,119}$' } }
         "400": { $ref: "#/components/responses/PublicSurveyInvalidInput" }
         "405": { $ref: "#/components/responses/PublicSurveyGetOnly" }
   /api/h5/surveys/oauth/start:

@@ -16894,7 +16894,7 @@ type ServerInterface interface {
 	// Issue one short-lived API-client JWT through client credentials
 	// (POST /oauth/token)
 	IssueAPIClientToken(w http.ResponseWriter, r *http.Request)
-	// Carry a public survey slug into the same-origin SPA without token parameters
+	// Carry a public survey slug into the deployed same-origin H5 form without token parameters
 	// (GET /q/{slug})
 	GetPublicSurveyPage(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug)
 	// Read one WeChat or WeCom domain verification file
@@ -18394,7 +18394,7 @@ func (_ Unimplemented) IssueAPIClientToken(w http.ResponseWriter, r *http.Reques
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// Carry a public survey slug into the same-origin SPA without token parameters
+// Carry a public survey slug into the deployed same-origin H5 form without token parameters
 // (GET /q/{slug})
 func (_ Unimplemented) GetPublicSurveyPage(w http.ResponseWriter, r *http.Request, slug PublicSurveySlug) {
 	w.WriteHeader(http.StatusNotImplemented)
@@ -50899,7 +50899,7 @@ type StrictServerInterface interface {
 	// Issue one short-lived API-client JWT through client credentials
 	// (POST /oauth/token)
 	IssueAPIClientToken(ctx context.Context, request IssueAPIClientTokenRequestObject) (IssueAPIClientTokenResponseObject, error)
-	// Carry a public survey slug into the same-origin SPA without token parameters
+	// Carry a public survey slug into the deployed same-origin H5 form without token parameters
 	// (GET /q/{slug})
 	GetPublicSurveyPage(ctx context.Context, request GetPublicSurveyPageRequestObject) (GetPublicSurveyPageResponseObject, error)
 	// Read one WeChat or WeCom domain verification file

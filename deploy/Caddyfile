@@ -16,7 +16,7 @@ aa.youcangogogo.com {
 		X-Frame-Options "DENY"
 	}
 
-	@backend path /api/* /auth/* /wecom/* /login /logout /healthz /readyz
+	@backend path /api/* /auth/* /wecom/* /oauth/* /q/* /c/* /p/* /r/* /login /logout /healthz /readyz
 	handle @backend {
 		reverse_proxy 127.0.0.1:8080
 	}
