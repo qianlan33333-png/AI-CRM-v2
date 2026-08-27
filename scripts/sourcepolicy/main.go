@@ -298,7 +298,11 @@ func trimLeadingSQLComments(value string) string {
 }
 
 func performanceAcceptanceCommand(rel string) bool {
-	return rel == "cmd/aicrm-contact-perf-data/main.go" || rel == "cmd/aicrm-contact-perf/main.go"
+	return rel == "cmd/aicrm-contact-perf-data/main.go" ||
+		rel == "cmd/aicrm-contact-perf/main.go" ||
+		rel == "internal/datamigration/manifest/collector.go" ||
+		rel == "internal/migration/v1archive/source_postgres.go" ||
+		rel == "internal/migration/v1archive/target_postgres.go"
 }
 
 func sourceModule(rel string) string {
