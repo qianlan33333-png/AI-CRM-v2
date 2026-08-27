@@ -12,7 +12,7 @@ import (
 const PublicShareSummaryPath = "/api/public/member-grid-shares/summary"
 
 type PublicShareApplication interface {
-	Summary(context.Context, string) (PublicShareSummary, error)
+	Summary(context.Context, string, string) (PublicShareSummary, error)
 }
 
 type PublicShareHandler struct{ application PublicShareApplication }
@@ -40,7 +40,8 @@ func (handler *PublicShareHandler) ServeHTTP(writer http.ResponseWriter, request
 		return
 	}
 	var input struct {
-		Token string `json:"token"`
+		Token  string `json:"token"`
+		Cursor string `json:"cursor"`
 	}
 	decoder := json.NewDecoder(io.LimitReader(request.Body, 1025))
 	decoder.DisallowUnknownFields()
@@ -53,10 +54,18 @@ func (handler *PublicShareHandler) ServeHTTP(writer http.ResponseWriter, request
 		writePublicShareError(writer, http.StatusBadRequest)
 		return
 	}
-	result, err := handler.application.Summary(request.Context(), input.Token)
+	if len(input.Cursor) > 256 {
+		writePublicShareError(writer, http.StatusBadRequest)
+		return
+	}
+	result, err := handler.application.Summary(request.Context(), input.Token, input.Cursor)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) || errors.Is(err, ErrInvalidExternalShareToken) {
 			writePublicShareError(writer, http.StatusNotFound)
+			return
+		}
+		if errors.Is(err, ErrInvalidCursor) {
+			writePublicShareError(writer, http.StatusBadRequest)
 			return
 		}
 		writePublicShareError(writer, http.StatusServiceUnavailable)

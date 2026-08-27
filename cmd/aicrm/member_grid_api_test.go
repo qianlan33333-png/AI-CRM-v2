@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	authhttp "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/http"
+	authport "github.com/qianlan33333-png/AI-CRM-v2/internal/auth/port"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/product/membergrid"
 )
 
@@ -98,5 +99,57 @@ func TestMemberGridRoutesUseLegacyAuthenticationAndReadCapabilities(t *testing.T
 	if query.Code != http.StatusOK || application.queryCalls != 1 || application.query.ProductID != 43 ||
 		application.query.State != membergrid.StateAll || application.query.Limit != membergrid.DefaultLimit {
 		t.Fatalf("query status/calls/input=%d/%d/%+v body=%s", query.Code, application.queryCalls, application.query, query.Body.String())
+	}
+}
+
+func TestMemberGridExternalShareRouteUsesProductsWriteAndCSRF(t *testing.T) {
+	service := &legacyAuthStub{}
+	legacy, err := NewHandler(service, &legacyCustomerStub{result: legacyCustomerResult()})
+	if err != nil {
+		t.Fatal(err)
+	}
+	calls := 0
+	legacy.memberGridExternalShare = http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		authorization, ok := authport.AuthorizationFromContext(request.Context())
+		if !ok || authorization.Capability != authport.CapabilityProductsWrite || authorization.Scope != authport.ScopeGlobal {
+			t.Fatalf("authorization=%+v ok=%v", authorization, ok)
+		}
+		calls++
+		writer.WriteHeader(http.StatusNoContent)
+	})
+	authHandler, err := authhttp.NewHandler(service)
+	if err != nil {
+		t.Fatal(err)
+	}
+	router, err := newAPIHandlerWithCallbackAndLegacy(
+		slog.New(slog.NewJSONHandler(io.Discard, nil)),
+		http.NotFoundHandler(),
+		authHandler,
+		authHandler,
+		legacy,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := membergrid.RoutePrefix + "/42/member-grid/share-settings"
+
+	anonymous := httptest.NewRecorder()
+	router.ServeHTTP(anonymous, httptest.NewRequest(http.MethodPut, path, nil))
+	if anonymous.Code != http.StatusUnauthorized || calls != 0 {
+		t.Fatalf("anonymous status/calls=%d/%d", anonymous.Code, calls)
+	}
+
+	missingCSRF := httptest.NewRecorder()
+	router.ServeHTTP(missingCSRF, legacyRequest(http.MethodPut, path, legacyToken(221)))
+	if missingCSRF.Code != http.StatusForbidden || calls != 0 {
+		t.Fatalf("missing CSRF status/calls=%d/%d", missingCSRF.Code, calls)
+	}
+
+	request := legacyRequest(http.MethodPut, path, legacyToken(221))
+	request.Header.Set("X-CSRF-Token", legacyToken(222))
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusNoContent || calls != 1 {
+		t.Fatalf("authorized status/calls=%d/%d body=%s", response.Code, calls, response.Body.String())
 	}
 }

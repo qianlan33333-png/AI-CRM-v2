@@ -21,4 +21,14 @@ COMMENT ON TABLE public.service_period_member_grid_external_shares IS
   'Current revocable Member Grid public-share state; share_id is opaque and is not the bearer token.';
 
 -- +goose Down
+LOCK TABLE public.service_period_member_grid_external_shares IN SHARE ROW EXCLUSIVE MODE;
+-- +goose StatementBegin
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.service_period_member_grid_external_shares LIMIT 1) THEN
+    RAISE EXCEPTION 'cannot roll back populated Member Grid external share state' USING ERRCODE = '55000';
+  END IF;
+END;
+$$;
+-- +goose StatementEnd
 DROP TABLE public.service_period_member_grid_external_shares;

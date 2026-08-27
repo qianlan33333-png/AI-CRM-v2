@@ -87,7 +87,25 @@ func TestLaneD2MemberGridRepositoryPG16_14(t *testing.T) {
 ) VALUES ($1,$2,$3,'active',1,7001,$4)`, productID, orderID, customerIDs[4], now); err != nil {
 		t.Fatal(err)
 	}
+	shareFixtureTx, err := pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = shareFixtureTx.Rollback(ctx) }()
+	if _, err = shareFixtureTx.Exec(ctx, `SET LOCAL session_replication_role=replica`); err != nil {
+		t.Fatal(err)
+	}
+	shareID := "share_abcdefghijklmnopqrstuv"
+	if _, err = shareFixtureTx.Exec(ctx, `INSERT INTO service_period_member_grid_external_shares (
+		service_product_id,share_id,enabled,version,updated_by,created_at,updated_at
+	) VALUES ($1,$2,true,1,7001,$3,$3)`, productID, shareID, now); err != nil {
+		t.Fatal(err)
+	}
+	if err = shareFixtureTx.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() {
+		_, _ = pool.Exec(ctx, `DELETE FROM service_period_member_grid_external_shares WHERE service_product_id=$1`, productID)
 		_, _ = pool.Exec(ctx, `DELETE FROM product_local_entitlements WHERE order_id=$1`, orderID)
 		_ = orderfixture.DeletePaidProjections(ctx, pool, []int64{orderID})
 		_, _ = pool.Exec(ctx, `DELETE FROM service_period_members WHERE service_product_id IN ($1,$2)`, productID, otherProductID)
@@ -151,6 +169,29 @@ func TestLaneD2MemberGridRepositoryPG16_14(t *testing.T) {
 	if _, err = service.Query(ctx, membergrid.QueryInput{ProductID: math.MaxInt64, State: membergrid.StateAll, Limit: 1}); !errors.Is(err, membergrid.ErrNotFound) {
 		t.Fatalf("missing product=%v", err)
 	}
+	shareTokens, err := membergrid.NewExternalShareTokenCodec(bytes.Repeat([]byte("member-grid-public-share-secret"), 2))
+	if err != nil {
+		t.Fatal(err)
+	}
+	publicService, err := membergrid.NewPublicShareService(platformstore.NewUnitOfWork(pool), membergrid.NewRepository(), membergrid.NewRepository(), membergrid.NewRepository(), shareTokens, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	publicToken, err := shareTokens.Issue(shareID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	publicGrid, err := publicService.Summary(ctx, publicToken, "")
+	if err != nil || len(publicGrid.Rows) != 4 || publicGrid.HasMore || publicGrid.NextCursor != "" || publicGrid.Limit != 50 {
+		t.Fatalf("public grid=%+v err=%v", publicGrid, err)
+	}
+	assertPublicGridJSON(t, publicGrid)
+	if _, err = pool.Exec(ctx, `UPDATE service_period_member_grid_external_shares SET share_id=NULL,enabled=false,version=version+1,updated_at=now() WHERE service_product_id=$1`, productID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = publicService.Summary(ctx, publicToken, ""); !errors.Is(err, membergrid.ErrNotFound) {
+		t.Fatalf("disabled public share error=%v", err)
+	}
 }
 
 func insertGridProduct(t *testing.T, ctx context.Context, pool *pgxpool.Pool, code string, servicePeriod bool, now time.Time) int64 {
@@ -185,5 +226,24 @@ func assertCanonicalGridJSON(t *testing.T, rows []membergrid.MemberRow) {
 		if strings.Contains(body, forbidden) {
 			t.Fatalf("grid JSON leaked %q: %s", forbidden, body)
 		}
+	}
+}
+
+func assertPublicGridJSON(t *testing.T, grid membergrid.PublicShareSummary) {
+	t.Helper()
+	encoded, err := json.Marshal(grid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := strings.ToLower(string(encoded))
+	for _, forbidden := range []string{
+		"customer_id", "member_ref", "service_product_id", "mobile", "external_userid", "unionid", "remark", "alliance", "version", "share_abcdefghijklmnopqrstuv",
+	} {
+		if strings.Contains(body, forbidden) {
+			t.Fatalf("public grid JSON leaked %q: %s", forbidden, body)
+		}
+	}
+	if !strings.Contains(body, "成员客户") || !strings.Contains(body, "display_name") {
+		t.Fatalf("public grid omitted allowlisted display names: %s", body)
 	}
 }

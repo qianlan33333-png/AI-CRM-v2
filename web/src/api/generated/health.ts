@@ -4928,9 +4928,91 @@ export interface ServicePeriodMemberGridShareSettings {
   collaborators: ServicePeriodMemberGridCollaborator[];
   external_share_supported: boolean;
   external_share_enabled: boolean;
+  /** @minimum 0 */
+  external_share_version: number;
   real_external_call_executed: boolean;
   collaborator_edit_is_local_metadata_only: boolean;
   collaborator_edit_grants_central_permission: boolean;
+}
+
+export interface ServicePeriodMemberGridExternalShareSetRequest {
+  enabled: boolean;
+  /** @minimum 0 */
+  expected_version: number;
+}
+
+export interface ServicePeriodMemberGridExternalShareSetResponse {
+  ok: boolean;
+  external_share_enabled: boolean;
+  /** @minimum 1 */
+  external_share_version: number;
+  token_issued: boolean;
+  /** @pattern ^/member-grid-share/index\.html#mgshare1\.[A-Za-z0-9_-]{16,128}\.[A-Za-z0-9_-]{43}$ */
+  public_path?: string;
+  real_external_call_executed: boolean;
+}
+
+export interface PublicServicePeriodMemberGridSummaryRequest {
+  /**
+   * @minLength 72
+   * @maxLength 181
+   * @pattern ^mgshare1\.[A-Za-z0-9_-]{16,128}\.[A-Za-z0-9_-]{43}$
+   */
+  token: string;
+  /**
+   * @maxLength 256
+   * @nullable
+   */
+  cursor?: string | null;
+}
+
+export type PublicServicePeriodMemberGridSummaryBucketState =
+  (typeof PublicServicePeriodMemberGridSummaryBucketState)[keyof typeof PublicServicePeriodMemberGridSummaryBucketState];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const PublicServicePeriodMemberGridSummaryBucketState = {
+  active: "active",
+  expired: "expired",
+  removed: "removed",
+} as const;
+
+export interface PublicServicePeriodMemberGridSummaryBucket {
+  state: PublicServicePeriodMemberGridSummaryBucketState;
+  /** @minimum 0 */
+  count: number;
+}
+
+export type PublicServicePeriodMemberGridSummaryLimit =
+  (typeof PublicServicePeriodMemberGridSummaryLimit)[keyof typeof PublicServicePeriodMemberGridSummaryLimit];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const PublicServicePeriodMemberGridSummaryLimit = {
+  NUMBER_50: 50,
+} as const;
+
+export interface PublicServicePeriodMemberGridSummary {
+  /**
+   * @minItems 3
+   * @maxItems 3
+   */
+  buckets: PublicServicePeriodMemberGridSummaryBucket[];
+  /** @maxItems 50 */
+  rows: PublicServicePeriodMemberGridPublicMember[];
+  limit: PublicServicePeriodMemberGridSummaryLimit;
+  /** @maxLength 256 */
+  next_cursor: string;
+  has_more: boolean;
+  as_of: string;
+}
+
+export interface PublicServicePeriodMemberGridPublicMember {
+  display_name: string;
+  state: ServicePeriodMemberState;
+  source: ServicePeriodMemberSource;
+  starts_at: string;
+  /** @nullable */
+  expires_at: string | null;
+  updated_at: string;
 }
 
 export type ExternalEffectStatus =
@@ -49926,7 +50008,7 @@ export const deleteServicePeriodMemberView = async (
 };
 
 /**
- * @summary Read local views and collaborators; external sharing is unsupported
+ * @summary Read local views, collaborators, and revocable read-only share state
  */
 export type getServicePeriodMemberGridShareSettingsResponse200 = {
   data: ServicePeriodMemberGridShareSettings;
@@ -50004,6 +50086,162 @@ export const getServicePeriodMemberGridShareSettings = async (
     status: res.status,
     headers: res.headers,
   } as getServicePeriodMemberGridShareSettingsResponse;
+};
+
+/**
+ * @summary Enable or disable one revocable read-only Member Grid share
+ */
+export type setServicePeriodMemberGridExternalShareResponse200 = {
+  data: ServicePeriodMemberGridExternalShareSetResponse;
+  status: 200;
+};
+
+export type setServicePeriodMemberGridExternalShareResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type setServicePeriodMemberGridExternalShareResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type setServicePeriodMemberGridExternalShareResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type setServicePeriodMemberGridExternalShareResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type setServicePeriodMemberGridExternalShareResponse409 = {
+  data: ConflictResponse;
+  status: 409;
+};
+
+export type setServicePeriodMemberGridExternalShareResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type setServicePeriodMemberGridExternalShareResponseSuccess =
+  setServicePeriodMemberGridExternalShareResponse200 & {
+    headers: Headers;
+  };
+export type setServicePeriodMemberGridExternalShareResponseError = (
+  | setServicePeriodMemberGridExternalShareResponse400
+  | setServicePeriodMemberGridExternalShareResponse401
+  | setServicePeriodMemberGridExternalShareResponse403
+  | setServicePeriodMemberGridExternalShareResponse404
+  | setServicePeriodMemberGridExternalShareResponse409
+  | setServicePeriodMemberGridExternalShareResponse503
+) & {
+  headers: Headers;
+};
+
+export type setServicePeriodMemberGridExternalShareResponse =
+  | setServicePeriodMemberGridExternalShareResponseSuccess
+  | setServicePeriodMemberGridExternalShareResponseError;
+
+export const getSetServicePeriodMemberGridExternalShareUrl = (
+  serviceProductId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/member-grid/share-settings`;
+};
+
+export const setServicePeriodMemberGridExternalShare = async (
+  serviceProductId: number,
+  servicePeriodMemberGridExternalShareSetRequest: ServicePeriodMemberGridExternalShareSetRequest,
+  options?: RequestInit,
+): Promise<setServicePeriodMemberGridExternalShareResponse> => {
+  const res = await fetch(
+    getSetServicePeriodMemberGridExternalShareUrl(serviceProductId),
+    {
+      ...options,
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(servicePeriodMemberGridExternalShareSetRequest),
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: setServicePeriodMemberGridExternalShareResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as setServicePeriodMemberGridExternalShareResponse;
+};
+
+/**
+ * @summary Read a revocable allowlisted member grid with an opaque bearer token
+ */
+export type queryPublicServicePeriodMemberGridSummaryResponse200 = {
+  data: PublicServicePeriodMemberGridSummary;
+  status: 200;
+};
+
+export type queryPublicServicePeriodMemberGridSummaryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type queryPublicServicePeriodMemberGridSummaryResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type queryPublicServicePeriodMemberGridSummaryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type queryPublicServicePeriodMemberGridSummaryResponseSuccess =
+  queryPublicServicePeriodMemberGridSummaryResponse200 & {
+    headers: Headers;
+  };
+export type queryPublicServicePeriodMemberGridSummaryResponseError = (
+  | queryPublicServicePeriodMemberGridSummaryResponse400
+  | queryPublicServicePeriodMemberGridSummaryResponse404
+  | queryPublicServicePeriodMemberGridSummaryResponse503
+) & {
+  headers: Headers;
+};
+
+export type queryPublicServicePeriodMemberGridSummaryResponse =
+  | queryPublicServicePeriodMemberGridSummaryResponseSuccess
+  | queryPublicServicePeriodMemberGridSummaryResponseError;
+
+export const getQueryPublicServicePeriodMemberGridSummaryUrl = () => {
+  return `/api/public/member-grid-shares/summary`;
+};
+
+export const queryPublicServicePeriodMemberGridSummary = async (
+  publicServicePeriodMemberGridSummaryRequest: PublicServicePeriodMemberGridSummaryRequest,
+  options?: RequestInit,
+): Promise<queryPublicServicePeriodMemberGridSummaryResponse> => {
+  const res = await fetch(getQueryPublicServicePeriodMemberGridSummaryUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(publicServicePeriodMemberGridSummaryRequest),
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: queryPublicServicePeriodMemberGridSummaryResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as queryPublicServicePeriodMemberGridSummaryResponse;
 };
 
 /**
