@@ -204,6 +204,20 @@ type CreateRecord struct {
 	ActorID        int64
 }
 
+// HistoricalDraftRecord carries only reviewed static definition facts. The
+// source ID is used for deterministic replay identity and is never exposed as
+// a public code or tracking identity.
+type HistoricalDraftRecord struct {
+	SourceID       int64
+	PublicCode     string
+	Name           string
+	Title          string
+	DestinationURL string
+	ActorID        int64
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
 type UpdateRecord struct {
 	LinkID          LinkID
 	ExpectedVersion int64

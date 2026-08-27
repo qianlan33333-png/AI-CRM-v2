@@ -23,6 +23,7 @@ type PostgresRepository struct {
 }
 
 var _ radarport.Repository = (*PostgresRepository)(nil)
+var _ radarport.HistoricalDraftImporter = (*PostgresRepository)(nil)
 var _ radarport.ImageReferenceReader = (*PostgresRepository)(nil)
 var _ radarport.AttachmentReferenceReader = (*PostgresRepository)(nil)
 
@@ -196,6 +197,51 @@ RETURNING id, public_code, name, title, destination_url, cover_image_id,
 	return link, err
 }
 
+// ImportHistoricalDraft writes an immutable-in-intent historical definition as
+// a local draft. A deterministic public code makes an exact replay a no-op;
+// any different row with that code is rejected instead of being updated.
+func (repository *PostgresRepository) ImportHistoricalDraft(ctx context.Context, record radarport.HistoricalDraftRecord) (radarport.Link, bool, error) {
+	if repository == nil || repository.tx == nil || record.SourceID < 1 || record.PublicCode == "" || record.Name == "" || record.Title == "" || record.DestinationURL == "" || record.ActorID < 1 || record.CreatedAt.IsZero() || record.UpdatedAt.IsZero() || record.UpdatedAt.Before(record.CreatedAt) {
+		return radarport.Link{}, false, radarport.ErrInvalidArgument
+	}
+	tx, err := repository.tx(ctx)
+	if err != nil {
+		return radarport.Link{}, false, err
+	}
+	link, err := scanLink(tx.QueryRow(ctx, `
+INSERT INTO public.radar_links (
+    public_code, name, title, destination_url, status, version,
+    created_by, updated_by, created_at, updated_at
+) VALUES ($1, $2, $3, $4, 'draft', 1, $5, $5, $6, $7)
+ON CONFLICT (public_code) DO NOTHING
+RETURNING id, public_code, name, title, destination_url, cover_image_id,
+          attachment_id, status, version, created_by, updated_by, created_at, updated_at
+`, record.PublicCode, record.Name, record.Title, record.DestinationURL, record.ActorID, record.CreatedAt, record.UpdatedAt))
+	if err == nil {
+		return link, false, nil
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return radarport.Link{}, false, err
+	}
+	existing, err := scanLink(tx.QueryRow(ctx, `
+SELECT id, public_code, name, title, destination_url, cover_image_id,
+       attachment_id, status, version, created_by, updated_by, created_at, updated_at
+FROM public.radar_links
+WHERE public_code = $1
+FOR KEY SHARE
+`, record.PublicCode))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return radarport.Link{}, false, radarport.ErrUnavailable
+	}
+	if err != nil {
+		return radarport.Link{}, false, err
+	}
+	if !sameHistoricalDraft(existing, record) {
+		return radarport.Link{}, false, radarport.ErrConflict
+	}
+	return existing, true, nil
+}
+
 func (repository *PostgresRepository) Update(ctx context.Context, record radarport.UpdateRecord, now time.Time) (radarport.Link, error) {
 	if repository == nil || repository.tx == nil || record.LinkID < 1 || record.ExpectedVersion < 1 || record.Name == "" || record.Title == "" || record.DestinationURL == "" || record.ActorID < 1 || now.IsZero() {
 		return radarport.Link{}, radarport.ErrInvalidArgument
@@ -223,6 +269,13 @@ RETURNING id, public_code, name, title, destination_url, cover_image_id,
 		return radarport.Link{}, radarport.ErrConflict
 	}
 	return link, err
+}
+
+func sameHistoricalDraft(link radarport.Link, record radarport.HistoricalDraftRecord) bool {
+	return link.PublicCode == record.PublicCode && link.Name == record.Name && link.Title == record.Title &&
+		link.DestinationURL == record.DestinationURL && link.CoverImageID == nil && link.AttachmentID == nil &&
+		link.Status == radarport.StatusDraft && link.Version == 1 && link.CreatedBy == record.ActorID &&
+		link.UpdatedBy == record.ActorID && link.CreatedAt.Equal(record.CreatedAt) && link.UpdatedAt.Equal(record.UpdatedAt)
 }
 
 func (repository *PostgresRepository) SetStatus(ctx context.Context, record radarport.StatusRecord, now time.Time) (radarport.Link, error) {

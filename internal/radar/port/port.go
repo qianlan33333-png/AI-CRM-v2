@@ -26,6 +26,13 @@ type Repository interface {
 	CompleteIdempotency(context.Context, int64, Link, time.Time) (IdempotencyRecord, error)
 }
 
+// HistoricalDraftImporter is the narrow owner-owned write boundary for
+// reviewed V1 Radar definitions. It is deliberately separate from normal
+// mutations and tracking; implementations must only persist local drafts.
+type HistoricalDraftImporter interface {
+	ImportHistoricalDraft(context.Context, HistoricalDraftRecord) (Link, bool, error)
+}
+
 // ImageReferenceReader is Radar's read-only answer to whether a local link
 // currently uses one Media image as its cover. IDs are ordered ascending.
 // Media uses this inside its deletion UoW; Radar retains ownership of the
