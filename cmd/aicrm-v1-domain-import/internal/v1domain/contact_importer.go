@@ -83,6 +83,16 @@ type contactTagBindingJSON struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type contactTagBindingArchiveRow struct {
+	archive v1archive.ArchivedRow
+	source  contactTagBindingJSON
+}
+
+type contactTagBindingKey struct {
+	unionID string
+	tagID   string
+}
+
 func (importer *ContactTagImporter) Import(ctx context.Context, archiveRunID string) (ContactTagImportResult, error) {
 	if importer == nil || importer.archive == nil || importer.uow == nil || importer.writer == nil || importer.journal == nil || importer.customers == nil || archiveRunID == "" {
 		return ContactTagImportResult{}, ErrInvalidScope
@@ -155,6 +165,7 @@ func (importer *ContactTagImporter) Import(ctx context.Context, archiveRunID str
 	}); err != nil {
 		return ContactTagImportResult{}, err
 	}
+	bindingRows := make([]contactTagBindingArchiveRow, 0)
 	if err := importer.archive.EachTableRow(ctx, archiveRunID, contactBindingsTable, func(row v1archive.ArchivedRow) error {
 		if !validContactArchivedRow(row, contactBindingsTable) {
 			return ErrInvalidScope
@@ -166,32 +177,66 @@ func (importer *ContactTagImporter) Import(ctx context.Context, archiveRunID str
 		if source.TagID == "" || source.UnionID == "" || source.CreatedAt.IsZero() {
 			return importer.recordContactTerminal(ctx, &result, contactport.HistoricalCustomerTagSource, row, "quarantine", "invalid_contact_tag")
 		}
-		customerID, err := importer.customers.ResolveVerifiedDM01Customer(ctx, source.UnionID)
-		if errors.Is(err, contactport.ErrHistoricalTagBlocked) || (err == nil && customerID < 1) {
-			return importer.recordContactTerminal(ctx, &result, contactport.HistoricalCustomerTagSource, row, "quarantine", "dm01_customer_unresolved")
-		}
-		if err != nil {
-			return fmt.Errorf("resolve DM01 customer: %w", err)
-		}
-		write, err := importer.writer.ImportCustomerTag(ctx, contactport.HistoricalCustomerTagRecord{Fact: contactTagFact(row), UnionID: source.UnionID, VerifiedCustomerID: customerID, ProviderTagID: source.TagID, TaggedAt: source.CreatedAt})
-		if errors.Is(err, contactport.ErrHistoricalTagBlocked) {
-			return importer.recordContactTerminal(ctx, &result, contactport.HistoricalCustomerTagSource, row, "quarantine", "dm01_or_tag_unresolved")
-		}
-		if errors.Is(err, contactport.ErrHistoricalTagInput) {
-			return importer.recordContactTerminal(ctx, &result, contactport.HistoricalCustomerTagSource, row, "quarantine", "invalid_contact_tag")
-		}
-		if err != nil {
-			return classifyContactWriteError(err)
-		}
-		result.ImportedBindings++
-		if write.Replayed {
-			result.ReplayedRows++
-		}
+		bindingRows = append(bindingRows, contactTagBindingArchiveRow{archive: row, source: source})
 		return nil
 	}); err != nil {
 		return ContactTagImportResult{}, err
 	}
+	selectedBindings := selectContactTagBindings(bindingRows)
+	for index, binding := range bindingRows {
+		if selectedBindings[contactTagBindingKey{unionID: binding.source.UnionID, tagID: binding.source.TagID}] != index {
+			if err := importer.recordContactTerminal(ctx, &result, contactport.HistoricalCustomerTagSource, binding.archive, "archive", "duplicate_customer_tag_binding"); err != nil {
+				return ContactTagImportResult{}, err
+			}
+			continue
+		}
+		if err := importer.importContactTagBinding(ctx, &result, binding); err != nil {
+			return ContactTagImportResult{}, err
+		}
+	}
 	return result, nil
+}
+
+func selectContactTagBindings(rows []contactTagBindingArchiveRow) map[contactTagBindingKey]int {
+	selected := make(map[contactTagBindingKey]int, len(rows))
+	for index, row := range rows {
+		key := contactTagBindingKey{unionID: row.source.UnionID, tagID: row.source.TagID}
+		current, found := selected[key]
+		if !found || contactTagBindingEarlier(row, rows[current]) {
+			selected[key] = index
+		}
+	}
+	return selected
+}
+
+func contactTagBindingEarlier(left, right contactTagBindingArchiveRow) bool {
+	return left.source.CreatedAt.Before(right.source.CreatedAt) ||
+		(left.source.CreatedAt.Equal(right.source.CreatedAt) && left.archive.SourceOrdinal < right.archive.SourceOrdinal)
+}
+
+func (importer *ContactTagImporter) importContactTagBinding(ctx context.Context, result *ContactTagImportResult, binding contactTagBindingArchiveRow) error {
+	customerID, err := importer.customers.ResolveVerifiedDM01Customer(ctx, binding.source.UnionID)
+	if errors.Is(err, contactport.ErrHistoricalTagBlocked) || (err == nil && customerID < 1) {
+		return importer.recordContactTerminal(ctx, result, contactport.HistoricalCustomerTagSource, binding.archive, "quarantine", "dm01_customer_unresolved")
+	}
+	if err != nil {
+		return fmt.Errorf("resolve DM01 customer: %w", err)
+	}
+	write, err := importer.writer.ImportCustomerTag(ctx, contactport.HistoricalCustomerTagRecord{Fact: contactTagFact(binding.archive), UnionID: binding.source.UnionID, VerifiedCustomerID: customerID, ProviderTagID: binding.source.TagID, TaggedAt: binding.source.CreatedAt})
+	if errors.Is(err, contactport.ErrHistoricalTagBlocked) {
+		return importer.recordContactTerminal(ctx, result, contactport.HistoricalCustomerTagSource, binding.archive, "quarantine", "dm01_or_tag_unresolved")
+	}
+	if errors.Is(err, contactport.ErrHistoricalTagInput) {
+		return importer.recordContactTerminal(ctx, result, contactport.HistoricalCustomerTagSource, binding.archive, "quarantine", "invalid_contact_tag")
+	}
+	if err != nil {
+		return classifyContactWriteError(err)
+	}
+	result.ImportedBindings++
+	if write.Replayed {
+		result.ReplayedRows++
+	}
+	return nil
 }
 
 func contactTagFact(row v1archive.ArchivedRow) contactport.HistoricalTagFact {

@@ -100,6 +100,87 @@ func TestContactTagImporterRejectsUnauthenticatedArchiveRow(t *testing.T) {
 	}
 }
 
+func TestContactTagImporterArchivesDuplicateBindingsAndKeepsEarliestPerExactKey(t *testing.T) {
+	stamp := time.Date(2026, 8, 28, 3, 0, 0, 0, time.UTC)
+	late := contactArchivedRow(contactBindingsTable, 10, map[string]any{"tag_id": "tag-1", "unionid": "union-a", "created_at": stamp.Add(time.Hour)})
+	early := contactArchivedRow(contactBindingsTable, 11, map[string]any{"tag_id": "tag-1", "unionid": "union-a", "created_at": stamp})
+	otherUnion := contactArchivedRow(contactBindingsTable, 12, map[string]any{"tag_id": "tag-1", "unionid": "union-b", "created_at": stamp.Add(2 * time.Hour)})
+	archive := &contactArchive{rows: map[string][]v1archive.ArchivedRow{
+		contactTagGroupsTable: {contactArchivedRow(contactTagGroupsTable, 1, map[string]any{"group_id": "group-1", "group_name": "Lifecycle"})},
+		contactTagsTable:      {contactArchivedRow(contactTagsTable, 2, map[string]any{"tag_id": "tag-1", "tag_name": "Paid", "group_id": "group-1"})},
+		contactBindingsTable:  {late, early, otherUnion},
+	}}
+	journal := newContactMemoryJournal()
+	store := newContactMemoryStore()
+	customers := &contactDM01Verifier{targets: map[string]contactport.CustomerID{"union-a": 19, "union-b": 20}}
+	importer, err := NewContactTagImporter(archive, contactMemoryUOW{}, store, journal, customers)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := importer.Import(context.Background(), "run")
+	if err != nil || result.ImportedBindings != 2 || result.ArchivedRows != 1 || result.QuarantinedRows != 0 || customers.resolveCalls != 2 || customers.verifyCalls != 2 {
+		t.Fatalf("result=%+v err=%v resolver=%d verifier=%d", result, err, customers.resolveCalls, customers.verifyCalls)
+	}
+	if terminal := journal.terminal[0]; terminal.Disposition != "archive" || terminal.Reason != "duplicate_customer_tag_binding" || terminal.SourceKeyDigest != late.SourceKeyHMAC {
+		t.Fatalf("duplicate terminal=%+v", terminal)
+	}
+	if len(store.customerTags) != 2 || !store.customerTags[contactCustomerTagKey(19, 2)].TaggedAt.Equal(stamp) || !store.customerTags[contactCustomerTagKey(20, 2)].TaggedAt.Equal(stamp.Add(2*time.Hour)) {
+		t.Fatalf("customer tags=%+v", store.customerTags)
+	}
+	if _, found := journal.lineage[contactJournalKey(contactport.HistoricalCustomerTagSource, early.SourceKeyHMAC)]; !found {
+		t.Fatal("earliest binding was not imported")
+	}
+	if _, found := journal.lineage[contactJournalKey(contactport.HistoricalCustomerTagSource, late.SourceKeyHMAC)]; found {
+		t.Fatal("later duplicate was imported")
+	}
+	if result.ImportedBindings+result.ArchivedRows != 3 {
+		t.Fatalf("valid binding conservation failed: %+v", result)
+	}
+}
+
+func TestContactTagImporterBreaksEqualTimeBindingTiesBySourceOrdinal(t *testing.T) {
+	stamp := time.Date(2026, 8, 28, 3, 0, 0, 0, time.UTC)
+	higherOrdinal := contactArchivedRow(contactBindingsTable, 21, map[string]any{"tag_id": "tag-1", "unionid": "union-a", "created_at": stamp})
+	lowerOrdinal := contactArchivedRow(contactBindingsTable, 22, map[string]any{"tag_id": "tag-1", "unionid": "union-a", "created_at": stamp})
+	lowerOrdinal.SourceOrdinal = 20
+	archive := &contactArchive{rows: map[string][]v1archive.ArchivedRow{
+		contactTagGroupsTable: {contactArchivedRow(contactTagGroupsTable, 1, map[string]any{"group_id": "group-1", "group_name": "Lifecycle"})},
+		contactTagsTable:      {contactArchivedRow(contactTagsTable, 2, map[string]any{"tag_id": "tag-1", "tag_name": "Paid", "group_id": "group-1"})},
+		contactBindingsTable:  {higherOrdinal, lowerOrdinal},
+	}}
+	journal := newContactMemoryJournal()
+	importer, err := NewContactTagImporter(archive, contactMemoryUOW{}, newContactMemoryStore(), journal, &contactDM01Verifier{targets: map[string]contactport.CustomerID{"union-a": 19}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := importer.Import(context.Background(), "run")
+	if err != nil || result.ImportedBindings != 1 || result.ArchivedRows != 1 || len(journal.terminal) != 1 || journal.terminal[0].SourceKeyDigest != higherOrdinal.SourceKeyHMAC {
+		t.Fatalf("result=%+v err=%v terminal=%+v", result, err, journal.terminal)
+	}
+	if _, found := journal.lineage[contactJournalKey(contactport.HistoricalCustomerTagSource, lowerOrdinal.SourceKeyHMAC)]; !found {
+		t.Fatal("lower source ordinal was not imported")
+	}
+}
+
+func TestContactTagImporterDoesNotHideWriterConflictAsDuplicate(t *testing.T) {
+	stamp := time.Date(2026, 8, 28, 3, 0, 0, 0, time.UTC)
+	archive := &contactArchive{rows: map[string][]v1archive.ArchivedRow{
+		contactTagGroupsTable: {contactArchivedRow(contactTagGroupsTable, 1, map[string]any{"group_id": "group-1", "group_name": "Lifecycle"})},
+		contactTagsTable:      {contactArchivedRow(contactTagsTable, 2, map[string]any{"tag_id": "tag-1", "tag_name": "Paid", "group_id": "group-1"})},
+		contactBindingsTable:  {contactArchivedRow(contactBindingsTable, 3, map[string]any{"tag_id": "tag-1", "unionid": "union-a", "created_at": stamp})},
+	}}
+	store := newContactMemoryStore()
+	store.customerTags[contactCustomerTagKey(19, 2)] = contactport.HistoricalCustomerTag{CustomerID: 19, TagID: 2, TaggedAt: stamp.Add(time.Hour), TaggedBy: "other"}
+	journal := newContactMemoryJournal()
+	importer, err := NewContactTagImporter(archive, contactMemoryUOW{}, store, journal, &contactDM01Verifier{targets: map[string]contactport.CustomerID{"union-a": 19}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = importer.Import(context.Background(), "run"); !errors.Is(err, ErrConflict) || len(journal.terminal) != 0 {
+		t.Fatalf("writer conflict was treated as duplicate: err=%v terminal=%+v", err, journal.terminal)
+	}
+}
+
 type contactArchive struct {
 	rows map[string][]v1archive.ArchivedRow
 }
