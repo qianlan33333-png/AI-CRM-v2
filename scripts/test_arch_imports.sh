@@ -17,7 +17,7 @@ trap 'rm -rf "$test_root"' EXIT
 
 seed() {
   local root="$1"
-  mkdir -p "$root/cmd/aicrm" "$root/cmd/aicrm-river-migrate" "$root/cmd/aicrm-contact-perf" "$root/cmd/aicrm-v1-import" "$root/internal/contact/app" \
+  mkdir -p "$root/cmd/aicrm" "$root/cmd/aicrm-river-migrate" "$root/cmd/aicrm-contact-perf" "$root/cmd/aicrm-v1-import" "$root/cmd/aicrm-v1-domain-import/internal/v1domain" "$root/internal/contact/app" \
     "$root/internal/identity/port" "$root/internal/identity/store" \
     "$root/internal/automation/app" "$root/internal/stats/app" "$root/internal/events/store" \
     "$root/internal/outbound/app" "$root/internal/product/app" "$root/internal/media/app" "$root/internal/survey/app" \
@@ -45,6 +45,12 @@ seed() {
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/config"' \
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"' \
     >"$root/cmd/aicrm-v1-import/main.go"
+  printf '%s\n' 'package main' \
+    'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"' \
+    >"$root/cmd/aicrm-v1-domain-import/main.go"
+  printf '%s\n' 'package v1domain' \
+    'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"' \
+    >"$root/cmd/aicrm-v1-domain-import/internal/v1domain/import.go"
   printf '%s\n' 'package store' \
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"' \
     >"$root/internal/identity/store/use.go"
@@ -129,6 +135,11 @@ mutate() {
     performance-composition-copy)
       mkdir -p "$root/cmd/aicrm-contact-perf-copy"
       printf '%s\n' 'package main' 'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"' >"$root/cmd/aicrm-contact-perf-copy/main.go" ;;
+    migration-concrete)
+      printf '%s\n' 'package app' 'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"' >"$root/internal/migration/app/use.go" ;;
+    domain-import-composition-copy)
+      mkdir -p "$root/cmd/aicrm-v1-domain-import-copy"
+      printf '%s\n' 'package main' 'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"' >"$root/cmd/aicrm-v1-domain-import-copy/main.go" ;;
     scattered-env)
       printf '%s\n' 'package app' 'import "os"' 'var _ = os.Getenv("DATABASE_URL")' >"$root/internal/contact/app/use.go" ;;
     aliased-env)
@@ -161,6 +172,8 @@ reject api-domain 'forbidden cross-module import'
 reject unknown 'unknown internal module'
 reject unapproved-composition-root 'forbidden cross-module import'
 reject performance-composition-copy 'forbidden cross-module import'
+reject migration-concrete 'forbidden cross-module import'
+reject domain-import-composition-copy 'forbidden cross-module import'
 reject scattered-env 'scattered environment read forbidden'
 reject aliased-env 'scattered environment read forbidden'
 reject raw-river-client 'raw or default River symbol forbidden'

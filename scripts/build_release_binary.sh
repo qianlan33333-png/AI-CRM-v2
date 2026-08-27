@@ -6,7 +6,7 @@ fail() {
   exit 2
 }
 
-usage='Usage: build_release_binary.sh [--command=<aicrm|aicrm-river-migrate>] --output=<absolute-file>'
+usage='Usage: build_release_binary.sh [--command=<aicrm|aicrm-river-migrate|aicrm-v1-domain-import>] --output=<absolute-file>'
 [[ "$#" -ge 1 && "$#" -le 2 ]] || fail "$usage"
 
 command_value='aicrm'
@@ -26,8 +26,8 @@ for argument in "$@"; do
     *) fail "$usage" ;;
   esac
 done
-[[ "$command_value" = 'aicrm' || "$command_value" = 'aicrm-river-migrate' ]] ||
-  fail 'command must be one of aicrm, aicrm-river-migrate'
+[[ "$command_value" = 'aicrm' || "$command_value" = 'aicrm-river-migrate' || "$command_value" = 'aicrm-v1-domain-import' ]] ||
+  fail 'command must be one of aicrm, aicrm-river-migrate, aicrm-v1-domain-import'
 [[ -n "$output_value" ]] || fail "$usage"
 [[ "$output_value" = /* ]] || fail 'output must be an absolute file'
 

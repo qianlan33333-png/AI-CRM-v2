@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	radarport "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/port"
+	radardb "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/store/generated"
 )
 
 type txResolver func(context.Context) (pgx.Tx, error)
@@ -23,6 +24,7 @@ type PostgresRepository struct {
 }
 
 var _ radarport.Repository = (*PostgresRepository)(nil)
+var _ radarport.HistoricalDraftImporter = (*PostgresRepository)(nil)
 var _ radarport.ImageReferenceReader = (*PostgresRepository)(nil)
 var _ radarport.AttachmentReferenceReader = (*PostgresRepository)(nil)
 
@@ -196,6 +198,47 @@ RETURNING id, public_code, name, title, destination_url, cover_image_id,
 	return link, err
 }
 
+// ImportHistoricalDraft writes an immutable-in-intent historical definition as
+// a local draft. A deterministic public code makes an exact replay a no-op;
+// any different row with that code is rejected instead of being updated.
+func (repository *PostgresRepository) ImportHistoricalDraft(ctx context.Context, record radarport.HistoricalDraftRecord) (radarport.Link, bool, error) {
+	if repository == nil || repository.tx == nil || record.SourceID < 1 || record.PublicCode == "" || record.Name == "" || record.Title == "" || record.DestinationURL == "" || record.ActorID < 1 || record.CreatedAt.IsZero() || record.UpdatedAt.IsZero() || record.UpdatedAt.Before(record.CreatedAt) {
+		return radarport.Link{}, false, radarport.ErrInvalidArgument
+	}
+	tx, err := repository.tx(ctx)
+	if err != nil {
+		return radarport.Link{}, false, err
+	}
+	queries := radardb.New(tx)
+	row, err := queries.InsertHistoricalRadarDraft(ctx, radardb.InsertHistoricalRadarDraftParams{
+		PublicCode: record.PublicCode, Name: record.Name, Title: record.Title,
+		DestinationUrl: record.DestinationURL, ActorID: record.ActorID,
+		CreatedAt: nullableTime(&record.CreatedAt), UpdatedAt: nullableTime(&record.UpdatedAt),
+	})
+	if err == nil {
+		link, conversionErr := trackingLink(row)
+		return link, false, conversionErr
+	}
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return radarport.Link{}, false, err
+	}
+	row, err = queries.GetHistoricalRadarDraftByCode(ctx, record.PublicCode)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return radarport.Link{}, false, radarport.ErrUnavailable
+	}
+	if err != nil {
+		return radarport.Link{}, false, err
+	}
+	existing, err := trackingLink(row)
+	if err != nil {
+		return radarport.Link{}, false, err
+	}
+	if !sameHistoricalDraft(existing, record) {
+		return radarport.Link{}, false, radarport.ErrConflict
+	}
+	return existing, true, nil
+}
+
 func (repository *PostgresRepository) Update(ctx context.Context, record radarport.UpdateRecord, now time.Time) (radarport.Link, error) {
 	if repository == nil || repository.tx == nil || record.LinkID < 1 || record.ExpectedVersion < 1 || record.Name == "" || record.Title == "" || record.DestinationURL == "" || record.ActorID < 1 || now.IsZero() {
 		return radarport.Link{}, radarport.ErrInvalidArgument
@@ -223,6 +266,13 @@ RETURNING id, public_code, name, title, destination_url, cover_image_id,
 		return radarport.Link{}, radarport.ErrConflict
 	}
 	return link, err
+}
+
+func sameHistoricalDraft(link radarport.Link, record radarport.HistoricalDraftRecord) bool {
+	return link.PublicCode == record.PublicCode && link.Name == record.Name && link.Title == record.Title &&
+		link.DestinationURL == record.DestinationURL && link.CoverImageID == nil && link.AttachmentID == nil &&
+		link.Status == radarport.StatusDraft && link.Version == 1 && link.CreatedBy == record.ActorID &&
+		link.UpdatedBy == record.ActorID && link.CreatedAt.Equal(record.CreatedAt) && link.UpdatedAt.Equal(record.UpdatedAt)
 }
 
 func (repository *PostgresRepository) SetStatus(ctx context.Context, record radarport.StatusRecord, now time.Time) (radarport.Link, error) {

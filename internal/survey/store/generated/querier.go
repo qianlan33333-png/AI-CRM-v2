@@ -36,6 +36,11 @@ type Querier interface {
 	GetSurveyExternalPush(ctx context.Context, arg GetSurveyExternalPushParams) (GetSurveyExternalPushRow, error)
 	GetSurveyExternalPushReconciliationEvidence(ctx context.Context, arg GetSurveyExternalPushReconciliationEvidenceParams) (string, error)
 	IncrementQuestionnaireCount(ctx context.Context) (int64, error)
+	InsertHistoricalAnswer(ctx context.Context, arg InsertHistoricalAnswerParams) (int64, error)
+	InsertHistoricalOption(ctx context.Context, arg InsertHistoricalOptionParams) (int64, error)
+	InsertHistoricalQuestion(ctx context.Context, arg InsertHistoricalQuestionParams) (int64, error)
+	InsertHistoricalQuestionnaire(ctx context.Context, arg InsertHistoricalQuestionnaireParams) (int64, error)
+	InsertHistoricalSubmission(ctx context.Context, arg InsertHistoricalSubmissionParams) (int64, error)
 	InsertQuestionnaireOption(ctx context.Context, arg InsertQuestionnaireOptionParams) (int64, error)
 	InsertQuestionnaireQuestion(ctx context.Context, arg InsertQuestionnaireQuestionParams) (int64, error)
 	InsertSurveyExternalPushDeliveryReceipt(ctx context.Context, arg InsertSurveyExternalPushDeliveryReceiptParams) error

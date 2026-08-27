@@ -24,6 +24,8 @@ type Querier interface {
 	InsertCampaignTouchPlanHandoff(ctx context.Context, arg InsertCampaignTouchPlanHandoffParams) error
 	InsertCampaignTouchPlanStep(ctx context.Context, arg InsertCampaignTouchPlanStepParams) error
 	InsertCampaignTouchPlanTargets(ctx context.Context, arg InsertCampaignTouchPlanTargetsParams) error
+	InsertHistoricalCampaignDefinition(ctx context.Context, arg InsertHistoricalCampaignDefinitionParams) error
+	InsertHistoricalCampaignStep(ctx context.Context, arg InsertHistoricalCampaignStepParams) error
 	ListApprovedCampaignTouchPlanSteps(ctx context.Context, arg ListApprovedCampaignTouchPlanStepsParams) ([]ListApprovedCampaignTouchPlanStepsRow, error)
 	ListApprovedCampaignTouchPlanTargets(ctx context.Context, arg ListApprovedCampaignTouchPlanTargetsParams) ([]int64, error)
 	ListCampaignStepsForTouchPlan(ctx context.Context, campaignCode string) ([]ListCampaignStepsForTouchPlanRow, error)

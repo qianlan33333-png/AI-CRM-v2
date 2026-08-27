@@ -68,4 +68,12 @@ scripts/build_release_binary.sh \
 [[ "$(go tool buildid "$temporary_directory/aicrm-river-migrate")" = "$source_sha" ]] ||
   fail 'River migration binary source SHA build ID mismatch'
 
+scripts/build_release_binary.sh \
+  --command=aicrm-v1-domain-import \
+  --output="$temporary_directory/aicrm-v1-domain-import" \
+  >"$temporary_directory/domain-import-receipt"
+[[ -x "$temporary_directory/aicrm-v1-domain-import" ]] || fail 'V1 domain import binary is not executable'
+[[ "$(go tool buildid "$temporary_directory/aicrm-v1-domain-import")" = "$source_sha" ]] ||
+  fail 'V1 domain import binary source SHA build ID mismatch'
+
 printf 'G2 runtime image acceptance: PASS\n'

@@ -158,6 +158,38 @@ func (repository *memoryRepository) Create(ctx context.Context, record radarport
 	return link, nil
 }
 
+func (repository *memoryRepository) ImportHistoricalDraft(ctx context.Context, record radarport.HistoricalDraftRecord) (radarport.Link, bool, error) {
+	state, err := memoryStateFromContext(ctx)
+	if err != nil {
+		return radarport.Link{}, false, err
+	}
+	for _, existing := range state.links {
+		if existing.PublicCode != record.PublicCode {
+			continue
+		}
+		if existing.Name == record.Name && existing.Title == record.Title && existing.DestinationURL == record.DestinationURL && existing.CoverImageID == nil && existing.AttachmentID == nil && existing.Status == radarport.StatusDraft && existing.Version == 1 && existing.CreatedBy == record.ActorID && existing.UpdatedBy == record.ActorID && existing.CreatedAt.Equal(record.CreatedAt) && existing.UpdatedAt.Equal(record.UpdatedAt) {
+			return cloneLink(existing), true, nil
+		}
+		return radarport.Link{}, false, radarport.ErrConflict
+	}
+	state.nextLinkID++
+	link := radarport.Link{
+		LinkID:         radarport.LinkID(state.nextLinkID),
+		PublicCode:     record.PublicCode,
+		Name:           record.Name,
+		Title:          record.Title,
+		DestinationURL: record.DestinationURL,
+		Status:         radarport.StatusDraft,
+		Version:        1,
+		CreatedBy:      record.ActorID,
+		UpdatedBy:      record.ActorID,
+		CreatedAt:      record.CreatedAt,
+		UpdatedAt:      record.UpdatedAt,
+	}
+	state.links[link.LinkID] = cloneLink(link)
+	return link, false, nil
+}
+
 func (repository *memoryRepository) Update(ctx context.Context, record radarport.UpdateRecord, now time.Time) (radarport.Link, error) {
 	state, err := memoryStateFromContext(ctx)
 	if err != nil {
@@ -524,6 +556,42 @@ func TestServiceLifecycleCASAndIdempotency(t *testing.T) {
 	}
 	if len(state.idempotency) != 5 { // create, update, enable x2, disable; failed CAS record rolled back.
 		t.Fatalf("idempotency_records=%d", len(state.idempotency))
+	}
+}
+
+func TestServiceImportsLegacyRadarDefinitionAsHistoricalDraft(t *testing.T) {
+	service, db := newServiceFixture(t)
+	created := time.Date(2025, 3, 4, 5, 6, 7, 0, time.FixedZone("legacy", 8*60*60))
+	row := LegacyRadarLinkRow{
+		SourceID: 91, Code: "legacy-radar-code", Title: "Legacy Radar", OriginalURL: "https://docs.example.com/radar",
+		MigrationActorID: 73, CreatedAt: created, UpdatedAt: created.Add(2 * time.Hour),
+	}
+	first, err := service.ImportLegacyDraft(context.Background(), row)
+	if err != nil || first.Replayed || first.Response.Link.Status != radarport.StatusDraft || first.Response.Link.CreatedBy != 73 || first.Response.Link.PublicCode == row.Code || !first.Response.Link.CreatedAt.Equal(row.CreatedAt.UTC()) || !first.Response.Link.UpdatedAt.Equal(row.UpdatedAt.UTC()) || !first.Response.LocalProjection || first.Response.RealExternalCallExecuted {
+		t.Fatalf("first=%+v err=%v", first, err)
+	}
+	state := db.snapshot()
+	if len(state.links) != 1 || len(state.events) != 0 || len(state.trackingEvents) != 0 || len(state.idempotency) != 0 {
+		t.Fatalf("unexpected runtime state=%+v", state)
+	}
+	if _, err = service.ResolvePublicRedirect(context.Background(), first.Response.Link.PublicCode); !errors.Is(err, radarport.ErrNotFound) || len(db.snapshot().trackingEvents) != 0 {
+		t.Fatalf("draft redirect err=%v tracking_events=%+v", err, db.snapshot().trackingEvents)
+	}
+
+	replay, err := service.ImportLegacyDraft(context.Background(), row)
+	if err != nil || !replay.Replayed || !equalLink(first.Response.Link, replay.Response.Link) || len(db.snapshot().links) != 1 {
+		t.Fatalf("replay=%+v err=%v state=%+v", replay, err, db.snapshot())
+	}
+
+	conflicting := row
+	conflicting.Title = "Changed legacy title"
+	if _, err = service.ImportLegacyDraft(context.Background(), conflicting); !errors.Is(err, radarport.ErrConflict) || len(db.snapshot().links) != 1 {
+		t.Fatalf("conflict err=%v state=%+v", err, db.snapshot())
+	}
+	invalidURL := row
+	invalidURL.OriginalURL = "http://example.com/radar"
+	if _, err = service.ImportLegacyDraft(context.Background(), invalidURL); !errors.Is(err, radarport.ErrInvalidArgument) || len(db.snapshot().links) != 1 {
+		t.Fatalf("invalid url err=%v state=%+v", err, db.snapshot())
 	}
 }
 
