@@ -30,11 +30,12 @@ func (appender *managementEventAppender) Append(_ context.Context, _ eventport.E
 type managementMemoryStore struct {
 	mu sync.Mutex
 
-	products      map[int64]bool
-	activeStaff   map[int64]bool
-	views         map[int64]SavedView
-	collaborators map[int64]Collaborator
-	receipts      map[string]MutationReceipt
+	products       map[int64]bool
+	activeStaff    map[int64]bool
+	views          map[int64]SavedView
+	collaborators  map[int64]Collaborator
+	externalShares map[int64]ExternalShare
+	receipts       map[string]MutationReceipt
 
 	nextViewID         int64
 	nextCollaboratorID int64
@@ -46,6 +47,7 @@ type managementMemoryStore struct {
 type managementMemorySnapshot struct {
 	views              map[int64]SavedView
 	collaborators      map[int64]Collaborator
+	externalShares     map[int64]ExternalShare
 	receipts           map[string]MutationReceipt
 	nextViewID         int64
 	nextCollaboratorID int64
@@ -70,7 +72,7 @@ func (unit *managementRollbackUOW) Within(ctx context.Context, callback func(con
 func newManagementMemoryStore() *managementMemoryStore {
 	return &managementMemoryStore{
 		products: make(map[int64]bool), activeStaff: make(map[int64]bool), views: make(map[int64]SavedView),
-		collaborators: make(map[int64]Collaborator), receipts: make(map[string]MutationReceipt),
+		collaborators: make(map[int64]Collaborator), externalShares: make(map[int64]ExternalShare), receipts: make(map[string]MutationReceipt),
 		nextViewID: 1, nextCollaboratorID: 1, nextReceiptID: 1,
 	}
 }
@@ -96,7 +98,8 @@ func (store *managementMemoryStore) snapshot() managementMemorySnapshot {
 	defer store.mu.Unlock()
 	return managementMemorySnapshot{
 		views: cloneViewMap(store.views), collaborators: cloneCollaboratorMap(store.collaborators),
-		receipts: cloneReceiptMap(store.receipts), nextViewID: store.nextViewID,
+		externalShares: cloneExternalShareMap(store.externalShares),
+		receipts:       cloneReceiptMap(store.receipts), nextViewID: store.nextViewID,
 		nextCollaboratorID: store.nextCollaboratorID, nextReceiptID: store.nextReceiptID,
 	}
 }
@@ -106,6 +109,7 @@ func (store *managementMemoryStore) restore(snapshot managementMemorySnapshot) {
 	defer store.mu.Unlock()
 	store.views = cloneViewMap(snapshot.views)
 	store.collaborators = cloneCollaboratorMap(snapshot.collaborators)
+	store.externalShares = cloneExternalShareMap(snapshot.externalShares)
 	store.receipts = cloneReceiptMap(snapshot.receipts)
 	store.nextViewID = snapshot.nextViewID
 	store.nextCollaboratorID = snapshot.nextCollaboratorID
@@ -267,6 +271,44 @@ func (store *managementMemoryStore) DeleteCollaborator(_ context.Context, produc
 	}
 	delete(store.collaborators, collaboratorID)
 	return cloneCollaborator(collaborator), nil
+}
+
+func (store *managementMemoryStore) CurrentExternalShare(_ context.Context, productID int64) (ExternalShare, error) {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	if share, ok := store.externalShares[productID]; ok {
+		return cloneExternalShare(share), nil
+	}
+	return ExternalShare{ServiceProductID: productID, Version: 0}, nil
+}
+
+func (store *managementMemoryStore) SetExternalShare(_ context.Context, record SetExternalShareRecord) (ExternalShare, error) {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	current, ok := store.externalShares[record.ServiceProductID]
+	if !ok {
+		current = ExternalShare{ServiceProductID: record.ServiceProductID, Version: 0}
+	}
+	if current.Version != record.ExpectedVersion {
+		return ExternalShare{}, ErrConflict
+	}
+	next := ExternalShare{
+		ServiceProductID: record.ServiceProductID, ShareID: record.ShareID,
+		Enabled: record.Enabled, Version: current.Version + 1,
+	}
+	store.externalShares[record.ServiceProductID] = cloneExternalShare(next)
+	return cloneExternalShare(next), nil
+}
+
+func (store *managementMemoryStore) LookupEnabledExternalShare(_ context.Context, shareID string) (ExternalShare, error) {
+	store.mu.Lock()
+	defer store.mu.Unlock()
+	for _, share := range store.externalShares {
+		if share.Enabled && share.ShareID == shareID {
+			return cloneExternalShare(share), nil
+		}
+	}
+	return ExternalShare{}, ErrNotFound
 }
 
 func (store *managementMemoryStore) ReserveMutationReceipt(_ context.Context, reservation MutationReceiptReservation) (MutationReceipt, bool, error) {
@@ -727,6 +769,14 @@ func cloneCollaboratorMap(source map[int64]Collaborator) map[int64]Collaborator 
 	result := make(map[int64]Collaborator, len(source))
 	for key, value := range source {
 		result[key] = cloneCollaborator(value)
+	}
+	return result
+}
+
+func cloneExternalShareMap(source map[int64]ExternalShare) map[int64]ExternalShare {
+	result := make(map[int64]ExternalShare, len(source))
+	for key, value := range source {
+		result[key] = cloneExternalShare(value)
 	}
 	return result
 }

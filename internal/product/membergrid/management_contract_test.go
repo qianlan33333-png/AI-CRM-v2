@@ -17,7 +17,7 @@ func TestManagementDTOJSONFieldWhitelists(t *testing.T) {
 	})
 	assertJSONFields(t, ShareSettingsResponse{}, []string{
 		"collaborator_edit_grants_central_permission", "collaborator_edit_is_local_metadata_only", "collaborators",
-		"external_share_enabled", "external_share_supported", "real_external_call_executed", "saved_views", "service_product_id",
+		"external_share_enabled", "external_share_supported", "external_share_version", "real_external_call_executed", "saved_views", "service_product_id",
 	})
 	assertJSONFields(t, SavedViewResponse{}, []string{"ok", "view"})
 	assertJSONFields(t, DeleteSavedViewResponse{}, []string{"deleted", "ok", "view"})
@@ -103,7 +103,7 @@ func TestManagementResponsesCannotClaimExternalSharingOrCentralPermission(t *tes
 		}
 	}
 	for _, want := range []string{
-		`"external_share_supported":false`, `"external_share_enabled":false`, `"real_external_call_executed":false`,
+		`"external_share_supported":false`, `"external_share_enabled":false`, `"external_share_version":0`, `"real_external_call_executed":false`,
 		`"collaborator_edit_is_local_metadata_only":true`, `"collaborator_edit_grants_central_permission":false`,
 		`"edit_permission_is_local_metadata_only":true`, `"grants_central_products_permission":false`,
 	} {
