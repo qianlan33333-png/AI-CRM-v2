@@ -34,6 +34,7 @@ type AdminState = {
   editingGroupId: number;
   /* ---- 人群包编辑器 ---- */
   apanel: number;
+  audiencePreview: { configurationVersion: number; memberCount: number; emptyConfirmed: boolean } | null;
   /* ---- 企微标签 ---- */
   tagGroupId: number;
   tagMode: '' | 'create-group' | 'create-tag' | 'edit-group' | 'edit-tag';
@@ -130,6 +131,7 @@ export class AdminController extends PageBase {
     groupMode: '',
     editingGroupId: 0,
     apanel: 1,
+    audiencePreview: null,
     tagGroupId: 1,
     tagMode: '',
     editingTagId: 0,
@@ -488,21 +490,29 @@ export class AdminController extends PageBase {
     return opts.map(([v, t]) => ({ v, t, sel: v === cur, not: v !== cur }));
   }
 
-  private saveAudienceBasic(): void {
+  private audienceWriteInput(): import('../api/admin').AudiencePackageWriteInput | null {
     const pkg = this.audiencePkg();
-    if (!pkg) return;
+    if (!pkg) return null;
     const val = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null)?.value || '';
     let definition: import('../api/admin').AudiencePackageWriteInput['definition'];
     try { definition = JSON.parse(val('aeDef')) as import('../api/admin').AudiencePackageWriteInput['definition']; }
-    catch { toast('SegmentDefinition 不是有效 JSON', true); return; }
+    catch { toast('SegmentDefinition 不是有效 JSON', true); return null; }
     const refreshMode = val('aeRefreshMode') === 'scheduled' ? 'scheduled' : 'manual';
     const refreshCron = val('aeRefreshCron').trim() || null;
-    if (refreshMode === 'scheduled' && !refreshCron) { toast('定时刷新必须填写 cron', true); return; }
+    if (refreshMode === 'scheduled' && !refreshCron) { toast('定时刷新必须填写 cron', true); return null; }
+    return { id: pkg.id, name: val('aeName') || pkg.name, definition, groupId: Number(val('aeGroup')) || null, refreshMode, refreshCron };
+  }
+
+  private saveAudienceBasic(): void {
+    const input = this.audienceWriteInput();
+    const pkg = this.audiencePkg();
+    if (!input || !pkg) return;
     void this.api
-      .saveAudiencePackage({ id: pkg.id, name: val('aeName') || pkg.name, definition, groupId: Number(val('aeGroup')) || null, refreshMode, refreshCron })
-      .then(() => {
+      .saveAudiencePackage(input)
+      .then((saved) => {
+        Object.assign(pkg, saved);
+        this.setState({ audiencePreview: null });
         toast('基础配置已保存');
-        void this.init();
       }).catch((error) => toast(error instanceof Error ? error.message : '人群包保存失败', true));
   }
 
@@ -558,9 +568,58 @@ export class AdminController extends PageBase {
   }
 
   private saveAudienceBinding(): void { this.bindAutomation((document.getElementById('aeAutomationId') as HTMLInputElement | null)?.value || ''); }
-  private snapshotAudience(): void { const pkg = this.audiencePkg(); if (!pkg) return; void this.api.snapshotAudienceConfiguration(pkg.id).then((version) => { toast(`配置版本 v${version} 已保存`); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '配置版本保存失败', true)); }
-  private previewAudience(): void { const pkg = this.audiencePkg(); if (!pkg) return; void this.api.previewAudienceConfiguration(pkg.id).then((result) => toast(`预览完成：${result.memberCount} 人 · 配置 v${result.configurationVersion}`)).catch((error) => toast(error instanceof Error ? error.message : '人群预览失败', true)); }
-  private materializeAudience(): void { const pkg = this.audiencePkg(); if (!pkg) return; confirmBox('物化人群成员', '该操作只写入本地 Segment 成员事实，不会触发企微群发。确认继续？', '确认物化', false, () => { void this.api.materializeAudienceConfiguration(pkg.id).then((result) => { toast(`物化完成：${result.memberCount} 人 · 未触发外部群发`); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '人群物化失败', true)); }); }
+  private snapshotAudience(): void {
+    const pkg = this.audiencePkg();
+    if (!pkg) return;
+    void this.api.snapshotAudienceConfiguration(pkg.id).then((version) => {
+      pkg.configurationVersion = version;
+      this.setState({ audiencePreview: null });
+      toast(`配置版本 v${version} 已保存`);
+    }).catch((error) => toast(error instanceof Error ? error.message : '配置版本保存失败', true));
+  }
+
+  private saveAndPreviewAudience(): void {
+    const input = this.audienceWriteInput();
+    const pkg = this.audiencePkg();
+    if (!input || !pkg) return;
+    void this.api.saveAudiencePackage(input)
+      .then((saved) => {
+        Object.assign(pkg, saved);
+        return this.api.snapshotAudienceConfiguration(pkg.id);
+      })
+      .then(() => this.api.previewAudienceConfiguration(pkg.id))
+      .then((result) => {
+        pkg.configurationVersion = result.configurationVersion;
+        const preview = { configurationVersion: result.configurationVersion, memberCount: result.memberCount, emptyConfirmed: result.memberCount !== 0 };
+        this.setState({ audiencePreview: preview });
+        if (result.memberCount !== 0) {
+          toast(`已保存并预览：${result.memberCount} 人 · 配置 v${result.configurationVersion}`);
+          return;
+        }
+        confirmBox('确认空人群预览', `配置 v${result.configurationVersion} 的预览结果为 0 人。不会创建群发或调用 Provider；若要物化空人群，必须在此明确确认。`, '确认空人群', true, () => {
+          this.setState({ audiencePreview: { ...preview, emptyConfirmed: true } });
+          toast('已确认空人群；仍需单独确认物化本地成员事实');
+        });
+      }).catch((error) => toast(error instanceof Error ? error.message : '保存并预览失败', true));
+  }
+
+  private materializeAudience(): void {
+    const pkg = this.audiencePkg();
+    const preview = this.state.audiencePreview;
+    if (!pkg) return;
+    if (!preview) { toast('请先保存并预览当前配置', true); return; }
+    if (preview.memberCount === 0 && !preview.emptyConfirmed) {
+      toast('空人群需先明确确认，已拒绝物化', true);
+      return;
+    }
+    const countText = preview.memberCount === 0 ? '当前已确认空人群（0 人）' : `当前预览 ${preview.memberCount} 人`;
+    confirmBox('物化人群成员', `${countText} · 配置 v${preview.configurationVersion}。该操作只写入本地 Segment 成员事实，不会触发企微群发或调用 Provider。确认继续？`, '确认物化', false, () => {
+      void this.api.materializeAudienceConfiguration(pkg.id).then((result) => {
+        this.setState({ audiencePreview: { configurationVersion: result.configurationVersion, memberCount: result.memberCount, emptyConfirmed: result.memberCount !== 0 || preview.emptyConfirmed } });
+        toast(`物化完成：${result.memberCount} 人 · 未触发外部群发`);
+      }).catch((error) => toast(error instanceof Error ? error.message : '人群物化失败', true));
+    });
+  }
 
   /* ================= 通用选择器接入 ================= */
 
@@ -1473,6 +1532,15 @@ export class AdminController extends PageBase {
     const aeSenders = pkg ? [...(this.db.audienceSenders[pkg.id] || []), ...(this.sendersDraft || [])] : [];
     const aeMembers = pkg ? this.db.audienceMembers[pkg.id] || [] : [];
     const aeRecords = pkg ? this.db.audienceRecords[pkg.id] || [] : [];
+    const aePreview = this.state.audiencePreview
+      ? {
+          ...this.state.audiencePreview,
+          state: this.state.audiencePreview.memberCount === 0 ? (this.state.audiencePreview.emptyConfirmed ? 'empty_confirmed' : 'empty_pending') : 'ready',
+          message: this.state.audiencePreview.memberCount === 0
+            ? (this.state.audiencePreview.emptyConfirmed ? '空人群已明确确认；仍需单独确认物化。' : '空人群尚未确认，物化已拒绝。')
+            : '预览已完成；物化仍只写本地成员事实。',
+        }
+      : null;
     const aeRecordRows = aeRecords.map((r) => ({ ...r, cs: mk(r.tone) }));
     const aeAgents = rows.agents.map((a) => ({
       ...a,
@@ -2152,6 +2220,7 @@ export class AdminController extends PageBase {
         memberTotal: aeMembers.length + ' 人（共 ' + (aePkg?.countText || '0') + ' 人，显示前 200）',
         records: aeRecordRows,
         recordTotal: aeRecords.length ? '共 ' + aeRecords.length + ' 条' : '暂无发送记录',
+        preview: aePreview,
         agents: aeAgents,
         saveBasic: () => this.saveAudienceBasic(),
         saveBinding: () => this.saveAudienceBinding(),
@@ -2160,7 +2229,7 @@ export class AdminController extends PageBase {
         saveSenders: () => this.saveSenders(),
         back: () => this.goto('automation'),
         snapshot: () => this.snapshotAudience(),
-        refresh: () => this.previewAudience(),
+        savePreview: () => this.saveAndPreviewAudience(),
         materialize: () => this.materializeAudience(),
       },
 

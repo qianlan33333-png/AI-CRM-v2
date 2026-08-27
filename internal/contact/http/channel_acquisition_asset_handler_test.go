@@ -87,6 +87,11 @@ func TestCH02AcquisitionAssetReadMasksUnknownAndNeverLeaksSensitiveFields(t *tes
 		}
 	}
 	queries.item.State = eer.StateExecuted
+	withoutURL := httptest.NewRecorder()
+	handler.ServeHTTP(withoutURL, acquisitionAssetRequest(http.MethodGet, "/api/admin/channels/41/acquisition-assets/eer_7", "", authport.CapabilityChannelsRead))
+	if withoutURL.Code != http.StatusOK || !strings.Contains(withoutURL.Body.String(), `"entrant_ready":false`) || strings.Contains(withoutURL.Body.String(), `"asset_url"`) {
+		t.Fatalf("executed-without-url status/body=%d/%s", withoutURL.Code, withoutURL.Body.String())
+	}
 	queries.item.AssetURL = "https://work.weixin.qq.com/ca/link-safe"
 	executed := httptest.NewRecorder()
 	handler.ServeHTTP(executed, acquisitionAssetRequest(http.MethodGet, "/api/admin/channels/41/acquisition-assets/eer_7", "", authport.CapabilityChannelsRead))

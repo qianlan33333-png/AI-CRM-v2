@@ -95,7 +95,7 @@ func TestCallbackHeadAndOptionsReturnEmptyWithoutDispatch(t *testing.T) {
 
 func TestCallbackNegativeCasesAreStableAndNeverAuthenticate(t *testing.T) {
 	fixture := loadFixture(t, "official_url_verification.json")
-	handler := officialHandler(t, fixture)
+	handler, appender := officialHandlerWithAppender(t, fixture)
 	validQuery := url.Values{"msg_signature": {fixture.Signature}, "timestamp": {fixture.Timestamp}, "nonce": {fixture.Nonce}, "echostr": {fixture.EchoStr}}
 	otherRecipient := otherRecipientCiphertext(t, fixture)
 	tests := []struct {
@@ -125,6 +125,9 @@ func TestCallbackNegativeCasesAreStableAndNeverAuthenticate(t *testing.T) {
 			target.ServeHTTP(response, httptest.NewRequest(test.method, test.path, test.body))
 			if response.Code != test.want || response.Body.String() != test.message || strings.Contains(response.Body.String(), fixture.Token) || strings.Contains(response.Body.String(), fixture.EncodingAESKey) {
 				t.Fatalf("response = %d, %q", response.Code, response.Body.String())
+			}
+			if len(appender.events) != 0 {
+				t.Fatalf("rejected callback must not append ingress events: %#v", appender.events)
 			}
 		})
 	}

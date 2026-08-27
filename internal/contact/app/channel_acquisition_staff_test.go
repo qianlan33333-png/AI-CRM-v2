@@ -17,10 +17,15 @@ func (stub acquisitionStaffChannels) GetChannel(context.Context, int64) (Channel
 
 type acquisitionStaffLocal struct {
 	items []contactport.StaffDirectoryEntry
+	err   error
+	calls *int
 }
 
 func (stub acquisitionStaffLocal) ListEligibleStaff(context.Context) ([]contactport.StaffDirectoryEntry, error) {
-	return stub.items, nil
+	if stub.calls != nil {
+		*stub.calls++
+	}
+	return stub.items, stub.err
 }
 
 type acquisitionStaffProvider struct {
@@ -58,5 +63,17 @@ func TestChannelAcquisitionStaffListFailsClosedWhenProviderReadFails(t *testing.
 	)
 	if _, err := service.List(context.Background(), 7); !errors.Is(err, ErrChannelUnavailable) {
 		t.Fatalf("err=%v", err)
+	}
+}
+
+func TestChannelAcquisitionStaffListRejectsMalformedProviderDirectoryBeforeLocalFallback(t *testing.T) {
+	localCalls := 0
+	service := NewChannelAcquisitionStaffService(
+		acquisitionStaffChannels{channel: Channel{ID: 7}},
+		acquisitionStaffLocal{items: []contactport.StaffDirectoryEntry{{WeComUserID: "staff-1", DisplayName: "客服一"}}, calls: &localCalls},
+		acquisitionStaffProvider{items: []string{"staff-1", "staff-1"}},
+	)
+	if _, err := service.List(context.Background(), 7); !errors.Is(err, ErrChannelUnavailable) || localCalls != 0 {
+		t.Fatalf("err=%v local_calls=%d", err, localCalls)
 	}
 }

@@ -24,7 +24,7 @@ const ok = (name, cond) => {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false } = {}) {
+async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -39,7 +39,7 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !couponHttp;
+      window.__AICRM_TEST_MOCK__ = !(couponHttp || audienceHttp);
       if (couponHttp) {
         const calls = [];
         const coupon = { id: 31, name: '新客券', discount_amount_total: 10000, total_issue_limit: 1200, issued_count: 0, per_user_issue_limit: 1, claim_starts_at: '2026-08-01T00:00:00Z', claim_ends_at: '2026-08-31T00:00:00Z', validity_mode: 'relative_days', relative_validity_days: 7, instructions: '说明', target_refs: ['standard_product:8'], status: 'draft', version: 1 };
@@ -52,6 +52,52 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
           if (url.pathname === '/api/admin/coupons/31') return json({ ok: true, coupon });
           if (url.pathname === '/api/admin/coupons/product-options') return json({ ok: true, items: [{ target_ref: 'standard_product:9', name: '增长课', price_minor: 9900, currency: 'CNY' }], total: 1, limit: 20, offset: 0 });
           return json({ code: 'unexpected_coupon_request' }, 500);
+        };
+        return;
+      }
+      if (audienceHttp) {
+        const calls = [];
+        let packageVersion = 3;
+        let configurationVersion = 2;
+        const packageDto = () => ({
+          package_id: 6,
+          name: '待唤醒客户',
+          group_id: 2,
+          lifecycle: 'paused',
+          version: packageVersion,
+          refresh_mode: 'manual',
+          refresh_cron: null,
+          member_count: audienceEmpty ? 0 : 2,
+          refreshed_at: null,
+          refresh_status: 'idle',
+          created_at: '2026-08-27T00:00:00Z',
+          updated_at: '2026-08-27T00:00:00Z',
+          definition: { field: 'stage_id', op: 'eq', value: 3 },
+        });
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data, clone() { return this; } });
+        window.document.cookie = 'aicrm_csrf=' + 'c'.repeat(43);
+        window.__audienceHttpTest = { calls };
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', body: init.body ? JSON.parse(String(init.body)) : null });
+          if (url.pathname === '/api/admin/ai-audience/package-groups') return json({ items: [{ group_id: 2, name: 'W4' }] });
+          if (url.pathname === '/api/admin/ai-audience/packages') return json({ items: [packageDto()] });
+          if (url.pathname === '/api/admin/ai-audience/packages/6') {
+            if (init.method === 'PATCH') {
+              packageVersion += 1;
+              return json({ package: packageDto(), local_projection: true, real_external_call_executed: false });
+            }
+            return json({ package: packageDto(), local_projection: true, real_external_call_executed: false });
+          }
+          if (url.pathname.endsWith('/automation-binding')) return json({ binding: { version: 1 }, local_projection: true, real_external_call_executed: false });
+          if (url.pathname.endsWith('/senders')) return json({ items: [], local_projection: true, real_external_call_executed: false });
+          if (url.pathname.endsWith('/configuration-preview')) return json({ configuration_version: configurationVersion, package_version: packageVersion, member_count: audienceEmpty ? 0 : 2, member_digest: 'sha256:' + 'a'.repeat(64), evaluated_at: '2026-08-27T00:00:00Z', materialized: false, local_projection: true, real_external_call_executed: false });
+          if (url.pathname.endsWith('/configuration')) {
+            if (init.method === 'PUT') configurationVersion += 1;
+            return json({ configuration: { version: configurationVersion }, local_projection: true, real_external_call_executed: false });
+          }
+          if (url.pathname.endsWith('/members')) return json({ items: [], local_projection: true, real_external_call_executed: false });
+          return json({ code: 'unexpected_audience_request' }, 500);
         };
         return;
       }
@@ -710,6 +756,49 @@ console.log('admin/audienceEdit.html?id={package_id}（真实配置与发送人 
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '保存发送人白名单'));
   await sleep(30);
   ok('超过 5 位在发请求前被阻止', d.body.textContent.includes('发送人最多 5 位且不能重复'));
+  dom.window.close();
+}
+
+console.log('admin/audienceEdit.html（HTTP 保存→配置快照→预览）');
+{
+  const dom = await loadPage('admin/audienceEdit.html', { id: 6, audienceHttp: true });
+  const d = dom.window.document;
+  await sleep(40);
+  input(dom, d.querySelector('#aeName'), '已保存的待唤醒客户');
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存并预览'));
+  await sleep(80);
+  const calls = dom.window.__audienceHttpTest.calls;
+  const patch = calls.findIndex((call) => call.path === '/api/admin/ai-audience/packages/6' && call.method === 'PATCH');
+  const snapshot = calls.findIndex((call) => call.path.endsWith('/configuration') && call.method === 'PUT');
+  const preview = calls.findIndex((call) => call.path.endsWith('/configuration-preview') && call.query === '?configuration_version=3');
+  ok('Audience 保存并预览只串行调用真实 package/configuration/preview 契约',
+    dom.window.__AICRM_TEST_MOCK__ === false && patch >= 0 && snapshot > patch && preview > snapshot &&
+    calls[patch]?.body?.expected_version === 3 && calls[snapshot]?.body?.expected_package_version === 4 &&
+    d.querySelector('[data-audience-preview="ready"]')?.textContent.includes('配置 v3 预览：2 人'));
+  ok('Audience 预览结果明确不创建群发或调用 Provider',
+    d.body.textContent.includes('不会创建群发或调用企微') && !calls.some((call) => call.path.includes('materialize')));
+  dom.window.close();
+}
+
+console.log('admin/audienceEdit.html（HTTP 空人群显式确认）');
+{
+  const dom = await loadPage('admin/audienceEdit.html', { id: 6, audienceHttp: true, audienceEmpty: true });
+  const d = dom.window.document;
+  await sleep(40);
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存并预览'));
+  await sleep(80);
+  ok('空人群预览要求明确确认且物化尚未执行',
+    d.querySelector('[data-audience-preview="empty_pending"]')?.textContent.includes('物化已拒绝') &&
+    d.querySelector('#fb-body')?.textContent.includes('预览结果为 0 人') &&
+    !dom.window.__audienceHttpTest.calls.some((call) => call.path.includes('materialize')));
+  click(dom, d.querySelector('#fb-ok'));
+  await sleep(30);
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '物化成员'));
+  await sleep(10);
+  ok('已确认的空人群仍需第二次确认本地物化，未伪造外部效果',
+    d.querySelector('[data-audience-preview="empty_confirmed"]')?.textContent.includes('仍需单独确认物化') &&
+    d.querySelector('#fb-body')?.textContent.includes('当前已确认空人群') &&
+    !dom.window.__audienceHttpTest.calls.some((call) => call.path.includes('materialize')));
   dom.window.close();
 }
 
