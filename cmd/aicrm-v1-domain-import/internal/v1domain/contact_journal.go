@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	contactport "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
+	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 )
 
 // ContactTagJournal routes the three Contact-owned source tables through the
@@ -24,7 +25,8 @@ var _ ContactTagReceiptJournal = (*ContactTagJournal)(nil)
 func NewContactTagJournal(groups, tags, bindings *Journal) (*ContactTagJournal, error) {
 	if !validContactTagScope(groups, contactTagGroupsTable, "tag_groups") ||
 		!validContactTagScope(tags, contactTagsTable, "tags") ||
-		!validContactTagScope(bindings, contactBindingsTable, "customer_tags") {
+		!validContactTagScope(bindings, contactBindingsTable, "customer_tags") ||
+		!sameContactTagJournalRun(groups, tags) || !sameContactTagJournalRun(groups, bindings) {
 		return nil, ErrInvalidScope
 	}
 	return &ContactTagJournal{groups: groups, tags: tags, bindings: bindings}, nil
@@ -32,7 +34,13 @@ func NewContactTagJournal(groups, tags, bindings *Journal) (*ContactTagJournal, 
 
 func validContactTagScope(journal *Journal, sourceTable, targetTable string) bool {
 	return journal != nil && journal.scope.valid() && journal.scope.TableID == sourceTable &&
-		journal.scope.TargetDomain == "contact" && journal.scope.TargetTable == targetTable
+		journal.scope.TargetDomain == "contact" && journal.scope.TargetTable == targetTable &&
+		journal.scope.AdapterID == v1archive.DefaultAdapterID
+}
+
+func sameContactTagJournalRun(left, right *Journal) bool {
+	return left != nil && right != nil && left.scope.ImportVersion == right.scope.ImportVersion &&
+		left.scope.ArchiveRunID == right.scope.ArchiveRunID && left.scope.AdapterID == right.scope.AdapterID
 }
 
 func (journal *ContactTagJournal) FindHistoricalTagLineage(ctx context.Context, source contactport.HistoricalTagSource, key [sha256.Size]byte) (contactport.HistoricalTagLineage, bool, error) {
@@ -44,7 +52,7 @@ func (journal *ContactTagJournal) FindHistoricalTagLineage(ctx context.Context, 
 	if err != nil || !found {
 		return contactport.HistoricalTagLineage{}, found, err
 	}
-	lineage, err := contactTagLineageFromTerminal(receipt)
+	lineage, err := contactTagLineageFromTerminal(source, receipt)
 	if err != nil {
 		return contactport.HistoricalTagLineage{}, false, err
 	}
@@ -60,10 +68,20 @@ func (journal *ContactTagJournal) AppendHistoricalTagLineage(ctx context.Context
 		lineage.TargetID < 1 || lineage.TargetDigest == ([sha256.Size]byte{}) || lineage.PayloadDigest != fact.PayloadDigest || lineage.FieldDigest != fact.FieldDigest {
 		return ErrInvalidScope
 	}
+	if source == contactport.HistoricalCustomerTagSource && lineage.CustomerID < 1 {
+		return ErrInvalidScope
+	}
+	if source != contactport.HistoricalCustomerTagSource && lineage.CustomerID != 0 {
+		return ErrInvalidScope
+	}
+	metadata := map[string]any{"payload_digest": hex.EncodeToString(fact.PayloadDigest[:]), "field_digest": hex.EncodeToString(fact.FieldDigest[:])}
+	if source == contactport.HistoricalCustomerTagSource {
+		metadata["customer_id"] = strconv.FormatInt(int64(lineage.CustomerID), 10)
+	}
 	return entry.Record(ctx, TerminalReceipt{
 		SourceKeyDigest: fact.SourceKeyDigest, PayloadDigest: fact.PayloadDigest, Disposition: "import",
 		TargetID: strconv.FormatInt(lineage.TargetID, 10), TargetDigest: lineage.TargetDigest,
-		Metadata: map[string]any{"payload_digest": hex.EncodeToString(fact.PayloadDigest[:]), "field_digest": hex.EncodeToString(fact.FieldDigest[:])},
+		Metadata: metadata,
 	})
 }
 
@@ -91,7 +109,7 @@ func (journal *ContactTagJournal) forSource(source contactport.HistoricalTagSour
 	}
 }
 
-func contactTagLineageFromTerminal(receipt TerminalReceipt) (contactport.HistoricalTagLineage, error) {
+func contactTagLineageFromTerminal(source contactport.HistoricalTagSource, receipt TerminalReceipt) (contactport.HistoricalTagLineage, error) {
 	if receipt.Disposition != "import" || receipt.Reason != "" || receipt.TargetID == "" || receipt.TargetDigest == ([sha256.Size]byte{}) {
 		return contactport.HistoricalTagLineage{}, ErrConflict
 	}
@@ -107,7 +125,31 @@ func contactTagLineageFromTerminal(receipt TerminalReceipt) (contactport.Histori
 	if err != nil {
 		return contactport.HistoricalTagLineage{}, ErrConflict
 	}
-	return contactport.HistoricalTagLineage{TargetID: targetID, TargetDigest: receipt.TargetDigest, PayloadDigest: payload, FieldDigest: field}, nil
+	lineage := contactport.HistoricalTagLineage{TargetID: targetID, TargetDigest: receipt.TargetDigest, PayloadDigest: payload, FieldDigest: field}
+	if source == contactport.HistoricalCustomerTagSource {
+		customerID, err := contactTagCustomerIDMetadata(receipt.Metadata)
+		if err != nil || customerID < 1 {
+			return contactport.HistoricalTagLineage{}, ErrConflict
+		}
+		lineage.CustomerID = customerID
+	} else if source != contactport.HistoricalTagGroupSource && source != contactport.HistoricalTagCatalogTagSource {
+		return contactport.HistoricalTagLineage{}, ErrInvalidScope
+	} else if _, present := receipt.Metadata["customer_id"]; present {
+		return contactport.HistoricalTagLineage{}, ErrConflict
+	}
+	return lineage, nil
+}
+
+func contactTagCustomerIDMetadata(metadata map[string]any) (contactport.CustomerID, error) {
+	value, ok := metadata["customer_id"].(string)
+	if !ok {
+		return 0, errors.New("invalid contact tag customer metadata")
+	}
+	parsed, err := strconv.ParseInt(value, 10, 64)
+	if err != nil || parsed < 1 {
+		return 0, errors.New("invalid contact tag customer metadata")
+	}
+	return contactport.CustomerID(parsed), nil
 }
 
 func contactTagDigestMetadata(metadata map[string]any, field string) ([sha256.Size]byte, error) {

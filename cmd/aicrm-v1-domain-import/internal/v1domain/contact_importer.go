@@ -90,6 +90,9 @@ func (importer *ContactTagImporter) Import(ctx context.Context, archiveRunID str
 	result := ContactTagImportResult{}
 	groupSourceKeys := map[string][32]byte{}
 	if err := importer.archive.EachTableRow(ctx, archiveRunID, contactTagGroupsTable, func(row v1archive.ArchivedRow) error {
+		if !validContactArchivedRow(row, contactTagGroupsTable) {
+			return ErrInvalidScope
+		}
 		var source contactTagGroupJSON
 		if err := json.Unmarshal(row.Payload, &source); err != nil {
 			return importer.recordContactTerminal(ctx, &result, contactport.HistoricalTagGroupSource, row, "quarantine", "malformed_tag_group")
@@ -117,6 +120,9 @@ func (importer *ContactTagImporter) Import(ctx context.Context, archiveRunID str
 		return ContactTagImportResult{}, err
 	}
 	if err := importer.archive.EachTableRow(ctx, archiveRunID, contactTagsTable, func(row v1archive.ArchivedRow) error {
+		if !validContactArchivedRow(row, contactTagsTable) {
+			return ErrInvalidScope
+		}
 		var source contactTagJSON
 		if err := json.Unmarshal(row.Payload, &source); err != nil {
 			return importer.recordContactTerminal(ctx, &result, contactport.HistoricalTagCatalogTagSource, row, "quarantine", "malformed_tag")
@@ -150,6 +156,9 @@ func (importer *ContactTagImporter) Import(ctx context.Context, archiveRunID str
 		return ContactTagImportResult{}, err
 	}
 	if err := importer.archive.EachTableRow(ctx, archiveRunID, contactBindingsTable, func(row v1archive.ArchivedRow) error {
+		if !validContactArchivedRow(row, contactBindingsTable) {
+			return ErrInvalidScope
+		}
 		var source contactTagBindingJSON
 		if err := json.Unmarshal(row.Payload, &source); err != nil {
 			return importer.recordContactTerminal(ctx, &result, contactport.HistoricalCustomerTagSource, row, "quarantine", "malformed_contact_tag")
@@ -158,8 +167,11 @@ func (importer *ContactTagImporter) Import(ctx context.Context, archiveRunID str
 			return importer.recordContactTerminal(ctx, &result, contactport.HistoricalCustomerTagSource, row, "quarantine", "invalid_contact_tag")
 		}
 		customerID, err := importer.customers.ResolveVerifiedDM01Customer(ctx, source.UnionID)
-		if err != nil || customerID < 1 {
+		if errors.Is(err, contactport.ErrHistoricalTagBlocked) || (err == nil && customerID < 1) {
 			return importer.recordContactTerminal(ctx, &result, contactport.HistoricalCustomerTagSource, row, "quarantine", "dm01_customer_unresolved")
+		}
+		if err != nil {
+			return fmt.Errorf("resolve DM01 customer: %w", err)
 		}
 		write, err := importer.writer.ImportCustomerTag(ctx, contactport.HistoricalCustomerTagRecord{Fact: contactTagFact(row), UnionID: source.UnionID, VerifiedCustomerID: customerID, ProviderTagID: source.TagID, TaggedAt: source.CreatedAt})
 		if errors.Is(err, contactport.ErrHistoricalTagBlocked) {
@@ -184,6 +196,11 @@ func (importer *ContactTagImporter) Import(ctx context.Context, archiveRunID str
 
 func contactTagFact(row v1archive.ArchivedRow) contactport.HistoricalTagFact {
 	return contactport.HistoricalTagFact{SourceKeyDigest: row.SourceKeyHMAC, PayloadDigest: row.PayloadHMAC, FieldDigest: row.FieldHMAC}
+}
+
+func validContactArchivedRow(row v1archive.ArchivedRow, table string) bool {
+	return row.AdapterID == v1archive.DefaultAdapterID && row.TableID == table &&
+		row.SourceKeyHMAC != ([32]byte{}) && row.PayloadHMAC != ([32]byte{}) && row.FieldHMAC != ([32]byte{})
 }
 
 func (importer *ContactTagImporter) recordContactTerminal(ctx context.Context, result *ContactTagImportResult, source contactport.HistoricalTagSource, row v1archive.ArchivedRow, disposition, reason string) error {

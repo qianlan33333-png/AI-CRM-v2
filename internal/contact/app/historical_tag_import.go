@@ -43,8 +43,11 @@ func (service *HistoricalTagImportService) ImportGroup(ctx context.Context, reco
 	if !historicalTagReady(service, false) {
 		return HistoricalTagImportResult{}, contactport.ErrHistoricalTagUnavailable
 	}
-	return service.withLineage(ctx, contactport.HistoricalTagGroupSource, record.Fact, func(tx context.Context, lineage contactport.HistoricalTagLineage, found bool) (int64, [32]byte, bool, error) {
+	return service.withLineage(ctx, contactport.HistoricalTagGroupSource, record.Fact, 0, func(tx context.Context, lineage contactport.HistoricalTagLineage, found bool) (int64, [32]byte, bool, error) {
 		if found {
+			if lineage.CustomerID != 0 {
+				return 0, [32]byte{}, false, contactport.ErrHistoricalTagConflict
+			}
 			group, err := service.store.GetHistoricalTagGroup(tx, lineage.TargetID)
 			if err != nil || !sameHistoricalTagGroup(group, record) {
 				return 0, [32]byte{}, false, contactport.ErrHistoricalTagConflict
@@ -66,7 +69,7 @@ func (service *HistoricalTagImportService) ImportTag(ctx context.Context, record
 	if !historicalTagReady(service, false) {
 		return HistoricalTagImportResult{}, contactport.ErrHistoricalTagUnavailable
 	}
-	return service.withLineage(ctx, contactport.HistoricalTagCatalogTagSource, record.Fact, func(tx context.Context, lineage contactport.HistoricalTagLineage, found bool) (int64, [32]byte, bool, error) {
+	return service.withLineage(ctx, contactport.HistoricalTagCatalogTagSource, record.Fact, 0, func(tx context.Context, lineage contactport.HistoricalTagLineage, found bool) (int64, [32]byte, bool, error) {
 		groupLineage, groupFound, err := service.journal.FindHistoricalTagLineage(tx, contactport.HistoricalTagGroupSource, record.GroupSourceKeyDigest)
 		if err != nil {
 			return 0, [32]byte{}, false, err
@@ -78,6 +81,9 @@ func (service *HistoricalTagImportService) ImportTag(ctx context.Context, record
 			return 0, [32]byte{}, false, contactport.ErrHistoricalTagBlocked
 		}
 		if found {
+			if lineage.CustomerID != 0 {
+				return 0, [32]byte{}, false, contactport.ErrHistoricalTagConflict
+			}
 			tag, getErr := service.store.GetHistoricalTag(tx, lineage.TargetID)
 			if getErr != nil || !sameHistoricalTag(tag, groupLineage.TargetID, record) {
 				return 0, [32]byte{}, false, contactport.ErrHistoricalTagConflict
@@ -102,9 +108,15 @@ func (service *HistoricalTagImportService) ImportCustomerTag(ctx context.Context
 	if !historicalTagReady(service, true) {
 		return HistoricalTagImportResult{}, contactport.ErrHistoricalTagUnavailable
 	}
-	return service.withLineage(ctx, contactport.HistoricalCustomerTagSource, record.Fact, func(tx context.Context, lineage contactport.HistoricalTagLineage, found bool) (int64, [32]byte, bool, error) {
+	return service.withLineage(ctx, contactport.HistoricalCustomerTagSource, record.Fact, record.VerifiedCustomerID, func(tx context.Context, lineage contactport.HistoricalTagLineage, found bool) (int64, [32]byte, bool, error) {
+		if found && lineage.CustomerID != record.VerifiedCustomerID {
+			return 0, [32]byte{}, false, contactport.ErrHistoricalTagConflict
+		}
 		if err := service.customers.VerifyHistoricalTagCustomer(tx, strings.TrimSpace(record.UnionID), record.VerifiedCustomerID); err != nil {
-			return 0, [32]byte{}, false, contactport.ErrHistoricalTagBlocked
+			if errors.Is(err, contactport.ErrHistoricalTagBlocked) {
+				return 0, [32]byte{}, false, contactport.ErrHistoricalTagBlocked
+			}
+			return 0, [32]byte{}, false, err
 		}
 		tag, tagFound, err := service.store.FindHistoricalTagByProviderID(tx, strings.TrimSpace(record.ProviderTagID))
 		if err != nil {
@@ -115,7 +127,7 @@ func (service *HistoricalTagImportService) ImportCustomerTag(ctx context.Context
 		}
 		targetDigest := historicalCustomerTagTargetDigest(record.VerifiedCustomerID, tag.ID)
 		if found {
-			if lineage.TargetID != tag.ID || lineage.TargetDigest != targetDigest {
+			if lineage.TargetID != tag.ID || lineage.CustomerID != record.VerifiedCustomerID || lineage.TargetDigest != targetDigest {
 				return 0, [32]byte{}, false, contactport.ErrHistoricalTagConflict
 			}
 			current, currentFound, getErr := service.store.GetHistoricalCustomerTag(tx, record.VerifiedCustomerID, tag.ID)
@@ -135,7 +147,7 @@ func (service *HistoricalTagImportService) ImportCustomerTag(ctx context.Context
 	})
 }
 
-func (service *HistoricalTagImportService) withLineage(ctx context.Context, source contactport.HistoricalTagSource, fact contactport.HistoricalTagFact, apply func(context.Context, contactport.HistoricalTagLineage, bool) (int64, [32]byte, bool, error)) (HistoricalTagImportResult, error) {
+func (service *HistoricalTagImportService) withLineage(ctx context.Context, source contactport.HistoricalTagSource, fact contactport.HistoricalTagFact, customerID contactport.CustomerID, apply func(context.Context, contactport.HistoricalTagLineage, bool) (int64, [32]byte, bool, error)) (HistoricalTagImportResult, error) {
 	if ctx == nil || ctx.Err() != nil {
 		return HistoricalTagImportResult{}, contactport.ErrHistoricalTagUnavailable
 	}
@@ -168,7 +180,11 @@ func (service *HistoricalTagImportService) withLineage(ctx context.Context, sour
 		if replayed {
 			return contactport.ErrHistoricalTagConflict
 		}
-		if err = service.journal.AppendHistoricalTagLineage(tx, source, fact, contactport.HistoricalTagLineage{TargetID: targetID, TargetDigest: targetDigest, PayloadDigest: fact.PayloadDigest, FieldDigest: fact.FieldDigest}); err != nil {
+		newLineage := contactport.HistoricalTagLineage{TargetID: targetID, TargetDigest: targetDigest, PayloadDigest: fact.PayloadDigest, FieldDigest: fact.FieldDigest}
+		if source == contactport.HistoricalCustomerTagSource {
+			newLineage.CustomerID = customerID
+		}
+		if err = service.journal.AppendHistoricalTagLineage(tx, source, fact, newLineage); err != nil {
 			return err
 		}
 		result.TargetID = targetID

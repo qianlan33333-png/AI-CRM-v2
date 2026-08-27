@@ -16,9 +16,9 @@ import (
 func TestContactTagImporterImportsLocalFactsWithVerifiedDM01Customer(t *testing.T) {
 	stamp := time.Date(2026, 8, 28, 3, 0, 0, 0, time.UTC)
 	archive := &contactArchive{rows: map[string][]v1archive.ArchivedRow{
-		contactTagGroupsTable: {contactArchivedRow(1, map[string]any{"group_id": "group-1", "group_name": "Lifecycle"})},
-		contactTagsTable:      {contactArchivedRow(2, map[string]any{"tag_id": "tag-1", "tag_name": "Paid", "group_id": "group-1", "order_index": 3})},
-		contactBindingsTable:  {contactArchivedRow(3, map[string]any{"userid": "must-not-map", "tag_id": "tag-1", "unionid": "union-1", "created_at": stamp})},
+		contactTagGroupsTable: {contactArchivedRow(contactTagGroupsTable, 1, map[string]any{"group_id": "group-1", "group_name": "Lifecycle"})},
+		contactTagsTable:      {contactArchivedRow(contactTagsTable, 2, map[string]any{"tag_id": "tag-1", "tag_name": "Paid", "group_id": "group-1", "order_index": 3})},
+		contactBindingsTable:  {contactArchivedRow(contactBindingsTable, 3, map[string]any{"userid": "must-not-map", "tag_id": "tag-1", "unionid": "union-1", "created_at": stamp})},
 	}}
 	journal := newContactMemoryJournal()
 	customers := &contactDM01Verifier{targets: map[string]contactport.CustomerID{"union-1": 19}}
@@ -40,8 +40,8 @@ func TestContactTagImporterArchivesDeletedTagAndQuarantinesBindingWithoutVerifie
 	deleted := stamp.Add(-time.Hour)
 	archive := &contactArchive{rows: map[string][]v1archive.ArchivedRow{
 		contactTagGroupsTable: {},
-		contactTagsTable:      {contactArchivedRow(2, map[string]any{"tag_id": "tag-1", "tag_name": "Paid", "group_id": "group-1", "deleted_at": deleted})},
-		contactBindingsTable:  {contactArchivedRow(3, map[string]any{"userid": "must-not-map", "tag_id": "tag-1", "unionid": "union-1", "created_at": stamp})},
+		contactTagsTable:      {contactArchivedRow(contactTagsTable, 2, map[string]any{"tag_id": "tag-1", "tag_name": "Paid", "group_id": "group-1", "deleted_at": deleted})},
+		contactBindingsTable:  {contactArchivedRow(contactBindingsTable, 3, map[string]any{"userid": "must-not-map", "tag_id": "tag-1", "unionid": "union-1", "created_at": stamp})},
 	}}
 	journal := newContactMemoryJournal()
 	importer, err := NewContactTagImporter(archive, contactMemoryUOW{}, newContactMemoryStore(), journal, &contactDM01Verifier{targets: map[string]contactport.CustomerID{"union-1": 19}})
@@ -59,7 +59,7 @@ func TestContactTagImporterArchivesDeletedTagAndQuarantinesBindingWithoutVerifie
 
 func TestContactTagImporterQuarantinesWhitespaceOnlyGroup(t *testing.T) {
 	archive := &contactArchive{rows: map[string][]v1archive.ArchivedRow{
-		contactTagGroupsTable: {contactArchivedRow(1, map[string]any{"group_id": "group-1", "group_name": " \t "})},
+		contactTagGroupsTable: {contactArchivedRow(contactTagGroupsTable, 1, map[string]any{"group_id": "group-1", "group_name": " \t "})},
 	}}
 	journal := newContactMemoryJournal()
 	importer, err := NewContactTagImporter(archive, contactMemoryUOW{}, newContactMemoryStore(), journal, &contactDM01Verifier{})
@@ -69,6 +69,34 @@ func TestContactTagImporterQuarantinesWhitespaceOnlyGroup(t *testing.T) {
 	result, err := importer.Import(context.Background(), "run")
 	if err != nil || result.QuarantinedRows != 1 || len(journal.terminal) != 1 || journal.terminal[0].Reason != "invalid_tag_group" {
 		t.Fatalf("result=%+v err=%v terminal=%+v", result, err, journal.terminal)
+	}
+}
+
+func TestContactTagImporterStopsForTransientDM01ResolverFailure(t *testing.T) {
+	stamp := time.Date(2026, 8, 28, 3, 0, 0, 0, time.UTC)
+	archive := &contactArchive{rows: map[string][]v1archive.ArchivedRow{
+		contactBindingsTable: {contactArchivedRow(contactBindingsTable, 3, map[string]any{"tag_id": "tag-1", "unionid": "union-1", "created_at": stamp})},
+	}}
+	journal := newContactMemoryJournal()
+	importer, err := NewContactTagImporter(archive, contactMemoryUOW{}, newContactMemoryStore(), journal, &contactDM01Verifier{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = importer.Import(context.Background(), "run"); err == nil || len(journal.terminal) != 0 {
+		t.Fatalf("transient resolver became terminal: err=%v terminal=%+v", err, journal.terminal)
+	}
+}
+
+func TestContactTagImporterRejectsUnauthenticatedArchiveRow(t *testing.T) {
+	row := contactArchivedRow(contactTagGroupsTable, 1, map[string]any{"group_id": "group-1", "group_name": "Lifecycle"})
+	row.AdapterID = "untrusted"
+	archive := &contactArchive{rows: map[string][]v1archive.ArchivedRow{contactTagGroupsTable: {row}}}
+	importer, err := NewContactTagImporter(archive, contactMemoryUOW{}, newContactMemoryStore(), newContactMemoryJournal(), &contactDM01Verifier{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = importer.Import(context.Background(), "run"); !errors.Is(err, ErrInvalidScope) {
+		t.Fatalf("unauthenticated row err=%v", err)
 	}
 }
 
@@ -205,9 +233,9 @@ func (store *contactMemoryStore) BindHistoricalCustomerTag(ctx context.Context, 
 	return value, true, nil
 }
 
-func contactArchivedRow(index byte, payload map[string]any) v1archive.ArchivedRow {
+func contactArchivedRow(table string, index byte, payload map[string]any) v1archive.ArchivedRow {
 	raw, _ := json.Marshal(payload)
-	return v1archive.ArchivedRow{SourceOrdinal: int64(index), SourceKeyHMAC: contactDigest(index), PayloadHMAC: contactDigest(index + 40), FieldHMAC: contactDigest(index + 80), Payload: raw}
+	return v1archive.ArchivedRow{AdapterID: v1archive.DefaultAdapterID, TableID: table, SourceOrdinal: int64(index), SourceKeyHMAC: contactDigest(index), PayloadHMAC: contactDigest(index + 40), FieldHMAC: contactDigest(index + 80), Payload: raw}
 }
 
 func contactDigest(index byte) [32]byte {

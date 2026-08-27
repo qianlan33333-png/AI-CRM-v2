@@ -31,6 +31,11 @@ func TestHistoricalTagImportIsLocalReplaySafeAndPreservesMappings(t *testing.T) 
 	if err != nil || firstCustomer.Replayed || firstCustomer.TargetID != firstTag.TargetID || verifier.calls != 1 {
 		t.Fatalf("customer=%+v err=%v calls=%d", firstCustomer, err, verifier.calls)
 	}
+	if journal.values[historicalTagJournalKey(contactport.HistoricalTagGroupSource, group.Fact.SourceKeyDigest)].CustomerID != 0 ||
+		journal.values[historicalTagJournalKey(contactport.HistoricalTagCatalogTagSource, tag.Fact.SourceKeyDigest)].CustomerID != 0 ||
+		journal.values[historicalTagJournalKey(contactport.HistoricalCustomerTagSource, customer.Fact.SourceKeyDigest)].CustomerID != 51 {
+		t.Fatalf("unexpected lineage addresses: %+v", journal.values)
+	}
 	binding, found := store.customerTags[historicalCustomerTagKey(51, firstTag.TargetID)]
 	if !found || !binding.TaggedAt.Equal(stamp.UTC()) || binding.TaggedBy != historicalContactTagTaggedBy {
 		t.Fatalf("binding=%+v found=%t", binding, found)
@@ -53,6 +58,28 @@ func TestHistoricalTagImportIsLocalReplaySafeAndPreservesMappings(t *testing.T) 
 	}
 	if verifier.calls != 2 { // exact customer replay still re-verifies the main-provided target.
 		t.Fatalf("customer verifier calls=%d", verifier.calls)
+	}
+}
+
+func TestHistoricalTagImportKeepsTransientCustomerVerifierFailureOutOfQuarantine(t *testing.T) {
+	store := newHistoricalTagMemoryStore()
+	journal := newHistoricalTagMemoryJournal()
+	verifier := &historicalTagCustomerVerifier{targets: map[string]contactport.CustomerID{"union-1": 51}, err: errors.New("database unavailable")}
+	service := NewHistoricalTagImportService(historicalTagMemoryUOW{}, store, journal, verifier)
+	group := historicalTagGroupRecord(31, "Lifecycle", 0)
+	if _, err := service.ImportGroup(context.Background(), group); err != nil {
+		t.Fatal(err)
+	}
+	tag := historicalTagRecord(32, group.Fact.SourceKeyDigest, "corp-tag-1", "Paid", 0)
+	if _, err := service.ImportTag(context.Background(), tag); err != nil {
+		t.Fatal(err)
+	}
+	customer := historicalCustomerTagRecord(33, "union-1", 51, "corp-tag-1", time.Now().UTC())
+	if _, err := service.ImportCustomerTag(context.Background(), customer); !errors.Is(err, contactport.ErrHistoricalTagUnavailable) || errors.Is(err, contactport.ErrHistoricalTagBlocked) {
+		t.Fatalf("transient verifier error=%v", err)
+	}
+	if len(store.customerTags) != 0 {
+		t.Fatalf("transient verifier created binding: %+v", store.customerTags)
 	}
 }
 
@@ -154,10 +181,14 @@ func (journal *historicalTagMemoryJournal) AppendHistoricalTagLineage(_ context.
 type historicalTagCustomerVerifier struct {
 	targets map[string]contactport.CustomerID
 	calls   int
+	err     error
 }
 
 func (verifier *historicalTagCustomerVerifier) VerifyHistoricalTagCustomer(_ context.Context, unionID string, target contactport.CustomerID) error {
 	verifier.calls++
+	if verifier.err != nil {
+		return verifier.err
+	}
 	if verifier.targets[unionID] != target {
 		return contactport.ErrHistoricalTagBlocked
 	}
