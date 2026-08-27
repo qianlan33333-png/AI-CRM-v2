@@ -519,6 +519,21 @@ func (HistoricalImportRepository) LockMatchingExistingStaff(ctx context.Context,
 	return row.ID, nil
 }
 
+func (HistoricalImportRepository) ReadHistoricalImportRun(ctx context.Context, runID int64) (string, string, error) {
+	if runID < 1 {
+		return "", "", ErrInvalidHistoricalImport
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return "", "", err
+	}
+	row, err := contactdb.New(tx).ReadHistoricalImportRun(ctx, runID)
+	if err != nil {
+		return "", "", err
+	}
+	return row.Mode, row.State, nil
+}
+
 func (HistoricalImportRepository) LockHistoricalImportSource(ctx context.Context, source contactport.HistoricalImportSource, sourceKeyHMAC []byte) error {
 	sourceTable, ok := historicalImportSourceTable(source)
 	if !ok || len(sourceKeyHMAC) != 32 {

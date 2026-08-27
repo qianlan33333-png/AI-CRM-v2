@@ -70,6 +70,11 @@ WHERE source_manifest_sha256 = sqlc.arg(source_manifest_sha256)::bytea
        OR (mode = 'reconcile' AND state IN ('reserved','reconciling','reconciled')))
 LIMIT 1;
 
+-- name: ReadHistoricalImportRun :one
+SELECT mode, state FROM legacy_contact_identity_import_runs
+WHERE id = sqlc.arg(run_id)::bigint
+FOR SHARE;
+
 -- name: RenewHistoricalImportLease :one
 UPDATE legacy_contact_identity_import_runs
 SET lease_expires_at = sqlc.arg(lease_expires_at)::timestamptz

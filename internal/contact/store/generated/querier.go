@@ -158,6 +158,7 @@ type Querier interface {
 	NextChannelAcquisitionAssetVersion(ctx context.Context, arg NextChannelAcquisitionAssetVersionParams) (int64, error)
 	ReadChannelAcquisitionAssetChannel(ctx context.Context, channelID int64) (bool, error)
 	ReadCustomerProjection(ctx context.Context, customerID int64) (ReadCustomerProjectionRow, error)
+	ReadHistoricalImportRun(ctx context.Context, runID int64) (ReadHistoricalImportRunRow, error)
 	RemoveCustomerTag(ctx context.Context, arg RemoveCustomerTagParams) (int64, error)
 	RenameStage(ctx context.Context, arg RenameStageParams) (RenameStageRow, error)
 	RenewHistoricalImportLease(ctx context.Context, arg RenewHistoricalImportLeaseParams) (int64, error)

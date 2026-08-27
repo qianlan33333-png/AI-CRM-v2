@@ -1047,6 +1047,24 @@ func (q *Queries) LockUniqueActiveStaffForHistoricalImport(ctx context.Context, 
 	return id, err
 }
 
+const readHistoricalImportRun = `-- name: ReadHistoricalImportRun :one
+SELECT mode, state FROM legacy_contact_identity_import_runs
+WHERE id = $1::bigint
+FOR SHARE
+`
+
+type ReadHistoricalImportRunRow struct {
+	Mode  string `json:"mode"`
+	State string `json:"state"`
+}
+
+func (q *Queries) ReadHistoricalImportRun(ctx context.Context, runID int64) (ReadHistoricalImportRunRow, error) {
+	row := q.db.QueryRow(ctx, readHistoricalImportRun, runID)
+	var i ReadHistoricalImportRunRow
+	err := row.Scan(&i.Mode, &i.State)
+	return i, err
+}
+
 const renewHistoricalImportLease = `-- name: RenewHistoricalImportLease :one
 UPDATE legacy_contact_identity_import_runs
 SET lease_expires_at = $1::timestamptz
