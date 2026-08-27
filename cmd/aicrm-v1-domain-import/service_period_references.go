@@ -127,7 +127,7 @@ func (r *servicePeriodReferenceResolver) ResolveServicePeriodCustomer(ctx contex
 	return r.finance.customer(ctx, unionID)
 }
 
-func (r *servicePeriodReferenceResolver) ResolveServicePeriodOrder(ctx context.Context, sourceID int64, outTradeNo string, productID int64) (*int64, error) {
+func (r *servicePeriodReferenceResolver) ResolveServicePeriodOrder(ctx context.Context, sourceID int64, outTradeNo string) (*int64, error) {
 	source, found := r.orders[sourceID]
 	if !found {
 		return nil, nil
@@ -140,14 +140,16 @@ func (r *servicePeriodReferenceResolver) ResolveServicePeriodOrder(ctx context.C
 	if err != nil {
 		return nil, err
 	}
-	if !servicePeriodOrderReferenceMatches(order, receipt, source.value, outTradeNo, productID) {
+	if !servicePeriodOrderReferenceMatches(order, receipt, source.value, outTradeNo) {
 		return nil, v1domain.ErrConflict
 	}
 	return &id, nil
 }
 
-func servicePeriodOrderReferenceMatches(order orderport.Record, receipt v1domain.TerminalReceipt, sourceNo, outTradeNo string, productID int64) bool {
+// Historical renewal/adjustment references may point to a different product.
+// Preserve the proven source order identity; do not impose current sale rules.
+func servicePeriodOrderReferenceMatches(order orderport.Record, receipt v1domain.TerminalReceipt, sourceNo, outTradeNo string) bool {
 	return order.ID > 0 && strconv.FormatInt(int64(order.ID), 10) == receipt.TargetID && order.RecordOrigin == orderport.RecordOriginV1History &&
-		order.ProductID != nil && *order.ProductID == productID && order.MerchantOrderNo == sourceNo && (outTradeNo == "" || outTradeNo == sourceNo) &&
+		order.MerchantOrderNo == sourceNo && (outTradeNo == "" || outTradeNo == sourceNo) &&
 		orderapp.HistoricalOrderTargetDigest(order) == receipt.TargetDigest
 }

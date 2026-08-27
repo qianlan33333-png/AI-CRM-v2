@@ -27,23 +27,27 @@ func TestServicePeriodSourceReferenceUsesExactRetainedFields(t *testing.T) {
 	}
 }
 
-func TestServicePeriodOrderReferenceKeepsHistoryAndProductScope(t *testing.T) {
+func TestServicePeriodOrderReferencePreservesSourceIdentityNotCurrentProduct(t *testing.T) {
 	product := int64(7)
 	order := orderport.Record{ID: 9, RecordOrigin: orderport.RecordOriginV1History, ProductID: &product, MerchantOrderNo: "source-order"}
 	receipt := v1domain.TerminalReceipt{TargetID: "9", TargetDigest: orderapp.HistoricalOrderTargetDigest(order)}
-	if !servicePeriodOrderReferenceMatches(order, receipt, "source-order", "source-order", 7) || !servicePeriodOrderReferenceMatches(order, receipt, "source-order", "", 7) {
+	if !servicePeriodOrderReferenceMatches(order, receipt, "source-order", "source-order") || !servicePeriodOrderReferenceMatches(order, receipt, "source-order", "") {
 		t.Fatal("verified history reference rejected")
 	}
-	if servicePeriodOrderReferenceMatches(order, receipt, "source-order", "other-order", 7) || servicePeriodOrderReferenceMatches(order, receipt, "source-order", "", 8) {
-		t.Fatal("cross-order/product reference accepted")
+	if servicePeriodOrderReferenceMatches(order, receipt, "source-order", "other-order") {
+		t.Fatal("cross-order reference accepted")
 	}
 	order.RecordOrigin = orderport.RecordOriginNative
-	if servicePeriodOrderReferenceMatches(order, receipt, "source-order", "", 7) {
+	if servicePeriodOrderReferenceMatches(order, receipt, "source-order", "") {
 		t.Fatal("native order linked as history")
 	}
 	order.RecordOrigin = orderport.RecordOriginV1History
 	order.ProductID = nil
-	if servicePeriodOrderReferenceMatches(order, receipt, "source-order", "", 7) {
-		t.Fatal("unknown product guessed")
+	if servicePeriodOrderReferenceMatches(order, receipt, "source-order", "") {
+		t.Fatal("changed order accepted against the old digest")
+	}
+	receipt.TargetDigest = orderapp.HistoricalOrderTargetDigest(order)
+	if !servicePeriodOrderReferenceMatches(order, receipt, "source-order", "") {
+		t.Fatal("verified historical order with unresolved product rejected")
 	}
 }

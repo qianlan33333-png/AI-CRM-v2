@@ -104,7 +104,7 @@ func (fake *servicePeriodResolverFake) ResolveServicePeriodCustomer(_ context.Co
 	return fake.customerID, fake.err
 }
 
-func (fake *servicePeriodResolverFake) ResolveServicePeriodOrder(_ context.Context, _ int64, _ string, _ int64) (*int64, error) {
+func (fake *servicePeriodResolverFake) ResolveServicePeriodOrder(_ context.Context, _ int64, _ string) (*int64, error) {
 	fake.orderCalls++
 	return fake.orderID, fake.err
 }

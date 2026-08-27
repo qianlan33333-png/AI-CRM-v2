@@ -28,7 +28,7 @@ type ServicePeriodHistoryWriter interface {
 type ServicePeriodHistoryResolver interface {
 	ResolveServicePeriodProduct(context.Context, int64) (int64, error)
 	ResolveServicePeriodCustomer(context.Context, string) (*int64, error)
-	ResolveServicePeriodOrder(context.Context, int64, string, int64) (*int64, error)
+	ResolveServicePeriodOrder(context.Context, int64, string) (*int64, error)
 }
 
 type ServicePeriodImportResult struct {
@@ -199,7 +199,7 @@ func (importer *ServicePeriodImporter) importServicePeriodEntitlement(ctx contex
 		if err != nil {
 			return err
 		}
-		orderID, err := importer.resolveServicePeriodOrder(tx, fact.LastOrderSourceID, fact.LastOutTradeNo, definition.productID)
+		orderID, err := importer.resolveServicePeriodOrder(tx, fact.LastOrderSourceID, fact.LastOutTradeNo)
 		if err != nil {
 			return err
 		}
@@ -259,7 +259,7 @@ func (importer *ServicePeriodImporter) importServicePeriodEvent(ctx context.Cont
 		if err != nil {
 			return err
 		}
-		orderID, err := importer.resolveServicePeriodOrder(tx, fact.OrderSourceID, fact.OutTradeNo, definition.productID)
+		orderID, err := importer.resolveServicePeriodOrder(tx, fact.OrderSourceID, fact.OutTradeNo)
 		if err != nil {
 			return err
 		}
@@ -300,11 +300,11 @@ func (importer *ServicePeriodImporter) resolveServicePeriodCustomer(ctx context.
 	return customerID, nil
 }
 
-func (importer *ServicePeriodImporter) resolveServicePeriodOrder(ctx context.Context, sourceID *int64, outTradeNo string, productID int64) (*int64, error) {
+func (importer *ServicePeriodImporter) resolveServicePeriodOrder(ctx context.Context, sourceID *int64, outTradeNo string) (*int64, error) {
 	if sourceID == nil {
 		return nil, nil
 	}
-	orderID, err := importer.resolver.ResolveServicePeriodOrder(ctx, *sourceID, outTradeNo, productID)
+	orderID, err := importer.resolver.ResolveServicePeriodOrder(ctx, *sourceID, outTradeNo)
 	if err != nil || orderID == nil {
 		return orderID, err
 	}
