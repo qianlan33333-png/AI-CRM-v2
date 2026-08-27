@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"sort"
 	"testing"
 	"time"
@@ -388,6 +389,52 @@ func TestCouponBoardMutationsUseReceiptReplayAndConflicts(t *testing.T) {
 	}
 	if _, err = service.Copy(context.Background(), 8, 9, "copy-key-00000001"); !errors.Is(err, ErrConflict) {
 		t.Fatalf("cross-coupon copy key error=%v", err)
+	}
+}
+
+func TestHistoricalCouponsRejectCurrentMutations(t *testing.T) {
+	for _, issued := range []int64{0, 1} {
+		for _, operation := range []string{"update", "update_draft", "copy", "archive", "delete", "publish", "stop", "claim"} {
+			t.Run(fmt.Sprintf("%s/issued_%d", operation, issued), func(t *testing.T) {
+				now := time.Date(2026, 8, 28, 0, 0, 0, 0, time.UTC)
+				item := couponTestItem(7, now)
+				item.Status, item.HistoryOnly, item.IssuedCount = "archived", true, issued
+				store, events := newCouponTestStore(item), &couponTestEvents{}
+				service := couponTestService(now, store, events)
+				command := couponport.UpsertCommand{Coupon: item, Actor: 1, IdempotencyKey: "history-mutation-test-key"}
+				command.TotalIssueLimit++
+				var err error
+				switch operation {
+				case "update":
+					_, err = service.Update(context.Background(), command)
+				case "update_draft":
+					_, err = service.UpdateDraft(context.Background(), command)
+				case "copy":
+					_, err = service.Copy(context.Background(), 7, 1, command.IdempotencyKey)
+				case "archive":
+					_, err = service.Archive(context.Background(), 7, 1, command.IdempotencyKey)
+				case "delete":
+					_, err = service.Delete(context.Background(), 7, 1, command.IdempotencyKey)
+				case "publish":
+					_, err = service.Publish(context.Background(), 7, 1, command.IdempotencyKey)
+				case "stop":
+					_, err = service.Stop(context.Background(), 7, 1, command.IdempotencyKey)
+				case "claim":
+					_, err = service.Claim(context.Background(), couponport.ClaimCommand{CouponID: 7, CustomerID: 41, IdempotencyKey: command.IdempotencyKey})
+				}
+				if !errors.Is(err, ErrConflict) && !errors.Is(err, ErrNotClaimable) {
+					t.Fatalf("historical %s accepted: %v", operation, err)
+				}
+				if len(store.coupons) != 1 || !reflect.DeepEqual(store.coupons[7], item) || store.updates != 0 || len(store.claims) != 0 || len(events.rows) != 0 {
+					t.Fatal("historical mutation wrote current business state")
+				}
+				for _, receipt := range store.receipts {
+					if receipt.State == "completed" {
+						t.Fatal("historical mutation produced a success receipt")
+					}
+				}
+			})
+		}
 	}
 }
 
