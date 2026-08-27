@@ -14,7 +14,7 @@ func TestAdaptHistoryPreservesPendingOrderAndRefundStatuses(t *testing.T) {
 		"status": "created", "trade_state": "NOTPAY", "refund_status": "NONE", "transaction_id": "", "created_at": candidateTime, "updated_at": candidateTime,
 	})}
 	refunds := []json.RawMessage{candidateJSON(t, map[string]any{
-		"id": 21, "order_id": 11, "out_trade_no": "order-11", "out_refund_no": "refund-21", "refund_id": "",
+		"id": 21, "order_id": 11, "out_trade_no": "order-11", "out_refund_no": "refund-21", "refund_id": "", "reason": " 原始退款原因 ",
 		"refund_amount_total": 1999, "order_amount_total": 1999, "currency": "CNY", "status": "PROCESSING",
 		"transaction_id": "", "created_at": candidateTime, "updated_at": candidateTime,
 	})}
@@ -24,7 +24,7 @@ func TestAdaptHistoryPreservesPendingOrderAndRefundStatuses(t *testing.T) {
 		t.Fatalf("order fact=%#v", result.Orders[0])
 	}
 	if result.Refunds[0].Disposition != DispositionCandidate || result.Refunds[0].Fact == nil || result.Refunds[0].Fact.Status != "PROCESSING" ||
-		result.Refunds[0].Fact.RefundNumber != "refund-21" || result.Refunds[0].Fact.OrderNumber != "order-11" || result.Refunds[0].Fact.AmountMinor != 1999 {
+		result.Refunds[0].Fact.RefundNumber != "refund-21" || result.Refunds[0].Fact.OrderNumber != "order-11" || result.Refunds[0].Fact.Reason != " 原始退款原因 " || result.Refunds[0].Fact.AmountMinor != 1999 {
 		t.Fatalf("refund fact=%#v", result.Refunds[0])
 	}
 }

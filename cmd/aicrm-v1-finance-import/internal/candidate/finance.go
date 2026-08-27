@@ -45,6 +45,7 @@ type RefundFact struct {
 	RefundNumber   string
 	ProviderRefund string
 	TransactionID  string
+	Reason         string
 	Status         string
 	AmountMinor    int64
 	OrderAmount    int64
@@ -93,6 +94,7 @@ type refundJSON struct {
 	TransactionID     string    `json:"transaction_id"`
 	OutRefundNo       string    `json:"out_refund_no"`
 	RefundID          string    `json:"refund_id"`
+	Reason            string    `json:"reason"`
 	RefundAmountTotal int64     `json:"refund_amount_total"`
 	OrderAmountTotal  int64     `json:"order_amount_total"`
 	Currency          string    `json:"currency"`
@@ -179,7 +181,7 @@ func AdaptRefund(value json.RawMessage, orders map[int64]OrderFact) RefundResult
 	}
 	return RefundResult{Disposition: DispositionCandidate, Fact: &RefundFact{
 		SourceID: source.ID, OrderSourceID: source.OrderID, OrderNumber: source.OutTradeNo, RefundNumber: source.OutRefundNo,
-		ProviderRefund: source.RefundID, TransactionID: source.TransactionID, Status: source.Status,
+		ProviderRefund: source.RefundID, TransactionID: source.TransactionID, Reason: source.Reason, Status: source.Status,
 		AmountMinor: source.RefundAmountTotal, OrderAmount: source.OrderAmountTotal, Currency: source.Currency,
 		CreatedAt: source.CreatedAt, UpdatedAt: source.UpdatedAt,
 	}}
