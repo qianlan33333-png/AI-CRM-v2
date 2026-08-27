@@ -30,16 +30,6 @@ type apiClientSecretVerifier interface {
 	VerifyAPIClientSecret(context.Context, string, string) (bool, error)
 }
 
-// unavailableAPIClientSecretVerifier keeps the route callable without
-// pretending that Admin Ops secret references are secret material. Production
-// composition must replace it with an approved secret-store adapter before any
-// credential can issue a token.
-type unavailableAPIClientSecretVerifier struct{}
-
-func (unavailableAPIClientSecretVerifier) VerifyAPIClientSecret(context.Context, string, string) (bool, error) {
-	return false, adminopsapp.ErrUnavailable
-}
-
 // apiClientTokenHandler is an unregistered client-credentials endpoint. Route
 // registration and the public protocol contract remain separately owned.
 type apiClientTokenHandler struct {

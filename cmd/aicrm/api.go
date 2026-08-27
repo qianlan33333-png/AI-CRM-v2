@@ -1597,9 +1597,11 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	if config.APIClient.JWTSecret.Configured() {
 		serviceAuthenticator = newAPIClientJWTAuthenticator(adminOpsService, config.APIClient.JWTSecret.Value())
 		apiClientJWT, _ = serviceAuthenticator.(*apiClientJWTAuthenticator)
+	}
+	if config.APIClient.JWTSecret.Configured() && config.APIClient.SecretMap.Configured() {
 		apiClientToken = newAPIClientTokenHandler(
 			adminOpsService,
-			unavailableAPIClientSecretVerifier{},
+			config.APIClient.SecretMap,
 			config.APIClient.JWTSecret.Value(),
 			strings.EqualFold(strings.TrimSpace(config.Release.Environment), "production"),
 		)

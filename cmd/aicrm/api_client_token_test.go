@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -14,6 +15,8 @@ import (
 
 	adminopsapp "github.com/qianlan33333-png/AI-CRM-v2/internal/adminops/app"
 	adminopsport "github.com/qianlan33333-png/AI-CRM-v2/internal/adminops/port"
+	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
+	appruntime "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/runtime"
 )
 
 type apiClientSecretVerifierStub struct {
@@ -78,6 +81,29 @@ func TestAPIClientTokenHandlerAcceptsFormCredentialsOnly(t *testing.T) {
 	handler.ServeHTTP(response, request)
 	if response.Code != http.StatusOK || secrets.calls != 1 {
 		t.Fatalf("form client credentials status=%d verifier=%d body=%s", response.Code, secrets.calls, response.Body.String())
+	}
+}
+
+func TestAPIClientTokenHandlerIssuesWithConfiguredEnvironmentSecretMap(t *testing.T) {
+	credential := apiClientTokenCredential(t)
+	clientSecret := base64.RawURLEncoding.EncodeToString([]byte("abcdefghijklmnopqrstuvwxyzABCDEF"))
+	jwtSecret := base64.RawURLEncoding.EncodeToString([]byte("01234567890123456789012345678901"))
+	t.Setenv("AICRM_DATABASE_URL", "postgres://db/aicrm")
+	t.Setenv("AICRM_HTTP_LISTEN_ADDRESS", "127.0.0.1:8080")
+	t.Setenv("AICRM_API_PGX_MAX_CONNS", "1")
+	t.Setenv("AICRM_IDENTITY_HMAC_KEY", strings.Repeat("A", 43))
+	t.Setenv("AICRM_ENV", "production")
+	t.Setenv("AICRM_API_CLIENT_JWT_SECRET", jwtSecret)
+	t.Setenv("AICRM_API_CLIENT_SECRET_MAP", `{"`+credential.SecretRef+`":"`+clientSecret+`"}`)
+	config, err := appconfig.Load(appruntime.RoleAPI)
+	if err != nil || !config.APIClient.JWTSecret.Configured() || !config.APIClient.SecretMap.Configured() {
+		t.Fatalf("API-client environment config = %#v, %v", config.APIClient, err)
+	}
+	handler := newAPIClientTokenHandler(&apiClientCredentialStub{credential: credential}, config.APIClient.SecretMap, config.APIClient.JWTSecret.Value(), true)
+	response := httptest.NewRecorder()
+	handler.ServeHTTP(response, apiClientTokenRequest(t, apiClientTokenForm(), credential.ClientID, clientSecret))
+	if response.Code != http.StatusOK {
+		t.Fatalf("environment-configured token issue status=%d body=%s", response.Code, response.Body.String())
 	}
 }
 

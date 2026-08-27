@@ -2,7 +2,10 @@
 package config
 
 import (
+	"context"
+	"crypto/subtle"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -39,6 +42,7 @@ const (
 	weComSidebarHostsEnv              = "AICRM_WECOM_SIDEBAR_ALLOWED_HOSTS"
 	identityHMACKeyEnv                = "AICRM_IDENTITY_HMAC_KEY"
 	apiClientJWTSecretEnv             = "AICRM_API_CLIENT_JWT_SECRET"
+	apiClientSecretMapEnv             = "AICRM_API_CLIENT_SECRET_MAP"
 	groupOpsWebhookSecretEnv          = "AICRM_AUTH_GROUP_OPS_WEBHOOK_SECRET"
 	aiAudienceWebhookSecretEnv        = "AICRM_AUTH_AI_AUDIENCE_WEBHOOK_SECRET"
 	surveyPublicKeyEnv                = "AICRM_SURVEY_PUBLIC_TOKEN_KEY"
@@ -331,8 +335,27 @@ func (key APIClientJWTSecret) Configured() bool { return key.configured }
 func (APIClientJWTSecret) String() string       { return "[REDACTED]" }
 func (APIClientJWTSecret) GoString() string     { return "[REDACTED]" }
 
+// APIClientSecretMap binds an Admin Ops secret reference to the corresponding
+// API-client credential secret. It is startup-only and cannot reveal a value
+// through generic formatting.
+type APIClientSecretMap struct{ values map[string]string }
+
+func (secrets APIClientSecretMap) Configured() bool { return len(secrets.values) > 0 }
+func (APIClientSecretMap) String() string           { return "[REDACTED]" }
+func (APIClientSecretMap) GoString() string         { return "[REDACTED]" }
+
+func (secrets APIClientSecretMap) Verify(secretRef, value string) bool {
+	expected, ok := secrets.values[secretRef]
+	return ok && subtle.ConstantTimeCompare([]byte(expected), []byte(value)) == 1
+}
+
+func (secrets APIClientSecretMap) VerifyAPIClientSecret(_ context.Context, secretRef, value string) (bool, error) {
+	return secrets.Verify(secretRef, value), nil
+}
+
 type APIClient struct {
 	JWTSecret APIClientJWTSecret
+	SecretMap APIClientSecretMap
 }
 
 // GroupOpsWebhookSecret is optional startup-only HMAC key material. Without
@@ -473,6 +496,7 @@ func load(role appruntime.Role, lookup environmentLookup) (Root, error) {
 		}
 		root.Identity.HMACKey = parseIdentityHMACKey(lookup, &problems)
 		root.APIClient.JWTSecret = parseOptionalAPIClientJWTSecret(lookup, &problems)
+		root.APIClient.SecretMap = parseOptionalAPIClientSecretMap(lookup, &problems)
 		root.GroupOps.WebhookSecret = parseOptionalGroupOpsWebhookSecret(lookup, &problems)
 		root.AIAudience.WebhookSecret = parseOptionalAIAudienceWebhookSecret(lookup, &problems)
 		root.Survey.PublicKey = parseOptionalSurveyPublicKey(lookup, &problems)
@@ -564,6 +588,35 @@ func parseOptionalAPIClientJWTSecret(lookup environmentLookup, problems *[]strin
 	copy(key.value[:], decoded)
 	key.configured = true
 	return key
+}
+
+func parseOptionalAPIClientSecretMap(lookup environmentLookup, problems *[]string) APIClientSecretMap {
+	value, present := lookup(apiClientSecretMapEnv)
+	if !present || value == "" {
+		return APIClientSecretMap{}
+	}
+	entries := map[string]string{}
+	if json.Unmarshal([]byte(value), &entries) != nil || len(entries) == 0 {
+		*problems = append(*problems, "api_client.secret_map must be a non-empty JSON object")
+		return APIClientSecretMap{}
+	}
+	for secretRef, secret := range entries {
+		if !validAPIClientSecretReference(secretRef) || !validAPIClientMappedSecret(secret) {
+			*problems = append(*problems, "api_client.secret_map must map valid secret references to 32-byte canonical base64url secrets")
+			return APIClientSecretMap{}
+		}
+	}
+	return APIClientSecretMap{values: entries}
+}
+
+func validAPIClientSecretReference(value string) bool {
+	return len(value) <= 250 && strings.TrimSpace(value) == value && !strings.ContainsAny(value, "\x00\r\n\t ") &&
+		((strings.HasPrefix(value, "secret://") && len(value) > len("secret://")) || (strings.HasPrefix(value, "secretref:") && len(value) > len("secretref:")))
+}
+
+func validAPIClientMappedSecret(value string) bool {
+	decoded, err := base64.RawURLEncoding.Strict().DecodeString(value)
+	return err == nil && len(decoded) == 32 && base64.RawURLEncoding.EncodeToString(decoded) == value
 }
 
 func parseOptionalGroupOpsWebhookSecret(lookup environmentLookup, problems *[]string) GroupOpsWebhookSecret {
