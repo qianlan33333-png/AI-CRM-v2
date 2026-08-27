@@ -289,7 +289,7 @@
     },
     {
       "name": "database-migration",
-      "patterns": ["internal/migration/store/**","internal/migration/v1archive/**","internal/migration/v1domain/**","cmd/aicrm-v1-import/**","cmd/aicrm-v1-domain-import/**","migrations/00107_v1_full_data_archive.sql","migrations/00108_v1_domain_import_receipts.sql","acceptance/datamigration/**"],
+      "patterns": ["internal/migration/store/**","internal/migration/v1archive/**","cmd/aicrm-v1-import/**","cmd/aicrm-v1-domain-import/**","migrations/00107_v1_full_data_archive.sql","migrations/00108_v1_domain_import_receipts.sql","acceptance/datamigration/**"],
       "effects": {"database": true,"database_groups": ["migration"],"database_mode": "selected"}
     },
     {

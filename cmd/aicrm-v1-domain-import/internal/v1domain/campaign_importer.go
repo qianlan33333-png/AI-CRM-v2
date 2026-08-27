@@ -10,9 +10,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1candidate"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
-	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1candidate"
 )
 
 const (

@@ -12,6 +12,8 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1candidate"
+	"github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1domain"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	campaignstore "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/store"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
@@ -19,8 +21,6 @@ import (
 	media "github.com/qianlan33333-png/AI-CRM-v2/internal/media"
 	mediastore "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
-	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1candidate"
-	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1domain"
 	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	radarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/app"
