@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	contact "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/port"
 	contactdb "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store/generated"
@@ -35,7 +36,7 @@ func (r *StaffDirectoryRepository) ListEligibleStaff(ctx context.Context) ([]con
 	}
 	result := make([]contact.StaffDirectoryEntry, len(rows))
 	for index, row := range rows {
-		if !row.UpdatedAt.Valid {
+		if !finiteStaffTimestamp(row.UpdatedAt) {
 			return nil, contact.ErrStaffReferenceUnavailable
 		}
 		result[index] = contact.StaffDirectoryEntry{
@@ -60,13 +61,17 @@ func (*StaffDirectoryRepository) LockEligibleStaffByWeComUserID(ctx context.Cont
 	if len(rows) == 0 {
 		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceNotFound
 	}
-	if len(rows) != 1 || !rows[0].UpdatedAt.Valid {
+	if len(rows) != 1 || !finiteStaffTimestamp(rows[0].UpdatedAt) {
 		return contact.StaffDirectoryEntry{}, contact.ErrStaffReferenceUnavailable
 	}
 	return contact.StaffDirectoryEntry{
 		StaffID: rows[0].ID, WeComUserID: rows[0].WecomUserid,
 		DisplayName: rows[0].Name, UpdatedAt: rows[0].UpdatedAt.Time.UTC(),
 	}, nil
+}
+
+func finiteStaffTimestamp(value pgtype.Timestamptz) bool {
+	return value.Valid && value.InfinityModifier == pgtype.Finite
 }
 
 func (*StaffDirectoryRepository) LockUniqueActiveStaffForHistoricalImport(ctx context.Context, weComUserID string) (contact.HistoricalImportStaff, error) {

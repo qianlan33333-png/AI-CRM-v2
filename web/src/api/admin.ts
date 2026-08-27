@@ -536,12 +536,13 @@ const groupOpsMaterialPlanDto = (value: unknown): GroupOpsMaterialPlan => {
 };
 export const groupOpsDetailDto = (value: unknown, preview?: unknown): NonNullable<AdminDb['groupOpsDetail']> => { const x = obj(value); const validation = obj(preview); return { plan: groupOpsPlanDto(x.plan), staffIds: list(x, 'members').map((item) => Number(obj(item).staff_id)), assets: list(x, 'group_assets').map((item) => ({ id: text(obj(item).group_asset_id), reference: text(obj(item).asset_reference) })), nodes: list(x, 'nodes').map((item) => ({ id: text(obj(item).node_id), position: Number(obj(item).position), kind: obj(item).kind === 'delay' ? 'delay' : 'message', messageText: text(obj(item).message_text, ''), delayMinutes: obj(item).delay_minutes == null ? undefined : Number(obj(item).delay_minutes), materialReference: text(obj(item).material_reference, ''), materialPlan: groupOpsMaterialPlanDto(obj(item).material_plan) })), webhookReference: text(obj(x.webhook_descriptor).reference, ''), previewLines: list(validation, 'preview_lines').map(String), previewIssues: list(validation, 'issue_codes').map(String) }; };
 export const groupOpsOperationMembersDto = (value: unknown): AdminDb['staff'] => {
-  const page = obj(value); const pageSize = Number(page.page_size); const items = list(page, 'items');
+  const page = obj(value); const pageSize = Number(page.page_size); const items = page.items;
+  if (!Array.isArray(items)) throw new Error('群运营成员选项缺少 items');
   if (page.scope !== 'group_ops' || !Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 100 || items.length > pageSize || typeof page.provider_execution_eligible !== 'boolean' || page.real_external_call_executed !== false || page.provider_accepted !== false || page.delivery_proven !== false) throw new Error('群运营成员选项缺少可信本地读取边界');
   const staffIDs = new Set<number>(); const senderIDs = new Set<string>();
   return items.map((item) => {
-    const source = obj(item); const staffID = Number(source.staff_id); const senderID = source.sender_userid; const displayName = source.display_name;
-    if (!Number.isSafeInteger(staffID) || staffID < 1 || typeof senderID !== 'string' || !/^[A-Za-z0-9._:-]{1,128}$/.test(senderID) || typeof displayName !== 'string' || displayName.trim() !== displayName || !displayName || [...displayName].length > 128 || staffIDs.has(staffID) || senderIDs.has(senderID)) throw new Error('群运营成员选项包含无效 staff_id 或目录身份');
+    const source = obj(item); const staffID = source.staff_id; const senderID = source.sender_userid; const displayName = source.display_name;
+    if (typeof staffID !== 'number' || !Number.isSafeInteger(staffID) || staffID < 1 || typeof senderID !== 'string' || !/^[A-Za-z0-9._:-]{1,128}$/.test(senderID) || typeof displayName !== 'string' || displayName.trim() !== displayName || !displayName || [...displayName].length > 128 || staffIDs.has(staffID) || senderIDs.has(senderID)) throw new Error('群运营成员选项包含无效 staff_id 或目录身份');
     staffIDs.add(staffID); senderIDs.add(senderID);
     return { uid: String(staffID), name: `${displayName}（${senderID}）`, dept: '群运营成员' };
   });

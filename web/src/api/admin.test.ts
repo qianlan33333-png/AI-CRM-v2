@@ -560,6 +560,12 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(groupOpsOperationMembersDto(groupOpsMembers)[0]?.uid === '7', 'group ops member option preserves trusted numeric staff_id');
   try { groupOpsOperationMembersDto({ ...groupOpsMembers, items: [{ sender_userid: 'staff-7', display_name: '客服七' }] }); assert(false, 'group ops member without staff_id must fail closed'); }
   catch (error) { assert(error instanceof Error && error.message.includes('staff_id'), 'group ops member without staff_id fails closed'); }
+  for (const staffID of ['7', true]) {
+    try { groupOpsOperationMembersDto({ ...groupOpsMembers, items: [{ staff_id: staffID, sender_userid: 'staff-7', display_name: '客服七' }] }); assert(false, 'group ops member non-number staff_id must fail closed'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('staff_id'), 'group ops member non-number staff_id fails closed'); }
+  }
+  try { groupOpsOperationMembersDto({ ...groupOpsMembers, items: undefined }); assert(false, 'group ops member page without items must fail closed'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('items'), 'group ops member page without items fails closed'); }
   const groupOpsWebhook = { configured: true, reference: 'hook-local-9', description: 'local opaque reference only', provider_execution_eligible: false, real_external_call_executed: false };
   const groupOpsExecution = { execution_id: '71', run_id: '61', plan_id: '9', plan_revision: 1, node_id: '51', node_position: 1, target_reference: 'group-opaque-1', target_digest: 'sha256:' + 'a'.repeat(64), content_digest: 'sha256:' + 'b'.repeat(64), material_digest: 'sha256:' + 'c'.repeat(64), external_effect_id: 'eer_71', state: 'outcome_unknown', provider_accepted: false, delivery_proven: false, attempt_count: 1, provider_receipt_present: false, reconciliation_evidence_present: false, created_at: '2026-08-27T00:00:00Z', updated_at: '2026-08-27T00:01:00Z' };
   const groupOpsRuntimeCalls: Array<{ input: string; init?: RequestInit }> = [];
