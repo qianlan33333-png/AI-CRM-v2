@@ -25,8 +25,9 @@ type FinanceReferenceResolver interface {
 	ResolveHistoricalOrderReferences(context.Context, v1finance.OrderFact) (customerID, productID *int64, err error)
 }
 
-type FinanceImportJournal interface {
+type financeImportJournal interface {
 	orderport.HistoricalImportJournal
+	validateArchiveRun(string) error
 	LoadTerminal(context.Context, string, [sha256.Size]byte) (TerminalReceipt, bool, error)
 	Record(context.Context, string, TerminalReceipt) error
 }
@@ -43,11 +44,11 @@ type FinanceImporter struct {
 	archive  ArchiveSource
 	uow      UnitOfWork
 	writer   *orderapp.HistoricalImportService
-	journal  FinanceImportJournal
+	journal  financeImportJournal
 	resolver FinanceReferenceResolver
 }
 
-func NewFinanceImporter(archive ArchiveSource, uow UnitOfWork, writer *orderapp.HistoricalImportService, journal FinanceImportJournal, resolver FinanceReferenceResolver) (*FinanceImporter, error) {
+func NewFinanceImporter(archive ArchiveSource, uow UnitOfWork, writer *orderapp.HistoricalImportService, journal financeImportJournal, resolver FinanceReferenceResolver) (*FinanceImporter, error) {
 	if archive == nil || uow == nil || writer == nil || journal == nil || resolver == nil {
 		return nil, ErrInvalidScope
 	}
@@ -55,13 +56,17 @@ func NewFinanceImporter(archive ArchiveSource, uow UnitOfWork, writer *orderapp.
 }
 
 type financeArchiveRow struct {
-	archive     v1archive.ArchivedRow
-	fieldDigest [sha256.Size]byte
+	archive         v1archive.ArchivedRow
+	fieldDigest     [sha256.Size]byte
+	redactionReason string
 }
 
 func (importer *FinanceImporter) Import(ctx context.Context, archiveRunID string) (FinanceImportResult, error) {
 	if importer == nil || archiveRunID == "" {
 		return FinanceImportResult{}, ErrInvalidScope
+	}
+	if err := importer.journal.validateArchiveRun(archiveRunID); err != nil {
+		return FinanceImportResult{}, err
 	}
 	orders, err := importer.readRows(ctx, archiveRunID, financeOrdersTableID, "id", "coupon_claim_id")
 	if err != nil {
@@ -101,20 +106,24 @@ func (importer *FinanceImporter) Import(ctx context.Context, archiveRunID string
 func (importer *FinanceImporter) readRows(ctx context.Context, archiveRunID, tableID string, excluded ...string) ([]financeArchiveRow, error) {
 	rows := make([]financeArchiveRow, 0)
 	err := importer.archive.EachTableRow(ctx, archiveRunID, tableID, func(row v1archive.ArchivedRow) error {
-		if row.AdapterID != v1archive.DefaultAdapterID || row.TableID != tableID {
+		if row.AdapterID != v1archive.DefaultAdapterID || row.TableID != tableID || row.SourceOrdinal < 1 ||
+			row.SourceKeyHMAC == ([sha256.Size]byte{}) || row.PayloadHMAC == ([sha256.Size]byte{}) {
 			return ErrConflict
 		}
 		fieldDigest, err := financeSourceFieldDigest(row.Payload, excluded...)
 		if err != nil {
 			return fmt.Errorf("canonicalize archived %s row %d: %w", tableID, row.SourceOrdinal, err)
 		}
-		rows = append(rows, financeArchiveRow{archive: row, fieldDigest: fieldDigest})
+		rows = append(rows, financeArchiveRow{archive: row, fieldDigest: fieldDigest, redactionReason: financeRedactionReason(tableID, row)})
 		return nil
 	})
 	return rows, err
 }
 
 func (importer *FinanceImporter) importOrder(ctx context.Context, row financeArchiveRow, decision v1finance.OrderResult, targets map[int64]int64, result *FinanceImportResult) error {
+	if row.redactionReason != "" {
+		return importer.quarantine(ctx, financeOrderKind, row, row.redactionReason, result)
+	}
 	if decision.Disposition != v1finance.DispositionCandidate || decision.Fact == nil {
 		return importer.quarantine(ctx, financeOrderKind, row, decision.Reason, result)
 	}
@@ -145,6 +154,9 @@ func (importer *FinanceImporter) importOrder(ctx context.Context, row financeArc
 }
 
 func (importer *FinanceImporter) importRefund(ctx context.Context, row financeArchiveRow, decision v1finance.RefundResult, targets map[int64]int64, result *FinanceImportResult) error {
+	if row.redactionReason != "" {
+		return importer.quarantine(ctx, financeRefundKind, row, row.redactionReason, result)
+	}
 	if decision.Disposition != v1finance.DispositionCandidate || decision.Fact == nil {
 		return importer.quarantine(ctx, financeRefundKind, row, decision.Reason, result)
 	}
@@ -181,6 +193,7 @@ func (importer *FinanceImporter) quarantineWithDigest(ctx context.Context, kind 
 	want := TerminalReceipt{SourceKeyDigest: row.archive.SourceKeyHMAC, PayloadDigest: row.archive.PayloadHMAC, Disposition: "quarantine", Reason: reason, Metadata: fieldDigestMetadata(fieldDigest)}
 	replayed := false
 	if err := importer.uow.Within(ctx, func(tx context.Context) error {
+		replayed = false
 		found, exists, err := importer.journal.LoadTerminal(tx, kind, row.archive.SourceKeyHMAC)
 		if err != nil {
 			return err
@@ -207,6 +220,27 @@ func (importer *FinanceImporter) quarantineWithDigest(ctx context.Context, kind 
 		}
 	}
 	return nil
+}
+
+func financeRedactionReason(tableID string, row v1archive.ArchivedRow) string {
+	var fields []string
+	switch tableID {
+	case financeOrdersTableID:
+		fields = []string{"id", "out_trade_no", "product_code", "product_name", "amount_total", "currency", "unionid", "status", "trade_state", "transaction_id", "paid_at", "created_at", "updated_at", "payer_name_snapshot", "refunded_amount_total", "refund_status"}
+	case financeRefundsTableID:
+		fields = []string{"id", "order_id", "out_trade_no", "transaction_id", "out_refund_no", "refund_id", "reason", "refund_amount_total", "order_amount_total", "currency", "status", "created_at", "updated_at"}
+	default:
+		return ""
+	}
+	for _, field := range fields {
+		if v1archive.IsRedacted(row, field) {
+			if tableID == financeOrdersTableID {
+				return "order_business_field_redacted"
+			}
+			return "refund_business_field_redacted"
+		}
+	}
+	return ""
 }
 
 func financeHistoricalFact(row financeArchiveRow, fieldDigest [sha256.Size]byte) orderport.HistoricalFact {

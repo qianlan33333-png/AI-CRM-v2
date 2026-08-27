@@ -82,6 +82,86 @@ func TestFinanceImporterRejectsUnrelatedArchiveRow(t *testing.T) {
 	}
 }
 
+func TestFinanceImporterRejectsWrongArchiveRunBeforeRead(t *testing.T) {
+	archive := &financeArchiveFake{}
+	importer, _, _ := newFinanceImporterForTest(t, archive, financeResolver{})
+	if _, err := importer.Import(context.Background(), "another-run"); !errors.Is(err, ErrConflict) || archive.calls != 0 {
+		t.Fatalf("error/calls = %v/%d", err, archive.calls)
+	}
+}
+
+func TestFinanceImporterRejectsInvalidArchiveIdentity(t *testing.T) {
+	stamp := time.Date(2026, 8, 28, 12, 0, 0, 0, time.UTC)
+	for _, mutate := range []func(*v1archive.ArchivedRow){
+		func(row *v1archive.ArchivedRow) { row.SourceOrdinal = 0 },
+		func(row *v1archive.ArchivedRow) { row.SourceKeyHMAC = [sha256.Size]byte{} },
+		func(row *v1archive.ArchivedRow) { row.PayloadHMAC = [sha256.Size]byte{} },
+	} {
+		row := financeArchivedJSON(t, financeOrdersTableID, 1, map[string]any{
+			"id": int64(71), "out_trade_no": "M-71", "product_code": "sku-71", "amount_total": int64(990), "currency": "CNY", "status": "paid", "created_at": stamp, "updated_at": stamp,
+		})
+		mutate(&row)
+		importer, store, _ := newFinanceImporterForTest(t, &financeArchiveFake{rows: map[string][]v1archive.ArchivedRow{financeOrdersTableID: {row}}}, financeResolver{})
+		if _, err := importer.Import(context.Background(), "archive-run"); !errors.Is(err, ErrConflict) || len(store.orders) != 0 {
+			t.Fatalf("error/orders = %v/%#v", err, store.orders)
+		}
+	}
+}
+
+func TestFinanceImporterQuarantinesBusinessRedactionButIgnoresCredentialRedaction(t *testing.T) {
+	stamp := time.Date(2026, 8, 28, 12, 0, 0, 0, time.UTC)
+	redacted := financeArchivedJSON(t, financeOrdersTableID, 1, map[string]any{
+		"id": int64(71), "out_trade_no": "M-71", "product_code": "sku-71", "amount_total": int64(990), "currency": "CNY", "status": "paid", "created_at": stamp, "updated_at": stamp,
+	})
+	redacted.RedactedFields = []string{"status"}
+	credentialOnly := financeArchivedJSON(t, financeOrdersTableID, 2, map[string]any{
+		"id": int64(72), "out_trade_no": "M-72", "product_code": "sku-72", "amount_total": int64(990), "currency": "CNY", "status": "paid", "created_at": stamp, "updated_at": stamp,
+	})
+	credentialOnly.RedactedFields = []string{"prepay_id"}
+	archive := &financeArchiveFake{rows: map[string][]v1archive.ArchivedRow{financeOrdersTableID: {redacted, credentialOnly}}}
+	importer, store, journal := newFinanceImporterForTest(t, archive, financeResolver{})
+	result, err := importer.Import(context.Background(), "archive-run")
+	if err != nil || result != (FinanceImportResult{ImportedOrders: 1, QuarantinedOrders: 1}) || len(store.orders) != 1 {
+		t.Fatalf("result/error/orders = %#v/%v/%#v", result, err, store.orders)
+	}
+	if got := journal.orders.(*financeTerminalFake).values[SourceIdentifier(redacted.SourceKeyHMAC)]; got.Reason != "order_business_field_redacted" {
+		t.Fatalf("redaction terminal = %#v", got)
+	}
+}
+
+func TestFinanceImporterRetryResetsQuarantineReplay(t *testing.T) {
+	stamp := time.Date(2026, 8, 28, 12, 0, 0, 0, time.UTC)
+	row := financeArchivedJSON(t, financeOrdersTableID, 1, map[string]any{
+		"id": int64(71), "out_trade_no": "M-71", "product_code": "sku-71", "amount_total": int64(990), "currency": "CNY", "status": "paid", "created_at": stamp, "updated_at": stamp,
+	})
+	row.RedactedFields = []string{"status"}
+	archive := &financeArchiveFake{rows: map[string][]v1archive.ArchivedRow{financeOrdersTableID: {row}}}
+	journal, err := newFinanceJournal(newFinanceTerminalFake(), newFinanceTerminalFake())
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest, err := financeSourceFieldDigest(row.Payload, "id", "coupon_claim_id")
+	if err != nil {
+		t.Fatal(err)
+	}
+	journal.orders.(*financeTerminalFake).values[SourceIdentifier(row.SourceKeyHMAC)] = TerminalReceipt{SourceKeyDigest: row.SourceKeyHMAC, PayloadDigest: row.PayloadHMAC, Disposition: "quarantine", Reason: "order_business_field_redacted", Metadata: fieldDigestMetadata(digest)}
+	journal.orders.(*financeTerminalFake).recordErrOnce = errors.New("retry transaction")
+	journal.orders.(*financeTerminalFake).removeReceiptOnRecordError = true
+	store := &financeStoreFake{orders: map[orderport.ID]orderport.Record{}, refunds: map[int64]orderport.HistoricalRefund{}}
+	writer, err := orderapp.NewHistoricalImportService(immediateUOW{}, store, journal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	importer, err := NewFinanceImporter(archive, retryFinanceUOW{}, writer, journal, financeResolver{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := importer.Import(context.Background(), "archive-run")
+	if err != nil || result != (FinanceImportResult{QuarantinedOrders: 1}) {
+		t.Fatalf("result/error = %#v/%v", result, err)
+	}
+}
+
 func TestFinanceImporterDoesNotSealReceiptOnTargetConflict(t *testing.T) {
 	stamp := time.Date(2026, 8, 28, 12, 0, 0, 0, time.UTC)
 	archive := &financeArchiveFake{rows: map[string][]v1archive.ArchivedRow{
@@ -117,10 +197,12 @@ func TestFinanceSourceFieldDigestExcludesSourceIDs(t *testing.T) {
 }
 
 type financeArchiveFake struct {
-	rows map[string][]v1archive.ArchivedRow
+	rows  map[string][]v1archive.ArchivedRow
+	calls int
 }
 
 func (archive *financeArchiveFake) EachTableRow(_ context.Context, _ string, table string, callback func(v1archive.ArchivedRow) error) error {
+	archive.calls++
 	for _, row := range archive.rows[table] {
 		if err := callback(row); err != nil {
 			return err
@@ -197,6 +279,15 @@ func newFinanceImporterForTest(t *testing.T, archive ArchiveSource, resolver Fin
 		t.Fatal(err)
 	}
 	return importer, store, journal
+}
+
+type retryFinanceUOW struct{}
+
+func (retryFinanceUOW) Within(ctx context.Context, callback func(context.Context) error) error {
+	if err := callback(ctx); err != nil {
+		return callback(ctx)
+	}
+	return nil
 }
 
 func financeArchivedJSON(t *testing.T, table string, ordinal int64, value any) v1archive.ArchivedRow {

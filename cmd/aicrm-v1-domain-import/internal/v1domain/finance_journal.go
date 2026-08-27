@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"strconv"
 
+	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	orderport "github.com/qianlan33333-png/AI-CRM-v2/internal/order/port"
 )
 
@@ -25,21 +26,40 @@ type financeTerminalJournal interface {
 // Order-owned historical import journal. It persists the field digest as
 // immutable receipt metadata, so replay also detects crosswalk drift.
 type FinanceJournal struct {
-	orders  financeTerminalJournal
-	refunds financeTerminalJournal
+	orders       financeTerminalJournal
+	refunds      financeTerminalJournal
+	archiveRunID string
 }
 
 var _ orderport.HistoricalImportJournal = (*FinanceJournal)(nil)
 
 func NewFinanceJournal(orders, refunds *Journal) (*FinanceJournal, error) {
-	return newFinanceJournal(orders, refunds)
+	if !validFinanceJournalScope(orders, financeOrdersTableID, "order_list_projections") ||
+		!validFinanceJournalScope(refunds, financeRefundsTableID, "order_historical_refunds") ||
+		orders.scope.ImportVersion != refunds.scope.ImportVersion || orders.scope.ArchiveRunID != refunds.scope.ArchiveRunID {
+		return nil, ErrInvalidScope
+	}
+	return &FinanceJournal{orders: orders, refunds: refunds, archiveRunID: orders.scope.ArchiveRunID}, nil
 }
 
 func newFinanceJournal(orders, refunds financeTerminalJournal) (*FinanceJournal, error) {
 	if orders == nil || refunds == nil {
 		return nil, ErrInvalidScope
 	}
-	return &FinanceJournal{orders: orders, refunds: refunds}, nil
+	return &FinanceJournal{orders: orders, refunds: refunds, archiveRunID: "archive-run"}, nil
+}
+
+func validFinanceJournalScope(journal *Journal, tableID, targetTable string) bool {
+	return journal != nil && journal.tx != nil && journal.scope.valid() &&
+		journal.scope.AdapterID == v1archive.DefaultAdapterID && journal.scope.TableID == tableID &&
+		journal.scope.TargetDomain == "order" && journal.scope.TargetTable == targetTable
+}
+
+func (journal *FinanceJournal) validateArchiveRun(archiveRunID string) error {
+	if journal == nil || archiveRunID == "" || archiveRunID != journal.archiveRunID {
+		return ErrConflict
+	}
+	return nil
 }
 
 func (journal *FinanceJournal) LoadTerminal(ctx context.Context, kind string, sourceKey [sha256.Size]byte) (TerminalReceipt, bool, error) {
