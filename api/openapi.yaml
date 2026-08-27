@@ -9090,7 +9090,7 @@ paths:
       operationId: getServicePeriodProductShare
       summary: Read the existing same-origin public detail path for one enabled service-period product
       x-legacy-mapping-ids: [LEGACY-API-0491]
-      x-p4-decision-evidence: LEGACY-S07-149
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-LIFECYCLE-2026-08-22
       x-aicrm-capability: products.read
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       x-aicrm-auth-scheme: human_session

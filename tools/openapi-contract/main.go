@@ -532,14 +532,16 @@ var p4MemberGridManagementOperations = map[string]bool{
 var p4ServicePeriodLifecycleOperations = map[string]bool{
 	"listServicePeriodProducts": true, "createServicePeriodProduct": true,
 	"getServicePeriodProduct": true, "updateServicePeriodProduct": true,
-	"archiveServicePeriodProduct": true, "enableServicePeriodProduct": true,
+	"getServicePeriodProductShare": true,
+	"archiveServicePeriodProduct":  true, "enableServicePeriodProduct": true,
 	"disableServicePeriodProduct": true, "copyServicePeriodProduct": true,
 }
 
 var p4ServicePeriodLifecycleLegacyMappings = map[string][]string{
 	"listServicePeriodProducts": {"LEGACY-API-0467"}, "createServicePeriodProduct": {"LEGACY-API-0468"},
 	"getServicePeriodProduct": {"LEGACY-API-0471"}, "updateServicePeriodProduct": {"LEGACY-API-0472"},
-	"archiveServicePeriodProduct": {"LEGACY-API-0470"}, "enableServicePeriodProduct": {"LEGACY-API-0475"},
+	"getServicePeriodProductShare": {"LEGACY-API-0491"},
+	"archiveServicePeriodProduct":  {"LEGACY-API-0470"}, "enableServicePeriodProduct": {"LEGACY-API-0475"},
 	"disableServicePeriodProduct": {"LEGACY-API-0474"}, "copyServicePeriodProduct": {"LEGACY-API-0473"},
 }
 
@@ -1103,6 +1105,7 @@ var authorizationContracts = map[string]authorizationContract{
 	"listServicePeriodProducts":                  {"products.read", map[string]string{"admin": "global", "ops": "global"}},
 	"createServicePeriodProduct":                 {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"getServicePeriodProduct":                    {"products.read", map[string]string{"admin": "global", "ops": "global"}},
+	"getServicePeriodProductShare":               {"products.read", map[string]string{"admin": "global", "ops": "global"}},
 	"updateServicePeriodProduct":                 {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"archiveServicePeriodProduct":                {"products.write", map[string]string{"admin": "global", "ops": "global"}},
 	"enableServicePeriodProduct":                 {"products.write", map[string]string{"admin": "global", "ops": "global"}},
@@ -2103,7 +2106,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				}
 			} else if p4ServicePeriodLifecycleOperations[op.OperationID] {
 				seenP4ServicePeriodLifecycle[op.OperationID] = true
-				read := op.OperationID == "listServicePeriodProducts" || op.OperationID == "getServicePeriodProduct"
+				read := op.OperationID == "listServicePeriodProducts" || op.OperationID == "getServicePeriodProduct" || op.OperationID == "getServicePeriodProductShare"
 				capability, csrf, source := "products.write", "required", "local_command"
 				if read {
 					capability, csrf, source = "products.read", "none", "local_read_model"
