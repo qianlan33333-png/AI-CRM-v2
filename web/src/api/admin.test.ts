@@ -9,6 +9,7 @@ import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getC
 import { ApiError } from './transport';
 import { HttpApi } from '../shared/api/client';
 import { mountFunnelGrid } from '../admin/sections/funnelGrid';
+import { radarQrSvg, radarShareUrl } from '../admin/sections/qr';
 import { getCreateProductUrl, getCreateServicePeriodProductUrl, getUpdateServicePeriodProductUrl } from './generated/health';
 import { getArchiveLegacyCouponUrl, getCopyLegacyCouponUrl, getCreateLegacyCouponUrl, getDeleteLegacyCouponUrl, getGetLegacyImageVariantUrl, getPublishLegacyCouponUrl, getStopLegacyCouponUrl, getUpdateLegacyCouponUrl } from './generated/health';
 import { getCreateServicePeriodMemberGridCollaboratorUrl, getDeleteServicePeriodMemberGridCollaboratorUrl, getGetServicePeriodMemberGridAccessUrl, getGetServicePeriodMemberGridSchemaUrl, getGetServicePeriodMemberGridShareSettingsUrl, getGetServicePeriodMemberUrl, getListLegacyCouponClaimsUrl, getListLegacyCouponProductOptionsUrl, getListServicePeriodMemberViewsUrl, getQueryServicePeriodMemberGridUrl, getSetServicePeriodMemberGridExternalShareUrl, getUpdateServicePeriodMemberFieldsUrl, getUpdateServicePeriodMemberGridCollaboratorUrl } from './generated/health';
@@ -685,6 +686,11 @@ export async function runAdminAdapterTests(): Promise<void> {
   try {
     const sharePath = await readRadarSharePath(5);
     assert(sharePath === '/r/rd_1234567890123456789012' && shareProjectionCall?.input === '/api/admin/radar-links/5/share' && shareProjectionCall.init?.method === 'GET', 'Radar share adapter uses the real local projection path');
+    const absoluteShareUrl = radarShareUrl(sharePath, 'https://crm.example.test');
+    const qrSvg = radarQrSvg(absoluteShareUrl);
+    assert(absoluteShareUrl === 'https://crm.example.test/r/rd_1234567890123456789012' && qrSvg.startsWith('<svg') && qrSvg.includes('<path'), 'Radar QR uses current-origin public route and real QR SVG');
+    try { radarShareUrl('https://other.example.test/r/rd_1234567890123456789012', 'https://crm.example.test'); assert(false, 'Radar QR accepted a cross-origin share URL'); }
+    catch (error) { assert(error instanceof Error && error.message.includes('当前站点'), 'Radar QR rejects cross-origin share URL'); }
   } finally { globalThis.fetch = savedFetch; }
   globalThis.fetch = async () => new Response(JSON.stringify({ link_id: 5, public_code: 'rd_1234567890123456789012', status: 'enabled', available: true, share_path: '/r/rd_1234567890123456789012', qr_payload: 'data:image/png;base64,not-a-server-field', local_projection: true, public_route_ready: true, real_external_call_executed: false }), { status: 200 });
   try { await readRadarSharePath(5); assert(false, 'Radar share adapter accepted a non-contract QR payload'); }
