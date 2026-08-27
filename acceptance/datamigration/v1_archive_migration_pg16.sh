@@ -133,7 +133,7 @@ grep -Fq '"ImportedCampaigns":1' "$failure_log"
 grep -Fq '"ImportedSteps":1' "$failure_log"
 grep -Fq '"ArchivedRows":2' "$failure_log"
 [[ "$(psql "$database_url" -X -q -At -c "SELECT approval_status||'|'||runtime_status FROM cloud_campaigns WHERE campaign_code='safe-v1'")" = "rejected|paused" ]]
-[[ "$(psql "$database_url" -X -q -At -c 'SELECT (SELECT count(*) FROM cloud_campaigns)||'|'||(SELECT count(*) FROM cloud_campaign_steps)||'|'||(SELECT count(*) FROM cloud_campaign_local_commands)')" = "1|1|0" ]]
+[[ "$(psql "$database_url" -X -q -At -c "SELECT (SELECT count(*) FROM cloud_campaigns)||'|'||(SELECT count(*) FROM cloud_campaign_steps)||'|'||(SELECT count(*) FROM cloud_campaign_local_commands)")" = "1|1|0" ]]
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" run ./cmd/aicrm-v1-domain-import \
   --mode reconcile --domain all --archive-run-id v1-archive-acceptance >"$failure_log"
