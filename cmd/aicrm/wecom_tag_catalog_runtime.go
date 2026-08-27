@@ -41,3 +41,13 @@ func newWeComTagCatalogProvider(config appconfig.WeComTagCatalog, httpClient *ht
 	}
 	return provider, nil
 }
+
+func weComTagEffectCorpID(config appconfig.Root) string {
+	if config.WeCom.TagCatalog.CorpID != "" {
+		return config.WeCom.TagCatalog.CorpID
+	}
+	if config.WeCom.OAuth.CorpID != "" {
+		return config.WeCom.OAuth.CorpID
+	}
+	return config.WeCom.Callback.CorpID
+}

@@ -2068,15 +2068,16 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	if weComIdentityCorpID == "" {
 		weComIdentityCorpID = config.WeCom.Callback.CorpID
 	}
+	weComTagCorpID := weComTagEffectCorpID(config)
 	var weComTagEffects *wecomtag.Service
-	if weComIdentityCorpID != "" {
+	if weComTagCorpID != "" {
 		weComTagJobs, tagErr := wecomtag.NewRiverJobInserter(pool)
 		if tagErr != nil {
 			pool.Close()
 			return nil, tagErr
 		}
 		weComTagEffects, tagErr = wecomtag.NewService(
-			uow, wecomstore.NewTagEffectRepository(pool), externalEffectsRuntime, weComTagJobs, weComIdentityCorpID,
+			uow, wecomstore.NewTagEffectRepository(pool), externalEffectsRuntime, weComTagJobs, weComTagCorpID,
 		)
 		if tagErr != nil {
 			pool.Close()

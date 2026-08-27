@@ -90,6 +90,34 @@ func TestListOwnedGroupsReadsOwnerScopedPagesAndExactGroups(t *testing.T) {
 	}
 }
 
+func TestListOwnedGroupsFailsClosedWithoutTokenRetryOnProviderError(t *testing.T) {
+	var grants, lists, details atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		switch request.URL.Path {
+		case "/cgi-bin/gettoken":
+			grants.Add(1)
+			_, _ = writer.Write([]byte(`{"errcode":0,"access_token":"token-safe","expires_in":7200}`))
+		case "/cgi-bin/externalcontact/groupchat/list":
+			lists.Add(1)
+			_, _ = writer.Write([]byte(`{"errcode":48002,"errmsg":"forbidden"}`))
+		case "/cgi-bin/externalcontact/groupchat/get":
+			details.Add(1)
+			_, _ = writer.Write([]byte(`{"errcode":0}`))
+		default:
+			t.Fatalf("unexpected request %s", request.URL.Path)
+		}
+	}))
+	defer server.Close()
+
+	source := newSource(t, server, ownerResolverFunc(func(context.Context, int64) (string, error) { return "owner-7", nil }), activeStaffFunc(nil))
+	if _, err := source.ListOwnedGroups(context.Background(), 7, 1000); !errors.Is(err, ErrUpstream) {
+		t.Fatalf("ListOwnedGroups() error = %v, want upstream rejection", err)
+	}
+	if grants.Load() != 1 || lists.Load() != 1 || details.Load() != 0 {
+		t.Fatalf("grants/lists/details=%d/%d/%d, want 1/1/0", grants.Load(), lists.Load(), details.Load())
+	}
+}
+
 func TestListOwnedGroupsFailsClosedForWrongOwnerAndDuplicateChats(t *testing.T) {
 	for _, testCase := range []struct {
 		name    string
