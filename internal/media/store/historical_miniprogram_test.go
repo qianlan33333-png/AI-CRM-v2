@@ -9,6 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	media "github.com/qianlan33333-png/AI-CRM-v2/internal/media"
 )
 
@@ -20,10 +21,10 @@ func TestHistoricalMiniProgramStoreInsertsOnlyDisabledStaticDefinition(t *testin
 	if err != nil || id != 81 {
 		t.Fatalf("id/err = %d/%v", id, err)
 	}
-	if !strings.Contains(tx.sql, "INSERT INTO public.media_miniprograms") || strings.Contains(tx.sql, "thumbnail_") || strings.Contains(tx.sql, "operation_receipts") || strings.Contains(tx.sql, "event_log") || strings.Contains(tx.sql, "UPDATE ") {
+	if !strings.Contains(tx.sql, "media_miniprograms") || strings.Contains(tx.sql, "thumbnail_") || strings.Contains(tx.sql, "operation_receipts") || strings.Contains(tx.sql, "event_log") || strings.Contains(tx.sql, "UPDATE ") {
 		t.Fatalf("unsafe SQL = %q", tx.sql)
 	}
-	if len(tx.arguments) != 10 || tx.arguments[0] != int64(18) || tx.arguments[5] != int64(7) || tx.arguments[6] != int64(7) || tx.arguments[7] != int64(1) {
+	if len(tx.arguments) != 10 || tx.arguments[0] != (pgtype.Int8{Int64: 18, Valid: true}) || tx.arguments[5] != int64(7) || tx.arguments[6] != int64(7) || tx.arguments[7] != int64(1) {
 		t.Fatalf("arguments = %#v", tx.arguments)
 	}
 }

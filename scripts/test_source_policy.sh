@@ -12,7 +12,7 @@ seed() {
     "$root/internal/contact/store/queries" "$root/internal/contact/store/generated" "$root/internal/contact/app" \
     "$root/internal/product/membergrid" \
     "$root/internal/datamigration/manifest" \
-    "$root/internal/migration/v1archive" \
+    "$root/internal/migration/v1archive" "$root/cmd/aicrm-v1-domain-import/internal/v1domain" \
     "$root/internal/events/dispatcher" "$root/internal/stats/app" \
     "$root/internal/api/candidate/generated" "$root/scripts/sourcepolicy"
   printf '%s\n' '# source-policy-baseline-v1: path<TAB>sorted_rule_counts<TAB>ordered_syntax_sha256' >"$root/scripts/sourcepolicy/baseline.tsv"
@@ -23,6 +23,9 @@ seed() {
   echo 'package manifest; const inspect = "SELECT count(*) FROM source_tables"; func collect(){ db.QueryRow(inspect); db.Query(inspect) }' >"$root/internal/datamigration/manifest/collector.go"
   echo 'package v1archive; const inspect = "SELECT count(*) FROM source_tables"; func read(){ db.QueryRow(inspect); db.Query(inspect) }' >"$root/internal/migration/v1archive/source_postgres.go"
   echo 'package v1archive; const write = "INSERT INTO archive_records DEFAULT VALUES"; func persist(){ db.Exec(write); db.QueryRow(write) }' >"$root/internal/migration/v1archive/target_postgres.go"
+  echo 'package v1archive; const inspect = "SELECT count(*) FROM v1_archive_records"; func read(){ db.QueryRow(inspect); db.Query(inspect) }' >"$root/internal/migration/v1archive/archive_reader.go"
+  echo 'package v1domain; const write = "INSERT INTO v1_domain_import_receipts DEFAULT VALUES"; func record(){ db.Exec(write) }' >"$root/cmd/aicrm-v1-domain-import/internal/v1domain/journal.go"
+  echo 'package v1domain; const inspect = "SELECT count(*) FROM v1_domain_import_receipts"; func verify(){ db.QueryRow(inspect) }' >"$root/cmd/aicrm-v1-domain-import/internal/v1domain/reconcile.go"
   printf '%s\n' 'package runtime' 'import "time"' 'func bounded(){ _ = time.NewTimer(time.Second) }' >"$root/internal/platform/runtime/timer.go"
   printf '%s\n' 'package source' 'import "os"' 'func load(){ _, _ = os.LookupEnv("KEY") }' >"$root/internal/config/source/env.go"
   echo 'SELECT 1;' >"$root/internal/contact/store/queries/list.sql"
@@ -66,6 +69,8 @@ reject() {
 mutate() {
   local name="$1" root="$2"
   case "$name" in
+    domain-journal-copy)
+      cp "$root/cmd/aicrm-v1-domain-import/internal/v1domain/journal.go" "$root/cmd/aicrm-v1-domain-import/internal/v1domain/unapproved.go" ;;
     env) echo 'package app; import e "os"; func f(){ _ = e.Getenv("X") }' >"$root/internal/contact/app/app.go" ;;
     env-loader) echo 'package app; import _ "example.com/godotenv"' >"$root/internal/contact/app/app.go" ;;
     sql-path) echo 'SELECT 1;' >"$root/internal/contact/store/direct.sql" ;;
@@ -106,6 +111,7 @@ reject sql-leading-block-comment 'handwritten SQL forbidden'; reject sql-leading
 reject sql-with-select 'handwritten SQL forbidden'; reject sql-with-update 'handwritten SQL forbidden'
 reject sql-insert 'handwritten SQL forbidden'; reject sql-delete 'handwritten SQL forbidden'
 reject sql-merge 'handwritten SQL forbidden'; reject sql-copy 'handwritten SQL forbidden'; reject sql-truncate 'handwritten SQL forbidden'
+reject domain-journal-copy 'handwritten SQL forbidden'
 reject db-call 'direct database call forbidden'; reject candidate-manual 'direct database call forbidden'; reject orm 'dynamic SQL library forbidden'
 reject dispatcher-savepoint 'direct database call forbidden'
 reject stats-runtime-sql 'direct database call forbidden'

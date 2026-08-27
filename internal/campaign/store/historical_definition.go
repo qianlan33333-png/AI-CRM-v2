@@ -6,7 +6,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
+	campaigndb "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/store/generated"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -32,11 +34,18 @@ func (store *HistoricalDefinitionStore) InsertHistoricalDefinition(ctx context.C
 		return err
 	}
 	value := definition.Campaign
-	if _, err = tx.Exec(ctx, `INSERT INTO public.cloud_campaigns (campaign_code,name,approval_status,runtime_status,version,created_by,updated_by,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`, value.Code, value.Name, value.ApprovalStatus, value.RuntimeStatus, value.Version, value.CreatedBy, value.UpdatedBy, value.CreatedAt.UTC(), value.UpdatedAt.UTC()); err != nil {
+	queries := campaigndb.New(tx)
+	if err = queries.InsertHistoricalCampaignDefinition(ctx, campaigndb.InsertHistoricalCampaignDefinitionParams{
+		CampaignCode: value.Code, Name: value.Name, CreatedBy: value.CreatedBy, UpdatedBy: value.UpdatedBy,
+		CreatedAt: pgtype.Timestamptz{Time: value.CreatedAt.UTC(), Valid: true},
+		UpdatedAt: pgtype.Timestamptz{Time: value.UpdatedAt.UTC(), Valid: true},
+	}); err != nil {
 		return historicalConflict(err)
 	}
 	for _, step := range definition.Steps {
-		if _, err = tx.Exec(ctx, `INSERT INTO public.cloud_campaign_steps (campaign_code,step_index,delay_minutes,content) VALUES ($1,$2,$3,$4)`, value.Code, step.Index, step.DelayMinutes, step.Content); err != nil {
+		if err = queries.InsertHistoricalCampaignStep(ctx, campaigndb.InsertHistoricalCampaignStepParams{
+			CampaignCode: value.Code, StepIndex: step.Index, DelayMinutes: step.DelayMinutes, Content: step.Content,
+		}); err != nil {
 			return historicalConflict(err)
 		}
 	}

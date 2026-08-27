@@ -302,7 +302,12 @@ func performanceAcceptanceCommand(rel string) bool {
 		rel == "cmd/aicrm-contact-perf/main.go" ||
 		rel == "internal/datamigration/manifest/collector.go" ||
 		rel == "internal/migration/v1archive/source_postgres.go" ||
-		rel == "internal/migration/v1archive/target_postgres.go"
+		rel == "internal/migration/v1archive/target_postgres.go" ||
+		rel == "internal/migration/v1archive/archive_reader.go" ||
+		// The offline migration command owns only immutable migration receipts
+		// and fixed-table reconciliation reads. Runtime domain writers remain sqlc-bound.
+		rel == "cmd/aicrm-v1-domain-import/internal/v1domain/journal.go" ||
+		rel == "cmd/aicrm-v1-domain-import/internal/v1domain/reconcile.go"
 }
 
 func sourceModule(rel string) string {

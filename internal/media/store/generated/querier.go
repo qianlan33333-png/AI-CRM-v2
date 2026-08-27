@@ -52,6 +52,7 @@ type Querier interface {
 	InitiateMediaAttachmentUpload(ctx context.Context, arg InitiateMediaAttachmentUploadParams) (InitiateMediaAttachmentUploadRow, error)
 	InsertGroupOpsUploadPreparation(ctx context.Context, arg InsertGroupOpsUploadPreparationParams) (InsertGroupOpsUploadPreparationRow, error)
 	InsertGroupOpsUploadReceipt(ctx context.Context, arg InsertGroupOpsUploadReceiptParams) (MediaWecomUploadReceipt, error)
+	InsertHistoricalMiniProgram(ctx context.Context, arg InsertHistoricalMiniProgramParams) (int64, error)
 	InsertMediaAttachment(ctx context.Context, arg InsertMediaAttachmentParams) (InsertMediaAttachmentRow, error)
 	InsertMediaAttachmentBlob(ctx context.Context, arg InsertMediaAttachmentBlobParams) error
 	InsertMediaContentPackageAttachmentRef(ctx context.Context, arg InsertMediaContentPackageAttachmentRefParams) error

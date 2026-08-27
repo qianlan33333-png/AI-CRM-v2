@@ -6,7 +6,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	media "github.com/qianlan33333-png/AI-CRM-v2/internal/media"
+	mediadb "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store/generated"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -34,11 +36,13 @@ func (store *HistoricalMiniProgramStore) InsertHistoricalMiniProgram(ctx context
 		return 0, err
 	}
 	item := definition.Item
-	var id int64
-	err = tx.QueryRow(ctx, `INSERT INTO public.media_miniprograms
-		(legacy_source_id,name,app_id,page_path,title,enabled,created_by,updated_by,version,created_at,updated_at)
-		VALUES ($1,$2,$3,$4,$5,FALSE,$6,$7,$8,$9,$10) RETURNING id`,
-		definition.SourceID, item.Name, item.AppID, item.PagePath, item.Title, item.CreatedBy, item.UpdatedBy, item.Version, item.CreatedAt.UTC(), item.UpdatedAt.UTC()).Scan(&id)
+	id, err := mediadb.New(tx).InsertHistoricalMiniProgram(ctx, mediadb.InsertHistoricalMiniProgramParams{
+		LegacySourceID: pgtype.Int8{Int64: definition.SourceID, Valid: true},
+		Name:           item.Name, AppID: item.AppID, PagePath: item.PagePath, Title: item.Title,
+		CreatedBy: item.CreatedBy, UpdatedBy: item.UpdatedBy, Version: item.Version,
+		CreatedAt: pgtype.Timestamptz{Time: item.CreatedAt.UTC(), Valid: true},
+		UpdatedAt: pgtype.Timestamptz{Time: item.UpdatedAt.UTC(), Valid: true},
+	})
 	if err != nil {
 		return 0, historicalMiniProgramConflict(err)
 	}
