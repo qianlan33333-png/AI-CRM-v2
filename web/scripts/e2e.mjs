@@ -132,6 +132,7 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
         return;
       }
       if (radarHttp) {
+        Object.defineProperty(window.crypto, 'subtle', { configurable: true, value: globalThis.crypto.subtle });
         const calls = [];
         const downloads = [];
         const publicCode = 'rd_1234567890123456789012';
@@ -144,9 +145,12 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
         window.HTMLAnchorElement.prototype.click = function () { downloads.push({ href: this.href, download: this.download }); };
         window.fetch = async (input, init = {}) => {
           const url = new URL(String(input), window.location.origin);
-          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', body: init.body ? String(init.body) : null });
           if (url.pathname === '/api/admin/radar-links') return json({ items: [link], total: 1, limit: 50, offset: 0 });
           if (url.pathname === '/api/admin/radar-links/2/share') return json(projection);
+          if (url.pathname === '/api/admin/attachment-library/uploads') return json({ upload_id: 44 }, 201);
+          if (/^\/api\/admin\/attachment-library\/uploads\/44\/parts\/\d+$/.test(url.pathname)) return json({}, 204);
+          if (url.pathname === '/api/admin/attachment-library/uploads/44/complete') return json({ attachment_id: 45 });
           return json({ code: 'unexpected_radar_request' }, 500);
         };
         return;
@@ -587,6 +591,22 @@ console.log('admin/radarForm.html（新建校验）');
   click(dom, save);
   await sleep(600);
   ok('保存成功 toast', d.querySelector('#fb-toast').textContent === '已保存内容雷达');
+  dom.window.close();
+}
+
+console.log('admin/radarForm.html（真实 PDF 文件分片上传）');
+{
+  const dom = await loadPage('admin/radarForm.html', { radarHttp: true });
+  const d = dom.window.document;
+  click(dom, d.querySelector('.type-card[data-t="pdf"]'));
+  const fileInput = d.querySelector('#fileInput');
+  const file = new dom.window.File(['%PDF-1.7\\n%%EOF'], '浏览器文件.pdf', { type: 'application/pdf' });
+  Object.defineProperty(fileInput, 'files', { configurable: true, value: [file] });
+  fileInput.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  await sleep(120);
+  const calls = dom.window.__radarHttpTest.calls.filter((call) => call.path.includes('/attachment-library/uploads'));
+  ok('真实文件控件触发 PDF initiate/part/complete', calls.length === 3 && calls[0].path.endsWith('/uploads') && calls[1].path.endsWith('/parts/1') && calls[2].path.endsWith('/complete'));
+  ok('PDF 上传完成后仅使用服务端附件 ID', d.querySelector('#mediaName').textContent === '浏览器文件.pdf' && d.querySelector('#mediaMeta').textContent.includes('分片上传'));
   dom.window.close();
 }
 

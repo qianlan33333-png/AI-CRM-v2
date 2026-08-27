@@ -876,8 +876,7 @@ const sha256 = async (bytes: ArrayBuffer): Promise<string> => `sha256:${Array.fr
 const base64 = (bytes: Uint8Array): string => { let binary = ''; for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000)); return btoa(binary); };
 const idempotency = (scope: string): RequestInit => apiRequestOptions({ headers: { 'Idempotency-Key': `${scope}-${crypto.randomUUID()}` } });
 export async function uploadRadarPdfDto(file: File): Promise<RadarMedia> {
-  if (file.size <= 1 << 20) { const item = obj(await call(uploadLegacyAttachment({ attachment: file, name: file.name }, apiRequestOptions()))); return { id: Number(item.id), name: text(item.name, file.name), meta: `${text(item.mime_type, file.type)} · ${text(item.file_size, String(file.size))} bytes` }; }
-  if (file.type !== 'application/pdf' || file.size > 10 << 20) throw new Error('PDF 必须为 10MB 以内的 application/pdf 文件');
+  if (!(file instanceof File) || file.type !== 'application/pdf' || file.size > 10 << 20) throw new Error('请选择 10MB 以内的真实 application/pdf 文件');
   const content = await file.arrayBuffer();
   const initiated = obj(await call(initiateMediaAttachmentMultipartUpload({ file_name: file.name, name: file.name, size: file.size, sha256: await sha256(content), enabled: true }, idempotency('radar-pdf-init'))));
   const uploadId = Number(initiated.upload_id);

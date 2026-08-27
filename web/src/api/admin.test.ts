@@ -871,28 +871,31 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(thumbnail.type === 'image/png', 'image thumbnail blob content handling');
   } finally { globalThis.fetch = savedFetch; }
 
-  let uploadInit: RequestInit | undefined;
-  globalThis.fetch = async (_input, init) => { uploadInit = init; return new Response(JSON.stringify({ id: 16, name: '资料', file_name: '资料.pdf', file_size: 3, mime_type: 'application/pdf' }), { status: 200 }); };
-  try {
-    const media = await uploadRadarPdfDto(new File(['pdf'], '资料.pdf', { type: 'application/pdf' }));
-    assert(media.id === 16 && uploadInit?.method === 'POST' && uploadInit.body instanceof FormData, 'attachment upload multipart mapping');
-    assert((uploadInit.body as FormData).get('attachment') instanceof Blob, 'attachment multipart field');
-  } finally { globalThis.fetch = savedFetch; }
   const chunkCalls: Array<{ input: string; init?: RequestInit }> = [];
   globalThis.fetch = async (input, init) => { const url = String(input); chunkCalls.push({ input: url, init }); if (url.endsWith('/uploads')) return new Response(JSON.stringify({ upload_id: 31 }), { status: 201 }); if (url.endsWith('/complete')) return new Response(JSON.stringify({ attachment_id: 32 }), { status: 200 }); return new Response(null, { status: 204 }); };
   try {
     const media = await uploadRadarPdfDto(new File([new Uint8Array((1 << 20) + 1)], '大文件.pdf', { type: 'application/pdf' }));
-    assert(media.id === 32 && media.meta.includes('分片上传'), 'large radar PDF returns canonical multipart attachment');
-    assert(chunkCalls.length === 4 && chunkCalls[0].input.endsWith('/uploads') && chunkCalls[3].input.endsWith('/complete'), 'large radar PDF initiate/two-parts/complete sequence');
-    assert(chunkCalls.every((item) => String(new Headers(item.init?.headers).get('Idempotency-Key') || '').startsWith('radar-pdf-')), 'large radar PDF mutations carry idempotency keys');
+    assert(media.id === 32 && media.meta.includes('分片上传'), 'real PDF File returns canonical multipart attachment');
+    assert(chunkCalls.length === 4 && chunkCalls[0].input.endsWith('/uploads') && chunkCalls[1].input.endsWith('/parts/1') && chunkCalls[2].input.endsWith('/parts/2') && chunkCalls[3].input.endsWith('/complete'), 'real PDF File uses initiate/ordered-parts/complete');
+    assert(chunkCalls.every((item) => String(new Headers(item.init?.headers).get('Idempotency-Key') || '').startsWith('radar-pdf-')), 'PDF multipart mutations carry idempotency keys');
     const secondPart = JSON.parse(String(chunkCalls[2].init?.body));
     assert(secondPart.content === 'AA==' && /^sha256:[0-9a-f]{64}$/.test(secondPart.sha256), 'large radar PDF part is base64 encoded and digest checked');
   } finally { globalThis.fetch = savedFetch; }
 
-  let oversizedPdfRequested = false;
-  globalThis.fetch = async () => { oversizedPdfRequested = true; return new Response('{}', { status: 200 }); };
-  try { await uploadRadarPdfDto({ size: (10 << 20) + 1, type: 'application/pdf', name: '过大.pdf' } as File); assert(false, 'oversized radar PDF was accepted'); }
-  catch (error) { assert(error instanceof Error && error.message.includes('10MB') && !oversizedPdfRequested, 'oversized radar PDF must fail before request'); }
+  let invalidPdfRequested = false;
+  globalThis.fetch = async () => { invalidPdfRequested = true; return new Response('{}', { status: 200 }); };
+  try { await uploadRadarPdfDto(new File([new Uint8Array((10 << 20) + 1)], '过大.pdf', { type: 'application/pdf' })); assert(false, 'oversized PDF File was accepted'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('10MB') && !invalidPdfRequested, 'oversized PDF File must fail before request'); }
+  try { await uploadRadarPdfDto({ size: 1, type: 'application/pdf', name: '伪造.pdf' } as File); assert(false, 'non-File PDF was accepted'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('真实') && !invalidPdfRequested, 'non-File PDF must fail before request'); }
+  try { await uploadRadarPdfDto(new File(['text'], '错误.txt', { type: 'text/plain' })); assert(false, 'non-PDF File was accepted'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('application/pdf') && !invalidPdfRequested, 'non-PDF File must fail before request'); }
+  finally { globalThis.fetch = savedFetch; }
+
+  const failedPartCalls: string[] = [];
+  globalThis.fetch = async (input) => { const url = String(input); failedPartCalls.push(url); if (url.endsWith('/uploads')) return new Response(JSON.stringify({ upload_id: 33 }), { status: 201 }); return new Response(JSON.stringify({ code: 'unavailable' }), { status: 503 }); };
+  try { await uploadRadarPdfDto(new File(['pdf'], '失败.pdf', { type: 'application/pdf' })); assert(false, 'failed PDF part was accepted'); }
+  catch (error) { assert(error instanceof ApiError && error.status === 503 && !failedPartCalls.some((url) => url.endsWith('/complete')), 'failed PDF part must not complete or report upload success'); }
   finally { globalThis.fetch = savedFetch; }
 
   const radarCalls: Array<{ input: string; init?: RequestInit }> = [];

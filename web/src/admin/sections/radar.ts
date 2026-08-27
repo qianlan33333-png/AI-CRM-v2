@@ -368,14 +368,14 @@ function renderForm(root: HTMLElement, api: AdminApi, links: RadarLink[], id?: n
 
     <div class="form-wrap">
       <div class="card">
-        <div class="panel-head"><h2>基础信息</h2><p>保存后生成 /r/{code} 中转链接；图片和 PDF 授权后进入云端在线预览。</p></div>
+        <div class="panel-head"><h2>基础信息</h2><p>保存后生成 /r/{code} 中转链接；图片和 PDF 的存储、扫描与访问状态以服务端回执为准。</p></div>
         <div class="panel-body">
           <div class="field"><label>内容名称 *</label><input class="input" id="fName" placeholder="例如：课程介绍 PDF" value="${esc(editing?.title || '')}"></div>
           <div class="field"><label>内容类型 *</label>
             <div class="type-cards" id="typeCards">
               <div class="type-card" data-t="link"><b>外部链接</b><span>跳转到任意 http/https 页面，到达即记录</span></div>
-              <div class="type-card" data-t="image"><b>图片预览</b><span>授权后在云端预览单张图片，JPG / PNG / WEBP ≤ 10MB</span></div>
-              <div class="type-card" data-t="pdf"><b>PDF 预览</b><span>授权后在线翻页预览，≤ 10MB，超过 1MB 自动分片上传</span></div>
+              <div class="type-card" data-t="image"><b>图片预览</b><span>由服务端访问状态控制，JPG / PNG / WEBP ≤ 10MB</span></div>
+              <div class="type-card" data-t="pdf"><b>PDF 预览</b><span>由服务端访问状态控制，≤ 10MB，使用分片上传</span></div>
             </div>
           </div>
           <div class="grid-2">
@@ -428,7 +428,7 @@ function renderForm(root: HTMLElement, api: AdminApi, links: RadarLink[], id?: n
     $('#mediaHelp').textContent =
       form.type === 'image'
         ? '可从图片素材库选择，或上传 JPG/PNG/WEBP，最大 10MB。'
-        : '可从附件素材库选择 PDF，或上传 PDF，最大 10MB，超过 1MB 自动分片上传。';
+        : '可从附件素材库选择 PDF，或上传 PDF，最大 10MB，使用分片上传。';
     ($('#fileInput') as HTMLInputElement).accept = form.type === 'image' ? 'image/jpeg,image/png,image/webp' : 'application/pdf';
     const m = form.media;
     ($('#mediaPicked') as HTMLElement).hidden = !m;
