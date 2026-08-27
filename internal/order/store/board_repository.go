@@ -284,10 +284,10 @@ func boardRefundParams(filter orderport.RefundFilter) orderdb.ListOrderRefundsPa
 	return orderdb.ListOrderRefundsParams{Provider: optionalText(filter.Provider, "all"), OrderNo: optionalText(filter.OrderNo, ""), TransactionID: optionalText(filter.TransactionID, ""), RefundID: optionalText(filter.RefundID, ""), OutRefundNo: optionalText(filter.OutRefundNo, ""), Status: optionalText(filter.Status, ""), CreatedFrom: optionalTime(filter.CreatedFrom), CreatedTo: optionalTime(filter.CreatedTo), RowOffset: filter.Offset, RowLimit: filter.Limit}
 }
 
-// legacyOrderProjection keeps pre-PE01 order-board reads compatible with
-// databases migrated only through the original order package (00036).
+// legacyOrderProjection is the read projection shared by the order board queries.
 type legacyOrderProjection struct {
 	ID                    int64              `json:"id"`
+	RecordOrigin          string             `json:"record_origin"`
 	Provider              string             `json:"provider"`
 	ProviderLabel         string             `json:"provider_label"`
 	MerchantOrderNo       string             `json:"merchant_order_no"`
@@ -310,7 +310,7 @@ type legacyOrderProjection struct {
 }
 
 func boardRecord(row legacyOrderProjection) orderport.Record {
-	return orderport.Record{ID: orderport.ID(row.ID), Provider: row.Provider, ProviderLabel: row.ProviderLabel, MerchantOrderNo: row.MerchantOrderNo, PlatformTransactionNo: row.PlatformTransactionNo, CustomerID: optionalInt64(row.CustomerID), PayerNameSnapshot: row.PayerNameSnapshot, MobileSnapshot: row.MobileSnapshot, IdentityKind: row.IdentityKind, IdentityValue: row.IdentityValue, ProductID: optionalInt64(row.ProductID), ProductCode: row.ProductCode, ProductNameSnapshot: row.ProductNameSnapshot, AmountMinor: row.AmountMinor, Currency: row.Currency, Status: row.Status, StatusLabel: row.StatusLabel, DetailURL: row.DetailUrl, CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time}
+	return orderport.Record{ID: orderport.ID(row.ID), RecordOrigin: row.RecordOrigin, Provider: row.Provider, ProviderLabel: row.ProviderLabel, MerchantOrderNo: row.MerchantOrderNo, PlatformTransactionNo: row.PlatformTransactionNo, CustomerID: optionalInt64(row.CustomerID), PayerNameSnapshot: row.PayerNameSnapshot, MobileSnapshot: row.MobileSnapshot, IdentityKind: row.IdentityKind, IdentityValue: row.IdentityValue, ProductID: optionalInt64(row.ProductID), ProductCode: row.ProductCode, ProductNameSnapshot: row.ProductNameSnapshot, AmountMinor: row.AmountMinor, Currency: row.Currency, Status: row.Status, StatusLabel: row.StatusLabel, DetailURL: row.DetailUrl, CreatedAt: row.CreatedAt.Time, UpdatedAt: row.UpdatedAt.Time}
 }
 
 func boardRefund(row orderdb.ListOrderRefundsRow) orderport.Refund {

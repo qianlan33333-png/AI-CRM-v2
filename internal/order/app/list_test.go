@@ -91,8 +91,25 @@ func TestI03ListNormalizesProjectsAndReadsThroughPorts(t *testing.T) {
 	if item.MerchantOrderNo != "M-11" || item.OutTradeNo != "M-11" || item.OrderNo != "M-11" || item.TransactionID != "WX-11" || item.PlatformTransactionNo != "WX-11" {
 		t.Fatalf("aliases=%+v", item)
 	}
-	if item.PayerName != "新客户" || item.ProductName != "新商品" || item.AmountYuan != "99.01" || item.ExternalUserID != "wmid-11" || item.UserID != "" || item.UnionID != "" {
+	if item.RecordOrigin != orderport.RecordOriginNative || item.PayerName != "新客户" || item.ProductName != "新商品" || item.AmountYuan != "99.01" || item.ExternalUserID != "wmid-11" || item.UserID != "" || item.UnionID != "" {
 		t.Fatalf("projection=%+v", item)
+	}
+}
+
+func TestI03ListProjectsV1HistoryOrigin(t *testing.T) {
+	record := validOrderRecord()
+	record.RecordOrigin = orderport.RecordOriginV1History
+	page, err := NewService(&orderTestUOW{}, &orderTestStore{records: []orderport.Record{record}, total: 1}, &orderTestCustomers{projection: contactport.CustomerProjection{ID: 7}}, &orderTestProducts{product: productport.Product{ID: 9}}).List(context.Background(), orderport.Filter{})
+	if err != nil || len(page.Items) != 1 || page.Items[0].RecordOrigin != orderport.RecordOriginV1History || page.Items[0].Status != record.Status || page.Items[0].AmountYuan != "99.01" {
+		t.Fatalf("page=%+v err=%v", page, err)
+	}
+}
+
+func TestI03ListRejectsUnknownRecordOrigin(t *testing.T) {
+	record := validOrderRecord()
+	record.RecordOrigin = "unknown"
+	if _, err := NewService(&orderTestUOW{}, &orderTestStore{records: []orderport.Record{record}, total: 1}, &orderTestCustomers{}, &orderTestProducts{}).List(context.Background(), orderport.Filter{}); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("error=%v", err)
 	}
 }
 

@@ -7,10 +7,12 @@ tools_mod="${TOOLS_MOD:-tools/go.mod}"
 base_database_url="$P4ORDERAB_TEST_DATABASE_URL"
 temporary_database="aicrm_test_order_ab"
 database_url="${base_database_url/aicrm_test/$temporary_database}"
+history_migrations="$(mktemp -d)"
+cp migrations/00109_order_v1_history.sql "$history_migrations/"
 
 MIGRATION_TEST_DATABASE_URL="$base_database_url" GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" run ./acceptance/fixtures/cmd/validate-database-url
-cleanup() { psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null; }
+cleanup() { psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null; rm -f "$history_migrations/00109_order_v1_history.sql"; rmdir "$history_migrations"; }
 trap cleanup EXIT
 psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "DROP DATABASE IF EXISTS $temporary_database WITH (FORCE)" >/dev/null
 psql "$base_database_url" -X -q -v ON_ERROR_STOP=1 -c "CREATE DATABASE $temporary_database" >/dev/null
@@ -43,8 +45,12 @@ read -r waterline receipts exports effects refunds no_auto_retry outcome_unknown
 [[ "$waterline" = "40" && "$receipts" = "1" && "$exports" = "1" && "$effects" = "1" && "$refunds" = "1" && "$no_auto_retry" = "1" && "$outcome_unknown_fk" = "1" ]]
 [[ "$(history_snapshot)" = "$baseline" ]]
 
+# Keep the original order-history fingerprints at waterline 40 while testing
+# the current query contract with the isolated Order-owned 109 addition.
+"$go_command" tool -modfile="$tools_mod" goose -dir "$history_migrations" postgres "$database_url" up
 /usr/bin/env -u BASH_ENV -u ENV GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" test -race -count=1 -timeout=360s -run '^TestP4OrderAB' ./acceptance/order -args -database-url "$database_url"
+"$go_command" tool -modfile="$tools_mod" goose -dir "$history_migrations" postgres "$database_url" down
 
 post_acceptance="$(history_snapshot)"
 "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down-to 38

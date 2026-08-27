@@ -131,11 +131,25 @@ func (s *BoardService) GetOrder(ctx context.Context, provider, reference string)
 		if !validRecord(row) {
 			return ErrBoardUnavailable
 		}
-		active, e := s.store.CountActiveRefundAmount(tx, row.ID)
-		if e != nil || active < 0 || active > row.AmountMinor {
-			return ErrBoardUnavailable
+		refundable := int64(0)
+		historicalRefunds := []orderport.HistoricalRefund(nil)
+		if recordOrigin(row.RecordOrigin) == orderport.RecordOriginV1History {
+			reader, ok := s.store.(orderport.HistoricalRefundReader)
+			if !ok {
+				return ErrBoardUnavailable
+			}
+			historicalRefunds, e = reader.ListHistoricalRefunds(tx, row.ID)
+			if e != nil || !validHistoricalRefunds(row, historicalRefunds) {
+				return ErrBoardUnavailable
+			}
+		} else {
+			active, countErr := s.store.CountActiveRefundAmount(tx, row.ID)
+			if countErr != nil || active < 0 || active > row.AmountMinor {
+				return ErrBoardUnavailable
+			}
+			refundable = row.AmountMinor - active
 		}
-		result = orderport.Detail{Item: boardItem(row), ID: row.ID, RefundableAmountMinor: row.AmountMinor - active}
+		result = orderport.Detail{Item: boardItem(row), ID: row.ID, RefundableAmountMinor: refundable, HistoricalRefunds: historicalRefunds}
 		return nil
 	})
 	if err != nil {
@@ -301,7 +315,7 @@ func (s *BoardService) RequestRefund(ctx context.Context, command orderport.Refu
 		if e != nil {
 			return e
 		}
-		if !validRecord(order) || order.Provider != command.Provider || (order.Status != "paid" && order.Status != "partially_refunded") || order.PlatformTransactionNo != command.TransactionIDConfirmation {
+		if !validRecord(order) || recordOrigin(order.RecordOrigin) == orderport.RecordOriginV1History || order.Provider != command.Provider || (order.Status != "paid" && order.Status != "partially_refunded") || order.PlatformTransactionNo != command.TransactionIDConfirmation {
 			return ErrInvalidBoardCommand
 		}
 		active, e := s.store.CountActiveRefundAmount(tx, order.ID)
@@ -685,7 +699,7 @@ func csvText(headers [][]string, rows func(func([]string) error) error) (string,
 	return out.String(), nil
 }
 func boardItem(row orderport.Record) orderport.Item {
-	item := orderport.Item{CreatedAt: row.CreatedAt, MerchantOrderNo: row.MerchantOrderNo, OutTradeNo: row.MerchantOrderNo, OrderNo: row.MerchantOrderNo, PlatformTransactionNo: row.PlatformTransactionNo, TransactionID: row.PlatformTransactionNo, PayerName: row.PayerNameSnapshot, Mobile: row.MobileSnapshot, ProductCode: row.ProductCode, ProductName: row.ProductNameSnapshot, AmountYuan: fmt.Sprintf("%d.%02d", row.AmountMinor/100, row.AmountMinor%100), Currency: row.Currency, Status: row.Status, StatusLabel: row.StatusLabel, Provider: row.Provider, ProviderLabel: row.ProviderLabel, DetailURL: row.DetailURL}
+	item := orderport.Item{RecordOrigin: recordOrigin(row.RecordOrigin), CreatedAt: row.CreatedAt, MerchantOrderNo: row.MerchantOrderNo, OutTradeNo: row.MerchantOrderNo, OrderNo: row.MerchantOrderNo, PlatformTransactionNo: row.PlatformTransactionNo, TransactionID: row.PlatformTransactionNo, PayerName: row.PayerNameSnapshot, Mobile: row.MobileSnapshot, ProductCode: row.ProductCode, ProductName: row.ProductNameSnapshot, AmountYuan: fmt.Sprintf("%d.%02d", row.AmountMinor/100, row.AmountMinor%100), Currency: row.Currency, Status: row.Status, StatusLabel: row.StatusLabel, Provider: row.Provider, ProviderLabel: row.ProviderLabel, DetailURL: row.DetailURL}
 	switch row.IdentityKind {
 	case "userid":
 		item.UserID = row.IdentityValue
@@ -800,6 +814,14 @@ func validBoardKey(value string) bool {
 }
 func validRefund(value orderport.Refund) bool {
 	return value.ID > 0 && value.OrderID > 0 && value.ExternalEffectID > 0 && (value.Provider == "wechat" || value.Provider == "alipay" || value.Provider == "wechat_shop") && validText(value.OrderNo, 200) && value.OrderNo != "" && validText(value.TransactionID, 200) && value.TransactionID != "" && strings.HasPrefix(value.RefundID, "rfd_") && strings.HasPrefix(value.OutRefundNo, "rfd_") && value.RefundAmountTotal > 0 && value.Currency == "CNY" && value.Status != "" && value.ExternalEffectState != "" && !value.AutoRetryAllowed && !value.CreatedAt.IsZero()
+}
+func validHistoricalRefunds(order orderport.Record, refunds []orderport.HistoricalRefund) bool {
+	for _, refund := range refunds {
+		if !validHistoricalRefundTarget(refund) || refund.OrderID != order.ID || !matchesHistoricalRefundOrder(order, refund) {
+			return false
+		}
+	}
+	return true
 }
 func validExportJob(value orderport.ExportJob) bool {
 	return strings.HasPrefix(value.JobID, "exp_") && (value.Resource == "orders" || value.Resource == "refunds") && value.Format == "csv" && value.Status == "completed" && value.Operator > 0 && !value.CreatedAt.IsZero() && value.ContentText != ""

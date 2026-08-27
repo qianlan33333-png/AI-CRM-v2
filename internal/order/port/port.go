@@ -10,6 +10,11 @@ import (
 
 type ID int64
 
+const (
+	RecordOriginNative    = "native"
+	RecordOriginV1History = "v1_history"
+)
+
 var (
 	ErrPaidOrderReadNotFound    = errors.New("paid order projection not found")
 	ErrPaidOrderReadUnavailable = errors.New("paid order projection unavailable")
@@ -37,6 +42,7 @@ type Filter struct {
 
 type Record struct {
 	ID                    ID
+	RecordOrigin          string
 	Provider              string
 	ProviderLabel         string
 	MerchantOrderNo       string
@@ -59,6 +65,7 @@ type Record struct {
 }
 
 type Item struct {
+	RecordOrigin          string    `json:"record_origin"`
 	CreatedAt             time.Time `json:"created_at"`
 	MerchantOrderNo       string    `json:"merchant_order_no"`
 	OutTradeNo            string    `json:"out_trade_no"`
@@ -103,8 +110,9 @@ type BoardFilter struct {
 
 type Detail struct {
 	Item
-	ID                    ID    `json:"id"`
-	RefundableAmountMinor int64 `json:"refundable_amount_total"`
+	ID                    ID                 `json:"id"`
+	RefundableAmountMinor int64              `json:"refundable_amount_total"`
+	HistoricalRefunds     []HistoricalRefund `json:"historical_refunds,omitempty"`
 }
 
 type RefundFilter struct {

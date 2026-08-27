@@ -9417,6 +9417,18 @@ export interface WechatShopRefundCallbackEnvelope {
   Encrypt: string;
 }
 
+/**
+ * Historical rows are local read-only facts, not verified payment or entitlement evidence.
+ */
+export type LegacyOrderListItemRecordOrigin =
+  (typeof LegacyOrderListItemRecordOrigin)[keyof typeof LegacyOrderListItemRecordOrigin];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderListItemRecordOrigin = {
+  native: "native",
+  v1_history: "v1_history",
+} as const;
+
 export type LegacyOrderListItemProvider =
   (typeof LegacyOrderListItemProvider)[keyof typeof LegacyOrderListItemProvider];
 
@@ -9428,6 +9440,8 @@ export const LegacyOrderListItemProvider = {
 } as const;
 
 export interface LegacyOrderListItem {
+  /** Historical rows are local read-only facts, not verified payment or entitlement evidence. */
+  record_origin?: LegacyOrderListItemRecordOrigin;
   created_at: string;
   /** @maxLength 200 */
   merchant_order_no: string;
@@ -9495,6 +9509,18 @@ export interface LegacyOrderListResponse {
   has_more: boolean;
 }
 
+/**
+ * Historical rows cannot be refunded or used to grant entitlements.
+ */
+export type LegacyOrderDetailRecordOrigin =
+  (typeof LegacyOrderDetailRecordOrigin)[keyof typeof LegacyOrderDetailRecordOrigin];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderDetailRecordOrigin = {
+  native: "native",
+  v1_history: "v1_history",
+} as const;
+
 export type LegacyOrderDetailProvider =
   (typeof LegacyOrderDetailProvider)[keyof typeof LegacyOrderDetailProvider];
 
@@ -9506,6 +9532,8 @@ export const LegacyOrderDetailProvider = {
 } as const;
 
 export interface LegacyOrderDetail {
+  /** Historical rows cannot be refunded or used to grant entitlements. */
+  record_origin?: LegacyOrderDetailRecordOrigin;
   /** @minimum 1 */
   id: number;
   created_at: string;
@@ -9563,6 +9591,45 @@ export interface LegacyOrderDetail {
   detail_url: string;
   /** @minimum 0 */
   refundable_amount_total: number;
+  /** Read-only V1 facts; no V2 refund command or Provider confirmation is implied. */
+  historical_refunds?: LegacyHistoricalRefund[];
+}
+
+export type LegacyHistoricalRefundCurrency =
+  (typeof LegacyHistoricalRefundCurrency)[keyof typeof LegacyHistoricalRefundCurrency];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyHistoricalRefundCurrency = {
+  CNY: "CNY",
+} as const;
+
+export interface LegacyHistoricalRefund {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  order_id: number;
+  /** @minimum 1 */
+  source_refund_id: number;
+  /**
+   * @minLength 1
+   * @maxLength 200
+   */
+  refund_number: string;
+  provider_refund_id: string;
+  transaction_id: string;
+  /**
+   * @minLength 1
+   * @maxLength 80
+   */
+  status: string;
+  /** @minimum 1 */
+  amount_minor: number;
+  /** @minimum 1 */
+  order_amount_minor: number;
+  currency: LegacyHistoricalRefundCurrency;
+  reason: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LegacyOrderItemsResponse {

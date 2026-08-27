@@ -355,7 +355,7 @@ func (q *Queries) CreateOrderRefund(ctx context.Context, arg CreateOrderRefundPa
 }
 
 const getBoardOrder = `-- name: GetBoardOrder :one
-SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+SELECT id, record_origin, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
        status, status_label, detail_url, created_at, updated_at
@@ -374,6 +374,7 @@ type GetBoardOrderParams struct {
 
 type GetBoardOrderRow struct {
 	ID                    int64              `json:"id"`
+	RecordOrigin          string             `json:"record_origin"`
 	Provider              string             `json:"provider"`
 	ProviderLabel         string             `json:"provider_label"`
 	MerchantOrderNo       string             `json:"merchant_order_no"`
@@ -400,6 +401,7 @@ func (q *Queries) GetBoardOrder(ctx context.Context, arg GetBoardOrderParams) (G
 	var i GetBoardOrderRow
 	err := row.Scan(
 		&i.ID,
+		&i.RecordOrigin,
 		&i.Provider,
 		&i.ProviderLabel,
 		&i.MerchantOrderNo,
@@ -424,7 +426,7 @@ func (q *Queries) GetBoardOrder(ctx context.Context, arg GetBoardOrderParams) (G
 }
 
 const getBoardOrderByID = `-- name: GetBoardOrderByID :one
-SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+SELECT id, record_origin, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
        status, status_label, detail_url, created_at, updated_at
@@ -434,6 +436,7 @@ WHERE id = $1::bigint
 
 type GetBoardOrderByIDRow struct {
 	ID                    int64              `json:"id"`
+	RecordOrigin          string             `json:"record_origin"`
 	Provider              string             `json:"provider"`
 	ProviderLabel         string             `json:"provider_label"`
 	MerchantOrderNo       string             `json:"merchant_order_no"`
@@ -460,6 +463,7 @@ func (q *Queries) GetBoardOrderByID(ctx context.Context, id int64) (GetBoardOrde
 	var i GetBoardOrderByIDRow
 	err := row.Scan(
 		&i.ID,
+		&i.RecordOrigin,
 		&i.Provider,
 		&i.ProviderLabel,
 		&i.MerchantOrderNo,
@@ -484,7 +488,7 @@ func (q *Queries) GetBoardOrderByID(ctx context.Context, id int64) (GetBoardOrde
 }
 
 const getBoardOrderForUpdate = `-- name: GetBoardOrderForUpdate :one
-SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+SELECT id, record_origin, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
        status, status_label, detail_url, created_at, updated_at
@@ -493,6 +497,7 @@ WHERE ($1::text = 'auto' OR provider = $1::text)
   AND (merchant_order_no = $2::text
        OR platform_transaction_no = $2::text
        OR id::text = $2::text)
+  AND record_origin = 'native'
 ORDER BY id DESC LIMIT 1 FOR UPDATE
 `
 
@@ -503,6 +508,7 @@ type GetBoardOrderForUpdateParams struct {
 
 type GetBoardOrderForUpdateRow struct {
 	ID                    int64              `json:"id"`
+	RecordOrigin          string             `json:"record_origin"`
 	Provider              string             `json:"provider"`
 	ProviderLabel         string             `json:"provider_label"`
 	MerchantOrderNo       string             `json:"merchant_order_no"`
@@ -529,6 +535,7 @@ func (q *Queries) GetBoardOrderForUpdate(ctx context.Context, arg GetBoardOrderF
 	var i GetBoardOrderForUpdateRow
 	err := row.Scan(
 		&i.ID,
+		&i.RecordOrigin,
 		&i.Provider,
 		&i.ProviderLabel,
 		&i.MerchantOrderNo,
@@ -724,6 +731,7 @@ SELECT id, product_id, customer_id
 FROM order_list_projections
 WHERE id = $1::bigint
   AND status = 'paid'
+  AND record_origin = 'native'
   AND product_id IS NOT NULL
   AND customer_id IS NOT NULL
 FOR UPDATE
@@ -743,7 +751,7 @@ func (q *Queries) GetPaidOrderProjection(ctx context.Context, orderID int64) (Ge
 }
 
 const listBoardOrders = `-- name: ListBoardOrders :many
-SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+SELECT id, record_origin, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
        status, status_label, detail_url, created_at, updated_at
@@ -777,6 +785,7 @@ type ListBoardOrdersParams struct {
 
 type ListBoardOrdersRow struct {
 	ID                    int64              `json:"id"`
+	RecordOrigin          string             `json:"record_origin"`
 	Provider              string             `json:"provider"`
 	ProviderLabel         string             `json:"provider_label"`
 	MerchantOrderNo       string             `json:"merchant_order_no"`
@@ -821,6 +830,7 @@ func (q *Queries) ListBoardOrders(ctx context.Context, arg ListBoardOrdersParams
 		var i ListBoardOrdersRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.RecordOrigin,
 			&i.Provider,
 			&i.ProviderLabel,
 			&i.MerchantOrderNo,
@@ -891,7 +901,7 @@ func (q *Queries) ListOrderExternalEffects(ctx context.Context, orderID int64) (
 }
 
 const listOrderProjections = `-- name: ListOrderProjections :many
-SELECT id, provider, provider_label, merchant_order_no, platform_transaction_no,
+SELECT id, record_origin, provider, provider_label, merchant_order_no, platform_transaction_no,
        customer_id, payer_name_snapshot, mobile_snapshot, identity_kind, identity_value,
        product_id, product_code, product_name_snapshot, amount_minor, currency,
        status, status_label, detail_url, created_at, updated_at
@@ -923,6 +933,7 @@ type ListOrderProjectionsParams struct {
 
 type ListOrderProjectionsRow struct {
 	ID                    int64              `json:"id"`
+	RecordOrigin          string             `json:"record_origin"`
 	Provider              string             `json:"provider"`
 	ProviderLabel         string             `json:"provider_label"`
 	MerchantOrderNo       string             `json:"merchant_order_no"`
@@ -966,6 +977,7 @@ func (q *Queries) ListOrderProjections(ctx context.Context, arg ListOrderProject
 		var i ListOrderProjectionsRow
 		if err := rows.Scan(
 			&i.ID,
+			&i.RecordOrigin,
 			&i.Provider,
 			&i.ProviderLabel,
 			&i.MerchantOrderNo,

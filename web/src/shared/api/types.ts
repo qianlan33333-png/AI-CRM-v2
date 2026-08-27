@@ -660,6 +660,14 @@ export interface Order {
   status: string;
   tone: Tone;
   pay: string;
+  recordOrigin?: 'native' | 'v1_history';
+  historicalRefunds?: HistoricalOrderRefund[];
+}
+
+export interface HistoricalOrderRefund {
+  status: string;
+  amount: string;
+  reason: string;
 }
 
 export interface Kv {

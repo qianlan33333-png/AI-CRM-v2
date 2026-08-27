@@ -55,7 +55,7 @@ func (repository *Repository) List(ctx context.Context, filter orderport.Filter)
 	records := make([]orderport.Record, len(rows))
 	for index, row := range rows {
 		records[index] = orderport.Record{
-			ID: orderport.ID(row.ID), Provider: row.Provider, ProviderLabel: row.ProviderLabel,
+			ID: orderport.ID(row.ID), RecordOrigin: row.RecordOrigin, Provider: row.Provider, ProviderLabel: row.ProviderLabel,
 			MerchantOrderNo: row.MerchantOrderNo, PlatformTransactionNo: row.PlatformTransactionNo,
 			CustomerID: optionalInt64(row.CustomerID), PayerNameSnapshot: row.PayerNameSnapshot,
 			MobileSnapshot: row.MobileSnapshot, IdentityKind: row.IdentityKind, IdentityValue: row.IdentityValue,

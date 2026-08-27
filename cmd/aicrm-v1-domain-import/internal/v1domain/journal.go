@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	media "github.com/qianlan33333-png/AI-CRM-v2/internal/media"
+	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -51,6 +52,67 @@ type TerminalReceipt struct {
 
 var _ campaign.HistoricalDefinitionJournal = (*Journal)(nil)
 var _ media.HistoricalMiniProgramJournal = (*Journal)(nil)
+
+// VerifyFinanceReferencePrerequisites prevents sealing unresolved references
+// merely because the earlier canonical package has not been imported yet.
+func VerifyFinanceReferencePrerequisites(ctx context.Context, archiveRun string, dm01Run int64) error {
+	if archiveRun == "" || dm01Run < 1 {
+		return ErrInvalidScope
+	}
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	var ready bool
+	err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM public.legacy_contact_identity_import_runs
+WHERE id=$1 AND mode='full' AND state='imported') AND EXISTS(
+SELECT 1 FROM public.v1_domain_import_reconciliation_receipts WHERE import_version='v1-static-a1'
+AND archive_run_id=$2 AND selected_source_count=receipt_count AND verified_count=receipt_count)`, dm01Run, archiveRun).Scan(&ready)
+	if err != nil {
+		return err
+	}
+	if !ready {
+		return ErrConflict
+	}
+	return nil
+}
+
+// LoadFinanceProductReference reads only sealed migration provenance, not a
+// product-code guess or a legacy numeric ID reused as a V2 foreign key.
+func LoadFinanceProductReference(ctx context.Context, archiveRun, code string) (id string, payload, digest, metadata []byte, found bool, err error) {
+	tx, err := platformstore.TxFromContext(ctx)
+	if err != nil {
+		return "", nil, nil, nil, false, err
+	}
+	rows, err := tx.Query(ctx, `SELECT receipt.target_id,receipt.payload_digest,receipt.target_digest,receipt.metadata,
+EXISTS(SELECT 1 FROM public.v1_archive_records archive WHERE archive.run_id=receipt.archive_run_id
+AND archive.adapter_id=receipt.adapter_id AND archive.table_id=receipt.table_id
+AND archive.source_key_digest=receipt.source_key_digest AND archive.payload_digest=receipt.payload_digest)
+FROM public.v1_domain_import_receipts receipt
+WHERE receipt.import_version='v1-static-a1' AND receipt.archive_run_id=$1 AND receipt.adapter_id=$2
+AND receipt.table_id='public/wechat_pay_products' AND receipt.disposition='import' AND receipt.verified
+AND receipt.target_domain='product' AND receipt.target_table='products'
+AND receipt.metadata->>'target_product_code'=$3 LIMIT 2`, archiveRun, v1archive.DefaultAdapterID, code)
+	if err != nil {
+		return "", nil, nil, nil, false, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		if found {
+			return "", nil, nil, nil, false, ErrConflict
+		}
+		var verified bool
+		if err = rows.Scan(&id, &payload, &digest, &metadata, &verified); err != nil {
+			return "", nil, nil, nil, false, err
+		}
+		if !verified {
+			return "", nil, nil, nil, false, ErrConflict
+		}
+		found = true
+	}
+	err = rows.Err()
+	return
+}
 
 func NewJournal(scope Scope) (*Journal, error) {
 	if !scope.valid() {

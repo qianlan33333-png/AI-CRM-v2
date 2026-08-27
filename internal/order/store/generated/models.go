@@ -51,6 +51,22 @@ type OrderFinancialRefund struct {
 	SettledAt               pgtype.Timestamptz `json:"settled_at"`
 }
 
+type OrderHistoricalRefund struct {
+	ID               int64              `json:"id"`
+	OrderID          int64              `json:"order_id"`
+	SourceRefundID   int64              `json:"source_refund_id"`
+	RefundNumber     string             `json:"refund_number"`
+	ProviderRefundID string             `json:"provider_refund_id"`
+	TransactionID    string             `json:"transaction_id"`
+	Status           string             `json:"status"`
+	AmountMinor      int64              `json:"amount_minor"`
+	OrderAmountMinor int64              `json:"order_amount_minor"`
+	Currency         string             `json:"currency"`
+	Reason           string             `json:"reason"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
 type OrderPaymentCommand struct {
 	ID                           int64              `json:"id"`
 	OrderID                      int64              `json:"order_id"`

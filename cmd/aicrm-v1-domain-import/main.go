@@ -31,6 +31,7 @@ import (
 
 const domainImportVersion = "v1-domain-a1"
 const staticImportVersion = "v1-static-a1"
+const financeImportVersion = "v1-finance-a1"
 
 func main() {
 	environment := appconfig.LoadV1ArchiveRuntimeEnvironment()
@@ -43,11 +44,11 @@ func main() {
 func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	flags := flag.NewFlagSet("aicrm-v1-domain-import", flag.ContinueOnError)
 	mode := flags.String("mode", "import", "import|reconcile")
-	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all (first package)|static (Contact/Product/media blobs)")
+	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all (first package)|static (Contact/Product/media blobs)|finance (read-only history)")
 	archiveRunID := flags.String("archive-run-id", "", "reconciled V1 archive run")
 	actorValues := flags.String("campaign-actors", "", "explicit owner_userid=V2_actor_id pairs")
 	migrationActor := flags.Int64("migration-actor", 0, "explicit V2 actor for local historical definitions")
-	dm01RunID := flags.Int64("dm01-run-id", 0, "verified DM01 full-import run for static Contact tags")
+	dm01RunID := flags.Int64("dm01-run-id", 0, "verified DM01 full-import run for historical references")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
@@ -57,8 +58,8 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	if *mode == "import" && len(environment.ArchiveKey) != 32 {
 		return fmt.Errorf("32-byte archive key is required for import")
 	}
-	if *mode == "reconcile" && *domain != "all" && *domain != "static" {
-		return fmt.Errorf("reconcile requires domain=all or static")
+	if *mode == "reconcile" && *domain != "all" && *domain != "static" && *domain != "finance" {
+		return fmt.Errorf("reconcile requires domain=all, static or finance")
 	}
 	var actors v1candidate.ActorIDs
 	var err error
@@ -72,10 +73,10 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 		return fmt.Errorf("migration-actor is required")
 	}
 	var dm01HMACKey []byte
-	if *mode == "import" && *domain == "static" {
+	if *mode == "import" && (*domain == "static" || *domain == "finance") {
 		dm01HMACKey = []byte(appconfig.LoadDM01RuntimeEnvironment().SourceHMACKey)
 		if *dm01RunID < 1 || len(dm01HMACKey) < 32 {
-			return fmt.Errorf("static import requires dm01-run-id and the frozen DM01 source HMAC key")
+			return fmt.Errorf("%s import requires dm01-run-id and the frozen DM01 source HMAC key", *domain)
 		}
 	}
 	ctx := context.Background()
@@ -91,6 +92,13 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 				return err
 			}
 			return json.NewEncoder(os.Stdout).Encode(map[string]any{"static_reconciliation": result})
+		}
+		if *domain == "finance" {
+			result, err := v1domain.ReconcileFinance(ctx, pool, financeImportVersion, *archiveRunID)
+			if err != nil {
+				return err
+			}
+			return json.NewEncoder(os.Stdout).Encode(map[string]any{"finance_reconciliation": result})
 		}
 		result, err := v1domain.ReconcileAll(ctx, pool, domainImportVersion, *archiveRunID)
 		if err != nil {
@@ -112,6 +120,13 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 		return json.NewEncoder(os.Stdout).Encode(result)
 	}
 	result := map[string]any{}
+	if *domain == "finance" {
+		value, err := importFinance(ctx, archive, uow, *archiveRunID, *dm01RunID, dm01HMACKey)
+		if err != nil {
+			return err
+		}
+		result["finance"] = value
+	}
 	if *domain == "campaign" || *domain == "all" {
 		value, err := importCampaign(ctx, archive, uow, *archiveRunID, actors)
 		if err != nil {
@@ -151,7 +166,7 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 }
 
 func validDomain(value string) bool {
-	return value == "campaign" || value == "survey" || value == "media" || value == "radar" || value == "shop" || value == "all" || value == "static"
+	return value == "campaign" || value == "survey" || value == "media" || value == "radar" || value == "shop" || value == "all" || value == "static" || value == "finance"
 }
 
 func newJournal(runID, tableID, domain, targetTable string) (*v1domain.Journal, error) {

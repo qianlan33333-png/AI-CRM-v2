@@ -200,7 +200,28 @@ func (s *boardTestStore) GetRefundByID(_ context.Context, id int64) (orderport.R
 	return orderport.Refund{}, ErrNotFound
 }
 
-func boardTestService(now time.Time, store *boardTestStore, events *boardTestEvents) (*BoardService, *boardTestUOW) {
+type historicalBoardTestStore struct {
+	*boardTestStore
+	refunds []orderport.HistoricalRefund
+	err     error
+	calls   int
+}
+
+func (s *historicalBoardTestStore) ListHistoricalRefunds(ctx context.Context, orderID orderport.ID) ([]orderport.HistoricalRefund, error) {
+	if in, _ := ctx.Value(boardTestTxKey{}).(bool); !in {
+		return nil, errors.New("historical refund read escaped its transaction")
+	}
+	s.calls++
+	if s.err != nil {
+		return nil, s.err
+	}
+	if orderID != s.record.ID {
+		return nil, ErrNotFound
+	}
+	return append([]orderport.HistoricalRefund(nil), s.refunds...), nil
+}
+
+func boardTestService(now time.Time, store BoardStore, events *boardTestEvents) (*BoardService, *boardTestUOW) {
 	uow := &boardTestUOW{}
 	service := NewBoardService(uow, store, events)
 	service.now = func() time.Time { return now }
@@ -223,6 +244,84 @@ func TestOrderBoardRefundIntentUsesOneReceiptAndEventTransaction(t *testing.T) {
 	command.Reason = "不同的退款理由"
 	if _, err = service.RequestRefund(context.Background(), command); !errors.Is(err, ErrBoardConflict) || len(store.refunds) != 1 || len(events.rows) != 1 {
 		t.Fatalf("same key different payload err=%v refunds=%d events=%d", err, len(store.refunds), len(events.rows))
+	}
+}
+
+func TestOrderBoardNativeDetailRemainsRefundable(t *testing.T) {
+	now := time.Date(2026, 8, 15, 17, 0, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	service, _ := boardTestService(now, store, events)
+	detail, err := service.GetOrder(context.Background(), "wechat", "M-11")
+	if err != nil || detail.RecordOrigin != orderport.RecordOriginNative || detail.RefundableAmountMinor != 9901 || detail.HistoricalRefunds != nil {
+		t.Fatalf("detail=%+v err=%v", detail, err)
+	}
+}
+
+func TestOrderBoardV1HistoryIsReadOnly(t *testing.T) {
+	now := time.Date(2026, 8, 15, 17, 0, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	store.record.RecordOrigin = orderport.RecordOriginV1History
+	store.records = []orderport.Record{store.record}
+	history := &historicalBoardTestStore{boardTestStore: store, refunds: []orderport.HistoricalRefund{{ID: 91, OrderID: store.record.ID, SourceRefundID: 801, RefundNumber: "R-801", ProviderRefundID: "", TransactionID: store.record.PlatformTransactionNo, Status: "refunded", AmountMinor: 1990, OrderAmountMinor: store.record.AmountMinor, Currency: "CNY", Reason: "历史退款", CreatedAt: now, UpdatedAt: now}}}
+	service, _ := boardTestService(now, history, events)
+
+	page, err := service.ListOrders(context.Background(), orderport.BoardFilter{})
+	if err != nil || len(page.Items) != 1 || page.Items[0].RecordOrigin != orderport.RecordOriginV1History || page.Items[0].AmountYuan != "99.01" || page.Items[0].Status != "paid" {
+		t.Fatalf("page=%+v err=%v", page, err)
+	}
+	detail, err := service.GetOrder(context.Background(), "wechat", "M-11")
+	if err != nil || detail.RecordOrigin != orderport.RecordOriginV1History || detail.RefundableAmountMinor != 0 || len(detail.HistoricalRefunds) != 1 || detail.HistoricalRefunds[0].ID != 91 || history.calls != 1 {
+		t.Fatalf("detail=%+v err=%v", detail, err)
+	}
+	// Imported reasons are source facts, not new refund-command input. Keep
+	// whitespace and long historical text without imposing command limits.
+	history.refunds[0].Reason = "  " + strings.Repeat("历史", 300) + "\n"
+	detail, err = service.GetOrder(context.Background(), "wechat", "M-11")
+	if err != nil || len(detail.HistoricalRefunds) != 1 || detail.HistoricalRefunds[0].Reason != history.refunds[0].Reason {
+		t.Fatalf("historical reason was rejected or rewritten: %v", err)
+	}
+
+	command := orderport.RefundCommand{Provider: "wechat", OrderReference: "M-11", RefundAmountTotal: 1990, Reason: "重复支付", TransactionIDConfirmation: "WX-11", Checked: true, Actor: 9, IdempotencyKey: "aaaaaaaaaaaaaaaa"}
+	if _, err = service.RequestRefund(context.Background(), command); !errors.Is(err, ErrInvalidBoardCommand) {
+		t.Fatalf("refund error=%v", err)
+	}
+	if len(store.effects) != 0 || len(store.refunds) != 0 || len(events.rows) != 0 {
+		t.Fatalf("historical refund created side effects: effects=%d refunds=%d events=%d", len(store.effects), len(store.refunds), len(events.rows))
+	}
+}
+
+func TestOrderBoardV1HistoryDetailFailsClosedWithoutVerifiedRefundReader(t *testing.T) {
+	now := time.Date(2026, 8, 15, 17, 0, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	store.record.RecordOrigin = orderport.RecordOriginV1History
+	store.records = []orderport.Record{store.record}
+	service, _ := boardTestService(now, store, events)
+	if _, err := service.GetOrder(context.Background(), "wechat", "M-11"); !errors.Is(err, ErrBoardUnavailable) {
+		t.Fatalf("missing historical reader error=%v", err)
+	}
+}
+
+func TestOrderBoardV1HistoryDetailFailsClosedOnMismatchedRefund(t *testing.T) {
+	now := time.Date(2026, 8, 15, 17, 0, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	store.record.RecordOrigin = orderport.RecordOriginV1History
+	store.records = []orderport.Record{store.record}
+	history := &historicalBoardTestStore{boardTestStore: store, refunds: []orderport.HistoricalRefund{{ID: 91, OrderID: 99, SourceRefundID: 801, RefundNumber: "R-801", Status: "refunded", AmountMinor: 1990, OrderAmountMinor: store.record.AmountMinor, Currency: "CNY", Reason: "历史退款", CreatedAt: now, UpdatedAt: now}}}
+	service, _ := boardTestService(now, history, events)
+	if _, err := service.GetOrder(context.Background(), "wechat", "M-11"); !errors.Is(err, ErrBoardUnavailable) {
+		t.Fatalf("mismatched historical refund error=%v", err)
+	}
+}
+
+func TestOrderBoardV1HistoryDetailFailsClosedOnReaderError(t *testing.T) {
+	now := time.Date(2026, 8, 15, 17, 0, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	store.record.RecordOrigin = orderport.RecordOriginV1History
+	store.records = []orderport.Record{store.record}
+	history := &historicalBoardTestStore{boardTestStore: store, err: errors.New("history unavailable")}
+	service, _ := boardTestService(now, history, events)
+	if _, err := service.GetOrder(context.Background(), "wechat", "M-11"); !errors.Is(err, ErrBoardUnavailable) || history.calls != 1 {
+		t.Fatalf("historical reader error=%v calls=%d", err, history.calls)
 	}
 }
 
