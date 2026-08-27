@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func TestAdaptHistoryProducesOnlyStaticCandidatesAndReadOnlyDynamicFacts(t *testing.T) {
+func TestAdaptHistoryProducesReadOnlyHistoryCandidates(t *testing.T) {
 	coupon, binding, claim, redemption := couponFixtures()
 	coupon["status"] = "expired_in_v1"
 	claim["status"] = "reserved"
@@ -16,8 +16,8 @@ func TestAdaptHistoryProducesOnlyStaticCandidatesAndReadOnlyDynamicFacts(t *test
 	if result.Coupons[0].Disposition != DispositionCandidate || result.Bindings[0].Disposition != DispositionCandidate {
 		t.Fatalf("static candidates = %#v %#v", result.Coupons[0], result.Bindings[0])
 	}
-	if result.Claims[0].Disposition != DispositionArchive || result.Redemptions[0].Disposition != DispositionArchive {
-		t.Fatalf("dynamic facts escaped archive-only: %#v %#v", result.Claims[0], result.Redemptions[0])
+	if result.Claims[0].Disposition != DispositionCandidate || result.Redemptions[0].Disposition != DispositionCandidate {
+		t.Fatalf("dynamic history candidates = %#v %#v", result.Claims[0], result.Redemptions[0])
 	}
 	if fact := result.Coupons[0].Fact; fact == nil || fact.SourceID != 101 || fact.OriginalStatus != "expired_in_v1" || fact.DiscountAmountMinor != 200 || !fact.CreatedAt.Equal(coupon["created_at"].(time.Time)) {
 		t.Fatalf("coupon fact=%#v", fact)
@@ -25,7 +25,7 @@ func TestAdaptHistoryProducesOnlyStaticCandidatesAndReadOnlyDynamicFacts(t *test
 	if fact := result.Bindings[0].Fact; fact == nil || fact.ProductSourceID != 301 || fact.CouponSourceID != 101 {
 		t.Fatalf("binding fact=%#v", fact)
 	}
-	if fact := result.Claims[0].Fact; fact == nil || fact.SourceID != 501 || fact.OriginalStatus != "reserved" || fact.DiscountAmountMinor != 200 || fact.ReservedAt != nil || fact.ConsumedAt != nil || fact.ExpiredAt != nil {
+	if fact := result.Claims[0].Fact; fact == nil || fact.SourceID != 501 || fact.UnionID != "union-1" || fact.OriginalStatus != "reserved" || fact.DiscountAmountMinor != 200 || fact.ReservedAt != nil || fact.ConsumedAt != nil || fact.ExpiredAt != nil {
 		t.Fatalf("claim fact=%#v", fact)
 	}
 	if fact := result.Redemptions[0].Fact; fact == nil || fact.SourceID != 601 || fact.OriginalStatus != "released" || fact.OrderSourceID != 701 || fact.OriginalAmountMinor != 1000 || fact.DiscountAmountMinor != 200 || fact.PayableAmountMinor != 800 || fact.ConsumedAt != nil || fact.ReleasedAt != nil {
@@ -43,7 +43,7 @@ func TestAdaptHistoryArchivesStaticSourceThatCannotSafelyBecomeV2Definition(t *t
 	if result.Bindings[0].Disposition != DispositionArchive || result.Bindings[0].Reason != "coupon_not_target_candidate" {
 		t.Fatalf("binding was made target candidate=%#v", result.Bindings[0])
 	}
-	if result.Claims[0].Disposition != DispositionArchive || result.Redemptions[0].Disposition != DispositionArchive {
+	if result.Claims[0].Disposition != DispositionCandidate || result.Redemptions[0].Disposition != DispositionCandidate {
 		t.Fatal("dynamic source facts were discarded with a non-target definition")
 	}
 }
@@ -86,7 +86,7 @@ func TestAdaptHistoryRejectsMissingRequiredAndInvalidAmountsButAcceptsNullableTi
 	claim["reserved_at"], claim["consumed_at"], claim["expired_at"] = nil, nil, nil
 	redemption["consumed_at"], redemption["released_at"] = nil, nil
 	result := AdaptHistory([]json.RawMessage{raw(t, coupon)}, []json.RawMessage{raw(t, binding)}, []json.RawMessage{raw(t, claim)}, []json.RawMessage{raw(t, redemption)})
-	if result.Claims[0].Disposition != DispositionArchive || result.Redemptions[0].Disposition != DispositionArchive {
+	if result.Claims[0].Disposition != DispositionCandidate || result.Redemptions[0].Disposition != DispositionCandidate {
 		t.Fatal("nullable source timestamps were rejected")
 	}
 	badCoupon := copyMap(coupon)

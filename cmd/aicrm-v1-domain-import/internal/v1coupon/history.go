@@ -1,6 +1,5 @@
-// Package v1coupon classifies archived V1 coupon facts. It is deliberately
-// persistence-free: only definitions and bindings may later be considered for
-// an archived target; claims and redemptions remain archive-only facts.
+// Package v1coupon classifies archived V1 coupon facts without doing any
+// persistence or V2 reference resolution.
 package v1coupon
 
 import (
@@ -50,12 +49,14 @@ type BindingFact struct {
 	CreatedAt       time.Time
 }
 
-// ClaimFact is read-only history. It intentionally excludes source unionid
-// and idempotency material, which remain available only in the sealed archive.
+// ClaimFact is read-only history. UnionID is private importer input for the
+// DM01 resolver and must never be serialized into a V2 DTO. Idempotency
+// material remains available only in the sealed archive.
 type ClaimFact struct {
 	SourceID            int64
 	TenantID            string
 	CouponSourceID      int64
+	UnionID             string `json:"-"`
 	ClaimNumber         string
 	DiscountAmountMinor int64
 	Currency            string
@@ -159,6 +160,7 @@ type claimJSON struct {
 	TenantID            string     `json:"tenant_id"`
 	CouponSourceID      int64      `json:"coupon_id"`
 	ClaimNumber         string     `json:"claim_no"`
+	UnionID             string     `json:"unionid"`
 	DiscountAmountMinor int64      `json:"discount_amount_total"`
 	Currency            string     `json:"currency"`
 	Status              string     `json:"status"`
@@ -342,7 +344,7 @@ func adaptClaim(row json.RawMessage, coupons map[int64]CouponDefinitionFact) Cla
 	if !decode(row, &source, "id tenant_id coupon_id claim_no unionid discount_amount_total currency valid_from valid_until status idempotency_key_hash claimed_at created_at updated_at") {
 		return ClaimResult{Disposition: DispositionQuarantine, Reason: "coupon_claim_json_invalid"}
 	}
-	fact := ClaimFact{SourceID: source.ID, TenantID: source.TenantID, CouponSourceID: source.CouponSourceID, ClaimNumber: source.ClaimNumber, DiscountAmountMinor: source.DiscountAmountMinor, Currency: source.Currency, OriginalStatus: source.Status, ValidFrom: source.ValidFrom, ValidUntil: source.ValidUntil, ClaimedAt: source.ClaimedAt, ReservedAt: source.ReservedAt, ConsumedAt: source.ConsumedAt, ExpiredAt: source.ExpiredAt, CreatedAt: source.CreatedAt, UpdatedAt: source.UpdatedAt}
+	fact := ClaimFact{SourceID: source.ID, TenantID: source.TenantID, CouponSourceID: source.CouponSourceID, UnionID: source.UnionID, ClaimNumber: source.ClaimNumber, DiscountAmountMinor: source.DiscountAmountMinor, Currency: source.Currency, OriginalStatus: source.Status, ValidFrom: source.ValidFrom, ValidUntil: source.ValidUntil, ClaimedAt: source.ClaimedAt, ReservedAt: source.ReservedAt, ConsumedAt: source.ConsumedAt, ExpiredAt: source.ExpiredAt, CreatedAt: source.CreatedAt, UpdatedAt: source.UpdatedAt}
 	if source.ID < 1 || source.TenantID == "" || source.CouponSourceID < 1 || source.DiscountAmountMinor < 0 || !validNonzeroTimes(source.ValidFrom, source.ValidUntil, source.ClaimedAt, source.CreatedAt, source.UpdatedAt) || !validOptionalTimes(source.ReservedAt, source.ConsumedAt, source.ExpiredAt) {
 		return ClaimResult{Disposition: DispositionQuarantine, Reason: "coupon_claim_shape_invalid"}
 	}
@@ -350,7 +352,7 @@ func adaptClaim(row json.RawMessage, coupons map[int64]CouponDefinitionFact) Cla
 	if !found || coupon.TenantID != fact.TenantID {
 		return ClaimResult{Disposition: DispositionQuarantine, Reason: "coupon_claim_coupon_unresolved"}
 	}
-	return ClaimResult{Disposition: DispositionArchive, Fact: &fact}
+	return ClaimResult{Disposition: DispositionCandidate, Fact: &fact}
 }
 
 func adaptRedemption(row json.RawMessage, claims map[int64]ClaimFact) RedemptionResult {
@@ -366,7 +368,7 @@ func adaptRedemption(row json.RawMessage, claims map[int64]ClaimFact) Redemption
 	if !found || claim.TenantID != fact.TenantID {
 		return RedemptionResult{Disposition: DispositionQuarantine, Reason: "coupon_redemption_claim_unresolved"}
 	}
-	return RedemptionResult{Disposition: DispositionArchive, Fact: &fact}
+	return RedemptionResult{Disposition: DispositionCandidate, Fact: &fact}
 }
 
 func validCouponSource(value CouponDefinitionFact) bool {
