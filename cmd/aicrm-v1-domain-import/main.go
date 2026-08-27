@@ -41,6 +41,7 @@ func main() {
 
 func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	flags := flag.NewFlagSet("aicrm-v1-domain-import", flag.ContinueOnError)
+	mode := flags.String("mode", "import", "import|reconcile")
 	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all")
 	archiveRunID := flags.String("archive-run-id", "", "reconciled V1 archive run")
 	actorValues := flags.String("campaign-actors", "", "explicit owner_userid=V2_actor_id pairs")
@@ -48,18 +49,24 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
-	if !validDomain(*domain) || *archiveRunID == "" || environment.TargetDatabaseURL == "" || len(environment.ArchiveKey) != 32 {
-		return fmt.Errorf("valid domain, archive-run-id, target database and 32-byte archive key are required")
+	if (*mode != "import" && *mode != "reconcile") || !validDomain(*domain) || *archiveRunID == "" || environment.TargetDatabaseURL == "" {
+		return fmt.Errorf("valid mode, domain, archive-run-id and target database are required")
+	}
+	if *mode == "import" && len(environment.ArchiveKey) != 32 {
+		return fmt.Errorf("32-byte archive key is required for import")
+	}
+	if *mode == "reconcile" && *domain != "all" {
+		return fmt.Errorf("reconcile requires domain=all")
 	}
 	var actors v1candidate.ActorIDs
 	var err error
-	if *domain == "campaign" || *domain == "all" {
+	if *mode == "import" && (*domain == "campaign" || *domain == "all") {
 		actors, err = parseActorIDs(*actorValues)
 		if err != nil {
 			return err
 		}
 	}
-	if (*domain == "survey" || *domain == "media" || *domain == "radar" || *domain == "all") && *migrationActor < 1 {
+	if *mode == "import" && (*domain == "survey" || *domain == "media" || *domain == "radar" || *domain == "all") && *migrationActor < 1 {
 		return fmt.Errorf("migration-actor is required")
 	}
 	ctx := context.Background()
@@ -68,6 +75,13 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 		return err
 	}
 	defer pool.Close()
+	if *mode == "reconcile" {
+		result, err := v1domain.ReconcileAll(ctx, pool, domainImportVersion, *archiveRunID)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(os.Stdout).Encode(map[string]any{"reconciliation": result})
+	}
 	archive, err := v1archive.OpenPostgresArchiveReader(ctx, environment.TargetDatabaseURL, []byte(environment.ArchiveKey))
 	if err != nil {
 		return err

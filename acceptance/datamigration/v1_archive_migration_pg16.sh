@@ -79,6 +79,14 @@ CREATE TABLE campaign_steps (
 INSERT INTO campaign_steps VALUES
   (31,11,21,0,0,'09:30','Asia/Shanghai','safe local definition'),
   (32,12,22,0,0,'10:00','Asia/Shanghai','must remain archived');
+CREATE TABLE questionnaires (id BIGINT PRIMARY KEY);
+CREATE TABLE questionnaire_questions (id BIGINT PRIMARY KEY);
+CREATE TABLE questionnaire_options (id BIGINT PRIMARY KEY);
+CREATE TABLE questionnaire_submissions (id BIGINT PRIMARY KEY);
+CREATE TABLE questionnaire_submission_answers (id BIGINT PRIMARY KEY);
+CREATE TABLE miniprogram_library (id BIGINT PRIMARY KEY);
+CREATE TABLE radar_links (id BIGINT PRIMARY KEY);
+CREATE TABLE wechat_shop_orders (id BIGINT PRIMARY KEY);
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 CREATE ROLE aicrm_v1_archive_fixture_reader LOGIN PASSWORD :'reader_password';
 GRANT CONNECT ON DATABASE aicrm_test_v1_archive_source_00107 TO aicrm_v1_archive_fixture_reader;
@@ -100,7 +108,7 @@ common_args=(
 )
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" run ./cmd/aicrm-v1-import --mode preflight >"$failure_log"
-grep -Fq '"table_count":4' "$failure_log"
+grep -Fq '"table_count":12' "$failure_log"
 grep -Fq '"row_count":8' "$failure_log"
 GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
   "$go_command" run ./cmd/aicrm-v1-import --mode full "${common_args[@]}" >"$full_result"
@@ -126,12 +134,13 @@ grep -Fq '"ImportedSteps":1' "$failure_log"
 grep -Fq '"ArchivedRows":2' "$failure_log"
 [[ "$(psql "$database_url" -X -q -At -c "SELECT approval_status||'|'||runtime_status FROM cloud_campaigns WHERE campaign_code='safe-v1'")" = "rejected|paused" ]]
 [[ "$(psql "$database_url" -X -q -At -c 'SELECT (SELECT count(*) FROM cloud_campaigns)||'|'||(SELECT count(*) FROM cloud_campaign_steps)||'|'||(SELECT count(*) FROM cloud_campaign_local_commands)')" = "1|1|0" ]]
-psql "$database_url" -X -q -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
-INSERT INTO v1_domain_import_reconciliation_receipts (
-  import_version, archive_run_id, selected_source_count, receipt_count,
-  imported_count, archived_count, quarantined_count, verified_count, comparison_digest
-) VALUES ('v1-domain-a1','v1-archive-acceptance',4,4,2,2,0,4,digest('v1-domain-a1','sha256'));
-SQL
+GOWORK=off GOTOOLCHAIN=local GOFLAGS=-mod=readonly \
+  "$go_command" run ./cmd/aicrm-v1-domain-import \
+  --mode reconcile --domain all --archive-run-id v1-archive-acceptance >"$failure_log"
+grep -Fq '"selected_source_count":4' "$failure_log"
+grep -Fq '"receipt_count":4' "$failure_log"
+grep -Fq '"imported_count":2' "$failure_log"
+grep -Fq '"archived_count":2' "$failure_log"
 [[ "$(psql "$database_url" -X -q -At -c "SELECT receipt_count||'|'||verified_count FROM v1_domain_import_reconciliation_receipts WHERE import_version='v1-domain-a1'")" = "4|4" ]]
 if psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "INSERT INTO v1_domain_import_receipts (import_version,archive_run_id,adapter_id,table_id,source_key_digest,payload_digest,disposition,reason,verified) SELECT 'v1-domain-a1',run_id,adapter_id,table_id,source_key_digest,payload_digest,'archive','late_write',true FROM v1_archive_records WHERE run_id='v1-archive-acceptance' AND table_id='public/fixture_contacts' ORDER BY source_ordinal LIMIT 1" >"$failure_log" 2>&1; then
   echo 'reconciled V1 domain import unexpectedly allowed a late receipt' >&2

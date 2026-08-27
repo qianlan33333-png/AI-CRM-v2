@@ -242,7 +242,7 @@ func (journal *Journal) Record(ctx context.Context, receipt TerminalReceipt) err
 	if journal == nil || journal.tx == nil || !journal.scope.valid() {
 		return ErrInvalidScope
 	}
-	metadata, err := json.Marshal(receipt.Metadata)
+	metadata, err := marshalReceiptMetadata(receipt.Metadata)
 	if err != nil {
 		return err
 	}
@@ -293,6 +293,13 @@ WHERE import_version=$1 AND archive_run_id=$2 AND adapter_id=$3 AND table_id=$4 
 		return ErrConflict
 	}
 	return nil
+}
+
+func marshalReceiptMetadata(value map[string]any) ([]byte, error) {
+	if value == nil {
+		value = map[string]any{}
+	}
+	return json.Marshal(value)
 }
 
 func equalDigest(value []byte, digest [sha256.Size]byte) bool {

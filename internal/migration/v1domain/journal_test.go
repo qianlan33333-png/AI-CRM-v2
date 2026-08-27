@@ -2,6 +2,7 @@ package v1domain
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"testing"
 )
 
@@ -14,6 +15,20 @@ func TestSourceIdentifierRoundTrip(t *testing.T) {
 	}
 	if decoded != digest {
 		t.Fatalf("decoded digest = %x, want %x", decoded, digest)
+	}
+}
+
+func TestNilReceiptMetadataIsJSONObject(t *testing.T) {
+	encoded, err := marshalReceiptMetadata(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var value any
+	if err = json.Unmarshal(encoded, &value); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := value.(map[string]any); !ok {
+		t.Fatalf("metadata = %s, want JSON object", encoded)
 	}
 }
 
