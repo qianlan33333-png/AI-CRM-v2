@@ -76,3 +76,4 @@ p4-wechat-shop-order-material|0074|P4_WECHAT_SHOP_MATERIAL_TEST_DATABASE_URL|scr
 p4-ai-audience-operation-member|0075|P4AIAUDIENCEOPMEMBER_TEST_DATABASE_URL|legacy-make|p4-ai-audience-operation-member-acceptance|-
 p4-ai-audience-inbound-webhook|0076|P4AIAUDIENCEINBOUNDWEBHOOK_TEST_DATABASE_URL|legacy-make|p4-ai-audience-inbound-webhook-acceptance|-
 p4-b1-wc02-wecom-profile-effect|0077|P4B1WC02_WECOM_PROFILE_EFFECT_TEST_DATABASE_URL|script|acceptance/wecom/b1_wc02_profile_effect_pg16.sh|-
+p4-v1-full-archive|0078|P4_V1_ARCHIVE_TEST_DATABASE_URL|legacy-make|p4-v1-archive-migration-acceptance|-

@@ -11,6 +11,8 @@ seed() {
   mkdir -p "$root/cmd/aicrm" "$root/internal/platform/runtime" "$root/internal/config/source" \
     "$root/internal/contact/store/queries" "$root/internal/contact/store/generated" "$root/internal/contact/app" \
     "$root/internal/product/membergrid" \
+    "$root/internal/datamigration/manifest" \
+    "$root/internal/migration/v1archive" \
     "$root/internal/events/dispatcher" "$root/internal/stats/app" \
     "$root/internal/api/candidate/generated" "$root/scripts/sourcepolicy"
   printf '%s\n' '# source-policy-baseline-v1: path<TAB>sorted_rule_counts<TAB>ordered_syntax_sha256' >"$root/scripts/sourcepolicy/baseline.tsv"
@@ -18,6 +20,9 @@ seed() {
   mkdir -p "$root/cmd/aicrm-contact-perf-data" "$root/cmd/aicrm-contact-perf"
   echo 'package main; const reset = "TRUNCATE TABLE customers"; func run(){ db.Exec(reset); db.CopyFrom() }' >"$root/cmd/aicrm-contact-perf-data/main.go"
   echo 'package main; const inspect = "SELECT count(*) FROM customers"; func run(){ db.QueryRow(inspect); db.Query(inspect) }' >"$root/cmd/aicrm-contact-perf/main.go"
+  echo 'package manifest; const inspect = "SELECT count(*) FROM source_tables"; func collect(){ db.QueryRow(inspect); db.Query(inspect) }' >"$root/internal/datamigration/manifest/collector.go"
+  echo 'package v1archive; const inspect = "SELECT count(*) FROM source_tables"; func read(){ db.QueryRow(inspect); db.Query(inspect) }' >"$root/internal/migration/v1archive/source_postgres.go"
+  echo 'package v1archive; const write = "INSERT INTO archive_records DEFAULT VALUES"; func persist(){ db.Exec(write); db.QueryRow(write) }' >"$root/internal/migration/v1archive/target_postgres.go"
   printf '%s\n' 'package runtime' 'import "time"' 'func bounded(){ _ = time.NewTimer(time.Second) }' >"$root/internal/platform/runtime/timer.go"
   printf '%s\n' 'package source' 'import "os"' 'func load(){ _, _ = os.LookupEnv("KEY") }' >"$root/internal/config/source/env.go"
   echo 'SELECT 1;' >"$root/internal/contact/store/queries/list.sql"
@@ -80,6 +85,9 @@ mutate() {
     stats-runtime-sql) echo 'package app; func f(){ db.Query("SELECT value FROM stats_daily") }' >"$root/internal/stats/app/app.go" ;;
     performance-command-copy) mkdir -p "$root/cmd/aicrm-contact-perf-data-copy"; echo 'package main; const q = "TRUNCATE TABLE customers"; func f(){ db.Exec(q) }' >"$root/cmd/aicrm-contact-perf-data-copy/main.go" ;;
     performance-runner-copy) mkdir -p "$root/cmd/aicrm-contact-perf-copy"; echo 'package main; const q = "SELECT count(*) FROM customers"; func f(){ db.Query(q) }' >"$root/cmd/aicrm-contact-perf-copy/main.go" ;;
+    manifest-collector-copy) echo 'package manifest; const q = "SELECT count(*) FROM source_tables"; func f(){ db.Query(q) }' >"$root/internal/datamigration/manifest/collector_copy.go" ;;
+    v1archive-source-copy) echo 'package v1archive; const q = "SELECT count(*) FROM source_tables"; func f(){ db.Query(q) }' >"$root/internal/migration/v1archive/source_postgres_copy.go" ;;
+    v1archive-target-copy) echo 'package v1archive; const q = "INSERT INTO archive_records DEFAULT VALUES"; func f(){ db.Exec(q) }' >"$root/internal/migration/v1archive/target_postgres_copy.go" ;;
     customer-plan-wrapper-copy) echo 'package store; type wrapper struct{ Tx database }; func (db wrapper) f(){ db.Tx.Query() }' >"$root/internal/contact/store/customer_query_plan_copy.go" ;;
     customer-plan-wrapper-wrong-receiver) echo 'package store; type otherWrapper struct{ Tx database }; func (db otherWrapper) Query(){ db.Tx.Query() }; func (db customerQueryDBTX) QueryRow(){ db.Tx.QueryRow() }' >"$root/internal/contact/store/customer_query_repository.go" ;;
     customer-plan-wrapper-shadowed-receiver) echo 'package store; type customerQueryDBTX struct{ Tx database }; type otherWrapper struct{ Tx database }; func (db customerQueryDBTX) Query(){ { db := otherWrapper{}; db.Tx.Query() } }; func (db customerQueryDBTX) QueryRow(){ db.Tx.QueryRow() }' >"$root/internal/contact/store/customer_query_repository.go" ;;
@@ -103,6 +111,9 @@ reject dispatcher-savepoint 'direct database call forbidden'
 reject stats-runtime-sql 'direct database call forbidden'
 reject performance-command-copy 'handwritten SQL forbidden'
 reject performance-runner-copy 'handwritten SQL forbidden'
+reject manifest-collector-copy 'handwritten SQL forbidden'
+reject v1archive-source-copy 'handwritten SQL forbidden'
+reject v1archive-target-copy 'handwritten SQL forbidden'
 reject customer-plan-wrapper-copy 'direct database call forbidden'
 reject customer-plan-wrapper-wrong-receiver 'direct database call forbidden'
 reject customer-plan-wrapper-shadowed-receiver 'direct database call forbidden'

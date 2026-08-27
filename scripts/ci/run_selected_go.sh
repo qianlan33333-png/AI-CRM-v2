@@ -70,7 +70,10 @@ while [[ -n "$remaining_groups" ]]; do
       ;;
     migration)
       add_package ./internal/migration/...
+      add_package ./internal/datamigration/...
       add_package ./acceptance/datamigration/...
+      add_package ./cmd/aicrm-v1-import
+      add_package ./scripts/datamigration_manifest
       ;;
     adminops|ai|auth|automation|config|contact|coupon|events|externaleffects|gateway|groupops|identity|media|operationcycle|ops|order|outbound|product|pushcenter|radar|segment|stats|survey|wecom)
       add_domain_group "$group_name"

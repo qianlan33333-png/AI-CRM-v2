@@ -448,6 +448,18 @@ class WorkflowWiringTests(unittest.TestCase):
         manifest = (REPO_ROOT / "docs/ci/go-acceptance-manifest.tsv").read_text(encoding="utf-8")
         self.assertIn("p4-data-migration-harness|0063|P4DMH_TEST_DATABASE_URL", manifest)
 
+    def test_v1_archive_runner_is_selected_and_nightly_gated(self) -> None:
+        ci_map = (REPO_ROOT / ".github/ci-map.yml").read_text(encoding="utf-8")
+        self.assertIn('"internal/migration/v1archive/**"', ci_map)
+        self.assertIn('"cmd/aicrm-v1-import/**"', ci_map)
+        runner = (REPO_ROOT / "scripts/ci/run_selected_database.sh").read_text(encoding="utf-8")
+        self.assertIn(
+            "run_make_acceptance P4_V1_ARCHIVE_TEST_DATABASE_URL p4-v1-archive-migration-acceptance",
+            runner,
+        )
+        manifest = (REPO_ROOT / "docs/ci/go-acceptance-manifest.tsv").read_text(encoding="utf-8")
+        self.assertIn("p4-v1-full-archive|0078|P4_V1_ARCHIVE_TEST_DATABASE_URL", manifest)
+
     def test_full_database_gate_includes_dm01(self) -> None:
         ci_source = (REPO_ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
         self.assertIn(

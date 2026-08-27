@@ -169,7 +169,7 @@
     },
     {
       "name": "domain-migration",
-      "patterns": ["internal/migration/**","acceptance/datamigration/**"],
+      "patterns": ["internal/migration/**","internal/datamigration/**","cmd/aicrm-v1-import/**","scripts/datamigration_manifest/**","acceptance/datamigration/**"],
       "effects": {"go": true,"go_groups": ["migration"],"go_mode": "selected"}
     },
     {
@@ -289,7 +289,7 @@
     },
     {
       "name": "database-migration",
-      "patterns": ["internal/migration/store/**","acceptance/datamigration/**"],
+      "patterns": ["internal/migration/store/**","internal/migration/v1archive/**","cmd/aicrm-v1-import/**","migrations/00107_v1_full_data_archive.sql","acceptance/datamigration/**"],
       "effects": {"database": true,"database_groups": ["migration"],"database_mode": "selected"}
     },
     {
