@@ -54,7 +54,7 @@ async function loadMemberGridShare({ token, response, responses, status = 200 } 
   return { dom, trace };
 }
 
-async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, radarHttp = false } = {}) {
+async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = false, audienceHttp = false, audienceEmpty = false, audienceActive = false, radarHttp = false, serviceProductHttp = false } = {}) {
   const file = path.join(DIST, rel);
   let html = fs.readFileSync(file, 'utf8');
   // 用 jsdom 执行内联脚本：把 bundle 内联进去，避免资源加载配置
@@ -69,7 +69,7 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
     pretendToBeVisual: true,
     beforeParse(window) {
       // Mock 仅由 DOM 回归测试显式注入；浏览器默认运行态不会走此路径。
-      window.__AICRM_TEST_MOCK__ = !(couponHttp || audienceHttp || radarHttp);
+      window.__AICRM_TEST_MOCK__ = !(couponHttp || audienceHttp || radarHttp || serviceProductHttp);
       if (couponHttp) {
         const calls = [];
         const coupon = { id: 31, name: '新客券', discount_amount_total: 10000, total_issue_limit: 1200, issued_count: 0, per_user_issue_limit: 1, claim_starts_at: '2026-08-01T00:00:00Z', claim_ends_at: '2026-08-31T00:00:00Z', validity_mode: 'relative_days', relative_validity_days: 7, instructions: '说明', target_refs: ['standard_product:8'], status: 'draft', version: 1 };
@@ -93,7 +93,7 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
           package_id: 6,
           name: '待唤醒客户',
           group_id: 2,
-          lifecycle: 'paused',
+          lifecycle: audienceActive ? 'active' : 'paused',
           version: packageVersion,
           refresh_mode: 'manual',
           refresh_cron: null,
@@ -132,6 +132,7 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
         return;
       }
       if (radarHttp) {
+        Object.defineProperty(window.crypto, 'subtle', { configurable: true, value: globalThis.crypto.subtle });
         const calls = [];
         const downloads = [];
         const publicCode = 'rd_1234567890123456789012';
@@ -144,10 +145,32 @@ async function loadPage(rel, { id, q, couponHttp = false, couponHttpFailure = fa
         window.HTMLAnchorElement.prototype.click = function () { downloads.push({ href: this.href, download: this.download }); };
         window.fetch = async (input, init = {}) => {
           const url = new URL(String(input), window.location.origin);
-          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET', body: init.body ? String(init.body) : null });
           if (url.pathname === '/api/admin/radar-links') return json({ items: [link], total: 1, limit: 50, offset: 0 });
           if (url.pathname === '/api/admin/radar-links/2/share') return json(projection);
+          if (url.pathname === '/api/admin/attachment-library/uploads') return json({ upload_id: 44 }, 201);
+          if (/^\/api\/admin\/attachment-library\/uploads\/44\/parts\/\d+$/.test(url.pathname)) return json({}, 204);
+          if (url.pathname === '/api/admin/attachment-library/uploads/44/complete') return json({ attachment_id: 45 });
           return json({ code: 'unexpected_radar_request' }, 500);
+        };
+        return;
+      }
+      if (serviceProductHttp) {
+        const calls = [];
+        const downloads = [];
+        const product = { service_product_id: 8, product_code: 'SP-8', name: '季度会员', description: '本地周期商品', price_minor: 398000, currency: 'CNY', stock_quantity: 5, lifecycle: 'enabled', enabled: true, archived: false, version: 3, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-26T08:00:00Z' };
+        const json = (data, status = 200) => ({ ok: status >= 200 && status < 300, status, headers: new Headers({ 'Content-Type': 'application/json' }), text: async () => JSON.stringify(data), json: async () => data, clone() { return this; } });
+        window.__serviceProductHttpTest = { calls, downloads, opened: [] };
+        window.URL.createObjectURL = () => 'blob:service-product-qr';
+        window.URL.revokeObjectURL = () => {};
+        window.HTMLAnchorElement.prototype.click = function () { downloads.push({ href: this.href, download: this.download }); };
+        window.open = (...args) => { window.__serviceProductHttpTest.opened.push(args); return null; };
+        window.fetch = async (input, init = {}) => {
+          const url = new URL(String(input), window.location.origin);
+          calls.push({ path: url.pathname, query: url.search, method: init.method || 'GET' });
+          if (url.pathname === '/api/admin/service-period-products') return json({ items: [product] });
+          if (url.pathname === '/api/admin/service-period-products/8/share') return json({ ok: true, service_product_id: 8, public_path: '/p/service_period/8', local_only: true, real_external_call_executed: false });
+          return json({ code: 'unexpected_service_product_request' }, 500);
         };
         return;
       }
@@ -571,6 +594,22 @@ console.log('admin/radarForm.html（新建校验）');
   dom.window.close();
 }
 
+console.log('admin/radarForm.html（真实 PDF 文件分片上传）');
+{
+  const dom = await loadPage('admin/radarForm.html', { radarHttp: true });
+  const d = dom.window.document;
+  click(dom, d.querySelector('.type-card[data-t="pdf"]'));
+  const fileInput = d.querySelector('#fileInput');
+  const file = new dom.window.File(['%PDF-1.7\\n%%EOF'], '浏览器文件.pdf', { type: 'application/pdf' });
+  Object.defineProperty(fileInput, 'files', { configurable: true, value: [file] });
+  fileInput.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+  await sleep(120);
+  const calls = dom.window.__radarHttpTest.calls.filter((call) => call.path.includes('/attachment-library/uploads'));
+  ok('真实文件控件触发 PDF initiate/part/complete', calls.length === 3 && calls[0].path.endsWith('/uploads') && calls[1].path.endsWith('/parts/1') && calls[2].path.endsWith('/complete'));
+  ok('PDF 上传完成后仅使用服务端附件 ID', d.querySelector('#mediaName').textContent === '浏览器文件.pdf' && d.querySelector('#mediaMeta').textContent.includes('分片上传'));
+  dom.window.close();
+}
+
 console.log('admin/radarForm.html?id=2（编辑路由）');
 {
   const dom = await loadPage('admin/radarForm.html', { id: 2 });
@@ -839,7 +878,7 @@ console.log('admin/audienceEdit.html（HTTP 保存→配置快照→预览）');
   const d = dom.window.document;
   await sleep(40);
   input(dom, d.querySelector('#aeName'), '已保存的待唤醒客户');
-  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存并预览'));
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存新版本并预览'));
   await sleep(80);
   const calls = dom.window.__audienceHttpTest.calls;
   const patch = calls.findIndex((call) => call.path === '/api/admin/ai-audience/packages/6' && call.method === 'PATCH');
@@ -859,7 +898,7 @@ console.log('admin/audienceEdit.html（HTTP 空人群显式确认）');
   const dom = await loadPage('admin/audienceEdit.html', { id: 6, audienceHttp: true, audienceEmpty: true });
   const d = dom.window.document;
   await sleep(40);
-  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存并预览'));
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存新版本并预览'));
   await sleep(80);
   ok('空人群预览要求明确确认且物化尚未执行',
     d.querySelector('[data-audience-preview="empty_pending"]')?.textContent.includes('物化已拒绝') &&
@@ -873,6 +912,19 @@ console.log('admin/audienceEdit.html（HTTP 空人群显式确认）');
     d.querySelector('[data-audience-preview="empty_confirmed"]')?.textContent.includes('仍需单独确认物化') &&
     d.querySelector('#fb-body')?.textContent.includes('当前已确认空人群') &&
     !dom.window.__audienceHttpTest.calls.some((call) => call.path.includes('materialize')));
+  dom.window.close();
+}
+
+console.log('admin/audienceEdit.html（active 人群包拒绝配置保存与预览）');
+{
+  const dom = await loadPage('admin/audienceEdit.html', { id: 6, audienceHttp: true, audienceActive: true });
+  const d = dom.window.document;
+  await sleep(40);
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存新版本并预览'));
+  await sleep(30);
+  ok('active 人群包在详情页发请求前被拒绝，且不触发外发或启用',
+    d.body.textContent.includes('请先停止后再保存或预览本地配置') &&
+    !dom.window.__audienceHttpTest.calls.some((call) => call.method !== 'GET' || call.path.includes('activate') || call.path.includes('materialize')));
   dom.window.close();
 }
 
@@ -953,6 +1005,24 @@ console.log('admin/groupopsDetail.html（typed 素材节点）');
   await sleep(30);
   const nodes = JSON.parse(d.querySelector('#groupOpsNodes').value);
   ok('图片选择写入 typed materialPlan 而非旧引用', nodes[0].materialReference === undefined && nodes[0].materialPlan.references[0].kind === 'image' && Number.isInteger(nodes[0].materialPlan.references[0].id));
+  dom.window.close();
+}
+
+console.log('admin/spProducts.html（真实周期商品分享）');
+{
+  const dom = await loadPage('admin/spProducts.html', { serviceProductHttp: true });
+  const d = dom.window.document;
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '分享'));
+  await sleep(40);
+  const test = dom.window.__serviceProductHttpTest;
+  const expected = 'http://localhost/p/service_period/8';
+  const svg = d.querySelector('#shareQrBox svg');
+  ok('周期商品分享只读取真实 OpenAPI 投影', test.calls.some((call) => call.path === '/api/admin/service-period-products/8/share' && call.method === 'GET'));
+  ok('分享链接与真实二维码均使用当前站点公开路径', d.querySelector('input[readonly]')?.value === expected && svg?.getAttribute('data-qr-payload') === expected && svg?.querySelector('path'));
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '预览'));
+  click(dom, [...d.querySelectorAll('button')].find((button) => button.textContent.trim() === '保存二维码'));
+  await sleep(30);
+  ok('预览与二维码下载均沿用同一真实链接', test.opened[0]?.[0] === expected && test.downloads[0]?.download === 'SP-8-qr.svg');
   dom.window.close();
 }
 

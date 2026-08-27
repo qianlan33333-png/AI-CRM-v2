@@ -298,6 +298,9 @@ func (service *LocalConfigurationService) PutConfiguration(ctx context.Context, 
 			if validateErr := validateWriteModel(packageModel); validateErr != nil {
 				return nil, nil, validateErr
 			}
+			if packageModel.Metadata.Lifecycle != PackagePaused {
+				return nil, nil, ErrConflict
+			}
 			if packageModel.Metadata.Version != input.ExpectedPackageVersion {
 				return nil, nil, ErrVersionConflict
 			}
@@ -358,6 +361,16 @@ func (service *LocalConfigurationService) PreviewConfiguration(ctx context.Conte
 	}
 	var response ConfigurationEvaluationResponse
 	err := service.uow.Within(ctx, func(tx context.Context) error {
+		packageModel, lockErr := service.repo.LockPackage(tx, input.PackageID)
+		if lockErr != nil {
+			return lockErr
+		}
+		if validateErr := validateWriteModel(packageModel); validateErr != nil {
+			return validateErr
+		}
+		if packageModel.Metadata.Lifecycle != PackagePaused {
+			return ErrConflict
+		}
 		configuration, err := service.repo.GetConfigurationVersion(tx, input.PackageID, input.ConfigurationVersion)
 		if err != nil {
 			return err
@@ -402,6 +415,9 @@ func (service *LocalConfigurationService) MaterializeConfiguration(ctx context.C
 			}
 			if validateErr := validateWriteModel(packageModel); validateErr != nil {
 				return nil, nil, validateErr
+			}
+			if packageModel.Metadata.Lifecycle != PackagePaused {
+				return nil, nil, ErrConflict
 			}
 			if packageModel.Metadata.Version != input.ExpectedPackageVersion {
 				return nil, nil, ErrVersionConflict

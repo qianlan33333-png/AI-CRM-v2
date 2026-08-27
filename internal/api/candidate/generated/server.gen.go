@@ -7009,6 +7009,51 @@ func (e ServicePeriodProductResponseOk) Valid() bool {
 	}
 }
 
+// Defines values for ServicePeriodProductShareResponseLocalOnly.
+const (
+	ServicePeriodProductShareResponseLocalOnlyTrue ServicePeriodProductShareResponseLocalOnly = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodProductShareResponseLocalOnly enum.
+func (e ServicePeriodProductShareResponseLocalOnly) Valid() bool {
+	switch e {
+	case ServicePeriodProductShareResponseLocalOnlyTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodProductShareResponseOk.
+const (
+	ServicePeriodProductShareResponseOkTrue ServicePeriodProductShareResponseOk = true
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodProductShareResponseOk enum.
+func (e ServicePeriodProductShareResponseOk) Valid() bool {
+	switch e {
+	case ServicePeriodProductShareResponseOkTrue:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ServicePeriodProductShareResponseRealExternalCallExecuted.
+const (
+	ServicePeriodProductShareResponseRealExternalCallExecutedFalse ServicePeriodProductShareResponseRealExternalCallExecuted = false
+)
+
+// Valid indicates whether the value is a known member of the ServicePeriodProductShareResponseRealExternalCallExecuted enum.
+func (e ServicePeriodProductShareResponseRealExternalCallExecuted) Valid() bool {
+	switch e {
+	case ServicePeriodProductShareResponseRealExternalCallExecutedFalse:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for SetupWizardAuditReceiptKey.
 const (
 	SetupWizardAuditReceiptKeyWecomAgentId SetupWizardAuditReceiptKey = "wecom.agent_id"
@@ -7446,13 +7491,13 @@ func (e SidebarSafetyProviderExecutionEligible) Valid() bool {
 
 // Defines values for SidebarSafetyRealExternalCallExecuted.
 const (
-	SidebarSafetyRealExternalCallExecutedFalse SidebarSafetyRealExternalCallExecuted = false
+	False SidebarSafetyRealExternalCallExecuted = false
 )
 
 // Valid indicates whether the value is a known member of the SidebarSafetyRealExternalCallExecuted enum.
 func (e SidebarSafetyRealExternalCallExecuted) Valid() bool {
 	switch e {
-	case SidebarSafetyRealExternalCallExecutedFalse:
+	case False:
 		return true
 	default:
 		return false
@@ -12100,6 +12145,24 @@ type ServicePeriodProductResponse struct {
 // ServicePeriodProductResponseOk defines model for ServicePeriodProductResponse.Ok.
 type ServicePeriodProductResponseOk bool
 
+// ServicePeriodProductShareResponse defines model for ServicePeriodProductShareResponse.
+type ServicePeriodProductShareResponse struct {
+	LocalOnly                ServicePeriodProductShareResponseLocalOnly                `json:"local_only"`
+	Ok                       ServicePeriodProductShareResponseOk                       `json:"ok"`
+	PublicPath               string                                                    `json:"public_path"`
+	RealExternalCallExecuted ServicePeriodProductShareResponseRealExternalCallExecuted `json:"real_external_call_executed"`
+	ServiceProductId         int64                                                     `json:"service_product_id"`
+}
+
+// ServicePeriodProductShareResponseLocalOnly defines model for ServicePeriodProductShareResponse.LocalOnly.
+type ServicePeriodProductShareResponseLocalOnly bool
+
+// ServicePeriodProductShareResponseOk defines model for ServicePeriodProductShareResponse.Ok.
+type ServicePeriodProductShareResponseOk bool
+
+// ServicePeriodProductShareResponseRealExternalCallExecuted defines model for ServicePeriodProductShareResponse.RealExternalCallExecuted.
+type ServicePeriodProductShareResponseRealExternalCallExecuted bool
+
 // ServicePeriodProductUpdateRequest defines model for ServicePeriodProductUpdateRequest.
 type ServicePeriodProductUpdateRequest struct {
 	Currency        string `json:"currency"`
@@ -16412,6 +16475,9 @@ type ServerInterface interface {
 	// Compare-and-swap one local service-period member to removed
 	// (POST /api/admin/service-period-products/{service_product_id}/members/{member_ref}/remove)
 	RemoveServicePeriodMember(w http.ResponseWriter, r *http.Request, serviceProductId int64, memberRef ServicePeriodMemberRef, params RemoveServicePeriodMemberParams)
+	// Read the existing same-origin public detail path for one enabled service-period product
+	// (GET /api/admin/service-period-products/{service_product_id}/share)
+	GetServicePeriodProductShare(w http.ResponseWriter, r *http.Request, serviceProductId int64)
 	// Read the local-only setup-wizard configuration snapshot
 	// (GET /api/admin/setup-wizard)
 	GetSetupWizard(w http.ResponseWriter, r *http.Request)
@@ -17540,6 +17606,12 @@ func (_ Unimplemented) UpdateServicePeriodMemberFields(w http.ResponseWriter, r 
 // Compare-and-swap one local service-period member to removed
 // (POST /api/admin/service-period-products/{service_product_id}/members/{member_ref}/remove)
 func (_ Unimplemented) RemoveServicePeriodMember(w http.ResponseWriter, r *http.Request, serviceProductId int64, memberRef ServicePeriodMemberRef, params RemoveServicePeriodMemberParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Read the existing same-origin public detail path for one enabled service-period product
+// (GET /api/admin/service-period-products/{service_product_id}/share)
+func (_ Unimplemented) GetServicePeriodProductShare(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -25860,6 +25932,37 @@ func (siw *ServerInterfaceWrapper) RemoveServicePeriodMember(w http.ResponseWrit
 	handler.ServeHTTP(w, r)
 }
 
+// GetServicePeriodProductShare operation middleware
+func (siw *ServerInterfaceWrapper) GetServicePeriodProductShare(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "service_product_id" -------------
+	var serviceProductId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "service_product_id", chi.URLParam(r, "service_product_id"), &serviceProductId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64"})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "service_product_id", Err: err})
+		return
+	}
+
+	ctx := r.Context()
+
+	ctx = context.WithValue(ctx, AdminSessionScopes, []string{})
+
+	r = r.WithContext(ctx)
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetServicePeriodProductShare(w, r, serviceProductId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetSetupWizard operation middleware
 func (siw *ServerInterfaceWrapper) GetSetupWizard(w http.ResponseWriter, r *http.Request) {
 
@@ -33656,6 +33759,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/members/{member_ref}/remove", wrapper.RemoveServicePeriodMember)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/admin/service-period-products/{service_product_id}/share", wrapper.GetServicePeriodProductShare)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/admin/setup-wizard", wrapper.GetSetupWizard)
@@ -42088,6 +42194,68 @@ func (response RemoveServicePeriodMember503JSONResponse) VisitRemoveServicePerio
 	return json.NewEncoder(w).Encode(response)
 }
 
+type GetServicePeriodProductShareRequestObject struct {
+	ServiceProductId int64 `json:"service_product_id"`
+}
+
+type GetServicePeriodProductShareResponseObject interface {
+	VisitGetServicePeriodProductShareResponse(w http.ResponseWriter) error
+}
+
+type GetServicePeriodProductShare200JSONResponse ServicePeriodProductShareResponse
+
+func (response GetServicePeriodProductShare200JSONResponse) VisitGetServicePeriodProductShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductShare400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetServicePeriodProductShare400JSONResponse) VisitGetServicePeriodProductShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductShare401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetServicePeriodProductShare401JSONResponse) VisitGetServicePeriodProductShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductShare403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response GetServicePeriodProductShare403JSONResponse) VisitGetServicePeriodProductShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductShare404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetServicePeriodProductShare404JSONResponse) VisitGetServicePeriodProductShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
+type GetServicePeriodProductShare503JSONResponse struct{ ServiceUnavailableJSONResponse }
+
+func (response GetServicePeriodProductShare503JSONResponse) VisitGetServicePeriodProductShareResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+
+	return json.NewEncoder(w).Encode(response)
+}
+
 type GetSetupWizardRequestObject struct {
 }
 
@@ -50207,6 +50375,9 @@ type StrictServerInterface interface {
 	// Compare-and-swap one local service-period member to removed
 	// (POST /api/admin/service-period-products/{service_product_id}/members/{member_ref}/remove)
 	RemoveServicePeriodMember(ctx context.Context, request RemoveServicePeriodMemberRequestObject) (RemoveServicePeriodMemberResponseObject, error)
+	// Read the existing same-origin public detail path for one enabled service-period product
+	// (GET /api/admin/service-period-products/{service_product_id}/share)
+	GetServicePeriodProductShare(ctx context.Context, request GetServicePeriodProductShareRequestObject) (GetServicePeriodProductShareResponseObject, error)
 	// Read the local-only setup-wizard configuration snapshot
 	// (GET /api/admin/setup-wizard)
 	GetSetupWizard(ctx context.Context, request GetSetupWizardRequestObject) (GetSetupWizardResponseObject, error)
@@ -54368,6 +54539,32 @@ func (sh *strictHandler) RemoveServicePeriodMember(w http.ResponseWriter, r *htt
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RemoveServicePeriodMemberResponseObject); ok {
 		if err := validResponse.VisitRemoveServicePeriodMemberResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetServicePeriodProductShare operation middleware
+func (sh *strictHandler) GetServicePeriodProductShare(w http.ResponseWriter, r *http.Request, serviceProductId int64) {
+	var request GetServicePeriodProductShareRequestObject
+
+	request.ServiceProductId = serviceProductId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.GetServicePeriodProductShare(ctx, request.(GetServicePeriodProductShareRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetServicePeriodProductShare")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetServicePeriodProductShareResponseObject); ok {
+		if err := validResponse.VisitGetServicePeriodProductShareResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {

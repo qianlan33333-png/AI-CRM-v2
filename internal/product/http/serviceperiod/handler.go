@@ -1,6 +1,7 @@
 // Package serviceperiod adapts the frozen legacy service-period Product routes.
-// It owns no provider, payment, entitlement-effect, sharing, or external-call
-// dependency. State-changing routes must be wrapped by the canonical CSRF
+// It owns no provider, payment, entitlement-effect, or external-call
+// dependency. Its share descriptor points only at the existing same-origin,
+// read-only Product detail route. State-changing routes must be wrapped by the canonical CSRF
 // middleware at the composition root described in ROUTE_FRAGMENT.md.
 package serviceperiod
 
@@ -109,6 +110,14 @@ func (handler *Handler) serveItem(writer http.ResponseWriter, request *http.Requ
 }
 
 func (handler *Handler) serveAction(writer http.ResponseWriter, request *http.Request, id productport.ID, action string) {
+	if action == "share" {
+		if request.Method != http.MethodGet {
+			writeMethodNotAllowed(writer, request, "GET")
+			return
+		}
+		handler.share(writer, request, id)
+		return
+	}
 	if action != "enable" && action != "disable" && action != "copy" {
 		writeNotFound(writer, request)
 		return
@@ -125,6 +134,30 @@ func (handler *Handler) serveAction(writer http.ResponseWriter, request *http.Re
 	case "copy":
 		handler.copyProduct(writer, request, id)
 	}
+}
+
+func (handler *Handler) share(writer http.ResponseWriter, request *http.Request, id productport.ID) {
+	if !readAuthorized(request) {
+		writeAuthorizationError(writer, request)
+		return
+	}
+	if request.URL.RawQuery != "" || requireEmptyBody(request) != nil {
+		writeMalformed(writer, request)
+		return
+	}
+	product, err := handler.application.GetServicePeriodProduct(request.Context(), id)
+	if err != nil {
+		writeApplicationError(writer, request, err)
+		return
+	}
+	if product.ServiceProductID != id || !product.Enabled || product.Archived || product.Lifecycle != productport.ServicePeriodEnabled {
+		writeApplicationError(writer, request, productapp.ErrNotFound)
+		return
+	}
+	writeJSON(writer, http.StatusOK, shareResponse{
+		OK: true, ServiceProductID: id, PublicPath: "/p/service_period/" + strconv.FormatInt(int64(id), 10),
+		LocalOnly: true, RealExternalCallExecuted: false,
+	})
 }
 
 func (handler *Handler) list(writer http.ResponseWriter, request *http.Request) {
@@ -364,6 +397,14 @@ type versionRequest struct {
 type productResponse struct {
 	OK      bool                             `json:"ok"`
 	Product productport.ServicePeriodProduct `json:"product"`
+}
+
+type shareResponse struct {
+	OK                       bool           `json:"ok"`
+	ServiceProductID         productport.ID `json:"service_product_id"`
+	PublicPath               string         `json:"public_path"`
+	LocalOnly                bool           `json:"local_only"`
+	RealExternalCallExecuted bool           `json:"real_external_call_executed"`
 }
 
 func readAuthorized(request *http.Request) bool {

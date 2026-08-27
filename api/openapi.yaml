@@ -9084,6 +9084,28 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/service-period-products/{service_product_id}/share:
+    get:
+      tags: [p4-service-period-products]
+      operationId: getServicePeriodProductShare
+      summary: Read the existing same-origin public detail path for one enabled service-period product
+      x-legacy-mapping-ids: [LEGACY-API-0491]
+      x-p4-decision-evidence: P4-SERVICE-PERIOD-LIFECYCLE-2026-08-22
+      x-aicrm-capability: products.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: financial
+      x-aicrm-data-source: local_read_model
+      x-aicrm-external-effect: none
+      parameters: [{ name: service_product_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }]
+      responses:
+        "200": { description: "Same-origin read-only product page path; no checkout, payment, or Provider effect", content: { application/json: { schema: { $ref: "#/components/schemas/ServicePeriodProductShareResponse" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/service-period-products/{service_product_id}/external-push:
     get:
       tags: [p4-commerce-external-push]
@@ -15319,6 +15341,16 @@ components:
       properties:
         ok: { type: boolean, enum: [true] }
         product: { $ref: "#/components/schemas/ServicePeriodProduct" }
+    ServicePeriodProductShareResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, service_product_id, public_path, local_only, real_external_call_executed]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        service_product_id: { type: integer, format: int64, minimum: 1 }
+        public_path: { type: string, pattern: '^/p/service_period/[1-9][0-9]{0,18}$', maxLength: 80 }
+        local_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
     ServicePeriodProductCreateRequest:
       type: object
       additionalProperties: false

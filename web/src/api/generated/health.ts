@@ -4309,6 +4309,19 @@ export interface ServicePeriodProductResponse {
   product: ServicePeriodProduct;
 }
 
+export interface ServicePeriodProductShareResponse {
+  ok: boolean;
+  /** @minimum 1 */
+  service_product_id: number;
+  /**
+   * @maxLength 80
+   * @pattern ^/p/service_period/[1-9][0-9]{0,18}$
+   */
+  public_path: string;
+  local_only: boolean;
+  real_external_call_executed: boolean;
+}
+
 export interface ServicePeriodProductCreateRequest {
   /**
    * @minLength 1
@@ -48519,6 +48532,87 @@ export const copyServicePeriodProduct = async (
     status: res.status,
     headers: res.headers,
   } as copyServicePeriodProductResponse;
+};
+
+/**
+ * @summary Read the existing same-origin public detail path for one enabled service-period product
+ */
+export type getServicePeriodProductShareResponse200 = {
+  data: ServicePeriodProductShareResponse;
+  status: 200;
+};
+
+export type getServicePeriodProductShareResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getServicePeriodProductShareResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getServicePeriodProductShareResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getServicePeriodProductShareResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getServicePeriodProductShareResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getServicePeriodProductShareResponseSuccess =
+  getServicePeriodProductShareResponse200 & {
+    headers: Headers;
+  };
+export type getServicePeriodProductShareResponseError = (
+  | getServicePeriodProductShareResponse400
+  | getServicePeriodProductShareResponse401
+  | getServicePeriodProductShareResponse403
+  | getServicePeriodProductShareResponse404
+  | getServicePeriodProductShareResponse503
+) & {
+  headers: Headers;
+};
+
+export type getServicePeriodProductShareResponse =
+  | getServicePeriodProductShareResponseSuccess
+  | getServicePeriodProductShareResponseError;
+
+export const getGetServicePeriodProductShareUrl = (
+  serviceProductId: number,
+) => {
+  return `/api/admin/service-period-products/${serviceProductId}/share`;
+};
+
+export const getServicePeriodProductShare = async (
+  serviceProductId: number,
+  options?: RequestInit,
+): Promise<getServicePeriodProductShareResponse> => {
+  const res = await fetch(
+    getGetServicePeriodProductShareUrl(serviceProductId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getServicePeriodProductShareResponse["data"] = body
+    ? JSON.parse(body)
+    : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getServicePeriodProductShareResponse;
 };
 
 /**

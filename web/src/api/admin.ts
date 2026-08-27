@@ -5,7 +5,7 @@ import {
   getLegacyMiniProgram, getLegacyOrder, getLegacyOrderItems, getLegacyQuestionnaire, getLegacyQuestionnaireResults,
   getAdminOpsCategory, getContactOwnerReassignmentPreview, getLegacyWecomTag, getLegacyWecomTagExecutionGate, getLegacyWecomTagGroup, getProduct,
   getServicePeriodMember, getServicePeriodMemberGridAccess, getServicePeriodMemberGridSchema, getServicePeriodMemberGridShareSettings,
-  getServicePeriodProduct, getSurveyOperations, getSurveyOperationsPageData, getSurveySafeSubmissionAnalysis,
+  getServicePeriodProduct, getServicePeriodProductShare, getSurveyOperations, getSurveyOperationsPageData, getSurveySafeSubmissionAnalysis,
   listAdminOpsCategories, listCustomers, listLegacyAttachments, listLegacyChannelEntrants, listLegacyChannels, listLegacyCouponClaims,
   listLegacyCouponProductOptions, listLegacyCoupons, getLegacyImageList, listLegacyMiniPrograms, listLegacyOrders, listLegacyRefunds, listLegacyWechatOrderExternalEffects,
   listLegacyQuestionnaireSubmissions, listLegacyQuestionnaires, listLegacyWecomTagGroups, listLegacyWecomTags,
@@ -669,6 +669,14 @@ export async function readRadarSharePath(linkId: number): Promise<string> {
   return sharePath;
 }
 export async function readCouponSharePath(couponId: number): Promise<string> { const projection = obj(await call(getLegacyCouponShare(couponId, apiRequestOptions()))); if (typeof projection.url !== 'string') throw new Error('后端尚未提供可用的优惠券分享路径'); return projection.url; }
+export async function readServiceProductSharePath(serviceProductId: number): Promise<string> {
+  if (!Number.isSafeInteger(serviceProductId) || serviceProductId < 1) throw new Error('周期商品 ID 无效');
+  const projection = obj(await call(getServicePeriodProductShare(serviceProductId, apiRequestOptions())));
+  const responseId = Number(projection.service_product_id);
+  const publicPath = typeof projection.public_path === 'string' ? projection.public_path : '';
+  if (projection.ok !== true || responseId !== serviceProductId || publicPath !== `/p/service_period/${serviceProductId}` || projection.local_only !== true || projection.real_external_call_executed !== false) throw new Error('周期商品分享响应不完整或越过本地边界');
+  return publicPath;
+}
 export async function updateCustomerDto(customerId: number, input: { name?: string; stageId?: number | null }): Promise<Customer> {
   const opt = apiRequestOptions(); let customer: ApiCustomer | undefined;
   if (input.name != null) customer = await call(updateCustomer(customerId, { name: input.name }, opt)) as ApiCustomer;
@@ -868,8 +876,7 @@ const sha256 = async (bytes: ArrayBuffer): Promise<string> => `sha256:${Array.fr
 const base64 = (bytes: Uint8Array): string => { let binary = ''; for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000)); return btoa(binary); };
 const idempotency = (scope: string): RequestInit => apiRequestOptions({ headers: { 'Idempotency-Key': `${scope}-${crypto.randomUUID()}` } });
 export async function uploadRadarPdfDto(file: File): Promise<RadarMedia> {
-  if (file.size <= 1 << 20) { const item = obj(await call(uploadLegacyAttachment({ attachment: file, name: file.name }, apiRequestOptions()))); return { id: Number(item.id), name: text(item.name, file.name), meta: `${text(item.mime_type, file.type)} · ${text(item.file_size, String(file.size))} bytes` }; }
-  if (file.type !== 'application/pdf' || file.size > 10 << 20) throw new Error('PDF 必须为 10MB 以内的 application/pdf 文件');
+  if (!(file instanceof File) || file.type !== 'application/pdf' || file.size > 10 << 20) throw new Error('请选择 10MB 以内的真实 application/pdf 文件');
   const content = await file.arrayBuffer();
   const initiated = obj(await call(initiateMediaAttachmentMultipartUpload({ file_name: file.name, name: file.name, size: file.size, sha256: await sha256(content), enabled: true }, idempotency('radar-pdf-init'))));
   const uploadId = Number(initiated.upload_id);
@@ -913,6 +920,11 @@ export async function saveMiniProgramItemDto(originalName: string | null, patch:
 }
 export async function deleteMiniProgramItemDto(item: MpItem): Promise<void> { const id = item.resourceId || Number(await uniqueMediaId('mini', item.name)); await call(deleteLegacyMiniProgram(id, apiRequestOptions())); }
 async function audiencePackageVersion(packageId: number): Promise<number> { return Number(obj(obj(await call(getAIAudiencePackage(packageId, apiRequestOptions()))).package).version); }
+function requireStoppedAudiencePackage(value: unknown): Record<string, unknown> {
+  const pkg = obj(value);
+  if (pkg.lifecycle === 'active') throw new Error('人群包处于 active 状态；请先停止后再保存或预览本地配置');
+  return pkg;
+}
 export async function saveAudienceGroup(input: { id?: number; name: string }): Promise<AdminDb['audienceGroups'][number]> {
   const opt = apiRequestOptions();
   if (input.id == null) {
@@ -931,13 +943,18 @@ export async function copyAudiencePackageDto(packageId: number): Promise<AdminDb
 export async function archiveAudiencePackage(packageId: number): Promise<void> { const expected_version = await audiencePackageVersion(packageId); await call(archiveAIAudiencePackage(packageId, { expected_version }, apiRequestOptions())); }
 export type AudiencePackageWriteInput = { id: number; name: string; groupId: number | null; definition: SegmentDefinition; refreshMode: 'manual' | 'scheduled'; refreshCron: string | null };
 export type AudienceEvaluation = { configurationVersion: number; packageVersion: number; memberCount: number; memberDigest: string; evaluatedAt: string; materialized: boolean };
-export async function saveAudiencePackageDto(input: AudiencePackageWriteInput): Promise<AdminDb['audiencePackages'][number]> { const current = obj(obj(await call(getAIAudiencePackage(input.id, apiRequestOptions()))).package); const result = obj(await call(updateAIAudiencePackage(input.id, { name: input.name, group_id: input.groupId, definition: input.definition, refresh_mode: input.refreshMode, refresh_cron: input.refreshCron, expected_version: Number(current.version) }, apiRequestOptions()))); return audiencePackagePageDto(result.package); }
+export async function saveAudiencePackageDto(input: AudiencePackageWriteInput): Promise<AdminDb['audiencePackages'][number]> {
+  const currentResponse = obj(await call(getAIAudiencePackage(input.id, apiRequestOptions())));
+  const current = requireStoppedAudiencePackage(currentResponse.package);
+  const result = obj(await call(updateAIAudiencePackage(input.id, { name: input.name, group_id: input.groupId, definition: input.definition, refresh_mode: input.refreshMode, refresh_cron: input.refreshCron, expected_version: Number(current.version) }, apiRequestOptions())));
+  return audiencePackagePageDto(result.package);
+}
 export async function replaceAudienceSendersDto(packageId: number, senders: AIAudiencePackageSender[]): Promise<AdminDb['audienceSenders'][number]> { const result = obj(await call(replaceAIAudiencePackageSenders(packageId, { items: senders }, apiRequestOptions()))); return list(result, 'items').map((item) => ({ priority: Number(obj(item).sort_order), userid: text(obj(item).sender_userid), rule: '服务端顺序', status: obj(item).is_enabled === false ? '停用' : '启用' })); }
 export async function setAudienceBindingDto(packageId: number, automationAgentId: number | null): Promise<void> { const current = obj(await call(getAIAudienceAutomationBinding(packageId, apiRequestOptions()))).binding; const expectedVersion = Number(obj(current).version || 0); if (automationAgentId == null) { if (current) await call(deleteAIAudienceAutomationBinding(packageId, { expected_version: expectedVersion }, apiRequestOptions())); return; } await call(putAIAudienceAutomationBinding(packageId, { automation_agent_id: automationAgentId, expected_version: expectedVersion }, apiRequestOptions())); }
-export async function snapshotAudienceConfigurationDto(packageId: number): Promise<number> { const [pkgResult, cfgResult] = await Promise.all([call(getAIAudiencePackage(packageId, apiRequestOptions())), call(getAIAudienceConfigurationVersion(packageId, apiRequestOptions()))]); const pkg = obj(obj(pkgResult).package); const cfg = obj(obj(cfgResult).configuration); const result = obj(await call(putAIAudienceConfigurationVersion(packageId, { expected_version: Number(cfg.version || 0), expected_package_version: Number(pkg.version) }, apiRequestOptions()))); return Number(obj(result.configuration).version); }
+export async function snapshotAudienceConfigurationDto(packageId: number): Promise<number> { const [pkgResult, cfgResult] = await Promise.all([call(getAIAudiencePackage(packageId, apiRequestOptions())), call(getAIAudienceConfigurationVersion(packageId, apiRequestOptions()))]); const pkg = requireStoppedAudiencePackage(obj(pkgResult).package); const cfg = obj(obj(cfgResult).configuration); const result = obj(await call(putAIAudienceConfigurationVersion(packageId, { expected_version: Number(cfg.version || 0), expected_package_version: Number(pkg.version) }, apiRequestOptions()))); return Number(obj(result.configuration).version); }
 const audienceEvaluationDto = (value: unknown): AudienceEvaluation => { const x = obj(value); return { configurationVersion: Number(x.configuration_version), packageVersion: Number(x.package_version), memberCount: Number(x.member_count), memberDigest: text(x.member_digest), evaluatedAt: text(x.evaluated_at), materialized: x.materialized === true }; };
-export async function previewAudienceConfigurationDto(packageId: number): Promise<AudienceEvaluation> { const cfg = obj(obj(await call(getAIAudienceConfigurationVersion(packageId, apiRequestOptions()))).configuration); if (!cfg.version) throw new Error('请先保存配置版本'); return audienceEvaluationDto(await call(previewAIAudienceConfiguration(packageId, { configuration_version: Number(cfg.version) }, apiRequestOptions()))); }
-export async function materializeAudienceConfigurationDto(packageId: number): Promise<AudienceEvaluation> { const [pkgResult, cfgResult] = await Promise.all([call(getAIAudiencePackage(packageId, apiRequestOptions())), call(getAIAudienceConfigurationVersion(packageId, apiRequestOptions()))]); const pkg = obj(obj(pkgResult).package); const cfg = obj(obj(cfgResult).configuration); if (!cfg.version) throw new Error('请先保存配置版本'); return audienceEvaluationDto(await call(materializeAIAudienceConfiguration(packageId, { configuration_version: Number(cfg.version), expected_package_version: Number(pkg.version) }, apiRequestOptions()))); }
+export async function previewAudienceConfigurationDto(packageId: number): Promise<AudienceEvaluation> { const [pkgResult, cfgResult] = await Promise.all([call(getAIAudiencePackage(packageId, apiRequestOptions())), call(getAIAudienceConfigurationVersion(packageId, apiRequestOptions()))]); requireStoppedAudiencePackage(obj(pkgResult).package); const cfg = obj(obj(cfgResult).configuration); if (!cfg.version) throw new Error('请先保存配置版本'); return audienceEvaluationDto(await call(previewAIAudienceConfiguration(packageId, { configuration_version: Number(cfg.version) }, apiRequestOptions()))); }
+export async function materializeAudienceConfigurationDto(packageId: number): Promise<AudienceEvaluation> { const [pkgResult, cfgResult] = await Promise.all([call(getAIAudiencePackage(packageId, apiRequestOptions())), call(getAIAudienceConfigurationVersion(packageId, apiRequestOptions()))]); const pkg = requireStoppedAudiencePackage(obj(pkgResult).package); const cfg = obj(obj(cfgResult).configuration); if (!cfg.version) throw new Error('请先保存配置版本'); return audienceEvaluationDto(await call(materializeAIAudienceConfiguration(packageId, { configuration_version: Number(cfg.version), expected_package_version: Number(pkg.version) }, apiRequestOptions()))); }
 export type GroupOpsWriteInput = { id?: string; name: string; staffIds: number[]; assetReferences: string[]; nodes: Array<{ id?: string; position: number; kind: 'message' | 'delay'; messageText?: string; delayMinutes?: number; materialReference?: string; materialPlan?: GroupOpsMaterialPlan }>; webhookReference?: string };
 async function readGroupOpsDetail(planId: string): Promise<NonNullable<AdminDb['groupOpsDetail']>> { const detail = await call(getGroupOpsPlan(planId, apiRequestOptions())); return groupOpsDetailDto(detail); }
 export async function saveGroupOpsPlanDto(input: GroupOpsWriteInput): Promise<NonNullable<AdminDb['groupOpsDetail']>> {

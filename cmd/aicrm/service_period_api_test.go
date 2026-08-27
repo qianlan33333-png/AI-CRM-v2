@@ -16,6 +16,7 @@ import (
 
 type servicePeriodRouteSpy struct {
 	listCalls   int
+	getCalls    int
 	createCalls int
 	create      productport.CreateServicePeriodProductCommand
 }
@@ -25,8 +26,9 @@ func (spy *servicePeriodRouteSpy) ListServicePeriodProducts(context.Context, int
 	return productport.ServicePeriodPage{OK: true, Items: []productport.ServicePeriodProduct{}, Limit: 50}, nil
 }
 
-func (*servicePeriodRouteSpy) GetServicePeriodProduct(context.Context, productport.ID) (productport.ServicePeriodProduct, error) {
-	return productport.ServicePeriodProduct{}, nil
+func (spy *servicePeriodRouteSpy) GetServicePeriodProduct(_ context.Context, id productport.ID) (productport.ServicePeriodProduct, error) {
+	spy.getCalls++
+	return productport.ServicePeriodProduct{ServiceProductID: id, ProductCode: "period-local", Name: "周期商品", Currency: "CNY", Lifecycle: productport.ServicePeriodEnabled, Enabled: true, Version: 1}, nil
 }
 
 func (spy *servicePeriodRouteSpy) CreateServicePeriodProduct(_ context.Context, command productport.CreateServicePeriodProductCommand) (productport.ServicePeriodProduct, error) {
@@ -94,6 +96,12 @@ func TestServicePeriodRoutesUseLegacyAuthenticationAuthorizationAndCSRF(t *testi
 	router.ServeHTTP(list, legacyRequest(http.MethodGet, producthttp.BasePath, legacyToken(211)))
 	if list.Code != http.StatusOK || application.listCalls != 1 {
 		t.Fatalf("list status/calls=%d/%d body=%s", list.Code, application.listCalls, list.Body.String())
+	}
+
+	share := httptest.NewRecorder()
+	router.ServeHTTP(share, legacyRequest(http.MethodGet, producthttp.BasePath+"/7/share", legacyToken(215)))
+	if share.Code != http.StatusOK || application.getCalls != 1 || !strings.Contains(share.Body.String(), `"public_path":"/p/service_period/7"`) {
+		t.Fatalf("share status/calls/body=%d/%d/%s", share.Code, application.getCalls, share.Body.String())
 	}
 
 	body := `{"product_code":"period-local","name":"周期商品","description":"","price_minor":16800,"currency":"CNY","stock_quantity":10}`

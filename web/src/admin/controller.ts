@@ -18,7 +18,8 @@ import { buildChannelFinalUrl, channelAcquisitionAssetReady } from '../api/admin
 import type { AdminReadContext, ChannelWriteInput, CouponWriteInput, CustomerListQuery, GroupOpsWriteInput, QuestionnaireWriteInput } from '../api/admin';
 import { toast, confirmBox, busy } from '../shared/ui/feedback';
 import { openPicker, type PickerItem, type PickerOpts } from '../shared/ui/picker';
-import { copyText, renderFakeQr } from './sections/util';
+import { copyText } from './sections/util';
+import { downloadQr, renderQr } from './sections/qr';
 import { ownerReassignmentCsvFromFile } from './ownerReassignmentFile';
 
 const ACCENT = '#3370ff';
@@ -410,11 +411,15 @@ export class AdminController extends PageBase {
       shareUrl: path ? new URL(path, location.origin).toString() : 'https://mock.invalid/s/' + code,
     });
     const el = document.getElementById('shareQrBox');
-    if (el) renderFakeQr(el, code);
+    if (el) renderQr(el, this.state.shareUrl, `${kind}分享`);
   }
 
   copyShareLink(): void {
     copyText(this.state.shareUrl, toast);
+  }
+
+  previewShareLink(): void {
+    window.open(this.state.shareUrl, '_blank', 'noopener,noreferrer');
   }
 
   /* ================= 自动化运营 · 人群包 ================= */
@@ -504,10 +509,16 @@ export class AdminController extends PageBase {
     return { id: pkg.id, name: val('aeName') || pkg.name, definition, groupId: Number(val('aeGroup')) || null, refreshMode, refreshCron };
   }
 
+  private audienceConfigurationAllowed(): boolean {
+    if (!this.audiencePkg()?.running) return true;
+    toast('当前人群包为 active；请先停止后再保存或预览本地配置', true);
+    return false;
+  }
+
   private saveAudienceBasic(): void {
     const input = this.audienceWriteInput();
     const pkg = this.audiencePkg();
-    if (!input || !pkg) return;
+    if (!input || !pkg || !this.audienceConfigurationAllowed()) return;
     void this.api
       .saveAudiencePackage(input)
       .then((saved) => {
@@ -571,7 +582,7 @@ export class AdminController extends PageBase {
   private saveAudienceBinding(): void { this.bindAutomation((document.getElementById('aeAutomationId') as HTMLInputElement | null)?.value || ''); }
   private snapshotAudience(): void {
     const pkg = this.audiencePkg();
-    if (!pkg) return;
+    if (!pkg || !this.audienceConfigurationAllowed()) return;
     void this.api.snapshotAudienceConfiguration(pkg.id).then((version) => {
       pkg.configurationVersion = version;
       this.setState({ audiencePreview: null });
@@ -582,32 +593,43 @@ export class AdminController extends PageBase {
   private saveAndPreviewAudience(): void {
     const input = this.audienceWriteInput();
     const pkg = this.audiencePkg();
-    if (!input || !pkg) return;
+    if (!input || !pkg || !this.audienceConfigurationAllowed()) return;
     void this.api.saveAudiencePackage(input)
       .then((saved) => {
         Object.assign(pkg, saved);
         return this.api.snapshotAudienceConfiguration(pkg.id);
       })
       .then(() => this.api.previewAudienceConfiguration(pkg.id))
-      .then((result) => {
-        pkg.configurationVersion = result.configurationVersion;
-        const preview = { configurationVersion: result.configurationVersion, memberCount: result.memberCount, emptyConfirmed: result.memberCount !== 0 };
-        this.setState({ audiencePreview: preview });
-        if (result.memberCount !== 0) {
-          toast(`已保存并预览：${result.memberCount} 人 · 配置 v${result.configurationVersion}`);
-          return;
-        }
-        confirmBox('确认空人群预览', `配置 v${result.configurationVersion} 的预览结果为 0 人。不会创建群发或调用 Provider；若要物化空人群，必须在此明确确认。`, '确认空人群', true, () => {
-          this.setState({ audiencePreview: { ...preview, emptyConfirmed: true } });
-          toast('已确认空人群；仍需单独确认物化本地成员事实');
-        });
-      }).catch((error) => toast(error instanceof Error ? error.message : '保存并预览失败', true));
+      .then((result) => this.showAudiencePreview(pkg, result, '已保存新配置版本并预览'))
+      .catch((error) => toast(error instanceof Error ? error.message : '保存并预览失败', true));
+  }
+
+  private previewAudience(): void {
+    const pkg = this.audiencePkg();
+    if (!pkg || !this.audienceConfigurationAllowed()) return;
+    void this.api.previewAudienceConfiguration(pkg.id)
+      .then((result) => this.showAudiencePreview(pkg, result, '已预览当前已保存配置'))
+      .catch((error) => toast(error instanceof Error ? error.message : '配置预览失败', true));
+  }
+
+  private showAudiencePreview(pkg: NonNullable<ReturnType<AdminController['audiencePkg']>>, result: import('../api/admin').AudienceEvaluation, success: string): void {
+    pkg.configurationVersion = result.configurationVersion;
+    const preview = { configurationVersion: result.configurationVersion, memberCount: result.memberCount, emptyConfirmed: result.memberCount !== 0 };
+    this.setState({ audiencePreview: preview });
+    if (result.memberCount !== 0) {
+      toast(`${success}：${result.memberCount} 人 · 配置 v${result.configurationVersion}`);
+      return;
+    }
+    confirmBox('确认空人群预览', `配置 v${result.configurationVersion} 的预览结果为 0 人。不会创建群发或调用 Provider；若要物化空人群，必须在此明确确认。`, '确认空人群', true, () => {
+      this.setState({ audiencePreview: { ...preview, emptyConfirmed: true } });
+      toast('已确认空人群；仍需单独确认物化本地成员事实');
+    });
   }
 
   private materializeAudience(): void {
     const pkg = this.audiencePkg();
     const preview = this.state.audiencePreview;
-    if (!pkg) return;
+    if (!pkg || !this.audienceConfigurationAllowed()) return;
     if (!preview) { toast('请先保存并预览当前配置', true); return; }
     if (preview.memberCount === 0 && !preview.emptyConfirmed) {
       toast('空人群需先明确确认，已拒绝物化', true);
@@ -1501,7 +1523,7 @@ export class AdminController extends PageBase {
           definitionText: pkg.definition || '{}',
           refreshCronText: pkg.refreshCron || '',
           bindingAgentIdText: pkg.bindingAgentId ? String(pkg.bindingAgentId) : '',
-          configurationText: pkg.configurationVersion ? `v${pkg.configurationVersion}` : '尚未保存配置版本',
+          configurationText: pkg.configurationVersion ? `v${pkg.configurationVersion}（已加载）` : '尚未保存配置版本',
         }
       : null;
     const aeNav: Record<string, StyleObj> = {};
@@ -1681,7 +1703,8 @@ export class AdminController extends PageBase {
       title: s.shareTitle,
       url: s.shareUrl,
       copyLink: () => this.copyShareLink(),
-      saveQr: () => this.blocked('当前分享投影只返回链接，没有可下载二维码文件 operation'),
+      preview: () => this.previewShareLink(),
+      saveQr: () => downloadQr(s.shareUrl, `${s.shareCode || 'share'}-qr.svg`),
       close: () => this.closeModal(),
     };
 
@@ -1753,7 +1776,10 @@ export class AdminController extends PageBase {
       cs: mk(p.tone),
       edit: () => p.resourceId ? this.goto('spProductForm', '?id=' + p.resourceId) : toast('周期商品缺少服务端 ID', true),
       data: () => p.resourceId ? this.goto('spProductData', '?id=' + p.resourceId) : toast('周期商品缺少服务端 ID', true),
-      shareIt: () => this.blocked('当前周期商品没有公开购买/分享契约'),
+      shareIt: () => {
+        if (!p.resourceId) return toast('周期商品缺少服务端 ID', true);
+        void this.api.getServiceProductSharePath(p.resourceId).then((path) => this.openShare('周期商品', p.name, p.code, path)).catch((error) => toast(error instanceof Error ? error.message : '分享地址读取失败', true));
+      },
       copyIt: () => p.resourceId && void this.api.copyServiceProduct(p.resourceId).then(() => { toast('周期商品副本已创建为草稿'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '周期商品复制失败', true)),
       archive: () => p.resourceId && confirmBox('归档周期商品', '归档会保留成员历史，确认继续？', '确认归档', true, () => { void this.api.archiveServiceProduct(p.resourceId!).then(() => { toast('周期商品已归档'); void this.init(); }).catch((error) => toast(error instanceof Error ? error.message : '周期商品归档失败', true)); }),
       toggle: () => {
@@ -2236,6 +2262,7 @@ export class AdminController extends PageBase {
         saveSenders: () => this.saveSenders(),
         back: () => this.goto('automation'),
         snapshot: () => this.snapshotAudience(),
+        previewConfiguration: () => this.previewAudience(),
         savePreview: () => this.saveAndPreviewAudience(),
         materialize: () => this.materializeAudience(),
       },
