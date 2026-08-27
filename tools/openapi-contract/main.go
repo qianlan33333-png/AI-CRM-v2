@@ -103,6 +103,7 @@ const (
 	p4WeComTagEffectEvidence                   = "P4-B1-WC01-2026-08-25"
 	p4ChannelAcquisitionEvidence               = "P4-CH01-2026-08-26"
 	p4ChannelAcquisitionStaffEvidence          = "P4-S06-008-CHANNEL-ACQUISITION-STAFF-2026-08-27"
+	p4ChannelHistoryEvidence                   = "P4-V1-CHANNEL-HISTORY-2026-08-28"
 	p4ChannelAcquisitionAssetEvidence          = "P4-CH02-2026-08-26"
 	p4ChannelAcquisitionEntrantEvidence        = "P4-CH03-2026-08-26"
 	p4SidebarOAuthEvidence                     = "P4-SB01-SIDEBAR-OAUTH-AGENT-CONFIG-2026-08-26"
@@ -138,6 +139,7 @@ var commerceRefundOperations = map[string]nativePackageOperation{
 }
 
 var nativePackageOperations = map[string]nativePackageOperation{
+	"getChannelHistory":                         {"/api/admin/channels/{channel_id}/history", "GET", p4ChannelHistoryEvidence, "customers.read", "human_session", "internal_pii", "contact.read_only_channel_history", "none", map[string]string{"admin": "global", "ops": "global"}},
 	"setServicePeriodMemberGridExternalShare":   {"/api/admin/service-period-products/{service_product_id}/member-grid/share-settings", "PUT", p4MemberGridReadonlyShareEvidence, "products.write", "human_session", "internal", "local_command", "required", map[string]string{"admin": "global", "ops": "global"}},
 	"queryPublicServicePeriodMemberGridSummary": {"/api/public/member-grid-shares/summary", "POST", p4MemberGridReadonlyShareEvidence, "member_grid.public.read", "public_token_body", "public_allowlisted_member_projection", "local_member_grid_projection", "none", nil},
 	"getChannelAcquisitionPreview":              {"/api/admin/channels/{channel_id}/acquisition-preview", "GET", p4ChannelAcquisitionEvidence, "channels.read", "human_session", "internal", "contact.local_channel_projection", "none", map[string]string{"admin": "global", "ops": "global"}},

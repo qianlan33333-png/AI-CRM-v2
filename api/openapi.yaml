@@ -4068,11 +4068,13 @@ paths:
       tags: [p4-channel-compat]
       operationId: getChannelHistory
       summary: Read V1 channel entry and assignment facts without current attribution or permissions
+      x-p4-decision-evidence: P4-V1-CHANNEL-HISTORY-2026-08-28
       x-aicrm-capability: customers.read
       x-aicrm-rbac-scopes: { admin: global, ops: global }
       x-aicrm-auth-scheme: human_session
       x-aicrm-session-bound-csrf: none
-      x-aicrm-data-classification: internal
+      x-aicrm-data-classification: internal_pii
+      x-aicrm-data-source: contact.read_only_channel_history
       x-aicrm-external-effect: none
       parameters:
         - { name: channel_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }

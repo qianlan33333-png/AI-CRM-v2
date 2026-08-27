@@ -212,6 +212,19 @@ func TestCanonicalCandidateDeclarationDoesNotRequireRunnerRegistryChanges(t *tes
 	})
 }
 
+func TestChannelHistoryNativeContractRemainsReadonly(t *testing.T) {
+	doc, inventory := fresh(t)
+	op := doc.Paths.Value("/api/admin/channels/{channel_id}/history").Get
+	if op == nil || op.OperationID != "getChannelHistory" || op.RequestBody != nil {
+		t.Fatal("channel history must remain a native GET")
+	}
+	if err := validate(doc, inventory); err != nil {
+		t.Fatal(err)
+	}
+	op.Extensions["x-aicrm-external-effect"] = "provider"
+	reject(t, doc, inventory)
+}
+
 func TestOwnerApprovedNativePackageRegistry(t *testing.T) {
 	operation := func(contract nativePackageOperation) (*openapi3.PathItem, *openapi3.Operation) {
 		op := &openapi3.Operation{
