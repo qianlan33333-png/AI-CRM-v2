@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
@@ -105,6 +107,102 @@ func TestPublicRepositoryPostgreSQLRoundTrip(t *testing.T) {
 	if err != errRollback {
 		t.Fatalf("round trip=%v", err)
 	}
+}
+
+// The real jsonb receipts must survive Publish/Disable and exact-key replay.
+// Every repository write uses the outer transaction, which is always rolled back.
+func TestPublicManagementPostgreSQLJSONBReplay(t *testing.T) {
+	url := os.Getenv("AICRM_SURVEY_TEST_DATABASE_URL")
+	if url == "" {
+		t.Skip("AICRM_SURVEY_TEST_DATABASE_URL is not set")
+	}
+	ctx := context.Background()
+	pool, err := pgxpool.New(ctx, url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pool.Close()
+	repo := NewPublicRepository()
+	events := &surveyOperationsIntegrationEvents{}
+	service := surveyapp.NewPublicService(publicManagementIntegrationUOW{}, repo, events, [32]byte{1})
+	var questionnaireID surveyport.ID
+	err = platformstore.NewUnitOfWork(pool).Within(ctx, func(tx context.Context) error {
+		db, err := platformstore.TxFromContext(tx)
+		if err != nil {
+			return err
+		}
+		q, err := NewQuestionnaireRepository().Create(tx, surveyport.CreateCommand{
+			Actor: 1,
+			Questionnaire: surveyport.Questionnaire{
+				Slug: "survey-public-management-it", Name: "UAT public management", Title: "UAT", Description: "Test only",
+				AnswerDisplayMode: surveyport.AllInOne,
+				Questions: []surveyport.Question{{Type: surveyport.SingleChoice, Title: "Choose", Required: true,
+					Validation: surveyport.Validation{MinimumSelections: intp(1), MaximumSelections: intp(1)},
+					Options:    []surveyport.Option{{OptionText: "A", TagCodes: []string{}}}}},
+			},
+		}, time.Now().UTC())
+		if err != nil {
+			return fmt.Errorf("create fixture: %w", err)
+		}
+		questionnaireID = q.ID
+		var published surveyapp.PublicDefinitionRecord
+		for index, operation := range []string{"publish", "disable"} {
+			key := "survey-pg-public-" + operation + "-01"
+			call := func() (surveyapp.PublicDefinitionRecord, error) {
+				if operation == "publish" {
+					return service.Publish(tx, surveyport.PublishPublicDefinitionCommand{QuestionnaireID: q.ID, ExpectedQuestionnaireVersion: q.Version, Actor: 1, IdempotencyKey: key})
+				}
+				return service.Disable(tx, surveyport.DisablePublicDefinitionCommand{QuestionnaireID: q.ID, ExpectedDefinitionVersion: published.View.Version, Actor: 1, IdempotencyKey: key})
+			}
+			first, err := call()
+			if err != nil {
+				return fmt.Errorf("%s: %w", operation, err)
+			}
+			if operation == "publish" {
+				published = first
+				if first.ID < 1 || first.State != "public" || first.View.ID != q.ID || len(first.View.Questions) != 1 || len(first.View.Questions[0].Options) != 1 {
+					return fmt.Errorf("publish returned incomplete definition")
+				}
+			} else if first.ID != published.ID || first.State != "disabled" || !reflect.DeepEqual(first.View, published.View) {
+				return fmt.Errorf("disable changed immutable definition")
+			}
+			replay, err := call()
+			if err != nil || !reflect.DeepEqual(first, replay) || events.count != index+1 {
+				return fmt.Errorf("%s replay changed result or duplicated event: %v", operation, err)
+			}
+			keyDigest := sha256.Sum256([]byte(key))
+			var snapshot json.RawMessage
+			if err = db.QueryRow(tx, `SELECT result_snapshot FROM questionnaire_public_management_receipts WHERE operation=$1 AND actor_scope='admin:1' AND key_digest=$2 AND state='completed'`, operation, keyDigest[:]).Scan(&snapshot); err != nil {
+				return err
+			}
+			encoded, err := json.Marshal(first)
+			var stored surveyapp.PublicDefinitionRecord
+			if err != nil || string(encoded) == string(snapshot) || json.Unmarshal(snapshot, &stored) != nil || !reflect.DeepEqual(stored, first) {
+				return fmt.Errorf("%s did not round-trip through reformatted jsonb", operation)
+			}
+		}
+		if _, err = repo.GetCurrentPublicDefinition(tx, q.ID); err != surveyapp.ErrNotFound {
+			return fmt.Errorf("disabled definition remained public: %v", err)
+		}
+		return errRollback
+	})
+	if err != errRollback {
+		t.Fatalf("public management round trip: %v", err)
+	}
+	var remaining int
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM questionnaires WHERE id=$1`, int64(questionnaireID)).Scan(&remaining); err != nil || remaining != 0 {
+		t.Fatalf("fixture rollback remaining=%d err=%v", remaining, err)
+	}
+}
+
+// Reuse the already-bound real transaction; production UoW rejects nesting.
+type publicManagementIntegrationUOW struct{}
+
+func (publicManagementIntegrationUOW) Within(ctx context.Context, callback func(context.Context) error) error {
+	if _, err := platformstore.TxFromContext(ctx); err != nil {
+		return err
+	}
+	return callback(ctx)
 }
 
 var errRollback = &rollbackSentinel{}
