@@ -8,51 +8,67 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	media "github.com/qianlan33333-png/AI-CRM-v2/internal/media"
+	mediadb "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store/generated"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
 type HistoricalStaticStore struct {
-	tx func(context.Context) (pgx.Tx, error)
+	tx         func(context.Context) (pgx.Tx, error)
+	newQueries func(pgx.Tx) historicalStaticQueries
 }
 
 var _ media.HistoricalStaticStore = (*HistoricalStaticStore)(nil)
 
+type historicalStaticQueries interface {
+	InsertHistoricalStaticImage(context.Context, mediadb.InsertHistoricalStaticImageParams) (int64, error)
+	InsertHistoricalStaticAttachment(context.Context, mediadb.InsertHistoricalStaticAttachmentParams) (int64, error)
+}
+
 func NewHistoricalStaticStore() *HistoricalStaticStore {
-	return &HistoricalStaticStore{tx: platformstore.TxFromContext}
+	return &HistoricalStaticStore{
+		tx: platformstore.TxFromContext,
+		newQueries: func(tx pgx.Tx) historicalStaticQueries {
+			return mediadb.New(tx)
+		},
+	}
 }
 
 // Historical inserts use only the caller's transaction. They create disabled
 // metadata and its verified blob atomically, without normal mutation receipts,
 // events, variants, Provider caches, or jobs. The migration journal owns replay.
 func (store *HistoricalStaticStore) InsertHistoricalImage(ctx context.Context, definition media.HistoricalImageDefinition) (int64, error) {
-	if store == nil || store.tx == nil || ctx == nil || definition.Validate() != nil {
+	if store == nil || store.tx == nil || store.newQueries == nil || ctx == nil || definition.Validate() != nil {
 		return 0, media.ErrHistoricalStaticInvalid
 	}
 	tx, err := store.tx(ctx)
 	if err != nil {
 		return 0, err
 	}
+	queries := store.newQueries(tx)
+	if queries == nil {
+		return 0, media.ErrHistoricalStaticInvalid
+	}
 	item := definition.Image
-	var id int64
-	err = tx.QueryRow(ctx, `WITH inserted AS (
-		INSERT INTO public.media_images
-		(name,file_name,mime_type,file_size,width,height,checksum,description,tags,category,enabled,created_by,created_at,updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,FALSE,$11,$12,$13) RETURNING id
-	)
-	INSERT INTO public.media_image_blobs (image_id,content,checksum,created_at)
-	SELECT id,$14,$7,$12 FROM inserted RETURNING image_id`,
-		item.Name, item.FileName, item.MimeType, item.FileSize, item.Width, item.Height, definition.Checksum[:],
-		item.Description, item.Tags, item.Category, definition.Actor, item.CreatedAt.UTC(), item.UpdatedAt.UTC(), definition.Content).Scan(&id)
+	id, err := queries.InsertHistoricalStaticImage(ctx, mediadb.InsertHistoricalStaticImageParams{
+		Content: definition.Content, Checksum: definition.Checksum[:], CreatedAt: stamp(item.CreatedAt.UTC()),
+		Name: item.Name, FileName: item.FileName, MimeType: item.MimeType, FileSize: item.FileSize,
+		Width: item.Width, Height: item.Height, Description: item.Description, Tags: item.Tags, Category: item.Category,
+		CreatedBy: definition.Actor, UpdatedAt: stamp(item.UpdatedAt.UTC()),
+	})
 	return historicalStaticInsertResult(id, err)
 }
 
 func (store *HistoricalStaticStore) InsertHistoricalAttachment(ctx context.Context, definition media.HistoricalAttachmentDefinition) (int64, error) {
-	if store == nil || store.tx == nil || ctx == nil || definition.Validate() != nil {
+	if store == nil || store.tx == nil || store.newQueries == nil || ctx == nil || definition.Validate() != nil {
 		return 0, media.ErrHistoricalStaticInvalid
 	}
 	tx, err := store.tx(ctx)
 	if err != nil {
 		return 0, err
+	}
+	queries := store.newQueries(tx)
+	if queries == nil {
+		return 0, media.ErrHistoricalStaticInvalid
 	}
 	item := definition.Attachment
 	if item.Tags == nil {
@@ -62,16 +78,11 @@ func (store *HistoricalStaticStore) InsertHistoricalAttachment(ctx context.Conte
 	if err != nil {
 		return 0, err
 	}
-	var id int64
-	err = tx.QueryRow(ctx, `WITH inserted AS (
-		INSERT INTO public.media_attachments
-		(name,file_name,mime_type,file_size,checksum,description,tags,enabled,version,created_by,updated_by,created_at,updated_at)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,FALSE,1,$8,$8,$9,$10) RETURNING id
-	)
-	INSERT INTO public.media_attachment_blobs (attachment_id,content,checksum,created_at)
-	SELECT id,$11,$5,$9 FROM inserted RETURNING attachment_id`,
-		item.Name, item.FileName, item.MimeType, item.FileSize, definition.Checksum[:], item.Description, tags,
-		item.CreatedBy, item.CreatedAt.UTC(), item.UpdatedAt.UTC(), definition.Content).Scan(&id)
+	id, err := queries.InsertHistoricalStaticAttachment(ctx, mediadb.InsertHistoricalStaticAttachmentParams{
+		Content: definition.Content, Checksum: definition.Checksum[:], CreatedAt: stamp(item.CreatedAt.UTC()),
+		Name: item.Name, FileName: item.FileName, MimeType: item.MimeType, FileSize: int32(item.FileSize),
+		Description: item.Description, Tags: tags, Actor: item.CreatedBy, UpdatedAt: stamp(item.UpdatedAt.UTC()),
+	})
 	return historicalStaticInsertResult(id, err)
 }
 
