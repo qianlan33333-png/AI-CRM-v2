@@ -218,7 +218,7 @@ func (importer *CouponImporter) importDefinitionGroup(ctx context.Context, defin
 		return importer.recordDefinitionGroup(ctx, definition, bindings, indexes, "quarantine", definition.redactionReason, result)
 	}
 	if decision.Disposition != v1coupon.DispositionCandidate || decision.Fact == nil {
-		return importer.recordDefinitionGroup(ctx, definition, bindings, indexes, string(decision.Disposition), reasonOr(decision.Reason, "coupon_definition_invalid"), result)
+		return importer.recordDefinitionGroup(ctx, definition, bindings, indexes, couponTerminalDisposition(decision.Disposition), reasonOr(decision.Reason, "coupon_definition_invalid"), result)
 	}
 	replayed, targetID := false, int64(0)
 	resolved := resolvedCouponDefinition{}
@@ -380,7 +380,7 @@ func (importer *CouponImporter) importClaim(ctx context.Context, row couponArchi
 		return importer.recordDecision(ctx, couponClaimsKind, row, "quarantine", row.redactionReason, result)
 	}
 	if decision.Disposition != v1coupon.DispositionCandidate || decision.Fact == nil {
-		return importer.recordDecision(ctx, couponClaimsKind, row, string(decision.Disposition), reasonOr(decision.Reason, "coupon_claim_invalid"), result)
+		return importer.recordDecision(ctx, couponClaimsKind, row, couponTerminalDisposition(decision.Disposition), reasonOr(decision.Reason, "coupon_claim_invalid"), result)
 	}
 	couponID, found := definitions[decision.Fact.CouponSourceID]
 	if !found || couponID < 1 {
@@ -434,7 +434,7 @@ func (importer *CouponImporter) importRedemption(ctx context.Context, row coupon
 		return importer.recordDecision(ctx, couponRedemptionsKind, row, "quarantine", row.redactionReason, result)
 	}
 	if decision.Disposition != v1coupon.DispositionCandidate || decision.Fact == nil {
-		return importer.recordDecision(ctx, couponRedemptionsKind, row, string(decision.Disposition), reasonOr(decision.Reason, "coupon_redemption_invalid"), result)
+		return importer.recordDecision(ctx, couponRedemptionsKind, row, couponTerminalDisposition(decision.Disposition), reasonOr(decision.Reason, "coupon_redemption_invalid"), result)
 	}
 	claimID, found := claims[decision.Fact.ClaimSourceID]
 	if !found || claimID < 1 {
@@ -554,9 +554,19 @@ func HistoricalCouponBindingTargetDigest(couponID int64, position int32, product
 	return sha256.Sum256(append([]byte("v1-coupon-binding-target/v1\x00"), payload...))
 }
 
-func dispositionForBinding(value v1coupon.BindingResult) string {
-	if value.Disposition == v1coupon.DispositionArchive {
+func couponTerminalDisposition(value v1coupon.Disposition) string {
+	switch value {
+	case v1coupon.DispositionArchive:
 		return "archive"
+	case v1coupon.DispositionQuarantine:
+		return "quarantine"
+	}
+	return ""
+}
+
+func dispositionForBinding(value v1coupon.BindingResult) string {
+	if disposition := couponTerminalDisposition(value.Disposition); disposition != "" {
+		return disposition
 	}
 	return "quarantine"
 }

@@ -8,9 +8,39 @@ import (
 	"testing"
 	"time"
 
+	"github.com/qianlan33333-png/AI-CRM-v2/cmd/aicrm-v1-domain-import/internal/v1coupon"
 	couponport "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/port"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 )
+
+func TestCouponImporterMapsArchiveOnlyDecisionsToTerminalReceipts(t *testing.T) {
+	archive := couponImportArchive(t)
+	importer, writer, journals := newCouponImporterForTest(t, archive, couponResolverFake{})
+	result := CouponImportResult{}
+	ctx := context.Background()
+	definition := couponArchiveRow{archive: archive.rows[couponDefinitionsTableID][0]}
+	claim := couponArchiveRow{archive: archive.rows[couponClaimsTableID][0]}
+	redemption := couponArchiveRow{archive: archive.rows[couponRedemptionsTableID][0]}
+	if err := importer.importDefinitionGroup(ctx, definition, v1coupon.CouponResult{Disposition: v1coupon.DispositionArchive, Reason: "coupon_target_ineligible"}, nil, nil, nil, map[int64]int64{}, &result); err != nil {
+		t.Fatal(err)
+	}
+	if err := importer.importClaim(ctx, claim, v1coupon.ClaimResult{Disposition: v1coupon.DispositionArchive, Reason: "historical_only"}, nil, nil, &result); err != nil {
+		t.Fatal(err)
+	}
+	if err := importer.importRedemption(ctx, redemption, v1coupon.RedemptionResult{Disposition: v1coupon.DispositionArchive, Reason: "historical_only"}, nil, &result); err != nil {
+		t.Fatal(err)
+	}
+	if result != (CouponImportResult{ArchivedDefinitions: 1, ArchivedClaims: 1, ArchivedRedemptions: 1}) || len(writer.definitions)+len(writer.claims)+len(writer.redemptions) != 0 {
+		t.Fatalf("unexpected archive result: %#v", result)
+	}
+	for _, kind := range []string{couponDefinitionsKind, couponClaimsKind, couponRedemptionsKind} {
+		for _, receipt := range journals[kind].(*couponTerminalFake).values {
+			if receipt.Disposition != "archive" || receipt.TargetID != "" {
+				t.Fatalf("unexpected terminal: %#v", receipt)
+			}
+		}
+	}
+}
 
 func TestCouponImporterImportsReadOnlyHistoryAndReplays(t *testing.T) {
 	archive := couponImportArchive(t)
