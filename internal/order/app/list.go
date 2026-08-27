@@ -117,7 +117,7 @@ func (service *Service) project(ctx context.Context, record orderport.Record) (o
 		}
 	}
 	item := orderport.Item{
-		CreatedAt: record.CreatedAt, MerchantOrderNo: record.MerchantOrderNo, OutTradeNo: record.MerchantOrderNo,
+		RecordOrigin: recordOrigin(record.RecordOrigin), CreatedAt: record.CreatedAt, MerchantOrderNo: record.MerchantOrderNo, OutTradeNo: record.MerchantOrderNo,
 		OrderNo: record.MerchantOrderNo, PlatformTransactionNo: record.PlatformTransactionNo,
 		TransactionID: record.PlatformTransactionNo, PayerName: payerName, Mobile: record.MobileSnapshot,
 		ProductCode: record.ProductCode, ProductName: productName, AmountYuan: fmt.Sprintf("%d.%02d", record.AmountMinor/100, record.AmountMinor%100),
@@ -170,7 +170,7 @@ func normalizeFilter(ctx context.Context, filter orderport.Filter) (orderport.Fi
 }
 
 func validRecord(record orderport.Record) bool {
-	return record.ID > 0 && (record.Provider == "wechat" || record.Provider == "alipay" || record.Provider == "wechat_shop") &&
+	return validRecordOrigin(record.RecordOrigin) && record.ID > 0 && (record.Provider == "wechat" || record.Provider == "alipay" || record.Provider == "wechat_shop") &&
 		validText(record.ProviderLabel, 80) && record.ProviderLabel != "" && validText(record.MerchantOrderNo, 200) && record.MerchantOrderNo != "" &&
 		validText(record.PlatformTransactionNo, 200) && optionalPositive(record.CustomerID) && validText(record.PayerNameSnapshot, 200) &&
 		validText(record.MobileSnapshot, 80) && validIdentity(record.IdentityKind, record.IdentityValue) && optionalPositive(record.ProductID) &&
@@ -178,6 +178,17 @@ func validRecord(record orderport.Record) bool {
 		len(record.Currency) == 3 && record.Currency == strings.ToUpper(record.Currency) && validText(record.Status, 80) && record.Status != "" &&
 		validText(record.StatusLabel, 80) && record.StatusLabel != "" && strings.HasPrefix(record.DetailURL, "/") && !strings.ContainsAny(record.DetailURL, " \t\r\n") &&
 		len(record.DetailURL) <= 2048 && !record.CreatedAt.IsZero() && !record.UpdatedAt.IsZero() && !record.CreatedAt.After(record.UpdatedAt)
+}
+
+func validRecordOrigin(value string) bool {
+	return value == "" || value == orderport.RecordOriginNative || value == orderport.RecordOriginV1History
+}
+
+func recordOrigin(value string) string {
+	if value == "" {
+		return orderport.RecordOriginNative
+	}
+	return value
 }
 
 func validIdentity(kind, value string) bool {

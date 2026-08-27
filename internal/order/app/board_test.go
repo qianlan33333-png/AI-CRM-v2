@@ -226,6 +226,41 @@ func TestOrderBoardRefundIntentUsesOneReceiptAndEventTransaction(t *testing.T) {
 	}
 }
 
+func TestOrderBoardNativeDetailRemainsRefundable(t *testing.T) {
+	now := time.Date(2026, 8, 15, 17, 0, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	service, _ := boardTestService(now, store, events)
+	detail, err := service.GetOrder(context.Background(), "wechat", "M-11")
+	if err != nil || detail.RecordOrigin != orderport.RecordOriginNative || detail.RefundableAmountMinor != 9901 {
+		t.Fatalf("detail=%+v err=%v", detail, err)
+	}
+}
+
+func TestOrderBoardV1HistoryIsReadOnly(t *testing.T) {
+	now := time.Date(2026, 8, 15, 17, 0, 0, 0, time.UTC)
+	store, events := newBoardTestStore(now), &boardTestEvents{}
+	store.record.RecordOrigin = orderport.RecordOriginV1History
+	store.records = []orderport.Record{store.record}
+	service, _ := boardTestService(now, store, events)
+
+	page, err := service.ListOrders(context.Background(), orderport.BoardFilter{})
+	if err != nil || len(page.Items) != 1 || page.Items[0].RecordOrigin != orderport.RecordOriginV1History || page.Items[0].AmountYuan != "99.01" || page.Items[0].Status != "paid" {
+		t.Fatalf("page=%+v err=%v", page, err)
+	}
+	detail, err := service.GetOrder(context.Background(), "wechat", "M-11")
+	if err != nil || detail.RecordOrigin != orderport.RecordOriginV1History || detail.RefundableAmountMinor != 0 {
+		t.Fatalf("detail=%+v err=%v", detail, err)
+	}
+
+	command := orderport.RefundCommand{Provider: "wechat", OrderReference: "M-11", RefundAmountTotal: 1990, Reason: "重复支付", TransactionIDConfirmation: "WX-11", Checked: true, Actor: 9, IdempotencyKey: "aaaaaaaaaaaaaaaa"}
+	if _, err = service.RequestRefund(context.Background(), command); !errors.Is(err, ErrInvalidBoardCommand) {
+		t.Fatalf("refund error=%v", err)
+	}
+	if len(store.effects) != 0 || len(store.refunds) != 0 || len(events.rows) != 0 {
+		t.Fatalf("historical refund created side effects: effects=%d refunds=%d events=%d", len(store.effects), len(store.refunds), len(events.rows))
+	}
+}
+
 func TestOrderBoardOutcomeUnknownNeverEntersRetryPath(t *testing.T) {
 	now := time.Date(2026, 8, 15, 17, 0, 0, 0, time.UTC)
 	store, events := newBoardTestStore(now), &boardTestEvents{}
