@@ -244,6 +244,42 @@ func (client *CustomerAcquisitionClient) CreateCustomerAcquisitionLink(ctx conte
 	return value, nil
 }
 
+// UpdateCustomerAcquisitionLink replaces the provider link configuration with
+// the complete desired input. A successful provider acknowledgement is read
+// back explicitly, so this method never returns an assumed post-update shape.
+// It does not retry a dispatched write whose outcome is unknown.
+func (client *CustomerAcquisitionClient) UpdateCustomerAcquisitionLink(ctx context.Context, linkID string, input CustomerAcquisitionLinkRequest) (CustomerAcquisitionLink, error) {
+	if client == nil || !validProviderID(linkID) || !validCustomerAcquisitionLinkRequest(input) {
+		return CustomerAcquisitionLink{}, ErrInvalidConfig
+	}
+	var payload struct {
+		ErrCode int    `json:"errcode"`
+		ErrMsg  string `json:"errmsg"`
+	}
+	if err := client.write(ctx, "/cgi-bin/externalcontact/customer_acquisition/update_link", map[string]any{
+		"link_id": linkID, "link_name": input.LinkName,
+		"range":       map[string]any{"user_list": input.UserIDs, "department_list": input.DepartmentIDs},
+		"skip_verify": input.SkipVerify,
+	}, &payload); err != nil {
+		return CustomerAcquisitionLink{}, err
+	}
+	return client.GetCustomerAcquisitionLink(ctx, linkID)
+}
+
+// DeleteCustomerAcquisitionLink returns nil only after WeCom accepts the
+// deletion request. It deliberately does not infer callback delivery or final
+// deletion from that acknowledgement, and never retries an unknown outcome.
+func (client *CustomerAcquisitionClient) DeleteCustomerAcquisitionLink(ctx context.Context, linkID string) error {
+	if client == nil || !validProviderID(linkID) {
+		return ErrInvalidConfig
+	}
+	var payload struct {
+		ErrCode int    `json:"errcode"`
+		ErrMsg  string `json:"errmsg"`
+	}
+	return client.write(ctx, "/cgi-bin/externalcontact/customer_acquisition/delete_link", map[string]string{"link_id": linkID}, &payload)
+}
+
 func (client *CustomerAcquisitionClient) GetCustomerAcquisitionLink(ctx context.Context, linkID string) (CustomerAcquisitionLink, error) {
 	if client == nil || !validProviderID(linkID) {
 		return CustomerAcquisitionLink{}, ErrInvalidConfig
@@ -537,6 +573,12 @@ func (*DisabledCustomerAcquisitionClient) ListFollowUsers(context.Context) ([]st
 }
 func (*DisabledCustomerAcquisitionClient) CreateCustomerAcquisitionLink(context.Context, CustomerAcquisitionLinkRequest) (CustomerAcquisitionLink, error) {
 	return CustomerAcquisitionLink{}, ErrCustomerAcquisitionDisabled
+}
+func (*DisabledCustomerAcquisitionClient) UpdateCustomerAcquisitionLink(context.Context, string, CustomerAcquisitionLinkRequest) (CustomerAcquisitionLink, error) {
+	return CustomerAcquisitionLink{}, ErrCustomerAcquisitionDisabled
+}
+func (*DisabledCustomerAcquisitionClient) DeleteCustomerAcquisitionLink(context.Context, string) error {
+	return ErrCustomerAcquisitionDisabled
 }
 func (*DisabledCustomerAcquisitionClient) GetCustomerAcquisitionLink(context.Context, string) (CustomerAcquisitionLink, error) {
 	return CustomerAcquisitionLink{}, ErrCustomerAcquisitionDisabled

@@ -16,6 +16,8 @@ import (
 
 func TestCustomerAcquisitionClientUsesFrozenWeComContracts(t *testing.T) {
 	provider := staticTokenProvider{token: AccessToken{value: "token-safe"}}
+	var acquisitionLinkUpdated bool
+	var acquisitionLinkGetCalls atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Query().Get("access_token") != "token-safe" {
 			t.Fatalf("request=%s query=%q content-type=%q", request.Method, request.URL.RawQuery, request.Header.Get("Content-Type"))
@@ -71,7 +73,27 @@ func TestCustomerAcquisitionClientUsesFrozenWeComContracts(t *testing.T) {
 			if string(body) != `{"link_id":"link-1"}` {
 				t.Fatalf("get link body=%s", body)
 			}
+			acquisitionLinkGetCalls.Add(1)
+			if acquisitionLinkUpdated {
+				_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_id":"link-1","link_name":"CH02 updated","url":"https://work.weixin.qq.com/ca/link-1","skip_verify":false,"range":{"user_list":["staff-b"],"department_list":[34]}}}`))
+				return
+			}
 			_, _ = writer.Write([]byte(`{"errcode":0,"link":{"link_id":"link-1","link_name":"CH02 landing","url":"https://work.weixin.qq.com/ca/link-1","skip_verify":true,"range":{"user_list":["staff-a"],"department_list":[12]}}}`))
+		case "/cgi-bin/externalcontact/customer_acquisition/update_link":
+			if request.Method != http.MethodPost || request.Header.Get("Content-Type") != "application/json" {
+				t.Fatalf("update link request=%s content-type=%q", request.Method, request.Header.Get("Content-Type"))
+			}
+			want := `{"link_id":"link-1","link_name":"CH02 updated","range":{"department_list":[34],"user_list":["staff-b"]},"skip_verify":false}`
+			if string(body) != want {
+				t.Fatalf("update link body=%s want=%s", body, want)
+			}
+			acquisitionLinkUpdated = true
+			_, _ = writer.Write([]byte(`{"errcode":0}`))
+		case "/cgi-bin/externalcontact/customer_acquisition/delete_link":
+			if request.Method != http.MethodPost || request.Header.Get("Content-Type") != "application/json" || string(body) != `{"link_id":"link-1"}` {
+				t.Fatalf("delete link request=%s content-type=%q body=%s", request.Method, request.Header.Get("Content-Type"), body)
+			}
+			_, _ = writer.Write([]byte(`{"errcode":0}`))
 		case "/cgi-bin/externalcontact/customer_acquisition/list_link":
 			if request.Method != http.MethodPost || request.Header.Get("Content-Type") != "application/json" {
 				t.Fatalf("list links request=%s content-type=%q", request.Method, request.Header.Get("Content-Type"))
@@ -109,8 +131,71 @@ func TestCustomerAcquisitionClientUsesFrozenWeComContracts(t *testing.T) {
 	if link, err = client.ReconcileCustomerAcquisitionLink(context.Background(), "link-1"); err != nil || link.LinkName != "CH02 landing" || len(link.DepartmentIDs) != 1 {
 		t.Fatalf("ReconcileCustomerAcquisitionLink()=%+v err=%v", link, err)
 	}
+	if link, err = client.UpdateCustomerAcquisitionLink(context.Background(), "link-1", CustomerAcquisitionLinkRequest{LinkName: "CH02 updated", UserIDs: []string{"staff-b"}, DepartmentIDs: []int64{34}}); err != nil || link.LinkName != "CH02 updated" || link.SkipVerify || !reflect.DeepEqual(link.UserIDs, []string{"staff-b"}) {
+		t.Fatalf("UpdateCustomerAcquisitionLink()=%+v err=%v", link, err)
+	}
+	if err := client.DeleteCustomerAcquisitionLink(context.Background(), "link-1"); err != nil {
+		t.Fatalf("DeleteCustomerAcquisitionLink() err=%v", err)
+	}
+	if got := acquisitionLinkGetCalls.Load(); got != 2 {
+		t.Fatalf("get link calls=%d, want update readback only (no delete readback)", got)
+	}
 	if page, err := client.ListCustomerAcquisitionLinks(context.Background(), "prior", 2); err != nil || page.NextCursor != "next" || len(page.Links) != 2 {
 		t.Fatalf("ListCustomerAcquisitionLinks()=%+v err=%v", page, err)
+	}
+}
+
+func TestCustomerAcquisitionUpdateAndDeleteFailUnknownWithoutRetry(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		call func(*CustomerAcquisitionClient) error
+	}{
+		{name: "update", call: func(client *CustomerAcquisitionClient) error {
+			_, err := client.UpdateCustomerAcquisitionLink(context.Background(), "link-1", CustomerAcquisitionLinkRequest{LinkName: "known", UserIDs: []string{"staff-a"}})
+			return err
+		}},
+		{name: "delete", call: func(client *CustomerAcquisitionClient) error {
+			return client.DeleteCustomerAcquisitionLink(context.Background(), "link-1")
+		}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var calls atomic.Int32
+			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, _ *http.Request) {
+				calls.Add(1)
+				writer.WriteHeader(http.StatusBadGateway)
+			}))
+			defer server.Close()
+			client := testCustomerAcquisitionClient(t, server.URL, server.Client(), staticTokenProvider{token: AccessToken{value: "token-safe"}})
+			if err := test.call(client); !errors.Is(err, ErrWriteOutcomeUnknown) || calls.Load() != 1 {
+				t.Fatalf("err=%v calls=%d, want one unknown write", err, calls.Load())
+			}
+		})
+	}
+}
+
+func TestCustomerAcquisitionUpdateRefusesSuccessWithoutReadback(t *testing.T) {
+	var calls atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		switch calls.Add(1) {
+		case 1:
+			if request.URL.Path != "/cgi-bin/externalcontact/customer_acquisition/update_link" {
+				t.Fatalf("first path=%s", request.URL.Path)
+			}
+			_, _ = writer.Write([]byte(`{"errcode":0}`))
+		case 2:
+			if request.URL.Path != "/cgi-bin/externalcontact/customer_acquisition/get" {
+				t.Fatalf("second path=%s", request.URL.Path)
+			}
+			_, _ = writer.Write([]byte(`not-json`))
+		default:
+			t.Fatalf("unexpected request %s", request.URL.Path)
+		}
+	}))
+	defer server.Close()
+	client := testCustomerAcquisitionClient(t, server.URL, server.Client(), staticTokenProvider{token: AccessToken{value: "token-safe"}})
+	_, err := client.UpdateCustomerAcquisitionLink(context.Background(), "link-1", CustomerAcquisitionLinkRequest{LinkName: "known", UserIDs: []string{"staff-a"}})
+	if !errors.Is(err, ErrUnexpectedResponse) || calls.Load() != 2 {
+		t.Fatalf("err=%v calls=%d, want accepted update followed by failed readback", err, calls.Load())
 	}
 }
 
@@ -282,6 +367,12 @@ func TestDisabledCustomerAcquisitionClientNeverGetsTokenOrCallsHTTP(t *testing.T
 	}
 	if _, err := disabled.CreateCustomerAcquisitionLink(context.Background(), CustomerAcquisitionLinkRequest{}); !errors.Is(err, ErrCustomerAcquisitionDisabled) {
 		t.Fatalf("CreateCustomerAcquisitionLink() err=%v", err)
+	}
+	if _, err := disabled.UpdateCustomerAcquisitionLink(context.Background(), "link-1", CustomerAcquisitionLinkRequest{}); !errors.Is(err, ErrCustomerAcquisitionDisabled) {
+		t.Fatalf("UpdateCustomerAcquisitionLink() err=%v", err)
+	}
+	if err := disabled.DeleteCustomerAcquisitionLink(context.Background(), "link-1"); !errors.Is(err, ErrCustomerAcquisitionDisabled) {
+		t.Fatalf("DeleteCustomerAcquisitionLink() err=%v", err)
 	}
 	if _, err := disabled.ListFollowUsers(context.Background()); !errors.Is(err, ErrCustomerAcquisitionDisabled) {
 		t.Fatalf("ListFollowUsers() err=%v", err)
