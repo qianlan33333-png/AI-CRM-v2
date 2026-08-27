@@ -192,12 +192,12 @@ func servicePeriodReconcileOptionalID(value pgtype.Int8) (*int64, error) {
 }
 
 func validServicePeriodReconcileDefinition(value productport.ServicePeriodHistoryDefinition) bool {
-	return value.ID > 0 && value.SourceDefinitionID > 0 && value.ProductID > 0 && value.MembershipConfigID != "" && value.MembershipConfigName != "" &&
+	return value.ID > 0 && value.SourceDefinitionID > 0 && value.ProductID > 0 &&
 		!value.CreatedAt.IsZero() && !value.UpdatedAt.IsZero() && !value.UpdatedAt.Before(value.CreatedAt)
 }
 
 func validServicePeriodReconcileEntitlement(value productport.ServicePeriodHistoryEntitlement) bool {
-	return value.ID > 0 && value.SourceEntitlementID > 0 && value.DefinitionID > 0 && value.MembershipConfigID != "" && value.Status != "" &&
+	return value.ID > 0 && value.SourceEntitlementID > 0 && value.DefinitionID > 0 && value.Status != "" &&
 		!value.StartAt.IsZero() && !value.EndAt.IsZero() && !value.CreatedAt.IsZero() && !value.UpdatedAt.IsZero() && !value.UpdatedAt.Before(value.CreatedAt)
 }
 

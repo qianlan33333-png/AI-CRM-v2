@@ -61,6 +61,16 @@ func TestServicePeriodReconcileSelectsExactlyThe213RowCoreTables(t *testing.T) {
 	}
 }
 
+func TestServicePeriodReconcilePreservesEmptyConfigurationFields(t *testing.T) {
+	definition, entitlement, _ := servicePeriodReconcileRecords()
+	definition.MembershipConfigID, definition.MembershipConfigName, entitlement.MembershipConfigID = "", "", ""
+	definitionDigest := productapp.ServicePeriodHistoryDefinitionTargetDigest(definition)
+	entitlementDigest := productapp.ServicePeriodHistoryEntitlementTargetDigest(entitlement)
+	if !servicePeriodDefinitionMatchesTarget(definition, definitionDigest[:]) || !servicePeriodEntitlementMatchesTarget(entitlement, entitlementDigest[:]) {
+		t.Fatal("empty source configuration was rejected despite the historical writer contract")
+	}
+}
+
 func TestServicePeriodReconcileDigestCoversEveryHistoricalFact(t *testing.T) {
 	definition, entitlement, event := servicePeriodReconcileRecords()
 	definitionDigest := productapp.ServicePeriodHistoryDefinitionTargetDigest(definition)
