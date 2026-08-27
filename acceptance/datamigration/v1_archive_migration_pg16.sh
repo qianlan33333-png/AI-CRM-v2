@@ -100,14 +100,39 @@ grep -Fq '"mode":"reconcile"' "$reconcile_result"
 [[ "$(psql "$database_url" -X -q -At -c "SELECT redaction_metadata::text FROM v1_archive_records WHERE run_id='v1-archive-acceptance' AND table_id='public/fixture_contacts' ORDER BY source_ordinal LIMIT 1")" = '["api_token"]' ]]
 [[ "$(psql "$database_url" -X -q -At -c "SELECT (SELECT count(*) FROM external_effects)||'|'||(SELECT count(*) FROM outbound_tasks)||'|'||(SELECT count(*) FROM event_log)")" = "0|0|0" ]]
 
+"$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" up-to 108 >/dev/null
+[[ "$(psql "$database_url" -X -q -At -c 'SELECT max(version_id) FROM goose_db_version WHERE is_applied')" = "108" ]]
+psql "$database_url" -X -q -v ON_ERROR_STOP=1 <<'SQL' >/dev/null
+INSERT INTO v1_domain_import_receipts (
+  import_version, archive_run_id, adapter_id, table_id, source_key_digest,
+  payload_digest, disposition, reason, verified
+)
+SELECT 'acceptance-v1', run_id, adapter_id, table_id, source_key_digest,
+       payload_digest, 'archive', 'acceptance_archive_only', true
+FROM v1_archive_records
+WHERE run_id='v1-archive-acceptance'
+ORDER BY table_id, source_ordinal
+LIMIT 1;
+INSERT INTO v1_domain_import_reconciliation_receipts (
+  import_version, archive_run_id, selected_source_count, receipt_count,
+  imported_count, archived_count, quarantined_count, verified_count, comparison_digest
+) VALUES ('acceptance-v1','v1-archive-acceptance',1,1,0,1,0,1,digest('acceptance-v1','sha256'));
+SQL
+[[ "$(psql "$database_url" -X -q -At -c "SELECT receipt_count||'|'||verified_count FROM v1_domain_import_reconciliation_receipts WHERE import_version='acceptance-v1'")" = "1|1" ]]
+if psql "$database_url" -X -q -v ON_ERROR_STOP=1 -c "INSERT INTO v1_domain_import_receipts (import_version,archive_run_id,adapter_id,table_id,source_key_digest,payload_digest,disposition,reason,verified) SELECT 'acceptance-v1',run_id,adapter_id,table_id,source_key_digest,payload_digest,'archive','late_write',true FROM v1_archive_records WHERE run_id='v1-archive-acceptance' ORDER BY table_id,source_ordinal OFFSET 1 LIMIT 1" >"$failure_log" 2>&1; then
+  echo 'reconciled V1 domain import unexpectedly allowed a late receipt' >&2
+  exit 1
+fi
+grep -Fq 'V1 domain import is already reconciled' "$failure_log"
+
 if psql "$database_url" -X -q -v ON_ERROR_STOP=1 \
-  -c "UPDATE v1_archive_records SET key_version=2" >"$failure_log" 2>&1; then
-  echo 'V1 archive record unexpectedly allowed mutation' >&2
+  -c "UPDATE v1_domain_import_receipts SET reason='changed'" >"$failure_log" 2>&1; then
+  echo 'V1 domain import receipt unexpectedly allowed mutation' >&2
   exit 1
 fi
 grep -Fq 'data migration facts are immutable' "$failure_log"
 if "$go_command" tool -modfile="$tools_mod" goose -dir migrations postgres "$database_url" down >"$failure_log" 2>&1; then
-  echo 'populated V1 archive unexpectedly allowed migration rollback' >&2
+  echo 'populated V1 domain import journal unexpectedly allowed migration rollback' >&2
   exit 1
 fi
 grep -Fq 'SQLSTATE 55000' "$failure_log"

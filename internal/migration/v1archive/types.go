@@ -20,6 +20,7 @@ var (
 	ErrInvalidManifest      = errors.New("invalid V1 archive source manifest")
 	ErrMissingPrimaryKey    = errors.New("V1 archive source table has no primary key")
 	ErrPayloadConflict      = errors.New("V1 archive source key has conflicting payload")
+	ErrArchiveTampered      = errors.New("V1 archive record is invalid or tampered")
 	ErrRunConflict          = errors.New("V1 archive run conflicts with stored run")
 	ErrReconciliationFailed = errors.New("V1 archive reconciliation failed")
 )
