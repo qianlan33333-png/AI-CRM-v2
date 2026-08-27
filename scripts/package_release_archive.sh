@@ -55,6 +55,8 @@ required_files=(
   SOURCE_SHA
   bin/aicrm-river-migrate
   bin/aicrm-river-migrate.sha256
+  bin/aicrm-v1-domain-import
+  bin/aicrm-v1-domain-import.sha256
   bin/goose
   config/aicrm.env
   config/postgresql.conf
