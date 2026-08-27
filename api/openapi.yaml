@@ -4063,6 +4063,30 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/admin/channels/{channel_id}/history:
+    get:
+      tags: [p4-channel-compat]
+      operationId: getChannelHistory
+      summary: Read V1 channel entry and assignment facts without current attribution or permissions
+      x-aicrm-capability: customers.read
+      x-aicrm-rbac-scopes: { admin: global, ops: global }
+      x-aicrm-auth-scheme: human_session
+      x-aicrm-session-bound-csrf: none
+      x-aicrm-data-classification: internal
+      x-aicrm-external-effect: none
+      parameters:
+        - { name: channel_id, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+      responses:
+        "200":
+          description: Immutable historical facts, not current attribution or staff permissions.
+          content: { application/json: { schema: { $ref: "#/components/schemas/ChannelHistoryResponse" } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/channels/{channel_id}/contacts:
     get:
       tags: [p4-channel-compat]
@@ -17317,6 +17341,52 @@ components:
         channels: { type: array, items: { $ref: "#/components/schemas/LegacyChannelListItem" } }
         reason: { type: string, enum: [channels_listed] }
         source: { type: string, enum: [ai_crm_next] }
+    ChannelHistoryContact:
+      type: object
+      additionalProperties: false
+      required: [id, channel_id, source_contact_id, customer_id, owner_reference, first_entered_at, last_entered_at, enter_count, created_at, updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        channel_id: { type: integer, format: int64, minimum: 1 }
+        source_contact_id: { type: integer, format: int64, minimum: 1 }
+        customer_id: { type: integer, format: int64, minimum: 1, nullable: true }
+        owner_reference: { type: string, description: "Historical source reference, not current ownership." }
+        first_entered_at: { type: string, format: date-time }
+        last_entered_at: { type: string, format: date-time }
+        enter_count: { type: integer, minimum: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ChannelHistoryAssignee:
+      type: object
+      additionalProperties: false
+      required: [id, channel_id, source_assignee_id, staff_reference, display_name_snapshot, priority, ratio_percent, max_scans_24h, status, source_created_at, source_updated_at]
+      properties:
+        id: { type: integer, format: int64, minimum: 1 }
+        channel_id: { type: integer, format: int64, minimum: 1 }
+        source_assignee_id: { type: integer, format: int64, minimum: 1 }
+        staff_reference: { type: string, description: "Historical source reference, not a current permission." }
+        display_name_snapshot: { type: string }
+        priority: { type: integer, minimum: 0 }
+        ratio_percent: { type: integer, nullable: true }
+        max_scans_24h: { type: integer, nullable: true }
+        status: { type: string }
+        source_created_at: { type: string, description: V1 civil timestamp without timezone. }
+        source_updated_at: { type: string, description: V1 civil timestamp without timezone. }
+    ChannelHistoryResponse:
+      type: object
+      additionalProperties: false
+      required: [ok, source, read_only, real_external_call_executed, channel_id, contacts, total, limit, offset, assignees]
+      properties:
+        ok: { type: boolean, enum: [true] }
+        source: { type: string, enum: [v1_history] }
+        read_only: { type: boolean, enum: [true] }
+        real_external_call_executed: { type: boolean, enum: [false] }
+        channel_id: { type: integer, format: int64, minimum: 1 }
+        contacts: { type: array, items: { $ref: "#/components/schemas/ChannelHistoryContact" } }
+        total: { type: integer, format: int64, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+        assignees: { type: array, maxItems: 200, items: { $ref: "#/components/schemas/ChannelHistoryAssignee" } }
     LegacyChannelDetailResponse:
       type: object
       additionalProperties: false

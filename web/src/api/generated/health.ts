@@ -8719,6 +8719,80 @@ export interface LegacyChannelListResponse {
   source: LegacyChannelListResponseSource;
 }
 
+export interface ChannelHistoryContact {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  channel_id: number;
+  /** @minimum 1 */
+  source_contact_id: number;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  customer_id: number | null;
+  /** Historical source reference, not current ownership. */
+  owner_reference: string;
+  first_entered_at: string;
+  last_entered_at: string;
+  /** @minimum 1 */
+  enter_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChannelHistoryAssignee {
+  /** @minimum 1 */
+  id: number;
+  /** @minimum 1 */
+  channel_id: number;
+  /** @minimum 1 */
+  source_assignee_id: number;
+  /** Historical source reference, not a current permission. */
+  staff_reference: string;
+  display_name_snapshot: string;
+  /** @minimum 0 */
+  priority: number;
+  /** @nullable */
+  ratio_percent: number | null;
+  /** @nullable */
+  max_scans_24h: number | null;
+  status: string;
+  /** V1 civil timestamp without timezone. */
+  source_created_at: string;
+  /** V1 civil timestamp without timezone. */
+  source_updated_at: string;
+}
+
+export type ChannelHistoryResponseSource =
+  (typeof ChannelHistoryResponseSource)[keyof typeof ChannelHistoryResponseSource];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const ChannelHistoryResponseSource = {
+  v1_history: "v1_history",
+} as const;
+
+export interface ChannelHistoryResponse {
+  ok: boolean;
+  source: ChannelHistoryResponseSource;
+  read_only: boolean;
+  real_external_call_executed: boolean;
+  /** @minimum 1 */
+  channel_id: number;
+  contacts: ChannelHistoryContact[];
+  /** @minimum 0 */
+  total: number;
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit: number;
+  /** @minimum 0 */
+  offset: number;
+  /** @maxItems 200 */
+  assignees: ChannelHistoryAssignee[];
+}
+
 export type LegacyChannelDetailResponseReason =
   (typeof LegacyChannelDetailResponseReason)[keyof typeof LegacyChannelDetailResponseReason];
 
@@ -17441,6 +17515,18 @@ export const ListLegacyChannelsStatus = {
   inactive: "inactive",
   archived: "archived",
 } as const;
+
+export type GetChannelHistoryParams = {
+  /**
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
 
 export type ListLegacyChannelEntrantsParams = {
   /**
@@ -32076,6 +32162,94 @@ export const updateLegacyChannel = async (
     status: res.status,
     headers: res.headers,
   } as updateLegacyChannelResponse;
+};
+
+/**
+ * @summary Read V1 channel entry and assignment facts without current attribution or permissions
+ */
+export type getChannelHistoryResponse200 = {
+  data: ChannelHistoryResponse;
+  status: 200;
+};
+
+export type getChannelHistoryResponse400 = {
+  data: BadRequestResponse;
+  status: 400;
+};
+
+export type getChannelHistoryResponse401 = {
+  data: UnauthorizedResponse;
+  status: 401;
+};
+
+export type getChannelHistoryResponse403 = {
+  data: ForbiddenResponse;
+  status: 403;
+};
+
+export type getChannelHistoryResponse404 = {
+  data: NotFoundResponse;
+  status: 404;
+};
+
+export type getChannelHistoryResponse503 = {
+  data: ServiceUnavailableResponse;
+  status: 503;
+};
+
+export type getChannelHistoryResponseSuccess = getChannelHistoryResponse200 & {
+  headers: Headers;
+};
+export type getChannelHistoryResponseError = (
+  | getChannelHistoryResponse400
+  | getChannelHistoryResponse401
+  | getChannelHistoryResponse403
+  | getChannelHistoryResponse404
+  | getChannelHistoryResponse503
+) & {
+  headers: Headers;
+};
+
+export type getChannelHistoryResponse =
+  getChannelHistoryResponseSuccess | getChannelHistoryResponseError;
+
+export const getGetChannelHistoryUrl = (
+  channelId: number,
+  params?: GetChannelHistoryParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/channels/${channelId}/history?${stringifiedParams}`
+    : `/api/admin/channels/${channelId}/history`;
+};
+
+export const getChannelHistory = async (
+  channelId: number,
+  params?: GetChannelHistoryParams,
+  options?: RequestInit,
+): Promise<getChannelHistoryResponse> => {
+  const res = await fetch(getGetChannelHistoryUrl(channelId, params), {
+    ...options,
+    method: "GET",
+  });
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getChannelHistoryResponse["data"] = body ? JSON.parse(body) : {};
+  return {
+    data,
+    status: res.status,
+    headers: res.headers,
+  } as getChannelHistoryResponse;
 };
 
 /**

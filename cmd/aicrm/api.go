@@ -2124,6 +2124,7 @@ func newAPIComponent(config appconfig.Root) (appruntime.Component, error) {
 	legacyHandler.aiAudienceConfiguration = legacyAIAudienceConfigurationFragment
 	legacyHandler.aiAudienceSendRecords = audienceSendRecordHandler
 	legacyHandler.channelEntrants = channelEntrantsFragment
+	legacyHandler.channelHistory = contactstore.NewHistoricalChannelHistoryReader(pool)
 	legacyHandler.channelAcquisition = channelAcquisitionFragment
 	legacyHandler.channelAcquisitionAsset = channelAcquisitionAssetsFragment
 	legacyHandler.entrantReceipts = channelAcquisitionEntrantReceiptsFragment
@@ -3250,6 +3251,9 @@ func newAPIHandlerWithAllOptionsAndAdminDetail(logger *slog.Logger, callbackHand
 					return nil, err
 				}
 			}
+		}
+		if err = registerLegacy(http.MethodGet, "/api/admin/channels/{channel_id}/history", authport.CapabilityCustomersRead, false, http.HandlerFunc(legacy.GetChannelHistory)); err != nil {
+			return nil, err
 		}
 		if legacy.channelEntrants != nil {
 			if err = registerLegacy(
