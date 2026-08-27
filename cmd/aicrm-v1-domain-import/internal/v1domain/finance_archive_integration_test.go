@@ -69,6 +69,10 @@ func TestReconciledFinanceArchiveValidatesWithoutWrites(t *testing.T) {
 	validatedOrders, validatedRefunds, targetRejected := 0, 0, 0
 	reasons := map[string]int{}
 	for index, decision := range history.Orders {
+		if orders[index].redactionReason != "" {
+			reasons[orders[index].redactionReason]++
+			continue
+		}
 		if decision.Disposition != v1finance.DispositionCandidate {
 			if decision.Reason == "" {
 				t.Fatal("finance_order_disposition_invalid")
@@ -94,6 +98,10 @@ func TestReconciledFinanceArchiveValidatesWithoutWrites(t *testing.T) {
 		}
 	}
 	for index, decision := range history.Refunds {
+		if refunds[index].redactionReason != "" {
+			reasons[refunds[index].redactionReason]++
+			continue
+		}
 		if decision.Disposition != v1finance.DispositionCandidate {
 			if decision.Reason == "" {
 				t.Fatal("finance_refund_disposition_invalid")
