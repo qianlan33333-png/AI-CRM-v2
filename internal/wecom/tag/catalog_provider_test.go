@@ -38,6 +38,42 @@ func TestCatalogProviderProducesObservedSnapshotOnlyAfterRealDirectoryRead(t *te
 	}
 }
 
+func TestCatalogProviderReceiptBindsObservedDirectoryRatherThanReadOrder(t *testing.T) {
+	first := wecomclient.CorpTagCatalog{Groups: []wecomclient.CorpTagGroup{
+		{ProviderGroupID: "group-2", Name: "Dormant", Order: 2, Tags: []wecomclient.CorpTag{{ProviderTagID: "tag-2", Name: "Cold", Order: 2}, {ProviderTagID: "tag-1", Name: "Warm", Order: 1}}},
+		{ProviderGroupID: "group-1", Name: "Lifecycle", Order: 1},
+	}}
+	second := wecomclient.CorpTagCatalog{Groups: []wecomclient.CorpTagGroup{
+		{ProviderGroupID: "group-1", Name: "Lifecycle", Order: 1},
+		{ProviderGroupID: "group-2", Name: "Dormant", Order: 2, Tags: []wecomclient.CorpTag{{ProviderTagID: "tag-1", Name: "Warm", Order: 1}, {ProviderTagID: "tag-2", Name: "Cold", Order: 2}}},
+	}}
+	provider, err := NewCatalogProvider(&catalogReaderStub{catalog: first})
+	if err != nil {
+		t.Fatal(err)
+	}
+	firstResult, err := provider.Execute(context.Background(), catalogProviderCommand(), eer.Attempt{Number: 1})
+	if err != nil || !firstResult.Catalog.Observed {
+		t.Fatalf("first Execute() = %#v, %v", firstResult, err)
+	}
+	provider, err = NewCatalogProvider(&catalogReaderStub{catalog: second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondResult, err := provider.Execute(context.Background(), catalogProviderCommand(), eer.Attempt{Number: 1})
+	if err != nil || firstResult.ReceiptDigest != secondResult.ReceiptDigest {
+		t.Fatalf("unordered directory receipt = %q/%q, %v", firstResult.ReceiptDigest, secondResult.ReceiptDigest, err)
+	}
+	second.Groups[1].Tags[0].Name = "Reclassified"
+	provider, err = NewCatalogProvider(&catalogReaderStub{catalog: second})
+	if err != nil {
+		t.Fatal(err)
+	}
+	changedResult, err := provider.Execute(context.Background(), catalogProviderCommand(), eer.Attempt{Number: 1})
+	if err != nil || changedResult.ReceiptDigest == firstResult.ReceiptDigest {
+		t.Fatalf("changed directory receipt = %q/%q, %v", firstResult.ReceiptDigest, changedResult.ReceiptDigest, err)
+	}
+}
+
 func TestCatalogProviderFailsClosedWithoutRetryableProviderResult(t *testing.T) {
 	for _, test := range []struct {
 		name       string
