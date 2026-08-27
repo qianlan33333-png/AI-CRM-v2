@@ -37305,7 +37305,7 @@ export const getQuestionnairePublicAnalytics = async (
 };
 
 /**
- * @summary Carry a public survey slug into the same-origin SPA without token parameters
+ * @summary Carry a public survey slug into the deployed same-origin H5 form without token parameters
  */
 export type getPublicSurveyPageResponse302 = {
   data: void;
