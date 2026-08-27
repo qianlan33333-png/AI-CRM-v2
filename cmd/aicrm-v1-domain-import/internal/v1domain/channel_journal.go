@@ -11,6 +11,71 @@ import (
 
 var _ contactport.HistoricalChannelJournal = (*Journal)(nil)
 
+// These scopes share one caller transaction, but cannot exchange receipts.
+type ChannelRelationsJournal struct{ contacts, assignees *Journal }
+
+func NewChannelRelationsJournal(contacts, assignees *Journal) (*ChannelRelationsJournal, error) {
+	if !channelRelationScope(contacts, "contacts") || !channelRelationScope(assignees, "assignees") ||
+		contacts.scope.ImportVersion != assignees.scope.ImportVersion || contacts.scope.ArchiveRunID != assignees.scope.ArchiveRunID {
+		return nil, ErrInvalidScope
+	}
+	return &ChannelRelationsJournal{contacts: contacts, assignees: assignees}, nil
+}
+
+func channelRelationScope(j *Journal, kind string) bool {
+	if j == nil || j.tx == nil || !j.scope.valid() || j.scope.AdapterID != v1archive.DefaultAdapterID || j.scope.TargetDomain != "contact" {
+		return false
+	}
+	if kind == "contacts" {
+		return j.scope.TableID == "public/automation_channel_contact" && j.scope.TargetTable == "channel_historical_contacts"
+	}
+	return kind == "assignees" && j.scope.TableID == "public/automation_channel_assignee" && j.scope.TargetTable == "channel_historical_assignees"
+}
+
+func (j *ChannelRelationsJournal) scope(kind string) (*Journal, error) {
+	if j == nil {
+		return nil, ErrInvalidScope
+	}
+	var selected *Journal
+	if kind == "contacts" {
+		selected = j.contacts
+	} else if kind == "assignees" {
+		selected = j.assignees
+	}
+	if !channelRelationScope(selected, kind) {
+		return nil, ErrInvalidScope
+	}
+	return selected, nil
+}
+
+func (j *ChannelRelationsJournal) LoadHistoricalChannelRelation(ctx context.Context, kind, source string) (contactport.HistoricalChannelReceipt, bool, error) {
+	selected, err := j.scope(kind)
+	if err != nil {
+		return contactport.HistoricalChannelReceipt{}, false, err
+	}
+	terminal, found, err := selected.LoadTerminal(ctx, source)
+	if err != nil || !found {
+		return contactport.HistoricalChannelReceipt{}, found, err
+	}
+	receipt, err := channelReceiptFromTerminal(source, terminal)
+	return receipt, err == nil, err
+}
+
+func (j *ChannelRelationsJournal) RecordHistoricalChannelRelation(ctx context.Context, kind string, receipt contactport.HistoricalChannelReceipt) error {
+	selected, err := j.scope(kind)
+	if err != nil {
+		return err
+	}
+	source, err := ParseSourceIdentifier(receipt.SourceIdentifier)
+	if err != nil || source == [32]byte{} || receipt.PayloadDigest == [32]byte{} || receipt.TargetDigest == [32]byte{} || receipt.TargetID < 1 || receipt.Replayed {
+		return ErrInvalidScope
+	}
+	return selected.Record(ctx, TerminalReceipt{SourceKeyDigest: source, PayloadDigest: receipt.PayloadDigest,
+		Disposition: "import", TargetID: strconv.FormatInt(receipt.TargetID, 10), TargetDigest: receipt.TargetDigest})
+}
+
+var _ contactport.HistoricalChannelRelationsJournal = (*ChannelRelationsJournal)(nil)
+
 func (journal *Journal) validChannelDefinitionScope() bool {
 	return journal != nil && journal.tx != nil && journal.scope.valid() &&
 		journal.scope.AdapterID == v1archive.DefaultAdapterID && journal.scope.TableID == "public/automation_channel" &&
