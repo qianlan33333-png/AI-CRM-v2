@@ -21,6 +21,7 @@ import type {
   ChannelAcquisitionPreview,
   ChannelAcquisitionStaff,
   ChannelEntrant,
+  ChannelHistoryPage,
   ConfigCategory,
   Coupon,
   Customer,
@@ -46,7 +47,7 @@ import { SEED_DB, deepCopy } from './mockData';
 import { deleteProductDto } from '../../api/admin';
 import { archiveCouponDto, copyCouponDto, deleteCouponDto, saveCouponDto, setCouponPublishedDto, type CouponWriteInput } from '../../api/admin';
 import { deleteQuestionnaireDto, duplicateQuestionnaireDto, queueQuestionnairePushTestDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, setQuestionnaireEnabledDto, type QuestionnaireWriteInput } from '../../api/admin';
-import { getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getChannelDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listChannelEntrantsDto, publishChannelAcquisitionAssetDto, saveChannelDto, updateChannelAcquisitionAssigneesDto, type ChannelWriteInput } from '../../api/admin';
+import { getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getChannelDto, getChannelHistoryDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listChannelEntrantsDto, publishChannelAcquisitionAssetDto, saveChannelDto, updateChannelAcquisitionAssigneesDto, type ChannelWriteInput } from '../../api/admin';
 import { listGlobalQuestionnairePushLogsDto } from '../../api/admin';
 import { materializeAudienceConfigurationDto, previewAudienceConfigurationDto, replaceAudienceSendersDto, saveAudiencePackageDto, setAudienceBindingDto, snapshotAudienceConfigurationDto, type AudienceEvaluation, type AudiencePackageWriteInput } from '../../api/admin';
 import type { AIAudiencePackageSender } from '../../api/generated/health';
@@ -67,6 +68,7 @@ export interface AdminApi {
   saveChannel(input: ChannelWriteInput): Promise<Channel>;
   getChannel(channelId: number): Promise<Channel>;
   listChannelEntrants(channelId: number): Promise<ChannelEntrant[]>;
+  getChannelHistory(channelId: number, limit: number, offset: number): Promise<ChannelHistoryPage>;
   getChannelAcquisitionPreview(channelId: number): Promise<ChannelAcquisitionPreview>;
   listChannelAcquisitionStaff(channelId: number): Promise<ChannelAcquisitionStaff[]>;
   updateChannelAcquisitionAssignees(channelId: number, input: ChannelAcquisitionAssignmentInput): Promise<ChannelAcquisitionAssignee[]>;
@@ -329,6 +331,7 @@ export class MockApi implements AdminApi {
     return channel ? delay(deepCopy(channel)) : Promise.reject(new Error('渠道不存在或当前账号不可见'));
   }
   listChannelEntrants(_channelId: number): Promise<ChannelEntrant[]> { return delay([]); }
+  getChannelHistory(_channelId: number, _limit: number, _offset: number): Promise<ChannelHistoryPage> { return Promise.reject(new Error('Mock 不提供 V1 渠道历史')); }
   getChannelAcquisitionPreview(channelId: number): Promise<ChannelAcquisitionPreview> {
     const channel = this.db.rows.channels.find((item) => item.resourceId === channelId);
     if (!channel) return Promise.reject(new Error('渠道不存在或当前账号不可见'));
@@ -837,6 +840,7 @@ export class HttpApi implements AdminApi {
   saveChannel(input: ChannelWriteInput): Promise<Channel> { return saveChannelDto(input); }
   getChannel(channelId: number): Promise<Channel> { return getChannelDto(channelId); }
   listChannelEntrants(channelId: number): Promise<ChannelEntrant[]> { return listChannelEntrantsDto(channelId); }
+  getChannelHistory(channelId: number, limit: number, offset: number): Promise<ChannelHistoryPage> { return getChannelHistoryDto(channelId, limit, offset); }
   getChannelAcquisitionPreview(channelId: number): Promise<ChannelAcquisitionPreview> { return getChannelAcquisitionPreviewDto(channelId); }
   listChannelAcquisitionStaff(channelId: number): Promise<ChannelAcquisitionStaff[]> { return listChannelAcquisitionStaffDto(channelId); }
   updateChannelAcquisitionAssignees(channelId: number, input: ChannelAcquisitionAssignmentInput): Promise<ChannelAcquisitionAssignee[]> { return updateChannelAcquisitionAssigneesDto(channelId, input); }

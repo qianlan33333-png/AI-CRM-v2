@@ -1,7 +1,7 @@
 /** Current Go OpenAPI -> Kimi Admin DTO boundary. No page imports generated data. */
 import {
   addCustomerTag, getCustomer, getCustomerContext, listCustomerSurveyAnswers, listStages, removeCustomerTag, setCustomerStage, updateCustomer,
-  getLegacyAttachment, getLegacyChannel, getLegacyCoupon, getLegacyCouponShare, getLegacyImage, getLegacyImageFacets,
+  getChannelHistory, getLegacyAttachment, getLegacyChannel, getLegacyCoupon, getLegacyCouponShare, getLegacyImage, getLegacyImageFacets,
   getLegacyMiniProgram, getLegacyOrder, getLegacyOrderItems, getLegacyQuestionnaire, getLegacyQuestionnaireResults,
   getAdminOpsCategory, getContactOwnerReassignmentPreview, getLegacyWecomTag, getLegacyWecomTagExecutionGate, getLegacyWecomTagGroup, getProduct,
   getServicePeriodMember, getServicePeriodMemberGridAccess, getServicePeriodMemberGridSchema, getServicePeriodMemberGridShareSettings,
@@ -29,7 +29,7 @@ import { deleteCloudCampaign, getCloudCampaign, getCloudCampaignTouchPlan, getCl
 import { acceptOutboundCampaignHandoff, dispatchOutboundCampaignHandoff, getOutboundCampaignDispatchReconciliation, getOutboundCampaignHandoffSummary, reconcileOutboundCampaignHandoff } from './generated/health';
 import { createLegacyRefundIntent, createLegacyWechatRefundIntent, queueSurveyExternalPushTest, saveSurveyCompletionOperations, saveSurveyExternalPushOperations, type WechatShopRefundRequest } from './generated/health';
 import { getChannelAcquisitionAsset, getChannelAcquisitionPreview, listChannelAcquisitionAssets, listChannelAcquisitionStaff, publishChannelAcquisitionAsset, updateChannelAcquisitionAssignees, type ChannelAcquisitionAssignmentRequest, type ChannelAcquisitionAssetPublishRequest } from './generated/health';
-import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelAcquisitionStaff, ChannelEntrant, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, GroupOpsMaterialKind, GroupOpsMaterialPlan, HistoricalOrderRefund, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
+import type { AdminDb, AttachItem, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssetKind, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelAcquisitionStaff, ChannelEntrant, ChannelHistoryAssignee, ChannelHistoryContact, ChannelHistoryPage, ConfigCategory, Coupon, Customer, Customer360Context, Customer360ChatEntry, Customer360SurveyProjection, Customer360TimelineEntry, GroupOpsMaterialKind, GroupOpsMaterialPlan, HistoricalOrderRefund, ImageItem, MpItem, Order, OwnerReassignmentPreview, Product, Questionnaire, QuestionnaireOps, RadarLinkInput, RadarMedia, SpProduct, TagGroup, Tone, WecomTag } from '../shared/api/types';
 import { getCreateLegacyWechatOrderExportUrl, type LegacyWechatOrderExportRequest } from './generated/health';
 import { ApiError, apiRequestOptions, request, unwrapGenerated } from './transport';
 
@@ -376,6 +376,73 @@ export async function getChannelDto(channelId: number): Promise<Channel> {
 export async function listChannelEntrantsDto(channelId: number): Promise<ChannelEntrant[]> {
   const result = await call(listLegacyChannelEntrants(channelId, { limit: 20 }, apiRequestOptions()));
   return list(result, 'items', 'entrants').map(channelEntrantDto);
+}
+
+const channelHistoryString = (value: unknown, field: string): string => {
+  if (typeof value !== 'string') throw new Error(`V1 渠道历史响应缺少 ${field}`);
+  return value;
+};
+
+const channelHistoryNullablePositive = (value: unknown, field: string): number | null => value == null ? null : requiredPositiveValue(value, field);
+const channelHistoryNullableNonNegative = (value: unknown, field: string): number | null => value == null ? null : requiredNonNegative(value, field);
+const channelHistoryCivilTime = (value: unknown, field: string): string => {
+  const civil = channelHistoryString(value, field);
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}$/.test(civil)) throw new Error(`V1 渠道历史响应包含无效无时区 ${field}`);
+  return civil;
+};
+
+const channelHistoryContactDto = (value: unknown, channelId: number): ChannelHistoryContact => {
+  const source = obj(value);
+  if (requiredPositiveValue(source.channel_id, 'contact.channel_id') !== channelId) throw new Error('V1 渠道历史联系人范围不匹配');
+  requiredPositiveValue(source.id, 'contact.id');
+  return {
+    sourceContactId: requiredPositiveValue(source.source_contact_id, 'source_contact_id'),
+    customerId: channelHistoryNullablePositive(source.customer_id, 'customer_id'),
+    ownerReference: channelHistoryString(source.owner_reference, 'owner_reference'),
+    firstEnteredAt: requiredString(source.first_entered_at, 'first_entered_at'),
+    lastEnteredAt: requiredString(source.last_entered_at, 'last_entered_at'),
+    enterCount: requiredPositiveValue(source.enter_count, 'enter_count'),
+  };
+};
+
+const channelHistoryAssigneeDto = (value: unknown, channelId: number): ChannelHistoryAssignee => {
+  const source = obj(value);
+  if (requiredPositiveValue(source.channel_id, 'assignee.channel_id') !== channelId) throw new Error('V1 渠道历史客服范围不匹配');
+  requiredPositiveValue(source.id, 'assignee.id');
+  const ratioPercent = channelHistoryNullableNonNegative(source.ratio_percent, 'ratio_percent');
+  const maxScans24h = channelHistoryNullableNonNegative(source.max_scans_24h, 'max_scans_24h');
+  if (ratioPercent != null && ratioPercent > 100) throw new Error('V1 渠道历史响应包含无效 ratio_percent');
+  return {
+    sourceAssigneeId: requiredPositiveValue(source.source_assignee_id, 'source_assignee_id'),
+    staffReference: channelHistoryString(source.staff_reference, 'staff_reference'),
+    displayNameSnapshot: channelHistoryString(source.display_name_snapshot, 'display_name_snapshot'),
+    priority: requiredNonNegative(source.priority, 'priority'),
+    ratioPercent,
+    maxScans24h,
+    status: channelHistoryString(source.status, 'status'),
+    sourceCreatedAt: channelHistoryCivilTime(source.source_created_at, 'source_created_at'),
+    sourceUpdatedAt: channelHistoryCivilTime(source.source_updated_at, 'source_updated_at'),
+  };
+};
+
+/** Reads the generated V1 archive endpoint only; callers must not substitute Mock data on failure. */
+export async function getChannelHistoryDto(channelId: number, limit = 50, offset = 0): Promise<ChannelHistoryPage> {
+  if (!Number.isSafeInteger(channelId) || channelId < 1 || !Number.isSafeInteger(limit) || limit < 1 || limit > 100 || !Number.isSafeInteger(offset) || offset < 0) throw new Error('V1 渠道历史请求参数无效');
+  const source = obj(await call(getChannelHistory(channelId, { limit, offset }, apiRequestOptions())));
+  if (source.ok !== true || source.source !== 'v1_history' || source.read_only !== true || source.real_external_call_executed !== false) throw new Error('V1 渠道历史响应越过只读边界');
+  if (requiredPositiveValue(source.channel_id, 'channel_id') !== channelId || !Array.isArray(source.contacts) || !Array.isArray(source.assignees)) throw new Error('V1 渠道历史响应范围或列表无效');
+  const responseLimit = requiredPositiveValue(source.limit, 'limit');
+  const responseOffset = requiredNonNegative(source.offset, 'offset');
+  const total = requiredNonNegative(source.total, 'total');
+  if (responseLimit !== limit || responseOffset !== offset || source.contacts.length > limit || responseOffset > total || responseOffset + source.contacts.length > total) throw new Error('V1 渠道历史分页响应无效');
+  return {
+    channelId,
+    contacts: source.contacts.map((item) => channelHistoryContactDto(item, channelId)),
+    total,
+    limit,
+    offset,
+    assignees: source.assignees.map((item) => channelHistoryAssigneeDto(item, channelId)),
+  };
 }
 
 const channelAssetKinds: ChannelAcquisitionAssetKind[] = ['contact_way_qrcode', 'customer_acquisition_link'];

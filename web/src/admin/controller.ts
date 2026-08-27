@@ -11,7 +11,7 @@
  */
 import { PageBase, type StyleObj, type Vals } from '../shared/ui/runtime';
 import type { AdminApi } from '../shared/api/client';
-import type { AdminDb, AudienceSender, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelEntrant, OwnerReassignmentPreview, QuestionnaireOps, Tone } from '../shared/api/types';
+import type { AdminDb, AudienceSender, Channel, ChannelAcquisitionAsset, ChannelAcquisitionAssignmentInput, ChannelAcquisitionAssignee, ChannelAcquisitionPreview, ChannelEntrant, ChannelHistoryPage, OwnerReassignmentPreview, QuestionnaireOps, Tone } from '../shared/api/types';
 import { deepCopy } from '../shared/api/mockData';
 import { emptyAdminDb } from '../api/admin';
 import { buildChannelFinalUrl, channelAcquisitionAssetReady } from '../api/admin';
@@ -23,6 +23,7 @@ import { downloadQr, renderQr } from './sections/qr';
 import { ownerReassignmentCsvFromFile } from './ownerReassignmentFile';
 
 const ACCENT = '#3370ff';
+const CHANNEL_HISTORY_PAGE_SIZE = 50;
 
 type AdminState = {
   cstep: number;
@@ -97,6 +98,9 @@ type AdminState = {
   channelFormPreviewError: string;
   channelFormAssetError: string;
   channelFormAssetBusy: boolean;
+  channelHistory: ChannelHistoryPage | null;
+  channelHistoryLoading: boolean;
+  channelHistoryError: string;
   /** 优惠券列表仅对已加载行做本地筛选，不产生新的服务端请求。 */
   couponQuery: string;
   couponStatus: string;
@@ -181,6 +185,9 @@ export class AdminController extends PageBase {
     channelFormPreviewError: '',
     channelFormAssetError: '',
     channelFormAssetBusy: false,
+    channelHistory: null,
+    channelHistoryLoading: false,
+    channelHistoryError: '',
     couponQuery: '',
     couponStatus: '',
   };
@@ -212,7 +219,12 @@ export class AdminController extends PageBase {
       context.customerList = parsed.query;
     }
     this.db = await this.api.loadDb(context);
-    if (this.page === 'channelForm') this.state.channelFormNotFound = Boolean(resourceId && this.db.rows.channels.length === 0);
+    if (this.page === 'channelForm') {
+      this.state.channelFormNotFound = Boolean(resourceId && this.db.rows.channels.length === 0);
+      this.state.channelHistory = null;
+      this.state.channelHistoryLoading = false;
+      this.state.channelHistoryError = '';
+    }
     if (this.page === 'channelForm' && resourceId && !this.state.channelFormNotFound) {
       const channelId = Number(resourceId);
       if (Number.isSafeInteger(channelId) && channelId > 0) await this.loadChannelFormAcquisitionData(channelId);
@@ -794,6 +806,21 @@ export class AdminController extends PageBase {
     if (this.state.channelFormPreview?.assignees.length && !this.state.cfStaff) {
       this.state.cfStaff = this.state.channelFormPreview.assignees.map((assignee) => ({ id: assignee.staffId, uid: assignee.staffId, name: assignee.name }));
     }
+  }
+
+  private loadChannelHistory(offset: number): void {
+    const channelId = this.db.rows.channels[0]?.resourceId;
+    if (this.page !== 'channelForm' || this.api.mode !== 'http' || !Number.isSafeInteger(channelId) || !channelId || channelId < 1 || !Number.isSafeInteger(offset) || offset < 0) {
+      this.setState({ channelHistory: null, channelHistoryLoading: false, channelHistoryError: 'V1 历史仅支持已保存渠道的 HTTP 只读读取' });
+      return;
+    }
+    this.setState({ channelHistory: null, channelHistoryLoading: true, channelHistoryError: '' });
+    void this.api.getChannelHistory(channelId, CHANNEL_HISTORY_PAGE_SIZE, offset).then((history) => {
+      if (history.channelId !== channelId) throw new Error('V1 渠道历史返回了其他渠道');
+      this.setState({ channelHistory: history, channelHistoryLoading: false, channelHistoryError: '' });
+    }).catch((error) => {
+      this.setState({ channelHistory: null, channelHistoryLoading: false, channelHistoryError: error instanceof Error ? error.message : 'V1 历史读取失败' });
+    });
   }
 
   private channelFormValue(id: string): string {
@@ -1862,6 +1889,30 @@ export class AdminController extends PageBase {
     };
     const latestDrawerAsset = channelAssetView(s.channelDrawerAssets[0]);
     const latestFormAsset = channelAssetView(s.channelFormAssets[0]);
+    const channelHistory = s.channelHistory;
+    const channelHistoryAvailable = this.api.mode === 'http' && Number.isSafeInteger(channelFormValue?.resourceId) && (channelFormValue?.resourceId || 0) > 0;
+    const channelHistoryRange = !channelHistory || channelHistory.total === 0
+      ? '暂无归档联系人'
+      : `第 ${channelHistory.offset + 1} – ${channelHistory.offset + channelHistory.contacts.length} 条，共 ${channelHistory.total} 条`;
+    const channelHistoryContacts = (channelHistory?.contacts || []).map((item) => ({
+      sourceContactId: String(item.sourceContactId),
+      customerId: item.customerId == null ? '未核验' : String(item.customerId),
+      ownerReference: item.ownerReference || '—',
+      firstEnteredAt: item.firstEnteredAt,
+      lastEnteredAt: item.lastEnteredAt,
+      enterCount: String(item.enterCount),
+    }));
+    const channelHistoryAssignees = (channelHistory?.assignees || []).map((item) => ({
+      sourceAssigneeId: String(item.sourceAssigneeId),
+      displayNameSnapshot: item.displayNameSnapshot || '—',
+      staffReference: item.staffReference || '—',
+      status: item.status || '—',
+      priority: String(item.priority),
+      ratio: item.ratioPercent == null ? '—' : `${item.ratioPercent}%`,
+      maxScans24h: item.maxScans24h == null ? '—' : String(item.maxScans24h),
+      sourceCreatedAt: item.sourceCreatedAt,
+      sourceUpdatedAt: item.sourceUpdatedAt,
+    }));
     const channelTagOptions = this.db.wecomTags.map((tag) => {
       const selected = String(tag.id) === (channelFormValue?.entryTagId || '');
       return { id: String(tag.id), name: tag.name, groupName: this.db.tagGroups.find((group) => group.id === tag.groupId)?.name || `标签组 ${tag.groupId}`, selected, notSelected: !selected };
@@ -2099,6 +2150,27 @@ export class AdminController extends PageBase {
         noResource: !channelFormValue?.resourceId,
         assetKindLabel: this.channelAssetKindLabel(channelAssetKind(channelFormValue)),
         assetRequest: () => this.requestChannelAsset(channelFormValue?.resourceId, channelAssetKind(channelFormValue), 'form'),
+        history: {
+          available: channelHistoryAvailable,
+          loading: s.channelHistoryLoading,
+          error: s.channelHistoryError,
+          loaded: channelHistory !== null,
+          canLoad: channelHistoryAvailable && !s.channelHistoryLoading && channelHistory === null,
+          canReload: channelHistoryAvailable && !s.channelHistoryLoading && channelHistory !== null,
+          hasContacts: channelHistoryContacts.length > 0,
+          noContacts: channelHistory !== null && channelHistoryContacts.length === 0,
+          hasAssignees: channelHistoryAssignees.length > 0,
+          noAssignees: channelHistory !== null && channelHistoryAssignees.length === 0,
+          contacts: channelHistoryContacts,
+          assignees: channelHistoryAssignees,
+          range: channelHistoryRange,
+          showPrevious: Boolean(channelHistory && channelHistory.offset > 0),
+          showNext: Boolean(channelHistory && channelHistory.offset + channelHistory.contacts.length < channelHistory.total),
+          load: () => this.loadChannelHistory(0),
+          reload: () => this.loadChannelHistory(0),
+          previous: () => this.loadChannelHistory(Math.max(0, (channelHistory?.offset || 0) - CHANNEL_HISTORY_PAGE_SIZE)),
+          next: () => this.loadChannelHistory((channelHistory?.offset || 0) + CHANNEL_HISTORY_PAGE_SIZE),
+        },
         item: channelFormValue ? {
           ...channelFormValue,
           finalUrl: channelFinalUrlPreview || channelFormValue.finalUrl || '',

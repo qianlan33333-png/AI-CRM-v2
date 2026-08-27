@@ -574,6 +574,38 @@ export interface ChannelEntrant {
   lastInteractAt: string | null;
 }
 
+/** V1 归档渠道事实；不代表当前客户归属、员工权限或任何 Provider 状态。 */
+export interface ChannelHistoryContact {
+  sourceContactId: number;
+  customerId: number | null;
+  ownerReference: string;
+  firstEnteredAt: string;
+  lastEnteredAt: string;
+  enterCount: number;
+}
+
+/** V1 归档客服快照；sourceCreatedAt/sourceUpdatedAt 为无时区民用时间。 */
+export interface ChannelHistoryAssignee {
+  sourceAssigneeId: number;
+  staffReference: string;
+  displayNameSnapshot: string;
+  priority: number;
+  ratioPercent: number | null;
+  maxScans24h: number | null;
+  status: string;
+  sourceCreatedAt: string;
+  sourceUpdatedAt: string;
+}
+
+export interface ChannelHistoryPage {
+  channelId: number;
+  contacts: ChannelHistoryContact[];
+  total: number;
+  limit: number;
+  offset: number;
+  assignees: ChannelHistoryAssignee[];
+}
+
 export type ChannelAcquisitionAssetKind = 'contact_way_qrcode' | 'customer_acquisition_link';
 export type ChannelAcquisitionAssetState = 'accepted' | 'queued' | 'attempted' | 'executed' | 'final_failed' | 'outcome_unknown' | 'reconciled';
 
