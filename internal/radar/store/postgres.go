@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	radarport "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/port"
+	radardb "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/store/generated"
 )
 
 type txResolver func(context.Context) (pgx.Tx, error)
@@ -208,31 +209,27 @@ func (repository *PostgresRepository) ImportHistoricalDraft(ctx context.Context,
 	if err != nil {
 		return radarport.Link{}, false, err
 	}
-	link, err := scanLink(tx.QueryRow(ctx, `
-INSERT INTO public.radar_links (
-    public_code, name, title, destination_url, status, version,
-    created_by, updated_by, created_at, updated_at
-) VALUES ($1, $2, $3, $4, 'draft', 1, $5, $5, $6, $7)
-ON CONFLICT (public_code) DO NOTHING
-RETURNING id, public_code, name, title, destination_url, cover_image_id,
-          attachment_id, status, version, created_by, updated_by, created_at, updated_at
-`, record.PublicCode, record.Name, record.Title, record.DestinationURL, record.ActorID, record.CreatedAt, record.UpdatedAt))
+	queries := radardb.New(tx)
+	row, err := queries.InsertHistoricalRadarDraft(ctx, radardb.InsertHistoricalRadarDraftParams{
+		PublicCode: record.PublicCode, Name: record.Name, Title: record.Title,
+		DestinationUrl: record.DestinationURL, ActorID: record.ActorID,
+		CreatedAt: nullableTime(&record.CreatedAt), UpdatedAt: nullableTime(&record.UpdatedAt),
+	})
 	if err == nil {
-		return link, false, nil
+		link, conversionErr := trackingLink(row)
+		return link, false, conversionErr
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return radarport.Link{}, false, err
 	}
-	existing, err := scanLink(tx.QueryRow(ctx, `
-SELECT id, public_code, name, title, destination_url, cover_image_id,
-       attachment_id, status, version, created_by, updated_by, created_at, updated_at
-FROM public.radar_links
-WHERE public_code = $1
-FOR KEY SHARE
-`, record.PublicCode))
+	row, err = queries.GetHistoricalRadarDraftByCode(ctx, record.PublicCode)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return radarport.Link{}, false, radarport.ErrUnavailable
 	}
+	if err != nil {
+		return radarport.Link{}, false, err
+	}
+	existing, err := trackingLink(row)
 	if err != nil {
 		return radarport.Link{}, false, err
 	}
