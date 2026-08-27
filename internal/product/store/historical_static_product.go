@@ -8,66 +8,82 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgtype"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	product "github.com/qianlan33333-png/AI-CRM-v2/internal/product"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
+	productdb "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/generated"
 )
 
 // HistoricalStaticProductStore writes a migration-only Product definition. It
 // deliberately does not use CatalogRepository.Create: that path reserves
 // operation receipts and increments the live catalogue counter.
 type HistoricalStaticProductStore struct {
-	tx func(context.Context) (pgx.Tx, error)
+	tx         func(context.Context) (pgx.Tx, error)
+	newQueries func(pgx.Tx) historicalStaticProductQueries
 }
 
 var _ product.HistoricalStaticProductStore = (*HistoricalStaticProductStore)(nil)
 
-const insertHistoricalStaticProductSQL = `INSERT INTO public.products
-	(product_code,name,description,price_minor,currency,stock_quantity,created_by,created_at,updated_at,version,local_lifecycle,legacy_admin_projection)
-	VALUES ($1,$2,'',$3,$4,0,$5,$6,$7,1,'disabled',$8::jsonb)
-	RETURNING id,product_code,name,description,price_minor,currency,stock_quantity,created_by,created_at,updated_at,version,local_lifecycle,legacy_admin_projection`
+type historicalStaticProductQueries interface {
+	InsertHistoricalStaticProduct(context.Context, productdb.InsertHistoricalStaticProductParams) (productdb.InsertHistoricalStaticProductRow, error)
+}
 
 func NewHistoricalStaticProductStore() *HistoricalStaticProductStore {
-	return &HistoricalStaticProductStore{tx: platformstore.TxFromContext}
+	return &HistoricalStaticProductStore{
+		tx: platformstore.TxFromContext,
+		newQueries: func(tx pgx.Tx) historicalStaticProductQueries {
+			return productdb.New(tx)
+		},
+	}
 }
 
 // InsertHistoricalStaticProduct writes products only. It cannot write a
 // runtime receipt, event, queue item, entitlement, image, or Provider fact.
 func (store *HistoricalStaticProductStore) InsertHistoricalStaticProduct(ctx context.Context, definition product.HistoricalStaticProductDefinition) (productport.Product, error) {
-	if store == nil || store.tx == nil || ctx == nil || !validStoredHistoricalStaticProduct(definition) {
+	if store == nil || store.tx == nil || store.newQueries == nil || ctx == nil || !validStoredHistoricalStaticProduct(definition) {
 		return productport.Product{}, product.ErrHistoricalStaticProductInvalid
 	}
 	tx, err := store.tx(ctx)
 	if err != nil {
 		return productport.Product{}, err
 	}
-
+	queries := store.newQueries(tx)
+	if queries == nil {
+		return productport.Product{}, product.ErrHistoricalStaticProductInvalid
+	}
 	item := definition.Product
-	var (
-		id         int64
-		createdAt  pgtype.Timestamptz
-		updatedAt  pgtype.Timestamptz
-		projection []byte
-	)
-	err = tx.QueryRow(ctx, insertHistoricalStaticProductSQL,
-		item.ProductCode, item.Name, item.PriceMinor, item.Currency, item.CreatedBy, item.CreatedAt.UTC(), item.UpdatedAt.UTC(), item.LegacyAdminProjection,
-	).Scan(
-		&id, &item.ProductCode, &item.Name, &item.Description, &item.PriceMinor, &item.Currency, &item.StockQuantity, &item.CreatedBy,
-		&createdAt, &updatedAt, &item.Version, &item.LocalLifecycle, &projection,
-	)
+	row, err := queries.InsertHistoricalStaticProduct(ctx, productdb.InsertHistoricalStaticProductParams{
+		ProductCode:           item.ProductCode,
+		Name:                  item.Name,
+		PriceMinor:            item.PriceMinor,
+		Currency:              item.Currency,
+		CreatedBy:             item.CreatedBy,
+		CreatedAt:             stamp(item.CreatedAt.UTC()),
+		UpdatedAt:             stamp(item.UpdatedAt.UTC()),
+		LegacyAdminProjection: item.LegacyAdminProjection,
+	})
 	if err != nil {
 		return productport.Product{}, historicalStaticProductConflict(err)
 	}
-	if id < 1 || !createdAt.Valid || !updatedAt.Valid {
+	if row.ID < 1 || row.Description != "" || row.StockQuantity != 0 || !row.CreatedAt.Valid || !row.UpdatedAt.Valid || row.Version != 1 || row.LocalLifecycle != string(productport.LocalProductDisabled) {
 		return productport.Product{}, product.ErrHistoricalStaticProductInvalid
 	}
-	item.ID = productport.ID(id)
-	item.Images = []string{}
-	item.CreatedAt = createdAt.Time
-	item.UpdatedAt = updatedAt.Time
-	item.LegacyAdminProjection = append([]byte(nil), projection...)
-	return item, nil
+	return productport.Product{
+		ID:                    productport.ID(row.ID),
+		ProductCode:           row.ProductCode,
+		Name:                  row.Name,
+		Description:           row.Description,
+		PriceMinor:            row.PriceMinor,
+		Currency:              row.Currency,
+		StockQuantity:         row.StockQuantity,
+		Images:                []string{},
+		CreatedBy:             row.CreatedBy,
+		CreatedAt:             row.CreatedAt.Time,
+		UpdatedAt:             row.UpdatedAt.Time,
+		Version:               row.Version,
+		LocalLifecycle:        productport.LocalProductLifecycle(row.LocalLifecycle),
+		LegacyAdminProjection: append([]byte(nil), row.LegacyAdminProjection...),
+	}, nil
 }
 
 func historicalStaticProductConflict(err error) error {

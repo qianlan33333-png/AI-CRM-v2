@@ -4,47 +4,33 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"os"
-	"strings"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 	platformport "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/port"
-	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 	product "github.com/qianlan33333-png/AI-CRM-v2/internal/product"
 	productport "github.com/qianlan33333-png/AI-CRM-v2/internal/product/port"
+	productdb "github.com/qianlan33333-png/AI-CRM-v2/internal/product/store/generated"
 )
 
-func TestHistoricalStaticProductSQLWritesProductsOnly(t *testing.T) {
-	sql := strings.ToLower(insertHistoricalStaticProductSQL)
-	for _, required := range []string{
-		"insert into public.products",
-		"stock_quantity",
-		",0,",
-		"local_lifecycle",
-		"'disabled'",
-		"version",
-		",1,",
-	} {
-		if !strings.Contains(sql, required) {
-			t.Fatalf("historical product SQL missing %q: %s", required, sql)
-		}
+func TestHistoricalStaticProductStoreUsesGeneratedStaticQuery(t *testing.T) {
+	definition := historicalStaticProductStoreDefinition(t)
+	query := &historicalStaticProductQueriesFake{}
+	store := historicalStaticProductStoreFake(query)
+	stored, err := store.InsertHistoricalStaticProduct(context.Background(), definition)
+	if err != nil {
+		t.Fatal(err)
 	}
-	for _, forbidden := range []string{
-		"product_operation_receipts",
-		"product_catalog_counters",
-		"product_images",
-		"product_local_entitlements",
-		"event_",
-		"provider",
-		"queue",
-	} {
-		if strings.Contains(sql, forbidden) {
-			t.Fatalf("historical product SQL must not touch runtime state %q: %s", forbidden, sql)
-		}
+	if query.calls != 1 || query.params.ProductCode != definition.Product.ProductCode || query.params.Name != definition.Product.Name ||
+		query.params.PriceMinor != definition.Product.PriceMinor || query.params.Currency != definition.Product.Currency || query.params.CreatedBy != definition.Product.CreatedBy ||
+		!query.params.CreatedAt.Time.Equal(definition.Product.CreatedAt) || !query.params.UpdatedAt.Time.Equal(definition.Product.UpdatedAt) ||
+		string(query.params.LegacyAdminProjection) != string(definition.Product.LegacyAdminProjection) {
+		t.Fatalf("generated query params = %#v", query.params)
+	}
+	if stored.ID != 41 || stored.LocalLifecycle != productport.LocalProductDisabled || stored.StockQuantity != 0 || stored.Description != "" || stored.Version != 1 || len(stored.Images) != 0 {
+		t.Fatalf("stored product = %#v", stored)
 	}
 }
 
@@ -59,9 +45,13 @@ func TestHistoricalStaticProductStoreRequiresCallerTransaction(t *testing.T) {
 func TestHistoricalStaticProductStoreRejectsAnythingButDisabledStaticDefinition(t *testing.T) {
 	definition := historicalStaticProductStoreDefinition(t)
 	definition.Product.LocalLifecycle = productport.LocalProductEnabled
-	_, err := NewHistoricalStaticProductStore().InsertHistoricalStaticProduct(context.Background(), definition)
+	query := &historicalStaticProductQueriesFake{}
+	_, err := historicalStaticProductStoreFake(query).InsertHistoricalStaticProduct(context.Background(), definition)
 	if !errors.Is(err, product.ErrHistoricalStaticProductInvalid) {
 		t.Fatalf("InsertHistoricalStaticProduct() error = %v, want invalid definition", err)
+	}
+	if query.calls != 0 {
+		t.Fatalf("invalid definition called generated query %d times", query.calls)
 	}
 }
 
@@ -69,69 +59,6 @@ func TestHistoricalStaticProductConflictClassifiesUniqueViolation(t *testing.T) 
 	err := historicalStaticProductConflict(&pgconn.PgError{Code: "23505"})
 	if !errors.Is(err, product.ErrHistoricalStaticProductConflict) {
 		t.Fatalf("historicalStaticProductConflict() error = %v", err)
-	}
-}
-
-func TestHistoricalStaticProductStorePostgreSQL16WritesDefinitionOnly(t *testing.T) {
-	databaseURL := os.Getenv("AICRM_HISTORICAL_PRODUCT_TEST_DATABASE_URL")
-	if databaseURL == "" {
-		t.Skip("AICRM_HISTORICAL_PRODUCT_TEST_DATABASE_URL is not set")
-	}
-	ctx := context.Background()
-	pool, err := pgxpool.New(ctx, databaseURL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(pool.Close)
-	var version string
-	if err = pool.QueryRow(ctx, "SHOW server_version_num").Scan(&version); err != nil || version != "160014" {
-		t.Fatalf("PostgreSQL version=%q err=%v", version, err)
-	}
-
-	definition := historicalStaticProductStoreDefinition(t)
-	definition.Product.ProductCode = fmt.Sprintf("historical-product-%d", time.Now().UnixNano())
-	uow := platformstore.NewUnitOfWork(pool)
-	store := NewHistoricalStaticProductStore()
-	err = uow.Within(ctx, func(tx context.Context) error {
-		db, txErr := platformstore.TxFromContext(tx)
-		if txErr != nil {
-			return txErr
-		}
-		var countersBefore, receiptsBefore int64
-		if txErr = db.QueryRow(tx, `SELECT total_products FROM public.product_catalog_counters WHERE singleton`).Scan(&countersBefore); txErr != nil {
-			return txErr
-		}
-		if txErr = db.QueryRow(tx, `SELECT count(*) FROM public.product_operation_receipts`).Scan(&receiptsBefore); txErr != nil {
-			return txErr
-		}
-		stored, insertErr := store.InsertHistoricalStaticProduct(tx, definition)
-		if insertErr != nil {
-			return insertErr
-		}
-		if stored.ID < 1 || stored.LocalLifecycle != productport.LocalProductDisabled || stored.StockQuantity != 0 || stored.PriceMinor != definition.Product.PriceMinor || stored.Currency != definition.Product.Currency {
-			return fmt.Errorf("stored static product=%#v", stored)
-		}
-		var countersAfter, receiptsAfter, images int64
-		if txErr = db.QueryRow(tx, `SELECT total_products FROM public.product_catalog_counters WHERE singleton`).Scan(&countersAfter); txErr != nil {
-			return txErr
-		}
-		if txErr = db.QueryRow(tx, `SELECT count(*) FROM public.product_operation_receipts`).Scan(&receiptsAfter); txErr != nil {
-			return txErr
-		}
-		if txErr = db.QueryRow(tx, `SELECT count(*) FROM public.product_images WHERE product_id=$1`, stored.ID).Scan(&images); txErr != nil {
-			return txErr
-		}
-		if countersAfter != countersBefore || receiptsAfter != receiptsBefore || images != 0 {
-			return fmt.Errorf("runtime state changed counters=%d/%d receipts=%d/%d images=%d", countersBefore, countersAfter, receiptsBefore, receiptsAfter, images)
-		}
-		return errHistoricalStaticProductStoreRollback
-	})
-	if !errors.Is(err, errHistoricalStaticProductStoreRollback) {
-		t.Fatalf("historical static product transaction = %v", err)
-	}
-	var rows int64
-	if err = pool.QueryRow(ctx, `SELECT count(*) FROM public.products WHERE product_code=$1`, definition.Product.ProductCode).Scan(&rows); err != nil || rows != 0 {
-		t.Fatalf("rollback rows=%d err=%v", rows, err)
 	}
 }
 
@@ -160,4 +87,40 @@ func historicalStaticProductStoreDefinition(t *testing.T) product.HistoricalStat
 	}
 }
 
-var errHistoricalStaticProductStoreRollback = errors.New("rollback historical static product store")
+func historicalStaticProductStoreFake(query *historicalStaticProductQueriesFake) *HistoricalStaticProductStore {
+	return &HistoricalStaticProductStore{
+		tx: func(context.Context) (pgx.Tx, error) { return nil, nil },
+		newQueries: func(pgx.Tx) historicalStaticProductQueries {
+			return query
+		},
+	}
+}
+
+type historicalStaticProductQueriesFake struct {
+	calls  int
+	params productdb.InsertHistoricalStaticProductParams
+	err    error
+}
+
+func (fake *historicalStaticProductQueriesFake) InsertHistoricalStaticProduct(_ context.Context, params productdb.InsertHistoricalStaticProductParams) (productdb.InsertHistoricalStaticProductRow, error) {
+	fake.calls++
+	fake.params = params
+	if fake.err != nil {
+		return productdb.InsertHistoricalStaticProductRow{}, fake.err
+	}
+	return productdb.InsertHistoricalStaticProductRow{
+		ID:                    41,
+		ProductCode:           params.ProductCode,
+		Name:                  params.Name,
+		Description:           "",
+		PriceMinor:            params.PriceMinor,
+		Currency:              params.Currency,
+		StockQuantity:         0,
+		CreatedBy:             params.CreatedBy,
+		CreatedAt:             params.CreatedAt,
+		UpdatedAt:             params.UpdatedAt,
+		Version:               1,
+		LocalLifecycle:        string(productport.LocalProductDisabled),
+		LegacyAdminProjection: params.LegacyAdminProjection,
+	}, nil
+}

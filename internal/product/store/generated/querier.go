@@ -40,6 +40,7 @@ type Querier interface {
 	GetServicePeriodProductRow(ctx context.Context, productID int64) (GetServicePeriodProductRowRow, error)
 	GetServicePeriodProductRowForUpdate(ctx context.Context, productID int64) (GetServicePeriodProductRowForUpdateRow, error)
 	IncrementProductCount(ctx context.Context) (int64, error)
+	InsertHistoricalStaticProduct(ctx context.Context, arg InsertHistoricalStaticProductParams) (InsertHistoricalStaticProductRow, error)
 	InsertProductImage(ctx context.Context, arg InsertProductImageParams) error
 	ListProductLocalEntitlements(ctx context.Context, arg ListProductLocalEntitlementsParams) ([]ListProductLocalEntitlementsRow, error)
 	ListProducts(ctx context.Context, arg ListProductsParams) ([]ListProductsRow, error)
