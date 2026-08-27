@@ -17,7 +17,7 @@ paths:
       x-aicrm-auth-scheme: oauth2_client_credentials
       x-aicrm-csrf: none
       x-aicrm-data-classification: secret
-      x-aicrm-data-source: admin_ops_credential_and_approved_secret_store
+      x-aicrm-data-source: admin_ops_credential_and_environment_secret_map
       x-aicrm-external-effect: none
       requestBody:
         required: true

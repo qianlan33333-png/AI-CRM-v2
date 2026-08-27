@@ -70,6 +70,7 @@ const (
 	p4OutboundOperationsEvidence               = "P4-OUTBOUND-OPERATIONS-2026-08-20"
 	p4CommerceWorkspaceEvidence                = "P4-COMMERCE-WORKSPACE-CARRIERS-2026-08-20"
 	p4HXCSenderManagementEvidence              = "P4-HXC-SENDER-MANAGEMENT-2026-08-20"
+	p4APIClientOAuthEvidence                   = "W9-S05-062-2026-08-27"
 	p4ExternalEffectsReadonlyEvidence          = "P4-EXTERNAL-EFFECTS-READONLY-2026-08-21"
 	p4AIAudienceConfigurationEvidence          = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-2026-08-22"
 	p4AIAudienceConfigurationClosureEvidence   = "P4-AI-AUDIENCE-LOCAL-CONFIGURATION-00084-2026-08-25"
@@ -457,6 +458,10 @@ var p3SegmentOperations = map[string]bool{
 
 var p4AutomationOperations = map[string]bool{
 	"listAutomationTriggerRuns": true,
+}
+
+var p4APIClientOAuthOperations = map[string]bool{
+	"issueAPIClientToken": true,
 }
 
 var p4HXCSenderManagementOperations = map[string]bool{
@@ -1378,7 +1383,7 @@ func load(spec, mapping string) (*openapi3.T, mappingInventory, error) {
 func isRunnerDeclaredOperation(operationID string) bool {
 	return p1CandidateOperations[operationID] || p2StageOperations[operationID] ||
 		p3ContactOperations[operationID] || p3IdentityOperations[operationID] || p3SegmentOperations[operationID] ||
-		p4AutomationOperations[operationID] || p4HXCSenderManagementOperations[operationID] || p4AutomationAgentOperations[operationID] || p4AutomationAgentManagementOperations[operationID] || p4Customer360Operations[operationID] || p4ProductOperations[operationID] || p4ServicePeriodLifecycleOperations[operationID] || p4ServicePeriodMemberGridReadOperations[operationID] || p4MemberGridManagementOperations[operationID] || p4RadarOperations[operationID] || p4CloudCampaignOperations[operationID] || p4AIAudienceOperations[operationID] || p4MediaOperations[operationID] ||
+		p4AutomationOperations[operationID] || p4APIClientOAuthOperations[operationID] || p4HXCSenderManagementOperations[operationID] || p4AutomationAgentOperations[operationID] || p4AutomationAgentManagementOperations[operationID] || p4Customer360Operations[operationID] || p4ProductOperations[operationID] || p4ServicePeriodLifecycleOperations[operationID] || p4ServicePeriodMemberGridReadOperations[operationID] || p4MemberGridManagementOperations[operationID] || p4RadarOperations[operationID] || p4CloudCampaignOperations[operationID] || p4AIAudienceOperations[operationID] || p4MediaOperations[operationID] ||
 		p4GroupInviteOperations[operationID] || p4SurveyOperations[operationID] || p4ChannelOperations[operationID] ||
 		p4TagOperations[operationID] || p4TagABOperations[operationID] || p4CouponOperations[operationID] ||
 		p4OrderOperations[operationID] || p4CustomerCompatOperations[operationID] || p4ConfigSettingsOperations[operationID] || p4AdminOpsSafeOperations[operationID].path != "" || p4SetupWizardOperations[operationID] ||
@@ -1956,7 +1961,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	}
 	seenP1, seenP2 := map[string]bool{}, map[string]bool{}
 	seenP3Contact, seenP3Identity, seenP3Segment := map[string]bool{}, map[string]bool{}, map[string]bool{}
-	seenP4Automation, seenP4HXCSenderManagement, seenP4AutomationAgent, seenP4AutomationAgentManagement, seenP4Customer360, seenP4Product, seenP4ServicePeriodLifecycle, seenP4ServicePeriodMemberGridRead, seenP4MemberGridManagement, seenP4Radar, seenP4CloudCampaign, seenP4AIAudience, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4SetupWizard, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
+	seenP4Automation, seenP4APIClientOAuth, seenP4HXCSenderManagement, seenP4AutomationAgent, seenP4AutomationAgentManagement, seenP4Customer360, seenP4Product, seenP4ServicePeriodLifecycle, seenP4ServicePeriodMemberGridRead, seenP4MemberGridManagement, seenP4Radar, seenP4CloudCampaign, seenP4AIAudience, seenP4Media, seenP4GroupInvite, seenP4Survey, seenP4Channel, seenP4Tag, seenP4TagAB, seenP4Coupon, seenP4Order, seenP4CustomerCompat, seenP4ConfigSettings, seenP4SetupWizard, seenP4DomainVerification, seenP4PushCenter, seenP4ExecutionRuntime, seenP4AdminShell, seenP4LegacyHealth := map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}, map[string]bool{}
 	seenP4AdminOpsSafe := map[string]bool{}
 	seenOperationIDs, seenCanonical := map[string]bool{}, map[string]bool{}
 	for path, item := range doc.Paths.Map() {
@@ -2028,6 +2033,16 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 				ids, linkErr := stringList(op.Extensions["x-legacy-mapping-ids"])
 				if linkErr != nil || !reflect.DeepEqual(ids, []string{"LEGACY-API-0141"}) {
 					return fmt.Errorf("%s legacy mapping=%v", op.OperationID, ids)
+				}
+			} else if p4APIClientOAuthOperations[op.OperationID] {
+				seenP4APIClientOAuth[op.OperationID] = true
+				if path != "/oauth/token" || op.Extensions["x-p4-decision-evidence"] != p4APIClientOAuthEvidence ||
+					op.Extensions["x-aicrm-capability"] != "api_client.token.issue" || op.Extensions["x-aicrm-auth-scheme"] != "oauth2_client_credentials" ||
+					op.Extensions["x-aicrm-csrf"] != "none" || op.Extensions["x-aicrm-data-classification"] != "secret" ||
+					op.Extensions["x-aicrm-data-source"] != "admin_ops_credential_and_environment_secret_map" || op.Extensions["x-aicrm-external-effect"] != "none" ||
+					op.Security == nil || len(*op.Security) != 0 || op.Responses.Value("200") == nil || op.Responses.Value("400") == nil || op.Responses.Value("401") == nil ||
+					op.Responses.Value("403") == nil || op.Responses.Value("405") == nil || op.Responses.Value("503") == nil {
+					return fmt.Errorf("%s API-client OAuth boundary drifted", op.OperationID)
 				}
 			} else if p4HXCSenderManagementOperations[op.OperationID] {
 				seenP4HXCSenderManagement[op.OperationID] = true
@@ -2524,7 +2539,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 					return fmt.Errorf("%s has missing or forged P3 segment evidence", op.OperationID)
 				}
 			}
-			if p4DomainVerificationOperations[op.OperationID] || p4LegacyHealthOperations[op.OperationID] || p4RadarPublicOperations[op.OperationID] || nativePackageOperationDeclared(op.OperationID) || pe01OperationDeclared(op.OperationID) || commerceRefundOperationDeclared(op.OperationID) {
+			if p4APIClientOAuthOperations[op.OperationID] || p4DomainVerificationOperations[op.OperationID] || p4LegacyHealthOperations[op.OperationID] || p4RadarPublicOperations[op.OperationID] || nativePackageOperationDeclared(op.OperationID) || pe01OperationDeclared(op.OperationID) || commerceRefundOperationDeclared(op.OperationID) {
 				// The public static route and the public runtime-mode snapshot are
 				// fully constrained in their dedicated branches above. Native
 				// package operations are likewise validated against their exact
@@ -2567,7 +2582,7 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	}
 	if len(seenP1) != len(p1CandidateOperations) || len(seenP2) != len(p2StageOperations) ||
 		len(seenP3Contact) != len(p3ContactOperations) || len(seenP3Identity) != len(p3IdentityOperations) || len(seenP3Segment) != len(p3SegmentOperations) ||
-		len(seenP4Automation) != len(p4AutomationOperations) || len(seenP4HXCSenderManagement) != len(p4HXCSenderManagementOperations) || len(seenP4AutomationAgent) != len(p4AutomationAgentOperations) || len(seenP4AutomationAgentManagement) != len(p4AutomationAgentManagementOperations) || len(seenP4Customer360) != len(p4Customer360Operations) || len(seenP4Product) != len(p4ProductOperations) || len(seenP4ServicePeriodLifecycle) != len(p4ServicePeriodLifecycleOperations) || len(seenP4ServicePeriodMemberGridRead) != len(p4ServicePeriodMemberGridReadOperations) || len(seenP4MemberGridManagement) != len(p4MemberGridManagementOperations) || len(seenP4Radar) != len(p4RadarOperations) || len(seenP4CloudCampaign) != len(p4CloudCampaignOperations) || len(seenP4AIAudience) != len(p4AIAudienceOperations) || len(seenP4Media) != len(p4MediaOperations) ||
+		len(seenP4Automation) != len(p4AutomationOperations) || len(seenP4APIClientOAuth) != len(p4APIClientOAuthOperations) || len(seenP4HXCSenderManagement) != len(p4HXCSenderManagementOperations) || len(seenP4AutomationAgent) != len(p4AutomationAgentOperations) || len(seenP4AutomationAgentManagement) != len(p4AutomationAgentManagementOperations) || len(seenP4Customer360) != len(p4Customer360Operations) || len(seenP4Product) != len(p4ProductOperations) || len(seenP4ServicePeriodLifecycle) != len(p4ServicePeriodLifecycleOperations) || len(seenP4ServicePeriodMemberGridRead) != len(p4ServicePeriodMemberGridReadOperations) || len(seenP4MemberGridManagement) != len(p4MemberGridManagementOperations) || len(seenP4Radar) != len(p4RadarOperations) || len(seenP4CloudCampaign) != len(p4CloudCampaignOperations) || len(seenP4AIAudience) != len(p4AIAudienceOperations) || len(seenP4Media) != len(p4MediaOperations) ||
 		len(seenP4GroupInvite) != len(p4GroupInviteOperations) || len(seenP4Survey) != len(p4SurveyOperations) || len(seenP4Channel) != len(p4ChannelOperations) ||
 		len(seenP4Tag) != len(p4TagOperations) || len(seenP4TagAB) != len(p4TagABOperations) || len(seenP4Coupon) != len(p4CouponOperations) ||
 		len(seenP4Order) != len(p4OrderOperations) || len(seenP4CustomerCompat) != len(p4CustomerCompatOperations) ||
@@ -2604,6 +2619,11 @@ func validateContracts(doc *openapi3.T, inventory mappingInventory, validateOpen
 	for id := range p4AutomationOperations {
 		if !seenP4Automation[id] {
 			return fmt.Errorf("missing P4 Automation operation: %s", id)
+		}
+	}
+	for id := range p4APIClientOAuthOperations {
+		if !seenP4APIClientOAuth[id] {
+			return fmt.Errorf("missing P4 API-client OAuth operation: %s", id)
 		}
 	}
 	for id := range p4AutomationAgentOperations {
