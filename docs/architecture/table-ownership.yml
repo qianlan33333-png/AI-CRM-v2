@@ -254,7 +254,7 @@ owners:
 
   product:
     package: internal/product
-    tables: [products, product_images, product_catalog_counters, product_operation_receipts, service_period_members, service_period_member_operation_receipts, product_local_entitlements, entitlement_operation_receipts, service_period_member_views, service_period_member_grid_collaborators, product_external_push_configurations, product_external_push_test_bindings]
+    tables: [products, product_images, product_catalog_counters, product_operation_receipts, service_period_members, service_period_member_operation_receipts, product_local_entitlements, entitlement_operation_receipts, service_period_member_views, service_period_member_grid_collaborators, service_period_member_grid_external_shares, product_external_push_configurations, product_external_push_test_bindings]
     constraints:
       products: ordinary_product_catalog_and_allowlisted_legacy_admin_projection
       product_images: product_owned_native_image_urls_only
@@ -268,6 +268,7 @@ owners:
       entitlement_operation_receipts: actor_scoped_transactional_entitlement_mutation_idempotency_receipts
       service_period_member_views: local_saved_member_grid_views_without_arbitrary_SQL_or_member_mutation
       service_period_member_grid_collaborators: local_staff_metadata_without_invitation_or_permission_escalation
+      service_period_member_grid_external_shares: current_revocable_public_share_state_without_bearer_token_storage
 
   coupon:
     package: internal/coupon
