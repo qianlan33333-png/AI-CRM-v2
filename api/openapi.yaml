@@ -9534,7 +9534,6 @@ paths:
       tags: [p4-service-period-member-grid]
       operationId: setServicePeriodMemberGridExternalShare
       summary: Enable or disable one revocable read-only Member Grid share
-      x-legacy-mapping-ids: [LEGACY-API-0480]
       x-p4-decision-evidence: P4-MEMBER-GRID-READONLY-SHARE-2026-08-27
       x-aicrm-capability: products.write
       x-aicrm-rbac-scopes: { admin: global, ops: global }
@@ -9562,7 +9561,6 @@ paths:
       operationId: queryPublicServicePeriodMemberGridSummary
       summary: Read a revocable allowlisted member grid with an opaque bearer token
       security: []
-      x-legacy-mapping-ids: [LEGACY-API-0707, LEGACY-API-0708]
       x-p4-decision-evidence: P4-MEMBER-GRID-READONLY-SHARE-2026-08-27
       x-aicrm-capability: member_grid.public.read
       x-aicrm-auth-scheme: public_token_body
