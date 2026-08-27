@@ -216,7 +216,7 @@ VALUES (
   $1::bigint, '', '', $2::text, '', '',
   $3::text, $4::text,
   $5::text, $6::text,
-  $7::bigint, $8::bigint,
+  $7::text, $8::text,
   $9::double precision, $10::jsonb,
   $11::text, $12::text,
   $13::timestamptz, $14::timestamptz
@@ -231,8 +231,8 @@ type InsertHistoricalSubmissionParams struct {
 	MatchedBy           string             `json:"matched_by"`
 	Mobile              string             `json:"mobile"`
 	SourceChannel       string             `json:"source_channel"`
-	CampaignID          int64              `json:"campaign_id"`
-	StaffID             int64              `json:"staff_id"`
+	CampaignID          string             `json:"campaign_id"`
+	StaffID             string             `json:"staff_id"`
 	TotalScore          float64            `json:"total_score"`
 	FinalTags           []byte             `json:"final_tags"`
 	ResultToken         string             `json:"result_token"`
