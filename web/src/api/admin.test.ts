@@ -329,7 +329,8 @@ export async function runAdminAdapterTests(): Promise<void> {
   assert(channelPageDto({ id: 1, channel_name: '夏令营', channel_code: 'summer', status: 'active', assignee_count: 0, channel_contact_count: 0, created_at: '', updated_at: '' }).tone === 'ok', 'channel response mapping');
   assert(buildChannelFinalUrl('https://example.test/acquisition?source=crm', 'spring').includes('customer_channel=spring'), 'channel final URL preview preserves existing query');
   assert(buildChannelFinalUrl('/acquisition', '春季') === 'http://localhost/acquisition?customer_channel=%E6%98%A5%E5%AD%A3', 'channel final URL preview encodes local path values');
-  assert(orderPageDto({ merchant_order_no: 'WX-9', provider: 'wechat_pay', product_name: '营', status: 'paid' }).plat === 'wechat_pay', 'order provider response mapping');
+  const order = orderPageDto({ merchant_order_no: 'WX-9', provider: 'wechat', product_name: '营', amount_yuan: '19.90', amount: '999.99', status: 'paid' });
+  assert(order.plat === 'wechat' && order.amount === '19.90', 'order list response maps contract amount_yuan without an unsupported amount fallback');
   assert(productPageDto({ id: 1, name: '商品', status: 'active' }).tone === 'ok', 'product response mapping');
   assert(serviceProductPageDto({ id: 2, name: '周期', status: 'disabled' }).tone === 'gray', 'service product response mapping');
   const couponProjection = couponPageDto({ name: '券', code: 'C', status: 'published', availability_status: 'active' });
