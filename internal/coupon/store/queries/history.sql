@@ -18,6 +18,9 @@ SELECT coupon_id FROM coupon_v1_history_definitions ORDER BY coupon_id LIMIT sql
 -- name: CountHistoricalCoupons :one
 SELECT count(*) FROM coupon_v1_history_definitions;
 
+-- name: GetHistoricalCouponTarget :one
+SELECT coupon_id,position,target_ref,product_id FROM coupon_targets WHERE coupon_id=sqlc.arg(coupon_id) AND position=sqlc.arg(position);
+
 -- name: CreateHistoricalCouponClaim :one
 INSERT INTO coupon_v1_history_claims(source_claim_id,source_coupon_id,coupon_id,customer_id,claim_no,status,discount_amount_total,currency,valid_from,valid_until,claimed_at,reserved_at,consumed_at,expired_at,created_at,updated_at)
 VALUES(sqlc.arg(source_claim_id),sqlc.arg(source_coupon_id),sqlc.arg(coupon_id),sqlc.narg(customer_id),sqlc.arg(claim_no),sqlc.arg(status),sqlc.arg(discount_amount_total),sqlc.arg(currency),sqlc.arg(valid_from),sqlc.arg(valid_until),sqlc.arg(claimed_at),sqlc.narg(reserved_at),sqlc.narg(consumed_at),sqlc.narg(expired_at),sqlc.arg(created_at),sqlc.arg(updated_at)) RETURNING *;

@@ -30,6 +30,7 @@ type Querier interface {
 	GetHistoricalCouponClaim(ctx context.Context, id int64) (CouponV1HistoryClaim, error)
 	GetHistoricalCouponMarker(ctx context.Context, couponID int64) (GetHistoricalCouponMarkerRow, error)
 	GetHistoricalCouponRedemption(ctx context.Context, id int64) (CouponV1HistoryRedemption, error)
+	GetHistoricalCouponTarget(ctx context.Context, arg GetHistoricalCouponTargetParams) (CouponTarget, error)
 	IncrementCouponCount(ctx context.Context) (int64, error)
 	IncrementCouponIssuedCount(ctx context.Context, arg IncrementCouponIssuedCountParams) (int64, error)
 	InsertCouponTarget(ctx context.Context, arg InsertCouponTargetParams) error

@@ -42,6 +42,13 @@ type CouponClaim struct {
 	ClaimedAt   pgtype.Timestamptz `json:"claimed_at"`
 }
 
+type CouponTarget struct {
+	CouponID  int64  `json:"coupon_id"`
+	Position  int32  `json:"position"`
+	TargetRef string `json:"target_ref"`
+	ProductID int64  `json:"product_id"`
+}
+
 type CouponV1HistoryClaim struct {
 	ID                  int64              `json:"id"`
 	SourceClaimID       int64              `json:"source_claim_id"`

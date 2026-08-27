@@ -325,6 +325,27 @@ func (q *Queries) GetHistoricalCouponRedemption(ctx context.Context, id int64) (
 	return i, err
 }
 
+const getHistoricalCouponTarget = `-- name: GetHistoricalCouponTarget :one
+SELECT coupon_id,position,target_ref,product_id FROM coupon_targets WHERE coupon_id=$1 AND position=$2
+`
+
+type GetHistoricalCouponTargetParams struct {
+	CouponID int64 `json:"coupon_id"`
+	Position int32 `json:"position"`
+}
+
+func (q *Queries) GetHistoricalCouponTarget(ctx context.Context, arg GetHistoricalCouponTargetParams) (CouponTarget, error) {
+	row := q.db.QueryRow(ctx, getHistoricalCouponTarget, arg.CouponID, arg.Position)
+	var i CouponTarget
+	err := row.Scan(
+		&i.CouponID,
+		&i.Position,
+		&i.TargetRef,
+		&i.ProductID,
+	)
+	return i, err
+}
+
 const listHistoricalCouponClaims = `-- name: ListHistoricalCouponClaims :many
 SELECT id, source_claim_id, source_coupon_id, coupon_id, customer_id, claim_no, status, discount_amount_total, currency, valid_from, valid_until, claimed_at, reserved_at, consumed_at, expired_at, created_at, updated_at FROM coupon_v1_history_claims WHERE coupon_id=$1 ORDER BY id LIMIT $3::integer OFFSET $2::integer
 `

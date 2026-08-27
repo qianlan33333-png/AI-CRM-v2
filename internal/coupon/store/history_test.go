@@ -5,11 +5,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	couponapp "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/app"
 	couponport "github.com/qianlan33333-png/AI-CRM-v2/internal/coupon/port"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
@@ -57,7 +57,7 @@ func TestCouponHistoryPostgresRoundTripAndRollback(t *testing.T) {
 			return fmt.Errorf("definition: %w", err)
 		}
 		d.ID = got.ID
-		if !reflect.DeepEqual(got, d) {
+		if couponapp.HistoricalDefinitionTargetDigest(got) != couponapp.HistoricalDefinitionTargetDigest(d) || got.AvailabilityStatus != "archived" {
 			return fmt.Errorf("definition facts changed")
 		}
 		locked, err := r.Lock(tx, got.ID)
@@ -70,7 +70,7 @@ func TestCouponHistoryPostgresRoundTripAndRollback(t *testing.T) {
 			return fmt.Errorf("claim: %w", err)
 		}
 		claim.ID = gotClaim.ID
-		if !reflect.DeepEqual(gotClaim, claim) {
+		if couponapp.HistoricalClaimTargetDigest(gotClaim) != couponapp.HistoricalClaimTargetDigest(claim) {
 			return fmt.Errorf("claim facts changed")
 		}
 		redemption := couponport.HistoricalRedemption{SourceRedemptionID: 900000003, SourceClaimID: claim.SourceClaimID, SourceOrderID: 900000004, ClaimHistoryID: claim.ID, OutTradeNo: "legacy-order", Status: "released", OriginalAmountTotal: 10, DiscountAmountTotal: 1, PayableAmountTotal: 8, Currency: "CNY", ReservedUntil: now, ReleaseReason: "original reason", ReservedAt: now, ReleasedAt: &now, CreatedAt: now, UpdatedAt: now.Add(-time.Hour)}
@@ -79,7 +79,7 @@ func TestCouponHistoryPostgresRoundTripAndRollback(t *testing.T) {
 			return fmt.Errorf("redemption: %w", err)
 		}
 		redemption.ID = gotRedemption.ID
-		if !reflect.DeepEqual(gotRedemption, redemption) {
+		if couponapp.HistoricalRedemptionTargetDigest(gotRedemption) != couponapp.HistoricalRedemptionTargetDigest(redemption) {
 			return fmt.Errorf("redemption facts changed")
 		}
 		reader := NewHistoricalReader(couponHistoryInlineUOW{})
@@ -88,11 +88,11 @@ func TestCouponHistoryPostgresRoundTripAndRollback(t *testing.T) {
 			return fmt.Errorf("definitions page: %v", err)
 		}
 		claims, total, err := reader.ListHistoricalClaims(tx, int64(d.ID), 100, 0)
-		if err != nil || total != 1 || len(claims) != 1 || !reflect.DeepEqual(claims[0], claim) {
+		if err != nil || total != 1 || len(claims) != 1 || couponapp.HistoricalClaimTargetDigest(claims[0]) != couponapp.HistoricalClaimTargetDigest(claim) {
 			return fmt.Errorf("claims page: %v", err)
 		}
 		redemptions, total, err := reader.ListHistoricalRedemptions(tx, int64(d.ID), 100, 0)
-		if err != nil || total != 1 || len(redemptions) != 1 || !reflect.DeepEqual(redemptions[0], redemption) {
+		if err != nil || total != 1 || len(redemptions) != 1 || couponapp.HistoricalRedemptionTargetDigest(redemptions[0]) != couponapp.HistoricalRedemptionTargetDigest(redemption) {
 			return fmt.Errorf("redemptions page: %v", err)
 		}
 		return rollback
