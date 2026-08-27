@@ -273,6 +273,13 @@ func TestOrderBoardV1HistoryIsReadOnly(t *testing.T) {
 	if err != nil || detail.RecordOrigin != orderport.RecordOriginV1History || detail.RefundableAmountMinor != 0 || len(detail.HistoricalRefunds) != 1 || detail.HistoricalRefunds[0].ID != 91 || history.calls != 1 {
 		t.Fatalf("detail=%+v err=%v", detail, err)
 	}
+	// Imported reasons are source facts, not new refund-command input. Keep
+	// whitespace and long historical text without imposing command limits.
+	history.refunds[0].Reason = "  " + strings.Repeat("历史", 300) + "\n"
+	detail, err = service.GetOrder(context.Background(), "wechat", "M-11")
+	if err != nil || len(detail.HistoricalRefunds) != 1 || detail.HistoricalRefunds[0].Reason != history.refunds[0].Reason {
+		t.Fatalf("historical reason was rejected or rewritten: %v", err)
+	}
 
 	command := orderport.RefundCommand{Provider: "wechat", OrderReference: "M-11", RefundAmountTotal: 1990, Reason: "重复支付", TransactionIDConfirmation: "WX-11", Checked: true, Actor: 9, IdempotencyKey: "aaaaaaaaaaaaaaaa"}
 	if _, err = service.RequestRefund(context.Background(), command); !errors.Is(err, ErrInvalidBoardCommand) {

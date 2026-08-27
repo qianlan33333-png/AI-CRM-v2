@@ -817,10 +817,7 @@ func validRefund(value orderport.Refund) bool {
 }
 func validHistoricalRefunds(order orderport.Record, refunds []orderport.HistoricalRefund) bool {
 	for _, refund := range refunds {
-		if refund.ID < 1 || refund.OrderID != order.ID || refund.SourceRefundID < 1 || !validText(refund.RefundNumber, 200) || refund.RefundNumber == "" || !validText(refund.ProviderRefundID, 200) || !validText(refund.TransactionID, 200) || !validText(refund.Status, 80) || refund.Status == "" || refund.AmountMinor < 1 || refund.AmountMinor > order.AmountMinor || refund.OrderAmountMinor != order.AmountMinor || refund.Currency != order.Currency || refund.Currency != "CNY" || !validText(refund.Reason, 500) || refund.CreatedAt.IsZero() || refund.UpdatedAt.IsZero() || refund.UpdatedAt.Before(refund.CreatedAt) {
-			return false
-		}
-		if refund.TransactionID != "" && refund.TransactionID != order.PlatformTransactionNo {
+		if !validHistoricalRefundTarget(refund) || refund.OrderID != order.ID || !matchesHistoricalRefundOrder(order, refund) {
 			return false
 		}
 	}
