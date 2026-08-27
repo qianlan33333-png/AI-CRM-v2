@@ -63,6 +63,25 @@ func TestHistoricalStaticAdaptersForceDisabledAndRetainVerifiedBytes(t *testing.
 	}
 }
 
+func TestHistoricalImageNormalizesV1EncodedLength(t *testing.T) {
+	source, origin := historicalImageFixture(t)
+	byteSize := source.FileSize
+	source.FileSize = int64(len(source.DataBase64))
+	definition, err := AdaptV1ImageLibrary(source, origin, 7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if int64(definition.Image.FileSize) != byteSize || definition.Checksum != sha256.Sum256(definition.Content) || definition.Origin != origin ||
+		base64.StdEncoding.EncodeToString(definition.Content) != source.DataBase64 {
+		t.Fatal("encoded-length normalization changed bytes or provenance")
+	}
+	source.DataBase64 = base64.StdEncoding.EncodeToString([]byte("not an image"))
+	source.FileSize = int64(len(source.DataBase64))
+	if _, err = AdaptV1ImageLibrary(source, origin, 7); !errors.Is(err, ErrHistoricalStaticInvalid) {
+		t.Fatalf("encoded length bypassed image validation: %v", err)
+	}
+}
+
 func TestHistoricalImageRejectsUnverifiableSources(t *testing.T) {
 	cases := map[string]func(*V1ImageLibraryRow){
 		"url-only":       func(s *V1ImageLibraryRow) { s.DataBase64 = "" },

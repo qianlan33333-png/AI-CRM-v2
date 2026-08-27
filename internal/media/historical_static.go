@@ -115,7 +115,17 @@ func NewHistoricalStaticWriter(store HistoricalStaticStore, journal HistoricalSt
 }
 
 func AdaptV1ImageLibrary(source V1ImageLibraryRow, origin HistoricalStaticOrigin, actor int64) (HistoricalImageDefinition, error) {
-	content, err := decodeHistoricalStatic(source.DataBase64, source.FileSize, domain.MaxImageBytes)
+	size := source.FileSize
+	// V1 ImportImageFromBase64Command stored the encoded character count.
+	// Only that exact convention is normalized; original metadata stays archived.
+	if size > 0 && size == int64(len(source.DataBase64)) && size <= int64(base64.StdEncoding.EncodedLen(domain.MaxImageBytes)) {
+		decoded, err := base64.StdEncoding.Strict().DecodeString(source.DataBase64)
+		if err != nil {
+			return HistoricalImageDefinition{}, ErrHistoricalStaticInvalid
+		}
+		size = int64(len(decoded))
+	}
+	content, err := decodeHistoricalStatic(source.DataBase64, size, domain.MaxImageBytes)
 	if err != nil || source.ID != origin.SourceID {
 		return HistoricalImageDefinition{}, ErrHistoricalStaticInvalid
 	}
