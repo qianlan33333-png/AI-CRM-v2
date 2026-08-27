@@ -40,6 +40,9 @@ func importStatic(ctx context.Context, archive *v1archive.PostgresArchiveReader,
 	if err != nil {
 		return nil, err
 	}
+	if err = verifier.PreflightContactTagBindings(ctx, archive, runID); err != nil {
+		return nil, err
+	}
 	contacts, err := v1domain.NewContactTagImporter(archive, uow, contactstore.NewHistoricalTagImportRepository(), contactJournal, verifier)
 	if err != nil {
 		return nil, err
