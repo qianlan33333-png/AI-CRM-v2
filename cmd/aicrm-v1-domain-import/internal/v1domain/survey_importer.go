@@ -213,10 +213,12 @@ func buildSurveyAggregate(questionnaire archivedValue[surveyQuestionnaireJSON], 
 	for _, question := range questions[source.ID] {
 		value := question.value
 		consumedQuestions[value.ID] = true
-		questionSortOrders[value.ID] = value.SortOrder
+		// V1 definitions use one-based positions; V2 owns zero-based positions.
+		// Subtraction preserves gaps/duplicates for the owner validator to reject.
+		questionSortOrders[value.ID] = value.SortOrder - 1
 		aggregate.Questions = append(aggregate.Questions, surveyport.ImportQuestion{
 			SourceID: value.ID, SourceQuestionnaireID: value.QuestionnaireID, Type: surveyport.QuestionType(value.Type),
-			Title: value.Title, Required: value.Required, SortOrder: value.SortOrder, PlaceholderText: value.PlaceholderText,
+			Title: value.Title, Required: value.Required, SortOrder: value.SortOrder - 1, PlaceholderText: value.PlaceholderText,
 			AssessmentDimensionKey: value.AssessmentDimensionKey, SidebarProfileField: value.SidebarProfileField,
 			Validation: json.RawMessage(`{}`), CreatedAt: value.CreatedAt, UpdatedAt: value.UpdatedAt,
 		})
@@ -224,11 +226,16 @@ func buildSurveyAggregate(questionnaire archivedValue[surveyQuestionnaireJSON], 
 		for _, option := range options[value.ID] {
 			item := option.value
 			consumedOptions[item.ID] = true
+			if !item.IsOther {
+				// V1 stores inactive input defaults on ordinary options. Keep the
+				// original in the archive, not as active V2 input configuration.
+				item.OtherPlaceholder, item.OtherMaximumLength = "", 0
+			}
 			aggregate.Options = append(aggregate.Options, surveyport.ImportOption{
 				SourceID: item.ID, SourceQuestionID: item.QuestionID, OptionText: item.OptionText, Score: item.Score,
 				AssessmentTypeKey: item.AssessmentTypeKey, TagCodes: item.TagCodes, IsOther: item.IsOther,
 				OtherPlaceholder: item.OtherPlaceholder, OtherMaxLength: item.OtherMaximumLength,
-				SortOrder: item.SortOrder, CreatedAt: item.CreatedAt, UpdatedAt: item.UpdatedAt,
+				SortOrder: item.SortOrder - 1, CreatedAt: item.CreatedAt, UpdatedAt: item.UpdatedAt,
 			})
 			rows = append(rows, surveyArchiveRef{table: "public/questionnaire_options", archive: option.archive, source: item.ID})
 		}
