@@ -35,6 +35,12 @@ aicrm-v1-domain-import --domain=channel --mode=reconcile \
 源预检为 49 定义（1 条空编码）、316 入渠、14 客服分配、1,549 运行/资产历史行。预期结果不是部署证据；
 只有实际 import/replay/reconcile 后记录数量。归档/隔离不计作业务功能上线完成。
 
+V2 独立、无网络演练库实际验证：1,928 源行 = 378 import（48 渠道、316 入渠、14 客服分配）
++ 1,549 archive + 1 quarantine。重复 import 为 1,928 replay，两次 reconcile 均验证 1,928 行，
+第二次 replay=true，digest `08a6a14b6e7a4d09d4c7c67959e79724f932d9d7921012585c3e3111466a375f`。
+外部效果、渠道资产绑定、领域事件、River 任务、客户当前渠道归属计数均为零且不变。
+演练已验证 110 迁移和真实 store 同事务回滚；这些结果不代表正式目标库或运行应用已部署本包。
+
 本包不修改 V1，不修改 DNS、现网代理、企微/OAuth/小程序入口。
 集中 PR 候选最终 SHA Full Nightly、合并后 exact-main Full Nightly 绿灯后才能在 V2 正式执行。
 应用/数据回滚分开：数据恢复使用迁移前快照恢复到新隔离库，不删除目标行或不可变回执。
