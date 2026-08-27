@@ -1,4 +1,4 @@
-package candidate
+package v1finance
 
 import (
 	"encoding/json"

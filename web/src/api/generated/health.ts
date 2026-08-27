@@ -9417,6 +9417,18 @@ export interface WechatShopRefundCallbackEnvelope {
   Encrypt: string;
 }
 
+/**
+ * Historical rows are local read-only facts, not verified payment or entitlement evidence.
+ */
+export type LegacyOrderListItemRecordOrigin =
+  (typeof LegacyOrderListItemRecordOrigin)[keyof typeof LegacyOrderListItemRecordOrigin];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderListItemRecordOrigin = {
+  native: "native",
+  v1_history: "v1_history",
+} as const;
+
 export type LegacyOrderListItemProvider =
   (typeof LegacyOrderListItemProvider)[keyof typeof LegacyOrderListItemProvider];
 
@@ -9428,6 +9440,8 @@ export const LegacyOrderListItemProvider = {
 } as const;
 
 export interface LegacyOrderListItem {
+  /** Historical rows are local read-only facts, not verified payment or entitlement evidence. */
+  record_origin?: LegacyOrderListItemRecordOrigin;
   created_at: string;
   /** @maxLength 200 */
   merchant_order_no: string;
@@ -9495,6 +9509,18 @@ export interface LegacyOrderListResponse {
   has_more: boolean;
 }
 
+/**
+ * Historical rows cannot be refunded or used to grant entitlements.
+ */
+export type LegacyOrderDetailRecordOrigin =
+  (typeof LegacyOrderDetailRecordOrigin)[keyof typeof LegacyOrderDetailRecordOrigin];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const LegacyOrderDetailRecordOrigin = {
+  native: "native",
+  v1_history: "v1_history",
+} as const;
+
 export type LegacyOrderDetailProvider =
   (typeof LegacyOrderDetailProvider)[keyof typeof LegacyOrderDetailProvider];
 
@@ -9506,6 +9532,8 @@ export const LegacyOrderDetailProvider = {
 } as const;
 
 export interface LegacyOrderDetail {
+  /** Historical rows cannot be refunded or used to grant entitlements. */
+  record_origin?: LegacyOrderDetailRecordOrigin;
   /** @minimum 1 */
   id: number;
   created_at: string;

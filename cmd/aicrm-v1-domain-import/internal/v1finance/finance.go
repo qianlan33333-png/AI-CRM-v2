@@ -1,7 +1,7 @@
 // Package candidate adapts archived V1 payment rows into non-executable
 // historical facts. It has no database, Provider, queue, receipt, or command
 // dependency.
-package candidate
+package v1finance
 
 import (
 	"encoding/json"

@@ -17609,6 +17609,7 @@ components:
       additionalProperties: false
       required: [created_at, merchant_order_no, out_trade_no, order_no, platform_transaction_no, transaction_id, payer_name, mobile, product_code, product_name, amount_yuan, currency, status, status_label, provider, provider_label, detail_url]
       properties:
+        record_origin: { type: string, enum: [native, v1_history], description: "Historical rows are local read-only facts, not verified payment or entitlement evidence." }
         created_at: { type: string, format: date-time }
         merchant_order_no: { type: string, maxLength: 200 }
         out_trade_no: { type: string, maxLength: 200 }
@@ -17643,6 +17644,7 @@ components:
       additionalProperties: false
       required: [id, created_at, merchant_order_no, out_trade_no, order_no, platform_transaction_no, transaction_id, payer_name, mobile, product_code, product_name, amount_yuan, currency, status, status_label, provider, provider_label, detail_url, refundable_amount_total]
       properties:
+        record_origin: { type: string, enum: [native, v1_history], description: "Historical rows cannot be refunded or used to grant entitlements." }
         id: { type: integer, format: int64, minimum: 1 }
         created_at: { type: string, format: date-time }
         merchant_order_no: { type: string, maxLength: 200 }
