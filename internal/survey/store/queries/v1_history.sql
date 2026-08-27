@@ -56,7 +56,7 @@ VALUES (
   sqlc.arg(questionnaire_id)::bigint, '', '', sqlc.arg(unionid)::text, '', '',
   sqlc.arg(follow_user_userid)::text, sqlc.arg(matched_by)::text,
   sqlc.arg(mobile)::text, sqlc.arg(source_channel)::text,
-  sqlc.arg(campaign_id)::bigint, sqlc.arg(staff_id)::bigint,
+  sqlc.arg(campaign_id)::text, sqlc.arg(staff_id)::text,
   sqlc.arg(total_score)::double precision, sqlc.arg(final_tags)::jsonb,
   sqlc.arg(result_token)::text, sqlc.arg(redirect_url_snapshot)::text,
   sqlc.arg(submitted_at)::timestamptz, sqlc.arg(created_at)::timestamptz
