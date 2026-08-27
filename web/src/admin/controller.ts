@@ -1234,6 +1234,7 @@ export class AdminController extends PageBase {
   private submitRefundIntent(): void {
     const order = this.db.rows.orders[0];
     if (!order) { toast('后端未返回订单详情，未发送请求', true); return; }
+    if (order.recordOrigin === 'v1_history') { toast('V1历史只读，非V2支付/退款确认', true); return; }
     const value = (id: string): string => (document.getElementById(id) as HTMLInputElement | HTMLSelectElement | null)?.value.trim() || '';
     const checked = (document.getElementById('refundChecked') as HTMLInputElement | null)?.checked === true;
     const input = { provider: order.plat, orderNo: order.no, amount: value('refundAmount'), reason: value('refundReason'), transactionIdConfirmation: value('refundOrderConfirmation'), checked };
@@ -2109,8 +2110,13 @@ export class AdminController extends PageBase {
         save: () => this.saveChannelForm(),
       },
       orderDetailPage: {
-        item: rows.orders[0] || { no: '—', plat: '未知', status: '暂无订单', amount: '0.00', tone: 'gray' },
+        item: rows.orders[0] || { no: '—', plat: '未知', status: '暂无订单', amount: '0.00', tone: 'gray', recordOrigin: 'native', historicalRefunds: [] },
         statusStyle: mk(rows.orders[0]?.tone || 'gray'),
+        isHistorical: rows.orders[0]?.recordOrigin === 'v1_history',
+        isNative: rows.orders[0]?.recordOrigin !== 'v1_history',
+        hasHistoricalRefunds: (rows.orders[0]?.historicalRefunds?.length || 0) > 0,
+        noHistoricalRefunds: (rows.orders[0]?.historicalRefunds?.length || 0) === 0,
+        historicalRefunds: rows.orders[0]?.historicalRefunds || [],
         submitRefund: () => this.submitRefundIntent(),
       },
       groupOpsPage: { rows: groupOpsRows, total: groupOpsRows.length, members: this.db.staff, memberCount: this.db.staff.length, create: () => this.goto('groupopsDetail'), directoryBlocked: () => this.blocked('当前页面未提供 owner_staff_id，不能安全触发目录同步；计划内使用 asset_reference 精确绑定群') },

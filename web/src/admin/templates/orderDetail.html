@@ -39,7 +39,7 @@
                 </table>
               </div>
             </div>
-            <div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px">
+            <sc-if value="{{ orderDetailPage.isNative }}"><div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px">
               <div style="padding:12px 16px;border-bottom:1px solid #EFF0F1">
                 <h2 style="margin:0;font-size:14px;font-weight:600">申请退款</h2>
                 <p style="margin:2px 0 0;font-size:12px;color:#8F959E">创建退款 intent 并展示后端 receipt；不把 intent 接受当作退款成功。</p>
@@ -51,5 +51,9 @@
                 <label style="display:flex;align-items:flex-start;gap:8px;font-size:13px;line-height:20px;cursor:pointer"><input id="refundChecked" type="checkbox" style="width:15px;height:15px;accent-color:#3370ff;margin-top:2px">已核对付款人、商品、金额、支付来源和订单号</label>
                 <div style="display:flex;justify-content:flex-end"><button onClick="{{ orderDetailPage.submitRefund }}" style="height:32px;padding:0 16px;border:0;border-radius:6px;background:var(--accent,#3370ff);color:#fff;font-size:13px;cursor:pointer">创建退款 intent</button></div>
               </div>
-            </div>
+            </div></sc-if>
+            <sc-if value="{{ orderDetailPage.isHistorical }}"><div style="background:#fff;border:1px solid #DEE0E3;border-radius:8px">
+              <div style="padding:12px 16px;border-bottom:1px solid #EFF0F1"><h2 style="margin:0;font-size:14px;font-weight:600">V1 历史只读</h2><p style="margin:2px 0 0;font-size:12px;color:#8F5A16">V1历史只读，非V2支付/退款确认</p></div>
+              <div style="padding:16px;display:grid;gap:10px"><sc-if value="{{ orderDetailPage.hasHistoricalRefunds }}"><sc-for list="{{ orderDetailPage.historicalRefunds }}" as="refund"><div style="padding:10px;border:1px solid #EFF0F1;border-radius:6px;display:grid;gap:4px"><div style="font-size:13px">{{ refund.status }} · {{ refund.amount }}</div><div style="font-size:12px;color:#646A73">{{ refund.reason }}</div></div></sc-for></sc-if><sc-if value="{{ orderDetailPage.noHistoricalRefunds }}"><div style="font-size:13px;color:#8F959E">没有历史退款记录</div></sc-if></div>
+            </div></sc-if>
           </div>

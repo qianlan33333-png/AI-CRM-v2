@@ -132,14 +132,24 @@ func (s *BoardService) GetOrder(ctx context.Context, provider, reference string)
 			return ErrBoardUnavailable
 		}
 		refundable := int64(0)
-		if recordOrigin(row.RecordOrigin) != orderport.RecordOriginV1History {
+		historicalRefunds := []orderport.HistoricalRefund(nil)
+		if recordOrigin(row.RecordOrigin) == orderport.RecordOriginV1History {
+			reader, ok := s.store.(orderport.HistoricalRefundReader)
+			if !ok {
+				return ErrBoardUnavailable
+			}
+			historicalRefunds, e = reader.ListHistoricalRefunds(tx, row.ID)
+			if e != nil || !validHistoricalRefunds(row, historicalRefunds) {
+				return ErrBoardUnavailable
+			}
+		} else {
 			active, countErr := s.store.CountActiveRefundAmount(tx, row.ID)
 			if countErr != nil || active < 0 || active > row.AmountMinor {
 				return ErrBoardUnavailable
 			}
 			refundable = row.AmountMinor - active
 		}
-		result = orderport.Detail{Item: boardItem(row), ID: row.ID, RefundableAmountMinor: refundable}
+		result = orderport.Detail{Item: boardItem(row), ID: row.ID, RefundableAmountMinor: refundable, HistoricalRefunds: historicalRefunds}
 		return nil
 	})
 	if err != nil {
@@ -804,6 +814,17 @@ func validBoardKey(value string) bool {
 }
 func validRefund(value orderport.Refund) bool {
 	return value.ID > 0 && value.OrderID > 0 && value.ExternalEffectID > 0 && (value.Provider == "wechat" || value.Provider == "alipay" || value.Provider == "wechat_shop") && validText(value.OrderNo, 200) && value.OrderNo != "" && validText(value.TransactionID, 200) && value.TransactionID != "" && strings.HasPrefix(value.RefundID, "rfd_") && strings.HasPrefix(value.OutRefundNo, "rfd_") && value.RefundAmountTotal > 0 && value.Currency == "CNY" && value.Status != "" && value.ExternalEffectState != "" && !value.AutoRetryAllowed && !value.CreatedAt.IsZero()
+}
+func validHistoricalRefunds(order orderport.Record, refunds []orderport.HistoricalRefund) bool {
+	for _, refund := range refunds {
+		if refund.ID < 1 || refund.OrderID != order.ID || refund.SourceRefundID < 1 || !validText(refund.RefundNumber, 200) || refund.RefundNumber == "" || !validText(refund.ProviderRefundID, 200) || !validText(refund.TransactionID, 200) || !validText(refund.Status, 80) || refund.Status == "" || refund.AmountMinor < 1 || refund.AmountMinor > order.AmountMinor || refund.OrderAmountMinor != order.AmountMinor || refund.Currency != order.Currency || refund.Currency != "CNY" || !validText(refund.Reason, 500) || refund.CreatedAt.IsZero() || refund.UpdatedAt.IsZero() || refund.UpdatedAt.Before(refund.CreatedAt) {
+			return false
+		}
+		if refund.TransactionID != "" && refund.TransactionID != order.PlatformTransactionNo {
+			return false
+		}
+	}
+	return true
 }
 func validExportJob(value orderport.ExportJob) bool {
 	return strings.HasPrefix(value.JobID, "exp_") && (value.Resource == "orders" || value.Resource == "refunds") && value.Format == "csv" && value.Status == "completed" && value.Operator > 0 && !value.CreatedAt.IsZero() && value.ContentText != ""
