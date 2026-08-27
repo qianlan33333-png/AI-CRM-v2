@@ -17,7 +17,7 @@ trap 'rm -rf "$test_root"' EXIT
 
 seed() {
   local root="$1"
-  mkdir -p "$root/cmd/aicrm" "$root/cmd/aicrm-river-migrate" "$root/cmd/aicrm-contact-perf" "$root/internal/contact/app" \
+  mkdir -p "$root/cmd/aicrm" "$root/cmd/aicrm-river-migrate" "$root/cmd/aicrm-contact-perf" "$root/cmd/aicrm-v1-import" "$root/internal/contact/app" \
     "$root/internal/identity/port" "$root/internal/identity/store" \
     "$root/internal/automation/app" "$root/internal/stats/app" "$root/internal/events/store" \
     "$root/internal/outbound/app" "$root/internal/product/app" "$root/internal/media/app" "$root/internal/survey/app" \
@@ -41,6 +41,10 @@ seed() {
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/app"' \
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/contact/store"' \
     >"$root/cmd/aicrm-contact-perf/main.go"
+  printf '%s\n' 'package main' \
+    'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/config"' \
+    'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"' \
+    >"$root/cmd/aicrm-v1-import/main.go"
   printf '%s\n' 'package store' \
     'import _ "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"' \
     >"$root/internal/identity/store/use.go"

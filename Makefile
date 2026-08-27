@@ -6,7 +6,7 @@ GO ?= go
 TOOLS_MOD := tools/go.mod
 ORVAL ?= ./node_modules/.bin/orval
 
-.PHONY: bootstrap-tools version-check generate generate-openapi generate-sqlc generate-orval orval-tool-check orval-check generate-check gitless-generate-test p4-dm01-migration-acceptance p4-dm01-two-pg-acceptance
+.PHONY: bootstrap-tools version-check generate generate-openapi generate-sqlc generate-orval orval-tool-check orval-check generate-check gitless-generate-test p4-dm01-migration-acceptance p4-dm01-two-pg-acceptance p4-v1-archive-migration-acceptance
 .PHONY: mod-check migration-validate migration-guard-negative migration-integration p4-media-content-delivery-acceptance
 .PHONY: fmt-check vet test build vuln p0-s01-acceptance p0-s02-contract p0-s02-acceptance p0-s03-contract p0-s03-acceptance ci-go
 .PHONY: p0-s04-contract p0-s04-acceptance p0-s04-integration
@@ -175,6 +175,10 @@ p4-dm01-two-pg-acceptance:
 	@test -n "$${DM01_SOURCE_TEST_DATABASE_URL:-}" || { echo "DM01_SOURCE_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@test -n "$${DM01_TARGET_TEST_DATABASE_URL:-}" || { echo "DM01_TARGET_TEST_DATABASE_URL is required" >&2; exit 2; }
 	@acceptance/dm01/run_two_pg16.sh
+
+p4-v1-archive-migration-acceptance:
+	@test -n "$${P4_V1_ARCHIVE_TEST_DATABASE_URL:-}" || { echo "P4_V1_ARCHIVE_TEST_DATABASE_URL is required" >&2; exit 2; }
+	@acceptance/datamigration/v1_archive_migration_pg16.sh
 
 fmt-check:
 	@files="$$(git ls-files '*.go')"; \
