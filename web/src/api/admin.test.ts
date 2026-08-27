@@ -1,6 +1,9 @@
 import { acceptCampaignOutboundHandoffDto, appSettingsPageDto, attachmentPageDto, audiencePackagePageDto, buildChannelFinalUrl, channelAcquisitionAssetDto, channelAcquisitionAssetReady, channelAcquisitionPreviewDto, channelPageDto, configCategoryPageDto, couponPageDto, createOwnerReassignmentPreviewDto, createRefundIntentDto, customerContextPageDto, customerPageDto, customerSurveyPageDto, decideCampaignTouchPlanRecipientReviewDto, decideCampaignTouchPlanReviewDto, deleteCampaignDto, dispatchCampaignOutboundHandoffDto, executeOwnerReassignmentPreviewDto, getCampaignOutboundDispatchReconciliationDto, getCampaignOutboundHandoffDto, getCampaignOutboundHandoffReconciliationDto, getCampaignTouchPlanRecipientDto, getCampaignTouchPlanRecipientReviewDto, getChannelAcquisitionAssetDto, getChannelAcquisitionPreviewDto, getCouponDto, getImageThumbnailDto, getServicePeriodMemberGridMetaDto, groupOpsDetailDto, hxcSenderPageDto, imagePageDto, listCampaignPlanIndexDto, listCampaignsDto, listCampaignTouchPlanRecipientsDto, listChannelAcquisitionAssetsDto, listChannelAcquisitionStaffDto, listCouponClaimsDto, listCouponProductOptionsDto, miniProgramPageDto, orderPageDto, ownerReassignmentPreviewDto, productPageDto, publishChannelAcquisitionAssetDto, questionnaireOpsPageDto, questionnairePageDto, queueQuestionnairePushTestDto, radarPageDto, readAdminPage, readAdminRows, readOnlyConfigPageDto, reorderHxcSendersDto, saveAppSettingsDto, saveAudiencePackageDto, saveCampaignTouchPlanRecipientMessageDto, saveChannelDto, saveCouponDto, saveGroupOpsPlanDto, saveHxcSenderDto, saveImageItemDto, saveProductDto, saveQuestionnaireDto, saveQuestionnaireOpsDto, saveRadarLinkDto, saveServiceProductDto, serviceProductPageDto, setCustomerTagDto, tagPageDto, tryGetCampaignOutboundDispatchReconciliationDto, tryGetCampaignOutboundHandoffDto, updateChannelAcquisitionAssigneesDto, updateCustomerDto, uploadRadarPdfDto } from './admin';
 import { createServicePeriodMemberGridCollaboratorDto, deleteServicePeriodMemberGridCollaboratorDto, getServicePeriodMemberDto, queryServicePeriodMemberGridDto, updateServicePeriodMemberFieldsDto, updateServicePeriodMemberGridCollaboratorDto } from './admin';
 import { exportWechatOrdersDto } from './admin';
+import { readRadarSharePath } from './admin';
+import { exportRadarEventsCsv, readRadarEvents } from './admin';
+import { listGlobalQuestionnairePushLogsDto } from './admin';
 import type { LegacyQuestionnaire } from './generated/health';
 import { getAddCustomerTagUrl, getCreateContactOwnerReassignmentPreviewUrl, getCreateLegacyWecomTagUrl, getCreateRadarLinkUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getExecuteContactOwnerReassignmentPreviewUrl, getGetAdminOpsCategoryUrl, getGetContactOwnerReassignmentPreviewUrl, getGetLegacyAttachmentUrl, getGetLegacyCouponUrl, getGetLegacyImageUrl, getGetLegacyOrderUrl, getGetLegacyQuestionnaireUrl, getGetLegacyWecomTagUrl, getGetProductUrl, getGetRadarLinkShareProjectionUrl, getGetServicePeriodProductUrl, getListAdminOpsCategoriesUrl, getListAIAudiencePackagesUrl, getListCustomersUrl, getListLegacyAttachmentsUrl, getListLegacyChannelsUrl, getListLegacyCouponsUrl, getListLegacyQuestionnairesUrl, getListProductsUrl, getListRadarLinksUrl, getListServicePeriodProductsUrl, getQueueLegacyWecomTagSyncUrl, getSetCustomerStageUrl, getUpdateCustomerUrl, getUpdateLegacyImageUrl, getUploadLegacyAttachmentUrl } from './generated/health';
 import { ApiError } from './transport';
@@ -642,6 +645,20 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(JSON.parse(String(calls[0].init?.body)).destination_url === 'https://example.test', 'radar create request mapping');
   } finally { globalThis.fetch = savedFetch; }
 
+  let shareProjectionCall: { input: string; init?: RequestInit } | undefined;
+  globalThis.fetch = async (input, init) => {
+    shareProjectionCall = { input: String(input), init };
+    return new Response(JSON.stringify({ link_id: 5, public_code: 'rd_1234567890123456789012', status: 'enabled', available: true, share_path: '/r/rd_1234567890123456789012', qr_payload: '/r/rd_1234567890123456789012', local_projection: true, public_route_ready: true, real_external_call_executed: false }), { status: 200 });
+  };
+  try {
+    const sharePath = await readRadarSharePath(5);
+    assert(sharePath === '/r/rd_1234567890123456789012' && shareProjectionCall?.input === '/api/admin/radar-links/5/share' && shareProjectionCall.init?.method === 'GET', 'Radar share adapter uses the real local projection path');
+  } finally { globalThis.fetch = savedFetch; }
+  globalThis.fetch = async () => new Response(JSON.stringify({ link_id: 5, public_code: 'rd_1234567890123456789012', status: 'enabled', available: true, share_path: '/r/rd_1234567890123456789012', qr_payload: 'data:image/png;base64,not-a-server-field', local_projection: true, public_route_ready: true, real_external_call_executed: false }), { status: 200 });
+  try { await readRadarSharePath(5); assert(false, 'Radar share adapter accepted a non-contract QR payload'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('分享投影'), 'Radar share adapter rejects a non-contract QR payload'); }
+  finally { globalThis.fetch = savedFetch; }
+
   let imageRadarBody: Record<string, unknown> | undefined;
   globalThis.fetch = async (_input, init) => { imageRadarBody = JSON.parse(String(init?.body)); return new Response(JSON.stringify({ link: { link_id: 6, public_code: 'rd_2234567890123456789012', name: '海报', title: '海报', destination_url: 'https://example.test/poster', cover_image_id: 15, attachment_id: null, status: 'disabled', version: 1, created_by: 9, updated_by: 9, created_at: '', updated_at: '' }, local_projection: true, real_external_call_executed: false }), { status: 201 }); };
   try {
@@ -680,6 +697,14 @@ export async function runAdminAdapterTests(): Promise<void> {
   let pushTestMethod = '';
   globalThis.fetch = async (_input, init) => { pushTestMethod = init?.method || ''; return new Response(JSON.stringify({ test_run_id: 91, questionnaire_id: 4, status: 'queued', attempt_count: 0, real_external_call_executed: false }), { status: 202 }); };
   try { const testRun = await queueQuestionnairePushTestDto(4); assert(testRun.id === 91 && testRun.status === 'queued' && testRun.attemptCount === 0 && pushTestMethod === 'POST', 'questionnaire local push test mapping/method'); }
+  finally { globalThis.fetch = savedFetch; }
+  const globalPushCalls: Array<{ input: string; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => { globalPushCalls.push({ input: String(input), init }); return new Response(JSON.stringify({ items: [{ test_run_id: 92, questionnaire_id: 4, status: 'queued', attempt_count: 0, side_effect_executed: false, provider_result_received: false, unknown_after_dispatch: false, auto_retry_allowed: false, created_at: '2026-08-27T00:00:00Z', updated_at: '2026-08-27T00:00:00Z' }], total: 1, limit: 100, offset: 0, has_more: false, local_only: true }), { status: 200 }); };
+  try { const logs = await listGlobalQuestionnairePushLogsDto(); assert(globalPushCalls.length === 1 && globalPushCalls[0].input === '/admin/questionnaires/external-push-logs?limit=100&offset=0' && globalPushCalls[0].init?.method === 'GET' && logs[0]?.sid === '#92' && logs[0]?.uid === '#4' && logs[0]?.err.includes('未执行外部派发'), 'global questionnaire push logs use local-only generated read'); }
+  finally { globalThis.fetch = savedFetch; }
+  globalThis.fetch = async () => new Response(JSON.stringify({ items: [{ test_run_id: 92, questionnaire_id: 4, status: 'queued', attempt_count: 0, side_effect_executed: true, provider_result_received: false, unknown_after_dispatch: false, auto_retry_allowed: false, created_at: '2026-08-27T00:00:00Z', updated_at: '2026-08-27T00:00:00Z' }], total: 1, limit: 100, offset: 0, has_more: false, local_only: true }), { status: 200 });
+  try { await listGlobalQuestionnairePushLogsDto(); assert(false, 'global push log with external effect was accepted'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('仅本地 queued'), 'global push log with external effect fails closed'); }
   finally { globalThis.fetch = savedFetch; }
 
   const hxcMapped = hxcSenderPageDto({ id: 'cfg-1', sender_userid: 'alice', display_name: 'Alice', priority: 2, is_active: true, created_at: '', updated_at: '' });
@@ -791,5 +816,45 @@ export async function runAdminAdapterTests(): Promise<void> {
     assert(media.id === 16 && uploadInit?.method === 'POST' && uploadInit.body instanceof FormData, 'attachment upload multipart mapping');
     assert((uploadInit.body as FormData).get('attachment') instanceof Blob, 'attachment multipart field');
   } finally { globalThis.fetch = savedFetch; }
+  const chunkCalls: Array<{ input: string; init?: RequestInit }> = [];
+  globalThis.fetch = async (input, init) => { const url = String(input); chunkCalls.push({ input: url, init }); if (url.endsWith('/uploads')) return new Response(JSON.stringify({ upload_id: 31 }), { status: 201 }); if (url.endsWith('/complete')) return new Response(JSON.stringify({ attachment_id: 32 }), { status: 200 }); return new Response(null, { status: 204 }); };
+  try {
+    const media = await uploadRadarPdfDto(new File([new Uint8Array((1 << 20) + 1)], '大文件.pdf', { type: 'application/pdf' }));
+    assert(media.id === 32 && media.meta.includes('分片上传'), 'large radar PDF returns canonical multipart attachment');
+    assert(chunkCalls.length === 4 && chunkCalls[0].input.endsWith('/uploads') && chunkCalls[3].input.endsWith('/complete'), 'large radar PDF initiate/two-parts/complete sequence');
+    assert(chunkCalls.every((item) => String(new Headers(item.init?.headers).get('Idempotency-Key') || '').startsWith('radar-pdf-')), 'large radar PDF mutations carry idempotency keys');
+    const secondPart = JSON.parse(String(chunkCalls[2].init?.body));
+    assert(secondPart.content === 'AA==' && /^sha256:[0-9a-f]{64}$/.test(secondPart.sha256), 'large radar PDF part is base64 encoded and digest checked');
+  } finally { globalThis.fetch = savedFetch; }
+
+  let oversizedPdfRequested = false;
+  globalThis.fetch = async () => { oversizedPdfRequested = true; return new Response('{}', { status: 200 }); };
+  try { await uploadRadarPdfDto({ size: (10 << 20) + 1, type: 'application/pdf', name: '过大.pdf' } as File); assert(false, 'oversized radar PDF was accepted'); }
+  catch (error) { assert(error instanceof Error && error.message.includes('10MB') && !oversizedPdfRequested, 'oversized radar PDF must fail before request'); }
+  finally { globalThis.fetch = savedFetch; }
+
+  const radarCalls: Array<{ input: string; init?: RequestInit }> = [];
+  const receiptID = `rre_${'a'.repeat(32)}`;
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    radarCalls.push({ input: url, init });
+    if (url.includes('/events/export')) return new Response(`unionid,external_userid,created_at\n,,2026-08-01T00:00:00Z\n`, { status: 200, headers: { 'Content-Type': 'text/csv; charset=utf-8' } });
+    return new Response(JSON.stringify({ items: [{ event_id: 1, receipt_id: receiptID, link_id: 5, stage: 'landing', source: 'public_redirect', created_at: '2026-08-01T00:00:00Z' }], events: [], total: 1, limit: 500, offset: 0, has_more: false, identity_attributed: false, real_external_call_executed: false }), { status: 200 });
+  };
+  try {
+    const filters = { startAt: '2026-08-01T08:00', endAt: '2026-08-01T09:00' };
+    const radarEvents = await readRadarEvents(5, filters);
+    const csv = await exportRadarEventsCsv(5, filters);
+    const listURL = new URL(radarCalls[0].input, 'https://aicrm.test');
+    const exportURL = new URL(radarCalls[1].input, 'https://aicrm.test');
+    assert(radarEvents.length === 1 && radarEvents[0].unionid_masked === receiptID && radarEvents[0].external_userid === 'landing', 'radar event reads only local receipt and stage');
+    assert(listURL.searchParams.get('limit') === '500' && listURL.searchParams.get('start_at') === new Date(filters.startAt).toISOString() && listURL.searchParams.get('end_at') === new Date(filters.endAt).toISOString(), 'radar event refresh sends time filters to generated endpoint');
+    assert(exportURL.pathname === '/api/admin/radar-links/5/events/export' && exportURL.searchParams.get('start_at') === new Date(filters.startAt).toISOString() && csv.includes('unionid,external_userid,created_at'), 'radar export downloads server CSV with matching time filters');
+  } finally { globalThis.fetch = savedFetch; }
+
+  globalThis.fetch = async () => new Response('unavailable', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+  try { await exportRadarEventsCsv(5); assert(false, 'radar export 503 was accepted'); }
+  catch (error) { assert(error instanceof ApiError && error.status === 503, 'radar export must fail closed without local CSV fallback'); }
+  finally { globalThis.fetch = savedFetch; }
   void response;
 }

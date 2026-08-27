@@ -299,7 +299,8 @@ console.log('admin/radar.html（列表）');
   const shareBtn = d.querySelector('[data-share]');
   click(dom, shareBtn);
   await sleep(30);
-  ok('分享浮窗打开且伪二维码渲染', d.querySelector('#shareMask').classList.contains('open') && !!d.querySelector('#shareQr svg'));
+  ok('分享浮窗打开且二维码缺口明确阻塞', d.querySelector('#shareMask').classList.contains('open') && d.querySelector('#shareQr').textContent.includes('backend_blocked') && !d.querySelector('#shareQr svg'));
+  ok('本地/Mock 模式不启用链接复制', d.querySelector('#shareUrl').disabled && d.querySelector('#shareCopy').disabled);
   click(dom, d.querySelector('#shareMask .modal-x'));
   await sleep(30);
   ok('关闭分享浮窗', !d.querySelector('#shareMask').classList.contains('open'));
@@ -321,6 +322,30 @@ console.log('admin/radarDetail.html?id=2（详情）');
   input(dom, d.querySelector('#dKeyword'), '2f9Qn');
   await sleep(30);
   ok('明细按外部联系人 ID 过滤', d.querySelectorAll('#dRows tr').length === 3);
+  click(dom, d.querySelector('#dRefresh'));
+  await sleep(400);
+  ok('刷新重读真实事件并保留当前时间/用户筛选', d.querySelectorAll('#dRows tr').length === 3 && d.body.textContent.includes('已按当前时间条件刷新'));
+  let exportedBlob = null;
+  const originalCreateObjectURL = dom.window.URL.createObjectURL;
+  const originalRevokeObjectURL = dom.window.URL.revokeObjectURL;
+  const originalAnchorClick = dom.window.HTMLAnchorElement.prototype.click;
+  dom.window.URL.createObjectURL = (blob) => {
+    exportedBlob = blob;
+    return 'blob:radar-export';
+  };
+  dom.window.URL.revokeObjectURL = () => {};
+  dom.window.HTMLAnchorElement.prototype.click = () => {};
+  click(dom, d.querySelector('#dExport'));
+  await sleep(30);
+  const reader = new dom.window.FileReader();
+  const csv = await new Promise((resolve) => {
+    reader.addEventListener('load', () => resolve(String(reader.result)));
+    reader.readAsText(exportedBlob);
+  });
+  ok('导出仅包含当前筛选后的 3 条雷达事件', csv.split('\n').filter(Boolean).length === 4 && csv.includes('2f9Qn'));
+  dom.window.URL.createObjectURL = originalCreateObjectURL;
+  dom.window.URL.revokeObjectURL = originalRevokeObjectURL;
+  dom.window.HTMLAnchorElement.prototype.click = originalAnchorClick;
   dom.window.close();
 }
 
@@ -350,6 +375,14 @@ console.log('admin/radarForm.html（新建校验）');
   click(dom, save);
   await sleep(600);
   ok('保存成功 toast', d.querySelector('#fb-toast').textContent === '已保存内容雷达');
+  dom.window.close();
+}
+
+console.log('admin/radarForm.html?id=2（编辑路由）');
+{
+  const dom = await loadPage('admin/radarForm.html', { id: 2 });
+  const d = dom.window.document;
+  ok('雷达编辑路由加载现有链接', d.querySelector('.page-title')?.textContent === '编辑雷达链接' && d.querySelector('#fName')?.value === '共学营开营通知（可追踪）' && d.querySelector('#fUrl')?.value === 'https://mp.weixin.qq.com/s/gongxueying-kaiying');
   dom.window.close();
 }
 
@@ -464,6 +497,19 @@ console.log('admin/questionnaires.html');
   const d = dom.window.document;
   ok('问卷列表 6 行', d.querySelectorAll('tbody tr').length === 6);
   dom.window.close();
+}
+
+console.log('admin/questionnaireDetail.html（新建/编辑路由）');
+{
+  const createDom = await loadPage('admin/questionnaireDetail.html');
+  const createDoc = createDom.window.document;
+  ok('问卷新建路由保持创建态', createDoc.body.textContent.includes('创建问卷') && !!createDoc.querySelector('#questionnaireName') && !!createDoc.querySelector('#questionnaireQuestions'));
+  createDom.window.close();
+
+  const editDom = await loadPage('admin/questionnaireDetail.html', { id: 1 });
+  const editDoc = editDom.window.document;
+  ok('问卷编辑路由保持编辑态', editDoc.body.textContent.includes('编辑问卷') && !!editDoc.querySelector('#questionnaireName') && !!editDoc.querySelector('#questionnaireQuestions'));
+  editDom.window.close();
 }
 
 console.log('admin/customers.html（筛选、opaque cursor 翻页与详情导航）');
@@ -629,6 +675,16 @@ console.log('admin/questionnaireOps.html?id=1（opaque 本地运营配置）');
   const d = dom.window.document;
   ok('只展示 opaque navigation target 与正整数渠道 ID', !!d.querySelector('#opsNavigationTarget') && !!d.querySelector('#opsChannelResourceId') && !d.querySelector('#opsRedirectUrl'));
   ok('外部推送只接受 configuration reference', !!d.querySelector('#opsConfigurationReference') && !d.querySelector('#opsWebhook'));
+  input(dom, d.querySelector('#opsLogKeyword'), '#20478');
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '应用筛选'));
+  await sleep(30);
+  ok('问卷外推日志按测试记录 ID 筛选', d.querySelectorAll('tbody tr').length === 1 && d.body.textContent.includes('#20478'));
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '重置'));
+  await sleep(30);
+  ok('问卷外推日志重置恢复完整视图', d.querySelectorAll('tbody tr').length === 3);
+  click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.trim() === '全部问卷'));
+  await sleep(30);
+  ok('全局问卷外推日志测试模式失败关闭且不回退 Mock', d.querySelector('#fb-toast')?.textContent.includes('backend_blocked') && d.body.textContent.includes('当前问卷本地外推测试记录'));
   click(dom, [...d.querySelectorAll('button')].find((b) => b.textContent.includes('测试推送')));
   await sleep(30);
   ok('测试外推明确为本地 queued 记录且未宣称派发', d.querySelector('#fb-body').textContent.includes('不执行外部派发'));

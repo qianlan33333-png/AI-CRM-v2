@@ -44,6 +44,9 @@ type AdminState = {
   postEnabled: boolean;
   postType: 'channel_qr' | 'redirect';
   pushEnabled: boolean;
+  opsLogKeyword: string;
+  opsLogStatus: string;
+  opsLogScope: 'questionnaire' | 'global';
   /* ---- 分享组件 ---- */
   shareKind: string;
   shareTitle: string;
@@ -135,6 +138,9 @@ export class AdminController extends PageBase {
     postEnabled: true,
     postType: 'channel_qr',
     pushEnabled: true,
+    opsLogKeyword: '',
+    opsLogStatus: '',
+    opsLogScope: 'questionnaire',
     shareKind: '',
     shareTitle: '',
     shareUrl: '',
@@ -181,6 +187,8 @@ export class AdminController extends PageBase {
   private sendersDraft: AudienceSender[] | null = null;
   /** 问卷运营配置 · 自定义参数草稿 */
   private paramsDraft: { key: string; value: string }[] | null = null;
+  /** 全局日志仅在 HttpApi 真实读取成功后缓存；不以 Mock 代替。 */
+  private globalQuestionnairePushLogs: AdminDb['rows']['qApply'] | null = null;
   private imageObjectUrls: string[] = [];
 
   constructor(
@@ -237,6 +245,8 @@ export class AdminController extends PageBase {
       this.state.postEnabled = ops.postEnabled;
       this.state.postType = ops.postType;
       this.state.pushEnabled = ops.pushEnabled;
+      this.state.opsLogScope = 'questionnaire';
+      this.globalQuestionnairePushLogs = null;
     }
     if (this.__render) this.__render();
   }
@@ -1539,6 +1549,8 @@ export class AdminController extends PageBase {
     const redirectTypeOpts = ops ? this.aeSelectOpts(ops.redirectType, [['h5', 'H5 跳转地址'], ['urllink', '动态 URL Link 接口']]) : [];
     const freqOpts = ops ? this.aeSelectOpts(ops.frequency, [['实时推送', '实时推送'], ['每 10 分钟汇总', '每 10 分钟汇总'], ['每小时汇总', '每小时汇总']]) : [];
     const channelOpts = rows.channels.map((c, i) => ({ v: c.name, t: c.name, sel: i === 0, not: i !== 0 }));
+    const opsLogSource = s.opsLogScope === 'global' ? this.globalQuestionnairePushLogs || [] : rows.qApply;
+    const opsLogRows = opsLogSource.filter((row) => { const keyword = s.opsLogKeyword.trim().toLowerCase(); return (!keyword || row.sid.toLowerCase().includes(keyword) || row.uid.toLowerCase().includes(keyword)) && (!s.opsLogStatus || row.status === s.opsLogStatus); });
 
     /* ================= 企微标签 ================= */
     const tagQ = s.tagQ.trim();
@@ -1726,7 +1738,7 @@ export class AdminController extends PageBase {
     const productFormValue = this.qs().get('id') ? rows.products[0] : undefined;
     const serviceFormValue = this.qs().get('id') ? rows.spProducts[0] : undefined;
     const couponFormValue = this.qs().get('id') ? rows.coupons[0] : undefined;
-    const questionnaireFormValue = this.page === 'questionnaireDetail' ? rows.questionnaires[0] : undefined;
+    const questionnaireFormValue = this.page === 'questionnaireDetail' && this.qs().get('id') ? rows.questionnaires[0] : undefined;
     const channelFormValue = this.page === 'channelForm' && Boolean(this.qs().get('id')) ? rows.channels[0] : undefined;
     const channelFinalUrlPreview = channelFormValue?.carrierType === 'link' ? buildChannelFinalUrl(channelFormValue.linkUrl || '', channelFormValue.customerChannel || '') : '';
     const dateInput = (value?: string | null): string => value ? value.slice(0, 16) : '';
@@ -2189,6 +2201,17 @@ export class AdminController extends PageBase {
         freqOpts,
         save: () => this.saveOps(),
         testPush: () => { const qid = this.currentQid(); confirmBox('创建本地推送测试记录', '该 operation 只创建 queued 本地测试记录，不执行外部派发。确认继续？', '确认创建', false, () => { void this.api.queueQuestionnairePushTest(qid).then((result) => toast(`本地测试记录 ${result.id} 已创建，状态 ${result.status}，attempt_count ${result.attemptCount}；未执行外部派发`)).catch((error) => toast(error instanceof Error ? error.message : '测试记录创建失败', true)); }); },
+        showQuestionnaireLogs: () => this.setState({ opsLogScope: 'questionnaire', opsLogKeyword: '', opsLogStatus: '' }),
+        showGlobalLogs: () => { if (this.api.mode !== 'http') { toast('backend_blocked：测试/本地模式不使用 Mock 全局外推日志', true); return; } void this.api.listGlobalQuestionnairePushLogs().then((logs) => { this.globalQuestionnairePushLogs = logs; this.setState({ opsLogScope: 'global', opsLogKeyword: '', opsLogStatus: '' }); }).catch((error) => toast(error instanceof Error ? error.message : '全局外推日志读取失败', true)); },
+        filterLogs: () => this.setState({ opsLogKeyword: this.opsInputVal('opsLogKeyword').trim(), opsLogStatus: this.opsInputVal('opsLogStatus') }),
+        resetLogs: () => this.setState({ opsLogKeyword: '', opsLogStatus: '' }),
+        logScope: s.opsLogScope === 'global' ? '全部问卷本地外推测试记录' : '当前问卷本地外推测试记录',
+        questionnaireLogScopeStyle: { height: '28px', padding: '0 10px', border: '1px solid #DEE0E3', borderRadius: '6px', background: s.opsLogScope === 'questionnaire' ? '#EFF4FF' : '#fff', color: s.opsLogScope === 'questionnaire' ? accent : '#646A73', fontSize: '12px', cursor: 'pointer' },
+        globalLogScopeStyle: { height: '28px', padding: '0 10px', border: '1px solid #DEE0E3', borderRadius: '6px', background: s.opsLogScope === 'global' ? '#EFF4FF' : '#fff', color: s.opsLogScope === 'global' ? accent : '#646A73', fontSize: '12px', cursor: 'pointer' },
+        logKeyword: s.opsLogKeyword,
+        logStatusAll: !s.opsLogStatus,
+        logStatusQueued: s.opsLogStatus === 'queued',
+        logCount: opsLogRows.length,
         copyPublic: () => qRow?.publicPath ? copyText(new URL(qRow.publicPath, location.origin).toString(), toast) : toast('后端未返回问卷公开地址', true),
         openPublic: () => qRow?.publicPath ? window.open(new URL(qRow.publicPath, location.origin).toString(), '_blank', 'noopener') : toast('后端未返回问卷公开地址', true),
         viewLogs: () => this.setState({ opsTab: 2 }),
@@ -2440,7 +2463,7 @@ export class AdminController extends PageBase {
           },
         })),
         qSubs: rows.qSubs,
-        qApply: rows.qApply.map((r) => ({ ...r, cs: mk(r.tone) })),
+        qApply: opsLogRows.map((r) => ({ ...r, cs: mk(r.tone) })),
         edTools: rows.edTools,
         edQs: rows.edQs.map((q) => ({ ...q, isOpts: !q.input })),
         edAssignees: rows.edAssignees,

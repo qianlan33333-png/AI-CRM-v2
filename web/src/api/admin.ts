@@ -13,6 +13,9 @@ import {
   listServicePeriodProducts, listSurveyQuestionnaireExternalPushLogs,
   activateAIAudiencePackage, archiveLegacyWecomTag, archiveLegacyWecomTagGroup, archiveAIAudiencePackage, archiveServicePeriodProduct, copyAIAudiencePackage, copyLegacyWechatPayProduct, copyServicePeriodProduct, createAIAudiencePackageGroup, createLegacyMiniProgram, createLegacyWecomTag, createLegacyWecomTagGroup, createProduct, createRadarLink, createServicePeriodProduct, createServicePeriodMemberGridCollaborator, deleteAIAudiencePackageGroup, deleteLegacyAttachment, deleteLegacyImage, deleteLegacyMiniProgram, deleteServicePeriodMemberGridCollaborator, disableLegacyWechatPayProduct, disableRadarLink, disableServicePeriodProduct, enableLegacyWechatPayProduct, enableRadarLink, enableServicePeriodProduct, executeContactOwnerReassignmentPreview, getAIAudiencePackage, getCreateContactOwnerReassignmentPreviewUrl, getDownloadContactOwnerReassignmentErrorsUrl, getDownloadContactOwnerReassignmentResultsUrl, getDownloadContactOwnerReassignmentTemplateUrl, getDownloadLegacyAttachmentUrl, getGetLegacyImageVariantUrl, getRadarLink, getRadarLinkShareProjection, listAIAudiencePackageGroups, listAIAudiencePackages, listRadarLinkEvents, listRadarLinks, pauseAIAudiencePackage, queueLegacyWecomTagSync, updateAIAudiencePackageGroup, updateLegacyAttachment, updateLegacyImage, updateLegacyMiniProgram, updateLegacyWecomTagGroupPatch, updateLegacyWecomTagPatch, updateProduct, updateRadarLink, updateServicePeriodMemberFields, updateServicePeriodMemberGridCollaborator, updateServicePeriodProduct, uploadLegacyAttachment, uploadLegacyImage, type ContactOwnerReassignmentPreview as ApiOwnerReassignmentPreview, type Customer as ApiCustomer, type LegacyChannel, type LegacyChannelListItem, type LegacyQuestionnaire, type RadarLink as ApiRadarLink,
 } from './generated/health';
+import { listSurveyExternalPushLogs } from './generated/health';
+import { completeMediaAttachmentMultipartUpload, initiateMediaAttachmentMultipartUpload, putMediaAttachmentMultipartPart } from './generated/health';
+import { getExportRadarLinkEventsUrl } from './generated/health';
 import { archiveLegacyHXCSendConfig, getLegacyHXCSendConfig, reorderLegacyHXCSendConfigs, upsertLegacyHXCSendConfig, type LegacyHXCSenderConfig } from './generated/health';
 import { getLegacyAppSettingsResource, saveLegacyAppSettingsResource } from './generated/health';
 import { getAdminOpsPushCapabilities, listAdminOpsReleases } from './generated/health';
@@ -593,8 +596,48 @@ export async function downloadOwnerReassignmentReportDto(previewId: string, kind
   return (await request(url)).blob();
 }
 export async function setRadarEnabled(linkId: number, enabled: boolean): Promise<void> { const current = obj(await call(getRadarLink(linkId, apiRequestOptions()))).link as ApiRadarLink; const request = { expected_version: current.version }; await call(enabled ? enableRadarLink(linkId, request, apiRequestOptions()) : disableRadarLink(linkId, request, apiRequestOptions())); }
-export async function readRadarEvents(linkId: number): Promise<AdminDb['radarEvents']> { const page = await call(listRadarLinkEvents(linkId, undefined, apiRequestOptions())); return list(page, 'items').map((item) => ({ unionid_masked: text(obj(item).unionid_masked), external_userid: text(obj(item).external_userid), created_at: text(obj(item).occurred_at, text(obj(item).created_at)) })); }
-export async function readRadarSharePath(linkId: number): Promise<string> { const projection = obj(await call(getRadarLinkShareProjection(linkId, apiRequestOptions()))); if (projection.available !== true || typeof projection.share_path !== 'string') throw new Error('后端尚未提供可用的 Radar 公开分享路径'); return projection.share_path; }
+type RadarEventFilters = { startAt?: string; endAt?: string };
+const radarEventParams = (linkId: number, filters: RadarEventFilters) => {
+  if (!Number.isSafeInteger(linkId) || linkId < 1) throw new Error('Radar 链接 ID 无效');
+  const toISO = (value: string | undefined, field: string): string | undefined => {
+    if (!value) return undefined;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) throw new Error(`Radar ${field}无效`);
+    return date.toISOString();
+  };
+  const startAt = toISO(filters.startAt, '开始时间');
+  const endAt = toISO(filters.endAt, '结束时间');
+  if (startAt && endAt && startAt > endAt) throw new Error('Radar 开始时间不能晚于结束时间');
+  return { start_at: startAt, end_at: endAt };
+};
+export async function readRadarEvents(linkId: number, filters: RadarEventFilters = {}): Promise<AdminDb['radarEvents']> {
+  const page = obj(await call(listRadarLinkEvents(linkId, { limit: 500, ...radarEventParams(linkId, filters) }, apiRequestOptions())));
+  if (page.identity_attributed !== false || page.real_external_call_executed !== false || page.has_more === true) throw new Error('Radar 事件响应越过本地边界或超出 500 条，请缩小时间范围');
+  return list(page, 'items').map((item) => {
+    const event = obj(item);
+    const receiptID = typeof event.receipt_id === 'string' ? event.receipt_id : '';
+    const stage = typeof event.stage === 'string' ? event.stage : '';
+    const createdAt = typeof event.created_at === 'string' ? event.created_at : '';
+    if (!/^rre_[0-9a-f]{32}$/.test(receiptID) || !stage || Number.isNaN(new Date(createdAt).getTime())) throw new Error('Radar 本地事件响应不完整');
+    return { unionid_masked: receiptID, external_userid: stage, created_at: createdAt };
+  });
+}
+export async function exportRadarEventsCsv(linkId: number, filters: RadarEventFilters = {}): Promise<string> {
+  const response = await request(getExportRadarLinkEventsUrl(linkId, radarEventParams(linkId, filters)));
+  if (!response.headers.get('Content-Type')?.toLowerCase().includes('text/csv')) throw new Error('Radar 导出响应不是 CSV');
+  return response.text();
+}
+export async function readRadarSharePath(linkId: number): Promise<string> {
+  if (!Number.isSafeInteger(linkId) || linkId < 1) throw new Error('Radar 链接 ID 无效');
+  const projection = obj(await call(getRadarLinkShareProjection(linkId, apiRequestOptions())));
+  const publicCode = typeof projection.public_code === 'string' ? projection.public_code : '';
+  const sharePath = typeof projection.share_path === 'string' ? projection.share_path : '';
+  const qrPayload = typeof projection.qr_payload === 'string' ? projection.qr_payload : '';
+  const responseLinkId = Number(projection.link_id);
+  if (!Number.isSafeInteger(responseLinkId) || responseLinkId < 1 || responseLinkId !== linkId || !/^rd_[A-Za-z0-9_-]{22}$/.test(publicCode) || !/^\/r\/rd_[A-Za-z0-9_-]{22}$/.test(sharePath) || sharePath !== `/r/${publicCode}` || !/^\/r\/rd_[A-Za-z0-9_-]{22}$/.test(qrPayload) || projection.local_projection !== true || projection.public_route_ready !== true || projection.real_external_call_executed !== false) throw new Error('Radar 分享投影响应不完整或越过本地边界');
+  if (projection.available !== true) throw new Error('后端尚未提供可用的 Radar 公开分享路径');
+  return sharePath;
+}
 export async function readCouponSharePath(couponId: number): Promise<string> { const projection = obj(await call(getLegacyCouponShare(couponId, apiRequestOptions()))); if (typeof projection.url !== 'string') throw new Error('后端尚未提供可用的优惠券分享路径'); return projection.url; }
 export async function updateCustomerDto(customerId: number, input: { name?: string; stageId?: number | null }): Promise<Customer> {
   const opt = apiRequestOptions(); let customer: ApiCustomer | undefined;
@@ -790,7 +833,25 @@ export async function saveRadarLinkDto(input: RadarLinkInput): Promise<AdminDb['
   return radarPageDto(updated.link as ApiRadarLink);
 }
 export async function uploadRadarImageDto(file: File): Promise<RadarMedia> { const result = obj(await call(uploadLegacyImage({ image: file, name: file.name }, apiRequestOptions()))); const item = obj(result.item); return { id: Number(item.id), name: text(item.name, file.name), meta: `${text(item.mime_type, file.type)} · ${text(item.file_size, String(file.size))} bytes` }; }
-export async function uploadRadarPdfDto(file: File): Promise<RadarMedia> { const item = obj(await call(uploadLegacyAttachment({ attachment: file, name: file.name }, apiRequestOptions()))); return { id: Number(item.id), name: text(item.name, file.name), meta: `${text(item.mime_type, file.type)} · ${text(item.file_size, String(file.size))} bytes` }; }
+const sha256 = async (bytes: ArrayBuffer): Promise<string> => `sha256:${Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), (value) => value.toString(16).padStart(2, '0')).join('')}`;
+const base64 = (bytes: Uint8Array): string => { let binary = ''; for (let offset = 0; offset < bytes.length; offset += 0x8000) binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000)); return btoa(binary); };
+const idempotency = (scope: string): RequestInit => apiRequestOptions({ headers: { 'Idempotency-Key': `${scope}-${crypto.randomUUID()}` } });
+export async function uploadRadarPdfDto(file: File): Promise<RadarMedia> {
+  if (file.size <= 1 << 20) { const item = obj(await call(uploadLegacyAttachment({ attachment: file, name: file.name }, apiRequestOptions()))); return { id: Number(item.id), name: text(item.name, file.name), meta: `${text(item.mime_type, file.type)} · ${text(item.file_size, String(file.size))} bytes` }; }
+  if (file.type !== 'application/pdf' || file.size > 10 << 20) throw new Error('PDF 必须为 10MB 以内的 application/pdf 文件');
+  const content = await file.arrayBuffer();
+  const initiated = obj(await call(initiateMediaAttachmentMultipartUpload({ file_name: file.name, name: file.name, size: file.size, sha256: await sha256(content), enabled: true }, idempotency('radar-pdf-init'))));
+  const uploadId = Number(initiated.upload_id);
+  if (!Number.isSafeInteger(uploadId) || uploadId < 1) throw new Error('后端未返回有效的 PDF 上传 ID');
+  for (let offset = 0, part = 1; offset < content.byteLength; offset += 1 << 20, part += 1) {
+    const chunk = content.slice(offset, Math.min(offset + (1 << 20), content.byteLength));
+    await call(putMediaAttachmentMultipartPart(uploadId, part, { sha256: await sha256(chunk), content: base64(new Uint8Array(chunk)) }, idempotency(`radar-pdf-part-${part}`)));
+  }
+  const completed = obj(await call(completeMediaAttachmentMultipartUpload(uploadId, idempotency('radar-pdf-complete'))));
+  const attachmentId = Number(completed.attachment_id);
+  if (!Number.isSafeInteger(attachmentId) || attachmentId < 1) throw new Error('后端未返回有效的 PDF 素材 ID');
+  return { id: attachmentId, name: file.name, meta: `${file.type} · ${file.size} bytes · 分片上传` };
+}
 const splitTags = (value: string | undefined): string[] => (value || '').split(/[,，]/).map((tag) => tag.trim()).filter(Boolean);
 async function uniqueMediaId(kind: 'image' | 'attachment' | 'mini', name: string): Promise<string | number> {
   const opt = apiRequestOptions();
@@ -910,6 +971,15 @@ export async function createRefundIntentDto(input: RefundIntentInput): Promise<R
 }
 export async function saveQuestionnaireOpsDto(questionnaireId: number, ops: QuestionnaireOps): Promise<void> { const opaque = /^[A-Za-z0-9._:-]{1,128}$/; const navigation = ops.completionNavigationTargetId.trim(); const reference = ops.externalPushConfigurationReference.trim(); const channel = ops.completionChannelId.trim(); if (navigation && !opaque.test(navigation)) throw new Error('提交后导航目标必须是 1-128 位 opaque reference，不能填写 URL'); if (reference && !opaque.test(reference)) throw new Error('外部推送配置必须是 1-128 位 opaque reference，不能填写 URL'); if (ops.pushEnabled && !reference) throw new Error('启用外部推送时必须提供 configuration reference'); const channel_id = channel ? Number(channel) : undefined; if (channel && (!Number.isInteger(channel_id) || Number(channel_id) < 1)) throw new Error('渠道资源 ID 必须是正整数'); const opt = apiRequestOptions(); await call(saveSurveyCompletionOperations(questionnaireId, navigation || channel_id ? { navigation_target_id: navigation || undefined, channel_id } : {}, opt)); await call(saveSurveyExternalPushOperations(questionnaireId, { enabled: ops.pushEnabled, configuration_reference: ops.pushEnabled ? reference : undefined }, opt)); }
 export async function queueQuestionnairePushTestDto(questionnaireId: number): Promise<{ id: number; status: string; attemptCount: number }> { const result = obj(await call(queueSurveyExternalPushTest(questionnaireId, apiRequestOptions()))); return { id: Number(result.test_run_id), status: text(result.status), attemptCount: Number(result.attempt_count || 0) }; }
+function surveyExternalPushLogDto(value: unknown): AdminDb['rows']['qApply'][number] {
+  const source = obj(value);
+  const testRunID = Number(source.test_run_id);
+  const questionnaireID = Number(source.questionnaire_id);
+  if (!Number.isSafeInteger(testRunID) || testRunID < 1 || !Number.isSafeInteger(questionnaireID) || questionnaireID < 1 || typeof source.created_at !== 'string' || !source.created_at) throw new Error('问卷外推日志缺少有效本地测试记录字段');
+  if (source.status !== 'queued' || source.attempt_count !== 0 || source.side_effect_executed !== false || source.provider_result_received !== false || source.unknown_after_dispatch !== false || source.auto_retry_allowed !== false) throw new Error('问卷外推日志不符合仅本地 queued 契约');
+  return { time: source.created_at, sid: `#${testRunID}`, uid: `#${questionnaireID}`, status: 'queued', tone: 'warn', err: '仅本地队列；未执行外部派发' };
+}
+export async function listGlobalQuestionnairePushLogsDto(): Promise<AdminDb['rows']['qApply']> { const page = obj(await call(listSurveyExternalPushLogs({ limit: 100, offset: 0 }, apiRequestOptions()))); if (page.local_only !== true) throw new Error('问卷全局外推日志缺少本地边界'); return list(page, 'items').map(surveyExternalPushLogDto); }
 export type HxcSenderWriteInput = { id: string; senderUserid: string; displayName: string; priority: number; active: boolean };
 export async function saveHxcSenderDto(input: HxcSenderWriteInput): Promise<AdminDb['rows']['agents'][number]> { if (!input.id || !input.senderUserid) throw new Error('配置 ID 和 sender_userid 不能为空'); if (!Number.isInteger(input.priority) || input.priority < 0 || input.priority > 100000) throw new Error('优先级必须是 0-100000 的整数'); const result = obj(await call(upsertLegacyHXCSendConfig({ id: input.id, sender_userid: input.senderUserid, display_name: input.displayName, priority: input.priority, is_active: input.active }, apiRequestOptions()))); return hxcSenderPageDto(result.item as LegacyHXCSenderConfig); }
 export async function reorderHxcSendersDto(ids: string[]): Promise<void> { const clean = ids.map((id) => id.trim()).filter(Boolean); if (!clean.length || new Set(clean).size !== clean.length) throw new Error('排序列表不能为空且 ID 不能重复'); await call(reorderLegacyHXCSendConfigs({ ids: clean }, apiRequestOptions())); }
@@ -995,7 +1065,7 @@ export async function readAdminPage(context: AdminReadContext = {}): Promise<Adm
     }
   }
   if (!id) return db;
-  if (context.page === 'questionnaireDetail' || context.page === 'questionnaireOps') { const [detail, results, submissions, analysis, operations, pageData, logs] = await Promise.all([call(getLegacyQuestionnaire(numeric, opt)), call(getLegacyQuestionnaireResults(numeric, opt)), call(listLegacyQuestionnaireSubmissions(numeric, undefined, opt)), call(getSurveySafeSubmissionAnalysis(numeric, undefined, opt)), call(getSurveyOperations(numeric, opt)), call(getSurveyOperationsPageData(numeric, opt)), call(listSurveyQuestionnaireExternalPushLogs(numeric, undefined, opt))]); const q = obj(detail).questionnaire || detail; db.rows.questionnaires = [questionnairePageDto(q as LegacyQuestionnaire)]; db.qOps[numeric] = questionnaireOpsPageDto(operations); db.rows.qSubs = list(submissions, 'items', 'submissions').map((x) => ({ time: text(obj(x).submitted_at), uid: text(obj(x).customer_id), by: text(obj(x).customer_name), score: text(obj(x).score), tags: list(obj(x).tags).map(String) })); db.rows.qApply = list(logs, 'items', 'logs').map((x) => ({ time: text(obj(x).created_at), sid: text(obj(x).submission_id), uid: text(obj(x).external_userid), status: text(obj(x).status), tone: toneFor(obj(x).status), err: text(obj(x).error, '') })); void results; void analysis; void pageData; }
+  if (context.page === 'questionnaireDetail' || context.page === 'questionnaireOps') { const [detail, results, submissions, analysis, operations, pageData, logs] = await Promise.all([call(getLegacyQuestionnaire(numeric, opt)), call(getLegacyQuestionnaireResults(numeric, opt)), call(listLegacyQuestionnaireSubmissions(numeric, undefined, opt)), call(getSurveySafeSubmissionAnalysis(numeric, undefined, opt)), call(getSurveyOperations(numeric, opt)), call(getSurveyOperationsPageData(numeric, opt)), call(listSurveyQuestionnaireExternalPushLogs(numeric, undefined, opt))]); const q = obj(detail).questionnaire || detail; db.rows.questionnaires = [questionnairePageDto(q as LegacyQuestionnaire)]; db.qOps[numeric] = questionnaireOpsPageDto(operations); db.rows.qSubs = list(submissions, 'items', 'submissions').map((x) => ({ time: text(obj(x).submitted_at), uid: text(obj(x).customer_id), by: text(obj(x).customer_name), score: text(obj(x).score), tags: list(obj(x).tags).map(String) })); db.rows.qApply = list(logs, 'items', 'logs').map(surveyExternalPushLogDto); void results; void analysis; void pageData; }
   if (context.page === 'channelForm') {
     try {
       const detail = await call(getLegacyChannel(numeric, opt));
