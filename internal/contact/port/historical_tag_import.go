@@ -33,7 +33,10 @@ type HistoricalTagFact struct {
 }
 
 type HistoricalTagLineage struct {
-	TargetID      int64
+	TargetID int64
+	// CustomerID completes the customer_tags composite target address; zero
+	// for tag groups and catalog tags.
+	CustomerID    CustomerID
 	TargetDigest  [32]byte
 	PayloadDigest [32]byte
 	FieldDigest   [32]byte
