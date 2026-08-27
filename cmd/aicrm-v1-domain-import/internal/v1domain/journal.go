@@ -3,6 +3,7 @@
 package v1domain
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -56,6 +57,66 @@ func NewJournal(scope Scope) (*Journal, error) {
 		return nil, ErrInvalidScope
 	}
 	return &Journal{scope: scope, tx: platformstore.TxFromContext}, nil
+}
+
+// LoadTerminal serializes one source identity, including the not-yet-imported
+// case. Callers must use the same transaction for the target write and Record.
+func (journal *Journal) LoadTerminal(ctx context.Context, sourceIdentifier string) (TerminalReceipt, bool, error) {
+	if journal == nil || journal.tx == nil || !journal.scope.valid() {
+		return TerminalReceipt{}, false, ErrInvalidScope
+	}
+	sourceKey, err := decodeSourceIdentifier(sourceIdentifier)
+	if err != nil {
+		return TerminalReceipt{}, false, err
+	}
+	tx, err := journal.tx(ctx)
+	if err != nil {
+		return TerminalReceipt{}, false, err
+	}
+	lockKey := strings.Join([]string{journal.scope.ImportVersion, journal.scope.ArchiveRunID, journal.scope.AdapterID, journal.scope.TableID, sourceIdentifier}, "/")
+	if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, lockKey); err != nil {
+		return TerminalReceipt{}, false, err
+	}
+	var receipt TerminalReceipt
+	var payload, targetDigest, metadata []byte
+	var targetDomain, targetTable, targetID *string
+	var verified bool
+	err = tx.QueryRow(ctx, `SELECT payload_digest,disposition,reason,target_domain,target_table,target_id,target_digest,metadata,verified
+FROM public.v1_domain_import_receipts
+WHERE import_version=$1 AND archive_run_id=$2 AND adapter_id=$3 AND table_id=$4 AND source_key_digest=$5`,
+		journal.scope.ImportVersion, journal.scope.ArchiveRunID, journal.scope.AdapterID, journal.scope.TableID, sourceKey).
+		Scan(&payload, &receipt.Disposition, &receipt.Reason, &targetDomain, &targetTable, &targetID, &targetDigest, &metadata, &verified)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return TerminalReceipt{}, false, nil
+	}
+	if err != nil {
+		return TerminalReceipt{}, false, err
+	}
+	if len(payload) != sha256.Size || !verified {
+		return TerminalReceipt{}, false, ErrConflict
+	}
+	copy(receipt.SourceKeyDigest[:], sourceKey)
+	copy(receipt.PayloadDigest[:], payload)
+	switch receipt.Disposition {
+	case "import":
+		if receipt.Reason != "" || targetDomain == nil || *targetDomain != journal.scope.TargetDomain || targetTable == nil || *targetTable != journal.scope.TargetTable || targetID == nil || *targetID == "" || len(targetDigest) != sha256.Size {
+			return TerminalReceipt{}, false, ErrConflict
+		}
+		receipt.TargetID = *targetID
+		copy(receipt.TargetDigest[:], targetDigest)
+	case "archive", "quarantine":
+		if receipt.Reason == "" || targetDomain != nil || targetTable != nil || targetID != nil || targetDigest != nil {
+			return TerminalReceipt{}, false, ErrConflict
+		}
+	default:
+		return TerminalReceipt{}, false, ErrConflict
+	}
+	decoder := json.NewDecoder(bytes.NewReader(metadata))
+	decoder.UseNumber()
+	if decoder.Decode(&receipt.Metadata) != nil || receipt.Metadata == nil {
+		return TerminalReceipt{}, false, ErrConflict
+	}
+	return receipt, true, nil
 }
 
 func (scope Scope) valid() bool {
@@ -265,31 +326,37 @@ func (journal *Journal) Record(ctx context.Context, receipt TerminalReceipt) err
 	default:
 		return ErrInvalidScope
 	}
-	_, err = tx.Exec(ctx, `INSERT INTO public.v1_domain_import_receipts
+	_, found, err := journal.LoadTerminal(ctx, SourceIdentifier(receipt.SourceKeyDigest))
+	if err != nil {
+		return err
+	}
+	if !found {
+		_, err = tx.Exec(ctx, `INSERT INTO public.v1_domain_import_receipts
 (import_version,archive_run_id,adapter_id,table_id,source_key_digest,payload_digest,disposition,reason,
  target_domain,target_table,target_id,target_digest,metadata,verified)
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,true)
 ON CONFLICT (import_version,archive_run_id,adapter_id,table_id,source_key_digest) DO NOTHING`,
-		journal.scope.ImportVersion, journal.scope.ArchiveRunID, journal.scope.AdapterID, journal.scope.TableID,
-		receipt.SourceKeyDigest[:], receipt.PayloadDigest[:], receipt.Disposition, receipt.Reason,
-		targetDomain, targetTable, targetID, targetDigest, metadata)
-	if err != nil {
-		return err
+			journal.scope.ImportVersion, journal.scope.ArchiveRunID, journal.scope.AdapterID, journal.scope.TableID,
+			receipt.SourceKeyDigest[:], receipt.PayloadDigest[:], receipt.Disposition, receipt.Reason,
+			targetDomain, targetTable, targetID, targetDigest, metadata)
+		if err != nil {
+			return err
+		}
 	}
 	var payload []byte
 	var disposition, reason string
 	var foundTargetID *string
 	var foundTargetDigest []byte
-	var foundMetadata []byte
-	err = tx.QueryRow(ctx, `SELECT payload_digest,disposition,reason,target_id,target_digest,metadata FROM public.v1_domain_import_receipts
+	var metadataMatches bool
+	err = tx.QueryRow(ctx, `SELECT payload_digest,disposition,reason,target_id,target_digest,metadata=$6::jsonb FROM public.v1_domain_import_receipts
 WHERE import_version=$1 AND archive_run_id=$2 AND adapter_id=$3 AND table_id=$4 AND source_key_digest=$5`,
 		journal.scope.ImportVersion, journal.scope.ArchiveRunID, journal.scope.AdapterID, journal.scope.TableID,
-		receipt.SourceKeyDigest[:]).Scan(&payload, &disposition, &reason, &foundTargetID, &foundTargetDigest, &foundMetadata)
+		receipt.SourceKeyDigest[:], metadata).Scan(&payload, &disposition, &reason, &foundTargetID, &foundTargetDigest, &metadataMatches)
 	if err != nil || len(payload) != sha256.Size || !equalDigest(payload, receipt.PayloadDigest) || disposition != receipt.Disposition || reason != receipt.Reason {
 		return ErrConflict
 	}
 	if (receipt.Disposition == "import" && (foundTargetID == nil || *foundTargetID != receipt.TargetID || !equalDigest(foundTargetDigest, receipt.TargetDigest))) ||
-		(receipt.Disposition != "import" && (foundTargetID != nil || foundTargetDigest != nil)) || string(foundMetadata) != string(metadata) {
+		(receipt.Disposition != "import" && (foundTargetID != nil || foundTargetDigest != nil)) || !metadataMatches {
 		return ErrConflict
 	}
 	return nil
