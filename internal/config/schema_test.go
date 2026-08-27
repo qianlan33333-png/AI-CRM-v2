@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -621,6 +622,46 @@ func TestLoadAPIClientJWTSecretIsOptionalStrictAndRedacted(t *testing.T) {
 	_, err = load(appruntime.RoleAPI, mapLookup(values))
 	if err == nil || err.Error() != "invalid startup configuration: api_client.jwt_secret must be 32-byte canonical base64url" || strings.Contains(err.Error(), "sentinel") {
 		t.Fatalf("invalid api-client JWT secret error = %v", err)
+	}
+}
+
+func TestLoadAPIClientSecretMapIsOptionalStrictAndRedacted(t *testing.T) {
+	base := map[string]string{
+		databaseURLEnv:      "postgres://db/aicrm",
+		apiListenAddressEnv: "127.0.0.1:8080",
+		apiPoolMaxConnsEnv:  "1",
+		identityHMACKeyEnv:  strings.Repeat("A", 43),
+	}
+	root, err := load(appruntime.RoleAPI, mapLookup(base))
+	if err != nil || root.APIClient.SecretMap.Configured() || root.APIClient.SecretMap.Verify("secret://adminops/api_client/identity.reader/current", strings.Repeat("A", 43)) {
+		t.Fatalf("optional api-client secret map load = %#v, %v", root.APIClient, err)
+	}
+	const secretRef = "secret://adminops/api_client/identity.reader/current"
+	secret := strings.Repeat("A", 42) + "E"
+	values := cloneValues(base)
+	values[apiClientSecretMapEnv] = `{"` + secretRef + `":"` + secret + `"}`
+	root, err = load(appruntime.RoleAPI, mapLookup(values))
+	if err != nil || !root.APIClient.SecretMap.Configured() || !root.APIClient.SecretMap.Verify(secretRef, secret) || root.APIClient.SecretMap.Verify(secretRef, strings.Repeat("A", 43)) {
+		t.Fatalf("api-client secret map load = %#v, %v", root.APIClient, err)
+	}
+	verified, verifyErr := root.APIClient.SecretMap.VerifyAPIClientSecret(context.Background(), secretRef, secret)
+	if verifyErr != nil || !verified {
+		t.Fatalf("api-client secret verifier = %t, %v", verified, verifyErr)
+	}
+	if formatted := fmt.Sprintf("%#v", root); strings.Contains(formatted, secret) || strings.Contains(formatted, secretRef) {
+		t.Fatalf("Root formatting exposed the API-client secret map: %s", formatted)
+	}
+	for _, invalid := range []string{
+		`{}`,
+		`not-json`,
+		`{"bad-ref":"` + secret + `"}`,
+		`{"` + secretRef + `":"secret-map-sentinel"}`,
+	} {
+		values[apiClientSecretMapEnv] = invalid
+		_, err = load(appruntime.RoleAPI, mapLookup(values))
+		if err == nil || err.Error() == "" || strings.Contains(err.Error(), "secret-map-sentinel") {
+			t.Fatalf("invalid api-client secret map error = %v", err)
+		}
 	}
 }
 

@@ -41,3 +41,4 @@ output-options:
     - pe01-wechat-pay-settlement
     - p4-media-content-delivery
     - commerce-refund-v2
+    - p4-api-client-oauth
