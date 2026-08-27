@@ -112,6 +112,49 @@ func TestCouponImporterRejectsPayloadDriftWithoutNewTarget(t *testing.T) {
 	}
 }
 
+func TestCouponImporterResolvesAndWritesInTheSameTransactionContext(t *testing.T) {
+	archive := couponImportArchive(t)
+	probe := &couponTransactionProbe{}
+	writer := &couponWriterFake{probe: probe, definitions: map[string]couponport.HistoricalDefinition{}, claims: map[string]couponport.HistoricalClaim{}, redemptions: map[string]couponport.HistoricalRedemption{}, receipts: map[string]couponport.HistoricalReceipt{}}
+	journals := map[string]couponTerminalJournal{
+		couponDefinitionsKind: newCouponTerminalFake(), couponBindingsKind: newCouponTerminalFake(),
+		couponClaimsKind: newCouponTerminalFake(), couponRedemptionsKind: newCouponTerminalFake(),
+	}
+	importer, err := newCouponImporter(archive, &couponTransactionUOW{probe: probe}, writer, couponResolverFake{
+		products: map[int64]int64{301: 41}, customers: map[string]*int64{"union-101": couponID(51)}, orders: map[int64]*int64{701: couponID(61)}, probe: probe,
+	}, journals, "archive-run", 7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result, err := importer.Import(context.Background(), "archive-run"); err != nil || result != (CouponImportResult{ImportedDefinitions: 1, ImportedBindings: 1, ImportedClaims: 1, ImportedRedemptions: 1}) {
+		t.Fatalf("result/error = %#v/%v", result, err)
+	}
+	if probe.mismatches != 0 || probe.resolverCalls != 3 || probe.writerCalls != 3 {
+		t.Fatalf("transaction probe = %#v", probe)
+	}
+}
+
+func TestCouponImporterRecordsDefinitionQuarantineAfterResolverTransaction(t *testing.T) {
+	archive := couponImportArchive(t)
+	probe := &couponTransactionProbe{}
+	uow := &couponTransactionUOW{probe: probe}
+	writer := &couponWriterFake{probe: probe, definitions: map[string]couponport.HistoricalDefinition{}, claims: map[string]couponport.HistoricalClaim{}, redemptions: map[string]couponport.HistoricalRedemption{}, receipts: map[string]couponport.HistoricalReceipt{}}
+	journals := map[string]couponTerminalJournal{
+		couponDefinitionsKind: newCouponTerminalFake(), couponBindingsKind: newCouponTerminalFake(),
+		couponClaimsKind: newCouponTerminalFake(), couponRedemptionsKind: newCouponTerminalFake(),
+	}
+	importer, err := newCouponImporter(archive, uow, writer, couponResolverFake{products: map[int64]int64{301: 0}, probe: probe}, journals, "archive-run", 7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result, err := importer.Import(context.Background(), "archive-run"); err != nil || result != (CouponImportResult{QuarantinedDefinitions: 1, QuarantinedBindings: 1, QuarantinedClaims: 1, QuarantinedRedemptions: 1}) {
+		t.Fatalf("result/error = %#v/%v", result, err)
+	}
+	if probe.writerCalls != 0 || probe.resolverCalls != 1 || probe.mismatches != 0 || uow.calls != 4 {
+		t.Fatalf("probe/uow = %#v/%#v", probe, uow)
+	}
+}
+
 type couponArchiveFake struct {
 	rows map[string][]v1archive.ArchivedRow
 }
@@ -130,17 +173,21 @@ type couponResolverFake struct {
 	customers map[string]*int64
 	orders    map[int64]*int64
 	err       error
+	probe     *couponTransactionProbe
 }
 
-func (resolver couponResolverFake) ResolveCouponProduct(_ context.Context, sourceID, _ int64) (int64, error) {
+func (resolver couponResolverFake) ResolveCouponProduct(ctx context.Context, sourceID, _ int64) (int64, error) {
+	resolver.probe.resolve(ctx)
 	return resolver.products[sourceID], resolver.err
 }
 
-func (resolver couponResolverFake) ResolveCouponCustomer(_ context.Context, unionID string) (*int64, error) {
+func (resolver couponResolverFake) ResolveCouponCustomer(ctx context.Context, unionID string) (*int64, error) {
+	resolver.probe.resolve(ctx)
 	return resolver.customers[unionID], resolver.err
 }
 
-func (resolver couponResolverFake) ResolveCouponOrder(_ context.Context, sourceID int64, _ string) (*int64, error) {
+func (resolver couponResolverFake) ResolveCouponOrder(ctx context.Context, sourceID int64, _ string) (*int64, error) {
+	resolver.probe.resolve(ctx)
 	return resolver.orders[sourceID], resolver.err
 }
 
@@ -149,9 +196,11 @@ type couponWriterFake struct {
 	claims      map[string]couponport.HistoricalClaim
 	redemptions map[string]couponport.HistoricalRedemption
 	receipts    map[string]couponport.HistoricalReceipt
+	probe       *couponTransactionProbe
 }
 
-func (writer *couponWriterFake) ImportDefinition(_ context.Context, source string, payload [sha256.Size]byte, value couponport.HistoricalDefinition) (couponport.HistoricalReceipt, error) {
+func (writer *couponWriterFake) ImportDefinition(ctx context.Context, source string, payload [sha256.Size]byte, value couponport.HistoricalDefinition) (couponport.HistoricalReceipt, error) {
+	writer.probe.write(ctx)
 	if existing, found := writer.receipts["definition/"+source]; found {
 		if existing.PayloadDigest != payload {
 			return couponport.HistoricalReceipt{}, couponport.ErrHistoryConflict
@@ -164,7 +213,8 @@ func (writer *couponWriterFake) ImportDefinition(_ context.Context, source strin
 	return receipt, nil
 }
 
-func (writer *couponWriterFake) ImportClaim(_ context.Context, source string, payload [sha256.Size]byte, value couponport.HistoricalClaim) (couponport.HistoricalReceipt, error) {
+func (writer *couponWriterFake) ImportClaim(ctx context.Context, source string, payload [sha256.Size]byte, value couponport.HistoricalClaim) (couponport.HistoricalReceipt, error) {
+	writer.probe.write(ctx)
 	if existing, found := writer.receipts["claim/"+source]; found {
 		if existing.PayloadDigest != payload {
 			return couponport.HistoricalReceipt{}, couponport.ErrHistoryConflict
@@ -177,7 +227,8 @@ func (writer *couponWriterFake) ImportClaim(_ context.Context, source string, pa
 	return receipt, nil
 }
 
-func (writer *couponWriterFake) ImportRedemption(_ context.Context, source string, payload [sha256.Size]byte, value couponport.HistoricalRedemption) (couponport.HistoricalReceipt, error) {
+func (writer *couponWriterFake) ImportRedemption(ctx context.Context, source string, payload [sha256.Size]byte, value couponport.HistoricalRedemption) (couponport.HistoricalReceipt, error) {
+	writer.probe.write(ctx)
 	if existing, found := writer.receipts["redemption/"+source]; found {
 		if existing.PayloadDigest != payload {
 			return couponport.HistoricalReceipt{}, couponport.ErrHistoryConflict
@@ -257,6 +308,45 @@ func couponSourceKey(t *testing.T, row v1archive.ArchivedRow) string {
 }
 
 func couponID(value int64) *int64 { return &value }
+
+type couponTransactionProbe struct {
+	ctx                                    context.Context
+	mismatches, resolverCalls, writerCalls int
+}
+
+func (probe *couponTransactionProbe) resolve(ctx context.Context) {
+	if probe == nil {
+		return
+	}
+	probe.resolverCalls++
+	if ctx != probe.ctx {
+		probe.mismatches++
+	}
+}
+
+func (probe *couponTransactionProbe) write(ctx context.Context) {
+	if probe == nil {
+		return
+	}
+	probe.writerCalls++
+	if ctx != probe.ctx {
+		probe.mismatches++
+	}
+}
+
+type couponTransactionUOW struct {
+	probe *couponTransactionProbe
+	calls int
+}
+
+func (uow *couponTransactionUOW) Within(ctx context.Context, callback func(context.Context) error) error {
+	uow.calls++
+	tx := context.WithValue(ctx, couponTransactionContextKey{}, struct{}{})
+	uow.probe.ctx = tx
+	return callback(tx)
+}
+
+type couponTransactionContextKey struct{}
 
 func tableForCouponKind(kind string) string {
 	switch kind {

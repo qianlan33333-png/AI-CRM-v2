@@ -220,16 +220,19 @@ func (importer *CouponImporter) importDefinitionGroup(ctx context.Context, defin
 	if decision.Disposition != v1coupon.DispositionCandidate || decision.Fact == nil {
 		return importer.recordDefinitionGroup(ctx, definition, bindings, indexes, string(decision.Disposition), reasonOr(decision.Reason, "coupon_definition_invalid"), result)
 	}
-	resolved, reason, err := importer.resolveDefinition(ctx, *decision.Fact, bindings, bindingDecisions, indexes)
-	if err != nil {
-		return err
-	}
-	if reason != "" {
-		return importer.recordDefinitionGroup(ctx, definition, bindings, indexes, "quarantine", reason, result)
-	}
 	replayed, targetID := false, int64(0)
-	err = importer.uow.Within(ctx, func(tx context.Context) error {
-		replayed, targetID = false, 0
+	resolved := resolvedCouponDefinition{}
+	err := importer.uow.Within(ctx, func(tx context.Context) error {
+		replayed, targetID, resolved = false, 0, resolvedCouponDefinition{}
+		var reason string
+		var resolveErr error
+		resolved, reason, resolveErr = importer.resolveDefinition(tx, *decision.Fact, bindings, bindingDecisions, indexes)
+		if resolveErr != nil {
+			return resolveErr
+		}
+		if reason != "" {
+			return &couponDefinitionQuarantineError{reason: reason}
+		}
 		receipt, writeErr := importer.writer.ImportDefinition(tx, SourceIdentifier(definition.archive.SourceKeyHMAC), definition.archive.PayloadHMAC, resolved.definition)
 		if writeErr != nil {
 			return writeErr
@@ -254,6 +257,10 @@ func (importer *CouponImporter) importDefinitionGroup(ctx context.Context, defin
 		}
 		return nil
 	})
+	var quarantined *couponDefinitionQuarantineError
+	if errors.As(err, &quarantined) {
+		return importer.recordDefinitionGroup(ctx, definition, bindings, indexes, "quarantine", quarantined.reason, result)
+	}
 	if errors.Is(err, couponport.ErrHistoryInvalid) {
 		return importer.recordDefinitionGroup(ctx, definition, bindings, indexes, "quarantine", "coupon_definition_target_invalid", result)
 	}
@@ -273,6 +280,10 @@ func (importer *CouponImporter) importDefinitionGroup(ctx context.Context, defin
 	}
 	return nil
 }
+
+type couponDefinitionQuarantineError struct{ reason string }
+
+func (err *couponDefinitionQuarantineError) Error() string { return err.reason }
 
 type resolvedCouponBinding struct {
 	row       couponArchiveRow
@@ -375,25 +386,25 @@ func (importer *CouponImporter) importClaim(ctx context.Context, row couponArchi
 	if !found || couponID < 1 {
 		return importer.recordDecision(ctx, couponClaimsKind, row, "quarantine", "coupon_claim_parent_coupon_unavailable", result)
 	}
-	var customerID *int64
-	var err error
-	if !v1archive.IsRedacted(row.archive, "unionid") && decision.Fact.UnionID != "" {
-		customerID, err = importer.resolver.ResolveCouponCustomer(ctx, decision.Fact.UnionID)
-		if err != nil {
-			return err
-		}
-		if invalidCouponReferenceID(customerID) {
-			return ErrConflict
-		}
-	}
-	value := couponport.HistoricalClaim{SourceClaimID: decision.Fact.SourceID, SourceCouponID: decision.Fact.CouponSourceID, CouponID: couponID, CustomerID: customerID,
-		ClaimNo: decision.Fact.ClaimNumber, Status: decision.Fact.OriginalStatus, DiscountAmountTotal: decision.Fact.DiscountAmountMinor, Currency: decision.Fact.Currency,
-		ValidFrom: couponTime(decision.Fact.ValidFrom), ValidUntil: couponTime(decision.Fact.ValidUntil), ClaimedAt: couponTime(decision.Fact.ClaimedAt),
-		ReservedAt: couponTimePointer(decision.Fact.ReservedAt), ConsumedAt: couponTimePointer(decision.Fact.ConsumedAt), ExpiredAt: couponTimePointer(decision.Fact.ExpiredAt),
-		CreatedAt: couponTime(decision.Fact.CreatedAt), UpdatedAt: couponTime(decision.Fact.UpdatedAt)}
 	replayed, targetID := false, int64(0)
-	err = importer.uow.Within(ctx, func(tx context.Context) error {
+	err := importer.uow.Within(ctx, func(tx context.Context) error {
 		replayed, targetID = false, 0
+		var customerID *int64
+		if !v1archive.IsRedacted(row.archive, "unionid") && decision.Fact.UnionID != "" {
+			var resolveErr error
+			customerID, resolveErr = importer.resolver.ResolveCouponCustomer(tx, decision.Fact.UnionID)
+			if resolveErr != nil {
+				return resolveErr
+			}
+			if invalidCouponReferenceID(customerID) {
+				return ErrConflict
+			}
+		}
+		value := couponport.HistoricalClaim{SourceClaimID: decision.Fact.SourceID, SourceCouponID: decision.Fact.CouponSourceID, CouponID: couponID, CustomerID: customerID,
+			ClaimNo: decision.Fact.ClaimNumber, Status: decision.Fact.OriginalStatus, DiscountAmountTotal: decision.Fact.DiscountAmountMinor, Currency: decision.Fact.Currency,
+			ValidFrom: couponTime(decision.Fact.ValidFrom), ValidUntil: couponTime(decision.Fact.ValidUntil), ClaimedAt: couponTime(decision.Fact.ClaimedAt),
+			ReservedAt: couponTimePointer(decision.Fact.ReservedAt), ConsumedAt: couponTimePointer(decision.Fact.ConsumedAt), ExpiredAt: couponTimePointer(decision.Fact.ExpiredAt),
+			CreatedAt: couponTime(decision.Fact.CreatedAt), UpdatedAt: couponTime(decision.Fact.UpdatedAt)}
 		receipt, writeErr := importer.writer.ImportClaim(tx, SourceIdentifier(row.archive.SourceKeyHMAC), row.archive.PayloadHMAC, value)
 		if writeErr != nil {
 			return writeErr
@@ -429,21 +440,21 @@ func (importer *CouponImporter) importRedemption(ctx context.Context, row coupon
 	if !found || claimID < 1 {
 		return importer.recordDecision(ctx, couponRedemptionsKind, row, "quarantine", "coupon_redemption_parent_claim_unavailable", result)
 	}
-	orderID, err := importer.resolver.ResolveCouponOrder(ctx, decision.Fact.OrderSourceID, decision.Fact.OutTradeNo)
-	if err != nil {
-		return err
-	}
-	if invalidCouponReferenceID(orderID) {
-		return ErrConflict
-	}
-	value := couponport.HistoricalRedemption{SourceRedemptionID: decision.Fact.SourceID, SourceClaimID: decision.Fact.ClaimSourceID, SourceOrderID: decision.Fact.OrderSourceID,
-		ClaimHistoryID: claimID, OrderID: orderID, OutTradeNo: decision.Fact.OutTradeNo, Status: decision.Fact.OriginalStatus,
-		OriginalAmountTotal: decision.Fact.OriginalAmountMinor, DiscountAmountTotal: decision.Fact.DiscountAmountMinor, PayableAmountTotal: decision.Fact.PayableAmountMinor,
-		Currency: decision.Fact.Currency, ReservedUntil: couponTime(decision.Fact.ReservedUntil), ReleaseReason: decision.Fact.ReleaseReason, ReservedAt: couponTime(decision.Fact.ReservedAt),
-		ConsumedAt: couponTimePointer(decision.Fact.ConsumedAt), ReleasedAt: couponTimePointer(decision.Fact.ReleasedAt), CreatedAt: couponTime(decision.Fact.CreatedAt), UpdatedAt: couponTime(decision.Fact.UpdatedAt)}
 	replayed := false
-	err = importer.uow.Within(ctx, func(tx context.Context) error {
+	err := importer.uow.Within(ctx, func(tx context.Context) error {
 		replayed = false
+		orderID, resolveErr := importer.resolver.ResolveCouponOrder(tx, decision.Fact.OrderSourceID, decision.Fact.OutTradeNo)
+		if resolveErr != nil {
+			return resolveErr
+		}
+		if invalidCouponReferenceID(orderID) {
+			return ErrConflict
+		}
+		value := couponport.HistoricalRedemption{SourceRedemptionID: decision.Fact.SourceID, SourceClaimID: decision.Fact.ClaimSourceID, SourceOrderID: decision.Fact.OrderSourceID,
+			ClaimHistoryID: claimID, OrderID: orderID, OutTradeNo: decision.Fact.OutTradeNo, Status: decision.Fact.OriginalStatus,
+			OriginalAmountTotal: decision.Fact.OriginalAmountMinor, DiscountAmountTotal: decision.Fact.DiscountAmountMinor, PayableAmountTotal: decision.Fact.PayableAmountMinor,
+			Currency: decision.Fact.Currency, ReservedUntil: couponTime(decision.Fact.ReservedUntil), ReleaseReason: decision.Fact.ReleaseReason, ReservedAt: couponTime(decision.Fact.ReservedAt),
+			ConsumedAt: couponTimePointer(decision.Fact.ConsumedAt), ReleasedAt: couponTimePointer(decision.Fact.ReleasedAt), CreatedAt: couponTime(decision.Fact.CreatedAt), UpdatedAt: couponTime(decision.Fact.UpdatedAt)}
 		receipt, writeErr := importer.writer.ImportRedemption(tx, SourceIdentifier(row.archive.SourceKeyHMAC), row.archive.PayloadHMAC, value)
 		if writeErr != nil {
 			return writeErr
