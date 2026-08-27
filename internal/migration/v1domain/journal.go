@@ -9,11 +9,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
+	media "github.com/qianlan33333-png/AI-CRM-v2/internal/media"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
 )
 
@@ -47,6 +49,7 @@ type TerminalReceipt struct {
 }
 
 var _ campaign.HistoricalDefinitionJournal = (*Journal)(nil)
+var _ media.HistoricalMiniProgramJournal = (*Journal)(nil)
 
 func NewJournal(scope Scope) (*Journal, error) {
 	if !scope.valid() {
@@ -149,6 +152,85 @@ VALUES ($1,$2,$3,$4,$5,$6,'import',$7,$8,$9,$10,$11,true)`, journal.scope.Import
 		var postgresError *pgconn.PgError
 		if errors.As(err, &postgresError) && postgresError.Code == "23505" {
 			return campaign.ErrHistoricalDefinitionConflict
+		}
+	}
+	return err
+}
+
+func (journal *Journal) LoadHistoricalMiniProgram(ctx context.Context, sourceIdentifier string) (media.HistoricalMiniProgramReceipt, bool, error) {
+	if journal == nil || journal.tx == nil || !journal.scope.valid() {
+		return media.HistoricalMiniProgramReceipt{}, false, ErrInvalidScope
+	}
+	sourceKey, err := decodeSourceIdentifier(sourceIdentifier)
+	if err != nil {
+		return media.HistoricalMiniProgramReceipt{}, false, err
+	}
+	tx, err := journal.tx(ctx)
+	if err != nil {
+		return media.HistoricalMiniProgramReceipt{}, false, err
+	}
+	var payload []byte
+	var targetID string
+	var metadata []byte
+	err = tx.QueryRow(ctx, `SELECT payload_digest,target_id,metadata FROM public.v1_domain_import_receipts
+WHERE import_version=$1 AND archive_run_id=$2 AND adapter_id=$3 AND table_id=$4
+  AND source_key_digest=$5 AND disposition='import'`, journal.scope.ImportVersion, journal.scope.ArchiveRunID,
+		journal.scope.AdapterID, journal.scope.TableID, sourceKey).Scan(&payload, &targetID, &metadata)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return media.HistoricalMiniProgramReceipt{}, false, nil
+	}
+	if err != nil || len(payload) != sha256.Size {
+		return media.HistoricalMiniProgramReceipt{}, false, ErrConflict
+	}
+	var values struct {
+		SourceID                int64 `json:"source_id"`
+		ProviderMaterialDropped bool  `json:"provider_material_dropped"`
+	}
+	if json.Unmarshal(metadata, &values) != nil || values.SourceID < 1 {
+		return media.HistoricalMiniProgramReceipt{}, false, ErrConflict
+	}
+	parsedTargetID, err := strconv.ParseInt(targetID, 10, 64)
+	if err != nil || parsedTargetID < 1 {
+		return media.HistoricalMiniProgramReceipt{}, false, ErrConflict
+	}
+	var digest [sha256.Size]byte
+	copy(digest[:], payload)
+	return media.HistoricalMiniProgramReceipt{
+		SourceIdentifier: sourceIdentifier, SourceID: values.SourceID, PayloadDigest: digest,
+		TargetMiniProgramID: parsedTargetID, ProviderMaterialDropped: values.ProviderMaterialDropped,
+	}, true, nil
+}
+
+func (journal *Journal) RecordHistoricalMiniProgram(ctx context.Context, receipt media.HistoricalMiniProgramReceipt) error {
+	if journal == nil || journal.tx == nil || !journal.scope.valid() || receipt.Replayed || receipt.SourceID < 1 || receipt.TargetMiniProgramID < 1 {
+		return ErrInvalidScope
+	}
+	sourceKey, err := decodeSourceIdentifier(receipt.SourceIdentifier)
+	if err != nil {
+		return err
+	}
+	metadata, err := json.Marshal(map[string]any{
+		"source_id": receipt.SourceID, "provider_material_dropped": receipt.ProviderMaterialDropped,
+	})
+	if err != nil {
+		return err
+	}
+	targetID := strconv.FormatInt(receipt.TargetMiniProgramID, 10)
+	targetDigest := sha256.Sum256([]byte(journal.scope.TargetDomain + "\x00" + journal.scope.TargetTable + "\x00" + targetID + "\x00" + hex.EncodeToString(receipt.PayloadDigest[:])))
+	tx, err := journal.tx(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, `INSERT INTO public.v1_domain_import_receipts
+(import_version,archive_run_id,adapter_id,table_id,source_key_digest,payload_digest,disposition,
+ target_domain,target_table,target_id,target_digest,metadata,verified)
+VALUES ($1,$2,$3,$4,$5,$6,'import',$7,$8,$9,$10,$11,true)`, journal.scope.ImportVersion,
+		journal.scope.ArchiveRunID, journal.scope.AdapterID, journal.scope.TableID, sourceKey,
+		receipt.PayloadDigest[:], journal.scope.TargetDomain, journal.scope.TargetTable, targetID, targetDigest[:], metadata)
+	if err != nil {
+		var postgresError *pgconn.PgError
+		if errors.As(err, &postgresError) && postgresError.Code == "23505" {
+			return media.ErrHistoricalMiniProgramConflict
 		}
 	}
 	return err

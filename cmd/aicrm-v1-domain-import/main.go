@@ -15,13 +15,21 @@ import (
 	campaign "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign"
 	campaignstore "github.com/qianlan33333-png/AI-CRM-v2/internal/campaign/store"
 	appconfig "github.com/qianlan33333-png/AI-CRM-v2/internal/config"
+	eventport "github.com/qianlan33333-png/AI-CRM-v2/internal/events/port"
+	media "github.com/qianlan33333-png/AI-CRM-v2/internal/media"
+	mediastore "github.com/qianlan33333-png/AI-CRM-v2/internal/media/store"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1archive"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1candidate"
 	"github.com/qianlan33333-png/AI-CRM-v2/internal/migration/v1domain"
+	orderstore "github.com/qianlan33333-png/AI-CRM-v2/internal/order/store"
 	platformstore "github.com/qianlan33333-png/AI-CRM-v2/internal/platform/store"
+	radarapp "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/app"
+	radarstore "github.com/qianlan33333-png/AI-CRM-v2/internal/radar/store"
+	surveyapp "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/app"
+	surveystore "github.com/qianlan33333-png/AI-CRM-v2/internal/survey/store"
 )
 
-const campaignImportVersion = "v1-domain-a1"
+const domainImportVersion = "v1-domain-a1"
 
 func main() {
 	environment := appconfig.LoadV1ArchiveRuntimeEnvironment()
@@ -33,18 +41,26 @@ func main() {
 
 func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 	flags := flag.NewFlagSet("aicrm-v1-domain-import", flag.ContinueOnError)
-	domain := flags.String("domain", "", "campaign")
+	domain := flags.String("domain", "", "campaign|survey|media|radar|shop|all")
 	archiveRunID := flags.String("archive-run-id", "", "reconciled V1 archive run")
 	actorValues := flags.String("campaign-actors", "", "explicit owner_userid=V2_actor_id pairs")
+	migrationActor := flags.Int64("migration-actor", 0, "explicit V2 actor for local historical definitions")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
-	if *domain != "campaign" || *archiveRunID == "" || environment.TargetDatabaseURL == "" || len(environment.ArchiveKey) != 32 {
-		return fmt.Errorf("domain=campaign, archive-run-id, target database and 32-byte archive key are required")
+	if !validDomain(*domain) || *archiveRunID == "" || environment.TargetDatabaseURL == "" || len(environment.ArchiveKey) != 32 {
+		return fmt.Errorf("valid domain, archive-run-id, target database and 32-byte archive key are required")
 	}
-	actors, err := parseActorIDs(*actorValues)
-	if err != nil {
-		return err
+	var actors v1candidate.ActorIDs
+	var err error
+	if *domain == "campaign" || *domain == "all" {
+		actors, err = parseActorIDs(*actorValues)
+		if err != nil {
+			return err
+		}
+	}
+	if (*domain == "survey" || *domain == "media" || *domain == "radar" || *domain == "all") && *migrationActor < 1 {
+		return fmt.Errorf("migration-actor is required")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, environment.TargetDatabaseURL)
@@ -57,35 +73,145 @@ func run(args []string, environment appconfig.V1ArchiveRuntime) error {
 		return err
 	}
 	defer archive.Close()
-	campaignJournal, err := v1domain.NewJournal(v1domain.Scope{
-		ImportVersion: campaignImportVersion, ArchiveRunID: *archiveRunID,
-		AdapterID: v1archive.DefaultAdapterID, TableID: "public/campaigns",
-		TargetDomain: "campaign", TargetTable: "cloud_campaigns",
-	})
-	if err != nil {
-		return err
+	uow := platformstore.NewUnitOfWork(pool)
+	result := map[string]any{}
+	if *domain == "campaign" || *domain == "all" {
+		value, err := importCampaign(ctx, archive, uow, *archiveRunID, actors)
+		if err != nil {
+			return err
+		}
+		result["campaign"] = value
 	}
-	stepJournal, err := v1domain.NewJournal(v1domain.Scope{
-		ImportVersion: campaignImportVersion, ArchiveRunID: *archiveRunID,
-		AdapterID: v1archive.DefaultAdapterID, TableID: "public/campaign_steps",
-		TargetDomain: "campaign", TargetTable: "cloud_campaign_steps",
-	})
+	if *domain == "survey" || *domain == "all" {
+		value, err := importSurvey(ctx, archive, uow, *archiveRunID, *migrationActor)
+		if err != nil {
+			return err
+		}
+		result["survey"] = value
+	}
+	if *domain == "media" || *domain == "all" {
+		value, err := importMedia(ctx, archive, uow, *archiveRunID, *migrationActor)
+		if err != nil {
+			return err
+		}
+		result["media"] = value
+	}
+	if *domain == "radar" || *domain == "all" {
+		value, err := importRadar(ctx, archive, uow, *archiveRunID, *migrationActor)
+		if err != nil {
+			return err
+		}
+		result["radar"] = value
+	}
+	if *domain == "shop" || *domain == "all" {
+		value, err := importShop(ctx, archive, uow, *archiveRunID)
+		if err != nil {
+			return err
+		}
+		result["shop"] = value
+	}
+	return json.NewEncoder(os.Stdout).Encode(result)
+}
+
+func validDomain(value string) bool {
+	return value == "campaign" || value == "survey" || value == "media" || value == "radar" || value == "shop" || value == "all"
+}
+
+func newJournal(runID, tableID, domain, targetTable string) (*v1domain.Journal, error) {
+	return v1domain.NewJournal(v1domain.Scope{ImportVersion: domainImportVersion, ArchiveRunID: runID,
+		AdapterID: v1archive.DefaultAdapterID, TableID: tableID, TargetDomain: domain, TargetTable: targetTable})
+}
+
+func importCampaign(ctx context.Context, archive *v1archive.PostgresArchiveReader, uow *platformstore.UnitOfWork, runID string, actors v1candidate.ActorIDs) (v1domain.CampaignImportResult, error) {
+	campaignJournal, err := newJournal(runID, "public/campaigns", "campaign", "cloud_campaigns")
 	if err != nil {
-		return err
+		return v1domain.CampaignImportResult{}, err
+	}
+	stepJournal, err := newJournal(runID, "public/campaign_steps", "campaign", "cloud_campaign_steps")
+	if err != nil {
+		return v1domain.CampaignImportResult{}, err
 	}
 	writer, err := campaign.NewHistoricalDefinitionWriter(campaignstore.NewHistoricalDefinitionStore(), campaignJournal)
 	if err != nil {
-		return err
+		return v1domain.CampaignImportResult{}, err
 	}
-	importer, err := v1domain.NewCampaignImporter(archive, platformstore.NewUnitOfWork(pool), writer, campaignJournal, stepJournal, actors)
+	importer, err := v1domain.NewCampaignImporter(archive, uow, writer, campaignJournal, stepJournal, actors)
 	if err != nil {
-		return err
+		return v1domain.CampaignImportResult{}, err
 	}
-	result, err := importer.Import(ctx, *archiveRunID)
+	return importer.Import(ctx, runID)
+}
+
+func importSurvey(ctx context.Context, archive *v1archive.PostgresArchiveReader, uow *platformstore.UnitOfWork, runID string, actor int64) (v1domain.SurveyImportResult, error) {
+	targets := map[string]string{
+		"public/questionnaires": "questionnaires", "public/questionnaire_questions": "questionnaire_questions",
+		"public/questionnaire_options": "questionnaire_options", "public/questionnaire_submissions": "questionnaire_submissions",
+		"public/questionnaire_submission_answers": "questionnaire_submission_answers",
+	}
+	journals := make(map[string]*v1domain.Journal, len(targets))
+	for table, target := range targets {
+		journal, err := newJournal(runID, table, "survey", target)
+		if err != nil {
+			return v1domain.SurveyImportResult{}, err
+		}
+		journals[table] = journal
+	}
+	service := surveyapp.NewImportService(uow, surveystore.NewQuestionnaireRepository())
+	importer, err := v1domain.NewSurveyImporter(archive, uow, service, journals, actor)
 	if err != nil {
-		return err
+		return v1domain.SurveyImportResult{}, err
 	}
-	return json.NewEncoder(os.Stdout).Encode(result)
+	return importer.Import(ctx, runID)
+}
+
+func importMedia(ctx context.Context, archive *v1archive.PostgresArchiveReader, uow *platformstore.UnitOfWork, runID string, actor int64) (v1domain.StaticImportResult, error) {
+	journal, err := newJournal(runID, "public/miniprogram_library", "media", "media_miniprograms")
+	if err != nil {
+		return v1domain.StaticImportResult{}, err
+	}
+	writer, err := media.NewHistoricalMiniProgramWriter(mediastore.NewHistoricalMiniProgramStore(), journal)
+	if err != nil {
+		return v1domain.StaticImportResult{}, err
+	}
+	importer, err := v1domain.NewMiniProgramImporter(archive, uow, writer, journal, actor)
+	if err != nil {
+		return v1domain.StaticImportResult{}, err
+	}
+	return importer.Import(ctx, runID)
+}
+
+func importRadar(ctx context.Context, archive *v1archive.PostgresArchiveReader, uow *platformstore.UnitOfWork, runID string, actor int64) (v1domain.StaticImportResult, error) {
+	journal, err := newJournal(runID, "public/radar_links", "radar", "radar_links")
+	if err != nil {
+		return v1domain.StaticImportResult{}, err
+	}
+	service, err := radarapp.NewService(uow, radarstore.NewPostgresRepository(), rejectingEventAppender{})
+	if err != nil {
+		return v1domain.StaticImportResult{}, err
+	}
+	importer, err := v1domain.NewRadarImporter(archive, uow, service, journal, actor)
+	if err != nil {
+		return v1domain.StaticImportResult{}, err
+	}
+	return importer.Import(ctx, runID)
+}
+
+func importShop(ctx context.Context, archive *v1archive.PostgresArchiveReader, uow *platformstore.UnitOfWork, runID string) (v1domain.WeChatShopImportResult, error) {
+	journal, err := newJournal(runID, "public/wechat_shop_orders", "order", "order_wechat_shop_materials")
+	if err != nil {
+		return v1domain.WeChatShopImportResult{}, err
+	}
+	importer, err := v1domain.NewWeChatShopImporter(archive, uow, orderstore.NewWeChatShopMaterialRepository(), journal)
+	if err != nil {
+		return v1domain.WeChatShopImportResult{}, err
+	}
+	return importer.Import(ctx, runID)
+}
+
+type rejectingEventAppender struct{}
+
+func (rejectingEventAppender) Append(context.Context, eventport.Event) (eventport.EventID, error) {
+	return 0, fmt.Errorf("historical definition attempted to append an event")
 }
 
 func parseActorIDs(value string) (v1candidate.ActorIDs, error) {
